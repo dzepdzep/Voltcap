@@ -3224,6 +3224,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         artOverrides = state.artOverrides,
                         cardArtType = state.appearance.cardArtFor(),
                         categoryBelow = categoryBelow && state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF,
+                        rowAtBottom = dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM, // (Update 153)
                         physicalMedia = state.physicalMedia,
                         screenshots = state.screenshots,
                         onNeedPhysical = { viewModel.loadPhysicalMedia(it) },

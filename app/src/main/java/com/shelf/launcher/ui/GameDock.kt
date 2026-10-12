@@ -91,6 +91,8 @@ internal fun GameDock(
     cardArtType: com.shelf.launcher.data.CardArtType = com.shelf.launcher.data.CardArtType.COVER,
     /** The category label sits under the row (else above it): the name line hugs it. */
     categoryBelow: Boolean = false,
+    /** Update 153: the row sits at the bottom of the screen (its name line can then be only as tall as it needs). */
+    rowAtBottom: Boolean = false,
     physicalMedia: Map<String, List<Pair<String, String>>> = emptyMap(),
     screenshots: Map<String, List<String>> = emptyMap(),
     /** Asks for a game's box / disc art (throttled here; only for games near the focus). */
@@ -349,7 +351,10 @@ internal fun GameDock(
                 start = dockTextStart(),
                 // The name hugs the category label when that's right next to it (above the name above the row, or
                 // under the name under the row) — else it hugs the row — so there's never a big gap between them.
-                wrap = !lineAbove,
+                // Update 153: also above a row at the bottom of the screen: the room kept for a second line (or a logo the
+                // game doesn't have) showed as a big gap between the category and the name. A changing height there
+                // only moves the category label above it, never the row.
+                wrap = !lineAbove || rowAtBottom,
                 vertical = if (lineAbove) {
                     if (categoryBelow) androidx.compose.ui.Alignment.Bottom else androidx.compose.ui.Alignment.Top
                 } else {

@@ -256,6 +256,14 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 153
+- **Release build installed** (22:13): `run-as` no longer works, so prefs can't be edited from adb; layouts are switched
+  through Settings › Home › Layout & presets (pick the layout chip, then "Use <layout> as it is").
+- **Disc station:** `DiscPanel` takes the cover when there's no backdrop; a Screen-blended radial wash of the glow colour
+  (`discIsDark` → stronger).
+- **GameDock:** `rowAtBottom` → the name line above the row wraps (no fixed two-line / logo height).
+- **Open:** "some art cut off on all sides" — asked the user which layout / look (screenshot).
+
 ## State after update 152
 - **Performance (measured on the RP Classic, carousel in Grid):** debug build: 50th-percentile frame 50–77 ms, about 43 % of
   the main thread in the ART interpreter (debuggable). Use `installRelease` for daily use (debug and release share the

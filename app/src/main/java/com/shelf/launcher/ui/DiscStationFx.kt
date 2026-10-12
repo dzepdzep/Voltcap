@@ -99,6 +99,13 @@ internal fun rememberDiscGlow(art: Bitmap?, fallback: Color): Color {
     return sampled ?: fallback
 }
 
+/** Update 153: [b] is mostly dark (its average brightness under about 18 %): the player then gets a stronger wash of colour. */
+internal fun discIsDark(b: Bitmap): Boolean = runCatching {
+    val p = Bitmap.createScaledBitmap(b, 1, 1, true).getPixel(0, 0)
+    val luma = (0.299f * android.graphics.Color.red(p) + 0.587f * android.graphics.Color.green(p) + 0.114f * android.graphics.Color.blue(p)) / 255f
+    luma < 0.18f
+}.getOrDefault(false)
+
 /** Text on the Disc station's panel: the interface font with a soft dark shadow, so it reads over any picture. */
 @Composable
 internal fun discTextStyle(): TextStyle =

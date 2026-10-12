@@ -15,6 +15,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -157,7 +158,8 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
     // disc, 5 % by default), fills the player instead.)
     BoxWithConstraints(modifier.clip(shape)) {
     val pct = Features.discBlur.state.value
-    val backdropUrl = c.backdrop(g)
+    // Update 153: a game without a background picture (apps, games with only a cover) takes its cover instead.
+    val backdropUrl = c.backdrop(g) ?: c.cover(g)
     val artNow = rememberSoftBitmap(backdropUrl, 480)
     // Update 151 (review): while the next game's picture loads, the last one stays behind the disc (it used to go empty
     // for a moment, the dark behind the player showing through at every step).
@@ -171,6 +173,24 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
     // Update 151: the glow's colour, from the game's art (the theme's accent until it's there).
     val glowTarget = rememberDiscGlow(art, ShelfTheme.accent)
     val glow by androidx.compose.animation.animateColorAsState(glowTarget, tween(400), label = "discGlow")
+    // Update 153: never a black player — a soft wash of the game's colour lights it from behind the disc, stronger when
+    // there's no picture at all or the picture is very dark (the user saw black behind the disc on those games).
+    val dark = remember(art) { art?.let { discIsDark(it) } ?: true }
+    val wash = if (soft == null || dark) 0.55f else 0.22f
+    Box(
+        Modifier.matchParentSize().drawBehind {
+            drawRect(
+                androidx.compose.ui.graphics.Brush.radialGradient(
+                    0f to glow.copy(alpha = wash),
+                    0.6f to glow.copy(alpha = wash * 0.45f),
+                    1f to glow.copy(alpha = wash * 0.18f),
+                    center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height * 0.55f),
+                    radius = size.maxDimension * 0.75f
+                ),
+                blendMode = androidx.compose.ui.graphics.BlendMode.Screen
+            )
+        }
+    )
     Column(
         Modifier.fillMaxSize().padding(if (compact) 10.dp else 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally

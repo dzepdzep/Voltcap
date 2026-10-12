@@ -4,6 +4,42 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (153): Disc station never black, Voltcap row name next to the category
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (4): `src_copy\ui\DiscStationFx.kt`,
+`src_copy\ui\GameDock.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\StyleDiscStation.kt`.
+
+**Files to delete:** none.
+
+### Measured on the Retroid Pocket Classic (release build)
+- Moving through games in Disc station: 2.5 % slow frames and 9 slow screen-thread frames (the debug build in Grid:
+  50–60 % slow frames, over 100 slow screen-thread frames). The release build is the one to use every day.
+
+### What changed
+- **Disc station: no more black behind the disc.** Games without a background picture (apps, games with only a cover)
+  use their cover, blurred; and a soft wash of the game's own colour lights the player from behind the disc — stronger
+  when there's no picture or it's very dark.
+- **Voltcap row:** with the row at the bottom, the game's name sits right under the category (it kept room for a second
+  line or a logo, which showed as a big gap). Only the category label moves when a name needs two lines; the row stays put.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 153: disc station never black, voltcap row name next to the category"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 12 Oct 2026 (152): smoother moving with animated covers, Save Vault label, Timeline and Disc station touches
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
