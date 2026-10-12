@@ -323,7 +323,16 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     com.shelf.launcher.data.HomeLayout.ARCADE -> "Arcade cabinets: the game you're on on an arcade cabinet's screen with its marquee lit on top, the others as a row of small cabinets."
     com.shelf.launcher.data.HomeLayout.CONSOLES -> "Console stack: your consoles as a pile of consoles; the one you're on slides out its games."
     com.shelf.launcher.data.HomeLayout.DISCS -> "Disc station: one disc player — the game you're on is the disc in the tray, ejected and swapped as you move, its name, play time, achievements and a few lines about it beside it."
-    com.shelf.launcher.data.HomeLayout.SHELF -> "Game shelf: your games as spines on a bookcase, the one you're on pulled out to show its front. ◀ ▶ along, ▲ ▼ to the shelf above / below."
+    // Update 158.
+    com.shelf.launcher.data.HomeLayout.HERO_TILES -> "Hero tiles: the game you're on as a big picture across the top, one or two rows of square tiles under it, an app dock and round buttons along the bottom."
+    // Update 158: the two-screen layouts.
+    com.shelf.launcher.data.HomeLayout.TWIN_DESK -> "Twin desk: for two screens — a clock and this month's calendar on squared paper on top, your games as wide panels with round buttons on the second screen. With one screen, both halves show together."
+    com.shelf.launcher.data.HomeLayout.TWIN_ICONS -> "Twin icons: for two screens — the game you're on as a big framed icon on top, a grid of square icons with tool buttons and an Open bar on the second screen. With one screen, both halves show together."
+    // Update 158: Record crate.
+    com.shelf.launcher.data.HomeLayout.CRATE -> "Record crate: your games as record sleeves in a wooden crate. Flip through them; the one you're on lifts out and its record slides out and turns. Its name, play time, achievements and Play beside it."
+    // Update 158: Card binder.
+    com.shelf.launcher.data.HomeLayout.CARDS -> "Card binder: your games as collectible cards — the cover in a framed window, the console as its type, time played, achievements and rarity stars at the bottom. The one you're on stands big in the middle, the others fan out like a hand; Y turns it over."
+    com.shelf.launcher.data.HomeLayout.SHELF -> "Game shelf:your games as spines on a bookcase, the one you're on pulled out to show its front. ◀ ▶ along, ▲ ▼ to the shelf above / below."
 }
 
 /** One line saying what applying [p] changes, compared with your settings now. */

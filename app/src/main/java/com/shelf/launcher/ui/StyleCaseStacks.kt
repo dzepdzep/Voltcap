@@ -494,7 +494,8 @@ private fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modifi
         // little so its spine shows (Cases in 3D; off: the flat case below).
         Box(modifier.gameOrigin(k, on)) {
             Case3D(
-                g, c.cover(g), c.state.physicalMedia[k], STACKS_CASE_YAW, case3dAspect(g, false),
+                // Update 158: facing you straight on by default; turned (its spine showing) with "Turned like the others".
+                g, c.cover(g), c.state.physicalMedia[k], if (PickedFacing.faces) 0f else STACKS_CASE_YAW, case3dAspect(g, false),
                 Modifier.fillMaxSize().awardShine(k, focused), frame = focused, frameColor = accent
             )
             ConsoleBadge(g.platform, packageName = g.packageName)
@@ -725,7 +726,13 @@ internal fun CaseStacksSettings() {
     Spacer(Modifier.height(8.dp))
     SwitchRow(
         Icons.Filled.ViewInAr, "Cases in 3D",
-        "The game in the middle as a real 3D case, turned a little so its spine shows. Off: its flat case, facing you.",
+        // (Update 158: it faces you by default; "The one you're on" below turns it so its spine shows.)
+        "The game in the middle as a real 3D case. Off: its flat case.",
         Features.stacks3d.state.value, { Features.stacks3d.value = it }
     )
+    // Update 158: the case in the middle faces you, or stands turned like the others.
+    if (Features.stacks3d.state.value) {
+        Spacer(Modifier.height(8.dp))
+        PickedFacingChoice(note = false)
+    }
 }

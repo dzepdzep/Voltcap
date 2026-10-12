@@ -5254,6 +5254,11 @@ private fun CarouselTiltChoices() {
         else "Each game a real case: cover on the front, its spine on the side, turned in true 3D. (TV room, Grid and Side menu carousels.)",
         f.carousel3d.state.value || f.carouselView.state.value.cases, { f.carousel3d.value = it }
     )
+    // Update 158: the 3D case you're on faces you (default) or stands turned like the others.
+    if (f.carousel3d.state.value || f.carouselView.state.value.cases) {
+        Spacer(Modifier.height(6.dp))
+        com.shelf.launcher.ui.PickedFacingChoice(note = false)
+    }
     if (!f.tvCarouselTilt.state.value) return
     RowChoice("Tilt direction", com.shelf.launcher.ui.TiltDir.values(), f.tvCarouselTiltDir.state.value, { it.label }) { f.tvCarouselTiltDir.value = it }
     RowChoice("Tilt which games", com.shelf.launcher.ui.TiltSides.values(), f.tvCarouselTiltSides.state.value, { it.label }) { f.tvCarouselTiltSides.value = it }

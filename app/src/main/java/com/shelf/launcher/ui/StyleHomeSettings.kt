@@ -63,6 +63,15 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.ARCADE -> "Marquee glow, screen lines, cabinet colour"
     HomeLayout.CONSOLES -> "Console pictures, how many games slide out"
     HomeLayout.DISCS -> "Spinning disc, about the game"
+    // Update 158.
+    HomeLayout.HERO_TILES -> "Rows of tiles, tile size, app dock, pale background, status bar"
+    // Update 158: the two-screen layouts.
+    HomeLayout.TWIN_DESK -> "Clock style, calendar"
+    HomeLayout.TWIN_ICONS -> "Icons per row"
+    // Update 158: Record crate.
+    HomeLayout.CRATE -> "Record turning, wood colour"
+    // Update 158: Card binder.
+    HomeLayout.CARDS -> "Fan angle, shiny sheen, frame colour, A starts the game"
     else -> ""
 }
 
@@ -88,6 +97,15 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.ARCADE -> ArcadeSettings()
         HomeLayout.CONSOLES -> ConsoleStackSettings()
         HomeLayout.DISCS -> DiscStationSettings()
+        // Update 158.
+        HomeLayout.HERO_TILES -> HeroTilesSettings()
+        // Update 158: the two-screen layouts (TwinDesk.kt / TwinIcons.kt).
+        HomeLayout.TWIN_DESK -> TwinDeskSettings()
+        HomeLayout.TWIN_ICONS -> TwinIconsSettings()
+        // Update 158: Record crate (StyleRecordCrate.kt).
+        HomeLayout.CRATE -> RecordCrateSettings()
+        // Update 158: Card binder (StyleCardBinder.kt).
+        HomeLayout.CARDS -> CardBinderSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).

@@ -230,14 +230,15 @@ internal object CustomPacks {
 
 /** What the scene code reads for a motif: the generated shaders, or the chosen custom pack's. */
 internal object SceneSource {
+    // Update 158: Lobby is drawn in code (LobbyScene) and has no shader: no code, no uniforms, no pictures.
     fun source(motif: ThemeMotif): String =
-        if (motif.custom) CustomPacks.active(motif)?.source.orEmpty() else ThemeShaders.source(motif)
+        if (motif == ThemeMotif.LOBBY) "" else if (motif.custom) CustomPacks.active(motif)?.source.orEmpty() else ThemeShaders.source(motif)
 
     fun uniforms(motif: ThemeMotif): Set<String> =
-        if (motif.custom) motif.packKind()?.let { CustomPackRules.uniformsOf(it) }.orEmpty() else ThemeShaders.uniforms(motif)
+        if (motif == ThemeMotif.LOBBY) emptySet() else if (motif.custom) motif.packKind()?.let { CustomPackRules.uniformsOf(it) }.orEmpty() else ThemeShaders.uniforms(motif)
 
     fun children(motif: ThemeMotif): Set<String> =
-        if (motif.custom) emptySet() else ThemeShaders.children(motif)
+        if (motif == ThemeMotif.LOBBY || motif.custom) emptySet() else ThemeShaders.children(motif)
 }
 
 /**

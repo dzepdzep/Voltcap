@@ -306,6 +306,8 @@ internal fun styleHomeKey(
     }
 
     // On the games.
+    // Update 158: Card binder — Y (or a hold of A) turns the card over, A plays, B turns it back (StyleCardBinder.kt).
+    if (layout == HomeLayout.CARDS && !isDir && cardBinderButton(event, sound)) return true
     if (!isDir || !down) return false
     val at = event.nativeKeyEvent.eventTime
     if (focus != StyleNav.dirFocus) { StyleNav.movedAt = StyleNav.dirAt; StyleNav.edgeKnock = false }
@@ -496,6 +498,35 @@ internal fun styleHomeKey(
             }
             else -> false
         }
+        // Update 158: Hero tiles handles its own keys (StyleHeroTiles.kt).
+        HomeLayout.HERO_TILES -> return heroTilesKey(
+            StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+        )
+        // Update 158: the two-screen layouts handle their own keys (TwinDesk.kt / TwinIcons.kt).
+        HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS -> {
+            val twinCtx = StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+            return if (layout == HomeLayout.TWIN_DESK) twinDeskKey(twinCtx) else twinIconsKey(twinCtx)
+        }
+        // Update 158: Card binder handles its own ▲ ▼ (StyleCardBinder.kt); ◀ ▶ are the home screen's own.
+        HomeLayout.CARDS -> return cardBinderKey(
+            StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+        )
+        // Update 158: Record crate handles its own keys (StyleRecordCrate.kt).
+        HomeLayout.CRATE -> return recordCrateKey(
+            StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+        )
         // Update 146: the newer layouts handle their own keys (in their own files) through [StyleKeyCtx].
         HomeLayout.LIBRARY, HomeLayout.STACKS, HomeLayout.TIMELINE, HomeLayout.ARCADE, HomeLayout.CONSOLES, HomeLayout.DISCS -> {
             val ctx = StyleKeyCtx(
@@ -638,7 +669,10 @@ internal class StyleActions(
     /** The details window itself (the Channel grid's own game window opens it from its Details button). */
     val details: () -> Unit = open,
     /** The game's achievement list (update 104: Resume / Hub show the next ones to earn behind their card). */
-    val needAchievements: (Game) -> Unit = {}
+    val needAchievements: (Game) -> Unit = {},
+    /** Update 158: the R1 quick settings panel and the screensaver (Twin desk's round buttons). */
+    val quickMenu: () -> Unit = {},
+    val screensaver: () -> Unit = {}
 )
 
 /** One stop of the category cycle (as L2 / R2 go through them). */
@@ -1033,6 +1067,12 @@ internal fun StyleHome(
                 shown?.let { near1 += it }
                 // Update 157: Disc station prints the game's own label scan on its disc when there is one: that too.
                 if (layout == HomeLayout.DISCS) typedArtFor(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, state.physicalMedia[k], state.screenshots[k], g.platform)?.let { near1 += it }
+                // Update 158: Hero tiles' square tiles show the cover whatever the game look is: that too.
+                if (layout == HomeLayout.HERO_TILES) cover?.let { near1 += it }
+                // Update 158: so do the two-screen layouts' square icons (TwinDesk.kt / TwinIcons.kt).
+                if (layout.isTwin) cover?.let { near1 += it }
+                // Update 158: Card binder's cards show the cover whatever the game look is: that too.
+                if (layout == HomeLayout.CARDS) cover?.let { near1 += it }
                 c.wide(g)?.let { near1 += it }
                 if (i in (focus - 1)..(focus + 1)) c.backdrop(g)?.let { backdrops += it }
             }
@@ -1073,6 +1113,15 @@ internal fun StyleHome(
         HomeLayout.CONSOLES -> StyleConsoleStack(c, modifier)
         // Update 147.
         HomeLayout.DISCS -> StyleDiscStation(c, modifier)
+        // Update 158.
+        HomeLayout.HERO_TILES -> StyleHeroTiles(c, modifier)
+        // Update 158: the two-screen layouts (TwinDesk.kt / TwinIcons.kt, the halves shared out in TwinScreens.kt).
+        HomeLayout.TWIN_DESK -> StyleTwinDesk(c, modifier)
+        HomeLayout.TWIN_ICONS -> StyleTwinIcons(c, modifier)
+        // Update 158: Record crate (StyleRecordCrate.kt).
+        HomeLayout.CRATE -> StyleRecordCrate(c, modifier)
+        // Update 158: Card binder (StyleCardBinder.kt).
+        HomeLayout.CARDS -> StyleCardBinder(c, modifier)
         else -> Unit
     }
 }
@@ -1122,6 +1171,8 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         )
         HomeLayout.CHAN -> if (Features.chanLight.state.value) ChannelBackdrop(Modifier.fillMaxSize())
         HomeLayout.CIRCUIT -> if (Features.circuitBackdrop.state.value) CircuitBackdrop(Modifier.fillMaxSize())
+        // Update 158: Hero tiles' pale backdrop (its option; off: the theme's background).
+        HomeLayout.HERO_TILES -> if (Features.heroTilesPale.state.value) HeroTilesBackdrop(Modifier.fillMaxSize())
         HomeLayout.LIVE -> if (Features.liveLight.state.value) LiveBackdrop(Modifier.fillMaxSize().padding(top = topInset, bottom = bottomInset))
         else -> Unit
     }
@@ -1135,6 +1186,8 @@ internal fun styleHasShortcuts(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.BAR -> Features.barIcons.state.value && !Features.barTabsCurrent.state.value
     HomeLayout.HUB -> Features.hubIcons.state.value
     HomeLayout.RESUME -> true
+    // Update 158: Twin icons has them as its tool buttons.
+    HomeLayout.TWIN_ICONS -> true
     else -> false
 }
 

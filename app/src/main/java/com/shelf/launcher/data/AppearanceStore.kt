@@ -130,11 +130,30 @@ enum class HomeLayout(val label: String) {
     CONSOLES("Console stack"),
     /** Update 147: one disc player — the game you're on as the disc in the tray (ejected and loaded as you move), its
      *  details beside it (StyleDiscStation.kt). Always discs. */
-    DISCS("Disc station");
+    DISCS("Disc station"),
+    /** Update 158: the game's big picture across the top, one or two rows of square tiles under it, an app dock and
+     *  round buttons along the bottom (StyleHeroTiles.kt). */
+    HERO_TILES("Hero tiles"),
+    /** Update 158: two screens — a desk with a clock and calendar on top, the games as wide panels on the second screen
+     *  (TwinDesk.kt; both halves stacked on a one-screen handheld). */
+    TWIN_DESK("Twin desk"),
+    /** Update 158: two screens — the game you're on as a big framed icon on top, a grid of square icons on the second
+     *  screen (TwinIcons.kt; both halves stacked on a one-screen handheld). */
+    TWIN_ICONS("Twin icons"),
+    /** Update 158: your games as record sleeves in a wooden crate; the one you're on lifts out, its record slides out
+     *  to the right and turns (StyleRecordCrate.kt). */
+    CRATE("Record crate"),
+    /** Update 158: your games as collectible cards — cover in a framed window, console as its type, stats at the
+     *  bottom; the one you're on big in the middle, the others fanned out like a hand; Y turns it over (StyleCardBinder.kt). */
+    CARDS("Card binder");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
-        this == LIBRARY || this == STACKS || this == TIMELINE || this == ARCADE || this == CONSOLES || this == DISCS
+        this == LIBRARY || this == STACKS || this == TIMELINE || this == ARCADE || this == CONSOLES || this == DISCS ||
+        this == HERO_TILES || // Update 158
+        this == TWIN_DESK || this == TWIN_ICONS || // Update 158: the two-screen layouts
+        this == CRATE || // Update 158: Record crate
+        this == CARDS // Update 158: Card binder
 
     companion object {
         /**
@@ -1450,7 +1469,9 @@ fun AppearanceSettings.cardArtFor(layout: HomeLayout = homeLayout): CardArtType 
  * Spotlight's Home menu unless it is turned on there (update 132: the menu has its own profile, battery and clock on top).
  */
 val AppearanceSettings.statusOn: Boolean
-    get() = showStatusBar && (homeLayout != HomeLayout.CHAN || Features.chanStatusBar.state.value) && !spotOwnTop
+    get() = showStatusBar && (homeLayout != HomeLayout.CHAN || Features.chanStatusBar.state.value) && !spotOwnTop &&
+        // Update 158: Hero tiles has its own status pill on the picture (unless its Status bar is turned on).
+        (homeLayout != HomeLayout.HERO_TILES || Features.heroTilesStatusBar.state.value)
 
 /** Update 132: Spotlight's Home menu draws its own top row (and its own button hints), so the status bar steps aside. */
 val AppearanceSettings.spotOwnTop: Boolean

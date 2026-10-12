@@ -172,6 +172,7 @@ internal fun LegacyThemeScene(motif: ThemeMotif, colors: ShelfColors, time: Stat
                 ThemeMotif.CHILL_RAIN -> rain(t, colors)
                 ThemeMotif.CHILL_GLADE -> wisps(t, colors)
                 ThemeMotif.CHILL_KOI -> liquid(t, colors)
+                ThemeMotif.LOBBY -> minimal(t, colors) // Update 158: drawn by LobbyScene instead
             }
         }
         drawSceneShade()

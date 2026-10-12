@@ -101,6 +101,11 @@ MOTIFS = [
 ALSO = {"VOLT_PIXELS": ["PIXEL_FALLS"]}
 
 
+# Update 158: motifs drawn in Compose with no shader at all (Lobby, LobbyScene.kt): "" / empty sets, so the whens stay
+# exhaustive without an else.
+NO_SCENE = ["LOBBY"]
+
+
 def _case(motif):
     return ", ".join("ThemeMotif." + m for m in [motif] + ALSO.get(motif, []))
 
@@ -231,12 +236,14 @@ def write_kotlin(sources):
         "internal object ThemeShaders {",
         "    fun source(motif: ThemeMotif): String = when (motif) {",
     ]
+    lines += [f"        ThemeMotif.{m} -> \"\"" for m in NO_SCENE]
     for motif, scene in MOTIFS + SHOWCASE:
         lines.append(f"        {_case(motif)} -> PRELUDE + {scene.upper()}")
     lines.append("    }")
     lines.append("")
     lines.append("    /** Child shaders each scene really samples (only these may be set; see gen.py used_children). */")
     lines.append("    fun children(motif: ThemeMotif): Set<String> = when (motif) {")
+    lines += [f"        ThemeMotif.{m} -> emptySet()" for m in NO_SCENE]
     for motif, scene in MOTIFS + SHOWCASE:
         kids = used_children(sources[scene])
         lines.append(f"        {_case(motif)} -> " + ("setOf(" + ", ".join('"' + k + '"' for k in kids) + ")" if kids else "emptySet()"))
@@ -247,6 +254,7 @@ def write_kotlin(sources):
     lines.append("     * on Android 13 setting one of those aborts the whole app, so only these may be set.")
     lines.append("     */")
     lines.append("    fun uniforms(motif: ThemeMotif): Set<String> = when (motif) {")
+    lines += [f"        ThemeMotif.{m} -> emptySet()" for m in NO_SCENE]
     for motif, scene in MOTIFS + SHOWCASE:
         us = used_uniforms(sources[scene])
         lines.append(f"        {_case(motif)} -> " + ("setOf(" + ", ".join('"' + u + '"' for u in us) + ")" if us else "emptySet()"))

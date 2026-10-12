@@ -4,6 +4,78 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (158): Twin desk, Twin icons, Hero tiles, Record crate, Card binder, Lobby theme, the game you're on faces you
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (8): `src_copy\ui\` LobbyScene, PickedFacing, StyleCardBinder, StyleHeroTiles, StyleRecordCrate, TwinDesk,
+  TwinIcons, TwinScreens (all `.kt`).
+- Changed (21): `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\theme\ShelfColors.kt`,
+  `src_copy\ui\theme\Theme.kt`, and `src_copy\ui\` Carousel, CustomPacks, GameLookPicker, LauncherScreen, Models3D,
+  OptionIcons, PresetPreview, PresetsCard, SettingsDialog, SettingsIndex, StyleCaseStacks, StyleHomeSettings, StyleHomes,
+  ThemeScene, ThemeSceneLegacy, ThemeShaders, ThemeThumbs (all `.kt`).
+
+**Copy `project_copy`** (over the project root): `project_copy\tools\themes\gen.py`.
+
+**Files to delete:** none.
+
+### New layouts (Settings › Home › Layout & presets)
+- **Twin desk** (two screens): on top, squared paper with a clock (analogue or digital), this month's calendar and the
+  game's name, console and time played; on the second screen the games as wide panels, two small panels with the next
+  games and round buttons (quick settings, Settings, screensaver). On a one-screen handheld both halves are stacked.
+  Options: Settings › Home › Layout options › Twin desk options (Clock, Calendar).
+- **Twin icons** (two screens): on top the game you're on as a big framed icon with its name card; on the second screen
+  a grid of square icons with your round shortcuts above it and an Open bar. Options: Twin icons options (Icons per row
+  4–7). Its own clock strip shows only when the status bar is off.
+- **Hero tiles:** the game's big picture across the top, one or two rows of square tiles under it, an app dock and round
+  buttons along the bottom. Options: Rows of tiles, Tile size, App dock, Apps in the dock, Pale background, Status bar.
+- **Record crate:** your games as record sleeves in a wooden crate; the one you're on lifts out and its record slides
+  out and turns. Options: Record turning, Wood colour (Light / Dark).
+- **Card binder:** each game as a trading card (frame, cover, console, time played, achievements, rarity stars) in a
+  fanned hand; Y or holding A turns it over (about, year, genre, who made it). Options: Fan angle, Shiny sheen, Frame
+  colour, A starts the game.
+- All five go round with Endless, and their parts can be moved or hidden in Edit Home.
+
+### Lobby theme
+- **Theme › Themes & colours › Themes › Lobby:** the first light theme — near-white to light grey with very faint lines
+  that drift slowly (still while idle, with Lite effects or with system animations off). Menus, switches and sliders
+  turn light with it.
+
+### The game you're on faces you
+- In 3D (models, the carousel's 3D cases, Case stacks' middle case) the game you're on now faces you; the others stay
+  turned. New choice "The one you're on: Faces you / Turned like the others" under Game look › Covers, cases & discs ›
+  3D models (Stand), Home › Layout options › Carousel (3D cases) and Case stacks (Cases in 3D).
+- "Turn the one you're on" is switched off once for everyone (switch it on again and it stays on).
+
+### Also
+- **157.1 (already installed):** the shared picture decode changed the request's size the way the image loader refuses
+  — every plain picture failed (Grid cards plain colours, a red box in the carousel). Fixed in `StyleArtRequests.kt`.
+- **Voltcap row, big gap between the category and the game's name:** the category name had a saved Edit Home position
+  that floated it above the row. Reset on your Pocket Classic (Edit home › Category name › X Reset part).
+- `ThemeShaders.kt` (generated) and `tools\themes\gen.py`: Lobby has no shader — the generator now writes an empty entry
+  for it, so the build doesn't fail on it.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`. `ThemeShaders.kt` compiled on its own with the Lobby entries.
+- Built by five agents in parallel, each reviewed by another (fixes: Twin desk clock compile error, ◀ with Endless,
+  Twin icons tool-button focus, Hero tiles taps and empty text, Card binder fan steps, a Lobby crash in custom packs,
+  the light scheme switching on with light game colours).
+- **Not tried on a device yet.** Twin desk / Twin icons need the Thor for the second screen.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 158: Twin desk, Twin icons, Hero tiles, Record crate, Card binder, Lobby theme, picked game faces you" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (157): art no longer comes in late when you move on quickly — every layout
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

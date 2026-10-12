@@ -7,6 +7,7 @@ import com.shelf.launcher.ui.theme.ThemeMotif
 /** AGSL source of each theme's animated scene (Android 13+, see ThemeScene). */
 internal object ThemeShaders {
     fun source(motif: ThemeMotif): String = when (motif) {
+        ThemeMotif.LOBBY -> ""
         ThemeMotif.SPARKS -> PRELUDE + SPARKS
         ThemeMotif.LIQUID -> PRELUDE + LIQUID
         ThemeMotif.FLAMES -> PRELUDE + FLAMES
@@ -204,6 +205,7 @@ internal object ThemeShaders {
 
     /** Child shaders each scene really samples (only these may be set; see gen.py used_children). */
     fun children(motif: ThemeMotif): Set<String> = when (motif) {
+        ThemeMotif.LOBBY -> emptySet()
         ThemeMotif.SPARKS -> emptySet()
         ThemeMotif.LIQUID -> emptySet()
         ThemeMotif.FLAMES -> emptySet()
@@ -404,6 +406,7 @@ internal object ThemeShaders {
      * on Android 13 setting one of those aborts the whole app, so only these may be set.
      */
     fun uniforms(motif: ThemeMotif): Set<String> = when (motif) {
+        ThemeMotif.LOBBY -> emptySet()
         ThemeMotif.SPARKS -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.LIQUID -> setOf("uAcc", "uBg", "uDensity", "uRes", "uSec", "uTime")
         ThemeMotif.FLAMES -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uSurf", "uTime")

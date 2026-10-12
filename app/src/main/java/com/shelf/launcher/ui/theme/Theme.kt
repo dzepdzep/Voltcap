@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -102,7 +103,25 @@ fun ShelfLauncherTheme(
         textMuted = mutedA
     )
 
-    val scheme = darkColorScheme(
+    // Update 158: a light theme (Lobby) gets Material's light scheme, so its own controls (switches, sliders, menus)
+    // draw light with dark writing instead of the dark defaults. (A light custom background keeps the dark scheme:
+    // its writing stays the theme's light text.)
+    // (The theme's own background decides, so a light game cover or album palette on a dark theme can't flip it.)
+    val lightTheme = appTheme.colors.background.luminance() > 0.5f && !useGame && !useAlbum
+    val scheme = if (lightTheme) androidx.compose.material3.lightColorScheme(
+        background = colors.background,
+        surface = colors.surface,
+        surfaceVariant = colors.surfaceRaised,
+        surfaceContainer = colors.surface,
+        surfaceContainerHigh = colors.surfaceRaised,
+        surfaceContainerHighest = colors.surfaceRaised,
+        primary = colors.accent,
+        secondary = colors.secondary,
+        onBackground = colors.textPrimary,
+        onSurface = colors.textPrimary,
+        onSurfaceVariant = colors.textMuted,
+        onPrimary = Color.White
+    ) else darkColorScheme(
         background = colors.background,
         surface = colors.surface,
         surfaceVariant = colors.surfaceRaised,

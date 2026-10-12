@@ -71,6 +71,15 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         com.shelf.launcher.data.HomeLayout.ARCADE -> Pictogram.TV
         com.shelf.launcher.data.HomeLayout.CONSOLES -> Pictogram.SHELF
         com.shelf.launcher.data.HomeLayout.DISCS -> Pictogram.DISC
+        // Update 158 (the nearest picture: tiles under a big picture).
+        com.shelf.launcher.data.HomeLayout.HERO_TILES -> Pictogram.SPOT
+        // Update 158: the two-screen layouts (the nearest pictures: a list of panels, a grid of icons).
+        com.shelf.launcher.data.HomeLayout.TWIN_DESK -> Pictogram.LIST
+        com.shelf.launcher.data.HomeLayout.TWIN_ICONS -> Pictogram.GRID
+        // Update 158: Record crate (the nearest picture: a disc).
+        com.shelf.launcher.data.HomeLayout.CRATE -> Pictogram.DISC
+        // Update 158: Card binder (the nearest picture: a big card with others either side).
+        com.shelf.launcher.data.HomeLayout.CARDS -> Pictogram.SHOWCASE
     }
     is TvRoom.Games -> when (value) {
         TvRoom.Games.SPINES -> Pictogram.SPINES

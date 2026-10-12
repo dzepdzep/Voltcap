@@ -105,6 +105,7 @@ object Features {
             saveVaultStyle.value = SaveVaultStyle.CAPSULE
         }
         migrate42(p)
+        migrate158(p) // Update 158
         // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
         // default; it now starts on the games' own art (still pickable).
         if (!p.contains("category_art")) {
@@ -130,6 +131,17 @@ object Features {
         }
         if (p.getBoolean("m42_done", false)) return
         p.edit().putBoolean("m42_done", true).apply()
+    }
+
+    /**
+     * Update 158, once (asked for): the 3D piece you're on stops its slow turn (Turn the one you're on off), so it faces
+     * you; switching it back on afterwards sticks. Someone who had picked the "Turned" stand keeps the one they're on turned.
+     */
+    private fun migrate158(p: android.content.SharedPreferences) {
+        if (p.getBoolean("m158_face_done", false)) return
+        p.edit().putBoolean("m158_face_done", true).apply()
+        if (modelTurn.value) modelTurn.value = false
+        if (modelAngle.value == com.shelf.launcher.ui.ModelAngle.TURNED && !p.contains("picked_faces")) pickedFaces.value = false
     }
 
     // ---- Look & feel ----
@@ -339,7 +351,14 @@ object Features {
      * each piece.
      */
     val modelDiscAsCart = BoolPref("model_disc_as_cart", false)
-    val modelTurn = BoolPref("model_turn", true)
+    // Update 158: off by default (the one you're on stands still, facing you); switched off once for existing installs too
+    // ([migrate158]), and switching it back on sticks.
+    val modelTurn = BoolPref("model_turn", false)
+    /**
+     * Update 158, "The one you're on" (Game look › 3D models, Carousel options, Case stacks): the 3D piece or case you're on
+     * faces you straight on (true) or stands turned like the others (PickedFacing.kt).
+     */
+    val pickedFaces = BoolPref("picked_faces", true)
     val modelReflect = BoolPref("model_reflect", false)
     /**
      * Update 136, Art drop (R1 › Art drop, Settings › Game look): how far the cover drops below the top of the window, 0–100,
@@ -954,6 +973,11 @@ object Features {
     /** Update 154: what the disc sits in — a drawn portable CD player (default) or the game's art, blurred. */
     enum class DiscPlayerLook(val label: String) { PLAYER("Portable CD player"), ART("The game's art") }
     val discPlayer = EnumPref("disc_player", DiscPlayerLook.PLAYER, DiscPlayerLook.values())
+    // Update 158: the two-screen layouts (TwinDesk.kt / TwinIcons.kt): Twin desk's clock and calendar, Twin icons' icons per row.
+    enum class TwinClock(val label: String) { ANALOGUE("Analogue"), DIGITAL("Digital") }
+    val twinClock = EnumPref("twin_clock", TwinClock.ANALOGUE, TwinClock.values())
+    val twinCalendar = BoolPref("twin_calendar", true)
+    val twinCols = IntPref("twin_cols", 5, 4..7)
     /** Update 154: Disc station keeps the screen behind it still: no video clip, the animated background holds a frame. */
     val discCalm = BoolPref("disc_calm_bg", true)
     /**
@@ -1386,6 +1410,39 @@ object Features {
     val virtualSecondScreenOpen = BoolPref("virtual_second_screen_open", false)
     /** Separate wallpapers: "" = the same as the main screen, else the picture's file name. */
     val secondScreenWallpaper = StringPref("second_screen_wallpaper", "")
+
+    // ---- Update 158: Hero tiles (StyleHeroTiles.kt, Settings › Home › Layout options) ----
+    /** Update 158, Hero tiles: rows of tiles under the big picture (1 or 2). */
+    val heroTilesRows = IntPref("hero_tiles_rows", 2, 1..2)
+    /** Update 158, Hero tiles: tile size, % of a row's height (smaller: more tiles across). */
+    val heroTilesSize = IntPref("hero_tiles_size", 90, 50..100)
+    /** Update 158, Hero tiles: the app dock at the bottom in the middle. */
+    val heroTilesDock = BoolPref("hero_tiles_dock", true)
+    /** Update 158, Hero tiles: the dock's own apps (package names, comma separated); empty = Files, Browser, Store, System settings. */
+    val heroTilesDockApps = StringPref("hero_tiles_dock_apps", "")
+    /** Update 158, Hero tiles: a pale backdrop with white tile frames (off: the theme's background). */
+    val heroTilesPale = BoolPref("hero_tiles_pale", true)
+    /** Update 158, Hero tiles: the status bar along the top too (off: the picture's own status pill). */
+    val heroTilesStatusBar = BoolPref("hero_tiles_status_bar", false)
+
+    // ---- Update 158: Record crate (StyleRecordCrate.kt, Settings › Home › Layout options) ----
+    /** Update 158, Record crate: the record half out of the sleeve turns slowly (never while the home screen rests). */
+    val crateSpin = BoolPref("crate_spin", true)
+    /** Update 158, Record crate: the crate's wood. */
+    enum class CrateWood(val label: String) { LIGHT("Light"), DARK("Dark") }
+    val crateWood = EnumPref("crate_wood", CrateWood.LIGHT, CrateWood.values())
+
+    // ---- Update 158: Card binder (StyleCardBinder.kt, Settings › Home › Layout options) ----
+    /** Update 158, Card binder: how far each card of the hand turns from the next (degrees; 0 = a flat row). */
+    // Update 158: default 5, a step the slider's D-pad (steps of 5: 0, 5, 10, 15) can come back to.
+    val cardsFan = IntPref("cards_fan", 5, 0..15)
+    /** Update 158, Card binder: a rainbow sheen sweeps once across the card you land on (never with Lite effects). */
+    val cardsSheen = BoolPref("cards_sheen", true)
+    /** Update 158, Card binder: where a card's frame colour comes from (mastered games are always gold). */
+    enum class CardFrame(val label: String) { CONSOLE("Console"), ART("Game's art") }
+    val cardsFrame = EnumPref("cards_frame", CardFrame.CONSOLE, CardFrame.values())
+    /** Update 158, Card binder: A starts the game straight away (off: A opens the game's window, as on other layouts). */
+    val cardsAPlays = BoolPref("cards_a_plays", true)
 
     // ---- Quick Menu while in a game ----
     val quickMenuInGame = BoolPref("quick_menu_in_game", true)

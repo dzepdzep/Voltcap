@@ -274,6 +274,8 @@ enum class ThemeMotif(
     BOLD_SPLIT(still = true),
     BOLD_DOTS(still = true),
     BOLD_BANDS(still = true),
+    /** Update 158: a calm light menu backdrop - near-white to light grey, faint thin lines drifting very slowly (LobbyScene, drawn in code). */
+    LOBBY(calm = true),
     /** A handheld booting up: the logo drops, the shine sweeps, a menu fades in, then it starts again. */
     HANDHELD_BOOT,
     /** Music: a wide handheld (D-pad left, A / B right) with the cover on its screen, pads pressing on the beat. */
@@ -550,6 +552,8 @@ enum class AppTheme(
     BOLD_SPLIT("Bold split", ThemeMotif.BOLD_SPLIT, ThemeGroup.CALM),
     BOLD_DOTS("Bold dots", ThemeMotif.BOLD_DOTS, ThemeGroup.CALM),
     BOLD_BANDS("Bold bands", ThemeMotif.BOLD_BANDS, ThemeGroup.CALM),
+    // Update 158: Lobby, the first light theme (near-white backdrop, light-grey panels, dark grey writing).
+    LOBBY("Lobby", ThemeMotif.LOBBY, ThemeGroup.CALM),
     // Picks.
     SAKURA("Sakura", ThemeMotif.PETALS, ThemeGroup.NATURE),
     // The game you're on in the CRT room's showcase (red / cyan arcade lighting).
@@ -619,6 +623,7 @@ enum class AppTheme(
         get() = when (this) {
             XMB_WAVE, MINIMAL_CONSOLE, GLASS, COVER_FLOW, COVER_FLOAT, CALM_RIBBON, CALM_DRIFT, CALM_HALO,
             STILL_DUSK, STILL_HORIZON, STILL_GLOW, BOLD_SPLIT, BOLD_DOTS, BOLD_BANDS -> MusicLoop.HOME
+            LOBBY -> MusicLoop.HOME // Update 158
             PS2_HAZE, TOWERS_128, MIND_TYPE, NEBULA, AURORA -> MusicLoop.HAZE
             CHILL_POLAR, CHILL_PLANET, CHILL_JELLY -> MusicLoop.HAZE
             CHILL_BLADES, CHILL_MOON, CHILL_ORBS, CHILL_SILK, CHILL_DUNES, CHILL_MESH, CHILL_LIGHT, CHILL_SHADE, CHILL_RAIN, CHILL_CITY, CHILL_GLADE, CHILL_HEX, CHILL_CLOUDS, CHILL_KOI, CHILL_PEAKS -> MusicLoop.HOME
@@ -649,6 +654,7 @@ enum class AppTheme(
             MONO, MINIMAL_CONSOLE, STILL_DUSK, STILL_HORIZON, STILL_GLOW, BOLD_SPLIT, BOLD_DOTS, BOLD_BANDS ->
                 com.shelf.launcher.data.Features.ThemeKind.STATIC
             CALM_RIBBON, CALM_DRIFT, CALM_HALO -> com.shelf.launcher.data.Features.ThemeKind.CALM
+            LOBBY -> com.shelf.launcher.data.Features.ThemeKind.CALM // Update 158
             CHILL_BLADES, CHILL_POLAR, CHILL_PLANET, CHILL_MOON, CHILL_ORBS, CHILL_SILK, CHILL_DUNES, CHILL_MESH, CHILL_LIGHT, CHILL_SHADE, CHILL_RAIN, CHILL_CITY, CHILL_JELLY, CHILL_GLADE, CHILL_HEX, CHILL_CLOUDS, CHILL_KOI, CHILL_PEAKS -> com.shelf.launcher.data.Features.ThemeKind.CALM
             XMB_WAVE, PS2_HAZE, AURORA, NEBULA, INK_WASH, PAPER_LAYERS, SHALLOWS, MATCHA, TIDE, LIQUID,
             GLASS, SHOWCASE_PARALLAX, SHOWCASE_CINEMA, DEEP_SEA, SAKURA, CONSTELLATION, PIXEL_VALLEY,
@@ -663,7 +669,9 @@ enum class AppTheme(
      * showcases from the game's art: those keep their original look.
      */
     val recolorable: Boolean
-        get() = !(motif.reactive || motif.showcase || motif == ThemeMotif.PIXEL_FALLS || motif.name in PAINTED_MOTIFS)
+        get() = !(motif.reactive || motif.showcase || motif == ThemeMotif.PIXEL_FALLS || motif.name in PAINTED_MOTIFS ||
+            // Update 158: Lobby is light with dark writing; a game's or a custom dark palette would leave its dark text unreadable.
+            motif == ThemeMotif.LOBBY)
 
     /**
      * Recolourable, but the scene paints mostly in its own fixed colours (sky, grass, stone...), so Custom /
@@ -729,6 +737,7 @@ enum class AppTheme(
             STILL_HORIZON, STILL_GLOW, CALM_DRIFT -> TIDE
             CALM_RIBBON -> COBALT
             BOLD_SPLIT, BOLD_DOTS, BOLD_BANDS -> MATCHA
+            LOBBY -> MONO // Update 158
             AURA_BEAT -> EMBER
             MOUNTAINS -> COBALT
             SPECIMEN_BEAT -> COBALT
@@ -820,6 +829,9 @@ enum class AppTheme(
             BOLD_SPLIT -> pal(0xFF26292F, 0xFF383B44, 0xFF4A4E5A, 0xFFF93444, 0xFF4FBDED, 0xFFFFFFFF, 0xFFCCD0D6)
             BOLD_DOTS -> pal(0xFF1B2532, 0xFF2B3747, 0xFF3A4A5B, 0xFFF9C642, 0xFFFA6481, 0xFFFFFFFF, 0xFFC9CFD8)
             BOLD_BANDS -> pal(0xFF17171A, 0xFF28282D, 0xFF393940, 0xFF34F9DA, 0xFFF97C43, 0xFFFFFFFF, 0xFFC3C3C9)
+            // Update 158, Lobby (light): near-white backdrop, light-grey panels, a soft pale blue, dark grey writing.
+            // (The accent a shade deeper than pale, so the focus ring and white writing on it still read on near-white.)
+            LOBBY -> pal(0xFFF2F4F6, 0xFFE5E8EC, 0xFFD8DDE3, 0xFF4592CC, 0xFF9CC9EA, 0xFF3A3F46, 0xFF757C85)
             AURA_BEAT -> pal(0xFF0A0911, 0xFF191826, 0xFF29263C, 0xFFF9B534, 0xFF5FB7FA, 0xFFFFF8EC, 0xFFBDB9CA)
             MOUNTAINS -> pal(0xFF0A0E1B, 0xFF171E33, 0xFF252D4A, 0xFF83A8FB, 0xFFFBB36F, 0xFFF2F5FF, 0xFFB5BBCC)
             SPECIMEN_BEAT -> pal(0xFF0B1130, 0xFF182048, 0xFF263063, 0xFF7FDD7D, 0xFF5883E5, 0xFFEFF6FF, 0xFFBAC2DB)

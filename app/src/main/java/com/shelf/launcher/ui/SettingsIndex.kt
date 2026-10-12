@@ -84,6 +84,9 @@ internal object SettingsIndex {
         E("React to the real beat", "Theme", "Themes & colours", "theme_music", "Music theme: player, equalizer & lyrics"),
         E("Retro bounce", "Theme", "Themes & colours", null, null),
         E("Lyric cloud", "Theme", "Themes & colours", null, null),
+        // Update 158: the light theme.
+        E("Lobby (light theme)", "Theme", "Themes & colours", "theme_browser", "Themes"),
+        E("Light theme", "Theme", "Themes & colours", "theme_browser", "Themes"),
         E("Show the next line", "Theme", "Themes & colours", null, null),
         E("Bouncing ball", "Theme", "Themes & colours", null, null),
         E("Game row", "Home", "Layout options", null, null),
@@ -131,6 +134,10 @@ internal object SettingsIndex {
         E("3D models: floor reflection", "Game look", "Covers, cases & discs", null, null),
         E("3D models: disc consoles as their 3D case or your custom cartridge", "Game look", "Covers, cases & discs", null, null),
         E("Case stacks: cases in 3D", "Home", "Layout options", null, null),
+        // Update 158: the 3D piece / case you're on faces you, or stands turned like the others.
+        E("3D models: the one you're on faces you or is turned like the others", "Game look", "Covers, cases & discs", null, null),
+        E("Carousel 3D cases: the one you're on faces you", "Home", "Layout options", null, null),
+        E("Case stacks: the one you're on faces you", "Home", "Layout options", null, null),
         E("Cartridge games as discs too", "Game look", "Covers, cases & discs", null, null),
         E("Categories with several consoles", "Game look", "Covers, cases & discs", null, null),
         E("Card artwork", "Game look", "Covers, cases & discs", null, null),
@@ -240,6 +247,32 @@ internal object SettingsIndex {
         // Update 154.
         E("Disc station: the disc sits in (portable CD player)", "Home", "Layout options", null, null),
         E("Disc station: calm background", "Home", "Layout options", null, null),
+        // Update 158: the two-screen layouts.
+        E("Twin desk (two screens: clock and calendar on top, games below)", "Home", "Layout & presets", null, null),
+        E("Twin icons (two screens: big icon on top, icon grid below)", "Home", "Layout & presets", null, null),
+        E("Dual screen layouts", "Home", "Layout & presets", null, null),
+        E("Twin desk: clock style (analogue / digital)", "Home", "Layout options", null, null),
+        E("Twin desk: calendar", "Home", "Layout options", null, null),
+        E("Twin icons: icons per row (4 to 7)", "Home", "Layout options", null, null),
+        // Update 158: Hero tiles.
+        E("Hero tiles (big picture, rows of tiles, app dock)", "Home", "Layout & presets", null, null),
+        E("Hero tiles: rows of tiles (one or two)", "Home", "Layout options", null, null),
+        E("Hero tiles: tile size", "Home", "Layout options", null, null),
+        E("Hero tiles: app dock", "Home", "Layout options", null, null),
+        E("Hero tiles: apps in the dock", "Home", "Layout options", null, null),
+        E("Hero tiles: pale background", "Home", "Layout options", null, null),
+        E("Hero tiles: status bar", "Home", "Layout options", null, null),
+        // Update 158: Record crate.
+        E("Record crate (record sleeves in a wooden crate)", "Home", "Layout & presets", null, null),
+        E("Record crate: record turning", "Home", "Layout options", null, null),
+        E("Record crate: wood colour (light / dark)", "Home", "Layout options", null, null),
+        // Update 158: Card binder.
+        E("Card binder (games as collectible cards, a fanned hand)", "Home", "Layout & presets", null, null),
+        E("Card binder: fan angle", "Home", "Layout options", null, null),
+        E("Card binder: shiny sheen", "Home", "Layout options", null, null),
+        E("Card binder: frame colour (console / game's art)", "Home", "Layout options", null, null),
+        E("Card binder: A starts the game", "Home", "Layout options", null, null),
+        E("Turn a card over (Y or hold A)", "Home", "Layout options", null, null),
         E("Background", "Home", "Layout options", null, null),
         E("Artwork priority", "Game look", "Artwork", "art_priority", "Artwork priority"),
         E("Sharpness", "Game look", "Artwork", "art_sharp", "Sharpness"),

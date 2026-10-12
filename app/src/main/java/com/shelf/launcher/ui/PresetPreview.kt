@@ -66,6 +66,15 @@ internal fun PresetPreview(
             HomeLayout.TIMELINE -> p.classic()
             HomeLayout.ARCADE -> p.tv()
             HomeLayout.DISCS -> p.spot()
+            // Update 158 (the nearest preview).
+            HomeLayout.HERO_TILES -> p.spot()
+            // Update 158: the two-screen layouts (the nearest previews).
+            HomeLayout.TWIN_DESK -> p.cross()
+            HomeLayout.TWIN_ICONS -> p.grid()
+            // Update 158: Record crate (the nearest preview: a big game with others in a row).
+            HomeLayout.CRATE -> p.shelf()
+            // Update 158: Card binder (the nearest preview: a big game in the middle, others either side).
+            HomeLayout.CARDS -> p.shelf()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()

@@ -90,6 +90,9 @@ fun ThemeScene(
         }
     } else if (motif.showcase) {
         ShowcaseScene(motif, colors, modifier)
+    } else if (motif == ThemeMotif.LOBBY) {
+        // Update 158: Lobby's light backdrop is drawn in code (no shader), on every Android version.
+        LobbyScene(colors, modifier)
     } else if (motif == ThemeMotif.PIXEL_FALLS) {
         // A pixel-art picture with its own frames (8 frames, 100 ms each), played crisply.
         FramesScene(com.shelf.launcher.R.drawable.scene_falls, frames = 8, frameMs = 100L, modifier = modifier)

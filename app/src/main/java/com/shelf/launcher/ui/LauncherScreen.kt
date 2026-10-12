@@ -1497,6 +1497,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 albumBlur = state.appearance.secondMusicBlurArt,
                 albumBlurPercent = state.appearance.secondMusicBlur
             )
+        } else if (TwinScreens.ctx != null && state.appearance.homeLayout.isTwin && SecondScreenShown.value &&
+            !(showDetails && state.appearance.secondDetails)) {
+            // Update 158: Twin desk / Twin icons put their bottom half here (TwinScreens.kt); the game window still
+            // comes here when it's set to.
+            TwinScreens.ctx?.let { TwinSecondScreen(it) }
         } else {
             val key = game?.stableKey
             val profileVersion by viewModel.profileVersion.collectAsState()
@@ -2948,7 +2953,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         profile = { StyleNav.reset(); sounds?.play(UiSound.OPEN); hubScreen = HubScreen.PROFILE },
                         settings = { StyleNav.reset(); sounds?.play(UiSound.OPEN); menuStartCategory = null; showMenu = true },
                         notifications = { StyleNav.reset(); sounds?.play(UiSound.OPEN); viewModel.refreshNotifications(); notificationsOnly = true; showNotifications = true },
-                        cloud = { StyleNav.reset(); sounds?.play(UiSound.OPEN); showSyncStatus = true }
+                        cloud = { StyleNav.reset(); sounds?.play(UiSound.OPEN); showSyncStatus = true },
+                        // Update 158: Twin desk's round buttons (the R1 quick settings panel, the screensaver).
+                        quickMenu = { StyleNav.reset(); sounds?.play(UiSound.OPEN); viewModel.refreshNotifications(); notificationsOnly = false; showNotifications = true },
+                        screensaver = { StyleNav.reset(); screensaverOn = true }
                     )
                 },
                 modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()

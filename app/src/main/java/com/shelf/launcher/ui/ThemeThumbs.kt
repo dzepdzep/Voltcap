@@ -76,6 +76,8 @@ internal object ThemeThumbs {
     @androidx.annotation.RequiresApi(33)
     private fun render(context: Context, theme: AppTheme): Bitmap? {
         val motif = theme.motif
+        // Update 158: Lobby has no shader; its still picture is drawn in code.
+        if (motif == com.shelf.launcher.ui.theme.ThemeMotif.LOBBY) return lobbyThumb(W, H, theme.colors)
         // Your own themes: the chosen pack, or nothing (no picture) when none is chosen / it doesn't run here.
         val source = SceneSource.source(motif)
         if (source.isEmpty()) return null
@@ -287,6 +289,7 @@ internal fun themeIcon(theme: AppTheme): ImageVector = when (theme) {
     AppTheme.BOLD_SPLIT -> Icons.Filled.Dashboard
     AppTheme.BOLD_DOTS -> Icons.Filled.Apps
     AppTheme.BOLD_BANDS -> Icons.Filled.ViewStream
+    AppTheme.LOBBY -> Icons.Filled.ViewHeadline // Update 158
     // Update 56: the brief's leftovers and the 32-bit creature types.
     AppTheme.HANDHELD_BOOT -> Icons.Filled.PhoneAndroid
     AppTheme.POCKET_BEAT -> Icons.Filled.SportsEsports

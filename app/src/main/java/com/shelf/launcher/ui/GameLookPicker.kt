@@ -340,9 +340,16 @@ private fun ModelOptions() {
         ChipFlow {
             ModelAngle.values().forEach { a ->
                 val on = F.modelAngle.state.value == a
-                Chip((if (on) "✓ " else "") + a.label, accent = on) { F.modelAngle.value = a }
+                Chip((if (on) "✓ " else "") + a.label, accent = on) {
+                    F.modelAngle.value = a
+                    // Update 158: the two turned stands set "The one you're on" below (it goes for every 3D view).
+                    if (a == ModelAngle.FACE_PICKED) F.pickedFaces.value = true
+                    if (a == ModelAngle.TURNED) F.pickedFaces.value = false
+                }
             }
         }
+        // Update 158: the one you're on faces you (default) or stands turned like the others.
+        PickedFacingChoice()
         // Update 151: the one you're on turning slowly to and fro, and a faint reflection on the floor.
         ChipFlow {
             val tn = F.modelTurn.state.value

@@ -1,6 +1,6 @@
 # Voltcap — handover to a new Claude
 
-Written 12 Oct 2026, after update **(145)**. Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+Written 12 Oct 2026, after update **(145)** (kept up to date to 158). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is
 **Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
@@ -255,6 +255,23 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 158
+- **New layouts** (enum order after DISCS: HERO_TILES, TWIN_DESK, TWIN_ICONS, CRATE, CARDS; all `styleHome`):
+  StyleHeroTiles.kt (`heroTilesKey`, ContinuousGrid strip, dock from `heroTilesDockApps`), TwinScreens.kt / TwinDesk.kt /
+  TwinIcons.kt (`TwinHost`: with Voltcap's second screen up, `SecondScreenContent` draws the bottom half; else stacked),
+  StyleRecordCrate.kt (`recordCrateKey`, part `part:CRATE:info`), StyleCardBinder.kt (`cardBinderButton` for Y / A / B
+  before the D-pad code in `styleHomeKey`, `cardBinderKey`). No presets / pictures of their own yet.
+- **Lobby** (`AppTheme.LOBBY`, `ThemeMotif.LOBBY`): drawn by LobbyScene.kt on every Android; not recolorable;
+  `SceneSource` returns "" for it; Theme.kt uses the light Material scheme when the theme background is light (not
+  with game / album colours). `gen.py` `NO_SCENE` writes `LOBBY -> ""` / `emptySet()` into ThemeShaders.kt.
+- **PickedFacing.kt:** `Features.pickedFaces` (default on); `modelTurn` default off + `migrate158` (`m158_face_done`).
+- **Not tested on a device.** Open: Lobby with the many hard-coded white texts; Hero tiles status bar on the pale backdrop;
+  Card binder hold-A timing; Twin layouts on the Thor's second screen.
+- **Found on the RP Classic (157.1), for 159:** Grid default size (user's is Large), ▲ ▼ don't go round on Grid / TV room /
+  Cross menu, Timeline repeats one group, TV room grid ignores the look, Tile look on the row runs off the bottom, Game
+  shelf front cover late, Case stacks crop + flat neighbours, Cross menu icons blurry, custom case templates should take
+  the SteamGridDB cover's shape, carousel frame taller than the art.
 
 ## State after update 157
 - **SharedArtInterceptor** (StyleArtRequests.kt, first in the image loader's components): String requests without

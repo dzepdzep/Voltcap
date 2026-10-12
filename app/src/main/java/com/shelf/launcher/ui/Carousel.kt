@@ -667,12 +667,15 @@ internal fun GameCarousel(
                         .pointerInput(real) { detectTapGestures { if (real == GridHome.focus) open() else select(real) } }
                         .then(if (on) Modifier.focusedCard() else Modifier)
                 ) {
+                    // Update 158: the one you're on faces you in every view (its turn there is 0); with "Turned like the
+                    // others" (PickedFacing.kt) it gets a turn of its own, fading in as it reaches the middle.
+                    val yaw3d = p.turnY + PickedFacing.carouselTurn(d)
                     if (model != null) Model3DArt(
-                        model, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, p.turnY, Modifier.fillMaxSize(), shade = p.shade, name = g.name, platform = g.platform,
+                        model, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, yaw3d, Modifier.fillMaxSize(), shade = p.shade, name = g.name, platform = g.platform,
                         // Update 151: its shadow, sheen and slow turn (Models3DLife.kt).
                         life = true, focused = on
                     ) else if (cases3d) Case3D(
-                        g, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, physicalMedia[g.stableKey], p.turnY, aspect,
+                        g, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, physicalMedia[g.stableKey], yaw3d, aspect,
                         Modifier.fillMaxSize(), shade = p.shade, reflect = reflect,
                         frame = on && look.focusBorder, frameColor = ShelfTheme.accent
                     ) else CarouselArt(g, on, spineHere, reflect, h0, p.shade, cardArtType, art, overrides, physicalMedia, screenshots, mixed, realRef, pulse)

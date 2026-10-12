@@ -104,8 +104,9 @@ internal object Models3D {
     /** Update 141: how a piece stands (Settings › Game look › 3D models › Stand); [focused]: it's the game you're on. */
     fun standYaw(focused: Boolean): Float = when (Features.modelAngle.state.value) {
         ModelAngle.FRONT -> 0f
-        ModelAngle.TURNED -> 20f
-        ModelAngle.FACE_PICKED -> if (focused) 0f else 20f
+        // Update 158: in both turned stands the one you're on follows "The one you're on" (PickedFacing.kt): facing you
+        // by default, or turned like the others. (Turned and Turned, yours facing you are kept in step with it.)
+        ModelAngle.TURNED, ModelAngle.FACE_PICKED -> if (focused && PickedFacing.faces) 0f else 20f
     }
 
     /** Your custom cartridges: Voltcap console keys → model ids (the clear ones add "_translucent"). */
