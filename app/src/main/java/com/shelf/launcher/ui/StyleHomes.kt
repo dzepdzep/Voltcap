@@ -395,19 +395,26 @@ internal fun styleHomeKey(
             if (Features.gridsContinuous.value) {
                 // Update 112: one long strip of columns (the games run down each column): ◀ ▶ a column over, ▲ ▼ along it.
                 val r = focus % rows
+                // Update 156: Endless on: ◀ on the first column goes round to the last one, ▶ on the last to the first
+                // (the strip carries on with the games again, see ContinuousGrid); [round] tells it which way.
+                val loop = StyleLoop.on && count >= 2
+                var round = 0
                 val target: Int? = when (k) {
                     Key.DirectionUp -> if (r > 0) focus - 1 else null
                     Key.DirectionDown -> if (r < rows - 1 && focus + 1 < count) focus + 1 else null
-                    Key.DirectionLeft -> if (focus - rows >= 0) focus - rows else null
+                    Key.DirectionLeft -> if (focus - rows >= 0) focus - rows
+                        else if (loop) { round = -1; ((count - 1) / rows * rows + r).coerceAtMost(count - 1) } else null
                     Key.DirectionRight -> when {
                         focus + rows < count -> focus + rows
                         // The last column is shorter: its last game.
                         (focus / rows + 1) * rows < count -> count - 1
+                        loop -> { round = 1; r.coerceAtMost(count - 1) }
                         else -> null
                     }
                     else -> return false
                 }
                 if (target != null && target != focus) {
+                    if (round != 0) StyleLoop.wrapped(round)
                     setFocus(target)
                     sound(UiSound.MOVE)
                 } else if (first && (k == Key.DirectionUp || k == Key.DirectionDown)) {
@@ -421,6 +428,10 @@ internal fun styleHomeKey(
             val pos = focus - pageStart
             val r = pos / cols
             val col = pos % cols
+            // Update 156: Endless on: ◀ ▶ past the first / last page go round (the last page's first game: [lastStart]).
+            val loop = StyleLoop.on && count >= 2
+            val lastStart = (count - 1) / per * per
+            var round = 0
             val target: Int? = when (k) {
                 Key.DirectionUp -> if (r > 0) focus - cols else null
                 Key.DirectionDown -> when {
@@ -432,16 +443,22 @@ internal fun styleHomeKey(
                 Key.DirectionLeft -> when {
                     col > 0 -> focus - 1
                     pageStart > 0 -> (focus - per + cols - 1).coerceAtMost(count - 1)
+                    // Update 156: Endless on: from the first page round to the same row of the last one.
+                    loop -> { if (lastStart > 0) round = -1; (lastStart + r * cols + cols - 1).coerceAtMost(count - 1) }
                     else -> null
                 }
                 Key.DirectionRight -> when {
                     col < cols - 1 && focus + 1 < count -> focus + 1
                     pageStart + per < count -> (pageStart + per + r * cols).coerceAtMost(count - 1)
+                    // Update 156: Endless on: from the last page round to the same row of the first one.
+                    loop -> { if (lastStart > 0) round = 1; (r * cols).coerceAtMost(count - 1) }
                     else -> null
                 }
                 else -> return false
             }
             if (target != null && target in 0 until count && target != focus) {
+                // Update 156: a page turned round slides in like any next / previous page (see StyleChannelGrid).
+                if (round != 0) StyleLoop.wrapped(round)
                 setFocus(target)
                 sound(UiSound.MOVE)
             } else if (first && (k == Key.DirectionUp || k == Key.DirectionDown)) {
@@ -506,6 +523,17 @@ internal fun styleHomeKey(
             // ▲ on the top row: the category names (update 101), then what lies above.
             if (k == Key.DirectionUp && move == focus) {
                 if (first && !StyleNav.enter(StyleNav.Zone.TOP, at).also { if (it) sound(UiSound.MOVE) }) reach(true)
+                return take()
+            }
+            // Update 156: Endless (R1): ▶ past the last page goes round to the first page, ◀ past the first to the last
+            // (LiveLoop.kt); the page slides in like any next page.
+            val round = liveWrap(focus, k, StyleNav.livePage, count, move)
+            if (round >= 0) {
+                if (round != focus) {
+                    LiveLoop.wrapped(focus, round, if (k == Key.DirectionRight) 1 else -1)
+                    setFocus(round)
+                    sound(UiSound.MOVE)
+                }
                 return take()
             }
             val next = move.coerceIn(0, (count - 1).coerceAtLeast(0))
@@ -781,7 +809,7 @@ internal fun StyleArt(
         // (Update 113: the game you're on reports where it is, so the game window grows out of it.)
         Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline) else Modifier).clip(shape).background(placeholderBrush(g.hue))) {
             when {
-                url != null -> AsyncImage(url, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                url != null -> AsyncImage(rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
                 g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = wide, modifier = Modifier.fillMaxSize())
                 else -> StyleNamePlate(titles.display(g.name))
             }
@@ -819,7 +847,7 @@ internal fun StyleArt(
             realScanOf(gArt, typed) != null -> MediaFocus(g.stableKey == c.game?.stableKey) {
                 RealMediaPicture(typed!!, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused))
             }
-            url != null -> AsyncImage(url, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+            url != null -> AsyncImage(rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = styleAspect(c.type) > 1f, modifier = Modifier.fillMaxSize())
             else -> StyleNamePlate(titles.display(g.name))
         }
@@ -944,7 +972,10 @@ internal fun StyleHome(
     LaunchedEffect(focus, type, games.size) {
         if (!needsLookup) return@LaunchedEffect
         kotlinx.coroutines.delay(120)
-        for (i in (focus - 3)..(focus + 8)) {
+        // Update 156: with Endless on, the games past the last one are the first ones again (and before the first, the
+        // last ones): their scans are asked for too, so the games coming round have their art.
+        val round = loopRowOn(c)
+        for (i in ((focus - 3)..(focus + 8)).map { if (round) it.mod(games.size) else it }.distinct()) {
             val g = games.getOrNull(i) ?: continue
             if (type == CardArtType.SCREENSHOT) {
                 if (!state.screenshots.containsKey(g.stableKey)) { actions.needMedia(g); kotlinx.coroutines.delay(90) }
@@ -955,13 +986,19 @@ internal fun StyleHome(
     if (layout == HomeLayout.SHELF) LaunchedEffect(focus, games.size) {
         kotlinx.coroutines.delay(150)
         // The nearest games first: moving along keeps restarting this, and the far ones used to be reached before the near ones.
-        for (i in ((focus - 30)..(focus + 60)).sortedBy { kotlin.math.abs(it - focus) }) {
+        // Update 156: with Endless on the bookcase goes on round, so the spines past the last game (the first ones again)
+        // and before the first are asked for too, each once.
+        val roundShelf = loopRowOn(c)
+        val seenShelf = HashSet<Int>()
+        for (j in ((focus - 30)..(focus + 60)).sortedBy { kotlin.math.abs(it - focus) }) {
+            val i = if (roundShelf) j.mod(games.size) else j
+            if (!seenShelf.add(i)) continue
             val g = games.getOrNull(i) ?: continue
             val list = state.physicalMedia[g.stableKey]
             // (Update 108: a game whose spine is only cut from its 3D box picture is asked again too, near the one you're
             // on — its real scans may have been added since; the look-up itself only runs when one is due.)
             val ownScan = list != null && list.any { it.first == "Spine" || it.first == BoxTexture.LABEL }
-            if (list == null || BoxTexture.spine(list, g.platform) == null || (!ownScan && kotlin.math.abs(i - focus) <= 10)) { actions.needSpine(g); kotlinx.coroutines.delay(60) }
+            if (list == null || BoxTexture.spine(list, g.platform) == null || (!ownScan && kotlin.math.abs(j - focus) <= 10)) { actions.needSpine(g); kotlinx.coroutines.delay(60) }
         }
     }
     // Art warm-up (the style homes used to load a card's picture only when it scrolled on screen, which showed as a
@@ -977,8 +1014,12 @@ internal fun StyleHome(
         val near = if (small) 4 else 8
         val thumbs = ArrayList<String>()
         val near1 = ArrayList<String>()
+        val backdrops = ArrayList<String>() // (Update 156)
+        // Update 156: with Endless on, the art of the games coming round (the first ones past the last game, the last ones
+        // before the first) is warmed as well, so going round never shows blank cards. (Doubles are dropped below.)
+        val round = loopRowOn(c)
         for (i in (focus - reach)..(focus + reach)) {
-            val g = games.getOrNull(i) ?: continue
+            val g = games.getOrNull(if (round) i.mod(games.size) else i) ?: continue
             val k = g.stableKey
             val o = state.artOverrides[k]
             val a = art[k]
@@ -990,13 +1031,16 @@ internal fun StyleHome(
             if (i in (focus - near)..(focus + near)) {
                 shown?.let { near1 += it }
                 c.wide(g)?.let { near1 += it }
-                if (i in (focus - 1)..(focus + 1)) c.backdrop(g)?.let { near1 += it }
+                if (i in (focus - 1)..(focus + 1)) c.backdrop(g)?.let { backdrops += it }
             }
         }
         val handles = ArrayList<coil.request.Disposable>()
         handles += prefetchThumbs(warmContext, thumbs.distinct())
+        // Update 156: the cards' pictures warmed exactly as the cards ask for them (StyleArtRequests.kt): the old
+        // 420 px warm-up was a different shape, so the cards read every picture from storage again (a second empty).
+        handles += warmStyleArt(warmContext, near1.distinct())
         val loader = warmContext.imageLoader
-        near1.distinct().forEach { url ->
+        backdrops.distinct().forEach { url ->
             handles += loader.enqueue(coil.request.ImageRequest.Builder(warmContext).data(url).size(coil.size.Size(420, 420)).build())
         }
         try { kotlinx.coroutines.awaitCancellation() } finally {

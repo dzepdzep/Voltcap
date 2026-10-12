@@ -251,10 +251,11 @@ internal fun TvRoomHome(
             Box(Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "sticker"), "Console sticker")) { ConsoleSticker(game?.platform) }
             Spacer(Modifier.height(6.dp))
             Box(Modifier.fillMaxWidth().weight(1f).categorySlide()) {
-                if (mode == TvRoom.Games.SHELF) SpineShelf(games, focus, art, overrides, onSelect, onOpen)
+                // Update 156: Endless goes round in the shelf and the grid too (one more step, nothing reloads).
+                if (mode == TvRoom.Games.SHELF) SpineShelf(games, focus, art, overrides, onSelect, onOpen, loop = loop, loopTick = loopTick, loopStep = loopStep)
                 else if (mode == TvRoom.Games.CAROUSEL) GameCarousel(games, focus, art, overrides, onSelect, onOpen, cardArtType, physicalMedia, screenshots, onNeedPhysical, loop = loop, loopTick = loopTick, loopStep = loopStep)
                 // Update 126: 3D cases turned to their spines only with the Spines look (R1 › Look); every other look as itself.
-                else CaseGrid(games, focus, art, overrides, mode == TvRoom.Games.SPINES && spinesOn(cardArtType), onSelect, onOpen, cardArtType, physicalMedia, screenshots, onNeedPhysical, cols = if (gamesW < 240.dp) 2 else 3)
+                else CaseGrid(games, focus, art, overrides, mode == TvRoom.Games.SPINES && spinesOn(cardArtType), onSelect, onOpen, cardArtType, physicalMedia, screenshots, onNeedPhysical, cols = if (gamesW < 240.dp) 2 else 3, loop = loop, loopTick = loopTick, loopStep = loopStep)
             }
             // The info strip stays here when there's no room under the set (or it's turned off there).
             if (game != null && !underOn) {
@@ -493,24 +494,46 @@ private fun CaseGrid(
     physicalMedia: Map<String, List<Pair<String, String>>> = emptyMap(),
     screenshots: Map<String, List<String>> = emptyMap(),
     onNeedPhysical: (Game) -> Unit = {},
-    cols: Int = 3
+    cols: Int = 3,
+    /** Update 156: Endless — the grid carries on with the first games again after the last ones. */
+    loop: Boolean = false,
+    loopTick: Int = 0,
+    loopStep: Int = 0
 ) {
+    val looping = loop && games.size >= 2
     // Cartridge / disc / box art: the label scans and box scans of the games around the one you're on.
     LaunchedEffect(focus, cardArtType, games.size) {
         if (!cardArtType.wantsMedia()) return@LaunchedEffect
         kotlinx.coroutines.delay(120)
         for (i in (focus - cols)..(focus + cols * 2)) {
-            val g = games.getOrNull(i) ?: continue
+            // Update 156: going round, the games after the last one are the first ones again.
+            val g = (if (looping) games.getOrNull(i.mod(games.size)) else games.getOrNull(i)) ?: continue
             if (!physicalMedia.containsKey(g.stableKey)) { onNeedPhysical(g); kotlinx.coroutines.delay(90) }
         }
     }
     GridHome.columns = cols
     GridHome.focus = focus
-    val state = rememberLazyGridState()
+    // Update 156: going round, the games repeat as copies (the grid starts in the middle copy) and the selection is on
+    // its endless virtual place: last -> first is one more step, the grid moves on a row at most.
+    val n = games.size
+    val loopTap = remember { LoopTap() }
+    val vFocus = rememberLoopPlace(focus, n, looping, loopTick, loopStep, games, loopTap, rowStep = cols)
+    val count = if (looping) n * LOOP_COPIES else n
+    val focusItem = if (looping) ((LOOP_COPIES / 2) * n + vFocus).coerceIn(0, count - 1) else focus
+    val plainState = rememberLazyGridState()
+    val loopState = remember(looping) {
+        if (looping) androidx.compose.foundation.lazy.grid.LazyGridState((focusItem / cols) * cols) else null
+    }
+    val state = loopState ?: plainState
     // The row you're on always sits in the middle: the grid scrolls up / down around it (the padding above and
     // below lets the first and last rows reach the middle too).
-    LaunchedEffect(focus) {
-        runCatching { state.animateScrollToItem((focus / cols) * cols) }
+    LaunchedEffect(focusItem) {
+        val target = (focusItem / cols) * cols
+        // Update 156: going round, a long way (a new category) jumps instead of racing over the copies.
+        runCatching {
+            if (looping && kotlin.math.abs(state.firstVisibleItemIndex - target) > cols * 8) state.scrollToItem(target)
+            else state.animateScrollToItem(target)
+        }
     }
     val hiddenMedia = LocalHiddenMedia.current
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -537,14 +560,16 @@ private fun CaseGrid(
         horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = padH, vertical = padV)
     ) {
-        items(games.size, key = { keys[it] }) { i ->
+        // Update 156: going round, item [vi] is game vi mod n (each copy with its own key).
+        items(count, key = { if (looping) "${keys[it.mod(n)]}#${it / n}" else keys[it] }) { vi ->
+            val i = if (looping) vi.mod(n) else vi
             val g = games[i]
-            val on = i == focus
+            val on = vi == focusItem
             val lift by animateFloatAsState(if (on) 1f else 0f, tween(if (on) 110 else 160), label = "caseLift")
             val free = isFreeMedia(artForGame(cardArtType, g.platform, hiddenMedia, mixed), g.platform)
             Column(
                 Modifier.zIndex(if (on) 1f else 0f).fillMaxWidth().aspectRatio(0.78f)
-                    .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } },
+                    .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (looping) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 ShelfGameArt(
@@ -571,12 +596,35 @@ private fun CaseGrid(
 @Composable
 private fun SpineShelf(
     games: List<Game>, focus: Int, art: Map<String, GameArt>, overrides: Map<String, ArtOverride>,
-    onSelect: (Int) -> Unit, onOpen: () -> Unit
+    onSelect: (Int) -> Unit, onOpen: () -> Unit,
+    /** Update 156: Endless — the shelf goes round (the games repeat on both sides). */
+    loop: Boolean = false,
+    loopTick: Int = 0,
+    loopStep: Int = 0
 ) {
     GridHome.columns = 1
     GridHome.focus = focus
-    val state = rememberLazyListState()
-    LaunchedEffect(focus) { runCatching { state.animateScrollToItem((focus - 3).coerceAtLeast(0)) } }
+    // Update 156: going round, the spines repeat as copies (the shelf starts in the middle copy) and the selection is on
+    // its endless virtual place: last -> first slides one spine on, like any step.
+    val looping = loop && games.size >= 2
+    val n = games.size
+    val loopTap = remember { LoopTap() }
+    val vFocus = rememberLoopPlace(focus, n, looping, loopTick, loopStep, games, loopTap)
+    val count = if (looping) n * LOOP_COPIES else n
+    val focusItem = if (looping) ((LOOP_COPIES / 2) * n + vFocus).coerceIn(0, count - 1) else focus
+    val plainState = rememberLazyListState()
+    val loopState = remember(looping) {
+        if (looping) androidx.compose.foundation.lazy.LazyListState((focusItem - 3).coerceAtLeast(0)) else null
+    }
+    val state = loopState ?: plainState
+    LaunchedEffect(focusItem) {
+        val target = (focusItem - 3).coerceAtLeast(0)
+        // Update 156: going round, a long way (a new category) jumps instead of racing over the copies.
+        runCatching {
+            if (looping && kotlin.math.abs(state.firstVisibleItemIndex - target) > 24) state.scrollToItem(target)
+            else state.animateScrollToItem(target)
+        }
+    }
     val select by rememberUpdatedState(onSelect)
     val open by rememberUpdatedState(onOpen)
     val look = LocalCardLook.current
@@ -591,9 +639,11 @@ private fun SpineShelf(
             Modifier.fillMaxSize(), state = state, verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            items(games.size, key = { keys[it] }) { i ->
+            // Update 156: going round, item [vi] is game vi mod n (each copy with its own key).
+            items(count, key = { if (looping) "${keys[it.mod(n)]}#${it / n}" else keys[it] }) { vi ->
+                val i = if (looping) vi.mod(n) else vi
                 val g = games[i]
-                val on = i == focus
+                val on = vi == focusItem
                 val pull by animateFloatAsState(if (on) 1f else 0f, tween(200), label = "spinePull")
                 val cov = if (Features.coverTemplates.state.value) MediaCovers.of(g.platform) else null
                 // (Update 129: or the spine picked for all on R1 › Spine.)
@@ -624,7 +674,7 @@ private fun SpineShelf(
                         .then(if (on) Modifier.focusedCard() else Modifier)
                         .clip(RoundedCornerShape(3.dp))
                         .border(if (on && frameOn) 2.dp else 0.dp, if (on && frameOn) ShelfTheme.accent else Color.Transparent, RoundedCornerShape(3.dp))
-                        .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
+                        .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (looping) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } }
                 ) {
                     if (pull > 0.4f) {
                         // Pulled out: the front alone, filling the slot (the spine is only for the shelf, seen from the side).

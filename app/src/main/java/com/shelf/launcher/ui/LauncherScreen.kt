@@ -402,6 +402,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
     val visibleGames = state.visibleGames
     val focusedGame = visibleGames.getOrNull(state.focusedIndex)
+    // Update 156: the next and previous categories got ready in the background (their covers in memory).
+    CategoryWarmup(state)
     // A or a tap on the game you're on (update 113): the layout's own game window (GameWindow.kt; its Details button
     // opens the big details window), or with Home › Game window off, straight into the game.
     val openGame = {
@@ -2441,7 +2443,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 kotlinx.coroutines.delay(150)
                 val i0 = state.focusedIndex
                 val urls = (-2..2).filter { it != 0 }.mapNotNull { off ->
-                    visibleGames.getOrNull(i0 + off)?.let { g ->
+                    // (Update 156: going round, the first games are next after the last.)
+                    visibleGames.getOrNull((i0 + off).let { if (state.appearance.loopRow && visibleGames.size >= 2) it.mod(visibleGames.size) else it })?.let { g ->
                         com.shelf.launcher.data.ArtPick.backdrop(g, state.artOverrides, state.art, state.screenshots)?.let { it to g.stableKey }
                     }
                 }
@@ -3023,7 +3026,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         val p = state.raProgress[g.stableKey]
                         val total = if (list.isNotEmpty()) list.size else p?.NumPossibleAchievements ?: 0
                         if (total <= 0) null else (if (list.isNotEmpty()) list.count { it.isUnlocked } else p?.NumAchieved ?: 0) to total
-                    }
+                    },
+                    // Update 156: going round at the end is one step (the grid repeats its games, GridHome.kt).
+                    loopTick = state.loopTick, loopStep = state.loopStep
                 )
             }
         } else if (tileLayout) androidx.compose.runtime.CompositionLocalProvider(LocalTileScale provides state.appearance.tileScale / 100f) {
@@ -3114,7 +3119,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         focusAnchor = state.appearance.tileFocus,
                         nameAnchor = tileNameAnchor,
                         onNeedPhysical = { viewModel.loadPhysicalMedia(it) },
-                        onNeedScreenshots = { viewModel.loadMedia(it) }
+                        onNeedScreenshots = { viewModel.loadMedia(it) },
+                        // Update 156: going round at the end is one step (TileHome.kt).
+                        loopTick = state.loopTick, loopStep = state.loopStep
                     )
                 }
                 if (tileCategoryBelow && showCats) {

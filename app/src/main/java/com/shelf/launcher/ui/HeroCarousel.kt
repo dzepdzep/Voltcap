@@ -315,7 +315,8 @@ private fun CoverWheel(
     LaunchedEffect(focused, cardArtType, games.size) {
         if (!cardArtType.wantsMedia()) return@LaunchedEffect
         kotlinx.coroutines.delay(120)
-        for (i in (focused - 3)..(focused + 5)) {
+        for (i in ((focused - 3)..(focused + 5)).map { if (looping) it.mod(games.size) else it }.distinct()) {
+            // Update 156: going round, the games past the ends are the ones from the other end.
             val g = games.getOrNull(i) ?: continue
             if (!physicalMedia.containsKey(g.stableKey)) { onNeedPhysical(g); kotlinx.coroutines.delay(90) }
         }
@@ -390,7 +391,8 @@ private fun CoverWheel(
         val wheelContext = androidx.compose.ui.platform.LocalContext.current
         // Thumbnails for a wider window: holding the D-pad flies past covers that aren't decoded yet.
         LaunchedEffect(focused / 5, games.size, wide) {
-            val urls = ((focused - 14)..(focused + 14)).mapNotNull { games.getOrNull(it) }
+            // Update 156: going round, the covers coming in past the ends (the other end's games) are warmed too.
+            val urls = ((focused - 14)..(focused + 14)).mapNotNull { games.getOrNull(if (looping) it.mod(games.size) else it) }
                 .mapNotNull { g -> if (wide) wideFor(g) ?: coverFor(g) else coverFor(g) }
             val handles = prefetchThumbs(wheelContext, urls)
             try { kotlinx.coroutines.awaitCancellation() } finally {

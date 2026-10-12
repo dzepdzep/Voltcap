@@ -66,6 +66,8 @@ internal fun StyleLiveTiles(c: StyleCtx, modifier: Modifier) {
     val musicOn = styleMusicShown(c) && c.game != null
     SideEffect {
         StyleNav.livePage = page.size
+        // Update 156: ◀ ▶ go round the pages with Endless on (LiveLoop.kt).
+        LiveLoop.on = loopRowOn(c)
         StyleNav.side = emptyList()
         StyleNav.top = tabs.map { (d, _) -> { if (d != 0) c.actions.category(d) } }
         StyleNav.topStart = tabs.indexOfFirst { it.first == 0 }
@@ -94,13 +96,20 @@ internal fun StyleLiveTiles(c: StyleCtx, modifier: Modifier) {
                 } else {
                     val gap = 10.dp
                     // The page of games the selection is on, sliding when the page changes.
-                    val first = c.focus - c.focus % page.size
+                    // Update 156: the page is counted on round the ends with Endless on (LiveLoop.kt), so the first page
+                    // after the last one slides in like any next page (it used to slide back). The start of the page is
+                    // that count times the page's size; without Endless it is the page's first game, as before.
+                    val pageN = page.size
+                    val pages = ((c.games.size + pageN - 1) / pageN).coerceAtLeast(1)
+                    val first = rememberLivePage(c.focus, pageN, c.games.size, loopRowOn(c), c.state.loopTick, c.state.loopStep) * pageN
                     AnimatedContent(
                         targetState = first, label = "livePage",
                         // The next page slides in from the side (update 104), it used to fade.
                         transitionSpec = { pageSlide() },
                         modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds().categorySlide()
-                    ) { start ->
+                    ) { counted ->
+                        // (Update 156: a page counted on past the last one shows the games from the first page again.)
+                        val start = if (counted >= 0 && counted < c.games.size) counted else counted.mod(pages * pageN)
                         // The % size (update 105): the page of tiles a little smaller, in the middle.
                         val pageK = GameSize.scale(com.shelf.launcher.data.HomeLayout.LIVE)
                         Box(Modifier.fillMaxSize().graphicsLayer { scaleX = pageK; scaleY = pageK }) { LivePageTiles(c, start, page, gap, ink, tint) }

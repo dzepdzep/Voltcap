@@ -109,6 +109,8 @@ internal fun StyleLibrary(c: StyleCtx, modifier: Modifier = Modifier) {
             else c.stops.indices.map { t -> { if (t != c.stop) c.actions.category(t - c.stop) } }
         // Going up lands on the tab of the category you're in.
         StyleNav.topStart = if (single) 0 else c.stop
+        // Update 156: Endless on (for libraryKey: ◀ / ▶ at the ends go round).
+        StyleLoop.on = loopRowOn(c)
     }
     // The tab to start on is this layout's own: another layout's top row starts where it was left again.
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { StyleNav.topStart = -1 } }
@@ -162,8 +164,11 @@ internal fun libraryKey(ctx: StyleKeyCtx): Boolean {
     val row = f / cols
     val col = f % cols
     val lastRow = (count - 1) / cols
-    fun go(target: Int): Boolean {
+    // Update 156 (review): every move adds its step to StyleLoop.walked ([d]: -1 / +1 going round), so with Endless the
+    // grid counts on exactly (a ▼ onto a shorter last row could be taken as a step back round before).
+    fun go(target: Int, d: Int = target - f): Boolean {
         if (target != f && target in 0 until count) {
+            StyleLoop.walked += d
             ctx.setFocus(target)
             ctx.sound(UiSound.MOVE)
         }
@@ -186,13 +191,20 @@ internal fun libraryKey(ctx: StyleKeyCtx): Boolean {
             // Into the panel only on a fresh press a moment after landing on the first column (as the other layouts do,
             // update 130), so a held ◀ or a quick second press doesn't shoot past the game into the buttons.
             StyleNav.side.isNotEmpty() -> if (ctx.first && StyleNav.dirAt - StyleNav.movedAt > 280) ctx.enterZone(StyleNav.Zone.SIDE) else ctx.take()
+            // Update 156: Endless on, ◀ on the first game: on round to the last game (one step back, see LibraryGrid).
+            f == 0 && libraryLoops(count) -> go(count - 1, -1)
             else -> go(f - 1)
         }
         // ▶ on the last column carries on to the first game of the next row.
-        Key.DirectionRight -> go(f + 1)
+        // Update 156: Endless on, ▶ on the last game: on round to the first game (one step on: the grid carries on
+        // with the games again, see LibraryGrid).
+        Key.DirectionRight -> if (f == count - 1 && libraryLoops(count)) go(0, 1) else go(f + 1)
         else -> false
     }
 }
+
+/** Update 156: Endless on for the Library panel (set as it draws) and at least two games. */
+private fun libraryLoops(count: Int): Boolean = StyleLoop.on && count >= 2
 
 /** The categories as tabs along the top: the one you're in lit (with its game count), L2 / R2 at the ends. */
 @Composable
@@ -497,16 +509,30 @@ private fun LibraryGrid(c: StyleCtx, modifier: Modifier) {
         val vGap = if (maxHeight < 300.dp) 8.dp else 12.dp
         val pad = 10.dp
         val gapPx = with(density) { vGap.toPx() }
-        val state = rememberLazyGridState(initialFirstVisibleItemIndex = ((c.focus / cols) - 1).coerceAtLeast(0) * cols)
+        // Update 156: Endless on (and more than one row of games): the games repeat down the grid, each round starting
+        // on a new row, and the place you're on counts on round (libraryKey's steps, the ends included),
+        // so going from the last game to the first just carries on a row down, like any ▶ — nothing jumps back up.
+        val n = c.games.size
+        val loop = loopRowOn(c) && n > cols
+        val tap = remember { LoopTap() }
+        // (Update 156, review: counted by the exact steps libraryKey made, StyleLoop.walked.)
+        val v = rememberWalkedPlace(c.focus, n, loop, StyleLoop.walked, c.games, tap)
+        // One round of the grid: its games and the empty cells that fill out its last row.
+        val stride = ((n + cols - 1) / cols).coerceAtLeast(1) * cols
+        val total = if (loop) stride * LOOP_COPIES else n
+        val half = LOOP_COPIES / 2
+        val focusCell = if (loop) ((half + Math.floorDiv(v, n)) * stride + v.mod(n)).coerceIn(0, total - 1) else c.focus
+        val state = rememberLazyGridState(initialFirstVisibleItemIndex = ((focusCell / cols) - 1).coerceAtLeast(0) * cols)
         // The games and the games per row the grid was last moved for: when either changes (a new category, Small /
         // Large) the positions the grid last laid out belong to the old ones, so they can't be glided from.
         val shownFor = remember { arrayOfNulls<Any>(1) }
-        LaunchedEffect(c.focus, cols, keys) {
-            val f = c.focus
-            if (f < 0 || f >= keys.size) return@LaunchedEffect
+        LaunchedEffect(focusCell, cols, keys, loop) {
+            // (Update 156: the cell you're on, which with Endless is in one of the rounds.)
+            val f = focusCell
+            if (f < 0 || f >= total) return@LaunchedEffect
             val row = f / cols
-            val lastRow = (keys.size - 1) / cols
-            val sig = keys to cols
+            val lastRow = (total - 1) / cols
+            val sig = Triple(keys, cols, loop)
             val fresh = shownFor[0] != sig
             shownFor[0] = sig
             val info = state.layoutInfo
@@ -547,8 +573,18 @@ private fun LibraryGrid(c: StyleCtx, modifier: Modifier) {
             // Room for the glow round the edge games.
             contentPadding = PaddingValues(pad)
         ) {
-            items(c.games.size, key = { keys[it] }) { i ->
-                LibraryTile(c, i, aspect, corner, inGames)
+            // Update 156: with Endless, cell i shows game i % stride of its round (the cells past the last game are empty).
+            items(total, key = { i -> if (loop) { val j = i % stride; if (j < n) "${keys[j]}#${i / stride}" else "pad#$i" } else keys[i] }) { i ->
+                val j = if (loop) i % stride else i
+                if (j < n) {
+                    LibraryTile(
+                        c, j, aspect, corner, inGames, on = i == focusCell,
+                        // A tap picks the round that was tapped (so the grid doesn't run off to another one).
+                        onPick = if (loop) ({ tap.virtual = (i / stride - half) * n + j }) else null
+                    )
+                } else {
+                    Spacer(Modifier.fillMaxWidth())
+                }
             }
         }
     }
@@ -556,12 +592,16 @@ private fun LibraryGrid(c: StyleCtx, modifier: Modifier) {
 
 /** One game in the grid: its card art, lifted and lit when you're on it, its name under it. */
 @Composable
-private fun LibraryTile(c: StyleCtx, i: Int, aspect: Float, corner: Dp, inGames: Boolean) {
+private fun LibraryTile(
+    c: StyleCtx, i: Int, aspect: Float, corner: Dp, inGames: Boolean,
+    // Update 156: with Endless only the cell you're on (not every round of the game) is lit; [onPick] runs before a tap selects.
+    on: Boolean = i == c.focus, onPick: (() -> Unit)? = null
+) {
     val g = c.games[i]
-    val on = i == c.focus
     val sel = on && inGames
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
+    val pick by rememberUpdatedState(onPick) // (Update 156)
     val lift = styleLift(sel)
     // Only the game you're on runs the focus pulse, so the rest of the grid stays still.
     val pulse = if (sel) rememberFocusPulse(animate = !LocalLiteEffects.current && LocalCardLook.current.focusEffect != FocusEffect.NONE) else null
@@ -581,7 +621,7 @@ private fun LibraryTile(c: StyleCtx, i: Int, aspect: Float, corner: Dp, inGames:
                     detectTapGestures {
                         // A tap brings the D-pad back to the games too.
                         if (StyleNav.zone != StyleNav.Zone.GAMES) StyleNav.leave()
-                        if (i == GridHome.focus) open() else select(i)
+                        if (i == GridHome.focus) open() else { pick?.invoke(); select(i) } // (Update 156: pick)
                     }
                 }
         ) {

@@ -4,6 +4,56 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (156): every layout goes round at the end without "reloading", art in at once
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (5): `src_copy\ui\CategoryWarmup.kt`, `src_copy\ui\LiveLoop.kt`, `src_copy\ui\LoopPlaces.kt`,
+  `src_copy\ui\StyleArtRequests.kt`, `src_copy\ui\StyleLoopSteps.kt`.
+- Changed (17): `src_copy\ui\` Carousel, EndlessRow, GameDock, GridHome, HeroCarousel, LauncherScreen, ShelfHome,
+  StyleCaseStacks, StyleConsoleHomes, StyleConsoleStack, StyleDiscStation, StyleHomes, StyleLibrary, StyleLiveTiles,
+  StyleTimelineHistory, TileHome, TvRoomHome (all `.kt`).
+
+**Files to delete:** none.
+
+### What changed
+- **Going past the end (Endless on) is one more step on every layout.** About half the layouts didn't go round on their
+  own: at the end the whole screen played "comes back in from the other side", which looked like the layout reloading.
+  Now Grid (every look), TV room (every look), Tile home, Game shelf, Case stacks, Console stack, Library panel,
+  Timeline, Channel grid (pages and strip), Live tiles, Arcade cabinets and Disc station go round themselves — the games
+  repeat, so from the last game the first one slides in like any next game, art already there. Disc station's disc no
+  longer ejects the wrong way at the end. The layouts that already went round were checked (Side menu, Dashboard, Icon
+  bar, Spotlight, Console hub, Circuit board, Resume, Cross menu, Hero carousel, Voltcap row, carousels).
+- **Art in at once on the style layouts and carousels:** their cards asked for each picture at the card's own size,
+  while the warm-up decoded it at another size under the same name — so the cards read every picture from storage again
+  (about a second empty). Cards and warm-up now ask the same way, with the small thumbnail standing in meanwhile. The
+  Grid and TV room carousels now warm the covers either side too.
+- **Next / previous category made ready in the background:** a moment after you land in a category, the categories
+  L2 / R2 lead to have their game lists worked out and their first covers decoded, so switching shows covers at once.
+- Built by five agents in parallel, each reviewed.
+
+### Still the same
+- ▲ ▼ in the Grid's grid stop at the top / bottom row (only ◀ ▶ go round). Swipes stop at the ends on Tile home,
+  Case stacks and Console stack.
+- Coming back from a game on the Pocket Classic still reloads the art (memory is freed for the emulator on purpose).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 156: every layout goes round at the end, art in at once, next categories ready"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 12 Oct 2026 (155): Hide nav bar the right way round on the Pocket Classic, volume mixer no longer stuck
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

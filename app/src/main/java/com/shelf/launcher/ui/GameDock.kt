@@ -242,11 +242,12 @@ internal fun GameDock(
         // around the focus, after the selection has rested a moment, one at a
         // time (the lookups are idempotent and remembered by the view model).
         val needsLookup = cardArtType.wantsMedia() || cardArtType == com.shelf.launcher.data.CardArtType.SCREENSHOT
-        LaunchedEffect(focus, cardArtType, games.size) {
+        LaunchedEffect(focus, cardArtType, games.size, loop) {
             if (!needsLookup) return@LaunchedEffect
             kotlinx.coroutines.delay(150)
             for (i in intArrayOf(focus, focus + 1, focus - 1, focus + 2)) {
-                val game = games.getOrNull(i) ?: continue
+                // Update 156: with the row going round, the games past the end are the first ones (and before game 1 the last).
+                val game = games.getOrNull(if (loop) i.mod(games.size) else i) ?: continue
                 val k = game.stableKey
                 if (cardArtType == com.shelf.launcher.data.CardArtType.SCREENSHOT) {
                     if (!screenshots.containsKey(k)) { onNeedScreenshots(game); kotlinx.coroutines.delay(100) }
@@ -255,20 +256,23 @@ internal fun GameDock(
                 }
             }
         }
-        LaunchedEffect(focus, games.size, prefetchSizes, prefetchWide, density, cardArtType, if (needsLookup) physicalMedia else null, if (needsLookup) screenshots else null) {
+        LaunchedEffect(focus, games.size, loop, prefetchSizes, prefetchWide, density, cardArtType, if (needsLookup) physicalMedia else null, if (needsLookup) screenshots else null) {
             kotlinx.coroutines.delay(80)
             val loader = context.imageLoader
             val handles = ArrayList<coil.request.Disposable>()
             try {
                 fun queue(url: String?, kind: ArtKind) {
-                    if (url == null) return
+                    // (Update 156: the carousel look warms its own covers in its own shape — GameCarousel.)
+                    if (url == null || carousel) return
                     val px = cardArtPx(prefetchSizes, prefetchWide, kind, density)
                     handles += loader.enqueue(artRequest(context, url, kind, px, fadeMillis = 0))
                 }
                 // Fewer neighbours on small handhelds (each decoded cover stays in memory).
                 val reach = if (com.shelf.launcher.device.MemoryBudget.small(context)) 2 else 3
                 for (i in (focus - reach)..(focus + reach + 1)) {
-                    val game = games.getOrNull(i) ?: continue
+                    // Update 156: going round, the games coming in past the last one (the first ones) are warmed too, so
+                    // their art is there as they slide in.
+                    val game = games.getOrNull(if (loop) i.mod(games.size) else i) ?: continue
                     val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow)
                     val override = artOverrides[game.stableKey]
                     val gameArt = art[game.stableKey]
@@ -303,10 +307,11 @@ internal fun GameDock(
         // Thumbnails for a wider window (tiny, 2 bytes a pixel): while you hold the D-pad and fly past games
         // whose sharp art isn't decoded yet, their thumbnail shows instead of an empty dark card.
         // Re-queued only every few steps, and the ones already in memory are skipped.
-        LaunchedEffect(focus / 6, games.size, cardArtType) {
+        LaunchedEffect(focus / 6, games.size, cardArtType, loop) {
             val reach = if (com.shelf.launcher.device.MemoryBudget.small(context)) 10 else 16
             val urls = ((focus - reach)..(focus + reach)).mapNotNull { i ->
-                val game = games.getOrNull(i) ?: return@mapNotNull null
+                // Update 156: past the ends of a row going round, the games from the other end.
+                val game = games.getOrNull(if (loop) i.mod(games.size) else i) ?: return@mapNotNull null
                 val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow)
                 val override = artOverrides[game.stableKey]
                 val gameArt = art[game.stableKey]
@@ -422,7 +427,10 @@ internal fun GameDock(
                 // while the one you were on slides out — it used to just appear (Settings › Home › Animations › Moving between games).
                 val swap = com.shelf.launcher.data.Features.capsuleSwap.state.value
                 androidx.compose.animation.AnimatedContent(
-                    targetState = focus,
+                    // Update 156: on a row going round, the place on the endless row: from the last game on to the first is
+                    // a step forward (it slid in backwards when compared by the games' indexes).
+                    // (A single game has nothing to go round to: it stays put.)
+                    targetState = if (loop && games.size >= 2) virtualFocus else focus,
                     modifier = Modifier
                         .align(androidx.compose.ui.Alignment.CenterStart)
                         .zIndex(1f)
@@ -442,7 +450,9 @@ internal fun GameDock(
                         }.using(androidx.compose.animation.SizeTransform(clip = false))
                     },
                     label = "fixedSlot"
-                ) { f ->
+                ) { v ->
+                // Update 156: [v] is the place on the endless row when it goes round; its game is [v] mod the count.
+                val f = if (loop) v.mod(games.size) else v.coerceIn(0, games.lastIndex)
                 val game = games[f.coerceIn(0, games.lastIndex)]
                 GameCard(
                     game = game,

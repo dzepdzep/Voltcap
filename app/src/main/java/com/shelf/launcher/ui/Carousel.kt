@@ -136,7 +136,7 @@ internal fun ShelfGameArt(
                 .clip(shape)
                 .background(placeholderBrush(g.hue))
         ) {
-            if (url != null) AsyncImage(url, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+            if (url != null) AsyncImage(rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156)
             else Text(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(6.dp))
             ConsoleBadge(g.platform, packageName = g.packageName)
         }
@@ -165,7 +165,7 @@ internal fun ShelfGameArt(
                 .background(placeholderBrush(g.hue))
         ) {
             if (cover != null) AsyncImage(
-                cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork(),
+                rememberStyleArtRequest(cover), g.name, contentScale = ContentScale.Crop, // (Update 156: the warmed shape) modifier = Modifier.fillMaxSize().pixelArtwork(),
                 // (Update 154: its shape noted, so the carousel's slot takes it — CoverAspects.)
                 onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
             )
@@ -460,6 +460,21 @@ internal fun GameCarousel(
     /** Update 146: time played per game (stableKey → ms), for the Receding row's line under its big game. */
     playtime: Map<String, Long> = emptyMap()
 ) {
+    // Update 156: the covers a few games either side decoded ahead, in the shape the carousel draws them (the Grid and TV
+    // room carousels warmed nothing: each new cover came in empty for a moment).
+    val warmCtx = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    androidx.compose.runtime.LaunchedEffect(focus, games) {
+        kotlinx.coroutines.delay(120)
+        val n = games.size
+        if (n == 0) return@LaunchedEffect
+        val reach = if (com.shelf.launcher.device.MemoryBudget.small(warmCtx)) 2 else 3
+        val urls = ((focus - reach)..(focus + reach)).mapNotNull { i ->
+            val g = games.getOrNull(if (loop) i.mod(n) else i) ?: return@mapNotNull null
+            overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
+        }.distinct()
+        prefetchThumbs(warmCtx, urls)
+        warmStyleArt(warmCtx, urls)
+    }
     val spines = spinesOn(cardArtType)
     val view = Carousel.view
     // Update 141: every carousel view works with every look. The views made for 3D cases (Arc, Spine wall, Turned row)

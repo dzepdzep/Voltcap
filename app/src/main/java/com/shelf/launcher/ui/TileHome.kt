@@ -220,9 +220,16 @@ internal fun TileHomeRow(
     /** Asks for a game's box / label scans (only for the few games around the focus). */
     onNeedPhysical: (Game) -> Unit = {},
     /** Asks for a game's screenshots (Screenshot card art). */
-    onNeedScreenshots: (Game) -> Unit = {}
+    onNeedScreenshots: (Game) -> Unit = {},
+    /** Update 156: Endless (R1) — the tiles go round (the first games again after the last); the view model's D-pad
+     *  step ([loopTick] / [loopStep]) tells the row which way a step went. */
+    loop: Boolean = LocalCardLook.current.loopRow,
+    loopTick: Int = 0,
+    loopStep: Int = 0
 ) {
     com.shelf.launcher.Breadcrumbs.mark("TileHomeRow")
+    // Update 156: going round needs two games at least.
+    val looping = loop && games.size >= 2
     // Box / label scans (and screenshots) for the tiles around the one you're on, after the selection rests a
     // moment, one at a time — as the other layouts do (the lookups are remembered by the view model).
     androidx.compose.runtime.LaunchedEffect(focusedIndex, cardArtType, games.size) {
@@ -230,7 +237,8 @@ internal fun TileHomeRow(
         if (!shots && !cardArtType.wantsMedia()) return@LaunchedEffect
         kotlinx.coroutines.delay(150)
         for (i in intArrayOf(focusedIndex, focusedIndex + 1, focusedIndex - 1, focusedIndex + 2, focusedIndex - 2, focusedIndex + 3)) {
-            val g = games.getOrNull(i) ?: continue
+            // Update 156: going round, the games past either end are the ones from the other end.
+            val g = (if (looping) games.getOrNull(i.mod(games.size)) else games.getOrNull(i)) ?: continue
             if (shots) { if (!screenshots.containsKey(g.stableKey)) { onNeedScreenshots(g); kotlinx.coroutines.delay(100) } }
             else if (!physicalMedia.containsKey(g.stableKey)) { onNeedPhysical(g); kotlinx.coroutines.delay(100) }
         }
@@ -250,12 +258,16 @@ internal fun TileHomeRow(
     if (games.isNotEmpty()) {
         val n = games.size
         val focus = focusedIndex.coerceIn(0, n - 1)
+        // Update 156: the tile you're on, on the endless row when Endless is on (the games repeat both ways, so last ->
+        // first slides one tile on like any step); with Endless off it is just [focus].
+        val loopTap = remember { LoopTap() }
+        val vFocus = rememberLoopPlace(focus, n, looping, loopTick, loopStep, games, loopTap)
         // First fully visible tile: moves only when the selection reaches an edge.
         val window = remember(n, m.visible) { intArrayOf(0) }
         var first = window[0]
-        if (focus < first) first = focus
-        if (focus > first + m.visible - 1) first = focus - m.visible + 1
-        first = first.coerceIn(0, maxOf(0, n - m.visible))
+        if (vFocus < first) first = vFocus
+        if (vFocus > first + m.visible - 1) first = vFocus - m.visible + 1
+        if (!looping) first = first.coerceIn(0, maxOf(0, n - m.visible))
         window[0] = first
         var rowWidth by remember { mutableStateOf(0.dp) }
         val rowDensity = LocalDensity.current
@@ -263,15 +275,16 @@ internal fun TileHomeRow(
         // or held at the left, the middle or the right with the row sliding under it.
         val anchorFirst: Float = when (focusAnchor) {
             com.shelf.launcher.data.TileFocus.EDGES -> first.toFloat()
-            com.shelf.launcher.data.TileFocus.LEFT -> focus.toFloat()
+            com.shelf.launcher.data.TileFocus.LEFT -> vFocus.toFloat()
             // Exactly in the middle of the screen, so the name, the category and the round buttons
             // (all centred) line up with it.
             // Measured on the row itself (not the display's size, which can leave out the navigation
             // bar's room and put the "middle" left of the real middle).
-            com.shelf.launcher.data.TileFocus.CENTER -> focus - (((if (rowWidth > 0.dp) rowWidth else screenSizeDp().width) / 2 - m.tile / 2 - m.start) / m.stride)
-            com.shelf.launcher.data.TileFocus.RIGHT -> (focus - m.visible + 1).toFloat()
+            com.shelf.launcher.data.TileFocus.CENTER -> vFocus - (((if (rowWidth > 0.dp) rowWidth else screenSizeDp().width) / 2 - m.tile / 2 - m.start) / m.stride)
+            com.shelf.launcher.data.TileFocus.RIGHT -> (vFocus - m.visible + 1).toFloat()
         }
-        if (focusAnchor != com.shelf.launcher.data.TileFocus.EDGES) first = anchorFirst.toInt().coerceAtLeast(0)
+        // (Update 156: going round, the tiles before the first game are the last ones, so the row may start before it.)
+        if (focusAnchor != com.shelf.launcher.data.TileFocus.EDGES) first = if (looping) floor(anchorFirst).toInt() else anchorFirst.toInt().coerceAtLeast(0)
 
         // Scroll position in dp. A long jump (wrapping from the last game to the
         // first) snaps instead of racing past the whole library.
@@ -282,9 +295,10 @@ internal fun TileHomeRow(
             else scroll.animateTo(target, dockMotion())
         }
         // The name follows the ring with the same motion as the row.
-        val nameX = remember { Animatable(focus * strideDpValue) }
-        LaunchedEffect(focus, strideDpValue) {
-            val target = focus * strideDpValue
+        // (Update 156: on the endless row's place, so going round glides one tile like any step.)
+        val nameX = remember { Animatable(vFocus * strideDpValue) }
+        LaunchedEffect(vFocus, strideDpValue) {
+            val target = vFocus * strideDpValue
             if (abs(target - nameX.value) > strideDpValue * (m.visible + 1)) nameX.snapTo(target)
             else nameX.animateTo(target, dockMotion())
         }
@@ -306,7 +320,8 @@ internal fun TileHomeRow(
         LaunchedEffect(focus / 6, n, cardArtType) {
             val reach = if (com.shelf.launcher.device.MemoryBudget.small(thumbContext)) 10 else 16
             val urls = ((focus - reach)..(focus + reach)).mapNotNull { i ->
-                val game = games.getOrNull(i) ?: return@mapNotNull null
+                // Update 156: going round, the games past either end are the ones from the other end.
+                val game = (if (looping) games.getOrNull(i.mod(n)) else games.getOrNull(i)) ?: return@mapNotNull null
                 val o = artOverrides[game.stableKey]
                 val a = art[game.stableKey]
                 val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow)
@@ -453,16 +468,17 @@ internal fun TileHomeRow(
                 // so scrolling in from the neighbours never shows a gap).
                 // (Update 137: a carousel packs them closer — as many as reach past the screen's edges.)
                 val reach = if (carousel) Carousel.flatReach(m.tile.value, screenSizeDp().width.value / 2f) else 0
-                val from = minOf(first - m.visible, focus - reach).coerceAtLeast(0)
-                val to = maxOf(first + m.visible * 2, focus + reach).coerceAtMost(n - 1)
+                // (Update 156: going round, [i] is a place on the endless row: game i mod n, each copy its own key.)
+                val from = minOf(first - m.visible, vFocus - reach).let { if (looping) it else it.coerceAtLeast(0) }
+                val to = maxOf(first + m.visible * 2, vFocus + reach).let { if (looping) it else it.coerceAtMost(n - 1) }
                 for (i in from..to) {
-                    val game = games[i]
-                    key(game.stableKey) {
+                    val game = games[if (looping) i.mod(n) else i]
+                    key(game.stableKey, if (looping) i.floorDiv(n) else 0) {
                         HomeTile(
                             game = game,
                             art = art[game.stableKey],
                             override = artOverrides[game.stableKey],
-                            focused = i == focus,
+                            focused = i == vFocus,
                             dimmed = dimmed,
                             tile = m.tile,
                             progress = raProgress[game.stableKey],
@@ -477,10 +493,11 @@ internal fun TileHomeRow(
                                 lastPlayedAt[game.stableKey], raProgress[game.stableKey],
                                 freshUnlock = game.raGameId?.let { id -> seenAll[com.shelf.launcher.data.AchievementSeen.keyRa(id)]?.glow?.isNotEmpty() } == true
                             ),
-                            onTap = { if (i == focus) onOpen(game) else onFocus(i) },
+                            // (Update 156: a tapped copy is where the selection goes.)
+                            onTap = { if (i == vFocus) onOpen(game) else if (looping) { loopTap.virtual = i; onFocus(i.mod(n)) } else onFocus(i) },
                             modifier = Modifier
                                 .align(Alignment.CenterStart)
-                                .zIndex(if (carousel) Carousel.placeFlat((i - focus).toFloat(), Carousel.side).z else if (i == focus) 1f else 0f)
+                                .zIndex(if (carousel) Carousel.placeFlat((i - vFocus).toFloat(), Carousel.side).z else if (i == vFocus) 1f else 0f)
                                 .offset {
                                     val x = (m.start.value + i * strideDpValue - scroll.value).dp
                                     IntOffset(x.roundToPx(), 0)
@@ -506,7 +523,7 @@ internal fun TileHomeRow(
                                         if (rotationY != 0f) flatTextFor3d()
                                     } else Modifier
                                 )
-                                .then(if (i == focus) Modifier.focusedCard() else Modifier)
+                                .then(if (i == vFocus) Modifier.focusedCard() else Modifier)
                         )
                     }
                 }

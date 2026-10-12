@@ -472,6 +472,8 @@ internal fun StyleChannelGrid(c: StyleCtx, modifier: Modifier) {
         StyleNav.topStart = 0
         // ▼ past the last row (update 101): the two round buttons, the category (left) and the game's details (right).
         StyleNav.bar = if (c.games.isEmpty() || barOff) emptyList() else listOf({ c.actions.category(1) }, { c.actions.open() })
+        // Update 156: Endless on (the keys in styleHomeKey go round past the last page / column).
+        StyleLoop.on = loopRowOn(c)
     }
     BoxWithConstraints(modifier) {
         val barH = (maxHeight * 0.22f).coerceIn(64.dp, 120.dp)
@@ -479,6 +481,14 @@ internal fun StyleChannelGrid(c: StyleCtx, modifier: Modifier) {
         val continuous = Features.gridsContinuous.state.value
         val pages = if (continuous) c.games.size.coerceAtLeast(1) else ((c.games.size + per - 1) / per).coerceAtLeast(1)
         val page = if (c.games.isEmpty()) 0 else if (continuous) c.focus else c.focus / per
+        // Update 156: Endless on: the pages counted on round, so the last page → the first slides in like any next
+        // page (and back), never back across them all; the page shown is that count round the pages.
+        val chanTap = remember { LoopTap() }
+        // (Update 156, review: the key handler's word that a page went round is taken only once the page itself has
+        // changed — it comes a moment before the selection, and a redraw in between must not slide twice.)
+        val chanSeen = remember { intArrayOf(page, StyleLoop.tick) }
+        if (page != chanSeen[0]) { chanSeen[0] = page; chanSeen[1] = StyleLoop.tick }
+        val vPage = rememberLoopPlace(page, pages, loopRowOn(c) && !continuous && pages >= 2, chanSeen[1], StyleLoop.step, c.games, chanTap)
         Column(Modifier.fillMaxSize()) {
             if (corner) ChannelCorner(c, light)
             if (c.games.isEmpty()) {
@@ -488,15 +498,19 @@ internal fun StyleChannelGrid(c: StyleCtx, modifier: Modifier) {
                 val pageK = GameSize.scale(com.shelf.launcher.data.HomeLayout.CHAN)
                 ContinuousGrid(
                     count = c.games.size, focus = c.focus, rows = rows, cols = cols, gap = 8.dp,
-                    modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds().categorySlide().graphicsLayer { scaleX = pageK; scaleY = pageK }.padding(horizontal = 14.dp, vertical = 6.dp)
+                    modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds().categorySlide().graphicsLayer { scaleX = pageK; scaleY = pageK }.padding(horizontal = 14.dp, vertical = 6.dp),
+                    // Update 156: Endless on: the strip carries on with the first columns again after the last.
+                    loop = loopRowOn(c), loopTick = StyleLoop.tick, loopStep = StyleLoop.step, loopList = c.games
                 ) { i, m -> ChanTile(c, i, light, m, select, open) }
             } else {
                 // A new page slides in from the side (update 104), it used to just appear.
                 androidx.compose.animation.AnimatedContent(
-                    targetState = page, label = "chanPage", transitionSpec = { pageSlide() },
+                    // Update 156: the page counted on round (vPage), so going round slides the same way as a step.
+                    targetState = vPage, label = "chanPage", transitionSpec = { pageSlide() },
                     // (Update 112: a new category slides / fades in too — it used to just appear.)
                     modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds().categorySlide()
-                ) { page ->
+                ) { shownPage ->
+                val page = if (loopRowOn(c)) shownPage.mod(pages) else shownPage
                 // The % size (update 105): the page of tiles a little smaller, in the middle.
                 val pageK = GameSize.scale(com.shelf.launcher.data.HomeLayout.CHAN)
                 Column(Modifier.fillMaxSize().graphicsLayer { scaleX = pageK; scaleY = pageK }.padding(horizontal = 14.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -560,10 +574,20 @@ internal fun ContinuousGrid(
      * and the slots past the last game drawn empty ([cell] gets an index ≥ [count] for those), like a handheld's menu.
      */
     fill: Boolean = false,
+    /**
+     * Update 156: Endless on: the strip carries on with the first columns again after the last (and before the first),
+     * the column you're on counted on round ([loopTick] / [loopStep]: a key that went round and which way, StyleLoop),
+     * so going round slides one column on like any step. Only when there are more columns than fit.
+     */
+    loop: Boolean = false,
+    loopTick: Int = 0,
+    loopStep: Int = 0,
+    loopList: Any? = null,
     cell: @Composable (Int, Modifier) -> Unit
 ) {
     val focusCol = focus / rows.coerceAtLeast(1)
     val totalCols = (count + rows - 1) / rows.coerceAtLeast(1)
+    val loopTap = androidx.compose.runtime.remember { LoopTap() } // (Update 156)
     // The first column in view moves only as far as needed to keep the game you're on in view (a plain holder: it's
     // worked out from the focus each time, never a state written while composing).
     val startHolder = androidx.compose.runtime.remember { IntArray(1) }
@@ -580,10 +604,16 @@ internal fun ContinuousGrid(
         val h = if (square) w else cellH
         val stepX = w + gap
         val viewCols = if (fill && square) (((maxWidth + gap) / stepX).toInt()).coerceAtLeast(cols) else cols
+        // Update 156: going round (Endless, more columns than fit): the column you're on counted on round.
+        val looping = loop && !fill && totalCols > viewCols
+        // (Update 156, review: a key's word that it went round is taken only once the column itself has changed.)
+        val seenCol = androidx.compose.runtime.remember { intArrayOf(focusCol, loopTick) }
+        if (focusCol != seenCol[0]) { seenCol[0] = focusCol; seenCol[1] = loopTick }
+        val atCol = rememberLoopPlace(focusCol, totalCols, looping, seenCol[1], loopStep, loopList, loopTap)
         var start = startHolder[0]
-        if (focusCol < start) start = focusCol
-        if (focusCol > start + viewCols - 1) start = focusCol - viewCols + 1
-        start = start.coerceIn(0, (totalCols - viewCols).coerceAtLeast(0))
+        if (atCol < start) start = atCol
+        if (atCol > start + viewCols - 1) start = atCol - viewCols + 1
+        if (!looping) start = start.coerceIn(0, (totalCols - viewCols).coerceAtLeast(0))
         startHolder[0] = start
         LaunchedEffect(start) {
             if (kotlin.math.abs(scroll.value - start) > viewCols * 2f || MotionPrefs.page() == com.shelf.launcher.data.Features.PageAnim.NONE) scroll.snapTo(start.toFloat())
@@ -593,17 +623,31 @@ internal fun ContinuousGrid(
         val left = if (square) (maxWidth - (w * viewCols + gap * (viewCols - 1))) / 2 else 0.dp
         val top = if (square) (maxHeight - (h * rows + gap * (rows - 1))) / 2 else 0.dp
         val shownCols = if (fill) maxOf(totalCols, viewCols) else totalCols
-        val from = (kotlin.math.floor(scroll.value).toInt() - 1).coerceAtLeast(0)
-        val to = (from + viewCols + 2).coerceAtMost(shownCols - 1)
+        // (Update 156: going round, the columns before the first / after the last are the games again, [col] counted
+        // on round; each keeps its own key so nothing already on screen is drawn anew.)
+        val from = (kotlin.math.floor(scroll.value).toInt() - 1).let { if (looping) it else it.coerceAtLeast(0) }
+        val to = (from + viewCols + 2).let { if (looping) it else it.coerceAtMost(shownCols - 1) }
         for (col in from..to) for (r in 0 until rows) {
-            val i = col * rows + r
+            val i = (if (looping) col.mod(totalCols) else col) * rows + r
             if (i >= count && !fill) continue
-            androidx.compose.runtime.key(i) {
+            androidx.compose.runtime.key(col * rows + r) {
                 cell(
                     i,
                     Modifier
                         .offset { androidx.compose.ui.unit.IntOffset(((left + stepX * col).toPx() - stepX.toPx() * scroll.value).roundToInt(), (top + (h + gap) * r).roundToPx()) }
                         .size(w, h)
+                        // (Update 156, review: going round, a touch notes which copy of the column it was, so a tapped
+                        // game is picked where it is instead of the strip running off the shorter way round.)
+                        .then(
+                            if (looping) Modifier.pointerInput(col) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                                        if (e.changes.any { it.pressed && !it.previousPressed }) loopTap.virtual = col
+                                    }
+                                }
+                            } else Modifier
+                        )
                 )
             }
         }

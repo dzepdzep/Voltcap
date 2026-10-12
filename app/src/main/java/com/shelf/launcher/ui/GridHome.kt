@@ -96,9 +96,17 @@ internal fun HomeGameGrid(
     /** Card size: 1 = the default cell width (Appearance › Cards › Card size). */
     sizeScale: Float = 1f,
     /** Update 125: earned / total achievements of a game, for the progress chip on the game you're on. */
-    progressOf: (Game) -> Pair<Int, Int>? = { null }
+    progressOf: (Game) -> Pair<Int, Int>? = { null },
+    /** Update 156: Endless (R1) — the grid carries on with the first games again after the last ones; the view
+     *  model's D-pad step ([loopTick] / [loopStep]) tells it which way a step went. */
+    loop: Boolean = LocalCardLook.current.loopRow && !secondScreen,
+    loopTick: Int = 0,
+    loopStep: Int = 0
 ) {
     val look = LocalCardLook.current
+    // Update 156: going round needs two games at least.
+    val looping = loop && games.size >= 2
+    val loopTap = androidx.compose.runtime.remember { LoopTap() }
     val titles = LocalTitleOptions.current
     val lite = LocalLiteEffects.current
     val hiddenMedia = LocalHiddenMedia.current
@@ -117,7 +125,8 @@ internal fun HomeGameGrid(
         if (!needsLookup) return@LaunchedEffect
         kotlinx.coroutines.delay(120)
         for (i in (focus - GridHome.columns)..(focus + GridHome.columns * 2)) {
-            val g = games.getOrNull(i) ?: continue
+            // Update 156: going round, the games after the last one are the first ones again.
+            val g = (if (looping) games.getOrNull(i.mod(games.size)) else games.getOrNull(i)) ?: continue
             if (cardArtType == CardArtType.SCREENSHOT) { if (!screenshots.containsKey(g.stableKey)) { onNeedScreenshots(g); kotlinx.coroutines.delay(90) } }
             else if (!physicalMedia.containsKey(g.stableKey)) { onNeedPhysical(g); kotlinx.coroutines.delay(90) }
         }
@@ -131,12 +140,27 @@ internal fun HomeGameGrid(
         val cols = if (fixedCols > 0) fixedCols.coerceIn(2, if (spines) 40 else 12)
             else ((maxWidth + gap) / (gridCellWidth(cardArtType, secondScreen, tiles, spines) * sizeScale + gap)).toInt().coerceIn(2, if (spines) 40 else 10)
         GridHome.columns = cols
-        val state = rememberLazyGridState()
+        // Update 156: going round, the games repeat as copies and the grid starts in the middle copy; the selection is
+        // on its endless virtual place, so last -> first is one more step (the grid scrolls on a row at most).
+        val n = games.size
+        val vFocus = rememberLoopPlace(focus, n, looping, loopTick, loopStep, games, loopTap, rowStep = cols)
+        val count = if (looping) n * LOOP_COPIES else n
+        val focusItem = if (looping) ((LOOP_COPIES / 2) * n + vFocus).coerceIn(0, count - 1) else focus
+        val plainState = rememberLazyGridState()
+        val loopState = androidx.compose.runtime.remember(looping) {
+            if (looping) androidx.compose.foundation.lazy.grid.LazyGridState(((focusItem / cols) - 1).coerceAtLeast(0) * cols) else null
+        }
+        val state = loopState ?: plainState
         // Keep the selection in view, a row of context above it.
-        LaunchedEffect(focus, cols) {
+        LaunchedEffect(focusItem, cols) {
             val visible = state.layoutInfo.visibleItemsInfo
-            val inView = visible.any { it.index == focus } && visible.firstOrNull()?.index != focus && (visible.lastOrNull()?.index ?: -1) - focus >= cols
-            if (!inView) runCatching { state.animateScrollToItem(((focus / cols) - 1).coerceAtLeast(0) * cols) }
+            val inView = visible.any { it.index == focusItem } && visible.firstOrNull()?.index != focusItem && (visible.lastOrNull()?.index ?: -1) - focusItem >= cols
+            val target = ((focusItem / cols) - 1).coerceAtLeast(0) * cols
+            // Update 156: going round, a long way (a new category) jumps instead of racing over the copies.
+            if (!inView) runCatching {
+                if (looping && kotlin.math.abs(state.firstVisibleItemIndex - target) > cols * 8) state.scrollToItem(target)
+                else state.animateScrollToItem(target)
+            }
         }
         val keys = androidx.compose.runtime.remember(games) { gameKeys(games) }
         LazyVerticalGrid(
@@ -146,9 +170,11 @@ internal fun HomeGameGrid(
             // Room for the glow / bolts round the edge cards.
             contentPadding = PaddingValues(12.dp)
         ) {
-            items(games.size, key = { keys[it] }) { i ->
+            // Update 156: going round, item [vi] is game vi mod n (each copy with its own key).
+            items(count, key = { if (looping) "${keys[it.mod(n)]}#${it / n}" else keys[it] }) { vi ->
+                val i = if (looping) vi.mod(n) else vi
                 val g = games[i]
-                val on = i == focus
+                val on = vi == focusItem
                 val k = g.stableKey
                 val o = overrides[k]
                 val a = art[k]
@@ -203,7 +229,9 @@ internal fun HomeGameGrid(
                             .border(if (outlined) 2.5.dp else 0.dp, if (outlined) ShelfTheme.accent else Color.Transparent, shape)
                             .clip(shape)
                             .background(placeholderBrush(g.hue)))
-                            .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
+                            // Update 156: a tapped copy is where the selection goes (going round; its place counted from the
+                            // middle copy, as rememberLoopPlace counts).
+                            .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (looping) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } }
                     ) {
                         val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC) else null
                         val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null

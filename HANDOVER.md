@@ -256,6 +256,15 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 156
+- **Endless:** `loopsOnItsOwn()` is true for every layout (no `EdgeBump.wrap` any more). New helpers: LoopPlaces.kt
+  (`rememberLoopPlace`, `LoopTap`), StyleLoopSteps.kt (`StyleLoop`, `rememberWalkedPlace` — Library / Timeline / Channel),
+  LiveLoop.kt (Live tiles pages). HomeGameGrid / TileHomeRow get `loopTick` / `loopStep` from LauncherScreen.
+- **Art requests:** StyleArtRequests.kt (`styleArtRequest` fixed square px = half the short side, 360–720, key
+  `url|style|px`, thumb placeholder) used by `StyleArt`, GameCarousel covers / wide art and their warm-ups.
+- **CategoryWarmup.kt:** neighbouring categories' `visibleGames` + thumbs + first card covers, 1.2 s after landing.
+- **Open:** Grid ▲ ▼ don't go round; swipes at the ends on Tiles / Stacks / Console stack.
+
 ## State after update 155
 - **GestureHint.systemOwnsNav** (Retroid + root service): `SystemBars.apply` doesn't hide the navigation bar
   (`windowHidesNav`); the force layer (global `hide_nav_bar`) does. On the RP Classic both together showed the pill.

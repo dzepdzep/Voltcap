@@ -13,14 +13,11 @@ import com.shelf.launcher.data.HomeLayout
  */
 
 /** Layouts whose row goes round on its own (no "comes back in from the other side" over the whole layout). */
-internal fun loopsOnItsOwn(layout: HomeLayout): Boolean = when (layout) {
-    HomeLayout.CLASSIC, HomeLayout.SIDE, HomeLayout.DASH, HomeLayout.BAR, HomeLayout.SPOT, HomeLayout.HUB, HomeLayout.CIRCUIT,
-    HomeLayout.RESUME, HomeLayout.CROSS, HomeLayout.HERO -> true
-    // Update 135: the Grid's carousel look and the TV room's carousel go round on their own too (GameCarousel).
-    HomeLayout.GRID -> HomeLayout.GRID.name in com.shelf.launcher.data.Features.carouselLayouts.value
-    HomeLayout.TV -> com.shelf.launcher.data.Features.tvRoomGames.value == TvRoom.Games.CAROUSEL
-    else -> false
-}
+// Update 156: every layout now goes round on its own (the Grid's and TV room's every look, Tiles, Game shelf, Case stacks,
+// Console stack, Library, Timeline, Channel grid, Live tiles, Arcade, Disc station joined): going past the end is one
+// more step, never the whole layout coming back in from the other side (it looked like the layout reloading).
+@Suppress("UNUSED_PARAMETER")
+internal fun loopsOnItsOwn(layout: HomeLayout): Boolean = true
 
 /** Copies of the games a looping lazy row holds; the row starts in the middle one. */
 internal const val LOOP_COPIES = 1000

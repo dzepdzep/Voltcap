@@ -91,10 +91,12 @@ internal fun StyleDiscStation(c: StyleCtx, modifier: Modifier = Modifier) {
         StyleNav.side = emptyList()
         StyleNav.top = emptyList()
         // ▼: ◀ previous, Play, ▶ next, Details.
+        // Update 156: with Endless on, ◀ on the first game goes round to the last one and ▶ on the last to the first.
+        val round = loopRowOn(c)
         StyleNav.bar = if (g == null || infoOff) emptyList() else listOf(
-            { if (c.focus > 0) c.actions.select(c.focus - 1) },
+            { if (c.focus > 0) c.actions.select(c.focus - 1) else if (round) { DiscBarTurn.went(c.games.size - 1, -1); c.actions.select(c.games.size - 1) } },
             { c.actions.play(g) },
-            { if (c.focus < c.games.size - 1) c.actions.select(c.focus + 1) },
+            { if (c.focus < c.games.size - 1) c.actions.select(c.focus + 1) else if (round) { DiscBarTurn.went(0, 1); c.actions.select(0) } },
             { c.actions.open() }
         )
     }
@@ -162,6 +164,25 @@ private fun DiscStation(c: StyleCtx, g: Game, infoOff: Boolean, modifier: Modifi
 private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier) {
     val open by rememberUpdatedState(c.actions.open)
     val shape = RoundedCornerShape(if (compact) 12.dp else 16.dp)
+    // Update 156: with Endless on, which way the last move went, from the place counted on round the ends
+    // (EndlessRow.kt): going round from the last game to the first loads the next disc from the right like any step
+    // forward (comparing the places in the list, it came in from the left). A new game at the same place (another
+    // category): from the right, as before.
+    val loopOn = loopRowOn(c)
+    val vf = rememberLoopFocus(c)
+    // [last place, way (1 / -1), 1 = a move along the same list (else as before: by the places in the list)]
+    val turn = remember { intArrayOf(vf, 1, 0) }
+    val turnList = remember { arrayOf<Any?>(c.games) }
+    // Update 156 (review): another list (a category change) slides as it did before Endless; the bar's ◀ ▶ going
+    // round say which way they went (with two games the place alone can't tell).
+    if (turnList[0] !== c.games) turn[2] = 0
+    else if (vf != turn[0]) {
+        turn[1] = if (DiscBarTurn.to == c.focus && DiscBarTurn.dir != 0) DiscBarTurn.dir else if (vf > turn[0]) 1 else -1
+        turn[2] = 1
+    }
+    if (vf != turn[0] || turnList[0] !== c.games) DiscBarTurn.dir = 0
+    turn[0] = vf
+    turnList[0] = c.games
     // (Update 149: no dark panel behind the disc — the game's own art, softly blurred (Disc station › Blur behind the
     // disc, 5 % by default), fills the player instead.)
     BoxWithConstraints(modifier.clip(shape)) {
@@ -233,7 +254,9 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
                 targetState = g,
                 contentKey = { it.stableKey },
                 transitionSpec = {
-                    val dir = if (c.games.indexOfFirst { it.stableKey == targetState.stableKey } >= c.games.indexOfFirst { it.stableKey == initialState.stableKey }) 1 else -1
+                    // (Update 156: with Endless on, the way the move went, see [turn].)
+                    val dir = if (loopOn && turn[2] == 1) turn[1]
+                    else if (c.games.indexOfFirst { it.stableKey == targetState.stableKey } >= c.games.indexOfFirst { it.stableKey == initialState.stableKey }) 1 else -1
                     (slideInHorizontally(tween(420, delayMillis = 140, easing = FastOutSlowInEasing)) { w -> w * dir } + fadeIn(tween(260, delayMillis = 140))) togetherWith
                         (slideOutVertically(tween(300, easing = FastOutSlowInEasing)) { h -> h / 2 } + fadeOut(tween(260)))
                 },
@@ -311,6 +334,20 @@ private fun stationPick(platform: String): MediaPick =
 /** Update 151: how much of its square the disc fills (a GameCube disc is drawn at its real, smaller size). */
 private fun stationDiscFrac(pick: MediaPick, bigGc: Boolean): Float =
     if (pick.shell == MediaShell.MINI_DISC && !bigGc) 0.7f else 1f
+
+/**
+ * Update 156 (review): the bar's ◀ / ▶ going round with Endless on (first game -> last, last -> first) say which way
+ * they went, so the next disc comes in from the right side even with two games (used once, by DiscPanel).
+ */
+private object DiscBarTurn {
+    @Volatile var to = -1
+    @Volatile var dir = 0
+
+    fun went(to: Int, dir: Int) {
+        this.to = to
+        this.dir = dir
+    }
+}
 
 /** Update 151: a circle [frac] of the box across, in its middle (the disc's outline). */
 private class DiscCircle(private val frac: Float) : androidx.compose.ui.graphics.Shape {

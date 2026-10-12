@@ -166,7 +166,19 @@ internal fun TimelineHistory(c: StyleCtx, data: TimelineData, mode: Features.Tim
     val starts = remember(rows) { IntArray(rows.size) { rows[it].start } }
     SideEffect { TimelineRows.starts = starts }
     val place = data.rank.getOrElse(c.focus) { 0 }
-    val focusRow = timelineRowOf(starts, place)
+    // Update 156: Endless on: the history repeats below its end (and above its start), the place you're on counted
+    // on round, so ▶ on the last game glides on down to the first period like any step into the next one.
+    val n = data.order.size
+    val loop = loopRowOn(c) && n == c.games.size
+    SideEffect { StyleLoop.on = loopRowOn(c) }
+    val tap = remember { LoopTap() }
+    val v = rememberWalkedPlace(place, n, loop, StyleLoop.walked, data, tap)
+    val nRows = rows.size.coerceAtLeast(1)
+    val half = LOOP_COPIES / 2
+    // The rows in the list (every round of the history with Endless), and the one you're in.
+    val total = if (loop) rows.size * LOOP_COPIES else rows.size
+    val focusRow = if (loop) ((half + Math.floorDiv(v, n)) * nRows + timelineRowOf(starts, v.mod(n))).coerceIn(0, total - 1)
+        else timelineRowOf(starts, place)
     val keys = remember(c.games) { gameKeys(c.games) }
     val text = remember { TimelineText() }
     text.refresh(System.currentTimeMillis())
@@ -175,11 +187,13 @@ internal fun TimelineHistory(c: StyleCtx, data: TimelineData, mode: Features.Tim
     val inGames = StyleNav.zone == StyleNav.Zone.GAMES
     val list = rememberLazyListState(initialFirstVisibleItemIndex = focusRow)
     // The rows the list last moved for: a new category / order jumps straight to the row instead of gliding.
-    val shownRows = remember { arrayOfNulls<Any>(1) }
-    LaunchedEffect(focusRow, rows) {
-        val fresh = shownRows[0] !== rows
+    val shownRows = remember { arrayOfNulls<Any>(2) }
+    LaunchedEffect(focusRow, rows, loop) {
+        // (Update 156: Endless switched on or off also jumps straight there: the list's rows are other ones then.)
+        val fresh = shownRows[0] !== rows || shownRows.getOrNull(1) != loop
         shownRows[0] = rows
-        if (focusRow !in rows.indices) return@LaunchedEffect
+        shownRows[1] = loop
+        if (focusRow !in 0 until total) return@LaunchedEffect
         if (fresh || abs(focusRow - list.firstVisibleItemIndex) > 3) list.scrollToItem(focusRow)
         else if (list.firstVisibleItemIndex != focusRow || list.firstVisibleItemScrollOffset != 0) list.animateScrollToItem(focusRow)
     }
@@ -196,12 +210,16 @@ internal fun TimelineHistory(c: StyleCtx, data: TimelineData, mode: Features.Tim
             gutter = if (compact) 20.dp else 26.dp, gap = if (compact) 10.dp else 14.dp
         )
         LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
-            items(rows.size, key = { rows[it].key }) { r ->
-                val row = rows[r]
+            // Update 156: with Endless, item r is period r % rows of round r / rows (the time line runs on through them all).
+            items(total, key = { if (loop) "${rows[it % nRows].key}#${it / nRows}" else rows[it].key }) { r ->
+                val row = rows[if (loop) r % nRows else r]
+                val round = r / nRows - half
                 HistoryRow(
-                    c, data, mode, row, first = r == 0, last = r == rows.size - 1, on = r == focusRow,
+                    c, data, mode, row, first = !loop && r == 0, last = !loop && r == rows.size - 1, on = r == focusRow,
                     place = place, keys = keys, text = text, dates = dates, inGames = inGames,
-                    geo = geo, accent = accent, compact = compact
+                    geo = geo, accent = accent, compact = compact,
+                    // A tap picks the round that was tapped (so the list doesn't run off to another one).
+                    onPick = if (loop) ({ p -> tap.virtual = round * n + p }) else null
                 )
             }
         }
@@ -213,7 +231,9 @@ internal fun TimelineHistory(c: StyleCtx, data: TimelineData, mode: Features.Tim
 private fun HistoryRow(
     c: StyleCtx, data: TimelineData, mode: Features.TimelineBy, row: HistoryPeriod, first: Boolean, last: Boolean, on: Boolean,
     place: Int, keys: List<String>, text: TimelineText, dates: Boolean, inGames: Boolean,
-    geo: HistoryGeo, accent: Color, compact: Boolean
+    geo: HistoryGeo, accent: Color, compact: Boolean,
+    // Update 156: with Endless, told the place of a game tapped in this row before it is selected.
+    onPick: ((Int) -> Unit)? = null
 ) {
     val glide = Features.rowGlide.state.value
     val col = if (on) (place - row.start).coerceIn(0, (row.size - 1).coerceAtLeast(0)) else 0
@@ -276,7 +296,8 @@ private fun HistoryRow(
                     val here = on && p == place
                     HistoryTile(
                         c, g, real, here = here, sel = here && inGames, big = on, cardW = cardW, cardH = cardH, capW = geo.capW,
-                        date = if (on && (dates || here)) text.date(mode, data.stamp[p]) else null, accent = accent, compact = compact
+                        date = if (on && (dates || here)) text.date(mode, data.stamp[p]) else null, accent = accent, compact = compact,
+                        onPick = if (onPick != null) ({ onPick(p) }) else null // (Update 156)
                     )
                 }
             }
@@ -330,10 +351,13 @@ private fun HistoryHeading(row: HistoryPeriod, on: Boolean, accent: Color, compa
 @Composable
 private fun HistoryTile(
     c: StyleCtx, g: Game, real: Int, here: Boolean, sel: Boolean, big: Boolean, cardW: Dp, cardH: Dp, capW: Dp,
-    date: String?, accent: Color, compact: Boolean
+    date: String?, accent: Color, compact: Boolean,
+    // Update 156: runs before a tap selects the game (Endless: which round was tapped).
+    onPick: (() -> Unit)? = null
 ) {
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
+    val pick by rememberUpdatedState(onPick) // (Update 156)
     val titles = LocalTitleOptions.current
     val glide = Features.rowGlide.state.value
     val grow by animateFloatAsState(
@@ -352,7 +376,7 @@ private fun HistoryTile(
                     scaleX = s; scaleY = s
                     transformOrigin = TransformOrigin(0.5f, 1f)
                 }
-                .pointerInput(real) { detectTapGestures { if (real == GridHome.focus) open() else select(real) } }
+                .pointerInput(real) { detectTapGestures { if (real == GridHome.focus) open() else { pick?.invoke(); select(real) } } } // (Update 156: pick)
         ) {
             StyleArt(c, g, Modifier.fillMaxSize(), focused = sel, fx = pulse, ring = accent)
         }
@@ -413,17 +437,22 @@ internal fun timelineHistoryKey(ctx: StyleKeyCtx): Boolean {
     val p = rank[ctx.focus]
     val r = timelineRowOf(starts, p)
     val col = p - starts[r]
-    fun go(t: Int): Boolean {
+    // Update 156: each step is added up in places along the line ([d]: -1 / +1 going round), so with Endless the
+    // history counts on round instead of racing back to its start.
+    fun go(t: Int, d: Int = t - p): Boolean {
         if (t in order.indices && order[t] != ctx.focus) {
+            StyleLoop.walked += d
             ctx.setFocus(order[t])
             ctx.sound(UiSound.MOVE)
         }
         return ctx.take()
     }
     fun rowEnd(i: Int): Int = if (i + 1 < starts.size) starts[i + 1] else order.size
+    // Update 156: Endless on: ◀ on the first game goes on round to the last, ▶ on the last to the first.
+    val loop = StyleLoop.on && order.size >= 2
     return when (ctx.key) {
-        Key.DirectionLeft -> if (p > 0) go(p - 1) else ctx.take()
-        Key.DirectionRight -> if (p < order.size - 1) go(p + 1) else ctx.take()
+        Key.DirectionLeft -> if (p > 0) go(p - 1) else if (loop) go(order.size - 1, -1) else ctx.take()
+        Key.DirectionRight -> if (p < order.size - 1) go(p + 1) else if (loop) go(0, 1) else ctx.take()
         Key.DirectionUp -> if (r > 0) go((starts[r - 1] + col).coerceAtMost(rowEnd(r - 1) - 1)) else up()
         Key.DirectionDown -> if (r < starts.size - 1) go((starts[r + 1] + col).coerceAtMost(rowEnd(r + 1) - 1)) else ctx.reach(false)
         else -> false

@@ -139,8 +139,13 @@ internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
     val needSpine by rememberUpdatedState(c.actions.needSpine)
     LaunchedEffect(c.focus, games.size) {
         kotlinx.coroutines.delay(150)
+        // (Update 156: with Endless on the stacks go on round the ends, so their spines are looked up too, each once.)
+        val loop = loopRowOn(c)
+        val seen = HashSet<Int>()
         for (i in ((c.focus - STACKS_MAX_SIDE)..(c.focus + STACKS_MAX_SIDE)).sortedBy { abs(it - c.focus) }) {
-            val g = games.getOrNull(i) ?: continue
+            val at = if (loop) i.mod(games.size) else i
+            if (!seen.add(at)) continue
+            val g = games.getOrNull(at) ?: continue
             val list = c.state.physicalMedia[g.stableKey]
             if (list == null || (BoxTexture.spine(list, g.platform) == null && abs(i - c.focus) <= 10)) {
                 needSpine(g)
@@ -258,15 +263,19 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
     val glide = Features.rowGlide.state.value
     val animate = rememberAnimationsEnabled()
     val accent = ShelfTheme.accent
+    // Update 156: with Endless on the games repeat in both stacks and the place you're on counts on (EndlessRow.kt), so
+    // going past the last game to the first slides the next spine out like any step. Off: just the game you're on.
+    val loop = loopRowOn(c)
+    val vFocus = rememberLoopFocus(c)
     // Where the stage is (in games): glides from game to game at the Moving between games speed, so the spine coming out,
     // its turn and its growing all follow one smooth motion (a held D-pad carries on from where it is, no restarts).
-    val pos = remember { Animatable(c.focus.toFloat()) }
+    val pos = remember { Animatable(vFocus.toFloat()) }
     // Update 146: which list the stage was showing, so a new category (other games, maybe with the game you're on near
     // the old place) jumps straight to its game instead of gliding through the new list's spines.
     val firstKey = keys.firstOrNull()
     val shownList = remember { arrayOfNulls<Any>(2) }
-    LaunchedEffect(c.focus, count, firstKey) {
-        val target = c.focus.toFloat()
+    LaunchedEffect(vFocus, count, firstKey) {
+        val target = vFocus.toFloat()
         val newList = shownList[0] != firstKey || shownList[1] != count
         shownList[0] = firstKey
         shownList[1] = count
@@ -348,11 +357,13 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
                 }
             }
         ) {
-            val first = (lo - geo.nSide - 1).coerceAtLeast(0)
-            val last = (lo + geo.nSide + 2).coerceAtMost(count - 1)
+            // (Update 156: on the endless row these are places on it; [real] is the game standing there, one key per copy.)
+            val first = if (loop) lo - geo.nSide - 1 else (lo - geo.nSide - 1).coerceAtLeast(0)
+            val last = if (loop) lo + geo.nSide + 2 else (lo + geo.nSide + 2).coerceAtMost(count - 1)
             val inGames = StyleNav.zone == StyleNav.Zone.GAMES
             for (i in first..last) {
-                key(keys[i]) {
+                val real = if (loop) i.mod(count) else i
+                key(if (loop) "${keys[real]}#${Math.floorDiv(i, count)}" else keys[i]) {
                     // The front only for the game(s) in the middle: the one there, and the one coming in while it glides.
                     val near = i == lo || (between && i == lo + 1)
                     // In the middle the nearer of the two (going / coming) is on top; the stacks behind, the far spines last.
@@ -362,8 +373,9 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
                         // Edge-on exactly in the middle the spine is a sliver: it takes no taps then (the case does).
                         spineTaps = !(i == lo && !between),
                         mirror = mirror && (near || (!lite && dist <= 12) || (lite && dist <= 3)),
-                        focused = i == c.focus && inGames, tap = tap,
-                        modifier = Modifier.zIndex(if (near) 1000f - dist else -dist.toFloat())
+                        focused = i == vFocus && inGames, tap = tap,
+                        modifier = Modifier.zIndex(if (near) 1000f - dist else -dist.toFloat()),
+                        game = real, centre = i == vFocus
                     )
                 }
             }
@@ -382,9 +394,12 @@ private fun stacksCaseLook(type: CardArtType): Boolean =
 @Composable
 private fun StacksItem(
     c: StyleCtx, i: Int, geo: StacksGeo, pos: () -> Float, near: Boolean, spineTaps: Boolean, mirror: Boolean,
-    focused: Boolean, tap: (Int) -> Unit, modifier: Modifier
+    focused: Boolean, tap: (Int) -> Unit, modifier: Modifier,
+    // Update 156: [i] is the place on the stage (it keeps counting on the endless row), [game] the game standing there,
+    // [centre] whether it is the place you're on.
+    game: Int = i, centre: Boolean = i == c.focus
 ) {
-    val g = c.games[i]
+    val g = c.games[game]
     val onTap by rememberUpdatedState(tap)
     Box(
         modifier
@@ -427,7 +442,7 @@ private fun StacksItem(
                     cameraDistance = 12f * density
                     alpha = if (th < 1f) 0f else 1f
                 }
-                .then(if (spineTaps) Modifier.pointerInput(i) { detectTapGestures { onTap(i) } } else Modifier)
+                .then(if (spineTaps) Modifier.pointerInput(game) { detectTapGestures { onTap(game) } } else Modifier)
         ) {
             GameSpine(g, c.state.physicalMedia[g.stableKey], Modifier.fillMaxSize())
         }
@@ -454,8 +469,8 @@ private fun StacksItem(
                     cameraDistance = 12f * density
                     alpha = if (th > 89f) 0f else 1f
                 }
-                .then(if (i == c.focus) Modifier.focusedCard() else Modifier)
-                .pointerInput(i) { detectTapGestures { onTap(i) } }
+                .then(if (centre) Modifier.focusedCard() else Modifier)
+                .pointerInput(game) { detectTapGestures { onTap(game) } }
         ) {
             StacksFront(c, g, focused, Modifier.fillMaxSize())
         }

@@ -194,11 +194,27 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         }
         val visibleRows = minOf(plan.rows, ((areaH / plan.rowH) + 0.01f).toInt().coerceAtLeast(1))
         val focusRow = plan.slots.getOrNull(c.focus)?.row ?: 0
+        // Update 156: with Endless on and more shelves than fit, the bookcase goes on round: after the last shelf the first
+        // ones come again, and the shelf you're on is counted on (its "lap" round the bookcase, from EndlessRow.kt's place
+        // on the endless row), so going past the last game to the first scrolls on by one shelf like any step instead of
+        // racing back to the top. When every shelf fits there's nothing to scroll: going round is just the next pull-out.
+        val loopV = rememberLoopFocus(c)
+        val scrolls = loopRowOn(c) && plan.rows > visibleRows
+        val lap = if (scrolls) Math.floorDiv(loopV, games.size) else 0
+        val focusVRow = focusRow + lap * plan.rows
         // Scrolls so the shelf you're on stays in view (in the middle once there are more shelves than fit).
         val scroll = remember { Animatable(0f) }
-        LaunchedEffect(focusRow, plan.rows, visibleRows) {
-            val target = (focusRow - (visibleRows - 1) / 2f).coerceIn(0f, (plan.rows - visibleRows).toFloat().coerceAtLeast(0f))
-            scroll.animateTo(target, tween(320, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)))
+        // (Update 156: whether the bookcase was going round the last time it moved, so only that can jump; without Endless
+        // it glides as it always did.)
+        val wentRound = remember { booleanArrayOf(false) }
+        LaunchedEffect(focusVRow, plan.rows, visibleRows, scrolls) {
+            val target = if (scrolls) focusVRow - (visibleRows - 1) / 2f
+                else (focusRow - (visibleRows - 1) / 2f).coerceIn(0f, (plan.rows - visibleRows).toFloat().coerceAtLeast(0f))
+            // (Update 156: a long way round, e.g. Endless switched on / off after a few laps, jumps instead of racing.)
+            val jump = kotlin.math.abs(scroll.value - target) > plan.rows && (scrolls || wentRound[0])
+            wentRound[0] = scrolls
+            if (jump) scroll.snapTo(target)
+            else scroll.animateTo(target, tween(320, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)))
         }
         // Few shelves: the bookcase sits in the middle of the room.
         val usedH = plan.rowH * visibleRows
@@ -218,10 +234,14 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         val back = remember { Animatable(0f) }
         var backIndex by remember { mutableStateOf(-1) }
         var shownIndex by remember { mutableStateOf(-1) }
+        // Update 156: which lap of the endless bookcase the game coming out / going back is on (always 0 without it).
+        var backLap by remember { mutableStateOf(0) }
+        var shownLap by remember { mutableStateOf(0) }
         LaunchedEffect(c.focus, games) {
             val leaving = shownIndex
             if (leaving >= 0 && leaving != c.focus && leaving in games.indices && pull.value > 0f) {
                 backIndex = leaving
+                backLap = shownLap
                 back.snapTo(pull.value)
                 launch { back.animateTo(0f, tween(320, easing = FastOutSlowInEasing)); backIndex = -1 }
             } else {
@@ -230,20 +250,27 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 back.snapTo(0f)
             }
             shownIndex = c.focus
+            shownLap = lap
             pull.snapTo(0f)
             kotlinx.coroutines.delay(40)
             pull.animateTo(1f, tween(620, easing = LinearEasing))
         }
-        /** How far [i] is pulled out right now. */
-        fun pulled(i: Int): Float = when (i) { c.focus -> pull.value; backIndex -> back.value; else -> 0f }
+        // Update 156: the shelf (counted on round the endless bookcase) the game going back stands on.
+        val backVRow = (plan.slots.getOrNull(backIndex)?.row ?: -1) + backLap * plan.rows
+        /** How far [i], on shelf [r] (counted on round the endless bookcase), is pulled out right now. */
+        fun pulled(i: Int, r: Int): Float = when {
+            i == c.focus && r == focusVRow -> pull.value
+            i == backIndex && r == backVRow -> back.value
+            else -> 0f
+        }
         // Update 136: the games either side make room for the one pulled out (half its front's width each way), so its
         // front no longer hides the spines next to it; they close up again as it goes back.
         val sideOut = Features.shelfPulled.state.value == Features.ShelfPulled.SIDE
-        fun makeRoom(i: Int, from: Int, p: Float): Dp {
+        // (Update 156: [r] / [fromRow] are the shelves counted on round the endless bookcase; without it, the shelves.)
+        fun makeRoom(i: Int, r: Int, from: Int, fromRow: Int, p: Float): Dp {
             if (from !in games.indices || i == from || p <= 0f) return 0.dp
             val sf = plan.slots.getOrNull(from) ?: return 0.dp
-            val si = plan.slots.getOrNull(i) ?: return 0.dp
-            if (si.row != sf.row) return 0.dp
+            if (plan.slots.getOrNull(i) == null || r != fromRow) return 0.dp
             val bigW = (plan.rowH * 0.9f).coerceAtMost(areaH * 0.7f) * pulledAspect(games[from].platform, sideOut)
             val push = ((bigW - sf.w) / 2 + 6.dp).coerceAtLeast(0.dp) * shelfFront(p)
             return if (i < from) -push else push
@@ -255,11 +282,13 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
             // a scroll no longer rebuilds every shelf and spine on every frame; only a new shelf coming into view does.
             val firstRow by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.floor(scroll.value).toInt() - 1 } }
             for (r in firstRow..(firstRow + visibleRows + 2)) {
-                if (r < 0 || r >= plan.rows) continue
-                val rowLeft = ((areaW - plan.rowW[r]) / 2).coerceAtLeast(0.dp)
+                if (!scrolls && (r < 0 || r >= plan.rows)) continue
+                // Update 156: [r] counts on round the endless bookcase; [pr] is the shelf of the plan it shows.
+                val pr = if (scrolls) r.mod(plan.rows) else r
+                val rowLeft = ((areaW - plan.rowW[pr]) / 2).coerceAtLeast(0.dp)
                 key(r) {
                 ShelfBoard(look, Modifier.offset { IntOffset(0, (top + plan.rowH * (r - scroll.value)).roundToPx()) }.fillMaxWidth().height(plan.rowH))
-                for (i in slotsByRow[r]) {
+                for (i in slotsByRow[pr]) {
                     val s = plan.slots[i]
                     val g = games[i]
                     key(g.stableKey) {
@@ -270,8 +299,8 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                 // Pulled out: it slides up out of its place; a spine then turns away as the front comes round,
                                 // a front / turned case hands over to the pulled-out one as that comes forward.
                                 .graphicsLayer {
-                                    val pv = pulled(i)
-                                    translationX = (makeRoom(i, c.focus, pull.value) + makeRoom(i, backIndex, back.value)).toPx()
+                                    val pv = pulled(i, r)
+                                    translationX = (makeRoom(i, r, c.focus, focusVRow, pull.value) + makeRoom(i, r, backIndex, backVRow, back.value)).toPx()
                                     if (pv > 0f) {
                                         translationY = -size.height * PULL_LIFT * shelfSlide(pv)
                                         if (stand == Features.ShelfStand.SPINES) {
@@ -298,7 +327,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
 
             // The pulled-out game(s), in front of everything: from the raised spine's place round to its front, then it bobs.
             @Composable
-            fun Pulled(index: Int, progress: () -> Float, resting: Boolean) {
+            fun Pulled(index: Int, progress: () -> Float, resting: Boolean, vrow: Int) {
                 // (Update 130: read here, so the pull-out's animation redraws only the game coming out, not the whole shelf.)
                 val p = progress()
                 val s = plan.slots.getOrNull(index) ?: return
@@ -306,7 +335,8 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 if (s.row !in 0 until plan.rows) return
                 val turn = shelfFront(p)
                 if (turn <= 0f) return
-                val rowTop = top + plan.rowH * (s.row - scroll.value)
+                // (Update 156: [vrow] is its shelf counted on round the endless bookcase; without it, its own shelf.)
+                val rowTop = top + plan.rowH * (vrow - scroll.value)
                 val rowLeft = ((areaW - plan.rowW[s.row]) / 2).coerceAtLeast(0.dp)
                 val side = Features.shelfPulled.state.value == Features.ShelfPulled.SIDE
                 val frontAspect = pulledAspect(g.platform, side)
@@ -357,7 +387,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
             }
             for (idx in shown) key(games[idx].stableKey) {
                 val on = idx == c.focus
-                Pulled(idx, if (on) ({ pull.value }) else ({ back.value }), resting = on)
+                Pulled(idx, if (on) ({ pull.value }) else ({ back.value }), resting = on, vrow = if (on) focusVRow else backVRow)
             }
         }
 

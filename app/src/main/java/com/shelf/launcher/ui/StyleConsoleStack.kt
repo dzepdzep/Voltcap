@@ -362,10 +362,15 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
     val wanted = Features.consoleStackGames.state.value.coerceIn(3, 9)
     // The category you're in (the stop alone is -1 for every list outside the cycle, so its name too).
     val catKey = "${c.stop}|${c.categoryLabel}"
-    val pos = remember { Animatable(c.focus.toFloat()) }
+    // Update 156: with Endless on the games repeat round the row and the place you're on counts on (EndlessRow.kt), so
+    // going past the last game to the first slides one game on, like any step. Off: just the game you're on.
+    val loop = loopRowOn(c)
+    val vFocus = rememberLoopFocus(c)
+    val latestV by rememberUpdatedState(vFocus)
+    val pos = remember { Animatable(vFocus.toFloat()) }
     val lastCat = remember { arrayOf<Any?>(catKey) }
-    LaunchedEffect(c.focus, catKey) {
-        val t = c.focus.toFloat()
+    LaunchedEffect(vFocus, catKey) {
+        val t = vFocus.toFloat()
         if (lastCat[0] != catKey) {
             // A new console: its games are placed at once (they slide out of the slot instead, below).
             lastCat[0] = catKey
@@ -427,10 +432,11 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
         val dropPx = with(density) { 5.dp.toPx() }
         val anchor0Px = with(density) { (8.dp + bigW / 2).toPx() }
         val anchorNearPx = with(density) { (gap + smallW).toPx() }
-        val focusT = c.focus
-        val windowLo = (focusT - before).coerceAtLeast(0)
-        val lo = (windowLo - 4).coerceAtLeast(0)
-        val hi = (windowLo + shown + 3).coerceAtMost(count - 1)
+        // (Update 156: on the endless row these are places on it, not games; [before] games always stand before yours.)
+        val focusT = vFocus
+        val windowLo = if (loop) focusT - before else (focusT - before).coerceAtLeast(0)
+        val lo = if (loop) windowLo - 4 else (windowLo - 4).coerceAtLeast(0)
+        val hi = if (loop) windowLo + shown + 3 else (windowLo + shown + 3).coerceAtMost(count - 1)
         // Caption over the row: the category and how many games it has (where there's room above the big card).
         val captionY = centreY - bigH / 2 - 26.dp
         if (captionY >= 0.dp) Row(
@@ -448,8 +454,10 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
             )
         }
         for (i in lo..hi) {
-            val g = c.games[i]
-            key(keys[i]) {
+            // Update 156: [i] is the place on the row, [real] the game standing there (one key per copy).
+            val real = if (loop) i.mod(count) else i
+            val g = c.games[real]
+            key(if (loop) "${keys[real]}#${Math.floorDiv(i, count)}" else keys[i]) {
                 val on = i == focusT
                 val sel = on && inGames
                 val slot = (i - windowLo).coerceAtLeast(0)
@@ -465,7 +473,8 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
                             val grow = (1f - ad).coerceIn(0f, 1f)
                             val s = smallRatio + (1f - smallRatio) * grow
                             val along = if (ad <= 1f) d * nearPx else sign(d) * (nearPx + (ad - 1f) * farPx)
-                            val b = p.coerceIn(0f, before.toFloat())
+                            // (Update 156: the endless row always has games before yours, so the big card stays put.)
+                            val b = if (loop) before.toFloat() else p.coerceIn(0f, before.toFloat())
                             val anchor = anchor0Px + if (b <= 1f) anchorNearPx * b else anchorNearPx + farPx * (b - 1f)
                             val targetX = anchor + along - bigWPx / 2f
                             // Out of the slot: from just left of the row (hidden behind its edge), one after another.
@@ -478,7 +487,7 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
                             scaleX = s
                             scaleY = s
                             // Only [shown] games: the ones past either end fade away as the row moves.
-                            val loF = (p - before).coerceAtLeast(0f)
+                            val loF = if (loop) p - before else (p - before).coerceAtLeast(0f)
                             val hiF = loF + shown - 1
                             val win = when {
                                 i < loF -> 1f - (loF - i)
@@ -490,13 +499,14 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
                         // (The game window grows out of the card you're on, like on the other layouts. After the layer, so
                         // it reports where the card really is on screen, not where it sits before it's moved into the row.)
                         .then(if (on) Modifier.focusedCard() else Modifier)
-                        .pointerInput(i) {
+                        .pointerInput(i, real, loop) {
                             detectTapGestures {
                                 // A faded-out game past the end of the row isn't there to tap.
-                                val f = GridHome.focus
-                                val wLo = (f - latestBefore).coerceAtLeast(0)
+                                // (Update 156: on the endless row the window is counted in places on it.)
+                                val f = if (loop) latestV else GridHome.focus
+                                val wLo = if (loop) f - latestBefore else (f - latestBefore).coerceAtLeast(0)
                                 if (i in wLo until wLo + latestShown) {
-                                    if (i == f) open() else select(i)
+                                    if (i == f || real == GridHome.focus) open() else select(real)
                                 }
                             }
                         }
