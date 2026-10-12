@@ -4,6 +4,54 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (152): smoother moving with animated covers, Save Vault label, Timeline and Disc station touches
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (6): `src_copy\MainActivity.kt`,
+`src_copy\data\AnimatedArt.kt`, `src_copy\ui\DiscStationFx.kt`, `src_copy\ui\PowerSaver.kt`, `src_copy\ui\SaveExplorer.kt`,
+`src_copy\ui\StyleTimeline.kt`.
+
+**Files to delete:** none.
+
+### Tested 151 on the Retroid Pocket Classic
+- **3D cases while scrolling:** no empty cases any more (recorded frame by frame in the 3D models look); PS2 games stand
+  as their 3D case, the soft shadow and the slow turn show.
+- **Save Vault:** Game Boy Color, GameCube, N64, PSP and Wii saves from your Odin 2 now show (14 games; the first look
+  can show the old list for a few seconds while Drive is read).
+- **Side menu:** the first game is reachable. **Timeline:** the new vertical history works. **Disc station:** the blurred
+  art behind the disc, glow ring and panel behind the text all show (one game's own picture is simply very dark).
+- **Why moving through games lags:** measured with the system's frame stats and a CPU profile. Two causes:
+  1. **The debug build.** Over 40 % of the screen's own thread was Android running the app's code without compiling it
+     (a debug build is made for debugging, not speed). The release build (`installRelease`) is compiled and optimised.
+     Both are signed with your release key, so it installs over the debug one and keeps everything.
+  2. **Animated covers** took most of a CPU core and the render thread, even with nothing moving.
+
+### What changed
+- **Animated covers rest while you move** and start again a moment after you stop; after 3 minutes without input they
+  stop until the next press (they took most of a CPU core on the Pocket Classic).
+- **Save Vault:** a save that's only on Google Drive (from another handheld) says "on Google Drive, from Odin2 Portal"
+  instead of "on this device".
+- **Timeline:** a soft shade from the left, so headings, names and dates read over a bright background picture.
+- **Disc station:** the logo above the disc is the big (SteamGridDB) logo the hero layouts use, not a small square
+  picture.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`. Your prefs on the Pocket Classic were backed up and put back after testing.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 152: animated covers rest while moving, save vault label, timeline shade, disc station logo"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 12 Oct 2026 (151): 3D pieces with depth, "throw it in" when a game starts, Save Vault matching, a new Timeline, many layout fixes
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
@@ -42,8 +90,9 @@ All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfL
 - **Achievements:** the trophy count works in all four corners (R1 tile and Settings); a small divider between the bar
   and "0 / 69". Achievement lists open each achievement's comments by themselves (Settings › Achievements ›
   Achievement views › **Show comments**, and the Comments chip in the list).
-- **Video previews on by default** for a new setup (switch: Settings › Home › Extras on the home screen › Video previews,
-  also Settings › Audio › Video previews): the clip plays over the game's background picture when it has one.
+- **Video previews on by default**, and switched on once for you too (turning them off afterwards stays off):
+  Settings › Home › Extras on the home screen › Video previews, also Settings › Audio › Video previews. On the Hero
+  carousel the clip now plays over the game's background picture.
 - **Save Vault:** text fits on the Pocket Classic; saves are matched to their games far better (core-name prefixes like
   "Gambatte", region and tag suffixes, "POKéMON COLOSSEUM" accents, GameCube / Wii IDs, saves only on Drive); saves that
   match no game show under **Other saves**; without Google Drive connected it just says so, with a Connect button.

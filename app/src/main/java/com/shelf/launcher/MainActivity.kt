@@ -263,6 +263,14 @@ class MainActivity : ComponentActivity() {
     // button legend can follow the handheld's own setting (SystemButtonLayout).
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         com.shelf.launcher.ui.HomeIdle.poke()
+        // Update 152: moving through games: animated covers hold still for a moment (AnimatedArt.onMove).
+        if (event.action == android.view.KeyEvent.ACTION_DOWN && when (event.keyCode) {
+                android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
+                android.view.KeyEvent.KEYCODE_DPAD_UP, android.view.KeyEvent.KEYCODE_DPAD_DOWN,
+                android.view.KeyEvent.KEYCODE_BUTTON_L1, android.view.KeyEvent.KEYCODE_BUTTON_R1,
+                android.view.KeyEvent.KEYCODE_BUTTON_L2, android.view.KeyEvent.KEYCODE_BUTTON_R2 -> true
+                else -> false
+            }) com.shelf.launcher.data.AnimatedArt.onMove()
         runCatching { com.shelf.launcher.data.SystemButtonLayout.observe(this, event) }
         return super.dispatchKeyEvent(event)
     }
@@ -270,6 +278,7 @@ class MainActivity : ComponentActivity() {
     // Any touch or stick movement also wakes the home screen's animations (see HomeIdle).
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
         com.shelf.launcher.ui.HomeIdle.poke()
+        if (ev.actionMasked == android.view.MotionEvent.ACTION_MOVE) com.shelf.launcher.data.AnimatedArt.onMove() // (Update 152)
         return super.dispatchTouchEvent(ev)
     }
 

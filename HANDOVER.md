@@ -256,6 +256,16 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 152
+- **Performance (measured on the RP Classic, carousel in Grid):** debug build: 50th-percentile frame 50–77 ms, about 43 % of
+  the main thread in the ART interpreter (debuggable). Use `installRelease` for daily use (debug and release share the
+  release key, same package, so they install over each other). `run-as` only works on the debug build: install debug for
+  test sessions that edit prefs.
+- **AnimatedArt:** decoded AnimatedImageDrawables are registered (weak); `onMove()` (from MainActivity key / touch) stops the
+  running ones and restarts them 450 ms after the last move; `setSleeping` from HomeIdle deep (3 min).
+- **Open:** Side menu "random folder icons" still not reproduced (All apps shows empty icon squares for a moment while the
+  icons load — maybe that). Start-game throw not tried on the device (it would have started a game).
+
 ## State after update 151
 - **3D:** `Models3D.idFor` gives disc consoles their CASES model (`modelDiscAsCart` keeps the custom cartridge); `CaseArt(models3d = false)` → case looks flat. `Model3DArt(life = true)` → `Model3DLive` (Models3DLife.kt: shadow, sheen, ±20° turn between pre-rendered angles, `modelTurn`, `modelReflect`). Composite cache keyed by the cover's address (`Models3D.noteSource` from `rememberSoftBitmap`, `cachedFor`), and no coverless composite while the cover loads.
 - **Throw:** `LaunchThrow.kt` overlay from `startGame` in LauncherScreen (`Features.launchThrow`); `DiscCase3D.kt` (`discCase3d`).

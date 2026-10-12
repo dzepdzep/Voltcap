@@ -108,7 +108,9 @@ internal fun discTextStyle(): TextStyle =
 @Composable
 internal fun DiscTitleArt(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier) {
     val titles = LocalTitleOptions.current
-    val logo = c.logo(g)
+    // Update 152: the big logo the hero layouts use (SteamGridDB's wide one when there is one): the scraped logo was
+    // sometimes a small square picture, lost above the disc.
+    val logo = bigLogo(g, c.state) ?: c.logo(g)
     var failed by remember(logo) { mutableStateOf(false) }
     Box(modifier, contentAlignment = Alignment.Center) {
         if (logo != null && !failed) {

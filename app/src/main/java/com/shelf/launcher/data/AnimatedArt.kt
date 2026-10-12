@@ -33,6 +33,53 @@ object AnimatedArt {
     /** Request parameter: keep this picture still even with Animated artwork on (a game set to "Still"). */
     const val PARAM_STILL = "voltcap.still"
 
+    // ---- Update 152: moving pictures rest while you move, and after a few minutes without input ----
+    // Measured on the Retroid Pocket Classic: every playing cover is decoded and uploaded to the GPU frame by frame, on
+    // the same render thread that draws the home screen, so scrolling through animated covers stuttered, and with the
+    // screen left alone they still took most of a CPU core. While you move (and for a moment after) they hold still;
+    // after three minutes without input (HomeIdle.deep) they stop until the next press.
+
+    /** Every animated picture decoded (weak: gone with its card). */
+    private val live = java.util.Collections.newSetFromMap(java.util.WeakHashMap<AnimatedImageDrawable, Boolean>())
+    /** The ones this paused (only these start again). */
+    private val held = ArrayList<java.lang.ref.WeakReference<AnimatedImageDrawable>>()
+    private val main by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
+    private var moving = false
+    private var sleeping = false
+    private val resume = Runnable { moving = false; if (!sleeping) restartHeld() }
+
+    private fun register(d: AnimatedImageDrawable) { synchronized(live) { live += d } }
+
+    /** A step on the D-pad (or a swipe): animated pictures hold still until you've stopped for a moment. Main thread. */
+    fun onMove() {
+        if (!enabled || Build.VERSION.SDK_INT < 28) return
+        if (!moving) { moving = true; pauseAll() }
+        main.removeCallbacks(resume)
+        main.postDelayed(resume, 450L)
+    }
+
+    /** No input for a long while (true) / input again (false). */
+    fun setSleeping(sleep: Boolean) {
+        if (Build.VERSION.SDK_INT < 28) return
+        main.post {
+            if (sleeping == sleep) return@post
+            sleeping = sleep
+            if (sleep) pauseAll() else if (!moving) restartHeld()
+        }
+    }
+
+    @androidx.annotation.RequiresApi(28)
+    private fun pauseAll() {
+        val now = synchronized(live) { live.toList() }
+        now.forEach { d -> if (d.isRunning) { runCatching { d.stop() }; held += java.lang.ref.WeakReference(d) } }
+    }
+
+    @androidx.annotation.RequiresApi(28)
+    private fun restartHeld() {
+        held.forEach { r -> r.get()?.let { runCatching { it.start() } } }
+        held.clear()
+    }
+
     /** A picture that's most likely animated, from its address (SteamGridDB's animated art is GIF / WebP). */
     fun looksAnimated(url: String?): Boolean {
         val u = url?.substringBefore('?')?.lowercase() ?: return false
@@ -92,7 +139,7 @@ object AnimatedArt {
                     }
                 }
             }
-            (drawable as? AnimatedImageDrawable)?.repeatCount = AnimatedImageDrawable.REPEAT_INFINITE
+            (drawable as? AnimatedImageDrawable)?.let { it.repeatCount = AnimatedImageDrawable.REPEAT_INFINITE; register(it) }
             return DecodeResult(drawable, sampled)
         }
     }

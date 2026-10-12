@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -224,7 +225,21 @@ internal fun StyleTimeline(c: StyleCtx, modifier: Modifier = Modifier) {
         StyleNav.top = if (orderOff) emptyList() else listOf({ Features.timelineBy.value = nextTimelineBy(Features.timelineBy.value) })
         StyleNav.topStart = 0
     }
-    BoxWithConstraints(modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
+    // Update 152: a soft shade from the left, so the headings, names and dates read over a bright, busy background
+    // picture (on the Pocket Classic they were lost in it); it fades out before the middle.
+    BoxWithConstraints(
+        modifier
+            .drawBehind {
+                drawRect(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        0f to androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.55f),
+                        0.45f to androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.28f),
+                        0.8f to androidx.compose.ui.graphics.Color.Transparent
+                    )
+                )
+            }
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+    ) {
         val compact = maxHeight < 380.dp
         Column(Modifier.fillMaxSize()) {
             TimelineHeader(c, mode, compact)

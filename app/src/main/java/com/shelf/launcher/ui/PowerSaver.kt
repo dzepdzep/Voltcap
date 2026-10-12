@@ -45,7 +45,7 @@ object HomeIdle {
         lastInput = SystemClock.elapsedRealtime()
         if (focusHide) focusHide = false
         if (idle) idle = false
-        if (deep) deep = false
+        if (deep) { deep = false; com.shelf.launcher.data.AnimatedArt.setSleeping(false) } // (Update 152)
     }
 
     /** Keeps [idle] / [deep] up to date; runs while the home screen is on screen (one wake-up per step). */
@@ -59,7 +59,8 @@ object HomeIdle {
             }
             val since = SystemClock.elapsedRealtime() - lastInput
             if (since >= IDLE_MS && !idle) idle = true
-            if (since >= DEEP_MS && !deep) deep = true
+            // Update 152: a few minutes without input: animated covers stop too (they kept a CPU core busy).
+            if (since >= DEEP_MS && !deep) { deep = true; com.shelf.launcher.data.AnimatedArt.setSleeping(true) }
             val next = when {
                 since < IDLE_MS -> IDLE_MS - since
                 since < DEEP_MS -> DEEP_MS - since

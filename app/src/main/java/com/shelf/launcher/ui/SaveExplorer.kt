@@ -1268,6 +1268,10 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
     val time = remember { android.text.format.DateFormat.getTimeFormat(context) }
     val last = maxOf(st.lastSuccessAt, capsule?.lastSaved ?: st.updatedAt)
     val synced = st.lastSuccessAt > 0 || st.state != SyncState.PENDING
+    // Update 152: saves that are only on Google Drive (synced from another handheld) said "on this device".
+    val elsewhere = capsule?.saves?.takeIf { it.isNotEmpty() }?.takeIf { list ->
+        list.all { it.where.contains(" · synced from ") || it.kind == com.shelf.launcher.data.SaveCapsules.Kind.DRIVE }
+    }?.let { list -> list.firstNotNullOfOrNull { it.where.substringAfter(" · synced from ", "").takeIf { d -> d.isNotBlank() } } ?: "another device" }
     Row(
         Modifier
             .fillMaxWidth()
@@ -1280,7 +1284,7 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
             Text(gameDisplayName(game.name), color = Color.White, fontSize = 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp), maxFontSize = 15.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
                 com.shelf.launcher.data.ConsoleNames.display(game.platform) + " · " +
-                    (capsule?.saves?.size?.takeIf { it > 0 }?.let { n -> "$n save${if (n == 1) "" else "s"} · " } ?: "") + if (!synced) "on this device" else when (st.state) {
+                    (capsule?.saves?.size?.takeIf { it > 0 }?.let { n -> "$n save${if (n == 1) "" else "s"} · " } ?: "") + if (elsewhere != null) "on Google Drive, from $elsewhere" else if (!synced) "on this device" else when (st.state) {
                     SyncState.SYNCED -> "safe on Google Drive"
                     SyncState.CONFLICT -> "differs on two devices — choose which to keep"
                     SyncState.UPLOADING -> "uploading…"
