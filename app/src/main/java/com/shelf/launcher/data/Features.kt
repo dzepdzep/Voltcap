@@ -871,6 +871,15 @@ object Features {
     val carouselReflect = BoolPref("carousel_reflect", false)
     /** Update 147: the carousel on a dark floor fading into black (on with the 3D case views). */
     val carouselStage = BoolPref("carousel_stage", false)
+    /** Update 148: animated covers move only on the game you're on (the others show their first frame). Off: every game. */
+    val animatedFocusOnly = BoolPref("animated_focus_only", false)
+    /** Update 148: the preview clips saved on the device (ClipStore), up to [clipsMaxMb]. */
+    val clipsOffline = BoolPref("clips_offline", false)
+    val clipsMaxMb = IntPref("clips_max_mb", 1024, 100..8000)
+    /** Update 149: the automatic Drive backup (AutoBackupWorker): how often, with accounts or not, when the last one ran. */
+    val autoBackup = EnumPref("auto_backup", AutoBackupWorker.Every.WEEKLY, AutoBackupWorker.Every.values())
+    val autoBackupAccounts = BoolPref("auto_backup_accounts", true)
+    val autoBackupAt = StringPref("auto_backup_at", "")
     /** Update 134: every carousel game drawn as a real 3D case (cover, spine, edge, lid), whatever the view (always in Arc, Spine wall and Turned row). */
     val carousel3d = BoolPref("carousel_3d", false)
     /**

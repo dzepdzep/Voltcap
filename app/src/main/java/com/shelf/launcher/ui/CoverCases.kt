@@ -246,7 +246,9 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
             // empty strips at its sides, as the Android case had — unless that would cut away more than 15 % of it
             // (a square or wide picture), which is then fitted whole.)
             if (art != null) AsyncImage(
-                art, null, contentScale = FillUnlessMuchCut, alignment = Alignment.Center,
+                // (Update 147: the card's own request — a set size, so a cover already in memory shows in the first frame,
+                // and its small copy while it loads; the case used to go blank for a moment every time it came back on screen.)
+                cardArtModel(art), null, contentScale = FillUnlessMuchCut, alignment = Alignment.Center,
                 modifier = Modifier.fillMaxSize().graphicsLayer {
                     scaleX = pos.zoom; scaleY = pos.zoom
                     translationX = pos.x * size.width * ArtPlace.REACH; translationY = pos.y * size.height * ArtPlace.REACH
@@ -259,11 +261,19 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
 }
 
 /**
+ * Update 147: [art] as a card's image request when it's an address (a set decode size, its small copy as the stand-in,
+ * found in memory at once), else as it is (an app icon bitmap, a file).
+ */
+@Composable
+internal fun cardArtModel(art: Any): Any = if (art is String) rememberCardArtRequest(art, ArtKind.COVER) else art
+
+/**
  * Update 144: fills the box like [ContentScale.Crop] when that cuts at most [MAX_CUT] of the picture, else fits it whole
  * ([ContentScale.Fit]) — a cover in a case window fills it, a square or wide picture isn't cut in half.
+ * (Update 147: up to 30 % — a portrait cover in your wider Android / Steam case windows still had bars at its sides.)
  */
 internal object FillUnlessMuchCut : ContentScale {
-    const val MAX_CUT = 0.15f
+    const val MAX_CUT = 0.30f
     fun scale(srcW: Float, srcH: Float, dstW: Float, dstH: Float): Float {
         if (srcW <= 0f || srcH <= 0f) return 1f
         val sx = dstW / srcW; val sy = dstH / srcH
@@ -385,9 +395,9 @@ internal fun ScanCase(
         Box(Modifier.size(w, h).caseShadow().then(caseModifier).background(CaseArtPlaceholder).then(if (cutLeft > 0f) Modifier.clipToBounds() else Modifier)) {
             // Update 119: the game's cover (usually already loaded) while its case scan comes in — never a dark box first.
             var scanIn by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
-            if (cover != null && !scanIn) AsyncImage(cover, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            if (cover != null && !scanIn) AsyncImage(cardArtModel(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             AsyncImage(
-                scan, null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
+                cardArtModel(scan), null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
                 onSuccess = { scanIn = true }, onError = { onFail() },
                 modifier = if (cutLeft > 0f) Modifier.fillMaxHeight().wrapContentWidth(Alignment.End, unbounded = true).width(w / (1f - cutLeft.coerceIn(0f, 0.5f)))
                 else Modifier.fillMaxSize()

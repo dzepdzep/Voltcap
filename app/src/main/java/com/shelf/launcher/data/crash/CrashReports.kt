@@ -293,6 +293,18 @@ object CrashReports {
     }.getOrDefault("not available")
 
     /** Own process only (`--pid`), best effort: a device may refuse or the lines may have rotated out. */
+    /**
+     * Update 149, for Settings › Diagnostics › Share report: the newest crash report's text (at most [max] characters)
+     * and this run's own recent log, both with personal details taken out. Blocking: call off the main thread.
+     */
+    fun latestReportText(context: Context, max: Int = 8_000): String? = runCatching {
+        val id = latestId(context) ?: return@runCatching null
+        File(File(root(context), id), REPORT).takeIf { it.isFile }?.readText()?.take(max)
+    }.getOrNull()
+
+    fun recentLog(max: Int = 20_000): String? =
+        readLogcat(android.os.Process.myPid())?.let { CrashRedactor.redact(it.takeLast(max)) }
+
     private fun readLogcat(pid: Int): String? = runCatching {
         val process = ProcessBuilder("logcat", "-d", "-t", "500", "--pid=$pid").redirectErrorStream(true).start()
         val out = ByteArrayOutputStream()

@@ -238,6 +238,18 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **First start:** `SettingsShareCard(receiveOnly = true)` under Welcome; the document goes straight to `Backup.applyDocument`, then restart.
 - **Carousel:** `Features.carouselStage` (Dark stage) drawn behind GameCarousel; the case views (`view.cases`) switch Reflection and Dark stage on when picked. SPINE_WALL 72°, TURNED faces the middle.
 
+## State after update 148
+- **Settings jump:** `SettingsJump.pending` (ui/SettingsJump.kt) = a search hit's label; `jumpAnchor(label)` (on SwitchRow, RowChoice, StyleChoice, PercentSlider, SectionLabel, FoldGroup) scrolls it into view and flashes it. While a jump is pending every FoldGroup renders open; the folds around the hit (`LocalFoldKeys`) stay open; a jump that finds nothing gives up after 2 s.
+- **Layout options:** FoldGroups `lo_window`, `lo_bg_names`, `lo_carousel`.
+- **Animated covers:** `animatedArt` defaults to true; `Features.animatedFocusOnly` → GameCard asks `rememberCardArtRequest(…, still = true)` (PARAM_STILL, "|still" in the memory key) for unfocused animated covers.
+- **Clips:** `ClipStore` (filesDir/clips, SHA-1 of the game key, limit `clipsMaxMb`); `Features.clipsOffline`; the view model queues saves (`saveClipLater`, one at a time, paused while playing) and `loadVideoUrl` prefers the saved file ("file://…").
+
+## State after update 149
+- **Auto backup:** `AutoBackupWorker` (12-hourly WorkManager check, runs `Backup.exportToDrive` when `Features.autoBackup` DAILY / WEEKLY has passed since `autoBackupAt`; needs `CloudSync` settings `connected`). Scheduled from the view model's init and when the choice changes (Settings › Backup).
+- **What's new:** `WhatsNew.check` (ui/WhatsNew.kt) compares the installed versionName with prefs "whats_new"; on a change fetches GitHub `releases/tags/v<version>` and shows `WhatsNewDialog` (LauncherScreen, not during first run).
+- **Share report:** `CrashReports.latestReportText` / `recentLog` appended to Diagnostics' report.
+- **Save sync (already there, unchanged):** before a game — resting on it / opening its window fetches its saves from Drive (at most every 3 min, Play never waits); during — SaveWatchWorker uploads changed saves 10 → 20 → 40 → 60 min in (upload only); after — on coming back, that game's saves both ways, then a full sync (PostGameSyncWorker retries offline).
+
 ## Planned next
 - Nothing left from my long list of 10 Oct (130–134 are done). Ask me what's next.
 

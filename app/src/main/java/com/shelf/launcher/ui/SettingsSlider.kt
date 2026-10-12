@@ -59,6 +59,7 @@ internal fun PercentSlider(
     var focused by remember { mutableStateOf(false) }
     Column(
         modifier
+            .then(jumpAnchor(label))
             .fillMaxWidth()
             .onFocusChanged { focused = it.isFocused }
             .onPreviewKeyEvent { event ->

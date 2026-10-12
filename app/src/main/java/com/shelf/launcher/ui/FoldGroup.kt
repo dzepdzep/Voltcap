@@ -37,6 +37,9 @@ private val foldOpen = mutableStateMapOf<String, Boolean>()
 /** Opens the fold with [key] (e.g. when a link jumps straight to it). */
 internal fun openFold(key: String) { foldOpen[key] = true }
 
+/** Update 148: the groups (FoldGroup keys) around a setting, so a search jump that finds it keeps them open. */
+internal val LocalFoldKeys = androidx.compose.runtime.staticCompositionLocalOf { emptyList<String>() }
+
 /**
  * A collapsible group inside a settings page (or any panel): a header row with a chevron (A / tap
  * opens and closes it) and its controls under it. Use it to group related settings into logical
@@ -50,9 +53,11 @@ internal fun FoldGroup(
     startOpen: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val open = foldOpen[key] ?: startOpen
+    // (Update 148: every group shows while a search jump looks for its setting; the ones it's found in stay open.)
+    val open = (foldOpen[key] ?: startOpen) || SettingsJump.pending != null
+    val parents = LocalFoldKeys.current
     val shape = uiRounded(14.dp)
-    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Column(jumpAnchor(title).fillMaxWidth().padding(vertical = 4.dp)) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -80,7 +85,7 @@ internal fun FoldGroup(
         }
         AnimatedVisibility(open, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
             Column(Modifier.fillMaxWidth().padding(top = 8.dp, start = 2.dp, end = 2.dp)) {
-                content()
+                androidx.compose.runtime.CompositionLocalProvider(LocalFoldKeys provides (parents + key)) { content() }
                 Spacer(Modifier.height(4.dp))
             }
         }

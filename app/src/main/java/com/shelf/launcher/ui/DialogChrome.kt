@@ -744,6 +744,7 @@ internal fun SwitchRow(
     val shape = uiRounded(16.dp)
     Row(
         modifier
+            .then(jumpAnchor(title))
             .fillMaxWidth()
             .voltSurface(shape)
             .shelfClickable(shape) { onChange(!checked) }
@@ -926,7 +927,7 @@ internal fun SectionLabel(text: String) {
         fontSize = 13.sp,
         fontWeight = FontWeight.Bold,
         fontFamily = headingFont(),
-        modifier = Modifier.padding(bottom = 4.dp)
+        modifier = jumpAnchor(text).padding(bottom = 4.dp)
     )
 }
 

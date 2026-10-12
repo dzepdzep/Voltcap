@@ -213,6 +213,8 @@ object EverythingScrape {
     }
     @Volatile var run: ((Set<Part>) -> Unit)? = null
     @Volatile var stop: (() -> Unit)? = null
+    /** Update 148: saves every clip already looked up on the device (Save clips on the device turned on). */
+    @Volatile var saveClips: (() -> Unit)? = null
     /** What it's doing now ("Artwork", "Details", "Scans, screenshots & clips") and games done / to do, while it runs. */
     var stage by androidx.compose.runtime.mutableStateOf<String?>(null)
     var progress by androidx.compose.runtime.mutableStateOf<Pair<Int, Int>?>(null)

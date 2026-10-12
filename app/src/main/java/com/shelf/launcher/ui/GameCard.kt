@@ -394,7 +394,7 @@ fun GameCard(
             }
         } else (baseUrl ?: artUrl)?.let { url ->
             AsyncImage(
-                model = rememberCardArtRequest(url, kindOf(url)),
+                model = rememberCardArtRequest(url, kindOf(url), still = !focused && com.shelf.launcher.data.Features.animatedFocusOnly.state.value && com.shelf.launcher.data.AnimatedArt.looksAnimated(url)),
                 contentDescription = game.name,
                 contentScale = ContentScale.Crop,
                 colorFilter = if (greyOut) GreyFilter else null,
@@ -413,7 +413,7 @@ fun GameCard(
         }
         (wideLayer ?: artUrl?.takeIf { reveal.value > 0f && it != baseUrl })?.let { url ->
             AsyncImage(
-                model = rememberCardArtRequest(url, kindOf(url)),
+                model = rememberCardArtRequest(url, kindOf(url), still = !focused && com.shelf.launcher.data.Features.animatedFocusOnly.state.value && com.shelf.launcher.data.AnimatedArt.looksAnimated(url)),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 onSuccess = { wideLoaded = true },

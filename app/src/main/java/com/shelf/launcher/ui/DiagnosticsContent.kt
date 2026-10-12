@@ -20,6 +20,7 @@ import com.shelf.launcher.data.Game
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 /** One line of the diagnostics page. */
 private data class Check(val group: String, val name: String, val ok: Boolean?, val detail: String)
@@ -33,6 +34,7 @@ private data class Check(val group: String, val name: String, val ok: Boolean?, 
 internal fun DiagnosticsContent(games: List<Game>, emulatorPlatforms: Set<String>) {
     val context = LocalContext.current
     var run by remember { mutableIntStateOf(0) }
+    val shareScope = androidx.compose.runtime.rememberCoroutineScope()
     val checks by produceState<List<Check>?>(null, run) {
         value = null
         value = withContext(Dispatchers.IO) { runCatching { collect(context, games, emulatorPlatforms) }.getOrElse { listOf(Check("Voltcap", "Diagnostics", false, it.toString())) } }
@@ -46,8 +48,16 @@ internal fun DiagnosticsContent(games: List<Game>, emulatorPlatforms: Set<String
         Spacer(Modifier.height(8.dp))
         ChipFlow {
             Chip("Check again", accent = false) { run++ }
-            Chip("Share report") {
-                val text = report(context, c)
+            Chip("Share report") { shareScope.launch {
+                // (Update 149: with the newest crash report and this run's recent log, personal details taken out.)
+                val text = report(context, c) + withContext(Dispatchers.IO) {
+                    runCatching {
+                        buildString {
+                            com.shelf.launcher.data.crash.CrashReports.latestReportText(context)?.let { appendLine(); appendLine("[Latest crash report]"); appendLine(it) }
+                            com.shelf.launcher.data.crash.CrashReports.recentLog()?.let { appendLine(); appendLine("[Recent log]"); appendLine(it) }
+                        }
+                    }.getOrDefault("")
+                }
                 runCatching {
                     (context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
                         .setPrimaryClip(android.content.ClipData.newPlainText("Voltcap diagnostics", text))
@@ -57,7 +67,7 @@ internal fun DiagnosticsContent(games: List<Game>, emulatorPlatforms: Set<String
                         .putExtra(android.content.Intent.EXTRA_SUBJECT, "Voltcap diagnostics").putExtra(android.content.Intent.EXTRA_TEXT, text)
                     context.startActivity(android.content.Intent.createChooser(send, "Share report").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
-            }
+            } }
         }
     }
     c.groupBy { it.group }.forEach { (group, list) ->

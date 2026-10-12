@@ -4,13 +4,100 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (149): Automatic Drive backup, "What's new" after an update, fuller problem reports
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (2): `src_copy\data\AutoBackupWorker.kt`, `src_copy\ui\WhatsNew.kt`.
+- Changed (7): `src_copy\LauncherViewModel.kt`, `src_copy\data\Features.kt`, `src_copy\data\crash\CrashReports.kt`,
+  `src_copy\ui\DiagnosticsContent.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\SettingsDialog.kt`,
+  `src_copy\ui\SettingsIndex.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **Automatic backup to Google Drive** (Settings › Backup): Off / Every day / Every week (default every week, once
+  Google Drive is connected). The whole backup — settings, game data and (switch "With accounts", on) logins — goes to
+  My Drive › Voltcap › voltcap-backup.json by itself, with a network and enough battery, never during a game. A new or
+  reset handheld takes it back at its first start. Shows when the last one ran.
+- **"What's new"** after Voltcap is updated: a card with that version's notes from its GitHub release (the text you give
+  `release.ps1`). Once per version, not on a fresh install.
+- **Problem reports:** Settings › Diagnostics › Share report now also carries the newest crash report and this run's
+  recent log (personal details taken out), ready to send by mail or messenger.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** the 7 changed files fetched fresh, the same as 148.
+- **Not tested on a device yet.**
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 149: automatic Drive backup, what's new after updating, fuller problem reports"
+git push origin main
+.\gradlew installDebug
+.\gradlew assembleRelease
+```
+
+---
+
+## Update — 12 Oct 2026 (148): Settings search goes to the setting, a tidier Layout options page, animated covers on by default, clips saved on the device
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (2): `src_copy\ui\SettingsJump.kt`, `src_copy\data\ClipStore.kt`.
+- Changed (13): `src_copy\LauncherViewModel.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\ArtFiles.kt`,
+  `src_copy\data\Features.kt`, `src_copy\ui\ArtRequests.kt`, `src_copy\ui\DialogChrome.kt`, `src_copy\ui\FoldGroup.kt`,
+  `src_copy\ui\GameCard.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\SettingsDialog.kt`,
+  `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\SettingsSlider.kt`, `src_copy\ui\StyleHomeSettings.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **Settings search goes to the setting itself:** picking a result opens its page and group, scrolls to the setting and
+  lights it up for a moment (it used to stop at the top of the page). R1 › hold a tile does the same.
+- **Layout options in folds:** Settings › Home › Layout options now has **Game window**, **Background & game names** and
+  **Carousel** as groups with a summary line each, instead of one long scroll.
+- **Animated covers:** Settings › Game look › Artwork › Animated artwork is **on by default** (new installs; yours
+  stays as you set it). New: **Only the game you're on moves** (off by default) — the other games show their
+  animation's first frame, lighter on memory with big animated covers.
+- **Clips saved on the device:** Settings › Metadata › Everything at once › **Save clips on the device** keeps the
+  preview clips on the handheld (up to 500 MB – 4 GB, picked there), so they play without Wi-Fi and start at once.
+  Turning it on saves the clips already looked up; Everything at once saves new ones as it finds them. Delete the
+  saved clips there too.
+- **Search** knows the new settings (Matching spines, Everything at once, Dark stage, Spin the loaded disc…).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** the 13 changed files fetched fresh, the same as 147.
+- **Not tested on a device yet.**
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 148: search goes to the setting, tidier layout options, animated covers on, clips saved on the device"
+git push origin main
+.\gradlew installDebug
+.\gradlew assembleRelease
+```
+
+---
+
 ## Update — 12 Oct 2026 (147): Disc station layout, grey 3D cases fixed, apps on their cartridges, spines at their real shape, matching spines, PIN / QR at first start, carousel case views like a disc loader
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
 
 **Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
 - New (2): `src_copy\ui\StyleDiscStation.kt`, `src_copy\ui\DrawableBitmap.kt`.
-- Changed (27): `src_copy\LauncherViewModel.kt`, `src_copy\data\ArtFiles.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`,
+- Changed (28): `src_copy\ui\CoverCases.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\data\ArtFiles.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`,
   `src_copy\ui\CategoryScreen.kt`, `src_copy\ui\CollectionDialogs.kt`, `src_copy\ui\FirstRunDialog.kt`,
   `src_copy\ui\GameCard.kt`, `src_copy\ui\ImportPreview.kt`, `src_copy\ui\Models3D.kt`, `src_copy\ui\OptionIcons.kt`,
   `src_copy\ui\PresetPreview.kt`, `src_copy\ui\PresetsCard.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\RealMedia.kt`,
@@ -41,6 +128,11 @@ All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfL
   Carousel look › View) turns on Reflection and the new **Dark stage** (a dark floor fading to black). Spine wall turns
   the cases to 72° so a sliver of each front shows; Turned row's cases sit close and turn to face the middle one.
 - **"1 games"** now reads "1 game".
+- **Art disappearing for a moment while scrolling:** case fronts, case scans and the pictures in 3D pieces and boxes
+  were looked up again every time a game came back on screen (blank meanwhile). They now show at once from memory, with
+  the small copy standing in while a new one loads.
+- **Your own Android / Steam cases:** a cover fills their (wider) window instead of leaving bars at its sides — a
+  picture is fitted whole only when filling would cut away more than 30 % of it.
 - **Everything at once** (Settings › Metadata, at the top): one button for every game's missing artwork, details, real
   case / disc / cartridge / spine scans, screenshots and video clips, one after another in the background (pauses while
   you play), with progress and Stop. The parts can be unticked. Video clips are looked up (ScreenScraper) and stream when

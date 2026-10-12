@@ -1537,9 +1537,18 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun loadVideoUrl(game: Game, force: Boolean = false) {
         if (!force && !_uiState.value.appearance.videoPreviews) return
         if (_uiState.value.videoUrls.containsKey(game.stableKey)) return
+        // Update 148: a clip saved on the device plays from there (no Wi-Fi needed, starts at once).
+        com.shelf.launcher.data.ClipStore.init(getApplication())
+        com.shelf.launcher.data.ClipStore.local(game.stableKey)?.let { local ->
+            _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to local)) }
+            return
+        }
         val saved = videoUrlStore.get(game.stableKey)
         if (saved != null) {
-            if (saved.isNotEmpty()) _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to saved)) }
+            if (saved.isNotEmpty()) {
+                _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to saved)) }
+                if (com.shelf.launcher.data.Features.clipsOffline.value) saveClipLater(game.stableKey, saved)
+            }
             return
         }
         val creds = screenScraperStore.load() ?: return
@@ -1548,6 +1557,35 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             val url = runCatching { screenScraperRepository.videoUrl(creds, game) }.getOrNull()
             videoUrlStore.put(game.stableKey, url)
             if (url != null) _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to url)) }
+            if (url != null && com.shelf.launcher.data.Features.clipsOffline.value) saveClipLater(game.stableKey, url)
+        }
+    }
+
+    /** Update 148: clips waiting to be saved on the device, one at a time in the background. */
+    private val clipQueue = kotlinx.coroutines.channels.Channel<Pair<String, String>>(kotlinx.coroutines.channels.Channel.UNLIMITED)
+    private val clipQueued = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+    private val clipSaver = viewModelScope.launch(Dispatchers.IO) {
+        for ((key, url) in clipQueue) {
+            com.shelf.launcher.data.GameMode.awaitNotPlaying()
+            val local = com.shelf.launcher.data.ClipStore.save(key, url)
+            clipQueued -= key
+            // (Not swapped in while it may be playing from the address: the saved one is used the next time.)
+            if (local == null) continue
+        }
+    }
+
+    private fun saveClipLater(key: String, url: String) {
+        com.shelf.launcher.data.ClipStore.init(getApplication())
+        if (url.startsWith("file://") || com.shelf.launcher.data.ClipStore.local(key) != null) return
+        if (clipQueued.add(key)) clipQueue.trySend(key to url)
+    }
+
+    /** Update 148: every clip already looked up, saved on the device (Settings › Metadata › Save clips on the device). */
+    fun saveAllClips() {
+        com.shelf.launcher.data.ClipStore.init(getApplication())
+        _uiState.value.games.forEach { g ->
+            val u = videoUrlStore.get(g.stableKey)
+            if (!u.isNullOrEmpty()) saveClipLater(g.stableKey, u)
         }
     }
 
@@ -5500,6 +5538,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                             val url = withContext(Dispatchers.IO) { runCatching { screenScraperRepository.videoUrl(creds, g) }.getOrNull() }
                             videoUrlStore.put(g.stableKey, url)
                             if (url != null) _uiState.update { it.copy(videoUrls = it.videoUrls + (g.stableKey to url)) }
+                            if (url != null && com.shelf.launcher.data.Features.clipsOffline.value) saveClipLater(g.stableKey, url)
                         }
                         E.progress = (i + 1) to pending.size
                         kotlinx.coroutines.delay(500)
@@ -5545,6 +5584,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         com.shelf.launcher.data.SpineScrape.stop = { stopSpineScrape() }
         com.shelf.launcher.data.EverythingScrape.run = { parts -> scrapeEverything(parts) }
         com.shelf.launcher.data.EverythingScrape.stop = { stopEverything() }
+        com.shelf.launcher.data.EverythingScrape.saveClips = { saveAllClips() }
     }
 
     /** How much space saved art uses, and how many images are still missing. */
@@ -5721,6 +5761,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) { runCatching { com.shelf.launcher.data.SyncStatusStore.load(application) } }
         // Background sync every few hours (Settings › Sync), set up again at each start.
         if (!com.shelf.launcher.CrashGuard.safeMode) runCatching { com.shelf.launcher.data.CloudSyncWorker.schedule(application) }
+        // Update 149: the automatic Drive backup's schedule.
+        if (!com.shelf.launcher.CrashGuard.safeMode) runCatching { com.shelf.launcher.data.AutoBackupWorker.schedule(application) }
         runCatching { com.shelf.launcher.data.RecapWorker.schedule(application, appearanceStore.load().weeklyRecap) }
         // Every RetroAchievements icon found before, straight away — loading
         // them one by one on focus flashed the SteamGridDB logo first.

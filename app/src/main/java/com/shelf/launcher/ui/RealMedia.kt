@@ -129,16 +129,22 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
 @Composable
 internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720): android.graphics.Bitmap? {
     val context = LocalContext.current
-    val state by produceState<android.graphics.Bitmap?>(null, model) {
+    // (Update 147: a picture already in memory is there from the first frame — a case or piece coming back on screen
+    // used to go blank for a moment while it was looked up again.)
+    val key = remember(model, maxSide) { (model as? String)?.let { coil.memory.MemoryCache.Key("soft|$maxSide|$it") } }
+    val cached = remember(key) { key?.let { coil.Coil.imageLoader(context).memoryCache?.get(it)?.bitmap } }
+    val state by produceState(cached, model) {
+        if (model == null) { value = null; return@produceState }
+        if (cached != null) { value = cached; return@produceState }
         value = null
-        if (model == null) return@produceState
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
                 // (Update 147: always a still picture — an animated cover came back as an animated drawable, not a bitmap,
                 // and the 3D pieces and cases stayed a plain grey card.)
                 val req = coil.request.ImageRequest.Builder(context).data(model).size(maxSide, maxSide)
                     .precision(coil.size.Precision.INEXACT).allowHardware(false)
-                    .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true).build()
+                    .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
+                    .apply { if (key != null) memoryCacheKey(key) }.build()
                 drawableBitmap((coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable, maxSide)
             }.getOrNull()
         }

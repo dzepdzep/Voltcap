@@ -51,14 +51,17 @@ internal fun artRequest(
     url: String,
     kind: ArtKind,
     px: IntSize,
-    fadeMillis: Int = ArtFadeMillis
+    fadeMillis: Int = ArtFadeMillis,
+    /** Update 148: its first frame only (an animated cover on a game you're not on, "Only the game you're on"). */
+    still: Boolean = false
 ): ImageRequest = ImageRequest.Builder(context)
     .data(url)
     .size(px.width, px.height)
+    .apply { if (still) setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true, memoryCacheKey = null) }
     // Crop fills the card, so decode to cover it (not just fit inside).
     .scale(Scale.FILL)
     .precision(Precision.INEXACT)
-    .memoryCacheKey("$url|${kind.name}|${px.width}x${px.height}")
+    .memoryCacheKey("$url|${kind.name}|${px.width}x${px.height}" + if (still) "|still" else "")
     // While the full-size art decodes, its small thumbnail (if already in memory) stands in,
     // so fast scrolling shows soft covers instead of empty dark cards.
     .placeholderMemoryCacheKey(thumbKey(url))
@@ -69,10 +72,10 @@ internal fun artRequest(
 
 /** [artRequest] for a card, remembered per url / slot / size. */
 @Composable
-internal fun rememberCardArtRequest(url: String, kind: ArtKind): ImageRequest {
+internal fun rememberCardArtRequest(url: String, kind: ArtKind, still: Boolean = false): ImageRequest {
     val context = LocalContext.current
     val px = cardArtPx(kind)
-    return remember(url, kind, px, context) { artRequest(context, url, kind, px) }
+    return remember(url, kind, px, context, still) { artRequest(context, url, kind, px, still = still) }
 }
 
 /** Memory-cache key of [url]'s small thumbnail (see [thumbRequest]). */

@@ -628,7 +628,7 @@ data class AppearanceSettings(
     /** The whole app (background, surfaces, accent, second colour) follows the focused game's cover. */
     val dynamicTheme: Boolean = false,
     /** GIF / animated WebP / APNG covers and heroes play (AnimatedArt). */
-    val animatedArt: Boolean = false,
+    val animatedArt: Boolean = true,
     /** Scraping asks SteamGridDB for animated covers and heroes first. */
     val preferAnimatedArt: Boolean = false,
     val customAccent: Int? = null,
@@ -969,7 +969,8 @@ class AppearanceStore(context: Context) {
     private fun loadSettings(): AppearanceSettings = AppearanceSettings(
         dynamicAccent = prefs.getBoolean("dynamic_accent", false),
         dynamicTheme = prefs.getBoolean("dynamic_theme", false),
-        animatedArt = prefs.getBoolean("animated_art", false),
+        // (Update 148: on by default.)
+        animatedArt = prefs.getBoolean("animated_art", true),
         preferAnimatedArt = prefs.getBoolean("prefer_animated_art", false),
         customAccent = if (prefs.contains("custom_accent")) prefs.getInt("custom_accent", 0) else null,
         customBackground = if (prefs.contains("custom_background")) prefs.getInt("custom_background", 0) else null,

@@ -4229,7 +4229,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // Straight to the setting: its section, sub-page and group (the settings search's own map).
                         val e = label?.let { l -> SettingsIndex.all.firstOrNull { it.label == l } }
                         val sec = e?.section ?: section
-                        if (sec != null) prepareSettingsJump(sec, e?.subpage, e?.foldKey)
+                        if (sec != null) prepareSettingsJump(sec, e?.subpage, e?.foldKey, e?.label)
                         showNotifications = false
                         menuStartCategory = sec
                         showMenu = true
@@ -4694,6 +4694,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // A moment after start, so it never pops up over the intro's last frames.
     var promptReady by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(2_500); promptReady = true }
+    // Update 149: "What's new" once after an update (its GitHub release notes).
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(4_000); WhatsNew.check(firstRunContext) }
+    WhatsNew.shown.value?.let { (v, notes) ->
+        if (!showFirstRun) WhatsNewDialog(v, notes) { WhatsNew.shown.value = null }
+    }
     if (showPermissionsPrompt && promptReady && !showFirstRun) {
         PermissionsPromptDialog(onDismiss = {
             PermissionsPrompt.markAsked(firstRunContext)

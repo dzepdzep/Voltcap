@@ -123,7 +123,7 @@ internal fun StyleShortcutSettings(layout: HomeLayout) {
 
 @Composable
 private fun <T> StyleChoice(label: String, values: Array<T>, current: T, name: (T) -> String, onPick: (T) -> Unit) {
-    Text(label, color = ShelfTheme.textMuted, fontSize = 12.sp)
+    Text(label, color = ShelfTheme.textMuted, fontSize = 12.sp, modifier = jumpAnchor(label))
     Spacer(Modifier.height(6.dp))
     ChipFlow { values.forEach { v -> Chip(name(v), accent = v == current) { onPick(v) } } }
     Spacer(Modifier.height(12.dp))

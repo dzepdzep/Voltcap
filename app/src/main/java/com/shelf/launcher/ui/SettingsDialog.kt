@@ -275,6 +275,10 @@ fun SettingsDialog(
     }
     // Settings search (the box in the header): while it has text, the results replace the page.
     var searchQuery by remember { mutableStateOf("") }
+    // (Update 148: a search jump that finds nothing on the page gives up after a moment, so the groups close again.)
+    LaunchedEffect(SettingsJump.pending) {
+        if (SettingsJump.pending != null) { kotlinx.coroutines.delay(2_000); SettingsJump.pending = null }
+    }
     LaunchedEffect(category) {
         onSectionChange(category.label)
         if (category.label == "Profile") onOpenProfile()
@@ -434,6 +438,8 @@ fun SettingsDialog(
                                 searchQuery = ""
                                 subpageMemory[hit.section] = hit.subpage
                                 hit.foldKey?.let { openFold(it) }
+                                // (Update 148: and scrolled to the setting itself, lit for a moment.)
+                                SettingsJump.pending = hit.label
                                 val target = CATEGORIES.firstOrNull { it.label == hit.section }
                                 if (target != null) {
                                     if (target == category) { currentSection = target.label; setSubpage(hit.subpage) }
@@ -963,6 +969,18 @@ private fun GameLookContent(appearance: AppearanceSettings, onChange: (Appearanc
                         "Uses a little more battery.",
                     checked = appearance.animatedArt,
                     onChange = { onChange(appearance.copy(animatedArt = it)) },
+                    modifier = m
+                )
+            }
+            // Update 148: every game's animated cover moving, or only the one you're on (lighter on small handhelds).
+            if (appearance.animatedArt) item { m ->
+                SwitchRow(
+                    icon = Icons.Filled.Gif,
+                    title = "Only the game you're on moves",
+                    subtitle = "On: the other games show their animation's first frame — lighter on memory and battery with " +
+                        "big animated covers. Off (default): every animated cover plays.",
+                    checked = com.shelf.launcher.data.Features.animatedFocusOnly.state.value,
+                    onChange = { com.shelf.launcher.data.Features.animatedFocusOnly.value = it },
                     modifier = m
                 )
             }
@@ -2137,7 +2155,31 @@ private fun MetadataContent(
                 Spacer(Modifier.height(8.dp))
                 Chip("Fetch everything missing", enabled = parts.isNotEmpty()) { E.run?.invoke(parts) }
                 Spacer(Modifier.height(4.dp))
-                MutedNote("Real cases, discs and spines and the video clips come from ScreenScraper (Settings › Accounts). The clips stream when they play; they aren't stored on the device.")
+                MutedNote("Real cases, discs and spines and the video clips come from ScreenScraper (Settings › Accounts).")
+            }
+            // Update 148: the clips kept on the device, to play without Wi-Fi and start at once.
+            Spacer(Modifier.height(10.dp))
+            val F = com.shelf.launcher.data.Features
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            var clipStats by remember { mutableStateOf(0 to 0L) }
+            LaunchedEffect(F.clipsOffline.state.value, E.stage) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    com.shelf.launcher.data.ClipStore.init(ctx)
+                    clipStats = com.shelf.launcher.data.ClipStore.count() to com.shelf.launcher.data.ClipStore.usedBytes()
+                }
+            }
+            SwitchRow(
+                Icons.Filled.CloudDownload, "Save clips on the device",
+                "The preview clips are kept on this handheld, so they play without Wi-Fi and start at once (a few MB each). " +
+                    "Off: they stream each time. Saved now: ${clipStats.first} clips, ${clipStats.second / (1024 * 1024)} MB.",
+                F.clipsOffline.state.value, { on -> F.clipsOffline.value = on; if (on) E.saveClips?.invoke() }
+            )
+            if (F.clipsOffline.state.value) {
+                Spacer(Modifier.height(6.dp))
+                RowChoice("Up to", arrayOf(500, 1024, 2048, 4096), F.clipsMaxMb.state.value, { if (it >= 1024) "${it / 1024} GB" else "$it MB" }) { F.clipsMaxMb.value = it }
+                Chip("Delete the saved clips", accent = false) {
+                    com.shelf.launcher.data.ClipStore.clear(); clipStats = 0 to 0L
+                }
             }
         }
     }
@@ -2478,6 +2520,35 @@ private fun BackupContent(onRunSetup: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             MutedNote(it)
         }
+        // Update 149: the same Drive backup made by itself, every day or week.
+        Spacer(Modifier.height(12.dp))
+        run {
+            val F = com.shelf.launcher.data.Features
+            val every = F.autoBackup.state.value
+            RowChoice("Automatic backup to Google Drive", com.shelf.launcher.data.AutoBackupWorker.Every.values(), every, { it.label }) { e ->
+                F.autoBackup.value = e
+                runCatching { com.shelf.launcher.data.AutoBackupWorker.schedule(context) }
+                // (Signs in to Drive now, so the first one can run.)
+                if (e != com.shelf.launcher.data.AutoBackupWorker.Every.OFF && !com.shelf.launcher.data.CloudSync.state.value.settings.connected) {
+                    message = "Connecting to Google Drive…"
+                    driveConnect { message = "Google Drive connected: the backup runs by itself from now on." }
+                }
+            }
+            if (every != com.shelf.launcher.data.AutoBackupWorker.Every.OFF) {
+                SwitchRow(
+                    Icons.Filled.CloudDownload, "With accounts",
+                    "Logins and API keys go into the automatic backup too, so a new device is signed in right away. The file is in your own Google Drive.",
+                    F.autoBackupAccounts.state.value, { F.autoBackupAccounts.value = it }
+                )
+                val last = F.autoBackupAt.state.value.toLongOrNull()
+                MutedNote(
+                    "Settings, game data" + (if (F.autoBackupAccounts.state.value) " and accounts" else "") +
+                        " to Google Drive › Voltcap › voltcap-backup.json, with Wi-Fi and enough battery, never during a game. " +
+                        (if (last != null) "Last one: " + java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(last)) + "."
+                        else "None yet.")
+                )
+            }
+        }
         // A picked file goes through the Import Preview first (nothing is replaced until confirmed).
         androidx.compose.runtime.LaunchedEffect(pendingImport) {
             val uri = pendingImport ?: return@LaunchedEffect
@@ -2652,9 +2723,10 @@ private var currentSection: String = ""
  * Opens Settings straight at a setting (R1 › hold a tile): [section]'s [subpage] and its [foldKey] group open.
  * The caller then opens Settings with [section] as the start category.
  */
-internal fun prepareSettingsJump(section: String, subpage: String?, foldKey: String?) {
+internal fun prepareSettingsJump(section: String, subpage: String?, foldKey: String?, label: String? = null) {
     subpageMemory[section] = subpage
     foldKey?.let { openFold(it) }
+    SettingsJump.pending = label
 }
 
 private fun setSubpage(title: String?) {
@@ -3189,6 +3261,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
         SectionLabel(appearance.homeLayout.label)
         MutedNote("The options of the layout in use. Another layout: Home › Layout & presets. Each layout keeps its own card size and spacing.")
         Spacer(Modifier.height(8.dp))
+        // Update 148: the page in folds (it was one long scroll): the game window, background & names, the carousel.
+        FoldGroup(
+            "Game window", key = "lo_window",
+            summary = if (com.shelf.launcher.data.Features.gameWindow.state.value) "On" + (if (com.shelf.launcher.data.Features.winBanner.state.value) " · Banner page" else "") + " · what it shows" else "Off: A starts the game"
+        ) {
         // Update 113: the game window, every layout (its look follows the layout).
         SwitchRow(
             Icons.Filled.OpenInNew, "Game window",
@@ -3221,6 +3298,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                 F.gameWindowCase.state.value, { F.gameWindowCase.value = it }
             )
         }
+        }
+        FoldGroup("Background & game names", key = "lo_bg_names", summary = "How the picture sits, where the names go") {
         // Update 125: how the background picture sits in this layout.
         run {
             val F = com.shelf.launcher.data.Features
@@ -3246,6 +3325,7 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                 }
             }
             MutedNote("Layouts with their own name options (below) use those as well.")
+        }
         }
         Spacer(Modifier.height(8.dp))
         if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TV) {
@@ -3344,6 +3424,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             // Carousel look for this layout (TV room: Games beside the TV › Carousel).
             val layoutName = appearance.homeLayout.name
             val carouselOn = layoutName in com.shelf.launcher.data.Features.carouselLayouts.state.value
+            // (Update 148: in a fold of its own.)
+            FoldGroup(
+                "Carousel", key = "lo_carousel",
+                summary = if (carouselOn) "On · " + com.shelf.launcher.data.Features.carouselView.state.value.label else "Off"
+            ) {
             SwitchRow(
                 Icons.Filled.ViewInAr, "Carousel look",
                 if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.HERO) "The covers above and below the selected one turn away from it, like pages."
@@ -3372,6 +3457,7 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                     com.shelf.launcher.data.Features.tvCarouselTilt.state.value, { com.shelf.launcher.data.Features.tvCarouselTilt.value = it }
                 )
                 CarouselTiltChoices()
+            }
             }
             Spacer(Modifier.height(8.dp))
         }
@@ -4077,7 +4163,7 @@ private fun RoundShortcutsContent(appearance: AppearanceSettings, onChange: (App
 /** One labelled row of choices, as wrapping chips. */
 @Composable
 private fun <T> RowChoice(label: String, values: Array<T>, current: T, name: (T) -> String, onPick: (T) -> Unit) {
-    Text(label, color = ShelfTheme.textMuted, fontSize = 12.sp)
+    Text(label, color = ShelfTheme.textMuted, fontSize = 12.sp, modifier = jumpAnchor(label))
     Spacer(Modifier.height(6.dp))
     // Visual choices (layouts, artwork, …) get a little drawing per option (OptionIcons.kt).
     if (values.all { pictogramFor(it) != null }) PictoChoice(values, current, name, onPick)
