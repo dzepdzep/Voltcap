@@ -83,8 +83,9 @@ internal class SharedArtInterceptor(private val px: Int) : coil.intercept.Interc
             w != null && h != null && w <= px && h <= px && (w >= 160 || h >= 160) &&
             (url.startsWith("http") || url.startsWith("/") || url.startsWith("file:") || url.startsWith("content:"))
         if (!shareable) return chain.proceed(r)
+        // Update 159: the size only through chain.withSize — Coil refuses a request whose size resolver an interceptor
+        // changed (every such picture failed: the Grid's cards stayed plain colours).
         val shared = r.newBuilder()
-            .size(px, px)
             .scale(Scale.FIT)
             .precision(Precision.INEXACT)
             .memoryCacheKey("$url|style|$px")
