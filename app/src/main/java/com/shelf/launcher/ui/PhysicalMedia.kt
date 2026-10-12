@@ -466,7 +466,7 @@ internal fun PhysicalMedia(
                     Modifier.offset(x = w * pad, y = h * pad).size(w * (1 - 2 * pad), h * (1 - 2 * pad))
                         .clip(RingShape(shell.label[1], shell.label[2]))
                 ) {
-                    if (label != null) AsyncImage(label, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    if (label != null) AsyncImage(mediaArtModel(label), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
                 }
             } else {
                 val l = shell.label
@@ -475,7 +475,7 @@ internal fun PhysicalMedia(
                         .clip(if (shell == MediaShell.UMD) androidx.compose.foundation.shape.CircleShape else RoundedCornerShape(w * shell.corner))
                         .androidx_background()
                 ) {
-                    if (label != null) AsyncImage(label, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    if (label != null) AsyncImage(mediaArtModel(label), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
                 }
             }
             Image(painterResource(shell.res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
@@ -644,7 +644,7 @@ internal fun DiscInCase(
             // The disc, behind the case and sticking out of its right side, turning round.
             Box(Modifier.size(d).align(Alignment.CenterEnd).mediaMotion(true, seed)) {
                 if (realDisc != null) coil.compose.AsyncImage(
-                    realDisc, null, contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                    mediaArtModel(realDisc), null, // (Update 157) contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape)
                 )
                 else TemplateMedia(discOnly, labelScan = null, cover = discArt, modifier = Modifier.fillMaxSize())
@@ -665,7 +665,7 @@ internal fun DiscInCase(
 internal fun RealMediaPicture(model: Any, round: Boolean, modifier: Modifier = Modifier) {
     Box(modifier.mediaMotion(round, 0), contentAlignment = Alignment.Center) {
         coil.compose.AsyncImage(
-            model, null, contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+            mediaArtModel(model), null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, // (Update 157)
             modifier = Modifier.fillMaxSize().then(if (round) Modifier.clip(androidx.compose.foundation.shape.CircleShape) else Modifier)
         )
     }

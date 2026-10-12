@@ -1006,9 +1006,10 @@ internal fun StyleHome(
     // and backdrop fetched ahead, the way the Game dock does. Thumbnails for a wide window, a decoded copy for the near ones.
     val warmContext = androidx.compose.ui.platform.LocalContext.current
     val hiddenMediaWarm = LocalHiddenMedia.current
-    LaunchedEffect(focus / 3, games.size, type, if (needsLookup) state.physicalMedia else null, if (needsLookup) state.screenshots else null) {
+    LaunchedEffect(focus / 2, games.size, type, if (needsLookup) state.physicalMedia else null, if (needsLookup) state.screenshots else null) {
         // The scan loop updates the media maps about every 90 ms: wait for it to settle instead of starting again each time.
-        kotlinx.coroutines.delay(300)
+        // (Update 157: every second step and sooner — moving on quickly outran the warm-up, the games coming in blank.)
+        kotlinx.coroutines.delay(150)
         val small = com.shelf.launcher.device.MemoryBudget.small(warmContext)
         val reach = if (small) 12 else 24
         val near = if (small) 4 else 8
@@ -1030,6 +1031,8 @@ internal fun StyleHome(
             shown?.let { thumbs += it }
             if (i in (focus - near)..(focus + near)) {
                 shown?.let { near1 += it }
+                // Update 157: Disc station prints the game's own label scan on its disc when there is one: that too.
+                if (layout == HomeLayout.DISCS) typedArtFor(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, state.physicalMedia[k], state.screenshots[k], g.platform)?.let { near1 += it }
                 c.wide(g)?.let { near1 += it }
                 if (i in (focus - 1)..(focus + 1)) c.backdrop(g)?.let { backdrops += it }
             }

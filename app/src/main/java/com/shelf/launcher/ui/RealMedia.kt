@@ -87,7 +87,7 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
             Box(Modifier.size(side, side)) {
                 // Discs are printed paper-white where the art is thin; the art fills the printable ring.
                 Box(Modifier.fillMaxSize().clip(DiscRing(MediaTemplates.RING_INNER, MediaTemplates.RING_OUTER)).background(Color(0xFFE9E6DF))) {
-                    if (art != null) AsyncImage(art, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
                 }
                 Image(painterResource(disc), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }
@@ -116,7 +116,7 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
                         }
                         .background(Color(0xFFE9E6DF))
                 ) {
-                    if (art != null) AsyncImage(art, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
                 }
                 Image(painterResource(cart.res), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }
@@ -322,7 +322,7 @@ internal fun FrontBox(tpl: BoxTpl, front: Any?, frontIsBox: Boolean, modifier: M
         // Update 119: while the face is being put together, the picture itself (usually already loaded) shows in the
         // case's place — not a dark panel first.
         if (face == null && front != null) coil.compose.AsyncImage(
-            front, null, contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            mediaArtModel(front), null, // (Update 157) contentScale = androidx.compose.ui.layout.ContentScale.Crop,
             modifier = Modifier.size(w, h).clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp))
         )
         Box(

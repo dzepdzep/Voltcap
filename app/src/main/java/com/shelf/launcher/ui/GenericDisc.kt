@@ -147,7 +147,7 @@ internal fun GenericDisc(console: String, art: Any?, modifier: Modifier = Modifi
             }
             // The printed ring: the game's art, the console's band on top and its name below.
             Box(Modifier.fillMaxSize().clip(DiscRingShape(0.30f, 0.965f)).background(Color(0xFFE9E6DF))) {
-                if (art != null) AsyncImage(art, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
                 // Top band with the logo (or the console's name while it loads / where there's none).
                 Box(
                     Modifier.fillMaxWidth().height(side * 0.33f).align(Alignment.TopCenter).background(bandColor),
@@ -231,7 +231,7 @@ internal fun SystemDisc(console: String, art: Any?, modifier: Modifier = Modifie
                 drawCircle(Color(0xFF1B1C22), r * 0.955f, center)
             }
             Box(Modifier.fillMaxSize().clip(DiscRingShape(0.225f, 0.955f))) {
-                if (art != null) AsyncImage(art, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
             }
             // The clear hub round the hole.
             Canvas(Modifier.fillMaxSize()) {

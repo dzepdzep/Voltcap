@@ -282,6 +282,9 @@ internal fun GameDock(
                     // What the card shows when it is not the focused one.
                     val typed = typedArtFor(gArt, physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform)
                     val shown = cardArtUrl(gArt, false, cover, wide, hero, typed)
+                    // Update 157: a disc / cartridge / case look prints its picture in the style shape (mediaArtModel):
+                    // that one warmed too (the discs came in blank for a moment).
+                    if (shown != null && !carousel && isFreeMedia(gArt, game.platform)) handles += warmStyleArt(context, listOf(shown))
                     when {
                         shown == null -> Unit
                         shown == typed -> queue(shown, cardArtKind(gArt))

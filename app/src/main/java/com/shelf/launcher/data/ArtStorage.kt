@@ -114,6 +114,8 @@ object ArtStorage {
             .respectCacheHeaders(false)
             // GIF / animated WebP / APNG covers and heroes play when Animated artwork is on (AnimatedArt).
             .components {
+                // Update 157: card-sized pictures share one decode with their warm-up (StyleArtRequests.kt).
+                add(com.shelf.launcher.ui.SharedArtInterceptor(com.shelf.launcher.ui.styleArtPx(context)))
                 add(AnimatedArt.Factory())
                 // "voltcrop:" models: the spine / front cut out of a game's full box scan (BoxTexture.kt).
                 add(com.shelf.launcher.ui.BoxCropInterceptor())

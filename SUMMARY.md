@@ -4,6 +4,47 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (157): art no longer comes in late when you move on quickly — every layout
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (8): `src_copy\data\ArtStorage.kt`,
+`src_copy\ui\` DiscCase3D, GameDock, GenericDisc, PhysicalMedia, RealMedia, StyleArtRequests, StyleHomes (all `.kt`).
+
+**Files to delete:** none.
+
+### Found on the Retroid Pocket Classic
+- Moving several games on quickly (Disc station, 156 installed): the discs came in as blank console discs and their art
+  appeared about a second later; the logos and pictures too. Each layout (and each disc, cartridge and case drawing)
+  asked for a game's picture at its own size, so a picture already in memory at another size — or warmed ahead — was
+  read from storage again, one after another.
+
+### What changed
+- **One shared decode for every card-sized game picture:** the image loader now gives every plain game picture up to
+  about half the screen's size the same shape and name, whatever layout or drawing asks for it (bigger backgrounds and
+  heroes, small badges and icons stay as they were). A picture warmed ahead, or shown by another layout a moment ago, is
+  found straight away.
+- **Discs, cartridges, cases and real disc scans** print their picture in that shared shape (they were never warmed).
+- **Warm-up keeps up when you move quickly:** the style layouts warm the games ahead every second step (was every third)
+  and sooner; Disc station also warms the games' own label scans; the Voltcap row warms the disc / cartridge pictures
+  of its media looks.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 157: one shared decode per game picture, art in at once when moving quickly"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 12 Oct 2026 (156): every layout goes round at the end without "reloading", art in at once
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

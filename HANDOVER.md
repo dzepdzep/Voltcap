@@ -256,6 +256,13 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 157
+- **SharedArtInterceptor** (StyleArtRequests.kt, first in the image loader's components): String requests without
+  their own key / transformations / parameters, resolved size ≤ `styleArtPx` (and ≥ 160 px on one side) → size px×px,
+  FIT, key `url|style|px` — the same as `styleArtRequest` / `warmStyleArt`.
+- **mediaArtModel(model)** for disc labels, real media, 3D box fronts. StyleHome warm-up: focus / 2, 150 ms; DISCS warms
+  label scans. GameDock warms the style shape for media looks.
+
 ## State after update 156
 - **Endless:** `loopsOnItsOwn()` is true for every layout (no `EdgeBump.wrap` any more). New helpers: LoopPlaces.kt
   (`rememberLoopPlace`, `LoopTap`), StyleLoopSteps.kt (`StyleLoop`, `rememberWalkedPlace` — Library / Timeline / Channel),

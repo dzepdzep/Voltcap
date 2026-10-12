@@ -56,3 +56,39 @@ internal fun warmStyleArt(context: Context, urls: List<String>): List<coil.reque
         if (req.memoryCacheKey?.let { cache?.get(it) } != null) null else loader.enqueue(req)
     }
 }
+
+/**
+ * Update 157: a disc's / cartridge's / case's printed picture (labels, real disc scans, the 3D box front) in the same
+ * shape as the cards and their warm-up: these drew a plain picture at their own size, never warmed — moving a few games
+ * on, the discs came in as blank console discs and their art a second later. Anything that isn't an address (a file,
+ * a bitmap) is passed through as it is.
+ */
+@Composable
+internal fun mediaArtModel(model: Any?): Any? = if (model is String) rememberStyleArtRequest(model) else model
+
+/**
+ * Update 157: every plain game picture of a card's size (a layout's own AsyncImage(url) with no key of its own) is
+ * decoded once, in the shared style shape ([styleArtRequest]: one size, one memory key). The layouts each asked at
+ * their own size, so a picture warmed for one shape was read from storage again for another, and moving a few games on
+ * showed blank cards for a second on every layout. Big pictures (backgrounds, heroes), tiny ones (badges, icons),
+ * requests with their own key, transformations or parameters are left as they are.
+ */
+internal class SharedArtInterceptor(private val px: Int) : coil.intercept.Interceptor {
+    override suspend fun intercept(chain: coil.intercept.Interceptor.Chain): coil.request.ImageResult {
+        val r = chain.request
+        val url = r.data as? String
+        val w = (chain.size.width as? coil.size.Dimension.Pixels)?.px
+        val h = (chain.size.height as? coil.size.Dimension.Pixels)?.px
+        val shareable = url != null && r.memoryCacheKey == null && r.transformations.isEmpty() && r.parameters.isEmpty() &&
+            w != null && h != null && w <= px && h <= px && (w >= 160 || h >= 160) &&
+            (url.startsWith("http") || url.startsWith("/") || url.startsWith("file:") || url.startsWith("content:"))
+        if (!shareable) return chain.proceed(r)
+        val shared = r.newBuilder()
+            .size(px, px)
+            .scale(Scale.FIT)
+            .precision(Precision.INEXACT)
+            .memoryCacheKey("$url|style|$px")
+            .build()
+        return chain.withSize(coil.size.Size(px, px)).proceed(shared)
+    }
+}
