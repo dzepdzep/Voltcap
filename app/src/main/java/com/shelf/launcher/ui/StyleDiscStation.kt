@@ -288,7 +288,10 @@ private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
     } else null
     val cover = c.cover(g)
     // Its own label scan when there is one, else the cover (printed on the disc).
-    val scan = typedArtFor(CardArtType.CARTRIDGE_DISC, c.state.physicalMedia[g.stableKey], c.state.screenshots[g.stableKey], g.platform)
+    // Update 159: only a game that really came on a disc prints its own scan — a cartridge game's scan is the cartridge's
+    // photo (it showed as a cartridge on the CD); those print their cover.
+    val scan = if (mediaKind(g.platform) != "disc") null
+        else typedArtFor(CardArtType.CARTRIDGE_DISC, c.state.physicalMedia[g.stableKey], c.state.screenshots[g.stableKey], g.platform)
     val label: Any? = scan ?: cover
     val pick = remember(g.platform) { stationPick(g.platform) }
     // Update 151: cut to the disc's circle (a UMD keeps its own shape), so a square scan's black / white corners never

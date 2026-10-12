@@ -4,6 +4,55 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (159): bug check of 158 on the Pocket Classic — carousel art, Disc station, Case stacks, new layouts
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (14): `src_copy\ui\` Carousel, DiscCase3D,
+LaunchThrow, LauncherScreen, PhysicalMedia, RealMedia, SettingsDialog, StyleCardBinder, StyleCaseStacks,
+StyleDiscStation, StyleHeroTiles, StyleHomes, StyleRecordCrate, TwinDesk (all `.kt`).
+
+**Files to delete:** none.
+
+### Found and fixed
+- **Carousel: big red box with the art small** (Grid, Side menu, every carousel): in 156 the cover's size ended up inside
+  a comment, so the cover drew at its own small size in the slot's colour. Same slip in 157 for real disc scans
+  (PhysicalMedia, the 3D disc case) and real box fronts (RealMedia) — all four put right.
+- **Disc station showed cartridges on the CDs:** a cartridge game's own "cartridge / disc" scan is a photo of the
+  cartridge, and the disc printed it. Cartridge games now print their cover on the CD (on the disc, in the warm-up and
+  in the start-game throw); games that really came on a disc keep their own disc scan. Nothing to switch on.
+- **Case stacks:** the dark "room" behind the stacks (dark back wall, shaded floor grid, light cone) is gone — it showed
+  as a dark box with a shade across the screen. The cover in the middle keeps its own shape (it was cut to the case's
+  place and lost its logo). **Carousel works here now:** R1 › Carousel (hold for its views), or Settings › Home ›
+  Layout options › Carousel — the stage becomes the carousel, in any game look; the name and button bar stay.
+- **Hero tiles:** the game's video preview played over the pale backdrop and hid it (now off on layouts with their own
+  backdrop: Hero tiles, Live tiles and Channel grid when pale, Game shelf's bookcase, Circuit board); the small square
+  RetroAchievements icon showed instead of the logo (now the big logo, else the name).
+- **Twin desk:** the list showed a cut-off part of a 4th panel at its bottom; now only whole panels.
+- **Record crate / Card binder:** tall covers were cut to the square sleeve / wide card window; the whole cover shows
+  now, the spare room the same picture dimmed behind it.
+
+### Checked on the Pocket Classic (158 installed 01:19)
+- Hero tiles (keys, dock, ▼ onto the dock), Twin desk and Twin icons stacked on one screen (keys, tool buttons, calendar),
+  Record crate (flip, record turning, ▼ to Continue), Card binder (fan, Y turns over), Lobby theme (light settings,
+  light buttons; the layouts keep their own white text over the art), Case stacks, Disc station. No crashes in the log.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 159: carousel art size, Disc station CDs for cartridge games, Case stacks carousel and no dark room, 158 layout fixes" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (158): Twin desk, Twin icons, Hero tiles, Record crate, Card binder, Lobby theme, the game you're on faces you
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

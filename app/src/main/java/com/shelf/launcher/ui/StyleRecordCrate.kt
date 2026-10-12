@@ -487,7 +487,13 @@ private fun CrateSleeve(c: StyleCtx, g: Game, focused: Boolean, centre: Boolean,
             .background(placeholderBrush(g.hue))
     ) {
         when {
-            url != null -> AsyncImage(rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+            // Update 159: the whole cover on the sleeve (a tall box cover lost its logo cut to the square); the spare room
+            // is the same picture filled and dimmed behind it — one decode, no blur.
+            url != null -> {
+                val req = rememberStyleArtRequest(url)
+                AsyncImage(req, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.32f })
+                AsyncImage(req, g.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().pixelArtwork())
+            }
             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
             else -> Text(
                 LocalTitleOptions.current.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp,

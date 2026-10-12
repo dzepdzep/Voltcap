@@ -165,7 +165,9 @@ internal fun ShelfGameArt(
                 .background(placeholderBrush(g.hue))
         ) {
             if (cover != null) AsyncImage(
-                rememberStyleArtRequest(cover), g.name, contentScale = ContentScale.Crop, // (Update 156: the warmed shape) modifier = Modifier.fillMaxSize().pixelArtwork(),
+                // (Update 156: the warmed shape.) Update 159: the size was inside that comment, so the cover drew at its own
+                // small size in the slot's colour (a big red box with the art small).
+                rememberStyleArtRequest(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork(),
                 // (Update 154: its shape noted, so the carousel's slot takes it — CoverAspects.)
                 onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
             )

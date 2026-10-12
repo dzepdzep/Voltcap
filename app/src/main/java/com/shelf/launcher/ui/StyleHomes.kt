@@ -1066,7 +1066,7 @@ internal fun StyleHome(
             if (i in (focus - near)..(focus + near)) {
                 shown?.let { near1 += it }
                 // Update 157: Disc station prints the game's own label scan on its disc when there is one: that too.
-                if (layout == HomeLayout.DISCS) typedArtFor(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, state.physicalMedia[k], state.screenshots[k], g.platform)?.let { near1 += it }
+                if (layout == HomeLayout.DISCS && mediaKind(g.platform) == "disc") typedArtFor(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, state.physicalMedia[k], state.screenshots[k], g.platform)?.let { near1 += it }
                 // Update 158: Hero tiles' square tiles show the cover whatever the game look is: that too.
                 if (layout == HomeLayout.HERO_TILES) cover?.let { near1 += it }
                 // Update 158: so do the two-screen layouts' square icons (TwinDesk.kt / TwinIcons.kt).
@@ -1188,6 +1188,20 @@ internal fun styleHasShortcuts(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.RESUME -> true
     // Update 158: Twin icons has them as its tool buttons.
     HomeLayout.TWIN_ICONS -> true
+    else -> false
+}
+
+/**
+ * Update 159: [layout] draws its own solid background over the whole screen (a pale backdrop, the bookcase, the circuit
+ * board): the full-screen video preview stays off there — it played over it and hid it (Hero tiles showed the game's
+ * clip instead of its pale backdrop).
+ */
+internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
+    HomeLayout.LIVE -> Features.liveLight.state.value && !Features.liveArt.state.value
+    HomeLayout.CHAN -> Features.chanLight.state.value && !Features.chanArt.state.value
+    HomeLayout.HERO_TILES -> Features.heroTilesPale.state.value
+    HomeLayout.SHELF -> Features.shelfBackdrop.state.value
+    HomeLayout.CIRCUIT -> Features.circuitBackdrop.state.value
     else -> false
 }
 

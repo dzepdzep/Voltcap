@@ -570,10 +570,13 @@ private fun CardFront(c: StyleCtx, g: Game, game: Int, d: CardDims, centre: Bool
                     .background(placeholder),
                 contentAlignment = Alignment.Center
             ) {
-                if (url != null) AsyncImage(
-                    rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().pixelArtwork()
-                )
+                // Update 159: the whole cover in the card's window (a tall cover lost its top and bottom to the wide
+                // window); the spare room is the same picture filled and dimmed behind it — one decode, no blur.
+                if (url != null) {
+                    val req = rememberStyleArtRequest(url)
+                    AsyncImage(req, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.32f })
+                    AsyncImage(req, g.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().pixelArtwork())
+                }
                 else if (g.sourceType == SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
                 else Text(
                     titles.display(g.name), color = Color.White, fontSize = d.titleSp, fontWeight = FontWeight.SemiBold,

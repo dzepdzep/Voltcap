@@ -225,7 +225,9 @@ private fun HeroPicture(c: StyleCtx, g: Game?, compact: Boolean, showStatus: Boo
 @Composable
 private fun HeroTitle(c: StyleCtx, g: Game, compact: Boolean) {
     val titles = LocalTitleOptions.current
-    val logo = if (titles.showLogos) c.logo(g) else null
+    // Update 159: the big logo (SteamGridDB's when there is one), never the RetroAchievements game icon — a small square
+    // picture showed there instead of the logo; without a logo, the name.
+    val logo = if (titles.showLogos) bigLogo(g, c.state)?.takeIf { !it.contains("retroachievements", ignoreCase = true) } else null
     Column {
         if (logo != null) AsyncImage(
             logo, titles.display(g.name), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart,

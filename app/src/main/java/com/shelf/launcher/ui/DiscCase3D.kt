@@ -53,7 +53,8 @@ internal fun disc3dPeek(p: String): Float? {
 private fun DiscBehind(tpl: MediaTpl?, realDisc: Any?, art: Any?, modifier: Modifier, seed: Int) {
     Box(modifier.mediaMotion(true, seed)) {
         if (realDisc != null) AsyncImage(
-            mediaArtModel(realDisc), null, // (Update 157) contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().clip(CircleShape)
+            // (Update 157; 159: the scale and size were inside this comment, so the disc scan drew at its own size.)
+            mediaArtModel(realDisc), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().clip(CircleShape)
         )
         else if (tpl?.disc != null) TemplateMedia(MediaTpl(null, null, tpl.disc, null), labelScan = null, cover = art, modifier = Modifier.fillMaxSize())
     }

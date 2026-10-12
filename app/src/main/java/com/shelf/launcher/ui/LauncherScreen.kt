@@ -2430,7 +2430,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val roomSound = state.appearance.videoSound
         SideEffect { Showcase.video = roomVideo; Showcase.videoSound = roomSound }
         // Update 151: the Hero carousel plays it over its big hero picture (below), not under it where it was hidden.
-        if (videoUrl != null && !roomClip && !screensaverOn && !heroLayout && !discCalm && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK) {
+        // (Update 159: nor over a style layout's own solid background — pale backdrops, the bookcase, the circuit board.)
+        if (videoUrl != null && !roomClip && !screensaverOn && !heroLayout && !discCalm && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK &&
+            !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))) {
             androidx.compose.runtime.key(videoUrl) {
                 VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize())
             }

@@ -3450,7 +3450,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
         ) { StyleHomeSettings(appearance.homeLayout) }
         // (Update 104: the Side menu can be a carousel too.)
         if (appearance.homeLayout != com.shelf.launcher.data.HomeLayout.TV && (!appearance.homeLayout.styleHome ||
-                appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SIDE)) {
+                appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SIDE ||
+                appearance.homeLayout == com.shelf.launcher.data.HomeLayout.STACKS)) { // (Update 159: Case stacks too)
             // Carousel look for this layout (TV room: Games beside the TV › Carousel).
             val layoutName = appearance.homeLayout.name
             val carouselOn = layoutName in com.shelf.launcher.data.Features.carouselLayouts.state.value

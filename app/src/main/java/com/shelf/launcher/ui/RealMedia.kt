@@ -322,7 +322,7 @@ internal fun FrontBox(tpl: BoxTpl, front: Any?, frontIsBox: Boolean, modifier: M
         // Update 119: while the face is being put together, the picture itself (usually already loaded) shows in the
         // case's place — not a dark panel first.
         if (face == null && front != null) coil.compose.AsyncImage(
-            mediaArtModel(front), null, // (Update 157) contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            mediaArtModel(front), null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, // (Update 157; 159: the scale was inside the comment)
             modifier = Modifier.size(w, h).clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp))
         )
         Box(

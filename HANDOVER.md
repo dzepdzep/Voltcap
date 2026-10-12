@@ -1,6 +1,6 @@
 # Voltcap — handover to a new Claude
 
-Written 12 Oct 2026, after update **(145)** (kept up to date to 158). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+Written 12 Oct 2026, after update **(145)** (kept up to date to 159). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is
 **Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
@@ -255,6 +255,18 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 159
+- **Carousel.kt cover**, PhysicalMedia / DiscCase3D real disc scan, RealMedia box front: their `contentScale` /
+  `modifier` had been swallowed by trailing comments in 156 / 157 (restored).
+- **Disc station:** only `mediaKind(platform) == "disc"` games use their CARTRIDGE_DISC scan (StyleDiscStation,
+  StyleHomes warm-up, LaunchThrow); cartridge games print the cover.
+- **Case stacks:** `StacksRoom` removed; flat-cover middle sized by `CoverAspects`; `GameCarousel` in the stage when
+  STACKS is in `Features.carouselLayouts` (Settings shows the Carousel fold for STACKS too).
+- **`styleOwnsBackground(layout)`** (StyleHomes): no full-screen video preview over those backdrops.
+- **Still open (now 160):** Grid default size, ▲ ▼ round on Grid / TV room / Cross menu, Timeline one-group repeat, TV
+  room grid ignores the look, Tile look row off the bottom, Game shelf front cover late, Cross menu icons, custom case
+  templates take the SteamGridDB cover's shape, Case stacks side spines in other looks, Thor second screen.
 
 ## State after update 158
 - **New layouts** (enum order after DISCS: HERO_TILES, TWIN_DESK, TWIN_ICONS, CRATE, CARDS; all `styleHome`):

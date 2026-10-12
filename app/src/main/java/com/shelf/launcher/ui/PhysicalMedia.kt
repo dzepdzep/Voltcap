@@ -644,7 +644,7 @@ internal fun DiscInCase(
             // The disc, behind the case and sticking out of its right side, turning round.
             Box(Modifier.size(d).align(Alignment.CenterEnd).mediaMotion(true, seed)) {
                 if (realDisc != null) coil.compose.AsyncImage(
-                    mediaArtModel(realDisc), null, // (Update 157) contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                    mediaArtModel(realDisc), null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, // (Update 157; 159: the scale was inside the comment)
                     modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape)
                 )
                 else TemplateMedia(discOnly, labelScan = null, cover = discArt, modifier = Modifier.fillMaxSize())

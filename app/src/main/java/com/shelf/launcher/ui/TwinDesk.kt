@@ -445,8 +445,10 @@ internal fun TwinDeskBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
         val barH = if (compact) 34.dp else 42.dp
         // The list keeps 4 dp round its panels for the corner brackets.
         val listH = (maxHeight - pad * 2 - smallH - barH - gap * 2).coerceAtLeast(48.dp)
-        val panelH = ((listH - 8.dp) / 4.2f).coerceIn(38.dp, 64.dp)
-        val rows = ((listH - 8.dp + gap) / (panelH + gap)).toInt().coerceAtLeast(1)
+        // Update 159: whole panels only (up to 4) — the list used to show a cut-off part of a 4th one at its bottom edge.
+        val avail = listH - 8.dp
+        val rows = ((avail + gap) / (38.dp + gap)).toInt().coerceIn(1, 4)
+        val panelH = ((avail - gap * (rows - 1)) / rows).coerceIn(30.dp, 64.dp)
         val before = if (rows >= 3) 1 else 0
         val at = if (loop) v else c.focus
         val topRow = if (loop) at - before else (at - before).coerceIn(0, (n - rows).coerceAtLeast(0))

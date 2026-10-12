@@ -174,7 +174,15 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, modifier: Modifier)
                     targetState = g, label = "stacksName", transitionSpec = { gameSwap() }, contentAlignment = Alignment.BottomCenter
                 ) { shown -> StacksName(c, shown, compact) }
             }
-            StacksStage(c, Modifier.fillMaxWidth().height(stageH))
+            // Update 159: Carousel (R1 › Carousel, hold for its views) works here too: the games as the carousel in the
+            // stage, in any game look (cartridges, discs, 3D cases, covers…); the name above and the button bar stay.
+            if (HomeLayout.STACKS.name in Features.carouselLayouts.state.value) GameCarousel(
+                games = c.games, focus = c.focus, art = c.art, overrides = c.state.artOverrides,
+                onSelect = c.actions.select, onOpen = c.actions.open, cardArtType = c.type,
+                physicalMedia = c.state.physicalMedia, screenshots = c.state.screenshots, onNeedPhysical = c.actions.needPhysical,
+                loop = loopRowOn(c), loopTick = c.state.loopTick, loopStep = c.state.loopStep,
+                modifier = Modifier.fillMaxWidth().height(stageH)
+            ) else StacksStage(c, Modifier.fillMaxWidth().height(stageH))
             if (barOn) Box(
                 Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Button bar"),
                 contentAlignment = Alignment.Center
@@ -335,7 +343,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
         val stepPx by rememberUpdatedState(with(density) { (pitch * 1.6f).toPx() })
 
         // The room: soft light from above, the floor grid in the theme's colour, a pool of light under the middle.
-        StacksRoom(geo, accent, Modifier.fillMaxSize())
+        // Update 159: the room (dark back wall, shaded floor grid, light cone) is gone — it showed as a dark box with a shade
+        // across the middle of the screen. The stacks stand straight on your background now.
 
         Box(
             Modifier.fillMaxSize().pointerInput(Unit) {
@@ -517,12 +526,22 @@ private fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modifi
         // No case for its console (or the Spines look, whose spines are the stacks already): the plain cover.
         val corner = LocalCardLook.current.cornerDp.coerceAtMost(10).dp
         val cover = c.cover(g)
+        // Update 159: the cover in its own shape, standing on the floor in the middle of the case's place — it was cut to
+        // that place (a tall box lost its logo) with a dark square showing round a wide one.
+        androidx.compose.foundation.layout.BoxWithConstraints(modifier, contentAlignment = Alignment.BottomCenter) {
+        val boxA = if (maxHeight.value > 0f) maxWidth / maxHeight else 0.7f
+        val a = CoverAspects.of(cover) ?: boxA
+        val w = if (a >= boxA) maxWidth else maxHeight * a
+        val h = if (a >= boxA) maxWidth / a else maxHeight
         Box(
-            modifier.gameOrigin(k, on)
+            Modifier.size(w, h).gameOrigin(k, on)
                 .then(if (focused) Modifier.styleFocus(true, corner, 0.75f, accent) else Modifier)
                 .clip(uiRounded(corner)).background(placeholderBrush(g.hue))
         ) {
-            if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+            if (cover != null) AsyncImage(
+                rememberStyleArtRequest(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork(),
+                onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
+            )
             else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
             else Text(
                 LocalTitleOptions.current.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp,
@@ -530,6 +549,7 @@ private fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modifi
             )
             ConsoleBadge(g.platform, packageName = g.packageName)
             StacksProgress(c, g, on)
+        }
         }
     } else {
         // Cartridges / discs, wide capsules, screenshots: the layout's own artwork, with its focus effect.
@@ -571,60 +591,6 @@ private fun Modifier.stacksMirror(on: Boolean): Modifier = if (!on) this else th
             drawRect(fade, blendMode = BlendMode.DstIn)
         }
         translate(0f, h) { drawLayer(reflection) }
-    }
-}
-
-/**
- * The room the stacks stand in (drawn once per size / colour, nothing moves): a soft cone of light down onto the middle,
- * the back wall darkening toward the horizon, the floor grid running back to it in the theme's colour, and a pool of
- * light where the case stands.
- */
-@Composable
-private fun StacksRoom(geo: StacksGeo, accent: Color, modifier: Modifier) {
-    Canvas(modifier) {
-        val w = size.width
-        val h = size.height
-        val hy = geo.horizonY
-        val cx = geo.cx
-        // The back wall: darker toward the horizon line.
-        drawRect(Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.22f), startY = 0f, endY = hy), size = androidx.compose.ui.geometry.Size(w, hy))
-        // The floor: the theme's colour faintly at the horizon, darker toward you.
-        drawRect(
-            Brush.verticalGradient(0f to accent.copy(alpha = 0.10f), 1f to Color.Black.copy(alpha = 0.30f), startY = hy, endY = h),
-            topLeft = Offset(0f, hy), size = androidx.compose.ui.geometry.Size(w, (h - hy).coerceAtLeast(0f))
-        )
-        // The floor grid: lines running back to the middle of the horizon …
-        val fan = Brush.verticalGradient(0f to Color.Transparent, 1f to accent.copy(alpha = 0.16f), startY = hy, endY = h)
-        for (j in -14..14) {
-            drawLine(fan, Offset(cx + j * w * 0.025f, hy), Offset(cx + j * w * 0.14f, h), strokeWidth = 1.dp.toPx())
-        }
-        // … and across, closer together further back.
-        for (n in 0..9) {
-            val y = hy + (h - hy) / (1f + 0.5f * (9 - n))
-            val a = 0.03f + 0.1f * (n / 9f)
-            drawLine(accent.copy(alpha = a), Offset(0f, y), Offset(w, y), strokeWidth = 1.dp.toPx())
-        }
-        // The horizon itself, a faint lit line.
-        drawLine(
-            Brush.horizontalGradient(0f to Color.Transparent, 0.5f to accent.copy(alpha = 0.28f), 1f to Color.Transparent),
-            Offset(0f, hy), Offset(w, hy), strokeWidth = 1.5.dp.toPx()
-        )
-        // A cone of soft light from above onto the middle.
-        val topHalf = geo.caseWPx * 0.32f
-        val footHalf = geo.caseWPx * 0.95f
-        val cone = Path().apply {
-            moveTo(cx - topHalf, 0f); lineTo(cx + topHalf, 0f)
-            lineTo(cx + footHalf, geo.floorY); lineTo(cx - footHalf, geo.floorY); close()
-        }
-        drawPath(cone, Brush.verticalGradient(0f to Color.White.copy(alpha = 0.07f), 1f to Color.White.copy(alpha = 0.015f), startY = 0f, endY = geo.floorY))
-        // The pool of light where the case stands, in the accent colour (squashed into an ellipse on the floor).
-        val r = geo.caseWPx * 0.95f
-        withTransform({ scale(1f, 0.22f, pivot = Offset(cx, geo.floorY)) }) {
-            drawCircle(
-                Brush.radialGradient(0f to accent.copy(alpha = 0.30f), 1f to Color.Transparent, center = Offset(cx, geo.floorY), radius = r),
-                radius = r, center = Offset(cx, geo.floorY)
-            )
-        }
     }
 }
 
