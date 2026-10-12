@@ -122,6 +122,8 @@ internal fun GameDock(
         MotionPrefs.observe()
         val popNow = MotionPrefs.pop(com.shelf.launcher.data.HomeLayout.CLASSIC)
         // (Update 141: whatever Endless and "Game you're on" say — always at the left end, never looping.)
+        // Update 146: like a big-screen game store's home row: game 1 is wide, but it's part of the row — moving on, the
+        // row slides along and the wide one slides off to the left like the others (it used to stay pinned there).
         val pinnedFirst = !carousel && LocalPinnedFirstWide.current
         // Update 136: wide capsules with the game you're on at the left: that place is a fixed wide capsule. It never
         // moves, folds or rolls out (only its game changes), and no game ever shows to its left; the covers right of it
@@ -344,7 +346,7 @@ internal fun GameDock(
                 centered = !carousel && !pinnedFirst && look.focusPosition == com.shelf.launcher.data.FocusPosition.CENTER,
                 // Lined up with the cards' left edge (same as the category label) — or, past the fixed
                 // first capsule, with the cover you're on next to it.
-                start = if (pinnedFirst && focus > 0) focusX + bannerWidth + spacing else dockTextStart(),
+                start = dockTextStart(),
                 // The name hugs the category label when that's right next to it (above the name above the row, or
                 // under the name under the row) — else it hugs the row — so there's never a big gap between them.
                 wrap = !lineAbove,
@@ -408,7 +410,7 @@ internal fun GameDock(
                 }
         ) {
             // The fixed first capsule is always there, however far along the row you are.
-            val slots = if (pinnedFirst && firstIndex > 0) listOf(0) + (firstIndex..lastIndex) else (firstIndex..lastIndex).toList()
+            val slots = (firstIndex..lastIndex).toList()
             // Update 136: the fixed wide place (see [fixedSlot]) holds the game you're on; the row only draws the ones after it.
             if (fixedSlot) key("fixedSlot") {
                 // Update 137: moving on, the next game slides into the wide place from the right (back: from the left)
@@ -497,14 +499,9 @@ internal fun GameDock(
                         carousel -> {
                             val w = if (r == 0) bannerWidth else coverWidth
                             // (Update 137: in the carousel view picked — Wheel, Deck, Flat row… — not only Tucked behind.)
-                            screenWidth / 2 + bannerWidth * Carousel.placeFlat(r.toFloat(), carouselSide).x - w / 2
-                        }
-                        pinnedFirst && index == 0 -> focusX
-                        // The focused cover sits right after the fixed capsule; the ones before it slide under it.
-                        pinnedFirst && focus > 0 -> when {
-                            r < 0 -> focusX + stride * r
-                            r == 0 -> focusX + bannerWidth + spacing
-                            else -> focusX + bannerWidth + spacing + bigCoverWidth + spacing + stride * (r - 1)
+                            // (Update 146: the Receding row's big game sits near the left edge, ~7 % in, the rest stepping back to its right.)
+                            val mid = if (Carousel.flatView == CarouselView.RECEDE) (screenWidth * 0.07f).coerceAtLeast(12.dp) + bannerWidth / 2 else screenWidth / 2
+                            mid + bannerWidth * Carousel.placeFlat(r.toFloat(), carouselSide).x - w / 2
                         }
                         // Left end: the games before sit fully off-screen — the frame/glow gap in front of the
                         // focused card used to show a sliver of the previous one.
@@ -513,17 +510,24 @@ internal fun GameDock(
                         else -> focusX + glideBanner + spacing + glideDiscRoom + stride * (r - 1)
                     }
                     val slotF = (if (loop) slot else index).toFloat()
-                    val fixedCard = pinnedFirst && index == 0
                     // Update 112: the game you're on growing out of the row (see below), eased in and out.
-                    // (Update 125: the fixed first capsule never moves at all — no growing, no leaning.)
-                    val fixedFirst = pinnedFirst && index == 0
-                    val popLift by androidx.compose.animation.core.animateFloatAsState(if (rel == 0 && !fixedFirst) 1f else 0f, androidx.compose.animation.core.tween(160), label = "dockPop")
+                    // Update 146, wide first game: where game [i] stands when the row is on game [at] — the game you're on
+                    // at the row's start, the ones before it a cover's width each to its left (game 1 its wide width),
+                    // the ones after past the bigger cover you're on.
+                    fun pinX(i: Int, at: Int): Dp = when {
+                        at <= 0 -> if (i == 0) focusX else focusX + bannerWidth + spacing + stride * (i - 1)
+                        i == at -> focusX
+                        i > at -> focusX + bigCoverWidth + spacing + stride * (i - at - 1)
+                        i >= 1 -> focusX + stride * (i - at)
+                        else -> focusX + stride * (1 - at) - spacing - bannerWidth
+                    }
+                    val popLift by androidx.compose.animation.core.animateFloatAsState(if (rel == 0) 1f else 0f, androidx.compose.animation.core.tween(160), label = "dockPop")
                     // Carousel: distance from the game you're on, gliding with the cards.
                     val relAnim by androidx.compose.animation.core.animateFloatAsState(rel.toFloat(), dockMotion(), label = "dockRel")
                     // Lean away from the game you're on (Game row › Tilt).
                     val tilt by androidx.compose.animation.core.animateFloatAsState(
                         targetValue = when {
-                            !look.tiltOthers || rel == 0 || fixedFirst -> 0f
+                            !look.tiltOthers || rel == 0 -> 0f
                             rel < 0 -> 24f
                             else -> -24f
                         },
@@ -572,13 +576,18 @@ internal fun GameDock(
                         modifier = Modifier
                             .align(androidx.compose.ui.Alignment.CenterStart)
                             // The focused card's frame / bolts reach past its edge: keep it above its neighbours.
-                            .zIndex(if (carousel) Carousel.placeFlat(relAnim, Carousel.side).z else if (pinnedFirst && index == 0) 2f else if (rel == 0) 1f else 0f)
+                            .zIndex(if (carousel) Carousel.placeFlat(relAnim, Carousel.side).z else if (rel == 0) 1f else 0f)
                             .offset {
                                 // The card's place for where the row is now (between two games while it glides).
-                                val rf = if (fixedCard) 0f else slotF - rowPos.value
-                                val f0 = kotlin.math.floor(rf).toInt()
-                                val t = rf - f0
-                                val xd = if (fixedCard) focusX else lerp(xAt(f0), xAt(f0 + 1), t)
+                                val xd = if (pinnedFirst) {
+                                    val p = rowPos.value
+                                    val a0 = kotlin.math.floor(p).toInt()
+                                    lerp(pinX(index, a0), pinX(index, a0 + 1), p - a0)
+                                } else {
+                                    val rf = slotF - rowPos.value
+                                    val f0 = kotlin.math.floor(rf).toInt()
+                                    lerp(xAt(f0), xAt(f0 + 1), rf - f0)
+                                }
                                 IntOffset(xd.roundToPx(), 0)
                             }
                             // The game you're on reports where it is (cover light, game window; no layout change).

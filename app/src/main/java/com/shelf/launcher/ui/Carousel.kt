@@ -221,7 +221,12 @@ enum class CarouselView(val label: String, /** Update 134: always drawn as 3D ca
     /** Update 134: the one you're on facing you, the others turned to their spines and packed tight, like a shelf. */
     SPINE_WALL("Spine wall", true),
     /** Update 134: a flat row of 3D cases all turned a little, so each one's spine shows, the name above. */
-    TURNED("Turned row", true)
+    TURNED("Turned row", true),
+    /**
+     * Update 146: like a dashboard: the game you're on big near the left edge, the next ones to its right getting
+     * smaller and turned a little away, stepping back into the distance; the ones before slide off to the left.
+     */
+    RECEDE("Receding row")
 }
 
 internal object Carousel {
@@ -315,12 +320,13 @@ internal object Carousel {
      */
     fun flatReach(bigW: Float, half: Float): Int {
         val s = side
-        for (k in 1..s) {
+        val r = reach(s, flatView)
+        for (k in 1..r) {
             val p = placeFlat(k.toFloat(), s)
             if (p.alpha <= 0f) return k
             if (kotlin.math.abs(p.x) * bigW - bigW * p.scale / 2f > half) return k + 1
         }
-        return s + 1
+        return r + 1
     }
 
     val flatView: CarouselView get() = when (view) {
@@ -386,8 +392,28 @@ internal object Carousel {
                 sign * (near * 1.0f + far * 0.92f) * g, 0f, if (d < 1f) 1f - 0.16f * d else 0.84f,
                 20f, 0f, alpha(d, side), shade(d) * 0.5f, z(d)
             )
+            CarouselView.RECEDE -> if (rel >= 0f) {
+                // Update 146: each next game a step further back: smaller by the same share each step, its left edge just
+                // under the one before (a little overlap), centred a bit higher so the row runs off to a point above the
+                // middle, and turned a little away like a wall seen from its left end.
+                val sc = if (d <= 1f) 1f - (1f - RECEDE_NEXT) * d else RECEDE_NEXT * Math.pow(RECEDE_SHRINK.toDouble(), far.toDouble()).toFloat()
+                val back = RECEDE_NEXT * 0.82f * (1f - Math.pow(RECEDE_SHRINK.toDouble(), far.toDouble()).toFloat()) / (1f - RECEDE_SHRINK)
+                Place(
+                    (0.76f * near + back) * g, -(1f - sc) * 0.3f, sc,
+                    24f * near, 0f, alpha(d, side), shade(d) * 0.8f, z(d)
+                )
+            } else Place(
+                // The ones before slide off past the left edge and fade (drawn over the one coming in, like the Deck).
+                -1.1f * d * g, 0f, 1f - 0.08f * near, 0f, 0f,
+                (1f - d * 1.25f).coerceIn(0f, 1f), 0f, z(d) + 0.5f
+            )
         }
     }
+
+    /** Update 146, Receding row: the first game after the one you're on, against it. */
+    const val RECEDE_NEXT = 0.62f
+    /** Update 146, Receding row: each game after that this much smaller than the one before. */
+    const val RECEDE_SHRINK = 0.86f
 }
 
 /**
@@ -409,7 +435,9 @@ internal fun GameCarousel(
     loop: Boolean = false,
     /** The view model's D-pad step count and direction, for the endless place ([rememberLoopFocus]). */
     loopTick: Int = 0,
-    loopStep: Int = 0
+    loopStep: Int = 0,
+    /** Update 146: time played per game (stableKey → ms), for the Receding row's line under its big game. */
+    playtime: Map<String, Long> = emptyMap()
 ) {
     val spines = spinesOn(cardArtType)
     val view = Carousel.view
@@ -425,8 +453,11 @@ internal fun GameCarousel(
     // spines), in the views that lay the games out in a row (Wheel and Deck keep their own places).
     val spinesAside = !cases3d && (view == CarouselView.TUCKED || view == CarouselView.FLIP || view == CarouselView.FLAT || view == CarouselView.POP) && (spines || (view == CarouselView.FLIP &&
         (cardArtType == com.shelf.launcher.data.CardArtType.COVER || cardArtType == com.shelf.launcher.data.CardArtType.CASE || cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL)))
+    // Update 146: the Receding row's next games as spines (Spines look) packed one after another to the right.
+    val recede = view == CarouselView.RECEDE
+    val spinesRight = recede && spines && !cases3d
     // Spines are slim: three times as many each side (like the Spine wall), so they reach the screen's edges.
-    val side = Carousel.side.let { if (spinesAside && it < Carousel.EDGE_SIDE) it * 3 else it }
+    val side = Carousel.side.let { if ((spinesAside || spinesRight) && it < Carousel.EDGE_SIDE) it * 3 else it }
     val n = games.size
     val looping = loop && n >= 2
     // The place on the endless row (just [focus] when it doesn't go round).
@@ -458,7 +489,8 @@ internal fun GameCarousel(
     val latestLoop by rememberUpdatedState(looping)
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     // Update 134: Turned row has the name above the games.
-    if (showName && view == CarouselView.TURNED) games.getOrNull(focus)?.let { g -> CarouselName(g, Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 6.dp)) }
+    val nameAbove = view == CarouselView.TURNED
+    if (showName && nameAbove) games.getOrNull(focus)?.let { g -> CarouselName(g, Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 6.dp)) }
     BoxWithConstraints(
         Modifier.fillMaxWidth().weight(1f).pointerInput(games.size) {
             // Swipe: one game per ~70 dp.
@@ -482,6 +514,20 @@ internal fun GameCarousel(
         val bigW = minOf(maxHeight * 0.84f * 0.72f * sizeK, maxHeight * 0.97f * 0.72f, maxWidth * 0.5f * sizeK)
         val bigH = bigW / 0.72f
         val reach = Carousel.reach(side, view)
+        // Update 146: the Receding row spaces its games by the big one's real width: a wide capsule or a round disc is
+        // wider than a cover, and spaced as covers they piled up. Glides to the next game's width with the carousel.
+        val widen = recede
+        // (No room yet — a 0-high box while the screen opens: 1, not 0 / 0 = NaN, which crashes the offset.)
+        val unitTarget = games.getOrNull(focus)?.takeIf { bigW > 0.dp }?.let { fg ->
+            val a = if (cases3d) case3dAspect(fg, mixed) else shelfArtAspect(fg, cardArtType, hidden, mixed)
+            val sh = minOf(bigH, if (a > 1f) bigW / a * 1.25f else bigH)
+            ((sh * a) / bigW).coerceIn(0.6f, 1.8f)
+        } ?: 1f
+        val unitAnim by animateFloatAsState(unitTarget, tween(glideMs, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "carouselUnit")
+        val unitK = if (widen) unitAnim else 1f
+        // Update 146: the Receding row's big game sits near the left edge (its left side ~7 % in), not in the middle.
+        val recedeLeft = (maxWidth * 0.07f).coerceAtLeast(12.dp)
+        val anchorX = if (recede) -maxWidth / 2 + recedeLeft + bigW * unitK / 2 else 0.dp
         val first = kotlin.math.floor(pos).toInt() - reach - 1
         val last = kotlin.math.ceil(pos).toInt() + reach + 1
         for (i in first..last) {
@@ -498,18 +544,25 @@ internal fun GameCarousel(
             val sideways = !cases3d && !spines && i != vFocus && kotlin.math.abs(p.turnY) > 50f &&
                 (cardArtType == com.shelf.launcher.data.CardArtType.COVER || cardArtType == com.shelf.launcher.data.CardArtType.CASE || cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL)
             val spineHere = !cases3d && ((spines && i != vFocus) || sideways)
+            // Update 136: with 3D models on, the 3D cases are your 3D shape library's pieces, at the angle nearest their turn.
+            // (Update 146: worked out first — a 3D model is drawn instead of a spine, so it isn't packed as one.)
+            val model = if (cases3d || (modelLook && isFreeMedia(artForGame(cardArtType, g.platform, hidden, mixed), g.platform))) Models3D.available(g.platform) else null
+            val near = d.coerceAtMost(1f)
+            val far = (d - 1f).coerceAtLeast(0f)
+            // Update 146: Receding row, Spines look: the next games as spines one after another to its right, stepping back.
+            val recedeSpine = spinesRight && spineHere && model == null && rel > 0f
             // Update 135: spines aside sit lower than the game you're on (they were nearly as tall as it), all the same
             // height like books on a shelf, packed close one after another from just beside its cover.
-            val scale = if (spineHere && spinesAside) Carousel.spineScale(d) else p.scale
-            val x = if (spineHere && spinesAside) {
+            val scale = if (recedeSpine || (spineHere && spinesAside)) Carousel.spineScale(d) else p.scale
+            val x = if (recedeSpine || (spineHere && spinesAside)) {
                 val spineW = bigH * Carousel.SPINE_SIZE * SPINE_ASPECT
-                val firstX = bigW * (0.5f + 0.07f * Carousel.gap) + spineW / 2
+                val firstX = bigW * unitK * (0.5f + 0.07f * Carousel.gap) + spineW / 2
                 val stepX = spineW + bigW * 0.03f * Carousel.gap
-                (firstX * d.coerceAtMost(1f) + stepX * (d - 1f).coerceAtLeast(0f)) * sign
-            } else bigW * p.x * (if (spines && !cases3d) 0.62f else 1f)
+                anchorX + (firstX * near + stepX * far) * sign
+            } else anchorX + bigW * unitK * p.x * (if (spines && !cases3d && !recede) 0.62f else 1f)
+            // (Update 146: the Receding row's spines step up towards its vanishing point like its covers do.)
+            val yK = if (recedeSpine) -(1f - scale) * 0.3f else p.y
             val reflect = Features.carouselReflect.state.value
-            // Update 136: with 3D models on, the 3D cases are your 3D shape library's pieces, at the angle nearest their turn.
-            val model = if (cases3d || (modelLook && isFreeMedia(artForGame(cardArtType, g.platform, hidden, mixed), g.platform))) Models3D.available(g.platform) else null
             val aspect = if (model != null) Models3D.aspect(model) else if (cases3d) case3dAspect(g, mixed) else if (spineHere) SPINE_ASPECT else shelfArtAspect(g, cardArtType, hidden, mixed)
             // Slot in the item's own shape (no empty bands round it), as tall as the middle one × its scale.
             val h0 = minOf(bigH, if (aspect > 1f) bigW / aspect * 1.25f else bigH)
@@ -521,7 +574,7 @@ internal fun GameCarousel(
                         .align(Alignment.Center)
                         // (Update 135: a spine never covers the game you're on while the carousel slides.)
                         .zIndex(if (spineHere) p.z - 50f else p.z)
-                        .offset(x = x, y = bigH * p.y - (if (reflect) bigH * 0.08f else 0.dp))
+                        .offset(x = x, y = bigH * yK - (if (reflect) bigH * 0.08f else 0.dp))
                         .size(w0, h0)
                         .graphicsLayer {
                             scaleX = scale; scaleY = scale
@@ -551,7 +604,33 @@ internal fun GameCarousel(
             }
         }
     }
-    if (showName && view != CarouselView.TURNED) games.getOrNull(focus)?.let { g -> CarouselName(g, Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp)) }
+    // Update 146: the Receding row's name (and time played) sits under its big game at the left, lined up with it.
+    if (showName && recede) games.getOrNull(focus)?.let { g ->
+        RecedeName(g, playtime[g.stableKey]?.takeIf { it > 0L && look.playtimeOnHome }, Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp))
+    } else if (showName && !nameAbove) games.getOrNull(focus)?.let { g -> CarouselName(g, Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp)) }
+    }
+}
+
+/**
+ * Update 146, Receding row: the big game's name, left-aligned under it (its left edge ~7 % in, as in [GameCarousel]),
+ * and its time played under that when there is some.
+ */
+@Composable
+private fun RecedeName(g: Game, playedMs: Long?, modifier: Modifier) {
+    BoxWithConstraints(modifier) {
+        Column(Modifier.padding(start = (maxWidth * 0.07f).coerceAtLeast(12.dp), end = 12.dp).fillMaxWidth(0.62f)) {
+            ScrollingName(
+                gameDisplayName(g.name), scrolling = true, color = ShelfTheme.accent, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                lines = 1, textAlign = androidx.compose.ui.text.style.TextAlign.Start,
+                style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW),
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (playedMs != null) Text(
+                // (The same short time as the other "Played …" lines: "Played <1 min", not "Played Under a minute".)
+                "Played " + com.shelf.launcher.data.PlaytimeStore.format(playedMs), color = ShelfTheme.colors.textPrimary.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1,
+                overflow = TextOverflow.Ellipsis, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
+            )
+        }
     }
 }
 

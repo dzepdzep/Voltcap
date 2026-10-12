@@ -56,6 +56,12 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.CHAN -> "Tiles per row, pale backdrop, names"
     HomeLayout.CIRCUIT -> "Board colour, flowing current, chip labels, board behind"
     HomeLayout.SHELF -> "Spines, fronts or turned, real sizes, front or side view, bob & turn, wood / dark / glass"
+    // Update 146.
+    HomeLayout.LIBRARY -> "Games per row, the game panel, tabs"
+    HomeLayout.STACKS -> "Stacks in perspective, button bar, mirror floor"
+    HomeLayout.TIMELINE -> "Order by last played, release year or added, dates"
+    HomeLayout.ARCADE -> "Marquee glow, screen lines, cabinet colour"
+    HomeLayout.CONSOLES -> "Console pictures, how many games slide out"
     else -> ""
 }
 
@@ -74,6 +80,12 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.RESUME -> ResumeSettings()
         HomeLayout.CHAN -> ChannelSettings()
         HomeLayout.CIRCUIT -> CircuitSettings()
+        // Update 146.
+        HomeLayout.LIBRARY -> LibrarySettings()
+        HomeLayout.STACKS -> CaseStacksSettings()
+        HomeLayout.TIMELINE -> TimelineSettings()
+        HomeLayout.ARCADE -> ArcadeSettings()
+        HomeLayout.CONSOLES -> ConsoleStackSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).
@@ -147,6 +159,24 @@ private fun DashSettings() {
     Toggle(Icons.Filled.ContentCut, "Cut corners", "Angled corners on the panels. Off: rounded.", Features.dashCut)
 }
 
+/**
+ * Update 146: what fills the background of a layout that has a pale backdrop of its own (Live tiles, Channel grid):
+ * that light backdrop, your theme's own background, or the game you're on's art (dimmed as the theme says).
+ */
+@Composable
+private fun BackdropChoice(light: Features.BoolPref, art: Features.BoolPref) {
+    val now = when {
+        art.state.value -> 2
+        light.state.value -> 0
+        else -> 1
+    }
+    StyleChoice("Background", arrayOf(0, 1, 2), now, { when (it) { 0 -> "Pale"; 1 -> "Your theme"; else -> "The game's art" } }) {
+        light.value = it == 0
+        art.value = it == 2
+    }
+    MutedNote("Pale: a light backdrop with dark writing. Your theme: the theme's own background (Settings › Theme). The game's art: the game you're on fills the screen.")
+}
+
 @Composable
 private fun LiveSettings() {
     MutedNote("Flat live tiles: the categories as words on top (L2 / R2 or tap), a page of game tiles, coloured shortcut tiles under them. ◀ ▶ ▲ ▼ move round the tiles, ▼ from the bottom row reaches the shortcuts.")
@@ -154,7 +184,7 @@ private fun LiveSettings() {
     StyleChoice("Tiles per page", Features.LivePage.values(), Features.livePage.state.value, { it.label }) { Features.livePage.value = it }
     StyleChoice("Colour", Features.LiveColor.values(), Features.liveColor.state.value, { it.label }) { Features.liveColor.value = it }
     Toggle(Icons.Filled.Tab, "Category names on top", "The one you're in, the one before it and the next ones.", Features.liveTabs)
-    Toggle(Icons.Filled.WbSunny, "Pale backdrop", "A light background behind the tiles. Off: your theme shows through.", Features.liveLight)
+    BackdropChoice(Features.liveLight, Features.liveArt)
     Toggle(Icons.Filled.Label, "Names on the tiles", "The game's name along the bottom of its tile.", Features.liveNames)
     Toggle(Icons.Filled.MusicNote, "Music player", "The song that's playing, as the last tile of the bottom row.", Features.styleMusic)
 }
@@ -288,7 +318,7 @@ private fun ChannelSettings() {
     MutedNote("Pages of wide tiles, a curved bar at the bottom with the clock; the round button on the left changes category, the one on the right opens the game's details. ▲ ▼ ◀ ▶ move along the tiles.")
     Spacer(Modifier.height(10.dp))
     Slider("Tiles per row", Features.chanCols, 3, 6) { "$it" }
-    Toggle(Icons.Filled.WbSunny, "Pale backdrop", "Off: your theme shows through.", Features.chanLight)
+    BackdropChoice(Features.chanLight, Features.chanArt)
     Toggle(Icons.Filled.Label, "Name on the tile you're on", "A small name pill along the bottom of the selected tile.", Features.chanNames)
     Toggle(Icons.Filled.Label, "Scroll on continuously", "◀ ▶ move a column over and the grid glides along with you. Off: pages that turn at the edge.", Features.gridsContinuous)
     MutedNote("The game window (A on a game: Home · Details · Start) is in Home › Game window, for every layout.")

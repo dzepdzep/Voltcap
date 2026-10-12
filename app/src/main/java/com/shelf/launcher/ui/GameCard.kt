@@ -190,8 +190,8 @@ fun GameCard(
     // Electric / glow effect on the game you're on (Game row › Effect). Lite effects: a still glow
     // instead of crackling arcs, and no pulse (nothing redraws while you just look at the screen).
     val lite = LocalLiteEffects.current
-    // (Update 125: the fixed first capsule stays still: its frame only, no glow pulse or crackling.)
-    val effect = if (!focused || pinnedWide) com.shelf.launcher.data.FocusEffect.NONE
+    // (Update 146: the wide first capsule moves with the row now, so it gets the effect like any game you're on.)
+    val effect = if (!focused) com.shelf.launcher.data.FocusEffect.NONE
     else if (lite && look.focusEffect == com.shelf.launcher.data.FocusEffect.ELECTRIC) com.shelf.launcher.data.FocusEffect.GLOW
     else look.focusEffect
     // ~20 updates a second (not every display frame), and still while the handheld sits idle.

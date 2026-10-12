@@ -64,6 +64,12 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         com.shelf.launcher.data.HomeLayout.RESUME -> Pictogram.LIVE
         com.shelf.launcher.data.HomeLayout.CHAN -> Pictogram.GRID
         com.shelf.launcher.data.HomeLayout.CIRCUIT -> Pictogram.ROW
+        // Update 146 (the nearest pictures).
+        com.shelf.launcher.data.HomeLayout.LIBRARY -> Pictogram.GRID
+        com.shelf.launcher.data.HomeLayout.STACKS -> Pictogram.SPINES
+        com.shelf.launcher.data.HomeLayout.TIMELINE -> Pictogram.ROW
+        com.shelf.launcher.data.HomeLayout.ARCADE -> Pictogram.TV
+        com.shelf.launcher.data.HomeLayout.CONSOLES -> Pictogram.SHELF
     }
     is TvRoom.Games -> when (value) {
         TvRoom.Games.SPINES -> Pictogram.SPINES

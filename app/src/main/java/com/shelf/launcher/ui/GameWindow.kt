@@ -429,6 +429,11 @@ internal fun GameWindow(
     /** Update 132: loads an achievement's comments (the achievements page shows them under the one you open). */
     onLoadComments: (Int) -> Unit = {}
 ) {
+    // Update 146: the banner page (Settings › Game window › Style), the same for every layout.
+    if (Features.winBanner.state.value) {
+        BannerGameWindow(layout, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onSync, options, onLoadComments)
+        return
+    }
     val o = state.artOverrides[g.stableKey]
     val a = art[g.stableKey]
     val cover = o?.cover ?: a?.gridUrl

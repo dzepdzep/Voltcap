@@ -464,6 +464,20 @@ internal fun styleHomeKey(
             }
             else -> false
         }
+        // Update 146: the newer layouts handle their own keys (in their own files) through [StyleKeyCtx].
+        HomeLayout.LIBRARY, HomeLayout.STACKS, HomeLayout.TIMELINE, HomeLayout.ARCADE, HomeLayout.CONSOLES -> {
+            val ctx = StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+            return when (layout) {
+                HomeLayout.LIBRARY -> libraryKey(ctx)
+                HomeLayout.STACKS -> caseStacksKey(ctx)
+                HomeLayout.TIMELINE -> timelineKey(ctx)
+                HomeLayout.ARCADE -> arcadeKey(ctx)
+                else -> consoleStackKey(ctx)
+            }
+        }
         HomeLayout.LIVE -> {
             val move = liveMove(focus, k, StyleNav.livePage)
             if (move == null) {
@@ -488,6 +502,32 @@ internal fun styleHomeKey(
         else -> return false
     }
 }
+
+/**
+ * Update 146: what a newer style home's key handler gets (see [styleHomeKey]) — called for a D-pad direction press
+ * (KeyDown) while the D-pad is on the games (menus / bars are handled by [styleHomeKey] itself).
+ * Return true when handled, false to let the home screen do its default (◀ ▶ = previous / next game).
+ */
+internal class StyleKeyCtx(
+    /** The direction pressed. */
+    val key: Key,
+    /** A fresh press (not the auto-repeat of a held one). */
+    val first: Boolean,
+    /** The game you're on (index in the category) and how many there are. */
+    val focus: Int,
+    val count: Int,
+    /** Moves to another game (play [sound] UiSound.MOVE yourself). */
+    val setFocus: (Int) -> Unit,
+    val sound: (UiSound) -> Unit,
+    /** L2 / R2: true = next category, false = previous. */
+    val category: (Boolean) -> Unit,
+    /** Moves the D-pad into a zone's buttons (StyleNav.top / side / bar, set by the layout as it draws); true = handled. */
+    val enterZone: (StyleNav.Zone) -> Boolean,
+    /** Past the layout's edge: up (true) or down — the status bar / player above or below (HomeReach); true = handled. */
+    val reach: (Boolean) -> Boolean,
+    /** Swallows the key (and its release); returns true. */
+    val take: () -> Boolean
+)
 
 /**
  * Live tiles: where a key goes from game [i] on pages of [page] games (big tile first). Null = off the
@@ -959,6 +999,12 @@ internal fun StyleHome(
         HomeLayout.RESUME -> StyleConsoleResume(c, modifier)
         HomeLayout.CHAN -> StyleChannelGrid(c, modifier)
         HomeLayout.CIRCUIT -> StyleCircuit(c, modifier)
+        // Update 146.
+        HomeLayout.LIBRARY -> StyleLibrary(c, modifier)
+        HomeLayout.STACKS -> StyleCaseStacks(c, modifier)
+        HomeLayout.TIMELINE -> StyleTimeline(c, modifier)
+        HomeLayout.ARCADE -> StyleArcade(c, modifier)
+        HomeLayout.CONSOLES -> StyleConsoleStack(c, modifier)
         else -> Unit
     }
 }
@@ -1031,6 +1077,9 @@ internal fun styleArtBehind(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.BAR -> Features.barArt.state.value
     HomeLayout.HUB -> Features.hubArt.state.value
     HomeLayout.RESUME -> Features.resArt.state.value
+    // Update 146: the two pale layouts can show the game's art instead (Settings › Home › Layout options › Background).
+    HomeLayout.LIVE -> Features.liveArt.state.value
+    HomeLayout.CHAN -> Features.chanArt.state.value
     else -> false
 }
 

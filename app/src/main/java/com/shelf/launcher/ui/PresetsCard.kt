@@ -315,6 +315,12 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     com.shelf.launcher.data.HomeLayout.RESUME -> "Resume & discover: the game you're on as a big square with shortcut tiles under it, the next games in a row, Discover cards."
     com.shelf.launcher.data.HomeLayout.CHAN -> "Channel grid: pages of wide tiles on a pale backdrop, a curved bar with the clock, round buttons at the sides."
     com.shelf.launcher.data.HomeLayout.CIRCUIT -> "Circuit board: Voltcap's own — your games as chips zig-zagging along a glowing power line, the one you're on powered up, a readout and a power switch to play."
+    // Update 146.
+    com.shelf.launcher.data.HomeLayout.LIBRARY -> "Library panel: the game you're on in a panel on the left — cover, play time, achievements, Details and Play — and a grid of the category's games on the right, tabs on top."
+    com.shelf.launcher.data.HomeLayout.STACKS -> "Case stacks: the game you're on as a big case in the middle, the others as stacks of spines left and right, a button bar along the bottom."
+    com.shelf.launcher.data.HomeLayout.TIMELINE -> "Timeline: your games along a line by when you last played them (or release year, or when added), with the dates under them."
+    com.shelf.launcher.data.HomeLayout.ARCADE -> "Arcade cabinets: the game you're on on an arcade cabinet's screen with its marquee lit on top, the others as a row of small cabinets."
+    com.shelf.launcher.data.HomeLayout.CONSOLES -> "Console stack: your consoles as a pile of consoles; the one you're on slides out its games."
     com.shelf.launcher.data.HomeLayout.SHELF -> "Game shelf: your games as spines on a bookcase, the one you're on pulled out to show its front. ◀ ▶ along, ▲ ▼ to the shelf above / below."
 }
 

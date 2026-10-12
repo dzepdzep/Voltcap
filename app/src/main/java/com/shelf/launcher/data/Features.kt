@@ -1003,6 +1003,8 @@ object Features {
     val liveColor = EnumPref("live_color", LiveColor.GREEN, LiveColor.values())
     /** Live tiles: a pale backdrop behind everything (off: the theme shows through). */
     val liveLight = BoolPref("live_light", true)
+    /** Update 146, Live tiles: the game's art fills the background (then the pale backdrop is off). */
+    val liveArt = BoolPref("live_art", false)
     /** Live tiles: the game's name on its tile. */
     val liveNames = BoolPref("live_names", true)
 
@@ -1139,6 +1141,8 @@ object Features {
     /** Channel grid: tiles per row, pale backdrop, the name on the tile you're on. */
     val chanCols = IntPref("chan_cols", 4, 3..6)
     val chanLight = BoolPref("chan_light", true)
+    /** Update 146, Channel grid: the game's art fills the background (then the pale backdrop is off). */
+    val chanArt = BoolPref("chan_art", false)
     val chanNames = BoolPref("chan_names", true)
     /**
      * Update 112: the Channel grid scrolls on continuously, a column at a time (◀ ▶), instead
@@ -1187,6 +1191,40 @@ object Features {
     val gameWindowPlan = StringPref("game_window_plan", "")
     /** Update 122: the game window's disc games as their case with the disc half out of it (the default); off: the disc alone. */
     val gameWindowCase = BoolPref("game_window_case", true)
+    // ---- Update 146: the newer layouts and the banner game window ----
+    /** Library panel: games per row in the grid (3–8). */
+    val libCols = IntPref("lib_cols", 5, 3..8)
+    /** Library panel: the game panel on the left (off: the grid alone, full width). */
+    val libPanel = BoolPref("lib_panel", true)
+    /** Library panel: category tabs along the top. */
+    val libTabs = BoolPref("lib_tabs", true)
+    /** Case stacks: the stacks drawn in perspective, going back into the room (off: flat, straight on). */
+    val stacksDepth = BoolPref("stacks_depth", true)
+    /** Case stacks: the button bar along the bottom. */
+    val stacksBar = BoolPref("stacks_bar", true)
+    /** Case stacks: a mirror floor under the cases. */
+    val stacksMirror = BoolPref("stacks_mirror", true)
+    /** Timeline: what puts the games in order along the line. */
+    enum class TimelineBy(val label: String) { LAST_PLAYED("Last played"), RELEASED("Release year"), ADDED("Added to Voltcap") }
+    val timelineBy = EnumPref("timeline_by", TimelineBy.LAST_PLAYED, TimelineBy.values())
+    /** Timeline: the date / year under each game. */
+    val timelineDates = BoolPref("timeline_dates", true)
+    /** Arcade cabinets: the marquee lit and glowing. */
+    val arcadeGlow = BoolPref("arcade_glow", true)
+    /** Arcade cabinets: scan lines over the screen. */
+    val arcadeLines = BoolPref("arcade_lines", true)
+    /** Arcade cabinets: the cabinets in the game's own colours (off: the theme's). */
+    val arcadeGameColors = BoolPref("arcade_game_colors", true)
+    /** Console stack: the consoles as your console photos where there are (Settings › Library), else drawn. */
+    val consolePhotos = BoolPref("console_stack_photos", true)
+    /** Console stack: how many games slide out of the console you're on (3–9). */
+    val consoleStackGames = IntPref("console_stack_games", 6, 3..9)
+    /**
+     * Banner game window (update 146): the game window as one page — a wide art banner on top, a coloured strip with
+     * Play, last played and play time, then tabs (L1 / R1): Activity, Achievements, Media, Game info. Off: each layout's own window.
+     */
+    val winBanner = BoolPref("win_banner", false)
+
     /** Channel grid (update 104): profile, Settings, notifications and sync buttons in the top right corner. */
     val chanCorner = BoolPref("chan_corner", true)
     /** Circuit board (update 106): the board's colour — green board and traces, else near-black with the theme's colour. */

@@ -3165,6 +3165,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             RowChoice("In ${appearance.homeLayout.label}, A opens", arrayOf(false, true), classic, { if (it) "The classic details window" else "This layout's own window" }) {
                 if (it != classic) F.classicWindowLayouts.toggle(appearance.homeLayout.name)
             }
+            // Update 146: the banner page — one look for every layout (art banner, Play strip, tabs).
+            RowChoice("Its style (every layout)", arrayOf(false, true), F.winBanner.state.value, { if (it) "Banner page" else "The layout's own" }) { F.winBanner.value = it }
             RowChoice("Its colours (every layout)", com.shelf.launcher.data.Features.WinColors.values(), F.gameWindowColors.state.value, { it.label }) { F.gameWindowColors.value = it }
             MutedNote("The game's colours come from its cover; the layout's own keeps each layout's look as it was.")
             // Update 125: what the window shows and where, for this layout on its own.

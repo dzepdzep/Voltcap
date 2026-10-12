@@ -113,10 +113,25 @@ enum class HomeLayout(val label: String) {
     /** Pages of wide tiles on a pale backdrop, a curved bar with the clock and a round button at each side (StyleConsoleHomes.kt). */
     CHAN("Channel grid"),
     /** Voltcap's own (update 106): the games as chips zig-zagging along a glowing power line on a circuit board (StyleCircuit.kt). */
-    CIRCUIT("Circuit board");
+    CIRCUIT("Circuit board"),
+    /** Update 146: a panel on the left with the game you're on (cover, name, play time, achievements, Details / Play),
+     *  a grid of the category's games on the right, category tabs along the top (StyleLibrary.kt). */
+    LIBRARY("Library panel"),
+    /** Update 146: the game you're on as a big case in the middle, the others as stacks of spines left and right, a button
+     *  bar along the bottom (StyleCaseStacks.kt). */
+    STACKS("Case stacks"),
+    /** Update 146: the games along a line by when you last played them (or release year / when added), dates under them
+     *  (StyleTimeline.kt). */
+    TIMELINE("Timeline"),
+    /** Update 146: the game you're on shown on a drawn arcade cabinet's screen with its marquee on top, the others as a
+     *  row of small cabinets (StyleArcade.kt). */
+    ARCADE("Arcade cabinets"),
+    /** Update 146: your consoles as a pile of drawn consoles; the one you pick slides out its games (StyleConsoleStack.kt). */
+    CONSOLES("Console stack");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
-    val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT
+    val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
+        this == LIBRARY || this == STACKS || this == TIMELINE || this == ARCADE || this == CONSOLES
 
     companion object {
         /**

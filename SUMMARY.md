@@ -4,6 +4,65 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (146): Five new layouts, a banner game page, the Receding row, the wide first game scrolls away, a Background choice for the pale layouts
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (6): `src_copy\ui\StyleLibrary.kt`, `src_copy\ui\StyleCaseStacks.kt`, `src_copy\ui\StyleTimeline.kt`,
+  `src_copy\ui\StyleArcade.kt`, `src_copy\ui\StyleConsoleStack.kt`, `src_copy\ui\GameWindowBanner.kt`.
+- Changed (12): `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`,
+  `src_copy\ui\GameCard.kt`, `src_copy\ui\GameDock.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\OptionIcons.kt`,
+  `src_copy\ui\PresetPreview.kt`, `src_copy\ui\PresetsCard.kt`, `src_copy\ui\SettingsDialog.kt`,
+  `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\StyleHomes.kt`.
+
+**Copy `project_copy`:** `project_copy\PRIVACY.md` (new, the privacy policy page for Google's sign-in screen).
+
+**Files to delete:** none.
+
+### What changed
+- **Five new layouts** (Settings › Home › Layout & presets › Layout; their options in Settings › Home › Layout options
+  while one is in use):
+  - **Library panel:** the game you're on in a panel on the left (cover, play time, achievements, Details, Play), a grid
+    of the category's games on the right, the categories as tabs on top. Options: games per row, the panel, the tabs.
+  - **Case stacks:** the game you're on as a big case in the middle, the others as stacks of spines each side, a
+    button bar along the bottom. Options: stack depth, the bar, a mirror floor.
+  - **Timeline:** the games along a glowing line, by last played, release year or date added, with the dates.
+  - **Arcade cabinets:** the game you're on on a big arcade cabinet's screen, its marquee lit; the others as a row of
+    small cabinets. Options: glow, scan lines, the game's own colours.
+  - **Console stack:** your consoles as a pile; the one you're on slides out its games. Options: console pictures, games
+    shown.
+- **Banner game page:** the game window as a store-style page (big art banner, Play strip, tabs for Activity, Options
+  and Achievements). Settings › Home › Layout options › Game window (on) › **Its style (every layout)** › Banner page.
+- **Receding row** (a new carousel view): the game you're on big near the left edge, the next ones stepping back into
+  the distance to its right. Settings › Home › Layout options › Carousel look › **View** › Receding row. Only this one
+  was added: the other carousel ideas from the pictures are already there (Arc, Spine wall, Record flip, Wheel).
+- **Wide for the first game only:** game 1 is still the wide capsule, but it's now part of the row: moving on, the row
+  slides along and the wide one slides off to the left like the others (it used to stay pinned at the left). Settings ›
+  Home › Layout options › Game you're on: At the left › It shows as: Wide for the first game only.
+- **Background for the pale layouts:** Live tiles and Channel grid had a fixed light backdrop. Their options now have
+  **Background**: Pale, Your theme, or The game's art.
+- **PRIVACY.md:** the privacy policy Google's sign-in screen needs a link to
+  (https://github.com/dzepdzep/Voltcap/blob/main/PRIVACY.md after the push).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** the 12 changed files fetched fresh, the same as 145.
+- **Not tested on a device yet.**
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 146: five new layouts, banner game page, receding row, wide first game scrolls, layout backgrounds, privacy policy"
+git push origin main
+.\gradlew installDebug
+```
+
+---
+
 ## Update — 12 Oct 2026 (145): The signed APK starts again, Google Drive at first start, trophy count clear of the cases, pictures fill the case window, shimmer keeps going
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

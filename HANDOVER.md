@@ -222,6 +222,14 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Case pictures:** `FillUnlessMuchCut` (CoverCases.kt) fills a window unless >15 % would be cut; Models3D labels use it too.
 - **Shimmer:** `EffectClock.shimmer` runs until the deep idle (3 min), slower while idle.
 
+## State after update 146
+- **New layouts:** `HomeLayout` LIBRARY / STACKS / TIMELINE / ARCADE / CONSOLES (all `styleHome`), each in its own file `ui/Style<Library|CaseStacks|Timeline|Arcade|ConsoleStack>.kt` with `Style…()`, `…Key(StyleKeyCtx)` and `…Settings()`. `StyleKeyCtx` (StyleHomes.kt) carries key, first, focus, count, setFocus, sound, category, enterZone, reach, take. Prefs in Features (Update 146 block).
+- **Banner page:** `Features.winBanner` → `GameWindow` hands over to `BannerGameWindow` (GameWindowBanner.kt) for every layout.
+- **Carousel:** `CarouselView.RECEDE` (left-anchored; `anchorX` in GameCarousel, `mid` in GameDock's carousel `xAt`). Cover flow and "Arc / Spine wall for every look" were built and then removed: they already exist (Record flip, Arc, Spine wall).
+- **Wide first game (pinnedFirst):** no longer pinned. Each card's x is `lerp(pinX(index, floor(rowPos)), pinX(index, floor+1))`; game 0 is wide, the rest covers, the focused cover bigger.
+- **Live tiles / Channel grid background:** `liveArt` / `chanArt` (art behind via `styleArtBehind`) with `liveLight` / `chanLight`; one Background choice in their options.
+- **Google sign-in screen:** `PRIVACY.md` at the repo root is the privacy policy link.
+
 ## Planned next
 - Nothing left from my long list of 10 Oct (130–134 are done). Ask me what's next.
 

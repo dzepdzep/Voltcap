@@ -60,6 +60,11 @@ internal fun PresetPreview(
             HomeLayout.RESUME -> p.resume()
             HomeLayout.CHAN -> p.chan()
             HomeLayout.CIRCUIT -> p.circuit()
+            // Update 146 (the nearest previews).
+            HomeLayout.LIBRARY -> p.grid()
+            HomeLayout.STACKS, HomeLayout.CONSOLES -> p.shelf()
+            HomeLayout.TIMELINE -> p.classic()
+            HomeLayout.ARCADE -> p.tv()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()
