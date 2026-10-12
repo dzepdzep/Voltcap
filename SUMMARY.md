@@ -4,6 +4,60 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (145): The signed APK starts again, Google Drive at first start, trophy count clear of the cases, pictures fill the case window, shimmer keeps going
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (1): `src_copy\ui\DriveConnect.kt`.
+- Changed (7): `src_copy\data\Backup.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\FirstRunDialog.kt`, `src_copy\ui\SettingsDialog.kt`,
+  `src_copy\ui\CoverCases.kt`, `src_copy\ui\Models3D.kt`, `src_copy\ui\PowerSaver.kt`.
+
+**Copy `project_copy`:** `project_copy\app\src\main\keepRules\rules.keep`, `project_copy\app\build.gradle.kts`,
+`project_copy\tools\adb_mcp\server.js` (all changed).
+
+**Files to delete:** none.
+
+### What changed
+- **The signed (release) APK crashed at start ("keeps stopping" on the RP Classic).** Found by installing a renamed copy
+  of your signed APK on the Odin and reading the crash: R8 (the release build's shrinker) had removed the constructor of
+  WorkManager's database, which is created by reflection. `rules.keep` now keeps it and the other classes those
+  libraries create by name. Debug builds were never affected.
+- **Signing:** `keystore.properties` pointed to the folder `Documenti\Voltcap` instead of the key file in it. The block
+  in the chat found the key and fixed the path. `build.gradle.kts` now falls back to the debug key (with a warning) when
+  the key file isn't there, instead of stopping the build.
+- **Google Drive at the very first start:** the first-start setup's Welcome step now offers "Yes — from Google Drive"
+  (signs in to Drive, takes back everything and restarts) next to "Yes — from a backup file…". Settings › Backup has
+  "Export to Google Drive" next to Export (the same backup with the parts you ticked, into My Drive › Voltcap ›
+  voltcap-backup.json).
+- **Trophy count over the cases:** a case, cartridge or disc keeps room at its top for the count when it sits at the
+  top (Achievements › Trophy count); every such card the same, so they stay one size.
+- **Picture in your own case templates:** it fills the case's window again (the Android case had empty strips at the
+  sides); only a picture that would lose more than 15 % (square or wide art) is fitted whole. Same for 3D-model labels.
+- **Mastered shimmer:** it froze 30 s after the last button press (the home screen's idle pause). It now has its own
+  clock that keeps going (at half the rate) while idle and only stops after 3 minutes.
+- **adb tool:** `install_apk`, `push` and `pull`, so Claude can install test builds on a handheld (after a restart of the
+  Claude app).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** the 7 changed files fetched fresh, the same as 144.
+- **On the Odin:** the crash was read from the signed APK (renamed copy, removed again afterwards); 144 is installed.
+- **Not tested yet:** 145 itself, and a release build with the new rules (build it and install it on the RP Classic).
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 145: release build starts again, Google Drive at first start, case fixes, shimmer while idle"
+git push origin main
+.\gradlew installDebug
+```
+
+---
+
 ## Update — 12 Oct 2026 (144): Full bug check (72 fixes), the row glides, cases all one height, slimmer Settings, one signing key, code on GitHub
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

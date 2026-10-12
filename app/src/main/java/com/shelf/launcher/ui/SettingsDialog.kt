@@ -2392,6 +2392,7 @@ private fun BackupContent(onRunSetup: () -> Unit) {
         // Default place: Internal storage › Voltcap › Voltcap settings sync › voltcap-backup.json - one file,
         // replaced on every export, so a sync app (or a USB copy) always has the latest.
         val canFolder = com.shelf.launcher.data.AppStorage.canUseRootFolder()
+        val driveConnect = rememberDriveConnect { message = it }
         var syncExists by remember { mutableStateOf(canFolder && com.shelf.launcher.data.Backup.syncFile().isFile) }
         ChipFlow {
             Chip("Export") {
@@ -2404,6 +2405,20 @@ private fun BackupContent(onRunSetup: () -> Unit) {
                 } else {
                     message = "To save into Internal storage › Voltcap › Voltcap settings sync, allow \"All files access\" for Voltcap " +
                         "(below), or pick a place with Export to…"
+                }
+            }
+            // Update 144: the same backup to Google Drive, so a new install takes it back in its first-start setup
+            // (Welcome › Yes — from Google Drive). Signs in to Drive first when needed.
+            Chip("Export to Google Drive", accent = false) {
+                message = "Connecting to Google Drive…"
+                driveConnect {
+                    backupScope.launch {
+                        message = "Saving to Google Drive…"
+                        message = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            runCatching { com.shelf.launcher.data.Backup.exportToDrive(context, includeGameData, includeDeviceSetup, includeAccounts) }
+                        }.fold({ "Saved ($it settings files) to Google Drive › Voltcap › voltcap-backup.json. A new install takes it back in its first-start setup." },
+                            { "Couldn't save to Google Drive: ${it.message}" })
+                    }
                 }
             }
             if (syncExists) Chip("Import from Voltcap settings sync", accent = false) {

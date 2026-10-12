@@ -178,6 +178,43 @@ object Backup {
         ).toString()
     }
 
+    /** Update 144: the full backup on Google Drive: My Drive › Voltcap › voltcap-backup.json (next to the settings "Send my settings to Drive" puts there). */
+    private const val DRIVE_FOLDER = "Voltcap"
+    private const val DRIVE_BACKUP = "voltcap-backup.json"
+    private const val DRIVE_SETTINGS = "voltcap-settings.json"
+
+    /**
+     * Update 144: Export to Google Drive — the same backup as Export (with the parts chosen), uploaded to Drive with
+     * the account set up under Sync, so a fresh install (first-start setup) can take everything back. Blocking: IO.
+     */
+    fun exportToDrive(context: Context, includeGameData: Boolean, includeDeviceSetup: Boolean, includeAccounts: Boolean): Int {
+        val chosen = names(context).filter { includeGameData || it !in GAME_DATA }
+        val files = serialize(context, chosen, includeDeviceSetup)
+        val root = document(
+            context, files,
+            manifest(context, includeDeviceSetup, includeGameData, "drive", signedInServices(context)),
+            includeDeviceSetup, includeGameData, if (includeAccounts) serializeAccounts(context) else null
+        )
+        val drive = DriveClient(context)
+        val folder = drive.folder(DRIVE_FOLDER)
+        val existing = drive.list(folder).firstOrNull { !it.isFolder && it.name == DRIVE_BACKUP }
+        drive.uploadBytes(root.toString().toByteArray(), DRIVE_BACKUP, folder, existing?.id)
+        return files.length()
+    }
+
+    /** Update 144: whether Drive has a backup (Export to Google Drive) or settings (Send my settings to Drive) to take back. */
+    fun readFromDrive(context: Context): JSONObject {
+        val drive = DriveClient(context)
+        val folder = drive.folder(DRIVE_FOLDER)
+        val files = drive.list(folder).filter { !it.isFolder }
+        val file = files.firstOrNull { it.name == DRIVE_BACKUP } ?: files.firstOrNull { it.name == DRIVE_SETTINGS }
+            ?: error("There's no Voltcap backup on this Google Drive yet. On your other device: Settings › Backup › Export to Google Drive.")
+        return parseText(String(drive.downloadBytes(file.id)))
+    }
+
+    /** Update 144: takes back everything from the Drive backup (first-start setup). Blocking: IO. */
+    fun importFromDrive(context: Context): Int = applyDocument(context, readFromDrive(context), null, "before import from Drive").filesApplied
+
     /** Where Export saves by default: Internal storage › Voltcap › Voltcap settings sync (one file, replaced each time, easy to sync). */
     fun syncFolder(): File = File(AppStorage.rootFolder(), "Voltcap settings sync")
     fun syncFile(): File = File(syncFolder(), "voltcap-backup.json")

@@ -126,12 +126,29 @@ object SecondIdle {
  */
 object EffectClock {
     val seconds = mutableFloatStateOf(0f)
+    /** Update 144: the mastered shimmer's own clock: it keeps going when the home screen goes idle (30 s without a
+     *  button) and only stops at the deep idle (3 minutes) — the shine used to freeze after half a minute. */
+    val shimmer = mutableFloatStateOf(0f)
 }
 
 /** Drives [EffectClock]; placed once on the home screen. */
 @Composable
 internal fun EffectClockDriver() {
-    val on = rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.idle
+    val active = rememberIsActive() && rememberAnimationsEnabled()
+    val on = active && !HomeIdle.idle
+    // Update 144: the shimmer's clock (see EffectClock.shimmer), slower while idle (~12 a second instead of ~24).
+    val shimmerOn = active && !HomeIdle.deep
+    val idleNow = HomeIdle.idle
+    LaunchedEffect(shimmerOn, idleNow) {
+        if (!shimmerOn) return@LaunchedEffect
+        val base = EffectClock.shimmer.floatValue
+        val start = SystemClock.uptimeMillis()
+        val step = if (idleNow) 84L else 42L
+        while (true) {
+            EffectClock.shimmer.floatValue = (base + (SystemClock.uptimeMillis() - start) / 1000f) % 3600f
+            delay(step)
+        }
+    }
     LaunchedEffect(on) {
         if (!on) return@LaunchedEffect
         val base = EffectClock.seconds.floatValue

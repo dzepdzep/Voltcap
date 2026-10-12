@@ -1,6 +1,6 @@
 # Voltcap — handover to a new Claude
 
-Written 12 Oct 2026, after update **(144)**. Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+Written 12 Oct 2026, after update **(145)**. Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is
 **Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
@@ -214,6 +214,13 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Settings header:** one slim bar, window 94 % tall, no floating Close row.
 - **Bug check 144:** 72 fixes (list in SUMMARY 144). Saved art cache now in `Art/cache` / `saved_art/cache` (ArtStorage.cacheDir), ArtFiles keeps an in-memory index (`savedFile`). SGDB `checkKey()` OK / REJECTED / UNREACHABLE with a retry job. `OtherDevices.deviceId` carries an ANDROID_ID mark; `retiredIds` cleaned off Drive. `other_devices`, `romm_downloads`, `sleep_radios_state` are INTERNAL prefs.
 - **Measuring motion on a handheld:** `screenrecord --size 640x360 --bit-rate 600000 --time-limit 2`, base64 it out in 75k-character `cut -c` chunks, decode and `ffmpeg` it here, then match the row line frame by frame (screencap alone is ~95 ms a frame, too slow).
+
+## State after update 145
+- **Release builds (R8):** `rules.keep` keeps Room / WorkManager / startup classes made by reflection (the release APK crashed at start without them). To test a release build on the Odin without touching the installed Voltcap: rename its package with apktool (`renameManifestPackage` + authorities / custom permission renamed), sign with uber-apk-signer, install, read `logcat -b crash`, uninstall.
+- **Drive:** `Backup.exportToDrive` / `readFromDrive` / `importFromDrive` (My Drive › Voltcap › voltcap-backup.json, falls back to voltcap-settings.json); `rememberDriveConnect` (DriveConnect.kt) signs in from anywhere; first-start Welcome uses it.
+- **GameCard:** `pillTopRoom` keeps the top of a free-standing case / cartridge / disc clear for a top trophy count.
+- **Case pictures:** `FillUnlessMuchCut` (CoverCases.kt) fills a window unless >15 % would be cut; Models3D labels use it too.
+- **Shimmer:** `EffectClock.shimmer` runs until the deep idle (3 min), slower while idle.
 
 ## Planned next
 - Nothing left from my long list of 10 Oct (130–134 are done). Ask me what's next.

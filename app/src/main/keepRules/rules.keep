@@ -28,3 +28,13 @@
 -dontwarn org.openjsse.**
 -dontwarn com.google.api.client.http.**
 -dontwarn org.joda.time.**
+
+# Update 144: the release build crashed at start ("Keeps stopping", RP Classic): R8 had removed the empty
+# constructor of WorkManager's database (androidx.work.impl.WorkDatabase_Impl), which Room creates by reflection
+# ("NoSuchMethodException: WorkDatabase_Impl.<init> []", read on the Odin from the signed APK). Kept here, with the
+# other classes these libraries create by name.
+-keep class * extends androidx.room.RoomDatabase { <init>(); }
+-keep class androidx.work.impl.WorkDatabase_Impl { <init>(); }
+-keep class * extends androidx.work.ListenableWorker { <init>(android.content.Context, androidx.work.WorkerParameters); }
+-keep class * extends androidx.work.InputMerger { <init>(); }
+-keep class * implements androidx.startup.Initializer { <init>(); }

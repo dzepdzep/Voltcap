@@ -87,6 +87,27 @@ fun FirstRunDialog(
                 .onFailure { importMessage = "Couldn't import: ${it.message}" }
         }
     }
+    // Update 144: everything back from Google Drive (the backup Settings › Backup › Export to Google Drive put there, or
+    // the settings "Send my settings to Drive" sent), signing in to Drive first.
+    var driveBusy by remember { mutableStateOf(false) }
+    val driveConnect = rememberDriveConnect { importMessage = it; driveBusy = false }
+    val fromDrive: () -> Unit = {
+        driveBusy = true
+        importMessage = "Connecting to Google Drive…"
+        driveConnect {
+            importScope.launch {
+                importMessage = "Getting your backup from Google Drive…"
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching { com.shelf.launcher.data.Backup.importFromDrive(context) }
+                }
+                    .onSuccess {
+                        com.shelf.launcher.data.FirstRun.markDone(context)
+                        com.shelf.launcher.data.Backup.restart(context)
+                    }
+                    .onFailure { importMessage = "Couldn't get it: ${it.message}"; driveBusy = false }
+            }
+        }
+    }
     // (Update 141: "Extra art" — the art packs question is part of the setup now.)
     val steps = listOf("Welcome", "Permissions", "Your games", "Artwork", "Extra art", "Game details", "Achievements", "Finishing touches")
     val name = steps[step]
@@ -145,12 +166,14 @@ fun FirstRunDialog(
                     )
                     Spacer(Modifier.height(4.dp))
                     MutedNote(
-                        "Import the backup you made there (Settings › Backup › Export) and everything comes " +
-                            "along — settings, accounts, artwork choices, saved details — and setup is done."
+                        "Take back the backup you made there and everything comes along — settings, accounts, artwork " +
+                            "choices, saved details — and setup is done. From Google Drive: Settings › Backup › Export to " +
+                            "Google Drive on the other device. From a file: Settings › Backup › Export."
                     )
                     Spacer(Modifier.height(10.dp))
                     ChipFlow {
-                        Chip("Yes — import my backup…") {
+                        Chip("Yes — from Google Drive", enabled = !driveBusy) { fromDrive() }
+                        Chip("Yes — from a backup file…", accent = false) {
                             importFile.launch(arrayOf("application/json", "text/plain", "*/*"))
                         }
                         Chip("No, set up fresh", accent = false) { step++ }

@@ -331,6 +331,16 @@ fun GameCard(
             )
             else reveal.snapTo(0f)
         }
+        // Update 144: a case, cartridge or disc fills its place now — room is kept at its top for the trophy count when
+        // that sits at the top (it used to be drawn over the case's banner). The same room on every such card, with
+        // or without a count, so they all stay one size.
+        val pillTopRoom = if (freeMedia && !banner && look.achievementsOnCards && titles.coverAchievements) {
+            val place = com.shelf.launcher.data.Features.achPlace.state.value
+            val atTop = place == com.shelf.launcher.data.Features.AchPlace.ABOVE ||
+                (place == com.shelf.launcher.data.Features.AchPlace.CORNER &&
+                    (look.trophyCorner == com.shelf.launcher.data.CardCorner.TOP_LEFT || look.trophyCorner == com.shelf.launcher.data.CardCorner.TOP_RIGHT))
+            if (atTop) (if (focused) 28.dp else 18.dp) else 0.dp
+        } else 0.dp
         // Cartridge / disc art, drawn: the console's cartridge or a disc with the game's label on it.
         val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc) else null
         val box3d = if (cardArtType == CardArtType.CASE && !banner) caseMarker(game.platform) else null
@@ -346,7 +356,7 @@ fun GameCard(
                     .graphicsLayer { alpha = if (greyOut || (!focused && look.otherGames != com.shelf.launcher.data.OtherGamesLook.NORMAL)) 0.55f else 1f }
             ) {
                 MediaFocus(focused) { PhysicalMedia(
-                    pick.shell, baseUrl ?: artUrl, Modifier.fillMaxSize().padding(if (pick.shell.isDisc) 6.dp else 10.dp),
+                    pick.shell, baseUrl ?: artUrl, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (pick.shell.isDisc) 6.dp else 10.dp),
                     platform = pick.platform, labelIsScan = typedArtUrl != null && (baseUrl ?: artUrl) == typedArtUrl,
                     caseCover = coverUrl, title = game.name
                 ) }
@@ -360,7 +370,7 @@ fun GameCard(
                     .graphicsLayer { alpha = if (greyOut || (!focused && look.otherGames != com.shelf.launcher.data.OtherGamesLook.NORMAL)) 0.55f else 1f }
             ) {
                 MediaFocus(focused) { CaseArt(
-                    game.platform, coverUrl, typedArtUrl, Modifier.fillMaxSize().padding(4.dp), title = gameDisplayName(game.name), real = realCase,
+                    game.platform, coverUrl, typedArtUrl, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(4.dp), title = gameDisplayName(game.name), real = realCase,
                     // The coloured frame hugs the case itself (Settings › Cards & frames › Coloured frame).
                     caseModifier = if (focused && look.focusBorder) Modifier.border(2.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier
                 ) }
@@ -373,7 +383,7 @@ fun GameCard(
                     .graphicsLayer { alpha = if (greyOut || (!focused && look.otherGames != com.shelf.launcher.data.OtherGamesLook.NORMAL)) 0.55f else 1f }
             ) {
                 MediaFocus(focused) {
-                    RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(if (mediaRound(game.platform)) 6.dp else 10.dp))
+                    RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (mediaRound(game.platform)) 6.dp else 10.dp))
                 }
             }
         } else (baseUrl ?: artUrl)?.let { url ->
@@ -1116,7 +1126,7 @@ private fun awardBrush(tint: Color, shimmer: Boolean, width: androidx.compose.ui
     val dark = androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.45f)
     if (!shimmer) return Brush.linearGradient(listOf(dark, tint, dark), start = Offset.Zero, end = Offset(w, h))
     // The shared slow clock (EffectClock): ~24 updates a second, still while idle.
-    val sweep = -1f + 3f * ((EffectClock.seconds.floatValue / 2.4f) % 1f)
+    val sweep = -1f + 3f * ((EffectClock.shimmer.floatValue / 2.4f) % 1f)
     val span = (w + h) * 0.35f
     val x = sweep * (w + h)
     return Brush.linearGradient(
@@ -1213,7 +1223,7 @@ internal fun MasteredShine(modifier: Modifier, strength: Float = 0.4f) {
     val accent = ShelfTheme.accent
     // One shared slow clock for every shining card (EffectClock) instead of an animation per card
     // redrawing at the display's full rate; read while drawing only, and still while idle.
-    val clock = EffectClock.seconds
+    val clock = EffectClock.shimmer
     Box(modifier.drawBehind { drawMasteredShine(style, accent, clock.floatValue, strength, BlendMode.SrcOver) })
 }
 
@@ -1239,7 +1249,7 @@ internal fun Modifier.awardShine(key: String, focused: Boolean): Modifier =
 internal fun Modifier.masteredShineOverShape(strength: Float = 0.4f): Modifier {
     val style = LocalTitleOptions.current.shimmerStyle
     val accent = ShelfTheme.accent
-    val clock = EffectClock.seconds
+    val clock = EffectClock.shimmer
     return this
         .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
         .drawWithContent {

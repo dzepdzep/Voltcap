@@ -242,10 +242,11 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
             Modifier.offset(w * win[0], h * win[1]).size(w * (win[2] - win[0]), h * (win[3] - win[1]))
                 .clipToBounds().background(placeholder)
         ) {
-            // (Update 143: the whole cover, fitted into the window — it used to be cut to fill it — so Art position
-            // moves and sizes the cover itself; Art size above 100 % fills the window.)
+            // (Update 143: Art position moves and sizes the cover itself. Update 144: the cover fills the window — no
+            // empty strips at its sides, as the Android case had — unless that would cut away more than 15 % of it
+            // (a square or wide picture), which is then fitted whole.)
             if (art != null) AsyncImage(
-                art, null, contentScale = ContentScale.Fit, alignment = Alignment.Center,
+                art, null, contentScale = FillUnlessMuchCut, alignment = Alignment.Center,
                 modifier = Modifier.fillMaxSize().graphicsLayer {
                     scaleX = pos.zoom; scaleY = pos.zoom
                     translationX = pos.x * size.width * ArtPlace.REACH; translationY = pos.y * size.height * ArtPlace.REACH
@@ -254,6 +255,24 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
         }
         if (owner == null) Image(painterResource(cov.frontRes), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
         else PlainFrame(cov, owner, w, h)
+    }
+}
+
+/**
+ * Update 144: fills the box like [ContentScale.Crop] when that cuts at most [MAX_CUT] of the picture, else fits it whole
+ * ([ContentScale.Fit]) — a cover in a case window fills it, a square or wide picture isn't cut in half.
+ */
+internal object FillUnlessMuchCut : ContentScale {
+    const val MAX_CUT = 0.15f
+    fun scale(srcW: Float, srcH: Float, dstW: Float, dstH: Float): Float {
+        if (srcW <= 0f || srcH <= 0f) return 1f
+        val sx = dstW / srcW; val sy = dstH / srcH
+        val fill = maxOf(sx, sy); val fit = minOf(sx, sy)
+        return if (fit / fill >= 1f - MAX_CUT) fill else fit
+    }
+    override fun computeScaleFactor(srcSize: androidx.compose.ui.geometry.Size, dstSize: androidx.compose.ui.geometry.Size): androidx.compose.ui.layout.ScaleFactor {
+        val k = scale(srcSize.width, srcSize.height, dstSize.width, dstSize.height)
+        return androidx.compose.ui.layout.ScaleFactor(k, k)
     }
 }
 
