@@ -230,6 +230,14 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Live tiles / Channel grid background:** `liveArt` / `chanArt` (art behind via `styleArtBehind`) with `liveLight` / `chanLight`; one Background choice in their options.
 - **Google sign-in screen:** `PRIVACY.md` at the repo root is the privacy policy link.
 
+## State after update 147
+- **Pictures as bitmaps:** `drawableBitmap()` (ui/DrawableBitmap.kt) turns any drawable into a bitmap; image requests that read pixels set `AnimatedArt.PARAM_STILL` (animated SteamGridDB covers came back as AnimatedImageDrawable → grey 3D pieces). `gamesCount(n)` there too.
+- **Disc station:** `HomeLayout.DISCS`, ui/StyleDiscStation.kt (`StyleDiscStation`, `discStationKey`, `DiscStationSettings`), prefs `discSpin`, `discAbout`; StyleHomes asks for disc scans for it whatever the look.
+- **Spines:** `SpineSlot` (ShelfHome.kt) keeps a spine's own shape; `Features.spinesOwn` (Matching spines) skips real scans.
+- **Apps:** GameCard passes the app icon as the label / cover of the drawn media and case; AppIconArt only when neither is drawn.
+- **First start:** `SettingsShareCard(receiveOnly = true)` under Welcome; the document goes straight to `Backup.applyDocument`, then restart.
+- **Carousel:** `Features.carouselStage` (Dark stage) drawn behind GameCarousel; the case views (`view.cases`) switch Reflection and Dark stage on when picked. SPINE_WALL 72°, TURNED faces the middle.
+
 ## Planned next
 - Nothing left from my long list of 10 Oct (130–134 are done). Ask me what's next.
 

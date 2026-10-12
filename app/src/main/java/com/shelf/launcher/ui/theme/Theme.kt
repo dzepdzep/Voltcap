@@ -158,9 +158,11 @@ private fun rememberArtAccent(url: String?): Color? {
             .data(url)
             .size(48, 48)
             .allowHardware(false) // pixels must be readable
+            // (Update 147: a still picture of an animated cover too — the game's colours never came for those.)
+            .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
             .build()
-        val bitmap = (context.imageLoader.execute(request) as? SuccessResult)
-            ?.drawable?.let { it as? BitmapDrawable }?.bitmap ?: return@LaunchedEffect
+        val bitmap = com.shelf.launcher.ui.drawableBitmap((context.imageLoader.execute(request) as? SuccessResult)?.drawable, 48)
+            ?: return@LaunchedEffect
         color = accentFrom(bitmap)
     }
     return color

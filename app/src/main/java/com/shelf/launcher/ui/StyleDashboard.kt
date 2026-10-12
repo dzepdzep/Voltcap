@@ -443,7 +443,7 @@ private fun DashProfile(c: StyleCtx, panel: Features.PanelLook, op: Float, shape
         StatBar("PWR", battery.percent / 100f, Color(0xFF6CCB3E), "${battery.percent} / 100", ink)
         Spacer(Modifier.height(5.dp))
         val total = c.state.games.size
-        StatBar("LIB", if (total > 0) c.games.size / total.toFloat() else 0f, Color(0xFF4AA8E8), "${c.games.size} games", ink)
+        StatBar("LIB", if (total > 0) c.games.size / total.toFloat() else 0f, Color(0xFF4AA8E8), gamesCount(c.games.size), ink)
     }
 }
 
@@ -458,7 +458,7 @@ private fun DashStatus(c: StyleCtx, panel: Features.PanelLook, op: Float, shape:
         PanelLabel("System status", ink)
         Spacer(Modifier.height(4.dp))
         StatusLine(Icons.Filled.BatteryFull, "Battery", "${battery.percent}%" + if (battery.charging) " ⚡" else "", ink, tight = tight)
-        StatusLine(Icons.Filled.VideogameAsset, "Library", "${c.state.games.size} games", ink, tight = tight)
+        StatusLine(Icons.Filled.VideogameAsset, "Library", gamesCount(c.state.games.size), ink, tight = tight)
         if (!tight) StatusLine(Icons.Filled.Schedule, "Played", if (totalMs > 0) stylePlaytime(totalMs) else "—", ink)
         StatusLine(Icons.Filled.Wifi, "Network", if (wifi) "Connected" else "Offline", ink, last = true, tight = tight)
     }

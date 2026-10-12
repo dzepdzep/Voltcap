@@ -119,7 +119,11 @@ internal fun ImportPreviewCard(
  * on the same Wi-Fi with a 6-digit PIN. Whatever arrives opens in the Import Preview ([onReceived]).
  */
 @Composable
-internal fun SettingsShareCard(onReceived: (org.json.JSONObject) -> Unit) {
+internal fun SettingsShareCard(
+    /** Update 147: only the receiving half (the first start's "from another device"): no sending, no Drive. */
+    receiveOnly: Boolean = false,
+    onReceived: (org.json.JSONObject) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var status by remember { mutableStateOf<String?>(null) }
@@ -131,13 +135,16 @@ internal fun SettingsShareCard(onReceived: (org.json.JSONObject) -> Unit) {
     var pinText by remember { mutableStateOf("") }
     var withAccounts by remember { mutableStateOf(true) }
     ShelfCard {
-        SectionLabel("Share settings with another device")
-        MutedNote("Only the look and behaviour travel: never sign-ins, never this device's folders or emulators. You see what changes before anything is applied.")
+        SectionLabel(if (receiveOnly) "From another device" else "Share settings with another device")
+        MutedNote(
+            if (receiveOnly) "On your other device open Settings › Backup › Share settings, then Nearby device › Send (a PIN) or QR code › Show QR code to send. Both on the same Wi-Fi."
+            else "Only the look and behaviour travel: never sign-ins, never this device's folders or emulators. You see what changes before anything is applied."
+        )
         Spacer(Modifier.height(6.dp))
-        Chip(if (withAccounts) "✓ Include accounts (RetroAchievements, SteamGridDB, ScreenScraper…)" else "Include accounts (RetroAchievements, SteamGridDB, ScreenScraper…)", accent = withAccounts) { withAccounts = !withAccounts }
-        MutedNote("Logins and API keys go along so the other device is signed in too (Google Drive, Spotify and Discord sign in on each device). The receiving side can still leave them out in the preview.")
+        if (!receiveOnly) Chip(if (withAccounts) "✓ Include accounts (RetroAchievements, SteamGridDB, ScreenScraper…)" else "Include accounts (RetroAchievements, SteamGridDB, ScreenScraper…)", accent = withAccounts) { withAccounts = !withAccounts }
+        if (!receiveOnly) MutedNote("Logins and API keys go along so the other device is signed in too (Google Drive, Spotify and Discord sign in on each device). The receiving side can still leave them out in the preview.")
         Spacer(Modifier.height(8.dp))
-        FoldGroup("Google Drive", summary = "Uses the Google account set up under Sync", key = "share_drive", startOpen = true) {
+        if (!receiveOnly) FoldGroup("Google Drive", summary = "Uses the Google account set up under Sync", key = "share_drive", startOpen = true) {
             ChipFlow {
                 Chip("Send my settings to Drive", enabled = !busy) {
                     busy = true; status = "Sending…"
@@ -158,14 +165,14 @@ internal fun SettingsShareCard(onReceived: (org.json.JSONObject) -> Unit) {
                 }
             }
         }
-        FoldGroup("Nearby device (PIN)", summary = "Both on the same Wi-Fi, no account needed", key = "share_nearby") {
+        FoldGroup("Nearby device (PIN)", summary = "Both on the same Wi-Fi, no account needed", key = "share_nearby", startOpen = receiveOnly) {
             val pin = sendPin
             if (pin != null) {
                 Text("PIN  $pin", color = ShelfTheme.accent, fontSize = 26.sp, fontWeight = FontWeight.Black)
                 MutedNote("On the other device: Settings › Backup › Nearby device › Receive, then type this PIN. Waiting up to 3 minutes…")
                 Chip("Stop", accent = false) { sendJob?.cancel(); sendPin = null }
             } else ChipFlow {
-                Chip("Send to a nearby device", enabled = !busy) {
+                if (!receiveOnly) Chip("Send to a nearby device", enabled = !busy) {
                     val p = com.shelf.launcher.data.LocalTransfer.newPin()
                     sendPin = p
                     sendJob = scope.launch {
@@ -213,7 +220,7 @@ internal fun SettingsShareCard(onReceived: (org.json.JSONObject) -> Unit) {
             }
         }
         FoldGroup("QR code", summary = "Scan to connect — no typing, no discovery", key = "share_qr") {
-            QrTransferSection(withAccounts, onStatus = { status = it }, onReceived = onReceived)
+            QrTransferSection(withAccounts, receiveOnly, onStatus = { status = it }, onReceived = onReceived)
         }
         status?.let { Spacer(Modifier.height(6.dp)); MutedNote(it) }
     }
@@ -226,7 +233,7 @@ internal fun SettingsShareCard(onReceived: (org.json.JSONObject) -> Unit) {
  * scanning it opens Voltcap there too (voltcap://transfer link → this section).
  */
 @Composable
-private fun QrTransferSection(withAccounts: Boolean, onStatus: (String?) -> Unit, onReceived: (org.json.JSONObject) -> Unit) {
+private fun QrTransferSection(withAccounts: Boolean, receiveOnly: Boolean, onStatus: (String?) -> Unit, onReceived: (org.json.JSONObject) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var target by remember { mutableStateOf<com.shelf.launcher.data.QrTransfer.Target?>(null) }
@@ -273,7 +280,7 @@ private fun QrTransferSection(withAccounts: Boolean, onStatus: (String?) -> Unit
         }
     } else {
         ChipFlow {
-            Chip("Show QR code to send", enabled = !busy) {
+            if (!receiveOnly) Chip("Show QR code to send", enabled = !busy) {
                 val host = com.shelf.launcher.data.LocalTransfer.localAddress(context)
                 if (host == null) { onStatus("Connect to Wi-Fi first: the other device reaches this one over the local network."); return@Chip }
                 val p = com.shelf.launcher.data.LocalTransfer.newPin()

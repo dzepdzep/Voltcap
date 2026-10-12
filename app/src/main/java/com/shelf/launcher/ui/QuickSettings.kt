@@ -598,7 +598,7 @@ fun QuickSettingsCard(
                         R1Choice(v.label + if (v.cases) " (3D cases with a case look)" else "", com.shelf.launcher.data.Features.carouselView.value == v) {
                             com.shelf.launcher.data.Features.carouselView.value = v
                             // (Update 134: Arc and Turned row come with their glossy floor.)
-                            if (v == CarouselView.ARC || v == CarouselView.TURNED) com.shelf.launcher.data.Features.carouselReflect.value = true
+                            if (v.cases) { com.shelf.launcher.data.Features.carouselReflect.value = true; com.shelf.launcher.data.Features.carouselStage.value = true }
                             turnOn()
                         }
                     } + (1..5).map { n ->

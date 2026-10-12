@@ -89,9 +89,10 @@ internal object TrophyShelf {
                         .size(if (item.mastered) CELL * 2 else CELL, if (item.mastered) CELL * 3 else CELL)
                         .scale(coil.size.Scale.FILL)
                         .allowHardware(false)
+                        .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
                         .memoryCacheKey("trophy|${item.url}")
                         .build()
-                    val bmp = ((loader.execute(request) as? coil.request.SuccessResult)?.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                    val bmp = drawableBitmap((loader.execute(request) as? coil.request.SuccessResult)?.drawable)
                     if (bmp == null || bmp.isRecycled) null else item to bmp
                 }
                 if (loaded.isEmpty()) return@runCatching null

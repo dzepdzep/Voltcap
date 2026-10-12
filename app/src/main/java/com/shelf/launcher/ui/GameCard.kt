@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
@@ -344,6 +345,11 @@ fun GameCard(
         // Cartridge / disc art, drawn: the console's cartridge or a disc with the game's label on it.
         val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc) else null
         val box3d = if (cardArtType == CardArtType.CASE && !banner) caseMarker(game.platform) else null
+        // Update 147: an app without art of its own wears its icon on its cartridge's label, disc or case front (the
+        // icon used to be laid over the whole card, hiding the cartridge / case under it).
+        val appIcon = if (artUrl == null && game.sourceType == SourceType.APP && (pick != null || box3d != null)) {
+            rememberAppIcon(game.packageName)?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
+        } else null
         // Mastered / completed: the light sweep follows the object's own shape (cartridge, disc, case), not a square round it.
         val shineOn = titles.masteredShimmer && (award == RaAward.MASTERED || award == RaAward.COMPLETED)
         // Update 113, Spines look: the games you're not on as their spines (the one you're on keeps its cover).
@@ -356,9 +362,9 @@ fun GameCard(
                     .graphicsLayer { alpha = if (greyOut || (!focused && look.otherGames != com.shelf.launcher.data.OtherGamesLook.NORMAL)) 0.55f else 1f }
             ) {
                 MediaFocus(focused) { PhysicalMedia(
-                    pick.shell, baseUrl ?: artUrl, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (pick.shell.isDisc) 6.dp else 10.dp),
+                    pick.shell, baseUrl ?: artUrl ?: appIcon, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (pick.shell.isDisc) 6.dp else 10.dp),
                     platform = pick.platform, labelIsScan = typedArtUrl != null && (baseUrl ?: artUrl) == typedArtUrl,
-                    caseCover = coverUrl, title = game.name
+                    caseCover = coverUrl ?: appIcon, title = game.name
                 ) }
             }
         } else if (box3d != null) {
@@ -370,7 +376,7 @@ fun GameCard(
                     .graphicsLayer { alpha = if (greyOut || (!focused && look.otherGames != com.shelf.launcher.data.OtherGamesLook.NORMAL)) 0.55f else 1f }
             ) {
                 MediaFocus(focused) { CaseArt(
-                    game.platform, coverUrl, typedArtUrl, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(4.dp), title = gameDisplayName(game.name), real = realCase,
+                    game.platform, coverUrl ?: appIcon, typedArtUrl, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(4.dp), title = gameDisplayName(game.name), real = realCase,
                     // The coloured frame hugs the case itself (Settings › Cards & frames › Coloured frame).
                     caseModifier = if (focused && look.focusBorder) Modifier.border(2.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier
                 ) }
@@ -481,7 +487,7 @@ fun GameCard(
         }
         // Most Android apps aren't on SteamGridDB — use the app's own icon
         // (or its TV banner on the wide card) rather than an empty gradient.
-        if (artUrl == null && game.sourceType == SourceType.APP) {
+        if (artUrl == null && game.sourceType == SourceType.APP && pick == null && box3d == null) {
             AppIconArt(game.packageName, wide = banner, modifier = Modifier.matchParentSize())
         }
         // The games you're not on, dimmed or greyed (Appearance › Game row).

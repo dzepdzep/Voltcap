@@ -384,13 +384,16 @@ internal object Carousel {
                 )
             }
             CarouselView.SPINE_WALL -> Place(
-                // Turned fully to their spines, packed close (a spine is about an eighth of a case wide).
-                sign * (0.6f * near + 0.125f * far) * g, 0f, if (d < 1f) 1f - 0.1f * d else 0.9f,
-                90f * near, 0f, alpha(d, reach(side, shown)), shade(d) * 0.5f, z(d)
+                // Turned almost to their spines (Update 147: 72°, a sliver of each front showing, as on a disc loader's
+                // case wall), packed close in a stack each side.
+                sign * (0.62f * near + 0.125f * far) * g, 0f, if (d < 1f) 1f - 0.1f * d else 0.9f,
+                72f * near, 0f, alpha(d, reach(side, shown)), shade(d) * 0.5f, z(d)
             )
             CarouselView.TURNED -> Place(
-                sign * (near * 1.0f + far * 0.92f) * g, 0f, if (d < 1f) 1f - 0.16f * d else 0.84f,
-                20f, 0f, alpha(d, side), shade(d) * 0.5f, z(d)
+                // Update 147: the ones aside close to the middle one, a little smaller and turned to face it (the left
+                // ones turned right, the right ones left), like a disc loader's cover row; the one you're on straight on.
+                sign * (near * 0.8f + far * 0.62f) * g, 0f, if (d < 1f) 1f - 0.2f * d else 0.8f,
+                -sign * 26f * near, 0f, alpha(d, side), shade(d) * 0.5f, z(d)
             )
             CarouselView.RECEDE -> if (rel >= 0f) {
                 // Update 146: each next game a step further back: smaller by the same share each step, its left edge just
@@ -514,6 +517,39 @@ internal fun GameCarousel(
         val bigW = minOf(maxHeight * 0.84f * 0.72f * sizeK, maxHeight * 0.97f * 0.72f, maxWidth * 0.5f * sizeK)
         val bigH = bigW / 0.72f
         val reach = Carousel.reach(side, view)
+        // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the
+        // games stand on, a faint gloss line along it, and stays dark below (drawn past the bottom of the carousel).
+        if (Features.carouselStage.state.value) {
+            val floorK = 0.5f + (bigH / maxHeight) / 2f - (if (Features.carouselReflect.state.value) (bigH * 0.08f) / maxHeight else 0f)
+            androidx.compose.foundation.Canvas(Modifier.matchParentSize().zIndex(-1000f)) {
+                val floorY = size.height * floorK
+                val below = size.height * 1.5f
+                drawRect(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        0f to Color.Black.copy(alpha = 0f), 0.35f to Color.Black.copy(alpha = 0.55f), 1f to Color.Black.copy(alpha = 0.9f),
+                        startY = -size.height * 0.25f, endY = floorY
+                    ),
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, -size.height * 0.25f),
+                    size = androidx.compose.ui.geometry.Size(size.width, floorY + size.height * 0.25f)
+                )
+                drawRect(
+                    Color.Black.copy(alpha = 0.92f), topLeft = androidx.compose.ui.geometry.Offset(0f, floorY),
+                    size = androidx.compose.ui.geometry.Size(size.width, below)
+                )
+                // The glossy floor: a soft sheen just under the line the games stand on.
+                drawRect(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.07f), Color.Transparent), startY = floorY, endY = floorY + size.height * 0.22f
+                    ),
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, floorY),
+                    size = androidx.compose.ui.geometry.Size(size.width, size.height * 0.22f)
+                )
+                drawLine(
+                    Color.White.copy(alpha = 0.12f), androidx.compose.ui.geometry.Offset(0f, floorY),
+                    androidx.compose.ui.geometry.Offset(size.width, floorY), strokeWidth = 1.5f
+                )
+            }
+        }
         // Update 146: the Receding row spaces its games by the big one's real width: a wide capsule or a round disc is
         // wider than a cover, and spaced as covers they piled up. Glides to the next game's width with the carousel.
         val widen = recede

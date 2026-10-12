@@ -869,6 +869,8 @@ object Features {
     val carouselGap = IntPref("carousel_gap", 100, 60..160)
     /** A faint reflection under each game of the carousel (update 104). */
     val carouselReflect = BoolPref("carousel_reflect", false)
+    /** Update 147: the carousel on a dark floor fading into black (on with the 3D case views). */
+    val carouselStage = BoolPref("carousel_stage", false)
     /** Update 134: every carousel game drawn as a real 3D case (cover, spine, edge, lid), whatever the view (always in Arc, Spine wall and Turned row). */
     val carousel3d = BoolPref("carousel_3d", false)
     /**
@@ -916,6 +918,15 @@ object Features {
      * [spineCuts]) on the shelf and the turned box. Off: Voltcap's case templates with the cover in them, the console's spine.
      */
     val originalCases = BoolPref("original_cases", true)
+    /**
+     * Update 147: every game's spine is Voltcap's own spine of its console with the game's name (your spine pack), so
+     * they all match — the real spine scans (each in its own style and size) are left out.
+     */
+    val spinesOwn = BoolPref("spines_own", false)
+    /** Update 147, Disc station: the loaded disc turns slowly. */
+    val discSpin = BoolPref("disc_spin", true)
+    /** Update 147, Disc station: a few lines about the game under its name. */
+    val discAbout = BoolPref("disc_about", true)
     /**
      * Update 123: a game without ScreenScraper's spine scan may use a spine cut out of its full box scan (or the side of
      * its 3D box picture). Off (default): only real spine scans; the others get the console's template spine with the name.

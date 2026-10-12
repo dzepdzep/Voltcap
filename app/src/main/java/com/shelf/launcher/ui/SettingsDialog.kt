@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.ViewWeek
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Schedule
@@ -3457,6 +3458,15 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
                 com.shelf.launcher.ui.MixedArt.CARTRIDGE -> "Every game in a mixed list as a cartridge. Disc games get a plain generic cartridge (the Game Boy shell without its branding) with their disc label on it."
             }
         )
+        // Update 147: one style for every spine (Spines look, Game shelf, the carousels' spines).
+        Spacer(Modifier.height(10.dp))
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Matching spines",
+            subtitle = "On: every game's spine is Voltcap's spine of its console with the game's name, so they all look alike. Off (default): a game's real spine scan when it has one.",
+            checked = com.shelf.launcher.data.Features.spinesOwn.state.value,
+            onChange = { com.shelf.launcher.data.Features.spinesOwn.value = it }
+        )
         when (artNow) {
             com.shelf.launcher.data.CardArtType.CASE -> MutedNote("Every case the same size, in lists mixing consoles too (Continue playing, Favourites…).")
             com.shelf.launcher.data.CardArtType.CASE_REAL -> MutedNote("Every case at its real size next to the others: a DS case smaller than a PS2 one, a Saturn case taller. Also in lists that mix consoles.")
@@ -5029,8 +5039,9 @@ private fun CarouselTiltChoices() {
     // Update 104: more carousel views and options (shared by every carousel).
     RowChoice("View", com.shelf.launcher.ui.CarouselView.values(), f.carouselView.state.value, { it.label }) {
         f.carouselView.value = it
-        // (Update 134: Arc and Turned row stand on a glossy floor — the reflection comes on with them; switch it off below.)
-        if (it == com.shelf.launcher.ui.CarouselView.ARC || it == com.shelf.launcher.ui.CarouselView.TURNED) f.carouselReflect.value = true
+        // (Update 134: Arc and Turned row stand on a glossy floor — the reflection comes on with them; switch it off below.
+        // Update 147: the Spine wall too, and all three on the dark stage, like a disc loader's case views.)
+        if (it.cases) { f.carouselReflect.value = true; f.carouselStage.value = true }
     }
     CarouselViewPreview(f.carouselView.state.value)
     // Update 137: where each view works, said right here (it used to depend on the layout without saying so).
@@ -5052,6 +5063,11 @@ private fun CarouselTiltChoices() {
     SwitchRow(
         Icons.Filled.ViewInAr, "Reflection", "A faint mirror image of each game under it, as on a glossy floor.",
         f.carouselReflect.state.value, { f.carouselReflect.value = it }
+    )
+    // Update 147: the black stage of a disc loader's case views (on with Arc, Spine wall and Turned row).
+    SwitchRow(
+        Icons.Filled.ViewInAr, "Dark stage", "The carousel stands on a dark floor that fades into black, the background dimmed around it.",
+        f.carouselStage.state.value, { f.carouselStage.value = it }
     )
     // Update 134: real 3D cases in any view.
     SwitchRow(

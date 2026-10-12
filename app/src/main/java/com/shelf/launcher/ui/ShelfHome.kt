@@ -368,7 +368,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                     maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
                 )
                 Text(
-                    listOfNotNull(LocalTitleOptions.current.console(gg.platform), c.playtime(gg)?.let { stylePlaytime(it, c.lastPlayed(gg) != null) }, "${games.size} games").joinToString("  ·  "),
+                    listOfNotNull(LocalTitleOptions.current.console(gg.platform), c.playtime(gg)?.let { stylePlaytime(it, c.lastPlayed(gg) != null) }, gamesCount(games.size)).joinToString("  ·  "),
                     color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1
                 )
             }
@@ -512,29 +512,46 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     // the strip of the cover): it used to need Original cases on, so games with their real spine still showed ours.
     // (Update 129: none of the games' own spines while one console's spine is picked for all, R1 › Spine.)
     val forAll = LookStyles.spineForAll()
-    val realSpine = if (forAll) null else scans?.firstOrNull { it.first == "Spine" }?.second
-    val own = realSpine ?: if (Features.originalCases.state.value && !forAll) BoxTexture.spine(scans, g.platform) else null
+    // (Update 147: "Matching spines" leaves the real scans out, so every spine is Voltcap's own.)
+    val matching = Features.spinesOwn.state.value
+    val realSpine = if (forAll || matching) null else scans?.firstOrNull { it.first == "Spine" }?.second
+    val own = realSpine ?: if (Features.originalCases.state.value && !forAll && !matching) BoxTexture.spine(scans, g.platform) else null
     var failed by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }
     if (own != null && !failed) {
         var lying by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }
-        Box(modifier.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue))) {
-            AsyncImage(
-                own, g.name, contentScale = ContentScale.FillBounds,
-                onSuccess = { s -> val d = s.result.drawable; lying = d.intrinsicWidth > d.intrinsicHeight },
-                onError = { failed = true },
-                modifier = if (lying) Modifier.spineText().fillMaxSize() else Modifier.fillMaxSize()
-            )
+        // Update 147: the scan's own shape (width / height standing up), so a slot wider than the spine no longer
+        // stretches it sideways; until it has loaded, the usual spine shape.
+        var shape by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableFloatStateOf(SPINE_ASPECT) }
+        SpineSlot(shape, modifier) { inner ->
+            Box(inner.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue))) {
+                AsyncImage(
+                    own, g.name, contentScale = ContentScale.FillBounds,
+                    onSuccess = { s ->
+                        val d = s.result.drawable
+                        lying = d.intrinsicWidth > d.intrinsicHeight
+                        if (d.intrinsicWidth > 0 && d.intrinsicHeight > 0) {
+                            val a = if (lying) d.intrinsicHeight.toFloat() / d.intrinsicWidth else d.intrinsicWidth.toFloat() / d.intrinsicHeight
+                            shape = a.coerceIn(0.03f, 0.35f)
+                        }
+                    },
+                    onError = { failed = true },
+                    modifier = if (lying) Modifier.spineText().fillMaxSize() else Modifier.fillMaxSize()
+                )
+            }
         }
         return
     }
     // Update 125: no real spine: your own console spine (CustomSpines; Steam's and Android's too), the name fitted in the
     // box left for it.
-    val tpl = if (Features.coverTemplates.state.value || forAll) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
+    val tpl = if (Features.coverTemplates.state.value || forAll || matching) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     val name = gameDisplayName(g.name)
     if (tpl != null) {
-        SpinePicture(tpl, modifier.clip(RoundedCornerShape(2.dp))) { ink ->
-            Box(Modifier.fillMaxSize().padding(horizontal = 1.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
-                SpineName(name, ink, Modifier.spineText())
+        // (Update 147: at the console spine's own shape, not stretched to a wider slot.)
+        SpineSlot(tpl.aspect, modifier) { inner ->
+            SpinePicture(tpl, inner.clip(RoundedCornerShape(2.dp))) { ink ->
+                Box(Modifier.fillMaxSize().padding(horizontal = 1.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
+                    SpineName(name, ink, Modifier.spineText())
+                }
             }
         }
         return
@@ -550,6 +567,18 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
         ) {
             SpineName(name, Color.White, Modifier.spineText())
         }
+    }
+}
+
+/**
+ * Update 147: a spine of shape [aspect] (width / height) in [modifier]'s slot: the slot's full height, as wide as that
+ * shape makes it (never wider than the slot), in the middle — a wider slot no longer stretches the picture.
+ */
+@Composable
+private fun SpineSlot(aspect: Float, modifier: Modifier, content: @Composable (Modifier) -> Unit) {
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val w = if (maxHeight == androidx.compose.ui.unit.Dp.Infinity) maxWidth else minOf(maxWidth, maxHeight * aspect)
+        content(Modifier.width(w).fillMaxHeight())
     }
 }
 

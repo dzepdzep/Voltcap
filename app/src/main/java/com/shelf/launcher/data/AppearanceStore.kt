@@ -127,11 +127,14 @@ enum class HomeLayout(val label: String) {
      *  row of small cabinets (StyleArcade.kt). */
     ARCADE("Arcade cabinets"),
     /** Update 146: your consoles as a pile of drawn consoles; the one you pick slides out its games (StyleConsoleStack.kt). */
-    CONSOLES("Console stack");
+    CONSOLES("Console stack"),
+    /** Update 147: one disc player — the game you're on as the disc in the tray (ejected and loaded as you move), its
+     *  details beside it (StyleDiscStation.kt). Always discs. */
+    DISCS("Disc station");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
-        this == LIBRARY || this == STACKS || this == TIMELINE || this == ARCADE || this == CONSOLES
+        this == LIBRARY || this == STACKS || this == TIMELINE || this == ARCADE || this == CONSOLES || this == DISCS
 
     companion object {
         /**

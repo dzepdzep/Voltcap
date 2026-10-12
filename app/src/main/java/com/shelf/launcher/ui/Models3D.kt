@@ -485,10 +485,10 @@ internal object Models3D {
         val c = android.graphics.Canvas(out)
         c.drawColor(0xFFC9CCD2.toInt())
         if (cover != null && cover.width > 0 && cover.height > 0) {
-            // (Update 143: Art position moves and sizes the cover itself. Update 144: it fills the label unless that
-            // would cut away more than 15 % of it — FillUnlessMuchCut, like the flat cases.)
+            // (Update 143: Art position moves and sizes the cover itself. Update 147: it always fills the label, like a real
+            // cartridge's sticker — fitting a tall cover into a wide label left grey bars at its sides.)
             val cw = cover.width.toFloat(); val ch = cover.height.toFloat()
-            val fit = FillUnlessMuchCut.scale(cw, ch, lw.toFloat(), lh.toFloat()) * pos.zoom
+            val fit = maxOf(lw / cw, lh / ch) * pos.zoom
             val dw = cw * fit; val dh = ch * fit
             val left = (lw - dw) / 2f + pos.x * lw * ArtPlace.REACH; val top = (lh - dh) / 2f + pos.y * lh * ArtPlace.REACH
             c.drawBitmap(

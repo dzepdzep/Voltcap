@@ -131,9 +131,10 @@ internal fun rememberArtPalette(model: Any?, enabled: Boolean): ShelfColors? {
                     .data(model)
                     .size(96)
                     .allowHardware(false)
+                    .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
                     .build()
                 val drawable = (coil.Coil.imageLoader(context).execute(request) as? coil.request.SuccessResult)?.drawable
-                val bmp = (drawable as? BitmapDrawable)?.bitmap ?: return@runCatching null
+                val bmp = drawableBitmap(drawable, 96) ?: return@runCatching null
                 MusicTheme.paletteOf(bmp)
             }.getOrNull()
         }

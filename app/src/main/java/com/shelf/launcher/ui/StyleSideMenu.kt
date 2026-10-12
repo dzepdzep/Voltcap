@@ -155,7 +155,7 @@ private fun SidePanel(c: StyleCtx, width: androidx.compose.ui.unit.Dp, compact: 
                         c.categoryLabel.let { if (caps) it.uppercase() else it }, color = trim, maxSize = 11.sp, minSize = 7.sp, maxLines = 2,
                         fontWeight = FontWeight.Bold
                     )
-                    Text("${c.games.size} games", color = trim.copy(alpha = 0.7f), fontSize = 9.sp, maxLines = 1, softWrap = false)
+                    Text(gamesCount(c.games.size), color = trim.copy(alpha = 0.7f), fontSize = 9.sp, maxLines = 1, softWrap = false)
                 }
             }
         }

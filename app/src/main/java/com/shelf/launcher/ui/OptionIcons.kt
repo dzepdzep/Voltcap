@@ -70,6 +70,7 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         com.shelf.launcher.data.HomeLayout.TIMELINE -> Pictogram.ROW
         com.shelf.launcher.data.HomeLayout.ARCADE -> Pictogram.TV
         com.shelf.launcher.data.HomeLayout.CONSOLES -> Pictogram.SHELF
+        com.shelf.launcher.data.HomeLayout.DISCS -> Pictogram.DISC
     }
     is TvRoom.Games -> when (value) {
         TvRoom.Games.SPINES -> Pictogram.SPINES

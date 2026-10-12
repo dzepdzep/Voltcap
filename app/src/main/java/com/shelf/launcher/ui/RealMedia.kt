@@ -134,9 +134,12 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720): android.graphi
         if (model == null) return@produceState
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
+                // (Update 147: always a still picture — an animated cover came back as an animated drawable, not a bitmap,
+                // and the 3D pieces and cases stayed a plain grey card.)
                 val req = coil.request.ImageRequest.Builder(context).data(model).size(maxSide, maxSide)
-                    .precision(coil.size.Precision.INEXACT).allowHardware(false).build()
-                ((coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                    .precision(coil.size.Precision.INEXACT).allowHardware(false)
+                    .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true).build()
+                drawableBitmap((coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable, maxSide)
             }.getOrNull()
         }
     }

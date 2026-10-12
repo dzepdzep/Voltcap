@@ -44,7 +44,7 @@ internal fun CollectionPickerDialog(
                     MenuRow(
                         if (inIt) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
                         name,
-                        "${collections[name].orEmpty().size} games"
+                        gamesCount(collections[name].orEmpty().size)
                     ) { onToggle(name) }
                 }
             }

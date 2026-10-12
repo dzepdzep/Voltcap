@@ -298,7 +298,7 @@ fun buildCategoryTiles(
                 com.shelf.launcher.data.CategorySettings.ALL ->
                     add(
                         CategoryTile(
-                            "ALL", "All games", "${state.games.size} games", coversOf(state.games), 210,
+                            "ALL", "All games", gamesCount(state.games.size), coversOf(state.games), 210,
                             slides = slidesOf(state.games.shuffled(java.util.Random(7))), customImage = categoryImages["ALL"],
                             count = state.games.size, favorites = favsOf(state.games),
                             lastPlayedCover = coverOf(lastOf(state.games)), lastPlayedTitle = lastOf(state.games)?.name,
@@ -315,7 +315,7 @@ fun buildCategoryTiles(
                     }
                     add(
                         CategoryTile(
-                            "p:$p", label, "${inIt.size} games", coversOf(inIt), hueOf(p),
+                            "p:$p", label, gamesCount(inIt.size), coversOf(inIt), hueOf(p),
                             slides = slidesOf(inIt), customImage = categoryImages["p:$p"],
                             count = inIt.size, favorites = favsOf(inIt), platform = p,
                             lastPlayedCover = coverOf(lastOf(inIt)), lastPlayedTitle = lastOf(inIt)?.name,
@@ -327,7 +327,7 @@ fun buildCategoryTiles(
                     val inIt = state.copy(platformFilter = c.key, specialFilter = null, searchQuery = "").visibleGames
                     if (inIt.isNotEmpty()) add(
                         CategoryTile(
-                            "p:${c.key}", c.name, "${inIt.size} games", coversOf(inIt), hueOf(c.key),
+                            "p:${c.key}", c.name, gamesCount(inIt.size), coversOf(inIt), hueOf(c.key),
                             slides = slidesOf(inIt), customImage = categoryImages["p:${c.key}"],
                             count = inIt.size, favorites = favsOf(inIt),
                             lastPlayedCover = coverOf(lastOf(inIt)), lastPlayedTitle = lastOf(inIt)?.name,
@@ -341,7 +341,7 @@ fun buildCategoryTiles(
                     val inIt = state.copy(specialFilter = f, platformFilter = null, searchQuery = "").visibleGames
                     add(
                         CategoryTile(
-                            key, f.label, "${inIt.size} games", coversOf(inIt), hueOf(key),
+                            key, f.label, gamesCount(inIt.size), coversOf(inIt), hueOf(key),
                             slides = slidesOf(inIt), customImage = categoryImages[key],
                             count = inIt.size, favorites = favsOf(inIt),
                             lastPlayedCover = coverOf(lastOf(inIt)), lastPlayedTitle = lastOf(inIt)?.name,

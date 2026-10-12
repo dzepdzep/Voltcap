@@ -65,6 +65,7 @@ internal fun PresetPreview(
             HomeLayout.STACKS, HomeLayout.CONSOLES -> p.shelf()
             HomeLayout.TIMELINE -> p.classic()
             HomeLayout.ARCADE -> p.tv()
+            HomeLayout.DISCS -> p.spot()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()

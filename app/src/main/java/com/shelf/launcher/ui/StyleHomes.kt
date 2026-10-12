@@ -465,7 +465,7 @@ internal fun styleHomeKey(
             else -> false
         }
         // Update 146: the newer layouts handle their own keys (in their own files) through [StyleKeyCtx].
-        HomeLayout.LIBRARY, HomeLayout.STACKS, HomeLayout.TIMELINE, HomeLayout.ARCADE, HomeLayout.CONSOLES -> {
+        HomeLayout.LIBRARY, HomeLayout.STACKS, HomeLayout.TIMELINE, HomeLayout.ARCADE, HomeLayout.CONSOLES, HomeLayout.DISCS -> {
             val ctx = StyleKeyCtx(
                 key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
                 category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
@@ -475,6 +475,7 @@ internal fun styleHomeKey(
                 HomeLayout.STACKS -> caseStacksKey(ctx)
                 HomeLayout.TIMELINE -> timelineKey(ctx)
                 HomeLayout.ARCADE -> arcadeKey(ctx)
+                HomeLayout.DISCS -> discStationKey(ctx)
                 else -> consoleStackKey(ctx)
             }
         }
@@ -921,7 +922,8 @@ internal fun StyleHome(
     }
     val label = state.specialFilter?.label ?: state.platformFilter?.let { titles.console(it) } ?: "All"
     val c = StyleCtx(state, games, focus, art, shortcuts, actions, type, mixed, stopsPair.first, stopsPair.second, label)
-    val needsLookup = type.wantsMedia() || type == CardArtType.SCREENSHOT
+    // (Update 147: the Disc station always shows discs, so it wants the disc scans whatever the game look is.)
+    val needsLookup = type.wantsMedia() || type == CardArtType.SCREENSHOT || layout == HomeLayout.DISCS
     LaunchedEffect(focus, type, games.size) {
         if (!needsLookup) return@LaunchedEffect
         kotlinx.coroutines.delay(120)
@@ -1005,6 +1007,8 @@ internal fun StyleHome(
         HomeLayout.TIMELINE -> StyleTimeline(c, modifier)
         HomeLayout.ARCADE -> StyleArcade(c, modifier)
         HomeLayout.CONSOLES -> StyleConsoleStack(c, modifier)
+        // Update 147.
+        HomeLayout.DISCS -> StyleDiscStation(c, modifier)
         else -> Unit
     }
 }

@@ -90,6 +90,8 @@ fun FirstRunDialog(
     // Update 144: everything back from Google Drive (the backup Settings › Backup › Export to Google Drive put there, or
     // the settings "Send my settings to Drive" sent), signing in to Drive first.
     var driveBusy by remember { mutableStateOf(false) }
+    // Update 147: the receiving half of Share settings (PIN / QR code) shown under the Welcome question.
+    var nearby by remember { mutableStateOf(false) }
     val driveConnect = rememberDriveConnect { importMessage = it; driveBusy = false }
     val fromDrive: () -> Unit = {
         driveBusy = true
@@ -168,17 +170,36 @@ fun FirstRunDialog(
                     MutedNote(
                         "Take back the backup you made there and everything comes along — settings, accounts, artwork " +
                             "choices, saved details — and setup is done. From Google Drive: Settings › Backup › Export to " +
-                            "Google Drive on the other device. From a file: Settings › Backup › Export."
+                            "Google Drive on the other device. From a file: Settings › Backup › Export. From another device: " +
+                            "it shows a PIN or QR code (Settings › Backup › Share settings)."
                     )
                     Spacer(Modifier.height(10.dp))
                     ChipFlow {
                         Chip("Yes — from Google Drive", enabled = !driveBusy) { fromDrive() }
+                        // Update 147: straight from the other Voltcap on the same Wi-Fi, with its PIN or QR code.
+                        Chip(if (nearby) "✓ Yes — from another device (PIN or QR)" else "Yes — from another device (PIN or QR)", accent = nearby) { nearby = !nearby }
                         Chip("Yes — from a backup file…", accent = false) {
                             importFile.launch(arrayOf("application/json", "text/plain", "*/*"))
                         }
                         Chip("No, set up fresh", accent = false) { step++ }
                     }
                     importMessage?.let { Spacer(Modifier.height(6.dp)); MutedNote(it) }
+                }
+                if (nearby) {
+                    Spacer(Modifier.height(12.dp))
+                    SettingsShareCard(receiveOnly = true) { doc ->
+                        importMessage = "Taking it all back…"
+                        importScope.launch {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                runCatching { com.shelf.launcher.data.Backup.applyDocument(context, doc, null, "before import from another device") }
+                            }
+                                .onSuccess {
+                                    com.shelf.launcher.data.FirstRun.markDone(context)
+                                    com.shelf.launcher.data.Backup.restart(context)
+                                }
+                                .onFailure { importMessage = "Couldn't import: ${it.message}" }
+                        }
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
                 ShelfCard {

@@ -4,6 +4,63 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (147): Disc station layout, grey 3D cases fixed, apps on their cartridges, spines at their real shape, matching spines, PIN / QR at first start, carousel case views like a disc loader
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (2): `src_copy\ui\StyleDiscStation.kt`, `src_copy\ui\DrawableBitmap.kt`.
+- Changed (24): `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`,
+  `src_copy\ui\CategoryScreen.kt`, `src_copy\ui\CollectionDialogs.kt`, `src_copy\ui\FirstRunDialog.kt`,
+  `src_copy\ui\GameCard.kt`, `src_copy\ui\ImportPreview.kt`, `src_copy\ui\Models3D.kt`, `src_copy\ui\OptionIcons.kt`,
+  `src_copy\ui\PresetPreview.kt`, `src_copy\ui\PresetsCard.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\RealMedia.kt`,
+  `src_copy\ui\SceneArt.kt`, `src_copy\ui\SceneStyle.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\ShelfHome.kt`,
+  `src_copy\ui\StyleDashboard.kt`, `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\StyleHomes.kt`,
+  `src_copy\ui\StyleSideMenu.kt`, `src_copy\ui\TrophyShelf.kt`, `src_copy\ui\theme\Theme.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **Grey, faded 3D cases and pieces (found on the RP Classic):** a game whose SteamGridDB cover is animated (an animated
+  WebP, 10 MB for Yu-Gi-Oh! The Duelists of the Roses) came back as an animated picture, which the 3D models, 3D cases
+  and the game's colours couldn't read, so they stayed a plain grey card. They now always get a still picture of it.
+- **3D cartridges' label:** the cover fills the label like a real sticker (a tall cover in a wide label had grey bars).
+- **Apps on cartridges, discs and cases:** an app without art wears its icon on its cartridge's label / disc / case front;
+  the icon used to be laid over the whole card, hiding the cartridge under it.
+- **Spines too wide:** a real spine scan, and Voltcap's console spines, keep their own shape in the middle of their slot
+  instead of being stretched to its width.
+- **Matching spines** (Settings › Game look › Covers, cases & discs): every game's spine in Voltcap's own console style
+  with its name, so they all match. Off by default.
+- **Disc station** (new layout, Settings › Home › Layout & presets › Layout): one disc player — the game you're on is the
+  disc in the tray (ejected and swapped as you move, spinning slowly), name, console, kind of disc, play time,
+  achievements and a few lines about it beside it, ◀ Play ▶ and Details. Always discs. Options: Spin the loaded disc,
+  About the game.
+- **First start:** "Yes — from another device (PIN or QR)" next to Google Drive and the backup file — the receiving half
+  of Settings › Backup › Share settings (nearby PIN, or the QR code's short code and PIN).
+- **Carousel case views like a disc loader:** picking Arc, Spine wall or Turned row (Settings › Home › Layout options ›
+  Carousel look › View) turns on Reflection and the new **Dark stage** (a dark floor fading to black). Spine wall turns
+  the cases to 72° so a sliver of each front shows; Turned row's cases sit close and turn to face the middle one.
+- **"1 games"** now reads "1 game".
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** the 24 changed files fetched fresh, the same as 146.
+- **On the RP Classic:** the grey case, the animated cover and the app icons were found there (146 installed). 147 not
+  tested yet.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 147: disc station, grey 3D cases fixed, apps on cartridges, real-shape spines, PIN/QR at first start, disc-loader case views"
+git push origin main
+.\gradlew installDebug
+```
+
+---
+
 ## Update — 12 Oct 2026 (146): Five new layouts, a banner game page, the Receding row, the wide first game scrolls away, a Background choice for the pale layouts
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

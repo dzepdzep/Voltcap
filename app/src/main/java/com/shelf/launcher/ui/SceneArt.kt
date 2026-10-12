@@ -78,9 +78,10 @@ internal object SceneArt {
                     .scale(if (fill) coil.size.Scale.FILL else coil.size.Scale.FIT)
                     .precision(coil.size.Precision.INEXACT)
                     .allowHardware(false)
+                    .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
                     .memoryCacheKey("scene|$url|${w}x$h|$fill")
                     .build()
-                val bmp = ((coil.Coil.imageLoader(context).execute(request) as? coil.request.SuccessResult)?.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                val bmp = drawableBitmap((coil.Coil.imageLoader(context).execute(request) as? coil.request.SuccessResult)?.drawable, maxOf(w, h))
                 bmp?.takeIf { !it.isRecycled }
             }.getOrNull()
         }

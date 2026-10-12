@@ -62,6 +62,7 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.TIMELINE -> "Order by last played, release year or added, dates"
     HomeLayout.ARCADE -> "Marquee glow, screen lines, cabinet colour"
     HomeLayout.CONSOLES -> "Console pictures, how many games slide out"
+    HomeLayout.DISCS -> "Spinning disc, about the game"
     else -> ""
 }
 
@@ -86,6 +87,7 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.TIMELINE -> TimelineSettings()
         HomeLayout.ARCADE -> ArcadeSettings()
         HomeLayout.CONSOLES -> ConsoleStackSettings()
+        HomeLayout.DISCS -> DiscStationSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).
