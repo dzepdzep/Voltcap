@@ -75,6 +75,18 @@ object GestureHint {
         worker.execute { runCatching { if (!forceOn(app)) restoreNow(app) } }
     }
 
+    /**
+     * Update 155: Retroid's ROM (seen on the Pocket Classic): with its own "hide_nav_bar" on, an app asking Android to
+     * hide the navigation bar brings the white gesture pill back — Hide nav bar on showed the pill, off hid it. There
+     * the device's own setting (layer 2, through its root service) does the hiding and Voltcap's window doesn't ask.
+     */
+    val systemOwnsNav: Boolean by lazy {
+        (android.os.Build.MODEL.contains("Retroid", true) || android.os.Build.MANUFACTURER.contains("Retroid", true)) && RootShell.available
+    }
+
+    /** Whether Voltcap's windows themselves ask Android to hide the navigation bar. */
+    fun windowHidesNav(immersive: Boolean = immersiveState.value): Boolean = immersive && !systemOwnsNav
+
     fun immersive(c: Context): Boolean = prefs(c).getBoolean("immersive", true)
 
     fun setImmersive(c: Context, on: Boolean) {

@@ -4,6 +4,48 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (155): Hide nav bar the right way round on the Pocket Classic, volume mixer no longer stuck
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (3): `src_copy\data\GestureHint.kt`,
+`src_copy\ui\SystemBars.kt`, `src_copy\device\audio\AppMixer.kt`.
+
+**Files to delete:** none.
+
+### Tested 154 on the Retroid Pocket Classic
+- **Disc station's CD player** shows (body, hinge, well with the laser slot, LCD and buttons).
+- **Charge limit works:** R1 shows "Stopped at 80 %" now that it's on again; AutoTDP Balanced is on.
+
+### What changed
+- **Hide nav bar (R1 › Device, Settings › Device › Gesture hint) was the wrong way round on the Pocket Classic:** on,
+  the white gesture pill showed; off, it was gone. Retroid's firmware shows the pill when an app asks Android to hide
+  the navigation bar while its own "hide navigation bar" setting is on. On a Retroid, Voltcap now leaves the hiding to
+  that setting alone (switched through the root service), so on = no pill.
+- **Volume mixer:**
+  - Found on the Pocket Classic: a volume helper started this morning by an older Voltcap was still running hours and
+    several updates later, holding Spotify at a few percent — Spotify stayed quiet and the sliders seemed to do nothing.
+    At each start Voltcap now stops a helper it didn't start itself, gives the apps it held their full volume back, and
+    puts on the volumes saved now.
+  - On a Retroid, Automatic uses the player volume (it holds there, and keeps holding when Android closes Voltcap
+    during a game — the sound effect's volumes jumped back to full then).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 155: hide nav bar right way round on retroid, volume mixer no longer stuck"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 12 Oct 2026 (154): Disc station as a portable CD player, calm background, the disc drops in at Play, covers shown whole
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

@@ -256,6 +256,13 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 155
+- **GestureHint.systemOwnsNav** (Retroid + root service): `SystemBars.apply` doesn't hide the navigation bar
+  (`windowHidesNav`); the force layer (global `hide_nav_bar`) does. On the RP Classic both together showed the pill.
+- **AppMixer:** `heldUids()` (from `pgrep -fl`), `stopHelperAndRelease()` — in `ensure()` when a helper runs that this
+  process didn't start (`daemonSig` empty), and in the EFFECT branch of `apply()`. Automatic → HELPER on Retroid.
+- Found: a `voltcap_mixd` from 09:33 (old APK path) holding Spotify (uid 10134) at 0.09.
+
 ## State after update 154
 - **Disc station:** `Features.discPlayer` (PLAYER default / ART), `Features.discCalm` (true). DiscPlayer.kt:
   `discPlayerBody`, `discWell`, `DiscPlayerFront`. `discCalm` in LauncherScreen → LocalSceneCovered, no VideoBackdrop,

@@ -28,7 +28,8 @@ internal object SystemBars {
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller.hide(WindowInsetsCompat.Type.statusBars())
-        if (immersive) controller.hide(WindowInsetsCompat.Type.navigationBars())
+        // (Update 155: not on a Retroid, where the device's own setting hides it — asking too brought the pill back.)
+        if (GestureHint.windowHidesNav(immersive)) controller.hide(WindowInsetsCompat.Type.navigationBars())
         else controller.show(WindowInsetsCompat.Type.navigationBars())
     }
 
@@ -54,7 +55,7 @@ internal object SystemBars {
      * window has the focus and no keyboard is open — it should be hidden again.
      */
     fun navStuck(window: Window, focused: Boolean): Boolean {
-        if (!focused || !GestureHint.immersiveState.value) return false
+        if (!focused || !GestureHint.windowHidesNav()) return false
         val insets = window.decorView.rootWindowInsets ?: return false
         val c = WindowInsetsCompat.toWindowInsetsCompat(insets, window.decorView)
         return c.isVisible(WindowInsetsCompat.Type.navigationBars()) && !c.isVisible(WindowInsetsCompat.Type.ime())

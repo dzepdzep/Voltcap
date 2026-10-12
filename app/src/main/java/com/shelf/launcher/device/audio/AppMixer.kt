@@ -262,6 +262,10 @@ object AppMixer {
         AudioSessions.register(c)
         // The notification-shade mixer is posted (or removed) at every start / game launch.
         MixerNotification.refreshAsync(c)
+        // Update 155: a helper still running from before this start (an older Voltcap, an update, a crash) holds
+        // volumes nobody here knows — maybe old ones (an app stuck quiet, sliders that seemed to do nothing). It goes,
+        // its apps get their full volume back, and the volumes saved now are put on again below.
+        if (RootShell.available && daemonSig.isEmpty() && daemonRunning()) stopHelperAndRelease(c)
         if (!available(c) || effective(c).isEmpty()) return
         // Update 122: Automatic moved to the sound effect: once, the old helper is stopped and the player volumes it
         // set are put back (they'd stack up with the effect where they did work).
@@ -556,6 +560,29 @@ object AppMixer {
     private fun daemonRunning(): Boolean =
         RootShell.exec("pgrep -f '$DAEMON_MATCH'")?.lines()?.any { it.trim().toIntOrNull() != null } == true
 
+    /**
+     * Update 155: the apps (uids) a running helper holds, read from the command line that started it. Seen on the
+     * Pocket Classic: a helper started that morning by an older Voltcap was still holding Spotify at a few percent
+     * hours and several updates later (it outlives Voltcap by design), so Spotify stayed quiet whatever the slider said.
+     */
+    private fun heldUids(): List<Int> {
+        val out = RootShell.exec("pgrep -fl '$DAEMON_MATCH'").orEmpty()
+        return out.lines().filter { "daemon" in it }.flatMap { line ->
+            line.substringAfter(" daemon ").split(Regex("\\s+")).mapNotNull { t ->
+                if (':' in t) t.substringBefore(':').toIntOrNull() else null
+            }
+        }.distinct()
+    }
+
+    /** Update 155: stops a running helper and puts every app it held back to its full player volume. */
+    private fun stopHelperAndRelease(c: Context) {
+        if (!RootShell.available) return
+        val held = heldUids()
+        RootShell.exec("pkill -f '$DAEMON_MATCH'")
+        daemonSig = ""
+        if (held.isNotEmpty()) helper(c, "apply " + held.joinToString(" ") { "$it:1.0000" })
+    }
+
     @Volatile private var helperOk: Boolean? = null
     /** Consecutive looks the helper didn't answer: one hiccup (a slow start under load) doesn't drop it for good. */
     @Volatile private var helperFails = 0
@@ -629,6 +656,8 @@ object AppMixer {
     }
 
     /** How volumes are set now (null: no way works here). */
+    private val retroid: Boolean by lazy { Build.MODEL.contains("Retroid", true) || Build.MANUFACTURER.contains("Retroid", true) }
+
     private fun resolved(c: Context): Method? {
         val pick = method(c)
         val helper = RootShell.available && helperOk != false
@@ -640,6 +669,10 @@ object AppMixer {
             // process from the root service, which some firmware drops without a word (the AYN Thor: every check passed,
             // nothing got quieter). The effect is Voltcap's own, on the app's audio session in Android's audio server.
             Method.AUTO -> when {
+                // Update 155: on a Retroid the player volume holds (seen on the Pocket Classic) and, unlike the effect,
+                // it keeps holding when Android closes Voltcap during a game (the small handheld does that often),
+                // where the effect's volumes jumped back to full.
+                helper && retroid -> Method.HELPER
                 effect && !fxGlobal(c) -> Method.EFFECT
                 // (Update 136: an effect this firmware spreads over all the sound is no per-app volume at all, so
                 // without the helper nothing is used.)
@@ -694,7 +727,8 @@ object AppMixer {
                 starter.execute { if (daemonSig == sig) runCatching { RootShell.exec(launch) } }
             }
             Method.EFFECT -> {
-                if (RootShell.available) RootShell.exec("pkill -f '$DAEMON_MATCH'")
+                // (Update 155: and whatever a helper still held goes back to full — the effect does the turning down.)
+                if (RootShell.available && daemonRunning()) stopHelperAndRelease(app)
                 // An app put back to 100 % must really get its player volume back too: the helper may have lowered it
                 // before (the effects only cover what they're on; this used to leave it quiet for good).
                 releasePlayers(app, resets)
