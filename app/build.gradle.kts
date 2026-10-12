@@ -48,13 +48,17 @@ android {
     }
 
     signingConfigs {
-        val storeFile = keystoreProps.getProperty("storeFile")
-        if (storeFile != null) {
+        val storeFile = keystoreProps.getProperty("storeFile")?.trim()?.trim('"')
+        // (Update 144: only when the key file is really there — a wrong path in keystore.properties made every build
+        // stop at validateSigningDebug; then this PC's debug key signs, with a warning.)
+        val keyFile = storeFile?.let { rootProject.file(it) }
+        if (keyFile != null && !keyFile.isFile) logger.warn("Voltcap: keystore.properties points to $keyFile, which doesn't exist - signing with the debug key.")
+        if (keyFile != null && keyFile.isFile) {
             create("release") {
-                this.storeFile = rootProject.file(storeFile)
-                storePassword = keystoreProps.getProperty("storePassword")
-                keyAlias = keystoreProps.getProperty("keyAlias")
-                keyPassword = keystoreProps.getProperty("keyPassword")
+                this.storeFile = keyFile
+                storePassword = keystoreProps.getProperty("storePassword")?.trim()
+                keyAlias = keystoreProps.getProperty("keyAlias")?.trim()
+                keyPassword = keystoreProps.getProperty("keyPassword")?.trim()
             }
         }
     }
