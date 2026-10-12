@@ -72,7 +72,8 @@ internal object GameSize {
     /** The size of [layout] now, as a percentage. */
     fun pct(a: AppearanceSettings): Int = when (a.homeLayout) {
         HomeLayout.CLASSIC, HomeLayout.GRID -> when (a.cardSize) { CardSize.SMALL -> 85; CardSize.LARGE -> 120; CardSize.MEDIUM -> 100 }
-        HomeLayout.CHAN -> when (Features.chanCols.state.value) { 3 -> 120; 4 -> 100; 5 -> 85; else -> 75 }
+        // (Update 151: 2 channels per row is the biggest.)
+        HomeLayout.CHAN -> when (Features.chanCols.state.value) { 2 -> 140; 3 -> 120; 4 -> 100; 5 -> 85; else -> 75 }
         HomeLayout.LIVE -> when (Features.livePage.state.value) { Features.LivePage.SIX -> 85; Features.LivePage.BIG_FOUR -> 100; Features.LivePage.BIG_TWO -> 120 }
         HomeLayout.TILES -> a.tileScale
         HomeLayout.CROSS -> Features.crossScale.state.value

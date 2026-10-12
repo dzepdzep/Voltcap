@@ -338,7 +338,8 @@ internal fun realCaseMm(platform0: String?): Pair<Float, Float>? {
 internal fun isFreeMedia(type: com.shelf.launcher.data.CardArtType, platform: String): Boolean = when (type) {
     // (Update 128: a game on your cartridge pack too — with "Real discs" as well, there's no scan of it to show.)
     // (Update 129: with "Real discs" too — the game's own scan stands free like the drawn one, see realScanOf.)
-    com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> customCartFor(platform) || MediaShell.of(platform) != null
+    // (Update 151: or a 3D case from your shape library — PS5, Xbox One / Series have no drawn disc but do have a case.)
+    com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> customCartFor(platform) || MediaShell.of(platform) != null || Models3D.available(platform) != null
     // Box art always uses the template pack's case when there's one for the console.
     // (Update 129: the case picked for all on R1 › Case, when there is one.)
     com.shelf.launcher.data.CardArtType.CASE -> LookStyles.casePlatform(platform).let { p ->
@@ -414,9 +415,11 @@ internal fun PhysicalMedia(
     // Update 136: a piece of your 3D shape library, the cover in its window; turned a little, the game you're on facing
     // you (Settings › Game look › 3D models › Stand).
     if (platform != null && platform.startsWith(MODEL_3D)) {
-        val yaw = Models3D.standYaw(LocalMediaFocused.current)
+        val on = LocalMediaFocused.current
+        val yaw = Models3D.standYaw(on)
         val (id, console) = platform.removePrefix(MODEL_3D).split('|', limit = 2).let { it[0] to it.getOrNull(1) }
-        Model3DArt(id, caseCover ?: label, yaw, modifier, name = title, platform = console)
+        // Update 151: with more life — a contact shadow, a sheen as it gets focus, the one you're on turning slowly.
+        Model3DArt(id, caseCover ?: label, yaw, modifier, name = title, platform = console, life = true, focused = on)
         return
     }
     // Update 128: a game on your cartridge pack — its cover in the window (a disc / label scan wouldn't fit it).
@@ -489,8 +492,9 @@ internal fun PhysicalMedia(
  * or cartridge is drawn flat into its own layer first and then turned (cheap, and it keeps Android's text cache out
  * of it, see flatTextFor3d).
  */
+// (Update 151: internal, for the 3D case + disc in DiscCase3D.kt.)
 @Composable
-private fun Modifier.mediaMotion(disc: Boolean, seed: Int): Modifier =
+internal fun Modifier.mediaMotion(disc: Boolean, seed: Int): Modifier =
     motionLayer(disc, (if (disc) Features.discMotion else Features.cartMotion).state.value, seed)
 
 /** A box (box art): turns slowly left and right and/or hops like a cartridge, as set under Cases (default still). */
@@ -576,7 +580,9 @@ internal fun discFrac(platform: String?, aspect: Float, box: BoxTpl, scanCase: B
 internal fun casePeek(type: Art, platform: String?): Float {
     if (type != Art.CASE || platform == null) return 0f
     val p = LookStyles.casePlatform(platform) ?: return 0f
-    if (Models3D.caseModel(p) != null) return 0f
+    // Update 151: the 3D case + disc (DiscCase3D.kt) has its own.
+    disc3dPeek(p)?.let { return it }
+    // (Update 151: no 3D case models in the plain case looks any more — every console's case is flat there, see CaseArt.)
     val shell = MediaShell.of(p)
     if (Features.caseWithMedia.state.value && shell != null) {
         val round = shell.disc || shell == MediaShell.UMD

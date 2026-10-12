@@ -417,7 +417,8 @@ internal fun BannerGameWindow(
                                 "$earned / $total achievements" + if (earned == total) "  ·  Mastered" else "",
                                 color = look.ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1
                             )
-                            Spacer(Modifier.width(10.dp))
+                            // Update 151: a small upright tick between "0 / 69 achievements" and its bar.
+                            ProgressTick(height = 10.dp, gap = 6.dp, color = look.ink.copy(alpha = 0.35f))
                             BannerBar(earned.toFloat() / total, look, Modifier.width(if (narrow) 50.dp else 90.dp))
                         } else Text(
                             if (lastAt == null) "Not played yet" else "Time played: " + stylePlaytime(playMs, played = true),

@@ -204,7 +204,7 @@ internal class SavedArtInterceptor : Interceptor {
 
 /** Update 114: Settings › Metadata › "Scrape spines" — the background look-up's controls and progress (set by the home screen). */
 /**
- * Update 147: Settings › Metadata › Everything at once — artwork, details, real cases / discs / spines, screenshots and
+ * Update 147: Settings › Metadata › Scraping (Everything at once) — artwork, details, real cases / discs / spines, screenshots and
  * video clips for every game that's missing them, one after another in the background.
  */
 object EverythingScrape {

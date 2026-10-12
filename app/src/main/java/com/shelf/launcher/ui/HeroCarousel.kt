@@ -549,7 +549,8 @@ private fun InfoRegion(
                     "ACHIEVEMENTS " + achievementProgress(info.earned, info.total), color = Color.White.copy(alpha = 0.85f),
                     fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp
                 )
-                Spacer(Modifier.width(8.dp))
+                // Update 151: a small upright tick between the count and its bar.
+                com.shelf.launcher.ui.ProgressTick(height = 9.dp, gap = 6.dp)
                 Box(Modifier.width(64.dp).height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color.White.copy(alpha = 0.2f))) {
                     Box(Modifier.fillMaxWidth((info.earned.toFloat() / info.total).coerceIn(0f, 1f)).height(3.dp).background(ShelfTheme.accent))
                 }

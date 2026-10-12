@@ -53,7 +53,7 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.BAR -> "Top icons, tile size, bigger selection, names, Start, art behind"
     HomeLayout.HUB -> "Art behind"
     HomeLayout.RESUME -> "Art behind"
-    HomeLayout.CHAN -> "Tiles per row, pale backdrop, names"
+    HomeLayout.CHAN -> "Channels per row, pale backdrop, names" // (Update 151: was "Tiles per row".)
     HomeLayout.CIRCUIT -> "Board colour, flowing current, chip labels, board behind"
     HomeLayout.SHELF -> "Spines, fronts or turned, real sizes, front or side view, bob & turn, wood / dark / glass"
     // Update 146.
@@ -309,7 +309,7 @@ private fun HubSettings() {
 
 @Composable
 private fun ResumeSettings() {
-    MutedNote("The game you're on as a big square with four shortcut tiles under it, the next games in a row, and Discover cards (Play / Continue, Achievements, Details). ◀ on the first game goes to the shortcut tiles, ▼ to the cards.")
+    MutedNote("The game you're on as a big square with four shortcut tiles under it, the next games in a row, and Discover cards (Play / Continue, Achievements, Details). ◀ twice on the first game goes to the shortcut tiles, ▼ to the cards.") // (Update 151: twice.)
     Spacer(Modifier.height(10.dp))
     Toggle(Icons.Filled.Image, "Game art behind", "The game you're on across the whole screen. Off: your theme.", Features.resArt)
     Toggle(Icons.Filled.EmojiEvents, "Next achievements", "The achievements still to earn slide slowly past, faint, behind the Achievements card (the ones most players get first at the top).", Features.resNextAch)
@@ -319,7 +319,8 @@ private fun ResumeSettings() {
 private fun ChannelSettings() {
     MutedNote("Pages of wide tiles, a curved bar at the bottom with the clock; the round button on the left changes category, the one on the right opens the game's details. ▲ ▼ ◀ ▶ move along the tiles.")
     Spacer(Modifier.height(10.dp))
-    Slider("Tiles per row", Features.chanCols, 3, 6) { "$it" }
+    // Update 151: a clear choice of 2 to 6 channels per row (it was a slider from 3 to 6 that was easy to miss).
+    StyleChoice("Channels per row", arrayOf(2, 3, 4, 5, 6), Features.chanCols.state.value, { "$it" }) { Features.chanCols.value = it }
     BackdropChoice(Features.chanLight, Features.chanArt)
     Toggle(Icons.Filled.Label, "Name on the tile you're on", "A small name pill along the bottom of the selected tile.", Features.chanNames)
     Toggle(Icons.Filled.Label, "Scroll on continuously", "◀ ▶ move a column over and the grid glides along with you. Off: pages that turn at the edge.", Features.gridsContinuous)

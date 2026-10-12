@@ -443,7 +443,8 @@ private fun DashProfile(c: StyleCtx, panel: Features.PanelLook, op: Float, shape
         StatBar("PWR", battery.percent / 100f, Color(0xFF6CCB3E), "${battery.percent} / 100", ink)
         Spacer(Modifier.height(5.dp))
         val total = c.state.games.size
-        StatBar("LIB", if (total > 0) c.games.size / total.toFloat() else 0f, Color(0xFF4AA8E8), gamesCount(c.games.size), ink)
+        // (Update 151: the library bar in the theme's accent; the battery bar stays green.)
+        StatBar("LIB", if (total > 0) c.games.size / total.toFloat() else 0f, ShelfTheme.accent, gamesCount(c.games.size), ink)
     }
 }
 

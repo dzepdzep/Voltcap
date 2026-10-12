@@ -220,8 +220,9 @@ private fun WideCard(modifier: Modifier, on: Boolean, spec: CardSpec, index: Int
     Box(
         modifier
             .clip(shape)
-            .background(Color(0xFF14181F).copy(alpha = 0.8f))
-            .border(if (on) 3.dp else 1.dp, if (on) Color.White else Color.White.copy(alpha = 0.18f), shape)
+            // Update 151: the card's dark and its selected frame follow the theme.
+            .background(themeDark(Color(0xFF14181F)).copy(alpha = 0.8f))
+            .border(if (on) 3.dp else 1.dp, if (on) ShelfTheme.accent else Color.White.copy(alpha = 0.18f), shape)
             .pointerInput(index) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.BAR, index); act() } }
     ) {
         if (spec.art != null) AsyncImage(spec.art, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.5f })
@@ -321,7 +322,8 @@ private fun HubTiles(c: StyleCtx, small: Dp, big: Dp) {
                     .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
             ) {
                 StyleArt(c, g, Modifier.fillMaxSize(), square = true, corner = corner, focused = false, fx = null)
-                if (sel) Box(Modifier.matchParentSize().border(3.dp, Color(0xFF66D17A).copy(alpha = grow.coerceIn(0.4f, 1f)), uiRounded(corner)))
+                // (Update 151: the frame in the theme's accent, it was always green.)
+                if (sel) Box(Modifier.matchParentSize().border(3.dp, ShelfTheme.accent.copy(alpha = grow.coerceIn(0.4f, 1f)), uiRounded(corner)))
                 if (grow >= 0.5f) Box(
                     Modifier.fillMaxWidth().align(Alignment.BottomCenter).clip(uiRounded(corner))
                         .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))))
@@ -394,8 +396,9 @@ internal fun StyleConsoleResume(c: StyleCtx, modifier: Modifier) {
                                         val on = StyleNav.on(StyleNav.Zone.SIDE, i)
                                         val click by rememberUpdatedState(s.onClick)
                                         Box(
-                                            Modifier.size(cell, cellH).background(Color(0xFF2B2F36).copy(alpha = 0.9f))
-                                                .border(if (on) 3.dp else 0.dp, if (on) Color.White else Color.Transparent, RoundedCornerShape(0.dp))
+                                            // Update 151: in the theme's colours.
+                                            Modifier.size(cell, cellH).background(themeDark(Color(0xFF2B2F36)).copy(alpha = 0.9f))
+                                                .border(if (on) 3.dp else 0.dp, if (on) ShelfTheme.accent else Color.Transparent, RoundedCornerShape(0.dp))
                                                 .pointerInput(i) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.SIDE, i); click() } },
                                             contentAlignment = Alignment.Center
                                         ) { Icon(s.icon, s.label, tint = Color.White, modifier = Modifier.size(22.dp)) }
@@ -530,8 +533,8 @@ private fun ChanTile(c: StyleCtx, i: Int, light: Boolean, modifier: Modifier, se
         modifier
             .graphicsLayer { val k = 1f + 0.04f * lift; scaleX = k; scaleY = k }
             .clip(shape)
-            .background(if (light) Color.White else Color(0xFF1D222B))
-            .border(if (sel) 4.dp else 2.dp, if (sel) ShelfTheme.accent else Color(0xFFB9C3D0), shape)
+            .background(if (light) Color.White else themeDark(Color(0xFF1D222B))) // (update 151: themed)
+            .border(if (sel) 4.dp else 2.dp, if (sel) ShelfTheme.accent else androidx.compose.ui.graphics.lerp(Color(0xFFB9C3D0), ShelfTheme.accent, 0.3f), shape)
             .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
     ) {
         StyleArt(c, g, Modifier.fillMaxSize().padding(3.dp), wide = true, corner = 13.dp)
@@ -630,8 +633,9 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
                 Modifier.padding(start = 8.dp).size(34.dp)
                     .graphicsLayer { val k = if (on) 1.12f else 1f; scaleX = k; scaleY = k }
                     .clip(CircleShape)
-                    .background(if (light) Brush.verticalGradient(listOf(Color.White, Color(0xFFE3E8EF))) else Brush.verticalGradient(listOf(Color(0xFF2E3540), Color(0xFF1B2028))))
-                    .border(if (on) 3.dp else 1.5.dp, if (on) ShelfTheme.accent else Color(0xFF9FB6CF), CircleShape)
+                    .background(if (light) Brush.verticalGradient(listOf(Color.White, Color(0xFFE3E8EF))) else Brush.verticalGradient(listOf(themeDark(Color(0xFF2E3540)), themeDark(Color(0xFF1B2028)))))
+                    // (Update 151: the rim and the dark follow the theme.)
+                    .border(if (on) 3.dp else 1.5.dp, if (on) ShelfTheme.accent else androidx.compose.ui.graphics.lerp(Color(0xFF9FB6CF), ShelfTheme.accent, 0.45f), CircleShape)
                     .pointerInput(i) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.TOP, i); act() } },
                 contentAlignment = Alignment.Center
             ) {
@@ -647,14 +651,17 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
 private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: Int) {
     val (time, date) = rememberConsoleClock()
     val ink = if (light) Color(0xFF4A5461) else Color.White
+    // Update 151: the rims and the dark bar take the theme's colour (they were one fixed blue-grey).
+    val rim = androidx.compose.ui.graphics.lerp(Color(0xFF8FB4D8), ShelfTheme.accent, 0.45f)
+    val darkTop = themeDark(Color(0xFF2A303A))
     val category by rememberUpdatedState(c.actions.category)
     val open by rememberUpdatedState(c.actions.open)
     Box(Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.CHAN, "bar"), "Clock bar & round buttons")) {
         Box(
             Modifier.fillMaxSize().padding(top = barH * 0.16f)
                 .clip(RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp))
-                .background(if (light) Brush.verticalGradient(listOf(Color.White, Color(0xFFD5DBE3))) else Brush.verticalGradient(listOf(Color(0xFF2A303A), Color(0xFF171B22))))
-                .border(1.dp, Color(0xFF9FB6CF).copy(alpha = 0.7f), RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp))
+                .background(if (light) Brush.verticalGradient(listOf(Color.White, Color(0xFFD5DBE3))) else Brush.verticalGradient(listOf(darkTop, themeDark(Color(0xFF171B22)))))
+                .border(1.dp, rim.copy(alpha = 0.7f), RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp))
         )
         Column(Modifier.align(Alignment.Center).padding(top = barH * 0.12f), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(time, color = ink, fontSize = (barH.value * 0.36f).sp, fontWeight = FontWeight.Light, maxLines = 1, softWrap = false)
@@ -670,8 +677,8 @@ private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: 
             Modifier.align(Alignment.CenterStart).padding(start = 14.dp, top = barH * 0.1f).size(ring)
                 .graphicsLayer { val k = if (leftOn) 1.1f else 1f; scaleX = k; scaleY = k }
                 .clip(CircleShape)
-                .background(if (light) Color.White else Color(0xFF2A303A))
-                .border(if (leftOn) 5.dp else 3.dp, if (leftOn) ShelfTheme.accent else Color(0xFF8FB4D8), CircleShape)
+                .background(if (light) Color.White else darkTop)
+                .border(if (leftOn) 5.dp else 3.dp, if (leftOn) ShelfTheme.accent else rim, CircleShape)
                 .pointerInput(Unit) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.BAR, 0); category(1) } },
             contentAlignment = Alignment.Center
         ) {
@@ -709,8 +716,8 @@ private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: 
             Modifier.align(Alignment.CenterEnd).padding(end = 14.dp, top = barH * 0.1f).size(ring)
                 .graphicsLayer { val k = if (rightOn) 1.1f else 1f; scaleX = k; scaleY = k }
                 .clip(CircleShape)
-                .background(if (light) Color.White else Color(0xFF2A303A))
-                .border(if (rightOn) 5.dp else 3.dp, if (rightOn) ShelfTheme.accent else Color(0xFF8FB4D8), CircleShape)
+                .background(if (light) Color.White else darkTop)
+                .border(if (rightOn) 5.dp else 3.dp, if (rightOn) ShelfTheme.accent else rim, CircleShape)
                 .pointerInput(Unit) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.BAR, 1); open() } },
             contentAlignment = Alignment.Center
         ) {

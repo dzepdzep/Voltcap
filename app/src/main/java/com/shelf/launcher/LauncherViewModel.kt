@@ -5500,12 +5500,21 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 if (com.shelf.launcher.data.EverythingScrape.Part.ART in parts) {
                     E.stage = "Artwork"; E.progress = null
                     scrapeMissingArt(manual = true)
-                    scrapeJob?.join()
+                    // (Update 149: its count shown here as it goes.)
+                    while (scrapeJob?.isActive == true) {
+                        val st = _uiState.value
+                        E.progress = if (st.scrapeTotal > 0) st.scrapeDone to st.scrapeTotal else null
+                        kotlinx.coroutines.delay(500)
+                    }
                 }
                 if (com.shelf.launcher.data.EverythingScrape.Part.DETAILS in parts) {
                     E.stage = "Details"; E.progress = null
                     scrapeMissingMetadata(silent = true)
-                    metadataScrapeJob?.join()
+                    while (metadataScrapeJob?.isActive == true) {
+                        val st = _uiState.value
+                        E.progress = if (st.metadataScrapeTotal > 0) st.metadataScrapeDone to st.metadataScrapeTotal else null
+                        kotlinx.coroutines.delay(500)
+                    }
                 }
                 val creds = screenScraperStore.load()
                 val scans = com.shelf.launcher.data.EverythingScrape.Part.SCANS in parts && creds != null

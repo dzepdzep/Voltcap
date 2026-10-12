@@ -582,7 +582,12 @@ internal fun GameCarousel(
             val spineHere = !cases3d && ((spines && i != vFocus) || sideways)
             // Update 136: with 3D models on, the 3D cases are your 3D shape library's pieces, at the angle nearest their turn.
             // (Update 146: worked out first — a 3D model is drawn instead of a spine, so it isn't packed as one.)
-            val model = if (cases3d || (modelLook && isFreeMedia(artForGame(cardArtType, g.platform, hidden, mixed), g.platform))) Models3D.available(g.platform) else null
+            // (Update 149: with 3D cases — Arc, Spine wall, Turned row — only your library's real 3D *cases*; a console
+            // without one gets the drawn case with its cover, not its cartridge: cartridges can't turn far enough to their
+            // side and stood wide over the middle game.)
+            // (Update 151: your library's 3D cases only with the 3D models look; the case looks' 3D cases are all drawn ones.)
+            val model = if (cases3d) (if (modelLook) Models3D.caseModel(g.platform) else null)
+                else if (modelLook && isFreeMedia(artForGame(cardArtType, g.platform, hidden, mixed), g.platform)) Models3D.available(g.platform) else null
             val near = d.coerceAtMost(1f)
             val far = (d - 1f).coerceAtLeast(0f)
             // Update 146: Receding row, Spines look: the next games as spines one after another to its right, stepping back.
@@ -630,7 +635,9 @@ internal fun GameCarousel(
                         .then(if (on) Modifier.focusedCard() else Modifier)
                 ) {
                     if (model != null) Model3DArt(
-                        model, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, p.turnY, Modifier.fillMaxSize(), shade = p.shade, name = g.name, platform = g.platform
+                        model, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, p.turnY, Modifier.fillMaxSize(), shade = p.shade, name = g.name, platform = g.platform,
+                        // Update 151: its shadow, sheen and slow turn (Models3DLife.kt).
+                        life = true, focused = on
                     ) else if (cases3d) Case3D(
                         g, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, physicalMedia[g.stableKey], p.turnY, aspect,
                         Modifier.fillMaxSize(), shade = p.shade, reflect = reflect,

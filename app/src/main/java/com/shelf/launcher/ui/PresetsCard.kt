@@ -318,7 +318,8 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     // Update 146.
     com.shelf.launcher.data.HomeLayout.LIBRARY -> "Library panel: the game you're on in a panel on the left — cover, play time, achievements, Details and Play — and a grid of the category's games on the right, tabs on top."
     com.shelf.launcher.data.HomeLayout.STACKS -> "Case stacks: the game you're on as a big case in the middle, the others as stacks of spines left and right, a button bar along the bottom."
-    com.shelf.launcher.data.HomeLayout.TIMELINE -> "Timeline: your games along a line by when you last played them (or release year, or when added), with the dates under them."
+    // Update 151: the history look.
+    com.shelf.launcher.data.HomeLayout.TIMELINE -> "Timeline: your games as a history, a row for each month or year by when you last played them (or release year, or when added)."
     com.shelf.launcher.data.HomeLayout.ARCADE -> "Arcade cabinets: the game you're on on an arcade cabinet's screen with its marquee lit on top, the others as a row of small cabinets."
     com.shelf.launcher.data.HomeLayout.CONSOLES -> "Console stack: your consoles as a pile of consoles; the one you're on slides out its games."
     com.shelf.launcher.data.HomeLayout.DISCS -> "Disc station: one disc player — the game you're on is the disc in the tray, ejected and swapped as you move, its name, play time, achievements and a few lines about it beside it."

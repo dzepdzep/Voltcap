@@ -710,7 +710,8 @@ private fun HomeTile(
         }
         val possible = progress?.NumPossibleAchievements
         // (Update 129: placed by the R1 Achievements tile; the corner one keeps the top right.)
-        val pillAt = achChipAlign(com.shelf.launcher.data.CardCorner.TOP_RIGHT)
+        // Update 151: the corner picked (Settings / the R1 Achievements tile), not always the top right.
+        val pillAt = achChipAlign(look.trophyCorner)
         if (possible != null && possible > 0 && look.achievementsOnCards && titles.coverAchievements && pillAt != null) {
             val earned = progress.NumAchieved ?: 0
             Row(
@@ -723,7 +724,8 @@ private fun HomeTile(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Filled.EmojiEvents, null, tint = accent, modifier = Modifier.size(10.dp))
-                Spacer(Modifier.width(3.dp))
+                // Update 151: a small upright tick between the trophy and "0/69".
+                ProgressTick(height = 8.dp, gap = 3.dp)
                 Text(
                     "$earned/$possible",
                     color = Color.White, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false

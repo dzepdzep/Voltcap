@@ -120,7 +120,7 @@ internal fun StyleLiveTiles(c: StyleCtx, modifier: Modifier) {
                                         .weight(1f)
                                         .fillMaxHeight()
                                         .graphicsLayer { val k = if (on) 1.03f else 1f; scaleX = k; scaleY = k }
-                                        .background(if (i == 0) tint else Color(0xFF2E2E2E))
+                                        .background(if (i == 0) tint else themeDark(Color(0xFF2E2E2E))) // (update 151: themed)
                                         .border(if (on) 3.dp else 0.dp, if (on) (if (light) Color(0xFF1E1E1E) else Color.White) else Color.Transparent, RectangleShape)
                                         .pointerInput(i) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.BAR, i); click() } }
                                         .padding(10.dp)

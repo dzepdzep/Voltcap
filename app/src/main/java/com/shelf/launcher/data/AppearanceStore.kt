@@ -938,7 +938,16 @@ class AppearanceStore(context: Context) {
         runCatching { Features.init(appContext); Features.mediaShells.value = false; prefs.edit().putBoolean("defaults_v4", true).apply() }
     }
 
-    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); oneGameLook(loadSettings()) }.also {
+    /**
+     * Update 151: video previews on for everyone, once (the scraped clip plays over the game's big background art). A
+     * new install has them on already; turning them off afterwards stays off.
+     */
+    private fun applyVideoOn151() {
+        if (prefs.getBoolean("video_on_151", false)) return
+        prefs.edit().putBoolean("video_previews", true).putBoolean("video_on_151", true).apply()
+    }
+
+    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); oneGameLook(loadSettings()) }.also {
         // Scraping in the background reads these too, without the home screen open.
         AnimatedArt.enabled = it.animatedArt
         AnimatedArt.preferAnimatedScraping = it.animatedArt && it.preferAnimatedArt

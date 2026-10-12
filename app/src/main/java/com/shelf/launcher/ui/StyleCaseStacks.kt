@@ -117,6 +117,9 @@ private const val STACKS_MAX_SIDE = 28
 /** How far the reflection reaches under a case, as a share of its height. */
 private const val STACKS_MIRROR = 0.42f
 
+/** Update 151: how far the 3D case in the middle is turned (degrees), so its spine shows on the left. */
+private const val STACKS_CASE_YAW = 24f
+
 @Composable
 internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
     val g0 = c.game
@@ -471,7 +474,18 @@ private fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modifi
     val caseLook = stacksCaseLook(c.type)
     // (The Spines look: the stacks are its spines already, so the middle shows the plain cover, never a case.)
     val spines = spinesOn(c.type)
-    if (caseLook && !spines && caseMarker(g.platform) != null) {
+    if (caseLook && !spines && Features.stacks3d.state.value) {
+        // Update 151: a real 3D case (the carousels' case drawing: its cover on the front, its spine on the side), turned a
+        // little so its spine shows (Cases in 3D; off: the flat case below).
+        Box(modifier.gameOrigin(k, on)) {
+            Case3D(
+                g, c.cover(g), c.state.physicalMedia[k], STACKS_CASE_YAW, case3dAspect(g, false),
+                Modifier.fillMaxSize().awardShine(k, focused), frame = focused, frameColor = accent
+            )
+            ConsoleBadge(g.platform, packageName = g.packageName)
+            StacksProgress(c, g, on)
+        }
+    } else if (caseLook && !spines && caseMarker(g.platform) != null) {
         val scan = typedArtFor(CardArtType.CASE, c.state.physicalMedia[k], c.state.screenshots[k], g.platform)
         Box(modifier.gameOrigin(k, on)) {
             MediaFocus(on) {
@@ -691,5 +705,12 @@ internal fun CaseStacksSettings() {
         Icons.Filled.WbSunny, "Mirror floor",
         "A soft reflection of the cases and spines on a glossy floor.",
         Features.stacksMirror.state.value, { Features.stacksMirror.value = it }
+    )
+    // Update 151.
+    Spacer(Modifier.height(8.dp))
+    SwitchRow(
+        Icons.Filled.ViewInAr, "Cases in 3D",
+        "The game in the middle as a real 3D case, turned a little so its spine shows. Off: its flat case, facing you.",
+        Features.stacks3d.state.value, { Features.stacks3d.value = it }
     )
 }

@@ -334,6 +334,14 @@ object Features {
     /** Update 136: the game's name on a strip along the bottom of the 3D model's label (Settings › Game look › 3D models). */
     val modelName = BoolPref("model_name", false)
     /**
+     * Update 151 (Settings › Game look › 3D models): disc consoles stand as their 3D case (off) or, with Custom / Clear,
+     * as your custom cartridge (on); the piece you're on turns slowly to and fro; a faint reflection on the floor under
+     * each piece.
+     */
+    val modelDiscAsCart = BoolPref("model_disc_as_cart", false)
+    val modelTurn = BoolPref("model_turn", true)
+    val modelReflect = BoolPref("model_reflect", false)
+    /**
      * Update 136, Art drop (R1 › Art drop, Settings › Game look): how far the cover drops below the top of the window, 0–100,
      * each look its own — the case template's front (Box art looks) and the 3D models' window.
      */
@@ -919,6 +927,11 @@ object Features {
     val coverTemplates = BoolPref("cover_templates", true)
     /** Disc games: the case with the disc half out of it, spinning. */
     val discCase = BoolPref("disc_case", false)
+    /**
+     * Update 151: "3D case + disc" (Settings › Game look › Cases with a disc): with Disc in its case, the case is the 3D box
+     * (every console alike) with the disc half out of it. Off by default.
+     */
+    val discCase3d = BoolPref("disc_case_3d", false)
     /** Box art (update 93): the case with its cartridge / disc leaning against it; only the cartridge / disc moves. */
     val caseWithMedia = BoolPref("case_with_media", false)
     /**
@@ -936,6 +949,8 @@ object Features {
     val discSpin = BoolPref("disc_spin", true)
     /** Update 147, Disc station: a few lines about the game under its name. */
     val discAbout = BoolPref("disc_about", true)
+    /** Update 149, Disc station: how much the game's art behind the disc is blurred (% of the player's width). */
+    val discBlur = IntPref("disc_blur", 5, 0..30)
     /**
      * Update 123: a game without ScreenScraper's spine scan may use a spine cut out of its full box scan (or the side of
      * its 3D box picture). Off (default): only real spine scans; the others get the console's template spine with the name.
@@ -1020,7 +1035,7 @@ object Features {
     val liveBar = IntPref("live_bar", 4, 0..6)
     /** Live tiles: the colour of the first shortcut tile and the selection. */
     enum class LiveColor(val label: String) { THEME("Theme colour"), GREEN("Green"), GAME("The game's colour") }
-    val liveColor = EnumPref("live_color", LiveColor.GREEN, LiveColor.values())
+    val liveColor = EnumPref("live_color", LiveColor.THEME, LiveColor.values()) // Update 151: the theme's colour by default (was green).
     /** Live tiles: a pale backdrop behind everything (off: the theme shows through). */
     val liveLight = BoolPref("live_light", true)
     /** Update 146, Live tiles: the game's art fills the background (then the pale backdrop is off). */
@@ -1039,7 +1054,7 @@ object Features {
     /** Side menu: its width (dp). */
     val sideWidth = IntPref("side_width", 200, 140..280)
     /** Side menu: gold trim instead of the theme's accent. */
-    val sideGold = BoolPref("side_gold", true)
+    val sideGold = BoolPref("side_gold", false) // Update 151: the theme's colour by default (was gold).
     /** Side menu: the game's art behind everything. */
     val sideArt = BoolPref("side_art", true)
     /** Side menu: the category's name above the row. */
@@ -1049,7 +1064,7 @@ object Features {
     val crossWaves = BoolPref("cross_waves", true)
     /** Cross menu: a colour wash over the background. */
     enum class CrossTint(val label: String) { DUSK("Dusk purple"), OCEAN("Ocean blue"), EMBER("Ember red"), THEME("Theme colour"), NONE("None") }
-    val crossTint = EnumPref("cross_tint", CrossTint.DUSK, CrossTint.values())
+    val crossTint = EnumPref("cross_tint", CrossTint.THEME, CrossTint.values()) // Update 151: the theme's colours by default (was Dusk purple).
     /** Cross menu: "Last played" / time played under the game you're on. */
     val crossInfo = BoolPref("cross_info", true)
     /** Update 127: on the Cross menu a game's achievements open as the menu's own column (CrossTrophies.kt), not the list popup. */
@@ -1159,7 +1174,7 @@ object Features {
     /** Resume & discover: the game's art behind. */
     val resArt = BoolPref("res_art", true)
     /** Channel grid: tiles per row, pale backdrop, the name on the tile you're on. */
-    val chanCols = IntPref("chan_cols", 4, 3..6)
+    val chanCols = IntPref("chan_cols", 4, 2..6) // Update 151: 2 to 6 (was 3 to 6).
     val chanLight = BoolPref("chan_light", true)
     /** Update 146, Channel grid: the game's art fills the background (then the pale backdrop is off). */
     val chanArt = BoolPref("chan_art", false)
@@ -1224,6 +1239,8 @@ object Features {
     val stacksBar = BoolPref("stacks_bar", true)
     /** Case stacks: a mirror floor under the cases. */
     val stacksMirror = BoolPref("stacks_mirror", true)
+    /** Update 151: Case stacks: the game in the middle as a real 3D case, turned a little so its spine shows (off: flat). */
+    val stacks3d = BoolPref("stacks_3d", true)
     /** Timeline: what puts the games in order along the line. */
     enum class TimelineBy(val label: String) { LAST_PLAYED("Last played"), RELEASED("Release year"), ADDED("Added to Voltcap") }
     val timelineBy = EnumPref("timeline_by", TimelineBy.LAST_PLAYED, TimelineBy.values())
@@ -1271,6 +1288,12 @@ object Features {
     /** A game's achievement list (update 84): Voltcap's power cells (default), a trophy list, the badge wall or the plain list. */
     enum class AchView(val label: String) { POWER("Power cells"), TROPHY("Trophy list"), BADGES("Badges"), LIST("List") }
     val achView = EnumPref("ach_view", AchView.POWER, AchView.values())
+    /**
+     * Update 151: a game's achievement list opens the details and comments of the achievement you rest on by itself
+     * (on by default; the Comments chip in the list or Settings › Achievements › Achievement views turns it off,
+     * then A opens them as before).
+     */
+    val achCommentsAuto = BoolPref("ach_comments_auto", true)
     /** The Achievements screen (every game): power cells (default), scorecards, or the plain list. */
     enum class AchHubView(val label: String) { POWER("Power cells"), SCORECARD("Scorecards"), LIST("List") }
     val achHubView = EnumPref("ach_hub_view", AchHubView.POWER, AchHubView.values())
@@ -1361,4 +1384,12 @@ object Features {
 
     // ---- Quick Menu while in a game ----
     val quickMenuInGame = BoolPref("quick_menu_in_game", true)
+
+    /**
+     * Update 151: what plays when a game drawn as a case, cartridge or disc starts (Settings › Home › Animations ›
+     * Starting a game): its case opens and the disc flies out, the cartridge is thrown into a slot below the screen,
+     * the disc drops into a tray. Off: the usual launch animation (or none).
+     */
+    enum class LaunchThrow(val label: String) { THROW("Throw it in"), OFF("Off") }
+    val launchThrow = EnumPref("launch_throw", LaunchThrow.THROW, LaunchThrow.values())
 }

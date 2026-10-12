@@ -504,15 +504,19 @@ fun QuickSettingsCard(
             // In the corner → Above the name → Next to the name → Under the cover → Off. Hold: the list.
             run {
                 val achPref = com.shelf.launcher.data.Features.achPlace
-                val place = achPref.state.value
-                fun put(p: com.shelf.launcher.data.Features.AchPlace) {
+                // Update 151: the four corners are their own steps (Top left → Top right → Bottom left → Bottom right
+                // → Above → By name → Under → Off); a corner also sets the trophy corner.
+                val spot = AchSpot.of(achPref.state.value, a.trophyCorner)
+                fun put(s: AchSpot) {
+                    val p = s.place
                     achPref.value = p
                     val byName = p == com.shelf.launcher.data.Features.AchPlace.NAME
                     val under = p == com.shelf.launcher.data.Features.AchPlace.UNDER
                     if ((byName || under) && byName != home.badgeNextToTitle) home.onToggleBadgePlacement()
                     home.setAppearance(when (p) {
                         com.shelf.launcher.data.Features.AchPlace.CORNER ->
-                            a.copy(achievementsOnCards = true, coverAchievements = true, trophyOnBanner = true, progressOnBanner = false)
+                            a.copy(achievementsOnCards = true, coverAchievements = true, trophyOnBanner = true, progressOnBanner = false,
+                                trophyCorner = s.corner ?: a.trophyCorner)
                         com.shelf.launcher.data.Features.AchPlace.ABOVE ->
                             a.copy(achievementsOnCards = true, coverAchievements = true, progressOnBanner = true, progressAbove = true)
                         com.shelf.launcher.data.Features.AchPlace.NAME, com.shelf.launcher.data.Features.AchPlace.UNDER ->
@@ -520,12 +524,12 @@ fun QuickSettingsCard(
                         com.shelf.launcher.data.Features.AchPlace.OFF -> a.copy(progressOnBanner = false, trophyOnBanner = false)
                     })
                 }
-                val all = com.shelf.launcher.data.Features.AchPlace.values()
-                add(R1Tile("progressbar", Icons.Filled.EmojiEvents, "Achievements\n${place.short}", place != com.shelf.launcher.data.Features.AchPlace.OFF,
+                val all = AchSpot.values()
+                add(R1Tile("progressbar", Icons.Filled.EmojiEvents, "Achievements\n${spot.short}", spot != AchSpot.OFF,
                     longAction = {
-                        choiceSheet = "Achievements on the game you're on" to all.map { p -> R1Choice(p.label, achPref.value == p) { put(p) } }
+                        choiceSheet = "Achievements on the game you're on" to all.map { s -> R1Choice(s.label, spot == s) { put(s) } }
                     }) {
-                    put(all[(place.ordinal + 1) % all.size])
+                    put(all[(spot.ordinal + 1) % all.size])
                 })
             }
             // Game size of the layout in use (update 104: every layout, it used to only size the Voltcap row):

@@ -106,6 +106,8 @@ internal object SettingsIndex {
         E("Channel grid: its own game window", "Home", "Layout options", null, null),
         E("Channel grid: corner buttons (profile, settings, notifications, sync)", "Home", "Layout options", null, null),
         E("Channel grid: status bar", "Home", "Layout options", null, null),
+        // Update 151.
+        E("Channel grid: channels per row (2 to 6)", "Home", "Layout options", null, null),
         E("Resume & discover: next achievements", "Home", "Layout options", null, null),
         E("Spotlight: big title placement", "Home", "Layout options", null, null),
         // Update 132.
@@ -124,6 +126,11 @@ internal object SettingsIndex {
         E("Cartridges & discs", "Game look", "Covers, cases & discs", null, null),
         E("3D models", "Game look", "Covers, cases & discs", null, null),
         E("3D cartridges cases cards (shape library)", "Game look", "Covers, cases & discs", null, null),
+        // Update 151: the 3D models' new options.
+        E("3D models: turn the one you're on", "Game look", "Covers, cases & discs", null, null),
+        E("3D models: floor reflection", "Game look", "Covers, cases & discs", null, null),
+        E("3D models: disc consoles as their 3D case or your custom cartridge", "Game look", "Covers, cases & discs", null, null),
+        E("Case stacks: cases in 3D", "Home", "Layout options", null, null),
         E("Cartridge games as discs too", "Game look", "Covers, cases & discs", null, null),
         E("Categories with several consoles", "Game look", "Covers, cases & discs", null, null),
         E("Card artwork", "Game look", "Covers, cases & discs", null, null),
@@ -159,6 +166,8 @@ internal object SettingsIndex {
         E("Spines cut from box scans", "Game look", "Covers, cases & discs", null, null),
         E("Cover templates", "Game look", "Covers, cases & discs", null, null),
         E("Disc in its case", "Game look", "Covers, cases & discs", null, null),
+        // Update 151: the 3D case with its disc.
+        E("3D case with the disc (3D case + disc)", "Game look", "Covers, cases & discs", null, null),
         E("Case with its cartridge / disc", "Game look", "Covers, cases & discs", null, null),
         E("Moving discs, cartridges & cases (spin, bounce, both)", "Game look", "Covers, cases & discs", null, null),
         E("Draw the cartridge / disc", "Game look", "Covers, cases & discs", null, null),
@@ -219,13 +228,15 @@ internal object SettingsIndex {
         // Update 147 / 148.
         E("Only the game you're on moves", "Game look", "Artwork", "art_animated", "Animated artwork"),
         E("Matching spines", "Game look", "Covers, cases & discs", null, null),
-        E("Everything at once", "Metadata", "Everything at once", null, null),
-        E("Fetch everything that's missing", "Metadata", "Everything at once", null, null),
-        E("Video clips (scrape)", "Metadata", "Everything at once", null, null),
-        E("Save clips on the device", "Metadata", "Everything at once", null, null),
+        // Update 151: the "Everything at once" card is at the top of Metadata › Scraping now.
+        E("Everything at once", "Metadata", "Scraping", null, null),
+        E("Fetch everything that's missing", "Metadata", "Scraping", null, null),
+        E("Video clips (scrape)", "Metadata", "Scraping", null, null),
+        E("Save clips on the device", "Metadata", "Scraping", null, null),
         E("Dark stage", "Home", "Layout options", "lo_carousel", "Carousel"),
         E("Reflection", "Home", "Layout options", "lo_carousel", "Carousel"),
         E("Spin the loaded disc", "Home", "Layout options", null, null),
+        E("Blur behind the disc", "Home", "Layout options", null, null),
         E("Background", "Home", "Layout options", null, null),
         E("Artwork priority", "Game look", "Artwork", "art_priority", "Artwork priority"),
         E("Sharpness", "Game look", "Artwork", "art_sharp", "Sharpness"),
@@ -261,6 +272,8 @@ internal object SettingsIndex {
         E("Scrolling animation", "Home", "Animations", "home_anim", "Animations"),
         E("How far the game you're on stands out", "Home", "Animations", "home_anim", "Animations"),
         E("Launch animation", "Home", "Animations", "home_anim", "Animations"),
+        // Update 151: the case opens / the cartridge or disc is thrown in when a game starts.
+        E("Starting a game (throw it in)", "Home", "Animations", "home_anim", "Animations"),
         E("New game arrival", "Home", "Animations", "home_anim", "Animations"),
         E("Details window grows out of the game", "Home", "Animations", "home_anim", "Animations"),
         E("Startup intro", "Home", "Animations", "home_anim", "Animations"),
@@ -302,6 +315,8 @@ internal object SettingsIndex {
         E("Notifications", "Device", null, "dev_notes", "Notifications"),
         E("Game header", "Home", "Next to the row", "home_header", "Game header"),
         E("Achievement views", "Achievements", "Achievement views", null, null),
+        // Update 151: a game's achievements open the comments of the one you rest on.
+        E("Show comments (achievements)", "Achievements", "Achievement views", null, null),
         E("Shade on the game's art", "Theme", "Background", "bg_shade", "Shade on the game's art"),
         E("Dark corners", "Theme", "Background", "bg_shade", "Shade on the game's art"),
         E("Vignette", "Theme", "Background", "bg_shade", "Shade on the game's art"),

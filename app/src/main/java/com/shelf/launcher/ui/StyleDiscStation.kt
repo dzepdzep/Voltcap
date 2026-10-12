@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -74,6 +75,11 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  * played), a few lines about the game, and the buttons ◀ Play ▶ and Details along the bottom.
  * ◀ ▶ the previous / next game (the home screen's own), ▼ the buttons (◀ ▶ between them, ▲ / B back), ▲ what lies above.
  * Touch: tap the disc to open the game's window, swipe it to move along.
+ *
+ * Update 151: every disc is cut to its circle (a square scan's black / white corners never show, turning or not), no
+ * dark shadow under it; instead a faint glow ring in the game's colour, a soft rainbow sheen that turns with the disc,
+ * the game's logo (or name) above it, and the text on the right on a soft see-through panel with shadowed letters
+ * (DiscStationFx.kt).
  */
 
 @Composable
@@ -115,6 +121,12 @@ internal fun DiscStationSettings() {
         Features.discSpin.state.value, { Features.discSpin.value = it }
     )
     Spacer(Modifier.height(8.dp))
+    PercentSlider(
+        "Blur behind the disc", Features.discBlur.state.value, { Features.discBlur.value = it.coerceIn(0, 30) },
+        min = 0, max = 30, valueText = { if (it == 0) "Sharp" else "$it %" }
+    )
+    MutedNote("The game's art fills the player behind the disc, softly blurred.")
+    Spacer(Modifier.height(8.dp))
     SwitchRow(
         Icons.Filled.Description, "About the game", "A few lines about the game under its name, when its details are there.",
         Features.discAbout.state.value, { Features.discAbout.value = it }
@@ -141,24 +153,46 @@ private fun DiscStation(c: StyleCtx, g: Game, infoOff: Boolean, modifier: Modifi
 private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier) {
     val open by rememberUpdatedState(c.actions.open)
     val shape = RoundedCornerShape(if (compact) 12.dp else 16.dp)
+    // (Update 149: no dark panel behind the disc — the game's own art, softly blurred (Disc station › Blur behind the
+    // disc, 5 % by default), fills the player instead.)
+    BoxWithConstraints(modifier.clip(shape)) {
+    val pct = Features.discBlur.state.value
+    val backdropUrl = c.backdrop(g)
+    val artNow = rememberSoftBitmap(backdropUrl, 480)
+    // Update 151 (review): while the next game's picture loads, the last one stays behind the disc (it used to go empty
+    // for a moment, the dark behind the player showing through at every step).
+    val artKeep = remember { arrayOfNulls<android.graphics.Bitmap>(1) }
+    if (artNow != null) artKeep[0] = artNow
+    val art = artNow ?: if (backdropUrl != null) artKeep[0] else null
+    val soft =if (pct > 0) rememberBakedBlur(art, maxWidth * (pct / 100f)) else art?.let { remember(it) { it.asImageBitmap() } }
+    if (soft != null) androidx.compose.foundation.Image(soft, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+    // (A light shade, so the disc and the label under it stand out from the picture.)
+    Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.18f)))
+    // Update 151: the glow's colour, from the game's art (the theme's accent until it's there).
+    val glowTarget = rememberDiscGlow(art, ShelfTheme.accent)
+    val glow by androidx.compose.animation.animateColorAsState(glowTarget, tween(400), label = "discGlow")
     Column(
-        modifier
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFF2A2C31), Color(0xFF1E2024))))
-            .border(1.dp, Color.White.copy(alpha = 0.06f), shape)
-            .padding(if (compact) 10.dp else 16.dp),
+        Modifier.fillMaxSize().padding(if (compact) 10.dp else 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Update 151: the game's logo (else its name in big letters) above the disc.
+        AnimatedContent(
+            targetState = g, contentKey = { it.stableKey }, label = "discLogo",
+            transitionSpec = { fadeIn(tween(260, delayMillis = 120)) togetherWith fadeOut(tween(180)) }
+        ) { shown ->
+            DiscTitleArt(c, shown, compact, Modifier.fillMaxWidth(0.86f).height(if (compact) 40.dp else 60.dp))
+        }
+        Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
         BoxWithConstraints(
             Modifier.weight(1f).fillMaxWidth().tapOnly { open() },
             contentAlignment = Alignment.Center
         ) {
-            val d = minOf(maxWidth, maxHeight) * 0.96f
-            // The tray's well: a faint ring the disc sits in.
-            Canvas(Modifier.size(d * 1.02f)) {
-                drawCircle(Color.Black.copy(alpha = 0.35f), radius = size.minDimension / 2f)
-                drawCircle(Color.White.copy(alpha = 0.05f), radius = size.minDimension / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
-            }
+            // Update 151: a little smaller, so the glow round it has room.
+            val d = minOf(maxWidth, maxHeight) * 0.86f
+            // Update 151: no dark shadow under the disc any more (it showed as black behind it): a faint glow ring in
+            // the game's colour round it instead (drawn once, it doesn't turn).
+            val glowPick = remember(g.platform) { stationPick(g.platform) }
+            Box(Modifier.size(d).discGlow(glow, stationDiscFrac(glowPick, Features.bigGcDiscs.state.value)))
             // Moving on ejects the old disc (down and out) and loads the next one (in from the right).
             AnimatedContent(
                 targetState = g,
@@ -177,8 +211,9 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF3DDC84)))
             Spacer(Modifier.width(6.dp))
-            Text("DISC LOADED", color = Color.White.copy(alpha = 0.7f), fontSize = if (compact) 10.sp else 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
+            Text("DISC LOADED", color = Color.White.copy(alpha = 0.85f), fontSize = if (compact) 10.sp else 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, style = discTextStyle())
         }
+    }
     }
 }
 
@@ -194,19 +229,66 @@ private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
     // Its own label scan when there is one, else the cover (printed on the disc).
     val scan = typedArtFor(CardArtType.CARTRIDGE_DISC, c.state.physicalMedia[g.stableKey], c.state.screenshots[g.stableKey], g.platform)
     val label: Any? = scan ?: cover
-    val pick = remember(g.platform) {
-        mediaFor(g.platform, asDisc = true)?.takeIf { it.shell.isDisc || it.shell == MediaShell.UMD || it.platform.startsWith(GENERIC_DISC) }
-            ?: MediaPick(MediaShell.DISC, genericDiscKey(if (g.platform == "App") "Android" else g.platform))
-    }
+    val pick = remember(g.platform) { stationPick(g.platform) }
+    // Update 151: cut to the disc's circle (a UMD keeps its own shape), so a square scan's black / white corners never
+    // show, turning or not.
+    val round = pick.shell != MediaShell.UMD
+    val small = pick.shell == MediaShell.MINI_DISC && !Features.bigGcDiscs.state.value
+    val frac = stationDiscFrac(pick, Features.bigGcDiscs.state.value)
+    val labelIsScan = scan != null && label == scan
+    // Update 151: with "Disc in its case" on, only the disc here (never its case half round it).
+    val tpl = if (genericDiscConsole(pick.platform) == null) MediaTemplates.of(pick.platform) else null
+    val circle = remember(frac) { DiscCircle(frac) }
     Box(
-        Modifier.size(d).graphicsLayer { rotationZ = angle?.value ?: 0f },
+        Modifier.size(d).graphicsLayer {
+            rotationZ = angle?.value ?: 0f
+            if (round) {
+                clip = true
+                shape = circle
+            }
+        },
         contentAlignment = Alignment.Center
     ) {
-        PhysicalMedia(
-            pick.shell, label, Modifier.fillMaxSize(), platform = pick.platform,
-            labelIsScan = scan != null && label == scan, caseCover = cover, title = g.name
+        if (tpl != null && discCaseOn(tpl)) {
+            TemplateMedia(
+                MediaTpl(null, null, tpl.disc, null), labelScan = if (labelIsScan) label else null,
+                cover = if (labelIsScan) null else label, modifier = Modifier.fillMaxSize(), smallDisc = small
+            )
+        } else {
+            PhysicalMedia(
+                pick.shell, label, Modifier.fillMaxSize(), platform = pick.platform,
+                labelIsScan = labelIsScan, caseCover = cover, title = g.name
+            )
+        }
+        // Update 151: a soft rainbow sheen, turning with the disc (cached; a spinning disc never redraws it).
+        if (round) Box(Modifier.fillMaxSize().discSheen(frac))
+    }
+}
+
+/** Update 151: the disc a game is shown as here — its own, else the plain CD with its console's branding. */
+private fun stationPick(platform: String): MediaPick =
+    mediaFor(platform, asDisc = true)?.takeIf { it.shell.isDisc || it.shell == MediaShell.UMD || it.platform.startsWith(GENERIC_DISC) }
+        ?: MediaPick(MediaShell.DISC, genericDiscKey(if (platform == "App") "Android" else platform))
+
+/** Update 151: how much of its square the disc fills (a GameCube disc is drawn at its real, smaller size). */
+private fun stationDiscFrac(pick: MediaPick, bigGc: Boolean): Float =
+    if (pick.shell == MediaShell.MINI_DISC && !bigGc) 0.7f else 1f
+
+/** Update 151: a circle [frac] of the box across, in its middle (the disc's outline). */
+private class DiscCircle(private val frac: Float) : androidx.compose.ui.graphics.Shape {
+    override fun createOutline(
+        size: androidx.compose.ui.geometry.Size, layoutDirection: androidx.compose.ui.unit.LayoutDirection, density: androidx.compose.ui.unit.Density
+    ): androidx.compose.ui.graphics.Outline {
+        val r = minOf(size.width, size.height) / 2f * frac
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+        return androidx.compose.ui.graphics.Outline.Generic(
+            androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(cx - r, cy - r, cx + r, cy + r)) }
         )
     }
+
+    override fun equals(other: Any?): Boolean = other is DiscCircle && other.frac == frac
+    override fun hashCode(): Int = frac.hashCode()
 }
 
 /** The right-hand side: what's in the tray, its details, and the buttons. */
@@ -214,20 +296,32 @@ private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
 private fun DiscInfo(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier) {
     val titles = LocalTitleOptions.current
     val accent = ShelfTheme.accent
-    Column(modifier.padding(top = if (compact) 2.dp else 6.dp)) {
+    // (Update 149: on a dark panel like the player's, so the text reads over any background picture.)
+    // Update 151: a soft, rounded, see-through panel instead (not a black box): a cool dark tint that deepens towards
+    // the bottom like frosted glass, a touch of the theme's accent, a faint light edge; the letters get a soft shadow.
+    val panel = RoundedCornerShape(if (compact) 14.dp else 20.dp)
+    val ink = discTextStyle()
+    Column(
+        modifier
+            .clip(panel)
+            .background(Brush.verticalGradient(listOf(Color(0xFF141A2A).copy(alpha = 0.42f), Color(0xFF0C111C).copy(alpha = 0.62f))))
+            .background(Brush.linearGradient(listOf(accent.copy(alpha = 0.10f), Color.Transparent)))
+            .border(1.dp, Color.White.copy(alpha = 0.14f), panel)
+            .padding(horizontal = if (compact) 10.dp else 16.dp, vertical = if (compact) 8.dp else 14.dp)
+    ) {
         Text(
-            "NOW SELECTED", color = Color.White.copy(alpha = 0.6f), fontSize = if (compact) 10.sp else 12.sp,
-            fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp
+            "NOW SELECTED", color = Color.White.copy(alpha = 0.7f), fontSize = if (compact) 10.sp else 12.sp,
+            fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, style = ink
         )
         Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
         FitText(
             titles.display(g.name), color = Color.White, maxSize = if (compact) 20.sp else 30.sp, minSize = 13.sp,
-            maxLines = 2, fontWeight = FontWeight.Bold
+            maxLines = 2, fontWeight = FontWeight.Bold, style = ink
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            titles.console(g.platform) + " · " + discKind(g.platform), color = Color.White.copy(alpha = 0.72f),
-            fontSize = if (compact) 11.sp else 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+            titles.console(g.platform) + " · " + discKind(g.platform), color = Color.White.copy(alpha = 0.8f),
+            fontSize = if (compact) 11.sp else 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink
         )
         Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -240,8 +334,8 @@ private fun DiscInfo(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier)
         if (summary != null) {
             Spacer(Modifier.height(if (compact) 6.dp else 12.dp))
             Text(
-                summary, color = Color.White.copy(alpha = 0.7f), fontSize = if (compact) 10.sp else 12.sp,
-                lineHeight = if (compact) 13.sp else 16.sp, maxLines = if (compact) 4 else 7, overflow = TextOverflow.Ellipsis
+                summary, color = Color.White.copy(alpha = 0.82f), fontSize = if (compact) 10.sp else 12.sp,
+                lineHeight = if (compact) 13.sp else 16.sp, maxLines = if (compact) 4 else 7, overflow = TextOverflow.Ellipsis, style = ink
             )
         }
         Spacer(Modifier.weight(1f))
@@ -249,14 +343,14 @@ private fun DiscInfo(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)) {
             val bar = StyleNav.bar
             DiscRound(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous", StyleNav.on(StyleNav.Zone.BAR, 0), compact) { bar.getOrNull(0)?.invoke() }
-            DiscPill(Icons.Filled.PlayArrow, if (c.lastPlayed(g) != null) "Continue" else "Play", StyleNav.on(StyleNav.Zone.BAR, 1), accent, compact) { bar.getOrNull(1)?.invoke() }
+            DiscPill(Icons.Filled.PlayArrow, if (c.lastPlayed(g) != null) "Continue" else "Play", StyleNav.on(StyleNav.Zone.BAR, 1), accent, compact, Modifier.weight(1f)) { bar.getOrNull(1)?.invoke() }
             DiscRound(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next", StyleNav.on(StyleNav.Zone.BAR, 2), compact) { bar.getOrNull(2)?.invoke() }
             DiscRound(Icons.Filled.Info, "Details", StyleNav.on(StyleNav.Zone.BAR, 3), compact) { bar.getOrNull(3)?.invoke() }
         }
         Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
         Text(
-            "${c.categoryLabel} · ${c.focus + 1} / ${c.games.size}", color = Color.White.copy(alpha = 0.45f),
-            fontSize = if (compact) 9.sp else 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+            "${c.categoryLabel} · ${c.focus + 1} / ${c.games.size}", color = Color.White.copy(alpha = 0.6f),
+            fontSize = if (compact) 9.sp else 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink
         )
     }
 }
@@ -297,20 +391,22 @@ private fun DiscRound(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
 }
 
 @Composable
-private fun DiscPill(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, on: Boolean, accent: Color, compact: Boolean, onTap: () -> Unit) {
+private fun DiscPill(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, on: Boolean, accent: Color, compact: Boolean, modifier: Modifier = Modifier, onTap: () -> Unit) {
     val pill = RoundedCornerShape(50)
+    // (Update 149: it takes the room the round buttons leave, so Details always fits beside it.)
     Row(
-        Modifier
+        modifier
             .graphicsLayer { val k = if (on) 1.06f else 1f; scaleX = k; scaleY = k }
             .clip(pill)
             .background(Color.White)
             .border(if (on) 3.dp else 0.dp, if (on) accent else Color.Transparent, pill)
             .tapOnly(onTap)
-            .padding(horizontal = if (compact) 14.dp else 20.dp, vertical = if (compact) 6.dp else 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = if (compact) 10.dp else 16.dp, vertical = if (compact) 6.dp else 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
         Icon(icon, null, tint = Color(0xFF16171B), modifier = Modifier.size(if (compact) 18.dp else 22.dp))
         Spacer(Modifier.width(6.dp))
-        Text(label, color = Color(0xFF16171B), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(label, color = Color(0xFF16171B), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

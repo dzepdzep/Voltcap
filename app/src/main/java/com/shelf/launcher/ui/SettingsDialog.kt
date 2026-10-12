@@ -804,6 +804,14 @@ private fun HomeContent(
                     modifier = m
                 )
             }
+            // Update 151: the case opens, the cartridge or disc is thrown in (LaunchThrow.kt).
+            item { m ->
+                Box(m) { ShelfCard {
+                    val F = com.shelf.launcher.data.Features
+                    RowChoice("Starting a game", com.shelf.launcher.data.Features.LaunchThrow.values(), F.launchThrow.state.value, { it.label }) { F.launchThrow.value = it }
+                    MutedNote("With cases, cartridges and discs: the case opens and its disc flies out, the cartridge spins down into a slot under the screen, the disc drops into a tray. Under a second. Other looks keep the launch animation above.")
+                } }
+            }
             item { m ->
                 SwitchRow(
                     icon = Icons.Filled.AutoAwesome,
@@ -1537,6 +1545,15 @@ private fun AchievementsContent(
                     com.shelf.launcher.data.Features.AchView.LIST -> "The plain list."
                 }
             )
+            // Update 151: the comments of the achievement you rest on open by themselves (on by default).
+            Spacer(Modifier.height(10.dp))
+            SwitchRow(
+                icon = Icons.Filled.EmojiEvents,
+                title = "Show comments",
+                subtitle = "In a game's achievements, the one you rest on opens its details and comments by itself. Off: A opens them.",
+                checked = com.shelf.launcher.data.Features.achCommentsAuto.state.value,
+                onChange = { com.shelf.launcher.data.Features.achCommentsAuto.value = it }
+            )
             Spacer(Modifier.height(10.dp))
             RowChoice("The Achievements screen", com.shelf.launcher.data.Features.AchHubView.values(), com.shelf.launcher.data.Features.achHubView.state.value, { it.label }) {
                 com.shelf.launcher.data.Features.achHubView.value = it
@@ -1633,7 +1650,10 @@ private fun AchievementsContent(
                 com.shelf.launcher.data.Features.achPlace.value = it
             }
             RowChoice("Corner", com.shelf.launcher.data.CardCorner.values(), appearance.trophyCorner, { it.label }) {
-                onAppearanceChange(appearance.copy(trophyCorner = it))
+                // Update 151: picking a corner also puts the count in the corner (it did nothing while "Where on the
+                // game" was Above / Next to the name / Under, so the right-hand corners seemed out of reach).
+                com.shelf.launcher.data.Features.achPlace.value = com.shelf.launcher.data.Features.AchPlace.CORNER
+                onAppearanceChange(appearance.copy(trophyCorner = it, achievementsOnCards = true, coverAchievements = true))
             }
             ChipFlow {
                 Chip(if (appearance.coverAchievements) "✓ On covers" else "On covers", accent = appearance.coverAchievements) {
@@ -2096,6 +2116,72 @@ private fun EmulatorsContent(onOpenEmulators: () -> Unit) {
     )
 }
 
+/**
+ * Update 147: one button for everything a game can have (it was spread over Scraping, Game details, Game look and the
+ * spines, and the video clips were only ever looked up when a game was shown).
+ * Update 151: its own card at the top of Settings › Metadata › Scraping (it used to be a section of its own).
+ */
+@Composable
+private fun EverythingAtOnceCard() {
+    ShelfCard {
+        val E = com.shelf.launcher.data.EverythingScrape
+        val running = E.stage != null
+        var parts by remember { mutableStateOf(com.shelf.launcher.data.EverythingScrape.Part.values().toSet()) }
+        Text("Fetch everything that's missing", color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        MutedNote(
+            "For every game, whatever it doesn't have yet: artwork (the kinds ticked under Scraping), details (ticked under " +
+                "Game details), its real case, disc, cartridge and spine scans, screenshots and a video clip for Video previews. " +
+                "One after another in the background; it pauses while you play. Games that have something are left as they are."
+        )
+        Spacer(Modifier.height(8.dp))
+        if (running) {
+            val prog = E.progress
+            Text(
+                (E.stage ?: "") + (prog?.let { "  ·  ${it.first} / ${it.second}" } ?: "…"),
+                color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
+            )
+            if (prog != null) TaskProgressLine(prog.first, prog.second)
+            Spacer(Modifier.height(6.dp))
+            Chip("Stop", accent = false) { E.stop?.invoke() }
+        } else {
+            ChipFlow {
+                com.shelf.launcher.data.EverythingScrape.Part.values().forEach { part ->
+                    val on = part in parts
+                    Chip((if (on) "✓ " else "") + part.label, accent = on) { parts = if (on) parts - part else parts + part }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Chip("Fetch everything missing", enabled = parts.isNotEmpty()) { E.run?.invoke(parts) }
+            Spacer(Modifier.height(4.dp))
+            MutedNote("Real cases, discs and spines and the video clips come from ScreenScraper (Settings › Accounts).")
+        }
+        // Update 148: the clips kept on the device, to play without Wi-Fi and start at once.
+        Spacer(Modifier.height(10.dp))
+        val F = com.shelf.launcher.data.Features
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        var clipStats by remember { mutableStateOf(0 to 0L) }
+        LaunchedEffect(F.clipsOffline.state.value, E.stage) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.shelf.launcher.data.ClipStore.init(ctx)
+                clipStats = com.shelf.launcher.data.ClipStore.count() to com.shelf.launcher.data.ClipStore.usedBytes()
+            }
+        }
+        SwitchRow(
+            Icons.Filled.CloudDownload, "Save clips on the device",
+            "The preview clips are kept on this handheld, so they play without Wi-Fi and start at once (a few MB each). " +
+                "Off: they stream each time. Saved now: ${clipStats.first} clips, ${clipStats.second / (1024 * 1024)} MB.",
+            F.clipsOffline.state.value, { on -> F.clipsOffline.value = on; if (on) E.saveClips?.invoke() }
+        )
+        if (F.clipsOffline.state.value) {
+            Spacer(Modifier.height(6.dp))
+            RowChoice("Up to", arrayOf(500, 1024, 2048, 4096), F.clipsMaxMb.state.value, { if (it >= 1024) "${it / 1024} GB" else "$it MB" }) { F.clipsMaxMb.value = it }
+            Chip("Delete the saved clips", accent = false) {
+                com.shelf.launcher.data.ClipStore.clear(); clipStats = 0 to 0L
+            }
+        }
+    }
+}
+
 @Composable
 private fun MetadataContent(
     artSource: ArtSource,
@@ -2122,67 +2208,8 @@ private fun MetadataContent(
     rawgConnected: Boolean
 ) {
     com.shelf.launcher.Breadcrumbs.mark("MetadataContent")
-    // Update 147: one button for everything a game can have (it was spread over Scraping, Game details, Game look and
-    // the spines, and the video clips were only ever looked up when a game was shown).
-    CollapsibleSection("Everything at once", startExpanded = true) {
-        ShelfCard {
-            val E = com.shelf.launcher.data.EverythingScrape
-            val running = E.stage != null
-            var parts by remember { mutableStateOf(com.shelf.launcher.data.EverythingScrape.Part.values().toSet()) }
-            Text("Fetch everything that's missing", color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            MutedNote(
-                "For every game, whatever it doesn't have yet: artwork (the kinds ticked under Scraping), details (ticked under " +
-                    "Game details), its real case, disc, cartridge and spine scans, screenshots and a video clip for Video previews. " +
-                    "One after another in the background; it pauses while you play. Games that have something are left as they are."
-            )
-            Spacer(Modifier.height(8.dp))
-            if (running) {
-                val prog = E.progress
-                Text(
-                    (E.stage ?: "") + (prog?.let { "  ·  ${it.first} / ${it.second}" } ?: "…"),
-                    color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
-                )
-                if (prog != null) TaskProgressLine(prog.first, prog.second)
-                Spacer(Modifier.height(6.dp))
-                Chip("Stop", accent = false) { E.stop?.invoke() }
-            } else {
-                ChipFlow {
-                    com.shelf.launcher.data.EverythingScrape.Part.values().forEach { part ->
-                        val on = part in parts
-                        Chip((if (on) "✓ " else "") + part.label, accent = on) { parts = if (on) parts - part else parts + part }
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                Chip("Fetch everything missing", enabled = parts.isNotEmpty()) { E.run?.invoke(parts) }
-                Spacer(Modifier.height(4.dp))
-                MutedNote("Real cases, discs and spines and the video clips come from ScreenScraper (Settings › Accounts).")
-            }
-            // Update 148: the clips kept on the device, to play without Wi-Fi and start at once.
-            Spacer(Modifier.height(10.dp))
-            val F = com.shelf.launcher.data.Features
-            val ctx = androidx.compose.ui.platform.LocalContext.current
-            var clipStats by remember { mutableStateOf(0 to 0L) }
-            LaunchedEffect(F.clipsOffline.state.value, E.stage) {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    com.shelf.launcher.data.ClipStore.init(ctx)
-                    clipStats = com.shelf.launcher.data.ClipStore.count() to com.shelf.launcher.data.ClipStore.usedBytes()
-                }
-            }
-            SwitchRow(
-                Icons.Filled.CloudDownload, "Save clips on the device",
-                "The preview clips are kept on this handheld, so they play without Wi-Fi and start at once (a few MB each). " +
-                    "Off: they stream each time. Saved now: ${clipStats.first} clips, ${clipStats.second / (1024 * 1024)} MB.",
-                F.clipsOffline.state.value, { on -> F.clipsOffline.value = on; if (on) E.saveClips?.invoke() }
-            )
-            if (F.clipsOffline.state.value) {
-                Spacer(Modifier.height(6.dp))
-                RowChoice("Up to", arrayOf(500, 1024, 2048, 4096), F.clipsMaxMb.state.value, { if (it >= 1024) "${it / 1024} GB" else "$it MB" }) { F.clipsMaxMb.value = it }
-                Chip("Delete the saved clips", accent = false) {
-                    com.shelf.launcher.data.ClipStore.clear(); clipStats = 0 to 0L
-                }
-            }
-        }
-    }
+    // Update 151: "Everything at once" is no longer its own section at the top of the page (it felt out of place
+    // there): its card is the first thing under Scraping (EverythingAtOnceCard).
     CollapsibleSection("Artwork source", startExpanded = false) {
         ShelfCard {
             Text("Artwork source", color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -2281,6 +2308,9 @@ private fun MetadataContent(
         }
     }
     CollapsibleSection("Scraping", startExpanded = true) {
+        // Update 151: "Fetch everything that's missing" (and the saved clips) on top of Scraping.
+        EverythingAtOnceCard()
+        Spacer(Modifier.height(10.dp))
         ShelfCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -3657,6 +3687,17 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
                 onChange = { com.shelf.launcher.data.Features.discCase.value = it }
             )
             Spacer(Modifier.height(10.dp))
+            // Update 151: the 3D box (or your 3D case) with its disc.
+            if (com.shelf.launcher.data.Features.discCase.state.value) {
+                SwitchRow(
+                    icon = Icons.Filled.ViewInAr,
+                    title = "3D case with the disc",
+                    subtitle = "Off (default): the flat case. On: the 3D box with the disc half out of it.",
+                    checked = com.shelf.launcher.data.Features.discCase3d.state.value,
+                    onChange = { com.shelf.launcher.data.Features.discCase3d.value = it }
+                )
+                Spacer(Modifier.height(10.dp))
+            }
         }
         if (artNow == com.shelf.launcher.data.CardArtType.CASE || artNow == com.shelf.launcher.data.CardArtType.CASE_REAL) {
             SwitchRow(
@@ -3738,7 +3779,8 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                 SwitchRow(
                     icon = Icons.Filled.Movie,
                     title = "Video previews",
-                    subtitle = "Rest on a game for two seconds and its clip plays behind the dock (ScreenScraper, ROMs).",
+                    // (Update 151: on by default; on the Hero carousel it plays over the hero picture.)
+                    subtitle = "Rest on a game for two seconds and its clip plays behind the dock or over the hero picture (ScreenScraper, ROMs).",
                     checked = appearance.videoPreviews,
                     onChange = { onChange(appearance.copy(videoPreviews = it)) },
                     modifier = m
@@ -4271,6 +4313,18 @@ private fun SoundsContent(appearance: AppearanceSettings, currentTheme: AppTheme
     }
     CollapsibleSection("Video previews", startExpanded = true) {
         SettingsGrid {
+            // Update 151: the on / off switch here too (on by default): a game's scraped clip plays over its big
+            // background or hero picture once you rest on it.
+            item { m ->
+                SwitchRow(
+                    icon = Icons.Filled.Movie,
+                    title = "Video previews",
+                    subtitle = "Rest on a game and its scraped clip plays over its background or hero picture.",
+                    checked = appearance.videoPreviews,
+                    onChange = { onChange(appearance.copy(videoPreviews = it)) },
+                    modifier = m
+                )
+            }
             item { m ->
                 SwitchRow(
                     icon = Icons.Filled.Movie,
@@ -5171,7 +5225,8 @@ private fun CarouselTiltChoices() {
     val v = f.carouselView.state.value
     MutedNote(
         when {
-            v.cases -> "${v.label}: real 3D cases in the Grid, Side menu and TV room carousels. In the Voltcap row and Tiles carousels the covers stand as in ${com.shelf.launcher.ui.Carousel.flatView.label}."
+            // (Update 149: the Voltcap row has used the full carousel since update 141.)
+            v.cases -> "${v.label}: real 3D cases in the Voltcap row, Grid, Side menu and TV room carousels. In the Tiles carousel the covers stand as in ${com.shelf.launcher.ui.Carousel.flatView.label}."
             v == com.shelf.launcher.ui.CarouselView.TUCKED || v == com.shelf.launcher.ui.CarouselView.FLIP || v == com.shelf.launcher.ui.CarouselView.FLAT || v == com.shelf.launcher.ui.CarouselView.POP ->
                 "${v.label}: every carousel (Voltcap row, Tiles, Grid, Side menu, TV room). With Spines aside (Covers look) the games beside the middle one are slim spines in Grid, Side menu and TV room."
             else -> "${v.label}: every carousel (Voltcap row, Tiles, Grid, Side menu, TV room)."

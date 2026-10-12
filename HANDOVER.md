@@ -250,6 +250,21 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Share report:** `CrashReports.latestReportText` / `recentLog` appended to Diagnostics' report.
 - **Save sync (already there, unchanged):** before a game — resting on it / opening its window fetches its saves from Drive (at most every 3 min, Play never waits); during — SaveWatchWorker uploads changed saves 10 → 20 → 40 → 60 min in (upload only); after — on coming back, that game's saves both ways, then a full sync (PostGameSyncWorker retries offline).
 
+## State after update 150
+- **Device test method:** force-stop, edit `shared_prefs/appearance.xml` (`home_layout`) / `voltcap_features.xml` with `run-as com.shelf.launcher sed -i …` (single-quoted, no `sh -c`), start HOME; back the two files up to `files/test_backup/` first and copy them back after.
+- **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
+- **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
+- **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 151
+- **3D:** `Models3D.idFor` gives disc consoles their CASES model (`modelDiscAsCart` keeps the custom cartridge); `CaseArt(models3d = false)` → case looks flat. `Model3DArt(life = true)` → `Model3DLive` (Models3DLife.kt: shadow, sheen, ±20° turn between pre-rendered angles, `modelTurn`, `modelReflect`). Composite cache keyed by the cover's address (`Models3D.noteSource` from `rememberSoftBitmap`, `cachedFor`), and no coverless composite while the cover loads.
+- **Throw:** `LaunchThrow.kt` overlay from `startGame` in LauncherScreen (`Features.launchThrow`); `DiscCase3D.kt` (`discCase3d`).
+- **Achievements:** `AchSpots.kt` (corner placements), comments auto-open (`achCommentsAuto`).
+- **Video:** `videoPreviews` on by default + one-time migration.
+- **Save Vault:** `SaveMatch.kt` (name / ID matching), `DriveOnlySaves.kt` (Drive listing, 20-min cache), "Other saves" group; not connected → connect prompt.
+- **Layouts:** ThemeTint.kt (theme accents into layouts), HomeEditLegend.kt, StyleTimelineHistory.kt (new Timeline), DiscStationFx.kt.
+- **Open:** throw ignores "Launch animation" off (own setting); Side menu folder-icon flash not reproduced (needs a recording); Timeline focused name pill can cover neighbours' dates; grid scroll lag still to measure on the device.
+
 ## Planned next
 - Nothing left from my long list of 10 Oct (130–134 are done). Ask me what's next.
 

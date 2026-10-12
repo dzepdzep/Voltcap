@@ -237,7 +237,9 @@ object MemoryCards {
 
     /** Loose title comparison: letters and digits only, roman numerals left as they are. */
     fun titleKey(s: String): String =
-        s.lowercase().replace(Regex("\\(.*?\\)|\\[.*?]"), " ").replace("&", " and ")
+        // Update 151: accents off first, so a save titled "POKéMON COLOSSEUM" matches "Pokemon Colosseum (USA)".
+        java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
+            .lowercase().replace(Regex("\\(.*?\\)|\\[.*?]"), " ").replace("&", " and ")
             .replace(Regex("[^a-z0-9]+"), " ").trim()
 
     /** True when a card save's title names this game ("FINAL FANTASY X" ~ "Final Fantasy X (USA)"). */
@@ -333,6 +335,10 @@ object MemoryCards {
                     magic.startsWith("RVZ") || magic.startsWith("WIA") -> gcCode(head, 0x58)
                     magic == "CISO" -> {
                         val b = ByteArray(6); r.seek(0x8000); r.readFully(b); gcCode(b, 0)
+                    }
+                    // Update 151: Wii .wbfs (the disc header after the 512-byte WBFS header), for the Save Vault's Wii saves.
+                    magic == "WBFS" -> {
+                        val b = ByteArray(6); r.seek(0x200); r.readFully(b); gcCode(b, 0)
                     }
                     else -> gcCode(head, 0)
                 }

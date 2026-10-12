@@ -115,6 +115,12 @@ internal object StyleNav {
     internal var enteredAt = 0L
     internal val keysDown = HashSet<Int>()
 
+    // Update 151: ◀ on the first game first only knocks against the start (the game stays selected); a second fresh ◀
+    // while still on it goes into the menu. A quick tapper's one extra press used to skip the first game into the menu.
+    internal var edgeKnock = false
+    /** Update 151: the Side menu's row goes round (Endless): ◀ on the first game slides on to the last instead. */
+    @Volatile var sideLoops = false
+
     fun items(z: Zone): List<() -> Unit> = when (z) {
         Zone.SIDE -> side
         Zone.BAR -> bar
@@ -302,13 +308,14 @@ internal fun styleHomeKey(
     // On the games.
     if (!isDir || !down) return false
     val at = event.nativeKeyEvent.eventTime
-    if (focus != StyleNav.dirFocus) StyleNav.movedAt = StyleNav.dirAt
+    if (focus != StyleNav.dirFocus) { StyleNav.movedAt = StyleNav.dirAt; StyleNav.edgeKnock = false }
     StyleNav.dirAt = at
     StyleNav.dirFocus = focus
     // ◀ on the first game into the menu beside it: a fresh press, a moment after landing on that game (update 130: the
     // stick's quick repeats — and a fast second press — went straight past the first game into the menu, so it seemed
     // it could never be reached).
-    val menuOk = first && at - StyleNav.movedAt > 280
+    // Update 151: and only after one ◀ has already knocked against the start while on it (see StyleNav.edgeKnock).
+    val menuOk = first && at - StyleNav.movedAt > 280 && StyleNav.edgeKnock
     fun take(): Boolean {
         StyleNav.keysDown += code
         return true
@@ -317,11 +324,19 @@ internal fun styleHomeKey(
         if (first && StyleNav.enter(z, at)) sound(UiSound.MOVE)
         return take()
     }
+    // Update 151: ◀ on the first game that doesn't go into the menu: it knocks against the start (the next fresh ◀ goes in).
+    fun knock(): Boolean {
+        // (Only a press made while resting on it counts, not a stray second event of the press that landed there.)
+        if (first && !StyleNav.edgeKnock && at - StyleNav.movedAt > 280) { StyleNav.edgeKnock = true; EdgeBump.hit(-1) }
+        return take()
+    }
+    fun leftToMenu(): Boolean = if (menuOk) { StyleNav.edgeKnock = false; enter(StyleNav.Zone.SIDE) } else knock()
     when (layout) {
         HomeLayout.SIDE -> return when (k) {
             Key.DirectionUp -> enter(StyleNav.Zone.SIDE)
             Key.DirectionDown -> { if (first) reach(false); take() }
-            Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty()) { if (menuOk) enter(StyleNav.Zone.SIDE) else take() } else false
+            // Update 151: knock first, then the menu (leftToMenu); with Endless on ◀ slides on round to the last game.
+            Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty() && !StyleNav.sideLoops) leftToMenu() else false
             else -> false
         }
         HomeLayout.SPOT -> {
@@ -357,7 +372,7 @@ internal fun styleHomeKey(
             else -> false
         }
         HomeLayout.RESUME -> return when (k) {
-            Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty()) { if (menuOk) enter(StyleNav.Zone.SIDE) else take() } else false
+            Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty()) leftToMenu() else false // Update 151: knock first
             // (Update 119: ▼ goes to the shortcuts right under the game; the Discover cards are ▶ from them.)
             Key.DirectionDown -> if (StyleNav.side.isNotEmpty()) enter(StyleNav.Zone.SIDE) else if (StyleNav.bar.isNotEmpty()) enter(StyleNav.Zone.BAR) else { if (first) reach(false); take() }
             Key.DirectionUp -> { if (first) reach(true); take() }
@@ -367,7 +382,7 @@ internal fun styleHomeKey(
             // ▲: Play in the Now playing card (update 101); ◀ from it (or ◀ on the first game) the menu.
             Key.DirectionUp -> if (StyleNav.top.isNotEmpty()) enter(StyleNav.Zone.TOP) else if (StyleNav.side.isNotEmpty()) enter(StyleNav.Zone.SIDE) else { if (first) reach(true); take() }
             Key.DirectionDown -> if (StyleNav.bar.isNotEmpty()) enter(StyleNav.Zone.BAR) else { if (first) reach(false); take() }
-            Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty()) { if (menuOk) enter(StyleNav.Zone.SIDE) else take() } else false
+            Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty()) leftToMenu() else false // Update 151: knock first
             else -> false
         }
         HomeLayout.CHAN -> {
@@ -709,7 +724,8 @@ internal fun panelInk(look: Features.PanelLook): Color = when (look) {
 internal fun Modifier.stylePanel(look: Features.PanelLook, opacity: Float, shape: Shape): Modifier {
     val (fill, edge) = when (look) {
         Features.PanelLook.LIGHT -> Color.White.copy(alpha = 0.72f * opacity) to Color.White.copy(alpha = 0.75f)
-        Features.PanelLook.DARK -> Color(0xFF0A0E15).copy(alpha = 0.85f * opacity) to Color.White.copy(alpha = 0.14f)
+        // Update 151: the dark glass takes the theme's colour (it was one fixed grey whatever the theme).
+        Features.PanelLook.DARK -> themeDark(Color(0xFF0A0E15)).copy(alpha = 0.85f * opacity) to ShelfTheme.accent.copy(alpha = 0.16f)
         Features.PanelLook.THEME -> ShelfTheme.colors.surface.copy(alpha = 0.9f * opacity) to ShelfTheme.accent.copy(alpha = 0.3f)
     }
     return this.clip(shape).background(fill).border(1.dp, edge, shape)
@@ -868,7 +884,8 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
                 Box(Modifier.width(34.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color.White.copy(alpha = 0.25f))) {
                     Box(Modifier.fillMaxWidth(earned.toFloat() / total).fillMaxHeight().background(ShelfTheme.accent))
                 }
-                Spacer(Modifier.width(5.dp))
+                // Update 151: a small upright tick between the bar and "0/69", so they read as two parts.
+                ProgressTick()
             }
             Text(if (compact) "$earned/$total" else "$earned/$total · $pct%", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
         }

@@ -69,16 +69,19 @@ private fun sideTrim(): Color = if (Features.sideGold.state.value) Color(0xFFD9B
 /**
  * Home layout › Side menu: a dark menu down the left (an emblem, your round shortcuts as a list, a glowing orb
  * with the game you're on under it), the game's art behind everything and the row of games along the bottom.
- * ◀ ▶ move along the row; ▲ (or ◀ on the first game) goes into the menu, ▲ ▼ move in it, ▶ / B come back.
+ * ◀ ▶ move along the row; ▲ (or ◀ twice on the first game, update 151) goes into the menu, ▲ ▼ move in it, ▶ / B come back.
  * Options: Appearance › Game row › Side menu options.
  */
 @Composable
 internal fun StyleSideMenu(c: StyleCtx, modifier: Modifier) {
     val menu = c.shortcuts
+    val loops = loopRowOn(c)
     SideEffect {
         StyleNav.side = menu.map { it.onClick }
         StyleNav.bar = emptyList()
         StyleNav.top = emptyList()
+        // Update 151: with Endless on, ◀ on the first game goes round to the last (▲ is the way into the menu).
+        StyleNav.sideLoops = loops
     }
     val pulse = rememberFocusPulse(animate = !LocalLiteEffects.current && LocalCardLook.current.focusEffect != FocusEffect.NONE)
     BoxWithConstraints(modifier) {
@@ -119,11 +122,13 @@ private fun SidePanel(c: StyleCtx, width: androidx.compose.ui.unit.Dp, compact: 
     val trim = sideTrim()
     val caps = Features.sideCaps.state.value
     val scroll = rememberScrollState()
+    // Update 151: the panel's dark takes the theme's colour.
+    val panel = themeDark(Color(0xFF0A0D14))
     Column(
         Modifier
             .width(width)
             .fillMaxHeight()
-            .background(Brush.horizontalGradient(0f to Color(0xF20A0D14), 0.85f to Color(0xD90A0D14), 1f to Color(0xB30A0D14)))
+            .background(Brush.horizontalGradient(0f to panel.copy(alpha = 0.95f), 0.85f to panel.copy(alpha = 0.85f), 1f to panel.copy(alpha = 0.70f)))
             .border(width = 1.dp, brush = Brush.verticalGradient(listOf(Color.Transparent, trim.copy(alpha = 0.55f), Color.Transparent)), shape = androidx.compose.ui.graphics.RectangleShape)
     ) {
         // The emblem and the category.
@@ -133,7 +138,8 @@ private fun SidePanel(c: StyleCtx, width: androidx.compose.ui.unit.Dp, compact: 
                 val size = if (compact) 40.dp else 54.dp
                 Box(
                     Modifier.size(size).clip(CircleShape)
-                        .background(Brush.radialGradient(listOf(trim.copy(alpha = 0.55f), Color(0xFF2A2210))))
+                        // (Update 151: the dark round it from the trim colour too, not always a dark gold.)
+                        .background(Brush.radialGradient(listOf(trim.copy(alpha = 0.55f), androidx.compose.ui.graphics.lerp(trim, Color.Black, 0.82f))))
                         .border(2.dp, trim, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
@@ -141,12 +147,17 @@ private fun SidePanel(c: StyleCtx, width: androidx.compose.ui.unit.Dp, compact: 
                     // Your RetroAchievements / Steam picture (as in the status bar), a person icon while there's none.
                     val avatar = if (Features.sideEmblem.state.value == Features.SideEmblem.PROFILE)
                         profilePictureUrl(com.shelf.launcher.data.RaBadges.mediaUrl(c.state.raProfile?.UserPic)) else null
+                    // Update 151: tied to the category it stands for, so stepping categories never shows the last one's
+                    // logo for a moment before the new one (or a folder's symbol) comes in.
+                    // (Your picture stays the same whatever the category, so it isn't reloaded.)
+                    androidx.compose.runtime.key(if (avatar != null) null else c.state.specialFilter, if (avatar != null) null else c.state.platformFilter) {
                     when {
                         avatar != null -> AsyncImage(avatar, null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
                         logo != null -> AsyncImage(logo, null, modifier = Modifier.size(size * 0.62f))
                         Features.sideEmblem.state.value == Features.SideEmblem.PROFILE ->
                             Icon(androidx.compose.material.icons.Icons.Filled.Person, null, tint = trim, modifier = Modifier.size(size * 0.56f))
                         else -> Icon(c.stopAt(0)?.icon ?: androidx.compose.material.icons.Icons.Filled.Apps, null, tint = trim, modifier = Modifier.size(size * 0.5f))
+                    }
                     }
                 }
                 Spacer(Modifier.width(8.dp))
@@ -239,7 +250,9 @@ private fun SideCapsule(trim: Color) {
         val t = rememberInfiniteTransition(label = "capsule")
         t.animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Restart), label = "capsuleTurn").value
     }
-    val charge = Color(0xFF6FC8FF)
+    // Update 151: with the theme's colour as trim (Gold trim off), the charge is the theme's accent too.
+    val charge = if (Features.sideGold.state.value) Color(0xFF6FC8FF) else ShelfTheme.accent
+    val chargeDeep = androidx.compose.ui.graphics.lerp(charge, Color.Black, 0.5f)
     Canvas(Modifier.size(96.dp)) {
         val u = size.minDimension
         val cx = size.width / 2f
@@ -274,7 +287,7 @@ private fun SideCapsule(trim: Color) {
                 }
                 lineTo(left + bw, top + bh); lineTo(left, top + bh); close()
             }
-            drawPath(wave, Brush.verticalGradient(listOf(charge.copy(alpha = 0.95f), Color(0xFF1C5C9A)), startY = surface, endY = top + bh))
+            drawPath(wave, Brush.verticalGradient(listOf(charge.copy(alpha = 0.95f), chargeDeep), startY = surface, endY = top + bh))
             // Glass shine down the left side.
             drawRect(Color.White.copy(alpha = 0.16f), topLeft = Offset(left + bw * 0.14f, top + bh * 0.1f), size = Size(bw * 0.12f, bh * 0.8f))
         }

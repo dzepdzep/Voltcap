@@ -10,6 +10,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -445,7 +446,8 @@ private fun rememberShelfBob(): Pair<androidx.compose.runtime.State<Float>, andr
 /** The pulled-out game: its front in the console's cover frame (or the plain cover), or the 3D box turned to its side. */
 @Composable
 private fun PulledCase(c: StyleCtx, g: Game, side: Boolean, modifier: Modifier, detail: Int = 480) =
-    PulledOutCase(g, c.cover(g), c.state.physicalMedia[g.stableKey], side, modifier, detail)
+    // Update 151: the shelf waits for the case (a plain case shape meanwhile), never the cover first (waitForCase).
+    PulledOutCase(g, c.cover(g), c.state.physicalMedia[g.stableKey], side, modifier, detail, waitForCase = true)
 
 /**
  * The game pulled out of a shelf of spines (Game shelf, TV room shelf; update 129: shared), as set in "Pulled out, it
@@ -456,13 +458,33 @@ private fun PulledCase(c: StyleCtx, g: Game, side: Boolean, modifier: Modifier, 
  * - 3D box from the side ([side]).
  */
 @Composable
-internal fun PulledOutCase(g: Game, cover: String?, physical: List<Pair<String, String>>?, side: Boolean, modifier: Modifier, detail: Int = 480) {
+internal fun PulledOutCase(
+    g: Game, cover: String?, physical: List<Pair<String, String>>?, side: Boolean, modifier: Modifier, detail: Int = 480,
+    /**
+     * Update 151 (Game shelf): the real case from the first frame. While the game's scans aren't known yet ([physical]
+     * null: not looked up, which the shelf does at once) a plain case in the case's shape stands in, and the scan comes
+     * in over that plain case, not over the cover. (Moving along the shelf showed the cover, or a wide picture, first
+     * and only then the real case.)
+     */
+    waitForCase: Boolean = false
+) {
     val mode = Features.shelfPulled.state.value
     val box = MediaTemplates.of(g.platform)?.box
     // The game's own scanned case and spine (update 101). Update 129: "Real case" always looks for the scan first.
     val original = Features.originalCases.state.value || mode == Features.ShelfPulled.FRONT
     val scan = if (original) BoxTexture.front(physical, g.platform) else physical?.firstOrNull { it.first == "Box" }?.second
     val ownSpine = if (original) BoxTexture.spine(physical, g.platform) else null
+    // Update 151: not known yet → the plain case shape (only where a scan would win over the cover).
+    val waiting = waitForCase && physical == null && ((side && box != null) || mode == Features.ShelfPulled.FRONT)
+    if (waiting) {
+        val aspect = if (side && box != null) box.aspect * 1.12f
+            else (if (Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null) ?: realCaseMm(g.platform)?.let { it.first / it.second } ?: 0.7f
+        BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+            val w = minOf(maxWidth, maxHeight * aspect)
+            Box(Modifier.size(w, w / aspect).clip(RoundedCornerShape(3.dp)).background(CaseArtPlaceholder).border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(3.dp)))
+        }
+        return
+    }
     if (side && box != null) {
         val (front, isBox) = if (original && scan != null) scan to true else boxFront(box, cover, scan)
         Box3D(box, front, isBox, gameDisplayName(g.name), modifier, spin = false, detail = detail, realSpine = ownSpine)
@@ -471,7 +493,8 @@ internal fun PulledOutCase(g: Game, cover: String?, physical: List<Pair<String, 
     val cov = if (Features.coverTemplates.state.value && mode != Features.ShelfPulled.COVER) MediaCovers.of(g.platform) else null
     var scanFailed by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
     if (mode == Features.ShelfPulled.FRONT && scan != null && !scanFailed) {
-        ScanCase(scan, cov?.frontAspect ?: realCaseMm(g.platform)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = cover)
+        // (Update 151: on the shelf the scan fades in over the plain case, not over the cover.)
+        ScanCase(scan, cov?.frontAspect ?: realCaseMm(g.platform)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = if (waitForCase) null else cover)
         return
     }
     if (cov != null) CoverCase(cov, cover, placeholderBrush(g.hue), modifier)

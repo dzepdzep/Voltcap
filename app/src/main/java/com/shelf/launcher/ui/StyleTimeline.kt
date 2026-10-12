@@ -81,6 +81,10 @@ import kotlin.math.roundToInt
  * ◀ ▶ move along the line, ▲ the order button (A changes the order, ▼ / B back), ▲ again / ▼ what lies beyond (HomeReach).
  * Swipe to scroll, tap a game to pick it and again to open it.
  * Options: Settings › Home › Layout options (Timeline).
+ *
+ * Update 151: no longer one line across the middle (it looked like the Circuit board): a vertical history instead —
+ * year headings (and months), a row of each period's games under them (StyleTimelineHistory.kt). This file keeps the
+ * order (TimelineOrder, timelineData), the date wording, the header with the order button and the options.
  */
 
 /** The line's order (shared with [timelineKey], which runs outside composition): set as the layout draws. */
@@ -94,14 +98,12 @@ internal object TimelineOrder {
 /** "No date" (never played, added before Voltcap kept track, release year not known): these go to the far end. */
 private const val UNKNOWN = Long.MIN_VALUE
 
-/** How much bigger the game you're on is. */
-private const val FOCUS_GROW = 1.22f
-
 /**
  * The line worked out once per category / order: [order] and [rank] as in [TimelineOrder], [stamp] each place's date
  * (epoch ms, or the year by release) and [period] its month / decade, so a marker goes where it changes.
  */
-private class TimelineData(val order: IntArray, val rank: IntArray, val stamp: LongArray, val period: IntArray)
+// (Update 151: internal, for the history in StyleTimelineHistory.kt.)
+internal class TimelineData(val order: IntArray, val rank: IntArray, val stamp: LongArray, val period: IntArray)
 
 private fun timelineData(games: List<Game>, mode: Features.TimelineBy, state: LauncherUiState): TimelineData {
     val n = games.size
@@ -145,8 +147,8 @@ private fun timelineData(games: List<Game>, mode: Features.TimelineBy, state: La
     return TimelineData(order, rank, stamp, period)
 }
 
-/** The dates' wording (kept for the layout's life; only used on the main thread). */
-private class TimelineText {
+/** The dates' wording (kept for the layout's life; only used on the main thread). (Update 151: internal, for the history.) */
+internal class TimelineText {
     private val cal = Calendar.getInstance()
     private val dayMonth = SimpleDateFormat("d MMM", Locale.getDefault())
     private val monthYear = SimpleDateFormat("MMM yyyy", Locale.getDefault())
@@ -201,11 +203,6 @@ private fun nextTimelineBy(mode: Features.TimelineBy): Features.TimelineBy {
     return all[(mode.ordinal + 1) % all.size]
 }
 
-/** Sizes along the line (dp), worked out from the room there is. */
-private class TimelineGeo(
-    val cx: Dp, val lineY: Dp, val step: Dp, val cardW: Dp, val cardH: Dp, val lead: Dp, val dateRoom: Dp, val dateW: Dp
-)
-
 @Composable
 internal fun StyleTimeline(c: StyleCtx, modifier: Modifier = Modifier) {
     val mode = Features.timelineBy.state.value
@@ -235,31 +232,32 @@ internal fun StyleTimeline(c: StyleCtx, modifier: Modifier = Modifier) {
             if (c.game == null) {
                 StyleEmpty(Modifier.weight(1f))
             } else {
-                TimelineLine(c, data, mode, compact, Modifier.weight(1f).fillMaxWidth())
+                // Update 151: the history (periods down the screen, each a row of games), not the line across it.
+                TimelineHistory(c, data, mode, compact, Modifier.weight(1f).fillMaxWidth())
             }
         }
     }
 }
 
-/** Above the line: the game's name, its console and time played; the order button at the right. */
+/** Above the history: the category, the game's name and time played; the order button at the right. */
 @Composable
 private fun TimelineHeader(c: StyleCtx, mode: Features.TimelineBy, compact: Boolean) {
     val titles = LocalTitleOptions.current
     val g = c.game
     Row(Modifier.fillMaxWidth().padding(top = 2.dp, bottom = if (compact) 2.dp else 6.dp), verticalAlignment = Alignment.Top) {
+        // Update 151: the game's name and date are under it in the history now; up here its time played (and the
+        // category), one short line.
         Box(Modifier.weight(1f).editablePart(LayoutParts.id(HomeLayout.TIMELINE, "title"), "Name & time played")) {
-            if (g != null) AnimatedContent(targetState = g, label = "timelineTitle", transitionSpec = { gameSwap() }) { shown ->
-                Column(Modifier.fillMaxWidth()) {
-                    FitText(
-                        titles.display(shown.name), Color.White, maxSize = if (compact) 18.sp else 24.sp, minSize = 12.sp,
-                        maxLines = 1, fontWeight = FontWeight.Bold, style = nameTextStyle(NameBackdrop.SHADOW)
-                    )
-                    Text(
-                        titles.console(shown.platform) + "  ·  " + stylePlaytime(c.playtime(shown), c.lastPlayed(shown) != null),
-                        color = Color.White.copy(alpha = 0.82f), fontSize = if (compact) 11.sp else 13.sp, maxLines = 1, softWrap = false,
-                        overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
-                    )
-                }
+            Column(Modifier.fillMaxWidth()) {
+                Text(
+                    c.categoryLabel, color = Color.White, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+                )
+                if (g != null) Text(
+                    titles.display(g.name) + "  ·  " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
+                    color = Color.White.copy(alpha = 0.75f), fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, softWrap = false,
+                    overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+                )
             }
         }
         Spacer(Modifier.width(10.dp))
@@ -288,277 +286,33 @@ private fun TimelineOrderChip(mode: Features.TimelineBy, compact: Boolean) {
 }
 
 /**
- * The line itself: only the games near the screen are composed (a window round the one you're on); everything moves
- * with one [Animatable] read in the layout / draw phase, so a glide redraws without recomposing every frame, and
- * nothing runs while you rest.
+ * Update 151: the history's keys (StyleTimelineHistory.kt): ◀ ▶ along the line (its own order, not the category's), on
+ * into the next / previous period at a row's ends; ▲ ▼ between periods; ▲ on the first the order button (then past it),
+ * ▼ on the last what lies below (HomeReach).
  */
-@Composable
-private fun TimelineLine(c: StyleCtx, data: TimelineData, mode: Features.TimelineBy, compact: Boolean, modifier: Modifier) {
-    val select by rememberUpdatedState(c.actions.select)
-    val latestData by rememberUpdatedState(data)
-    val latestFocus by rememberUpdatedState(c.focus)
-    val glide = Features.rowGlide.state.value
-    val n = data.order.size
-    val target = data.rank.getOrElse(c.focus) { 0 }
-    val pos = remember { Animatable(target.toFloat()) }
-    // The line it last glided on, so a new line (category, order) is never glided across from the old one's place.
-    val shownData = remember { arrayOfNulls<TimelineData>(1) }
-    LaunchedEffect(target, data) {
-        val newLine = shownData[0] !== data
-        shownData[0] = data
-        // A new line or a long jump (the far end): straight there rather than racing along the line.
-        if (newLine || abs(pos.value - target) > 8f) pos.snapTo(target.toFloat())
-        else pos.animateTo(target.toFloat(), spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = glide.stiffness))
-    }
-    // The window only changes when the line has moved a whole game.
-    val center by remember { derivedStateOf { pos.value.roundToInt() } }
-    val keys = remember(c.games) { gameKeys(c.games) }
-    val text = remember { TimelineText() }
-    text.refresh(System.currentTimeMillis())
-    val accent = ShelfTheme.accent
-    val dates = Features.timelineDates.state.value
-    val inGames = StyleNav.zone == StyleNav.Zone.GAMES
-    // The drag reads the step from here (the drag handler is never restarted for a size).
-    val stepPx = remember { floatArrayOf(1f) }
-    val density = LocalDensity.current
-    BoxWithConstraints(
-        modifier.pointerInput(Unit) {
-            var acc = 0f
-            var cur = 0
-            detectHorizontalDragGestures(
-                onDragStart = { acc = 0f; cur = latestData.rank.getOrElse(latestFocus) { 0 } },
-                onDragEnd = { acc = 0f },
-                onDragCancel = { acc = 0f }
-            ) { change, dx ->
-                change.consume()
-                acc += dx
-                val d = latestData
-                val s = (stepPx[0] * 0.8f).coerceAtLeast(24.dp.toPx())
-                // Dragging left brings the later games in, like scrolling the line.
-                while (acc <= -s) { acc += s; if (cur + 1 < d.order.size) { cur++; select(d.order[cur]) } }
-                while (acc >= s) { acc -= s; if (cur > 0) { cur--; select(d.order[cur]) } }
-            }
-        }.categorySlide()
-    ) {
-        val k = GameSize.scale(HomeLayout.TIMELINE)
-        val aspect = styleAspect(c.type).coerceIn(0.13f, 1.8f)
-        val lead = if (compact) 10.dp else 14.dp
-        val dateRoom = if (dates) (if (compact) 16.dp else 18.dp) else 0.dp
-        // A card (grown, for the game you're on) with its date and stem fits in half the height; never so wide that
-        // fewer than about four games show across a small screen.
-        val avail = (maxHeight / 2f - lead - dateRoom - 4.dp).coerceAtLeast(30.dp)
-        val cardH = minOf(avail / FOCUS_GROW * 0.88f * k, avail / FOCUS_GROW, maxWidth * 0.24f / aspect).coerceAtLeast(28.dp)
-        val cardW = cardH * aspect
-        // One above, the next below: neighbours on the same side are two steps apart, so they can overlap a little sideways.
-        val step = maxOf(cardW * 0.64f, if (compact) 50.dp else 56.dp)
-        val geo = TimelineGeo(
-            cx = maxWidth / 2f, lineY = maxHeight / 2f, step = step, cardW = cardW, cardH = cardH,
-            lead = lead, dateRoom = dateRoom, dateW = step * 1.9f
-        )
-        SideEffect { stepPx[0] = with(density) { step.toPx() } }
-        val half = (maxWidth / 2f / step).toInt() + 2
-        val first = (center - half).coerceAtLeast(0)
-        val last = (center + half).coerceAtMost(n - 1)
-
-        // The line and the period ticks (drawn every frame only while the line glides). The stems and dots are drawn
-        // after the markers' names, so a name never hides a game's dot on a narrow screen.
-        Canvas(Modifier.fillMaxSize()) {
-            val y = geo.lineY.toPx()
-            val sp = step.toPx()
-            val ax = geo.cx.toPx()
-            val p0 = pos.value
-            // The line runs from a little before the first game to a little after the last, fading at the screen's edges.
-            val startX = (ax + (0 - p0) * sp - sp).coerceAtLeast(0f)
-            val endX = (ax + (n - 1 - p0) * sp + sp).coerceAtMost(size.width)
-            if (endX > startX) {
-                val fade = Brush.horizontalGradient(
-                    0f to Color.Transparent, 0.07f to accent, 0.93f to accent, 1f to Color.Transparent,
-                    startX = 0f, endX = size.width
-                )
-                drawLine(fade, Offset(startX, y), Offset(endX, y), strokeWidth = 14.dp.toPx(), cap = StrokeCap.Round, alpha = 0.12f)
-                drawLine(fade, Offset(startX, y), Offset(endX, y), strokeWidth = 6.dp.toPx(), cap = StrokeCap.Round, alpha = 0.28f)
-                drawLine(fade, Offset(startX, y), Offset(endX, y), strokeWidth = 2.5.dp.toPx(), cap = StrokeCap.Round, alpha = 0.9f)
-            }
-            for (p in first..last) {
-                // A tick across the line where a new month / decade starts (its name is drawn over it below; the
-                // tick peeks out above and below the name).
-                if (p == 0 || data.period[p] != data.period[p - 1]) {
-                    val xm = ax + (p - p0) * sp - sp / 2f
-                    drawLine(accent.copy(alpha = 0.75f), Offset(xm, y - 13.dp.toPx()), Offset(xm, y + 13.dp.toPx()), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)
-                }
-            }
-        }
-        // The markers' names, on the line between the two games where the period changes.
-        for (p in first..last) {
-            if (p == 0 || data.period[p] != data.period[p - 1]) key("m", p) {
-                TimelineMarker(text.marker(mode, data.stamp[p]), p, pos, geo, accent)
-            }
-        }
-        // The stems and the dots, over the markers' names.
-        Canvas(Modifier.fillMaxSize()) {
-            val y = geo.lineY.toPx()
-            val sp = step.toPx()
-            val ax = geo.cx.toPx()
-            val p0 = pos.value
-            val leadPx = lead.toPx()
-            for (p in first..last) {
-                val x = ax + (p - p0) * sp
-                val up = p % 2 == 0
-                val on = p == target
-                // The stem from the dot to the card.
-                drawLine(
-                    if (on) accent else Color.White.copy(alpha = 0.35f), Offset(x, y), Offset(x, if (up) y - leadPx else y + leadPx),
-                    strokeWidth = (if (on) 3.dp else 1.5.dp).toPx()
-                )
-                if (on) {
-                    drawCircle(accent.copy(alpha = 0.3f), radius = 13.dp.toPx(), center = Offset(x, y))
-                    drawCircle(accent, radius = 8.dp.toPx(), center = Offset(x, y))
-                    drawCircle(Color.White, radius = 4.5.dp.toPx(), center = Offset(x, y))
-                } else {
-                    drawCircle(accent, radius = 4.5.dp.toPx(), center = Offset(x, y))
-                    drawCircle(Color.Black.copy(alpha = 0.55f), radius = 1.8.dp.toPx(), center = Offset(x, y))
-                }
-            }
-        }
-        // The games.
-        for (p in first..last) {
-            val real = data.order[p]
-            val g = c.games.getOrNull(real)
-            if (g != null) key(keys[real]) {
-                val on = p == target
-                TimelineCard(
-                    c, g, real, p, on = on, sel = on && inGames, pos = pos, geo = geo,
-                    date = if (dates) text.date(mode, data.stamp[p]) else null, accent = accent
-                )
-            }
-        }
-    }
-}
-
-/** A month / decade name on the line. */
-@Composable
-private fun TimelineMarker(label: String, p: Int, pos: Animatable<Float, AnimationVector1D>, geo: TimelineGeo, accent: Color) {
-    val w = 120.dp
-    val h = 18.dp
-    Box(
-        Modifier
-            .offset { IntOffset((geo.cx + geo.step * (p - pos.value) - geo.step / 2f - w / 2f).roundToPx(), (geo.lineY - h / 2f).roundToPx()) }
-            .size(w, h),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            label, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
-            modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.7f))
-                .border(1.dp, accent.copy(alpha = 0.8f), RoundedCornerShape(50)).padding(horizontal = 7.dp, vertical = 1.dp)
-        )
-    }
-}
-
-/**
- * A game on the line: its card art (the layout's artwork) above or below the line and its date by the dot. The game
- * you're on grows away from the line and glows (the layout's focus effect). Tap: pick it; tap the one you're on: open it.
- */
-@Composable
-private fun TimelineCard(
-    c: StyleCtx, g: Game, real: Int, p: Int, on: Boolean, sel: Boolean,
-    pos: Animatable<Float, AnimationVector1D>, geo: TimelineGeo, date: String?, accent: Color
-) {
-    val select by rememberUpdatedState(c.actions.select)
-    val open by rememberUpdatedState(c.actions.open)
-    val glide = Features.rowGlide.state.value
-    val grow by animateFloatAsState(
-        if (on) 1f else 0f, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = glide.stiffness), label = "timelineGrow"
-    )
-    // The focus pulse only on the game you're on, so resting re-draws that one card alone.
-    val pulse: Float? = if (sel) rememberFocusPulse(animate = !LocalLiteEffects.current && LocalCardLook.current.focusEffect != FocusEffect.NONE) else null
-    val up = p % 2 == 0
-    Box(
-        Modifier
-            .offset {
-                IntOffset(
-                    (geo.cx + geo.step * (p - pos.value) - geo.cardW / 2f).roundToPx(),
-                    (if (up) geo.lineY - geo.lead - geo.dateRoom - geo.cardH else geo.lineY + geo.lead + geo.dateRoom).roundToPx()
-                )
-            }
-            .size(geo.cardW, geo.cardH)
-            .zIndex(if (on) 2f else 1f)
-            // The game window grows out of the card, like on the other layouts.
-            .then(if (on) Modifier.focusedCard() else Modifier)
-            .graphicsLayer {
-                val s = 1f + (FOCUS_GROW - 1f) * grow
-                scaleX = s; scaleY = s
-                transformOrigin = TransformOrigin(0.5f, if (up) 1f else 0f)
-                alpha = 0.78f + 0.22f * grow
-            }
-            .pointerInput(real) { detectTapGestures { if (real == GridHome.focus) open() else select(real) } }
-    ) {
-        StyleArt(c, g, Modifier.fillMaxSize(), focused = sel, fx = pulse, ring = accent)
-    }
-    if (date != null) Box(
-        Modifier
-            .offset {
-                IntOffset(
-                    (geo.cx + geo.step * (p - pos.value) - geo.dateW / 2f).roundToPx(),
-                    (if (up) geo.lineY - geo.lead - geo.dateRoom else geo.lineY + geo.lead).roundToPx()
-                )
-            }
-            .size(geo.dateW, geo.dateRoom)
-            .zIndex(if (on) 2f else 1f),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            date, color = if (on) accent else Color.White.copy(alpha = 0.72f), fontSize = if (on) 11.sp else 10.sp,
-            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
-            style = nameTextStyle(NameBackdrop.SHADOW)
-        )
-    }
-}
-
-/**
- * ◀ ▶ go to the previous / next game along the line (its own order, not the category's); at either end they stay put.
- * ▲ the order button (then past it), ▼ what lies below (HomeReach).
- */
-internal fun timelineKey(ctx: StyleKeyCtx): Boolean = when (ctx.key) {
-    Key.DirectionUp -> if (StyleNav.top.isNotEmpty()) ctx.enterZone(StyleNav.Zone.TOP) else ctx.reach(true)
-    Key.DirectionDown -> ctx.reach(false)
-    Key.DirectionLeft, Key.DirectionRight -> {
-        val order = TimelineOrder.order
-        val rank = TimelineOrder.rank
-        // Not drawn yet for this category (the order is from another one): the home screen's own ◀ ▶ this once.
-        if (ctx.count <= 0 || order.size != ctx.count || ctx.focus !in rank.indices) {
-            false
-        } else {
-            val t = rank[ctx.focus] + if (ctx.key == Key.DirectionRight) 1 else -1
-            if (t in order.indices && order[t] != ctx.focus) {
-                ctx.setFocus(order[t])
-                ctx.sound(UiSound.MOVE)
-            }
-            ctx.take()
-        }
-    }
-    else -> false
-}
+internal fun timelineKey(ctx: StyleKeyCtx): Boolean = timelineHistoryKey(ctx)
 
 @Composable
 internal fun TimelineSettings() {
-    MutedNote("Your games along a glowing time line across the middle of the screen, one above it, the next below it, with the date by each one and a marker where a new month (or decade) starts. The game you're on is bigger and in the middle, its name, console and time played above. ◀ ▶ move along the line, ▲ the order button (A changes the order). Swipe to scroll; tap a game to pick it, tap it again to open it.")
+    // Update 151: the history (periods down the screen) instead of the line across it.
+    MutedNote("Your games as a history: big year headings (and months, by last played or added) down a time line on the left, each with a row of that time's games. The row you're in is bigger; the game you're on has its name and date under it. ▲ ▼ move between years / months, ◀ ▶ along a row, ▲ at the top the order button (A changes the order). Swipe to scroll; tap a game to pick it, tap it again to open it.")
     Spacer(Modifier.height(10.dp))
     val current = Features.timelineBy.state.value
-    Text("Order along the line", color = ShelfTheme.textMuted, fontSize = 12.sp)
+    Text("Order", color = ShelfTheme.textMuted, fontSize = 12.sp)
     Spacer(Modifier.height(6.dp))
     ChipFlow { Features.TimelineBy.values().forEach { v -> Chip(v.label, accent = v == current) { Features.timelineBy.value = v } } }
     Spacer(Modifier.height(6.dp))
     MutedNote(
         when (current) {
             Features.TimelineBy.LAST_PLAYED -> "The game you played last comes first; games you've never played wait at the far end."
-            Features.TimelineBy.RELEASED -> "From the oldest game to the newest, with a marker at each new decade. Games without a known release year wait at the far end."
+            Features.TimelineBy.RELEASED -> "From the oldest game to the newest, a row for each year. Games without a known release year wait at the far end."
             Features.TimelineBy.ADDED -> "The newest arrivals first. Games that were already here before Voltcap kept track wait at the far end."
         }
     )
     Spacer(Modifier.height(12.dp))
     SwitchRow(
         Icons.Filled.Label, "Dates on the line",
-        "By each game's dot: Today, Yesterday, 12 Oct, Mar 2024, or its release year.",
+        "Under each game in the row you're in: Today, Yesterday, 12 Oct, Mar 2024, or its release year.",
         Features.timelineDates.state.value, { Features.timelineDates.value = it }
     )
     Spacer(Modifier.height(8.dp))

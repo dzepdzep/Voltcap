@@ -133,6 +133,7 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720): android.graphi
     // used to go blank for a moment while it was looked up again.)
     val key = remember(model, maxSide) { (model as? String)?.let { coil.memory.MemoryCache.Key("soft|$maxSide|$it") } }
     val cached = remember(key) { key?.let { coil.Coil.imageLoader(context).memoryCache?.get(it)?.bitmap } }
+        ?.also { b -> (model as? String)?.let { Models3D.noteSource(b, it) } }
     val state by produceState(cached, model) {
         if (model == null) { value = null; return@produceState }
         if (cached != null) { value = cached; return@produceState }
@@ -146,6 +147,8 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720): android.graphi
                     .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
                     .apply { if (key != null) memoryCacheKey(key) }.build()
                 drawableBitmap((coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable, maxSide)
+                    // (Update 151: remembered as this address's picture, so the 3D pieces made with it are found again.)
+                    ?.also { b -> (model as? String)?.let { Models3D.noteSource(b, it) } }
             }.getOrNull()
         }
     }
@@ -367,7 +370,13 @@ internal fun CaseArt(
     platform: String?, cover: Any?, scan: Any?, modifier: Modifier = Modifier, title: String = "", detail: Int = 360,
     real: RealCaseRef? = null, caseModifier: Modifier = Modifier,
     /** The game's own spine (BoxTexture.spine), for the box turned to its side. */
-    spine: Any? = null
+    spine: Any? = null,
+    /**
+     * Update 151: draw the game in its 3D case from your shape library (where there's one). Off for every caller now: Real
+     * cases and Cases · real sizes are flat for every console (a PS2 game stood as a 3D case among flat ones); the 3D
+     * cases belong to the 3D models look (mediaFor); 3D case + disc draws the template's 3D box for every console.
+     */
+    models3d: Boolean = false
 ): Boolean {
     // Update 129: one console's case picked for all (R1 › Case): every game's cover in that case, never its own scan.
     val casePlatform = LookStyles.casePlatform(platform)
@@ -379,8 +388,18 @@ internal fun CaseArt(
     val owner = if (forAll && platform != null && casePlatform != platform) platform else null
     // Update 141: with 3D models on (Settings › Game look › 3D models), the case looks show the game in its console's
     // 3D case from your shape library, standing as Stand says — consoles without one keep their flat case.
+    // (Update 151: only with [models3d].)
     val model = if (owner == null) Models3D.caseModel(casePlatform) else null
-    if (model != null) {
+    // Update 151: 3D case + disc — your 3D case with the disc half out of it (DiscCase3D.kt). Only with [models3d] too:
+    // in the case looks every console's 3D case + disc is the template's 3D box (CaseArtFace), so no console stands apart.
+    if (model != null && models3d && real == null && disc3dOn(casePlatform)) {
+        DiscIn3DModelCase(
+            model, casePlatform, cover, scan, Models3D.standYaw(LocalMediaFocused.current), modifier, caseModifier,
+            title.takeIf { it.isNotBlank() }, platform
+        )
+        return true
+    }
+    if (model != null && models3d) {
         val yaw = Models3D.standYaw(LocalMediaFocused.current)
         val nm = title.takeIf { it.isNotBlank() }
         // Update 144: with "Box art · real sizes" the 3D case is sized like the flat cases — its real size against the
@@ -389,7 +408,13 @@ internal fun CaseArt(
             val k = minOf(maxWidth / real.wMm, maxHeight / real.hMm)
             Model3DArt(model, cover ?: scan, yaw, Modifier.size(k * mm.first, k * mm.second).then(caseModifier), name = nm, platform = platform)
         }
-        else Model3DArt(model, cover ?: scan, yaw, modifier.then(caseModifier), name = nm, platform = platform)
+        // (Update 149: the case drawn at its own shape in the middle of the slot, so the focus frame hugs the case — it
+        // used to frame the whole slot, wider and taller than the case.)
+        else BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+            val a = Models3D.aspect(model).coerceAtLeast(0.1f)
+            val w = minOf(maxWidth, maxHeight * a)
+            Model3DArt(model, cover ?: scan, yaw, Modifier.size(w, w / a).then(caseModifier), name = nm, platform = platform)
+        }
         return true
     }
     var drawn = true
@@ -489,7 +514,9 @@ private fun CaseArtFace(
     }
     if (box == null) return false
     val (front, isBox) = boxFront(box, cover, scan)
-    if (discCase) DiscInCase(
+    // Update 151: 3D case + disc — the 3D box with the disc half out of it (DiscCase3D.kt); PS1 keeps its flat case.
+    if (discCase && disc3dOn(platform) && platform != "PS1") DiscInBox3D(tpl!!, cover, scan, !scanFailed, modifier, title, detail, platform)
+    else if (discCase) DiscInCase(
         tpl!!, front, isBox, cover ?: scan, modifier, title, detail,
         // Update 104: the game's own case scan and its own disc picture, when there are.
         caseScan = if (com.shelf.launcher.data.Features.originalCases.state.value && !scanFailed) scan else null,

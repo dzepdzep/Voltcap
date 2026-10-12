@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Icon
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.LaunchedEffect
 import com.shelf.launcher.data.ra.RaMatchInfo
 import androidx.compose.material3.Text
@@ -100,6 +101,19 @@ fun AchievementListDialog(
         kotlinx.coroutines.delay(60)
         runCatching { rowFocus[id]?.requestFocus() }
         returnFocusId = null
+    }
+    // Update 151: the achievement you rest on opens its details and comments by itself (Features.achCommentsAuto, on
+    // by default; the Comments chip below turns it off). After a short rest, so moving through the list stays light
+    // and only the one you stop on loads its comments.
+    val autoComments = com.shelf.launcher.data.Features.achCommentsAuto.state.value
+    var restingId by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(restingId, autoComments) {
+        val id = restingId
+        if (autoComments && id != null && detailId != id) {
+            kotlinx.coroutines.delay(380)
+            detailId = id
+            onLoadComments(id)
+        }
     }
     val hasRarity = showRarity && achievements.any { it.unlockPercent != null }
     // Order: unlocked first then the locked ones (greyed), the set's own, unlock order (timeline),
@@ -265,7 +279,10 @@ fun AchievementListDialog(
                 if (visible.isEmpty()) {
                     EmptyState(filter.emptyText)
                 } else {
-                    MutedNote("A (or tap) on an achievement opens its details and comments right under ${if (wall) "its row" else "it"}; A again closes them.")
+                    MutedNote(
+                        if (autoComments) "The achievement you rest on shows its details and comments right under ${if (wall) "its row" else "it"}; A closes them."
+                        else "A (or tap) on an achievement opens its details and comments right under ${if (wall) "its row" else "it"}; A again closes them."
+                    )
                     if (achievements.any { it.isMissable }) {
                         Spacer(Modifier.height(4.dp))
                         MissableLegend()
@@ -280,6 +297,11 @@ fun AchievementListDialog(
                     ChipFlow {
                         com.shelf.launcher.data.Features.AchView.values().forEach { v ->
                             Chip(v.label, accent = view == v) { com.shelf.launcher.data.Features.achView.value = v }
+                        }
+                        // Update 151: comments open by themselves on the one you rest on; this turns that off (and on).
+                        Chip(if (autoComments) "✓ Comments" else "Comments", accent = autoComments) {
+                            com.shelf.launcher.data.Features.achCommentsAuto.value = !autoComments
+                            if (autoComments) detailId = null
                         }
                     }
                     Spacer(Modifier.height(6.dp))
@@ -301,7 +323,8 @@ fun AchievementListDialog(
                                 val id = item.key as Int
                                 if (detailId == id) detailId = null else { detailId = id; onLoadComments(id) }
                             },
-                            modifierFor = { item -> Modifier.focusRequester(rowFocus.getOrPut(item.key as Int) { FocusRequester() }) },
+                            modifierFor = { item -> Modifier.focusRequester(rowFocus.getOrPut(item.key as Int) { FocusRequester() })
+                                .onFocusChanged { if (it.isFocused) restingId = item.key as Int } },
                             below = { item ->
                                 val a = visible.first { it.id == item.key }
                                 AchievementInlineDetail(
@@ -328,11 +351,11 @@ fun AchievementListDialog(
                                 if (view == com.shelf.launcher.data.Features.AchView.POWER) PowerCell(
                                     a, showRarity = hasRarity, missable = a.isMissable,
                                     markedMissed = a.missableState(missedMarks) == MissableState.MARKED_MISSED, expanded = detailId == a.id,
-                                    modifier = Modifier.focusRequester(requester), onClick = toggle
+                                    modifier = Modifier.focusRequester(requester).onFocusChanged { if (it.isFocused) restingId = a.id }, onClick = toggle
                                 ) else TrophyRow(
                                     a, showRarity = hasRarity, missable = a.isMissable,
                                     markedMissed = a.missableState(missedMarks) == MissableState.MARKED_MISSED, expanded = detailId == a.id,
-                                    modifier = Modifier.focusRequester(requester), onClick = toggle
+                                    modifier = Modifier.focusRequester(requester).onFocusChanged { if (it.isFocused) restingId = a.id }, onClick = toggle
                                 )
                                 if (detailId == a.id) AchievementInlineDetail(
                                     raGameId = game.raGameId,
@@ -357,7 +380,7 @@ fun AchievementListDialog(
                             AchievementRow(
                                 a, showRarity = hasRarity, easiestNext = a.id == easiestNext,
                                 markedMissed = a.missableState(missedMarks) == MissableState.MARKED_MISSED,
-                                modifier = Modifier.focusRequester(requester),
+                                modifier = Modifier.focusRequester(requester).onFocusChanged { if (it.isFocused) restingId = a.id },
                                 expanded = detailId == a.id
                             ) {
                                 // A (or tap) opens its details right under it; again closes them.

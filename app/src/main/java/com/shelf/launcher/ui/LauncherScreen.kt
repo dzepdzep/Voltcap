@@ -369,6 +369,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (video != null) introVideo = game to video else viewModel.launch(game)
     }
     fun startGame(game: com.shelf.launcher.data.Game, askIfOthersOpen: Boolean = true) {
+        // Update 151: a game already being thrown in starts when its animation ends (a second tap would start it twice).
+        if (LaunchThrow.plan != null) return
         val alreadyOpen = game.stableKey in com.shelf.launcher.data.RunningGames.confirmed
         if (askIfOthersOpen && !alreadyOpen) {
             val others = viewModel.otherOpenGames(game)
@@ -376,7 +378,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         sounds?.play(UiSound.LAUNCH)
         // A game that's still open just comes back to the front: no launch animation for that.
-        if (state.appearance.launchAnimation && !alreadyOpen) launchingGame = game else launchAfterIntro(game, alreadyOpen)
+        // Update 151: a case, cartridge or disc is thrown in instead (LaunchThrow.kt, Home › Animations › Starting a game).
+        val thrown = if (!alreadyOpen && LaunchThrow.plan == null && launchingGame == null)
+            LaunchThrow.planFor(game, state, state.visibleGames.getOrNull(state.focusedIndex)?.stableKey) else null
+        if (thrown != null) LaunchThrow.plan = thrown
+        else if (state.appearance.launchAnimation && !alreadyOpen) launchingGame = game else launchAfterIntro(game, alreadyOpen)
     }
     val detailsScroll = rememberScrollState()
     val detailsScope = rememberCoroutineScope()
@@ -2408,10 +2414,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val roomClip = backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ANIMATED &&
             (pickedScene?.motif ?: state.appTheme.motif) == com.shelf.launcher.ui.theme.ThemeMotif.GAMING_ROOM &&
             android.os.Build.VERSION.SDK_INT >= 33
-        val roomVideo = if (roomClip && !screensaverOn) videoUrl else null
+        // (Update 151: not on the Hero carousel, which plays it over its hero picture: one clip at a time.)
+        val roomVideo = if (roomClip && !screensaverOn && !heroLayout) videoUrl else null
         val roomSound = state.appearance.videoSound
         SideEffect { Showcase.video = roomVideo; Showcase.videoSound = roomSound }
-        if (videoUrl != null && !roomClip && !screensaverOn && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK) {
+        // Update 151: the Hero carousel plays it over its big hero picture (below), not under it where it was hidden.
+        if (videoUrl != null && !roomClip && !screensaverOn && !heroLayout && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK) {
             androidx.compose.runtime.key(videoUrl) {
                 VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize())
             }
@@ -2443,6 +2451,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 fallbackUrl = hg?.let { g -> state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl },
                 gameKey = hg?.stableKey
             )
+            // Update 151: rest on a game with a scraped clip and it plays over the hero picture (Settings › Audio ›
+            // Video previews turns it off). It fades in on its first frame, so until then the hero stays.
+            // (Not when the info panel plays it already, Detail layers › Preview video: one clip at a time.)
+            if (videoUrl != null && !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value) {
+                androidx.compose.runtime.key(videoUrl) {
+                    VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize())
+                }
+            }
         }
         // The status bar's real height (taller with the music player in it), so what sits under it
         // (grid, TV room, corner visualizers and shortcuts) starts below it instead of on the player.
@@ -3497,6 +3513,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 subtitle = if (game.sourceType == com.shelf.launcher.data.SourceType.APP) null
                 else LocalTitleOptions.current.console(game.platform)
             )
+        }
+
+        // Update 151: the case opens / the cartridge or disc is thrown in; the game starts when it ends.
+        LaunchThrow.plan?.let { plan ->
+            LaunchThrowOverlay(plan) {
+                if (LaunchThrow.plan === plan) { LaunchThrow.plan = null; launchAfterIntro(plan.game, false) }
+            }
         }
 
         introVideo?.let { (game, address) ->
@@ -4882,6 +4905,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
                 // Launch animation running: it'll open the game in a moment.
                 if (launchingGame != null) return@onKeyEvent true
+                // Update 151: the same while a game is thrown in.
+                if (LaunchThrow.plan != null) return@onKeyEvent true
                 // Platform intro video: any button skips it (and starts the game).
                 introVideo?.let { (game, _) ->
                     if (event.type == KeyEventType.KeyDown && !isSystemKey(event.nativeKeyEvent.keyCode)) {

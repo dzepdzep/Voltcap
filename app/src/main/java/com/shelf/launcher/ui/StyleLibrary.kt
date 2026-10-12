@@ -306,7 +306,8 @@ private fun LibraryPanelInfo(c: StyleCtx, g: Game, compact: Boolean, roomy: Bool
         c.backdrop(g)?.let { url ->
             Box(Modifier.fillMaxWidth().fillMaxHeight(0.55f)) {
                 AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.32f })
-                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF0A0E15)))))
+                // (Update 151: fades into the panel's own dark, which now takes the theme's colour — see stylePanel.)
+                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, themeDark(Color(0xFF0A0E15))))))
             }
         }
         Column(Modifier.fillMaxSize().padding(horizontal = if (compact) 8.dp else 12.dp, vertical = if (compact) 8.dp else 12.dp)) {

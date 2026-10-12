@@ -84,8 +84,9 @@ internal object Models3D {
     )
 
     /**
-     * Update 141: the 3D cases for the case looks (Real cases, Cases · real sizes) while 3D models are on: the consoles
-     * your shape library has a case for. Cartridge consoles without one keep their flat case.
+     * Update 141: the 3D cases: the consoles your shape library has a case for. Update 151: only the 3D models look draws
+     * them (disc consoles stand as their case there, see [idFor]); Real cases and Cases · real sizes are flat for every
+     * console.
      */
     private val CASES: Map<String, String> = mapOf(
         "PS1" to "case_ps1_jewel", "PS2" to "case_ps2_dvd", "PS3" to "case_ps3", "PS4" to "case_ps4", "PS5" to "case_ps5",
@@ -155,6 +156,8 @@ internal object Models3D {
     fun packFiles(): Map<String, Set<String>> {
         val out = HashMap<String, MutableSet<String>>()
         for ((k, id) in REAL) out.getOrPut(id) { HashSet() } += k
+        // (Update 151: the 3D cases the disc consoles stand as.)
+        for ((k, id) in CASES) out.getOrPut(id) { HashSet() } += k
         for ((k, id) in CUSTOM) { out.getOrPut(id) { HashSet() } += k; out.getOrPut(id + "_translucent") { HashSet() } += k }
         // The cards are the Save Vault's (any console's saves).
         val all = CustomCarts.allIds().keys.toSet()
@@ -168,10 +171,17 @@ internal object Models3D {
     /** On: games are drawn as the library's pieces (where they're downloaded). */
     fun on(): Boolean = Features.modelFinish.state.value != ModelFinish.OFF && Packs.anyModels()
 
-    /** The model [platform]'s games are drawn as with the current choice (downloaded or not), or null. */
-    fun idFor(platform: String): String? {
+    /**
+     * The model [platform]'s games are drawn as with the current choice (downloaded or not), or null. [noCase]: never its
+     * 3D case (the piece it falls back to while the case isn't downloaded).
+     */
+    fun idFor(platform: String, noCase: Boolean = false): String? {
         val finish = Features.modelFinish.state.value
         if (finish == ModelFinish.OFF) return null
+        // Update 151: disc consoles (and the DS, 3DS and Switch) stand as their 3D case from your shape library, the game's
+        // cover in it; with Custom / Clear only if you didn't pick your custom cartridge for them (Settings › Game look ›
+        // 3D models › Disc consoles as). Cartridge consoles keep their 3D cartridge.
+        if (!noCase && (finish == ModelFinish.REAL || !Features.modelDiscAsCart.state.value)) CASES[platform]?.let { return it }
         val clear = finish == ModelFinish.CLEAR
         // Update 137: consoles without a custom piece get the generic one in their colours with their logo (once the logos are here).
         val shape = CUSTOM[platform] ?: GENERIC.takeIf { CustomCarts.idFor(platform) != null && Packs.hasModel(LOGOS) }
@@ -188,7 +198,9 @@ internal object Models3D {
     }
 
     /** [idFor], only when that model is on the device. */
-    fun available(platform: String): String? = idFor(platform)?.takeIf { Packs.hasModel(it) }
+    // (Update 151: a disc console whose 3D case isn't downloaded falls back to the piece it had before.)
+    fun available(platform: String): String? =
+        idFor(platform)?.takeIf { Packs.hasModel(it) } ?: idFor(platform, noCase = true)?.takeIf { Packs.hasModel(it) }
 
     // ---- The pack's pictures ----
 
@@ -263,12 +275,31 @@ internal object Models3D {
         return b
     }
 
+    /**
+     * Update 151: where each cover picture came from (its address), so a piece already made is found again after the
+     * cover was loaded anew (another picture object of the same cover) — and before it has loaded at all. Keyed by the
+     * picture object; forgotten with it.
+     */
+    private val sources = java.util.Collections.synchronizedMap(java.util.WeakHashMap<android.graphics.Bitmap, String>())
+
+    fun noteSource(cover: android.graphics.Bitmap, source: String) { sources[cover] = source }
+
+    private fun coverTag(cover: android.graphics.Bitmap?): String =
+        cover?.let { sources[it] ?: ("#" + System.identityHashCode(it)) } ?: "0"
+
+    private fun keyFor(id: String, yaw: Int, coverTag: String, name: String?, pos: ArtPos, tint: Tint?) =
+        "$id|$yaw|$coverTag|${name.orEmpty()}|${pos.key}|${tint?.key.orEmpty()}"
+
     private fun key(id: String, yaw: Int, cover: android.graphics.Bitmap?, name: String?, pos: ArtPos, tint: Tint?) =
-        "$id|$yaw|${cover?.let { System.identityHashCode(it) } ?: 0}|${name.orEmpty()}|${pos.key}|${tint?.key.orEmpty()}"
+        keyFor(id, yaw, coverTag(cover), name, pos, tint)
 
     /** The picture already made for these, if any (drawn at once, no waiting). */
     fun cached(id: String, yaw: Int, cover: android.graphics.Bitmap?, name: String? = null, pos: ArtPos = ArtPos.NONE, tint: Tint? = null): android.graphics.Bitmap? =
         composed.get(key(id, yaw, cover, name, pos, tint))
+
+    /** Update 151: the same, found by the cover's address while its picture is still loading. */
+    fun cachedFor(id: String, yaw: Int, coverSource: String, name: String? = null, pos: ArtPos = ArtPos.NONE, tint: Tint? = null): android.graphics.Bitmap? =
+        composed.get(keyFor(id, yaw, coverSource, name, pos, tint))
 
     // ---- Update 137: painting the custom pieces ----
 
@@ -419,7 +450,11 @@ internal object Models3D {
                     val sft = 16 - ch * 8
                     val a = px[s0][i] ushr 24; val b = px[s0 + 1][i] ushr 24
                     // premultiplied, so a see-through part blends right
-                    col[ch] = ((px[s0][i] shr sft) and 255) * a / 255f * (1 - f) + ((px[s0 + 1][i] shr sft) and 255) * b / 255f * f
+                    // Update 151: then back to this channel's own straight colour (divided by its own levels' alpha). Each
+                    // channel can sit between other levels than the others, and the lighter levels turn the thick edges
+                    // see-through: divided by the shared alpha, a blue card's sides and back came out olive.
+                    val ac = a * (1 - f) + b * f
+                    col[ch] = if (ac < 0.5f) 0f else (((px[s0][i] shr sft) and 255) * a * (1 - f) + ((px[s0 + 1][i] shr sft) and 255) * b * f) / ac
                     aSum += u
                 }
                 val um = aSum / 3f
@@ -427,8 +462,23 @@ internal object Models3D {
                 val alpha = ((px[s0][i] ushr 24) * (1 - f) + (px[s0 + 1][i] ushr 24) * f)
                 if (alpha < 0.5f) continue
                 var rgb = 0
-                for (ch in 0 until 3) rgb = rgb or ((col[ch] * 255f / alpha).toInt().coerceIn(0, 255) shl (16 - ch * 8))
+                // (Update 151: col is each channel's straight colour now.)
+                for (ch in 0 until 3) rgb = rgb or (col[ch].toInt().coerceIn(0, 255) shl (16 - ch * 8))
                 out[i] = (alpha.toInt().coerceIn(0, 255) shl 24) or rgb
+            }
+        }
+        // Update 151: a Save Vault card in its own colours is the library's own picture (exact, front and back one colour),
+        // only its badge painted for the save's console logo — painted from the grey levels, a clear card's back and sides
+        // came out another colour than its front.
+        val own = tm.own
+        if (own != null && own.first == t.shell) {
+            val base = pixels(id, "$yaw")
+            if (base != null && base.second == w && base.third == h) {
+                val bp = base.first
+                for (i in 0 until n) {
+                    val wgt = (bw.first[i] shr 16 and 255) / 255f
+                    if (wgt <= 0.004f) out[i] = bp[i] else if (wgt < 0.996f) out[i] = mixArgb(bp[i], out[i], wgt)
+                }
             }
         }
         val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
@@ -455,6 +505,18 @@ internal object Models3D {
         }
         tinted.put(k, bmp)
         return bmp
+    }
+
+    /** Update 151: straight ARGB [a] → [b] by [t] (0–1), each channel and the alpha. */
+    private fun mixArgb(a: Int, b: Int, t: Float): Int {
+        var r = 0
+        var s = 24
+        while (s >= 0) {
+            val x = (a ushr s) and 255; val y = (b ushr s) and 255
+            r = r or ((x + (y - x) * t).toInt().coerceIn(0, 255) shl s)
+            s -= 8
+        }
+        return r
     }
 
     private val mulPaint = android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.MULTIPLY) }
@@ -574,8 +636,15 @@ internal object Models3D {
 internal fun Model3DArt(
     id: String, cover: Any?, yaw: Float, modifier: Modifier = Modifier, shade: Float = 0f, name: String? = null, alwaysName: Boolean = false,
     /** Update 137: the game's console (its colours and logo on a custom piece). */
-    platform: String? = null
+    platform: String? = null,
+    /** Update 151: a game's piece in a row, grid or carousel: drawn with more life (Models3DLife.kt); [focused]: the one you're on. */
+    life: Boolean = false,
+    focused: Boolean = false
 ) {
+    if (life) {
+        Model3DLive(id, cover, yaw, modifier, shade, name, alwaysName, platform, focused)
+        return
+    }
     val version = Packs.version.intValue
     val meta = remember(id, version) { Models3D.meta(id) }
     if (meta == null) { Box(modifier); return }
@@ -588,8 +657,11 @@ internal fun Model3DArt(
     ModelColors.version.intValue
     val tint = Models3D.tintFor(id, platform, name?.let { gameDisplayName(it) })
     val tk = tint?.key
-    val bmp by produceState(Models3D.cached(id, angle, coverBmp, title, pos, tint), id, angle, coverBmp, version, title, pos.key, tk) {
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Models3D.compose(id, angle, coverBmp, title, pos, tint) }
+    // (Update 151: while its cover is still loading, the piece made before with that cover — never an empty case first.)
+    val waiting = cover != null && coverBmp == null
+    val first = if (waiting && cover is String) Models3D.cachedFor(id, angle, cover, title, pos, tint) else Models3D.cached(id, angle, coverBmp, title, pos, tint)
+    val bmp by produceState(first, id, angle, coverBmp, version, title, pos.key, tk) {
+        if (!waiting) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Models3D.compose(id, angle, coverBmp, title, pos, tint) }
     }
     val shown = bmp
     val dim = (1f - shade).coerceIn(0f, 1f)

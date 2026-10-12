@@ -80,25 +80,30 @@ internal object AppIconCache {
 internal fun rememberAppIcon(packageName: String?): ImageBitmap? {
     com.shelf.launcher.Breadcrumbs.mark("rememberAppIcon")
     val context = LocalContext.current
-    return produceState(initialValue = packageName?.let { AppIconCache.cachedIcon(it) }, packageName, AppIconCache.version) {
-        // produceState keeps its value across key changes: always settle on this package's icon.
-        if (packageName == null) { value = null; return@produceState }
-        AppIconCache.cachedIcon(packageName)?.let { value = it; return@produceState }
-        value = null
-        value = withContext(Dispatchers.IO) { AppIconCache.loadIcon(context, packageName) }
+    // Update 151: the icon is kept with the package it belongs to. produceState keeps its value across key changes, so for
+    // the first frame after the package changed (a slot moving on to another app) it still held the LAST app's icon —
+    // a wrong icon flashing before the right one. Now that frame shows this app's cached icon, or nothing.
+    val st = produceState<Pair<String?, ImageBitmap?>>(initialValue = packageName to packageName?.let { AppIconCache.cachedIcon(it) }, packageName, AppIconCache.version) {
+        if (packageName == null) { value = null to null; return@produceState }
+        AppIconCache.cachedIcon(packageName)?.let { value = packageName to it; return@produceState }
+        value = packageName to null
+        value = packageName to withContext(Dispatchers.IO) { AppIconCache.loadIcon(context, packageName) }
     }.value
+    return if (st.first == packageName) st.second else packageName?.let { AppIconCache.cachedIcon(it) }
 }
 
 @Composable
 internal fun rememberAppBanner(packageName: String?): ImageBitmap? {
     com.shelf.launcher.Breadcrumbs.mark("rememberAppBanner")
     val context = LocalContext.current
-    return produceState(initialValue = packageName?.let { AppIconCache.cachedBanner(it) }, packageName, AppIconCache.version) {
-        if (packageName == null || AppIconCache.knownToHaveNoBanner(packageName)) { value = null; return@produceState }
-        AppIconCache.cachedBanner(packageName)?.let { value = it; return@produceState }
-        value = null
-        value = withContext(Dispatchers.IO) { AppIconCache.loadBanner(context, packageName) }
+    // Update 151: kept with its package, like rememberAppIcon (never the last app's banner for a frame).
+    val st = produceState<Pair<String?, ImageBitmap?>>(initialValue = packageName to packageName?.let { AppIconCache.cachedBanner(it) }, packageName, AppIconCache.version) {
+        if (packageName == null || AppIconCache.knownToHaveNoBanner(packageName)) { value = packageName to null; return@produceState }
+        AppIconCache.cachedBanner(packageName)?.let { value = packageName to it; return@produceState }
+        value = packageName to null
+        value = packageName to withContext(Dispatchers.IO) { AppIconCache.loadBanner(context, packageName) }
     }.value
+    return if (st.first == packageName) st.second else packageName?.let { AppIconCache.cachedBanner(it) }
 }
 
 /**
@@ -127,7 +132,7 @@ internal fun AppIconArt(
         } else if (icon != null) {
             // Update 130: the enlarged copy is blurred once, in the picture (BakedBlur): the live blur did nothing on
             // Android 11 and older (and was left out in Lite), so a small icon blown up to the card showed its pixels.
-            val soft = rememberBakedBlur(androidx.compose.runtime.remember(icon) { icon.asAndroidBitmap() }, 24.dp)
+            val soft = rememberBakedBlur(androidx.compose.runtime.remember(icon) { icon.asAndroidBitmap() }, 24.dp, keepLast = false)
             if (soft != null) Image(
                 soft, null,
                 contentScale = ContentScale.Crop,

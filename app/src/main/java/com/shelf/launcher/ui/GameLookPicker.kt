@@ -60,7 +60,9 @@ private class LookStep(
     /** Update 125: Cartridges only (with the Cartridges & discs type). */
     val carts: Boolean = false,
     /** Update 141: the 3D models (your 3D shape library) with the Cartridges & discs type. */
-    val models: Boolean = false
+    val models: Boolean = false,
+    /** Update 151: 3D case + disc (the 3D box with the disc half out of it). */
+    val disc3d: Boolean = false
 )
 
 private val LOOK_STEPS = listOf(
@@ -74,6 +76,8 @@ private val LOOK_STEPS = listOf(
     LookStep(CardArtType.CASE, false, false, "Real cases"),
     LookStep(CardArtType.CASE_REAL, false, false, "Cases · real sizes"),
     LookStep(CardArtType.CASE, true, false, "Case + disc"),
+    // (Update 151: the 3D case with its disc.)
+    LookStep(CardArtType.CASE, true, false, "3D case + disc", disc3d = true),
     LookStep(CardArtType.CASE, false, true, "Case + its media"),
     LookStep(CardArtType.CARTRIDGE_DISC, false, false, "Cartridges & discs"),
     // (Update 128: "Cartridges" — with your own cartridge pack, R1 › Cartridges.)
@@ -92,8 +96,10 @@ private fun currentStep(a: AppearanceSettings): LookStep? {
     val spine = com.shelf.launcher.data.Features.spineLook.value
     val carts = com.shelf.launcher.data.Features.cartsOnly.value
     val models = com.shelf.launcher.data.Features.modelFinish.value != ModelFinish.OFF
+    // Update 151: 3D case + disc tells itself from Case + disc.
+    val d3 = com.shelf.launcher.data.Features.discCase3d.value
     return LOOK_STEPS.firstOrNull {
-        it.type == t && (!isCase || (it.leaning == lean && (lean || it.discInCase == disc))) &&
+        it.type == t && (!isCase || (it.leaning == lean && (lean || (it.discInCase == disc && (!disc || it.disc3d == d3))))) &&
             (t != CardArtType.CARTRIDGE_DISC || (if (models) it.models else (!it.models && it.carts == carts))) &&
             (t != CardArtType.COVER || (it.spine == spine && (spine || (it.tile == tile && (tile || it.focus == null || it.focus == a.focusedCardStyle)))))
     }
@@ -108,6 +114,7 @@ internal fun stepGameLook(a: AppearanceSettings): AppearanceSettings {
     val next = LOOK_STEPS[(i + 1).mod(LOOK_STEPS.size)]
     com.shelf.launcher.data.Features.discCase.value = next.discInCase
     com.shelf.launcher.data.Features.caseWithMedia.value = next.leaning
+    com.shelf.launcher.data.Features.discCase3d.value = next.disc3d // Update 151
     com.shelf.launcher.data.Features.squareTiles.value = next.tile
     com.shelf.launcher.data.Features.spineLook.value = next.spine
     com.shelf.launcher.data.Features.cartsOnly.value = next.carts
@@ -200,13 +207,14 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
                 com.shelf.launcher.data.Features.cartsOnly.value = false
                 com.shelf.launcher.data.Features.discCase.value = st.discInCase
                 com.shelf.launcher.data.Features.caseWithMedia.value = st.leaning
+                com.shelf.launcher.data.Features.discCase3d.value = st.disc3d // Update 151
                 com.shelf.launcher.data.Features.squareTiles.value = false
                 com.shelf.launcher.data.Features.spineLook.value = false
                 onChange(appearance.copy(cardArtType = st.type))
             }
         }
     }
-    MutedNote("Case + disc: disc games show their case with the disc half out of it, turning. Case + its media: the case standing, its cartridge or disc leaning against it.")
+    MutedNote("Case + disc: disc games show their case with the disc half out of it, turning. 3D case + disc: the same with the 3D box. Case + its media: the case standing, its cartridge or disc leaning against it.")
     Spacer(Modifier.height(6.dp))
     MutedNote(
         if (com.shelf.launcher.data.Features.spineLook.state.value)
@@ -335,16 +343,33 @@ private fun ModelOptions() {
                 Chip((if (on) "✓ " else "") + a.label, accent = on) { F.modelAngle.value = a }
             }
         }
+        // Update 151: the one you're on turning slowly to and fro, and a faint reflection on the floor.
+        ChipFlow {
+            val tn = F.modelTurn.state.value
+            Chip((if (tn) "✓ " else "") + "Turn the one you're on", accent = tn) { F.modelTurn.value = !tn }
+            val rf = F.modelReflect.state.value
+            Chip((if (rf) "✓ " else "") + "Floor reflection", accent = rf) { F.modelReflect.value = !rf }
+        }
+        MutedNote("Every piece stands on a soft shadow and catches a sweep of light when you reach it. Turn the one you're on: it turns slowly from side to side, and stays put with Lite effects or while the screen rests.")
         ChipFlow {
             val nm = F.modelName.state.value
             Chip((if (nm) "✓ " else "") + "Name on the label", accent = nm) { F.modelName.value = !nm }
+        }
+        // Update 151: disc consoles stand as their 3D case; with Custom / Clear your custom cartridge instead, if you like.
+        if (F.modelFinish.state.value != ModelFinish.REAL) {
+            SectionLabel("Disc consoles as")
+            ChipFlow {
+                val cart = F.modelDiscAsCart.state.value
+                Chip((if (!cart) "✓ " else "") + "Their 3D case", accent = !cart) { F.modelDiscAsCart.value = false }
+                Chip((if (cart) "✓ " else "") + "Your custom cartridge", accent = cart) { F.modelDiscAsCart.value = true }
+            }
         }
         ArtPositionSliders(model = true)
         MutedNote("Art position: where the cover sits in the window (also R1 › Art position, by dragging).")
         val have = com.shelf.launcher.data.Packs.count(com.shelf.launcher.data.Packs.Pack.MODELS).first
         if (have == 0) MutedNote("The 3D models aren't on this device yet: Settings › Game look › Extra art packs › 3D models downloads them.")
     }
-    MutedNote("Your 3D shape library: with the 3D models look (or Cartridges & discs) every game is its console's piece with its cover in the window; with Real cases the disc consoles, DS, 3DS and Switch stand in their 3D cases, and the carousels' 3D cases become these pieces, turned to the side they face. Real: each console's own cartridge, card or case. Custom: your custom cartridges. Clear: the custom ones in tinted clear plastic. Consoles without a piece keep their usual look; the SD and memory cards are for the Save Vault (its Style › 3D card).")
+    MutedNote("Your 3D shape library: with the 3D models look (or Cartridges & discs) every game is its console's piece with its cover in the window: cartridge consoles their 3D cartridge, the disc consoles, DS, 3DS and Switch their 3D case, and the carousels' 3D cases become these cases, turned to the side they face. Real cases stay flat for every console. Real: each console's own cartridge, card or case. Custom: your custom cartridges. Clear: the custom ones in tinted clear plastic. Consoles without a piece keep their usual look; the SD and memory cards are for the Save Vault (its Style › 3D card).")
 }
 
 /** Width / height of a game drawn as its spine (Spines look, update 113): a little wider than a real one, so the name reads. */

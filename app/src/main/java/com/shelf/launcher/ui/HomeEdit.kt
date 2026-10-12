@@ -641,45 +641,7 @@ internal fun BoxScope.HomeEditBar() {
         ) {
             Text(if (folded < 0) "Edit Home  ▶" else "◀  Edit Home", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         }
-    } else
-    Row(
-        Modifier.align(Alignment.BottomCenter).zIndex(9f).safeZonePadding().clip(RoundedCornerShape(50))
-            .background(ShelfTheme.colors.surfaceRaised.copy(alpha = 0.95f)).padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            Modifier.size(28.dp).clip(RoundedCornerShape(50)).background(ShelfTheme.colors.surface)
-                .pointerInput(Unit) { detectTapGestures { HomeEditState.barFolded = -1 } },
-            contentAlignment = Alignment.Center
-        ) { Text("◀", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp) }
-        Spacer(Modifier.width(8.dp))
-        Text(
-            "Edit Home · ${HomeWidgets.label(HomeEditState.selected)} · drag or D-pad to move, corner or L2 / R2 to resize (tap it: Style), side and bottom handles to stretch",
-            color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.SemiBold,
-            // Narrow screens: the hint wraps / shortens, the buttons stay whole.
-            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false)
-        )
-        Spacer(Modifier.width(10.dp))
-        // Same as the X / Y buttons: position and size (update 91).
-        Chip("X Reset position", accent = false) { HomeEditState.resetOne(HomeEditState.selected) }
-        Spacer(Modifier.width(6.dp))
-        Chip("Y Reset layout", accent = false) { HomeEditState.resetEvery() }
-        Spacer(Modifier.width(6.dp))
-        Chip("Select ✕", accent = false) { HomeWidgets.remove(HomeEditState.selected) }
-        Spacer(Modifier.width(6.dp))
-        Chip("Start + Add", accent = false) { HomeEditState.adding = true }
-        Spacer(Modifier.width(6.dp))
-        Chip("L3 ✎ Style", accent = false) { HomeEditState.styling = HomeEditState.selected }
-        Spacer(Modifier.width(6.dp))
-        Chip("A Done") { HomeEditState.done() }
-        Spacer(Modifier.width(8.dp))
-        Box(
-            Modifier.size(28.dp).clip(RoundedCornerShape(50)).background(ShelfTheme.colors.surface)
-                .pointerInput(Unit) { detectTapGestures { HomeEditState.barFolded = 1 } },
-            contentAlignment = Alignment.Center
-        ) { Text("▶", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp) }
-    }
+    } else HomeEditBarOpen() // Update 151: the open legend, fitted to small screens (HomeEditLegend.kt).
     if (HomeEditState.adding) HomeAddSheet(HomeEditState.layout, onDismiss = { HomeEditState.adding = false })
     HomeEditState.styling?.let { id -> PartStyleSheet(id, onDismiss = { HomeEditState.styling = null }) }
 }

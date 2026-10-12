@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.filled.SdCard
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -51,6 +53,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -115,24 +118,54 @@ internal fun SaveExplorerDialog(
 ) {
     val context = LocalContext.current
     LaunchedEffect(Unit) { SyncStatusStore.load(context); com.shelf.launcher.data.SaveCapsules.loadOptions(context) }
+    // Google Drive sync, right inside the vault: "Sync now" runs a saves sync, then looks for saves again.
+    // (Update 151: read before the first frame, so a connected vault never flashes "Not connected".)
+    remember { com.shelf.launcher.data.CloudSync.load(context) }
+    val cloud by com.shelf.launcher.data.CloudSync.state.collectAsState()
+    LaunchedEffect(Unit) { com.shelf.launcher.data.CloudSync.load(context) }
+    // Update 151: without Google Drive the vault shows only that, with a button to connect it (as in Settings › Sync).
+    val connected = cloud.settings.connected
     // Only games with real save evidence (save files, memory-card / SAVEDATA saves, saves Drive moved):
     // looking at a game never makes a capsule. Read again each time the browser opens.
-    LaunchedEffect(games, lastPlayed) { com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed) }
+    LaunchedEffect(games, lastPlayed, connected) { if (connected) com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed) }
     val capsules by com.shelf.launcher.data.SaveCapsules.all.collectAsState()
     val capsuleOptions by com.shelf.launcher.data.SaveCapsules.options.collectAsState()
     val scanning by com.shelf.launcher.data.SaveCapsules.loading.collectAsState()
-    // Google Drive sync, right inside the vault: "Sync now" runs a saves sync, then looks for saves again.
-    val cloud by com.shelf.launcher.data.CloudSync.state.collectAsState()
-    LaunchedEffect(Unit) { com.shelf.launcher.data.CloudSync.load(context) }
     val syncScope = androidx.compose.runtime.rememberCoroutineScope()
     val syncNow: () -> Unit = {
         if (cloud.settings.connected && !cloud.running) {
             syncScope.launch {
                 runCatching { com.shelf.launcher.data.CloudSync.syncInBackground(context, savesOnly = true)?.await() }
+                // Update 151: Drive's folders listed again too (saves from folders this device doesn't sync).
+                com.shelf.launcher.data.DriveOnlySaves.invalidate()
                 com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed)
             }
         }
     }
+    var connectProblem by remember { mutableStateOf<String?>(null) }
+    var connecting by remember { mutableStateOf(false) }
+    val driveConnect = rememberDriveConnect { connectProblem = it; connecting = false }
+    val connectDrive: () -> Unit = {
+        if (!connecting) {
+            connecting = true
+            connectProblem = null
+            driveConnect {
+                connecting = false
+                syncScope.launch {
+                    // Connecting starts a sync: look for saves again once it's done.
+                    kotlinx.coroutines.delay(400)
+                    kotlinx.coroutines.withTimeoutOrNull(10 * 60_000L) { com.shelf.launcher.data.CloudSync.state.first { !it.running } }
+                    com.shelf.launcher.data.DriveOnlySaves.invalidate()
+                    com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed)
+                }
+            }
+        }
+    }
+    val connectFocus = remember { FocusRequester() }
+    LaunchedEffect(connected) { if (!connected) { kotlinx.coroutines.delay(80); runCatching { connectFocus.requestFocus() } } }
+    // Update 151: on a small screen (Retroid Pocket Classic, 620 x 540 dp) the header's buttons go on a line of their own
+    // under the title, and the save's details window gets a smaller icon and scrolls (labels were cut and overlapping).
+    val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 760
     var showHidden by remember { mutableStateOf(false) }
     var showFilters by remember { mutableStateOf(false) }
     val prefs = remember { context.getSharedPreferences("save_explorer", android.content.Context.MODE_PRIVATE) }
@@ -319,6 +352,13 @@ internal fun SaveExplorerDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         ImmersiveDialogWindow()
+        // Update 151: the vault is always dark, so its buttons and notes keep light text with a light theme too (they
+        // were dark on dark, hard to read).
+        val baseColors = ShelfTheme.colors
+        val vaultColors = remember(baseColors) {
+            if (baseColors.textPrimary.luminance() < 0.5f) baseColors.copy(textPrimary = Color.White, textMuted = Color.White.copy(alpha = 0.62f)) else baseColors
+        }
+        androidx.compose.runtime.CompositionLocalProvider(com.shelf.launcher.ui.theme.LocalShelfColors provides vaultColors) {
         Box(
             Modifier
                 .fillMaxWidth(0.94f)
@@ -358,20 +398,11 @@ internal fun SaveExplorerDialog(
                             else -> false
                         }
                     }
-                    .padding(18.dp)
+                    .padding(if (compact) 12.dp else 18.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(com.shelf.launcher.data.SAVES_NAME, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
-                        Text(
-                            "${all.size} game${if (all.size == 1) "" else "s"} with saves · " + (if (byName) "A–Z" else "last played first") +
-                                if (byConsole && consoles.size > 1) " · L1 / R1 console" else "",
-                            color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    VoltHelpButton(VoltTopic.SAVE_VAULT)
-                    Spacer(Modifier.width(8.dp))
+                // The vault's buttons (Update 151: one list, beside the title on a wide screen, on their own line under it on
+                // a small one; without Google Drive only Close).
+                val headerChips: @Composable () -> Unit = {
                     Chip(
                         when {
                             cloud.running -> "⟳ Syncing…"
@@ -379,21 +410,42 @@ internal fun SaveExplorerDialog(
                         },
                         accent = cloud.running, onClick = syncNow
                     )
-                    Spacer(Modifier.width(8.dp))
                     Chip(if (showFilters) "Filters & look ▴" else "Filters & look ▾", accent = showFilters) { showFilters = !showFilters }
-                    Spacer(Modifier.width(8.dp))
                     Chip(if (byConsole) "By console (X)" else "All saves (X)", accent = false) {
                         byConsole = !byConsole; selected = home()
                         prefs.edit().putBoolean("by_console", byConsole).apply()
                     }
-                    Spacer(Modifier.width(8.dp))
                     Chip(if (byName) "A–Z (Y)" else "Recent (Y)", accent = false) { byName = !byName; selected = home() }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            com.shelf.launcher.data.SAVES_NAME, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp,
+                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis
+                        )
+                        if (connected) Text(
+                            "${all.size} game${if (all.size == 1) "" else "s"} with saves · " + (if (byName) "A–Z" else "last played first") +
+                                if (byConsole && consoles.size > 1) " · L1 / R1 console" else "",
+                            color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    VoltHelpButton(VoltTopic.SAVE_VAULT)
+                    if (connected && !compact) {
+                        Spacer(Modifier.width(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { headerChips() }
+                    }
                     Spacer(Modifier.width(8.dp))
                     Chip("Close", accent = false, onClick = onDismiss)
                 }
+                if (connected && compact) {
+                    Spacer(Modifier.height(8.dp))
+                    ChipFlow { headerChips() }
+                }
                 // Filters and the look fold open under the header (scrolling on small screens).
-                androidx.compose.animation.AnimatedVisibility(showFilters) {
-                    Column(Modifier.padding(top = 8.dp).heightIn(max = 230.dp).verticalScroll(rememberScrollState())) {
+                androidx.compose.animation.AnimatedVisibility(showFilters && connected) {
+                    Column(Modifier.padding(top = 8.dp).heightIn(max = if (compact) 180.dp else 230.dp).verticalScroll(rememberScrollState())) {
                         CapsuleFilters(
                             options = capsuleOptions,
                             hiddenCount = capsules.count { it.game.stableKey in capsuleOptions.hidden },
@@ -405,7 +457,38 @@ internal fun SaveExplorerDialog(
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                if (entries.isEmpty()) {
+                if (!connected) {
+                    // Update 151: Google Drive isn't connected: only that, and the way to connect it.
+                    Column(
+                        Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Filled.CloudOff, contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(40.dp)
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "Not connected to Google Drive", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold,
+                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(17.sp), maxFontSize = 17.sp),
+                            maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        val problem = connectProblem
+                        if (problem != null) {
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                problem, color = Color(0xFFFFB4A0), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 5, overflow = TextOverflow.Ellipsis,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        Chip(
+                            if (connecting) "Connecting…" else "Connect Google Drive", accent = true,
+                            modifier = Modifier.focusRequester(connectFocus), onClick = connectDrive
+                        )
+                    }
+                } else if (entries.isEmpty()) {
                     Column(
                         Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -501,6 +584,7 @@ internal fun SaveExplorerDialog(
             // (Update 141: the insert / loading moment after a save opened is gone, at your request — the save's
             // details show as soon as it lands.)
         }
+        } // (Update 151: CompositionLocalProvider)
     }
 }
 
@@ -795,20 +879,23 @@ private fun SaveDetail(
             .pointerInput(Unit) { detectTapGestures { onBack() } },
         contentAlignment = Alignment.Center
     ) {
+        // Update 151: on a small screen the window is wider, the icon smaller and the details scroll (they ran off the bottom).
+        val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 760
         Row(
             Modifier
-                .fillMaxWidth(0.8f)
+                .fillMaxWidth(if (compact) 0.94f else 0.8f)
+                .padding(vertical = if (compact) 8.dp else 0.dp)
                 .clip(RoundedCornerShape(22.dp))
                 .background(Brush.linearGradient(listOf(ShelfTheme.accent.copy(alpha = 0.3f).compositeOverDark(), Color(0xFF0A0B12))))
                 .border(1.dp, ShelfTheme.accent.copy(alpha = 0.5f), RoundedCornerShape(22.dp))
                 .pointerInput(Unit) { detectTapGestures { } }
-                .padding(22.dp),
+                .padding(if (compact) 14.dp else 22.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // The icon's spot: measured for the flight; the icon appears here once it has landed.
             Box(
                 Modifier
-                    .size(150.dp)
+                    .size(if (compact) 108.dp else 150.dp)
                     .onGloballyPositioned { onIconSpot(it.boundsInRoot()) },
                 contentAlignment = Alignment.Center
             ) {
@@ -817,7 +904,7 @@ private fun SaveDetail(
                     Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 2.dp)
-                        .width(110.dp)
+                        .width(if (compact) 80.dp else 110.dp)
                         .height(10.dp)
                         .clip(RoundedCornerShape(50))
                         .background(ShelfTheme.accent.copy(alpha = if (landed) 0.25f else 0.1f))
@@ -831,10 +918,10 @@ private fun SaveDetail(
                     )
                 }
             }
-            Spacer(Modifier.width(24.dp))
-            Column(Modifier.weight(1f)) {
-                Text(gameDisplayName(game.name), color = Color.White, fontSize = 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(22.sp), maxFontSize = 22.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.width(if (compact) 14.dp else 24.dp))
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                Text(gameDisplayName(game.name), color = Color.White, fontSize = if (compact) 18.sp else 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 18.sp else 22.sp), maxFontSize = if (compact) 18.sp else 22.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(12.dp))
                 val lastSave = maxOf(last, capsule?.lastSaved ?: 0L)
                 DetailRow("Last saved", if (lastSave > 0) "${fmt.format(java.util.Date(lastSave))}, ${time.format(java.util.Date(lastSave))} (${syncAgo(lastSave)})" else "Unknown")
@@ -866,11 +953,11 @@ private fun SaveDetail(
                         fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp
                     )
                     Spacer(Modifier.height(4.dp))
-                    androidx.compose.foundation.lazy.LazyColumn(Modifier.height((saves.size.coerceAtMost(4) * 38).dp)) {
+                    androidx.compose.foundation.lazy.LazyColumn(Modifier.height((saves.size.coerceAtMost(if (compact) 3 else 4) * 38).dp)) {
                         items(saves.size) { i -> CapsuleSaveRow(saves[i]) }
                     }
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(if (compact) 10.dp else 16.dp))
                 ChipFlow {
                     Box(Modifier.focusRequester(focus)) { Chip("Save options", accent = true, onClick = onOpenSave) }
                     // Hides the capsule only; the save files are never touched.
@@ -1104,10 +1191,10 @@ private fun CapsuleSaveRow(item: com.shelf.launcher.data.SaveCapsules.SaveItem) 
         )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(item.title, color = Color.White, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(item.where, color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(item.title, color = Color.White, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis) // (Update 151: one line each: two of each never fit the 38 dp row and were cut through)
+            Text(item.where, color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (item.modified > 0) Text(fmt.format(java.util.Date(item.modified)), color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+        if (item.modified > 0) Text(fmt.format(java.util.Date(item.modified)), color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1, modifier = Modifier.padding(start = 6.dp)) // (Update 151: one line)
     }
 }
 
@@ -1206,10 +1293,13 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
                 color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis
             )
         }
-        Column(horizontalAlignment = Alignment.End) {
+        // Update 151: kept to one line each and narrow enough to leave the game's name room on a small screen.
+        Column(Modifier.padding(start = 10.dp).widthIn(max = 200.dp), horizontalAlignment = Alignment.End) {
             Text(
                 if (last > 0) "${fmt.format(java.util.Date(last))} ${time.format(java.util.Date(last))}" else "Never",
-                color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
+                color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
+                maxLines = 1, overflow = TextOverflow.Ellipsis
             )
             Text(
                 if (!synced) "Last saved" else when (st.lastDirection) {
@@ -1217,7 +1307,7 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
                     SyncDirection.DOWNLOAD -> "Fetched from Drive"
                     SyncDirection.NONE -> "Checked"
                 } + if (st.fileCount > 0) " · ${st.fileCount} file${if (st.fileCount == 1) "" else "s"}" else "",
-                color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp
+                color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
             )
         }
     }

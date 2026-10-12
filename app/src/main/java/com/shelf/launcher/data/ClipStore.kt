@@ -5,7 +5,7 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
- * Update 148: the preview clips saved on the device (Settings › Metadata › Everything at once › Save clips on the
+ * Update 148: the preview clips saved on the device (Settings › Metadata › Scraping › Save clips on the
  * device), so they play without Wi-Fi and start at once. One file per game in the app's own storage, up to the size
  * limit picked; past it, no more are saved (the others still stream). Cleared with the button next to it.
  */

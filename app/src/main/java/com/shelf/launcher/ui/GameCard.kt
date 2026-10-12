@@ -602,7 +602,8 @@ fun GameCard(
                                 tint = ShelfTheme.accent, modifier = Modifier.size(if (focused) 12.dp else 9.dp)
                             )
                         }
-                        Spacer(Modifier.width(if (focused) 4.dp else 2.dp))
+                        // Update 151: a small upright tick between the trophy and "0/69", so they read as two parts.
+                        ProgressTick(height = if (focused) 10.dp else 7.dp, gap = if (focused) 4.dp else 2.dp)
                         val earned = progress.NumAchieved ?: 0
                         Text(
                             // Always the count, the same on every card ("0/53", "12/120"); with room

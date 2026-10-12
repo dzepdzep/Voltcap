@@ -296,7 +296,7 @@ private fun SpotActions(c: StyleCtx, g: Game, compact: Boolean) {
             Modifier
                 .size(if (compact) 38.dp else 52.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF3A3D44).copy(alpha = 0.9f))
+                .background(themeDark(Color(0xFF3A3D44)).copy(alpha = 0.9f)) // (update 151: themed)
                 .border(if (onMore) 3.dp else 0.dp, if (onMore) accent else Color.Transparent, CircleShape)
                 .pointerInput(g.stableKey) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.BAR, 1); open() } },
             contentAlignment = Alignment.Center
@@ -326,7 +326,7 @@ private fun SpotCards(c: StyleCtx, g: Game) {
                     .weight(1f)
                     .widthIn(max = 300.dp)
                     .clip(uiRounded(12.dp))
-                    .background(Color(0xFF1C1F25).copy(alpha = 0.88f))
+                    .background(themeDark(Color(0xFF1C1F25)).copy(alpha = 0.88f)) // (update 151: themed)
                     .border(if (on) 2.5.dp else 0.dp, if (on) ShelfTheme.accent else Color.Transparent, uiRounded(12.dp))
                     // Update 144: the card's action is looked up when it is tapped (the list is only refreshed after
                     // the screen is drawn, so reading it earlier ran the previous game's card), and the slot follows
@@ -501,7 +501,7 @@ private fun SpotRecent(c: StyleCtx, g: Game, compact: Boolean) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         recent.forEach { a ->
             Row(
-                Modifier.widthIn(max = 230.dp).clip(uiRounded(8.dp)).background(Color(0xFF1C1F25).copy(alpha = 0.85f)).padding(8.dp),
+                Modifier.widthIn(max = 230.dp).clip(uiRounded(8.dp)).background(themeDark(Color(0xFF1C1F25)).copy(alpha = 0.85f)).padding(8.dp), // (update 151: themed)
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 com.shelf.launcher.data.RaBadges.url(a.badgeName)?.let { AsyncImage(it, null, modifier = Modifier.size(if (compact) 28.dp else 36.dp).clip(uiRounded(5.dp))) }
@@ -531,7 +531,7 @@ private fun SpotRelated(c: StyleCtx, related: List<Game>, compact: Boolean) {
 @Composable
 private fun SpotInfoCard(head: String, value: String, compact: Boolean, bar: Float? = null) {
     Column(
-        Modifier.widthIn(min = 110.dp, max = 220.dp).clip(uiRounded(8.dp)).background(Color(0xFF1C1F25).copy(alpha = 0.85f))
+        Modifier.widthIn(min = 110.dp, max = 220.dp).clip(uiRounded(8.dp)).background(themeDark(Color(0xFF1C1F25)).copy(alpha = 0.85f)) // (update 151: themed)
             .padding(horizontal = 12.dp, vertical = if (compact) 6.dp else 10.dp)
     ) {
         Text(head, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, maxLines = 1)

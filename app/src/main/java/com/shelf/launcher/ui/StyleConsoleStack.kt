@@ -191,6 +191,7 @@ private fun ConsolePile(c: StyleCtx, pileW: Dp, unitH: Dp, pull: Dp, centreY: Dp
             }
     ) {
         // The rack: two faint uprights and a shelf board under each unit (drawn from the glide, no recomposing).
+        val boardInk = themeDark(Color(0xFF1C1F24)) // Update 151: the boards take the theme's colour.
         Canvas(Modifier.width(pileW).fillMaxHeight()) {
             val rail = Color.White.copy(alpha = 0.07f)
             drawLine(rail, Offset(2.dp.toPx(), 0f), Offset(2.dp.toPx(), size.height), strokeWidth = 3.dp.toPx())
@@ -199,7 +200,7 @@ private fun ConsolePile(c: StyleCtx, pileW: Dp, unitH: Dp, pull: Dp, centreY: Dp
             for (i in lo..hi) {
                 val y = centrePx + (i - pos.value) * stepPx + unitHPx / 2f + 2.dp.toPx()
                 if (y < -boardH || y > size.height + boardH) continue
-                drawRect(Color(0xFF1C1F24).copy(alpha = 0.85f), Offset(0f, y), Size(size.width, boardH))
+                drawRect(boardInk.copy(alpha = 0.85f), Offset(0f, y), Size(size.width, boardH))
                 drawLine(Color.White.copy(alpha = 0.12f), Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
             }
         }

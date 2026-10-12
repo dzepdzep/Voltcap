@@ -4,6 +4,122 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (151): 3D pieces with depth, "throw it in" when a game starts, Save Vault matching, a new Timeline, many layout fixes
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (10): `src_copy\data\DriveOnlySaves.kt`, `src_copy\data\SaveMatch.kt`, `src_copy\ui\AchSpots.kt`,
+  `src_copy\ui\DiscCase3D.kt`, `src_copy\ui\DiscStationFx.kt`, `src_copy\ui\HomeEditLegend.kt`, `src_copy\ui\LaunchThrow.kt`,
+  `src_copy\ui\Models3DLife.kt`, `src_copy\ui\StyleTimelineHistory.kt`, `src_copy\ui\ThemeTint.kt`.
+- Changed (40): `src_copy\data\` AppearanceStore, ArtFiles, ClipStore, CloudSync, Features, MemoryCards, SaveCapsules;
+  `src_copy\ui\` AchievementListDialog, AppIcons, BakedBlur, Carousel, GameCard, GameLookPicker, GameSize, GameWindowBanner,
+  HeroCarousel, HomeEdit, LauncherScreen, Models3D, PhysicalMedia, PresetsCard, QuickSettings, RealMedia, SaveExplorer,
+  SettingsDialog, SettingsIndex, ShelfHome, StyleCaseStacks, StyleConsoleHomes, StyleConsoleStack, StyleDashboard,
+  StyleDiscStation, StyleHomeSettings, StyleHomes, StyleLibrary, StyleLiveTiles, StyleSideMenu, StyleSpotlight,
+  StyleTimeline, TileHome (all `.kt`).
+
+**Files to delete:** none.
+
+### What changed
+- **Real cases are flat for every console** (PS2 no longer the odd 3D one). The 3D cases live in the **3D models** look:
+  disc consoles (PS1/PS2/PS3/PS4/PS5, PSP, GameCube, Wii, Wii U, Xbox, Dreamcast, Saturn, Sega CD, 3DO, PC Engine CD,
+  Neo Geo CD, DS, 3DS, Switch) stand as their 3D case with the cover in it, cartridge consoles as their 3D cartridge.
+  New in Settings › Game look › Covers, cases & discs › 3D models: **Disc consoles as** (their 3D case / your custom
+  cartridge, with Custom or Clear), **Turn the one you're on** (on), **Floor reflection** (off).
+- **3D pieces with depth:** a soft shadow under each piece, a light sweep over the one you land on, and it slowly
+  turns ±20° (stops when idle or with Lite effects).
+- **3D cases no longer show up empty for a moment while scrolling:** a piece already made with a cover shows at once
+  when it comes back on screen (found the blink on your RP Classic: PS2 cases empty for about a third of a second).
+- **Coloured 3D memory cards:** front and back now the same colour.
+- **Case stacks:** the game in the middle is a real 3D case, turned so its spine shows (Settings › Home › Layout
+  options › Case stacks › **Cases in 3D**, on).
+- **Starting a game — "throw it in"** (Settings › Home › Animations › **Starting a game**: Throw it in / Off): a case
+  opens and its disc flies down out of the screen; a cartridge spins down and slots in at the bottom; a disc spins and
+  drops into a tray (with Discs only, every game). About 0.8 s, then the game starts.
+- **New look: 3D case + disc** — the 3D box with its disc half out (Settings › Game look › Covers, cases & discs ›
+  Cases with a disc › 3D case + disc).
+- **Achievements:** the trophy count works in all four corners (R1 tile and Settings); a small divider between the bar
+  and "0 / 69". Achievement lists open each achievement's comments by themselves (Settings › Achievements ›
+  Achievement views › **Show comments**, and the Comments chip in the list).
+- **Video previews on by default** for a new setup (switch: Settings › Home › Extras on the home screen › Video previews,
+  also Settings › Audio › Video previews): the clip plays over the game's background picture when it has one.
+- **Save Vault:** text fits on the Pocket Classic; saves are matched to their games far better (core-name prefixes like
+  "Gambatte", region and tag suffixes, "POKéMON COLOSSEUM" accents, GameCube / Wii IDs, saves only on Drive); saves that
+  match no game show under **Other saves**; without Google Drive connected it just says so, with a Connect button.
+- **Side menu:** the first game can be reached (▲ goes into the menu; ◀ on the first game takes two presses).
+- **Game shelf:** no wide capsule or cover before the case — the case (or its outline) from the first frame.
+- **Channel grid:** Channels per row 2–6 (Settings › Home › Layout options › Channel grid options).
+- **Edit Home:** the button legend fits small screens (two lines).
+- **Theme colours** now reach the layouts' accents (Side menu trim, Cross menu wash, Live tiles colour now follow the
+  theme by default; Console hub, Channel grid, Spotlight, Dashboard, Console stack accents too).
+- **Timeline redesigned:** a vertical history — year headings (and months), each period's games in a row; ▲ ▼ between
+  periods, ◀ ▶ along a row. Clearly different from Circuit board now.
+- **Disc station:** discs clipped round (no black corners), a rainbow sheen turning with the disc, a glow ring in the
+  game's colour, the game's logo above the disc, and a frosted panel behind the text.
+- **Everything at once** moved inside Settings › Metadata › **Scraping** (top card).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`. Built by six agents in parallel, each group reviewed line by line.
+- **Your PC copies:** the 40 changed files fetched fresh, the same as 150.
+- **Not tested on a device yet** — next step.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 151: 3D depth, throw-in launch animation, save vault matching, new timeline, layout fixes"
+git push origin main
+.\gradlew installDebug
+```
+
+---
+
+## Update — 12 Oct 2026 (150): Fixes from the full test on the RP Classic
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`) — changed (7): `src_copy\LauncherViewModel.kt`,
+`src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\SettingsDialog.kt`,
+`src_copy\ui\SettingsIndex.kt`, `src_copy\ui\StyleDiscStation.kt`.
+
+**Files to delete:** none.
+
+### Tested on the RP Classic (149 installed)
+Library panel, Case stacks, Timeline, Arcade cabinets, Console stack, Disc station, the Spine wall carousel in the
+Voltcap row and the Grid, the Banner page, Settings search (jumps to "Dark stage"), Everything at once (starts, shows
+its step, stops). Your own settings were put back afterwards.
+
+### What changed
+- **Disc station:** no dark panel behind the disc — the game's own art fills the player, softly blurred (new: Settings ›
+  Home › Layout options › Disc station options › **Blur behind the disc**, 5 % by default). The text on the right sits on
+  a soft shade so it reads over light pictures; Details no longer falls off the end of the buttons.
+- **Focus frame round 3D cases** (Case stacks, Console stack, every 3D case): it hugs the case instead of framing the
+  whole slot, wider and taller than the case.
+- **Arc, Spine wall, Turned row with cartridge games:** they use your library's real 3D cases only; a console without
+  one gets the drawn case with its cover. The cartridges couldn't turn far enough and stood wide over the middle game.
+- **Everything at once** shows the artwork and details counts while it runs (it only said "Artwork…").
+- **Carousel note:** the case views work in the Voltcap row too (the note said they didn't).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** the 7 changed files fetched fresh, the same as 149.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 150: fixes from the RP Classic test (disc station backdrop, 3D case focus frame, case views, scrape counts)"
+git push origin main
+.\gradlew installDebug
+```
+
+---
+
 ## Update — 12 Oct 2026 (149): Automatic Drive backup, "What's new" after an update, fuller problem reports
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

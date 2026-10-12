@@ -58,15 +58,20 @@ internal object BakedBlur {
 
 /** [src] blurred once by about [blur] (null until it's ready, or with no picture). Made off the main thread. */
 @Composable
-internal fun rememberBakedBlur(src: Bitmap?, blur: Dp): ImageBitmap? {
+internal fun rememberBakedBlur(src: Bitmap?, blur: Dp, keepLast: Boolean = true): ImageBitmap? {
     // (Update 130: sized by the blur and the screen, so it's never blocky — see BakedBlur.sideFor.)
     val screenDp = screenLongDp()
     val side = BakedBlur.sideFor(blur, screenDp)
     val r = BakedBlur.radiusAt(blur, side, screenDp)
-    return produceState<ImageBitmap?>(null, src, r, side) {
-        value = if (src == null) null
-        else withContext(Dispatchers.Default) { BakedBlur.of(src, r, side)?.asImageBitmap() }
+    // Update 151: the blurred copy is kept with the picture it was made from, so a slot moving on to another picture never
+    // shows the previous one's blur for a moment (produceState keeps its last value across key changes).
+    val st = produceState<Pair<Bitmap?, ImageBitmap?>>(null to null, src, r, side) {
+        value = if (src == null) null to null
+        else src to withContext(Dispatchers.Default) { BakedBlur.of(src, r, side)?.asImageBitmap() }
     }.value
+    // (Update 151 review: a backdrop keeps the last blur until the new one is ready — [keepLast] — so moving between games
+    // never leaves an empty, dark gap behind; a small icon's glow passes keepLast = false.)
+    return if (st.first === src || (keepLast && src != null)) st.second else null
 }
 
 /** The screen's long side in dp (for the blurred copies' size). */

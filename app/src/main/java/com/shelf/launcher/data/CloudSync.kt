@@ -547,7 +547,8 @@ object CloudSync {
     fun looseSaveFiles(context: Context): List<LooseSave> {
         load(context)
         val out = mutableListOf<LooseSave>()
-        val kinds = PER_GAME_KINDS + SaveKind.N64 + SaveKind.DOLPHIN_GC
+        // Update 151: Dolphin Wii too (the Save Vault matches its saves by the game code in their folder's name).
+        val kinds = PER_GAME_KINDS + SaveKind.N64 + SaveKind.DOLPHIN_GC + SaveKind.DOLPHIN_WII
         _state.value.settings.folders.filter { it.enabled && it.saveKind in kinds && !isStateFolder(it.path) }.forEach { folder ->
             val kind = folder.saveKind
             fun titleOf(rel: String): String {

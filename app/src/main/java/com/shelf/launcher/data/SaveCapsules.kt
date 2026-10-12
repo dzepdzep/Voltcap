@@ -200,6 +200,11 @@ object SaveCapsules {
         val roms = games.filter { it.sourceType == SourceType.ROM && it.romPath != null }
         val items = HashMap<String, MutableList<SaveItem>>()
         fun add(game: Game, item: SaveItem) { items.getOrPut(game.stableKey) { mutableListOf() } += item }
+        // Update 151: saves on Google Drive in folders this device doesn't sync (set up on another device only) — they
+        // never showed. Their memory cards, PSP saves and named saves join the steps below like synced ones.
+        val driveOnly = runCatching { DriveOnlySaves.loose(context) }.getOrDefault(emptyList())
+        // Update 151: the library's names worked out once, for matching saves by file name and title (step 4).
+        val romIndex = SaveMatch.index(roms)
 
         // 1. Save files named after the ROM (the per-game kinds: RetroArch, generic folders, DraStic): every
         //    folder listed once for the whole library.
@@ -222,13 +227,31 @@ object SaveCapsules {
         //    games "not on this device" (one capsule per game, holding all of its saves).
         val cardGames = roms.filter { platformKind(it.platform) != null }
         val strayGames = HashMap<String, Game>()
+        // Update 151: a save that matches no game goes under "Other saves" (named after its file), never left out.
+        fun other(name: String, item: SaveItem) {
+            val id = name.lowercase()
+            val g = strayGames.getOrPut("OTHER:$id") {
+                Game(name = name, platform = "other", hue = (id.hashCode() and 0x7FFFFFFF) % 360, sourceType = SourceType.ROM, romPath = "save:other:$id")
+            }
+            add(g, item)
+        }
+        fun itemOf(f: CloudSync.LooseSave): SaveItem = SaveItem(
+            title = f.path.substringAfterLast('/'),
+            where = f.folder + if (!f.onDevice) " · synced from ${f.fromDevice ?: "another device"}" else "",
+            sizeBytes = f.size, modified = f.modified,
+            kind = if (f.onDevice) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE
+        )
         // (Update 108: plus the cards only synced from another device, fetched from Drive and opened the same way.)
         val openedCards = HashSet<String>()
         // (Update 109: and files that look like a card by name but aren't one, by their content — plain saves, step 4.)
         val notCards = HashSet<String>()
         // (Listed once: the memory-card folders' files only on Drive, for step 2 and step 4.)
-        val remoteCardList = runCatching { CloudSync.remoteCardFiles(context) }.getOrDefault(emptyList())
-        val saves = readCards(context) + remoteCards(context, remoteCardList, openedCards, notCards)
+        val remoteCardList = runCatching { CloudSync.remoteCardFiles(context) }.getOrDefault(emptyList()) +
+            driveOnly.filter { it.kind == SaveKind.PS1_MEMCARDS || it.kind == SaveKind.PS2_MEMCARDS } // (Update 151)
+        val saves = readCards(context) + remoteCards(context, remoteCardList, openedCards, notCards) +
+            // Update 151: PSP saves only on Drive (a PPSSPP folder this device doesn't sync), named from their PARAM.SFO.
+            runCatching { DriveOnlySaves.pspSaves(context, driveOnly.filter { it.kind == SaveKind.PSP_SAVEDATA }) }
+                .getOrDefault(emptyList()).map { Platform.PSP to it }
         if (saves.isNotEmpty()) {
             val byCode = HashMap<String, Game>()
             cardGames.forEach { g ->
@@ -266,7 +289,8 @@ object SaveCapsules {
         // 2b. GameCube (update 112): Dolphin's .gci saves and .raw memory cards are opened and each save goes to its game —
         //     by the game code (read from the disc's header), else by the save's own title; Dolphin's SRAM file (system
         //     settings, not a save) stays out. On this device they're read directly, from another device fetched once.
-        val loose = runCatching { CloudSync.looseSaveFiles(context) }.getOrDefault(emptyList()) + remoteCardList
+        val loose = runCatching { CloudSync.looseSaveFiles(context) }.getOrDefault(emptyList()) + remoteCardList +
+            driveOnly.filter { it.kind in DRIVE_LOOSE_KINDS } // (Update 151)
         val gcDone = HashSet<String>()
         val gcFiles = loose.filter { f ->
             val e = f.path.substringAfterLast('.', "").lowercase()
@@ -276,6 +300,9 @@ object SaveCapsules {
             val gcLib = roms.filter { isGameCube(it.platform) }
             val byGcId = HashMap<String, Game>()
             gcLib.forEach { g -> MemoryCards.gcGameId(g.romPath!!)?.let { byGcId.putIfAbsent(it.take(4), g) } }
+            // Update 151: also by name (Dolphin's file name holds one: "01-GC6E-pokemon_colosseum.gci"), when the disc's
+            // header can't be read and the save's own title differs ("POKéMON COLOSSEUM").
+            val gcIndex = SaveMatch.index(gcLib)
             gcFiles.forEach { f ->
                 val key = "${f.folder}|${f.path}"
                 val name = f.path.substringAfterLast('/')
@@ -284,6 +311,8 @@ object SaveCapsules {
                 val cap = if (ext == "raw") 17_000_000L else 2_000_000L
                 val bytes = if (f.onDevice) CloudSync.localFileBytes(context, f.folder, f.path, cap)
                     else runCatching { CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = cap.toInt()) }.getOrNull()
+                        // Update 151: or from a Drive folder this device doesn't sync.
+                        ?: DriveOnlySaves.bytes(context, f.folder, f.path, cap)
                 val from = if (!f.onDevice) " · synced from ${f.fromDevice ?: "another device"}" else ""
                 val gcSaves = when {
                     bytes == null -> null
@@ -295,19 +324,30 @@ object SaveCapsules {
                 gcDone += key
                 if (gcSaves == null) {
                     // Not readable now (offline): a .gci still names its game in Dolphin's file name ("01-GZLE-…").
-                    if (ext != "gci") return@forEach
-                    val code = Regex("^[0-9A-Za-z]{2}-([A-Za-z0-9]{4})-").find(name)?.groupValues?.get(1)?.uppercase()
-                    val g = code?.let { byGcId[it] } ?: return@forEach
-                    add(g, SaveItem(name, f.folder + from, f.size, f.modified, if (f.onDevice) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE))
+                    // Update 151: by the code, else by the name after it; still unknown: under "Other saves", not left out.
+                    val code = if (ext == "gci") Regex("^[0-9A-Za-z]{2}-([A-Za-z0-9]{4})-").find(name)?.groupValues?.get(1)?.uppercase() else null
+                    val g = code?.let { byGcId[it] } ?: (if (ext == "gci") SaveMatch.best(f.title, "gc", gcIndex) else null)
+                    val item = SaveItem(name, f.folder + from, f.size, f.modified, if (f.onDevice) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE)
+                    if (g != null) add(g, item) else other(name, item)
                     return@forEach
                 }
                 gcSaves.forEach { sv ->
                     val code4 = sv.code?.take(4)
                     val known = code4?.let { byGcId[it] }
                         ?: gcLib.firstOrNull { g -> MemoryCards.titleMatches(sv.title, com.shelf.launcher.ui.stripRegionTags(g.name)) }
+                        // Update 151: a single .gci also by Dolphin's file name ("pokemon_colosseum").
+                        ?: (if (ext == "gci") SaveMatch.best(f.title, "gc", gcIndex) else null)
                     // A save that isn't one of your games shows as a game "not on this device" only when it says which game
-                    // it is in words (a title with letters); a bare number or code is left out.
-                    if (known == null && !looksLikeTitle(sv.title, sv.code)) return@forEach
+                    // it is in words (a title with letters); a bare number or code goes under "Other saves" (update 151:
+                    // it used to be left out).
+                    if (known == null && !looksLikeTitle(sv.title, sv.code)) {
+                        other(if (ext == "gci") name else sv.title.ifBlank { name }, SaveItem(
+                            title = sv.title.ifBlank { name }, where = (if (ext == "raw") "$name · " else "") + f.folder + from,
+                            sizeBytes = sv.sizeBytes, modified = sv.modified,
+                            kind = if (ext == "raw") Kind.MEMORY_CARD else if (f.onDevice) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE
+                        ))
+                        return@forEach
+                    }
                     val target = known
                         ?: run {
                             val id = (code4 ?: sv.title).lowercase()
@@ -321,6 +361,36 @@ object SaveCapsules {
                         kind = if (ext == "raw") Kind.MEMORY_CARD else if (f.onDevice) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE
                     ))
                 }
+            }
+        }
+
+        // 2c. Wii (update 151): Dolphin keeps each game's save in "<type>/<title id>/data/…"; the title id's last part is
+        //     the game code ("524d4345" = "RMCE"), matched to the code in a Wii disc's header (or its file name). One
+        //     save per game folder; one that isn't in the library shows as that code's Wii save.
+        val wiiFiles = loose.filter { it.kind == SaveKind.DOLPHIN_WII }
+        if (wiiFiles.isNotEmpty()) {
+            val wiiLib = roms.filter { it.platform.equals("wii", true) }
+            val byWiiId = HashMap<String, Game>()
+            wiiLib.forEach { g ->
+                val path = g.romPath!!
+                val id = MemoryCards.gcGameId(path) ?: Regex("\\[([A-Z0-9]{6})]").find(path.substringAfterLast('/'))?.groupValues?.get(1)
+                id?.let { byWiiId.putIfAbsent(it.take(4).uppercase(), g) }
+            }
+            wiiFiles.groupBy { f -> f.folder to f.path.split('/').take(2).joinToString("/") }.forEach { (key, files) ->
+                val hex = key.second.substringAfter('/', "")
+                val code = wiiCode(hex)
+                val first = files.first()
+                val item = SaveItem(
+                    title = "Save data (${files.size} file${if (files.size == 1) "" else "s"})",
+                    where = key.first + if (!first.onDevice) " · synced from ${first.fromDevice ?: "another device"}" else "",
+                    sizeBytes = files.sumOf { it.size }, modified = files.maxOf { it.modified },
+                    kind = if (files.all { it.onDevice }) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE
+                )
+                val g = byWiiId[code] ?: strayGames.getOrPut("WII:${code.lowercase()}") {
+                    Game(name = "Wii save ($code)", platform = "Wii", hue = (code.hashCode() and 0x7FFFFFFF) % 360,
+                        sourceType = SourceType.ROM, romPath = "save:wii:${code.lowercase()}")
+                }
+                add(g, item)
             }
         }
 
@@ -394,27 +464,26 @@ object SaveCapsules {
                 add(stray, item)
                 return@forEach
             }
-            val stripped = com.shelf.launcher.ui.stripRegionTags(f.title)
-            if (stripped.length < 3) return@forEach
-            // Update 119: GameCube saves are only ever read in step 2b (by their content).
-            if (ext == "gci" || f.kind == SaveKind.DOLPHIN_GC) return@forEach
-            val mine = roms.firstOrNull { g ->
-                val systemOk = f.kind == SaveKind.RETROARCH || f.kind == SaveKind.GENERIC || f.kind in CloudSync.kindsForPlatform(g.platform)
-                systemOk && (MemoryCards.titleMatches(stripped, com.shelf.launcher.ui.stripRegionTags(g.name)) ||
-                    MemoryCards.titleMatches(com.shelf.launcher.ui.stripRegionTags(g.name), stripped))
+            // Update 119: GameCube saves are only ever read in step 2b (by their content); update 151: Wii saves in 2c.
+            if (ext == "gci" || f.kind == SaveKind.DOLPHIN_GC || f.kind == SaveKind.DOLPHIN_WII) return@forEach
+            // Update 151: the emulator core in front of the name ("Gambatte_Pokemon - Red…") is not part of the game's name.
+            val (core, bare) = SaveMatch.splitCore(f.title)
+            val stripped = com.shelf.launcher.ui.stripRegionTags(bare)
+            val item = itemOf(f)
+            if (stripped.length < 3) { other(f.path.substringAfterLast('/'), item); return@forEach }
+            // Update 151: matched by the same file name as the ROM first, then by the name with its tags, then by title
+            // ("… [patched]", "(Subset - …)"), a game of the save's own console first (it used to take the first title
+            // match of any console).
+            val hint = SaveMatch.platformOfCore(core) ?: loosePlatform(f)
+            val mine = SaveMatch.best(bare, hint, romIndex) { g ->
+                f.kind == SaveKind.RETROARCH || f.kind == SaveKind.GENERIC || f.kind in CloudSync.kindsForPlatform(g.platform)
             }
-            val item = SaveItem(
-                title = f.path.substringAfterLast('/'),
-                where = f.folder + if (!f.onDevice) " · synced from ${f.fromDevice ?: "another device"}" else "",
-                sizeBytes = f.size, modified = f.modified,
-                kind = if (f.onDevice) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE
-            )
             if (mine != null) { add(mine, item); return@forEach }
-            // Without a recognisable name (a number, a code) it isn't shown as a game of its own (update 119).
-            if (!looksLikeTitle(stripped)) return@forEach
+            // Without a recognisable name (a number, a code) it isn't a game of its own (update 119): "Other saves" (update 151).
+            if (!looksLikeTitle(stripped)) { other(f.path.substringAfterLast('/'), item); return@forEach }
             // Its console (update 104): from the folder's kind, the file's type, or the emulator / system folder it's in;
             // Game Boy or Game Boy Color by the game itself (update 119: the emulators keep both in one folder).
-            val platform = handheldOf(loosePlatform(f), f.title, raLists)
+            val platform = handheldOf(hint, bare, raLists)
             val id = stripped.lowercase()
             val stray = strayGames.getOrPut("LOOSE:$platform:$id") {
                 Game(
@@ -424,6 +493,9 @@ object SaveCapsules {
             }
             add(stray, item)
         }
+        // Update 151: Drive-only folders of other kinds (3DS, Dreamcast…): one "Other saves" entry per folder.
+        driveOnly.filter { it.kind != SaveKind.PSP_SAVEDATA && it.kind != SaveKind.PS1_MEMCARDS && it.kind != SaveKind.PS2_MEMCARDS && it.kind !in DRIVE_LOOSE_KINDS }
+            .forEach { f -> other(f.folder, itemOf(f)) }
 
         val byKey = roms.associateBy { it.stableKey }
         val strays = strayGames.values.associateBy { it.stableKey }
@@ -676,6 +748,16 @@ object SaveCapsules {
         }
     }
 
+    /** Update 151: the kinds of Drive-only saves that join the loose saves (named after their game, GameCube, Wii). */
+    private val DRIVE_LOOSE_KINDS = setOf(SaveKind.RETROARCH, SaveKind.GENERIC, SaveKind.NDS, SaveKind.N64, SaveKind.DOLPHIN_GC, SaveKind.DOLPHIN_WII)
+
+    /** Update 151: a Wii title id's game part ("524d4345") as its code ("RMCE"); the hex itself when it isn't letters. */
+    private fun wiiCode(hex: String): String {
+        if (hex.length != 8) return hex.uppercase().ifBlank { "?" }
+        val chars = (0 until 4).map { i -> hex.substring(i * 2, i * 2 + 2).toIntOrNull(16) ?: 0 }
+        return if (chars.all { it in 0x30..0x39 || it in 0x41..0x5A }) chars.joinToString("") { it.toChar().toString() } else hex.uppercase()
+    }
+
     /** A shared card's name ("Mcd001", "epsxe000", "shared_card", "card1"…), not a game's. */
     private val SHARED_CARD = Regex("^(mcd|mc|card|memcard|memorycard|shared_card|epsxe|slot|memory ?card)[ _-]?\\d*$", RegexOption.IGNORE_CASE)
 
@@ -719,7 +801,8 @@ object SaveCapsules {
             folderFrom.putIfAbsent("${f.folder}|$card", f.fromDevice)
             val old = m[save] ?: Triple(null, 0L, 0L)
             val icon = if (old.first == null && parts.last().equals("icon.sys", true) && parts.size == at + 3)
-                runCatching { CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = 64_000) }.getOrNull() else old.first
+                (runCatching { CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = 64_000) }.getOrNull()
+                    ?: DriveOnlySaves.bytes(context, f.folder, f.path, 64_000L)) else old.first // (Update 151: or a Drive-only folder)
             // (Update 144: the save's size adds up its files, like the local twin above - it used to stay 0 B.)
             m[save] = Triple(icon, old.second + f.size, maxOf(old.third, f.modified))
         }
@@ -736,7 +819,9 @@ object SaveCapsules {
             val read = synchronized(remoteCache) { remoteCache[key] } ?: run {
                 // (PS2 cards can be 8 to 64 MB; on a handheld with little memory only up to 16 MB ones are opened.)
                 val cap = if (com.shelf.launcher.device.MemoryBudget.small(context)) 17_400_000 else 70_000_000
-                val bytes = CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = cap) ?: return@forEach
+                // (Update 151: a card in a Drive folder this device doesn't sync is fetched by DriveOnlySaves.)
+                val bytes = CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = cap)
+                    ?: DriveOnlySaves.bytes(context, f.folder, f.path, cap.toLong()) ?: return@forEach
                 val r = runCatching { MemoryCards.readAny(name, bytes, f.modified) }.getOrNull()
                     .let { RemoteCard(it?.first ?: 0, it?.second.orEmpty()) }
                 synchronized(remoteCache) { remoteCache[key] = r }
