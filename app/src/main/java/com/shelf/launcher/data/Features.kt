@@ -951,6 +951,11 @@ object Features {
     val discAbout = BoolPref("disc_about", true)
     /** Update 149, Disc station: how much the game's art behind the disc is blurred (% of the player's width). */
     val discBlur = IntPref("disc_blur", 5, 0..30)
+    /** Update 154: what the disc sits in — a drawn portable CD player (default) or the game's art, blurred. */
+    enum class DiscPlayerLook(val label: String) { PLAYER("Portable CD player"), ART("The game's art") }
+    val discPlayer = EnumPref("disc_player", DiscPlayerLook.PLAYER, DiscPlayerLook.values())
+    /** Update 154: Disc station keeps the screen behind it still: no video clip, the animated background holds a frame. */
+    val discCalm = BoolPref("disc_calm_bg", true)
     /**
      * Update 123: a game without ScreenScraper's spine scan may use a spine cut out of its full box scan (or the side of
      * its 3D box picture). Off (default): only real spine scans; the others get the console's template spine with the name.

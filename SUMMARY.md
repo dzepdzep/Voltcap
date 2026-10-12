@@ -4,6 +4,55 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 12 Oct 2026 (154): Disc station as a portable CD player, calm background, the disc drops in at Play, covers shown whole
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (1): `src_copy\ui\DiscPlayer.kt`.
+- Changed (9): `src_copy\data\AutoBackupWorker.kt`, `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`,
+  `src_copy\ui\CoverCases.kt`, `src_copy\ui\LaunchThrow.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\StyleDiscStation.kt`,
+  `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\SettingsIndex.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **Disc station: the disc sits in a portable CD player** (drawn by Voltcap, no real maker's design): a body in charcoal
+  tinted with the game's colour, a hinge across the top, the round well with the laser's slot and spindle, speaker holes,
+  and an LCD saying DISC LOADED with buttons along the front. No more plain colour or blurred art behind the disc.
+  Settings › Home › Layout options › Disc station › **The disc sits in**: Portable CD player (default) / The game's art.
+- **Calm background** (Disc station, on by default): no video clip and no moving background behind the player — the
+  animated background holds still, game ambience and backdrop touches rest; only the disc turns.
+- **Starting a game in Disc station:** the disc now spins and drops into the tray (every game is a disc there, whatever
+  the game look). It used to fall back to the standard launch animation.
+- **Covers no longer cut off:** in the carousel a plain cover takes its own shape once loaded (it was cut to one shape);
+  in a case window a picture of another shape is shown whole with the case's own colour round it (it could lose up to
+  30 % — a GBA box lost its logo).
+- **Automatic backup to Drive now includes this handheld's own setup** (charge limit, performance tuner / AutoTDP,
+  folders, emulators). Restoring on another handheld still leaves those out.
+
+### Battery limiter / AutoTDP
+- Checked on the Pocket Classic: R1 › Device shows **Charge 80 %** and **AutoTDP** switched **off**, and Power at Stock.
+  Most likely the one-time uninstall when the signing key changed reset this handheld's own settings, and the automatic
+  backup didn't hold device settings, so they never came back. The code itself is unchanged since update 146 and its root
+  calls work. Switch them on again in R1 › Device.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 154: disc station cd player, calm background, disc drops in at play, covers shown whole"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 12 Oct 2026 (153): Disc station never black, Voltcap row name next to the category
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

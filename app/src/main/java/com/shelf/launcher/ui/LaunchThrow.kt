@@ -109,6 +109,18 @@ internal object LaunchThrow {
         val wide = state.artOverrides[k]?.wide ?: state.art[k]?.wideGridUrl
         val discLabel = physical?.firstOrNull { it.first == "Disc label" }?.second
         val ownMedia = if (!Features.mediaShells.value) BoxTexture.media(physical) else null
+        // Update 154: Disc station — every game is a disc there, whatever the game look: it drops into the tray.
+        if (a.homeLayout == com.shelf.launcher.data.HomeLayout.DISCS) {
+            val pick = mediaFor(game.platform, asDisc = true)
+                ?.takeIf { it.shell.isDisc || it.shell == MediaShell.UMD || it.platform.startsWith(GENERIC_DISC) }
+                ?: MediaPick(MediaShell.DISC, genericDiscKey(if (game.platform == "App") "Android" else game.platform))
+            val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, game.platform)
+            val label = typed ?: cover ?: wide
+            return ThrowPlan(
+                game, ThrowKind.DISC, rect, GameOrigin.displayId, cover, null, null, pick, label,
+                typed != null && label == typed, null, true, null, null, 1f, 1f
+            )
+        }
         return when (type) {
             CardArtType.CASE -> {
                 if (caseMarker(game.platform) == null) return null

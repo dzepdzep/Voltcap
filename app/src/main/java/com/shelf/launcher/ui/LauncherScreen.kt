@@ -2077,6 +2077,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // (Settings, the details window, the app drawer…) lets it move on, at a calmer ~15 fps.
         val sceneCovered = screensaverOn || categoryScreenOpen || guideForGame != null ||
             manualFor != null || artViewer != null || viewingShots != null
+        // Update 154: Disc station keeps what's behind it still (Disc station › Calm background, on by default): the
+        // animated background holds a frame, game ambience and backdrop touches rest, no video clip plays.
+        val discCalm = state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.DISCS &&
+            com.shelf.launcher.data.Features.discCalm.state.value
         val scenePartlyCovered = !sceneCovered && (showMenu || showSettings || showDetails || showSaveExplorer ||
             showAppsLibrary || showAppDrawer || showFirstRun)
         // The second screen only gets the scene while the animated background is on.
@@ -2197,7 +2201,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     }
                     androidx.compose.runtime.CompositionLocalProvider(
                         LocalSceneAvoid provides sceneAvoid,
-                        LocalSceneCovered provides (sceneCovered || sceneOnSecond),
+                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm),
                         LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                         // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                         LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
@@ -2327,7 +2331,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             if (wantsCrt) CrtArtOverlay(glow)
             if (ambience != null) GameAmbienceLayer(
                 ambience, glow, lookColors?.secondary ?: com.shelf.launcher.ui.theme.ShelfTheme.colors.secondary,
-                covered = sceneCovered
+                covered = sceneCovered || discCalm
             )
         }
 
@@ -2396,7 +2400,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 val total = p.NumPossibleAchievements ?: 0
                 if (total > 0) (p.NumAchieved ?: 0).toFloat() / total else null
             }
-            BackdropAchievementsLayer(recentBadges, prog, covered = sceneCovered, modifier = Modifier.fillMaxSize())
+            BackdropAchievementsLayer(recentBadges, prog, covered = sceneCovered || discCalm, modifier = Modifier.fillMaxSize())
         }
 
         // Video preview: rest on a game for two seconds and its clip fades in.
@@ -2419,7 +2423,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val roomSound = state.appearance.videoSound
         SideEffect { Showcase.video = roomVideo; Showcase.videoSound = roomSound }
         // Update 151: the Hero carousel plays it over its big hero picture (below), not under it where it was hidden.
-        if (videoUrl != null && !roomClip && !screensaverOn && !heroLayout && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK) {
+        if (videoUrl != null && !roomClip && !screensaverOn && !heroLayout && !discCalm && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK) {
             androidx.compose.runtime.key(videoUrl) {
                 VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize())
             }

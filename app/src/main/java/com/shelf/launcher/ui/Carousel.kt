@@ -164,7 +164,11 @@ internal fun ShelfGameArt(
                 .clip(shape)
                 .background(placeholderBrush(g.hue))
         ) {
-            if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+            if (cover != null) AsyncImage(
+                cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork(),
+                // (Update 154: its shape noted, so the carousel's slot takes it — CoverAspects.)
+                onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
+            )
             else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize().padding(10.dp))
             else Text(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(6.dp))
             // Case gloss.
@@ -178,7 +182,7 @@ internal fun ShelfGameArt(
 }
 
 /** The width / height a game's art takes on the shelf (its case's front, its cartridge / disc, else a cover's shape). */
-internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardArtType, hidden: Set<String>, mixed: Boolean): Float {
+internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardArtType, hidden: Set<String>, mixed: Boolean, cover: String? = null): Float {
     // Update 115: the wide looks at their own shape (they used to be cropped into a cover's).
     if (cardArtType == com.shelf.launcher.data.CardArtType.CAPSULE) return CAPSULE_ASPECT
     if (cardArtType == com.shelf.launcher.data.CardArtType.HERO || cardArtType == com.shelf.launcher.data.CardArtType.SCREENSHOT) return 16f / 9f
@@ -188,7 +192,21 @@ internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardAr
         return MediaCovers.of(g.platform)?.frontAspect ?: 0.7f
     }
     if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.let { return it.frontAspect }
-    return 0.7f
+    // Update 154: a plain cover at its own shape once it has loaded (it was cut to 0.7 — tops, bottoms and sides of
+    // square GBA boxes, wide PC covers and tall posters were cut off).
+    return CoverAspects.of(cover) ?: 0.7f
+}
+
+/** Update 154: the shape (width / height) of each plain cover the carousel has loaded, so its slot fits it whole. */
+internal object CoverAspects {
+    private val map = androidx.compose.runtime.mutableStateMapOf<String, Float>()
+    fun of(url: String?): Float? = url?.let { map[it] }
+    fun note(url: String, w: Float, h: Float) {
+        if (w <= 0f || h <= 0f || w.isInfinite() || h.isInfinite()) return
+        val a = (w / h).coerceIn(0.5f, 1.25f)
+        val old = map[url]
+        if (old == null || kotlin.math.abs(old - a) > 0.01f) map[url] = a
+    }
 }
 
 /**
@@ -604,7 +622,7 @@ internal fun GameCarousel(
             // (Update 146: the Receding row's spines step up towards its vanishing point like its covers do.)
             val yK = if (recedeSpine) -(1f - scale) * 0.3f else p.y
             val reflect = Features.carouselReflect.state.value
-            val aspect = if (model != null) Models3D.aspect(model) else if (cases3d) case3dAspect(g, mixed) else if (spineHere) SPINE_ASPECT else shelfArtAspect(g, cardArtType, hidden, mixed)
+            val aspect = if (model != null) Models3D.aspect(model) else if (cases3d) case3dAspect(g, mixed) else if (spineHere) SPINE_ASPECT else shelfArtAspect(g, cardArtType, hidden, mixed, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl)
             // Slot in the item's own shape (no empty bands round it), as tall as the middle one × its scale.
             val h0 = minOf(bigH, if (aspect > 1f) bigW / aspect * 1.25f else bigH)
             val w0 = h0 * aspect

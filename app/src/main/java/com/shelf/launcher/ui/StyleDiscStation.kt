@@ -122,11 +122,19 @@ internal fun DiscStationSettings() {
         Features.discSpin.state.value, { Features.discSpin.value = it }
     )
     Spacer(Modifier.height(8.dp))
-    PercentSlider(
+    // Update 154.
+    StyleChoice("The disc sits in", Features.DiscPlayerLook.values(), Features.discPlayer.state.value, { it.label }) { Features.discPlayer.value = it }
+    Spacer(Modifier.height(8.dp))
+    SwitchRow(
+        Icons.Filled.Album, "Calm background", "No video clip and no moving background behind the player — only the disc turns. Off: the home screen's background as everywhere else.",
+        Features.discCalm.state.value, { Features.discCalm.value = it }
+    )
+    Spacer(Modifier.height(8.dp))
+    if (Features.discPlayer.state.value == Features.DiscPlayerLook.ART) PercentSlider(
         "Blur behind the disc", Features.discBlur.state.value, { Features.discBlur.value = it.coerceIn(0, 30) },
         min = 0, max = 30, valueText = { if (it == 0) "Sharp" else "$it %" }
     )
-    MutedNote("The game's art fills the player behind the disc, softly blurred.")
+    if (Features.discPlayer.state.value == Features.DiscPlayerLook.ART) MutedNote("The game's art fills the player behind the disc, softly blurred.")
     Spacer(Modifier.height(8.dp))
     SwitchRow(
         Icons.Filled.Description, "About the game", "A few lines about the game under its name, when its details are there.",
@@ -157,19 +165,23 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
     // (Update 149: no dark panel behind the disc — the game's own art, softly blurred (Disc station › Blur behind the
     // disc, 5 % by default), fills the player instead.)
     BoxWithConstraints(modifier.clip(shape)) {
+    // Update 154: the disc sits in a drawn portable CD player by default (Disc station › The disc sits in); the game's
+    // art, blurred, is the other choice.
+    val player = Features.discPlayer.state.value == Features.DiscPlayerLook.PLAYER
     val pct = Features.discBlur.state.value
     // Update 153: a game without a background picture (apps, games with only a cover) takes its cover instead.
     val backdropUrl = c.backdrop(g) ?: c.cover(g)
-    val artNow = rememberSoftBitmap(backdropUrl, 480)
+    // (The player still reads the picture once, small, for the game's colour.)
+    val artNow = rememberSoftBitmap(backdropUrl, if (player) 96 else 480)
     // Update 151 (review): while the next game's picture loads, the last one stays behind the disc (it used to go empty
     // for a moment, the dark behind the player showing through at every step).
     val artKeep = remember { arrayOfNulls<android.graphics.Bitmap>(1) }
     if (artNow != null) artKeep[0] = artNow
     val art = artNow ?: if (backdropUrl != null) artKeep[0] else null
-    val soft =if (pct > 0) rememberBakedBlur(art, maxWidth * (pct / 100f)) else art?.let { remember(it) { it.asImageBitmap() } }
+    val soft = if (player) null else if (pct > 0) rememberBakedBlur(art, maxWidth * (pct / 100f)) else art?.let { remember(it) { it.asImageBitmap() } }
     if (soft != null) androidx.compose.foundation.Image(soft, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
     // (A light shade, so the disc and the label under it stand out from the picture.)
-    Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.18f)))
+    if (!player) Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.18f)))
     // Update 151: the glow's colour, from the game's art (the theme's accent until it's there).
     val glowTarget = rememberDiscGlow(art, ShelfTheme.accent)
     val glow by androidx.compose.animation.animateColorAsState(glowTarget, tween(400), label = "discGlow")
@@ -177,7 +189,8 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
     // there's no picture at all or the picture is very dark (the user saw black behind the disc on those games).
     val dark = remember(art) { art?.let { discIsDark(it) } ?: true }
     val wash = if (soft == null || dark) 0.55f else 0.22f
-    Box(
+    if (player) Box(Modifier.matchParentSize().discPlayerBody(glow))
+    else Box(
         Modifier.matchParentSize().drawBehind {
             drawRect(
                 androidx.compose.ui.graphics.Brush.radialGradient(
@@ -212,7 +225,9 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
             // Update 151: no dark shadow under the disc any more (it showed as black behind it): a faint glow ring in
             // the game's colour round it instead (drawn once, it doesn't turn).
             val glowPick = remember(g.platform) { stationPick(g.platform) }
-            Box(Modifier.size(d).discGlow(glow, stationDiscFrac(glowPick, Features.bigGcDiscs.state.value)))
+            // Update 154: in the player, the round well it sits in instead.
+            if (player) Box(Modifier.size(d).discWell(glow, stationDiscFrac(glowPick, Features.bigGcDiscs.state.value)))
+            else Box(Modifier.size(d).discGlow(glow, stationDiscFrac(glowPick, Features.bigGcDiscs.state.value)))
             // Moving on ejects the old disc (down and out) and loads the next one (in from the right).
             AnimatedContent(
                 targetState = g,
@@ -224,11 +239,14 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
                 },
                 label = "discTray"
             ) { shown ->
-                Box(Modifier.size(d), contentAlignment = Alignment.Center) { LoadedDisc(c, shown, d) }
+                // (Update 154: its place on screen, for Starting a game's disc dropping into the tray.)
+                Box(Modifier.size(d).gameOrigin(shown.stableKey, shown.stableKey == g.stableKey), contentAlignment = Alignment.Center) { LoadedDisc(c, shown, d) }
             }
         }
         Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // Update 154: the player's LCD and buttons along its front edge.
+        if (player) DiscPlayerFront(glow, compact)
+        else Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF3DDC84)))
             Spacer(Modifier.width(6.dp))
             Text("DISC LOADED", color = Color.White.copy(alpha = 0.85f), fontSize = if (compact) 10.sp else 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, style = discTextStyle())

@@ -256,6 +256,17 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 154
+- **Disc station:** `Features.discPlayer` (PLAYER default / ART), `Features.discCalm` (true). DiscPlayer.kt:
+  `discPlayerBody`, `discWell`, `DiscPlayerFront`. `discCalm` in LauncherScreen → LocalSceneCovered, no VideoBackdrop,
+  ambience / backdrop touches covered. Disc box has `gameOrigin` → LaunchThrow.planFor makes a DISC throw for DISCS.
+- **Covers:** `CoverAspects` (Carousel.kt) notes each plain cover's shape; `shelfArtAspect(..., cover)`. `FillUnlessMuchCut.MAX_CUT`
+  = 0.06, window background = `FrameColors` when the art is there.
+- **AutoBackupWorker:** `includeDeviceSetup = true`.
+- **Charge limit / AutoTDP:** off in this handheld's prefs since the reinstall (not a code fault: PServer calls work,
+  `/sys/class/qcom-battery/restrict_chg` is written at start). The user switches them on again.
+- **Not tested on the device yet** (release build: no run-as).
+
 ## State after update 153
 - **Release build installed** (22:13): `run-as` no longer works, so prefs can't be edited from adb; layouts are switched
   through Settings › Home › Layout & presets (pick the layout chip, then "Use <layout> as it is").

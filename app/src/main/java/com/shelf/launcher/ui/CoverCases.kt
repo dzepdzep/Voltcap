@@ -238,9 +238,12 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
         // Update 136, Art drop / update 137, Art position (R1 › Art position): the cover moved in the window (down under
         // the frame's top band, up, sideways) and sized, the window cutting it off.
         val pos = ArtPlace.of(model = false)
+        // Update 154: round a cover shown whole, the case's own colour (not the game-colour placeholder).
+        val ctx = androidx.compose.ui.platform.LocalContext.current.applicationContext
+        val frameColor = remember(cov.frontRes) { FrameColors.of(ctx, cov) }
         Box(
             Modifier.offset(w * win[0], h * win[1]).size(w * (win[2] - win[0]), h * (win[3] - win[1]))
-                .clipToBounds().background(placeholder)
+                .clipToBounds().then(if (art != null && owner == null) Modifier.background(frameColor) else Modifier.background(placeholder))
         ) {
             // (Update 143: Art position moves and sizes the cover itself. Update 144: the cover fills the window — no
             // empty strips at its sides, as the Android case had — unless that would cut away more than 15 % of it
@@ -273,7 +276,9 @@ internal fun cardArtModel(art: Any): Any = if (art is String) rememberCardArtReq
  * (Update 147: up to 30 % — a portrait cover in your wider Android / Steam case windows still had bars at its sides.)
  */
 internal object FillUnlessMuchCut : ContentScale {
-    const val MAX_CUT = 0.30f
+    // Update 154: at most 6 % — the user saw covers cut off on all sides (a GBA box lost its logo); a picture of
+    // another shape now shows whole, the window's spare room in the case's own colour (CoverFace).
+    const val MAX_CUT = 0.06f
     fun scale(srcW: Float, srcH: Float, dstW: Float, dstH: Float): Float {
         if (srcW <= 0f || srcH <= 0f) return 1f
         val sx = dstW / srcW; val sy = dstH / srcH

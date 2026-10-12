@@ -237,6 +237,9 @@ internal object SettingsIndex {
         E("Reflection", "Home", "Layout options", "lo_carousel", "Carousel"),
         E("Spin the loaded disc", "Home", "Layout options", null, null),
         E("Blur behind the disc", "Home", "Layout options", null, null),
+        // Update 154.
+        E("Disc station: the disc sits in (portable CD player)", "Home", "Layout options", null, null),
+        E("Disc station: calm background", "Home", "Layout options", null, null),
         E("Background", "Home", "Layout options", null, null),
         E("Artwork priority", "Game look", "Artwork", "art_priority", "Artwork priority"),
         E("Sharpness", "Game look", "Artwork", "art_sharp", "Sharpness"),
