@@ -203,6 +203,21 @@ internal class SavedArtInterceptor : Interceptor {
 }
 
 /** Update 114: Settings › Metadata › "Scrape spines" — the background look-up's controls and progress (set by the home screen). */
+/**
+ * Update 147: Settings › Metadata › Everything at once — artwork, details, real cases / discs / spines, screenshots and
+ * video clips for every game that's missing them, one after another in the background.
+ */
+object EverythingScrape {
+    enum class Part(val label: String) {
+        ART("Artwork"), DETAILS("Details"), SCANS("Real cases, discs & spines"), SHOTS("Screenshots"), VIDEOS("Video clips")
+    }
+    @Volatile var run: ((Set<Part>) -> Unit)? = null
+    @Volatile var stop: (() -> Unit)? = null
+    /** What it's doing now ("Artwork", "Details", "Scans, screenshots & clips") and games done / to do, while it runs. */
+    var stage by androidx.compose.runtime.mutableStateOf<String?>(null)
+    var progress by androidx.compose.runtime.mutableStateOf<Pair<Int, Int>?>(null)
+}
+
 object SpineScrape {
     /** Starts it (true: every game without its own spine is asked again, even recently asked ones). */
     @Volatile var run: ((Boolean) -> Unit)? = null

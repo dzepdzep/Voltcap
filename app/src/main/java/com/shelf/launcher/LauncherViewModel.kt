@@ -5446,6 +5446,86 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         com.shelf.launcher.data.SpineScrape.progress = null
     }
 
+    /**
+     * Update 147: everything a game can have, for every game missing it — artwork (the ticked kinds), details (the
+     * ticked ones), then one pass over the games for their real cases / discs / spines, screenshots and video clips.
+     * One step after the other (never two look-ups at once on the same server), waiting while a game is being played.
+     */
+    private var everythingJob: Job? = null
+
+    fun scrapeEverything(parts: Set<com.shelf.launcher.data.EverythingScrape.Part>) {
+        if (everythingJob?.isActive == true) return
+        if (parts.isEmpty()) { setStatusMessage("Tick at least one thing to fetch."); return }
+        val E = com.shelf.launcher.data.EverythingScrape
+        everythingJob = viewModelScope.launch {
+            try {
+                if (com.shelf.launcher.data.EverythingScrape.Part.ART in parts) {
+                    E.stage = "Artwork"; E.progress = null
+                    scrapeMissingArt(manual = true)
+                    scrapeJob?.join()
+                }
+                if (com.shelf.launcher.data.EverythingScrape.Part.DETAILS in parts) {
+                    E.stage = "Details"; E.progress = null
+                    scrapeMissingMetadata(silent = true)
+                    metadataScrapeJob?.join()
+                }
+                val creds = screenScraperStore.load()
+                val scans = com.shelf.launcher.data.EverythingScrape.Part.SCANS in parts && creds != null
+                val shots = com.shelf.launcher.data.EverythingScrape.Part.SHOTS in parts
+                val clips = com.shelf.launcher.data.EverythingScrape.Part.VIDEOS in parts && creds != null
+                val real = setOf("Box", "Disc / cartridge", com.shelf.launcher.ui.BoxTexture.LABEL)
+                fun hasReal(key: String): Boolean =
+                    _uiState.value.physicalMedia[key]?.any { it.first in real } == true ||
+                        physicalPrefs.getString(key, null)?.split('\n')?.any { it.substringBefore('\t') in real } == true
+                fun needsScans(g: Game) = scans && g.sourceType == SourceType.ROM && !hasReal(g.stableKey)
+                fun needsShots(g: Game) = shots && !_uiState.value.screenshots.containsKey(g.stableKey) && screenshotPrefs.getString(g.stableKey, null) == null
+                fun needsClip(g: Game) = clips && g.sourceType == SourceType.ROM && videoUrlStore.get(g.stableKey) == null
+                val pending = _uiState.value.games.filter { needsScans(it) || needsShots(it) || needsClip(it) }
+                if (pending.isNotEmpty()) {
+                    E.stage = "Cases, screenshots & clips"
+                    E.progress = 0 to pending.size
+                    for ((i, g) in pending.withIndex()) {
+                        com.shelf.launcher.data.GameMode.awaitNotPlaying()
+                        if (needsScans(g)) {
+                            loadPhysicalMedia(g, needSpine = true, force = true)
+                            var waited = 0
+                            while (g.stableKey in physicalLoading && waited < 30_000) { kotlinx.coroutines.delay(200); waited += 200 }
+                        }
+                        if (needsShots(g)) {
+                            loadMedia(g)
+                            var waited = 0
+                            while (g.stableKey in screenshotsLoading && waited < 30_000) { kotlinx.coroutines.delay(200); waited += 200 }
+                        }
+                        if (needsClip(g) && creds != null) {
+                            val url = withContext(Dispatchers.IO) { runCatching { screenScraperRepository.videoUrl(creds, g) }.getOrNull() }
+                            videoUrlStore.put(g.stableKey, url)
+                            if (url != null) _uiState.update { it.copy(videoUrls = it.videoUrls + (g.stableKey to url)) }
+                        }
+                        E.progress = (i + 1) to pending.size
+                        kotlinx.coroutines.delay(500)
+                    }
+                    if (_uiState.value.artStorage.autoSave) saveAllArt(silent = true)
+                }
+                val noSs = creds == null && (com.shelf.launcher.data.EverythingScrape.Part.SCANS in parts || com.shelf.launcher.data.EverythingScrape.Part.VIDEOS in parts)
+                setStatusMessage(
+                    "Everything fetched that was missing." +
+                        if (noSs) " Real cases and video clips need ScreenScraper (Settings › Accounts)." else ""
+                )
+            } finally {
+                E.stage = null
+                E.progress = null
+            }
+        }
+    }
+
+    fun stopEverything() {
+        everythingJob?.cancel()
+        scrapeJob?.cancel()
+        metadataScrapeJob?.cancel()
+        com.shelf.launcher.data.EverythingScrape.stage = null
+        com.shelf.launcher.data.EverythingScrape.progress = null
+    }
+
     fun cancelArtSave() {
         artSaveJob?.cancel()
         _uiState.update { it.copy(artSaveDone = 0, artSaveTotal = 0) }
@@ -5463,6 +5543,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             c.second[key]?.let { it.name to it.platform }
         }
         com.shelf.launcher.data.SpineScrape.stop = { stopSpineScrape() }
+        com.shelf.launcher.data.EverythingScrape.run = { parts -> scrapeEverything(parts) }
+        com.shelf.launcher.data.EverythingScrape.stop = { stopEverything() }
     }
 
     /** How much space saved art uses, and how many images are still missing. */

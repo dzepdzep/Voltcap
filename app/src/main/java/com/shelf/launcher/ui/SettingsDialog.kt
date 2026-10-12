@@ -2104,6 +2104,43 @@ private fun MetadataContent(
     rawgConnected: Boolean
 ) {
     com.shelf.launcher.Breadcrumbs.mark("MetadataContent")
+    // Update 147: one button for everything a game can have (it was spread over Scraping, Game details, Game look and
+    // the spines, and the video clips were only ever looked up when a game was shown).
+    CollapsibleSection("Everything at once", startExpanded = true) {
+        ShelfCard {
+            val E = com.shelf.launcher.data.EverythingScrape
+            val running = E.stage != null
+            var parts by remember { mutableStateOf(com.shelf.launcher.data.EverythingScrape.Part.values().toSet()) }
+            Text("Fetch everything that's missing", color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            MutedNote(
+                "For every game, whatever it doesn't have yet: artwork (the kinds ticked under Scraping), details (ticked under " +
+                    "Game details), its real case, disc, cartridge and spine scans, screenshots and a video clip for Video previews. " +
+                    "One after another in the background; it pauses while you play. Games that have something are left as they are."
+            )
+            Spacer(Modifier.height(8.dp))
+            if (running) {
+                val prog = E.progress
+                Text(
+                    (E.stage ?: "") + (prog?.let { "  ·  ${it.first} / ${it.second}" } ?: "…"),
+                    color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
+                )
+                if (prog != null) TaskProgressLine(prog.first, prog.second)
+                Spacer(Modifier.height(6.dp))
+                Chip("Stop", accent = false) { E.stop?.invoke() }
+            } else {
+                ChipFlow {
+                    com.shelf.launcher.data.EverythingScrape.Part.values().forEach { part ->
+                        val on = part in parts
+                        Chip((if (on) "✓ " else "") + part.label, accent = on) { parts = if (on) parts - part else parts + part }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Chip("Fetch everything missing", enabled = parts.isNotEmpty()) { E.run?.invoke(parts) }
+                Spacer(Modifier.height(4.dp))
+                MutedNote("Real cases, discs and spines and the video clips come from ScreenScraper (Settings › Accounts). The clips stream when they play; they aren't stored on the device.")
+            }
+        }
+    }
     CollapsibleSection("Artwork source", startExpanded = false) {
         ShelfCard {
             Text("Artwork source", color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)

@@ -10,7 +10,7 @@ All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfL
 
 **Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
 - New (2): `src_copy\ui\StyleDiscStation.kt`, `src_copy\ui\DrawableBitmap.kt`.
-- Changed (24): `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`,
+- Changed (27): `src_copy\LauncherViewModel.kt`, `src_copy\data\ArtFiles.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`,
   `src_copy\ui\CategoryScreen.kt`, `src_copy\ui\CollectionDialogs.kt`, `src_copy\ui\FirstRunDialog.kt`,
   `src_copy\ui\GameCard.kt`, `src_copy\ui\ImportPreview.kt`, `src_copy\ui\Models3D.kt`, `src_copy\ui\OptionIcons.kt`,
   `src_copy\ui\PresetPreview.kt`, `src_copy\ui\PresetsCard.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\RealMedia.kt`,
@@ -41,6 +41,10 @@ All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfL
   Carousel look › View) turns on Reflection and the new **Dark stage** (a dark floor fading to black). Spine wall turns
   the cases to 72° so a sliver of each front shows; Turned row's cases sit close and turn to face the middle one.
 - **"1 games"** now reads "1 game".
+- **Everything at once** (Settings › Metadata, at the top): one button for every game's missing artwork, details, real
+  case / disc / cartridge / spine scans, screenshots and video clips, one after another in the background (pauses while
+  you play), with progress and Stop. The parts can be unticked. Video clips are looked up (ScreenScraper) and stream when
+  they play.
 
 ### Check
 - **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
