@@ -1,0 +1,84 @@
+// Frost: an ice-type night. Six-armed snowflakes tumble down in two layers, frost creeps in
+// crystal facets from the corners and slowly breathes, an aurora ripples across the top and ice
+// glints sparkle here and there.
+
+// A snowflake (six arms with side branches), radius about s. Negative inside-ish (a distance).
+float flakeD(float2 p, float s) {
+    float r = length(p);
+    float a = atan(p.y, p.x);
+    a = mod(a + PI / 6.0, PI / 3.0) - PI / 6.0;
+    float2 q = float2(cos(a), abs(sin(a))) * r;
+    float d = sdSegment(q, float2(0.0), float2(s, 0.0));
+    d = min(d, sdSegment(q, float2(s * 0.45, 0.0), float2(s * 0.68, s * 0.2)));
+    d = min(d, sdSegment(q, float2(s * 0.7, 0.0), float2(s * 0.85, s * 0.12)));
+    return d;
+}
+
+float4 flakeLayer(float2 uv, float scale, float speed, float seed, float t) {
+    float2 p = uv * scale + float2(sin(t * 0.3 + uv.y * 3.0 + seed) * 0.4, -t * speed);
+    float2 id = floor(p);
+    float2 f = fract(p) - 0.5;
+    float2 r = hash22(id + seed);
+    if (r.x > 0.45) return float4(0.0);
+    float2 q = rot(t * (0.3 + r.y) + r.x * 20.0) * (f - (r - 0.5) * 0.4);
+    float s = 0.18 + 0.12 * r.y;
+    float d = flakeD(q, s);
+    float a = 1.0 - smoothstep(0.012, 0.03, d);
+    return float4(float3(1.0), a * (0.6 + 0.4 * r.y));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float3 col = mix(BG * 0.8, mix(BG, A, 0.25), uv.y);
+
+    // Aurora ripples along the top.
+    float ax = uv.x * 1.5 + sin(uv.x * 2.0 + t * 0.2) * 0.4;
+    float curtain = exp(-abs(uv.y - (0.22 + 0.06 * sin(ax * 2.0 + t * 0.3))) * 14.0);
+    float rays = 0.5 + 0.5 * sin(ax * 30.0 + fbm3(float2(ax * 3.0, t * 0.2)) * 6.0);
+    col += mix(A, S, 0.5 + 0.5 * sin(ax + t * 0.1)) * curtain * rays * 0.3;
+
+    // Distant snowy hills.
+    float hill = 0.82 - 0.06 * fbm3(float2(uv.x * 1.5, 1.0));
+    col = mix(col, mix(BG, float3(0.85), 0.25), step(hill, uv.y));
+    col += float3(1.0) * exp(-abs(uv.y - hill) * 200.0) * 0.12;
+
+    // Snowflakes, far then near.
+    float4 fl = flakeLayer(uv, 14.0, 0.6, 3.0, t);
+    col = mix(col, mix(col, float3(0.9, 0.95, 1.0), 0.6), fl.a * 0.5);
+    fl = flakeLayer(uv, 6.0, 0.35, 11.0, t);
+    col = mix(col, mix(S, float3(1.0), 0.7), fl.a * 0.9);
+
+    // Frost creeping from the corners: faceted (voronoi-ish cells), breathing slowly.
+    float2 c = uv * 9.0;
+    float2 ci = floor(c);
+    float2 cf = fract(c);
+    float best = 9.0;
+    float second = 9.0;
+    for (int j = -1; j <= 1; j++) {
+        for (int i = -1; i <= 1; i++) {
+            float2 g = float2(float(i), float(j));
+            float2 o = hash22(ci + g);
+            float dd = length(g + o - cf);
+            if (dd < best) { second = best; best = dd; } else if (dd < second) { second = dd; }
+        }
+    }
+    float facet = second - best;
+    // Distance to the nearest screen corner: the frost only grows in from the corners.
+    float2 cuv = float2(min(uv.x, asp - uv.x), min(uv.y, 1.0 - uv.y));
+    float corner = length(cuv);
+    float reach = 0.3 + 0.04 * sin(t * 0.25);
+    float frost = 1.0 - smoothstep(reach - 0.08, reach, corner + 0.08 * fbm3(uv * 6.0));
+    col = mix(col, mix(float3(0.85, 0.93, 1.0), S, 0.2) * (0.7 + 0.3 * smoothstep(0.0, 0.2, facet)), frost * 0.55);
+    col += float3(1.0) * (1.0 - smoothstep(0.0, 0.03, facet)) * frost * 0.35;
+
+    // Glints.
+    col += float3(1.0) * dots(uv, 40.0, float2(0.0), 0.06, 0.06, 7.0) * (0.3 + 0.7 * frost);
+
+    return half4(finish(col, fc), 1.0);
+}

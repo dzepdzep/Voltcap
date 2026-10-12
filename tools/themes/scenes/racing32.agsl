@@ -1,0 +1,101 @@
+// 32-bit racing: the late-90s arcade racer look at the resolution it was drawn at. A low-res,
+// dithered evening: a big sun setting behind jagged polygon mountains, a winding road of flat-shaded
+// segments with red-and-white kerbs, roadside poles and signs flicking past, a rival car's tail
+// lights ahead, and the speed lines of going too fast. Everything snaps to a 240-line pixel grid.
+
+float bayer4(float2 c) {
+    float2 a = mod(c, 4.0);
+    float2 b = floor(a / 2.0);
+    float2 s = mod(a, 2.0);
+    float v = (mod(b.x * 2.0 + b.y * 3.0, 4.0)) / 4.0;
+    return (mod(s.x * 2.0 + s.y * 3.0, 4.0) + v) / 4.0;
+}
+
+half4 main(float2 fc) {
+    float res = 240.0;
+    float2 cell = floor(fc / uRes.y * res);
+    float2 uv = (cell + 0.5) / res;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float d = bayer4(cell);
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float hz = 0.5;
+
+    float3 col;
+    // Road curve: the horizon point drifts left and right.
+    float curve = 0.35 * sin(t * 0.2) + 0.15 * sin(t * 0.47);
+    if (uv.y < hz) {
+        // Sky in dithered bands: deep at the top, burning orange low down.
+        float g = uv.y / hz;
+        float band = floor(g * 8.0 + d) / 8.0;
+        col = mix(mix(BG * 1.5, A * 0.5, 0.4), mix(float3(1.0, 0.55, 0.25), S, 0.25), band);
+        // The sun, striped by the dither towards its base.
+        float2 sp = float2(asp * 0.5 - curve * 0.25, hz - 0.05);
+        float sd = length(uv - sp);
+        float sun = step(sd, 0.12) * step(d * 0.6, 1.0 - smoothstep(hz - 0.12, hz, uv.y));
+        col = mix(col, mix(float3(1.0, 0.9, 0.5), S, 0.2), sun);
+        col += float3(1.0, 0.6, 0.3) * step(sd, 0.18 + d * 0.02) * 0.12;
+        // Polygon mountains: straight-edged peaks, flat-shaded (lit and shadow sides).
+        float mx = uv.x + curve * 0.3;
+        float seg = floor(mx * 6.0);
+        float fx = fract(mx * 6.0);
+        float h0 = 0.08 + 0.1 * hash11(seg);
+        float h1 = 0.08 + 0.1 * hash11(seg + 1.0);
+        float peakX = 0.3 + 0.4 * hash11(seg * 7.0);
+        float pk = 0.14 + 0.12 * hash11(seg * 3.0);
+        float mh = fx < peakX ? mix(h0, pk, fx / peakX) : mix(pk, h1, (fx - peakX) / (1.0 - peakX));
+        float mTop = hz - mh;
+        float3 mc = mix(BG * 1.2, A * 0.3, 0.3) * (fx < peakX ? 1.25 : 0.75);
+        col = mix(col, mc, step(mTop, uv.y));
+    } else {
+        // Road: perspective with alternating segment shading, kerbs and a centre line.
+        float dy = uv.y - hz;
+        float z = 0.1 / dy;
+        float x = (uv.x - asp * 0.5) * z + curve * z * z * 0.12 - curve * 0.2;
+        float segP = fract(z * 0.5 - t * 3.0);
+        float alt = step(0.5, segP);
+        float3 grass = mix(mix(float3(0.15, 0.32, 0.12), float3(0.2, 0.4, 0.15), alt), BG, 0.25);
+        float3 road = mix(float3(0.32, 0.32, 0.36), float3(0.36, 0.36, 0.4), alt);
+        float w = 0.18;
+        col = grass;
+        col = mix(col, road, step(abs(x), w));
+        col = mix(col, mix(float3(0.9, 0.12, 0.1), float3(0.95), alt), step(w, abs(x)) * step(abs(x), w + 0.025));
+        col = mix(col, float3(0.95), step(abs(x), 0.006) * alt);
+        // Lane lines.
+        col = mix(col, float3(0.85), step(abs(abs(x) - 0.09), 0.003) * alt);
+        // Haze near the horizon.
+        col = mix(col, mix(float3(1.0, 0.6, 0.35), S, 0.25) * 0.8, exp(-dy * 25.0) * 0.7);
+        // The rival's car ahead: a blocky shape with tail lights.
+        float carZ = 6.0 + 1.5 * sin(t * 0.3);
+        float carY = hz + 0.1 / carZ;
+        float carX = asp * 0.5 + (0.07 * sin(t * 0.25) + curve * 0.2 - curve * carZ * carZ * 0.12) / carZ;
+        float2 cq = (uv - float2(carX, carY - 0.012 / carZ * 6.0)) * carZ * 4.0;
+        float body = step(abs(cq.x), 0.4) * step(abs(cq.y + 0.05), 0.12);
+        float roof = step(abs(cq.x), 0.25) * step(abs(cq.y + 0.2), 0.06);
+        col = mix(col, mix(A * 0.6, float3(0.2), 0.3), max(body, roof));
+        float tail = step(abs(abs(cq.x) - 0.3), 0.07) * step(abs(cq.y + 0.08), 0.03);
+        col = mix(col, float3(1.0, 0.2, 0.15), tail);
+    }
+    // Roadside poles flicking past on both sides.
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float ph = fract(fi / 6.0 + t * 0.5);
+        float z = 8.0 * (1.0 - ph) + 0.4;
+        float side = mod(fi, 2.0) * 2.0 - 1.0;
+        float xx = asp * 0.5 + (side * 0.26 - curve * z * z * 0.12 + curve * 0.2) / z;
+        float base = hz + 0.1 / z;
+        float hh = 0.14 / z;
+        float pole = step(abs(uv.x - xx), max(0.003 / z, 0.5 / 240.0)) * step(base - hh, uv.y) * step(uv.y, base);
+        float sign_ = step(abs(uv.x - xx - side * 0.02 / z), 0.03 / z) * step(abs(uv.y - (base - hh)), 0.018 / z);
+        col = mix(col, float3(0.85, 0.85, 0.8), pole);
+        col = mix(col, mix(A, S, mod(fi, 3.0) / 2.0), sign_ * step(0.5, mod(fi, 2.0) + 0.5));
+    }
+    // Speed lines at the edges.
+    float sl = step(0.93, hash12(float2(floor(atan(uv.y - hz, uv.x - asp * 0.5) * 40.0), floor(t * 12.0))));
+    col = mix(col, float3(1.0), sl * smoothstep(0.35, 0.8, length((uv - float2(asp * 0.5, hz)) / float2(asp * 0.5, 0.5))) * 0.2 * step(hz, uv.y));
+    // Quantize the colours like a 15-bit frame buffer.
+    col = floor(col * 31.0 + d) / 31.0;
+    return half4(finish(col * 0.9, fc), 1.0);
+}

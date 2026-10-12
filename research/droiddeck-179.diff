@@ -1,0 +1,747 @@
+diff --git a/app/src/main/java/com/droiddeck/launcher/App.kt b/app/src/main/java/com/droiddeck/launcher/App.kt
+index 2476bcc4..bbaa0a81 100644
+--- a/app/src/main/java/com/droiddeck/launcher/App.kt
++++ b/app/src/main/java/com/droiddeck/launcher/App.kt
+@@ -20,5 +20,6 @@ class App : Application() {
+         com.droiddeck.launcher.update.AppUpdates.init(this)
+         GpuClockPin.clearLeftover(this)
+         BwrapSpawner.start(this)
++        com.droiddeck.launcher.frontend.GameFileSync.start(this)
+     }
+ }
+diff --git a/app/src/main/java/com/droiddeck/launcher/MainActivity.kt b/app/src/main/java/com/droiddeck/launcher/MainActivity.kt
+index 6a327203..0f177933 100644
+--- a/app/src/main/java/com/droiddeck/launcher/MainActivity.kt
++++ b/app/src/main/java/com/droiddeck/launcher/MainActivity.kt
+@@ -379,6 +379,18 @@ class MainActivity : ComponentActivity() {
+     private var shortcutLibraryScanning by mutableStateOf(false)
+     @Volatile private var libraryScanGeneration = 0
+     private var pendingGameLink: String? = null
++    private var gameSyncFolder by mutableStateOf<String?>(null)
++    private fun pickGameExport(game: Library.SteamGame?) {
++        onSavePicked = { folder ->
++            saveAction(getString(R.string.game_frontend_files)) {
++                if (game != null) com.droiddeck.launcher.frontend.GameFiles.export(folder, game)
++                else com.droiddeck.launcher.frontend.GameFileSync.enable(this, folder)
++                ui.post { gameSyncFolder = com.droiddeck.launcher.frontend.GameFileSync.folder(this) }
++                getString(R.string.game_file_exported, folder.path)
++            }
++        }
++        pickSaveDir.launch(InAppFilePicker.buildDirIntent(this, getString(R.string.game_file_folder), gameSyncFolder))
++    }
+ 
+     private fun readGameIntent(request: Intent) {
+         shortcutPicker = request.action == Intent.ACTION_CREATE_SHORTCUT
+@@ -387,10 +399,20 @@ class MainActivity : ComponentActivity() {
+             steamGames = emptyList()
+             shortcutLibraryScanning = true
+         } else shortcutLibraryScanning = false
+-        pendingGameLink = if (request.action == Intent.ACTION_VIEW)
+-            com.droiddeck.launcher.frontend.GameLaunchLink.parse(request.dataString) else null
+-        if (request.action == Intent.ACTION_VIEW && pendingGameLink == null) {
+-            android.widget.Toast.makeText(this, R.string.game_link_invalid, android.widget.Toast.LENGTH_LONG).show()
++        pendingGameLink = null
++        if (request.action == Intent.ACTION_VIEW) {
++            val copy = Intent(request)
++            Thread({
++                val id = com.droiddeck.launcher.frontend.GameFiles.readIntent(this, copy)
++                ui.post {
++                    if (intent === request && !isDestroyed) {
++                        pendingGameLink = id
++                        if (id == null) {
++                            android.widget.Toast.makeText(this, R.string.game_link_invalid, android.widget.Toast.LENGTH_LONG).show()
++                        } else refresh()
++                    }
++                }
++            }, "game-launch-file").start()
+         }
+     }
+ 
+@@ -439,6 +461,7 @@ class MainActivity : ComponentActivity() {
+     override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
+         readGameIntent(intent)
++        gameSyncFolder = com.droiddeck.launcher.frontend.GameFileSync.folder(this)
+         displayManager = getSystemService(DISPLAY_SERVICE) as DisplayManager
+         refreshPhantomStatus()
+         theme = SessionPrefs.theme(this)
+@@ -467,6 +490,7 @@ class MainActivity : ComponentActivity() {
+                         installed = installed, ready = ready, available = available?.version,
+                         shortcutPicker = shortcutPicker,
+                         shortcutLibraryScanning = shortcutLibraryScanning,
++                        gameSyncFolder = gameSyncFolder,
+                         busy = busy, stage = stage, percent = percent,
+                         desktopInstalled = desktopInstalled,
+                         offlineAccount = offlineAccount, offline = offline,
+@@ -508,6 +532,14 @@ class MainActivity : ComponentActivity() {
+                         },
+                         onSteamGame = { g -> if (shortcutPicker) chooseGameShortcut(g) else launchGame(g) },
+                         onGameShortcut = { g -> com.droiddeck.launcher.frontend.GameShortcuts.pin(this, g) },
++                        onExportGameFile = { g -> pickGameExport(g) },
++                        onSyncGameFiles = { pickGameExport(null) },
++                        onStopGameFileSync = {
++                            Thread({
++                                com.droiddeck.launcher.frontend.GameFileSync.disable(this)
++                                ui.post { gameSyncFolder = null }
++                            }, "game-file-stop-sync").start()
++                        },
+                         onCopyGameLink = { g ->
+                             (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(
+                                 ClipData.newPlainText(g.name, com.droiddeck.launcher.frontend.GameLaunchLink.uri(g.gameIdString)))
+@@ -1353,15 +1385,7 @@ class MainActivity : ComponentActivity() {
+             // One update with the whole list: the wall places games by their position in it, so a
+             // partial list first would shuffle every capsule when the rest arrived. LibraryCache
+             // covers the wait.
+-            val games = if (ready) Library.steamGames(this) + com.droiddeck.launcher.frontend.AddedGames.scan(this).map { g ->
+-                com.droiddeck.launcher.frontend.AddedGameArt.resolve(this, g).let { art ->
+-                    Library.SteamGame(
+-                        g.steamAppId ?: g.appId.toInt(), g.name, art.portrait ?: art.header, Library.ADDED, g.gameId,
+-                        hero = art.hero ?: art.header, gameFiles = g.folder,
+-                        protonPrefix = Library.protonPrefix(this, g.steamAppId?.toLong() ?: g.appId),
+-                    )
+-                }
+-            } else emptyList()
++            val games = if (ready) Library.launchableGames(this) else emptyList()
+             val emus = Library.emulators(this) { id -> DesktopCatalog.installed(this, id) != null }
+             val all = games.distinctBy { it.gameId }
+             if (ready) com.droiddeck.launcher.frontend.LibraryCache.save(this, all)
+diff --git a/app/src/main/java/com/droiddeck/launcher/frontend/GameFileSync.kt b/app/src/main/java/com/droiddeck/launcher/frontend/GameFileSync.kt
+new file mode 100644
+index 00000000..b9844492
+--- /dev/null
++++ b/app/src/main/java/com/droiddeck/launcher/frontend/GameFileSync.kt
+@@ -0,0 +1,54 @@
++package com.droiddeck.launcher.frontend
++
++import android.content.Context
++import android.util.Log
++import com.droiddeck.launcher.runtime.LinuxRuntime
++import com.droiddeck.launcher.session.GameStorage
++import com.droiddeck.launcher.session.SessionPrefs
++import java.io.File
++import java.util.concurrent.Executors
++import java.util.concurrent.TimeUnit
++
++/** Runs while DroidDeck's process is alive, including downloads in a background Steam session. */
++object GameFileSync {
++    private val worker = Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "game-file-sync").apply { isDaemon = true } }
++    private fun prefs(context: Context) = context.getSharedPreferences("game_files", Context.MODE_PRIVATE)
++    fun folder(context: Context): String? = prefs(context).getString("folder", null)
++
++    fun start(context: Context) {
++        val app = context.applicationContext
++        worker.scheduleWithFixedDelay({
++            runCatching { syncConfigured(app) }.onFailure { Log.w("GameFileSync", "Sync failed: ${it.message}") }
++        }, 0, 30, TimeUnit.SECONDS)
++    }
++
++    @Synchronized internal fun syncConfigured(context: Context) {
++        val path = folder(context) ?: return
++        sync(context, File(path))
++    }
++
++    @Synchronized fun enable(context: Context, folder: File) {
++        sync(context, folder)
++        prefs(context).edit().putString("folder", folder.absolutePath).apply()
++    }
++
++    @Synchronized fun disable(context: Context) {
++        prefs(context).edit().remove("folder").apply()
++    }
++
++    @Synchronized private fun sync(context: Context, folder: File) {
++        check(LinuxRuntime.isInstalled(context)) { "Install the runtime first" }
++        // A disconnected library must not be interpreted as a mass uninstall.
++        check(File(LinuxRuntime.rootDir(context), "root/.local/share/Steam/steamapps").isDirectory) { "Steam library is unavailable" }
++        val storage = GameStorage.effective(context)
++        val storageSetting = SessionPrefs.gameStorage(context)
++        val previousStorage = prefs(context).getString("storagePath", null)
++        if (storageSetting.isEmpty() && prefs(context).getString("storageSetting", null) == storageSetting && previousStorage != null) {
++            check(File(previousStorage).isDirectory) { "Previous SD library is unavailable" }
++        }
++        storage?.let { check(File(it.path).listFiles() != null) { "Game storage is unavailable" } }
++        SessionPrefs.addedGamesDirs(context).forEach { check(File(it).listFiles() != null) { "Added games folder is unavailable" } }
++        GameFiles.sync(folder, Library.launchableGames(context, strictRead = true))
++        prefs(context).edit().putString("storageSetting", storageSetting).putString("storagePath", storage?.path).apply()
++    }
++}
+diff --git a/app/src/main/java/com/droiddeck/launcher/frontend/GameFiles.kt b/app/src/main/java/com/droiddeck/launcher/frontend/GameFiles.kt
+new file mode 100644
+index 00000000..58e58cd0
+--- /dev/null
++++ b/app/src/main/java/com/droiddeck/launcher/frontend/GameFiles.kt
+@@ -0,0 +1,133 @@
++package com.droiddeck.launcher.frontend
++
++import android.content.Context
++import android.content.Intent
++import android.util.AtomicFile
++import androidx.core.util.readText
++import androidx.core.util.writeBytes
++import androidx.core.util.writeText
++import org.json.JSONObject
++import java.io.File
++import java.io.InputStream
++
++/** Small, portable launch files for frontends that scan ROM folders. No guest paths or commands. */
++object GameFiles {
++    const val EXTENSION = "droiddeck"
++    private const val MAX_BYTES = 128
++    private const val INVENTORY = ".droiddeck-sync.json"
++    private const val FORMAT = "droiddeck-game-files-v1"
++
++    /** Called on a worker: content providers and shared storage may block. */
++    fun readIntent(context: Context, request: Intent): String? = runCatching {
++        if (request.action != Intent.ACTION_VIEW) return null
++        val uri = request.data ?: return null
++        GameLaunchLink.parse(uri.toString())?.let { return it }
++        val stream = when (uri.scheme) {
++            "content" -> context.contentResolver.openInputStream(uri)
++            "file" -> {
++                if (!uri.authority.isNullOrEmpty() || uri.query != null || uri.fragment != null) return null
++                File(uri.path ?: return null).inputStream()
++            }
++            null -> File(uri.toString()).takeIf { it.isAbsolute }?.inputStream()
++            else -> null
++        } ?: return null
++        stream.use(::read)
++    }.getOrNull()
++
++    fun read(stream: InputStream): String? {
++        // An untrusted URI must not make us buffer an arbitrary ROM or parse a command.
++        val bytes = ByteArray(MAX_BYTES + 1)
++        var count = 0
++        while (count < bytes.size) {
++            val n = stream.read(bytes, count, bytes.size - count)
++            if (n < 0) break
++            if (n == 0) return null
++            count += n
++        }
++        if (count > MAX_BYTES) return null
++        val text = String(bytes, 0, count, Charsets.UTF_8).trim()
++        return GameLaunchLink.parse(text) ?: text.takeIf(GameLaunchLink::validId)
++    }
++
++    fun filename(game: Library.SteamGame): String {
++        val sanitized = game.name.replace(Regex("[\\p{Cntrl}\\\\/:*?\"<>|]"), "_")
++            .trim().trim('.').ifBlank { "Game" }
++        val points = sanitized.codePoints().limit(40).toArray()
++        val title = String(points, 0, points.size)
++        return "$title (${game.gameIdString}).$EXTENSION"
++    }
++
++    private fun contents(id: String) = GameLaunchLink.uri(id) + "\n"
++
++    @Synchronized fun export(folder: File, game: Library.SteamGame): File {
++        require(folder.isDirectory) { "Folder is unavailable" }
++        val target = child(folder, filename(game))
++        val text = contents(game.gameIdString)
++        require(!target.exists() || matches(target, text)) { "A different file already uses ${target.name}" }
++        if (!target.exists()) write(target, text)
++        exportArt(folder, game)
++        return target
++    }
++
++    /** Cocoon matches icons in its data folder's images directory. Never replace custom art. */
++    private fun exportArt(folder: File, game: Library.SteamGame) {
++        val art = listOfNotNull(game.icon, game.art).firstOrNull {
++            it.isFile && it.extension.lowercase() in listOf("jpg", "jpeg", "png", "webp")
++        } ?: return
++        val title = filename(game).substringBeforeLast(" (${game.gameIdString})")
++            .replace(Regex("\\[[^]]*]|\\([^)]*\\)"), "")
++            .replace(Regex("[^a-zA-Z0-9\\s]"), "").trim()
++            .replace(Regex("\\s+"), "-").lowercase(java.util.Locale.ROOT).take(50).trimEnd('-')
++        if (title.isEmpty()) return
++        val images = child(folder, "images")
++        check(images.isDirectory || images.mkdir()) { "Artwork folder is unavailable" }
++        val target = child(images, "$title-icon.${art.extension.lowercase()}")
++        if (!target.exists()) AtomicFile(target).writeBytes(art.readBytes())
++    }
++
++    /** Only remove files in our inventory whose content is still exactly what we wrote. */
++    @Synchronized fun sync(folder: File, games: List<Library.SteamGame>) {
++        require(folder.isDirectory) { "Folder is unavailable" }
++        val inventory = child(folder, INVENTORY)
++        val previous = if (inventory.exists()) {
++            val record = JSONObject(AtomicFile(inventory).readText())
++            require(record.optString("format") == FORMAT) { "Folder has an unrelated sync inventory" }
++            record.getJSONObject("games")
++        } else JSONObject()
++        val next = JSONObject()
++        val exports = games.distinctBy { it.gameId }.map { game ->
++            val target = child(folder, filename(game))
++            // Keep an edited export without letting it block the rest of the library sync.
++            val file = if (previous.optString(target.name) == game.gameIdString && target.exists() &&
++                !matches(target, contents(game.gameIdString))) target else export(folder, game)
++            next.put(file.name, game.gameIdString)
++            file
++        }
++        // Write new exports before pruning; a failed write must not remove old launch files.
++        for (name in previous.keys()) {
++            val id = previous.getString(name)
++            if (!next.has(name) && name.endsWith(".$EXTENSION") && GameLaunchLink.validId(id)) {
++                val file = child(folder, name)
++                if (matches(file, contents(id))) {
++                    // Android shared storage is often case insensitive. A case-only rename may
++                    // still resolve to the live export, which must not be pruned as an old file.
++                    val retained = exports.any { java.nio.file.Files.isSameFile(it.toPath(), file.toPath()) }
++                    if (!retained) check(file.delete()) { "Could not remove $name" }
++                }
++            }
++        }
++        if (previous.toString() != next.toString()) write(inventory, JSONObject().put("format", FORMAT).put("games", next).toString())
++    }
++
++    private fun child(folder: File, name: String): File {
++        require(name.isNotEmpty() && '/' !in name && '\\' !in name && name != "." && name != "..")
++        val file = File(folder, name)
++        require(file.canonicalFile.parentFile == folder.canonicalFile) { "File leaves the export folder" }
++        return file
++    }
++
++    private fun matches(file: File, text: String) = file.isFile && file.length() == text.toByteArray().size.toLong() &&
++        file.readText() == text
++
++    private fun write(file: File, text: String) = AtomicFile(file).writeText(text)
++}
+diff --git a/app/src/main/java/com/droiddeck/launcher/frontend/GameShortcuts.kt b/app/src/main/java/com/droiddeck/launcher/frontend/GameShortcuts.kt
+index 700839bd..5cd22165 100644
+--- a/app/src/main/java/com/droiddeck/launcher/frontend/GameShortcuts.kt
++++ b/app/src/main/java/com/droiddeck/launcher/frontend/GameShortcuts.kt
+@@ -19,7 +19,7 @@ object GameShortcuts {
+ 
+     private fun info(context: Context, game: Library.SteamGame): ShortcutInfo {
+         val name = game.name.ifBlank { context.getString(R.string.app_name) }
+-        val icon = game.art?.takeIf { it.isFile }?.let { file -> runCatching {
++        val icon = listOfNotNull(game.icon, game.art).firstNotNullOfOrNull { file -> runCatching {
+             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+             BitmapFactory.decodeFile(file.path, bounds)
+             if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@runCatching null
+diff --git a/app/src/main/java/com/droiddeck/launcher/frontend/Library.kt b/app/src/main/java/com/droiddeck/launcher/frontend/Library.kt
+index 480c6a6f..886cb872 100644
+--- a/app/src/main/java/com/droiddeck/launcher/frontend/Library.kt
++++ b/app/src/main/java/com/droiddeck/launcher/frontend/Library.kt
+@@ -23,6 +23,7 @@ object Library {
+         val appId: Int, val name: String, val art: File?, val library: String, val gameId: Long = appId.toLong(),
+         val hero: File? = null, val lastPlayed: Long = 0L,
+         val gameFiles: File? = null, val protonPrefix: File? = null,
++        val icon: File? = null,
+     ) {
+         /** Decimal form used by Steam links and Android shortcuts, including unsigned shortcut ids. */
+         val gameIdString: String get() = java.lang.Long.toUnsignedString(gameId)
+@@ -71,6 +72,7 @@ object Library {
+     )
+     private val STEAM_CAPSULES = listOf("library_capsule.jpg", "library_600x900.jpg")
+     private val STEAM_HEROES = listOf("library_hero.jpg")
++    private val STEAM_ICON = Regex("[a-fA-F0-9]{40}\\.(jpg|png)")
+     private val NAME = Regex("^\\s*\"name\"\\s*\"([^\"]*)\"", RegexOption.MULTILINE)
+     private val STATE = Regex("^\\s*\"StateFlags\"\\s*\"(\\d+)\"", RegexOption.MULTILINE)
+     private val LAST_PLAYED = Regex("^\\s*\"LastPlayed\"\\s*\"(\\d+)\"", RegexOption.MULTILINE)
+@@ -99,18 +101,19 @@ object Library {
+             .firstOrNull { it.isDirectory }
+     }
+ 
+-    fun steamGames(context: Context): List<SteamGame> {
++    fun steamGames(context: Context, strictRead: Boolean = false): List<SteamGame> {
+         val root = File(LinuxRuntime.rootDir(context), "root/.local/share/Steam")
+         val cache = File(root, "appcache/librarycache")
+         val libraries = steamLibraries(context)
+         val out = LinkedHashMap<Int, SteamGame>()
+         for ((library, label) in libraries) {
+             val steamapps = File(library, "steamapps")
+-            steamapps.listFiles { f -> f.isFile && f.name.startsWith("appmanifest_") && f.name.endsWith(".acf") }
+-                ?.sortedBy { it.name }?.forEach { manifest ->
++            val manifests = steamapps.listFiles { f -> f.isFile && f.name.startsWith("appmanifest_") && f.name.endsWith(".acf") }
++            if (strictRead && steamapps.isDirectory) check(manifests != null) { "Steam manifests are unavailable" }
++            manifests?.sortedBy { it.name }?.forEach { manifest ->
+                     val appId = manifest.name.removePrefix("appmanifest_").removeSuffix(".acf").toIntOrNull() ?: return@forEach
+                     if (appId in NOT_GAMES || out.containsKey(appId)) return@forEach
+-                    val text = try { manifest.readText() } catch (e: Exception) { return@forEach }
++                    val text = try { manifest.readText() } catch (e: Exception) { if (strictRead) throw e; return@forEach }
+                     val name = NAME.find(text)?.groupValues?.get(1)?.trim().orEmpty()
+                     val flags = STATE.find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                     // StateFlags 4 = fully installed; anything else is downloading, updating or broken.
+@@ -128,12 +131,26 @@ object Library {
+                         appId, name, art, label, hero = hero, lastPlayed = lastPlayed,
+                         gameFiles = gameFiles,
+                         protonPrefix = protonPrefix(context, appId.toLong(), library),
++                        icon = steamCacheImage(cache, appId, listOf("icon.jpg", "icon.png"))
++                            ?: File(cache, appId.toString()).listFiles()?.firstOrNull { it.isFile && STEAM_ICON.matches(it.name) },
+                     )
+                 }
+         }
+         return out.values.toList()
+     }
+ 
++    /** The same installed-game inventory used for links, shortcuts and file exports. */
++    fun launchableGames(context: Context, strictRead: Boolean = false): List<SteamGame> = (steamGames(context, strictRead) + AddedGames.scan(context).map { g ->
++        AddedGameArt.resolve(context, g).let { art ->
++            SteamGame(
++                g.steamAppId ?: g.appId.toInt(), g.name, art.portrait ?: art.header, ADDED, g.gameId,
++                hero = art.hero ?: art.header, gameFiles = g.folder,
++                protonPrefix = protonPrefix(context, g.steamAppId?.toLong() ?: g.appId),
++                icon = art.icon?.takeIf { it.extension.lowercase() != "ico" },
++            )
++        }
++    }).distinctBy { it.gameId }
++
+     /** Steam stores current library art inside hash-named folders under the app's cache dir. */
+     private fun steamCacheImage(cache: File, appId: Int, names: List<String>): File? {
+         val appDir = File(cache, appId.toString())
+diff --git a/app/src/main/java/com/droiddeck/launcher/frontend/LibraryCache.kt b/app/src/main/java/com/droiddeck/launcher/frontend/LibraryCache.kt
+index afe842d7..2add2468 100644
+--- a/app/src/main/java/com/droiddeck/launcher/frontend/LibraryCache.kt
++++ b/app/src/main/java/com/droiddeck/launcher/frontend/LibraryCache.kt
+@@ -25,6 +25,7 @@ object LibraryCache {
+                 appId = o.getInt("appId"), name = o.getString("name"), art = o.file("art"),
+                 library = o.getString("library"), gameId = o.getLong("gameId"), hero = o.file("hero"),
+                 lastPlayed = o.optLong("lastPlayed"), gameFiles = o.file("gameFiles"), protonPrefix = o.file("protonPrefix"),
++                icon = o.file("icon"),
+             )
+         }
+     }.getOrElse { e -> Log.w(TAG, "unreadable, ignored: ${e.message}"); emptyList() }
+@@ -35,7 +36,7 @@ object LibraryCache {
+             for (g in games) array.put(
+                 JSONObject().put("appId", g.appId).put("name", g.name).put("library", g.library).put("gameId", g.gameId)
+                     .put("lastPlayed", g.lastPlayed).putFile("art", g.art).putFile("hero", g.hero)
+-                    .putFile("gameFiles", g.gameFiles).putFile("protonPrefix", g.protonPrefix),
++                    .putFile("gameFiles", g.gameFiles).putFile("protonPrefix", g.protonPrefix).putFile("icon", g.icon),
+             )
+             val f = file(context)
+             val tmp = File(f.path + ".tmp")
+diff --git a/app/src/main/java/com/droiddeck/launcher/ui/FrontEndGames.kt b/app/src/main/java/com/droiddeck/launcher/ui/FrontEndGames.kt
+index 9dc2d0d0..90917377 100644
+--- a/app/src/main/java/com/droiddeck/launcher/ui/FrontEndGames.kt
++++ b/app/src/main/java/com/droiddeck/launcher/ui/FrontEndGames.kt
+@@ -73,6 +73,7 @@ internal fun GamesPage(s: FrontEndState, a: FrontEndActions, selected: String, o
+             if (!s.shortcutPicker) Rise(2) {
+                 Actions { PrimaryButton(stringResource(R.string.games_play_steam), enabled = !s.busy, main = true, icon = Icons.Filled.PlayArrow, modifier = Modifier.padding(top = 12.dp), onClick = a.onPlay) }
+             }
++            GameFileFolderActions(s, a)
+         }
+         return
+     }
+@@ -90,6 +91,7 @@ internal fun GamesPage(s: FrontEndState, a: FrontEndActions, selected: String, o
+             }
+             Rise(1) { SectionTitle(stringResource(R.string.games_launch_settings), null) }
+             Rise(2) { LaunchSettings(s, a, host) }
++            Rise(3) { GameFileFolderActions(s, a) }
+         }
+         return
+     }
+@@ -108,6 +110,24 @@ internal fun GamesPage(s: FrontEndState, a: FrontEndActions, selected: String, o
+             }
+             SectionTitle(stringResource(R.string.games_launch_settings), null)
+             LaunchSettings(s, a, host)
++            GameFileFolderActions(s, a)
++        }
++    }
++}
++
++@Composable
++private fun GameFileFolderActions(s: FrontEndState, a: FrontEndActions) {
++    if (s.shortcutPicker) return
++    var open by remember { androidx.compose.runtime.mutableStateOf(false) }
++    Box(Modifier.padding(top = 12.dp)) {
++        SecondaryButton(stringResource(R.string.game_frontend_files), compact = true) { open = !open }
++        AnchoredMenu(open, onDismiss = { open = false }, title = s.gameSyncFolder ?: stringResource(R.string.game_frontend_files)) { first ->
++            MenuItem(stringResource(R.string.game_file_sync), checked = false, focusRequester = first) {
++                open = false; a.onSyncGameFiles()
++            }
++            if (s.gameSyncFolder != null) MenuItem(stringResource(R.string.game_file_stop_sync), checked = false) {
++                open = false; a.onStopGameFileSync()
++            }
+         }
+     }
+ }
+@@ -139,6 +159,9 @@ private fun GameShortcutMenu(g: Library.SteamGame, a: FrontEndActions) {
+             MenuItem(stringResource(R.string.game_shortcut_add), checked = false, focusRequester = first) {
+                 open = false; a.onGameShortcut(g)
+             }
++            MenuItem(stringResource(R.string.game_file_export), checked = false) {
++                open = false; a.onExportGameFile(g)
++            }
+             MenuItem(stringResource(R.string.game_link_copy), checked = false) {
+                 open = false; a.onCopyGameLink(g)
+             }
+diff --git a/app/src/main/java/com/droiddeck/launcher/ui/FrontEndScreen.kt b/app/src/main/java/com/droiddeck/launcher/ui/FrontEndScreen.kt
+index 442a9940..8931de7e 100644
+--- a/app/src/main/java/com/droiddeck/launcher/ui/FrontEndScreen.kt
++++ b/app/src/main/java/com/droiddeck/launcher/ui/FrontEndScreen.kt
+@@ -98,6 +98,7 @@ class FrontEndState(
+     val lossless: Lossless.State = Lossless.State.NONE,
+     val shortcutPicker: Boolean = false,
+     val shortcutLibraryScanning: Boolean = false,
++    val gameSyncFolder: String? = null,
+     val pageKey: String? = null,
+     val theme: String = Themes.GRAPHITE,
+     val isHomeApp: Boolean = false,
+@@ -129,6 +130,9 @@ class FrontEndActions(
+     val onPlayDesktopUi: () -> Unit,
+     val onSteamGame: (Library.SteamGame) -> Unit,
+     val onGameShortcut: (Library.SteamGame) -> Unit = {},
++    val onExportGameFile: (Library.SteamGame) -> Unit = {},
++    val onSyncGameFiles: () -> Unit = {},
++    val onStopGameFileSync: () -> Unit = {},
+     val onCopyGameLink: (Library.SteamGame) -> Unit = {},
+     val onDesktop: () -> Unit,
+     val onEmulator: (Library.Emulator) -> Unit,
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+index 32082112..169b7f2f 100644
+--- a/app/src/main/res/values/strings.xml
++++ b/app/src/main/res/values/strings.xml
+@@ -935,4 +935,10 @@
+     <string name="game_link_missing">This game is no longer in your DroidDeck library.</string>
+     <string name="game_link_session_busy">Stop the current session before launching a Steam game.</string>
+     <string name="game_link_failed">Could not send the game to Steam. Try launching it again.</string>
++    <string name="game_file_export">Export game file</string>
++    <string name="game_file_sync">Sync all game files to folder</string>
++    <string name="game_file_stop_sync">Stop syncing game files</string>
++    <string name="game_file_folder">Choose a folder for frontend game files</string>
++    <string name="game_file_exported">Game files saved to %1$s</string>
++    <string name="game_frontend_files">Frontend files</string>
+ </resources>
+diff --git a/app/src/test/java/com/droiddeck/launcher/frontend/GameFileSyncTest.kt b/app/src/test/java/com/droiddeck/launcher/frontend/GameFileSyncTest.kt
+new file mode 100644
+index 00000000..5025d9dd
+--- /dev/null
++++ b/app/src/test/java/com/droiddeck/launcher/frontend/GameFileSyncTest.kt
+@@ -0,0 +1,49 @@
++package com.droiddeck.launcher.frontend
++
++import com.droiddeck.launcher.runtime.LinuxRuntime
++import com.droiddeck.launcher.session.SessionPrefs
++import org.junit.Assert.*
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.RuntimeEnvironment
++import org.robolectric.annotation.Config
++import java.io.File
++
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [33])
++class GameFileSyncTest {
++    @Test fun syncUsesFreshInstalledManifestsAndStopsWhenDisabled() {
++        val context = RuntimeEnvironment.getApplication()
++        val root = LinuxRuntime.rootDir(context)
++        listOf("usr/bin/gamescope", LinuxRuntime.SESSION_SCRIPT.removePrefix("/"), "opt/android-host/proot", "opt/android-host/loader").forEach { path ->
++            File(root, path).apply { parentFile!!.mkdirs(); writeText("") }
++        }
++        SessionPrefs.setGameStorage(context, SessionPrefs.GAME_STORAGE_OFF, "")
++        SessionPrefs.setAddedGamesDirs(context, emptyList())
++        val steamapps = File(root, "root/.local/share/Steam/steamapps").apply { mkdirs() }
++        val manifest = File(steamapps, "appmanifest_8400.acf").apply {
++            writeText("\"AppState\"\n{\n\"name\" \"Geometry Wars\"\n\"StateFlags\" \"4\"\n}")
++        }
++        val folder = File(context.filesDir, "exports").apply { mkdirs() }
++        GameFileSync.enable(context, folder)
++        assertEquals(folder.path, GameFileSync.folder(context))
++        assertEquals(1, folder.listFiles()!!.count { it.extension == GameFiles.EXTENSION })
++        // An unavailable source must leave the existing export intact.
++        val unavailable = File(steamapps.parentFile, "steamapps-unavailable")
++        assertTrue(steamapps.renameTo(unavailable))
++        assertThrows(IllegalStateException::class.java) { GameFileSync.syncConfigured(context) }
++        assertEquals(1, folder.listFiles()!!.count { it.extension == GameFiles.EXTENSION })
++        assertTrue(unavailable.renameTo(steamapps))
++        // A genuine uninstall removes the owned export at the next tick.
++        assertTrue(manifest.delete())
++        GameFileSync.syncConfigured(context)
++        assertEquals(0, folder.listFiles()!!.count { it.extension == GameFiles.EXTENSION })
++        // Disabled sync does not write files for new installs.
++        GameFileSync.disable(context)
++        manifest.writeText("\"name\" \"Geometry Wars\"\n\"StateFlags\" \"4\"")
++        GameFileSync.syncConfigured(context)
++        assertNull(GameFileSync.folder(context))
++        assertEquals(0, folder.listFiles()!!.count { it.extension == GameFiles.EXTENSION })
++    }
++}
+diff --git a/app/src/test/java/com/droiddeck/launcher/frontend/GameFilesTest.kt b/app/src/test/java/com/droiddeck/launcher/frontend/GameFilesTest.kt
+new file mode 100644
+index 00000000..a6cb43d0
+--- /dev/null
++++ b/app/src/test/java/com/droiddeck/launcher/frontend/GameFilesTest.kt
+@@ -0,0 +1,170 @@
++package com.droiddeck.launcher.frontend
++
++import android.content.ContentProvider
++import android.content.ContentValues
++import android.content.Intent
++import android.database.Cursor
++import android.net.Uri
++import android.os.ParcelFileDescriptor
++import org.junit.Assert.*
++import org.junit.Rule
++import org.junit.Test
++import org.junit.rules.TemporaryFolder
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.RuntimeEnvironment
++import org.robolectric.annotation.Config
++import org.robolectric.shadows.ShadowContentResolver
++import java.io.ByteArrayInputStream
++import java.io.File
++
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [33])
++class GameFilesTest {
++    @get:Rule val tmp = TemporaryFolder()
++    private fun game(id: String = "8400", name: String = "Geometry Wars") =
++        Library.SteamGame(8400, name, null, "internal", id.toULong().toLong())
++
++    @Test fun exportsPortableFilesAndAcceptsFileUriRawPathAndContentUri() {
++        val folder = tmp.newFolder()
++        val file = GameFiles.export(folder, game("18446744073709551615", "A/B: C"))
++        assertEquals("A_B_ C (18446744073709551615).droiddeck", file.name)
++        assertEquals("droiddeck://game/18446744073709551615\n", file.readText())
++        val context = RuntimeEnvironment.getApplication()
++        listOf(Uri.fromFile(file), Uri.parse(file.path)).forEach { uri ->
++            assertEquals("18446744073709551615", GameFiles.readIntent(context, Intent(Intent.ACTION_VIEW, uri)))
++        }
++        val provider = LaunchFileProvider(file)
++        provider.attachInfo(context, android.content.pm.ProviderInfo().apply { authority = "frontend" })
++        ShadowContentResolver.registerProviderInternal("frontend", provider)
++        // Providers often give opaque document IDs with no filename extension.
++        val uri = Uri.parse("content://frontend/document/opaque%3A42")
++        assertEquals("18446744073709551615", GameFiles.readIntent(context, Intent(Intent.ACTION_VIEW, uri)))
++    }
++
++    @Test fun rejectsCommandsMalformedIdsLargeFilesAndUnsupportedIntents() {
++        listOf("", "0", "01", "-1", "18446744073709551616", "steam://rungameid/8400",
++            "8400\n8401", "droiddeck://game/8400?command=quit", "x".repeat(129)).forEach { value ->
++            assertNull(value, GameFiles.read(ByteArrayInputStream(value.toByteArray())))
++        }
++        assertEquals("8400", GameFiles.read(ByteArrayInputStream("8400\n".toByteArray())))
++        val context = RuntimeEnvironment.getApplication()
++        assertNull(GameFiles.readIntent(context, Intent(Intent.ACTION_SEND, Uri.parse("droiddeck://game/8400"))))
++        assertNull(GameFiles.readIntent(context, Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com/8400.droiddeck"))))
++        assertNull(GameFiles.readIntent(context, Intent(Intent.ACTION_VIEW, Uri.parse("file://remote/game.droiddeck"))))
++        assertNull(GameFiles.readIntent(context, Intent(Intent.ACTION_VIEW, Uri.fromFile(File(tmp.root, "missing.droiddeck")))))
++        assertEquals("8400", GameFiles.readIntent(context, Intent(Intent.ACTION_VIEW, Uri.parse("droiddeck://game/8400"))))
++    }
++
++    @Test fun exportsGameIconBeforeCapsuleAndPreservesCustomArtwork() {
++        val folder = tmp.newFolder()
++        val art = tmp.newFile("cover.jpg").apply { writeBytes(byteArrayOf(1, 2, 3)) }
++        val icon = tmp.newFile("icon.jpg").apply { writeBytes(byteArrayOf(4, 5, 6)) }
++        val game = Library.SteamGame(8400, "Geometry Wars: Retro Evolved", art, "internal", icon = icon)
++        GameFiles.export(folder, game)
++        val image = File(folder, "images/geometry-wars-retro-evolved-icon.jpg")
++        assertArrayEquals(icon.readBytes(), image.readBytes())
++        LibraryCache.save(RuntimeEnvironment.getApplication(), listOf(game))
++        assertEquals(icon, LibraryCache.load(RuntimeEnvironment.getApplication()).single().icon)
++        image.writeText("custom artwork")
++        GameFiles.sync(folder, listOf(game))
++        assertEquals("custom artwork", image.readText())
++        GameFiles.sync(folder, emptyList())
++        assertEquals("custom artwork", image.readText())
++        assertEquals(0, folder.listFiles { f -> f.extension == GameFiles.EXTENSION }!!.size)
++        icon.delete()
++        val fallback = tmp.newFolder()
++        GameFiles.export(fallback, game)
++        assertArrayEquals(art.readBytes(), File(fallback, "images/${image.name}").readBytes())
++    }
++
++    @Test fun syncAddsRenamesAndRemovesOwnedFilesAndPreservesUnrelatedAndEditedFiles() {
++        val folder = tmp.newFolder()
++        val unrelated = File(folder, "manual.droiddeck").apply { writeText("droiddeck://game/1\n") }
++        val note = File(folder, "notes.txt").apply { writeText("Keep me") }
++        val first = game()
++        val second = game("620", "Portal 2")
++        GameFiles.sync(folder, listOf(first, second))
++        val firstFile = File(folder, GameFiles.filename(first))
++        val secondFile = File(folder, GameFiles.filename(second))
++        val modified = secondFile.apply { writeText("user edit") }
++        val third = game("1", "New install")
++        GameFiles.sync(folder, listOf(first, second, third))
++        assertTrue(File(folder, GameFiles.filename(third)).isFile)
++        assertEquals("user edit", modified.readText())
++        val renamed = game(name = "Geometry Wars: Retro Evolved")
++        GameFiles.sync(folder, listOf(renamed))
++        assertFalse(firstFile.exists())
++        assertTrue(File(folder, GameFiles.filename(renamed)).isFile)
++        assertEquals("user edit", modified.readText())
++        GameFiles.sync(folder, emptyList())
++        assertFalse(File(folder, GameFiles.filename(renamed)).exists())
++        assertTrue(unrelated.isFile)
++        assertEquals("Keep me", note.readText())
++        assertEquals("user edit", modified.readText())
++    }
++
++    @Test fun failedExportDoesNotPruneOldInventoryAndNeverOverwritesCollisions() {
++        val folder = tmp.newFolder()
++        val first = game()
++        GameFiles.sync(folder, listOf(first))
++        val second = game("620", "Portal 2")
++        val collision = File(folder, GameFiles.filename(second)).apply { writeText("personal file") }
++        assertThrows(IllegalArgumentException::class.java) { GameFiles.sync(folder, listOf(second)) }
++        assertEquals("personal file", collision.readText())
++        assertTrue(File(folder, GameFiles.filename(first)).isFile)
++        collision.delete()
++        GameFiles.sync(folder, listOf(second))
++        assertFalse(File(folder, GameFiles.filename(first)).exists())
++        assertTrue(collision.isFile)
++    }
++
++    @Test fun sanitizedNamesFitFilesystemLimitsAndDoNotEscapeFolder() {
++        val folder = tmp.newFolder()
++        val games = listOf(game(name = "../.."), game(name = "🎮".repeat(200)), game(name = "\u0000\n"))
++        games.forEach { game ->
++            val file = GameFiles.export(folder, game)
++            assertEquals(folder.canonicalFile, file.canonicalFile.parentFile)
++            assertTrue(file.name.toByteArray().size < 255)
++        }
++    }
++
++    @Test fun refusesSymlinksLeavingTheExportFolder() {
++        val folder = tmp.newFolder()
++        val outside = tmp.newFile()
++        outside.writeText("droiddeck://game/8400\n")
++        java.nio.file.Files.createSymbolicLink(File(folder, GameFiles.filename(game())).toPath(), outside.toPath())
++        assertThrows(IllegalArgumentException::class.java) { GameFiles.export(folder, game()) }
++        assertEquals("droiddeck://game/8400\n", outside.readText())
++    }
++
++    @Test fun caseOnlyRenameKeepsTheLiveExportOnCaseInsensitiveStorage() {
++        val folder = tmp.newFolder()
++        val first = game(name = "Game")
++        val renamed = game(name = "GAME")
++        GameFiles.sync(folder, listOf(first))
++        GameFiles.sync(folder, listOf(renamed))
++        val file = File(folder, GameFiles.filename(renamed))
++        assertTrue(file.isFile)
++        assertEquals("8400", file.inputStream().use(GameFiles::read))
++        assertEquals(1, folder.listFiles()!!.count { it.extension == GameFiles.EXTENSION })
++    }
++
++    @Test fun unrelatedInventoryIsPreserved() {
++        val folder = tmp.newFolder()
++        val inventory = File(folder, ".droiddeck-sync.json").apply { writeText("{}") }
++        assertThrows(IllegalArgumentException::class.java) { GameFiles.sync(folder, listOf(game())) }
++        assertEquals("{}", inventory.readText())
++        assertEquals(0, folder.listFiles()!!.count { it.extension == GameFiles.EXTENSION })
++    }
++
++    private class LaunchFileProvider(private val file: File) : ContentProvider() {
++        override fun onCreate() = true
++        override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
++        override fun getType(uri: Uri) = "application/octet-stream"
++        override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor? = null
++        override fun insert(uri: Uri, values: ContentValues?): Uri? = null
++        override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
++        override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?) = 0
++    }
++}
+diff --git a/docs/testing/game-launcher-shortcuts.md b/docs/testing/game-launcher-shortcuts.md
+index 1c503452..f806f2a8 100644
+--- a/docs/testing/game-launcher-shortcuts.md
++++ b/docs/testing/game-launcher-shortcuts.md
+@@ -6,7 +6,7 @@ DroidDeck exposes installed Steam titles and AddedGames through a canonical laun
+ droiddeck://game/<unsigned-decimal-game-id>
+ ```
+ 
+-The ID is the value accepted by `steam://rungameid/`, including an AddedGames shortcut ID that occupies the unsigned 64-bit range. The app accepts only the exact URI form and only after a fresh library scan finds that game. It does not accept paths, Steam URLs, extra parameters, leading zeroes, or IDs outside the unsigned 64-bit range.
++The ID is the value accepted by `steam://rungameid/`, including an AddedGames shortcut ID that occupies the unsigned 64-bit range. The app accepts only the exact URI form and only after a fresh library scan finds that game. The deep link does not accept paths, Steam URLs, extra parameters, leading zeroes, or IDs outside the unsigned 64-bit range. Frontends that scan files can instead pass a file or content URI for an exported `.droiddeck` launch file.
+ 
+ Each game page's **Shortcut** menu offers **Add to home screen** through Android's pinned-shortcut request and **Copy launch link**. When a launcher invokes `ACTION_CREATE_SHORTCUT`, DroidDeck opens the Games page and returns Android's standard shortcut result after the user chooses a game.
+ 

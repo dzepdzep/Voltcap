@@ -1,0 +1,126 @@
+// Spark · 32-bit (electric type): a pixel power line at night in a thunderstorm. Rolling storm clouds in
+// three dithered shades, lattice pylons marching off over the hills, sagging wires with sparks racing
+// along them, rain streaks, and every few seconds a forked bolt that strikes the nearest pylon and lights
+// the whole sky.
+//#include pixel
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // The strike: every 4.5 s, a short double flash.
+    float cyc = t / 4.5;
+    float k = floor(cyc);
+    float age = fract(cyc) * 4.5;
+    float flash = exp(-age * 9.0) + 0.6 * exp(-max(age - 0.18, 0.0) * 12.0) * step(0.18, age);
+
+    // Sky: deep storm blue, banded.
+    float3 sky0 = mix(BG, S * 0.25, 0.5) * 0.7;
+    float3 sky1 = mix(BG * 1.6, S * 0.45, 0.5);
+    float3 col = mix(sky1, sky0, pxBand(1.0 - uv.y * 1.3, 4.0, cell));
+    // Clouds: three shades, the light side lit by the flash.
+    float c = fbm3(float2(uv.x * 2.2 + t * 0.03, uv.y * 4.0 - t * 0.01));
+    float cm = c - uv.y * 0.9;
+    float3 cloudD = mix(BG, S * 0.35, 0.4) * 0.9;
+    float3 cloudM = mix(BG * 2.0, S * 0.6, 0.5);
+    float3 cloudL = mix(cloudM, float3(0.85, 0.88, 1.0), 0.15 + 0.7 * flash);
+    if (cm > 0.12) col = cloudD;
+    if (cm > 0.22) col = mix(cloudD, cloudM, pxBand(sat((cm - 0.22) * 4.0), 2.0, cell));
+    if (cm > 0.32 && fbm3(float2(uv.x * 2.2 + t * 0.03, uv.y * 4.0 - t * 0.01) - 0.04) < c) col = cloudL;
+    col += (S * 0.4 + 0.25) * flash * 0.35 * (1.0 - uv.y);
+
+    // Hills: two silhouettes.
+    float h1 = 0.68 + 0.05 * sin(uv.x * 3.1) + 0.02 * sin(uv.x * 9.0 + 1.0);
+    float h2 = 0.8 + 0.04 * sin(uv.x * 2.3 + 2.0);
+    if (uv.y > h1) col = mix(BG * 1.3, S * 0.15, 0.3) + flash * 0.08;
+    if (uv.y > h2) col = BG * 0.8 + flash * 0.05;
+
+    // Pylons: lattice towers every 0.95 screen heights, smaller further back (two rows).
+    float3 steel = mix(float3(0.45, 0.48, 0.55), S, 0.2) * (0.6 + 0.9 * flash);
+    float wireHit = 0.0;
+    float sparkHit = 0.0;
+    for (int r = 0; r < 2; r++) {
+        float fr = float(r);
+        float sc = fr < 0.5 ? 1.0 : 0.55;
+        float spacing = 0.95 * sc;
+        float base = fr < 0.5 ? 0.97 : 0.76;
+        float hgt = 0.48 * sc;
+        float xi = floor(uv.x / spacing + 0.5);
+        float px0 = xi * spacing;
+        float2 q = float2(uv.x - px0, uv.y);
+        float yTop = base - hgt;
+        float f = sat((uv.y - yTop) / hgt);             // 0 at the top, 1 at the foot
+        float halfW = (0.012 + 0.06 * f * f) * sc;
+        float inY = step(yTop, uv.y) * step(uv.y, base);
+        float legs = step(abs(abs(q.x) - halfW), PX * 0.6) * inY;
+        // Cross braces: an X in each storey.
+        float st = (uv.y - yTop) / (hgt / 5.0);
+        float sf = fract(st);
+        float brace = step(abs(abs(q.x) / max(halfW, 1e-4) - abs(1.0 - 2.0 * sf)), 0.12 / max(sc, 0.5)) * step(abs(q.x), halfW) * inY;
+        // Two crossarms near the top.
+        float arm = (pxBox(q, float2(0.0, yTop + 0.03 * sc), float2(0.07 * sc, PX * 0.5)) + pxBox(q, float2(0.0, yTop + 0.09 * sc), float2(0.055 * sc, PX * 0.5)));
+        float tower = max(max(legs, brace), min(arm, 1.0));
+        if (tower > 0.5) col = steel * (fr < 0.5 ? 1.0 : 0.7);
+        // Wires between this tower's arms and the next: catenaries.
+        for (int w = 0; w < 2; w++) {
+            float fw = float(w);
+            float armY = yTop + (fw < 0.5 ? 0.03 : 0.09) * sc;
+            float armX = (fw < 0.5 ? 0.07 : 0.055) * sc;
+            float u = fract((uv.x - armX) / spacing);
+            float sag = 0.05 * sc * 4.0 * u * (1.0 - u);
+            float wy = armY + sag;
+            float on = step(abs(uv.y - wy), PX * 0.55);
+            wireHit = max(wireHit, on * (fr < 0.5 ? 1.0 : 0.6));
+            // A spark racing along the wire, with a short trail.
+            float sp = fract(t * (0.35 + 0.1 * fw + 0.07 * fr) + fw * 0.4 + fr * 0.17);
+            float span = floor((uv.x - armX) / spacing);
+            float lead = sp - u;
+            float trail = step(0.0, lead) * step(lead, 0.08) * (1.0 - lead / 0.08) * step(0.5, hash11(span * 3.1 + fw + fr * 7.0) + 0.3);
+            sparkHit = max(sparkHit, on * trail);
+        }
+    }
+    col = mix(col, float3(0.08, 0.08, 0.1) + flash * 0.3, wireHit * 0.9);
+    col = mix(col, mix(A, float3(1.0), 0.4), step(0.35, sparkHit));
+    col = mix(col, A, step(0.05, sparkHit) * step(sparkHit, 0.35) * 0.8);
+
+    // The bolt: from the clouds to the top of a front pylon, jagged, forking once.
+    float targetI = floor(hash11(k * 7.3) * (asp / 0.95)) + 1.0;
+    float2 tip = float2(targetI * 0.95, 0.97 - 0.48);
+    float2 top = float2(tip.x + (hash11(k * 2.7) - 0.5) * 0.5, 0.05);
+    float bolt = 0.0;
+    float halo = 0.0;
+    float2 prev = top;
+    for (int i = 1; i <= 7; i++) {
+        float fi = float(i) / 7.0;
+        float zig = (mod(float(i), 2.0) < 0.5 ? 1.0 : -1.0) * (0.03 + 0.05 * hash11(k * 13.0 + float(i)));
+        float2 nx = mix(top, tip, fi) + float2(zig * (1.0 - fi * fi * 0.7), 0.0);
+        if (i == 7) nx = tip;
+        bolt = max(bolt, pxLine(uv, prev, nx, 2.0));
+        halo = max(halo, pxLine(uv, prev, nx, 6.0));
+        if (i == 3) {
+            float2 fork = nx + float2((hash11(k * 5.0) - 0.5) * 0.25, 0.16);
+            bolt = max(bolt, pxLine(uv, nx, fork, 1.0) * 0.8);
+        }
+        prev = nx;
+    }
+    float lit = step(age, 0.32) * (step(age, 0.08) + step(0.18, age));
+    col = mix(col, mix(col, A, 0.6), halo * lit * 0.6);
+    col = mix(col, mix(float3(1.0), A, 0.25), bolt * lit);
+    // A glow ring round the struck tower top.
+    col += A * 0.6 * step(length(uv - tip), 0.03 + age * 0.1) * step(age * 0.1 + 0.015, length(uv - tip)) * exp(-age * 5.0);
+
+    // Rain: slanted pixel streaks.
+    float2 rp = float2(uv.x + uv.y * 0.35 + t * 0.6, uv.y + t * 1.8);
+    float2 rc = floor(rp * float2(60.0, 9.0));
+    float rn = hash12(rc);
+    float rf = fract(rp.y * 9.0);
+    col = mix(col, mix(col, float3(0.7, 0.75, 0.9), 0.5), step(0.9, rn) * step(rf, 0.35) * step(abs(fract(rp.x * 60.0) - 0.5), 0.2));
+
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

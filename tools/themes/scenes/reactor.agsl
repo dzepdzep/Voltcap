@@ -1,0 +1,72 @@
+// Reactor: a mech's power core. A plasma sphere churns and swells with the bass, three containment
+// rings orbit it at different tilts, arcs of energy jump to the rings on every kick, and a hex
+// shield shimmers around it. Sized to its room, centred where the equalizer is set.
+//#include reactive
+//#include anime
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float play = uPlaying;
+    float k = uIntensity;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float rm = room(0.24);
+
+    float3 col = coverField(uv, asp, t, bass, 0.45, BG, A, S);
+    float2 c = float2(waveX(asp), uWaveY);
+    float2 d = uv - c;
+    float r = length(d);
+
+    // Core.
+    float R = rm * (0.32 + 0.08 * bass * k + 0.04 * kick * k);
+    float plasma = fbm(d / R * 2.0 + float2(t * 0.6, -t * 0.4)) + 0.5 * fbm3(d / R * 4.0 - float2(t * 0.9, t * 0.3));
+    float inCore = 1.0 - smoothstep(R * 0.97, R, r);
+    float3 coreCol = mix(A, mix(S, float3(1.0), 0.6), smoothstep(0.6, 1.2, plasma));
+    col = mix(col, coreCol * (0.7 + 0.5 * bass), inCore);
+    col += mix(A, S, 0.4) * exp(-max(r - R, 0.0) / (rm * 0.25)) * (0.25 + 0.5 * bass * k);
+
+    // Three tilted rings orbiting.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float tilt = fi * 1.05 + 0.3;
+        float2 q = rot(tilt) * d;
+        q.y /= 0.32;
+        float rr = rm * (0.6 + 0.12 * fi);
+        float ring = exp(-abs(length(q) - rr) * 260.0 / (1.0 + fi * 0.3));
+        // Bright segments chasing round it.
+        float a = atan(q.y, q.x) / TAU + 0.5;
+        float seg = 0.4 + 0.6 * smoothstep(0.6, 1.0, fract(a * 3.0 - t * (0.3 + 0.15 * fi) * (fi > 0.5 ? -1.0 : 1.0)));
+        // Behind the core where it passes the back.
+        float behind = step(0.0, -(rot(tilt) * d).y) * inCore;
+        col += mix(A, S, 0.5 + 0.25 * fi) * ring * seg * (1.0 - behind) * (0.5 + 0.5 * eqAt(fi * 0.3 + 0.1) * play);
+    }
+
+    // Arcs from the core to the rings on each kick (new places every kick).
+    float epoch = floor(t * 1.8);
+    for (int j = 0; j < 3; j++) {
+        float fj = float(j);
+        float ang = hash11(epoch * 3.0 + fj) * TAU;
+        float2 a = c + float2(cos(ang), sin(ang) * 0.6) * R;
+        float2 b = c + float2(cos(ang + 0.4), sin(ang + 0.4) * 0.32) * rm * (0.6 + 0.12 * fj);
+        float bd = bolt(uv, a, b, epoch + fj * 5.0, rm * 0.12);
+        col += mix(S, float3(1.0), 0.6) * (exp(-bd * 700.0) + 0.3 * exp(-bd * 70.0)) * kick * k;
+    }
+
+    // Hex shield shimmer.
+    float2 hp = d / rm * 9.0;
+    float2 hr = float2(1.0, 1.7320508);
+    float2 ha = mod(hp, hr) - hr * 0.5;
+    float2 hb = mod(hp - hr * 0.5, hr) - hr * 0.5;
+    float2 gv = dot(ha, ha) < dot(hb, hb) ? ha : hb;
+    float2 aq = abs(gv);
+    float hexEdge = 0.5 - max(dot(aq, float2(0.5, 0.8660254)), aq.x);
+    float shell = exp(-abs(r - rm * 0.95) * 30.0 / rm);
+    col += S * (1.0 - smoothstep(0.0, 0.06, hexEdge)) * shell * (0.06 + 0.25 * kick * k);
+
+    return half4(finish(col, fc), 1.0);
+}

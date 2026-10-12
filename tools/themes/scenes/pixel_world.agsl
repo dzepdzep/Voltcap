@@ -1,0 +1,96 @@
+// Pixel world: a 32-bit overworld map scrolling slowly by, as if a traveller were crossing it. Tiles
+// of sea with rolling waves, beaches, meadows with flowers, forests, snowy mountains, winding roads and
+// little towns; clouds drift over with their shadows and a small capsule hero walks in the middle -
+// along the main road, which the map follows round its bends (the land either side of it is open
+// meadow, so the hero never walks over trees, mountains or water).
+//#include pixel
+
+// The main road's centre across the world (in world pixels) at height y.
+float mainRoad(float y) { return 60.0 * sin(y * 0.01) + 25.0 * sin(y * 0.027 + 1.3); }
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // World pixel under this screen pixel: the view follows the main road (a whole pixel at a time),
+    // keeping the hero in the middle of the screen on it.
+    float2 hc = floor(float2(asp * PX_ROWS * 0.5, PX_ROWS * 0.5));
+    float camY = floor(t * 5.0);
+    float2 cam = float2(floor(mainRoad(camY)), camY);
+    float2 wp = cell - hc + cam;
+    float2 tile = floor(wp / 8.0);
+    float2 lp = wp - tile * 8.0;                       // 0..7 inside the tile
+    float h = fbm3(tile * 0.07) * 0.75 + vnoise(tile * 0.25) * 0.25;
+    h = (h - 0.5) * 2.4 + 0.5;
+    // Open meadow for a couple of tiles either side of the main road.
+    float2 tc = tile * 8.0 + 4.0;
+    float roadTile = abs(tc.x - mainRoad(tc.y));
+    h = mix(0.5, h, smoothstep(10.0, 26.0, roadTile));
+    float onMain = step(abs(wp.x - floor(mainRoad(wp.y))), 3.5);
+    float rd = abs(vnoise(tile * 0.05 + 7.0) - 0.5);   // roads follow a noise contour
+    float th = hash12(tile);
+    float3 col;
+    if (h < 0.36) {
+        // Sea: deeper further out, wave pixels rolling.
+        col = mix(mix(float3(0.15, 0.4, 0.75), S, 0.25), mix(float3(0.25, 0.6, 0.9), S, 0.2), step(0.3, h));
+        float wv = step(0.86, fract((wp.x + wp.y * 0.5) / 16.0 + t * 0.15 + th)) * step(abs(lp.y - 3.0), 0.5);
+        col = mix(col, float3(0.85, 0.95, 1.0), wv);
+    } else if (h < 0.4) {
+        col = mix(float3(0.92, 0.85, 0.6), float3(0.85, 0.75, 0.5), step(0.8, hash12(wp)));
+    } else if (h < 0.62) {
+        col = mix(mix(float3(0.35, 0.68, 0.3), A, 0.12), mix(float3(0.42, 0.75, 0.35), A, 0.1), step(0.5, mod(tile.x + tile.y, 2.0)) * 0.6);
+        // Flowers on some tiles.
+        if (th > 0.8) col = mix(col, mix(float3(1.0, 0.9, 0.4), S, step(0.9, th)), step(abs(lp.x - 2.0), 0.5) * step(abs(lp.y - 5.0), 0.5) + step(abs(lp.x - 5.0), 0.5) * step(abs(lp.y - 2.0), 0.5));
+        col = mix(col, col * 0.85, step(0.92, hash12(wp)));
+    } else if (h < 0.8) {
+        // Forest: round tree crowns with a lit side and a trunk.
+        col = float3(0.2, 0.45, 0.2);
+        float2 tq = lp - float2(3.5, 3.0);
+        float crown = step(length(tq), 3.2);
+        col = mix(col, mix(float3(0.15, 0.42, 0.2), float3(0.3, 0.62, 0.28), step(tq.x + tq.y, -1.0)), crown);
+        col = mix(col, float3(0.4, 0.25, 0.15), step(abs(lp.x - 3.5), 0.6) * step(6.0, lp.y));
+    } else {
+        // Mountains: a peak per tile, snow on the high ones.
+        col = mix(float3(0.45, 0.42, 0.4), float3(0.3, 0.42, 0.25), 0.3);
+        float peak = step(abs(lp.x - 3.5) * 1.1, lp.y);
+        float3 rock = mix(float3(0.55, 0.5, 0.48), float3(0.38, 0.35, 0.34), step(3.5, lp.x));
+        col = mix(col, rock, peak);
+        col = mix(col, float3(0.95, 0.97, 1.0), peak * step(lp.y, 2.5) * step(0.85, h));
+    }
+    // Roads on land: a sandy path with edge pixels (the main road, and side roads along a noise contour).
+    if (h >= 0.4 && h < 0.8 && (rd < 0.025 || onMain > 0.5)) {
+        col = mix(float3(0.85, 0.72, 0.48), float3(0.7, 0.58, 0.38), step(0.85, hash12(wp)));
+    }
+    // Towns: a few houses on meadow tiles near the road.
+    if (h >= 0.4 && h < 0.62 && rd < 0.08 && rd >= 0.025 && th > 0.86 && roadTile > 9.0) {
+        float2 hq = lp - float2(3.5, 4.0);
+        float wall = step(abs(hq.x), 2.5) * step(0.0, hq.y) * step(hq.y, 3.0);
+        float roof = step(abs(hq.x) - 3.0, -hq.y * 0.0) * step(-3.0, hq.y) * step(hq.y, -0.5) * step(abs(hq.x), 3.5 + hq.y);
+        col = mix(col, float3(0.95, 0.92, 0.85), wall);
+        col = mix(col, mix(float3(0.85, 0.3, 0.25), A, 0.35), roof);
+        col = mix(col, float3(0.35, 0.25, 0.2), step(abs(hq.x), 0.5) * step(1.5, hq.y) * step(hq.y, 3.0));
+    }
+    // Cloud shadows, then clouds above.
+    float2 cw = (cell + float2(t * 12.0, t * 4.0)) / 60.0;
+    float cl = fbm3(cw);
+    float clS = fbm3(cw + float2(0.12, 0.2));
+    col *= 1.0 - 0.2 * step(0.62, clS);
+    if (cl > 0.64) col = mix(float3(0.92, 0.94, 1.0), float3(1.0), step(0.7, cl));
+    // The hero: a little capsule figure walking along the road in the middle.
+    float2 q = cell - hc;
+    float step2 = mod(floor(t * 4.0), 2.0);
+    q.y += step2;
+    float body = step(abs(q.x), 2.5) * step(-6.0, q.y) * step(q.y, 2.0) * step(length(max(abs(q - float2(0.0, -2.0)) - float2(0.0, 2.0), 0.0)), 2.6);
+    float legs = step(2.0, q.y) * step(q.y, 4.0 - step2) * (step(abs(q.x + 1.0), 0.5) + step(abs(q.x - 1.0), 0.5));
+    float3 heroC = mix(mix(A, float3(1.0), 0.15), float3(0.95), step(q.y, -2.0));
+    col = mix(col, float3(0.1, 0.1, 0.12), sat(legs));
+    col = mix(col, heroC, body);
+    col = mix(col, float3(0.1), body * step(abs(q.y + 4.0), 0.5) * step(abs(abs(q.x) - 1.0), 0.5));
+    col = mix(col, float3(0.0, 0.0, 0.0), 0.25 * step(abs(q.y - 5.0 + step2), 0.5) * step(abs(q.x), 2.5) * (1.0 - body));
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,20 @@
+// Game showcase backdrop: what the showcase themes show until the game's hero art and screenshots
+// have loaded (and behind them, through their soft edges) - a slow, deep gradient in the game's own
+// colours with light sweeping across and a few motes, like a store page's backdrop.
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float2 p = uv - float2(asp * 0.5, 0.45);
+    float n = fbm3(p * 1.2 + float2(t * 0.02, -t * 0.015));
+    float3 col = mix(BG * 1.4, mix(BG, A, 0.45), smoothstep(0.2, 0.9, n));
+    col = mix(col, mix(BG, S, 0.3), smoothstep(0.55, 0.95, fbm3(p * 0.8 - t * 0.01 + 3.0)) * 0.6);
+    // A wide, slow sweep of light.
+    float sweep = sin((uv.x - uv.y * 0.4) * 1.6 - t * 0.12);
+    col += mix(A, float3(1.0), 0.5) * smoothstep(0.8, 1.0, sweep) * 0.06;
+    col += float3(1.0) * dots(uv, 22.0, float2(t * 0.01, -t * 0.02), 0.15, 0.08, 3.0) * 0.12;
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,280 @@
+// Badge constellations: a clear night over a hilltop observatory. Stars join up one line at a time
+// into the figures of a gamer's sky - a trophy cup, a crown, a lightning bolt, a heart, a five-pointed
+// star, a game pad - and when a figure closes it fills with a soft glow like an unlocked achievement,
+// then fades while the next one starts elsewhere. Signed in to RetroAchievements (or Steam), some of
+// the figures are frames of stars round one of your own latest badges, which lights up inside when the
+// frame closes. Below, layered hills with mist between them, pines, and the observatory: a shaded dome
+// with its shutter open and the telescope following the newest figure, a warm window and a path.
+
+uniform shader uTrophies;    // your trophies side by side: 7 square cells, uTrophySize.y pixels each (TrophyShelf)
+uniform float2 uTrophySize;
+uniform float uTrophyN;      // how many cells are filled (0 = only the drawn figures)
+
+// Point k of figure [kind] (closed outline, at most 10 points, about -1..1, y down).
+float2 figPoint(float kind, float k) {
+    if (kind < 0.5) {                                       // trophy cup
+        if (k < 0.5) return float2(-0.75, -0.85);
+        if (k < 1.5) return float2(0.75, -0.85);
+        if (k < 2.5) return float2(0.55, -0.05);
+        if (k < 3.5) return float2(0.14, 0.28);
+        if (k < 4.5) return float2(0.14, 0.58);
+        if (k < 5.5) return float2(0.52, 0.85);
+        if (k < 6.5) return float2(-0.52, 0.85);
+        if (k < 7.5) return float2(-0.14, 0.58);
+        if (k < 8.5) return float2(-0.14, 0.28);
+        return float2(-0.55, -0.05);
+    }
+    if (kind < 1.5) {                                       // crown
+        if (k < 0.5) return float2(-0.85, 0.6);
+        if (k < 1.5) return float2(0.85, 0.6);
+        if (k < 2.5) return float2(0.95, -0.65);
+        if (k < 3.5) return float2(0.45, -0.05);
+        if (k < 4.5) return float2(0.0, -0.85);
+        if (k < 5.5) return float2(-0.45, -0.05);
+        return float2(-0.95, -0.65);
+    }
+    if (kind < 2.5) {                                       // lightning bolt
+        if (k < 0.5) return float2(0.25, -1.0);
+        if (k < 1.5) return float2(-0.5, 0.12);
+        if (k < 2.5) return float2(-0.02, 0.12);
+        if (k < 3.5) return float2(-0.25, 1.0);
+        if (k < 4.5) return float2(0.52, -0.14);
+        return float2(0.04, -0.14);
+    }
+    if (kind < 3.5) {                                       // heart
+        float a = k / 10.0 * TAU;
+        float x = 16.0 * sqf(sin(a)) * sin(a);
+        float y = 13.0 * cos(a) - 5.0 * cos(2.0 * a) - 2.0 * cos(3.0 * a) - cos(4.0 * a);
+        return float2(x, -y) / 16.0;
+    }
+    if (kind < 4.5) {                                       // five-pointed star
+        float a = k / 10.0 * TAU - PI * 0.5;
+        return float2(cos(a), sin(a)) * (mod(k, 2.0) < 0.5 ? 1.0 : 0.42);
+    }
+    if (kind < 5.5) {                                       // game pad
+        if (k < 0.5) return float2(-0.92, -0.18);
+        if (k < 1.5) return float2(-0.5, -0.48);
+        if (k < 2.5) return float2(0.5, -0.48);
+        if (k < 3.5) return float2(0.92, -0.18);
+        if (k < 4.5) return float2(1.0, 0.48);
+        if (k < 5.5) return float2(0.62, 0.55);
+        if (k < 6.5) return float2(0.32, 0.18);
+        if (k < 7.5) return float2(-0.32, 0.18);
+        if (k < 8.5) return float2(-0.62, 0.55);
+        return float2(-1.0, 0.48);
+    }
+    // A badge frame: a rounded square of stars (your badge shows inside).
+    float a = k / 8.0 * TAU + PI * 0.25;
+    float2 d = float2(cos(a), sin(a));
+    return d / max(abs(d.x), abs(d.y)) * (mod(k, 2.0) < 0.5 ? 0.92 : 1.0);
+}
+
+float figN(float kind) {
+    if (kind < 0.5) return 10.0;
+    if (kind < 1.5) return 7.0;
+    if (kind < 2.5) return 6.0;
+    if (kind < 3.5) return 10.0;
+    if (kind < 4.5) return 10.0;
+    if (kind < 5.5) return 10.0;
+    return 8.0;
+}
+
+// Extra stars inside a figure, part of it (the game pad's buttons and stick, the cup's handles...).
+float2 figExtra(float kind, float k) {
+    if (kind < 0.5) return k < 0.5 ? float2(-1.0, -0.55) : float2(1.0, -0.55);
+    if (kind < 1.5) return k < 0.5 ? float2(-0.45, 0.3) : float2(0.45, 0.3);
+    if (kind < 5.5 && kind > 4.5) return k < 0.5 ? float2(-0.5, -0.08) : float2(0.5, -0.12);
+    return float2(9.0);
+}
+
+// One star: a bright core, a soft halo and a short cross of light.
+float starLight(float2 d, float s) {
+    float r = length(d);
+    float core = exp(-r * 900.0 / s);
+    float halo = exp(-r * 140.0 / s) * 0.35;
+    float cross = (exp(-abs(d.x) * 1400.0 / s) * exp(-abs(d.y) * 90.0 / s) + exp(-abs(d.y) * 1400.0 / s) * exp(-abs(d.x) * 90.0 / s)) * 0.5;
+    return core + halo + cross;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float px = 1.5 / uRes.y;
+
+    // Sky: deep at the top, a faint glow of distant towns along the horizon, the galaxy band, stars.
+    float3 col = mix(BG * 0.6, mix(BG * 2.2, S * 0.18, 0.4), smoothstep(0.1, 0.85, uv.y));
+    float band = uv.y - 0.5 + (uv.x / asp - 0.5) * 0.55;
+    float galN = fbm(uv * float2(3.0, 6.0) + float2(t * 0.003, 0.0));
+    float gal = exp(-band * band * 26.0) * (0.35 + 0.65 * galN);
+    float dust = exp(-band * band * 120.0) * smoothstep(0.45, 0.7, fbm3(uv * float2(8.0, 14.0) + 3.0));
+    col += mix(S, float3(0.95, 0.9, 1.0), 0.55) * gal * 0.26;
+    col -= float3(0.03) * dust;
+    col += float3(0.9, 0.92, 1.0) * dots(uv, 90.0, float2(t * 0.002, 0.0), 0.35, 0.05, 1.0) * 0.6;
+    col += float3(1.0) * dots(uv, 32.0, float2(t * 0.001, 0.0), 0.12, 0.05, 2.0) * 0.9;
+    col += mix(A, float3(1.0), 0.6) * dots(uv, 14.0, float2(0.0), 0.06, 0.045, 5.0) * 0.6;
+
+    // A crescent moon up on the right, lighting the hills.
+    float2 mo = float2(asp * 0.93, 0.09);
+    float moon = (1.0 - smoothstep(0.0, px, length(uv - mo) - 0.03)) * smoothstep(0.0, px, length(uv - mo - float2(0.012, -0.008)) - 0.027);
+    col += float3(1.0, 0.97, 0.88) * moon * 0.9 + float3(0.7, 0.75, 0.9) * exp(-length(uv - mo) * 18.0) * 0.08;
+    // Three figures, each on its own 12 s cycle, offset in time; place and figure change every cycle.
+    float2 newest = float2(asp * 0.5, 0.25);
+    float newestAge = 99.0;
+    for (int c = 0; c < 3; c++) {
+        float fcn = float(c);
+        float cyc = t / 12.0 + fcn / 3.0;
+        float ci = floor(cyc);
+        float cp = fract(cyc) * 12.0;                  // seconds into this cycle
+        float pick = hash11(ci * 7.1 + fcn * 3.0);
+        // With your trophies, every other figure is a frame round one of them.
+        float slot = mod(ci * 3.0 + fcn, max(uTrophyN, 1.0));
+        float badge = step(0.5, uTrophyN) * step(0.5, mod(ci + fcn, 2.0));
+        float kind = badge > 0.5 ? 6.0 : floor(pick * 6.0);
+        float n = figN(kind);
+        float2 center = float2((0.14 + 0.72 * fract(hash11(ci * 3.3 + fcn) * 0.33 + fcn / 3.0)) * asp, 0.17 + 0.22 * hash11(ci * 5.7 + fcn));
+        float R = (0.085 + 0.035 * hash11(ci * 9.1 + fcn)) * (badge > 0.5 ? 0.9 : 1.0);
+        float tilt = (hash11(ci * 4.4 + fcn) - 0.5) * 0.5;
+        float2x2 rm = rot(tilt);
+        float draw = sat((cp - 0.5) / 5.0) * n;         // how many lines are drawn
+        float done = smoothstep(5.5, 6.2, cp);
+        float fade = 1.0 - smoothstep(10.0, 12.0, cp);
+        if (cp < newestAge) { newestAge = cp; newest = center; }
+        float3 cc = mix(A, S, hash11(ci + fcn * 2.0));
+        float lines = 0.0;
+        float stars = 0.0;
+        for (int k = 0; k < 10; k++) {
+            float fk = float(k);
+            if (fk >= n) break;
+            float2 a = center + rm * figPoint(kind, fk) * R;
+            float2 b = center + rm * figPoint(kind, mod(fk + 1.0, n)) * R;
+            float part = sat(draw - fk);
+            if (part > 0.0) {
+                float2 e = mix(a, b, part);
+                float d = sdSegment(uv, a, e);
+                lines = max(lines, (1.0 - smoothstep(0.0, px * 1.1, d - 0.0009)) * 0.8 + exp(-d * 260.0) * 0.25);
+            }
+            // The star itself, brighter once it's joined; each a little different in size.
+            float lit = step(fk, draw);
+            float sz = 0.7 + 0.6 * hash11(fk + ci * 3.0 + fcn);
+            stars += starLight(uv - a, sz * (0.6 + 0.6 * lit)) * (0.45 + 0.8 * lit) * (0.85 + 0.15 * sin(t * 3.0 + fk));
+        }
+        for (int k = 0; k < 2; k++) {
+            float2 ep = figExtra(kind, float(k));
+            if (ep.x > 5.0) break;
+            stars += starLight(uv - center - rm * ep * R, 0.8) * (0.4 + 0.7 * done);
+        }
+        col += cc * 0.75 * lines * fade;
+        col += mix(cc, float3(1.0), 0.6) * stars * fade * 0.8;
+        // Closed: the figure fills with a soft glow (and your badge shows in its frame).
+        if (done > 0.0) {
+            float2 q = (rot(-tilt) * (uv - center)) / R;
+            float inside = 1.0 - smoothstep(0.75, 1.0, max(abs(q.x), abs(q.y)) * (badge > 0.5 ? 1.0 : 0.0) + length(q) * (badge > 0.5 ? 0.0 : 0.85));
+            col += cc * 0.09 * inside * done * fade;
+            if (badge > 0.5) {
+                float2 bq = q * 0.5 / 0.78 + 0.5;
+                if (bq.x > 0.0 && bq.x < 1.0 && bq.y > 0.0 && bq.y < 1.0) {
+                    float3 pic = float3(uTrophies.eval(float2((slot + bq.x) * uTrophySize.y, bq.y * uTrophySize.y)).rgb);
+                    // Starlight: the badge's own colours, glowing, a little see-through.
+                    float edge = smoothstep(0.0, 0.06, min(min(bq.x, 1.0 - bq.x), min(bq.y, 1.0 - bq.y)));
+                    col = mix(col, pic * 1.15 + cc * 0.08, edge * done * fade * 0.85);
+                }
+            }
+            float ring = exp(-abs(length(q) - (cp - 5.5) * 1.6) * 10.0) * (1.0 - smoothstep(5.5, 7.2, cp));
+            col += cc * ring * 0.45 * step(5.5, cp);
+        }
+    }
+    // A shooting star every 9 s.
+    float st = fract(t / 9.0) * 9.0;
+    if (st < 0.8) {
+        float2 a = float2(asp * (0.2 + 0.6 * hash11(floor(t / 9.0))), 0.08);
+        float2 b = a + float2(0.5, 0.2) * st;
+        float d = sdSegment(uv, b - float2(0.5, 0.2) * min(st, 0.25), b);
+        col += float3(1.0) * exp(-d * 600.0) * (1.0 - st / 0.8);
+    }
+
+    // The land: three ranges of hills, lighter and misty far away, a band of mist between them.
+    float3 night = mix(float3(0.03, 0.035, 0.07), BG * 0.6, 0.5);
+    float h1 = 0.72 - 0.05 * fbm3(float2(uv.x * 1.8, 1.0)) - 0.03 * sin(uv.x * 2.4 + 1.0);
+    float h2 = 0.79 - 0.045 * fbm3(float2(uv.x * 2.5 + 4.0, 2.0)) - 0.025 * sin(uv.x * 3.1);
+    float obsX = asp * 0.72;
+    float h3 = 0.86 - 0.075 * exp(-sqf((uv.x - obsX) * 2.2)) + 0.008 * sin(uv.x * 11.0);
+    float3 farC = mix(night * 3.2 + mix(A, S, 0.5) * 0.03, col, 0.3);
+    farC *= 0.85 + 0.15 * vnoise(uv * float2(20.0, 40.0));
+    farC += mix(S, float3(0.8, 0.85, 1.0), 0.5) * 0.12 * exp(-max(uv.y - h1, 0.0) * 60.0);   // moonlight on the far ridge
+    col = mix(col, farC, smoothstep(h1 - px, h1 + px, uv.y));
+    col += mix(S, float3(0.8), 0.6) * 0.06 * exp(-abs(uv.y - h2 + 0.01) * 30.0);  // mist in the valley
+    // Mid hills with a fringe of pines.
+    float tx = uv.x * 60.0;
+    float tc = floor(tx);
+    float th = (0.012 + 0.022 * hash11(tc)) * step(0.35, hash11(tc + 9.0));
+    float pine = step(abs(fract(tx) - 0.5) / 60.0, (1.0 - (h2 - uv.y) / max(th, 0.001)) * 0.007) * step(uv.y, h2) * step(h2 - th, uv.y);
+    // A small town in the valley: warm windows twinkling between the hills.
+    if (uv.y > h1 && uv.y < h2 + 0.01) {
+        float2 tq = float2(uv.x * 140.0, (uv.y - h1) * 260.0);
+        float2 tid = floor(tq);
+        float on = step(0.93, hash12(tid)) * smoothstep(0.2, 0.05, abs(uv.x / asp - 0.3)) * step(h2 - 0.035, uv.y) * (0.7 + 0.3 * sin(t * 0.5 + hash12(tid) * 40.0));
+        col += mix(float3(1.0, 0.75, 0.4), A, 0.2) * on * (1.0 - smoothstep(0.15, 0.35, length(fract(tq) - 0.5))) * 0.9;
+    }
+    float3 midC = night * 1.6 * (0.85 + 0.15 * vnoise(uv * float2(30.0, 50.0)));
+    midC += mix(S, float3(0.8, 0.85, 1.0), 0.5) * 0.08 * exp(-max(uv.y - h2, 0.0) * 80.0) * step(h2, uv.y);
+    col = mix(col, midC, max(smoothstep(h2 - px, h2 + px, uv.y), pine));
+    // The near hill: grass catching a little starlight along the top.
+    float grass = vnoise(float2(uv.x * 220.0, uv.y * 40.0)) * vnoise(uv * float2(40.0, 20.0));
+    float3 nearC = night * (1.1 + 0.6 * grass);
+    nearC += mix(S, float3(0.8, 0.85, 1.0), 0.5) * 0.1 * exp(-max(uv.y - h3, 0.0) * 70.0);   // moonlit crest
+    // Fireflies over the grass.
+    nearC += mix(float3(0.9, 1.0, 0.5), A, 0.3) * dots(uv + float2(sin(t * 0.3) * 0.02, t * 0.004), 40.0, float2(0.0), 0.08, 0.06, 13.0) * 0.8;
+    col = mix(col, nearC, smoothstep(h3 - px, h3 + px, uv.y));
+    // A path winding down from the door, with little lamps.
+    float pathX = obsX - 0.04 - (uv.y - 0.8) * 0.9 - 0.03 * sin(uv.y * 30.0);
+    float path = step(abs(uv.x - pathX), 0.006 + (uv.y - 0.8) * 0.06) * step(0.805, uv.y);
+    col = mix(col, night * 1.9, path * 0.8);
+    for (int l = 0; l < 3; l++) {
+        float ly = 0.85 + float(l) * 0.05;
+        float2 lp = float2(obsX - 0.04 - (ly - 0.8) * 0.9 - 0.03 * sin(ly * 30.0) + 0.02 + (ly - 0.8) * 0.06, ly);
+        col += mix(float3(1.0, 0.8, 0.45), A, 0.25) * (exp(-length(uv - lp) * 420.0) * 1.2 + exp(-length(uv - lp) * 60.0) * 0.08);
+    }
+
+    // The observatory: a drum with a lit window and a door, the dome shaded like a metal sphere with ribs,
+    // its shutter open and the telescope inside turning towards the newest figure.
+    float2 oc = float2(obsX, h3 - 0.07);
+    float2 oq = uv - oc;
+    float drum = sdRoundBox(oq - float2(0.0, 0.035), float2(0.085, 0.036), 0.003);
+    float domeR = 0.08;
+    float dome = length(oq) - domeR;
+    float3 metal = mix(float3(0.42, 0.45, 0.55), BG * 3.0, 0.3);
+    if (drum < px) {
+        float3 dc = metal * (0.32 + 0.25 * sat(0.5 - oq.x * 7.0));
+        dc *= 0.9 + 0.1 * step(0.5, fract(oq.x * 70.0));
+        float win = step(abs(oq.x + 0.04), 0.011) * step(abs(oq.y - 0.03), 0.011);
+        float door = step(abs(oq.x - 0.03), 0.013) * step(0.035, oq.y) * step(oq.y, 0.071);
+        dc = mix(dc, mix(float3(1.0, 0.78, 0.4), A, 0.2) * (0.85 + 0.15 * sin(t * 0.7)), win);
+        dc = mix(dc, night * 0.7, door);
+        col = mix(col, dc, 1.0 - smoothstep(-px, px, drum));
+    }
+    if (dome < px && oq.y < 0.002) {
+        float2 n2 = oq / domeR;
+        float nz = sqrt(sat(1.0 - dot(n2, n2)));
+        float3 nrm = float3(n2.x, -n2.y, nz);
+        float lit = sat(dot(nrm, normalize(float3(-0.5, 0.6, 0.6))));
+        float spec = sqf(sqf(sat(dot(reflect(float3(0.0, 0.0, -1.0), nrm), normalize(float3(-0.5, 0.6, 0.6))))));
+        float3 dcol = metal * (0.18 + 0.75 * lit) + float3(0.9, 0.95, 1.0) * spec * 0.35 + mix(A, S, 0.5) * 0.06;
+        float ribs = smoothstep(0.85, 1.0, abs(sin(atan(n2.x, nz) * 4.0)));
+        dcol *= 1.0 - 0.25 * ribs;
+        // The shutter slit, turned towards the newest figure; the telescope's tube inside it.
+        float aim = clamp((newest.x - oc.x) * 1.2, -0.6, 0.6);
+        float2 sq = rot(aim) * n2;
+        float slit = step(abs(sq.x), 0.17) * step(sq.y, -0.15);
+        dcol = mix(dcol, night * 0.5, slit);
+        float tube = step(abs(sq.x), 0.07) * step(sq.y, -0.2) * step(-0.95, sq.y);
+        dcol = mix(dcol, metal * 0.75 + float3(0.05), tube * slit);
+        col = mix(col, dcol, 1.0 - smoothstep(-px, px, dome));
+    }
+    // A blinking red beacon on top.
+    col += float3(1.0, 0.15, 0.1) * exp(-length(uv - oc - float2(0.0, -domeR - 0.008)) * 500.0) * step(0.5, fract(t * 0.5)) * 1.2;
+    return half4(finish(col, fc), 1.0);
+}

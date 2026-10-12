@@ -1,0 +1,34 @@
+// Shared by the painted scenes (the user's own paintings with motion added on top: aurora, meadow,
+// px_dojo): the painting fills the screen like a cover (cropped, never stretched) round a chosen point.
+uniform shader uPaint;      // the painting (ScenePainting: res/drawable-nodpi/scene_*.webp)
+uniform float2 uPaintSize;  // its decoded size in pixels
+uniform float uHasPaint;    // 0 while it decodes (a plain gradient in the theme's colours shows)
+
+// The painting's pixel under screen point fc, filling the screen, the crop centred on (fx, fy) (0..1 across it).
+float2 paintPx(float2 fc, float fx, float fy) {
+    float2 sz = max(uPaintSize, float2(1.0));
+    float s = max(uRes.x / sz.x, uRes.y / sz.y);
+    float2 off = (sz * s - uRes) * float2(fx, fy);
+    return (fc + off) / s;
+}
+
+// The painting's colour at pixel p (clamped inside it).
+float3 paintAt(float2 p) { return float3(uPaint.eval(clamp(p, float2(0.5), max(uPaintSize, float2(1.0)) - 0.5)).rgb); }
+
+// Brightness, for picking out lit parts of the painting.
+float luma(float3 c) { return dot(c, float3(0.299, 0.587, 0.114)); }
+
+// How much pixel p is a small bright speck (a star) rather than part of a bright area: brighter than the
+// painting a few pixels away on both sides. lum is its own brightness.
+float speckAt(float2 p, float lum) {
+    float k = max(uPaintSize.y, 1.0) / 941.0 * 4.0;
+    float n = (luma(paintAt(p + float2(k, k * 0.5))) + luma(paintAt(p - float2(k * 0.5, k)))) * 0.5;
+    return smoothstep(0.06, 0.2, lum - n);
+}
+
+// The painted chill scenes' finish: the painting's own colours and framing (no vignette, no highlight
+// roll-off), only the fine noise that keeps dark gradients from banding.
+float3 finishPaint(float3 col, float2 fc) {
+    col = clamp(col, 0.0, 1.0);
+    return col + (hash12(fc) - 0.5) / 255.0;
+}

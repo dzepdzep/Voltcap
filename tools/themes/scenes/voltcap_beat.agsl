@@ -1,0 +1,104 @@
+// Voltcap beat: the Voltcap capsule as a big music visualizer in the song's colours over its blurred
+// cover. Everything follows the music, not a clock: the capsule swells with the bass, its outline
+// burns brighter the louder it gets, a ring of spectrum bars stands out all round it (bass at the top
+// and bottom, highs towards the ends), sparks race round faster when the song gets busy, and only a
+// real kick flashes the bolt, throws arcs to the outline and rolls a shock wave out. Quiet parts
+// calm right down.
+//#include reactive
+//#include voltcap
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 CREAM = float3(1.0, 0.965, 0.84);
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float busy = (uMid + uHigh) * 0.5 * play;
+    float kick = exp(-uBeatAge * 4.5) * play;
+    float loud = sat((uEqA.x + uEqA.y + uEqA.z + uEqA.w + uEqB.x + uEqB.y) / 6.0) * play;
+
+    float3 col = coverField(uv, asp, t, bass, 0.42, BG, A, S);
+    float2 c = float2(waveX(asp), uWaveY);
+    // Size: the room it was given (the bars need ~45 % of it outside the capsule).
+    float K0 = room(0.24) * 0.78;
+    float K = K0 * (1.0 + (0.05 * bass + 0.06 * kick) * (0.4 + 0.8 * k));
+    float2 q = (uv - c) / K;
+    float d = sdCapsuleMark(q);
+
+    // Glow of the whole mark on the background, breathing with the level.
+    col += mix(A, S, 0.4) * exp(-max(d, 0.0) * 1.6) * (0.06 + 0.22 * loud * k);
+
+    // Ring of spectrum bars standing out from the outline.
+    float ang = atan(q.y, q.x * 0.5);
+    float n = 72.0;
+    float fid = floor((ang + PI) / TAU * n);
+    float ca = (fid + 0.5) / n * TAU - PI;
+    float m = 1.0 - abs(sin(ca));                         // 0 = top / bottom middle (bass), 1 = the ends (highs)
+    float e = eqAt(m) * play;
+    float h = (0.05 + 0.75 * e * (0.45 + 0.7 * k)) * (0.35 + 0.65 * play);
+    float gap = 0.09;
+    float lane = abs(fract((ang + PI) / TAU * n) - 0.5);
+    float inBar = step(lane, 0.3) * step(gap, d) * step(d, gap + h);
+    float3 bc = mix(mix(A, S, m), CREAM, sat((d - gap) / max(h, 0.01)) * 0.35);
+    col = mix(col, bc * (0.75 + 0.7 * e), inBar);
+    // Soft bloom above each bar's tip.
+    col += bc * step(lane, 0.3) * step(gap, d) * glow(max(d - gap - h, 0.0) * K, 0.003) * 0.35 * e;
+
+    // The capsule: dark glass with the song's colours deep inside, the outline burning with the level.
+    float inside = 1.0 - smoothstep(-px / K, px / K, d);
+    float3 glass = BG * 0.3 + mix(A, S, sat(0.5 - q.y)) * (0.08 + 0.18 * bass * k);
+    glass += CREAM * 0.12 * smoothstep(0.1, 0.0, abs(q.y + VR * 0.62)) * smoothstep(0.85, 0.3, abs(q.x));
+    col = mix(col, glass, inside * 0.9);
+    float rim = 0.35 + 1.5 * loud * k + 0.8 * kick * k;
+    col += mix(A, S, 0.3) * glow(abs(d) * K, 0.0018 + 0.004 * bass * k) * rim;
+    col += mix(S, CREAM, 0.5) * (1.0 - smoothstep(0.0, px / K * 2.2, abs(d))) * (0.3 + 0.5 * loud);
+
+    // Sparks orbiting the outline: speed follows how busy the song is (they nearly stop when it's quiet).
+    float spd = 0.15 + 2.4 * busy * (0.5 + 0.7 * k);
+    float base = t * spd;
+    for (int i = 0; i < 3; i++) {
+        float a = base + float(i) * TAU / 3.0;
+        col += mix(S, CREAM, 0.5) * glow(length(q - capsulePoint(a)) * K, 0.0035) * (0.4 + 0.8 * busy);
+        for (int j = 1; j < 6; j++) {
+            col += A * glow(length(q - capsulePoint(a - float(j) * 0.07 * (0.4 + spd))) * K, 0.002) * (0.32 - float(j) * 0.05) * (0.4 + busy);
+        }
+    }
+
+    // The bolt: steady, flashing white-hot and growing on a real kick only.
+    float db = sdBoltMark(q / (1.0 + 0.16 * kick * k));
+    float3 boltCol = mix(mix(A, S, 0.6), CREAM, kick);
+    col = mix(col, boltCol, 1.0 - smoothstep(0.0, px / K * 2.0, db));
+    col += S * glow(max(db, 0.0) * K, 0.004 + 0.012 * kick) * (0.25 + 1.1 * kick * k);
+
+    // Strong kicks throw little arcs from the bolt to the outline.
+    if (kick * k > 0.25) {
+        for (int i = 0; i < 3; i++) {
+            float fi = float(i);
+            float a = fi * 2.1 + floor(t * 3.0) * 1.7;
+            float2 to = capsulePoint(a) * 0.97;
+            float2 from = to * 0.22;
+            float2 ab = to - from;
+            float hh = sat(dot(q - from, ab) / dot(ab, ab));
+            float2 nrm = float2(-ab.y, ab.x) / length(ab);
+            float jag = (vnoise(float2(hh * 9.0, t * 30.0 + fi * 5.0)) - 0.5) * 0.16 * sin(hh * PI);
+            col += mix(S, CREAM, 0.6) * glow(length(q - (from + ab * hh + nrm * jag)) * K, 0.0014) * (kick * k - 0.25) * 1.8;
+        }
+    }
+
+    // Shock wave on the kick, sized to the capsule.
+    float ring = exp(-abs(length((uv - c) * float2(0.85, 1.55)) - K * (0.95 + 1.6 * (1.0 - kick))) * 45.0) * kick;
+    col += mix(S, CREAM, 0.4) * ring * 0.55 * k;
+
+    // Sparks flung out on kicks, drifting off.
+    float2 fp = (uv - c) / K;
+    float fl = dots(fp * 0.6 + float2(t * 0.05, -t * 0.08), 14.0, float2(0.0), 0.12, 0.07, 5.0);
+    col += mix(A, CREAM, 0.4) * fl * smoothstep(1.2, 2.2, length(fp * float2(0.5, 1.0))) * (0.1 + 0.6 * kick) * play;
+
+    return half4(finish(col, fc), 1.0);
+}

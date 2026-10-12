@@ -1,0 +1,152 @@
+// Console disc: an original round disc console - a low puck seen from above at an angle, its clear
+// dome lid swung up at the back. The disc spins in the bay with its printed label turning and a rainbow
+// sheen sliding round the rim, the laser glows red as it tracks in and out underneath, a light ring
+// round the bay breathes in the theme's colours, and the puck is mirrored in the glossy floor.
+// With a game picked, the disc in the bay is that game's real disc (ScreenScraper's picture of it), or
+// its cover printed on the disc when there's no picture; a cartridge game's cartridge stands in the bay
+// instead, swaying slowly in a beam of light.
+
+uniform shader uMedia;      // the game's disc / cartridge picture, or its cover (SceneArt)
+uniform float2 uMediaSize;
+uniform float uHasMedia;    // 0 = the console's own drawn disc
+uniform float uMediaKind;   // 0 = a disc picture, 1 = a cartridge / card picture, 2 = only the cover (printed on the disc)
+uniform float uFocusY;      // 0.5 + how far to move the console down (share of the height; 0 = not set)
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float px = 1.5 / uRes.y;
+    float breathe = 0.5 + 0.5 * sin(t * 1.3);
+
+    // Floor: dark gloss under a soft overhead light.
+    float3 col = mix(BG * 0.65, mix(BG, S, 0.2) * 1.5, exp(-length((uv - float2(asp * 0.5, 0.5)) * float2(0.55, 1.2)) * 2.2));
+
+    float2 c = float2(asp * 0.5, 0.6 + (uFocusY > 0.001 ? clamp(uFocusY - 0.5, -0.15, 0.25) : 0.0));
+    float cart = step(0.5, uHasMedia) * step(0.5, uMediaKind) * step(uMediaKind, 1.5);
+    float2 p = uv - c;
+    float sq = 0.42;                                   // the top is seen at an angle: squashed
+    float R = 0.46;
+    float Hgt = 0.07;                                  // the puck's side height on screen
+    // Mirror image in the floor and the shadow.
+    float2 mq = float2(p.x, (p.y - Hgt * 2.0 - 0.02) / sq);
+    float mirror = 1.0 - smoothstep(0.0, px / sq, length(mq) - R);
+    col = mix(col, mix(col, mix(BG, A, 0.25), 0.35), mirror * step(Hgt, p.y) * 0.8);
+    col *= 1.0 - 0.4 * (1.0 - smoothstep(0.0, 0.08, length(float2(p.x, (p.y - Hgt) / sq)) - R));
+    // The puck's side band (front half only shows).
+    float3 dark = mix(float3(0.12, 0.12, 0.14), BG, 0.4);
+    float3 top = mix(float3(0.24, 0.25, 0.28), S * 0.4, 0.3);
+    float topD = length(float2(p.x, p.y / sq)) - R;
+    float sideD = length(float2(p.x, (p.y - Hgt) / sq)) - R;
+    float side = (1.0 - smoothstep(0.0, px, sideD)) * step(0.0, p.y);
+    float sideShade = 0.6 + 0.4 * (1.0 - abs(p.x) / R);
+    col = mix(col, dark * (0.8 + 0.4 * sideShade), side * step(0.0, topD));
+    // A light strip running round the front of the side.
+    float strip = step(abs(sideD + 0.0 - (length(float2(p.x, (p.y - Hgt * 0.5) / sq)) - R) * 0.0), 1.0) * step(abs(p.y - Hgt * 0.5 - sq * sqrt(max(R * R - p.x * p.x, 0.0))), 0.004) * step(abs(p.x), R * 0.8);
+    col = mix(col, mix(A, S, 0.5 + 0.5 * p.x / R) * (0.6 + 0.5 * breathe), strip);
+    // Top face.
+    if (topD < 0.0) {
+        float2 tq = float2(p.x, p.y / sq);
+        col = top * (0.85 + 0.25 * (-tq.y / R) * 0.5 + 0.1);
+        col = mix(col, top * 1.35, smoothstep(-0.02, 0.0, topD) * step(tq.y, 0.0));
+        // Brushed rings.
+        col *= 0.96 + 0.04 * sin(length(tq) * 600.0);
+        // A small bolt badge at the front and two touch keys.
+        float2 bq = tq - float2(0.0, 0.38);
+        float bolt = step(abs(bq.x + bq.y * 0.6 + 0.008), 0.009) * step(-0.03, bq.y) * step(bq.y, 0.002) + step(abs(bq.x + bq.y * 0.6 - 0.008), 0.009) * step(-0.002, bq.y) * step(bq.y, 0.03);
+        col = mix(col, mix(A, float3(1.0), 0.3), sat(bolt));
+        for (int i = 0; i < 2; i++) {
+            float fi = float(i) * 2.0 - 1.0;
+            float kd = length(tq - float2(fi * 0.3, 0.27)) - 0.025;
+            col = mix(col, top * 0.6, 1.0 - smoothstep(0.0, px, kd));
+            col = mix(col, mix(A, S, float(i)) * 0.8, 1.0 - smoothstep(0.0, px, abs(kd + 0.004) - 0.0025));
+        }
+    }
+    // The bay: a well with a breathing light ring.
+    float2 bq = float2(p.x, p.y / sq);
+    float rb = length(bq);
+    float bay = rb - 0.3;
+    col = mix(col, mix(A, S, 0.5 + 0.5 * sin(atan(bq.y, bq.x) + t * 0.5)) * (0.5 + 0.6 * breathe), (1.0 - smoothstep(0.0, px, abs(bay) - 0.006)));
+    col = mix(col, dark * 0.5, 1.0 - smoothstep(0.0, px, bay + 0.008));
+    // The laser's red glow under the disc, tracking in and out.
+    float sledR = 0.08 + 0.17 * (0.5 + 0.5 * sin(t * 0.3));
+    // The disc.
+    float an = atan(bq.y, bq.x);
+    float spin = t * 3.0;
+    float discM = (1.0 - smoothstep(0.0, px, rb - 0.27)) * smoothstep(0.024 - px, 0.024, rb) * (1.0 - cart);
+    if (discM > 0.0 && uHasMedia > 0.5) {
+        // The game's own disc: its picture turning with the spin (a disc picture fills its square), or its
+        // cover printed on the disc's label ring; a little rainbow sheen and the clear hub stay.
+        float2 lp = rot(-spin) * bq;
+        float2 sz = max(uMediaSize, float2(1.0));
+        float3 discCol;
+        if (uMediaKind < 0.5) {
+            float4 pc = float4(uMedia.eval((lp / 0.54 + 0.5) * sz));
+            discCol = mix(float3(0.72, 0.74, 0.78), pc.rgb, pc.a);
+        } else {
+            float side = min(sz.x, sz.y);
+            float2 cq = lp / 0.54;
+            float3 cov = float3(uMedia.eval(sz * 0.5 + cq * side).rgb);
+            discCol = mix(cov, float3(0.8, 0.82, 0.86), smoothstep(0.255, 0.262, rb));
+        }
+        float rbw = fract(an / TAU * 2.0 - t * 0.05 + rb * 3.0);
+        float3 rainbow = 0.5 + 0.5 * cos(TAU * (rbw + float3(0.0, 0.33, 0.67)));
+        discCol += rainbow * 0.08 * smoothstep(0.15, 0.26, rb);
+        discCol = mix(discCol, float3(0.75, 0.8, 0.86) * 0.6, step(rb, 0.045));
+        discCol += 0.2 * smoothstep(0.1, 0.0, abs(an - 2.3)) * smoothstep(0.05, 0.24, rb);
+        col = mix(col, discCol, discM);
+    } else if (discM > 0.0) {
+        float rbw = fract(an / TAU * 2.0 - t * 0.05 + rb * 3.0);
+        float3 rainbow = 0.5 + 0.5 * cos(TAU * (rbw + float3(0.0, 0.33, 0.67)));
+        float3 discCol = mix(float3(0.72, 0.74, 0.78), rainbow, 0.4 * smoothstep(0.2, 0.26, rb)) * (0.85 + 0.15 * sin(rb * 320.0));
+        float la = an - spin;
+        if (rb < 0.2) {
+            discCol = mix(A, S, step(0.5, fract(la / TAU * 3.0))) * 0.85;
+            discCol = mix(discCol, float3(0.95), step(abs(rb - 0.13), 0.012));
+            discCol = mix(discCol, mix(A, float3(1.0), 0.6), step(abs(fract(la / TAU) - 0.5), 0.03) * step(0.07, rb));
+            float2 lp = rot(-spin) * bq;
+            float2 q2 = lp - float2(0.0, -0.13);
+            float bolt = step(abs(q2.x + q2.y * 0.6 + 0.008), 0.01) * step(-0.034, q2.y) * step(q2.y, 0.002) + step(abs(q2.x + q2.y * 0.6 - 0.008), 0.01) * step(-0.002, q2.y) * step(q2.y, 0.034);
+            discCol = mix(discCol, float3(1.0), sat(bolt));
+        }
+        discCol = mix(discCol, float3(0.75, 0.8, 0.86) * 0.6, step(rb, 0.06));
+        discCol += 0.28 * smoothstep(0.1, 0.0, abs(an - 2.3)) * smoothstep(0.05, 0.24, rb);
+        col = mix(col, discCol, discM);
+    }
+    col += float3(1.0, 0.15, 0.1) * 0.4 * exp(-length(bq - float2(sledR, 0.0)) * 35.0) * step(rb, 0.3) * (0.75 + 0.25 * sin(t * 25.0));
+    // The dome lid swung up at the back: a clear half-dome, seen edge-on, with its rim and a highlight.
+    float2 lc = float2(0.0, -0.3 * sq - 0.17);
+    float2 lq = (p - lc) * float2(1.0, 1.5);
+    float dome = length(lq) - 0.3;
+    float lidM = (1.0 - smoothstep(0.0, px, dome)) * step(lq.y, 0.12);
+    col = mix(col, mix(col, mix(float3(0.85, 0.9, 1.0), S, 0.3), 0.25), lidM);
+    col = mix(col, mix(float3(0.9, 0.95, 1.0), A, 0.2), (1.0 - smoothstep(0.0, px, abs(dome) - 0.003)) * step(lq.y, 0.12) * 0.8);
+    col += 0.25 * lidM * smoothstep(0.04, 0.0, abs(length(lq - float2(0.06, 0.04)) - 0.22)) * step(lq.x, -0.05) * step(lq.y, -0.05);
+    col = mix(col, top * 0.8, (1.0 - smoothstep(0.0, px, sdRoundBox(p - float2(0.0, -0.3 * sq - 0.005), float2(0.08, 0.012), 0.008))));
+    // A cartridge game: its cartridge stands in the bay, swaying slowly in a beam of light from the laser.
+    if (cart > 0.5) {
+        float2 sz = max(uMediaSize, float2(1.0));
+        float hgt = 0.36;
+        float wid = hgt * sz.x / sz.y;
+        if (wid > 0.3) { wid = 0.3; hgt = wid * sz.y / sz.x; }
+        float turn = 0.8 + 0.2 * sin(t * 0.6);            // turning a little to and fro, always facing us
+        float2 base = float2(0.0, 0.01 + 0.006 * sin(t * 1.4));
+        float2 cq = p - base;
+        float beam = exp(-abs(cq.x) / (0.05 + max(-cq.y, 0.0) * 0.4)) * step(cq.y, 0.0) * step(-0.55, cq.y);
+        col += mix(A, S, 0.5) * beam * 0.18 * (0.7 + 0.3 * breathe);
+        float hw = wid * 0.5 * max(abs(turn), 0.04);
+        float2 q = float2(cq.x / (2.0 * hw) + 0.5, (cq.y + hgt) / hgt);
+        if (q.x > 0.0 && q.x < 1.0 && q.y > 0.0 && q.y < 1.0) {
+            float2 tq = float2(turn < 0.0 ? 1.0 - q.x : q.x, q.y);
+            float4 pc = float4(uMedia.eval(tq * sz));
+            float3 cc = turn < 0.0 ? pc.rgb * 0.35 + top * 0.4 : pc.rgb;  // its back: dark plastic
+            cc *= 0.8 + 0.35 * abs(turn) * (1.0 - q.x * 0.4);
+            cc += float3(1.0) * 0.12 * smoothstep(0.08, 0.0, abs(q.x - 0.15 - 0.5 * fract(t * 0.1)));
+            col = mix(col, cc, step(0.5, pc.a));
+        }
+    }
+    return half4(finish(col, fc), 1.0);
+}

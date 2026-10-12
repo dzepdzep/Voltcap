@@ -1,0 +1,36 @@
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/app/build
+/app/release
+
+# Built apps and signing keys never go into git
+*.apk
+*.aab
+*.jks
+*.keystore
+/app/.cxx
+.kotlin/
+
+keystore.properties
+
+# Update 144 (code on GitHub, dzepdzep/Voltcap › main): kept off GitHub.
+# Discord's Social SDK: files up to 290 MB (GitHub's limit is 100 MB) and Discord's terms don't allow sharing it —
+# whoever builds Voltcap downloads it from discord.com/developers into app/libs/discord.
+/app/libs/discord/
+# Claude's working copies (the real files are in app/ and the project root).
+/src_copy/
+/project_copy/
+/Claude outputs/
+# Your screenshots from the handhelds.
+/screens/
+# Logs, Python caches.
+*.log
+__pycache__/

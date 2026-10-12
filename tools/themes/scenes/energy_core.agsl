@@ -1,0 +1,95 @@
+// Energy core: the heart of a reactor. A sphere of churning plasma hangs inside three containment
+// rings that turn on different axes; arcs of energy jump between the core and the ring emitters,
+// a hexagonal chamber wall glows faintly behind, and every few seconds the core surges - a bright
+// pulse, a shockwave across the walls, and the rings speeding up for a moment.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float2 c = float2(asp * 0.5, 0.5);
+    float2 p = uv - c;
+    float r = length(p);
+    float cyc = mod(t, 7.0);
+    float surge = exp(-cyc * 2.5);
+    float spin = t + (1.0 - exp(-cyc * 1.5)) * 1.2 + floor(t / 7.0) * 1.2;
+
+    // Hex chamber wall: a honeycomb of panels with faint glowing seams, lit by the core.
+    float2 h = p * 9.0;
+    float2 hr = float2(1.0, 1.7320508);
+    float2 ha = mod(h, hr) - hr * 0.5;
+    float2 hb = mod(h - hr * 0.5, hr) - hr * 0.5;
+    float2 hg = dot(ha, ha) < dot(hb, hb) ? ha : hb;
+    float hexD = 0.5 - max(abs(hg.x) * 0.866 + abs(hg.y) * 0.5, abs(hg.y));
+    float3 col = BG * (0.9 + 0.3 * hash12(floor((h - hg) * 10.0)));
+    float light = exp(-r * 2.2) * (0.6 + 0.8 * surge);
+    col += mix(A, S, 0.5) * (1.0 - smoothstep(0.0, 0.05, hexD)) * (0.08 + 0.4 * light);
+    col *= 0.7 + 0.6 * light;
+    // The surge's shockwave across the wall.
+    col += mix(A, float3(1.0), 0.5) * exp(-abs(r - cyc * 0.45) * 40.0) * exp(-cyc * 0.8) * 0.4;
+
+    // Containment rings: ellipses (circles seen at an angle) turning about different axes. The back
+    // half is drawn before the core, the front half after.
+    float R = 0.24;
+    float3 ringC = mix(float3(0.75, 0.8, 0.9), A, 0.3);
+    float back = 0.0;
+    float front = 0.0;
+    float emit = 0.0;
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float ang = fi * 1.05 + 0.3;
+        float tiltA = 0.25 + 0.25 * fi + 0.1 * sin(spin * 0.3 + fi);
+        float2 q = rot(ang) * p;
+        float sy = sin(tiltA);
+        float2 e = float2(q.x, q.y / max(sy, 0.08));
+        float er = length(e);
+        float rr = R * (1.12 + 0.14 * fi);
+        float band = exp(-abs(er - rr) * 260.0 * max(sy, 0.25));
+        // Segments rotating round the ring.
+        float a = atan(e.y, e.x) + spin * (0.6 + 0.3 * fi) * (fi == 1.0 ? -1.0 : 1.0);
+        float seg = step(0.25, fract(a / TAU * 12.0));
+        float isFront = step(0.0, e.y);
+        back += band * (1.0 - isFront) * (0.4 + 0.6 * seg);
+        front += band * isFront * (0.4 + 0.6 * seg);
+        // Emitters: bright nodes on the ring.
+        float node = exp(-length(e - rr * float2(cos(-spin * (0.6 + 0.3 * fi) * (fi == 1.0 ? -1.0 : 1.0)), sin(-spin * (0.6 + 0.3 * fi) * (fi == 1.0 ? -1.0 : 1.0)))) * 90.0);
+        emit += node;
+    }
+    col += ringC * back * 0.5;
+
+    // The core: a sphere of plasma - swirling noise mapped on a ball, hot centre, darker limb.
+    float cr = 0.15 * (1.0 + 0.06 * surge + 0.015 * sin(t * 3.0));
+    if (r < cr * 1.6) {
+        float2 n = p / cr;
+        float z = sqrt(max(1.0 - dot(n, n), 0.0));
+        float2 sp = n / (1.0 + z) * 2.0;
+        float pl = fbm(rot(t * 0.2) * sp * 2.0 + float2(t * 0.3, -t * 0.2));
+        pl = 0.6 * pl + 0.4 * fbm(sp * 4.0 - float2(t * 0.5, t * 0.1));
+        float3 hot = mix(mix(A, S, pl), float3(1.0), smoothstep(0.55, 0.9, pl) * 0.7 + z * 0.3);
+        float inside = 1.0 - smoothstep(cr - px, cr + px, r);
+        col = mix(col, hot * (0.6 + 0.6 * z) * (1.0 + 0.6 * surge), inside);
+    }
+    col += mix(A, S, 0.5) * exp(-max(r - cr, 0.0) * 14.0) * (0.35 + 0.6 * surge);
+    col += float3(1.0) * exp(-r * 30.0) * surge * 0.6;
+
+    // Arcs: jagged bolts from the core towards the rings, flickering.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float seed = floor(t * 8.0 + fi * 13.0);
+        float ang = hash11(seed) * TAU;
+        float2 dir = float2(cos(ang), sin(ang));
+        float along = dot(p, dir);
+        float across = dot(p, float2(-dir.y, dir.x));
+        float jag = (vnoise(float2(along * 40.0, seed)) - 0.5) * 0.03 * sat(along / 0.1);
+        float bolt = exp(-abs(across - jag) * 600.0) * step(cr * 0.9, along) * step(along, R * 1.2);
+        col += mix(float3(1.0), S, 0.3) * bolt * step(0.4, hash11(seed + 3.0)) * (0.6 + surge);
+    }
+    // Front halves of the rings, and their emitter nodes.
+    col += ringC * front * 0.75;
+    col += float3(1.0) * emit * 0.7;
+    return half4(finish(col, fc), 1.0);
+}

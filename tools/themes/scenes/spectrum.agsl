@@ -1,0 +1,56 @@
+// Spectrum: a classic LED bar visualizer over the blurred cover - low notes on the left, highs on
+// the right - standing on a glowing floor line with a glossy reflection under it. Each bar is
+// segmented like a hi-fi meter and gets hotter towards its top, a thin cap floats above it and
+// the floor flashes on every kick. Sits where the equalizer is set (uWaveY).
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+
+    float3 col = coverField(uv, asp, t, bass, 0.85, BG, A, S);
+    float rm = room(0.11);
+    float base = uWaveY + rm * 0.85;
+
+    // Bars across the middle 88 % of the width.
+    float x = (uv.x / asp - 0.06) / 0.88;
+    float N = 44.0;
+    float id = floor(x * N);
+    float fx = fract(x * N);
+    float m = (id + 0.5) / N;
+    float inRange = step(0.0, x) * step(x, 1.0);
+    float e = eqAt(m) * play;
+    e *= 0.82 + 0.18 * sin(id * 1.7 + t * 5.0 + hash11(id) * 6.0);
+    float gain = 0.5 + 0.5 * k;
+    float hgt = (0.012 + (rm * 1.7 - 0.012) * pow(e, 0.7) * gain);
+    float up = base - uv.y;
+    float bar = step(0.14, fx) * step(fx, 0.86) * inRange;
+    float seg = step(0.3, fract(up * 85.0));
+    float3 barCol = mix(A, S, m);
+    float hot = sat(up / (rm * 1.7));
+    float lit = bar * step(0.0, up) * step(up, hgt) * seg;
+    col = mix(col, mix(barCol, float3(1.0), hot * 0.55), lit * (0.75 + 0.25 * play));
+    // Cap just above each bar.
+    float cap = bar * (1.0 - smoothstep(0.0, 0.003, abs(up - hgt - 0.012)));
+    col += mix(barCol, float3(1.0), 0.6) * cap * 0.8;
+    // Reflection under the floor.
+    float down = -up;
+    float refl = bar * step(0.0, down) * step(down, hgt * 0.15) * seg * (1.0 - down / max(hgt * 0.15, 0.001));
+    col += barCol * refl * 0.22;
+    // Glow round the bars.
+    col += barCol * exp(-abs(up - hgt * 0.5) / (0.06 + hgt)) * 0.1 * e * inRange;
+    // Floor line, flashing on the kick.
+    float floorLine = exp(-abs(up) * 500.0) * inRange;
+    col += mix(A, float3(1.0), 0.5) * floorLine * (0.35 + 0.65 * kick * k);
+    col += A * exp(-abs(up) * 18.0) * kick * 0.12 * k;
+
+    return half4(finish(col, fc), 1.0);
+}

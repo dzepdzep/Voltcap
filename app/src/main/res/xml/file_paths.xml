@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Games are handed to emulators as links through this provider. The
+         first two cover internal storage with short, readable links; the
+         root entry covers everything else (SD cards, USB drives), so a game
+         anywhere Shelf can read can be shared. -->
+    <external-path name="roms" path="ROMs/" />
+    <external-path name="external_files" path="." />
+    <root-path name="storage" path="." />
+</paths>

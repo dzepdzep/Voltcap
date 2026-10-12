@@ -1,0 +1,42 @@
+// The Voltcap mark, shared by the Voltcap scenes: the capsule (half width 1, half height VR in its own
+// units) and the bolt inside it - the same shapes as the start-up animation (VoltcapIntro).
+const float VR = 0.44;
+
+float sdCapsuleMark(float2 q) { return sdRoundBox(q, float2(1.0, VR), VR); }
+
+// One edge of a polygon for its signed distance (squared distance, and 1 when it flips the inside test).
+float2 polyEdge(float2 p, float2 vi, float2 vj) {
+    float2 e = vj - vi;
+    float2 w = p - vi;
+    float2 b = w - e * sat(dot(w, e) / dot(e, e));
+    float c1 = step(vi.y, p.y);
+    float c2 = 1.0 - step(vj.y, p.y);
+    float c3 = step(e.y * w.x, e.x * w.y);
+    return float2(dot(b, b), c1 * c2 * c3 + (1.0 - c1) * (1.0 - c2) * (1.0 - c3));
+}
+
+// The bolt (capsule units; y down), signed distance.
+float sdBoltMark(float2 p) {
+    float2 v0 = float2(0.13, -0.33);
+    float2 v1 = float2(-0.17, 0.045);
+    float2 v2 = float2(-0.015, 0.045);
+    float2 v3 = float2(-0.11, 0.33);
+    float2 v4 = float2(0.19, -0.055);
+    float2 v5 = float2(0.035, -0.055);
+    float d = dot(p - v0, p - v0);
+    float flips = 0.0;
+    float2 r;
+    r = polyEdge(p, v0, v5); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v1, v0); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v2, v1); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v3, v2); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v4, v3); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v5, v4); d = min(d, r.x); flips += r.y;
+    float s = mod(flips, 2.0) > 0.5 ? -1.0 : 1.0;
+    return s * sqrt(d);
+}
+
+// A point on the capsule's outline at angle a (close enough to the real outline for sparks).
+float2 capsulePoint(float a) {
+    return float2(clamp(1.35 * cos(a), -1.0, 1.0) * (1.0 - VR), 0.0) + VR * float2(cos(a), sin(a));
+}

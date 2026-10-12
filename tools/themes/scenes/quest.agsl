@@ -1,0 +1,189 @@
+// Hero's quest: the first morning of a fantasy adventure, seen from a cliff. A low sun breaks
+// through layered clouds lit gold from below and throws long rays through the haze; snowy ranges
+// fade into the distance, floating islands trail thin waterfalls, a castle with lit windows and
+// waving pennants stands on its crag above a winding, glittering river, mist lies in the valleys
+// and a flock of birds crosses the sky. Up front a lone hero stands at the cliff's edge, cape
+// streaming in the wind, beside a windswept tree; motes of light drift up from the grass.
+
+float ridge(float x, float seed, float amp, float fr) {
+    return amp * (fbm3(float2(x * fr + seed, seed * 1.7)) - 0.5) * 2.0 + amp * 0.35 * abs(sin(x * fr * 2.3 + seed));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float2 sunP = float2(asp * 0.62, 0.36);
+    float3 skyHi = float3(0.16, 0.22, 0.48);
+    float3 skyMid = float3(0.62, 0.48, 0.62);
+    float3 skyLow = float3(1.0, 0.72, 0.45);
+    float y = uv.y;
+    float3 col = mix(skyHi, skyMid, smoothstep(0.0, 0.3, y));
+    col = mix(col, skyLow, smoothstep(0.22, 0.42, y));
+    float sd = length((uv - sunP) * float2(1.0, 1.1));
+    col += float3(1.0, 0.85, 0.55) * exp(-sd * 5.0) * 0.55;
+    col = mix(col, float3(1.0, 0.97, 0.88), 1.0 - smoothstep(0.035, 0.04, sd));
+
+    // Clouds: two layers, lit gold from below near the sun, drifting.
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float2 cp = float2(uv.x * (3.2 + fi) + t * (0.008 + 0.006 * fi), uv.y * (7.0 + fi * 2.0));
+        float n = fbm3(cp + fi * 5.0);
+        float band = smoothstep(0.05 + fi * 0.08, 0.16 + fi * 0.08, uv.y) * (1.0 - smoothstep(0.2 + fi * 0.08, 0.32 + fi * 0.06, uv.y));
+        float cl = smoothstep(0.48, 0.72, n) * band;
+        float3 cc = mix(float3(0.42, 0.36, 0.55), float3(1.0, 0.75, 0.5), exp(-length(uv - sunP) * 2.2));
+        cc = mix(cc, float3(1.0, 0.9, 0.7), smoothstep(0.6, 0.75, n) * 0.4 * exp(-length(uv - sunP) * 1.5));
+        col = mix(col, cc, cl * 0.85);
+    }
+    // Sun rays through the haze.
+    float2 sv = uv - sunP;
+    float ra = atan(sv.y, sv.x);
+    float rays = pow(0.5 + 0.5 * sin(ra * 18.0 + sin(ra * 7.0 + t * 0.1) * 2.0), 6.0);
+    col += float3(1.0, 0.85, 0.6) * rays * exp(-length(sv) * 2.2) * 0.16 * step(0.0, sv.y + 0.2);
+
+    // Birds: a loose V crossing slowly.
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float bx = fract(t * 0.02 + 0.3) * (asp + 0.6) - 0.3 - abs(fi - 2.5) * 0.03;
+        float by = 0.17 + (fi - 2.5) * 0.012 + abs(fi - 2.5) * 0.008 + 0.01 * sin(t * 0.5 + fi);
+        float2 bp = uv - float2(bx, by);
+        float flap = sin(t * 7.0 + fi * 1.3) * 0.004;
+        float wing = abs(bp.y + abs(bp.x) * 0.6 - flap - abs(bp.x) * abs(bp.x) * 30.0 * flap) - 0.0012;
+        col = mix(col, float3(0.15, 0.12, 0.2), (1.0 - smoothstep(0.0, px, wing)) * step(abs(bp.x), 0.012));
+    }
+
+    // Far snowy ranges, fading into the haze.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float base = 0.42 + fi * 0.045;
+        float h = base - 0.1 + ridge(uv.x, 3.0 + fi * 4.1, 0.11 - fi * 0.02, 2.2 + fi * 0.9);
+        float haze = 0.5 - fi * 0.16;
+        float3 rock = mix(float3(0.42, 0.42, 0.6), float3(0.3, 0.32, 0.45), fi * 0.4);
+        float snowLine = smoothstep(h + 0.035, h + 0.008, uv.y);
+        float3 m = mix(rock, float3(0.92, 0.88, 0.92), snowLine * (1.0 - fi * 0.3));
+        // Lit side towards the sun.
+        m *= 0.88 + 0.6 * sat((ridge(uv.x + 0.004, 3.0 + fi * 4.1, 1.0, 2.5 + fi * 0.8) - ridge(uv.x, 3.0 + fi * 4.1, 1.0, 2.5 + fi * 0.8)) * 4.0);
+        m = mix(m, skyLow * 0.9 + skyMid * 0.1, haze);
+        col = mix(col, m, smoothstep(h - px, h + px, uv.y));
+    }
+
+    // Floating islands with thin waterfalls.
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float2 ic = float2(asp * (0.18 + fi * 0.58), 0.27 + fi * 0.04 + 0.006 * sin(t * 0.4 + fi * 2.0));
+        float w = 0.07 - fi * 0.02;
+        float2 ip = uv - ic;
+        float top = abs(ip.y + 0.004) - 0.006;
+        float under = ip.y - (w - abs(ip.x)) * 0.9 * (0.8 + 0.4 * vnoise(float2(ip.x * 60.0, fi)));
+        float inIsl = step(abs(ip.x), w) * step(0.0 - 0.01, ip.y) * step(under, 0.0);
+        float3 ic3 = mix(float3(0.45, 0.38, 0.42), float3(0.3, 0.55, 0.32), step(ip.y, 0.008));
+        ic3 = mix(ic3, skyLow, 0.45 - fi * 0.1);
+        col = mix(col, ic3, inIsl);
+        float fall = step(abs(ip.x - w * 0.3), 0.0025) * step(0.0, ip.y) * step(ip.y, 0.18);
+        col = mix(col, float3(0.92, 0.95, 1.0), fall * (0.5 + 0.3 * vnoise(float2(ip.x * 300.0, ip.y * 40.0 - t * 3.0))) * (1.0 - smoothstep(0.08, 0.18, ip.y)));
+    }
+
+    // Middle hills with the castle on its crag, and mist in the valley.
+    float hm = 0.6 + ridge(uv.x, 9.0, 0.05, 1.6);
+    float crag = exp(-sqf((uv.x - asp * 0.56) * 7.0)) * 0.1;
+    hm -= crag;
+    float3 hillC = mix(float3(0.2, 0.36, 0.26), float3(0.42, 0.52, 0.3), smoothstep(hm, hm + 0.12, uv.y));
+    hillC = mix(hillC, skyLow, 0.18 * (1.0 - smoothstep(hm, hm + 0.1, uv.y)));
+    hillC *= 0.8 + 0.3 * fbm3(uv * float2(6.0, 18.0));
+    col = mix(col, hillC, smoothstep(hm - px, hm + px, uv.y));
+    // The castle.
+    float2 cb = float2(asp * 0.56, 0.6 - 0.1 + 0.002);
+    float2 q = uv - cb;
+    float keep = sdRoundBox(q - float2(0.0, -0.035), float2(0.022, 0.04), 0.0);
+    float wall = sdRoundBox(q - float2(0.0, 0.0), float2(0.055, 0.016), 0.0);
+    float tw1 = sdRoundBox(q - float2(-0.05, -0.02), float2(0.011, 0.035), 0.0);
+    float tw2 = sdRoundBox(q - float2(0.05, -0.02), float2(0.011, 0.035), 0.0);
+    float tw3 = sdRoundBox(q - float2(0.0, -0.09), float2(0.008, 0.02), 0.0);
+    float roof1 = max(abs(q.x + 0.05) * 1.6 + (q.y + 0.055) * 1.0, -(q.y + 0.055)) - 0.018;
+    float roof2 = max(abs(q.x - 0.05) * 1.6 + (q.y + 0.055) * 1.0, -(q.y + 0.055)) - 0.018;
+    float roof3 = max(abs(q.x) * 1.6 + (q.y + 0.11), -(q.y + 0.11)) - 0.014;
+    float crenel = step(fract(q.x * 180.0), 0.5) * step(abs(q.y + 0.018), 0.004) * step(abs(q.x), 0.055);
+    float castle = min(min(min(keep, wall), min(tw1, tw2)), min(min(tw3, roof1), min(roof2, roof3)));
+    float3 stone = mix(float3(0.22, 0.22, 0.32), skyLow * 0.5, 0.25);
+    col = mix(col, stone, max(1.0 - smoothstep(0.0, px, castle), crenel));
+    // Lit windows, flickering softly.
+    float2 wg = floor((q + float2(0.06, 0.06)) * float2(90.0, 60.0));
+    float win = step(0.6, hash12(wg)) * step(abs(fract((q.x + 0.06) * 90.0) - 0.5), 0.2) * step(abs(fract((q.y + 0.06) * 60.0) - 0.5), 0.22);
+    col = mix(col, float3(1.0, 0.8, 0.4) * (0.8 + 0.2 * sin(t * 3.0 + wg.x)), win * step(castle, -0.003));
+    // Pennants on the towers.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float2 pp = q - float2((fi - 1.0) * 0.05, fi == 1.0 ? -0.125 : -0.075);
+        float pole = step(abs(pp.x), 0.0012) * step(-0.025, pp.y) * step(pp.y, 0.0);
+        float2 fp = pp - float2(0.0, -0.022);
+        float wave = sin(fp.x * 300.0 - t * 6.0 + fi) * 0.0025 * fp.x / 0.025;
+        float flag = step(0.0, fp.x) * step(fp.x, 0.024) * step(abs(fp.y - wave), 0.006 * (1.0 - fp.x / 0.03));
+        col = mix(col, float3(0.2), pole);
+        col = mix(col, fi == 1.0 ? A : S, flag);
+    }
+    // River glittering through the valley below the castle.
+    float rv = 0.68 + 0.02 * sin(uv.x * 3.0);
+    float riverW = 0.004 + 0.01 * sat((uv.y - 0.6) * 4.0);
+    float rx = asp * 0.72 + 0.3 * sin(uv.y * 14.0) * (uv.y - 0.6);
+    float river = step(0.6, uv.y) * step(abs(uv.x - rx), riverW + (uv.y - 0.6) * 0.15);
+    float glit = step(0.92, hash12(floor(uv * 300.0) + floor(t * 4.0)));
+    col = mix(col, mix(float3(0.65, 0.75, 0.95), float3(1.0, 0.9, 0.7), glit), river * 0.85);
+    // Mist in the valley.
+    float mist = smoothstep(0.58, 0.68, uv.y) * (1.0 - smoothstep(0.72, 0.85, uv.y)) * (0.5 + 0.5 * fbm3(float2(uv.x * 3.0 + t * 0.02, uv.y * 8.0)));
+    col = mix(col, float3(0.95, 0.85, 0.8), mist * 0.22);
+
+    // Near meadow hills.
+    float hn = 0.78 + ridge(uv.x, 15.0, 0.035, 1.1);
+    float3 meadow = mix(float3(0.42, 0.62, 0.28), float3(0.2, 0.42, 0.2), smoothstep(hn, hn + 0.25, uv.y));
+    meadow *= 0.85 + 0.25 * fbm3(uv * float2(10.0, 30.0) + float2(t * 0.05, 0.0));
+    meadow = mix(meadow, A * 0.5, 0.08);
+    col = mix(col, meadow, smoothstep(hn - px, hn + px, uv.y));
+
+    // The cliff up front (left), with the hero and a windswept tree.
+    float cliffTop = 0.74 + 0.012 * sin(uv.x * 9.0);
+    float cliffEdge = asp * 0.34 + 0.03 * sin(uv.y * 20.0);
+    float inCliff = step(cliffTop, uv.y) * step(uv.x, cliffEdge);
+    float3 cliffC = mix(float3(0.1, 0.1, 0.14), float3(0.18, 0.2, 0.16), smoothstep(0.74, 1.0, uv.y));
+    col = mix(col, cliffC, inCliff);
+    // Grass tufts swaying on the cliff top.
+    float gx = uv.x * 260.0;
+    float blade = sat(1.0 - abs(fract(gx) - 0.5 - (cliffTop + 0.02 - uv.y) * 12.0 * sin(t * 2.0 + uv.x * 3.0) * 0.6) * 4.0);
+    float gh = 0.012 + 0.01 * hash11(floor(gx));
+    col = mix(col, float3(0.25, 0.4, 0.2), blade * step(cliffTop - gh, uv.y) * step(uv.y, cliffTop + 0.002) * step(uv.x, cliffEdge));
+    // The hero: a small figure in a cape, sword at the hip, looking towards the castle.
+    float2 hp = uv - float2(asp * 0.25, 0.74 - 0.002);
+    float body = sdRoundBox(hp - float2(0.0, -0.028), float2(0.006, 0.02), 0.004);
+    float head = length(hp - float2(0.0, -0.056)) - 0.0065;
+    float legs = sdRoundBox(hp - float2(0.0, -0.006), float2(0.005, 0.009), 0.001);
+    float wind = sin(t * 2.2) * 0.004 + sin(t * 5.1) * 0.0015;
+    float capeY = sat((-hp.y - 0.008) / 0.044);
+    float capeX = hp.x + 0.004 + (1.0 - capeY) * (0.02 + wind * 2.0);
+    float cape = step(-0.052, hp.y) * step(hp.y, -0.01) * step(0.0, capeX) * step(capeX, 0.004 + (1.0 - capeY) * 0.012);
+    float sword = step(abs(hp.x - 0.007 + hp.y * 0.25), 0.001) * step(-0.03, hp.y) * step(hp.y, -0.006);
+    float hero = max(max(1.0 - smoothstep(0.0, px, min(min(body, head), legs)), cape), sword);
+    col = mix(col, float3(0.07, 0.06, 0.1), hero);
+    col = mix(col, A * 0.85, cape * 0.55);
+    // Rim light from the sun on the hero.
+    col += float3(1.0, 0.8, 0.5) * hero * smoothstep(0.004, -0.004, abs(hp.x - 0.004) - 0.002) * 0.4;
+    // The windswept tree on the cliff.
+    float2 tp = uv - float2(asp * 0.1, 0.74);
+    float trunk = step(abs(tp.x + (tp.y + 0.12) * 0.0 - (-tp.y) * (-tp.y) * 3.0), 0.003 + (0.12 + tp.y) * 0.03) * step(-0.14, tp.y) * step(tp.y, 0.0);
+    float crownN = fbm3(tp * 22.0 + float2(t * 0.25, 0.0));
+    float crown = step(length((tp - float2(0.05, -0.15)) * float2(0.8, 1.5)) - 0.06 * (0.7 + 0.5 * crownN), 0.0);
+    col = mix(col, float3(0.08, 0.07, 0.09), trunk);
+    col = mix(col, mix(float3(0.1, 0.18, 0.12), float3(0.25, 0.32, 0.18), crownN), crown);
+
+    // Motes of light drifting up.
+    float2 mp = uv + float2(sin(uv.y * 6.0 + t * 0.6) * 0.01, t * 0.03);
+    col += float3(1.0, 0.88, 0.6) * dots(mp, 26.0, float2(0.0), 0.07, 0.06, 4.0) * 0.6 * smoothstep(0.5, 0.9, uv.y);
+
+    col = mix(col, BG * 2.0, 0.05);
+    float2 vv = fc / uRes - 0.5;
+    col *= 1.0 - 0.35 * dot(vv, vv);
+    return half4(finish(col, fc), 1.0);
+}

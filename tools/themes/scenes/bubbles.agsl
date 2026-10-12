@@ -1,0 +1,141 @@
+// Torrent / Deep sea: deep under water, looking up at the light. The surface ripples far above,
+// shafts of sunlight sway down through the blue, caustics dance over the rocks of the seabed where
+// kelp sways, and streams of bubbles wobble up from vents - each a little glass sphere catching the
+// light. Glowing jellyfish pulse as they drift, trailing their tentacles, and marine snow sinks
+// slowly through it all.
+
+// Bright web of light on the seabed (after the well-known tileable caustic).
+float caustic(float2 p, float t) {
+    p = mod(p, TAU) - 250.0;
+    float2 i = p;
+    float c = 1.0;
+    float inten = 0.005;
+    for (int n = 0; n < 4; n++) {
+        float tt = t * (1.0 - (3.5 / float(n + 1)));
+        i = p + float2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));
+        c += 1.0 / length(float2(p.x / (sin(i.x + tt) / inten), p.y / (cos(i.y + tt) / inten)));
+    }
+    c /= 4.0;
+    c = 1.17 - pow(max(c, 0.0), 1.4);
+    return min(pow(abs(c), 8.0), 2.0);
+}
+
+// One layer of bubbles. Returns light (glass sphere: dark core, bright rim, highlight).
+float bubbleLayer(float2 uv, float scale, float speed, float seed, float t, float density) {
+    float2 p = uv * scale + float2(0.0, t * speed);
+    float2 id = floor(p);
+    float2 r = hash22(id + seed);
+    if (r.x > density) return 0.0;
+    float2 f = fract(p) - 0.5;
+    float2 o = (hash22(id + seed + 2.2) - 0.5) * 0.4;
+    o.x += 0.08 * sin(t * (1.5 + r.y * 2.0) + r.x * 30.0);
+    float rad = 0.06 + 0.12 * r.y;
+    float2 q = f - o;
+    q.x *= 1.0 + 0.07 * sin(t * 4.0 + r.y * 10.0);
+    float d = length(q) / rad;
+    if (d > 1.15) return 0.0;
+    float edge = 1.5 / (uRes.y / scale) / rad;
+    float inside = 1.0 - smoothstep(1.0 - edge, 1.0, d);
+    float fres = pow(sat(d), 4.0);
+    float hl = exp(-length(q / rad - float2(-0.38, -0.42)) * 9.0);
+    float hl2 = exp(-length(q / rad - float2(0.35, 0.45)) * 14.0) * 0.4;
+    return inside * (0.08 + fres * 0.8 + hl * 1.2 + hl2);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 water = mix(A, float3(0.1, 0.45, 0.6), 0.4);
+
+    // Water: brighter up towards the light, deep and dark below.
+    float3 col = mix(water * 0.55 + BG, BG * 0.6, smoothstep(0.0, 1.0, uv.y));
+
+    // The surface far above: a bright rippling sheet near the top.
+    float2 sp = float2(uv.x * 1.5, uv.y * 6.0);
+    float surf = caustic(sp * 3.0 + float2(t * 0.1, 0.0), t * 0.4);
+    col += mix(water, float3(1.0), 0.5) * (0.25 + surf * 0.6) * exp(-uv.y * 9.0);
+
+    // Shafts of light swaying down from the surface.
+    float2 d = uv - float2(asp * 0.42 + 0.15 * sin(t * 0.05), -0.6);
+    float ang = atan(d.x, d.y);
+    float rays = vnoise(float2(ang * 14.0, t * 0.12)) * 0.6 + vnoise(float2(ang * 31.0, -t * 0.09 + 2.0)) * 0.4;
+    float shaft = smoothstep(0.42, 0.95, rays) * exp(-max(length(d) - 0.6, 0.0) * 1.4);
+    col += mix(water, float3(0.9, 1.0, 1.0), 0.4) * shaft * 0.32;
+
+    // Far haze of particles, then the nearer marine snow.
+    col += mix(water, float3(1.0), 0.3) * dots(uv, 60.0, float2(t * 0.02, -t * 0.03), 0.3, 0.06, 6.0) * 0.18;
+
+    // Jellyfish: pulsing bells drifting up, glowing in the secondary colour, tentacles trailing.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float per = 40.0 + 12.0 * fi;
+        float ph = fract(t / per + hash11(fi * 3.7));
+        float2 jc = float2(asp * (0.18 + 0.32 * fi + 0.06 * sin(t * 0.1 + fi)), 1.1 - ph * 1.4);
+        float sz = 0.045 + 0.02 * hash11(fi * 9.1);
+        float pulse = 0.5 + 0.5 * sin(t * 2.2 + fi * 2.0);
+        float2 q = (uv - jc) / sz;
+        q.x *= 1.0 + 0.18 * pulse;
+        q.y *= 1.0 - 0.12 * pulse;
+        float bell = length(q * float2(1.0, 1.35)) - 1.0;
+        bell = max(bell, q.y - 0.15);
+        float3 jcol = mix(S, float3(1.0), 0.25);
+        float inside = smoothstep(0.08, -0.08, bell);
+        float rimJ = exp(-abs(bell) * 10.0) * step(q.y, 0.2);
+        col += jcol * (inside * (0.12 + 0.18 * (1.0 + q.y) * pulse) + rimJ * 0.35);
+        col += jcol * 0.12 * exp(-length(uv - jc) * 14.0);
+        // Tentacles: wavy lines hanging below the bell.
+        for (int k = 0; k < 4; k++) {
+            float fk = float(k);
+            float tx = (fk - 1.5) * 0.45;
+            float ty = q.y - 0.15;
+            if (ty > 0.0 && ty < 4.5) {
+                float wav = tx + 0.25 * sin(ty * 2.2 - t * 2.5 + fk * 1.3) * (ty / 4.5 + 0.2);
+                float dd = abs(q.x - wav) * sz;
+                col += jcol * (1.0 - smoothstep(0.0, px * 1.2, dd)) * (1.0 - ty / 4.5) * 0.4;
+            }
+        }
+    }
+
+    // The seabed: rocks in silhouette with caustics dancing on their tops, and swaying kelp.
+    float bed = 0.86 - 0.05 * fbm3(float2(uv.x * 3.0, 1.0)) - 0.035 * abs(sin(uv.x * 5.0 + 1.0));
+    float cs = caustic(float2(uv.x * 4.0, uv.y * 10.0) + float2(t * 0.05, 0.0), t * 0.5);
+    float onBed = smoothstep(bed, bed + px, uv.y);
+    float3 rock = BG * 0.5 + water * 0.06 * (0.6 + 0.4 * vnoise(uv * 40.0));
+    rock += mix(water, float3(1.0), 0.5) * cs * 0.5 * exp(-(uv.y - bed) * 25.0);
+    col = mix(col, rock, onBed);
+    // Kelp: tall ribbons rooted in the bed, swaying, lit on their upper edges.
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float kx = asp * (0.05 + fi * 0.17 + 0.05 * hash11(fi * 4.4));
+        float kh = 0.25 + 0.2 * hash11(fi * 2.3);
+        float y = (0.9 - uv.y) / kh;
+        if (y > 0.0 && y < 1.0) {
+            float sway = 0.04 * sin(t * 0.8 + fi + y * 3.0) * y * y;
+            float wdt = 0.010 * (1.0 - y * 0.6) * (0.8 + 0.4 * sin(y * 20.0 + fi));
+            float kd = abs(uv.x - kx - sway) - wdt;
+            float3 kc = mix(float3(0.04, 0.12, 0.08), water * 0.3, y * 0.5) + mix(water, float3(1.0), 0.4) * 0.15 * exp(-abs(kd + wdt * 0.5) * 300.0) * y;
+            col = mix(col, kc, smoothstep(px, -px, kd));
+        }
+    }
+
+    // Streams of bubbles rising from two vents, plus loose ones at three depths.
+    for (int v = 0; v < 2; v++) {
+        float fv = float(v);
+        float vx = asp * (0.3 + 0.42 * fv);
+        float2 bq = float2((uv.x - vx) * 9.0 + 0.5, uv.y);
+        if (abs(uv.x - vx) < 0.06) col += mix(water, float3(1.0), 0.6) * bubbleLayer(float2(bq.x / 9.0, uv.y), 9.0, 1.4, 20.0 + fv, t, 0.9) * 0.5;
+    }
+    col += mix(water, float3(1.0), 0.4) * bubbleLayer(uv, 13.0, 0.9, 1.0, t, 0.35) * 0.30;
+    col += mix(water, float3(1.0), 0.5) * bubbleLayer(uv, 7.0, 0.6, 4.0, t, 0.3) * 0.45;
+    col += mix(S, float3(1.0), 0.4) * bubbleLayer(uv, 4.0, 0.38, 9.0, t, 0.25) * 0.6;
+
+    // Marine snow drifting down, nearest the camera.
+    col += float3(0.9, 1.0, 1.0) * dots(uv, 24.0, float2(sin(t * 0.2) * 0.3, -t * 0.12), 0.22, 0.09, 13.0) * 0.28;
+
+    return half4(finish(col, fc), 1.0);
+}

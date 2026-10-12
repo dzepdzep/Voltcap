@@ -1,0 +1,162 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
+<body><canvas id="c" width="960" height="540"></canvas>
+<script>
+// Prototype of the Voltcap intro. Same math as VoltcapIntro.kt.
+const FULL = {total:2700, bgIn:350, traceFrom:180, hit:1050, boltDraw:190, fillEnd:1650, lettersFrom:1280, letterStep:55, letterDur:420, tagFrom:1750, tagTo:2150, shineFrom:1900, shineTo:2400, reveal:2300};
+const SHORT = {total:950, bgIn:60, traceFrom:-1, hit:90, boltDraw:120, fillEnd:450, lettersFrom:160, letterStep:28, letterDur:260, tagFrom:330, tagTo:560, shineFrom:420, shineTo:720, reveal:650};
+const R = 0.44; // pill half height; half width = 1
+const LINE = 2*(1-R);
+function ph(t,a,b){return Math.min(1,Math.max(0,(t-a)/(b-a)));}
+function eOut3(x){return 1-Math.pow(1-x,3);}
+function eInOut3(x){return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;}
+function eBack(x){const c1=1.9,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2);}
+// Half outline: s in [0,1] by arc length, top (side=-1) or bottom (side=1)
+const ARC=Math.PI/2*R, HALF=ARC*2+LINE;
+// simpler explicit version
+function halfPoint(side,s){
+  let d=s*HALF;
+  if(d<ARC){ const a=Math.PI - d/R; // from 180deg going to 90deg (math coords, y up)
+    return [-(1-R)+R*Math.cos(a), side*R*Math.sin(a)]; }
+  d-=ARC;
+  if(d<LINE) return [-(1-R)+d, side*R];
+  d-=LINE; const a=Math.PI/2 - d/R; return [(1-R)+R*Math.cos(a), side*R*Math.sin(a)];
+}
+// Note: side=-1 is the top edge (y negative = up on screen)
+function rnd(seed){let s=seed;return ()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+const rng=rnd(20260930);
+const EMBERS=[...Array(26)].map(()=>({s:rng(),side:rng()<0.5?-1:1,delay:rng()*700,life:1100+rng()*900,drift:(rng()-0.5)*0.5,rise:0.35+rng()*0.6,size:0.010+rng()*0.018,tw:rng()*6.28}));
+const TRAIL=[...Array(28)].map(()=>({k:rng(),off:(rng()-0.5)*0.08,life:260+rng()*300,size:0.008+rng()*0.012}));
+// Bolt glyph in pill units
+const BOLT=[[0.13,-0.33],[-0.17,0.045],[-0.015,0.045],[-0.11,0.33],[0.19,-0.055],[0.035,-0.055]];
+function boltLen(){let L=0;for(let i=0;i<BOLT.length;i++){const a=BOLT[i],b=BOLT[(i+1)%BOLT.length];L+=Math.hypot(b[0]-a[0],b[1]-a[1]);}return L;}
+const BL=boltLen();
+function boltPartial(ctx,frac){ // polyline along the outline up to frac
+  let target=frac*BL; ctx.moveTo(BOLT[0][0],BOLT[0][1]);
+  for(let i=0;i<BOLT.length;i++){const a=BOLT[i],b=BOLT[(i+1)%BOLT.length];const l=Math.hypot(b[0]-a[0],b[1]-a[1]);
+    if(target>=l){ctx.lineTo(b[0],b[1]);target-=l;} else {const f=target/l;ctx.lineTo(a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f);return;}}
+}
+function pillPath(ctx){ctx.beginPath();ctx.moveTo(-(1-R),-R);ctx.lineTo(1-R,-R);ctx.arc(1-R,0,R,-Math.PI/2,Math.PI/2);ctx.lineTo(-(1-R),R);ctx.arc(-(1-R),0,R,Math.PI/2,Math.PI*1.5);ctx.closePath();}
+const ORANGE=[245,154,44], YELLOW=[255,216,74], CREAM=[255,246,214];
+function rgba(c,a){return `rgba(${c[0]},${c[1]},${c[2]},${a})`;}
+
+function drawIntro(ctx,t,W,H,tm){
+  const r=Math.min(0.2*W,0.26*H); const cx=W/2, cy=H*0.43;
+  const out=ph(t,tm.reveal,tm.total); const gA=1-out; const zoom=1+0.05*eOut3(out);
+  ctx.save(); ctx.globalAlpha=1; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=gA;
+  // background
+  const bgIn=ph(t,0,tm.bgIn);
+  ctx.fillStyle='#08070b'; ctx.fillRect(0,0,W,H);
+  const hitK = t>=tm.hit ? Math.pow(1-ph(t,tm.hit,tm.hit+900),2):0;
+  const charge = eOut3(ph(t,tm.hit,tm.fillEnd));
+  let g=ctx.createRadialGradient(cx,cy,0,cx,cy,3.4*r);
+  const ga=0.10*bgIn+0.10*charge+0.12*hitK;
+  g.addColorStop(0,rgba(ORANGE,ga)); g.addColorStop(0.45,rgba([150,70,20],ga*0.35)); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // slow drifting light blobs
+  for(let i=0;i<2;i++){const ang=t/1000*0.35+i*3.1; const bx=cx+Math.cos(ang)*r*1.6*(i?1:-1), by=cy+Math.sin(ang*0.8)*r*0.7;
+    const bg=ctx.createRadialGradient(bx,by,0,bx,by,2.6*r); const c=i?YELLOW:[255,110,40]; bg.addColorStop(0,rgba(c,0.045*bgIn)); bg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);}
+  // vignette
+  let v=ctx.createRadialGradient(cx,H/2,Math.min(W,H)*0.3,cx,H/2,Math.max(W,H)*0.75); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,0.65)'); ctx.fillStyle=v; ctx.fillRect(0,0,W,H);
+
+  ctx.save(); ctx.translate(cx,cy); ctx.scale(r*zoom,r*zoom);
+  const px=1/r;
+  // --- capsule body (dark glass) ---
+  const bodyA = tm.traceFrom<0 ? ph(t,0,120) : ph(t,tm.traceFrom,tm.traceFrom+500);
+  pillPath(ctx); ctx.fillStyle=`rgba(22,15,10,${0.92*bodyA})`; ctx.fill();
+  // inner energy after the hit
+  if(t>=tm.hit){
+    ctx.save(); pillPath(ctx); ctx.clip();
+    const rad=0.25+1.35*charge; let eg=ctx.createRadialGradient(0,0,0,0,0,rad);
+    eg.addColorStop(0,rgba([255,190,90],0.50*charge+0.35*hitK)); eg.addColorStop(0.45,rgba([230,110,30],0.30*charge)); eg.addColorStop(1,rgba([120,40,10],0));
+    ctx.globalCompositeOperation='lighter'; ctx.fillStyle=eg; ctx.fillRect(-1,-R,2,2*R);
+    ctx.globalCompositeOperation='source-over';
+    // gloss on the top half
+    let gl=ctx.createLinearGradient(0,-R,0,0.05); gl.addColorStop(0,`rgba(255,255,255,${0.16*charge})`); gl.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=gl; ctx.fillRect(-1,-R,2,R);
+    ctx.restore();
+    // seam
+    ctx.strokeStyle=rgba(CREAM,0.35*charge); ctx.lineWidth=0.012; ctx.beginPath(); ctx.moveTo(0,-R); ctx.lineTo(0,R); ctx.stroke();
+  }
+  // --- outline trace ---
+  const p = tm.traceFrom<0 ? 1 : eInOut3(ph(t,tm.traceFrom,tm.hit));
+  const rimGrad=ctx.createLinearGradient(-1,0,1,0); rimGrad.addColorStop(0,rgba(ORANGE,1)); rimGrad.addColorStop(1,rgba(YELLOW,1));
+  const pulse = 1+0.6*hitK;
+  ctx.globalCompositeOperation='lighter'; ctx.lineCap='round'; ctx.lineJoin='round';
+  for(const side of [-1,1]){
+    const N=64; const pts=[]; for(let i=0;i<=N;i++){const s=p*i/N; pts.push(halfPoint(side,s));}
+    const layers=[[0.12,0.06],[0.05,0.22],[0.018,1.0]];
+    for(const [w,a] of layers){ctx.beginPath(); pts.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));
+      ctx.strokeStyle=rimGrad; ctx.globalAlpha=gA*Math.min(1,a*pulse)*(tm.traceFrom<0?ph(t,0,140):1); ctx.lineWidth=w; ctx.stroke();}
+    ctx.globalAlpha=gA;
+    // spark head + trailing sparkles while tracing
+    if(p<1 && p>0){const h=halfPoint(side,p); let sg=ctx.createRadialGradient(h[0],h[1],0,h[0],h[1],0.16);
+      sg.addColorStop(0,'rgba(255,255,255,1)'); sg.addColorStop(0.25,rgba(YELLOW,0.8)); sg.addColorStop(1,'rgba(255,160,40,0)'); ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(h[0],h[1],0.16,0,6.283); ctx.fill();
+      for(const tr of TRAIL){const age=(t - (tm.traceFrom + tr.k*(tm.hit-tm.traceFrom))); if(age<0||age>tr.life) continue;
+        const s=eInOut3(ph(tm.traceFrom+tr.k*(tm.hit-tm.traceFrom),tm.traceFrom,tm.hit)); const q=halfPoint(side,s); const f=age/tr.life;
+        ctx.fillStyle=rgba(CREAM,(1-f)*0.9); ctx.beginPath(); ctx.arc(q[0]+tr.off*(1+f), q[1]+side*tr.off*0.5 + side*0.06*f, tr.size*(1-f*0.6),0,6.283); ctx.fill();}
+    }
+  }
+  // --- bolt ---
+  if(t>=tm.hit){
+    const bd=eOut3(ph(t,tm.hit,tm.hit+tm.boltDraw));
+    const pop=eBack(ph(t,tm.hit,tm.hit+380)); const bs=1.22*(0.7+0.3*pop);
+    ctx.save(); ctx.scale(bs,bs);
+    const fillA=ph(t,tm.hit+tm.boltDraw*0.6,tm.hit+tm.boltDraw+120);
+    // glow
+    ctx.beginPath(); BOLT.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])); ctx.closePath();
+    ctx.globalCompositeOperation='lighter';
+    for(const [w,a] of [[0.20,0.07],[0.11,0.14],[0.05,0.25]]){ctx.strokeStyle=rgba([255,170,60],a*fillA*(0.9+0.8*hitK)); ctx.lineWidth=w; ctx.stroke();}
+    ctx.globalCompositeOperation='source-over';
+    let bg2=ctx.createLinearGradient(0,-0.33,0,0.33); bg2.addColorStop(0,'#FFFFFF'); bg2.addColorStop(0.45,'#FFF0A8'); bg2.addColorStop(1,'#FFC23A');
+    ctx.fillStyle=bg2; ctx.globalAlpha=gA*fillA; ctx.fill(); ctx.globalAlpha=gA;
+    // drawing stroke
+    ctx.globalCompositeOperation='lighter';
+    ctx.beginPath(); boltPartial(ctx,bd); ctx.strokeStyle=rgba(CREAM,1-fillA*0.7); ctx.lineWidth=0.022; ctx.stroke();
+    ctx.restore();
+  }
+  // --- hit: shock ring + flash core ---
+  if(t>=tm.hit && t<tm.hit+700){
+    const u=ph(t,tm.hit,tm.hit+600); const rr=0.5+1.5*eOut3(u);
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=rgba([255,200,110],0.5*(1-u)*(1-u)); ctx.lineWidth=0.05*(1-u)+0.004; ctx.beginPath(); ctx.ellipse(0,0,rr,rr*0.62,0,0,6.283); ctx.stroke();
+    let cg=ctx.createRadialGradient(0,0,0,0,0,1.2); cg.addColorStop(0,`rgba(255,250,235,${0.8*(1-u)*(1-u)})`); cg.addColorStop(1,'rgba(255,200,90,0)');
+    ctx.fillStyle=cg; ctx.fillRect(-1.3,-1.3,2.6,2.6);
+  }
+  // --- embers ---
+  if(t>=tm.hit){ctx.globalCompositeOperation='lighter';
+    for(const e of EMBERS){const age=t-tm.hit-e.delay*(tm.total<1500?0.3:1); if(age<0||age>e.life) continue; const f=age/e.life;
+      const b=halfPoint(e.side,e.s); const x=b[0]+e.drift*f+0.03*Math.sin(age/260+e.tw); const y=b[1]-e.rise*eOut3(f);
+      const tw=0.6+0.4*Math.sin(age/90+e.tw); ctx.fillStyle=rgba(e.side<0?YELLOW:ORANGE,(1-f)*tw); ctx.beginPath(); ctx.arc(x,y,e.size*(1-0.5*f),0,6.283); ctx.fill();}
+  }
+  ctx.globalCompositeOperation='source-over';
+  ctx.restore();
+
+  // --- wordmark ---
+  const fs=0.40*r*zoom; ctx.font=`900 ${fs}px Roboto, "Helvetica Neue", Arial, sans-serif`; ctx.textBaseline='alphabetic';
+  const word='VOLTCAP'; const track=0.14*fs; const widths=[...word].map(ch=>ctx.measureText(ch).width); const total=widths.reduce((a,b)=>a+b,0)+track*(word.length-1);
+  let x=cx-total/2; const base=cy+ (0.44+0.62)*r*zoom + fs*0.35;
+  const wg=ctx.createLinearGradient(cx-total/2,0,cx+total/2,0); wg.addColorStop(0,rgba(ORANGE,1)); wg.addColorStop(0.5,rgba(YELLOW,1)); wg.addColorStop(1,rgba(ORANGE,1));
+  for(let i=0;i<word.length;i++){
+    const a=eOut3(ph(t,tm.lettersFrom+i*tm.letterStep,tm.lettersFrom+i*tm.letterStep+tm.letterDur));
+    if(a>0){ctx.globalAlpha=gA*a; ctx.fillStyle=wg; ctx.shadowColor='rgba(255,140,40,0.55)'; ctx.shadowBlur=fs*0.35; ctx.fillText(word[i],x,base+(1-a)*fs*0.32); ctx.shadowBlur=0;}
+    x+=widths[i]+track;
+  }
+  // shine sweep
+  const sh=ph(t,tm.shineFrom,tm.shineTo);
+  if(sh>0&&sh<1){const bx=cx-total/2-fs+ (total+2*fs)*eInOut3(sh); const sg=ctx.createLinearGradient(bx-fs*0.8,0,bx+fs*0.8,0);
+    sg.addColorStop(0,'rgba(255,255,255,0)'); sg.addColorStop(0.5,'rgba(255,255,255,0.85)'); sg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=gA; x=cx-total/2; ctx.fillStyle=sg;
+    for(let i=0;i<word.length;i++){ctx.fillText(word[i],x,base); x+=widths[i]+track;} ctx.globalCompositeOperation='source-over';}
+  // tagline
+  const ta=ph(t,tm.tagFrom,tm.tagTo); if(ta>0){const tfs=fs*0.25; ctx.font=`600 ${tfs}px Roboto, Arial, sans-serif`; ctx.globalAlpha=gA*0.72*ta;
+    const tag='PLUG IN  ·  PLAY ON'; const tt=0.34*tfs; const tw=[...tag].map(ch=>ctx.measureText(ch).width); const tot=tw.reduce((a,b)=>a+b,0)+tt*(tag.length-1);
+    let tx=cx-tot/2; ctx.fillStyle='rgb(233,217,191)'; for(let i=0;i<tag.length;i++){ctx.fillText(tag[i],tx,base+fs*0.72+(1-eOut3(ta))*tfs*0.5); tx+=tw[i]+tt;}}
+  ctx.globalAlpha=1;
+  // flash over everything
+  if(t>=tm.hit){const since=t-tm.hit; const f1=Math.pow(1-ph(t,tm.hit,tm.hit+260),2); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(255,200,120,${0.22*f1*gA})`; ctx.fillRect(0,0,W,H); ctx.globalCompositeOperation='source-over';}
+  ctx.restore();
+}
+window.render=(t,short)=>{const c=document.getElementById('c');drawIntro(c.getContext('2d'),t,c.width,c.height,short?SHORT:FULL);return c.toDataURL('image/png');};
+</script></body></html>

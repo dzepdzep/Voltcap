@@ -1,0 +1,183 @@
+// Coral reef: a sunny reef in clear shallow water. The surface shimmers overhead with light breaking
+// through it, god rays sway down, real caustic light nets dance over the sand and the rocks, a
+// reef wall of brain corals, branching staghorn, tube sponges, swaying sea fans and anemones in
+// candy colours fills the bottom, a sea turtle glides by, a school of striped fish wheels round,
+// little fish dart about, marine snow drifts and bubbles wobble up.
+
+// Caustics: the light net under rippling water (a few warped sine layers).
+float caustic(float2 p, float t) {
+    float2 q = p;
+    float c = 0.0;
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        q = float2(q.x + 0.35 * sin(q.y * 1.7 + t * (0.6 + fi * 0.2) + fi), q.y + 0.35 * sin(q.x * 1.5 - t * (0.5 + fi * 0.15) + fi * 2.0));
+        c += 1.0 / (1.0 + 30.0 * abs(sin(q.x * 2.2) * sin(q.y * 2.2)));
+    }
+    return c / 3.0;
+}
+
+// A simple fish facing +x at the origin, size r: body ellipse + tail. Returns distance.
+float fishD(float2 p, float r) {
+    float body = length(p / float2(1.0, 0.45)) - r;
+    float2 tp = p + float2(r * 1.05, 0.0);
+    float tail = max(abs(tp.y) - (-tp.x) * 0.9 - r * 0.05, tp.x) ;
+    tail = max(tail, -tp.x - r * 0.5);
+    return min(body * 0.6, tail);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float px = 1.5 / uRes.y;
+
+    // Water: luminous turquoise near the top, deep blue towards the bottom and the far distance.
+    float3 shallow = mix(float3(0.32, 0.88, 0.95), S, 0.15);
+    float3 deep = mix(float3(0.03, 0.22, 0.48), BG * 2.0, 0.2);
+    float3 col = mix(shallow, deep, smoothstep(0.0, 0.85, uv.y));
+    // The surface overhead: bright shimmering band.
+    float sn = caustic(float2(uv.x * 6.0, t * 0.2) * 1.0, t);
+    float surf = 0.035 + 0.008 * sin(uv.x * 14.0 + t * 1.4);
+    col = mix(col, float3(0.85, 1.0, 1.0), (1.0 - smoothstep(surf - 0.01, surf + 0.02, uv.y)) * (0.55 + 0.4 * sn));
+    // God rays swaying down from the surface.
+    float sx = uv.x + uv.y * 0.3;
+    float rays = pow(sat(sin(sx * 8.0 + sin(t * 0.3) * 0.6 + t * 0.12) * 0.5 + 0.5), 8.0)
+        + 0.7 * pow(sat(sin(sx * 13.0 - t * 0.17 + 1.3) * 0.5 + 0.5), 12.0);
+    col += float3(0.85, 1.0, 1.0) * rays * 0.2 * (1.0 - smoothstep(0.0, 0.85, uv.y));
+
+    // Far reef silhouettes in the blue haze.
+    float far = 0.56 + 0.05 * vnoise(float2(uv.x * 5.0, 1.0)) + 0.03 * sin(uv.x * 11.0);
+    col = mix(col, mix(deep, shallow, 0.35) * 0.9, smoothstep(far - px, far + px, uv.y) * 0.7);
+
+    // Sand.
+    float sandY = 0.76 + 0.02 * sin(uv.x * 3.0) + 0.012 * sin(uv.x * 7.0 + 1.0);
+    if (uv.y > sandY) {
+        float3 sand = mix(float3(0.98, 0.88, 0.62), A, 0.08) * (0.78 + 0.12 * vnoise(uv * float2(60.0, 140.0)));
+        sand *= 0.85 + 0.15 * sin((uv.x + sin(uv.y * 60.0) * 0.01) * 80.0);
+        col = sand;
+    }
+
+    // Reef wall: corals along the bottom, built from a row of slots.
+    float slotW = 0.17;
+    float sid = floor(uv.x / slotW);
+    for (int k = -1; k <= 1; k++) {
+        float id = sid + float(k);
+        float h = hash11(id * 7.31);
+        float cx = (id + 0.5) * slotW + (h - 0.5) * 0.03;
+        float baseY = sandY + 0.02;
+        float2 p = (uv - float2(cx, baseY)) / 1.6;
+        float kind = floor(hash11(id * 3.17) * 5.0);
+        float3 cc = mix(mix(float3(1.0, 0.45, 0.55), float3(1.0, 0.7, 0.25), hash11(id * 1.9)), mix(A, S, h), 0.3);
+        float d = 1.0;
+        if (kind < 1.0) {
+            // Brain coral: a dome with wavy grooves.
+            d = length(p * float2(1.0, 1.4)) - 0.05 - 0.02 * h;
+            float groove = sin(p.x * 260.0 + sin(p.y * 180.0) * 2.0);
+            cc *= 0.8 + 0.25 * groove;
+        } else if (kind < 2.0) {
+            // Staghorn: branching sticks.
+            for (int b = 0; b < 4; b++) {
+                float fb = float(b);
+                float a = -0.9 + fb * 0.6 + 0.05 * sin(t * 0.8 + fb + id);
+                float2 tip = float2(sin(a), -cos(a)) * (0.09 + 0.02 * hash11(id + fb));
+                d = min(d, sdSegment(p, float2(0.0), tip) - 0.007);
+                float2 tip2 = tip + float2(sin(a + 0.6), -cos(a + 0.6)) * 0.04;
+                d = min(d, sdSegment(p, tip * 0.6, tip2) - 0.005);
+            }
+        } else if (kind < 3.0) {
+            // Tube sponges: three upright tubes with dark mouths.
+            for (int b = 0; b < 3; b++) {
+                float fb = float(b);
+                float2 q = p - float2((fb - 1.0) * 0.022, 0.0);
+                float hh = 0.06 + 0.04 * hash11(id * 5.0 + fb);
+                d = min(d, sdRoundBox(q - float2(0.0, -hh * 0.5), float2(0.008, hh * 0.5), 0.006));
+                float mouth = length((q - float2(0.0, -hh)) * float2(1.0, 3.0)) - 0.006;
+                if (mouth < 0.0) cc = cc * 0.4;
+            }
+        } else if (kind < 4.0) {
+            // Sea fan: a fan of fine lines, swaying.
+            float sw = sin(t * 0.7 + id) * 0.08;
+            float2 q = rot(sw) * p;
+            float r = length(q);
+            float an = atan(q.x, -q.y);
+            float fan = step(abs(an), 0.9) * step(r, 0.11);
+            float lines = max(step(abs(fract(an * 10.0) - 0.5), 0.12), step(abs(fract(r * 70.0) - 0.5), 0.1));
+            d = fan * lines > 0.5 ? -1.0 : 1.0;
+            cc = mix(cc, float3(0.6, 0.3, 0.9), 0.4);
+        } else {
+            // Anemone: a mound with swaying tentacles.
+            d = length(p * float2(1.0, 2.0)) - 0.03;
+            for (int b = 0; b < 7; b++) {
+                float fb = float(b);
+                float a = -1.2 + fb * 0.4;
+                float sway = sin(t * 1.4 + fb * 0.7 + id) * 0.25;
+                float2 base = float2(sin(a), -cos(a)) * 0.02;
+                float2 tip = base + float2(sin(a + sway), -cos(a + sway)) * 0.05;
+                d = min(d, sdSegment(p, base, tip) - 0.004);
+            }
+            cc = mix(cc, float3(1.0, 0.55, 0.85), 0.5);
+        }
+        float shade = 0.75 + 0.35 * sat(-p.y * 8.0);
+        col = mix(col, cc * shade, 1.0 - smoothstep(0.0, px * 1.5, d));
+    }
+    // Caustic light net over the sand and the reef.
+    float cst = caustic(uv * float2(9.0, 12.0) + float2(t * 0.05, 0.0), t * 1.2);
+    col += float3(0.9, 1.0, 1.0) * pow(cst, 2.5) * 0.35 * smoothstep(0.5, 0.78, uv.y);
+
+    // A sea turtle gliding across.
+    float tx = fract(t * 0.012 + 0.35) * (asp + 0.6) - 0.3;
+    float2 tp = uv - float2(tx, 0.42 + 0.03 * sin(t * 0.3));
+    float shell = length(tp * float2(1.0, 1.5)) - 0.055;
+    float head = length(tp - float2(0.07, -0.008)) - 0.016;
+    float fl = sin(t * 2.0) * 0.4;
+    float2 fp1 = rot(-0.6 + fl) * (tp - float2(0.03, -0.03));
+    float flipper1 = length(fp1 * float2(0.6, 2.2)) - 0.03;
+    float2 fp2 = rot(0.6 - fl) * (tp - float2(0.03, 0.03));
+    float flipper2 = length(fp2 * float2(0.6, 2.2)) - 0.03;
+    float turtle = min(min(shell, head), min(flipper1, flipper2));
+    float3 tc = mix(float3(0.3, 0.45, 0.25), float3(0.55, 0.62, 0.35), 0.5 + 0.5 * sin(tp.x * 140.0) * sin(tp.y * 160.0));
+    tc = mix(tc, float3(0.5, 0.6, 0.4), step(0.0, shell));
+    col = mix(col, mix(tc, col, 0.15), 1.0 - smoothstep(0.0, px * 1.5, turtle));
+
+    // A school of striped fish wheeling round in a loop.
+    for (int i = 0; i < 9; i++) {
+        float fi = float(i);
+        float a = t * 0.35 + fi * 0.18;
+        float2 cen = float2(asp * 0.68, 0.36);
+        float2 fpos = cen + float2(cos(a) * 0.3, sin(a * 2.0) * 0.08) + float2(hash11(fi) - 0.5, hash11(fi + 9.0) - 0.5) * 0.08;
+        float2 dir = normalize(float2(-sin(a) * 0.22, cos(a * 2.0) * 0.12));
+        float2 q = uv - fpos;
+        q = float2(dot(q, dir), dot(q, float2(-dir.y, dir.x)));
+        float d = fishD(q, 0.024);
+        float3 fcol = mix(float3(1.0, 0.85, 0.2), float3(0.2, 0.5, 1.0), step(0.5, fract(q.x * 90.0 + 0.3)));
+        col = mix(col, fcol, 1.0 - smoothstep(0.0, px, d));
+        col = mix(col, float3(0.05), (1.0 - smoothstep(0.0, px, length(q - float2(0.013, -0.003)) - 0.003)));
+    }
+    // Little reef fish darting near the corals.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float2 fpos = float2(fract(t * (0.02 + fi * 0.008) + fi * 0.27) * (asp + 0.2) - 0.1, 0.7 + 0.06 * sin(t * 0.9 + fi * 2.0) + fi * 0.02);
+        float2 q = uv - fpos;
+        float d = fishD(q, 0.016);
+        col = mix(col, fi < 2.0 ? A : float3(1.0, 0.5, 0.2), 1.0 - smoothstep(0.0, px, d));
+    }
+
+    // Marine snow and bubbles.
+    col += float3(0.9, 1.0, 1.0) * dots(uv, 40.0, float2(t * 0.004, -t * 0.006), 0.05, 0.05, 2.0) * 0.25;
+    for (int i = 0; i < 8; i++) {
+        float fi = float(i);
+        float by = 1.05 - fract(t * (0.04 + 0.02 * hash11(fi)) + hash11(fi * 3.0));
+        float bx = asp * hash11(fi * 7.1) + 0.01 * sin(t * 2.0 + fi * 3.0);
+        float r = 0.005 + 0.006 * hash11(fi * 2.3);
+        float d = abs(length(uv - float2(bx, by)) - r);
+        col = mix(col, float3(0.9, 1.0, 1.0), (1.0 - smoothstep(0.0, px * 1.2, d - 0.0008)) * 0.8);
+    }
+
+    col = mix(col, BG * 2.0, 0.03);
+    float2 vv = fc / uRes - 0.5;
+    col *= 1.0 - 0.35 * dot(vv, vv);
+    return half4(finish(col, fc), 1.0);
+}

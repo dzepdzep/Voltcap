@@ -1,0 +1,93 @@
+// Handheld (music): a chunky original handheld console floating at an angle, its screen showing the
+// album cover with a soft LCD grid and a little equalizer underneath, the D-pad and face buttons
+// pressing down in time with the beat, a battery light that pulses with the bass - over a soft
+// pastel backdrop in the song's colours with floating shapes.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 6.0) * play;
+    float n = floor((t - uBeatAge) * 2.0);        // which beat we're on (for alternating presses)
+
+    float3 col = mix(mix(BG, A, 0.25), mix(BG, S, 0.3), uv.x / asp);
+    // Floating shapes in the background.
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float2 p = float2(fract(hash11(fi) + t * 0.01 * (fi + 1.0)) * asp, fract(hash11(fi + 3.0) - t * 0.015));
+        float2 q = rot(t * 0.3 + fi) * (uv - p);
+        float d = mod(fi, 3.0) < 1.0 ? length(q) - 0.03 : (mod(fi, 3.0) < 2.0 ? sdRoundBox(q, float2(0.025), 0.004) : abs(length(q) - 0.03) - 0.006);
+        col = mix(col, mix(A, S, hash11(fi)) * 0.9 + 0.1, (1.0 - smoothstep(0.0, px, d)) * 0.35);
+    }
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3) * 0.9;
+    float tilt = -0.08 + 0.03 * sin(t * 0.4) + 0.02 * kick * k;
+    float2 p = rot(tilt) * (uv - c - float2(0.0, -0.01 * bass * k)) / R;   // device units: 1 = half its height
+
+    // Shadow and body.
+    float2 bh = float2(1.25, 0.95);
+    float body = sdRoundBox(p - float2(0.06, 0.08), bh, 0.22);
+    col *= 1.0 - 0.35 * (1.0 - smoothstep(-0.05, 0.12, body));
+    body = sdRoundBox(p, bh, 0.22);
+    float3 shell = mix(float3(0.92, 0.9, 0.86), mix(A, float3(1.0), 0.75), 0.4);
+    shell *= 0.92 + 0.12 * smoothstep(0.9, -0.9, p.y);
+    col = mix(col, shell, 1.0 - smoothstep(0.0, px / R, body));
+    col = mix(col, shell * 0.75, (1.0 - smoothstep(0.0, 2.0 * px / R, abs(body))) * 0.8);
+
+    // Screen bezel and the screen with the cover.
+    float2 sc = float2(-0.25, 0.0);
+    float bez = sdRoundBox(p - sc, float2(0.78, 0.72), 0.08);
+    col = mix(col, float3(0.18, 0.18, 0.22), 1.0 - smoothstep(0.0, px / R, bez));
+    float scr = sdRoundBox(p - sc, float2(0.62, 0.62), 0.02);
+    if (scr < 0.0) {
+        float2 q = (p - sc) / 1.24 + 0.5;
+        float3 cov = sharpCover(float2(q.x, q.y * 1.12 - 0.02), A, S);
+        // A little equalizer strip at the bottom of the screen.
+        float strip = step(0.86, q.y);
+        float bi = floor(q.x * 16.0);
+        float e = eqAt(abs(bi / 15.0 - 0.5) * 2.0) * play;
+        float bar = step(1.0 - (q.y - 0.86) / 0.14, e) * step(0.15, fract(q.x * 16.0));
+        cov = mix(cov, mix(BG * 0.3, mix(A, S, bi / 15.0), bar), strip);
+        // LCD grid.
+        float2 lg = abs(fract(q * 80.0) - 0.5);
+        cov *= 0.86 + 0.14 * step(max(lg.x, lg.y), 0.42);
+        col = mix(col, cov, 1.0 - smoothstep(-px / R, 0.0, scr));
+    }
+    // Battery light.
+    float led = length(p - float2(-0.95, -0.55)) - 0.035;
+    col = mix(col, mix(float3(0.3, 0.05, 0.05), float3(1.0, 0.25, 0.25), 0.3 + 0.7 * bass), 1.0 - smoothstep(0.0, px / R, led));
+
+    // D-pad: presses a different direction each beat.
+    float2 dp = p - float2(0.82, 0.25);
+    float dir = mod(n, 4.0);
+    float2 pressV = dir < 1.0 ? float2(0.0, -1.0) : (dir < 2.0 ? float2(1.0, 0.0) : (dir < 3.0 ? float2(0.0, 1.0) : float2(-1.0, 0.0)));
+    float dcross = min(sdRoundBox(dp, float2(0.2, 0.065), 0.02), sdRoundBox(dp, float2(0.065, 0.2), 0.02));
+    float dpShade = 1.0 - 0.35 * kick * step(0.06, dot(dp, pressV));
+    col = mix(col, float3(0.15, 0.15, 0.18) * dpShade, 1.0 - smoothstep(0.0, px / R, dcross));
+    // Face buttons: A and B alternate on the beat.
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float2 bp = p - float2(0.72 + fi * 0.24, -0.3 - fi * 0.1);
+        float pressed = step(0.5, abs(mod(n, 2.0) - fi)) * kick;
+        float d = length(bp) - 0.1 * (1.0 - 0.1 * pressed);
+        float3 bc = (i == 0 ? A : S) * (0.85 - 0.3 * pressed);
+        col = mix(col, bc, 1.0 - smoothstep(0.0, px / R, d));
+        col = mix(col, float3(1.0), (1.0 - smoothstep(0.0, px / R, length(bp - float2(-0.03, -0.03)) - 0.03)) * 0.5 * (1.0 - pressed));
+    }
+    // Speaker holes that bounce with the bass.
+    float2 sp = p - float2(0.95, -0.7);
+    float2 sg = fract(sp * 9.0) - 0.5;
+    float hole = step(length(sg), 0.18 + 0.08 * bass) * step(abs(sp.x), 0.15) * step(abs(sp.y), 0.12);
+    col = mix(col, float3(0.25), hole * (1.0 - step(0.0, body)));
+
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,161 @@
+// Mind: a psychic orb hovering over a still, glossy pool. The orb swirls with light inside; rings of
+// force spread from under it and from two wandering points, so the pool's mirror surface ripples in
+// interfering waves with an oily, iridescent sheen. Stones float round the orb, lit by it, and
+// everything - orb, stones, the dark sky - is reflected in the water.
+
+float sphereHit(float3 ro, float3 rd, float3 c, float r) {
+    float3 oc = ro - c;
+    float b = dot(oc, rd);
+    float h = b * b - dot(oc, oc) + r * r;
+    if (h < 0.0) return -1.0;
+    return -b - sqrt(h);
+}
+
+// One of the floating stones: its centre at time t.
+float3 stonePos(float i, float t, float3 orb) {
+    float a = t * (0.25 + 0.06 * i) + i * 1.9;
+    float r = 0.75 + 0.15 * hash11(i * 3.3);
+    return orb + float3(cos(a) * r, 0.12 * sin(t * 0.7 + i * 2.1) + (hash11(i * 5.1) - 0.5) * 0.3, sin(a) * r * 0.8);
+}
+
+// The pool's height and its slope (x = height, yz = d/dx, d/dz) at p.
+float3 pool(float2 p, float t, float2 orbXZ) {
+    float3 h = float3(0.0);
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float2 c = i == 0 ? orbXZ : float2(1.6 * sin(t * (0.07 + fi * 0.03) + fi * 2.0), -0.8 + 1.2 * cos(t * (0.05 + fi * 0.02) + fi));
+        float k = i == 0 ? 18.0 : 13.0;
+        float amp = i == 0 ? 0.02 : 0.011;
+        float2 d = p - c;
+        float r = max(length(d), 1e-3);
+        float fall = exp(-r * 0.9);
+        float ph = k * r - t * (i == 0 ? 2.2 : 1.6);
+        float s = sin(ph);
+        float cs = cos(ph);
+        h.x += amp * s * fall;
+        float dr = amp * fall * (k * cs - 0.9 * s);
+        h.yz += dr * d / r;
+    }
+    return h;
+}
+
+float3 skyCol(float3 rd, float3 A, float3 S, float3 BG, float t) {
+    float y = rd.y;
+    float3 c = mix(BG * 1.6 + A * 0.05, BG * 0.6, sat(y * 2.0));
+    float2 q = rd.xz / max(rd.y + 0.35, 0.05);
+    c += mix(A, S, 0.5) * 0.10 * fbm3(q * 1.5 + float2(t * 0.01, 0.0)) * sat(y * 3.0);
+    float st = dots(q * 0.6, 40.0, float2(0.0), 0.15, 0.05, 4.0);
+    c += st * 0.5 * sat(y * 4.0);
+    return c;
+}
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float2 sp = (fc - 0.5 * uRes) / uRes.y;
+    sp.y = -sp.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float3 ro = float3(0.3 * sin(t * 0.05), 0.36, 3.0);
+    float3 ta = float3(0.0, 0.62, -2.2);
+    float3 fw = normalize(ta - ro);
+    float3 rt = normalize(cross(fw, float3(0.0, 1.0, 0.0)));
+    float3 up = cross(rt, fw);
+    float3 rd = normalize(fw + 0.75 * (sp.x * rt + sp.y * up));
+
+    float3 orb = float3(0.0, 0.86 + 0.06 * sin(t * 0.8), -2.2);
+    float orbR = 0.42;
+    float3 orbCol = mix(A, S, 0.35);
+
+    float3 col = skyCol(rd, A, S, BG, t);
+    float tHit = 1e4;
+    float3 surf = float3(0.0);
+    float kind = 0.0; // 1 orb, 2 stone, 3 pool
+
+    float to = sphereHit(ro, rd, orb, orbR);
+    if (to > 0.0) { tHit = to; kind = 1.0; }
+    for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float3 c = stonePos(fi, t, orb);
+        float r = 0.045 + 0.045 * hash11(fi * 7.7);
+        float ts = sphereHit(ro, rd, c, r);
+        if (ts > 0.0 && ts < tHit) { tHit = ts; kind = 2.0; surf = c; }
+    }
+    if (rd.y < 0.0) {
+        float tp = -ro.y / rd.y;
+        if (tp < tHit) { tHit = tp; kind = 3.0; }
+    }
+
+    float3 p = ro + rd * tHit;
+    if (kind > 2.5) {
+        // ---- the pool ----
+        float3 h = pool(p.xz, t, orb.xz);
+        float3 n = normalize(float3(-h.y, 1.0, -h.z));
+        float3 r = reflect(rd, n);
+        // Reflected: the orb, the stones, or the sky.
+        float3 refl = skyCol(r, A, S, BG, t);
+        // The orb's halo, seen in the water too.
+        float3 oc = orb - p;
+        float ca = max(dot(oc, r), 0.0);
+        float miss = length(oc - r * ca);
+        refl += orbCol * (exp(-miss * 2.5) * 0.35 + exp(-miss * 8.0) * 0.3);
+        float tr = sphereHit(p, r, orb, orbR);
+        if (tr > 0.0) {
+            float3 q = p + r * tr;
+            float3 on = normalize(q - orb);
+            refl = orbCol * (0.8 + 0.6 * sqf(1.0 - sat(dot(on, -r)))) + float3(1.0) * 0.4 * pow(sat(dot(on, -r)), 6.0);
+        }
+        for (int i = 0; i < 5; i++) {
+            float fi = float(i);
+            float3 c = stonePos(fi, t, orb);
+            float rr = 0.045 + 0.045 * hash11(fi * 7.7);
+            if (sphereHit(p, r, c, rr) > 0.0) refl = BG * 0.6 + orbCol * 0.15;
+        }
+        float fres = 0.06 + 0.94 * pow(1.0 - sat(dot(n, -rd)), 5.0);
+        // Oily sheen: colour shifts with the ripples' height and the viewing angle.
+        float film = h.x * 30.0 + dot(n, -rd) * 2.0 + t * 0.05;
+        float3 iri = 0.5 + 0.5 * cos(TAU * (film + float3(0.0, 0.33, 0.67)));
+        float3 sheen = mix(A, S, iri.r) * (0.5 + 0.5 * iri.g);
+        float3 deep = BG * 0.5;
+        // Light from the orb on the surface.
+        float3 lo = orb - p;
+        float ld = length(lo);
+        lo /= ld;
+        float3 hv = normalize(lo - rd);
+        float spec = pow(sat(dot(n, hv)), 90.0);
+        float3 lit = orbCol * (sat(dot(n, lo)) * 0.25 / (1.0 + ld * ld)) + float3(1.0, 0.95, 1.0) * spec * 1.4 / (0.5 + ld * ld);
+        col = deep + refl * fres + sheen * 0.10 * (0.4 + fres) + lit;
+        // Fade into the dark far off.
+        float far = sat((tHit - 4.0) / 14.0);
+        col = mix(col, skyCol(float3(rd.x, 0.0, rd.z), A, S, BG, t), far * far);
+    } else if (kind > 1.5) {
+        // ---- a floating stone, lit by the orb ----
+        float3 n = normalize(p - surf);
+        n = normalize(n + 0.25 * (float3(vnoise(p.xy * 40.0), vnoise(p.yz * 40.0), vnoise(p.zx * 40.0)) - 0.5));
+        float3 lo = normalize(orb - p);
+        float dif = sat(dot(n, lo));
+        col = BG * 0.4 + uSurf.rgb * 0.3 + orbCol * dif * 0.9 + mix(A, S, 0.5) * pow(1.0 - sat(dot(n, -rd)), 3.0) * 0.15;
+    } else if (kind > 0.5) {
+        // ---- the orb: glass sphere with swirling light inside ----
+        float3 n = normalize(p - orb);
+        float fr = pow(1.0 - sat(dot(n, -rd)), 2.5);
+        float3 q = n;
+        float sw = fbm(float2(atan(q.z, q.x) * 1.5 + t * 0.4, q.y * 3.0 - t * 0.2) + fbm3(q.xy * 3.0 + t * 0.3));
+        float3 inner = mix(orbCol * 0.6, mix(S, float3(1.0), 0.5), smoothstep(0.45, 0.85, sw));
+        inner *= 0.7 + 0.5 * (1.0 - fr);
+        float core = pow(sat(dot(n, -rd)), 6.0);
+        col = inner + float3(1.0) * core * 0.6 + A * fr * 0.9;
+        // A window-like highlight on the glass.
+        float3 hl = normalize(float3(-0.5, 0.7, 0.6) - rd);
+        col += float3(1.0) * pow(sat(dot(n, hl)), 60.0) * 0.6;
+    }
+
+    // The orb's glow in the air, and rings of force flashing out now and then.
+    float3 po = float3(dot(orb - ro, rt), dot(orb - ro, up), dot(orb - ro, fw));
+    float2 os = po.xy / (po.z * 0.75);
+    float od = length(sp - os);
+    col += orbCol * (exp(-od * 6.0) * 0.35 + exp(-od * 18.0) * 0.4) * step(kind, 0.5 + step(2.5, kind) * 3.0);
+
+    return half4(finish(col, fc), 1.0);
+}

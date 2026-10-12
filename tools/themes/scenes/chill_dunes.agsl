@@ -1,0 +1,51 @@
+// Dune hour: Toni's painting of dunes under a low sun (res scene_chill_dunes), brought to life. Wind carries
+// fine sand low over the dunes, the far dunes shimmer in the heat, the thin clouds drift, light ripples run
+// over the sand and the sun glows and breathes. (The procedural version is kept as chill_dunes_drawn.agsl.)
+//#include paint
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(BG * 1.4, mix(BG, A, 0.4), uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+    float2 r = q * float2(1672.0, 941.0);
+    float aspP = sz.x / sz.y;
+
+    // Heat shimmer over the far dunes and the horizon; the clouds drift slowly sideways.
+    float heat = exp(-sqf((r.y - 625.0) / 30.0));
+    float clouds = exp(-sqf((r.y - 420.0) / 90.0)) * step(r.y, 560.0) * smoothstep(60.0, 140.0, length(r - float2(1292.0, 518.0)));
+    float2 off = float2(sin(r.y * 0.35 + t * 2.2) * 1.2 * heat + sin(r.y * 0.04 + t * 0.12) * 14.0 * clouds * smoothstep(400.0, 900.0, r.x),
+                        sin(r.x * 0.08 + t * 1.7) * 0.6 * heat);
+    float3 col = paintAt(p + off / float2(1672.0, 941.0) * sz);
+    float lum = luma(col);
+
+    // The sun breathes; a soft halo and faint rays round it.
+    float2 sv = r - float2(1292.0, 518.0);
+    float sd = length(sv);
+    float breathe = 0.5 + 0.5 * sin(t * 0.4);
+    col += A * exp(-sd * 0.012) * 0.06 * breathe;
+    float ang = atan(sv.y, sv.x);
+    float rays = 0.5 + 0.5 * sin(ang * 14.0 + t * 0.15) * sin(ang * 5.0 - t * 0.1);
+    col += mix(A, float3(1.0, 0.9, 0.7), 0.5) * rays * exp(-sd * 0.006) * step(40.0, sd) * step(r.y, 600.0) * 0.05;
+
+    // Light ripples running over the lit sand.
+    float sand = smoothstep(560.0, 640.0, r.y);
+    float rip = sin(r.x * 0.06 + r.y * 0.35 - t * 0.8);
+    col *= 1.0 + sand * smoothstep(0.35, 0.6, lum) * rip * 0.04;
+
+    // Wind: fine sand streaming low over the dunes from right to left, thicker near the ground.
+    float2 wp = float2(r.x * 0.006 + t * 0.22, r.y * 0.03);
+    float drift = fbm3(wp + float2(fbm3(wp * 0.5 - t * 0.05) * 1.5, 0.0));
+    float streak = smoothstep(0.55, 0.85, drift) * sand * (0.4 + 0.6 * smoothstep(620.0, 941.0, r.y));
+    col += mix(A, float3(1.0, 0.85, 0.65), 0.4) * streak * 0.09;
+    // Grains glinting in the sun as they fly.
+    col += float3(1.0, 0.85, 0.6) * dots(q * float2(aspP, 1.0), 140.0, float2(t * 0.35, t * 0.01), 0.06, 0.07, 3.0) * sand * 0.35;
+
+    return half4(finishPaint(col, fc), 1.0);
+}

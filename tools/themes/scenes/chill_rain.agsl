@@ -1,0 +1,94 @@
+// Rainy window: night city lights melted into soft bokeh behind a window pane. Raindrops bead on the glass,
+// most of them round the edges and corners, each a tiny upside-down lens of the lights behind; now and
+// then one runs down, leaving a clear trail through the mist on the glass. The middle stays clearer.
+
+// The city behind the glass, out of focus: soft discs of light on a dark gradient.
+float3 bokeh(float2 p, float asp, float t, float3 A, float3 S, float3 BG) {
+    float3 c = mix(BG * 1.4 + S * 0.03, BG * 0.9 + A * 0.04, smoothstep(0.1, 1.0, p.y));
+    // The glow of the street low down.
+    c += mix(A, S, 0.3) * exp(-sqf((p.y - 0.95) / 0.3)) * 0.12;
+    for (int layer = 0; layer < 2; layer++) {
+        float fl = float(layer);
+        float sc = 3.2 + 2.4 * fl;
+        for (int j = 0; j < 4; j++) {
+            float2 off = float2(float(j / 2), float(j - (j / 2) * 2)) * 0.5;
+            float2 g = p * sc + off + float2(t * 0.01 * (1.0 + fl), 0.0);
+            float2 id = floor(g);
+            float2 f = g - id - 0.5;
+            float2 r = hash22(id + fl * 17.0 + off * 3.0);
+            // More lights lower down (the street) and towards the sides.
+            float2 cellP = (id + 0.5 - off - float2(t * 0.01 * (1.0 + fl), 0.0)) / sc;
+            float2 cq = (cellP - float2(asp * 0.5, 0.45)) / float2(asp * 0.5, 0.5);
+            float want = 0.62 * smoothstep(0.55, 1.05, length(cq * float2(0.9, 1.1)));
+            if (r.x > want) continue;
+            float rad = 0.14 + 0.12 * r.y;
+            float d = length(f - (hash22(id + 5.0 + fl) - 0.5) * 0.36);
+            float disc = smoothstep(rad, rad - 0.035, d);
+            float rim = exp(-abs(d - rad + 0.02) * 40.0) * disc;
+            float3 lc = r.y > 0.5 ? A : S;
+            lc = mix(lc, float3(1.0, 0.95, 0.85), hash11(id.x * 3.0 + id.y + fl) * 0.4);
+            float tw = 0.75 + 0.25 * sin(t * (0.5 + r.y) + r.x * 30.0);
+            c += lc * (disc * 0.26 + rim * 0.14) * tw * (1.0 - 0.4 * fl);
+        }
+    }
+    return c;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // How misty / wet the glass is here: more round the edges and corners.
+    float2 cq = (uv - float2(asp * 0.5, 0.5)) / float2(asp * 0.5, 0.5);
+    float edge = sat(max(abs(cq.x), abs(cq.y)) * 0.6 + length(cq) * 0.35 - 0.35);
+    float mist = smoothstep(0.15, 0.8, edge) * (0.75 + 0.25 * fbm3(uv * 3.0));
+
+    float3 behind = bokeh(uv, asp, t, A, S, BG);
+    // Mist: lighter, flatter, a little blue.
+    float3 col = mix(behind, behind * 0.7 + mix(BG, S, 0.2) * 0.9 + 0.025, mist * 0.6);
+
+    // Beaded drops on the glass.
+    float sc = 22.0;
+    float2 g = uv * sc;
+    float2 id = floor(g);
+    float2 f = g - id - 0.5;
+    float2 r = hash22(id + 3.7);
+    float dropHere = step(r.x, 0.03 + 0.55 * mist * mist);
+    float rad = 0.12 + 0.24 * r.y * r.y;
+    float2 dc = (hash22(id + 9.1) - 0.5) * (0.9 - rad * 2.0);
+    float2 dq = (f - dc) / rad;
+    float dd = dot(dq, dq);
+    // Running drops: in a few columns a drop slides down now and then, clearing a trail.
+    float colW = 0.045;
+    float cx = floor(uv.x / colW);
+    float ch = hash11(cx * 1.37 + 2.0);
+    float runs = step(0.62, ch) * smoothstep(0.1, 0.5, edge + 0.2 * ch);
+    float speed = 0.05 + 0.08 * ch;
+    float headY = fract(t * speed + ch * 7.0) * 1.4 - 0.2;
+    float lx = (fract(uv.x / colW) - 0.5 + 0.12 * sin(uv.y * 30.0 + ch * 10.0)) * colW;
+    float trail = runs * step(uv.y, headY) * smoothstep(0.012, 0.004, abs(lx)) * exp(-(headY - uv.y) * 2.5);
+    col = mix(col, behind, trail * 0.8 * mist);
+    float2 hq = float2(lx / 0.011, (uv.y - headY) / 0.016);
+    float hd = dot(hq, hq) * runs;
+    // Drop shading (beaded or running): an upside-down lens of the lights, dark rim, bright glint.
+    float isDrop = dropHere * step(dd, 1.0) * (1.0 - trail);
+    float isHead = step(hd, 1.0) * runs;
+    if (isDrop + isHead > 0.0) {
+        float2 q = isHead > 0.0 ? hq : dq;
+        float z = sqrt(max(1.0 - dot(q, q), 0.0));
+        float3 lens = bokeh(uv - q * 0.08 + float2(0.0, 0.05), asp, t, A, S, BG) * 1.5 + 0.03;
+        lens *= 0.55 + 0.45 * z;
+        lens += float3(1.0) * exp(-dot(q - float2(-0.35, -0.45), q - float2(-0.35, -0.45)) * 18.0) * 0.6;
+        lens += mix(A, float3(1.0), 0.5) * exp(-abs(sqrt(dot(q, q)) - 0.92) * 20.0) * 0.08;
+        lens *= 1.0 - 0.3 * smoothstep(0.75, 1.0, sqrt(dot(q, q)));
+        col = mix(col, lens, smoothstep(1.0, 0.8, dot(q, q)));
+    }
+    // A fine haze of tiny droplets in the mist.
+    col += float3(0.8, 0.85, 0.9) * dots(uv, 120.0, float2(0.0), 0.35, 0.12, 4.0) * mist * 0.05;
+
+    return half4(finish(col, fc), 1.0);
+}

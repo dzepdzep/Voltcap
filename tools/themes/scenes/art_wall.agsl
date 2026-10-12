@@ -1,0 +1,103 @@
+// Cover wall: the album cover printed again and again on a wall of tiles that never does the same
+// thing twice in a row. It drifts, slowly turns and zooms; waves of tiles flip round (the backs in
+// the cover's colours), tiles swell and shrink with their part of the spectrum, a ripple of light runs
+// out from the middle on each kick, now and then a few tiles pop forward - and every so often the
+// big cover in front grows until it fills the screen, then settles back.
+//#include reactive
+
+// 0..1 bump that is 1 while t is inside [a, b] (soft 1 s edges), for mixing the moves.
+float phaseW(float t, float a, float b) { return smoothstep(a, a + 1.0, t) * (1.0 - smoothstep(b - 1.0, b, t)); }
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float2 c = float2(waveX(asp), uWaveY);
+
+    // A 32-second programme of moves, mixed with soft edges.
+    float pt = mod(t, 32.0);
+    float wSpin = phaseW(pt, 0.0, 9.0);      // the whole wall slowly turning
+    float wFlip = phaseW(pt, 7.0, 17.0);     // waves of tiles flipping round
+    float wZoom = phaseW(pt, 15.0, 25.0);    // the wall breathing in and out
+    float wFill = phaseW(pt, 23.0, 31.5);    // the front cover grows over the screen
+
+    // The wall's transform: drift, a gentle turn, breathing zoom.
+    float2 w = uv - c;
+    float ang = 0.12 * sin(t * 0.13) * wSpin + 0.04 * kick * k;
+    float zoom = 1.0 + 0.45 * (0.5 - 0.5 * cos(pt * TAU / 10.0)) * wZoom + 0.04 * bass * k;
+    w = rot(ang) * w / zoom;
+    float T = 0.19;
+    float2 wp = w / T + float2(t * 0.05, 0.5) + float2(0.0, t * 0.02 * wSpin);
+    float2 id = floor(wp);
+    float2 q = fract(wp);
+    float colPos = fract((id.x * 0.618) + 0.5);
+    float e = eqAt(colPos) * play;
+
+    // Ripple of light from the middle on each kick.
+    float dist = length(id + 0.5 - float2(t * 0.05, 0.5)) * T;
+    float ripple = exp(-abs(dist - uBeatAge * 0.9) * 9.0) * exp(-uBeatAge * 1.2) * play;
+
+    // Flip waves: a front sweeps diagonally over the wall; each tile turns a full circle as it passes.
+    float front = (id.x + id.y * 0.6) * 0.18 - pt * 1.1;
+    float fl = sat(fract(front * 0.25) * 4.0 - 2.0) * wFlip;
+    float flipA = fl * TAU;
+    float cx = cos(flipA);
+    // Pops: now and then a tile jumps forward and shines (changes every couple of seconds).
+    float popId = hash12(id + floor(t * 0.5));
+    float pop = step(0.93, popId) * (0.5 - 0.5 * cos(fract(t * 0.5) * TAU));
+
+    float sc = 0.84 + 0.12 * e * k + 0.05 * ripple + 0.12 * pop;
+    float2 tq = (q - 0.5) / sc;
+    tq.x /= max(abs(cx), 0.04);                // turning round its vertical axis
+    tq += 0.5;
+    float inTile = step(0.0, tq.x) * step(tq.x, 1.0) * step(0.0, tq.y) * step(tq.y, 1.0);
+    float back = step(cx, 0.0);
+    float flip = step(0.5, hash12(id + 3.0));
+    float2 aq = float2(mix(tq.x, 1.0 - tq.x, flip), tq.y);
+    float3 tile = sharpCover(aq, A, S);
+    float lum = dot(tile, float3(0.299, 0.587, 0.114));
+    float3 duo = mix(BG * 0.6, mix(A, S, colPos), lum);
+    tile = mix(duo, tile, 0.4 + 0.5 * e + 0.4 * ripple + 0.6 * pop);
+    // Back of a turning tile: the cover's colours with a fine pattern.
+    float3 backCol = mix(A, S, tq.y) * (0.45 + 0.25 * step(0.5, fract((tq.x + tq.y) * 6.0)));
+    tile = mix(tile, backCol, back);
+    tile *= (0.36 + 0.55 * e * (0.5 + 0.5 * k) + 0.6 * ripple + 0.7 * pop) * (0.7 + 0.3 * abs(cx));
+    float3 grout = BG * 0.3 + mix(A, S, colPos) * (0.05 + 0.22 * e);
+    float3 col = mix(grout, tile, inTile);
+    col += mix(A, float3(1.0), 0.5) * pop * 0.15 * inTile;
+    // A light sweep across the wall.
+    col += float3(1.0) * 0.05 * exp(-sqf((uv.x - uv.y * 0.4 - fract(t * 0.03) * (asp + 1.0) + 0.5) * 3.0));
+
+    // The big cover in front; every half minute it grows to fill the screen and settles back.
+    float2 d = uv - c;
+    float R0 = room(0.26) * 0.92 * (1.0 + 0.025 * bass * k + 0.02 * kick * k);
+    float grow = smoothstep(0.0, 1.0, wFill);
+    float R = mix(R0, max(asp, 1.0) * 0.62, grow);
+    col *= mix(0.55 + 0.45 * smoothstep(R * 0.9, R * 2.6, length(d)), 1.0, grow);
+    // A slow tilt for depth while it's small.
+    float tilt = 0.04 * sin(t * 0.4) * (1.0 - grow);
+    float2 dd = rot(tilt) * d;
+    float box = sdRoundBox(dd, float2(R), R * 0.04);
+    float sh = sdRoundBox(dd - float2(0.014, 0.022) * R / 0.24, float2(R), R * 0.04);
+    col *= 1.0 - 0.5 * (1.0 - smoothstep(-0.02, 0.05, sh)) * (1.0 - grow);
+    col += mix(A, S, 0.5) * exp(-max(box, 0.0) * 14.0) * (0.25 + 0.7 * bass * k) * step(0.0, box);
+    if (box < px) {
+        float2 cq = dd / (2.0 * R) + 0.5;
+        float3 cov = sharpCover(cq, A, S);
+        // Filling the screen it gets softer and darker, so the player stays readable.
+        cov = mix(cov, cov * 0.55 + BG * 0.2, grow * 0.6);
+        cov += float3(1.0) * 0.12 * pow(sat(1.0 - abs(cq.x + cq.y - 2.0 * fract(t * 0.05) * 1.6 + 0.3) * 3.0), 3.0);
+        col = mix(col, cov, 1.0 - smoothstep(-px, px, box));
+    }
+    col += mix(float3(1.0), A, 0.3) * (1.0 - smoothstep(0.0, px * 2.0, abs(box))) * 0.35 * (1.0 - grow);
+
+    return half4(finish(col, fc), 1.0);
+}

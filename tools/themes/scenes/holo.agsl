@@ -1,0 +1,61 @@
+// Holo foil: the shimmer of a holographic trading-card foil, full screen. Rainbow bands slide across
+// a fine diffraction pattern with interference ripples flowing over it, a sheen sweeps across and
+// glitter flashes; the light catches differently as you tilt the handheld (motion sensor), and the foil
+// keeps moving on its own without one.
+uniform float2 uTilt;   // -1..1, from the device's tilt (0 when there is none)
+
+float3 spectral(float x) {
+    // A smooth rainbow (cos palette), shifted towards the theme's colours elsewhere.
+    return 0.5 + 0.5 * cos(TAU * (x + float3(0.0, 0.33, 0.67)));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Tilt: the sensor, plus a slow sway so it lives without one.
+    float2 tilt = uTilt + 0.45 * float2(sin(t * 0.33), sin(t * 0.27 + 1.0));
+
+    // Base: dark card stock.
+    float3 col = BG * 0.8;
+
+    // Diffraction: fine diagonal grooves whose colour depends on viewing angle (tilt) and position.
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float grooves = sin((p.x * 0.8 + p.y) * 380.0) * 0.5 + 0.5;
+    float phase = dot(p, float2(0.9, 0.6)) * 1.4 + tilt.x * 0.6 + tilt.y * 0.4 + t * 0.02;
+    float3 rainbow = spectral(phase + grooves * 0.05);
+    rainbow = mix(rainbow, mix(A, S, 0.5 + 0.5 * sin(phase * 3.0)), 0.35);
+    // Bright bands where the light hits, sliding with the tilt.
+    float bandPos = dot(p, normalize(float2(1.0, 0.7))) - tilt.x * 0.35 - tilt.y * 0.2;
+    float band = exp(-sqf(bandPos * 3.2)) * 0.9 + exp(-sqf((bandPos - 0.55) * 4.0)) * 0.4;
+    col += rainbow * (0.12 + 0.55 * band) * (0.8 + 0.2 * grooves);
+
+    // Moving interference: two slow ripple fields crossing, so colours flow over the foil even when
+    // the handheld is still (no pressed shapes).
+    float w1 = sin(length(p - float2(0.6 * sin(t * 0.11), 0.4 * cos(t * 0.09))) * 26.0 - t * 1.1);
+    float w2 = sin(dot(p, float2(0.8, -0.6)) * 30.0 + t * 0.8 + w1 * 0.6);
+    float inter = 0.5 + 0.25 * (w1 + w2);
+    col += spectral(phase + inter * 0.35 + t * 0.03) * inter * (0.06 + 0.25 * band);
+    // A sheen sweeping across every few seconds, as if the card turned under the lamp.
+    float sweep = exp(-sqf((dot(p, normalize(float2(1.0, -0.4))) - (fract(t / 6.0) * 3.0 - 1.5)) * 5.0));
+    col += mix(float3(1.0), rainbow, 0.5) * sweep * 0.22;
+
+    // Glitter: tiny flakes that flash when their angle meets the light.
+    float2 gp = fc / max(uRes.y / 540.0, 1.0) * 0.6;
+    float2 gid = floor(gp);
+    float2 gf = fract(gp) - 0.5;
+    float2 h = hash22(gid);
+    float facing = sin(h.x * TAU + tilt.x * 6.0 + tilt.y * 4.0 + t * 0.4);
+    float flake = step(0.92, h.y) * smoothstep(0.92, 1.0, facing) * (1.0 - smoothstep(0.1, 0.35, length(gf)));
+    col += mix(float3(1.0), spectral(h.x + phase), 0.4) * flake * 1.2;
+
+    // Edge darkening like a card under a lamp.
+    col *= 0.75 + 0.25 * smoothstep(1.2, 0.2, length(p));
+    // Dim overall so the home screen stays readable.
+    col = mix(col, BG, 0.25);
+    return half4(finish(col, fc), 1.0);
+}

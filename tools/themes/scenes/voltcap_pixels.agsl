@@ -1,0 +1,71 @@
+// Voltcap 32-bit: little pixel-art Voltcap capsules and bolts - 32-pixel sprites with a dark outline
+// and a highlight - hopping about over a dark checkered floor, each with its own bounce (squashing a
+// little when it lands) and a shadow, now and then a sparkle when two pass each other.
+//#include voltcap
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Background: dark gradient with a faint pixel checker.
+    float3 col = mix(BG * 0.7, BG * 1.3 + A * 0.04, uv.y);
+    float2 ck = floor(uv * 24.0);
+    col *= 0.94 + 0.06 * mod(ck.x + ck.y, 2.0);
+
+    // Sprites: one per cell of a loose grid, wandering a little, hopping.
+    float cell = 0.38;
+    float2 g = uv / cell;
+    float2 gid0 = floor(g);
+    for (int jy = -1; jy <= 1; jy++) {
+        for (int jx = -1; jx <= 1; jx++) {
+            float2 id = gid0 + float2(float(jx), float(jy));
+            float h = hash12(id + 3.0);
+            if (h < 0.18) continue;
+            float kind = step(0.55, hash12(id + 9.0));       // 0 capsule, 1 bolt
+            float sp = 1.6 + 1.6 * hash12(id + 1.0);
+            float ph = hash12(id + 5.0) * 6.28;
+            float hop = abs(sin(t * sp + ph));
+            float land = 1.0 - smoothstep(0.0, 0.25, hop);
+            // Base position in the cell, drifting slowly sideways.
+            float2 base = (id + 0.5 + (hash22(id + 2.0) - 0.5) * 0.4) * cell;
+            base.x += sin(t * 0.3 * sp + ph) * cell * 0.25;
+            float size = 0.17;                              // sprite height in screen heights
+            float2 pos = base - float2(0.0, hop * 0.07);
+            // Shadow on the "floor".
+            float2 sd = (uv - base - float2(0.0, size * 0.55)) / float2(size * 0.5 * (1.1 - hop * 0.4), size * 0.1);
+            col *= 1.0 - 0.35 * (1.0 - smoothstep(0.7, 1.0, length(sd)));
+            // The sprite in its own 32x32 pixel grid (squash on landing).
+            float2 sq = float2(1.0 + 0.18 * land, 1.0 - 0.18 * land);
+            float2 local = (uv - pos) / (size * sq);       // -0.5..0.5 across the sprite
+            if (abs(local.x) > 0.6 || abs(local.y) > 0.6) continue;
+            float2 pix = (floor((local + 0.5) * 32.0) + 0.5) / 32.0 - 0.5;
+            float2 pq = pix * 2.2;                           // into capsule units
+            float dShape = kind < 0.5 ? sdCapsuleMark(float2(pq.x, pq.y * 1.0)) : sdBoltMark(pq * 0.42);
+            float pxSize = 2.2 / 32.0 * (kind < 0.5 ? 1.0 : 0.42);
+            float inside = step(dShape, 0.0);
+            float outline = step(dShape, pxSize * 1.1) * (1.0 - inside);
+            if (inside + outline < 0.5) continue;
+            float3 body;
+            if (kind < 0.5) {
+                // Capsule: the theme's colour, a bolt drawn on it in the second colour.
+                body = mix(A * 0.8, A * 1.15, step(pq.y, 0.0));
+                float b = sdBoltMark(pq * 0.85);
+                body = mix(body, mix(S, float3(1.0), 0.3), step(b, 0.0));
+            } else {
+                body = mix(S * 0.85, mix(S, float3(1.0), 0.45), step(pq.x + pq.y * 0.5, 0.0));
+            }
+            // Highlight pixels at the top-left.
+            body += float3(1.0) * 0.25 * step(pix.y, -0.28) * step(pix.x, -0.1) * inside;
+            float3 sprite = mix(float3(0.05, 0.04, 0.06), body, inside);
+            col = sprite;
+        }
+    }
+    // Sparkles here and there.
+    col += mix(S, float3(1.0), 0.5) * dots(uv, 18.0, float2(0.0), 0.06, 0.05, 11.0) * 0.5;
+
+    return half4(finish(col, fc), 1.0);
+}

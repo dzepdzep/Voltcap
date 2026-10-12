@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Expanded view of the volume-mixer notification (device/audio/MixerNotification.kt): a header, then a row per app. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="6dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/mix_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:text="Volume mixer"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title" />
+
+        <ImageButton
+            android:id="@+id/mix_refresh"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Refresh"
+            android:src="@drawable/ic_mix_refresh" />
+
+        <TextView
+            android:id="@+id/mix_open"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:paddingStart="10dp"
+            android:paddingEnd="4dp"
+            android:text="Open"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/mix_rows"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <TextView
+        android:id="@+id/mix_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nothing is playing. Start music or a game, then tap refresh."
+        android:textAppearance="@android:style/TextAppearance.Material.Notification"
+        android:visibility="gone" />
+</LinearLayout>

@@ -1,0 +1,47 @@
+// Big type (music): the song's title written huge across the background in the cover's colours,
+// sliding slowly past in several rows at different speeds (the artist in smaller rows between),
+// the cover in front with a hard shadow like a poster. The letters swell with the bass and flash
+// on the kick; the rows run faster when the song gets busy.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float busy = (uMid + uHigh) * 0.5 * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.66;
+    float3 col = mix(BG * 0.8, mix(BG, A, 0.25), uv.y);
+
+    // Rows of giant type: each row samples the label picture (title on top half, artist below).
+    float rowH = 0.2;
+    float row = floor(uv.y / rowH);
+    float ry = fract(uv.y / rowH);
+    float isTitle = step(0.5, fract(row * 0.5 + 0.25));
+    float speed = (0.03 + 0.06 * hash11(row)) * (1.0 + 2.0 * busy) * (mod(row, 2.0) < 0.5 ? 1.0 : -1.0);
+    float scale = 1.0 + 0.04 * bass * k;
+    float lx = fract((uv.x / (rowH * 2.29) + t * speed + hash11(row * 3.0)) / scale);
+    // Title is in the upper ~55 % of the label picture, the artist below it.
+    float ly = isTitle > 0.5 ? mix(0.08, 0.55, (ry - 0.1) / 0.8) : mix(0.62, 0.95, (ry - 0.2) / 0.6);
+    float ink = labelInk(float2(lx, ly)) * step(0.05, ry) * step(ry, 0.95);
+    float3 tc = mix(A, S, isTitle) * (0.55 + 0.35 * isTitle) + float3(1.0) * kick * 0.25 * k;
+    col = mix(col, tc, ink * (0.55 + 0.25 * isTitle));
+
+    // The cover in front, with a hard offset shadow like a poster.
+    float2 d = uv - c;
+    float sh = sdRoundBox(d - float2(R * 0.07, R * 0.07), float2(R), 0.0);
+    col = mix(col, BG * 0.25, step(sh, 0.0) * 0.8);
+    float box = sdRoundBox(d, float2(R), 0.0);
+    if (box < px) col = mix(col, sharpCover(d / (2.0 * R) + 0.5, A, S), 1.0 - smoothstep(-px, px, box));
+    col = mix(col, float3(0.05), step(abs(box), 0.004));
+    return half4(finish(col, fc), 1.0);
+}

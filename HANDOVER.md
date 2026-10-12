@@ -1,0 +1,229 @@
+# Voltcap — handover to a new Claude
+
+Written 12 Oct 2026, after update **(144)**. Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+
+## What this is
+**Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
+
+I run it on three handhelds:
+- AYN Thor (two screens, Android 13/14);
+- AYN Odin 2 Portal;
+- Retroid Pocket Classic.
+
+## Where things are (on my PC)
+- **Project root:** `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`
+- **`src_copy\`:** the mirror of the Kotlin source (`app/src/main/java/com/shelf/launcher/`). It contains `data/`, `device/`, `spotify/`, `ui/` and the top-level files. **This is the only code you edit.**
+- **`project_copy\`:** non-Kotlin files (resources, assets, tools), at the same path they have relative to the project root.
+- **`SUMMARY.md`:** the running log of every update, newest first.
+- **Other notes:** `CLAUDE.md`, `FEATURES.md` and `CURRENT_TASK.md` (this one is older and may be out of date).
+- **Release and Google Drive set-up:** `tools/release/GITHUB_RELEASE.md`.
+
+I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy), and `project_copy` over the project root, with the PowerShell block Claude gives me (rule 13).
+
+## Rules (always)
+1. **Only edit** `src_copy` (and `project_copy` for non-Kotlin files). Never touch `app/src`.
+2. **After every update, add an entry at the top of `SUMMARY.md`,** and bring this handover file up to date at the end (so a new Claude can take over at any time). The entry's title contains the next number, e.g. `## Update — <date> (131): <short title>`. The entry lists:
+   - **Copy:** new, changed and emptied files;
+   - **Files to delete:** if there are any;
+   - **What changed:** in plain words;
+   - **Check:** what you checked, what you fixed during the check, and what was **not tested**.
+3. **Big check before every delivery:**
+   - Get a fresh copy of each file from my PC first; never edit from an old copy.
+   - When you're done, reread every change line by line against my PC's current copy.
+   - Type-check before you ship. Nothing ships that doesn't compile.
+   - The type-check is expected to give **0 errors**. (The old "5 known SvgDecoder errors" were only a missing `coil-svg` jar; it's in `tools/compile_check/paths.txt` since 122.)
+   - The previous Claude had a type-check set up in its own workspace (kotlinc 2.2.10 plus the project's dependency jars listed in `tools/compile_check/paths.txt`, from my Gradle cache, plus `android.jar` from SDK platform 36). You'll need to set up your own. If you can't, tell me and I'll build in Android Studio.
+4. **Reviews and bug checks:** go through every file, don't skip any. **Before every delivery, bug check** everything the update touches and everything it reaches (callers, shared state, other screens using the same code), and say in SUMMARY what was checked and fixed.
+5. **Don't operate my PC** to run builds, and don't take over my computer. Work on the files. No subagents unless I ask.
+6. **No Shizuku and no dependency on other apps.** Root features use the handheld's own root service (AYN / Retroid "PServer"), through `device/RootShell`.
+7. **Controller (D-pad), touch and second-screen support** must keep working everywhere.
+8. **Original names and art only:** no copied brands or characters. The exceptions are the Steam case template I supplied myself, my own spine pack, my cartridge pack and my optical-system (disc console) pack (all three downloaded since 131, see below), my 3D shape library with its logos (the "3D models" pack since 136, v6.8 and the ES-DE console logos in `model_logos.zip` since 137) and the console logos in `assets/platform_logos`, `assets/badge_logos` and `assets/badge_icons` (Dan Patrick's v2 Platform Logos, credited in the app and in `badge_logos/CREDITS.txt`). The mascot (Volt the cat) was removed in 122 at my request.
+9. **No lower-case text on popups,** buttons or labels.
+10. **Ask me** when you don't understand something. Don't guess.
+11. **Always give exact locations:** full paths on my PC (e.g. `C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy\ui\StyleCrossMenu.kt`) for every file to copy or delete, and the exact Settings path (Settings › … › …) for every option, in SUMMARY and in your replies.
+12. **Dexing:** the Kotlin type-check doesn't catch everything Android's dexer rejects. After each compile, search the compiled classes for `NON_LOCAL_RETURN`. Never `return@key` (or any early return) out of an inline composable such as `key { }`. That broke the build in 125 (fixed in 127).
+13. **Always give a PowerShell command** in your reply and in each SUMMARY entry: one block to paste that first deletes every file under "Files to delete" (in `project_copy` first, so robocopy can't bring them back, then in the project, with `Remove-Item -LiteralPath … -ErrorAction SilentlyContinue`), then runs
+    `robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher" /E /NJH /NP` and
+    `robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher" /E /NJH /NP`.
+14. **Always give me the easiest, fastest way** to do anything I have to do myself: one PowerShell block to paste rather than many manual steps, Git from the command line rather than clicking through web pages, and so on. If a manual way is the only option, say why. (Example, 140: the packs go up with one `git clone` / `robocopy` / `git push` block, not 100-file web uploads.)
+15. **GitHub (since 144):** the project folder is a git repo on `github.com/dzepdzep/Voltcap`, branch `main` (public: the code, the art packs in `packs/v1`, the releases). Every update's PowerShell block ends with the commit and push, after the robocopy lines: `cd "C:\Users\User\AndroidStudioProjects\ShelfLauncher"`, `git add -A`, `git commit -q -m "Update <n>: <short title>"`, `git push origin main`, then `.\gradlew installDebug`. `.gitignore` keeps `app/libs/discord`, `src_copy`, `project_copy`, `Claude outputs`, `screens`, logs, keys and builds off GitHub. One-time set-up: `tools\release\setup_github.ps1`. Never put an interactive command (Read-Host, a sign-in) in the middle of a pasted block — pasted lines after it get read as its answers; run those as a one-line script call on their own.
+16. **Signing (since 144):** `keystore.properties` (your release key, never in git) signs debug and release builds alike (`app/build.gradle.kts`), so Android Studio installs, GitHub releases and the in-app updater all install over each other. Changing keys needs an uninstall on each handheld (Settings › Backup › Export first).
+
+## How to deliver
+- **Before editing:** copy each file you'll touch from my PC and note its modified time.
+- **When you write back:** only overwrite a file if I haven't changed it since you copied it.
+- **New files:** go next to the others in `src_copy`.
+- **Emptying a file:** reduce it to just its `package` line, so the build still works, and list it under "Files to delete".
+- **Then** update `SUMMARY.md` and tell me in a few lines what changed and what I should test.
+
+## Things to know about the code
+- **Settings:**
+  - Prefs live in `data/Features.kt` (`BoolPref`, `IntPref`, `StringPref`, `SetPref`, `EnumPref`). Read them in Compose with `.state.value` and outside it with `.value`.
+  - Inside Compose, reach a nested enum by its full name (`com.shelf.launcher.data.Features.X`).
+  - Bigger appearance settings are in `data/AppearanceStore.kt`.
+- **Compose pitfalls that caused bugs before:**
+  - Don't read a CompositionLocal's `.current` inside `runCatching`; read it into a `val` first.
+  - Use `rememberUpdatedState` for lambdas used inside `pointerInput(Unit)`.
+  - Don't key `pointerInput` on a size: it restarts the gesture on every resize.
+  - A child placed outside its parent's bounds gets no touches.
+- **Main screen:** `ui/LauncherScreen.kt` is very big. The layouts are the `Style*.kt` files, plus `HomeChrome.kt`, `HomeParts.kt` and `HomeEdit.kt` (Edit Home).
+- **Animated backgrounds:**
+  - `ui/ThemeScene.kt` holds the shader scenes, quality and resolution, and `idleFrameMs`.
+  - `ui/PowerSaver.kt` holds `HomeIdle`, `SecondIdle`, `LocalSceneCovered` and `LocalSceneMinFrameMs`.
+  - `ui/ThemeShaders.kt` is generated by `tools/themes/gen.py`. Never edit it by hand.
+  - Blurred pictures are made once in `ui/BakedBlur.kt` and `ui/SmoothBlur.kt`.
+- **In-game overlays:** `ui/PerfOverlayService.kt` runs them (drag to move, placed with the screen's real size). Each overlay sits inside its own `ui/OverlayShell.kt` window frame (fold arrow in the overlay's outer corner, folded tab, resize by dragging a corner or pinching). The views are `MusicOverlayView` and `RaOverlayView`.
+- **Second screen:** `ui/SecondScreen*.kt` and `ui/CompanionActivity.kt`. Its pages are `SecondPage` in `AppearanceStore.kt`; the Games page (console folders, popup of games) is `ui/SecondGamesPage.kt`, its logos `ui/PlatformLogos.kt`. The Handheld menu layout and "Games below / Swap screens" were removed in 122; `ui/DualScreenGrid.kt` only holds `DualGridArt` now.
+- **Endless rows (125):** `ui/EndlessRow.kt` (`rememberLoopFocus`, `LoopRow`, `FollowFocus`, `loopsOnItsOwn`). The view model's `loopTick` / `loopStep` say which way a step went; `AnchoredStrip(loop = …)` and the lazy rows use a virtual index.
+- **Game window (125):** `ui/GameWindow.kt`. Its pages are `WinPage` (main, details, options, trophies), what shows where per layout is `WinPlan` (Features.gameWindowPlan), and the options list is `gameWindowOptions` in `LauncherScreen.kt`.
+- **Per-layout plans (125):** `NamePlan` and `HeroFitPlan` in `AppearanceStore.kt` (Features.namesByLayout, heroFitByLayout).
+- **Edit Home (125):** `PartsLayer.z` (floating parts over the games, under popups), `HomeEditState.snapToOthers`, `barFolded`; part styles hand `LocalPartLook` to `PartBackingBox`.
+- **Your own presets (125):** `LayoutPresetStore` saves the whole "appearance" prefs (typed) and `Features.snapshot()`, and puts them back on apply (`restoreAll`).
+- **Where the focused game card is:** `ui/FocusedCard.kt` (`Modifier.focusedCard()` on each layout's focused card). The cover light and the game window's grow animation use it.
+- **Volume mixer** (`device/audio/`):
+  - **Automatic = sound effect (since 122):** `MixerEffects` (DynamicsProcessing on each app's audio session, held by Voltcap). The root helper is still used to find who's playing.
+  - **Player volume (picked by hand):** `AppMixer` starts `MixerHelper` as root through `app_process`. It reads Android's active players and sets each app's player volume, or a constant "system duck" volume shaper (the second way). Some firmware (the Thor) silently ignores both.
+  - **Announced sessions:** `AudioSessions` listens for the audio sessions apps announce.
+  - **Spotify:** the Spotify Web API is the fallback for Spotify.
+  - Mixer check is in `ui/MixerActivity.kt`.
+- **Cartridges look (128):** `ui/CustomCarts.kt` — `CartLook` (the pack's 14 shapes, each with its size and window in the pack's own units from its `manifest.json`), `CartSource` (Original / Custom), `CustomCarts` (Voltcap console key → the pack's ES-DE id, asset path), `customCartFor(platform)` and the `CustomCart` composable. `mediaFor` hands out `MediaPick(…, CUSTOM_CART + platform, aspect)`; `PhysicalMedia` draws it first thing. Prefs: `Features.cartsOnly` (the look), `cartSource`, `cartLook`, `cartClear`. Pictures: downloaded since 131 (see Extra art packs), `files/packs/carts/<shape>/<o|t>/<id>.webp`, 1600 px wide, lossless, window transparent.
+- **Look styles (129):** `ui/LookStyles.kt` — one console's disc / case / spine for every game (`Features.discStyle`, `caseStyle`, `spineStyle`, "" = each game's own), R1 › Disc / Case / Spine tiles (`styleTile` in `QuickSettings.kt`). `LookStyles.casePlatform` / `spinePlatform` map a game's console to the picked one; `mediaFor(asDisc)` uses `LookStyles.disc()`.
+- **Real scans standing free (129):** `realScanOf(type, typed)` and `mediaRound(platform)` in `PhysicalMedia.kt`, drawn with `RealMediaPicture` in every row (no card behind them); `isFreeMedia(CARTRIDGE_DISC)` is true for every console with a shell.
+- **Achievement placement (129):** `Features.achPlace` (`AchPlace`: CORNER, ABOVE, NAME, UNDER, OFF), R1 › Achievements tile (id `progressbar`) and Settings › Achievements › Achievements on cards & pop-ups › On the cards › Trophy count › Where on the game. Covers: `trophyAlign` in `GameCard.kt`; other layouts: `achChipAlign()` in `StyleHomes.kt` (Grid, Tiles, style homes). The tile also sets the wide capsule's `progressOnBanner` / `progressAbove` / `badgeNextToTitle` / `trophyOnBanner`.
+- **Pulled-out case (129):** `PulledOutCase` in `ShelfHome.kt`, shared by the Game shelf and the TV room shelf; `Features.ShelfPulled` FRONT (real case, else Voltcap's; default), SIDE, OURS, COVER.
+- **Size of the game you're on (129):** `cardSizes()` in `GameCard.kt` grows it by 15 % × `MotionPrefs.pop()` (0..1); `GameDock` takes `grow` from `sizes`. Carousels: `Features.carouselSize` (60–200, default 130), `carouselEdge` default on.
+- **Google Drive sync:** `data/CloudSync.kt` and `data/DriveClient.kt` use the `drive.file` scope.
+
+## State after update 122 (not tested on a device yet)
+- **Second screen Games page:** folders, the popup of games, a tap on a game opening it on the main screen; the arrows by the tabs.
+- **Console logos** (SVG through Coil) on the Games folders and the Cross menu folders.
+- **Overlays:** drag to every edge, corner drag and pinch resize, the fold arrow in the outer corner.
+- **Volume mixer:** Automatic now uses the sound effect. **Next step:** run Mixer check while an app plays; each app line says whether the effect is on its sessions.
+- **Save Vault:** GameCube saves should be back.
+- **Game window:** opens on Play / Continue; disc games show the case with the disc.
+- **Real spines and discs** need ScreenScraper scans; I have no ScreenScraper access right now.
+- **Spines (125):** a real spine scan, else your spine pack (`vc_spine_*`, `CustomSpines.yours` in `CoverCases.kt`, title area and ink from your manifest), else Steam's spine, else the plain one; the name is fitted into the title area (`spineWithTitle` for the 3D boxes). The old `cov_spine_*` (except Steam's and Android's) and `tpl_spine_*` are to be deleted (see 125).
+- **Spines (126):** Android games and apps use Voltcap's redrawn Android spine (`cov_spine_android`, laid out like the pack; in `CustomSpines.builtIn`), not the pack's two Android spines. Each `SpineTpl` carries its picture's `aspect`; the Game shelf and the TV room shelf size the slot from it, and `SpinePicture` never crops. `SPINE_MAX_ASPECT` is 0.125.
+- **Spines (123/124, older):** Strips cut from box scans only with Game look › Spines cut from box scans (default off). Steam has its own custom spine. Since 124 a shelf spine is at most a tenth of its height wide (`SPINE_MAX_ASPECT` in `CoverCases.kt`), and the name auto-sizes over up to two lines. No other scraper Voltcap uses has spines; LaunchBox's Games Database ("Box - Spine", sparse, terms unclear) and EmuMovies (members) do.
+- **Shuffle (124):** `ui/MusicShuffle.kt`, on the big player, the second screen's music page and the in-game music panel while Spotify plays. It uses the Web API when connected, else Spotify's media-session shuffle action.
+
+## State after update 125 (not tested on a device yet)
+- Everything in the 125 entry. Above all: endless rows on each layout, Spotlight's Row & menu look, Resume's fly-in, your spines, the mixer with AetherSX2 / ARMSX2, Sleep mode, the old popup's ◀ ▶, and presets carrying everything.
+- My optical-disc pack (`Downloads\VoltCap_Optical_Disc_Systems_SystemLogoWhite_v3_30_with_Android_Steam`) is used since 131 (the disc-console shells, downloaded).
+
+## State after update 126 (not tested on a device yet)
+- **TV room grid** follows R1 › Look; only the Spines look shows the 3D cases turned to their spines (`spinesOn` in `TvRoomHome`'s `CaseGrid` call). `TvRoom.Games.SPINES` is now labelled "Grid · as the Look".
+- **Frame rate:** Automatic quality picks SMOOTH (60) on every handheld that isn't low-end or short on memory, whatever the screen's Hz; FrameWatch still steps it down. `sceneFrameMs()` in `ThemeScene.kt` is the one rate for `SceneClock` and the music visualizers' `MusicClock`. Calm themes have no cap of their own any more. Packs: `PackRules.MIN_FRAME_MS` 14 (~60), `HEAVY_FRAME_MS` 28 (~30).
+
+## State after update 127 (not tested on a device yet)
+- **Cross menu achievements:** `ui/CrossTrophies.kt` (`CrossTrophies`, `crossTrophiesOn`, `CrossTrophyView.full`). It is shown from the `viewingAchievementsForGame` block in `LauncherScreen.kt` when the layout is the Cross menu and `Features.crossTrophies` is on; A opens `AchievementListDialog`, whose B comes back. The game window's Achievements goes there too on the Cross menu (`GameWindow.kt`, `WinExtras.onAchievements`).
+
+## State after update 128 (not tested on a device yet)
+- **Cartridges look:** Original / Custom, Opaque / Clear and the 14 shapes, from R1 › Cartridge (only while the look is on; tap = next shape, hold = everything) and Settings › Game look › Games are drawn as › Cartridges. Labels are always the game's cover. The second screen doesn't use the pack.
+
+## State after update 129 (not tested on a device yet)
+- Everything in the 129 entry: symbol badges (`assets/badge_icons`, `BadgeLogos.ICON` in `ConsoleBadge.kt`), slimmer spines (`SPINE_ASPECT` 0.13), the PS1 case without its hinge, real scans standing free, Disc / Case / Spine / Achievements tiles, carousel Game size, the first game's capsule animation (`Features.capsuleRevealFirst`, off), `HeroFitPlan.of(layout, global, look)` filling the screen by default, the game popup (Play lit first, Achievements for that game, no cut words).
+
+## State after update 130 (not tested on a device yet)
+- **Hide navigation bar:** a watchdog in `MainActivity` (`SystemBars.navStuck`) re-hides a bar that is really up every 1.5 s (15 s after four tries); every Compose `Dialog` calls `ImmersiveDialogWindow()`; the other activities re-apply `SystemBars.apply` on focus.
+- **Circuit board:** its bar (Play, Settings, Details) has its own arrows in `styleHomeKey` (Play above, the two under it).
+- **Blur:** `BakedBlur.sideFor` / `radiusAt` size the baked copy by the blur and the screen.
+- **Game shelf:** scroll and pull-out are read in the offset / graphics layer lambdas, not while composing (`ShelfHome.kt`).
+- **First game → menu (Side menu, Resume, Dashboard):** `StyleNav.movedAt`; ◀ goes into the menu only on a fresh press ~280 ms after landing.
+
+## State after update 131 (not tested on a device yet)
+- **Extra art packs:** `data/Packs.kt` (what's downloadable, what's on the device, the download on one background thread with OkHttp, `version` bumped whenever pieces arrive or go) and `ui/PacksUi.kt` (`PacksFirstAsk`, shown once from `LauncherScreen.kt` after the first-time setup; `PacksCard` in Settings › Game look › Extra art packs).
+- **Where they're hosted:** the public repo `dzepdzep/Voltcap`, folder `packs/v1` (`Packs.RELEASE` = `https://raw.githubusercontent.com/dzepdzep/Voltcap/main/packs/v1/`). I upload the files myself on github.com (Add file › Upload files, ≤100 files and ≤25 MB each per upload); the whole project can't be pushed because `app\libs\discord\lib\debug` has files over GitHub's 100 MB limit (140). All 234 files live in `project_copy\packs\v1\`: rebuilt in 140 from my originals in Downloads (`cartridges`, `VoltCap_Custom_Console_Spines_All`, `VoltCap_Optical_Disc_Systems_SystemLogoWhite_v3_30_with_Android_Steam`) plus the 3D models (137). For a new version of a pack, add `packs/v2` and change `RELEASE`.
+- **Files:**
+  - `carts_<id>.zip` (64): `<shape>/<o|t>/<id>.webp`, unpacked to `files/packs/carts/`, counted once `<id>.ok` is written;
+  - `spine_<name>.webp` (60): `files/packs/spines/`;
+  - `disc_<name>.webp` (27): `files/packs/discs/`.
+- **Spines without resources:** `CustomSpines.meta` (title box, ink, aspect per console), `yours` only lists spines on the device; `PackSpines` gives each file a stand-in id below zero, and `spineImage(res)` loads either a resource or a downloaded file (`rememberSpine`, `Box3D`).
+- **Disc consoles:** `DiscShells` in `CustomCarts.kt` (shell aspect, window measured from my pictures), `discShellFor(platform)` (Cartridges look, disc-like console, not overridden by Custom's cartridge), drawn by `DiscShellArt`.
+- **R1 › Cartridge** shows only with `Packs.anyCarts()`.
+
+## State after update 132 (not tested on a device yet)
+- **Spotlight's Home menu** (`SpotLook.HOME_MENU`, the default since 132): `SpotHomeMenu` / `SpotMenuTop` / `SpotMenuTiles` / `SpotHints` in `StyleSpotlight.kt`. The status bar steps aside there (`spotOwnTop` in `AppearanceStore.kt`, unless `Features.spotStatusBar`), and the legend too while its hints are on (`legendOn`, which every legend gap now reads). The hints are `StyleNav.bar`; X uses the new `StyleActions.favorite`.
+- **Cross menu Trophies category:** `SpecialFilter.TROPHIES`, only in `categoryOrder` on the Cross menu with `Features.crossTrophyCat`; A there opens `viewingAchievementsForGame` (`openGame` in `LauncherScreen.kt`); leaving the Cross menu while in it goes back to All.
+- **Game window achievements page:** `WindowTrophies` in `GameWindow.kt` has an order row (`Features.winTrophyOrder`, `trophyOrder()`) and opens an achievement's comments under it (`TrophyMore`, `WinExtras.onLoadComments` → `viewModel.loadAchievementComments`). The two readings I asked about are in the 132 entry.
+
+## State after update 133 (not tested on a device yet)
+- **Only for this layout:** `data/LayoutOnly.kt` (each layout's own values `own`, the shared values of the layout on screen `shared`, typed like the presets; noted while Settings › Home is open — `LayoutOnlyCard` in `SettingsDialog.kt` — and swapped in `LauncherViewModel.setAppearance` via `leaving` / `entered`).
+- **Edit Home stretch:** `Features.widgetStretch`, `HomeWidgets.stretch()`, `HomeEditState.liveStretch` / `stretchBy`, `Modifier.stretched()` and `StretchHandle` in `HomeEdit.kt`; layouts' own parts stretch through their graphics layer in `editablePart`.
+- **Backings:** `Features.partBackingSolid` and `backingUnder()` in `HomeParts.kt` (a dark layer under each backing).
+
+## State after update 134 (not tested on a device yet)
+- **3D cases:** `ui/Case3D.kt` (`Case3D` composable; `CaseDraw` does the perspective maths — yaw/pitch, back-face culling by projected area, faces warped with `setPolyToPoly`, mirror image under the floor in a faded layer). `CarouselView.ARC / SPINE_WALL / TURNED` (with `cases = true`), `Carousel.cases3d`, `Carousel.reach` (Spine wall: ×3 each side) and `Features.carousel3d` in `Carousel.kt` / `Features.kt`. `GameCarousel` hands the turn (`Place.turnY`) to the case instead of its graphics layer; the flat drawing is now `CarouselArt`, the name `CarouselName` (above for Turned row).
+- **Spine cache:** `SpineCache` in `CoverCases.kt`. `rememberSpine` (now returns `SpineCache.Ready?`, picture + ink) and `rememberTitledSpine` (`SpineCache.Titled`) make the pictures on IO, once each. `SpinePicture`, `Box3D` and `Case3D` use them. `spineImage` stays, but nothing in the shelves calls it any more.
+
+## State after update 135 (not tested on a device yet)
+- **Carousel spines:** with spines aside (Spines look, or Record flip in COVER / CASE / CASE_REAL) in Tucked / Record flip / Flat row, `GameCarousel` places them itself: `Carousel.SPINE_SIZE` (0.66 of the middle game), `Carousel.spineScale(d)`, packed from just beside the cover; "N each side" is ×3 for them (`spinesAside`).
+- **Endless carousel:** `GameCarousel(loop, loopTick, loopStep)` uses `rememberLoopFocus`; items are keyed by their endless place, the game is place mod count. Callers: Grid (`LauncherScreen.kt`), Side menu (`loopRowOn(c)`), TV room (`TvRoomHome(loop, loopTick, loopStep)`). `loopsOnItsOwn` is true for GRID with Carousel look and TV with its carousel.
+- **Seeing the handheld:** Claude can use the `voltcap-adb` MCP server (`tools\adb_mcp\server.js`, in Claude's desktop config): screenshot (saved in `screens\`, also inline), press (A, B, X, Y, L1, R1, D-pad…), tap, swipe, logcat, shell. Debug builds can be read with `run-as com.shelf.launcher` (e.g. `shared_prefs/voltcap_features.xml`). mobile-mcp doesn't work from the cloud session (its `device` argument is stripped).
+- **3D shape library (v6, `Downloads\VoltCap_3D_Shape_Library_v6_3_Complete\VoltCap_v6_Refined\v6`):** 81 GLB models, all pass the Khronos glTF validator. Used since 136 as pre-rendered pictures (see below).
+
+## State after update 136 (not tested on a device yet)
+- **3D models look:** `ui/Models3D.kt` — `ModelFinish` (OFF / REAL / CUSTOM / CLEAR), `ModelSpare`, `ModelAngle`, `Models3D` (console key → model id tables `REAL` / `CUSTOM`, `idFor`, `available`, `on`, `meta`, `compose`, two LRU caches) and the `Model3DArt` composable. Prefs `Features.modelFinish / modelSpare / modelAngle`; UI `ModelOptions` in `GameLookPicker.kt` (Settings › Game look › Covers, cases & discs › 3D models). `mediaFor` hands out `MediaPick(…, MODEL_3D + id, aspect)` first thing; `PhysicalMedia` draws it; the carousel's `cases3d` path draws `Model3DArt(yaw = p.turnY)` when the console has a model.
+- **The pack:** `Packs.Pack.MODELS`, `model_<id>.zip` (81, 11 MB) → `files/packs/models/<id>/` with `<yaw>.webp` (model, window dark), `<yaw>_g.webp` (window light, alpha = where the window shows) for yaw −60…60 step 20, and `meta.json` (w, h, `art` = window aspect, `angles` = the window's 4 corners per yaw, normalised, TL TR BR BL). App side: cover cut to `art`, `setPolyToPoly` to the corners on a black layer, × gain (PorterDuff MULTIPLY), + model (ADD). Made by `tools/render3d` (WebGL2 renderer in headless Chromium, Playwright + sharp). The zips are in `project_copy/packs/v1/`; I upload them to the repo's `packs/v1` on github.com (see Extra art packs).
+- **Mixer:** `AppMixer.fxGlobal` (meta "fx_global"): when the firmware moves the effect to session 0 (AYN: "createEffect sessionId 0" in logcat), `checkRemap` notices (no "effects for session X" in `dumpsys media.audio_flinger`), Automatic uses the helper instead. The helper is started on the single-thread `starter` with `setsid … &`, so `apply()` never waits on it (it hung forever before).
+- **Gesture hint:** `HintKey("global","hide_nav_bar")` (AYN) is the first candidate; `hintKey()` re-detects once (`keys_v` = 2).
+- **Art drop:** `Features.artDropCase` (used in `CoverFace`, `CoverCases.kt`) and `artDropModel` (`Models3D.labelPicture`), R1 tile `artdrop` + `ArtDropPopup` in `QuickSettings.kt` (bottom slider, no dim). **Name strip:** `Features.modelName`, `PhysicalMedia(title)`.
+- **Save Vault 3D card:** `SaveVaultStyle.CARD_3D`, `Features.saveVaultCard` (`ModelSpare`) / `saveVaultClear`, `Models3D.saveCardId()`, drawn in `StyledSaveCard` (`SaveVaultStyles.kt`). The cards aren't used for games.
+- **Even row carousel:** `CarouselView.POP` in `Carousel.kt`.
+- **Wide capsule fixed:** `fixedSlot` in `GameDock.kt` / `GameCard.kt` (focused wide on the left, not the carousel / pinned first): drawn on its own, no reveal, nothing on its left.
+- **Text:** `fitMin(size)` in `FitText.kt` is the floor for every `StepBased` auto-size (≥ 10 sp, or the size itself when smaller); auto-sized line heights are in em.
+- **Shades:** status bar edge (`StatusBar` in `HomeChrome.kt`), Dashboard menu column and Now playing bottom, Side menu buttons fit (`SidePanel`), Spotlight name drawn with `drawText`, `stylePlaytime(ms, played)`, Game shelf `makeRoom`, Console hub ticker fade and `ConsoleStatus` only without the status bar.
+
+## State after update 137 (not tested on a device yet)
+- **Library v6.8** (`Downloads\VoltCap_3D_Shape_Library_v6_8_Complete\VoltCap_v6_Refined\v6`): `branding/card_slots.json` (tint materials `molded_polymer` / `recess_polymer` / `translucent_tinted_polycarbonate`, nodes `console_logo` / `console_name`, `default_system`), `branding/systems.json` (203 ES-DE ids: shell / badge sRGB), `branding/logos/<id>.png` (64).
+- **Pack v6.8:** marker `<id>.v68` (`Packs.marker`), so 136 pieces are fetched again. Paintable pieces (`meta.tint`: `sys`, `clear`, `trans`, `levels`, `logo` quad + `ls` light per yaw, `logoAspect`, `own` for the Save Vault cards) also have `<yaw>_t<level>.webp`, `<yaw>_b.webp` (badge weight), `<yaw>_gw.webp` (clear). `model_logos.zip` → `models/logos/<esde>.webp` + `systems.json` (`{id: [shell, badge]}`), item `Models3D.LOGOS` (serves every console).
+- **Painting:** `Models3D.tintFor(id, platform, shownName)` → `Tint(shell, badge, logo)`; `paint()` (solid: `Tone.inv` / `Tone.out` around ACES + sRGB, exact; clear: piecewise in sRGB level, premultiplied, alpha by mean level) then the logo via `setPolyToPoly` × `ls`; LRU `tinted`. `compose(…, pos, tint)`; clear art gain × srgb(trans·c)/srgb(trans). `MediaPick.platform` for a model is now `~m3d:<id>|<console>`. `GENERIC = "cart_snes"` for consoles without a custom piece (needs the logos piece).
+- **Colours:** `ModelColors` (prefs `model_colors`: `all`, `g:<console>|<shown name lower-case>`), init from `Packs.init`. R1 tile `cartcolour` → `HomeAdjust.open = Target(CART_COLOUR, …)`.
+- **Home-screen controls:** `ui/HomeAdjust.kt` — `HomeAdjust.open`, `HomeAdjustBar(atTop = dock BOTTOM)` hosted in `LauncherScreen` (a `LaunchedEffect` closes the R1 panel). `ArtPos` / `ArtPlace` (prefs `artDrop*` −50…100, `artShift*` −50…50, `artZoom*` 50…200; `REACH` 0.3 of the window), used by `CoverFace` and `Models3D.labelPicture`. `ArtDropPopup` is gone.
+- **Wide place:** `fixedSlot` in `GameDock.kt` is an `AnimatedContent` on `focus` (`Features.capsuleSwap`).
+- **Carousels:** `Carousel.placeFlat` / `flatView` for the Voltcap row (`GameDock`) and Tiles (`TileHome`); 138: `Carousel.flatReach(bigW, half)` sets how many games each side they draw (enough to pass the screen edges with To the edge).
+- **Artwork:** `Features.artSourceCover / Wide / Hero / Logo` (ArtSource names, "" = main) in `fetchArtFromSelectedSource` (per-field order). `data/PhysicalOverrides.kt` (prefs `physical_overrides`, "<key>\t<label>"): applied wherever `physicalMedia` is set in the view model (`physicalRaw` keeps the scans); UI in `ArtworkPickerDialog` (`PhysicalOverrides.SLOTS`).
+- **Settings:** new top-level "Screensaver" category (`SettingsDialog.kt` CATEGORIES + `SettingsIndex`).
+- **Gesture hint:** `GestureHint.forceOn` defaults to (immersive && `RootShell.available`) while "force" was never set; `onForeground` grants WRITE_SECURE_SETTINGS through the root service first. On the Odin 2 Portal the pill is the `SecondaryHomeHandle` window, gone with `global hide_nav_bar 1`.
+- **Renderer:** `tools/render3d/batch2.js` (see its README).
+
+## State after update 141 (not tested on a device yet)
+- **Updates:** `data/AppUpdates.kt` (GitHub releases of `dzepdzep/Voltcap`, latest release's tag vs versionName, APK downloaded to the external cache and handed to Android's installer through the FileProvider; `REQUEST_INSTALL_PACKAGES` in the manifest), `ui/UpdatesUi.kt` (Settings › Updates & downloads: version, checker, PacksCard). Auto-check at start once a day (prefs `app_updates`). Release: `tools/release/release.ps1 <version> "<notes>"` (gh CLI).
+- **Art packs in setup:** `FirstRunDialog` step "Extra art" (`PacksSetupStep` in `PacksUi.kt`); steps are matched by name now, not index.
+- **Row glide:** `Features.rowGlide` (Quick 1100 / Smooth 380 / Slow 170 stiffness; carousel 160 / 300 / 460 ms) used by `dockMotion()` and `GameCarousel`.
+- **Voltcap row carousel:** `GameDock` draws `GameCarousel` (Carousel.kt) when CLASSIC is in `carouselLayouts`; its box is `bigCover.height / (0.84 × carousel size)` tall. In `GameCarousel`, `cases3d` = 3D cases switch, or a case view (Arc / Spine wall / Turned row) with a case look; `modelLook` draws Model3DArt for the cartridges & discs look in any view.
+- **First one wide:** `pinnedFirstOn(appearance)` (LauncherScreen.kt) = FIRST_ONLY + Voltcap row, not carousel / square tiles. GameDock pins game 1 (ignores Endless and centre focus); `moveFocus` wraps without Endless.
+- **Borrowed case / disc:** `LocalCaseOwner` (CoverCases.kt, set by `CaseArt`) → `PlainFrame`: the template's frame outside the window tinted to its average colour (`FrameColors`), the game's console logo (`PlatformLogo`) in the biggest band. Borrowed disc → `genericDiscKey(own console)`; UMD → `"plain:<console>"`.
+- **3D models look:** `LookStep(models = true)`, `setModelsLook()` and `Features.modelFinishLast` (GameLookPicker.kt).
+- **Save Vault 3D:** `SwayingModel` (SaveVaultStyles.kt) — ±60° sway on the 7 pictures, the last few degrees by graphicsLayer. Open / crack animations removed from SaveExplorer (SaveOpenAnimation remains, unused).
+- **Clear 3D:** `Models3D.compose` — clear art gain ×1.2 uncoloured (`CLEAR_ART_GAIN`), shell thinned over the window (`clearThinPaint`). Clear pack carts at 82 % alpha.
+
+## State after update 142
+- **3D cases in the case looks:** `Models3D.CASES` / `caseModel(platform)` (3D models on, the case downloaded) and `standYaw(focused)`; `CaseArt` (RealMedia.kt) draws `Model3DArt` first when there's one (not for a borrowed case). PhysicalMedia uses `standYaw` too.
+- **Release:** `powershell -ExecutionPolicy Bypass -File "…\tools\release\release.ps1" <version> "<notes>"`; Java comes from Android Studio's `jbr` (JAVA_HOME set for the user in 141's reply).
+
+## State after update 143
+- **Normal row motion:** `fixedSlot` (GameDock.kt) now also needs `!bannerFree` — the fixed wide place only while the game you're on opens wide; cases / carts / discs slide like a cover row. Measured on the Odin with screencap frames (row line y=900, best horizontal shift per frame).
+- **PS1 band:** `PS1_BAND` (0.0956, CoverCases.kt) cut off the left of PS1 case scans (`ScanCase(cutLeft)`); `CaseArtFace` never turns PS1 to its spine; `DiscInCase` uses the flat `CoverCase` for PS1 when there's no scan.
+- **Carousel shade:** `CarouselArt` darkens only the drawn game (offscreen layer + SrcAtop), not a box over the place.
+- **Art position:** `CoverFace` and `Models3D.labelPicture` fit the whole cover in the window, then Art size / position apply.
+
+## State after update 144
+- **Row glide:** `GameDock` no longer animates each card's x with its own spring (that never showed on the handhelds — the row jumped in one frame, measured with `screenrecord`). One `Animatable` `rowPos` (virtual index) glides; each card's x is `lerp(xAt(floor), xAt(floor+1))` of its distance from `rowPos`, read in `offset {}`. `glideBanner` / `glideDiscRoom` animate the focused card's room.
+- **Case sizes:** `DiscInCase` and the "Case with its cartridge / disc" path size the case like a lone case (`h = min(maxHeight, maxWidth / aspect)`) and let the disc / cartridge overflow right (`wrapContentSize(unbounded)` + offset). `casePeek()` (PhysicalMedia.kt) gives the row the room after the focused game (`discRoom`). `discFrac()` / `DISC_OUT` shared.
+- **Settings header:** one slim bar, window 94 % tall, no floating Close row.
+- **Bug check 144:** 72 fixes (list in SUMMARY 144). Saved art cache now in `Art/cache` / `saved_art/cache` (ArtStorage.cacheDir), ArtFiles keeps an in-memory index (`savedFile`). SGDB `checkKey()` OK / REJECTED / UNREACHABLE with a retry job. `OtherDevices.deviceId` carries an ANDROID_ID mark; `retiredIds` cleaned off Drive. `other_devices`, `romm_downloads`, `sleep_radios_state` are INTERNAL prefs.
+- **Measuring motion on a handheld:** `screenrecord --size 640x360 --bit-rate 600000 --time-limit 2`, base64 it out in 75k-character `cut -c` chunks, decode and `ffmpeg` it here, then match the row line frame by frame (screencap alone is ~95 ms a frame, too slow).
+
+## Planned next
+- Nothing left from my long list of 10 Oct (130–134 are done). Ask me what's next.
+
+## Open questions for me
+- **`settings.gradle.kts`:** the previous Claude changed it directly to `rootProject.name = "Voltcap"` (outside project_copy). I still have to say keep or revert.
+
+## Housekeeping still open (I do these, but remind me)
+Delete the old spine pictures listed in update 125 (`cov_spine_*` except `cov_spine_steam` and `cov_spine_android`, and every `tpl_spine_*`), since 126 `vc_spine_androidgames.webp` and `vc_spine_androidapps.webp`, and since 131 every `vc_spine_*.webp` and the folder `assets/carts` (all in the 131 PowerShell block). Create the public repo `dzepdzep/Voltcap` and upload `project_copy\packs\v1\` (all 234 files) to `packs/v1` on `main` (steps in SUMMARY 140). Before that: nothing left to delete (checked 9 Oct, after 123). The mascot files and pictures, `tools/mascot`, `ThemePacks.kt`, `LoopThemes.kt`, `ThemePacksCard.kt` and `make_theme_packs.py` are all gone.
+
+The `loops` asset folders are already deleted.
+
+Start by reading the top of `SUMMARY.md`, then tell me you're ready.

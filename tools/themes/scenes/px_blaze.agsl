@@ -1,0 +1,89 @@
+// Blaze · 32-bit (fire type): a volcano at night. The crater glows and every few seconds it erupts,
+// throwing lava bombs in arcs that leave pixel trails; lava rivers crawl down its flanks, ash drifts
+// across a smoky red sky, and a bubbling lava lake glows below black rocks rimmed with red light.
+//#include pixel
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 lava0 = mix(float3(0.55, 0.06, 0.02), A * 0.6, 0.3);
+    float3 lava1 = mix(float3(1.0, 0.4, 0.05), A, 0.35);
+    float3 lava2 = mix(float3(1.0, 0.85, 0.3), S, 0.3);
+
+    float cyc = t / 6.0;
+    float k = floor(cyc);
+    float age = fract(cyc) * 6.0;
+    float erupt = exp(-age * 1.2);
+
+    // Sky: smoky red bands, darker up top, glowing more after an eruption.
+    float3 col = mix(BG * 0.9, mix(float3(0.45, 0.08, 0.04), A * 0.35, 0.4), pxBand(uv.y * 1.2 + 0.15 * erupt, 5.0, cell));
+    float smoke = fbm3(float2(uv.x * 2.0 - t * 0.02, uv.y * 3.0 + t * 0.05));
+    col = mix(col, BG * 0.6 + float3(0.08, 0.02, 0.02), step(0.55, smoke) * step(uv.y, 0.55) * 0.8);
+    // Volcano cone.
+    float cx = asp * 0.5;
+    float crater = 0.38;
+    float slope = crater + abs(uv.x - cx) * 0.75 - 0.05 + 0.015 * sin(uv.x * 30.0);
+    float onCone = step(slope, uv.y) * step(0.06, abs(uv.x - cx) + step(0.42, uv.y));
+    if (onCone > 0.5) {
+        float shade = pxBand(0.6 - (uv.x - cx) * 1.2, 3.0, cell);
+        col = mix(float3(0.08, 0.05, 0.05), float3(0.22, 0.12, 0.1), shade);
+        // Lava rivers down the flanks.
+        for (int i = 0; i < 3; i++) {
+            float fi = float(i);
+            float side = fi - 1.0;
+            float rx = cx + side * (0.06 + 0.5 * (uv.y - crater)) + 0.03 * sin(uv.y * 25.0 + fi * 3.0);
+            float wdt = 0.008 + 0.006 * sin(uv.y * 40.0 - t * 2.0 + fi);
+            float flow = vnoise(float2(uv.x * 40.0, uv.y * 30.0 - t * 2.5 + fi * 5.0));
+            if (abs(uv.x - rx) < wdt && uv.y < crater + 0.35 + 0.1 * fi) col = flow > 0.6 ? lava2 : (flow > 0.3 ? lava1 : lava0);
+        }
+    }
+    // The crater's glow.
+    float2 cp = uv - float2(cx, crater + 0.01);
+    col = mix(col, lava1, step(length(cp * float2(1.0, 2.5)), 0.05) * step(-0.005, cp.y));
+    col = mix(col, lava2, step(length(cp * float2(1.0, 2.5)), 0.03) * step(-0.005, cp.y) * (0.5 + 0.5 * erupt));
+    col += lava1 * 0.25 * pxBand(sat(1.0 - length(cp) * 5.0), 3.0, cell) * (0.4 + 0.8 * erupt);
+    // Lava bombs: parabolas from the crater, with trails.
+    for (int i = 0; i < 9; i++) {
+        float fi = float(i);
+        float vx = (hash11(k * 3.0 + fi) - 0.5) * 0.5;
+        float vy = 0.35 + 0.25 * hash11(k * 5.0 + fi * 1.3);
+        for (int j = 0; j < 4; j++) {
+            float tt = age - float(j) * 0.04;
+            if (tt < 0.0) continue;
+            float2 bp = float2(cx + vx * tt, crater - vy * tt + 0.35 * tt * tt);
+            bp = pxSnap(bp);
+            float on = step(length(uv - bp), PX * (j == 0 ? 1.6 : 1.0));
+            col = mix(col, j == 0 ? lava2 : (j < 2 ? lava1 : lava0), on * step(tt, 2.5));
+        }
+    }
+    // Ash: grey pixels drifting.
+    float2 ap = float2(uv.x + t * 0.03, uv.y - t * 0.015) * 50.0;
+    col = mix(col, float3(0.5, 0.45, 0.45), step(0.985, hash12(floor(ap))) * step(abs(fract(ap.x) - 0.5), 0.3) * step(abs(fract(ap.y) - 0.5), 0.3));
+    // The lava lake below, bubbling.
+    float lakeY = 0.86;
+    if (uv.y > lakeY) {
+        float n = vnoise(float2(uv.x * 25.0 + t * 0.4, uv.y * 30.0 - t * 0.2)) + 0.4 * sin(uv.x * 40.0 + t * 1.5) * 0.3;
+        col = n > 0.65 ? lava2 : (n > 0.35 ? lava1 : lava0);
+        for (int i = 0; i < 5; i++) {
+            float fi = float(i);
+            float bt = fract(t * 0.4 + hash11(fi));
+            float2 bc = pxSnap(float2(hash11(fi * 7.0) * asp, lakeY + 0.05 + 0.04 * hash11(fi * 3.0)));
+            col = mix(col, lava2, step(abs(length(uv - bc) - bt * 0.02), PX * 0.6) * step(bt, 0.8));
+        }
+    }
+    // Black rocks in front with a red rim from the lake.
+    float rock = 0.0;
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float2 rc = float2((fi * 0.45 + 0.1) * asp, 0.98);
+        float d = length((uv - rc) * float2(0.8, 1.4)) - (0.1 + 0.05 * hash11(fi)) + 0.015 * vnoise(uv * 30.0);
+        if (d < 0.0) col = d > -PX * 2.0 ? lava1 * 0.8 : float3(0.06, 0.04, 0.04);
+    }
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

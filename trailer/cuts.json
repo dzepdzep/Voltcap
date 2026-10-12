@@ -1,0 +1,19 @@
+{
+  "clips_dir": "clips",
+  "music": "../app/src/main/res/raw/bgm_volt.ogg",
+  "intro_sound": "../app/src/main/res/raw/voltcap_intro.ogg",
+  "bpm": 88,
+  "shots": [
+    {"file": "01_iconbar.mp4",     "in": 1.0, "beats": 8, "caption": "PS5-style icon bar"},
+    {"file": "02_crossmenu.mp4",   "in": 1.0, "beats": 4, "caption": "Cross menu"},
+    {"file": "03_discs.mp4",       "in": 1.0, "beats": 8, "caption": "Discs spin. Cartridges bounce."},
+    {"file": "04_spotlight.mp4",   "in": 1.0, "beats": 4, "caption": "Your games, full screen"},
+    {"file": "05_themes.mp4",      "in": 1.0, "beats": 8, "caption": "100+ animated themes"},
+    {"file": "06_colours.mp4",     "in": 1.0, "beats": 4, "caption": "Colours that follow your game"},
+    {"file": "07_achievements.mp4","in": 1.0, "beats": 6, "caption": "RetroAchievements & Steam"},
+    {"file": "08_music.mp4",       "in": 1.0, "beats": 6, "caption": "Spotify, with synced lyrics"},
+    {"file": "09_dualscreen.mp4",  "in": 1.0, "beats": 6, "caption": "Made for two screens"},
+    {"file": "10_extra.mp4",       "in": 1.0, "beats": 4, "caption": ""}
+  ],
+  "intro": {"file": "99_intro.mp4", "start": null, "hold_at": 2.25, "hold": 2.6, "sound_offset": 0.0}
+}

@@ -1,0 +1,87 @@
+// Wyrm (dragon type): a storm at twilight with a great serpent of the sky swimming through it. Its
+// long scaled body weaves in and out of the cloud banks - front coils in front of the clouds, back
+// coils behind them - a ridge of spines along its back, scales catching the light in the theme's
+// colours; lightning flickers inside the clouds and embers drift up.
+
+// Height of the body's centre line at x, and its thickness, for coil c (0 = behind, 1 = in front).
+float bodyY(float x, float t, float c) {
+    return 0.45 + 0.12 * sin(x * 3.2 - t * 0.5 + c * 2.6) + 0.05 * sin(x * 7.0 - t * 0.9 + c);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Sky: storm violet over a last band of light.
+    float3 col = mix(BG * 1.3 + A * 0.06, mix(S, float3(1.0, 0.6, 0.4), 0.4) * 0.5, smoothstep(0.2, 0.95, uv.y));
+    // Lightning inside the clouds: a flicker every few seconds lighting a patch from within.
+    float lc = mod(t, 4.3);
+    float flash = (exp(-lc * 14.0) + 0.6 * exp(-abs(lc - 0.18) * 30.0)) ;
+    float2 lp = float2(hash11(floor(t / 4.3)) * asp, 0.25 + 0.2 * hash11(floor(t / 4.3) + 3.0));
+
+    float3 cloudLit = mix(float3(0.55, 0.5, 0.7), S, 0.25);
+    float3 cloudDark = mix(BG * 0.9, A * 0.2, 0.2);
+    // Back cloud bank.
+    float cb = fbm(float2(uv.x * 1.5 - t * 0.015, uv.y * 3.0));
+    float backM = smoothstep(0.42, 0.62, cb);
+    float3 backC = mix(cloudDark, cloudLit * 0.7, smoothstep(0.5, 0.75, fbm(float2(uv.x * 1.5 - t * 0.015, uv.y * 3.0 - 0.05))));
+    backC += float3(0.85, 0.85, 1.0) * flash * exp(-length(uv - lp) * 4.0) * 0.8;
+
+    // The serpent: two passes of the same long body; the back coil is drawn, then clouds, then the
+    // front coil, so it weaves through the bank.
+    float3 body = float3(0.0);
+    float bodyM = 0.0;
+    for (int c = 0; c < 2; c++) {
+        float fcn = float(c);
+        // Only part of each coil is visible: it dives in and out.
+        float cy = bodyY(uv.x, t, fcn);
+        float thick = 0.042 + 0.014 * sin(uv.x * 2.0 - t * 0.3 + fcn);
+        // Slope for the scale direction and the lighting.
+        float dy = (bodyY(uv.x + 0.01, t, fcn) - cy) / 0.01;
+        float d = (uv.y - cy) / sqrt(1.0 + dy * dy);
+        float inside = 1.0 - smoothstep(thick - px, thick + px, abs(d));
+        float visible = smoothstep(-0.1, 0.1, sin(uv.x * 1.3 - t * 0.2 + fcn * 3.0));
+        // Scales: overlapping rows along the body, offset every other row.
+        float along = uv.x * 26.0 - t * 1.5;
+        float row = floor(d / thick * 2.5);
+        float2 sc = float2(fract(along + row * 0.5) - 0.5, fract(d / thick * 2.5) - 0.5);
+        float scale = smoothstep(0.5, 0.2, length(sc * float2(1.0, 1.4)));
+        float lit = 0.5 + 0.5 * (-d / thick);                     // lit from above
+        float3 skin = mix(A * 0.45, mix(A, S, 0.5) * 0.9, lit);
+        skin *= 0.55 + 0.6 * scale;
+        skin += mix(S, float3(1.0), 0.4) * 0.25 * smoothstep(0.3, 0.45, length(sc * float2(1.0, 1.4))) * (1.0 - smoothstep(0.45, 0.5, length(sc * float2(1.0, 1.4)))) * lit;
+        skin += float3(1.0) * pow(sat(1.0 - abs(d / thick + 0.5) * 3.0), 3.0) * 0.25;        // sheen line
+        skin += float3(0.85, 0.85, 1.0) * flash * 0.35 * exp(-length(uv - lp) * 3.0);
+        // Belly plates on the underside.
+        skin = mix(skin, mix(S, float3(1.0, 0.9, 0.7), 0.5) * 0.7 * (0.8 + 0.2 * step(0.5, fract(along * 0.5))), smoothstep(0.35, 0.75, d / thick));
+        // Spines along the back: little triangles above the body.
+        float sx = fract(uv.x * 22.0 - t * 0.95) - 0.5;
+        float spineD = (-d - thick) / (0.022 * (1.0 - abs(sx) * 2.0) + 1e-4);
+        float spine = step(0.0, spineD) * step(spineD, 1.0) * step(abs(sx), 0.5);
+        float3 spineC = mix(S, float3(1.0), 0.2) * 0.8;
+        if (c == 0) {
+            col = mix(col, skin * 0.65, inside * visible);
+            col = mix(col, spineC * 0.6, spine * visible);
+            col = mix(col, backC, backM * 0.92);
+        } else {
+            body = mix(body, skin, inside);
+            body = mix(body, spineC, spine * (1.0 - inside));
+            bodyM = max(inside, spine) * visible;
+        }
+    }
+    // Front cloud wisps and the front coil.
+    col = mix(col, body, bodyM);
+    float cf = fbm(float2(uv.x * 2.2 - t * 0.03, uv.y * 4.5 + 3.0));
+    float frontM = smoothstep(0.55, 0.7, cf) * smoothstep(0.35, 0.7, uv.y);
+    col = mix(col, mix(cloudDark, cloudLit, 0.35) + float3(0.85, 0.85, 1.0) * flash * exp(-length(uv - lp) * 3.0) * 0.4, frontM * 0.85);
+
+    // Embers drifting up.
+    float emb = dots(uv + float2(sin(uv.y * 8.0 + t * 0.5) * 0.02, t * 0.05), 60.0, float2(0.0), 0.12, 0.06, 4.0);
+    col += mix(float3(1.0, 0.6, 0.25), S, 0.3) * emb * 0.7 * smoothstep(0.2, 0.9, uv.y);
+    return half4(finish(col, fc), 1.0);
+}

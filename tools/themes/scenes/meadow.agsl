@@ -1,0 +1,89 @@
+// Meadow (normal type): a gentle, everyday afternoon. Soft clouds drift over two rows of hazy hills,
+// a windmill turns slowly on the far rise, tall grass fills the front and the wind runs through it in
+// visible gusts - bright sheens rolling across the blades - while dandelion seeds float past.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Sky: warm pale near the horizon, soft blue above, a sun glow at the upper right.
+    float3 skyTop = mix(float3(0.42, 0.62, 0.86), BG * 2.0, 0.25);
+    float3 skyLow = mix(float3(0.98, 0.92, 0.78), S, 0.15);
+    float3 col = mix(skyTop, skyLow, smoothstep(0.0, 0.6, uv.y));
+    float2 sunP = float2(asp * 0.78, 0.12);
+    col += float3(1.0, 0.95, 0.8) * (exp(-length(uv - sunP) * 9.0) * 0.6 + exp(-length(uv - sunP) * 2.5) * 0.15);
+    // Clouds: soft, lit from the top, drifting.
+    float2 cp = float2(uv.x * 1.4 + t * 0.012, uv.y * 3.2);
+    float cl = fbm(cp);
+    float cm = smoothstep(0.5, 0.72, cl) * smoothstep(0.55, 0.15, uv.y);
+    float clTop = fbm(cp + float2(0.0, 0.08));
+    col = mix(col, mix(float3(0.82, 0.84, 0.9), float3(1.0, 0.99, 0.96), smoothstep(0.45, 0.7, clTop)), cm * 0.9);
+
+    // Far hills, then nearer hills; each hazier with distance.
+    float h1 = 0.5 - 0.05 * sin(uv.x * 2.2 + 0.5) - 0.03 * sin(uv.x * 5.1 + 2.0);
+    float h2 = 0.6 - 0.06 * sin(uv.x * 1.6 + 2.4) - 0.025 * sin(uv.x * 4.3 + t * 0.0);
+    float3 hill1 = mix(mix(float3(0.45, 0.62, 0.45), A, 0.12), col, 0.45);
+    float3 hill2 = mix(float3(0.36, 0.56, 0.3), A, 0.1);
+    col = mix(col, hill1, smoothstep(h1 - px, h1 + px, uv.y));
+    // The windmill on the far rise: a tapered tower with a cap and four slowly turning sails.
+    float2 wm = float2(asp * 0.3, 0.5 - 0.05 * sin(asp * 0.3 * 2.2 + 0.5) - 0.03 * sin(asp * 0.3 * 5.1 + 2.0));
+    float2 wq = uv - wm;
+    float tower = max(abs(wq.x) - (0.012 + 0.008 * sat(wq.y / -0.09 + 1.0) * 0.0) - 0.006 * sat(1.0 + wq.y / 0.09), max(wq.y, -wq.y - 0.09));
+    float cap = length((wq - float2(0.0, -0.092)) * float2(1.0, 1.4)) - 0.014;
+    float2 hub = wm + float2(0.0, -0.094);
+    float2 hq = rot(t * 0.35) * (uv - hub);
+    float sails = 1e5;
+    for (int i = 0; i < 4; i++) {
+        float2 r = rot(float(i) * PI * 0.5) * hq;
+        sails = min(sails, sdRoundBox(r - float2(0.0, 0.034), float2(0.007, 0.03), 0.002));
+        sails = min(sails, sdSegment(r, float2(0.0), float2(0.0, 0.066)) - 0.0012);
+    }
+    float3 wmCol = mix(float3(0.92, 0.9, 0.86), col, 0.35);
+    col = mix(col, wmCol * 0.9, 1.0 - smoothstep(-px, px, min(tower, cap)));
+    col = mix(col, mix(float3(0.95, 0.94, 0.9), col, 0.3), 1.0 - smoothstep(-px, px, sails));
+    col = mix(col, hill2 * (0.85 + 0.15 * vnoise(uv * float2(20.0, 60.0))), smoothstep(h2 - px, h2 + px, uv.y));
+
+    // Front grass: blades in two rows; the wind runs through as travelling gusts.
+    float gustF = sin(uv.x * 3.0 - t * 1.4) * 0.5 + 0.5;
+    float gust = smoothstep(0.55, 1.0, gustF) * (0.6 + 0.4 * vnoise(float2(uv.x * 2.0 - t * 0.5, 3.0)));
+    for (int r = 0; r < 2; r++) {
+        float fr = float(r);
+        float base = 0.82 + fr * 0.12;
+        float bw = 0.006 + 0.004 * fr;
+        float x = uv.x / bw + fr * 0.37;
+        float id = floor(x);
+        float lx = fract(x) - 0.5;
+        float hgt = (0.16 + 0.12 * hash11(id + fr * 11.0)) * (1.0 + 0.4 * fr);
+        float yy = (base - uv.y) / hgt;                // 0 at the foot, 1 at the tip
+        float g = sin(id * 0.05 * bw * 100.0 - t * 1.4) * 0.5 + 0.5;
+        float bend = (0.35 + 1.4 * smoothstep(0.55, 1.0, g)) * yy * yy + 0.15 * sin(t * 2.0 + id) * yy * yy;
+        float w = 0.45 * (1.0 - yy);
+        float blade = step(0.0, yy) * step(yy, 1.0) * step(abs(lx - bend), w);
+        float3 gc = mix(float3(0.22, 0.45, 0.16), float3(0.6, 0.78, 0.32), yy * 0.8 + 0.2 * hash11(id));
+        gc = mix(gc, A * 0.5 + gc * 0.6, 0.1);
+        gc += float3(1.0, 0.98, 0.8) * 0.18 * gust * yy;             // the gust's sheen
+        col = mix(col, gc * (0.75 + 0.25 * fr), blade);
+        col = mix(col, gc * 0.55 * (0.75 + 0.25 * fr), step(base, uv.y) * step(fr, 0.5) * step(uv.y, 1.0));
+    }
+    col = mix(col, float3(0.18, 0.34, 0.12), step(0.94, uv.y) * 0.8);
+
+    // Dandelion seeds: a dot with a fuzzy crown, drifting with the wind.
+    for (int i = 0; i < 9; i++) {
+        float fi = float(i);
+        float life = fract(t * (0.035 + 0.01 * hash11(fi)) + hash11(fi * 7.0));
+        float2 p = float2(fract(hash11(fi * 3.0) + life * 1.4) * (asp + 0.2) - 0.1,
+                          0.25 + 0.5 * hash11(fi * 5.0) + 0.05 * sin(life * 12.0 + fi) - 0.1 * life);
+        float2 q = uv - p;
+        float d = length(q);
+        float sz = 0.006 + 0.004 * hash11(fi * 13.0);
+        float a = atan(q.y, q.x);
+        float crown = exp(-abs(d - sz) * 600.0) * (0.5 + 0.5 * sin(a * 9.0 + life * 3.0)) * step(q.y, 0.002);
+        col += float3(1.0) * (crown * 0.5 + exp(-d * 900.0) * 0.3);
+    }
+    return half4(finish(col * 0.92, fc), 1.0);
+}

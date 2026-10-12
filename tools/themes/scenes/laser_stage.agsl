@@ -1,0 +1,95 @@
+// Laser stage: fans of laser beams sweep through a hazy club from emitters behind the stage. The
+// beams fan out and swing with the music, each beam's brightness follows a band of the spectrum,
+// the haze glows where they pass, a strobe flashes on the drops, and the floor shows their reflection.
+// The beams cross where the equalizer is set.
+//#include reactive
+
+// One fan of beams from origin o: brightness of the beams at point p.
+float fan(float2 p, float2 o, float centre, float spread, float count, float width, float t, float seed) {
+    float2 d = p - o;
+    float ang = atan(d.x, -d.y);               // 0 = straight up
+    float x = (ang - centre) / spread * count + count * 0.5;
+    float id = floor(x);
+    float inFan = step(0.0, x) * step(x, count);
+    float f = fract(x) - 0.5;
+    float r = length(d);
+    // Thin in angle, so they widen with distance like real beams.
+    float w = width / max(r, 0.05);
+    float af = abs(f) / (w * count / spread);
+    float beam = exp(-af * 1.2) + 0.22 * exp(-af * 0.12);
+    float e = eqAt((id + 0.5) / count);
+    return beam * inFan * (0.25 + e) * (0.6 + 0.4 * hash11(id + seed));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 9.0) * play;
+
+    float floorY = 0.8;
+    // Haze: dark with slow rolling smoke.
+    float smoke = fbm(float2(uv.x * 1.3 - t * 0.04, uv.y * 2.2 + t * 0.02));
+    float3 col = BG * 0.5 + mix(A, S, 0.5) * 0.04 * smoke;
+    col = mix(col, coverField(uv, asp, t, bass, 0.35, BG, A, S), 0.4);
+
+    float2 p = uv;
+    bool below = uv.y > floorY;
+    if (below) p.y = 2.0 * floorY - uv.y;      // the floor mirrors what's above it
+
+    // Where the beams cross: the equalizer's line, held clear of the floor.
+    float meetY = clamp(uWaveY, 0.2, floorY - 0.15);
+    float swing = sin(t * 0.55) * 0.35 + sin(t * 0.21) * 0.2 + 0.25 * bass * k * sin(t * 2.3);
+    float spread = 0.55 + 0.35 * (0.5 + 0.5 * sin(t * 0.3)) + 0.3 * bass * k;
+    float2 oL = float2(asp * 0.12, floorY);
+    float2 oR = float2(asp * 0.88, floorY);
+    float2 oC = float2(asp * 0.5, floorY + 0.02);
+    // The side fans aim at the crossing point, the middle one swings.
+    float aimL = atan(asp * 0.5 - oL.x, -(meetY - oL.y));
+    float aimR = atan(asp * 0.5 - oR.x, -(meetY - oR.y));
+    float bA = fan(p, oL, aimL + swing * 0.5, spread, 7.0, 0.0012, t, 1.0);
+    float bB = fan(p, oR, aimR - swing * 0.5, spread, 7.0, 0.0012, t, 9.0);
+    float bC = fan(p, oC, swing, spread * 1.3, 9.0, 0.001, t, 5.0);
+    // Haze makes them visible; denser smoke, brighter beam.
+    float haze = 0.45 + 0.9 * smoke;
+    float3 cA = mix(A, float3(1.0), 0.15);
+    float3 cB = mix(S, float3(1.0), 0.15);
+    float3 cC = mix(A, S, 0.5 + 0.5 * sin(t * 0.4));
+    float3 light = (cA * bA + cB * bB + cC * bC * (0.6 + 0.6 * uHigh * play)) * haze * (0.35 + 0.65 * play);
+    // Fade towards the far end of each beam.
+    light *= smoothstep(-0.05, 0.6, p.y);
+    col += light * (1.3 + 1.0 * k);
+
+    // Emitters: hot points with a glow.
+    float em = glow(length(p - oL), 0.004) + glow(length(p - oR), 0.004) + glow(length(p - oC), 0.005);
+    col += mix(float3(1.0), A, 0.3) * em * 0.35;
+
+    // The strobe on hard kicks, and a wash of the beams' colour with the bass.
+    col += float3(1.0) * kick * kick * 0.18 * k * step(0.6, uBass);
+    col += mix(A, S, 0.5) * bass * 0.05 * k;
+
+    if (below) {
+        // Wet floor: the reflection rippled and darker, plus a glossy line where the stage meets it.
+        float rip = vnoise(float2(uv.x * 40.0, uv.y * 120.0 - t * 2.0));
+        col = col * (0.35 + 0.15 * rip) + BG * 0.2;
+        col += mix(A, S, 0.5) * exp(-(uv.y - floorY) * 160.0) * 0.25;
+    }
+    // A silhouetted crowd along the stage edge.
+    float heads = 0.0;
+    float hx = uv.x * 34.0;
+    float hid = floor(hx);
+    float bob = 0.006 * sin(t * 6.0 + hid * 2.0) * (0.3 + bass);
+    float hy = 0.94 - 0.02 * hash11(hid) - bob;
+    float hr = 0.012 + 0.005 * hash11(hid + 3.0);
+    heads = step(length(float2((fract(hx) - 0.5) / 34.0, uv.y - hy)), hr);
+    float shoulders = step(hy + hr * 0.6, uv.y) * step(uv.y, 1.0);
+    col = mix(col, BG * 0.15, max(heads, shoulders));
+
+    return half4(finish(col, fc), 1.0);
+}

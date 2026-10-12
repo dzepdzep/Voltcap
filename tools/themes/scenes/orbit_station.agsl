@@ -1,0 +1,30 @@
+// A lit orbital habitat with overlapping tilted rings and a dark planet, in the chosen palette.
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float2 p = uv - float2(asp * 0.62, 0.46);
+    float3 col = uBg.rgb;
+    col += uSec.rgb * exp(-length(p) * 3.0) * 0.075;
+    col += mix(uAcc.rgb, float3(1.0), 0.5) * dots(uv, 25.0, float2(uTime * 0.002, 0.0), 0.12, 0.08, 7.0) * 0.3;
+    float radius = 0.17;
+    float planet = 1.0 - smoothstep(radius - 0.002, radius + 0.002, length(p));
+    float light = sat(0.55 - p.x * 2.6 - p.y * 1.5);
+    for (int i = 0; i < 3; i++) {
+        if (uLod > 1.5 && i > 1) break;
+        float fi = float(i);
+        float2 q = rot(-0.25 + fi * 0.42 + sin(uTime * 0.04) * 0.04) * p;
+        float rr = length(q * float2(1.0, 2.6));
+        float ringR = 0.28 + fi * 0.07;
+        float ring = exp(-abs(rr - ringR) * 240.0);
+        float front = step(0.0, q.y);
+        float visible = 1.0 - planet * (1.0 - front);
+        col += mix(uAcc.rgb, uSec.rgb, fi * 0.4) * ring * visible * (0.25 + 0.65 * front);
+        float a = uTime * (0.13 + fi * 0.05) + fi * 2.0;
+        float2 shuttle = float2(cos(a) * ringR, sin(a) * ringR / 2.6);
+        float dot = exp(-length(q - shuttle) * 500.0);
+        col += float3(1.0) * dot * visible;
+    }
+    col = mix(col, mix(uBg.rgb * 0.65, uAcc.rgb * 0.45, light), planet * 0.97);
+    col += uAcc.rgb * exp(-abs(length(p) - radius) * 190.0) * 0.45 * light;
+    return half4(finish(col, fc), 1.0);
+}

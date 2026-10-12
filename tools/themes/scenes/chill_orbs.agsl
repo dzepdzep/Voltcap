@@ -1,0 +1,85 @@
+// Glass orbs: big glass spheres resting in two clusters, bottom-left and top-right, floating up and down
+// very slowly. Each one bends the soft coloured light behind it, has a bright rim, a window-shaped
+// highlight and a warm caustic glowing under it. Between them, only the soft gradient (original design).
+
+// The backdrop at p: soft coloured lights on a deep gradient (also what the glass bends).
+float3 backdrop(float2 p, float asp, float t, float3 A, float3 S, float3 BG) {
+    float3 c = mix(BG * 1.25, BG * 0.8, sat(p.y));
+    float2 l1 = p - float2(asp * 0.12 + 0.05 * sin(t * 0.07), 0.85);
+    float2 l2 = p - float2(asp * 0.9, 0.12 + 0.04 * cos(t * 0.06));
+    float2 l3 = p - float2(asp * 0.62, 0.95);
+    c += A * exp(-dot(l1, l1) * 3.5) * 0.35;
+    c += S * exp(-dot(l2, l2) * 4.0) * 0.3;
+    c += mix(A, S, 0.5) * exp(-dot(l3, l3) * 6.0) * 0.12;
+    // Faint diagonal bands so the bending shows.
+    c += mix(A, S, 0.5) * 0.035 * sin((p.x + p.y * 0.6) * 9.0 + t * 0.05);
+    return c;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float3 col = backdrop(uv, asp, t, A, S, BG);
+    float3 L = normalize(float3(-0.5, -0.65, 0.6));
+
+    // Draw the orbs back to front (smaller ones are further away).
+    for (int i = 0; i < 9; i++) {
+        if (uLod > 1.5 && i > 5) break;
+        float fi = float(i);
+        float corner = step(4.5, fi);            // 0 bottom-left cluster, 1 top-right
+        float k = fi - corner * 5.0;
+        float h1 = hash11(fi * 3.17 + 0.5);
+        float h2 = hash11(fi * 7.31 + 1.7);
+        // Clusters hugging their corners: a big orb partly off-screen, smaller ones fanned round it.
+        float r = k < 0.5 ? 0.21 - 0.03 * corner : mix(0.04, 0.1, h1) * (1.0 - 0.1 * corner);
+        float a = mix(-1.5, -0.05, (k - 1.0) / 3.0) + 0.15 * (h2 - 0.5);
+        float dist = k < 0.5 ? 0.0 : 0.23 + 0.12 * h2 + 0.02 * k;
+        float2 home = corner < 0.5
+            ? float2(asp * 0.06, 0.93) + float2(cos(a), sin(a)) * dist * float2(1.15, 1.0)
+            : float2(asp * 0.95, 0.07) - float2(cos(a), sin(a)) * dist * float2(1.15, 1.0);
+        float2 c = home + float2(0.012 * sin(t * 0.11 + fi * 2.0), 0.02 * sin(t * 0.17 + fi * 1.3));
+        float2 q = (uv - c) / r;
+        float d2 = dot(q, q);
+        // Soft shadow / caustic on the backdrop below-right of the orb.
+        float2 sh = (uv - c - float2(0.25, 0.55) * r) / (r * 1.1);
+        col *= 1.0 - 0.18 * exp(-dot(sh, sh) * 2.5);
+        float3 tint = mix(A, S, h2);
+        col += mix(tint, float3(1.0, 0.95, 0.85), 0.4) * exp(-dot(sh * float2(1.0, 2.2) + float2(0.0, 0.25), sh * float2(1.0, 2.2) + float2(0.0, 0.25)) * 6.0) * 0.12;
+        if (d2 < 1.0) {
+            float z = sqrt(1.0 - d2);
+            float3 n = float3(q, z);
+            // Refraction: the backdrop seen through the glass, bent and flipped a little.
+            float2 bent = c - q * r * (0.55 + 0.35 * z);
+            float3 inside = backdrop(bent, asp, t, A, S, BG);
+            inside = mix(inside, inside * tint * 1.6, 0.35) * 1.1;
+            float fres = pow(1.0 - z, 3.0);
+            float3 glass = inside + tint * fres * 0.55;
+            // Highlights: a soft window-shaped one and a sharp point, plus a faint second one opposite.
+            float2 hp = q - float2(-0.38, -0.42);
+            float win = exp(-dot(hp * float2(2.2, 3.2), hp * float2(2.2, 3.2)) * 6.0);
+            float spec = pow(sat(dot(reflect(-L, n), float3(0.0, 0.0, 1.0))), 60.0);
+            glass += float3(1.0) * (win * 0.4 + spec * 0.6);
+            float2 rp = q - float2(0.45, 0.5);
+            glass += mix(tint, float3(1.0), 0.5) * exp(-dot(rp, rp) * 18.0) * 0.18 * (1.0 - z);
+            // Inner caustic: light gathered at the bottom inside the sphere.
+            float2 cp = q - float2(0.15, 0.55);
+            glass += mix(tint, float3(1.0, 0.95, 0.8), 0.3) * exp(-dot(cp, cp) * 9.0) * 0.18;
+            float edgeAA = smoothstep(1.0, 0.96, d2);
+            col = mix(col, glass, edgeAA);
+        }
+        // Thin bright rim.
+        col += mix(tint, float3(1.0), 0.6) * exp(-abs(sqrt(d2) - 1.0) * r * 900.0) * 0.25;
+    }
+
+    // A few tiny bubbles drifting up near the clusters.
+    float bub = dots(uv, 40.0, float2(0.0, t * 0.02), 0.1, 0.07, 6.0);
+    float zone = max(exp(-length(uv - float2(asp * 0.15, 0.85)) * 3.0), exp(-length(uv - float2(asp * 0.88, 0.15)) * 3.0));
+    col += mix(A, float3(1.0), 0.6) * bub * zone * 0.4;
+
+    return half4(finish(col, fc), 1.0);
+}

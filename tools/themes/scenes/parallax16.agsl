@@ -1,0 +1,86 @@
+// 16-bit valley: a pixel-art landscape in the style of the classic 16-bit platformers (all drawn
+// here, nothing borrowed): a dithered sky with a big low sun, clouds, mountain and hill layers
+// scrolling at their own speeds, pollen twinkling, and a row of grass in front.
+
+// Snaps a position to the pixel grid, so everything looks hand-placed on a low-resolution screen.
+float2 pix(float2 uv, float res) { return (floor(uv * res) + 0.5) / res; }
+
+// 4x4 ordered dither threshold for a pixel cell.
+float bayer(float2 c) {
+    float2 a = mod(c, 4.0);
+    float v = 0.0;
+    // Bayer matrix by halves (no arrays in this subset).
+    float2 b = floor(a / 2.0);
+    float2 s = mod(a, 2.0);
+    v = 2.0 * mod(b.x + b.y * 2.0 + b.y, 4.0) / 4.0;
+    v = (mod(s.x * 2.0 + s.y * 3.0, 4.0) + v * 4.0) / 16.0;
+    return v;
+}
+
+half4 main(float2 fc) {
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float res = 180.0;                              // pixels per screen height
+    float2 cell = floor(fc / uRes.y * res);
+    float2 uv = (cell + 0.5) / res;
+    float d = bayer(cell);
+
+    // Sky: banded gradient with dithered steps.
+    float g = uv.y / 0.7;
+    float band = floor(g * 6.0 + d) / 6.0;
+    float3 col = mix(mix(S, float3(1.0, 0.8, 0.6), 0.3) * 0.8, mix(BG, A, 0.3) * 0.7, 1.0 - band);
+    col = mix(col, BG * 0.6, 0.35);
+    // The sun, low and big, with a dithered halo.
+    float2 sc = float2(asp * 0.62, 0.42);
+    float sdist = length(uv - sc);
+    col = mix(col, mix(S, float3(1.0, 0.95, 0.7), 0.5), step(sdist, 0.11));
+    col = mix(col, mix(S, A, 0.3) * 0.9, step(sdist, 0.15 + d * 0.02) * step(0.11, sdist) * 0.5);
+
+    // Clouds: chunky rounded rows drifting.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float cx = mod(uv.x + t * (0.01 + 0.006 * fi) + fi * 1.3, asp + 0.6) - 0.3;
+        float cy = 0.12 + fi * 0.08;
+        float2 q = float2(cx - (0.2 + 0.5 * fi), uv.y - cy);
+        float cl = length(q * float2(0.5, 1.6)) - 0.05 - 0.02 * step(0.0, q.x);
+        cl = min(cl, length((q - float2(0.05, -0.012)) * float2(0.7, 1.4)) - 0.035);
+        col = mix(col, mix(float3(1.0), S, 0.2) * 0.85, step(cl, 0.0));
+        col = mix(col, mix(float3(1.0), A, 0.3) * 0.65, step(cl, 0.0) * step(0.004, uv.y - cy));
+    }
+
+    // Far mountains: stepped silhouettes.
+    float mx = uv.x + t * 0.008;
+    float mh = 0.5 - 0.14 * abs(fract(mx * 1.3) - 0.5) * 2.0 - 0.06 * abs(fract(mx * 3.1 + 0.3) - 0.5) * 2.0;
+    mh = floor(mh * res / 2.0) * 2.0 / res;
+    float3 mcol = mix(BG, A, 0.35) * 0.75;
+    col = mix(col, mcol, step(mh, uv.y));
+    // Snow caps.
+    col = mix(col, mix(float3(0.95), S, 0.15) * 0.85, step(mh, uv.y) * step(uv.y, mh + 0.02) * step(mh, 0.4));
+
+    // Mid hills with a dithered shade edge.
+    float hx = uv.x + t * 0.025;
+    float hh = 0.6 - 0.05 * sin(hx * 4.0) - 0.03 * sin(hx * 9.0 + 1.0);
+    hh = floor(hh * res) / res;
+    float3 hcol = mix(float3(0.25, 0.55, 0.3), S, 0.25) * 0.75;
+    float shade = step(d, smoothstep(hh, hh + 0.08, uv.y));
+    col = mix(col, mix(hcol, hcol * 0.7, shade), step(hh, uv.y));
+
+    // Near ground with grass tufts and a dirt layer.
+    float nx = uv.x + t * 0.06;
+    float gh = 0.8 - 0.02 * step(0.5, fract(nx * 3.0));
+    float tuft = step(0.5, fract(nx * 40.0)) * 0.006;
+    col = mix(col, mix(float3(0.35, 0.7, 0.3), A, 0.15) * 0.85, step(gh - tuft, uv.y));
+    col = mix(col, mix(float3(0.45, 0.3, 0.2), BG, 0.3), step(gh + 0.03, uv.y));
+    col = mix(col, col * 0.75, step(gh + 0.03, uv.y) * step(0.5, fract(nx * 12.0 + floor(uv.y * res / 3.0) * 0.5)));
+
+    // Fireflies / pollen twinkling over the grass.
+    float sp = step(0.988, hash12(cell + floor(t * 4.0))) * step(0.6, uv.y) * step(uv.y, 0.8);
+    col += mix(float3(1.0, 0.95, 0.6), S, 0.3) * sp * 0.5;
+
+    // Dim it so the home screen stays readable.
+    col *= 0.62;
+    return half4(finish(col, fc), 1.0);
+}

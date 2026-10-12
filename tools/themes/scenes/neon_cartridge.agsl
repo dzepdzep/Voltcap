@@ -1,0 +1,104 @@
+// Neon cartridge: a game cartridge drawn in neon tubes on a dark brick wall, above a neon console.
+// The tubes buzz on with a flicker, the cartridge hovers, then slides down into the console's slot;
+// the console lights up - power light, a glowing screen arc, a burst of sparks - before the cartridge
+// rises out again (a 10 s loop). The wet floor below mirrors all of it.
+
+// Glowing tube at distance d: a hot core and a wide soft glow.
+float3 tube(float d, float3 c, float on, float px) {
+    float core = 1.0 - smoothstep(0.0025, 0.0025 + px, d);
+    float glowN = exp(-d * 90.0) * 0.55 + exp(-d * 22.0) * 0.22;
+    return (mix(c, float3(1.0), 0.65) * core + c * glowN) * on;
+}
+
+// The cartridge outline at p (cartridge units, centre 0): shell, label window, grip ridges.
+float cartD(float2 p) {
+    float shell = abs(sdRoundBox(p, float2(0.16, 0.19), 0.02));
+    // A notch cut in the top corners.
+    float label = abs(sdRoundBox(p - float2(0.0, -0.035), float2(0.11, 0.1), 0.015));
+    float d = min(shell, label);
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        d = min(d, sdSegment(p, float2(-0.09, 0.105 + fi * 0.025), float2(0.09, 0.105 + fi * 0.025)));
+    }
+    return d;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float px = 1.5 / uRes.y;
+    float T = mod(t, 10.0);
+    float floorY = 0.86;
+    // Below the floor line: the reflection (mirror the point, darken, ripple).
+    float refl = step(floorY, uv.y);
+    float2 w = uv;
+    if (refl > 0.5) {
+        w.y = 2.0 * floorY - uv.y;
+        w.x += 0.004 * sin(uv.y * 160.0 + t * 2.0);
+    }
+
+    // Brick wall.
+    float2 b = float2(w.x * 7.0, w.y * 14.0);
+    b.x += step(0.5, fract(b.y * 0.5)) * 0.5;
+    float2 bf = fract(b);
+    float mortar = step(min(bf.x * 2.0, bf.y), 0.06) + step(0.94, bf.y) + step(0.97, bf.x);
+    float3 brick = mix(float3(0.2, 0.09, 0.08), BG, 0.4) * (0.75 + 0.35 * hash12(floor(b)));
+    float3 col = mix(brick, BG * 0.4, sat(mortar));
+    col *= 0.6 + 0.4 * vnoise(w * 30.0);
+
+    // Flicker-on at the start of each loop.
+    float on = step(0.15, T) * (step(0.35, T) + step(fract(T * 23.0), 0.5) * step(T, 0.35)) * (1.0 - 0.15 * step(0.985, fract(t * 1.7)));
+    on = sat(on);
+    // Cartridge position: hovers, slides into the slot, stays, rises out.
+    float down = smoothstep(3.0, 3.9, T) - smoothstep(8.2, 9.3, T);
+    float2 cc = float2(asp * 0.5, 0.36 + 0.012 * sin(t * 1.5) * (1.0 - down) + down * 0.2);
+    float slotY = 0.6;                                  // the top of the console: the cartridge hides below it
+    float2 cp = w - cc;
+    float dc = cartD(cp);
+    float hidden = step(slotY, w.y);
+    col += tube(dc, A, on * (1.0 - hidden), px);
+    // A bolt on the label, in the second colour.
+    float2 bq = cp - float2(0.0, -0.035);
+    float bolt = min(sdSegment(bq, float2(0.02, -0.06), float2(-0.025, 0.005)), min(sdSegment(bq, float2(-0.025, 0.005), float2(0.025, -0.005)), sdSegment(bq, float2(0.025, -0.005), float2(-0.02, 0.06))));
+    col += tube(bolt, S, on * (1.0 - hidden), px);
+
+    // The console below: a wide rounded body with the slot on top, a screen arc and a power light.
+    float lit = smoothstep(3.9, 4.3, T) * (1.0 - smoothstep(8.0, 8.4, T));
+    float2 kp = w - float2(asp * 0.5, 0.72);
+    float body = abs(sdRoundBox(kp, float2(0.34, 0.11), 0.06));
+    float slot = sdSegment(kp, float2(-0.17, -0.12), float2(0.17, -0.12));
+    float slotSides = min(sdSegment(kp, float2(-0.17, -0.12), float2(-0.17, -0.09)), sdSegment(kp, float2(0.17, -0.12), float2(0.17, -0.09)));
+    col += tube(min(body, min(slot, slotSides)), S, on, px);
+    // Pads on the console face.
+    float pad = min(abs(length(kp - float2(-0.22, 0.02)) - 0.035), abs(length(kp - float2(0.22, 0.02)) - 0.035));
+    col += tube(pad, mix(A, S, 0.5), on, px);
+    // The screen arc lights up once the cartridge is in.
+    float arc = abs(length(kp - float2(0.0, 0.12)) - 0.12);
+    arc = max(arc, kp.y - 0.06);
+    col += tube(arc, A, on * lit, px) * (0.9 + 0.1 * sin(t * 30.0));
+    float led = length(kp - float2(0.0, 0.07)) - 0.008;
+    col += mix(float3(0.2, 1.0, 0.4), A, 0.3) * (1.0 - smoothstep(0.0, px, led)) * lit;
+    col += mix(float3(0.2, 1.0, 0.4), A, 0.3) * exp(-max(led, 0.0) * 50.0) * 0.6 * lit;
+    // The burst of sparks as it clicks in.
+    float sa = T - 3.9;
+    if (sa > 0.0 && sa < 1.2) {
+        for (int i = 0; i < 12; i++) {
+            float fi = float(i);
+            float ang = fi / 12.0 * TAU + 0.3;
+            float2 sp = float2(asp * 0.5, slotY) + float2(cos(ang), sin(ang) * 0.6 - 0.4) * sa * (0.25 + 0.1 * hash11(fi)) + float2(0.0, 0.3 * sa * sa);
+            col += mix(A, float3(1.0), 0.5) * exp(-length(w - sp) * 300.0) * (1.0 - sa / 1.2) * 1.5;
+        }
+    }
+    // The wall glows where the tubes are.
+    col += mix(A, S, 0.4) * 0.05 * on * exp(-length((w - float2(asp * 0.5, 0.5)) * float2(0.7, 1.0)) * 3.0);
+
+    if (refl > 0.5) {
+        col *= 0.38 * (1.0 - (uv.y - floorY) * 2.5);
+        col += BG * 0.15;
+    }
+    return half4(finish(col, fc), 1.0);
+}

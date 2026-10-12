@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <queries>
+        <package android:name="com.droiddeck.launcher" />
+        <package android:name="psplay.grill.com" />
+        <package android:name="com.asobi.droid" />
+    </queries>
+    <!-- "Now playing" theme, opt-in only: Android's audio Visualizer reads the sound going to the
+         speaker so the background can follow the beat. Android files that under RECORD_AUDIO
+         ("Microphone"); nothing is recorded. Asked for only when the person switches on
+         "React to the real beat" (Appearance > Theme). Discord's SDK declares both as well. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Achievement unlock pop-ups while playing (Android 13+ asks once). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Haptic ticks when moving / selecting (Settings › Sound). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Needed to read ROM files from shared storage. On Android 11+ this alone
+         won't grant broad folder access — see the library-scan work for wiring
+         up the Storage Access Framework / MANAGE_EXTERNAL_STORAGE properly. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+
+    <!-- Broad filesystem access for the library scanner (any folder, not just
+         MediaStore-indexed files). Play Store heavily restricts apps using
+         this permission and requires a declaration form — fine for a
+         sideloaded personal launcher, but reconsider before publishing. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
+    <!-- Quick settings (R1 panel). Wi-Fi/Bluetooth state and, on older
+         Android versions, switching them directly; Do Not Disturb; and
+         screen brightness ("Modify system settings", granted by the user
+         from Android's own screen). -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <!-- Settings › Backup › Nearby device: finding the other Voltcap on the same Wi-Fi (network service discovery). -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!-- Settings › Device › Navigation hint: writing navigation_bar_gesture_hint (granted once through the handheld's root service or adb; never at install. No Shizuku). -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <!-- Android 12+: needed to read connected headphones and their battery. Asked for only from the connected-devices popup. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Performance overlay (Settings › Device › Performance): runs as a foreground service while shown. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Screen Mirror widget on the second screen: captures the primary screen while it is switched on. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <!-- 80 % charge limit: picks itself up again after a restart. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- App drawer › Uninstall: lets Android show its own confirm screen. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <!-- Update 141, Settings › Updates & downloads: installing a new Voltcap from its GitHub release (Android asks first). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Performance overlay (Settings › Device › Performance): a small readout on top of a
+         game. The user allows "display over other apps" from Android's screen. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Optional, granted only over ADB: lets Voltcap read the game's FPS from SurfaceFlinger. -->
+    <uses-permission android:name="android.permission.DUMP" tools:ignore="ProtectedPermissions" />
+    <!-- Running games: Android's usage record tells when a backgrounded game was closed and how long it
+         was really in front (the user turns on Usage access from Settings › Library › Running games). -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <!-- X on a running game asks Android to end the emulator's background process. -->
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+
+    <!-- Package-visibility declaration (Android 11+) so AppScanner's
+         queryIntentActivities call can actually see other installed apps
+         instead of an empty/near-empty list. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- R1 "CPU tuner" tile: ClusterTune / PULSE quick-control screens. -->
+        <intent>
+            <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.ShelfLauncher"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:enableOnBackInvokedCallback="true">
+
+        <!-- Android 16 (targetSdk 36) ignores the landscape lock on screens 600 dp and wider, which
+             some handheld second screens and TV boxes report. Voltcap's layouts are landscape-only,
+             so keep the lock there too. -->
+        <property
+            android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY"
+            android:value="true" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+
+        <!-- Reads active notifications for the in-launcher notifications and
+             music panel. Requires the user to grant "Notification access" in
+             Settings; Android offers no runtime-dialog path for this. -->
+        <service
+            android:name=".data.ShelfNotificationListener"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- The on-game performance readout; never takes focus or touches. -->
+        <service
+            android:name=".ui.PerfOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Optional on-screen performance readout (FPS/CPU/GPU) shown over games while the user has switched it on." />
+        </service>
+
+        <!-- 80 % charge limit (R1 menu): only runs while the limit is on and the charger is in. -->
+        <service
+            android:name=".device.ChargeLimitService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Battery care: pauses charging at the user-chosen 80 % limit while the charger is plugged in." />
+        </service>
+        <service
+            android:name=".device.tune.TuneService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Performance tuner: holds the user-chosen CPU/GPU clock limits, frame-rate target and fan curve while a game runs." />
+        </service>
+        <service
+            android:name=".device.tune.TunerTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_power"
+            android:label="Voltcap power / TDP"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <!-- Quick Settings: underclock (Off / Light / Medium / Heavy / Custom ceilings per CPU cluster and GPU). -->
+        <service
+            android:name=".device.tune.UnderclockTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_underclock"
+            android:label="Voltcap underclock"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <!-- Quick Settings: the overlays over games (Off / Stats / Music / Trophies / All), also mid-game. -->
+        <service
+            android:name=".device.tune.OverlayTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_overlay"
+            android:label="Voltcap overlay"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <!-- The in-game panel (overlays: which show, size, opacity, moving; power): a long press on the
+             Voltcap Quick Settings tiles opens it (Android's tile settings), and a tap on the in-game
+             notification. A small card over the game, in its own task so the game stays behind it. -->
+        <activity
+            android:name=".ui.OverlayControlActivity"
+            android:exported="true"
+            android:taskAffinity="com.shelf.launcher.ingame"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
+        </activity>
+        <!-- The in-game Quick menu (achievements, saved Bluetooth headsets and controllers) over the running game. -->
+        <activity
+            android:name=".ui.QuickMenuActivity"
+            android:exported="false"
+            android:taskAffinity="com.shelf.launcher.ingame"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <service
+            android:name=".device.tune.QuickMenuTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_overlay"
+            android:label="Voltcap quick menu"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <!-- Screen Mirror widget: foreground service that holds the screen capture. -->
+        <service
+            android:name=".ui.MirrorService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+        <!-- Volume mixer: a small card over whatever is on screen (a game included). Opened by Voltcap's
+             own mixer tile, the R1 menu and the in-game panel only. -->
+        <activity
+            android:name=".ui.MixerActivity"
+            android:exported="false"
+            android:taskAffinity="com.shelf.launcher.mixer"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- "Add to home screen" from other apps (DroidDeck game shortcuts…): Voltcap confirms and adds them as games. -->
+        <activity
+            android:name=".ui.PinShortcutActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity="com.shelf.launcher.pin"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />
+            </intent-filter>
+        </activity>
+        <!-- Quick Settings: the volume mixer (volume per app). -->
+        <service
+            android:name=".device.audio.MixerTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_mixer"
+            android:label="Volume mixer"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <!-- Buttons on the one in-game notification (overlays + power); only Voltcap's own intents. -->
+        <receiver
+            android:name=".device.tune.GameNotificationReceiver"
+            android:exported="false" />
+        <!-- The − / + buttons of the volume-mixer notification in the shade. -->
+        <receiver
+            android:name=".device.audio.MixerNotificationReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".device.ChargeLimitBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize|density|uiMode|keyboard|navigation"
+            android:theme="@style/Theme.ShelfLauncher">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Settings transfer by QR code (Settings › Backup › Share settings › QR code): a camera
+                 app scanning the code opens Voltcap here with the sender's address and PIN. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="voltcap" android:host="transfer" />
+            </intent-filter>
+        </activity>
+
+        <!-- Discord sign-in ("Connect Discord" under Settings › Accounts):
+             Discord sends the player back here after they approve. The
+             scheme is "discord-" + the application ID in DiscordPresence.kt. -->
+        <!-- What goes on the screen the game isn't on (Settings › Screens):
+             the game's info, or black. Its own task, so it can sit on the
+             second screen / TV next to the game. -->
+        <activity
+            android:name=".ui.CompanionActivity"
+            android:exported="false"
+            android:taskAffinity="com.shelf.launcher.companion"
+            android:excludeFromRecents="true"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density"
+            android:theme="@style/Theme.ShelfLauncher" />
+
+        <!-- Spotify sign-in (Settings › Accounts › Spotify): the browser sends the
+             player back here with voltcap://spotify-callback?code=… (PKCE). -->
+        <!-- Guides read inside Voltcap (controller-friendly web view). -->
+        <activity
+            android:name=".ui.GuideWebActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:configChanges="orientation|screenSize|keyboardHidden|keyboard|navigation" />
+
+        <activity
+            android:name=".spotify.SpotifyAuthActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="voltcap" android:host="spotify-callback" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.discord.socialsdk.AuthenticationActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="discord-1552821662812995715" />
+            </intent-filter>
+        </activity>
+
+        <!-- Home-screen entry, switched on from Settings › Appearance ›
+             "Use Shelf as the home screen" (HomeLauncher.kt). Off until then,
+             so installing Shelf never takes over the home button by itself. -->
+        <activity-alias
+            android:name=".HomeAlias"
+            android:targetActivity=".MainActivity"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+    </application>
+</manifest>

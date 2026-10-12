@@ -1,0 +1,127 @@
+// Winter peaks: blue hour in the mountains. Big snowy peaks rise in the bottom-left corner, soft clouds
+// drift over the sky, and in the bottom-right a small cabin sits among snowy pines with a warm window and
+// smoke curling from its chimney. Snow falls gently, the nearest flakes big and soft (original design).
+
+float peakBase(float x, float asp) {
+    float xr = x / asp;
+    float h = 0.95 - 0.38 * exp(-sqf((xr - 0.1) / 0.12)) - 0.27 * exp(-sqf((xr - 0.27) / 0.08));
+    h -= 0.04 * (1.0 - abs(2.0 * vnoise(float2(x * 7.0, 2.0)) - 1.0));
+    return h + 0.6 * sqf(sat((xr - 0.35) / 0.4));
+}
+float peakH(float x, float asp) {
+    float xr = x / asp;
+    float h = 0.95 - 0.38 * exp(-sqf((xr - 0.1) / 0.12)) - 0.27 * exp(-sqf((xr - 0.27) / 0.08));
+    h -= 0.04 * (1.0 - abs(2.0 * vnoise(float2(x * 7.0, 2.0)) - 1.0));
+    h -= 0.012 * vnoise(float2(x * 30.0, 5.0));
+    return h + 0.6 * sqf(sat((xr - 0.35) / 0.4));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;      // snow light
+    float3 S = uSec.rgb;      // blue hour
+    float3 BG = uBg.rgb;
+    float xr = uv.x / asp;
+    float3 warm = float3(1.0, 0.72, 0.38);
+
+    // Blue-hour sky.
+    float3 col = mix(BG * 1.2, mix(S, BG, 0.3) * 0.8, smoothstep(0.0, 0.8, uv.y));
+    col += mix(S, A, 0.4) * exp(-sqf((uv.y - 0.75) / 0.25)) * 0.12;
+    col += float3(0.9, 0.95, 1.0) * dots(uv, 60.0, float2(0.0), 0.1, 0.06, 2.0) * 0.4 * smoothstep(0.4, 0.0, uv.y);
+    // Soft clouds drifting.
+    float cl = fbm(float2(uv.x * 1.2 + t * 0.008, uv.y * 4.0));
+    col = mix(col, mix(S, A, 0.3) * 0.45 + BG * 0.3, smoothstep(0.55, 0.8, cl) * smoothstep(0.55, 0.2, uv.y) * 0.4);
+
+    // Far range, hazy, across the bottom.
+    float far = 0.82 - 0.07 * fbm3(float2(uv.x * 2.5, 1.0)) - 0.03 * (1.0 - abs(2.0 * vnoise(float2(uv.x * 9.0, 3.0)) - 1.0));
+    if (uv.y > far) col = mix(col, mix(S, BG, 0.4) * 0.75 + A * 0.04, 0.85);
+
+    // The big peaks in the bottom-left.
+    float ph = peakH(uv.x, asp);
+    if (uv.y > ph) {
+        float e = 0.01;
+        float e2 = 0.025;
+        float slope = (peakBase(uv.x + e2, asp) - peakBase(uv.x - e2, asp)) / (2.0 * e2);
+        float depth = uv.y - ph;
+        slope += 0.5 * (vnoise(float2(uv.x * 22.0 - depth * 8.0, depth * 4.0)) - 0.5);
+        // Light from the upper right (the last glow of the day).
+        float lit = sat(0.5 + slope * 0.6);
+        // Ridges running down from each summit: bands of light and shade fanning out.
+        float2 s1 = uv - float2(asp * 0.1, 0.55);
+        float2 s2 = uv - float2(asp * 0.27, 0.66);
+        float near1 = step(length(s1 * float2(1.0, 0.8)), length(s2 * float2(1.0, 0.8)) + 0.05);
+        float2 sp = near1 > 0.5 ? s1 : s2;
+        float ra = atan(sp.x, max(sp.y, 0.01));
+        float ridge = sin(ra * 9.0 + 2.5 * fbm3(uv * 6.0) + near1 * 2.0);
+        lit = mix(lit, smoothstep(-0.25, 0.25, ridge) * 0.9 + 0.05, 0.55 * smoothstep(0.0, 0.08, sp.y));
+        float rock = smoothstep(0.6, 0.78, fbm3(float2(uv.x * 18.0 + depth * 10.0, depth * 20.0))) * sat(abs(slope) * 0.8);
+        float3 snow = mix(mix(S, BG, 0.35) * 0.6, mix(A, float3(1.0), 0.3) * 0.72, lit);
+        snow = mix(snow, BG * 0.8, rock * 0.75);
+        snow = mix(snow, mix(S, BG, 0.4) * 0.6, sat(depth * 2.0));
+        col = mix(col, snow, smoothstep(0.0, 0.002, depth));
+        col += mix(A, float3(1.0), 0.5) * exp(-depth * 300.0) * lit * 0.12;
+    }
+
+    // Bottom-right: a snowy slope, pines and a cabin.
+    float slopeY = 0.86 - 0.12 * sqf(sat((xr - 0.55) / 0.45)) + 0.01 * sin(uv.x * 6.0);
+    float onSlope = smoothstep(slopeY, slopeY + 0.003, uv.y) * smoothstep(asp * 0.45, asp * 0.6, uv.x);
+    float3 slopeCol = mix(mix(A, float3(1.0), 0.4) * 0.6, mix(S, BG, 0.4) * 0.6, sat((uv.y - slopeY) * 5.0));
+    col = mix(col, slopeCol, onSlope);
+    // Cabin.
+    float2 cb = float2(asp * 0.82, slopeY - 0.0);
+    float cbY = 0.86 - 0.12 * sqf(sat((0.82 - 0.55) / 0.45)) + 0.01 * sin(asp * 0.82 * 6.0);
+    float2 q = uv - float2(asp * 0.82, cbY);
+    float wall = step(abs(q.x), 0.06) * step(-0.07, q.y) * step(q.y, 0.0);
+    float roof = step(abs(q.x), 0.075 - (-0.07 - q.y) * 1.1) * step(q.y, -0.07) * step(-0.135, q.y);
+    float roofSnow = roof * step(-0.135, q.y) * step(q.y, -0.122 + abs(q.x) * 0.0) + roof * smoothstep(0.004, 0.0, abs(q.y + 0.07 + 0.0)) ;
+    float3 cabin = mix(float3(0.16, 0.1, 0.08), float3(0.24, 0.15, 0.1), step(0.5, fract((q.y + 0.07) * 70.0)));
+    col = mix(col, cabin * (0.7 + 0.3 * smoothstep(0.06, -0.06, q.x)), wall);
+    col = mix(col, mix(A, float3(1.0), 0.4) * 0.75, roof);
+    // Windows glowing.
+    float2 w1 = q - float2(-0.025, -0.035);
+    float2 w2 = q - float2(0.025, -0.035);
+    float win = (step(abs(w1.x), 0.012) * step(abs(w1.y), 0.014)) + (step(abs(w2.x), 0.012) * step(abs(w2.y), 0.014));
+    float flick = 0.88 + 0.12 * sin(t * 3.1) * sin(t * 1.7);
+    col = mix(col, warm * flick, win);
+    col += warm * exp(-length(q - float2(0.0, -0.03)) * 18.0) * 0.12 * flick;
+    // Light spilling onto the snow below the windows.
+    col += warm * exp(-length((q - float2(0.0, 0.02)) * float2(1.0, 3.0)) * 25.0) * 0.12 * onSlope;
+    // Chimney and smoke.
+    float2 ch = q - float2(0.04, -0.12);
+    float chim = step(abs(ch.x), 0.007) * step(-0.02, ch.y) * step(ch.y, 0.0);
+    col = mix(col, float3(0.15, 0.1, 0.09), chim);
+    float sy = -ch.y - 0.02;
+    float sx = ch.x - 0.025 * sin(sy * 14.0 - t * 0.8) * sy * 6.0 - sy * 0.6;
+    float smoke = exp(-sqf(sx / (0.006 + sy * 0.18))) * step(0.0, sy) * exp(-sy * 9.0);
+    smoke *= 0.6 + 0.4 * fbm3(float2(sx * 30.0, sy * 10.0 - t * 0.3));
+    col = mix(col, mix(S, float3(0.9), 0.5) * 0.55, smoke * 0.55);
+
+    // Pines round the cabin.
+    for (int i = 0; i < 7; i++) {
+        float fi = float(i);
+        float px = asp * (0.6 + 0.06 * fi + 0.02 * hash11(fi * 2.3));
+        if (abs(px - asp * 0.82) < 0.08) continue;
+        float base = 0.86 - 0.12 * sqf(sat((px / asp - 0.55) / 0.45)) + 0.01 * sin(px * 6.0) + 0.01;
+        float hgt = 0.08 + 0.08 * hash11(fi * 7.7);
+        float2 pq = uv - float2(px, base);
+        float rel = sat(-pq.y / hgt);
+        float tier = fract(rel * 4.0 + 0.1 * sin(pq.x * 300.0));
+        float w = hgt * 0.36 * (1.0 - rel) * (0.6 + 0.4 * tier);
+        float tree = step(-hgt, pq.y) * step(pq.y, 0.0) * smoothstep(w + 0.002, w - 0.002, abs(pq.x));
+        float snowT = smoothstep(0.1, 0.0, tier) * smoothstep(0.0, -w * 0.7, pq.x) * 0.45 + smoothstep(-w * 0.55, -w * 0.95, pq.x) * 0.4;
+        float3 tc = mix(BG * 0.6 + float3(0.0, 0.03, 0.03), mix(A, float3(1.0), 0.4) * 0.6, sat(snowT));
+        col = mix(col, tc, tree);
+    }
+
+    // Snow falling: small far flakes everywhere, big soft ones near the corners.
+    float2 sv = uv + float2(sin(t * 0.3 + uv.y * 3.0) * 0.01, 0.0);
+    float flakes = dots(sv, 50.0, float2(t * 0.02, -t * 0.09), 0.18, 0.08, 3.0) * 0.5
+                 + dots(sv, 26.0, float2(t * 0.03, -t * 0.14), 0.1, 0.1, 7.0) * 0.6;
+    float corner = max(exp(-length(uv - float2(asp, 0.0)) * 2.0), exp(-length(uv - float2(0.0, 1.0)) * 2.0));
+    float big = dots(sv, 9.0, float2(t * 0.05, -t * 0.22), 0.25, 0.22, 11.0) * corner;
+    col += float3(0.95, 0.97, 1.0) * (flakes * 0.5 + big * 0.35);
+
+    return half4(finish(col, fc), 1.0);
+}

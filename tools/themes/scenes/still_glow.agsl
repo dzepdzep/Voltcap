@@ -1,0 +1,17 @@
+// Still glow: a minimal, unmoving field — two large soft light pools in the theme colours over a dark
+// gradient, a faint diagonal sheen and grain. Drawn once.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(BG * 1.15, BG * 0.7, uv.y);
+    col += A * exp(-length((uv - float2(asp * 0.15, 0.1)) * float2(0.7, 1.0)) * 2.2) * 0.32;
+    col += S * exp(-length((uv - float2(asp * 0.9, 0.95)) * float2(0.7, 1.0)) * 2.4) * 0.22;
+    float sheen = 1.0 - smoothstep(0.0, 0.25, abs(uv.x / asp - uv.y * 0.5 - 0.35));
+    col += float3(1.0) * sheen * 0.025;
+    col += (hash12(fc) - 0.5) * 0.02;
+    return half4(finish(col, fc), 1.0);
+}

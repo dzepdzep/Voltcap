@@ -1,0 +1,106 @@
+// Neon puddle: a rain-soaked street at night, seen low over the wet road. A row of dark buildings
+// lines the far side; their neon rooftop tubes are the equalizer - each building rises and glows with
+// its band - windows flicker, and the song's cover hangs as a lit billboard where the equalizer is
+// set. Everything is mirrored in the wet street below, stretched into long streaks and broken up by
+// rain rings that land on the beat. Colours come from the cover.
+//#include reactive
+
+float3 cityAbove(float2 p, float asp, float t, float streetY, float play, float k, float kick, float3 A, float3 S, float3 BG,
+                 float2 bc, float bw, float bh) {
+    // Sky: deep, with a city glow low down.
+    float3 col = mix(BG * 0.45, mix(BG, mix(A, S, 0.5), 0.25) * 0.9, smoothstep(0.0, streetY, p.y));
+    // Buildings: 16 columns of varying width; heights follow the eight bands (mirrored outwards).
+    float x = p.x / asp;
+    float colI = floor(x * 16.0);
+    float fx = fract(x * 16.0);
+    float h0 = hash11(colI * 3.7 + 1.0);
+    float band = abs(colI - 7.5) / 8.0;                    // 0 middle .. 1 edges: low bands in the middle
+    float lvl = eqAt(band) * play;
+    float top = streetY - (0.16 + 0.22 * h0 + 0.16 * lvl * (0.4 + 0.6 * k));
+    float inside = step(top, p.y) * step(0.06 + 0.06 * h0, fx) * step(fx, 0.94 - 0.05 * h0);
+    float3 wall = BG * (0.35 + 0.15 * h0);
+    // Windows: a grid, some lit (warm or cover-tinted), a few flickering.
+    float2 wg = float2(fx * 6.0, (p.y - top) * 70.0);
+    float2 wid = floor(wg);
+    float lit = step(0.62, hash12(wid + colI * 17.0 + floor(t * 0.05 + hash11(colI)) * 3.0));
+    float win = step(0.25, fract(wg.x)) * step(fract(wg.x), 0.75) * step(0.3, fract(wg.y)) * step(fract(wg.y), 0.8);
+    float3 wcol = mix(float3(1.0, 0.85, 0.6), mix(A, S, hash11(colI)), 0.5) * (0.35 + 0.25 * hash12(wid));
+    wall += wcol * win * lit * step(top + 0.01, p.y);
+    col = mix(col, wall, inside);
+    // Neon tube along each rooftop, brightening with its band and flickering on kicks.
+    float3 tube = mix(mix(A, S, step(0.5, hash11(colI * 5.1))), float3(1.0), 0.25);
+    float tubeD = abs(p.y - top);
+    float on = step(0.06 + 0.06 * h0, fx) * step(fx, 0.94 - 0.05 * h0);
+    float glowL = (0.45 + 0.9 * lvl + 0.4 * kick * k) * (1.0 - 0.6 * step(0.93, hash11(floor(t * 10.0) + colI)) * kick);
+    col += tube * on * (exp(-tubeD * 900.0) * 1.2 + exp(-tubeD * 60.0) * 0.18) * glowL;
+    // Billboard: the cover, lit, in a frame.
+    float2 bq = (p - bc) / float2(bw, bh) + 0.5;
+    float inB = step(0.0, bq.x) * step(bq.x, 1.0) * step(0.0, bq.y) * step(bq.y, 1.0);
+    if (inB > 0.0) {
+        float3 art = uHasArt > 0.5 ? float3(uCover.eval(clamp(bq, 0.0, 1.0) * uCoverSize).rgb) : mix(A, S, bq.x);
+        col = art * (0.85 + 0.25 * kick * k);
+    }
+    float frameD = max(abs(bq.x - 0.5), abs(bq.y - 0.5));
+    col += mix(A, float3(1.0), 0.4) * exp(-abs(frameD - 0.51) * 300.0) * 0.6 * step(frameD, 0.56);
+    col += mix(A, S, 0.5) * exp(-length((p - bc) / float2(bw, bh)) * 2.2) * 0.12;
+    return col;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = vivid(uAcc.rgb, 1.2);
+    float3 S = vivid(uSec.rgb, 1.2);
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 6.0) * play;
+
+    float streetY = 0.66;
+    // The billboard sits where the equalizer is set (kept above the street).
+    float s = room(0.2) / 0.2;
+    float bh = 0.2 * s;
+    float bw = bh;
+    float2 bc = float2(waveX(asp), min(uWaveY, streetY - bh * 0.7));
+
+    float3 col;
+    if (uv.y < streetY) {
+        col = cityAbove(uv, asp, t, streetY, play, k, kick, A, S, BG, bc, bw, bh);
+    } else {
+        // The wet street: the city mirrored, squashed, smeared downward and broken up by rain rings.
+        float depth = uv.y - streetY;
+        float ring = 0.0;
+        for (int i = 0; i < 4; i++) {
+            if (uLod > 1.5 && i > 1) break;
+            float fi = float(i);
+            float age = uBeatAge * play + fi * 0.37 + (1.0 - play) * (fract(t * 0.7 + fi * 0.31) * 2.0);
+            float seed = floor((t - age) * 3.0) + fi * 7.0;
+            float2 rc = float2(hash11(seed) * asp, streetY + 0.03 + hash11(seed + 3.0) * 0.3);
+            float rr = length((uv - rc) * float2(1.0, 3.2));
+            ring += sin((rr - age * 0.22) * 160.0) * exp(-age * 2.2) * exp(-abs(rr - age * 0.22) * 25.0);
+        }
+        float wob = (vnoise(float2(uv.x * 40.0, uv.y * 8.0 - t * 0.6)) - 0.5) * 0.01 + ring * 0.01 * (0.5 + k);
+        float2 m = float2(uv.x + wob * 0.5, streetY - depth * 1.6 + wob);
+        float3 refl = cityAbove(m, asp, t, streetY, play, k, kick, A, S, BG, bc, bw, bh);
+        // A second, lower sample smears lights into long vertical streaks.
+        float3 refl2 = cityAbove(float2(m.x, m.y - 0.05), asp, t, streetY, play, k, kick, A, S, BG, bc, bw, bh);
+        refl = max(refl, refl2 * 0.8);
+        col = refl * (0.55 - 0.25 * sat(depth * 2.0)) + BG * 0.08;
+        // Asphalt texture between puddles: rougher, less reflective.
+        float rough = smoothstep(0.45, 0.75, fbm3(uv * float2(6.0, 18.0)));
+        col = mix(col, BG * 0.22 * (0.8 + 0.4 * vnoise(uv * 120.0)), rough * 0.6);
+        col += mix(A, S, 0.5) * exp(-depth * 18.0) * 0.06;
+    }
+    // The kerb line catching the light.
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - streetY) * 300.0) * 0.25;
+
+    // Rain streaks, catching the neon.
+    float2 rp = float2(uv.x * 90.0 + uv.y * 9.0, uv.y * 3.0 - t * 5.5);
+    float2 rid = floor(rp);
+    float rf = fract(rp.x) - 0.5;
+    float drop = step(hash12(rid), 0.16) * (1.0 - smoothstep(0.0, 0.08, abs(rf))) * smoothstep(0.0, 0.6, fract(rp.y + hash12(rid + 3.0)));
+    col += mix(float3(0.7, 0.8, 1.0), mix(A, S, 0.5), 0.5) * drop * 0.16;
+
+    return half4(finish(col, fc), 1.0);
+}

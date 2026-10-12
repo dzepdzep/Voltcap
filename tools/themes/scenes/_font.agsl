@@ -1,0 +1,30 @@
+// A tiny 3 x 5 pixel font for scenes that print a few words or numbers (arcade screens, scoreboards).
+// Each glyph is 15 bits, rows top to bottom, left pixel first.
+
+// 1 where glyph [code] has a pixel at cell q (0..2 across, 0..4 down; anything else is 0).
+float fontBit(float code, float2 q) {
+    if (q.x < 0.0 || q.x > 2.0 || q.y < 0.0 || q.y > 4.0 || code < 0.5) return 0.0;
+    float idx = (4.0 - q.y) * 3.0 + (2.0 - q.x);
+    return mod(floor(code / exp2(idx)), 2.0);
+}
+
+float digitCode(float d) {
+    if (d < 0.5) return 31599.0;
+    if (d < 1.5) return 11415.0;
+    if (d < 2.5) return 29671.0;
+    if (d < 3.5) return 29647.0;
+    if (d < 4.5) return 23497.0;
+    if (d < 5.5) return 31183.0;
+    if (d < 6.5) return 31215.0;
+    if (d < 7.5) return 29257.0;
+    if (d < 8.5) return 31727.0;
+    return 31695.0;
+}
+
+// Pixel of number n (whole, up to 6 digits, zero padded to [digits]) at pixel q from its top-left; 4 pixels per digit.
+float fontNumber(float n, float digits, float2 q) {
+    float i = floor(q.x / 4.0);
+    if (i < 0.0 || i >= digits) return 0.0;
+    float d = mod(floor(n / pow(10.0, digits - 1.0 - i) + 0.0001), 10.0);
+    return fontBit(digitCode(floor(d)), float2(q.x - i * 4.0, q.y));
+}

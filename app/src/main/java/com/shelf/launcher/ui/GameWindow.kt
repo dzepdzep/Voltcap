@@ -1,0 +1,1339 @@
+package com.shelf.launcher.ui
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.draw.clip
+import com.shelf.launcher.ui.theme.ShelfTheme
+import com.shelf.launcher.LauncherUiState
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.shelf.launcher.data.Features
+import com.shelf.launcher.data.Game
+import com.shelf.launcher.data.GameArt
+import com.shelf.launcher.data.HomeLayout
+
+/*
+ * Update 113: the game window on every layout (it was the Channel grid's only). A or a tap on the game you're on opens
+ * it — always on the main screen, growing out of the game you picked — with the game's picture (its preview video
+ * once found), name and console, and three buttons: back, Details (turns the window over to the game's details, with
+ * "Full details" for the big window) and Play. Each layout has its own look of it (below, [lookFor]).
+ * Settings › Home › "Game window" off: A / a tap starts the game straight away.
+ */
+
+/** The game window, open while [game] is set. */
+internal object GamePopup {
+    var game by mutableStateOf<Game?>(null)
+}
+
+/**
+ * Where the game you're on was last drawn (in its window), so the game window grows out of it. Plain fields (written
+ * while laying out, read once when the window opens); [displayId] tells the main screen from the second one.
+ */
+internal object GameOrigin {
+    /** Marked by the card the layout lifts for the game you're on (whichever game that is). */
+    const val FOCUSED = "\u0000focused"
+    var key: String? = null
+    var rect: Rect? = null
+    var displayId: Int = -1
+}
+
+/**
+ * Update 113: the big logo for [g] (Edit Home's logo part, Hero carousel, Spotlight, the second screen's showcase):
+ * your own pick, else SteamGridDB's (Features.bigLogoSgdb, looked up once per game), else — with that off, or without
+ * a SteamGridDB key — the artwork's logo from whichever source.
+ */
+internal fun bigLogo(g: Game, state: LauncherUiState): String? {
+    val k = g.stableKey
+    state.artOverrides[k]?.logo?.let { return it }
+    val any = state.art[k]?.logoUrl
+    if (!Features.bigLogoSgdb.state.value || com.shelf.launcher.data.SgdbAuth.apiKey.isNullOrBlank()) return any
+    if (any != null && any.contains("steamgriddb", ignoreCase = true)) return any
+    return state.sgdbLogos[k]?.takeIf { it.isNotEmpty() }
+}
+
+/** Marks [key]'s picture as the game you're on ([on]), so the game window can grow out of it. */
+@Composable
+internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
+    if (!on) return this
+    val view = LocalView.current
+    return this.onGloballyPositioned { c ->
+        GameOrigin.key = key
+        GameOrigin.rect = c.boundsInWindow()
+        GameOrigin.displayId = runCatching { view.display?.displayId }.getOrNull() ?: -1
+    }
+}
+
+/** Update 119: what the game window can show where it has room (Home › Layout options › Game window). */
+internal enum class WinPart(val label: String) {
+    MEDIA("Its disc / cartridge"), DESCRIPTION("Description"), FACTS("Facts"), ACHIEVEMENTS("Achievements"), ICONS("Options, trophies & sync buttons")
+}
+
+/**
+ * Update 125: where each part of the game window goes, per layout (Home › Layout options › Game window): on the
+ * picture, by the game's name (the window's info place), under the buttons, or not at all.
+ */
+internal enum class WinSlot(val label: String) { PICTURE("On the picture"), INFO("By the name"), BOTTOM("Under the buttons"), OFF("Off") }
+
+/** Update 125: the window's pages — the picture, the details, the game's options and its achievements, all in its style. */
+internal enum class WinPage { MAIN, DETAILS, OPTIONS, TROPHIES }
+
+/** Update 125: one of the game's options, shown on the window's own options page. */
+internal class WinOption(val label: String, val sub: String? = null, val destructive: Boolean = false, val onClick: () -> Unit)
+
+/**
+ * Update 125: each layout's own placement of the window's parts, kept in Features.gameWindowPlan as
+ * "LAYOUT.PART=SLOT" entries. A layout without its own keeps the old every-layout choice (Features.gameWindowShows):
+ * shown parts in their usual place, the others off.
+ */
+internal object WinPlan {
+    fun usual(part: WinPart): WinSlot = if (part == WinPart.MEDIA) WinSlot.PICTURE else WinSlot.INFO
+
+    private fun parse(raw: String): Map<String, WinSlot> = raw.split(',').mapNotNull { e ->
+        val k = e.substringBefore('=', "").trim(); val v = e.substringAfter('=', "").trim()
+        WinSlot.values().firstOrNull { it.name == v }?.let { if (k.isNotEmpty()) k to it else null }
+    }.toMap()
+
+    /** [layout]'s placement of every part (read in composition: redraws when it changes). */
+    fun of(layout: HomeLayout): Map<WinPart, WinSlot> {
+        val saved = parse(Features.gameWindowPlan.state.value)
+        val shows = Features.gameWindowShows.state.value
+        return WinPart.values().associateWith { p -> saved["${layout.name}.${p.name}"] ?: if (p.name in shows) usual(p) else WinSlot.OFF }
+    }
+
+    fun set(layout: HomeLayout, part: WinPart, slot: WinSlot) {
+        val m = parse(Features.gameWindowPlan.value).toMutableMap()
+        m["${layout.name}.${part.name}"] = slot
+        Features.gameWindowPlan.value = m.entries.joinToString(",") { "${it.key}=${it.value.name}" }
+    }
+}
+
+/** Update 119: where the TV room's screen is (in the window), so the game window opens on the TV itself. */
+internal object TvScreen {
+    var rect: Rect? = null
+    /** The display it's on (the TV room drawn on the second screen, with the games below, doesn't count). */
+    var displayId: Int = -1
+}
+
+/** SHOWCASE (update 119, the Grid): the game's disc / cartridge on top in the middle, its name and story under it. */
+private enum class Arrange { STACK, SPLIT, LIST, FULL, SHOWCASE }
+private enum class Btn { PILL, ROUNDED, SQUARE, LCD, TEXT, TAB }
+
+/** How one layout draws its game window. */
+private class WinLook(
+    val arrange: Arrange,
+    val btn: Btn,
+    val veil: Brush,
+    /** The window's own panel (null: the parts float on the veil). */
+    val panel: Brush?,
+    val frame: Color?,
+    val frameW: Dp,
+    val corner: Dp,
+    val mediaCorner: Dp,
+    /** A frame round the picture (the TV's bezel, the handheld's screen edge…). */
+    val mediaFrame: Color?,
+    val mediaFrameW: Dp,
+    val ink: Color,
+    val muted: Color,
+    val accent: Color,
+    val btnFill: Brush,
+    val btnInk: Color,
+    val btnOnFill: Brush,
+    val btnOnInk: Color,
+    val btnBorder: Color?,
+    val back: String,
+    val details: String,
+    val play: String,
+    val mono: Boolean = false,
+    val caps: Boolean = false,
+    /** The details page's own paper (null: the panel's). */
+    val paper: Color? = null
+)
+
+private fun solid(c: Color): Brush = Brush.verticalGradient(listOf(c, c))
+
+private fun mix(a: Color, b: Color, t: Float) = Color(a.red + (b.red - a.red) * t, a.green + (b.green - a.green) * t, a.blue + (b.blue - a.blue) * t, 1f)
+
+/**
+ * Update 119: the window in [tint]'s colours (the game's, from its cover, or the theme's) — the panel, the veil, the
+ * buttons and the details page — keeping the layout's shapes, words and type. The windows were mostly white or grey.
+ */
+private fun WinLook.tinted(tint: Color): WinLook {
+    val deep = mix(tint, Color.Black, 0.55f)
+    val rich = mix(tint, Color.Black, 0.25f)
+    val glow = mix(tint, Color.White, 0.55f)
+    return WinLook(
+        arrange, btn,
+        veil = Brush.verticalGradient(listOf(deep.copy(alpha = 0.78f), Color.Black.copy(alpha = 0.82f))),
+        panel = if (panel != null) Brush.verticalGradient(listOf(rich, deep)) else null,
+        frame = if (frame != null) glow.copy(alpha = 0.6f) else null, frameW = frameW, corner = corner, mediaCorner = mediaCorner,
+        mediaFrame = if (mediaFrame != null) mix(tint, Color.Black, 0.75f) else null, mediaFrameW = mediaFrameW,
+        ink = Color.White, muted = Color.White.copy(alpha = 0.74f), accent = glow,
+        btnFill = solid(Color.White.copy(alpha = 0.13f)), btnInk = Color.White,
+        btnOnFill = solid(glow), btnOnInk = deep,
+        btnBorder = if (btnBorder != null) glow.copy(alpha = 0.45f) else null,
+        back = back, details = details, play = play, mono = mono, caps = caps,
+        paper = mix(tint, Color.Black, 0.7f)
+    )
+}
+
+@Composable
+private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
+    val t = ShelfTheme.colors
+    val acc = ShelfTheme.accent
+    // Update 144: text on an accent fill is dark when the accent is light (Mono's white, pale accents), so
+    // "The layout's own" colours don't put white words on a white button.
+    val lightAcc = acc.luminance() > 0.5f
+    val onAcc = if (lightAcc) Color(0xFF111111) else Color.White
+    val playWord = if (resumed) "Continue" else "Play"
+    return when (layout) {
+        // The Channel grid: a rounded screen on a see-through white (or dark) veil, round-ended buttons.
+        HomeLayout.CHAN -> {
+            val light = Features.chanLight.state.value
+            val ink = if (light) Color(0xFF3B4450) else Color.White
+            WinLook(
+                Arrange.STACK, Btn.PILL,
+                veil = solid(if (light) Color(0xFFF6F8FB).copy(alpha = 0.82f) else Color(0xFF0E1116).copy(alpha = 0.86f)),
+                panel = null, frame = null, frameW = 0.dp, corner = 22.dp, mediaCorner = 22.dp,
+                mediaFrame = if (light) Color(0xFFB9C3D0) else Color(0xFF3A4350), mediaFrameW = 4.dp,
+                ink = ink, muted = ink.copy(alpha = 0.7f), accent = acc,
+                btnFill = if (light) Brush.verticalGradient(listOf(Color.White, Color(0xFFDCE2EA))) else Brush.verticalGradient(listOf(Color(0xFF323A46), Color(0xFF1C2129))),
+                btnInk = ink,
+                btnOnFill = if (light) Brush.verticalGradient(listOf(Color.White, Color(0xFFCFE3F7))) else Brush.verticalGradient(listOf(Color(0xFF3B5470), Color(0xFF22303F))),
+                btnOnInk = ink, btnBorder = Color(0xFF8FB4D8),
+                back = "Home", details = "Details", play = "Start",
+                paper = if (light) Color.White else Color(0xFF1A1F27)
+            )
+        }
+        // The Circuit board: an LCD panel, monospace, buttons as LCD keys.
+        HomeLayout.CIRCUIT -> {
+            val ink = if (Features.circuitColors.state.value == Features.CircuitColors.GREEN) Color(0xFF7CE0A0) else acc
+            val lcd = when (Features.circuitColors.state.value) {
+                Features.CircuitColors.THEME -> t.surface
+                Features.CircuitColors.GREEN -> Color(0xFF0D1410)
+                Features.CircuitColors.DARK -> Color(0xFF0E1013)
+            }
+            WinLook(
+                Arrange.SPLIT, Btn.LCD,
+                veil = solid(Color.Black.copy(alpha = 0.78f)),
+                panel = solid(lcd), frame = ink, frameW = 2.dp, corner = 6.dp, mediaCorner = 4.dp,
+                mediaFrame = ink.copy(alpha = 0.6f), mediaFrameW = 1.dp,
+                ink = Color.White, muted = Color.White.copy(alpha = 0.65f), accent = ink,
+                btnFill = solid(lcd), btnInk = Color.White.copy(alpha = 0.8f), btnOnFill = solid(ink.copy(alpha = 0.35f)), btnOnInk = Color.White,
+                btnBorder = ink.copy(alpha = 0.7f),
+                back = "BACK", details = "DETAILS", play = if (resumed) "CONTINUE" else "PLAY", mono = true, caps = true
+            )
+        }
+        // The Cross menu: no panel, a soft wave of colour, the choices as a list of words that glow.
+        HomeLayout.CROSS -> WinLook(
+            Arrange.LIST, Btn.TEXT,
+            veil = Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), acc.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.75f))),
+            panel = null, frame = null, frameW = 0.dp, corner = 0.dp, mediaCorner = 4.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = Color.White, muted = Color.White.copy(alpha = 0.7f), accent = Color.White,
+            btnFill = solid(Color.Transparent), btnInk = Color.White.copy(alpha = 0.6f), btnOnFill = solid(Color.Transparent), btnOnInk = Color.White, btnBorder = null,
+            back = "Back", details = "Information", play = if (resumed) "Continue game" else "Start game"
+        )
+        // The side menu: the choices in a column on the left of the picture.
+        HomeLayout.SIDE -> WinLook(
+            Arrange.LIST, Btn.ROUNDED,
+            veil = solid(Color.Black.copy(alpha = 0.7f)),
+            panel = solid(t.surface.copy(alpha = 0.96f)), frame = t.surfaceRaised, frameW = 1.dp, corner = 18.dp, mediaCorner = 12.dp,
+            mediaFrame = null, mediaFrameW = 0.dp,
+            ink = t.textPrimary, muted = ShelfTheme.textMuted, accent = acc,
+            btnFill = solid(t.surfaceRaised), btnInk = t.textPrimary, btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = null,
+            back = "Back", details = "Details", play = playWord
+        )
+        // Live tiles: flat, square, one solid colour.
+        HomeLayout.LIVE -> WinLook(
+            Arrange.SPLIT, Btn.SQUARE,
+            veil = solid(Color.Black.copy(alpha = 0.75f)),
+            panel = solid(acc), frame = null, frameW = 0.dp, corner = 0.dp, mediaCorner = 0.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            // (The accent is also drawn on the dark details paper, so on a light accent it's a mid grey that shows on both.)
+            ink = onAcc, muted = onAcc.copy(alpha = 0.78f), accent = if (lightAcc) Color(0xFF6A6A6A) else Color.White,
+            // Update 144: on a light accent the buttons are darker and the focused one is near-black with the
+            // accent's words, so neither is white on white. (White words stay readable on the dark details paper.)
+            // The unfocused ones are a solid mid grey there, not a see-through black: on the dark paper of the
+            // Options / Achievements pages that would be as black as the focused row, and you couldn't see the selection.
+            btnFill = solid(if (lightAcc) Color(0xFF5E5E5E) else Color.Black.copy(alpha = 0.22f)), btnInk = Color.White,
+            btnOnFill = solid(if (lightAcc) Color(0xFF111111) else Color.White), btnOnInk = acc, btnBorder = null,
+            back = "Back", details = "Details", play = if (resumed) "Continue" else "Play",
+            paper = Color(0xFF1D1D1D)
+        )
+        // The dashboard: a dark card with flat accent buttons.
+        HomeLayout.DASH -> WinLook(
+            Arrange.SPLIT, Btn.SQUARE,
+            veil = solid(Color.Black.copy(alpha = 0.72f)),
+            panel = Brush.verticalGradient(listOf(t.surfaceRaised, t.surface)), frame = null, frameW = 0.dp, corner = 6.dp, mediaCorner = 4.dp,
+            mediaFrame = null, mediaFrameW = 0.dp,
+            ink = t.textPrimary, muted = ShelfTheme.textMuted, accent = acc,
+            btnFill = solid(t.background.copy(alpha = 0.6f)), btnInk = t.textPrimary, btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = null,
+            back = "Back", details = "Details", play = playWord
+        )
+        // The grid: a rounded card — the game's disc / cartridge on top in the middle, then its name and story (update 119).
+        HomeLayout.GRID -> WinLook(
+            Arrange.SHOWCASE, Btn.ROUNDED,
+            veil = solid(Color.Black.copy(alpha = 0.66f)),
+            panel = solid(t.surface), frame = t.surfaceRaised, frameW = 1.dp, corner = 16.dp, mediaCorner = 10.dp,
+            mediaFrame = null, mediaFrameW = 0.dp,
+            ink = t.textPrimary, muted = ShelfTheme.textMuted, accent = acc,
+            btnFill = solid(t.surfaceRaised), btnInk = t.textPrimary, btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = null,
+            back = "Back", details = "Details", play = playWord
+        )
+        // The shelf: the box pulled out on a wooden board, the choices as wooden labels.
+        HomeLayout.SHELF -> WinLook(
+            Arrange.SPLIT, Btn.TAB,
+            veil = solid(Color(0xFF120B06).copy(alpha = 0.78f)),
+            panel = Brush.verticalGradient(listOf(Color(0xFF7A5232), Color(0xFF54351F))), frame = Color(0xFF24150B), frameW = 2.dp, corner = 8.dp,
+            mediaCorner = 3.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = Color(0xFFFFF3E2), muted = Color(0xFFFFE2BE).copy(alpha = 0.75f), accent = Color(0xFFFFD08A),
+            btnFill = Brush.verticalGradient(listOf(Color(0xFFB98757), Color(0xFF9C6D43))), btnInk = Color(0xFF2A1A0E),
+            btnOnFill = Brush.verticalGradient(listOf(Color(0xFFF2D3A6), Color(0xFFD9AE76))), btnOnInk = Color(0xFF2A1A0E), btnBorder = Color(0xFF24150B),
+            back = "Put back", details = "Read the back", play = playWord,
+            paper = Color(0xFF3A2516)
+        )
+        // Hero carousel: the picture fills the window, the name and big buttons over its foot.
+        HomeLayout.HERO -> WinLook(
+            Arrange.FULL, Btn.PILL,
+            veil = solid(Color.Black.copy(alpha = 0.8f)),
+            panel = solid(Color.Black), frame = null, frameW = 0.dp, corner = 14.dp, mediaCorner = 14.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = Color.White, muted = Color.White.copy(alpha = 0.75f), accent = acc,
+            btnFill = solid(Color.White.copy(alpha = 0.16f)), btnInk = Color.White, btnOnFill = solid(Color.White), btnOnInk = Color(0xFF111111), btnBorder = null,
+            back = "Back", details = "Details", play = "▶  $playWord",
+            paper = Color(0xFF14161B)
+        )
+        // The TV room: the picture on a TV with a thick bezel, round buttons like a remote's.
+        HomeLayout.TV -> WinLook(
+            Arrange.STACK, Btn.PILL,
+            veil = solid(Color(0xFF07080A).copy(alpha = 0.85f)),
+            panel = null, frame = null, frameW = 0.dp, corner = 16.dp, mediaCorner = 10.dp,
+            mediaFrame = Color(0xFF1B1C20), mediaFrameW = 14.dp,
+            ink = Color.White, muted = Color.White.copy(alpha = 0.7f), accent = acc,
+            btnFill = Brush.verticalGradient(listOf(Color(0xFF2E3036), Color(0xFF1A1B1F))), btnInk = Color.White,
+            btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = Color(0xFF45474F),
+            back = "Back", details = "Info", play = playWord
+        )
+        // Resume & discover and the hub: a glass card.
+        HomeLayout.RESUME, HomeLayout.HUB -> WinLook(
+            Arrange.STACK, Btn.ROUNDED,
+            veil = solid(Color.Black.copy(alpha = 0.7f)),
+            panel = Brush.verticalGradient(listOf(t.surfaceRaised.copy(alpha = 0.92f), t.surface.copy(alpha = 0.95f))), frame = Color.White.copy(alpha = 0.14f), frameW = 1.dp,
+            corner = 18.dp, mediaCorner = 12.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = t.textPrimary, muted = ShelfTheme.textMuted, accent = acc,
+            btnFill = solid(Color.White.copy(alpha = 0.08f)), btnInk = t.textPrimary, btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = null,
+            back = "Back", details = "Details", play = if (layout == HomeLayout.RESUME && resumed) "Resume" else playWord
+        )
+        // Spotlight and the icon bar: a light, rounded panel.
+        HomeLayout.SPOT, HomeLayout.BAR -> WinLook(
+            Arrange.STACK, Btn.PILL,
+            veil = solid(Color.Black.copy(alpha = 0.62f)),
+            panel = solid(Color(0xFFF2F3F5)), frame = null, frameW = 0.dp, corner = 20.dp, mediaCorner = 14.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = Color(0xFF1E2228), muted = Color(0xFF5E6672), accent = acc,
+            btnFill = solid(Color(0xFFE1E4E9)), btnInk = Color(0xFF1E2228), btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = null,
+            back = "Back", details = "Details", play = playWord,
+            paper = Color.White
+        )
+        // The Voltcap row (and anything else): the theme's own glass panel, round-ended buttons.
+        else -> WinLook(
+            Arrange.STACK, Btn.PILL,
+            veil = solid(Color.Black.copy(alpha = 0.68f)),
+            panel = Brush.verticalGradient(listOf(t.surfaceRaised.copy(alpha = 0.95f), t.surface.copy(alpha = 0.97f))), frame = acc.copy(alpha = 0.45f), frameW = 1.dp,
+            corner = 20.dp, mediaCorner = 14.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = t.textPrimary, muted = ShelfTheme.textMuted, accent = acc,
+            btnFill = solid(Color.White.copy(alpha = 0.08f)), btnInk = t.textPrimary, btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = acc.copy(alpha = 0.35f),
+            back = "Back", details = "Details", play = playWord
+        )
+    }
+}
+
+/**
+ * The game window for [layout]: [onPlay] starts [g], [onFullDetails] opens the big details window, [onClose] closes
+ * this one. Drawn in its own window over the main screen.
+ */
+@Composable
+internal fun GameWindow(
+    layout: HomeLayout,
+    g: Game,
+    state: LauncherUiState,
+    art: Map<String, GameArt>,
+    onClose: () -> Unit,
+    onPlay: () -> Unit,
+    onFullDetails: () -> Unit,
+    onNeedMedia: (Game) -> Unit,
+    onOptions: () -> Unit = {},
+    onAchievements: () -> Unit = {},
+    onSync: () -> Unit = {},
+    /** Update 125: the game's options, shown on the window's own page in its style (empty: [onOptions] opens the menu). */
+    options: List<WinOption> = emptyList(),
+    /** Update 132: loads an achievement's comments (the achievements page shows them under the one you open). */
+    onLoadComments: (Int) -> Unit = {}
+) {
+    val o = state.artOverrides[g.stableKey]
+    val a = art[g.stableKey]
+    val cover = o?.cover ?: a?.gridUrl
+    val wide = o?.wide ?: a?.wideGridUrl ?: o?.hero ?: a?.heroUrl ?: cover
+    val backdrop = com.shelf.launcher.data.ArtPick.backdrop(g, state.artOverrides, art, state.screenshots) ?: wide
+    val resumed = state.lastPlayedAt[g.stableKey] != null
+    // Update 119: in the game's colours (its cover's), the theme's, or the layout's own.
+    val colors = Features.gameWindowColors.state.value
+    val coverBmp = rememberSoftBitmap(if (colors == Features.WinColors.GAME) cover else null, 64)
+    val gameTint = rememberArtColor(coverBmp, ShelfTheme.accent)
+    val base = lookFor(layout, resumed)
+    val look = when (colors) {
+        Features.WinColors.LAYOUT -> base
+        Features.WinColors.THEME -> base.tinted(ShelfTheme.accent)
+        Features.WinColors.GAME -> base.tinted(if (coverBmp != null) gameTint else ShelfTheme.accent)
+    }
+    val plan = WinPlan.of(layout)
+    // The TV room: the window opens on the TV's own screen (update 119).
+    val hereView = LocalView.current
+    val hereDisplay = runCatching { hereView.display?.displayId }.getOrNull() ?: -1
+    val tvRect = if (layout == HomeLayout.TV && (TvScreen.displayId == hereDisplay || TvScreen.displayId < 0)) TvScreen.rect else null
+    // Where it grows from: the game's picture on the main screen, else (picked on the second screen) up from the
+    // bottom edge, else the middle.
+    val view = LocalView.current
+    val origin = remember(g.stableKey) {
+        val here = runCatching { view.display?.displayId }.getOrNull() ?: -1
+        if ((GameOrigin.key == g.stableKey || GameOrigin.key == GameOrigin.FOCUSED) && GameOrigin.rect != null) {
+            if (GameOrigin.displayId == here || GameOrigin.displayId < 0) GameOrigin.rect else Rect(0f, Float.MAX_VALUE, 0f, Float.MAX_VALUE)
+        } else null
+    }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onClose,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        ImmersiveDialogWindow()
+        val playFocus = remember { FocusRequester() }
+        // Update 122: always opens on Play / Continue. The window can take a moment to get the focus
+        // (from a touch, or picked on the second screen): ask again until something in it has the focus.
+        var focusInside by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            // (Update 125: the first three asks always go to Play — something else in the window, e.g. an icon, could
+            // take the focus first, and then Play was never picked.)
+            for ((n, wait) in longArrayOf(60, 140, 250, 400, 700).withIndex()) {
+                kotlinx.coroutines.delay(wait)
+                if (focusInside && n >= 3) break
+                runCatching { playFocus.requestFocus() }
+            }
+        }
+        // Update 129: the popup's own window can get the key focus only after those asks (opened with A, from the second
+        // screen, or a slow handheld) — then Play wasn't lit until another press. Ask once more the moment it gets it.
+        val windowInfo = androidx.compose.ui.platform.LocalWindowInfo.current
+        var askedOnFocus by remember { mutableStateOf(false) }
+        LaunchedEffect(windowInfo.isWindowFocused) {
+            if (windowInfo.isWindowFocused && !askedOnFocus) {
+                askedOnFocus = true
+                kotlinx.coroutines.delay(30)
+                runCatching { playFocus.requestFocus() }
+            }
+        }
+        LaunchedEffect(g.stableKey) { onNeedMedia(g) }
+        // Update 125: the picture, the details, the options and the achievements are pages of the same window.
+        var page by remember { mutableStateOf(WinPage.MAIN) }
+        val details = page != WinPage.MAIN
+        val listFocus = remember { FocusRequester() }
+        androidx.activity.compose.BackHandler(enabled = details) { page = WinPage.MAIN }
+        val hasTrophies = state.raAchievementDetails[g.stableKey].orEmpty().isNotEmpty()
+        val extras = WinExtras(
+            plan,
+            onOptions = { if (options.isNotEmpty()) page = WinPage.OPTIONS else onOptions() },
+            // (Update 127: on the Cross menu the achievements open as the menu's own column, CrossTrophies.kt.)
+            onAchievements = { if (hasTrophies && !crossTrophiesOn(layout)) page = WinPage.TROPHIES else onAchievements() },
+            onSync = onSync,
+            onFullAchievements = onAchievements,
+            onLoadComments = onLoadComments
+        )
+        // Turning the window over swaps the buttons: the D-pad's place goes back to Play (the button it was on may be gone),
+        // or to the first row of the options / achievements.
+        var turned by remember { mutableStateOf(false) }
+        LaunchedEffect(page) {
+            if (!turned) { turned = true; return@LaunchedEffect }
+            kotlinx.coroutines.delay(60)
+            if (page == WinPage.OPTIONS || page == WinPage.TROPHIES) {
+                if (runCatching { listFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
+            } else runCatching { playFocus.requestFocus() }
+        }
+        // The grow: 0 = drawn over the game it came from, 1 = in its place. Starts once the window's place is known.
+        val grow = remember { Animatable(0f) }
+        var target by remember { mutableStateOf<Rect?>(null) }
+        val anim = MotionPrefs.info() != Features.InfoAnim.NONE
+        LaunchedEffect(target != null) {
+            if (target == null) return@LaunchedEffect
+            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing))
+        }
+        if (tvRect != null) {
+            // On the TV: the room stays lit round it, the window fills the set's screen, switching on like an old TV.
+            LaunchedEffect(Unit) { if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing)) }
+            val d = androidx.compose.ui.platform.LocalDensity.current
+            BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).pointerInput(Unit) { detectTapGestures { onClose() } }) {
+                with(d) {
+                    // Update 125: the name and the buttons go under the set when there's room, so nothing covers the
+                    // game's picture (they sat over its lower half, over the faces); over its foot only when there isn't.
+                    val below = maxHeight - tvRect.bottom.toDp()
+                    val outside = below >= 74.dp
+                    Box(
+                        Modifier.offset(tvRect.left.toDp(), tvRect.top.toDp()).size(tvRect.width.toDp(), tvRect.height.toDp())
+                            .graphicsLayer { val k = grow.value; scaleY = 0.04f + 0.96f * k; scaleX = 0.6f + 0.4f * k; alpha = (k * 3f).coerceAtMost(1f) }
+                            .clip(RoundedCornerShape(10.dp)).background(Color.Black)
+                            .pointerInput(Unit) { detectTapGestures { } }
+                            .onFocusChanged { if (it.hasFocus) focusInside = true }
+                    ) {
+                        TvWindowBody(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options, controlsInside = !outside)
+                    }
+                    if (outside) Box(
+                        Modifier.offset(tvRect.left.toDp() - 6.dp, tvRect.bottom.toDp() + 8.dp).width(tvRect.width.toDp() + 12.dp)
+                            .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) }
+                            .clip(RoundedCornerShape(12.dp)).background(Color(0xFF15161A).copy(alpha = 0.94f))
+                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                            .pointerInput(Unit) { detectTapGestures { } }
+                            .onFocusChanged { if (it.hasFocus) focusInside = true }
+                            .padding(8.dp)
+                    ) {
+                        TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp)
+                    }
+                }
+            }
+        } else Box(
+            Modifier.fillMaxSize()
+                .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) }
+                .background(look.veil)
+                .pointerInput(Unit) { detectTapGestures { onClose() } },
+            contentAlignment = Alignment.Center
+        ) {
+            BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 14.dp), contentAlignment = Alignment.Center) {
+                val maxW = maxWidth
+                val maxH = maxHeight
+                Box(
+                    Modifier
+                        .onGloballyPositioned { if (target == null) target = it.boundsInWindow() }
+                        .graphicsLayer {
+                            val to = target
+                            val from = origin
+                            val k = grow.value
+                            if (to == null) { alpha = 0f; return@graphicsLayer }
+                            transformOrigin = TransformOrigin(0.5f, 0.5f)
+                            if (from == null || !anim) {
+                                val s = 0.86f + 0.14f * k
+                                scaleX = s; scaleY = s
+                            } else if (from.top == Float.MAX_VALUE) {
+                                // From the second screen: up from below the main screen's bottom edge.
+                                translationY = (1f - k) * (size.height * 0.9f + to.height)
+                                val s = 0.7f + 0.3f * k
+                                scaleX = s; scaleY = s
+                            } else {
+                                val s0x = (from.width / to.width).coerceIn(0.05f, 1f)
+                                val s0y = (from.height / to.height).coerceIn(0.05f, 1f)
+                                scaleX = s0x + (1f - s0x) * k
+                                scaleY = s0y + (1f - s0y) * k
+                                translationX = (from.center.x - to.center.x) * (1f - k)
+                                translationY = (from.center.y - to.center.y) * (1f - k)
+                            }
+                        }
+                        // Taps inside the window never close it.
+                        .pointerInput(Unit) { detectTapGestures { } }
+                        .onFocusChanged { if (it.hasFocus) focusInside = true }
+                ) {
+                    WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Update 119: what the window shows besides its picture and buttons, and the small buttons' actions. Update 125: where
+ * each part goes ([plan], this layout's own); the options and achievements turn the window to their page.
+ */
+private class WinExtras(
+    val plan: Map<WinPart, WinSlot>, val onOptions: () -> Unit, val onAchievements: () -> Unit, val onSync: () -> Unit,
+    /** The big achievement list (the button on the window's achievements page). */
+    val onFullAchievements: () -> Unit = onAchievements,
+    /** Update 132: loads an achievement's comments from RetroAchievements (shown under it on the achievements page). */
+    val onLoadComments: (Int) -> Unit = {}
+) {
+    fun has(p: WinPart) = (plan[p] ?: WinSlot.OFF) != WinSlot.OFF
+    fun at(p: WinPart, slot: WinSlot) = (plan[p] ?: WinSlot.OFF) == slot
+    /** Any of the text parts (facts, achievements, story) at [slot]. */
+    fun textAt(slot: WinSlot) = at(WinPart.FACTS, slot) || at(WinPart.ACHIEVEMENTS, slot) || at(WinPart.DESCRIPTION, slot)
+}
+
+/**
+ * Update 125: the window's buttons, Play / Continue always first (the D-pad starts on it), then the page's own: Details
+ * and Back on the picture; Full details and Back on the details; the full list and Back on the achievements; Back on
+ * the options.
+ */
+private fun winButtonItems(
+    look: WinLook, page: WinPage, setPage: (WinPage) -> Unit, onClose: () -> Unit, onPlay: () -> Unit,
+    onFullDetails: () -> Unit, extras: WinExtras
+): List<Triple<String, () -> Unit, Boolean>> {
+    val rest: List<Pair<String, () -> Unit>> = when (page) {
+        WinPage.MAIN -> listOf(look.details to { setPage(WinPage.DETAILS) }, look.back to onClose)
+        WinPage.DETAILS -> listOf("Full details" to onFullDetails, "Back" to { setPage(WinPage.MAIN) })
+        WinPage.TROPHIES -> listOf("Full list" to extras.onFullAchievements, "Back" to { setPage(WinPage.MAIN) })
+        WinPage.OPTIONS -> listOf("Back" to { setPage(WinPage.MAIN) })
+    }
+    return listOf(Triple(look.play, onPlay, true)) + rest.map { (l, f) -> Triple(l, f, false) }
+}
+
+/**
+ * The game's own disc / cartridge (its scan, else Voltcap's drawn one with its label), else its cover (update 119).
+ * Update 122: a disc game shows its case with the disc half out of it by default (Home › Game window › Case with the disc).
+ */
+@Composable
+private fun WinGameMedia(g: Game, state: LauncherUiState, cover: String?, modifier: Modifier) {
+    val physical = state.physicalMedia[g.stableKey]
+    val pick = mediaFor(g.platform)
+    // Update 128: on your cartridge pack (Cartridges look) it's that cartridge, never its disc case or a disc scan.
+    val custom = pick?.platform?.let { it.startsWith(CUSTOM_CART) || it.startsWith(MODEL_3D) } == true
+    val realScan = physical?.firstOrNull { it.first == "Disc / cartridge" }?.second?.takeIf { !custom }
+    val tpl = MediaTemplates.of(g.platform)
+    val caseOn = Features.gameWindowCase.state.value && tpl?.disc != null && tpl.box != null && pick != null && !custom
+    Box(modifier, contentAlignment = Alignment.Center) {
+        when {
+            caseOn -> {
+                val label = physical?.firstOrNull { it.first == "Disc label" }?.second
+                val caseScan = BoxTexture.caseScan(physical, g.platform)
+                val (front, frontIsBox) = boxFront(tpl!!.box!!, cover, caseScan)
+                DiscInCase(
+                    tpl, front, frontIsBox, label ?: cover, Modifier.fillMaxSize(),
+                    realDisc = realScan.takeIf { !mediaShellsOn }, platform = g.platform
+                )
+            }
+            pick != null && !mediaShellsOn && realScan != null ->
+                AsyncImage(realScan, g.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+            pick != null -> {
+                val label = physical?.firstOrNull { it.first == "Disc label" }?.second
+                MediaFocus(true) { PhysicalMedia(pick.shell, label ?: cover, Modifier.fillMaxSize(), platform = pick.platform, labelIsScan = label != null, caseCover = cover, title = g.name) }
+            }
+            cover != null -> AsyncImage(cover, g.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)))
+        }
+    }
+}
+
+/** Whether [platform]'s game shows as a case with its disc (a disc console with a case template). */
+private fun discCaseFits(platform: String): Boolean = MediaTemplates.of(platform).let { it?.disc != null && it.box != null } &&
+    mediaFor(platform).let { it != null && !it.platform.startsWith(CUSTOM_CART) && !it.platform.startsWith(MODEL_3D) }
+
+/** Facts, achievements and the story, as chosen (update 119). [descLines]: 0 = no story. */
+@Composable
+private fun WinInfo(
+    look: WinLook, g: Game, state: LauncherUiState, extras: WinExtras, descLines: Int, ink: Color = look.ink, muted: Color = look.muted, center: Boolean = false,
+    /** Update 125: only the parts placed here. */
+    slot: WinSlot = WinSlot.INFO
+) {
+    val titles = LocalTitleOptions.current
+    val meta = state.metadata[g.stableKey]
+    val align = if (center) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start
+    val family = if (look.mono) FontFamily.Monospace else null
+    Column(horizontalAlignment = if (center) Alignment.CenterHorizontally else Alignment.Start) {
+        if (extras.at(WinPart.FACTS, slot)) {
+            val facts = listOfNotNull(
+                meta?.releaseYear?.toString(), meta?.developer, meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() },
+                state.lastPlayedAt[g.stableKey]?.let { "Last played " + lastPlayedLabel(it) }
+            )
+            if (facts.isNotEmpty()) androidx.compose.material3.Text(
+                // (Update 129: two lines, so the year, maker, genres and last played aren't cut off with "…".)
+                facts.joinToString("  ·  ").let { if (look.caps) it.uppercase() else it }, color = muted, fontSize = 12.sp, maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = align, fontFamily = family
+            )
+        }
+        if (extras.at(WinPart.ACHIEVEMENTS, slot)) {
+            val list = state.raAchievementDetails[g.stableKey].orEmpty()
+            val p = state.raProgress[g.stableKey]
+            val total = if (list.isNotEmpty()) list.size else p?.NumPossibleAchievements ?: 0
+            val earned = if (list.isNotEmpty()) list.count { it.isUnlocked } else p?.NumAchieved ?: 0
+            if (total > 0) {
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.EmojiEvents, null, tint = look.accent, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(5.dp))
+                    androidx.compose.material3.Text(
+                        (if (look.caps) "ACHIEVEMENTS" else "Achievements") + " $earned / $total", color = ink, fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold, maxLines = 1, fontFamily = family
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.width(70.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(ink.copy(alpha = 0.2f))) {
+                        Box(Modifier.fillMaxWidth((earned.toFloat() / total).coerceIn(0f, 1f)).fillMaxHeight().background(look.accent))
+                    }
+                }
+            }
+        }
+        val summary = meta?.summary?.takeIf { it.isNotBlank() }
+        if (descLines > 0 && extras.at(WinPart.DESCRIPTION, slot) && summary != null) {
+            Spacer(Modifier.height(6.dp))
+            androidx.compose.material3.Text(
+                summary, color = ink.copy(alpha = 0.88f), fontSize = 12.sp, lineHeight = 16.sp, maxLines = descLines,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = align, fontFamily = family
+            )
+        }
+    }
+}
+
+/** A small round button in the window's style: the game's options, its achievements, its save sync (update 119). */
+@Composable
+private fun WinIconButton(look: WinLook, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, size: Dp, onClick: () -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    val focused by source.collectIsFocusedAsState()
+    val sounds = LocalUiSounds.current
+    LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
+    val shape: Shape = when (look.btn) { Btn.SQUARE -> RoundedCornerShape(0.dp); Btn.LCD -> RoundedCornerShape(6.dp); else -> CircleShape }
+    Box(
+        Modifier.size(size)
+            .graphicsLayer { val k = if (focused) 1.08f else 1f; scaleX = k; scaleY = k }
+            .clip(shape)
+            .background(if (focused) look.btnOnFill else if (look.btn == Btn.TEXT) solid(Color.White.copy(alpha = 0.1f)) else look.btnFill)
+            .then(if (look.btnBorder != null) Modifier.border(if (focused) 2.dp else 1.dp, if (focused) look.accent else look.btnBorder, shape) else Modifier)
+            .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        androidx.compose.material3.Icon(icon, label, tint = if (focused) look.btnOnInk else look.btnInk, modifier = Modifier.size(size * 0.5f))
+    }
+}
+
+@Composable
+private fun WinIcons(look: WinLook, extras: WinExtras, size: Dp = 40.dp, slot: WinSlot = WinSlot.INFO) {
+    if (!extras.at(WinPart.ICONS, slot)) return
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Settings, "Game options", size, extras.onOptions)
+        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.EmojiEvents, "Achievements", size, extras.onAchievements)
+        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.CloudSync, "Save sync", size, extras.onSync)
+    }
+}
+
+/**
+ * Update 119: the window on the TV room's set — the picture fills the screen. Update 125: the name and the buttons sit
+ * under the set ([TvControls]) unless there's no room there ([controlsInside]: then over the picture's foot, as before).
+ */
+@Composable
+private fun TvWindowBody(
+    look: WinLook, g: Game, state: LauncherUiState, backdrop: String?, cover: String?, page: WinPage, setPage: (WinPage) -> Unit,
+    playFocus: FocusRequester, listFocus: FocusRequester, onClose: () -> Unit, onPlay: () -> Unit, onFullDetails: () -> Unit,
+    extras: WinExtras, options: List<WinOption>, controlsInside: Boolean
+) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val roomy = maxWidth > 380.dp
+        when (page) {
+            WinPage.MAIN -> {
+                if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                val video = state.videoUrls[g.stableKey]
+                if (video != null) androidx.compose.runtime.key(video) { VideoBackdrop(video, state.appearance.videoSound, Modifier.fillMaxSize()) }
+                if (controlsInside) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.88f)))))
+                WinPicturePart(look, g, state, cover, extras, Modifier.fillMaxSize(), nameShown = false)
+            }
+            WinPage.DETAILS -> WindowDetails(look, g, state, cover, Modifier.fillMaxSize())
+            WinPage.OPTIONS -> WindowOptions(look, options, listFocus, Modifier.fillMaxSize())
+            WinPage.TROPHIES -> WindowTrophies(look, g, state, listFocus, Modifier.fillMaxSize(), extras.onLoadComments)
+        }
+        if (controlsInside) Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(10.dp)) {
+            TvControls(look, g, page, setPage, playFocus, onClose, onPlay, onFullDetails, extras, roomy)
+        }
+        // The old set's glass: faint scanlines over everything.
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            var y = 0f
+            val step = 3.dp.toPx()
+            while (y < size.height) { drawRect(Color.Black.copy(alpha = 0.12f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Size(size.width, 1f)); y += step }
+        }
+    }
+}
+
+/** Update 125: the TV window's name and buttons (Play first), under the set or over the picture's foot. */
+@Composable
+private fun TvControls(
+    look: WinLook, g: Game, page: WinPage, setPage: (WinPage) -> Unit, playFocus: FocusRequester, onClose: () -> Unit,
+    onPlay: () -> Unit, onFullDetails: () -> Unit, extras: WinExtras, roomy: Boolean
+) {
+    val titles = LocalTitleOptions.current
+    Column(Modifier.fillMaxWidth()) {
+        if (page == WinPage.MAIN) {
+            WinText(look, titles.display(g.name), Color.White, 17, FontWeight.Bold, shadow = true)
+            Spacer(Modifier.height(6.dp))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras).forEach { (l, f, isPlay) ->
+                WinButton(
+                    look, if (look.caps) l.uppercase() else l,
+                    Modifier.weight(1f).then(if (isPlay) Modifier.focusRequester(playFocus) else Modifier),
+                    wideButton = false, stretch = true, compact = true, onClick = f
+                )
+            }
+            // (The small buttons only when there's room for them.)
+            if (roomy && page == WinPage.MAIN) {
+                WinIcons(look, extras, 32.dp)
+                WinIcons(look, extras, 32.dp, WinSlot.BOTTOM)
+            }
+        }
+    }
+}
+
+/**
+ * Update 125: the parts placed "On the picture": the disc / cartridge in its lower right corner, the facts,
+ * achievements and story in its lower left (under the name when [nameShown]), the small buttons in its top right.
+ */
+@Composable
+private fun WinPicturePart(look: WinLook, g: Game, state: LauncherUiState, cover: String?, extras: WinExtras, modifier: Modifier, nameShown: Boolean, showcase: Boolean = false) {
+    Box(modifier) {
+        if (!showcase && extras.at(WinPart.MEDIA, WinSlot.PICTURE) && mediaFor(g.platform) != null) WinGameMedia(
+            g, state, cover, Modifier.align(Alignment.BottomEnd).padding(10.dp).fillMaxHeight(0.46f)
+                .aspectRatio(if (Features.gameWindowCase.state.value && discCaseFits(g.platform)) 1.35f else 1f)
+        )
+        if (extras.textAt(WinSlot.PICTURE)) {
+            if (!nameShown) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.6f)))))
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(0.62f).padding(start = 14.dp, end = 14.dp, bottom = if (nameShown) 64.dp else 12.dp)) {
+                WinInfo(look, g, state, extras, descLines = 2, ink = Color.White, muted = Color.White.copy(alpha = 0.82f), slot = WinSlot.PICTURE)
+            }
+        }
+        if (extras.at(WinPart.ICONS, WinSlot.PICTURE)) Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) {
+            WinIcons(look, extras, 36.dp, WinSlot.PICTURE)
+        }
+    }
+}
+
+/** Update 125: the parts placed "Under the buttons". */
+@Composable
+private fun WinBottomPart(look: WinLook, g: Game, state: LauncherUiState, cover: String?, extras: WinExtras, width: Dp?, center: Boolean = false) {
+    val media = extras.at(WinPart.MEDIA, WinSlot.BOTTOM) && mediaFor(g.platform) != null
+    val text = extras.textAt(WinSlot.BOTTOM)
+    val icons = extras.at(WinPart.ICONS, WinSlot.BOTTOM)
+    if (!media && !text && !icons) return
+    Spacer(Modifier.height(10.dp))
+    Row((if (width != null) Modifier.width(width) else Modifier.fillMaxWidth()), verticalAlignment = Alignment.CenterVertically) {
+        if (media) {
+            WinGameMedia(g, state, cover, Modifier.height(70.dp).aspectRatio(if (Features.gameWindowCase.state.value && discCaseFits(g.platform)) 1.35f else 1f))
+            Spacer(Modifier.width(10.dp))
+        }
+        if (text) Box(Modifier.weight(1f)) { WinInfo(look, g, state, extras, descLines = 2, center = center && !media, slot = WinSlot.BOTTOM) }
+        else Spacer(Modifier.weight(1f))
+        if (icons) { Spacer(Modifier.width(8.dp)); WinIcons(look, extras, 38.dp, WinSlot.BOTTOM) }
+    }
+}
+
+@Composable
+private fun WindowBody(
+    look: WinLook, g: Game, state: LauncherUiState, cover: String?, wide: String?, backdrop: String?,
+    page: WinPage, setPage: (WinPage) -> Unit, maxW: Dp, maxH: Dp, playFocus: FocusRequester, listFocus: FocusRequester,
+    onClose: () -> Unit, onPlay: () -> Unit, onFullDetails: () -> Unit, extras: WinExtras, options: List<WinOption>
+) {
+    val details = page != WinPage.MAIN
+    val panelShape = RoundedCornerShape(look.corner)
+    val panelMod = Modifier
+        .then(if (look.panel != null) Modifier.clip(panelShape).background(look.panel) else Modifier)
+        .then(if (look.frame != null && look.frameW > 0.dp) Modifier.border(look.frameW, look.frame, panelShape) else Modifier)
+        .padding(if (look.panel != null) 14.dp else 0.dp)
+    val titles = LocalTitleOptions.current
+    val name = titles.display(g.name)
+    val sub = listOfNotNull(titles.console(g.platform), state.playtime[g.stableKey]?.takeIf { it > 0L }?.let { stylePlaytime(it) }).joinToString("  ·  ")
+    // The buttons: Play / Continue first (update 125), then the page's own.
+    @Composable
+    fun Buttons(vertical: Boolean, fill: Boolean = false) {
+        val all = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras)
+        if (vertical) Column(verticalArrangement = Arrangement.spacedBy(if (look.btn == Btn.TEXT) 4.dp else 10.dp)) {
+            all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, if (isPlay) Modifier.focusRequester(playFocus) else Modifier, wideButton = true, onClick = f) }
+            // (Update 119: the game's options, achievements and save sync under them.)
+            if (!details) WinIcons(look, extras)
+        } else Row(if (fill) Modifier.fillMaxWidth() else Modifier, horizontalArrangement = Arrangement.spacedBy(if (fill) 8.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            // [fill]: the buttons share the width (a narrow column).
+            all.forEach { (l, f, isPlay) ->
+                WinButton(
+                    look, if (look.caps) l.uppercase() else l,
+                    (if (fill) Modifier.weight(1f) else Modifier).then(if (isPlay) Modifier.focusRequester(playFocus) else Modifier),
+                    wideButton = false, stretch = fill, onClick = f
+                )
+            }
+            if (!details) WinIcons(look, extras, if (fill) 38.dp else 44.dp)
+        }
+    }
+    @Composable
+    fun Media(m: Modifier, showName: Boolean) {
+        val shape = RoundedCornerShape(look.mediaCorner)
+        val framed = look.mediaFrame != null && look.mediaFrameW > 0.dp
+        Box(
+            m.then(if (framed) Modifier.clip(RoundedCornerShape(look.mediaCorner + look.mediaFrameW)).background(look.mediaFrame!!).padding(look.mediaFrameW) else Modifier)
+                .clip(shape).background(if (details) (look.paper ?: Color.Black) else Color.Black)
+                // A tap on the picture turns it over (picture ⇄ details); the options and achievements pages take their own taps.
+                .then(
+                    if (page == WinPage.MAIN || page == WinPage.DETAILS)
+                        Modifier.pointerInput(page) { detectTapGestures { setPage(if (page == WinPage.MAIN) WinPage.DETAILS else WinPage.MAIN) } }
+                    else Modifier
+                )
+        ) {
+            AnimatedContent(
+                targetState = page, label = "gameWindowPage",
+                transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) }
+            ) { pg ->
+                when (pg) {
+                    WinPage.MAIN -> Box(Modifier.fillMaxSize()) {
+                        if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        val video = state.videoUrls[g.stableKey]
+                        if (video != null) androidx.compose.runtime.key(video) { VideoBackdrop(video, state.appearance.videoSound, Modifier.fillMaxSize()) }
+                        if (showName) {
+                            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.72f)))))
+                            Column(Modifier.align(Alignment.BottomStart).padding(16.dp)) {
+                                WinText(look, name, Color.White, 22, FontWeight.Bold, shadow = true)
+                                if (sub.isNotBlank()) WinText(look, sub, Color.White.copy(alpha = 0.85f), 13, FontWeight.Normal, shadow = true)
+                            }
+                        }
+                        // Update 119 / 125: what's placed on the picture (the Grid's window has its disc on top instead).
+                        WinPicturePart(look, g, state, cover, extras, Modifier.fillMaxSize(), nameShown = showName, showcase = look.arrange == Arrange.SHOWCASE)
+                    }
+                    WinPage.DETAILS -> WindowDetails(look, g, state, cover, Modifier.fillMaxSize())
+                    WinPage.OPTIONS -> WindowOptions(look, options, listFocus, Modifier.fillMaxSize())
+                    WinPage.TROPHIES -> WindowTrophies(look, g, state, listFocus, Modifier.fillMaxSize(), extras.onLoadComments)
+                }
+            }
+        }
+    }
+    when (look.arrange) {
+        // The picture (16:9) on top, the buttons under it.
+        Arrange.STACK -> {
+            // (Update 119: facts, achievements and two lines of the story under the picture, when chosen and there's room.)
+            val info = extras.textAt(WinSlot.INFO) && maxH > 300.dp
+            val bottom = (extras.textAt(WinSlot.BOTTOM) || extras.at(WinPart.MEDIA, WinSlot.BOTTOM) || extras.at(WinPart.ICONS, WinSlot.BOTTOM)) && !details
+            val btnRoom = 76.dp + (if (info) 74.dp else 0.dp) + (if (bottom) 82.dp else 0.dp)
+            val inner = (maxW - (if (look.panel != null) 28.dp else 0.dp)).coerceAtLeast(120.dp)
+            val screenW = minOf(inner, (maxH - btnRoom - (if (look.panel != null) 28.dp else 0.dp)) * 1.78f).coerceAtLeast(120.dp)
+            Column(panelMod, horizontalAlignment = Alignment.CenterHorizontally) {
+                Media(Modifier.width(screenW).height(screenW / 1.78f), showName = true)
+                if (info && !details) {
+                    Spacer(Modifier.height(8.dp))
+                    Box(Modifier.width(screenW)) { WinInfo(look, g, state, extras, descLines = 2) }
+                }
+                Spacer(Modifier.height(14.dp))
+                Buttons(vertical = false)
+                if (!details) WinBottomPart(look, g, state, cover, extras, screenW)
+            }
+        }
+        // Update 119 (the Grid): the game's disc / cartridge on top in the middle, its name, facts and story under it.
+        Arrange.SHOWCASE -> {
+            val w = minOf(maxW, 560.dp)
+            val h = minOf(maxH, w * 1.05f)
+            Column(panelMod.width(w).heightIn(max = h), horizontalAlignment = Alignment.CenterHorizontally) {
+                if (!details) {
+                    if (extras.at(WinPart.MEDIA, WinSlot.PICTURE) || extras.at(WinPart.MEDIA, WinSlot.INFO)) {
+                        WinGameMedia(g, state, cover, Modifier.fillMaxWidth().height((h * 0.36f).coerceIn(90.dp, 220.dp)))
+                        Spacer(Modifier.height(10.dp))
+                    } else {
+                        Media(Modifier.fillMaxWidth().height((h * 0.36f).coerceIn(90.dp, 220.dp)), showName = false)
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    WinText(look, name, look.ink, 22, FontWeight.Bold)
+                    if (sub.isNotBlank()) WinText(look, sub, look.muted, 13, FontWeight.Normal)
+                    Spacer(Modifier.height(6.dp))
+                    Box(Modifier.fillMaxWidth().weight(1f, fill = false)) { WinInfo(look, g, state, extras, descLines = if (h > 380.dp) 5 else 3, center = true) }
+                } else Media(Modifier.fillMaxWidth().height((h * 0.62f).coerceAtLeast(140.dp)), showName = false)
+                Spacer(Modifier.height(12.dp))
+                Buttons(vertical = false, fill = true)
+                if (!details) WinBottomPart(look, g, state, cover, extras, null, center = true)
+            }
+        }
+        // The picture fills the window; the name and the buttons over its foot.
+        Arrange.FULL -> {
+            val w = minOf(maxW, maxH * 1.78f)
+            Box(panelMod.width(w).height(w / 1.78f).clip(RoundedCornerShape(look.corner))) {
+                Media(Modifier.fillMaxSize(), showName = false)
+                if (!details) {
+                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.25f), Color.Black.copy(alpha = 0.85f)))))
+                    Column(Modifier.align(Alignment.BottomStart).padding(22.dp)) {
+                        WinText(look, name, Color.White, 28, FontWeight.Bold, shadow = true)
+                        if (sub.isNotBlank()) WinText(look, sub, Color.White.copy(alpha = 0.85f), 14, FontWeight.Normal, shadow = true)
+                        Spacer(Modifier.height(6.dp))
+                        Box(Modifier.fillMaxWidth(0.7f)) { WinInfo(look, g, state, extras, descLines = 2, ink = Color.White, muted = Color.White.copy(alpha = 0.8f)) }
+                        Spacer(Modifier.height(14.dp))
+                        Buttons(vertical = false)
+                        Box(Modifier.fillMaxWidth(0.7f)) { WinBottomPart(look, g, state, cover, extras, null) }
+                    }
+                } else Box(Modifier.align(Alignment.BottomEnd).padding(14.dp)) { Buttons(vertical = false) }
+            }
+        }
+        // The cover (or the game's look) on the left, its facts and the buttons on the right.
+        Arrange.SPLIT -> {
+            val h = minOf(maxH, maxW * 0.56f).coerceAtLeast(160.dp)
+            Row(panelMod.width(minOf(maxW, h * 1.9f)).height(h), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(look.mediaCorner)).background(placeholderBrush(g.hue))) {
+                    if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f).fillMaxHeight()) {
+                    WinText(look, name, look.ink, 22, FontWeight.Bold)
+                    if (sub.isNotBlank()) WinText(look, sub, look.muted, 13, FontWeight.Normal)
+                    if (!details) { Spacer(Modifier.height(4.dp)); WinInfo(look, g, state, extras, descLines = if (h > 300.dp) 2 else 0) }
+                    Spacer(Modifier.height(10.dp))
+                    Media(Modifier.fillMaxWidth().weight(1f), showName = false)
+                    Spacer(Modifier.height(12.dp))
+                    Buttons(vertical = false, fill = true)
+                    if (!details) WinBottomPart(look, g, state, cover, extras, null)
+                }
+            }
+        }
+        // A column of choices beside the picture.
+        Arrange.LIST -> {
+            val h = minOf(maxH, maxW * 0.5f).coerceAtLeast(160.dp)
+            Row(panelMod.width(minOf(maxW, h * 2.2f)).height(h), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.width(220.dp).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
+                    WinText(look, name, look.ink, 20, FontWeight.Bold)
+                    if (sub.isNotBlank()) WinText(look, sub, look.muted, 12, FontWeight.Normal)
+                    if (!details) { Spacer(Modifier.height(4.dp)); WinInfo(look, g, state, extras, descLines = 0) }
+                    Spacer(Modifier.height(16.dp))
+                    Buttons(vertical = true)
+                    if (!details) WinBottomPart(look, g, state, cover, extras, null)
+                }
+                Spacer(Modifier.width(18.dp))
+                Media(Modifier.weight(1f).fillMaxHeight(), showName = false)
+            }
+        }
+    }
+}
+
+/** Update 125: one row of the window's own lists (options, achievements), in its colours and button shape. */
+@Composable
+private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable androidx.compose.foundation.layout.RowScope.(Boolean) -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    val focused by source.collectIsFocusedAsState()
+    val sounds = LocalUiSounds.current
+    LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
+    val shape: Shape = when (look.btn) {
+        Btn.PILL -> RoundedCornerShape(14.dp)
+        Btn.ROUNDED -> RoundedCornerShape(10.dp)
+        Btn.SQUARE -> RoundedCornerShape(0.dp)
+        Btn.LCD -> RoundedCornerShape(6.dp)
+        Btn.TEXT -> RoundedCornerShape(4.dp)
+        Btn.TAB -> RoundedCornerShape(topStart = 4.dp, topEnd = 12.dp, bottomEnd = 4.dp, bottomStart = 4.dp)
+    }
+    Row(
+        modifier.fillMaxWidth().heightIn(min = 44.dp)
+            .clip(shape)
+            .background(if (focused) look.btnOnFill else if (look.btn == Btn.TEXT) solid(Color.Transparent) else look.btnFill)
+            .then(if (look.btnBorder != null) Modifier.border(if (focused) 2.dp else 1.dp, if (focused) look.accent else look.btnBorder, shape) else Modifier)
+            .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() }
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) { content(focused) }
+}
+
+/** Update 125: the game's options as a page of the window (they used to open a separate menu over it). */
+@Composable
+private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: FocusRequester, modifier: Modifier) {
+    val paper = look.paper ?: Color(0xFF15181E)
+    Column(
+        modifier.background(paper).verticalScroll(rememberScrollState()).padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        options.forEachIndexed { i, opt ->
+            WinRow(look, if (i == 0) Modifier.focusRequester(listFocus) else Modifier, onClick = opt.onClick) { on ->
+                Column(Modifier.weight(1f)) {
+                    val ink = when {
+                        on -> look.btnOnInk
+                        opt.destructive -> Color(0xFFFF8A80)
+                        else -> look.btnInk
+                    }
+                    androidx.compose.material3.Text(
+                        if (look.caps) opt.label.uppercase() else opt.label, color = ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
+                    )
+                    opt.sub?.let {
+                        androidx.compose.material3.Text(
+                            it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private val LockedGrey = androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) })
+
+/**
+ * Update 125: the game's achievements as a page of the window, in its style: how many you have, then each one —
+ * earned in colour, still to get in grey.
+ * Update 132: the first row is the order (A steps through Set order, Still to get first, Earned first, Latest earned
+ * first, Most points first, Rarest first; it stays for every game), and A on an achievement opens it under itself: all
+ * of what it asks, when you earned it, how many players have it, and the comments people left on RetroAchievements.
+ */
+@Composable
+private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listFocus: FocusRequester, modifier: Modifier, onLoadComments: (Int) -> Unit = {}) {
+    val paper = look.paper ?: Color(0xFF15181E)
+    val light = (paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f
+    val ink = if (light) Color(0xFF2E3640) else Color.White
+    val order = Features.winTrophyOrder.state.value
+    val details = state.raAchievementDetails[g.stableKey]
+    val list = remember(details, order) { trophyOrder(details.orEmpty(), order) }
+    val earned = list.count { it.isUnlocked }
+    var openId by remember(g.stableKey) { mutableStateOf<Int?>(null) }
+    Column(modifier.background(paper).padding(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.EmojiEvents, null, tint = look.accent, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            androidx.compose.material3.Text(
+                (if (look.caps) "ACHIEVEMENTS" else "Achievements") + "  $earned / ${list.size}", color = ink, fontSize = 15.sp,
+                fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null
+            )
+            Spacer(Modifier.width(10.dp))
+            Box(Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.18f))) {
+                Box(Modifier.fillMaxWidth(if (list.isEmpty()) 0f else earned.toFloat() / list.size).fillMaxHeight().background(look.accent))
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            // The order: A steps to the next one.
+            WinRow(look, Modifier.focusRequester(listFocus), onClick = {
+                val all = Features.TrophyOrder.values()
+                Features.winTrophyOrder.value = all[(order.ordinal + 1) % all.size]
+            }) { on ->
+                val rowInk = if (on) look.btnOnInk else look.btnInk
+                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.SwapVert, null, tint = rowInk, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(10.dp))
+                androidx.compose.material3.Text(
+                    (if (look.caps) "ORDER: " + order.label.uppercase() else "Order: " + order.label), color = rowInk, fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
+                )
+                androidx.compose.material3.Text("A: next", color = rowInk.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1)
+            }
+            list.forEach { a ->
+                androidx.compose.runtime.key(a.id) {
+                    val opened = openId == a.id
+                    WinRow(look, onClick = {
+                        openId = if (opened) null else a.id
+                        if (!opened) onLoadComments(a.id)
+                    }) { on ->
+                        val rowInk = if (on) look.btnOnInk else look.btnInk
+                        AsyncImage(
+                            com.shelf.launcher.data.RaBadges.url(a.badgeName), a.title, contentScale = ContentScale.Crop,
+                            colorFilter = if (a.isUnlocked) null else LockedGrey, alpha = if (a.isUnlocked) 1f else 0.55f,
+                            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(6.dp))
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            androidx.compose.material3.Text(
+                                a.title ?: "Achievement", color = rowInk.copy(alpha = if (a.isUnlocked) 1f else 0.62f), fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                fontFamily = if (look.mono) FontFamily.Monospace else null
+                            )
+                            a.description?.let {
+                                androidx.compose.material3.Text(
+                                    it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, maxLines = if (opened) 6 else 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                        a.points?.let {
+                            Spacer(Modifier.width(8.dp))
+                            androidx.compose.material3.Text("$it", color = rowInk.copy(alpha = if (a.isUnlocked) 0.9f else 0.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    if (opened) TrophyMore(look, ink, a, state.raComments[a.id], a.id in state.raCommentsLoading)
+                }
+            }
+        }
+    }
+}
+
+/** Update 132: the achievements page's order ([Features.TrophyOrder]); ties keep the set's own order. */
+private fun trophyOrder(all: List<com.shelf.launcher.data.RaAchievementDetail>, order: Features.TrophyOrder): List<com.shelf.launcher.data.RaAchievementDetail> {
+    val set = all.sortedWith(com.shelf.launcher.data.RA_DISPLAY_ORDER)
+    fun earnedAt(a: com.shelf.launcher.data.RaAchievementDetail) = a.dateEarnedHardcore ?: a.dateEarned ?: ""
+    return when (order) {
+        Features.TrophyOrder.SET -> set
+        Features.TrophyOrder.TO_GET -> set.sortedBy { it.isUnlocked }
+        Features.TrophyOrder.EARNED -> set.sortedBy { !it.isUnlocked }
+        Features.TrophyOrder.LATEST -> set.filter { it.isUnlocked }.sortedByDescending { earnedAt(it) } + set.filter { !it.isUnlocked }
+        Features.TrophyOrder.POINTS -> set.sortedByDescending { it.points ?: 0 }
+        Features.TrophyOrder.RARE -> set.sortedBy { it.unlockPercent ?: 101f }
+    }
+}
+
+/** Update 132: under an opened achievement — when you earned it, how rare it is, and the comments people left. */
+@Composable
+private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaAchievementDetail, comments: List<com.shelf.launcher.data.RaComment>?, loading: Boolean) {
+    Column(
+        Modifier.fillMaxWidth().padding(start = 18.dp, end = 6.dp, bottom = 4.dp)
+            .clip(RoundedCornerShape(8.dp)).background(ink.copy(alpha = 0.07f)).padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        val facts = buildList {
+            (a.dateEarnedHardcore ?: a.dateEarned)?.let { add("Earned " + it.take(10) + if (a.dateEarnedHardcore != null) " (hardcore)" else "") }
+            a.unlockPercent?.let { add("%.1f %% of players have it".format(it)) }
+            if (a.isMissable) add("Missable")
+        }
+        if (facts.isNotEmpty()) androidx.compose.material3.Text(facts.joinToString("  ·  "), color = look.accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        androidx.compose.material3.Text(if (look.caps) "COMMENTS" else "Comments", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        when {
+            comments == null && loading -> androidx.compose.material3.Text("Loading comments…", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
+            comments == null -> androidx.compose.material3.Text("Couldn't load the comments (no connection?). Close it and open it again to try again.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
+            comments.isEmpty() -> androidx.compose.material3.Text("No comments yet.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
+            else -> comments.take(8).forEach { cm ->
+                Column {
+                    androidx.compose.material3.Text(
+                        (cm.User ?: "Player") + (cm.Submitted?.let { "  ·  " + it.take(10) } ?: ""),
+                        color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1
+                    )
+                    androidx.compose.material3.Text(cm.CommentText.orEmpty().trim(), color = ink, fontSize = 11.sp, maxLines = 6, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WinText(look: WinLook, text: String, color: Color, size: Int, weight: FontWeight, shadow: Boolean = false) {
+    androidx.compose.material3.Text(
+        if (look.caps) text.uppercase() else text, color = color, fontSize = size.sp, fontWeight = weight, maxLines = 1,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        fontFamily = if (look.mono) FontFamily.Monospace else null,
+        style = if (shadow) nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW) else androidx.compose.ui.text.TextStyle.Default
+    )
+}
+
+/** One of the window's buttons, drawn in the layout's own way; the one the D-pad is on takes the "on" colours. */
+@Composable
+private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButton: Boolean, stretch: Boolean = false, compact: Boolean = false, onClick: () -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    val focused by source.collectIsFocusedAsState()
+    val sounds = LocalUiSounds.current
+    LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
+    val shape: Shape = when (look.btn) {
+        Btn.PILL -> RoundedCornerShape(50)
+        Btn.ROUNDED -> RoundedCornerShape(10.dp)
+        Btn.SQUARE -> RoundedCornerShape(0.dp)
+        Btn.LCD -> RoundedCornerShape(6.dp)
+        Btn.TEXT -> RoundedCornerShape(4.dp)
+        Btn.TAB -> RoundedCornerShape(topStart = 4.dp, topEnd = 14.dp, bottomEnd = 4.dp, bottomStart = 4.dp)
+    }
+    val w = when {
+        look.btn == Btn.TEXT || stretch -> null
+        wideButton -> 200.dp
+        look.btn == Btn.SQUARE -> 130.dp
+        else -> 140.dp
+    }
+    val h = if (compact) 32.dp else when (look.btn) { Btn.TEXT -> 34.dp; Btn.LCD -> 36.dp; else -> 44.dp }
+    Box(
+        modifier
+            // (Update 129: at least this wide, wider when its word needs it — "Achievements" used to end in "…".)
+            .then(if (w != null) Modifier.widthIn(min = w) else Modifier)
+            .height(h)
+            .graphicsLayer { if (look.btn != Btn.TEXT) { val k = if (focused) 1.05f else 1f; scaleX = k; scaleY = k } }
+            .clip(shape)
+            .background(if (focused) look.btnOnFill else look.btnFill)
+            .then(if (look.btnBorder != null) Modifier.border(if (focused && look.btn != Btn.SQUARE) 2.5.dp else 1.5.dp, if (focused) look.accent else look.btnBorder, shape) else Modifier)
+            .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() }
+            .padding(horizontal = if (look.btn == Btn.TEXT) 6.dp else if (compact) 6.dp else 14.dp),
+        contentAlignment = if (look.btn == Btn.TEXT) Alignment.CenterStart else Alignment.Center
+    ) {
+        if (look.btn == Btn.TEXT) {
+            // The Cross menu's words: the one you're on bigger and glowing.
+            androidx.compose.material3.Text(
+                label, color = if (focused) look.btnOnInk else look.btnInk, fontSize = if (focused) 19.sp else 16.sp,
+                fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
+                style = if (focused) androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = 0.9f), blurRadius = 14f)) else androidx.compose.ui.text.TextStyle.Default
+            )
+        } else androidx.compose.material3.Text(
+            label, color = if (focused) look.btnOnInk else look.btnInk, fontSize = if (compact) 12.sp else if (look.btn == Btn.LCD) 13.sp else 15.sp,
+            fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, fontFamily = if (look.mono) FontFamily.Monospace else null,
+            // (Update 129: a little smaller rather than cut, where the button can't grow — e.g. buttons sharing a row.)
+            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+                minFontSize = 9.sp, maxFontSize = if (compact) 12.sp else if (look.btn == Btn.LCD) 13.sp else 15.sp, stepSize = 0.5.sp
+            )
+        )
+    }
+}
+
+/** The details page inside the window (its story, facts, play time and achievements), in the layout's colours. */
+@Composable
+private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover: String?, modifier: Modifier) {
+    val paper = look.paper ?: Color(0xFF15181E)
+    val light = (paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f
+    val ink = if (light) Color(0xFF2E3640) else Color.White
+    val muted = if (light) Color(0xFF6A7584) else Color.White.copy(alpha = 0.7f)
+    val meta = state.metadata[g.stableKey]
+    val titles = LocalTitleOptions.current
+    Row(modifier.background(paper).padding(16.dp)) {
+        Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
+            if (cover != null) AsyncImage(cover, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
+            androidx.compose.material3.Text(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null)
+            val facts = listOfNotNull(
+                titles.console(g.platform), meta?.releaseYear?.toString(), meta?.developer,
+                meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() }
+            ).joinToString("  ·  ")
+            androidx.compose.material3.Text(facts, color = muted, fontSize = 12.sp, maxLines = 2)
+            Spacer(Modifier.height(8.dp))
+            val list = state.raAchievementDetails[g.stableKey].orEmpty()
+            val p = state.raProgress[g.stableKey]
+            val total = if (list.isNotEmpty()) list.size else p?.NumPossibleAchievements ?: 0
+            val earned = if (list.isNotEmpty()) list.count { it.isUnlocked } else p?.NumAchieved ?: 0
+            val played = listOfNotNull(
+                state.playtime[g.stableKey]?.takeIf { it > 0L }?.let { "Played " + stylePlaytime(it) },
+                state.lastPlayedAt[g.stableKey]?.let { "Last played " + lastPlayedLabel(it) },
+                if (total > 0) "Achievements $earned / $total" else null
+            )
+            if (played.isNotEmpty()) {
+                androidx.compose.material3.Text(played.joinToString("  ·  "), color = if (light) ShelfTheme.accent else look.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+            }
+            androidx.compose.material3.Text(meta?.summary?.takeIf { it.isNotBlank() } ?: "No description yet.", color = ink.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 18.sp)
+        }
+    }
+}

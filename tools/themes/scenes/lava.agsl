@@ -1,0 +1,96 @@
+// Album lava: glossy blobs rolling round each other like a lava lamp, each one swelling with its own
+// part of the spectrum, merging and splitting. Every blob carries the album cover inside it like a
+// lens (bent towards its rim), tinted with the cover's colours, over a bright wash of the same
+// colours. Bubbles rise with the highs; everything breathes with the bass.
+//#include reactive
+
+float blob(float2 p, float2 c, float r) { float2 q = p - c; return r * r / (dot(q, q) + 1e-4); }
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5);
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float high = uHigh * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+    float lvl = bass * 0.5 + uMid * play * 0.3 + high * 0.2;
+
+    float3 col = paletteField(uv, asp, t * 0.7, lvl * k, BG, A, S) * 0.75;
+    col = mix(col, coverField(uv, asp, t, bass, 1.0, BG, A, S), 0.3 * uHasArt);
+
+    float rm = room(0.16);
+    float2 c = float2(waveX(asp), uWaveY);
+    float span = min(asp * 0.3, 0.7);
+    float g = 0.5 + 0.5 * k;
+    float field = 0.0;
+    float3 tint = float3(0.0);
+    float wsum = 0.0;
+    for (int i = 0; i < 7; i++) {
+        float fi = float(i);
+        float e = eqBand(fi) * play;
+        float sp = 0.13 + 0.05 * hash11(fi * 3.1);
+        float2 bc = c + float2(
+            sin(t * sp + fi * 2.1) * span * (0.35 + 0.6 * hash11(fi + 0.5)),
+            cos(t * sp * 1.3 + fi * 1.7) * rm * 0.75
+        );
+        float br = rm * (0.42 + 0.42 * e * g + 0.08 * kick * k);
+        float f = blob(uv, bc, br);
+        field += f;
+        float3 bcCol = fi < 2.5 ? A : (fi < 4.5 ? S : C);
+        bcCol = mix(bcCol, float3(1.0), 0.12 * hash11(fi + 9.0));
+        tint += bcCol * f;
+        wsum += f;
+    }
+    float3 lavaCol = tint / max(wsum, 1e-4);
+    // The cover inside the blobs: each blob shows it centred on itself, magnified like a lens and
+    // bent towards its rim; where blobs merge their pictures blend by how much each one is there.
+    float3 artIn = float3(0.0);
+    if (field > 0.85) {
+        float aw = 0.0;
+        for (int i = 0; i < 7; i++) {
+            float fi = float(i);
+            float e = eqBand(fi) * play;
+            float sp = 0.13 + 0.05 * hash11(fi * 3.1);
+            float2 bc = c + float2(
+                sin(t * sp + fi * 2.1) * span * (0.35 + 0.6 * hash11(fi + 0.5)),
+                cos(t * sp * 1.3 + fi * 1.7) * rm * 0.75
+            );
+            float br = rm * (0.42 + 0.42 * e * g + 0.08 * kick * k);
+            float f = blob(uv, bc, br);
+            float2 q = (uv - bc) / (br * 2.3);
+            q *= 1.0 - 0.35 * dot(q, q);          // lens: magnified in the middle
+            artIn += sharpCover(q + 0.5, A, S) * f;
+            aw += f;
+        }
+        artIn /= max(aw, 1e-4);
+    }
+    float inside = smoothstep(0.9, 1.15, field);
+    // Fake light: brighter towards the top-left of each blob (the field's gradient isn't available,
+    // so the falloff of the field itself does it), with a glossy rim.
+    float shade = sat(1.0 - 0.9 / max(field, 0.9));
+    float3 lava = lavaCol * (0.75 + 0.45 * shade) + float3(1.0) * pow(shade, 6.0) * 0.35;
+    lava = mix(lava, lavaCol * 1.25, (1.0 - smoothstep(1.0, 1.4, field)) * 0.6);
+    // The picture, lit like the blob and coloured at its rim.
+    float3 artLava = artIn * (0.8 + 0.35 * shade) + float3(1.0) * pow(shade, 6.0) * 0.3;
+    artLava = mix(artLava, lavaCol * 1.2, (1.0 - smoothstep(1.0, 1.5, field)) * 0.7);
+    lava = mix(lava, artLava, 0.85 * uHasArt);
+    col = mix(col, lava, inside);
+    // Glow outside the blobs.
+    col += lavaCol * smoothstep(0.25, 0.9, field) * (1.0 - inside) * (0.25 + 0.35 * bass * k);
+
+    // Bubbles rising.
+    float2 bp = float2(uv.x * 9.0, uv.y * 9.0 + t * (0.6 + 1.2 * high));
+    float2 bid = floor(bp);
+    float2 bf = fract(bp) - 0.5;
+    float2 bh = hash22(bid + 13.0);
+    float bub = step(bh.x, 0.18) * (1.0 - smoothstep(0.0, 0.03, abs(length(bf - (bh - 0.5) * 0.5) - 0.12 * bh.y - 0.05)));
+    col += mix(float3(1.0), S, 0.3) * bub * (0.08 + 0.25 * high * k);
+
+    return half4(finish(col, fc), 1.0);
+}

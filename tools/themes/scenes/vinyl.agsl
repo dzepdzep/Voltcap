@@ -1,0 +1,129 @@
+// Vinyl spin: the album's sleeve with the full cover on it, and the record half pulled out of it,
+// turning, with the cover as its label (real 12" proportions: the label is a third of the record), in a room washed with
+// the cover's own colours. Grooves catch a fixed light (so the sheen stays put while the record turns),
+// the record thumps on the kick, the tonearm rides the outer grooves and a ring of light around the
+// platter follows the spectrum. Centred where the equalizer is set (uWaveY), sized to its room.
+//#include reactive
+
+float3 labelArt(float2 q, float3 A, float3 S) {
+    // q: -1..1 across the label. The sharp cover, or (no cover) a printed label in the palette.
+    float2 c = q * 0.5 + 0.5;
+    float3 art = float3(uCover.eval(clamp(c, 0.0, 1.0) * uCoverSize).rgb);
+    float r = length(q);
+    float3 printed = mix(A, S, c.y) * (0.85 + 0.15 * step(0.55, fract(r * 6.0)));
+    return mix(printed, art, uHasArt);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float px = 1.5 / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float lvl = bass * 0.55 + uMid * play * 0.3 + uHigh * play * 0.15;
+
+    // The room: the cover's colours flowing, a soft light from the upper left.
+    float3 col = paletteField(uv, asp, t, lvl * k, BG, A, S);
+    col = mix(col, coverField(uv, asp, t, bass, 1.0, BG, A, S), 0.35 * uHasArt);
+    col += mix(A, float3(1.0), 0.4) * exp(-length(uv - float2(asp * 0.12, -0.1)) * 1.6) * 0.18;
+
+    float2 c0 = float2(waveX(asp), uWaveY);
+    float R = room(0.38) * 0.95 * (1.0 + 0.018 * kick * k);
+    // The sleeve to the left, the record pulled out to the right (side by side when there's room).
+    float wide = step(1.2, asp) * step(R * 3.1, asp * 0.96);
+    float2 c = c0 + float2(R * 0.5, 0.0) * wide;
+    float2 sc = c0 - float2(R * 0.55, 0.0);
+    if (wide > 0.5) {
+        float2 sd = uv - sc;
+        float side = R * 1.02;
+        float sleeveSh = sdRoundBox(sd - float2(0.012, 0.02), float2(side), 0.006);
+        col *= 1.0 - 0.45 * (1.0 - smoothstep(-0.01, 0.03, sleeveSh));
+        float sleeve = sdRoundBox(sd, float2(side), 0.004);
+        if (sleeve < 0.0) {
+            float2 q = sd / (2.0 * side) + 0.5;
+            float3 sl = sharpCover(q, A, S);
+            // Card sleeve: slightly worn edges, a soft sheen from the upper left, ring wear.
+            sl *= 0.94 + 0.06 * vnoise(q * 90.0);
+            sl += float3(1.0) * 0.07 * smoothstep(0.6, 0.0, length(q - float2(0.15, 0.1)));
+            float ringWear = exp(-abs(length(q - float2(0.62, 0.5)) - 0.4) * 160.0) * 0.06;
+            sl += float3(1.0) * ringWear;
+            col = mix(sl, col, smoothstep(-px, px, sleeve));
+        }
+        col = mix(col, float3(0.92), (1.0 - smoothstep(0.0, px * 1.5, abs(sleeve))) * 0.35);
+    }
+    float2 d = uv - c;
+    float r = length(d);
+    float ang = atan(d.y, d.x);
+    float spin = 1.15 * uPlayT; // a touch slower than it used to be
+
+    // Glow behind the platter, swelling with the bass, and a spectrum ring round it.
+    col += mix(A, S, 0.5 + 0.5 * sin(t * 0.3)) * exp(-max(r - R, 0.0) * 9.0) * (0.12 + 0.45 * bass * k) * step(R, r);
+    float a01 = fract(ang / TAU + 0.25);
+    float m = abs(a01 - 0.5) * 2.0;
+    float e = eqAt(m) * play;
+    float ringR = R * 1.08;
+    float ring = exp(-abs(r - ringR - e * R * 0.12 * k) * 260.0);
+    col += mix(A, S, m) * ring * (0.35 + 0.9 * e);
+    float ticks = step(0.5, fract(a01 * 96.0)) * step(ringR, r) * step(r, ringR + (0.006 + e * 0.07 * k) * R / 0.3);
+    col = mix(col, mix(mix(A, S, m), float3(1.0), 0.35), ticks * 0.75);
+
+    // Drop shadow under the record.
+    col *= 1.0 - 0.45 * exp(-max(length(d - float2(0.012, 0.018)) - R, 0.0) * 40.0) * step(R, r);
+
+    if (r < R) {
+        float rn = r / R;
+        float la = ang - spin;
+        // Vinyl: near-black with fine grooves, a few wider track gaps, and the fixed light catching them.
+        float grooves = 0.5 + 0.5 * sin(r * 1400.0 + hash11(floor(rn * 9.0)) * 6.0);
+        float gap = smoothstep(0.0, 0.01, abs(fract(rn * 7.0 + 0.3) - 0.5) - 0.02);
+        float3 vinyl = float3(0.035, 0.035, 0.045) + float3(0.02) * grooves * gap;
+        // Two broad reflections at a fixed angle (they don't turn with the record), tinted by the room.
+        float sheen = pow(abs(cos(ang - 0.7)), 18.0) + 0.6 * pow(abs(cos(ang + 1.2)), 30.0);
+        vinyl += mix(float3(1.0), A, 0.35) * sheen * (0.10 + 0.08 * grooves) * smoothstep(0.42, 0.5, rn);
+        // A thin colour shimmer moving along the grooves while it plays.
+        vinyl += mix(A, S, 0.5 + 0.5 * sin(la * 3.0)) * 0.05 * play * (0.5 + 0.5 * sin(la * 2.0 + rn * 40.0));
+        float3 disc = vinyl;
+        // Label: the cover, turning with the record.
+        float LR = 0.35;
+        if (rn < LR) {
+            float2 q = float2(cos(la), sin(la)) * (rn / LR);
+            float3 lab = labelArt(q, A, S);
+            // A little gloss and a darker rim on the label.
+            lab *= 0.92 + 0.08 * smoothstep(1.0, 0.85, rn / LR);
+            lab += float3(1.0) * pow(abs(cos(ang - 0.7)), 40.0) * 0.08;
+            disc = mix(lab, vinyl, smoothstep(LR - 0.006, LR, rn));
+        }
+        // Spindle.
+        disc = mix(float3(0.82), disc, smoothstep(0.022, 0.03, rn));
+        disc = mix(BG * 0.3, disc, smoothstep(0.012, 0.018, rn));
+        // Outer edge.
+        disc = mix(disc, float3(0.18), smoothstep(0.985, 1.0, rn));
+        col = disc;
+    }
+
+    // Tonearm: from a pivot at the upper right of the platter down onto the outer grooves.
+    float2 pivot = c + float2(R * 1.25, -R * 0.95);
+    float swing = 0.04 * sin(t * 0.7) * play + 0.02 * kick * k;
+    float2 head = c + float2(R * 0.52, -R * 0.62) + float2(swing, swing * 0.5) * R;
+    float arm = sdSegment(uv, pivot, head);
+    float armW = R * 0.022;
+    col *= 1.0 - 0.35 * exp(-max(sdSegment(uv - float2(0.01, 0.015), pivot, head) - armW, 0.0) * 120.0);
+    float3 metal = mix(float3(0.55), float3(0.95), 0.5 + 0.5 * sin((uv.x + uv.y) * 40.0));
+    col = mix(col, metal, 1.0 - smoothstep(armW - 0.002, armW, arm));
+    float hd = length((uv - head) * float2(1.0, 1.4));
+    col = mix(col, float3(0.15), 1.0 - smoothstep(R * 0.05, R * 0.055, hd));
+    float pv = length(uv - pivot);
+    col = mix(col, float3(0.25), 1.0 - smoothstep(R * 0.09, R * 0.095, pv));
+    col = mix(col, metal, 1.0 - smoothstep(R * 0.05, R * 0.055, pv));
+
+    // Dust motes drifting through the light.
+    col += float3(1.0) * dots(uv, 26.0, float2(t * 0.03, -t * 0.02), 0.12, 0.08, 4.0) * 0.25;
+
+    return half4(finish(col, fc), 1.0);
+}

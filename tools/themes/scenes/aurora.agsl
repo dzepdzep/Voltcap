@@ -1,0 +1,123 @@
+// Aurora: the northern lights over a frozen lake. Curtains of light hang in depth - stacked sheets
+// that fold and ripple slowly, bright along their lower hem with rays reaching up, green fading to
+// violet - above snowy mountains that catch their glow. Stars behind, a dark fringe of pines on the
+// far shore, and the whole sky mirrored, a little softened, in the ice and open water below.
+
+// Curtain pattern on a sheet at height-layer i: thin folded bands drifting slowly. 0..1.
+float curtain(float2 p, float t) {
+    // p = (across, away) on the sheet. Bands run across the view and fold slowly.
+    float w = fbm3(float2(p.x * 0.15 + t * 0.01, p.y * 0.1)) * 5.0;
+    float b = sin(p.y * 1.15 + w + sin(p.x * 0.2 + t * 0.05) * 1.5 + t * 0.04);
+    float band = exp(-abs(b) * 10.0);
+    float b2 = sin(p.y * 1.9 - w * 0.8 + 1.7 + t * 0.03);
+    band += exp(-abs(b2) * 14.0) * 0.5;
+    // Rays: brightness varying finely along the band.
+    float rays = 0.4 + 0.6 * vnoise(float2(p.x * 6.0 + w * 2.0, t * 0.25));
+    return band * rays;
+}
+
+// Light of the aurora seen along direction rd (rd.y > 0).
+float3 auroraCol(float3 rd, float t, float3 A, float3 S, float lod, float jit) {
+    float3 acc = float3(0.0);
+    float n = 22.0 - lod * 6.0;
+    for (int i = 0; i < 22; i++) {
+        float fi = float(i);
+        if (fi >= n) break;
+        float h = 0.8 + (fi + jit) * 0.06;       // height of this sheet above the eye (jittered: no banding)
+        float d = h / max(rd.y, 0.02);
+        float2 p = rd.xz * d + float2(0.0, 6.0);
+        float c = curtain(p * 0.35, t);
+        float k = fi / n;
+        float3 tint = mix(A, S, smoothstep(0.15, 0.9, k));
+        // The hem is brightest; higher sheets fade.
+        float fall = exp(-k * 3.2) * (1.0 + 2.5 * exp(-k * 25.0));
+        acc += tint * c * fall * smoothstep(40.0, 8.0, d);
+    }
+    return acc * (1.6 / n) * 4.2;
+}
+
+float3 skyCol(float3 rd, float t, float3 A, float3 S, float3 BG, float lod, float jit) {
+    float y = max(rd.y, 0.0);
+    float3 c = mix(BG * 1.6 + A * 0.03, BG * 0.6, sat(y * 2.2));
+    float2 sp = rd.xz / (rd.y + 0.15);
+    c += float3(0.9, 0.95, 1.0) * dots(sp * 0.5, 60.0, float2(0.0), 0.3, 0.07, 3.0) * 0.5 * sat(y * 6.0);
+    c += float3(1.0) * dots(sp * 0.5, 22.0, float2(0.0), 0.12, 0.06, 8.0) * 0.6 * sat(y * 6.0);
+    if (rd.y > 0.0) c += auroraCol(rd, t, A, S, lod, jit);
+    return c;
+}
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float2 sp = (fc - 0.5 * uRes) / uRes.y;
+    sp.y = -sp.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Looking a little up over the lake; the horizon sits low.
+    float yaw = 0.06 * sin(t * 0.02);
+    float3 rd = normalize(float3(sp.x, sp.y + 0.10, -1.0));
+    rd.xz = rot(yaw) * rd.xz;
+    float horizonY = -0.10;   // in sp units, where rd.y = 0
+
+    float3 col;
+    float jit = fract(52.9829189 * fract(dot(fc, float2(0.06711056, 0.00583715))));
+    float3 sky = skyCol(rd, t, A, S, BG, uLod, jit);
+    // Average aurora light, for the snow and ice (cheap: it changes slowly).
+    float3 glowA = mix(A, S, 0.3) * (0.22 + 0.08 * sin(t * 0.13) + 0.05 * sin(sp.x * 3.0 + t * 0.05));
+
+    if (rd.y > 0.0) {
+        col = sky;
+    } else {
+        // The lake: ice with open water, mirroring the sky, rippled and darker.
+        float3 r = float3(rd.x, -rd.y, rd.z);
+        float dist = 1.0 / max(-rd.y, 0.01);
+        float2 wp = rd.xz * dist;
+        r.x += 0.004 * sin(wp.y * 3.0 + t * 0.8) * (1.0 + 0.5 * sin(wp.x));
+        float3 refl = skyCol(normalize(r), t, A, S, BG, max(uLod, 1.0), jit);
+        float ice = smoothstep(0.45, 0.6, fbm3(wp * float2(0.6, 1.5)));
+        float3 iceCol = mix(float3(0.12, 0.15, 0.2), glowA * 0.4 + float3(0.15), 0.4) * (0.6 + 0.4 * vnoise(wp * 4.0));
+        col = mix(refl * 0.75 + BG * 0.1, iceCol * 0.6 + refl * 0.25, ice);
+        // Cracks in the ice.
+        col *= 1.0 - 0.4 * ice * smoothstep(0.03, 0.0, abs(vnoise(wp * 3.0) - 0.5));
+    }
+
+    // Mountains on the far shore: snow on the slopes catching the aurora, two ridges; mirrored in the lake.
+    float mx = sp.x + yaw;
+    float hy = sp.y;
+    float under = step(hy, horizonY);
+    float my = under > 0.5 ? 2.0 * horizonY - hy : hy;
+    float m1 = horizonY + 0.05 + 0.07 * fbm(float2(mx * 1.6, 2.0)) + 0.035 * (1.0 - abs(2.0 * vnoise(float2(mx * 4.0, 1.0)) - 1.0));
+    float m1r = horizonY + 0.05 + 0.07 * fbm(float2((mx + 0.01) * 1.6, 2.0)) + 0.035 * (1.0 - abs(2.0 * vnoise(float2((mx + 0.01) * 4.0, 1.0)) - 1.0));
+    float3 snow = mix(float3(0.55, 0.6, 0.7), glowA * 1.3 + float3(0.1), 0.55);
+    float3 mcol = col;
+    float mcov = 0.0;
+    if (my < m1) {
+        // Lit on slopes facing left (towards the brightest aurora), snow higher up, rocky streaks.
+        float slope = (m1r - m1) / 0.01;
+        float shade = sat(0.55 + slope * 1.5);
+        float hgt = (my - horizonY) / max(m1 - horizonY, 0.01);
+        float streak = vnoise(float2(mx * 60.0, my * 6.0));
+        float snowy = smoothstep(0.35, 0.7, hgt + (streak - 0.5) * 0.6);
+        float3 mc = mix(BG * 0.45, snow * (0.3 + 0.6 * shade), snowy);
+        mcol = mix(mc, sky * 0.5, 0.2 * (1.0 - hgt));
+        mcov = smoothstep(m1, m1 - px, my);
+    }
+    // In the water the mountains are darker, and the ripples break them up.
+    if (under > 0.5) mcol = mcol * 0.45 + BG * 0.05;
+    col = mix(col, mcol, mcov * (1.0 - under * 0.15));
+
+    // Pines on the shore, and their reflection in the water.
+    float tx = mx * 30.0;
+    float th = 0.03 + 0.03 * hash11(floor(tx)) * step(0.3, hash11(floor(tx) + 7.0));
+    float tf = abs(fract(tx) - 0.5) / 30.0;
+    float tr = abs(hy - horizonY);
+    float pine = step(tf, (1.0 - tr / th) * 0.012 * (0.7 + 0.3 * step(0.5, fract(tr / th * 5.0)))) * step(tr, th);
+    float3 pineCol = hy > horizonY ? BG * 0.25 : BG * 0.3 + glowA * 0.03;
+    col = mix(col, pineCol, pine);
+
+    // A soft glow of the aurora low over everything.
+    col += glowA * 0.05;
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,68 @@
+// Retro TV (music): the album cover playing on an old CRT television in a dark room - curved glass,
+// scanlines, colour fringes and a soft bloom - the picture rolling and glitching for a moment on the
+// kick, the TV's light flickering over the walls with the music, a VU-style volume bar on screen
+// that follows the level, and the static hiss between songs.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 6.0) * play;
+    float loud = sat((uEqA.x + uEqA.y + uEqB.x) / 3.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3) * 0.72;
+    float2 sh = float2(R * 1.25, R);
+    // Room: dark, lit by the TV.
+    float3 col = BG * 0.35;
+    col += mix(float3(0.6, 0.7, 1.0), mix(A, S, 0.5), 0.5) * exp(-length((uv - c) * float2(0.5, 0.9)) / R * 0.9) * (0.15 + 0.3 * loud);
+    // Cabinet.
+    float cab = sdRoundBox(uv - c - float2(R * 0.18, 0.0), sh + float2(R * 0.45, R * 0.18), R * 0.12);
+    col = mix(col, mix(float3(0.22, 0.15, 0.1), BG * 0.6, 0.3), step(cab, 0.0));
+    float bez = sdRoundBox(uv - c, sh + R * 0.06, R * 0.12);
+    col = mix(col, float3(0.08), step(bez, 0.0));
+    // Knobs.
+    for (int i = 0; i < 2; i++) {
+        float kd = length(uv - c - float2(sh.x + R * 0.32, -R * 0.35 + float(i) * R * 0.45)) - R * 0.1;
+        col = mix(col, float3(0.7, 0.68, 0.6), step(kd, 0.0));
+    }
+    // The screen: curved glass.
+    float2 q = (uv - c) / sh;
+    float2 dq = q * (1.0 + 0.08 * dot(q, q));
+    float inS = step(abs(dq.x), 1.0) * step(abs(dq.y), 1.0) * step(sdRoundBox(uv - c, sh, R * 0.1), 0.0);
+    if (inS > 0.5) {
+        // Rolling on the kick: the picture jumps up and tears a little.
+        float roll = kick * k * 0.15;
+        float tear = step(0.92, hash11(floor(dq.y * 30.0) + floor(t * 20.0))) * kick * k * 0.08;
+        float2 sq = float2(dq.x + tear, dq.y + roll);
+        sq.y = sq.y - 2.0 * floor((sq.y + 1.0) / 2.0);
+        float2 cq = float2(sq.x * 0.5 / 1.25 * 1.25, sq.y) * 0.5 + 0.5;
+        cq = float2(sq.x * 0.5 + 0.5, sq.y * 0.5 + 0.5);
+        cq.x = (cq.x - 0.5) * 1.25 + 0.5;              // keep the cover square on the 5:4 screen
+        float inside = step(0.0, cq.x) * step(cq.x, 1.0);
+        float3 pic = float3(sharpCover(cq + float2(0.004, 0.0), A, S).r, sharpCover(cq, A, S).g, sharpCover(cq - float2(0.004, 0.0), A, S).b);
+        pic = mix(BG * 0.2, pic, inside);
+        // Volume bar at the bottom of the screen.
+        float vb = step(0.82, sq.y) * step(sq.y, 0.88) * step(-0.8, sq.x) * step(sq.x, -0.8 + 1.6 * loud);
+        float vbSeg = step(0.25, fract((sq.x + 0.8) * 10.0));
+        pic = mix(pic, mix(float3(0.3, 1.0, 0.4), float3(1.0, 0.3, 0.2), step(0.6, (sq.x + 0.8) / 1.6)), vb * vbSeg);
+        // Scanlines, mask, bloom, vignette, static.
+        pic *= 0.78 + 0.22 * step(0.5, fract(fc.y / 3.0));
+        pic += pic * pic * 0.25;
+        pic *= 1.0 - 0.3 * dot(dq, dq) * 0.5;
+        float n = hash12(floor(fc / 2.0) + floor(t * 50.0));
+        pic = mix(pic, float3(n), (1.0 - play) * 0.6 + kick * k * 0.08);
+        col = pic;
+        // Glass reflection.
+        col += float3(1.0) * 0.06 * smoothstep(0.3, 0.0, length(dq - float2(-0.5, -0.5)));
+    }
+    return half4(finish(col, fc), 1.0);
+}

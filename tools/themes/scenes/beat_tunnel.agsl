@@ -1,0 +1,55 @@
+// Beat tunnel: rushing through a neon tunnel in the cover's colours. It lurches forward on every
+// kick, its walls glow brighter where the spectrum is strong (bass along the floor and ceiling,
+// highs at the sides), rings of light sweep past on the beat and sparks stream by. The vanishing
+// point sits where the equalizer is set (uWaveY).
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+
+    float2 c = float2(asp * 0.5, clamp(uWaveY, 0.2, 0.8));
+    float2 d = uv - c;
+    d *= 1.0 + 0.04 * kick * k;
+    float r = max(length(d * float2(0.8, 1.0)), 0.001);
+    float a = atan(d.y, d.x) / TAU + 0.5;
+    float z = 0.22 / r + 0.9 * t + 0.5 * uPlayT + kick * 0.25;
+    float fog = smoothstep(0.02, 0.35, r);
+
+    float3 col = coverField(uv, asp, t, bass, 0.35, BG, A, S) * (1.0 - fog * 0.5);
+
+    // Walls: a grid of glowing lines.
+    float gx = abs(fract(a * 18.0) - 0.5);
+    float gz = abs(fract(z * 1.2) - 0.5);
+    float m = abs(abs(a - 0.5) * 2.0 - 0.5) * 2.0;
+    float e = eqAt(1.0 - m) * play;
+    float3 wc = mix(A, S, 0.5 + 0.5 * sin(z * 0.5));
+    float lines = exp(-gx * 30.0) * 0.8 + exp(-gz * 28.0);
+    col += wc * lines * fog * (0.45 + 0.8 * e * (0.5 + 0.5 * k));
+    // Panels between the lines, faintly lit by the spectrum.
+    col += wc * fog * e * 0.06;
+
+    // A ring of light passing on each beat.
+    col += mix(A, float3(1.0), 0.5) * exp(-gz * 70.0) * kick * fog * k;
+
+    // Sparks streaming past.
+    float2 sp = float2(a * 60.0, z * 3.0);
+    float2 sid = floor(sp);
+    float2 sf = fract(sp) - 0.5;
+    float2 sh = hash22(sid + 5.0);
+    float spark = step(sh.x, 0.08) * (1.0 - smoothstep(0.08, 0.2, length(sf * float2(1.0, 0.3))));
+    col += mix(S, float3(1.0), 0.6) * spark * fog * (0.3 + 0.6 * uHigh * play);
+
+    // Light at the far end, pulsing with the bass.
+    col += mix(A, S, 0.3) * exp(-r * 9.0) * (0.25 + 0.7 * bass * k);
+
+    return half4(finish(col, fc), 1.0);
+}

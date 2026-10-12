@@ -1,0 +1,52 @@
+// Cover tunnel: the album cover inside itself, again and again - a picture-in-picture tunnel you
+// keep falling into, faster with the bass, each frame turning a little on the beat, its edges lit by
+// the spectrum.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float2 d = uv - c;
+    // Each frame is Z times the size of the next one in.
+    float Z = 1.7;
+    float lz = log(Z);
+    // How far in we've fallen: steady, quicker while it's loud.
+    float phase = 0.12 * t + 0.1 * uPlayT;
+    phase = fract(phase);
+    float rr = max(max(abs(d.x), abs(d.y)), 1e-4);
+    float w = log(rr / 0.06) / lz + phase;
+    float n = floor(w);
+    float f = w - n;
+    float level = n - phase;
+    float scale = 0.06 * exp(level * lz);
+    // Every level turns a little further, and kicks give it a nudge.
+    float ang = n * (0.06 + 0.12 * k * kick);
+    float2 local = rot(ang) * d / scale;          // |local| between 1 and Z
+    float2 q = local / (2.0 * Z) + 0.5;
+    float3 col = sharpCover(q, A, S);
+    // Fog towards the far end, the outer frames brighter.
+    float depth = sat((n + 2.0) / 7.0);
+    col *= 0.35 + 0.75 * depth;
+    // The frame's edge: a lit border, coloured by the spectrum around it.
+    float edge = (max(abs(local.x), abs(local.y)) - 1.0) / (Z - 1.0);
+    float m = fract(atan(local.y, local.x) / TAU + 0.5);
+    float e = eqAt(abs(m - 0.5) * 2.0) * play;
+    float border = exp(-edge * 40.0);
+    col = mix(col, mix(A, S, m) * (0.7 + 1.0 * e), border * 0.7);
+    col += mix(A, float3(1.0), 0.3) * border * kick * 0.3;
+    // The centre glows.
+    col += mix(A, S, 0.5) * exp(-length(d) * 12.0) * (0.3 + 0.8 * bass * k);
+    col = mix(col, BG, 0.08);
+
+    return half4(finish(col, fc), 1.0);
+}

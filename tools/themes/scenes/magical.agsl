@@ -1,0 +1,94 @@
+// Magical sparkle: a pastel anime sky in the magical-transformation style. Soft gradient light,
+// twisting ribbons of shimmer, big four-point star glints, falling sparkle dust, floating hearts
+// and bubbles, and every few seconds a ring of light bursting out from the middle. Drawing style
+// only - no characters or symbols.
+//#include anime
+
+float star4(float2 p, float s) {
+    float2 a = abs(p) / s;
+    return exp(-a.x * 18.0) * exp(-a.y * 2.2) + exp(-a.y * 18.0) * exp(-a.x * 2.2) + exp(-length(p) / s * 6.0);
+}
+
+float dot2(float2 v) { return dot(v, v); }
+
+// A heart of height ~s centred on p (point at the bottom).
+float heart(float2 p, float s) {
+    float2 q = float2(p.x, -p.y) / s + float2(0.0, 0.5);
+    q.x = abs(q.x);
+    if (q.y + q.x > 1.0) return (sqrt(dot2(q - float2(0.25, 0.75))) - 0.35355) * s;
+    return sqrt(min(dot2(q - float2(0.0, 1.0)), dot2(q - 0.5 * max(q.x + q.y, 0.0)))) * sign(q.x - q.y) * s;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Pastel gradient with soft light blooms.
+    float3 top = mix(A, float3(1.0), 0.55);
+    float3 bot = mix(S, float3(1.0), 0.5);
+    float3 col = mix(top, bot, smoothstep(0.0, 1.0, uv.y + 0.1 * sin(uv.x * 2.0 + t * 0.2)));
+    col = mix(col, BG * 1.5 + 0.1, 0.35);
+    col += float3(1.0) * exp(-length(uv - float2(asp * 0.3, 0.3)) * 3.0) * 0.18;
+    col += mix(A, float3(1.0), 0.5) * exp(-length(uv - float2(asp * 0.75, 0.65)) * 3.5) * 0.15;
+
+    // Ribbons of shimmer twisting across.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float y0 = 0.3 + fi * 0.22 + 0.06 * sin(uv.x * 2.5 + t * 0.5 + fi * 2.0);
+        float wdt = 0.012 + 0.01 * (0.5 + 0.5 * sin(uv.x * 6.0 - t * 1.2 + fi));
+        float rib = exp(-abs(uv.y - y0) / wdt);
+        float sh = 0.5 + 0.5 * sin(uv.x * 30.0 - t * 3.0 + fi * 4.0);
+        col += mix(mix(A, S, fi * 0.5), float3(1.0), 0.5 + 0.3 * sh) * rib * 0.45;
+    }
+
+    // Big glints.
+    for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float2 p = float2(asp * hash11(fi * 3.3), 0.15 + 0.7 * hash11(fi * 7.1));
+        p += float2(sin(t * 0.2 + fi), cos(t * 0.17 + fi)) * 0.03;
+        float tw = pow(0.5 + 0.5 * sin(t * (1.2 + fi * 0.3) + fi * 2.0), 3.0);
+        col += float3(1.0) * star4(uv - p, 0.03 + 0.02 * tw) * (0.25 + 0.75 * tw) * 0.5;
+    }
+
+    // Falling sparkle dust (little four-point stars).
+    float2 dp = uv * 14.0 + float2(sin(uv.y * 4.0 + t * 0.6) * 0.3, -t * 0.9);
+    float2 di = floor(dp);
+    float2 dfp = fract(dp) - 0.5;
+    float2 dh = hash22(di + 3.0);
+    if (dh.x < 0.25) {
+        float tw = 0.5 + 0.5 * sin(t * 4.0 + dh.y * 30.0);
+        col += mix(float3(1.0), A, 0.3) * star4(dfp - (dh - 0.5) * 0.5, 0.06) * tw * 0.6;
+    }
+
+    // Floating hearts and bubbles drifting up.
+    float2 hp = uv * float2(5.0, 4.0) + float2(0.0, t * 0.25);
+    float2 hi = floor(hp);
+    float2 hf = fract(hp) - 0.5;
+    float2 hh = hash22(hi + 9.0);
+    if (hh.x < 0.3) {
+        float2 o = (hh - 0.5) * 0.4 + float2(0.08 * sin(t + hh.y * 10.0), 0.0);
+        float hd = heart(hf - o, 0.22 + 0.1 * hh.y);
+        float3 hc = mix(mix(A, float3(1.0, 0.5, 0.7), 0.5), float3(1.0), 0.25);
+        col = mix(col, hc, (1.0 - smoothstep(0.0, 0.03, hd)) * 0.7);
+        col += float3(1.0) * (1.0 - smoothstep(0.0, 0.02, abs(hd + 0.015))) * 0.2;
+    } else if (hh.x < 0.55) {
+        float bd = length(hf - (hh - 0.5) * 0.4) - 0.12 * (0.6 + hh.y);
+        col += float3(1.0) * (1.0 - smoothstep(0.0, 0.03, abs(bd))) * 0.35;
+        col += float3(1.0) * (1.0 - smoothstep(0.0, 0.05, length(hf - (hh - 0.5) * 0.4 + 0.05) - 0.02)) * 0.4;
+    }
+
+    // Transformation ring every few seconds.
+    float rt = fract(t / 7.0);
+    float2 c = float2(asp * 0.5, 0.5);
+    float rr = length(uv - c);
+    float ring = exp(-abs(rr - rt * 1.4) * 60.0) * (1.0 - rt);
+    col += mix(float3(1.0), S, 0.3) * ring * 0.7;
+    col += float3(1.0) * focusLines(uv, c, t, 90.0, 5.0) * (1.0 - smoothstep(0.0, 0.15, rt)) * 0.25;
+
+    return half4(finish(col, fc), 1.0);
+}

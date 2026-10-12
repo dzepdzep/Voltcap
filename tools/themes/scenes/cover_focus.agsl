@@ -1,0 +1,57 @@
+// Pan & zoom (music): the album cover fills the screen and the camera drifts over it like a
+// documentary - slowly zooming in on the cover's subject (found by MusicTheme: faces, the brightest,
+// busiest, most colourful part) and easing back out, never straying off the picture. Away from the
+// subject the cover goes soft like a shallow depth of field. Every kick punches the zoom a touch
+// and splits the colours for an instant; a thin spectrum glows along the bottom.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 6.0) * play;
+
+    float3 sub = subjectOf();
+    float2 sp = sub.xy;
+    float sz = clamp(sub.z, 0.12, 0.6);
+    // Slow in and out (about 50 s a cycle); smaller subjects get a deeper zoom.
+    float slow = 0.5 - 0.5 * cos(t * 0.125);
+    float z = 1.0 + (0.18 + 0.55 * (0.6 - sz)) * slow + kick * 0.04 * (0.4 + k);
+    float w = 1.0 / z;          // how much of the cover's width is on screen
+    float hgt = w / asp;        // ... and of its height
+    // The camera: from the middle towards the subject as it zooms in, with a gentle wander.
+    float2 drift = float2(sin(t * 0.047), cos(t * 0.039)) * 0.05 * (1.0 - 0.5 * slow);
+    float2 cam = mix(float2(0.5, 0.5), sp, 0.35 + 0.6 * slow) + drift;
+    cam.x = clamp(cam.x, w * 0.5, 1.0 - w * 0.5);
+    cam.y = clamp(cam.y, hgt * 0.5, 1.0 - hgt * 0.5);
+    float2 q = cam + (uv - float2(asp * 0.5, 0.5)) * (w / asp);
+
+    // The kick splits the colours for a moment.
+    float split = kick * 0.004 * (0.3 + k);
+    float3 sharp = float3(sharpCover(q + float2(split, 0.0), A, S).r,
+                          sharpCover(q, A, S).g,
+                          sharpCover(q - float2(split, 0.0), A, S).b);
+    float3 soft = mix(mix(A, S, q.y), float3(uArt.eval(clamp(q, 0.0, 1.0) * uArtSize).rgb), uHasArt);
+    // Shallow depth of field round the subject (stronger when zoomed in).
+    float dof = smoothstep(sz * 0.55, sz * 1.5, length((q - sp) * float2(1.0, 1.1)));
+    float3 col = mix(sharp, soft, dof * (0.25 + 0.4 * slow));
+
+    // A warm light leak drifting across, in the cover's colours, brighter on the beat.
+    float2 lp = float2(asp * (0.5 + 0.6 * sin(t * 0.09)), 0.2 + 0.15 * cos(t * 0.07));
+    col += mix(A, S, 0.5 + 0.5 * sin(t * 0.05)) * exp(-length(uv - lp) * 2.4) * (0.1 + 0.25 * kick * k);
+    // Calmer at the bottom, where the player and lyrics sit.
+    col *= 1.0 - 0.38 * smoothstep(0.5, 1.0, uv.y);
+    // A thin spectrum along the bottom edge.
+    float m = sat(uv.x / asp);
+    float e = eqAt(m) * play;
+    float bar = smoothstep(1.0 - 0.06 * e - 0.004, 1.0 - 0.06 * e, uv.y);
+    col = mix(col, mix(A, float3(1.0), 0.35), bar * (0.35 + 0.4 * k));
+    // Vignette.
+    float2 vv = fc / uRes - 0.5;
+    col *= 1.0 - 0.55 * dot(vv, vv);
+    return half4(finish(col, fc), 1.0);
+}

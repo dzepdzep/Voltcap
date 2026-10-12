@@ -1,0 +1,175 @@
+// Trophy vault (32-bit): a dark hall of honour. Seven pedestals stand in a row, each with a badge
+// floating above it - a star, gold and silver coins, a red bolt plaque, a blue bolt octagon - glowing in
+// chunky pixels. A red carpet with gold trim runs up to the middle pedestal under a beam of light, where a
+// gold coin turns on its edge; the coins spin, the badges bob, sparkles twinkle, and every few seconds
+// one badge flares as if it had just been unlocked.
+// Signed in to RetroAchievements, the pedestals hold your own trophies instead (TrophyShelf.kt): the games
+// you mastered most recently in gold frames (the newest on the carpet, under the beam), then your latest
+// unlocked badges in silver ones. Each one spins round every few seconds, showing its gold or silver back.
+// Pedestals left over keep the drawn badges.
+//#include pixel
+
+uniform shader uTrophies;    // the trophies side by side: 7 square cells, uTrophySize.y pixels each
+uniform float2 uTrophySize;
+uniform float uTrophyN;      // how many cells are filled (0 = the drawn badges everywhere)
+uniform float uFocusY;       // 0.5 + how far to move the hall down (share of the height; 0 = not set)
+uniform float uMasteredN;    // the first this many are mastered games (gold), the rest badges (silver)
+
+// Badge kind k at q (pixels from its centre), size r (pixels): 1 inside, 2 on the rim, 3 on the bolt.
+float badgeShape(float k, float2 q, float r) {
+    float d;
+    if (k < 0.5) {                                    // star
+        float a = atan(q.y, q.x) + PI * 0.5;
+        float f = abs(fract(a / TAU * 5.0) - 0.5) * 2.0;
+        d = length(q) - r * mix(0.45, 1.0, f * f * f);
+        return d < 0.0 ? 1.0 : 0.0;
+    }
+    if (k < 1.5) d = length(q) - r;                                                       // coin
+    else if (k < 2.5) d = max(abs(q.x) - r * 0.72, abs(q.y) - r) - 0.0 + 0.0 * r;         // plaque
+    else { float2 h = abs(q); d = max(h.x * 0.924 + h.y * 0.383, max(h.y * 0.924 + h.x * 0.383, max(h.x, h.y))) - r; }   // octagon
+    if (d > 0.0) return 0.0;
+    if (d > -1.6) return 2.0;
+    // The bolt: two slanted strokes.
+    float2 b = q / max(r, 1.0) * 6.0;
+    float bolt = step(abs(b.x + b.y * 0.55 + 0.7), 0.9) * step(-3.6, b.y) * step(b.y, 0.3)
+               + step(abs(b.x + b.y * 0.55 - 0.7), 0.9) * step(-0.3, b.y) * step(b.y, 3.6);
+    return bolt > 0.5 ? 3.0 : 1.0;
+}
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    // Moved down (a game row at the top, or Theme look › Scene position): whole pixels, the wall continues above.
+    cell.y -= floor((uFocusY > 0.001 ? clamp(uFocusY - 0.5, -0.15, 0.3) : 0.0) * PX_ROWS);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float W = asp * PX_ROWS;                           // screen width in pixels
+    float2 p = cell + 0.5;                             // this pixel
+    float cx = W * 0.5;
+    float hor = PX_ROWS * 0.6;                         // where the wall meets the floor
+
+    // The hall: navy wall, a darker dado band, a floor of big dim tiles in perspective.
+    float3 wall = mix(BG * 1.4 + float3(0.06, 0.08, 0.16), float3(0.12, 0.15, 0.3), 0.5);
+    float3 col = wall * (0.8 + 0.25 * (p.y / hor));
+    if (p.y > hor - 22.0) col = wall * 0.75;
+    if (p.y > hor) {
+        float z = 40.0 / (p.y - hor + 6.0);
+        float xx = (p.x - cx) / W * z * 4.0;
+        float tile = mod(floor(xx) + floor(z * 1.5), 2.0);
+        col = mix(wall * 0.55, wall * 0.62, tile) * (0.75 + 0.25 * (p.y - hor) / (PX_ROWS - hor));
+    }
+    // Beams of light from above: a bright one in the middle, two faint ones beside it.
+    float beamC = step(abs(p.x - cx), 10.0 + p.y * 0.35) * step(p.y, hor + 8.0);
+    float beamL = step(abs(p.x - cx + W * 0.13 + p.y * 0.12), 8.0 + p.y * 0.25) * step(p.y, hor);
+    float beamR = step(abs(p.x - cx - W * 0.13 - p.y * 0.12), 8.0 + p.y * 0.25) * step(p.y, hor);
+    col += float3(0.6, 0.7, 1.0) * (0.13 * beamC + 0.05 * (beamL + beamR)) * (0.85 + 0.15 * sin(t * 0.7));
+    col += float3(0.6, 0.7, 1.0) * 0.06 * step(abs(p.x - cx), 34.0) * exp(-abs(p.y - hor) * 0.08) * step(hor - 3.0, p.y);
+
+    // The carpet: from the bottom edge up to the middle pedestal, widening towards you, gold edges.
+    float cy0 = hor + 4.0;
+    if (p.y > cy0) {
+        float f = (p.y - cy0) / (PX_ROWS - cy0);
+        float cw = 14.0 + f * 52.0;
+        float dx = abs(p.x - cx);
+        if (dx < cw) col = mix(mix(float3(0.62, 0.16, 0.14), A * 0.6, 0.15), mix(float3(0.78, 0.24, 0.2), A, 0.15), step(mod(floor(p.y * 0.25), 2.0), 0.5) * 0.3 + 0.35 * (1.0 - f));
+        if (dx >= cw && dx < cw + 2.0 + f * 2.0) col = mix(float3(0.85, 0.6, 0.2), S * 0.8 + 0.2, 0.15);
+    }
+
+    // Seven pedestals with their badges. kind: 0 star, 1 coin, 2 plaque, 3 octagon.
+    float flareN = floor(t / 4.0);
+    float flareA = fract(t / 4.0) * 4.0;
+    float flareI = mod(floor(hash11(flareN * 3.7) * 7.0), 7.0);
+    for (int i = 0; i < 7; i++) {
+        float fi = float(i);
+        float u = fi < 0.5 ? 0.1 : (fi < 1.5 ? 0.215 : (fi < 2.5 ? 0.365 : (fi < 3.5 ? 0.5 : (fi < 4.5 ? 0.635 : (fi < 5.5 ? 0.785 : 0.9)))));
+        float px0 = floor(W * u);
+        float near = fi < 0.5 || fi > 5.5 ? 0.0 : 1.0;
+        float base = hor + 12.0 - abs(fi - 3.0) * 1.0;
+        float topY = base - 24.0 - 2.0 * step(abs(fi - 3.0), 1.5);
+        float hw = 9.0 + 2.0 * step(abs(fi - 3.0), 2.5);
+        // Column with a lit right edge, and a wider cap.
+        float2 cq = p - float2(px0, 0.0);
+        if (abs(cq.x) <= hw && p.y > topY && p.y < base) {
+            col = mix(float3(0.13, 0.15, 0.25), BG + 0.08, 0.2);
+            if (cq.x > hw - 4.0) col = float3(0.26, 0.29, 0.45);
+            if (cq.x < -hw + 2.0) col *= 0.8;
+        }
+        if (abs(cq.x) <= hw + 3.0 && p.y > topY - 4.0 && p.y <= topY) col = p.y < topY - 2.0 ? float3(0.36, 0.4, 0.58) : float3(0.24, 0.27, 0.42);
+        // The badge, bobbing; coins turn round.
+        float kind = fi < 0.5 ? 0.0 : (fi < 1.5 || fi > 4.5 ? 1.0 : (fi < 2.5 ? 2.0 : (fi < 3.5 ? 1.0 : 3.0)));
+        float r = fi < 0.5 ? 9.0 : (abs(fi - 3.0) < 0.5 ? 10.0 : (fi < 2.5 || abs(fi - 4.0) < 0.5 ? 13.0 : 11.0));
+        float bob = floor(2.0 * sin(t * 1.3 + fi * 1.1) + 0.5);
+        float2 bc = float2(px0, topY - r - 6.0 + bob);
+        float spin = kind > 0.5 && kind < 1.5 ? cos(t * (abs(fi - 3.0) < 0.5 ? 2.2 : 0.9) + fi) : 1.0;
+        if (abs(fi - 3.0) < 0.5) spin = 0.3 + 0.12 * sin(t * 2.5);      // the middle coin turns slowly on its edge
+        float sx = max(abs(spin), 0.12);
+        float2 q = floor(p - bc) + 0.5;
+        q.x /= sx;
+        float shape = badgeShape(kind, q, r);
+        float3 bcol = fi < 0.5 ? float3(1.0, 0.78, 0.25) : (fi < 1.5 || fi > 5.5 ? float3(1.0, 0.75, 0.2) : (fi < 2.5 ? mix(float3(0.85, 0.3, 0.25), A, 0.25) : (fi < 3.5 ? float3(1.0, 0.82, 0.3) : (fi < 4.5 ? mix(float3(0.25, 0.45, 1.0), S, 0.25) : float3(0.82, 0.84, 0.92)))));
+        float flare = abs(fi - flareI) < 0.5 ? exp(-flareA * 1.6) : 0.0;
+        // Your own trophy on this pedestal: the middle first, then out to the sides.
+        float slot = fi < 0.5 ? 5.0 : (fi < 1.5 ? 3.0 : (fi < 2.5 ? 1.0 : (fi < 3.5 ? 0.0 : (fi < 4.5 ? 2.0 : (fi < 5.5 ? 4.0 : 6.0)))));
+        if (slot < uTrophyN - 0.5) {
+            float mast = step(slot, uMasteredN - 0.5);
+            float rr = 12.0 + 2.0 * mast + 3.0 * step(abs(fi - 3.0), 0.5);
+            float3 fr = mast > 0.5 ? float3(1.0, 0.8, 0.3) : float3(0.8, 0.84, 0.95);
+            // A full turn now and then (each on its own beat), resting face-on in between.
+            float ph = fract(t / 5.5 + fi * 0.29);
+            float cs = cos(TAU * smoothstep(0.0, 0.32, ph));
+            float sxx = max(abs(cs), 0.1);
+            float2 tc = float2(px0, topY - rr - 6.0 + bob);
+            float2 q2 = floor(p - tc) + 0.5;
+            float2 qq = float2(q2.x / sxx, q2.y);
+            float gd2 = max(abs(q2.x) - rr * sxx, abs(q2.y) - rr);
+            col = mix(col, mix(col, fr, 0.45), (1.0 - gd2 / (5.0 + 6.0 * flare)) * step(gd2, 5.0 + 6.0 * flare) * step(0.0, gd2) * step(0.5, mod(cell.x + cell.y, 2.0)) * (0.55 + 0.45 * flare));
+            if (abs(qq.x) < rr && abs(qq.y) < rr) {
+                float edge = rr - max(abs(qq.x), abs(qq.y));
+                float3 c;
+                if (cs > 0.0) {
+                    float2 tuv = clamp(qq / rr * 0.5 + 0.5, 0.02, 0.98);
+                    c = float3(uTrophies.eval(float2((slot + tuv.x) * uTrophySize.y, tuv.y * uTrophySize.y)).rgb);
+                } else {
+                    // Its back: a plain plate with the bolt.
+                    c = fr * (badgeShape(2.0, qq * float2(0.72, 1.0), rr * 0.8) > 2.5 ? 1.0 : 0.62);
+                }
+                if (edge < 1.5 + mast) c = fr * (edge < 1.0 ? 1.0 : 0.75);
+                if (sxx < 0.22) c = mix(fr, float3(1.0), 0.3);        // edge-on: a gold / silver sliver
+                c *= 0.88 + 0.12 * step(q2.x + q2.y, 0.0);
+                col = c * (1.0 + 0.6 * flare);
+            }
+            // A glint across the frame while it turns.
+            if (ph < 0.34) col += fr * 0.25 * step(abs(q2.x - (ph * 6.0 - 1.0) * rr), 1.0) * step(abs(q2.y), rr);
+            continue;
+        }
+        // Soft glow round each badge (every other pixel: a dithered halo).
+        float gd = length(p - bc) - r;
+        col = mix(col, mix(col, bcol, 0.45), (1.0 - gd / (5.0 + 6.0 * flare)) * step(gd, 5.0 + 6.0 * flare) * step(0.0, gd) * step(0.5, mod(cell.x + cell.y, 2.0)) * (0.55 + 0.45 * flare));
+        if (shape > 0.5) {
+            float3 c = shape > 2.5 ? mix(bcol, float3(1.0), 0.55) : (shape > 1.5 ? mix(bcol, float3(1.0), 0.35) : bcol * 0.85);
+            // Edge-on coin: a bright sliver.
+            if (sx < 0.45) c = mix(bcol, float3(1.0), 0.25 + 0.25 * step(abs(q.x * sx), 1.0));
+            c *= 0.85 + 0.15 * step(q.x * sx + q.y, 0.0);
+            col = c * (1.0 + 0.8 * flare);
+        }
+        // Sparkles: little crosses round the middle coin, the octagon, and the one flaring.
+        if (abs(fi - 3.0) < 0.5 || abs(fi - 4.0) < 0.5 || flare > 0.05) {
+            for (int s = 0; s < 3; s++) {
+                float fs = float(s);
+                float tw = step(0.4, sin(t * 3.0 + fs * 2.1 + fi));
+                float2 sp = bc + float2((fs - 1.0) * (r + 7.0), (fs < 0.5 ? 2.0 : (fs < 1.5 ? -r - 5.0 : 6.0)));
+                float2 sq = abs(floor(p - sp));
+                float plus = step(sq.x + sq.y, 0.5) + step(sq.x, 0.5) * step(sq.y, 2.0) + step(sq.y, 0.5) * step(sq.x, 2.0);
+                col = mix(col, mix(bcol, float3(1.0), 0.6), step(0.5, plus) * max(tw, flare * 2.0) * step(fs, 1.0 + step(abs(fi - 4.0), 0.5)));
+            }
+        }
+    }
+    // Dust in the middle beam.
+    float2 dp = floor(p * 0.5 + float2(t * 1.5, -t * 2.0));
+    col += float3(0.7, 0.8, 1.0) * 0.25 * step(0.985, hash12(dp)) * beamC;
+    col = pxQuant(col, 12.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

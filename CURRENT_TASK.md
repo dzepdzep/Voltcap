@@ -1,0 +1,156 @@
+# CURRENT_TASK — updated 6 Oct 2026 (after update 57)
+
+## Done
+- Updates 20, 21 (themes) and 22 (the user's list of 5 Oct evening + pixel UI reach, Volt): see SUMMARY.md.
+- Update 22 answers from the user: "Sync recently played" = games (same as last-played sync); Save Vault "spawn
+  infinitely" = endless scrolling grid; Thor 2nd-screen swipe = flip Voltcap pages.
+
+- Update 23: in-game overlay panel (tile long-press / notification tap), free overlay dragging, visible blurred cover
+  on the music overlay, home header / corner visualizer clean-up.
+
+- Update 24: Volt design system (VoltUi.kt: glass panels, accent focus glow, voltage line, pill switches, edge
+  cards, underline tabs), applied to all shared components, settings, R1 sheet, notifications; second screen header /
+  achievements board / "Cartridge + details" art / Games page; library view grid / list (GameBrowser.kt); Volt
+  companion (perch on focused card, roam the background); picture tiles for visual choices + group icons.
+  Constraint from the user: don't break the game rows (classic / tiles / hero) — new things layer on top.
+
+- Update 25: Volt pieces in the theme palette (accent → secondary), Grid home layout (GridHome.kt), drawn
+  cartridges / discs with label (PhysicalMedia.kt, ScreenScraper support-texture), soft glow / electric redone.
+
+- Update 26: VoltTour.kt (spotlight tour of the real home screen after setup / Mascot › Show me around; targets
+  via Modifier.tourTarget(id)), cleaned 10 mascot PNGs (project_copy res/drawable-nodpi).
+
+- Update 27: UiStyle Glass / Energy capsule / 32-bit console / Classic (VoltUi capsuleSurface, pixelSurface), pixel
+  artwork in dp + dither, category slide / cover light / charge gauge (HomeExtras.kt).
+
+- Update 28: Pixel Volt set (res volt_*.png, generator tools/mascot), Features.mascotArt; soft blur behind the
+  games (Features.rowBlur, SoftRowBlur in HomeExtras.kt).
+
+- Update 29: original Volt default again (code-drawn sets not good enough; user prefers their art), UiStyle +
+  Memory card / CRT / Neon sign / Cartridge, HomeLayout.TV (TvRoomHome.kt: TV with clip/screenshots/music OSD,
+  console sticker, cases with spines / covers / shelf of spines, info bar).
+
+- Update 30: per-console MediaShell (N64, Switch, Vita, HuCard, GBC, Atari, Game Gear, disc variants PS1/PS2/
+  Saturn/GD/Wii, GC mini at real size + Features.bigGcDiscs).
+
+- Update 31: physical media as rendered templates (res media_*.png from tools/media, label window behind).
+
+- Update 32: new Volt sheet → mascot_*.png (27 poses incl. stretch/loaf/prowl/idea/gaming + 9 faces), blink frames
+  (MascotPose.blinkRes), per-pose animations in MascotSprite (pop on pose change, music sway, hops, prowl...);
+  "Waterfall cliffs" animated theme (ThemeMotif.PIXEL_FALLS, FramesScene.kt, scene_falls.png 8×560×272 strip);
+  UMD redone as the real pick-shaped shell with a round window (label clipped by CircleShape).
+- Update 33: gesture pill — GestureHint.immersiveState ("Hide navigation bar", default on) + SystemBars.kt
+  (window, every Dialog via ImmersiveDialogWindow(), re-hide after IME); "Force-hide gesture hint" switch
+  (Shizuku / WRITE_SECURE_SETTINGS, keys navigation_bar_gesture_hint / hide_gesture_line, restore on onStop).
+
+- Update 34: bug check — unique lazy keys (gameKeys), BackHandler for library / tour / details / category screen,
+  library Close button, blink stuck fix, showcase shadow, second-screen focus outline. FEATURES.md written.
+- Update 35: second bug check — launcher-data merge no longer wipes on unreadable/missing Drive file, last-played
+  skip on unreadable file, scan keeps selection, web remote lockout, nearby transfer PIN limit, overlay tile restarts
+  the overlay service mid-game (GameMode.active), video Surface release.
+- Update 36: full bug check of all 180 files, nothing skipped (user: "dont skip anything in the future"). 88 files
+  fixed: Drive download swap, SAF partial file cleanup, duplicate lazy keys (category row, 2nd-screen apps),
+  clock-change crash, safe JSON in RA social / Steam, borrowed emulator package names, manuals for apps,
+  CUE/GDI tracks, stale touch callbacks (rememberUpdatedState), per-frame wakeups / recompositions, main-thread I/O.
+  Google Drive for everyone = publish the OAuth consent screen (drive.file) + release-key Android client.
+- Update 37: Shizuku removed (user doesn't want to run it): GestureHint uses RootShell (PServer) + self-grant of
+  WRITE_SECURE_SETTINGS, else the adb command. Underclock (TuneProfile.underclock / underclockKhz / underclockGpuMhz,
+  Tuner.underclockKhz/GpuLevel/cycleUnderclock) with R1 tile (DeviceControl.UNDERCLOCK), QS tile
+  (UnderclockTileService), in-game panel chip. Tiles mid-game now apply to games on the device-wide profile.
+- Update 38: per-game "For this game" quick card (underclock / fan / buttons; first pick creates the own profile),
+  GameExtras restore persisted (prefs game_extras, INTERNAL) so buttons go back after Voltcap was killed mid-game.
+- Update 39: console profiles ("plat:<platform>" in TuneStore per_game; Tuner.resolve own → pkg → plat → global;
+  onGameLaunch gets platform + console name), heat guard (Tuner.heatTick, heatCeiling, TuneStore.heatGuard/heatGuardC),
+  copy to all console games (TuneStore.setForKeys), measurements (TuneStore.stats/addStat, ProfileStat, Tuner
+  measureStart/Sample/End, TuneService.batteryPower). Toggles: consoleProfiles, heatGuard, measure.
+  Next ideas offered to the user (not started): see the chat for update 39.
+- Update 40: SystemSync (ContentObservers on shade settings, display listener, Wi-Fi/BT/DND/volume broadcasts,
+  prefs listeners on tuner/perf_settings/charge_limit/mixer → version StateFlow; screens re-read). Tuner adopts
+  outside fan_mode (onSystemFanMode, lastFanWritten); GameExtras.onSystemChange drops restore of Hz / buttons
+  changed in the shade. Volume mixer: MixerHelper (app_process via PServer: IAudioService
+  getActivePlaybackConfigurations → getClientUid / getPlayerProxy().setVolume; modes list / daemon),
+  AppMixer (prefs "mixer", pkill/pgrep 'voltcap_mix[d]'), MixerActivity card, MixerTileService, R1 tile.
+- Update 41: AppearanceSettings.secondPageTitleOnly → SecondScreenOptions.pageTitleOnly; PageSwitcher (SecondScreenHome)
+  with quiet chevrons, VoltSecondHeader(titleOnly, onStep); switch in Screens › While you're in Voltcap.
+
+- Update 42 (user's 26-point list, part 1): CategorySlide.tick (slide only on L2/R2), GameDock loop tracker keeps its
+  place on list refresh, SecondScreenShown + FLAG_NOT_FOCUSABLE Presentation (keys forwarded), details as the second
+  screen's "Game" page (gameWindow / onCloseGameWindow, AppearanceSettings.secondDetails), achievements inline detail
+  (narrow), MusicPlayer(artBackdrop), FitText uses LocalTextStyle, MascotSprite(sameScale) + BODY_POSES, Volt off
+  (Features.migrate42), mixer one-line list + dumpsys fallback, SystemLights (AYN RGB keys held off), all multi-intensity
+  LEDs, theme-colour lights at 45 %, music fx on the second screen (musicFxSecond, fxOverlay), visualizer cover toggle
+  (secondVisualizerArt, COVER_MOTIFS), second-screen saver BLACK (key second_screen_v42), SaverStyle.VOLT_SLEEP,
+  removed: GameBrowser / LIBRARY_VIEW / library prefs / Game clients card / SecondPage.LIBRARY (enum kept for old
+  values) / NIGHT_DRIVE; Retro TV = MusicCrtRoom (CRT room shader with the cover).
+
+- Update 43: template pack → res tpl_*.webp + ui/MediaTemplates.kt (generated, tools/media_templates), TemplateMedia
+  (mask DstIn in the window) + Box3D (setPolyToPoly front/spine, glass overlay, rotationY sway) in ui/RealMedia.kt;
+  PhysicalMedia(platform, labelIsScan) uses them; typedArtFor(platform) keeps only the 2D box when box3d; Features.box3d;
+  CaseDetailsPage (ui/SecondScreenDetails.kt, flip open, secondDetailsCase); Features.uiFont (NORMAL / PIXEL),
+  headingFont(), uiFontStyle() (font-only merge), Density fontScale 0.84 for pixel; m43 migration of pixelUi; PixelStyleCard
+  in Interface style; cardArtByLayout / hiddenMediaByLayout + cardArtFor() + LocalHiddenMedia/artForGame; PinnedShortcuts
+  + PinShortcutActivity (CONFIRM_PIN_SHORTCUT, LauncherApps.startShortcut). User rule: every update lists files to delete with full paths.
+
+- Update 44: shaders get playing clocks uPlayT / uBassT / uMidT / uHighT (_reactive.agsl, NowPlayingScene MusicShader integrates
+  them; replaced every t * (a + b * level) spin), HOLO_COVER perspective card + uLabel name strip (songLabel(clean = true),
+  640 x 170, bilinear), RECORD_SHELF rebuilt (wallSleeve / crate helpers), cube silhouette AA; ThemeMotif.lyrics +
+  ThemeGroup.LYRICS, LYRIC_KARAOKE / LYRIC_SHEET (lyric_cloud scene) / LYRIC_NEON in ui/LyricThemes.kt (LyricStageLayer,
+  largestFreeBand, Features.lyricNextLine / karaokeBall); TvRoomHome PadGlyph confetti per console + cabinet TV (Canvas,
+  rotationY -5, channel param). gen.py: NIGHT_DRIVE out, ALSO map (PIXEL_FALLS); check_uniforms.py handles shared cases;
+  tools/themes/shoot_frame.py renders a still. FitText.kt (uiFontStyle) had been left out of update 43's copy: delivered in 44.
+
+- Update 45: mixer rework — MixerHelper one marked line (VOLTCAP_MIX), launch VARIANTS remembered, players carry sessions;
+  MixerEffects.kt (DynamicsProcessing per session, AudioReport: DUMP self-grant via root / adb, dumpAsync of "audio",
+  root dumpsys joined with tr); AppMixer Method AUTO / HELPER / EFFECT, Status, per-game volume (onGameLaunch /
+  onGameEnded from the VM), pinned apps, amplitude = p²; MixerActivity redesign + Mixer check report; Hotkey VOLUME_MIXER.
+  QsTiles.kt + QsTilesCard.kt (Settings › Device fold "dev_tiles", FirstRun finishing touches; requestAddTileService
+  API 33+, root sysui_qs_tiles add-all, tiles mark onTileAdded/Removed; res ic_tile_*). Visual sweep of every ui/ file:
+  ChipFlow rows, ShelfDialog FlowRow footer, PercentSlider valueText, LegendThree in ControlBar, statusBarDp insets,
+  SecondScreenHome headerEndInset (CompanionHub timer pill), 76 Ellipsis adds (/tmp ellip.py). SettingsScopes: mixer_games /
+  mixer_meta DEVICE, qs_tiles INTERNAL. Not compiled (PC run stopped after generateDebugRFile; jar type-check not run). verify-src-copy.bat in the project root
+  sets JAVA_HOME to Android Studio's jbr and runs the verify-src-copy.gradle build.
+  User: work on the app files, not by driving the PC (no computer use).
+
+- Update 46: VoltageLine shared clock (VOLT_SPARK_CYCLE); TvRoomBackdrop (room, stand, lamp, screen glow) + CRT flicker /
+  roll / phosphor; CaseGrid centred row (padV contentPadding) + free media; isFreeMedia / mediaFloorGlow (PhysicalMedia.kt),
+  FrontBox + rememberBoxFace (RealMedia.kt) in GameCard / GridHome / TileHome / TV, GameDock bannerFree slot width;
+  MediaVariants (GBC Black / Grey / Clear, Features.gbcCart, res tpl_cart(l)_gbc_black); FocusedLine vertical hug +
+  GameDock categoryBelow; SecondScreenOptions.artType limited (HERO / SCREENSHOTS), SecondHomeGame.shots; DockBacking
+  header switch + rowBlur / nameBlur sliders (nameTextStyle scales shadow); CloudSync.perGameSaveFilesAll + SaveCapsules
+  disk cache; FloatingSaveField, MemoryCardSky own clock, CapsuleCrack before open, MemCardShape; music never paused while
+  playing (NowPlayingScene / CodeScene musicOn / Lyric* / CornerVisualizers), scene scale ≥ 0.9, secondScreenQuality = main;
+  ScreensaverLyrics fit ladder; Underclock.AUTO + effectiveUnderclock (migration flag uc_with_power); LidPause
+  (Features.pauseOnClose); hero retry + HeroLayers refresh on resume. Not compiled.
+- Update 47: settings search (SettingsSearchResults + generated SettingsIndex.kt, tools/settings_index/gen.py; jumps via
+  subpageMemory / openFold / category); second-screen FullMusicScreen inside SecondPage.MUSIC (no takeover); TV music OSD
+  off, Features.tvRoomNames; FrontBox draws the template overlay warped to the front quad (setPolyToPoly), case media no
+  longer gated by Features.box3d; FocusedLine wrap under the row; AudioReport session regex ("session ID:") + diagnose
+  checks; softBandBrush / SoftBandBlur (HomeExtras.kt) for Game-UI blur + dim + SoftRowBlur (hero fades right, grid full,
+  tiles from artTop). Not compiled.
+- Update 48: 47 build fix (TvRoomHome OSD block removed); ANR on Thor = hwui text-blob cache under perspective
+  (GrTextBlobRedrawCoordinator) → flatTextFor3d() (Offscreen compositing when rotationX/Y != 0) on every 3D layer;
+  real compile check in the cloud (tools/compile_check, jars from the user's Gradle cache, granted read access). 0 errors.
+
+## Open / next
+- Update 45 needs a build + device test (mixer effect method, tile prompts, Thor lower screen).
+- 26-point list done. Maybe: 3D boxes in the TV room's cases.
+- See FEATURES.md › "Not done yet" for the full list.
+- Possible next: more pictograms (focus effect, other-games look, positions); Volt reacting to game launch / unlock
+  toasts.
+- Update 56: all brief themes done (+ 18 pixel types, Trophy vault, Badge constellations); Gaming room = the user's
+  painting (res/drawable-nodpi/gaming_room.webp, a showcase: uRoom + uShot, monitor at uFocusY = middle of the open
+  space from LocalSceneAvoid); ⊘/◐ own-colour marks (color_check.py). Compiled, 0 errors. Needs a device test.
+- Update 57: Trophy vault reads RA (TrophyShelf: mastered games + recent badges → uTrophies atlas, spinning frames);
+  Gaming room poster = cover (uPoster), clip on the monitor (VideoBackdrop over roomMonitorRect, Showcase.video);
+  Steam achievements without a key (community ?xml=1 pages). "Make the hero be…" dropped by the user.
+- DroidDeck / PXPlay: needs the installed apps' exported intents (dumpsys package) to go further than update 20.
+- Device checks pending (see SUMMARY update 22 "not tested").
+
+## How it's checked
+- Before shipping: tools/compile_check/check.sh in the cloud (see its README) — must be 0 errors.
+Cloud session without a shell on the PC: stage src_copy (7 calls of 50 files) + jars from ~/.gradle/caches
+(compose ui/foundation/animation/runtime 1.10.4, material3 1.4.0, icons 1.7.8, lifecycle 2.9.4, activity 1.10.1,
+core 1.16.0, coil 2.7.0, gson 2.11, okhttp 4.12, retrofit 2.11, okio 3.9) and android-36 android.jar; Kotlin 2.2.10
+from GitHub (Maven is blocked) with its compose-compiler-plugin.jar. Baseline: 544 errors (was 389 earlier) on untouched sources
+(missing WorkManager, Play services, R...). Compare error lists without line numbers.
+Commit back with expectedMtimeMs from the staging result.

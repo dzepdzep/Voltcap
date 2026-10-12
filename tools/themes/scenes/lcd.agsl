@@ -1,0 +1,79 @@
+// Pocket LCD / Pocket shell: a little dot-matrix landscape in four shades, scrolling past
+// like a handheld's attract screen: clouds, two rows of hills, a moon and twinkling stars.
+float3 shade4(float lv, float3 c0, float3 c1, float3 c2, float3 c3) {
+    if (lv < 0.5) return c0;
+    if (lv < 1.5) return c1;
+    if (lv < 2.5) return c2;
+    return c3;
+}
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 SF = uSurf.rgb;
+    float3 c0 = BG;
+    float3 c1 = mix(BG, SF, 1.0);
+    float3 c2 = mix(SF, A, 0.45);
+    float3 c3 = mix(A, S, 0.3);
+
+    float ps = max(4.0, floor(uRes.y / 96.0));
+    float2 cell = floor(fc / ps);
+    float2 local = fract(fc / ps);
+    float rows = floor(uRes.y / ps);
+    float x = cell.x;
+    float y = cell.y / rows; // 0 top .. 1 bottom
+
+    float lv = 0.0;
+    // Stars.
+    float st = hash12(cell);
+    if (st > 0.985 && y < 0.5) lv = step(0.5, sin(t * 2.0 + st * 60.0)) + 1.0;
+    // Moon.
+    float2 mc = float2(rows * (uRes.x / uRes.y) * 0.78, rows * 0.2);
+    float md = length(cell - mc);
+    if (md < rows * 0.07) lv = (length(cell - mc - float2(rows * 0.03, -rows * 0.01)) < rows * 0.06) ? 1.0 : 3.0;
+    // Clouds drifting.
+    // Clouds: puffy blobs made of a few circles each, drifting one dot at a time.
+    float cx = x + floor(t * 2.0);
+    float span = 46.0;
+    float ci = floor(cx / span);
+    float lx = cx - ci * span;
+    float cyc = rows * (0.12 + 0.2 * hash11(ci * 3.7));
+    float cw = 9.0 + 7.0 * hash11(ci * 1.9);
+    if (hash11(ci * 5.3) > 0.25) {
+        float2 cc = float2(span * 0.5, cyc);
+        float puff = min(min(length((float2(lx, cell.y) - cc) / float2(cw, cw * 0.55)),
+                             length((float2(lx, cell.y) - cc - float2(-cw * 0.6, cw * 0.15)) / float2(cw * 0.6, cw * 0.4))),
+                         length((float2(lx, cell.y) - cc - float2(cw * 0.65, cw * 0.18)) / float2(cw * 0.55, cw * 0.38)));
+        if (puff < 1.0 && cell.y < cc.y + cw * 0.3) lv = 2.0;
+        if (puff < 1.0 && cell.y > cc.y + cw * 0.05 && cell.y < cc.y + cw * 0.3) lv = 1.0;
+    }
+    // Far hills.
+    float fx = x + t * 3.0;
+    float fh = 0.55 + 0.08 * sin(fx * 0.045) + 0.05 * sin(fx * 0.11 + 1.0);
+    if (y > fh) lv = 1.0;
+    // Near hills, with a dithered slope shade.
+    float nx = x + t * 7.0;
+    float nh = 0.7 + 0.07 * sin(nx * 0.06 + 2.0) + 0.04 * sin(nx * 0.17);
+    if (y > nh) {
+        lv = 2.0;
+        float slope = cos(nx * 0.06 + 2.0);
+        if (slope > 0.3 && mod(cell.x + cell.y, 2.0) < 1.0) lv = 1.0;
+    }
+    // Ground with grass tufts scrolling fastest.
+    float gx = x + t * 12.0;
+    if (y > 0.86) {
+        lv = 1.0;
+        if (y < 0.88 && hash11(floor(gx / 2.0)) > 0.5) lv = 2.0;
+        if (mod(floor(gx / 5.0) + cell.y, 7.0) < 1.0) lv = 0.0;
+    }
+
+    float3 c = shade4(lv, c0, c1, c2, c3);
+    // Gaps between the dots, and a soft sheen across the glass.
+    float gap = step(0.14, local.x) * step(0.14, local.y);
+    c = mix(mix(c, c0, 0.45), c, gap);
+    float2 q = fc / uRes;
+    c += float3(1.0) * 0.025 * smoothstep(0.6, 0.0, abs(q.x - q.y * 0.5 - 0.15));
+    return half4(finish(c, fc), 1.0);
+}

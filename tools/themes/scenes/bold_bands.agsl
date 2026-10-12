@@ -1,0 +1,28 @@
+// Bold bands: thick rounded colour bands laid diagonally across a flat field, like a clean, modern
+// console home screen. Static, flat colours, sharp antialiased edges.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = BG * 1.1;
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float ca = cos(0.45); float sa = sin(0.45);
+    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float y = -0.45 + fi * 0.3;
+        float len = 0.5 + 0.35 * hash11(fi + 2.0);
+        float x0 = -0.9 + 0.5 * hash11(fi + 7.0);
+        float2 q = p - float2(x0 + len, y);
+        float2 b = float2(len, 0.085);
+        float2 qq = abs(q) - b + 0.085;
+        float d = length(max(qq, 0.0)) + min(max(qq.x, qq.y), 0.0) - 0.085;
+        float3 bc = i == 1 ? A : (i == 3 ? S : mix(BG, A, 0.35) * 1.2);
+        col = mix(col, bc, 1.0 - smoothstep(-px, px, d));
+    }
+    return half4(col, 1.0);
+}

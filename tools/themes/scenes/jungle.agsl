@@ -1,0 +1,149 @@
+// Jungle canopy: deep in a lush jungle at golden hour. Bright sky glows through gaps in the
+// canopy, layers of trees fade from misty blue-green far away to rich saturated greens up close and
+// drift past at their own speeds; an overgrown stepped temple rises in the haze, a tall waterfall
+// pours into a glowing pool of mist, sunbeams slant through the leaves, big leaves in the
+// foreground sway in the breeze, vines hang and swing, butterflies flutter and fireflies blink.
+
+float leafShape(float2 p, float len, float wid) {
+    // A pointed leaf along +y: width falls off towards both ends.
+    float y = p.y / len;
+    float w = wid * sin(sat(y) * PI) * (1.0 - 0.3 * y);
+    return abs(p.x) - w + step(1.0, y) + step(y, 0.0);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Sky glow behind everything.
+    float3 col = mix(float3(1.0, 0.93, 0.7), float3(0.55, 0.78, 0.7), smoothstep(0.1, 0.6, uv.y));
+    float2 sunP = float2(asp * 0.58, 0.18);
+    col += float3(1.0, 0.85, 0.5) * exp(-length(uv - sunP) * 4.0) * 0.5;
+
+    // Far tree layers: misty silhouettes with round crowns, drifting slowly.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float sp = 0.004 + fi * 0.006;
+        float x = uv.x + t * sp + fi * 7.3;
+        float crowns = 0.0;
+        float base = 0.42 + fi * 0.08;
+        float h = base - 0.12 * (0.5 + 0.5 * vnoise(float2(x * 3.0, fi))) - 0.05 * abs(sin(x * 9.0 + fi));
+        h -= 0.03 * vnoise(float2(x * 25.0, fi * 3.0));
+        float3 lc = mix(float3(0.5, 0.72, 0.66), float3(0.14, 0.46, 0.18), fi / 3.0);
+        lc = mix(lc, float3(0.88, 0.93, 0.78), 0.32 - fi * 0.1);
+        // Dappled light and texture on the crowns, a sunlit rim along their tops.
+        lc *= 0.82 + 0.3 * fbm3(float2(x * 14.0, uv.y * 18.0 + fi));
+        lc += float3(0.9, 0.85, 0.4) * 0.35 * exp(-(uv.y - h) * 90.0) * (0.4 + 0.15 * fi);
+        // Flowers on the nearer crowns.
+        float fl = step(0.993, hash12(floor(float2(x, uv.y) * 110.0))) * step(1.5, fi) * exp(-(uv.y - h) * 12.0);
+        lc = mix(lc, mix(float3(1.0, 0.45, 0.55), float3(1.0, 0.7, 0.2), hash11(floor(x * 140.0))), fl);
+        col = mix(col, lc, smoothstep(h - px * 2.0, h + px * 2.0, uv.y));
+        // Trunks under the crowns.
+        float tx = fract(x * (2.0 + fi * 0.6));
+        float trunk = step(abs(tx - 0.5), 0.02 + fi * 0.008) * step(h, uv.y);
+        col = mix(col, lc * 0.7, trunk * 0.7);
+
+        // After the second layer: the temple and the waterfall, in the haze.
+        if (i == 1) {
+            float2 tp = uv - float2(asp * 0.28 - t * 0.008, 0.48);
+            float steps = 0.0;
+            for (int s = 0; s < 5; s++) {
+                float fs = float(s);
+                float w = 0.13 - fs * 0.022;
+                float y0 = -fs * 0.04;
+                steps = max(steps, step(abs(tp.x), w) * step(y0 - 0.04, tp.y) * step(tp.y, y0));
+            }
+            float shrine = step(abs(tp.x), 0.025) * step(-0.235, tp.y) * step(tp.y, -0.2);
+            float door = step(abs(tp.x), 0.008) * step(-0.225, tp.y) * step(tp.y, -0.205);
+            float3 stone = mix(float3(0.62, 0.62, 0.52), float3(0.86, 0.8, 0.62), 0.4);
+            stone *= 0.85 + 0.15 * step(0.5, fract(tp.y * 50.0));
+            float moss = smoothstep(0.45, 0.7, fbm3(tp * 30.0));
+            stone = mix(stone, float3(0.25, 0.5, 0.3), moss * 0.6);
+            col = mix(col, mix(stone, col, 0.12), max(steps, shrine));
+            col = mix(col, float3(0.1, 0.15, 0.12), door * 0.8);
+            // The waterfall on the cliff to the right.
+            float2 wp = uv - float2(asp * 0.72, 0.2);
+            float cliff = step(abs(wp.x), 0.09) * step(0.0, wp.y);
+            col = mix(col, mix(float3(0.3, 0.42, 0.36), col, 0.3), cliff * step(0.03, abs(wp.x)));
+            float fall = step(abs(wp.x), 0.028) * step(0.0, wp.y) * step(wp.y, 0.36);
+            float streak = 0.6 + 0.4 * vnoise(float2(wp.x * 220.0, wp.y * 8.0 - t * 4.0));
+            col = mix(col, float3(0.9, 0.97, 1.0) * streak, fall * 0.9);
+            float mist = exp(-length((wp - float2(0.0, 0.36)) * float2(1.6, 3.5)) * 6.0) * (0.7 + 0.3 * fbm3(wp * 10.0 - t * 0.3));
+            col = mix(col, float3(0.95, 0.98, 1.0), mist * 0.7);
+        }
+    }
+
+    // Sunbeams slanting through the leaves.
+    float beam = 0.0;
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float bx = asp * (0.25 + fi * 0.22) + sin(t * 0.1 + fi) * 0.02;
+        float d = abs((uv.x - bx) - (uv.y - 0.1) * 0.45);
+        beam += exp(-d * (22.0 + fi * 6.0)) * (0.5 + 0.5 * sin(t * 0.3 + fi * 2.0));
+    }
+    col += float3(1.0, 0.92, 0.6) * beam * 0.14 * smoothstep(0.05, 0.4, uv.y) * (1.0 - smoothstep(0.7, 1.0, uv.y));
+
+    // Near jungle floor plants.
+    float hn = 0.86 - 0.06 * vnoise(float2(uv.x * 6.0 + t * 0.03, 1.0)) - 0.03 * abs(sin(uv.x * 30.0));
+    col = mix(col, mix(float3(0.1, 0.33, 0.1), float3(0.22, 0.52, 0.16), vnoise(uv * 20.0)) * (0.9 + 0.2 * exp(-(uv.y - hn) * 40.0)), smoothstep(hn - px, hn + px, uv.y));
+
+    // Canopy at the top: dense leaves with gaps of sky, swaying.
+    float cn = fbm3(float2(uv.x * 5.0 + t * 0.02, uv.y * 7.0) + float2(sin(t * 0.3) * 0.05, 0.0));
+    float canopy = smoothstep(0.42, 0.5, cn + (0.22 - uv.y) * 2.2);
+    float3 leafC = mix(float3(0.05, 0.22, 0.08), float3(0.25, 0.5, 0.16), sat(cn * 1.6 - 0.4));
+    leafC += float3(1.0, 0.9, 0.5) * 0.12 * smoothstep(0.55, 0.7, cn);
+    col = mix(col, leafC, canopy);
+
+    // Hanging vines, swinging.
+    for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float vx = asp * (0.08 + fi * 0.21) + 0.02 * sin(fi * 3.7);
+        float len = 0.35 + 0.25 * hash11(fi);
+        float sw = sin(t * 0.6 + fi * 1.4) * 0.03 * uv.y / len;
+        float d = abs(uv.x - vx - sw * uv.y);
+        float vine = step(d, 0.0022) * step(uv.y, len);
+        float leaves = step(abs(fract(uv.y * 28.0 + fi) - 0.5), 0.2) * step(d, 0.007) * step(uv.y, len);
+        col = mix(col, float3(0.1, 0.3, 0.1), max(vine, leaves * 0.8));
+    }
+
+    // Big foreground leaves at the bottom corners, swaying.
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float side = i < 3 ? 0.0 : 1.0;
+        float2 root = float2(side * asp + (side * 2.0 - 1.0) * -0.02, 1.05);
+        float ang = (side * 2.0 - 1.0) * (0.35 + fi * 0.18 - side * 0.54) + sin(t * 0.8 + fi) * 0.05;
+        float2 lp = rot(ang) * (uv - root);
+        lp.y = -lp.y;
+        float d = leafShape(lp, 0.42 + 0.08 * hash11(fi), 0.07);
+        float3 lc = mix(float3(0.06, 0.28, 0.08), float3(0.28, 0.62, 0.18), sat(lp.y / 0.4));
+        lc += float3(0.6, 0.6, 0.2) * 0.25 * sat(lp.x / 0.07);
+        float vein = step(abs(lp.x), 0.0018) + step(abs(abs(lp.x) - fract(lp.y * 18.0) * 0.03), 0.0012) * 0.4;
+        lc = mix(lc, lc * 1.6, vein * 0.5);
+        col = mix(col, lc, 1.0 - smoothstep(0.0, px * 2.0, d));
+    }
+
+    // Butterflies and fireflies.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float2 bp = float2(fract(t * 0.03 + fi * 0.33) * (asp + 0.4) - 0.2, 0.55 + 0.12 * sin(t * 0.7 + fi * 2.0) + 0.05 * sin(t * 2.3 + fi));
+        float2 q = uv - bp;
+        float flap = abs(sin(t * 12.0 + fi * 2.0));
+        q.x /= 0.3 + 0.7 * flap;
+        float wing = length(q - float2(0.0, -0.004)) - 0.008;
+        float3 bc = fi < 1.0 ? A : (fi < 2.0 ? S : float3(1.0, 0.6, 0.2));
+        col = mix(col, bc, 1.0 - smoothstep(0.0, px, wing));
+    }
+    float2 fp = uv + float2(sin(uv.y * 5.0 + t * 0.4) * 0.02, sin(uv.x * 4.0 + t * 0.3) * 0.02);
+    float ff = dots(fp, 20.0, float2(t * 0.01, -t * 0.008), 0.06, 0.06, 9.0) * (0.5 + 0.5 * sin(t * 3.0 + uv.x * 40.0));
+    col += float3(1.0, 0.95, 0.5) * ff * 0.7 * smoothstep(0.5, 0.95, uv.y);
+
+    col = mix(col, BG * 2.0, 0.04);
+    float2 vv = fc / uRes - 0.5;
+    col *= 1.0 - 0.4 * dot(vv, vv);
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,51 @@
+// Shared by the 32-bit creature-type scenes (px_*.agsl): a chunky pixel grid, an ordered dither and
+// banded shading, so every scene reads as one 32-bit sprite picture. Shapes are evaluated at each
+// pixel's centre with hard edges (no smoothing), colours are stepped through a few shades with a 4 x 4
+// Bayer dither between them.
+
+// The pixel a fragment belongs to, with PX_ROWS pixels on the screen's height.
+const float PX_ROWS = 180.0;
+float2 pxCell(float2 fc) { return floor(fc / uRes.y * PX_ROWS); }
+// The centre of that pixel in screen heights (0..aspect across, 0..1 down).
+float2 pxUv(float2 cell) { return (cell + 0.5) / PX_ROWS; }
+// One pixel, in screen heights.
+const float PX = 1.0 / 180.0;
+
+// 4 x 4 ordered dither threshold for an integer cell, 0..1.
+float bayer2(float2 p) { return 2.0 * p.x + 3.0 * p.y - 4.0 * p.x * p.y; }
+float bayer4(float2 c) {
+    float2 a = mod(c, 2.0);
+    float2 b = mod(floor(c * 0.5), 2.0);
+    return (4.0 * bayer2(a) + bayer2(b) + 0.5) / 16.0;
+}
+
+// v (0..1) stepped into n bands, dithered across each step.
+float pxBand(float v, float n, float2 cell) {
+    return clamp(floor(v * n + bayer4(cell)) / n, 0.0, 1.0);
+}
+
+// The colour stepped to a small palette (levels per channel), dithered.
+float3 pxQuant(float3 c, float levels, float2 cell) {
+    return floor(max(c, 0.0) * levels + bayer4(cell)) / levels;
+}
+
+// Four-shade ramp: dark, mid, light, highlight (v 0..1), banded and dithered.
+float3 pxRamp(float v, float2 cell, float3 c0, float3 c1, float3 c2, float3 c3) {
+    float b = pxBand(sat(v), 3.0, cell);
+    return b < 0.17 ? c0 : (b < 0.5 ? c1 : (b < 0.84 ? c2 : c3));
+}
+
+// 1 inside a box of half size h around c (hard edge).
+float pxBox(float2 p, float2 c, float2 h) {
+    float2 d = abs(p - c) - h;
+    return step(max(d.x, d.y), 0.0);
+}
+
+// 1 inside a circle (hard edge).
+float pxDisc(float2 p, float2 c, float r) { return step(length(p - c), r); }
+
+// 1 on a line from a to b that is w pixels thick (hard edge).
+float pxLine(float2 p, float2 a, float2 b, float w) { return step(sdSegment(p, a, b), w * PX * 0.5 + 1e-5); }
+
+// Snaps a moving position to the pixel grid, so sprites move a whole pixel at a time.
+float2 pxSnap(float2 p) { return (floor(p * PX_ROWS) + 0.5) / PX_ROWS; }

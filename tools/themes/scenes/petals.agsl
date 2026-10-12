@@ -1,0 +1,142 @@
+// Sakura: a spring night under a cherry tree. A gnarled branch heavy with blossom reaches in over
+// the top of the screen, its flowers lit by a big pale moon; far below, misty hills with a pagoda and
+// glowing stone lanterns by a still pond that mirrors the moon. Petals drift down at three depths -
+// soft and out of focus close up, crisp in the middle - and some settle on the water.
+//#include falling
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 blossom = mix(A, float3(1.0, 0.75, 0.85), 0.35);
+
+    // Night sky: plum to deep blue, a big moon upper right with a halo.
+    float3 col = mix(BG * 1.6 + A * 0.06, BG * 0.8, smoothstep(0.0, 0.7, uv.y));
+    float2 mc = float2(asp * 0.78, 0.24);
+    float md = length(uv - mc);
+    col += mix(S, float3(1.0), 0.4) * (exp(-md * 4.0) * 0.25 + exp(-md * 14.0) * 0.2);
+    float moon = smoothstep(0.075, 0.07, md);
+    col = mix(col, float3(1.0, 0.96, 0.93) * (0.88 + 0.12 * vnoise((uv - mc) * 30.0)), moon);
+    col += dots(uv, 60.0, float2(0.0), 0.12, 0.05, 2.0) * 0.4 * smoothstep(0.5, 0.0, uv.y) * smoothstep(0.1, 0.25, md);
+
+    // Far hills in mist, a pagoda on the left one.
+    float h1 = 0.60 - 0.06 * fbm3(float2(uv.x * 1.5, 1.0)) - 0.05 * smoothstep(0.0, 1.0, 1.0 - abs(uv.x - asp * 0.25) * 2.0);
+    col = mix(col, mix(BG * 1.2, A * 0.12 + BG, 0.4), smoothstep(h1, h1 + px, uv.y) * 0.85);
+    float2 pq = uv - float2(asp * 0.25, h1 + 0.005);
+    float pag = 1.0;
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float y0 = -0.03 - fi * 0.035;
+        float w = 0.05 - fi * 0.009;
+        // A roof that curls up at its ends, and the storey under it.
+        float roof = max(abs(pq.y - y0 + 0.006 * sqf(pq.x / w) * 3.0) - 0.004, abs(pq.x) - w);
+        float wall = max(abs(pq.y - y0 - 0.017) - 0.013, abs(pq.x) - w * 0.65);
+        pag = min(pag, min(roof, wall));
+    }
+    pag = min(pag, max(abs(pq.x) - 0.0025, abs(pq.y + 0.175) - 0.03));
+    col = mix(col, BG * 0.6, smoothstep(px, -px, pag));
+    col += float3(1.0, 0.7, 0.4) * smoothstep(0.004, 0.0, max(abs(pq.x) - 0.006, abs(pq.y + 0.045) - 0.004)) * 0.6;
+    // Mist lying in the valley.
+    float mist = fbm3(float2(uv.x * 2.0 - t * 0.02, uv.y * 8.0));
+    col = mix(col, mix(BG * 2.0, A * 0.2 + S * 0.05, 0.4), smoothstep(0.55, 0.75, uv.y) * mist * 0.6);
+
+    // The pond: mirror of the sky, the moon's reflection broken by ripples.
+    float py = 0.76;
+    if (uv.y > py) {
+        float dy = uv.y - py;
+        float2 r = float2(uv.x + 0.004 * sin(uv.y * 220.0 + t * 1.5) * (1.0 + dy * 20.0), py - dy * 3.7);
+        float3 rc = mix(BG * 1.6 + A * 0.06, BG * 0.8, smoothstep(0.0, 0.7, r.y));
+        float rmd = length(r - mc);
+        rc += mix(S, float3(1.0), 0.4) * exp(-rmd * 6.0) * 0.25;
+        rc += float3(1.0, 0.96, 0.93) * smoothstep(0.08, 0.06, rmd) * 0.7 * (0.6 + 0.4 * sin(uv.y * 400.0 + t * 2.0));
+        col = mix(col, rc * 0.8 + BG * 0.1, smoothstep(py, py + px, uv.y));
+    }
+    // Stone lanterns on the shore, glowing warm, their light on the water.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float lx = asp * (0.42 + 0.22 * fi);
+        float2 lq = uv - float2(lx, py - 0.012);
+        float body = min(sdRoundBox(lq + float2(0.0, 0.03), float2(0.012, 0.012), 0.002), sdRoundBox(lq + float2(0.0, 0.05), float2(0.02, 0.004), 0.002));
+        body = min(body, sdRoundBox(lq + float2(0.0, 0.012), float2(0.004, 0.012), 0.001));
+        col = mix(col, BG * 0.5, smoothstep(px, -px, body));
+        float flick = 0.85 + 0.15 * sin(t * 7.0 + fi * 3.0) * sin(t * 4.3 + fi);
+        col += float3(1.0, 0.65, 0.3) * smoothstep(0.008, 0.0, length(lq + float2(0.0, 0.03))) * flick;
+        col += float3(1.0, 0.6, 0.3) * 0.12 * exp(-length((lq + float2(0.0, 0.03)) * float2(1.0, 0.6)) * 25.0) * flick;
+        col += float3(1.0, 0.6, 0.3) * 0.08 * exp(-abs(uv.x - lx) * 60.0) * step(py, uv.y) * exp(-(uv.y - py) * 8.0) * flick;
+    }
+
+    // Petals far away (soft), then the branch, then near petals.
+    float4 l = fallingLayer(uv, 13.0, float2(0.3, 0.5), 0.4, 3.0, 1.0, 0.035, blossom * 0.8, S * 0.8);
+    col = mix(col, l.rgb * 0.7, l.a * 0.3);
+
+    // The branch: gnarled, swaying a little, dark bark rimmed by the moon.
+    float sw = 0.006 * sin(t * 0.5);
+    float2 b0 = float2(-0.05, 0.07);
+    float2 b1 = float2(asp * 0.22, 0.14 + sw);
+    float2 b2 = float2(asp * 0.45, 0.10 + sw * 1.5);
+    float2 b3 = float2(asp * 0.62, 0.17 + sw * 2.0);
+    float2 c1 = b1 + float2(0.10, 0.17 + sw);
+    float2 c2 = b2 + float2(0.06, -0.10 + sw);
+    float2 c3 = b2 + float2(0.12, 0.13 + sw * 2.0);
+    float bd = sdSegment(uv, b0, b1) - 0.016;
+    bd = min(bd, sdSegment(uv, b1, b2) - 0.011);
+    bd = min(bd, sdSegment(uv, b2, b3) - 0.007);
+    bd = min(bd, sdSegment(uv, b1, c1) - 0.006);
+    bd = min(bd, sdSegment(uv, b2, c2) - 0.005);
+    bd = min(bd, sdSegment(uv, b2, c3) - 0.005);
+    bd += 0.002 * (vnoise(uv * 120.0) - 0.5);
+    float3 bark = BG * 0.4 + float3(0.04, 0.025, 0.03);
+    bark += mix(S, float3(1.0), 0.5) * 0.12 * smoothstep(0.0, -0.004, bd) * (1.0 - smoothstep(-0.004, -0.009, bd));
+    col = mix(col, bark, smoothstep(px, -px, bd));
+
+    // Blossom: sprays of small five-petal flowers along the twigs, denser near the wood, lit from
+    // the moon's side; two offset grids so they overlap like the real thing.
+    if (bd < 0.06) {
+        for (int g = 0; g < 2; g++) {
+            float fg = float(g);
+            float scale = 38.0 + fg * 13.0;
+            float2 fq = uv * scale + fg * 0.37;
+            float2 fid = floor(fq);
+            float2 ff = fract(fq) - 0.5;
+            float2 h = hash22(fid + fg * 13.0);
+            float2 cpos = (fid + 0.5 + (h - 0.5) * 0.5 - fg * 0.37) / scale;
+            // Distance of this flower's centre to the wood decides whether it's there.
+            float wd = sdSegment(cpos, b0, b1) - 0.016;
+            wd = min(wd, sdSegment(cpos, b1, b2) - 0.011);
+            wd = min(wd, sdSegment(cpos, b2, b3) - 0.007);
+            wd = min(wd, sdSegment(cpos, b1, c1) - 0.006);
+            wd = min(wd, sdSegment(cpos, b2, c2) - 0.005);
+            wd = min(wd, sdSegment(cpos, b2, c3) - 0.005);
+            float present = step(h.x, 0.95 - smoothstep(0.0, 0.045, wd) * 0.95) * step(-0.004, wd);
+            if (present > 0.5) {
+                float2 q = ff - (h - 0.5) * 0.5;
+                float sz = 0.36 + 0.14 * h.y;
+                float a = atan(q.y, q.x) + h.y * 6.0 + 0.2 * sin(t * 0.6 + h.x * 9.0);
+                float rr = length(q) / sz;
+                float petal = rr - (0.7 + 0.3 * abs(cos(a * 2.5)));
+                if (petal < 0.1) {
+                    float lit = sat(0.55 + dot(normalize(mc - cpos), normalize(q + 1e-4)) * 0.3 * rr + (h.y - 0.5) * 0.4);
+                    float3 fcol = blossom * (0.45 + 0.75 * lit);
+                    fcol = mix(fcol, float3(1.0, 0.95, 0.97), (1.0 - rr) * 0.3 * lit);
+                    fcol = mix(fcol, mix(A, float3(0.55, 0.08, 0.2), 0.5), smoothstep(0.25, 0.0, rr) * 0.7);
+                    // Petal edges a touch darker so neighbouring flowers read apart.
+                    fcol *= 0.8 + 0.2 * smoothstep(0.0, -0.15, petal);
+                    col = mix(col, fcol, smoothstep(px * scale / sz, -px * scale / sz, petal * sz / scale * 1.0) * 0.97);
+                }
+            }
+        }
+        col += blossom * 0.05 * exp(-max(bd, 0.0) * 60.0);
+    }
+
+    // Nearer petals over everything.
+    l = fallingLayer(uv, 8.0, float2(0.25, 0.4), 0.35, 7.0, 1.0, 0.018, blossom, S);
+    col = mix(col, l.rgb * 0.95, l.a * 0.6);
+    l = fallingLayer(uv, 4.6, float2(0.2, 0.3), 0.3, 12.0, 1.0, 0.012, blossom, mix(S, float3(1.0), 0.3));
+    col = mix(col, l.rgb, l.a * 0.8);
+
+    return half4(finish(col, fc), 1.0);
+}

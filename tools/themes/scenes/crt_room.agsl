@@ -1,0 +1,716 @@
+// CRT room: a dark gaming den at night, rendered in 3D (ray traced boxes and planes, a ray-marched TV).
+// The game plays on an old CRT television: the picture (uShot, set by ShowcaseScene - the hero art,
+// then the screenshots, a new channel every 9 s) is mapped onto the TV's curved glass with scanlines,
+// colour fringes, a burst of static, a rolling picture and the channel number between channels. The
+// room is lit by the TV itself in the picture's own colours (uTvL / uTvR), a bias light behind the set
+// in the theme's accent, and cold moonlight falling through a rainy window (a light shaft with dust).
+// A low cabinet holds the console (power light on) and a VCR blinking 12:00 under a stack of game
+// cases; a pad lies on the rug with its cable running to the console; game boxes on the shelves; rabbit
+// ears on the set. The camera drifts slowly, so everything moves in depth.
+// Without a picture (theme previews, a game without art) the TV shows a test card.
+uniform shader uShot;      // the picture on the TV, any size (ShowcaseScene.CrtRoom3D)
+uniform float2 uShotSize;  // its size in pixels
+uniform float uHasShot;    // 1 = a picture is set, 0 = test card
+uniform float3 uTvL;       // average colour of the picture's left half (the room's light)
+uniform float3 uTvR;       // ... and of its right half
+uniform float uTune;       // 0..1 extra static (a new game was picked)
+
+const float CH_LEN = 9.0;
+const float3 TV_C = float3(0.0, 0.98, -1.30);    // front bezel
+const float3 SCR_C = float3(0.0, 1.03, -1.22);   // screen centre on the front face
+const float2 SCR_H = float2(0.44, 0.33);         // screen half size (4:3)
+const float GLASS_R = 2.4;                       // radius of the bulging glass
+const float3 PAD_P = float3(0.05, 0.0, -0.62);   // the pad on the rug
+const float PAD_A = 0.35;
+const float3 MOON_C = float3(0.62, 0.75, 1.0);
+
+float sdBox3(float3 p, float3 b) {
+    float3 q = abs(p) - b;
+    return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+float sdCap(float3 p, float3 a, float3 b, float r) {
+    float3 pa = p - a;
+    float3 ba = b - a;
+    float h = sat(dot(pa, ba) / dot(ba, ba));
+    return length(pa - ba * h) - r;
+}
+
+float smin(float a, float b, float k) {
+    float h = sat(0.5 + 0.5 * (b - a) / k);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+// Ray against an axis-aligned box: distance to the entry (-1 = missed); n = the face's normal.
+float boxHit(float3 ro, float3 rd, float3 c, float3 b, out float3 n) {
+    float3 m = 1.0 / rd;
+    float3 o = m * (ro - c);
+    float3 k = abs(m) * b;
+    float3 t1 = -o - k;
+    float3 t2 = -o + k;
+    float tN = max(max(t1.x, t1.y), t1.z);
+    float tF = min(min(t2.x, t2.y), t2.z);
+    n = float3(0.0);
+    if (tN > tF || tF < 0.0) return -1.0;
+    n = -sign(rd) * step(t1.yzx, t1.xyz) * step(t1.zxy, t1.xyz);
+    return tN;
+}
+
+// Entry and exit distances of a box (x > y = missed).
+float2 boxSpan(float3 ro, float3 rd, float3 c, float3 b) {
+    float3 m = 1.0 / rd;
+    float3 o = m * (ro - c);
+    float3 k = abs(m) * b;
+    float3 t1 = -o - k;
+    float3 t2 = -o + k;
+    return float2(max(max(t1.x, t1.y), t1.z), min(min(t2.x, t2.y), t2.z));
+}
+
+// ---- the television ----
+
+float tvBody(float3 p) {
+    float d = sdBox3(p - TV_C, float3(0.52, 0.40, 0.04)) - 0.045;
+    // The tube's housing behind, narrowing towards the back.
+    float3 r = p - float3(0.0, 0.99, -1.60);
+    float k = sat((0.22 - r.z) / 0.44);
+    d = min(d, sdBox3(r, float3(mix(0.42, 0.22, k), mix(0.32, 0.18, k), 0.17)) - 0.05);
+    // The screen's opening, deeper than the glass so its edges show.
+    d = max(d, -(sdBox3(p - SCR_C, float3(SCR_H - 0.05, 0.10)) - 0.05));
+    // Two little feet.
+    d = min(d, sdBox3(p - float3(-0.40, 0.537, -1.33), float3(0.06, 0.012, 0.05)));
+    d = min(d, sdBox3(p - float3(0.40, 0.537, -1.33), float3(0.06, 0.012, 0.05)));
+    return d;
+}
+
+float tvGlass(float3 p) {
+    float cap = length(p - float3(SCR_C.xy, -1.226 - GLASS_R)) - GLASS_R;
+    return max(cap, sdBox3(p - SCR_C, float3(SCR_H - 0.05, 0.14)) - 0.05);
+}
+
+float tvAerial(float3 p) {
+    float3 b = float3(0.12, 1.37, -1.60);
+    float3 q = (p - b) * float3(1.0, 1.9, 1.0);
+    float d = length(q) / 1.9 - 0.026;
+    d = min(d, sdCap(p, b, float3(-0.30, 1.97, -1.76), 0.0065));
+    d = min(d, sdCap(p, b, float3(0.64, 1.91, -1.66), 0.0065));
+    return d;
+}
+
+float tvMap(float3 p) { return min(min(tvBody(p), tvGlass(p)), tvAerial(p)); }
+
+float3 tvNormal(float3 p) {
+    float2 e = float2(0.0012, -0.0012);
+    return normalize(e.xyy * tvMap(p + e.xyy) + e.yyx * tvMap(p + e.yyx) + e.yxy * tvMap(p + e.yxy) + e.xxx * tvMap(p + e.xxx));
+}
+
+// ---- the pad on the rug ----
+
+float3 padLocal(float3 p) {
+    float3 q = p - PAD_P;
+    q.xz = rot(PAD_A) * q.xz;
+    return q;
+}
+
+float padMap(float3 p) {
+    float3 q = padLocal(p);
+    q.y -= 0.021;
+    float body = sdBox3(q, float3(0.062, 0.004, 0.024)) - 0.015;
+    float g1 = sdCap(q, float3(-0.07, -0.002, 0.005), float3(-0.095, -0.006, 0.045), 0.02);
+    float g2 = sdCap(q, float3(0.07, -0.002, 0.005), float3(0.095, -0.006, 0.045), 0.02);
+    return smin(body, min(g1, g2), 0.02);
+}
+
+float3 padNormal(float3 p) {
+    float2 e = float2(0.0008, -0.0008);
+    return normalize(e.xyy * padMap(p + e.xyy) + e.yyx * padMap(p + e.yyx) + e.yxy * padMap(p + e.yxy) + e.xxx * padMap(p + e.xxx));
+}
+
+// ---- pictures on the screen ----
+
+// 3 x 5 pixel digits (and C, H) for the channel number.
+float glyphCode(float g) {
+    if (g < 0.5) return 31599.0;
+    if (g < 1.5) return 11415.0;
+    if (g < 2.5) return 29671.0;
+    if (g < 3.5) return 29647.0;
+    if (g < 4.5) return 23497.0;
+    if (g < 5.5) return 31183.0;
+    if (g < 6.5) return 31215.0;
+    if (g < 7.5) return 29257.0;
+    if (g < 8.5) return 31727.0;
+    if (g < 9.5) return 31695.0;
+    if (g < 10.5) return 31015.0;
+    return 23533.0;
+}
+
+float glyph(float2 p, float g) {
+    if (p.x < 0.0 || p.y < 0.0 || p.x >= 3.0 || p.y >= 5.0) return 0.0;
+    float idx = 14.0 - (floor(p.y) * 3.0 + floor(p.x));
+    return mod(floor(glyphCode(g) / exp2(idx)), 2.0);
+}
+
+// The test card: colour bars over a strip of steps.
+float3 testCard(float2 tc) {
+    float b = floor(tc.x * 7.0);
+    float3 c = float3(0.75);
+    if (b > 0.5) c = float3(0.75, 0.75, 0.0);
+    if (b > 1.5) c = float3(0.0, 0.75, 0.75);
+    if (b > 2.5) c = float3(0.0, 0.75, 0.0);
+    if (b > 3.5) c = float3(0.75, 0.0, 0.75);
+    if (b > 4.5) c = float3(0.75, 0.0, 0.0);
+    if (b > 5.5) c = float3(0.0, 0.0, 0.75);
+    if (tc.y > 0.67) c = float3(floor(tc.x * 6.0) / 5.0) * 0.9;
+    if (tc.y > 0.67 && tc.y < 0.75) c = mix(float3(0.0, 0.0, 0.6), float3(0.08), step(0.5, fract(tc.x * 3.5)));
+    return c;
+}
+
+float3 picture(float2 tc, float2 uv, float ph) {
+    if (uHasShot < 0.5) return testCard(tc);
+    float ia = uShotSize.x / max(uShotSize.y, 1.0);
+    float sa = SCR_H.x / SCR_H.y;
+    float2 q = tc;
+    if (ia > sa) {
+        // Wider than the tube (hero art): pan across it during the channel.
+        float w = sa / ia;
+        q.x = (1.0 - w) * mix(0.12, 0.88, ph / CH_LEN) + q.x * w;
+    } else {
+        float h = ia / sa;
+        q.y = (1.0 - h) * 0.5 + q.y * h;
+    }
+    float2 px = q * uShotSize;
+    float2 off = uv * (uShotSize.x / 520.0);
+    float3 c;
+    c.r = uShot.eval(px + off).r;
+    c.g = uShot.eval(px).g;
+    c.b = uShot.eval(px - off).b;
+    return c;
+}
+
+// What the tube shows at uv (-1..1 across the screen, y up), as light.
+float3 screenColor(float2 uv, float lineFade) {
+    float t = uTime;
+    float ch = floor(t / CH_LEN);
+    float ph = t - ch * CH_LEN;
+    float tune = max(1.0 - ph / 0.8, 0.0);
+    float stat = max(tune, uTune);
+    // Picture bulges a little more than the glass; rolls and tears while it tunes in.
+    float2 w = uv * (1.0 + 0.035 * dot(uv, uv));
+    w.y += stat * stat * 1.6 * fract(t * 1.7);
+    w.x += 0.03 * stat * sin(w.y * 40.0 + t * 30.0);
+    w.x += 0.004 * sin(w.y * 3.0 + t * 2.0) * step(0.985, hash11(floor(t * 4.0)));
+    float2 tc = float2(w.x * 0.5 + 0.5, 0.5 - w.y * 0.5);
+    tc.y = fract(tc.y);
+    float3 c = picture(tc, w, ph);
+    // Phosphor: punchier, highlights bloom a little.
+    c = pow(c, float3(0.92)) * 1.12;
+    c += c * c * 0.25;
+    // Scanlines (faded where they'd be finer than a pixel) and a slow bright roll bar.
+    float lines = 200.0;
+    float sl = 0.5 + 0.5 * cos(tc.y * lines * TAU);
+    c *= 1.0 - 0.32 * lineFade * sl;
+    c *= 1.0 + 0.06 * exp(-abs(fract(tc.y * 0.5 - t * 0.07) - 0.5) * 18.0);
+    // Static between channels.
+    float n = hash12(floor(tc * float2(170.0, 128.0)) + floor(t * 30.0) * 17.0);
+    float band = 0.7 + 0.3 * sin(tc.y * 9.0 - t * 40.0);
+    c = mix(c, float3(n * band * 0.9 + 0.05), sat(stat * 1.15));
+    // The channel number, top right, after each switch.
+    float osd = step(0.8, ph) * step(ph, 3.6) * step(stat, 0.01);
+    if (osd > 0.5) {
+        float2 g = (tc - float2(0.60, 0.08)) * float2(64.0, 48.0);
+        float chn = mod(ch, 12.0) + 2.0;
+        float tens = floor(chn / 10.0);
+        float ones = chn - tens * 10.0;
+        float on = glyph(g, 10.0) + glyph(g - float2(4.0, 0.0), 11.0) + glyph(g - float2(10.0, 0.0), tens) + glyph(g - float2(14.0, 0.0), ones);
+        float sh = glyph(g - float2(0.5, 0.5), 10.0) + glyph(g - float2(4.5, 0.5), 11.0) + glyph(g - float2(10.5, 0.5), tens) + glyph(g - float2(14.5, 0.5), ones);
+        c = mix(c, c * 0.25, sat(sh) * 0.8);
+        c = mix(c, float3(0.35, 1.0, 0.45), sat(on));
+    }
+    // Darker into the tube's corners.
+    c *= 1.0 - 0.28 * pow(dot(uv * float2(0.85, 1.0), uv * float2(0.85, 1.0)) * 0.5, 1.5);
+    return max(c, 0.0);
+}
+
+// How bright the TV is right now (static flashes, the picture dims while tuning).
+float3 tvLightCol(float x01) {
+    float t = uTime;
+    float ph = t - floor(t / CH_LEN) * CH_LEN;
+    float stat = max(max(1.0 - ph / 0.8, 0.0), uTune);
+    float3 c = mix(uTvL, uTvR, x01);
+    if (uHasShot < 0.5) c = mix(float3(0.62, 0.62, 0.55), float3(0.45, 0.5, 0.75), x01);
+    c = mix(c, float3(0.55 + 0.25 * hash11(floor(t * 24.0))), stat);
+    float lum = dot(c, float3(0.3, 0.55, 0.15));
+    c = mix(float3(lum), c, 1.25);
+    float flick = 0.94 + 0.06 * sin(t * 61.0) * sin(t * 13.0);
+    return max(c, 0.0) * (0.55 + 0.45 * sat(lum * 2.2)) * flick;
+}
+
+// ---- the window: rain on the glass, the city behind ----
+
+float rainOnGlass(float2 w) {
+    float t = uTime;
+    float2 p = float2(w.x * 26.0, w.y * 3.0 + t * 0.9);
+    float col = floor(p.x);
+    float r = hash11(col * 7.3);
+    float y = fract(p.y * (0.6 + r * 0.5) + r * 3.0);
+    float streak = smoothstep(0.08, 0.0, abs(fract(p.x) - 0.5) - 0.1) * smoothstep(0.0, 0.25, y) * smoothstep(1.0, 0.75, y) * step(0.55, r);
+    float2 dp = w * float2(60.0, 60.0);
+    float2 id = floor(dp);
+    float2 h = hash22(id);
+    float drop = smoothstep(0.32, 0.12, length(fract(dp) - 0.5 - (h - 0.5) * 0.4)) * step(0.7, h.x);
+    return sat(streak * 0.8 + drop * 0.6);
+}
+
+float3 windowView(float2 w, float3 rd) {
+    // w: position on the window, 0..1 across and up.
+    float3 c = mix(float3(0.035, 0.045, 0.10), float3(0.09, 0.12, 0.22), w.y);
+    // Moon behind thin cloud.
+    float2 mp = w - float2(0.72, 0.78);
+    c += MOON_C * (smoothstep(0.075, 0.065, length(mp * float2(1.0, 1.1))) * 0.9 + 0.25 * exp(-length(mp) * 7.0));
+    c *= 0.85 + 0.25 * fbm3(w * float2(4.0, 2.0) + float2(uTime * 0.02, 0.0));
+    // Towers with lit windows, two rows.
+    float x = w.x * 16.0 + rd.x * 2.0;
+    float hb = 0.14 + 0.16 * hash11(floor(x)) + 0.08 * step(0.85, hash11(floor(x) * 3.3));
+    float far = step(w.y, hb);
+    c = mix(c, float3(0.02, 0.025, 0.05), far);
+    float2 wc = float2(x * 5.0, w.y * 70.0);
+    float lit = step(0.74, hash12(floor(wc))) * far * step(0.25, fract(x)) * step(0.3, fract(wc.x)) * step(0.35, fract(wc.y));
+    c += float3(1.0, 0.75, 0.45) * lit * 0.45 * (0.7 + 0.3 * sin(uTime * 0.5 + floor(x) * 3.0));
+    c += float3(0.25, 0.3, 0.5) * 0.12 * exp(-abs(w.y - hb) * 12.0) * (1.0 - far);
+    float x2 = w.x * 7.0 + rd.x * 4.0 + 3.0;
+    float near = step(w.y, 0.06 + 0.08 * hash11(floor(x2)));
+    c = mix(c, float3(0.01, 0.012, 0.02), near);
+    // Rain: blurs and brightens what's behind.
+    float r = rainOnGlass(w);
+    c = mix(c, c * 1.6 + float3(0.05, 0.06, 0.09), r);
+    return c;
+}
+
+// Moonlight reaching point p through the window (0..1), with the frame's and the rain's shadows.
+float moonAt(float3 p, float3 L) {
+    float s = (p.z + 2.0) / -L.z;
+    if (s < 0.0) return 0.0;
+    float3 w = p + L * s;
+    float2 q = (w.xy - float2(-1.5, 1.5)) / float2(0.45, 0.5);
+    float m = smoothstep(1.0, 0.94, abs(q.x)) * smoothstep(1.0, 0.94, abs(q.y));
+    m *= smoothstep(0.02, 0.05, abs(q.x)) * smoothstep(0.02, 0.05, abs(q.y));
+    float2 wq = q * 0.5 + 0.5;
+    m *= 1.0 - 0.55 * rainOnGlass(wq);
+    return m;
+}
+
+float shadowed(float3 p, float3 L) {
+    float3 n;
+    float a = boxHit(p, L, float3(0.0, 0.27, -1.45), float3(0.87, 0.27, 0.44), n);
+    float b = boxHit(p, L, float3(0.0, 0.98, -1.55), float3(0.57, 0.45, 0.32), n);
+    return (a > 0.002 || b > 0.002) ? 0.0 : 1.0;
+}
+
+// ---- lighting ----
+
+float3 lightAt(float3 p, float3 n, float3 L, float onWall, float3 tvA, float3 tvB) {
+    float3 acc = float3(0.026, 0.028, 0.040) * (0.6 + 0.4 * n.y);
+    // The TV: three emitters across its screen, each in the colour of that part of the picture.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i) - 1.0;
+        float3 e = float3(fi * 0.3, SCR_C.y, -1.17) - p;
+        float d2 = dot(e, e);
+        e *= inversesqrt(d2);
+        float emit = sat(-e.z) * (0.4 + 0.6 * sat(-e.z));
+        acc += mix(tvA, tvB, fi * 0.5 + 0.5) * (sat(dot(n, e)) * emit / (d2 + 0.3)) * 2.1;
+    }
+    // The TV's light bouncing round the room: a soft fill in its colours, strongest near the set.
+    float3 bo = p - float3(0.0, 1.0, -1.0);
+    acc += (tvA + tvB) * (0.5 + 0.3 * sat(n.z)) * 0.05 / (1.0 + dot(bo, bo) * 0.6);
+    // Bias light behind the set (the theme's accent): a halo on the wall round the TV's back.
+    float3 bias = uAcc.rgb * 1.1;
+    float halo = sdRoundBox(p.xy - float2(0.0, 0.99), float2(0.40, 0.33), 0.12);
+    acc += bias * onWall * (exp(-max(halo, 0.0) * 3.0) * 3.2 + exp(-max(halo, 0.0) * 1.1) * 0.45);
+    // A warm strip light under the top shelf, over the lower row of game boxes.
+    float3 sl = p - float3(clamp(p.x, 1.05, 2.05), 1.76, -1.84);
+    float sd2 = dot(sl, sl);
+    acc += float3(1.0, 0.72, 0.45) * sat(dot(n, -sl * inversesqrt(sd2)) + 0.3) * 0.045 / (sd2 + 0.02) * step(p.x, 2.2);
+    float3 bl = float3(0.0, 0.99, -1.90) - p;
+    float bd2 = dot(bl, bl);
+    acc += bias * (1.0 - onWall) * sat(dot(n, bl * inversesqrt(bd2))) * 0.12 / (bd2 + 0.2);
+    // Moonlight through the window.
+    float m = moonAt(p, -L);
+    if (m > 0.0) acc += MOON_C * m * sat(dot(n, -L)) * 0.55 * shadowed(p + n * 0.003, -L);
+    return acc;
+}
+
+float3 woodTex(float2 p, float3 base) {
+    float g = fbm3(float2(p.x * 3.0, p.y * 40.0));
+    float rings = sin(p.y * 90.0 + g * 9.0) * 0.5 + 0.5;
+    return base * (0.75 + 0.3 * g + 0.12 * rings);
+}
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float2 res = uRes;
+    float2 sp = (fc - 0.5 * res) / res.y;
+    sp.y = -sp.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Camera: a slow drift round the room.
+    float3 ro = float3(1.05 + 0.34 * sin(t * 0.045), 1.42 + 0.05 * sin(t * 0.063 + 1.0), 1.45 + 0.16 * sin(t * 0.031));
+    float3 ta = float3(0.0 + 0.06 * sin(t * 0.045 + 0.8), 0.80, -1.30);
+    float3 fw = normalize(ta - ro);
+    float3 rt = normalize(cross(fw, float3(0.0, 1.0, 0.0)));
+    float3 up = cross(rt, fw);
+    float fov = 0.78;
+    float3 rd = normalize(fw + fov * (sp.x * rt + sp.y * up));
+    if (abs(rd.x) < 1e-5) rd.x = 1e-5;
+    if (abs(rd.y) < 1e-5) rd.y = 1e-5;
+    if (abs(rd.z) < 1e-5) rd.z = 1e-5;
+    float3 L = normalize(float3(0.30, -0.85, 1.0));   // moonlight's direction of travel
+    float3 tvA = tvLightCol(0.0);   // the TV's light, left and right half of the picture
+    float3 tvB = tvLightCol(1.0);
+    float3 tvM = (tvA + tvB) * 0.5;
+
+    // ---- find what the ray hits ----
+    float tb = 1e4;
+    float mat = 0.0;  // 1 floor, 2 back wall, 3 side wall, 4 cabinet wood, 5 cabinet inside, 6 console, 7 VCR, 8 cases, 9 shelf, 10 game boxes, 11 TV, 12 glass, 13 pad, 14 sill
+    float3 nb = float3(0.0, 1.0, 0.0);
+    float tt;
+    float3 nn;
+    if (rd.y < 0.0) { tt = -ro.y / rd.y; if (tt < tb) { tb = tt; mat = 1.0; nb = float3(0.0, 1.0, 0.0); } }
+    if (rd.z < 0.0) { tt = (-2.0 - ro.z) / rd.z; if (tt < tb) { tb = tt; mat = 2.0; nb = float3(0.0, 0.0, 1.0); } }
+    if (rd.x < 0.0) { tt = (-2.6 - ro.x) / rd.x; if (tt < tb) { tb = tt; mat = 3.0; nb = float3(1.0, 0.0, 0.0); } }
+    if (rd.x > 0.0) { tt = (2.6 - ro.x) / rd.x; if (tt < tb) { tb = tt; mat = 3.0; nb = float3(-1.0, 0.0, 0.0); } }
+    if (rd.y > 0.0) { tt = (2.6 - ro.y) / rd.y; if (tt < tb) { tb = tt; mat = 3.0; nb = float3(0.0, -1.0, 0.0); } }
+
+    // The cabinet and what's in it.
+    float2 cs = boxSpan(ro, rd, float3(0.0, 0.27, -1.45), float3(0.87, 0.28, 0.44));
+    if (cs.x < cs.y && cs.y > 0.0 && cs.x < tb) {
+        tt = boxHit(ro, rd, float3(0.0, 0.505, -1.45), float3(0.86, 0.025, 0.43), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 4.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(0.0, 0.045, -1.45), float3(0.86, 0.025, 0.43), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 4.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(0.0, 0.01, -1.45), float3(0.80, 0.012, 0.40), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 5.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(-0.835, 0.275, -1.45), float3(0.025, 0.21, 0.43), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 4.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(0.835, 0.275, -1.45), float3(0.025, 0.21, 0.43), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 4.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(0.06, 0.275, -1.45), float3(0.018, 0.21, 0.41), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 4.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(0.0, 0.275, -1.86), float3(0.81, 0.21, 0.015), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 5.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(-0.40, 0.115, -1.42), float3(0.25, 0.045, 0.19), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 6.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(0.45, 0.11, -1.43), float3(0.31, 0.04, 0.21), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 7.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(0.43, 0.205, -1.47), float3(0.17, 0.055, 0.12), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 8.0; nb = nn; }
+    }
+    // Shelves on the wall, right of the TV, with game boxes standing on them.
+    float2 ss = boxSpan(ro, rd, float3(1.55, 1.62, -1.89), float3(0.56, 0.42, 0.12));
+    if (ss.x < ss.y && ss.y > 0.0 && ss.x < tb) {
+        tt = boxHit(ro, rd, float3(1.55, 1.30, -1.89), float3(0.55, 0.018, 0.11), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 9.0; nb = nn; }
+        tt = boxHit(ro, rd, float3(1.55, 1.78, -1.89), float3(0.55, 0.018, 0.11), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 9.0; nb = nn; }
+        for (int r = 0; r < 2; r++) {
+            float fr = float(r);
+            float y0 = 1.318 + fr * 0.48;
+            float x0 = 1.06;
+            float x1 = fr < 0.5 ? 1.98 : 1.62;
+            tt = boxHit(ro, rd, float3((x0 + x1) * 0.5, y0 + 0.13, -1.905), float3((x1 - x0) * 0.5, 0.13, 0.085), nn);
+            if (tt > 0.0 && tt < tb) {
+                float3 hp = ro + rd * tt;
+                float id = floor((hp.x - x0) / 0.042);
+                float hgt = 0.17 + 0.07 * hash11(id * 1.7 + fr * 13.0);
+                // A gap now and then; boxes are only as tall as they are.
+                if (hp.y - y0 < hgt && hash11(id * 3.1 + fr) > 0.08) { tb = tt; mat = 10.0; nb = nn; }
+            }
+        }
+    }
+    // Window sill.
+    tt = boxHit(ro, rd, float3(-1.5, 0.975, -1.93), float3(0.52, 0.02, 0.075), nn); if (tt > 0.0 && tt < tb) { tb = tt; mat = 14.0; nb = nn; }
+
+    // The TV (marched inside its bounds).
+    float2 ts = boxSpan(ro, rd, float3(0.16, 1.26, -1.52), float3(0.82, 0.74, 0.33));
+    if (ts.x < ts.y && ts.y > 0.0 && ts.x < tb) {
+        float tm = max(ts.x, 0.0);
+        float tEnd = min(ts.y, tb);
+        for (int i = 0; i < 64; i++) {
+            if (float(i) > 64.0 - 16.0 * uLod) break;
+            float d = tvMap(ro + rd * tm);
+            if (d < 0.0009) { tb = tm; mat = 11.0; break; }
+            tm += d * 0.85;
+            if (tm > tEnd) break;
+        }
+    }
+    // The pad.
+    float2 ps = boxSpan(ro, rd, PAD_P + float3(0.0, 0.03, 0.0), float3(0.15, 0.035, 0.15));
+    if (ps.x < ps.y && ps.y > 0.0 && ps.x < tb) {
+        float tm = max(ps.x, 0.0);
+        float tEnd = min(ps.y, tb);
+        for (int i = 0; i < 40; i++) {
+            float d = padMap(ro + rd * tm);
+            if (d < 0.0006) { tb = tm; mat = 13.0; break; }
+            tm += d;
+            if (tm > tEnd) break;
+        }
+    }
+
+    float3 p = ro + rd * tb;
+    float3 col = float3(0.0);
+    float3 n = nb;
+
+    if (mat > 10.5 && mat < 11.5) {
+        n = tvNormal(p);
+        if (tvGlass(p) < 0.002 && tvBody(p) > 0.001) mat = 12.0;
+    }
+    if (mat > 12.5 && mat < 13.5) n = padNormal(p);
+
+    // Scanlines are faded out where they'd be finer than a pixel: their spacing in pixels here.
+    float pxPerUnit = res.y / (2.0 * fov * max(dot(p - ro, fw), 0.1));
+    float lineFade = sat((2.0 * SCR_H.y / 200.0 * pxPerUnit - 1.2) / 1.8);
+
+    if (mat > 11.5) {
+        if (mat < 12.5) {
+            // ---- the glass: picture, glow, reflections ----
+            float2 uv = (p.xy - SCR_C.xy) / (SCR_H - 0.012);
+            float3 img = screenColor(uv, lineFade);
+            float edge = sdRoundBox(p.xy - SCR_C.xy, SCR_H - 0.05, 0.05);
+            img *= smoothstep(0.004, -0.02, edge);
+            float fres = 0.04 + 0.5 * pow(1.0 - sat(dot(n, -rd)), 5.0);
+            float3 r = reflect(rd, n);
+            // A soft window glint behind the viewer, and the room's faint glow.
+            float3 env = float3(0.015, 0.016, 0.022) + MOON_C * 0.5 * smoothstep(0.93, 0.985, dot(r, normalize(float3(-0.35, 0.45, 1.0))));
+            env += A * 0.05 * sat(r.y + 0.3);
+            col = img * (1.0 - fres) + env * fres * 2.2;
+        } else {
+            // ---- the pad: dark plastic, a d-pad and four buttons ----
+            float3 q = padLocal(p);
+            float3 alb = float3(0.06, 0.06, 0.07);
+            float top = step(0.032, q.y);
+            float dpad = min(sdBox3(q - float3(-0.052, 0.04, -0.002), float3(0.015, 0.1, 0.005)), sdBox3(q - float3(-0.052, 0.04, -0.002), float3(0.005, 0.1, 0.015)));
+            alb = mix(alb, float3(0.02), step(dpad, 0.0) * top);
+            for (int i = 0; i < 4; i++) {
+                float a = float(i) * 1.5708;
+                float2 bp = float2(0.052, -0.002) + 0.012 * float2(cos(a), sin(a));
+                float3 bc = i == 0 ? float3(0.75, 0.15, 0.12) : (i == 1 ? float3(0.15, 0.55, 0.2) : (i == 2 ? float3(0.85, 0.7, 0.1) : float3(0.15, 0.35, 0.8)));
+                alb = mix(alb, bc * 0.6, step(length(q.xz - bp), 0.006) * top);
+            }
+            float3 lt = lightAt(p, n, L, 0.0, tvA, tvB);
+            float3 h = normalize(normalize(SCR_C - p) - rd);
+            col = alb * lt + tvM * pow(sat(dot(n, h)), 40.0) * 0.25;
+        }
+    } else if (mat > 10.5) {
+        // ---- the TV's cabinet: dark plastic ----
+        float3 alb = float3(0.075, 0.073, 0.078);
+        float3 lp = p - TV_C;
+        // Front panel under the screen: buttons, a power light, a grille.
+        float front = step(-1.222, p.z) * step(n.z, 1.1) * step(0.6, n.z);
+        float strip = step(abs(lp.y + 0.36), 0.035) * front;
+        float grille = step(abs(lp.x + 0.30), 0.13) * strip * step(0.5, fract(lp.x * 90.0));
+        alb = mix(alb, float3(0.02), grille);
+        for (int i = 0; i < 4; i++) {
+            float bx = 0.12 + float(i) * 0.055;
+            alb = mix(alb, float3(0.12), step(sdRoundBox(lp.xy - float2(bx, -0.36), float2(0.018, 0.009), 0.006), 0.0) * strip);
+        }
+        float led = length(lp.xy - float2(0.40, -0.36)) * front;
+        float aer = tvAerial(p);
+        alb = mix(alb, float3(0.35, 0.36, 0.38), step(aer, 0.003) * step(1.40, p.y));
+        float3 lt = lightAt(p, n, L, 0.0, tvA, tvB);
+        // The screen's own glow on the bezel round it.
+        float rim = sdRoundBox(p.xy - SCR_C.xy, SCR_H, 0.06);
+        lt += tvM * exp(-max(rim, 0.0) * 30.0) * 0.5 * front;
+        col = alb * lt;
+        float3 h = normalize(normalize(float3(0.0, SCR_C.y, -0.6) - p) - rd);
+        col += tvM * pow(sat(dot(n, h)), 30.0) * 0.12;
+        float3 hm = normalize(-L - rd);
+        col += MOON_C * pow(sat(dot(n, hm)), 50.0) * 0.08;
+        // A cool rim where the cabinet turns away (moon and room light catching its edges).
+        col += float3(0.10, 0.12, 0.17) * pow(1.0 - sat(dot(n, -rd)), 4.0) * 0.5;
+        col += float3(1.0, 0.12, 0.08) * 1.4 * smoothstep(0.009, 0.004, led) * step(0.001, front);
+        col += float3(1.0, 0.12, 0.08) * 0.25 * exp(-led * 60.0) * front;
+    } else if (mat > 0.5) {
+        float onWall = 0.0;
+        float3 alb = float3(0.1);
+        float gloss = 0.0;
+        float3 emit = float3(0.0);
+        if (mat < 1.5) {
+            // ---- floor: dark planks, a rug, the pad's cable ----
+            float2 f = p.xz;
+            float plank = floor(f.x / 0.15);
+            float2 pf = float2(fract(f.x / 0.15), f.y + hash11(plank) * 3.0);
+            alb = woodTex(float2(pf.y * 0.4, f.x), float3(0.20, 0.12, 0.075)) * (0.85 + 0.3 * hash11(plank * 1.3));
+            alb *= 0.6 + 0.4 * smoothstep(0.0, 0.04, pf.x) * smoothstep(0.0, 0.03, abs(fract(pf.y / 1.3) - 0.5) * 1.3);
+            gloss = 1.0;
+            // The rug.
+            float2 rq = (f - float2(0.0, -0.30)) / float2(1.30, 0.85);
+            float rug = max(abs(rq.x), abs(rq.y));
+            if (rug < 1.0) {
+                float2 wv = f * 160.0;
+                float weave = 0.85 + 0.15 * step(0.5, fract(wv.x)) * step(0.5, fract(wv.y + 0.5 * step(0.5, fract(wv.x * 0.5))));
+                float3 rc = mix(BG * 1.8 + float3(0.05, 0.03, 0.025), A * 0.35, 0.35);
+                float border = step(0.86, rug) * step(rug, 0.93);
+                float inner = step(0.93, rug);
+                rc = mix(rc, A * 0.45, border);
+                rc = mix(rc, S * 0.25 + 0.03, inner);
+                float dia = abs(fract((rq.x + rq.y) * 3.0) - 0.5) + abs(fract((rq.x - rq.y) * 3.0) - 0.5);
+                rc *= 0.85 + 0.25 * smoothstep(0.42, 0.38, abs(dia - 0.5)) * step(rug, 0.8);
+                alb = rc * weave * (0.8 + 0.2 * vnoise(f * 40.0));
+                gloss = 0.0;
+                // Fringe at the ends.
+                alb *= 1.0 - 0.5 * step(0.985, abs(rq.y)) * step(0.5, fract(f.x * 90.0));
+            }
+            // The pad's cable, lying loose to the console.
+            float3 cq = float3(0.0, 0.0, -0.035);
+            cq.xz = rot(-PAD_A) * cq.xz;
+            float2 c0 = PAD_P.xz + cq.xz;
+            float2 c3 = float2(-0.36, -1.03);
+            float2 c1 = c0 + float2(0.18, -0.18);
+            float2 c2 = c3 + float2(0.30, 0.30);
+            float cd = 1.0;
+            float2 prev = c0;
+            for (int i = 1; i <= 10; i++) {
+                float u = float(i) / 10.0;
+                float v = 1.0 - u;
+                float2 b = v * v * v * c0 + 3.0 * v * v * u * c1 + 3.0 * v * u * u * c2 + u * u * u * c3;
+                cd = min(cd, sdSegment(f, prev, b));
+                prev = b;
+            }
+            float cable = smoothstep(0.007, 0.004, cd);
+            alb = mix(alb, float3(0.03), cable);
+            gloss = mix(gloss, 0.6, cable);
+            // Contact shadows: under the cabinet, round the pad, along the wall.
+            float ao = 1.0;
+            float cab = sdRoundBox(f - float2(0.0, -1.45), float2(0.86, 0.43), 0.01);
+            ao *= 0.35 + 0.65 * smoothstep(0.0, 0.22, cab);
+            ao *= 0.5 + 0.5 * smoothstep(0.0, 0.45, f.y + 2.0);
+            float pd = length(padLocal(p).xz * float2(0.8, 1.2));
+            ao *= 0.45 + 0.55 * smoothstep(0.05, 0.16, pd);
+            ao *= 0.6 + 0.4 * smoothstep(0.0, 0.008, cd);
+            alb *= ao;
+        } else if (mat < 2.5) {
+            // ---- back wall: dark wallpaper over wainscoting, the window ----
+            onWall = 1.0;
+            float2 w = p.xy;
+            float stripe = 0.9 + 0.1 * step(0.5, fract(w.x * 7.0));
+            float dam = vnoise(w * float2(14.0, 9.0));
+            alb = mix(BG * 1.4 + float3(0.02, 0.018, 0.02), A * 0.08 + BG, 0.3) * stripe * (0.9 + 0.12 * dam);
+            if (w.y < 0.9) {
+                float panel = sdRoundBox(float2(fract(w.x / 0.6) - 0.5, w.y - 0.47) * float2(0.6, 1.0), float2(0.24, 0.34), 0.01);
+                alb = float3(0.07, 0.045, 0.035) * (0.9 + 0.2 * step(abs(panel + 0.015), 0.006) - 0.15 * step(abs(panel), 0.004));
+            }
+            alb *= 1.0 - 0.4 * step(abs(w.y - 0.905), 0.012);
+            // Window.
+            float2 wq = (w - float2(-1.5, 1.5)) / float2(0.45, 0.5);
+            float frameD = max(abs(wq.x), abs(wq.y));
+            if (frameD < 1.09) {
+                if (frameD < 1.0 && min(abs(wq.x), abs(wq.y)) > 0.035) {
+                    emit = windowView(wq * 0.5 + 0.5, rd);
+                    alb = float3(0.0);
+                } else {
+                    alb = float3(0.05, 0.035, 0.03);
+                }
+            }
+        } else if (mat < 3.5) {
+            alb = BG * 1.2 + 0.015;
+        } else if (mat < 4.5) {
+            // ---- the cabinet: walnut ----
+            float2 wp = abs(nb.y) > 0.5 ? p.xz : (abs(nb.x) > 0.5 ? p.zy : p.xy);
+            alb = woodTex(float2(wp.x, wp.y * 0.3 + wp.x * 0.05), float3(0.22, 0.13, 0.08));
+            gloss = 0.5;
+        } else if (mat < 5.5) {
+            alb = float3(0.035, 0.025, 0.02);
+        } else if (mat < 6.5) {
+            // ---- the console: grey box, a slot, a red power light ----
+            float3 q = p - float3(-0.40, 0.115, -1.42);
+            alb = float3(0.32, 0.32, 0.34);
+            alb *= 1.0 - 0.5 * step(abs(q.z + 0.02), 0.035) * step(abs(q.x - 0.02), 0.13) * step(0.04, q.y);
+            alb *= 1.0 - 0.3 * step(abs(q.y), 0.006) * step(0.18, q.z);
+            float pl = length(float2(q.x + 0.18, q.y + 0.01));
+            emit = float3(1.0, 0.1, 0.06) * smoothstep(0.009, 0.005, pl) * step(0.185, q.z) * 2.0;
+            gloss = 0.4;
+        } else if (mat < 7.5) {
+            // ---- the VCR: black, its clock blinking 12:00 ----
+            float3 q = p - float3(0.45, 0.11, -1.43);
+            alb = float3(0.05, 0.05, 0.055);
+            float face = step(0.205, q.z);
+            alb = mix(alb, float3(0.015), step(abs(q.y - 0.005), 0.007) * step(abs(q.x + 0.06), 0.15) * face);
+            float2 dq = (float2(q.x - 0.17, -q.y) - float2(-0.045, -0.012)) * float2(220.0, 220.0);
+            float blink = step(0.5, fract(t * 0.8));
+            float digits = glyph(dq, 1.0) + glyph(dq - float2(4.0, 0.0), 2.0) + glyph(dq - float2(10.0, 0.0), 0.0) + glyph(dq - float2(14.0, 0.0), 0.0);
+            float colon = step(length(dq - float2(8.0, 1.5)), 0.5) + step(length(dq - float2(8.0, 3.5)), 0.5);
+            emit = float3(0.25, 1.0, 0.55) * sat(digits + colon) * blink * face * 1.3;
+            emit += float3(0.1, 0.4, 0.22) * 0.25 * face * step(abs(q.x - 0.17), 0.06) * step(abs(q.y), 0.018);
+            gloss = 0.6;
+        } else if (mat < 8.5) {
+            // ---- a stack of game cases on the VCR ----
+            float layer = floor((p.y - 0.15) / 0.022);
+            alb = mix(A, S, hash11(layer * 5.1)) * 0.35 + 0.03;
+            alb *= 0.75 + 0.25 * step(0.15, fract((p.y - 0.15) / 0.022));
+            gloss = 0.3;
+        } else if (mat < 9.5) {
+            alb = woodTex(p.xz * float2(1.0, 4.0), float3(0.17, 0.10, 0.065));
+            gloss = 0.3;
+        } else if (mat < 10.5) {
+            // ---- game boxes on the shelves: coloured spines with a label band ----
+            float id = floor((p.x - 1.06) / 0.042);
+            float h = hash11(id * 1.7 + floor(p.y / 0.48) * 13.0);
+            float3 c = mix(A, S, h);
+            c = mix(c, float3(0.85), step(0.82, hash11(id * 9.1)));
+            c = mix(c, float3(0.05), step(hash11(id * 4.7), 0.18));
+            float lx = fract((p.x - 1.06) / 0.042);
+            c *= 0.35 + 0.65 * smoothstep(0.0, 0.12, lx) * smoothstep(1.0, 0.88, lx);
+            float yb = fract((p.y - 1.318) / 0.48);
+            c = mix(c, float3(0.8), 0.6 * step(abs(yb - 0.1), 0.012) * step(0.5, nb.z));
+            alb = c * 0.55;
+            gloss = 0.2;
+        } else {
+            alb = float3(0.12, 0.08, 0.06);
+        }
+        float3 lt = lightAt(p, n, L, onWall, tvA, tvB);
+        col = alb * lt + emit;
+        // Glossy surfaces catch the screen: a soft, stretched reflection of it.
+        if (gloss > 0.0) {
+            float3 r = reflect(rd, n);
+            if (r.z < -0.01) {
+                float s = (-1.225 - p.z) / r.z;
+                float2 q = p.xy + r.xy * s - SCR_C.xy;
+                float d = sdRoundBox(q, SCR_H, 0.05);
+                float rough = 0.04 + 0.02 * s;
+                float spot = exp(-max(d, 0.0) / rough) * step(0.0, s);
+                float fres = 0.05 + 0.5 * pow(1.0 - sat(dot(n, -rd)), 5.0);
+                col += mix(tvA, tvB, sat(q.x / (2.0 * SCR_H.x) + 0.5)) * spot * fres * gloss * 1.4;
+                // The window too, faintly.
+                float s2 = (-2.0 - p.z) / r.z;
+                float2 wq = (p.xy + r.xy * s2 - float2(-1.5, 1.5)) / float2(0.45, 0.5);
+                col += MOON_C * 0.12 * fres * gloss * smoothstep(1.15, 0.8, max(abs(wq.x), abs(wq.y)));
+            }
+        }
+    }
+
+    // ---- light in the air: the TV's glow and the window's shaft, with dust ----
+    float tMax = min(tb, 4.5);
+    float jit = fract(52.9829189 * fract(dot(fc, float2(0.06711056, 0.00583715))) + fract(t * 7.0) * 0.618);
+    float nh = 8.0 - 2.0 * floor(uLod + 0.5);
+    float tvHaze = 0.0;
+    float moonHaze = 0.0;
+    for (int i = 0; i < 8; i++) {
+        if (float(i) >= nh) break;
+        float st = (float(i) + jit) / nh * tMax;
+        float3 q = ro + rd * st;
+        float3 e = SCR_C + float3(0.0, 0.0, 0.05) - q;
+        float d2 = dot(e, e);
+        float emit = sat(-e.z * inversesqrt(d2));
+        tvHaze += emit * emit / (d2 + 0.25) * 0.5;
+        // The window's shaft (its frame's shadow, no rain: too fine to see in the air).
+        float s = (q.z + 2.0) / L.z;
+        float2 wq = abs((q.xy - L.xy * s - float2(-1.5, 1.5)) / float2(0.45, 0.5));
+        moonHaze += smoothstep(1.0, 0.9, max(wq.x, wq.y)) * smoothstep(0.02, 0.06, min(wq.x, wq.y)) * step(0.0, s);
+    }
+    float3 haze = (tvM * tvHaze + MOON_C * moonHaze * 1.1) * (tMax / nh);
+    float dust = dots(sp + float2(t * 0.004, -t * 0.003), 34.0, float2(0.0, t * 0.05), 0.5, 0.06, 2.0)
+               + dots(sp * 0.7 + float2(-t * 0.003, t * 0.002), 22.0, float2(t * 0.03, 0.0), 0.35, 0.05, 9.0);
+    col += haze * (0.028 + 0.10 * dust);
+
+    // Bloom round the bright screen (a lens effect: drawn over whatever is in front).
+    float sz = (-1.215 - ro.z) / rd.z;
+    if (sz > 0.0) {
+        float2 q = ro.xy + rd.xy * sz - SCR_C.xy;
+        float d = sdRoundBox(q, SCR_H, 0.06);
+        col += mix(tvA, tvB, sat(q.x / (2.0 * SCR_H.x) + 0.5)) * (exp(-max(d, 0.0) * 9.0) * 0.10 + exp(-max(d, 0.0) * 2.5) * 0.035) * step(0.0, d);
+    }
+
+    // Soft shoulder for the highlights, a cool tint in the shadows.
+    float mx = max(col.r, max(col.g, col.b));
+    col = mix(col, col / (1.0 + mx) * (1.0 + mx * 0.5), smoothstep(0.55, 1.6, mx));
+    col += float3(0.0, 0.002, 0.006) * (1.0 - sat(mx * 8.0));
+    return half4(finish(col, fc), 1.0);
+}

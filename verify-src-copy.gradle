@@ -1,0 +1,10 @@
+// Read-only source routing: verify staged Kotlin without copying into app/src.
+gradle.projectsEvaluated {
+    def app = rootProject.project(':app')
+    def android = app.extensions.getByName('android')
+    android.sourceSets.main.java.setSrcDirs([new File(rootProject.projectDir, 'src_copy')])
+    android.sourceSets.main.kotlin.setSrcDirs([new File(rootProject.projectDir, 'src_copy')])
+    android.sourceSets.main.manifest.srcFile(new File(rootProject.projectDir, 'project_copy/app/src/main/AndroidManifest.xml'))
+    android.sourceSets.debug.res.srcDir(new File(rootProject.projectDir, 'project_copy/app/src/main/res'))
+    app.dependencies.add('implementation', 'com.google.android.gms:play-services-code-scanner:16.1.0')
+}

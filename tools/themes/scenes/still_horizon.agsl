@@ -1,0 +1,26 @@
+// Still horizon: layered soft hills fading into haze under a pale sky, like a quiet wallpaper. A still
+// picture (drawn once). Theme colours: sky from the background, hills from the accent and second colour.
+
+float hill(float x, float base, float amp, float seed) {
+    return base - amp * (0.55 * fbm(float2(x * 1.1 + seed, seed)) + 0.45 * sin(x * 1.7 + seed));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 sky = mix(mix(BG, S, 0.25) * 1.1, mix(BG, A, 0.3), smoothstep(0.0, 0.7, uv.y));
+    float3 col = sky;
+    col += mix(A, float3(1.0), 0.5) * exp(-length((uv - float2(asp * 0.32, 0.5)) * float2(0.5, 1.5)) * 3.5) * 0.3;
+    float3 haze = mix(sky, mix(A, S, 0.5), 0.25);
+    float h1 = hill(uv.x, 0.62, 0.08, 2.0);
+    float h2 = hill(uv.x + 3.0, 0.74, 0.09, 5.0);
+    float h3 = hill(uv.x + 7.0, 0.88, 0.1, 9.0);
+    col = mix(col, mix(haze, A * 0.5 + BG * 0.5, 0.35), smoothstep(h1, h1 + 0.004, uv.y));
+    col = mix(col, mix(haze, S * 0.35 + BG * 0.65, 0.55), smoothstep(h2, h2 + 0.004, uv.y));
+    col = mix(col, BG * 0.55 + A * 0.08, smoothstep(h3, h3 + 0.004, uv.y));
+    col += (hash12(fc) - 0.5) * 0.016;
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,56 @@
+// Glass: soft coloured lights drift behind frosted glass panels. The panels blur and bend what
+// is behind them, catch a highlight along their edges and cast faint shadows.
+float3 lights(float2 uv, float asp, float t, float blur, float3 A, float3 S) {
+    float3 c = float3(0.0);
+    float2 p1 = float2(asp * (0.3 + 0.2 * sin(t * 0.07)), 0.35 + 0.2 * cos(t * 0.05));
+    float2 p2 = float2(asp * (0.7 + 0.2 * cos(t * 0.06)), 0.55 + 0.2 * sin(t * 0.045));
+    float2 p3 = float2(asp * (0.5 + 0.35 * sin(t * 0.04 + 2.0)), 0.75 + 0.15 * cos(t * 0.08));
+    float k = 1.0 / (0.04 + blur);
+    c += A * exp(-dot(uv - p1, uv - p1) * k * 0.6) * 0.55;
+    c += S * exp(-dot(uv - p2, uv - p2) * k * 0.8) * 0.4;
+    c += mix(A, S, 0.5) * exp(-dot(uv - p3, uv - p3) * k) * 0.35;
+    return c;
+}
+
+float panelSd(float2 uv, float i, float asp, float t) {
+    float2 c = float2(asp * (0.2 + 0.6 * hash11(i * 5.1)) + 0.04 * sin(t * 0.08 + i * 2.0), 0.22 + 0.5 * hash11(i * 9.7) + 0.03 * cos(t * 0.06 + i));
+    float2 s = float2(0.16 + 0.14 * hash11(i * 2.3), 0.1 + 0.08 * hash11(i * 3.9));
+    float2 q = rot(0.08 * sin(t * 0.05 + i)) * (uv - c);
+    return sdRoundBox(q, s, 0.035);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float px = 1.0 / uRes.y;
+
+    float3 col = BG + lights(uv, asp, t, 0.0, A, S);
+    for (int k = 0; k < 4; k++) {
+        float i = float(k);
+        float d = panelSd(uv, i, asp, t);
+        // Shadow just below and right.
+        float sh = panelSd(uv - float2(0.012, 0.02), i, asp, t);
+        col *= 1.0 - 0.3 * (1.0 - smoothstep(-0.02, 0.04, sh)) * step(0.0, d);
+        if (d < 0.0) {
+            float edgeK = exp(d * 40.0);
+            float2 bend = float2(d, d) * 0.0;
+            float2 nrm = normalize(float2(
+                panelSd(uv + float2(px, 0.0), i, asp, t) - d,
+                panelSd(uv + float2(0.0, px), i, asp, t) - d) + 1e-5);
+            bend = -nrm * edgeK * 0.05;
+            float3 behind = BG + lights(uv + bend, asp, t, 0.06, A, S);
+            float3 frost = behind * 0.9 + float3(1.0) * 0.045 + (hash12(fc) - 0.5) * 0.015;
+            // Light sweep across the panel.
+            float sw = exp(-sqf((uv.x - uv.y * 0.6) * 4.0 - (fract(t * 0.05 + i * 0.25) * 8.0 - 3.0))) * 0.05;
+            col = frost + sw;
+        }
+        float rim = 1.0 - smoothstep(0.0, 1.5 * px, abs(d));
+        float lightSide = 0.5 + 0.5 * sat(-(uv.y) + 0.8);
+        col += float3(1.0) * rim * 0.22 * lightSide;
+    }
+    return half4(finish(col, fc), 1.0);
+}

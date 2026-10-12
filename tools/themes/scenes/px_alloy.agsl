@@ -1,0 +1,98 @@
+// Alloy · 32-bit (steel type): a factory line. A riveted steel wall with a big turning gear, a
+// conveyor belt carrying gleaming parts under a stamping press that slams down in rhythm, a robot arm
+// picking each part up, sparks from a welding torch and a hazard light rolling round.
+//#include pixel
+
+float gearShape(float2 q, float r, float teeth, float a) {
+    float rr = length(q);
+    float an = atan(q.y, q.x) + a;
+    float tooth = step(0.5, fract(an / TAU * teeth));
+    return step(rr, r + tooth * r * 0.16) * step(r * 0.35, rr);
+}
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 st0 = mix(float3(0.2, 0.22, 0.26), BG, 0.3);
+    float3 st1 = mix(float3(0.42, 0.45, 0.5), A * 0.6, 0.15);
+    float3 st2 = mix(float3(0.62, 0.66, 0.72), A, 0.15);
+    float3 st3 = float3(0.88, 0.92, 0.96);
+
+    // Riveted panels with a sweeping sheen.
+    float2 pg = uv * float2(5.0, 4.0);
+    float2 pf = fract(pg);
+    float sheen = step(abs(fract(uv.x * 0.6 + uv.y * 0.3 - t * 0.08) - 0.5), 0.06);
+    float3 col = pxRamp(0.18 + 0.25 * (1.0 - uv.y) + 0.45 * sheen, cell, st0, st1, st2, st3);
+    col = mix(col, st0, step(min(pf.x, pf.y), 0.03));
+    float2 rv = abs(pf - 0.5) - 0.42;
+    col = mix(col, st3, step(length(max(rv, 0.0) - 0.0), 0.0) * step(length(pf - float2(0.08, 0.08)), 0.03));
+    col = mix(col, st3, step(length(pf - float2(0.92, 0.08)), 0.03) + step(length(pf - float2(0.08, 0.92)), 0.03) + step(length(pf - float2(0.92, 0.92)), 0.03));
+    // A hazard stripe band.
+    float hz = step(abs(uv.y - 0.12), 0.025);
+    col = mix(col, mix(float3(1.0, 0.8, 0.1), float3(0.08), step(0.5, fract((uv.x + uv.y) * 12.0))), hz);
+    // Two meshing gears.
+    float2 g1 = float2(asp * 0.2, 0.42);
+    float2 g2 = g1 + float2(0.24, -0.14);
+    float ga = gearShape(uv - g1, 0.16, 12.0, t * 0.5);
+    float gb = gearShape(uv - g2, 0.1, 8.0, -t * 0.5 * 12.0 / 8.0 + 0.2);
+    col = mix(col, mix(st2, st3, step(uv.y, g1.y - 0.02)), ga);
+    col = mix(col, mix(mix(st2, A, 0.4), st3, step(uv.y, g2.y - 0.02)), gb);
+    col = mix(col, st0, step(length(uv - g1), 0.025) + step(length(uv - g2), 0.018));
+    // The press: slams down every 2 s.
+    float pt = fract(t / 2.0);
+    float drop = pt < 0.15 ? pt / 0.15 : (pt < 0.3 ? 1.0 : 1.0 - smoothstep(0.3, 0.7, pt));
+    drop = drop * drop;
+    float px0 = asp * 0.55;
+    float headY = 0.42 + drop * 0.2;
+    col = mix(col, st1, pxBox(uv, float2(px0, 0.25 + (headY - 0.25) * 0.5), float2(0.015, (headY - 0.25) * 0.5)));
+    col = mix(col, mix(st2, A, 0.2), pxBox(uv, float2(px0, headY), float2(0.07, 0.025)));
+    col = mix(col, mix(float3(1.0, 0.8, 0.1), float3(0.1), step(0.5, fract(uv.x * 30.0))), pxBox(uv, float2(px0, headY + 0.02), float2(0.07, 0.006)));
+    col = mix(col, st0, pxBox(uv, float2(px0, 0.22), float2(0.12, 0.03)));
+    // Conveyor belt with rollers.
+    float beltY = 0.7;
+    col = mix(col, st0, pxBox(uv, float2(asp * 0.5, beltY + 0.03), float2(asp, 0.03)));
+    col = mix(col, float3(0.12), pxBox(uv, float2(asp * 0.5, beltY), float2(asp, 0.012)) * step(0.3, fract(uv.x * 40.0 + t * 1.2)));
+    float roll = step(abs(fract(uv.x * 10.0 + t * 0.12 * 0.0) - 0.5), 0.15) * step(abs(uv.y - beltY - 0.035), 0.012);
+    col = mix(col, st2, roll);
+    // Parts riding the belt (stamped once they pass the press).
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float x = fract(fi / 6.0 + t * 0.05) * (asp + 0.3) - 0.15;
+        float2 q = uv - float2(x, beltY - 0.03);
+        float stamped = step(px0, x);
+        float part = stamped > 0.5 ? pxBox(q, float2(0.0, 0.01), float2(0.03, 0.008)) : pxBox(q, float2(0.0, 0.0), float2(0.018, 0.018));
+        col = mix(col, mix(st2, st3, step(q.y, -0.005)), part);
+        col = mix(col, mix(A, S, 0.5), part * step(length(q - float2(0.0, stamped > 0.5 ? 0.01 : 0.0)), 0.006));
+    }
+    // Robot arm on the right, swinging between belt and bin.
+    float2 base = float2(asp * 0.85, 0.66);
+    float sw = 0.6 * sin(t * 1.2);
+    float2 elbow = base + float2(sin(sw) * 0.12, -cos(sw) * 0.14);
+    float2 hand = elbow + float2(-cos(sw * 1.3) * 0.12, 0.05 + 0.03 * sin(t * 2.4));
+    col = mix(col, st1, pxLine(uv, base, elbow, 6.0));
+    col = mix(col, st2, pxLine(uv, elbow, hand, 4.0));
+    col = mix(col, st0, pxDisc(uv, elbow, 0.012) + pxDisc(uv, base, 0.02));
+    col = mix(col, mix(float3(1.0, 0.8, 0.1), A, 0.2), pxBox(uv, hand + float2(0.0, 0.012), float2(0.014, 0.006)));
+    // Welding sparks at the press.
+    float wt = step(pt, 0.4);
+    for (int i = 0; i < 10; i++) {
+        float fi = float(i);
+        float life = fract(pt * 4.0 + hash11(fi));
+        float2 v = float2((hash11(fi * 3.0) - 0.5) * 0.4, -0.15 - 0.2 * hash11(fi * 5.0));
+        float2 sp = pxSnap(float2(px0, headY + 0.03) + v * life + float2(0.0, 0.4 * life * life));
+        col = mix(col, mix(float3(1.0, 0.9, 0.4), S, 0.2), step(length(uv - sp), PX * 0.8) * wt * (1.0 - life));
+    }
+    // Hazard light rolling round.
+    float2 hl = float2(asp * 0.55, 0.06);
+    float beam = step(0.85, cos(atan(uv.y - hl.y, uv.x - hl.x) - t * 3.0)) * step(length(uv - hl), 0.35);
+    col = mix(col, mix(col, float3(1.0, 0.6, 0.1), 0.35), beam * step(0.5, mod(cell.x + cell.y, 2.0)));
+    col = mix(col, float3(1.0, 0.55, 0.1), pxDisc(uv, hl, 0.012));
+    if (uv.y > 0.78) col = mix(st0, st1, pxBand(hash12(cell) * 0.3 + 0.2, 2.0, cell));
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

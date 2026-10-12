@@ -1,0 +1,76 @@
+// Motion plaza: the calm of a 2000s family console's menu, built as a place you look into. A soft
+// blue-grey room with a floor grid receding to the horizon and a gentle ceiling light; glass bubbles
+// drifting up at three depths (far ones small and soft, near ones large, refracted and specular, with a
+// faint shadow on the floor); thin rings turning slowly in the air. Kept mid-bright so white text reads.
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float horizon = 0.56;
+
+    // Room: a light pool from above, walls falling off to the sides.
+    float2 lc = float2(asp * 0.5, 0.2);
+    float pool = exp(-length((uv - lc) * float2(0.6, 1.0)) * 1.6);
+    float3 wall = mix(float3(0.24, 0.27, 0.32), float3(0.46, 0.52, 0.6), pool);
+    wall = mix(wall, BG * 2.0, 0.22);
+    float3 col = wall;
+
+    // Floor with a perspective grid, fading into the distance.
+    float floorM = smoothstep(horizon, horizon + 0.004, uv.y);
+    float fy = max(uv.y - horizon, 0.003);
+    float z = 0.3 / fy;
+    float gx = (uv.x - asp * 0.5) * z;
+    float2 g = abs(fract(float2(gx * 1.4, z * 0.9 + t * 0.03)) - 0.5);
+    float grid = (1.0 - smoothstep(0.0, 0.02 * z, min(g.x, g.y))) * exp(-z * 0.12);
+    float3 floorC = mix(float3(0.30, 0.34, 0.40), float3(0.18, 0.2, 0.24), sat(fy * 2.5)) + float3(0.6, 0.7, 0.8) * grid * 0.08;
+    floorC = mix(floorC, BG * 1.6, 0.25);
+    col = mix(col, floorC, floorM);
+    col += mix(A, float3(1.0), 0.6) * exp(-abs(uv.y - horizon) * 140.0) * 0.08;
+
+    // Rings turning in the air, each casting a soft ellipse of shadow on the floor.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float2 rc = float2(asp * (0.22 + 0.28 * fi), 0.32 + 0.06 * sin(t * 0.2 + fi));
+        float R = 0.12 + 0.06 * fi;
+        float2 p = (uv - rc) * float2(1.0, 1.7 + 0.5 * sin(t * 0.15 + fi));   // tilted, rocking slowly
+        float rr = length(p);
+        float a = atan(p.y, p.x) + t * (0.12 + 0.05 * fi) * (fi == 1.0 ? -1.0 : 1.0);
+        float dash = step(0.3, fract(a / TAU * (6.0 + fi * 2.0)));
+        float lit = 0.6 + 0.4 * sat(-p.y / R);
+        col += mix(A, float3(1.0), 0.55) * exp(-abs(rr - R) * 260.0) * dash * 0.4 * lit;
+        float2 sp = (uv - float2(rc.x, horizon + 0.08 + 0.05 * fi)) * float2(1.0, 4.0);
+        col *= 1.0 - 0.08 * exp(-sqf(length(sp) / R) * 2.0) * floorM;
+    }
+
+    // Glass bubbles at three depths, far to near.
+    for (int k = 0; k < 3; k++) {
+        if (uLod > 1.5 && k > 1) break;
+        float fk = float(k);
+        float sc = mix(7.0, 2.6, fk / 2.0);
+        float2 bp = uv * sc + float2(sin(t * 0.15 + fk) * 0.4, t * mix(0.05, 0.16, fk / 2.0));
+        float2 id = floor(bp);
+        float2 h = hash22(id + fk * 7.0);
+        float br = 0.16 + 0.14 * h.y;
+        float2 f = fract(bp) - 0.5 - (h - 0.5) * 0.3;
+        float dd = length(f);
+        float on = step(h.x, mix(0.12, 0.2, fk / 2.0));
+        float soft = mix(0.06, 0.012, fk / 2.0);     // depth of field
+        float body = (1.0 - smoothstep(br - soft, br, dd)) * on;
+        // Sphere shading: fresnel rim, light from above-left, a refracted tint in the middle.
+        float2 n2 = f / max(br, 0.001);
+        float nz = sqrt(max(1.0 - dot(n2, n2), 0.0));
+        float rim = pow(1.0 - nz, 2.5);
+        float diff = sat(dot(normalize(float3(n2, nz)), normalize(float3(-0.5, -0.7, 0.6))));
+        float3 tint = mix(A, S, h.y);
+        float3 bc = mix(col * 1.08, mix(float3(0.85, 0.93, 1.0), tint, 0.35), 0.25 + 0.35 * rim) + float3(1.0) * pow(diff, 24.0) * 0.6;
+        float alpha = body * mix(0.35, 0.8, fk / 2.0);
+        col = mix(col, bc, alpha);
+        col += float3(1.0) * exp(-abs(dd - br) * mix(60.0, 140.0, fk / 2.0)) * on * 0.12;
+    }
+    // Sheen across.
+    col += float3(1.0) * smoothstep(0.9, 1.0, sin(uv.x * 2.5 - uv.y * 1.2 - t * 0.15)) * 0.04;
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,211 @@
+// Specimen lab: a pixel-art laboratory at night - a tall glass tank glowing in the middle, something
+// sleeping inside it (the Voltcap capsule, bolt pulsing), bubbles rising through the green fluid, a
+// scan line sweeping it, banks of green monitors on both sides ticking away (waveforms, bar graphs, a
+// radar, scrolling readouts), blinking lights, pipes and big tanks in the dark behind.
+//#include voltcap
+
+float inRect(float2 p, float2 a, float2 b) {
+    return step(a.x, p.x) * step(p.x, b.x) * step(a.y, p.y) * step(p.y, b.y);
+}
+
+half4 main(float2 fc) {
+    // Everything is drawn on a 180-pixel-tall grid, so it stays chunky pixel art at any size.
+    float P = uRes.y / 180.0;
+    float2 c = floor(fc / P) + 0.5;
+    float W = floor(uRes.x / P);
+    float cx = floor(W * 0.5);
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 white = float3(1.0);
+
+    // --- The room: a blue wall, lighter towards the top, panel seams, pipes, big tanks in the dark.
+    float3 col = mix(BG * 1.2, mix(BG, S, 0.42), sat(1.0 - c.y / 170.0));
+    float seam = step(mod(c.x - cx, 32.0), 1.0) * step(c.y, 112.0);
+    col = mix(col, BG * 0.8, seam * 0.5);
+    col = mix(col, BG * 0.85, (step(abs(c.y - 22.5), 0.6) + step(abs(c.y - 62.5), 0.6)) * 0.6);
+    // Pipes along the ceiling.
+    float pipe = inRect(c, float2(0.0, 10.0), float2(W, 15.0));
+    col = mix(col, mix(BG, S, 0.6), pipe);
+    col = mix(col, mix(S, white, 0.25), inRect(c, float2(0.0, 11.0), float2(W, 11.9)) * 0.6);
+    // Pipe clamps.
+    col = mix(col, BG * 0.9, pipe * step(mod(c.x, 40.0), 3.0));
+    // Background tanks (both sides), with tiny amber windows.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float side = i < 2 ? -1.0 : 1.0;
+        float x0 = cx + side * (66.0 + mod(fi, 2.0) * 56.0);
+        float hw = 12.0 + mod(fi, 2.0) * 3.0;
+        float top = 30.0 + mod(fi, 2.0) * 10.0;
+        float body = inRect(c, float2(x0 - hw, top), float2(x0 + hw, 112.0));
+        float dome = step(length((c - float2(x0, top)) / float2(hw, 6.0)), 1.0);
+        float tank = max(body, dome);
+        float shade = 0.5 + 0.5 * sat((c.x - x0 + hw) / (2.0 * hw));
+        col = mix(col, mix(BG, S, 0.3 + 0.14 * shade), tank);
+        col = mix(col, mix(BG, S, 0.62), tank * step(abs(c.x - (x0 - hw * 0.5)), 0.6) * 0.7);
+        float2 win = float2(x0 - 2.0, top + 18.0 + fi * 7.0);
+        float blink = step(0.3, fract(sin(fi * 7.1 + floor(t * 0.7 + fi)) * 43.7));
+        col = mix(col, float3(1.0, 0.72, 0.3), inRect(c, win, win + float2(1.0, 0.0)) * (0.5 + 0.5 * blink));
+        col = mix(col, float3(1.0, 0.72, 0.3), inRect(c, win + float2(3.0, 0.0), win + float2(4.0, 0.0)) * (0.5 + 0.5 * blink));
+    }
+    // Hanging cables on the right.
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float y = 38.0 + fi * 9.0 + 16.0 * sin((c.x - cx) * 0.035 + fi * 1.7) + 1.5 * sin(t * 0.4 + fi);
+        col = mix(col, BG * 0.85, step(abs(c.y - y), 0.6) * step(cx + 40.0, c.x) * 0.8);
+    }
+    // Floor.
+    col = mix(col, mix(BG, S, 0.12) * (1.0 - 0.3 * sat((c.y - 150.0) / 30.0)), step(150.0, c.y));
+    col = mix(col, mix(BG, S, 0.35), step(abs(c.y - 150.5), 0.6));
+
+    // --- The tank in the middle.
+    float tw = 30.0;
+    float tTop = 32.0;
+    float tBot = 126.0;
+    float3 metal = mix(BG, S, 0.62);
+    float3 metalLit = mix(S, white, 0.3);
+    // Its glow on the room.
+    float2 dTank = max(abs(c - float2(cx, (tTop + tBot) * 0.5)) - float2(tw, (tBot - tTop) * 0.5), 0.0);
+    col += A * 0.22 * exp(-length(dTank) / 14.0) * (0.85 + 0.15 * sin(t * 1.3));
+    // Side pillars with little blue lights.
+    for (int s = 0; s < 2; s++) {
+        float sx = s == 0 ? -1.0 : 1.0;
+        float x0 = cx + sx * (tw + 7.0);
+        float pil = inRect(c, float2(x0 - 5.0, 24.0), float2(x0 + 5.0, 140.0));
+        col = mix(col, mix(BG, S, 0.45), pil);
+        col = mix(col, metalLit, pil * step(abs(c.x - (x0 - sx * 4.0)), 0.6) * 0.5);
+        float2 cell = floor((c - float2(x0 - 3.0, 30.0)) / float2(4.0, 5.0));
+        float2 inCell = c - float2(x0 - 3.0, 30.0) - cell * float2(4.0, 5.0);
+        float lit = step(0.35, hash12(cell + float2(sx * 13.0, floor(t * 1.5 + cell.y * 0.3))));
+        float light = pil * step(inCell.x, 2.0) * step(inCell.y, 2.0) * step(0.0, cell.x) * step(cell.x, 1.0)
+            * step(0.0, cell.y) * step(cell.y, 17.0) * step(abs(cell.y - 9.0), 6.0);
+        col = mix(col, mix(S, white, 0.45) * (0.55 + 0.6 * lit), light);
+    }
+    // Pedestal and the top cap.
+    col = mix(col, mix(BG, S, 0.4), inRect(c, float2(cx - tw - 14.0, 136.0), float2(cx + tw + 14.0, 148.0)));
+    col = mix(col, metal, inRect(c, float2(cx - tw - 4.0, tBot), float2(cx + tw + 4.0, 136.0)));
+    col = mix(col, metal, inRect(c, float2(cx - tw - 4.0, tTop - 8.0), float2(cx + tw + 4.0, tTop)));
+    col = mix(col, metalLit, (inRect(c, float2(cx - tw - 4.0, tTop - 8.0), float2(cx + tw + 4.0, tTop - 7.0))
+        + inRect(c, float2(cx - tw - 4.0, tBot), float2(cx + tw + 4.0, tBot + 0.9))) * 0.6);
+    // Vents on the base.
+    col = mix(col, BG * 0.8, inRect(c, float2(cx - tw, 130.0), float2(cx + tw, 132.0)) * step(mod(c.x, 4.0), 2.0));
+    // The fluid.
+    float glass = inRect(c, float2(cx - tw, tTop), float2(cx + tw, tBot));
+    if (glass > 0.5) {
+        float ly = (c.y - tTop) / (tBot - tTop);
+        float lx = (c.x - cx) / tw;
+        float3 fluid = mix(mix(A, BG, 0.25), mix(A, S, 0.45) * 0.75, ly);
+        fluid *= 0.8 + 0.25 * (1.0 - lx * lx);
+        // Slow currents.
+        fluid += A * 0.08 * step(0.7, vnoise(float2(c.x * 0.12, c.y * 0.05 + t * 0.4)));
+        // Something asleep inside: the capsule, drifting gently, held by two cables.
+        float2 q = (c - float2(cx, 78.0 + floor(2.5 * sin(t * 0.7)))) / 20.0;
+        float dCap = sdCapsuleMark(q);
+        float dBolt = sdBoltMark(q);
+        float cable = step(abs(abs(c.x - cx) - 9.0), 0.6) * step(c.y, 78.0 - 6.0);
+        fluid = mix(fluid, mix(BG, A, 0.18), cable * 0.8);
+        float pulse = 0.6 + 0.4 * sin(t * 2.2);
+        fluid = mix(fluid, mix(mix(BG, S, 0.3), A, 0.25 + 0.15 * pulse), step(dCap, 0.0));
+        fluid = mix(fluid, mix(A, white, 0.35), step(abs(dCap), 0.05));
+        fluid = mix(fluid, mix(A, white, 0.45 + 0.4 * pulse), step(dBolt, 0.0));
+        fluid += A * 0.3 * pulse * exp(-max(dBolt, 0.0) * 10.0) * step(0.0, dCap);
+        // Bubbles rising in a few columns.
+        float colId = floor(c.x / 3.0);
+        float h = hash11(colId * 3.7);
+        if (h > 0.4) {
+            float by = tBot - fract(h * 9.1 + t * (0.12 + 0.12 * h)) * (tBot - tTop);
+            float bx = colId * 3.0 + 1.0 + floor(sin(t * 2.0 + h * 10.0) + 0.5);
+            fluid = mix(fluid, mix(A, white, 0.6), inRect(c, float2(bx, by), float2(bx + 1.0, by + 1.0)) * 0.95);
+        }
+        // Bright bands at the top and bottom, and the scan line sweeping down.
+        float dash = step(0.4, fract((c.x + t * 12.0) / 9.0));
+        fluid = mix(fluid, mix(A, white, 0.5), (step(abs(c.y - (tTop + 2.5)), 0.6) + step(abs(c.y - (tBot - 3.5)), 0.6)) * dash);
+        float scanY = tTop + floor(fract(t * 0.18) * (tBot - tTop));
+        fluid = mix(fluid, mix(A, white, 0.5), step(abs(c.y - scanY), 0.6) * 0.45);
+        // Glass highlights and the edges.
+        fluid = mix(fluid, white, (step(abs(c.x - (cx - tw + 4.5)), 0.6) * 0.25 + step(abs(c.x - (cx + tw - 8.5)), 0.6) * 0.12));
+        fluid = mix(fluid, mix(S, white, 0.2), step(tw - 1.0, abs(c.x - cx)) * 0.7);
+        // Every other pixel row a touch darker - the CRT shimmer.
+        fluid *= 0.94 + 0.06 * step(mod(c.y, 2.0), 1.0);
+        col = fluid;
+    }
+
+    // --- Monitor banks on both sides.
+    float bankL = cx - tw - 18.0;
+    float bankR = cx + tw + 18.0;
+    float onBank = step(c.x, bankL) + step(bankR, c.x);
+    // Desks.
+    float desk = onBank * inRect(c, float2(0.0, 138.0), float2(W, 158.0));
+    col = mix(col, mix(BG, S, 0.34), desk);
+    col = mix(col, metalLit, onBank * inRect(c, float2(0.0, 138.0), float2(W, 139.0)) * 0.6);
+    col = mix(col, BG * 0.85, desk * step(mod(c.x, 22.0), 0.9));
+    // Blinking lights on the desks.
+    float2 led = floor(c / float2(5.0, 1.0));
+    float ledOn = step(0.45, hash12(float2(led.x, floor(t * 2.0 + hash11(led.x) * 3.0))));
+    float3 ledCol = hash11(led.x * 1.3) > 0.6 ? float3(1.0, 0.7, 0.3) : mix(S, white, 0.4);
+    col = mix(col, ledCol * (0.4 + 0.7 * ledOn), desk * step(abs(c.y - 145.5), 0.6) * step(mod(c.x, 5.0), 1.0) * step(0.3, hash11(led.x * 2.1)));
+    // Monitors: slots of 34 pixels outwards from the tank, each a screen with its own readout.
+    float side = c.x < cx ? -1.0 : 1.0;
+    float rel = side < 0.0 ? bankL - c.x : c.x - bankR;
+    float slot = floor(rel / 34.0);
+    float sx0 = slot * 34.0;
+    float hs = hash11(slot * 5.3 + side * 17.0);
+    float mw = 22.0 + floor(hs * 9.0);
+    float mh = 16.0 + floor(hash11(slot * 2.1 + side * 3.0) * 12.0);
+    float mTop = 136.0 - mh - floor(hash11(slot * 8.7 + side) * 6.0);
+    // Local coordinates inside the monitor (x from its tank-side edge outwards, mirrored on the left).
+    float2 m = float2(rel - sx0 - 4.0, c.y - mTop);
+    float inMon = onBank * step(0.0, rel) * inRect(m, float2(-2.0, -2.0), float2(mw + 2.0, mh + 2.0));
+    if (inMon > 0.5) {
+        float3 frame = mix(BG, S, 0.25);
+        float3 scr = mix(A, BG, 0.4);
+        float3 ink = mix(A, white, 0.5);
+        float inner = inRect(m, float2(0.0, 0.0), float2(mw, mh));
+        float3 mc = frame;
+        if (inner > 0.5) {
+            mc = scr;
+            float type = floor(hash11(slot * 11.3 + side * 7.0) * 4.0);
+            float v = 0.0;
+            if (type < 1.0) {
+                // A waveform.
+                float y = mh * 0.5 + floor(sin(m.x * 0.45 + t * 3.0 + hs * 6.0) * mh * 0.28 + 0.5);
+                v = step(abs(m.y - y), 0.6);
+                v = max(v, step(abs(m.y - mh * 0.5), 0.6) * 0.35 * step(mod(m.x, 2.0), 1.0));
+            } else if (type < 2.0) {
+                // Bar graph.
+                float b = floor(m.x / 4.0);
+                float bh = floor((0.2 + 0.75 * hash12(float2(b + slot * 9.0, floor(t * 3.0)))) * (mh - 3.0));
+                v = step(mod(m.x, 4.0), 2.0) * step(mh - 2.0 - bh, m.y) * step(m.y, mh - 2.0) * step(1.0, m.x) * step(m.x, mw - 2.0);
+            } else if (type < 3.0) {
+                // Radar with a crosshair and a sweep.
+                float2 rc = m - float2(mw, mh) * 0.5;
+                float r = min(mw, mh) * 0.42;
+                float d = length(rc);
+                v = step(abs(d - r), 0.7) + step(abs(rc.x), 0.5) * step(d, r) * 0.6 + step(abs(rc.y), 0.5) * step(d, r) * 0.6;
+                float a = fract(atan(rc.y, rc.x) / TAU - t * 0.3);
+                v = max(v, step(d, r) * smoothstep(0.85, 1.0, a) * 0.8);
+                float2 blip = float2(cos(hs * 6.0), sin(hs * 6.0)) * r * 0.55;
+                v = max(v, step(length(rc - blip), 1.0) * (0.5 + 0.5 * sin(t * 4.0)));
+            } else {
+                // Scrolling readout.
+                float row = floor((m.y + floor(t * 6.0)) / 3.0);
+                float len = 4.0 + floor(hash11(row * 1.7 + slot) * (mw - 8.0));
+                v = step(mod(m.y + floor(t * 6.0), 3.0), 0.9) * step(2.0, m.x) * step(m.x, len)
+                    * step(0.2, hash12(float2(floor(m.x / 3.0), row)));
+            }
+            mc = mix(mc, ink, sat(v));
+            // Screen glow edge and scanlines.
+            mc = mix(mc, mix(A, white, 0.4), step(abs(m.y - 0.5), 0.6) * 0.5);
+            mc *= 0.9 + 0.1 * step(mod(m.y, 2.0), 1.0);
+        }
+        col = mc;
+    }
+    // The monitors light the wall above them a little.
+    col += A * 0.05 * onBank * exp(-max(110.0 - c.y, 0.0) / 10.0) * step(c.y, 138.0);
+
+    // A soft vignette.
+    float2 vv = fc / uRes - 0.5;
+    col *= 1.0 - 0.35 * dot(vv, vv);
+    return half4(finish(col, fc), 1.0);
+}

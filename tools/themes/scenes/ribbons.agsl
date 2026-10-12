@@ -1,0 +1,52 @@
+// Sound ribbons: layered ribbons of coloured light weaving across a bright wash of the cover's
+// colours, like a voice assistant's waveform: each ribbon follows its own part of the spectrum, they
+// swell together on the bass and flash white on the kick. Sits on the equalizer line (uWaveY).
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5);
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.5) * play;
+    float lvl = bass * 0.5 + uMid * play * 0.3 + uHigh * play * 0.2;
+
+    float3 col = paletteField(uv, asp, t, lvl * k, BG, A, S) * 0.8;
+    float rm = room(0.14);
+    float x = uv.x / asp;
+    // Ribbons fade out towards the screen's edges.
+    float env = pow(sin(clamp(x, 0.0, 1.0) * PI), 1.6);
+    float y = uv.y - uWaveY;
+    float3 glowSum = float3(0.0);
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float e = mix(eqBand(fi), eqBand(fi + 1.0), 0.5) * play;
+        float amp = rm * (0.12 + 0.85 * e * (0.5 + 0.5 * k)) * env;
+        float fr = 6.0 + fi * 2.3;
+        float ph = t * (1.1 + fi * 0.37) * (fract(fi * 0.5) < 0.25 ? 1.0 : -1.0) + fi * 1.9;
+        float w = sin(x * fr + ph) * cos(x * fr * 0.37 - ph * 0.6);
+        float d = abs(y - amp * w);
+        float3 rc = fi < 1.5 ? A : (fi < 3.5 ? S : C);
+        rc = mix(rc, float3(1.0), 0.15 + 0.3 * kick * k);
+        float thick = 0.002 + 0.004 * e;
+        float core = 1.0 - smoothstep(thick, thick + 0.003, d);
+        float halo = exp(-d / (0.02 + 0.03 * e));
+        glowSum += rc * (core * 0.9 + halo * (0.12 + 0.22 * e));
+        // A soft fill between the ribbon and the centre line.
+        float fill = step(0.0, (y) * w * amp) * step(abs(y), abs(amp * w)) * 0.06;
+        glowSum += rc * fill * env;
+    }
+    col += glowSum;
+    // A white-hot centre line.
+    col += float3(1.0) * exp(-abs(y) * 400.0) * env * (0.25 + 0.5 * kick * k);
+    col += mix(A, S, x) * exp(-abs(y) * 12.0) * env * (0.06 + 0.2 * bass * k);
+    // Floating sparks.
+    col += float3(1.0) * dots(uv, 30.0, float2(t * 0.05, sin(t * 0.2) * 0.2), 0.12, 0.07, 5.0) * 0.22;
+    return half4(finish(col, fc), 1.0);
+}

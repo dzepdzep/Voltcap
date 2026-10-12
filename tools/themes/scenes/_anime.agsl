@@ -1,0 +1,44 @@
+// Anime / manga drawing tricks shared by the anime-inspired scenes: focus (speed) lines, halftone
+// dots, flat cel bands and jagged lightning. Generic drawing styles only - no characters or symbols.
+
+// Focus lines radiating from c, the classic "speed lines" of a dramatic panel. n = how many around,
+// they flicker to new positions 8 times a second. Clear near the centre, strongest at the edges.
+float focusLines(float2 uv, float2 c, float t, float n, float seed) {
+    float2 d = uv - c;
+    float a = atan(d.y, d.x) / TAU + 0.5;
+    float r = length(d);
+    float id = floor(a * n);
+    float h = hash11(id + seed + floor(t * 8.0) * 13.0);
+    float w = abs(fract(a * n) - 0.5) * 2.0;
+    float line = (1.0 - smoothstep(0.0, 0.12 + 0.25 * h, w)) * step(0.62, h);
+    return line * smoothstep(0.22 + 0.35 * h, 0.95, r);
+}
+
+// Manga halftone: dots on a 45-degree grid, bigger where v is larger (0..1). 1 inside a dot.
+float halftone(float2 uv, float scale, float v) {
+    float2 p = rot(0.785398) * uv * scale;
+    float2 g = fract(p) - 0.5;
+    return 1.0 - smoothstep(v * 0.62 - 0.04, v * 0.62 + 0.04, length(g));
+}
+
+// Linear noise between random points: kinked, jagged lines (lightning) instead of smooth curves.
+float jag(float x, float s) {
+    float i = floor(x);
+    return mix(hash11(i * 1.37 + s), hash11((i + 1.0) * 1.37 + s), fract(x)) - 0.5;
+}
+
+// Distance to a lightning bolt from a to b: a straight segment pushed sideways by jagged noise,
+// thinning towards its ends.
+float bolt(float2 p, float2 a, float2 b, float seed, float amp) {
+    float2 ba = b - a;
+    float L = max(length(ba), 1e-4);
+    float2 dir = ba / L;
+    float2 nrm = float2(-dir.y, dir.x);
+    float2 pa = p - a;
+    float along = dot(pa, dir);
+    float h = sat(along / L);
+    float off = (jag(h * 7.0, seed) + 0.45 * jag(h * 23.0, seed + 9.0)) * amp * sin(PI * h);
+    float side = dot(pa, nrm) - off;
+    float outside = max(-along, along - L);
+    return length(float2(side, max(outside, 0.0)));
+}

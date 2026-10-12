@@ -1,0 +1,113 @@
+package com.shelf.launcher.ui
+
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import com.shelf.launcher.data.HomeLayout
+
+/*
+ * Update 125: the endless row ("Endless" in R1) on the other layouts too. The games repeat on both sides, and the
+ * place you're on is tracked on an endless "virtual" index: stepping from the last game to the first slides one game
+ * on, like the Voltcap row (GameDock), instead of the row racing back over everything to the start.
+ */
+
+/** Layouts whose row goes round on its own (no "comes back in from the other side" over the whole layout). */
+internal fun loopsOnItsOwn(layout: HomeLayout): Boolean = when (layout) {
+    HomeLayout.CLASSIC, HomeLayout.SIDE, HomeLayout.DASH, HomeLayout.BAR, HomeLayout.SPOT, HomeLayout.HUB, HomeLayout.CIRCUIT,
+    HomeLayout.RESUME, HomeLayout.CROSS, HomeLayout.HERO -> true
+    // Update 135: the Grid's carousel look and the TV room's carousel go round on their own too (GameCarousel).
+    HomeLayout.GRID -> HomeLayout.GRID.name in com.shelf.launcher.data.Features.carouselLayouts.value
+    HomeLayout.TV -> com.shelf.launcher.data.Features.tvRoomGames.value == TvRoom.Games.CAROUSEL
+    else -> false
+}
+
+/** Copies of the games a looping lazy row holds; the row starts in the middle one. */
+internal const val LOOP_COPIES = 1000
+
+/** True when [c]'s row should go round (Endless on, at least two games). */
+internal fun loopRowOn(c: StyleCtx): Boolean = c.state.appearance.loopRow && c.games.size >= 2
+
+/**
+ * The virtual place of [focus] on an endless row of [n] games: it moves by the D-pad's step ([tick] / [step] from the
+ * view model), so with the row going round it keeps counting up (or down) instead of jumping back. Without [loop] it is
+ * just [focus]. A new list of the same size keeps the place; a different size starts again at [focus].
+ */
+@Composable
+internal fun rememberLoopFocus(focus: Int, n: Int, loop: Boolean, tick: Int, step: Int, list: Any?): Int {
+    // [last focus, virtual focus, last tick, size, looping]
+    val t = remember { intArrayOf(focus, focus, tick, n, 0) }
+    val seen = remember { arrayOfNulls<Any>(1) }
+    if (!loop || n <= 0) {
+        t[0] = focus; t[1] = focus; t[2] = tick; t[3] = n; t[4] = 0
+        seen[0] = list
+        return focus
+    }
+    if (t[4] == 0 || t[3] != n) {
+        t[0] = focus; t[1] = focus; t[2] = tick; t[3] = n; t[4] = 1
+    } else if (seen[0] != null && seen[0] !== list) {
+        // Re-sorted, or art came in: carry on from the same place on the endless row.
+        t[1] = t[1] - t[1].mod(n) + focus
+        t[0] = focus
+        t[2] = tick
+    }
+    seen[0] = list
+    if (t[2] != tick) {
+        // A D-pad step: slide exactly that way (with two games the index alone can't tell which way it went).
+        t[2] = tick
+        if (step != 0) {
+            t[1] += step
+            t[0] = (t[0] + step).mod(n)
+        }
+    }
+    if (t[0] != focus) {
+        // A jump (a tap, a letter): the shorter way round.
+        var d = focus - t[0]
+        if (d > n / 2) d -= n
+        if (d < -n / 2) d += n
+        t[1] += d
+        t[0] = focus
+    }
+    return t[1]
+}
+
+/** [rememberLoopFocus] for a style home's row. */
+@Composable
+internal fun rememberLoopFocus(c: StyleCtx): Int =
+    rememberLoopFocus(c.focus, c.games.size, loopRowOn(c), c.state.loopTick, c.state.loopStep, c.games)
+
+/**
+ * A lazy row of [c]'s games that goes round: how many items it holds, which game item [i] shows, which item is the
+ * one you're on ([focusItem]), and a key for each item.
+ */
+internal class LoopRow(val loop: Boolean, val n: Int, virtual: Int) {
+    private val base = if (loop) (LOOP_COPIES / 2) * n else 0
+    val count: Int get() = if (loop) n * LOOP_COPIES else n
+    val focusItem: Int = (base + virtual).let { if (loop) it.coerceIn(0, n * LOOP_COPIES - 1) else it }
+    fun game(i: Int): Int = if (loop) i.mod(n) else i
+    fun key(i: Int, keys: List<Any>): Any = if (loop) "${keys[i.mod(n)]}#${i / n}" else keys[i]
+}
+
+@Composable
+internal fun rememberLoopRow(c: StyleCtx): LoopRow {
+    val v = rememberLoopFocus(c)
+    val loop = loopRowOn(c)
+    return remember(loop, c.games.size, v) { LoopRow(loop, c.games.size, v) }
+}
+
+/**
+ * Keeps the item you're on in view of a lazy row: one step glides, a long way (a new list, Endless switched on) jumps.
+ * [before] is how many items stay visible before it.
+ */
+@Composable
+internal fun FollowFocus(list: LazyListState, row: LoopRow, before: Int = 1) {
+    LaunchedEffect(row.focusItem, row.count) {
+        val target = (row.focusItem - before).coerceAtLeast(0)
+        val visible = list.layoutInfo.visibleItemsInfo
+        val inView = visible.any { it.index == row.focusItem } && visible.firstOrNull()?.index != row.focusItem &&
+            visible.lastOrNull()?.index != row.focusItem
+        if (inView && visible.size > 2) return@LaunchedEffect
+        if (kotlin.math.abs(list.firstVisibleItemIndex - target) > 12) runCatching { list.scrollToItem(target) }
+        else runCatching { list.animateScrollToItem(target) }
+    }
+}

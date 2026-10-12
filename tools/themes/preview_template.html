@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voltcap theme scenes</title>
+<style>
+  :root { --bg:#0d0f14; --panel:#161a22; --text:#eef1f6; --muted:#9aa3b2; --line:#262c38; --accent:#f59a2c; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  header { padding:16px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; border-bottom:1px solid var(--line); }
+  h1 { font-size:16px; margin:0 12px 0 0; letter-spacing:.02em; }
+  select, button, label { font:inherit; color:var(--text); }
+  select, button { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px 10px; }
+  button { cursor:pointer; }
+  label { display:flex; gap:6px; align-items:center; color:var(--muted); }
+  main { padding:16px; max-width:1280px; margin:0 auto; }
+  .stage { position:relative; width:100%; aspect-ratio:16/9; border-radius:14px; overflow:hidden; background:#000; }
+  .stage canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .shade { position:absolute; inset:0; background:linear-gradient(to bottom, transparent 35%, rgba(0,0,0,.45)); pointer-events:none; }
+  .mock { position:absolute; left:4%; right:4%; bottom:9%; display:none; gap:2.2%; pointer-events:none; }
+  .mock.on { display:flex; }
+  .mock div { flex:0 0 13%; aspect-ratio:2/3; border-radius:10px; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); }
+  .mock div:first-child { flex-basis:26%; aspect-ratio:auto; height:auto; outline:3px solid var(--accent); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px; margin-top:16px; }
+  .tile { background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; cursor:pointer; padding:0; text-align:left; }
+  .tile.sel { border-color:var(--accent); }
+  .tile canvas { width:100%; aspect-ratio:16/9; display:block; }
+  .tile span { display:block; padding:6px 10px; color:var(--muted); font-size:12px; }
+  .tile b { color:var(--text); font-weight:600; }
+  .lyrics { position:absolute; left:6%; top:16%; max-width:60%; pointer-events:none; display:none; text-shadow:0 2px 12px rgba(0,0,0,.6); }
+  .lyrics.on { display:block; }
+  .lyrics .tag { font-size:clamp(9px,1.3vw,14px); opacity:.7; letter-spacing:.04em; }
+  .lyrics .now { font-size:clamp(16px,3.1vw,34px); font-weight:700; line-height:1.15; margin-top:.3em; transition:opacity .35s; }
+  .lyrics .next { font-size:clamp(11px,1.8vw,20px); opacity:.45; margin-top:.35em; }
+  .lyrics.small { left:50%; top:9%; transform:translateX(-50%); max-width:80%; background:rgba(0,0,0,.45); padding:.35em 1em; border-radius:99px; text-shadow:none; }
+  .lyrics.small .tag, .lyrics.small .next { display:none; }
+  .lyrics.small .now { font-size:clamp(10px,1.4vw,15px); font-weight:600; margin:0; }
+  .music { display:none; gap:10px; align-items:center; flex-wrap:wrap; }
+  .music.on { display:flex; }
+  .sw { width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,.3); display:inline-block; }
+  #err { color:#ff8a80; white-space:pre-wrap; font-family:ui-monospace, monospace; font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Voltcap theme scenes</h1>
+  <select id="theme" aria-label="Theme"></select>
+  <button id="pause">Pause</button>
+  <label><input type="checkbox" id="mock"> Show home row</label>
+  <label>Speed <input type="range" id="speed" min="0" max="4" step="0.25" value="1"></label>
+  <span class="music" id="musicBar">
+    <select id="cover" aria-label="Test cover"></select>
+    <label>Your cover <input type="file" id="coverFile" accept="image/*"></label>
+    <select id="lyricsStyle" aria-label="Lyrics"><option value="big">Lyrics: Big</option><option value="small">Lyrics: Small</option><option value="off">Lyrics: Off</option></select>
+    <label>Strength <input type="range" id="strength" min="0" max="100" value="70"></label>
+    <span id="swatches"></span>
+  </span>
+</header>
+<main>
+  <div class="stage"><canvas id="gl"></canvas><div class="shade"></div><div class="lyrics" id="lyrics"><div class="tag">Paper Lanterns · The Night Shift</div><div class="now" id="lyNow"></div><div class="next" id="lyNext"></div></div><div class="mock" id="mockRow"><div></div><div></div><div></div><div></div><div></div></div></div>
+  <div id="err"></div>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+const DATA = /*DATA*/null;
+const params = new URLSearchParams(location.search);
+const canvas = document.getElementById('gl');
+const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
+const err = document.getElementById('err');
+const HEAD = `precision highp float;
+#define float2 vec2
+#define float3 vec3
+#define float4 vec4
+#define half float
+#define half2 vec2
+#define half3 vec3
+#define half4 vec4
+#define float2x2 mat2
+#define main sceneMain
+`;
+const TAIL = `
+#undef main
+void main() { gl_FragColor = sceneMain(vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y)); }
+`;
+const VS = 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }';
+const programs = {};
+function compile(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(motif) {
+  if (programs[motif]) return programs[motif];
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, VS));
+  let src = DATA.scenes[motif];
+  let tail = TAIL;
+  if (src.includes('uniform shader uArt;')) {
+    // AGSL child shader -> a texture, sampled in pixels like BitmapShader.
+    src = src.replace('uniform shader uArt;', 'uniform sampler2D uArtTex;\nvec4 uArt_eval(vec2 p);').replace(/uArt\.eval\(/g, 'uArt_eval(');
+    tail = '\nvec4 uArt_eval(vec2 p) { return texture2D(uArtTex, p / uArtSize); }\n' + tail;
+  }
+  if (src.includes('uniform shader uLabel;')) {
+    // The song written on a label (NowPlayingScene.songLabel): a third texture.
+    src = src.replace('uniform shader uLabel;', 'uniform sampler2D uLabelTex;\nvec4 uLabel_eval(vec2 p);').replace(/uLabel\.eval\(/g, 'uLabel_eval(');
+    tail = '\nvec4 uLabel_eval(vec2 p) { return texture2D(uLabelTex, p / uLabelSize); }\n' + tail;
+  }
+  if (src.includes('uniform shader uHistory;')) {
+    // Earlier songs' covers: the preview has none (uHistCount = 0), so this only has to compile.
+    src = src.replace('uniform shader uHistory;', 'uniform sampler2D uHistoryTex;\nvec4 uHistory_eval(vec2 p);').replace(/uHistory\.eval\(/g, 'uHistory_eval(');
+    tail = '\nvec4 uHistory_eval(vec2 p) { return texture2D(uHistoryTex, p / vec2(768.0, 384.0)); }\n' + tail;
+  }
+  if (src.includes('uniform shader uCover;')) {
+    // The sharp cover (record / disc labels): a second texture.
+    src = src.replace('uniform shader uCover;', 'uniform sampler2D uCoverTex;\nvec4 uCover_eval(vec2 p);').replace(/uCover\.eval\(/g, 'uCover_eval(');
+    tail = '\nvec4 uCover_eval(vec2 p) { return texture2D(uCoverTex, p / uCoverSize); }\n' + tail;
+  }
+  if (src.includes('uniform shader uShot;')) {
+    // The game's picture on the CRT room's TV (ShowcaseScene): a test screenshot.
+    src = src.replace('uniform shader uShot;', 'uniform sampler2D uShotTex;\nvec4 uShot_eval(vec2 p);').replace(/uShot\.eval\(/g, 'uShot_eval(');
+    tail = '\nvec4 uShot_eval(vec2 p) { return texture2D(uShotTex, p / uShotSize); }\n' + tail;
+  }
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, HEAD + src + tail));
+  gl.bindAttribLocation(p, 0, 'p');
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return (programs[motif] = p);
+}
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0);
+gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+function draw(theme, t, w, h) {
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  gl.viewport(0, 0, w, h);
+  const p = program(theme.motif);
+  gl.useProgram(p);
+  const u = n => gl.getUniformLocation(p, n);
+  gl.uniform2f(u('uRes'), w, h);
+  gl.uniform1f(u('uTime'), t);
+  gl.uniform1f(u('uLod'), +(params.get('lod') || 0));
+  const music = DATA.reactive.includes(theme.motif);
+  const [bg, surf, acc, sec] = music && M.palette ? M.palette : theme.colors;
+  if (music) {
+    // Same simulated levels as NowPlayingScene uses without real audio.
+    const beat = 60 / 112, age = t % beat;
+    gl.uniform1f(u('uBass'), 0.35 + 0.5 * Math.exp(-age * 6));
+    gl.uniform1f(u('uMid'), 0.45 + 0.25 * Math.sin(t * 1.7) * Math.sin(t * 0.43 + 1));
+    gl.uniform1f(u('uHigh'), 0.35 + 0.3 * Math.max(0, Math.sin(t * 2.9 + 1)) * (0.5 + 0.5 * Math.sin(t * 0.37)));
+    gl.uniform1f(u('uBeatAge'), age);
+    gl.uniform1f(u('uSwapAge'), t % 12); // the cover changes every 12 s in the preview
+    gl.uniform1f(u('uPlaying'), 1);
+    // The playing clocks (NowPlayingScene integrates the levels; here: their average rates).
+    gl.uniform1f(u('uPlayT'), t); gl.uniform1f(u('uBassT'), 0.45 * t); gl.uniform1f(u('uMidT'), 0.45 * t); gl.uniform1f(u('uHighT'), 0.4 * t);
+    gl.uniform1f(u('uIntensity'), M.strength);
+    gl.uniform1f(u('uHasArt'), M.tex ? 1 : 0);
+    gl.uniform2f(u('uArtSize'), 96, 96);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, M.tex);
+    gl.uniform1i(u('uArtTex'), 0);
+    gl.uniform2f(u('uCoverSize'), 256, 256);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, M.sharp);
+    gl.uniform1i(u('uCoverTex'), 1);
+    if (!M.label) {
+      gl.activeTexture(gl.TEXTURE2);
+      const c = document.createElement('canvas'); c.width = 640; c.height = 280;
+      const x = c.getContext('2d'); x.fillStyle = 'rgb(28,30,78)';
+      x.save(); x.translate(320, 140); x.rotate(-2.5 * Math.PI / 180); x.translate(-320, -140);
+      x.font = 'bold 96px "Comic Sans MS", cursive'; x.fillText('Paper Lanterns', 12, 134);
+      x.globalAlpha = 0.8; x.font = 'bold 62px "Comic Sans MS", cursive'; x.fillText('The Night Shift', 28, 241); x.restore();
+      M.label = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, M.label);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    }
+    // The holo card prints the song in a clean type (NowPlayingScene.songLabel(clean = true)), 640 x 170.
+    const clean = theme.motif === 'HOLO_COVER';
+    if (clean && !M.labelClean) {
+      const c = document.createElement('canvas'); c.width = 640; c.height = 170;
+      const x = c.getContext('2d'); x.fillStyle = 'rgb(28,30,78)'; x.textAlign = 'center';
+      x.font = 'bold 86px "Arial Narrow", Arial, sans-serif'; x.fillText('Paper Lanterns', 320, 92);
+      x.globalAlpha = 0.85; x.font = '500 50px Arial, sans-serif'; x.fillText('The Night Shift', 320, 156);
+      M.labelClean = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, M.labelClean);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    }
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, clean ? M.labelClean : M.label);
+    gl.uniform1i(u('uLabelTex'), 2); gl.uniform2f(u('uLabelSize'), 640, clean ? 170 : 280);
+    gl.activeTexture(gl.TEXTURE0);
+    // Simulated equalizer bands (lows thump with the kick, highs flicker), like NowPlayingScene.
+    const eq = [];
+    for (let i = 0; i < 8; i++) { const f = i / 7; const wob = 0.5 + 0.5 * Math.sin(t * (1.3 + i * 0.71) + i * 2.1) * Math.sin(t * (0.37 + i * 0.13) + i);
+      eq.push(Math.min(1, 0.15 + 0.35 * wob * (1 - 0.4 * f) + 0.7 * Math.exp(-age * 7) * (1 - f) * (1 - f) + 0.5 * Math.exp(-((t + beat / 2) % beat) * 14) * f * f)); }
+    gl.uniform4f(u('uEqA'), eq[0], eq[1], eq[2], eq[3]);
+    gl.uniform4f(u('uEqB'), eq[4], eq[5], eq[6], eq[7]);
+    gl.uniform1f(u('uWaveY'), +(params.get('wave') || 0.42));
+    gl.uniform1f(u('uWaveH'), +(params.get('room') || 0));
+    // Where the test cover's subject is (the sun on cover 0), like MusicTheme.subject.
+    gl.uniform3f(u('uSubject'), 0.59, 0.47, 0.26);
+  }
+  if (theme.motif === 'SHOWCASE_CRT') {
+    // ?shot=0 test card (no art), 1 a 4:3 game screenshot (default), 2 wide key art (pans).
+    const kind = +(params.get('shot') ?? 1);
+    if (kind > 0) {
+      const s = testShot(kind);
+      gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, s.tex);
+      gl.uniform1i(u('uShotTex'), 3); gl.uniform2f(u('uShotSize'), s.w, s.h);
+      gl.uniform3f(u('uTvL'), ...s.left); gl.uniform3f(u('uTvR'), ...s.right);
+      gl.activeTexture(gl.TEXTURE0);
+    }
+    gl.uniform1f(u('uHasShot'), kind > 0 ? 1 : 0);
+  }
+  gl.uniform4f(u('uBg'), ...bg, 1); gl.uniform4f(u('uSurf'), ...surf, 1);
+  gl.uniform4f(u('uAcc'), ...acc, 1); gl.uniform4f(u('uSec'), ...sec, 1);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+// ---- CRT room: a made-up game screenshot (pixel platformer) and a wide key art, like ShowcaseScene's ----
+const SHOTS = {};
+function testShot(kind) {
+  if (SHOTS[kind]) return SHOTS[kind];
+  const c = document.createElement('canvas');
+  const g = c.getContext('2d');
+  if (kind === 1) {
+    c.width = 320; c.height = 240;
+    const sky = g.createLinearGradient(0, 0, 0, 240); sky.addColorStop(0, '#3a7bff'); sky.addColorStop(1, '#9ad8ff');
+    g.fillStyle = sky; g.fillRect(0, 0, 320, 240);
+    g.fillStyle = '#fff'; [[40, 40], [200, 30], [260, 70]].forEach(([x, y]) => { g.fillRect(x, y, 36, 10); g.fillRect(x + 6, y - 6, 22, 8); });
+    g.fillStyle = '#2f9e44'; g.beginPath(); g.moveTo(0, 190); g.quadraticCurveTo(80, 120, 160, 190); g.quadraticCurveTo(240, 110, 320, 190); g.lineTo(320, 240); g.lineTo(0, 240); g.fill();
+    for (let x = 0; x < 320; x += 16) { g.fillStyle = '#b5651d'; g.fillRect(x, 200, 16, 40); g.fillStyle = '#8a4a14'; g.fillRect(x, 200, 16, 3); g.fillRect(x + 7, 203, 2, 37); }
+    g.fillStyle = '#d9822b'; for (let i = 0; i < 4; i++) { g.fillRect(120 + i * 18, 130, 16, 16); } g.fillStyle = '#ffd43b'; g.fillRect(156, 132, 16, 12);
+    g.fillStyle = '#ffd43b'; [[60, 160], [80, 150], [100, 160], [230, 120]].forEach(([x, y]) => { g.beginPath(); g.ellipse(x, y, 4, 6, 0, 0, 7); g.fill(); });
+    g.fillStyle = '#e8590c'; g.fillRect(70, 176, 14, 18); g.fillStyle = '#ffe066'; g.fillRect(73, 179, 8, 6); g.fillStyle = '#1b1b1b'; g.fillRect(78, 180, 2, 2);
+    g.fillStyle = '#fff'; g.font = 'bold 12px monospace'; g.fillText('SCORE 004200', 10, 16); g.fillText('x 07', 270, 16);
+  } else {
+    c.width = 960; c.height = 310;
+    const sky = g.createLinearGradient(0, 0, 0, 310); sky.addColorStop(0, '#1d1145'); sky.addColorStop(0.6, '#c2456b'); sky.addColorStop(1, '#ffb15e');
+    g.fillStyle = sky; g.fillRect(0, 0, 960, 310);
+    g.fillStyle = '#ffe3a0'; g.beginPath(); g.arc(640, 190, 60, 0, 7); g.fill();
+    g.fillStyle = '#2a1640'; g.beginPath(); g.moveTo(0, 310); for (let x = 0; x <= 960; x += 40) g.lineTo(x, 220 - Math.abs(Math.sin(x * 0.011)) * 90); g.lineTo(960, 310); g.fill();
+    g.fillStyle = '#120a20'; g.fillRect(250, 120, 18, 190); g.beginPath(); g.moveTo(240, 120); g.lineTo(259, 70); g.lineTo(278, 120); g.fill();
+    g.fillStyle = '#0b0614'; g.beginPath(); g.moveTo(0, 310); for (let x = 0; x <= 960; x += 30) g.lineTo(x, 280 - Math.abs(Math.sin(x * 0.03 + 1)) * 30); g.lineTo(960, 310); g.fill();
+  }
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  // Average colour of each half, like ShowcaseScene does for the room's light.
+  const half = x0 => { const d = g.getImageData(x0, 0, c.width / 2, c.height).data; let r = 0, gg = 0, b = 0; for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; } const n = d.length / 4 * 255; return [r / n, gg / n, b / n]; };
+  return (SHOTS[kind] = { tex, w: c.width, h: c.height, left: half(0), right: half(c.width / 2) });
+}
+
+// ---- Now playing: test covers, the cover softening and palette (ports of MusicTheme.kt) ----
+const M = { tex: null, sharp: null, palette: null, strength: 0.7, covers: [] };
+function cover(kind) {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  const lin = (a, b) => { const l = g.createLinearGradient(0, 0, 256, 256); l.addColorStop(0, a); l.addColorStop(1, b); return l; };
+  if (kind === 0) { g.fillStyle = lin('#ff8a3d', '#6a2bd6'); g.fillRect(0, 0, 256, 256); g.fillStyle = '#ffd34d'; g.beginPath(); g.arc(150, 120, 60, 0, 7); g.fill(); g.fillStyle = '#1b0f2e'; g.fillRect(0, 190, 256, 66); }
+  if (kind === 1) { const r = g.createRadialGradient(128, 160, 10, 128, 128, 200); r.addColorStop(0, '#22d6c8'); r.addColorStop(1, '#0a2a6b'); g.fillStyle = r; g.fillRect(0, 0, 256, 256); g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 6; for (let i = 0; i < 4; i++) { g.beginPath(); for (let x = 0; x <= 256; x += 8) g.lineTo(x, 60 + i * 45 + Math.sin(x / 20 + i) * 10); g.stroke(); } }
+  if (kind === 2) { g.fillStyle = '#0b0b10'; g.fillRect(0, 0, 256, 256); for (let i = -4; i < 8; i++) { g.fillStyle = i % 2 ? '#ff2fb3' : '#7dff3a'; g.save(); g.translate(i * 40, 0); g.rotate(0.5); g.fillRect(0, -50, 14, 400); g.restore(); } }
+  if (kind === 3) { g.fillStyle = lin('#0f3d22', '#081a10'); g.fillRect(0, 0, 256, 256); g.fillStyle = 'rgba(220,255,180,.25)'; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(40 + i * 40, 0); g.lineTo(70 + i * 40, 0); g.lineTo(140 + i * 30, 256); g.lineTo(100 + i * 30, 256); g.fill(); } g.fillStyle = '#e8402a'; g.beginPath(); g.arc(180, 190, 18, 0, 7); g.fill(); }
+  return c;
+}
+function scaled(src, size, sx = 0, sy = 0, sw = src.width, sh = src.height) {
+  const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(src, sx, sy, sw, sh, 0, 0, size, size); return c;
+}
+function soften(img) {
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, side = Math.min(w, h);
+  return scaled(scaled(scaled(img, 16, (w - side) / 2, (h - side) / 2, side, side), 32), 96);
+}
+function rgb2hsv([r, g, b]) { const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0;
+  if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; return [h, mx ? d / mx : 0, mx]; }
+function hsv2rgb([h, s, v]) { const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c; let r = 0, g = 0, b = 0;
+  if (h < 60) [r, g] = [c, x]; else if (h < 120) [r, g] = [x, c]; else if (h < 180) [g, b] = [c, x]; else if (h < 240) [g, b] = [x, c]; else if (h < 300) [r, b] = [x, c]; else [r, b] = [c, x];
+  return [r + m, g + m, b + m]; }
+function vivid(c, minSat) { const h = rgb2hsv(c); h[1] = h[1] < 0.1 ? h[1] : Math.min(Math.max(h[1], minSat), 0.9); h[2] = Math.min(Math.max(h[2], 0.85), 1); return hsv2rgb(h); }
+function extract(soft) {
+  const d = scaled(soft, 24).getContext('2d').getImageData(0, 0, 24, 24).data, bins = 18;
+  const w = new Array(bins).fill(0), sr = w.slice(), sg = w.slice(), sb = w.slice(); let ar = 0, ag = 0, ab = 0;
+  for (let i = 0; i < d.length; i += 4) { const c = [d[i] / 255, d[i + 1] / 255, d[i + 2] / 255]; ar += c[0]; ag += c[1]; ab += c[2];
+    const [h, s, v] = rgb2hsv(c); if (s < 0.18 || v < 0.12) continue; const ww = s * s * (0.3 + v), k = Math.min(bins - 1, Math.floor(h / 360 * bins));
+    w[k] += ww; sr[k] += c[0] * ww; sg[k] += c[1] * ww; sb[k] += c[2] * ww; }
+  const n = d.length / 4, overall = [ar / n, ag / n, ab / n];
+  const score = w.map((x, i) => x + 0.5 * (w[(i + 1) % bins] + w[(i + bins - 1) % bins]));
+  let first = 0; score.forEach((x, i) => { if (x > score[first]) first = i; });
+  const bin = i => [sr[i] / w[i], sg[i] / w[i], sb[i] / w[i]];
+  const accentBase = w[first] > 0 ? bin(first) : null;
+  let second = -1; score.forEach((x, i) => { const dist = Math.min(Math.abs(i - first), bins - Math.abs(i - first)); if (dist >= 3 && w[i] > 0 && (second < 0 || x > score[second])) second = i; });
+  const accent = vivid(accentBase || overall, accentBase ? 0.5 : 0);
+  let secondary; if (second >= 0 && score[second] > score[first] * 0.12) secondary = vivid(bin(second), 0.4);
+  else { const h = rgb2hsv(accent); secondary = hsv2rgb([(h[0] + 32) % 360, h[1] * 0.6, 0.98]); }
+  const [th, ts] = rgb2hsv(overall), s = Math.min(ts * 0.7, 0.45);
+  return [hsv2rgb([th, s, 0.07]), hsv2rgb([th, s, 0.13]), accent, secondary];
+}
+function setCover(img) {
+  const soft = soften(img);
+  if (!M.tex) M.tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, M.tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, soft);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  // The sharp copy (MusicTheme.sharpArt: centre square at 256 px).
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, side = Math.min(w, h);
+  const sharp = scaled(img, 256, (w - side) / 2, (h - side) / 2, side, side);
+  if (!M.sharp) M.sharp = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, M.sharp);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sharp);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  M.palette = extract(soft);
+  const sw = document.getElementById('swatches'); sw.innerHTML = '';
+  M.palette.forEach(c => { const e = document.createElement('span'); e.className = 'sw'; e.style.background = 'rgb(' + c.map(x => Math.round(x * 255)).join(',') + ')'; sw.appendChild(e); });
+}
+const coverSel = document.getElementById('cover');
+['Sunset', 'Ocean', 'Neon', 'Forest'].forEach((n, i) => { M.covers.push(cover(i)); const o = document.createElement('option'); o.value = i; o.textContent = 'Cover: ' + n; coverSel.appendChild(o); });
+coverSel.onchange = () => setCover(M.covers[+coverSel.value]);
+document.getElementById('coverFile').onchange = e => { const f = e.target.files[0]; if (!f) return; const im = new Image(); im.onload = () => setCover(im); im.src = URL.createObjectURL(f); };
+document.getElementById('strength').oninput = e => M.strength = e.target.value / 100;
+const LINES = ['Lanterns drifting over the harbour', 'every light a little promise', 'we kept the night shift running', 'humming till the morning came', 'paper hearts and copper wire', 'carry me back to the shore'];
+const lyricsEl = document.getElementById('lyrics');
+function updateMusicUi(theme, t) {
+  const on = DATA.reactive.includes(theme.motif);
+  document.getElementById('musicBar').classList.toggle('on', on);
+  const style = document.getElementById('lyricsStyle').value;
+  lyricsEl.classList.toggle('on', on && style !== 'off'); lyricsEl.classList.toggle('small', style === 'small');
+  const i = Math.floor(t / 3.2) % LINES.length;
+  document.getElementById('lyNow').textContent = LINES[i]; document.getElementById('lyNext').textContent = LINES[(i + 1) % LINES.length];
+  if (M.palette) lyricsEl.style.color = 'rgb(' + hsv2rgb([rgb2hsv(M.palette[0])[0], 0.04, 0.98]).map(x => Math.round(x * 255)).join(',') + ')';
+}
+setCover(M.covers[+(params.get('cover') || 0)]);
+
+const sel = document.getElementById('theme');
+DATA.themes.forEach((th, i) => { const o = document.createElement('option'); o.value = i; o.textContent = th.label + ' (' + th.motif.toLowerCase().replace('_', ' ') + ')'; sel.appendChild(o); });
+let current = DATA.themes.find(x => x.motif === 'MUSIC') || DATA.themes[0];
+sel.value = DATA.themes.indexOf(current);
+let paused = false, speed = 1, t = 0, last = performance.now();
+sel.onchange = () => { current = DATA.themes[+sel.value]; markTiles(); };
+document.getElementById('pause').onclick = e => { paused = !paused; e.target.textContent = paused ? 'Play' : 'Pause'; };
+document.getElementById('speed').oninput = e => speed = +e.target.value;
+document.getElementById('mock').onchange = e => document.getElementById('mockRow').classList.toggle('on', e.target.checked);
+
+// Screenshot mode: ?theme=VOLT&t=8&w=1280&h=720 draws one still frame.
+if (params.has('theme')) {
+  const th = DATA.themes.find(x => x.name === params.get('theme'));
+  document.querySelector('header').style.display = 'none';
+  document.getElementById('grid').style.display = 'none';
+  document.querySelector('main').style.padding = '0';
+  const st = document.querySelector('.stage'); st.style.borderRadius = '0';
+  try { draw(th, +params.get('t') || 0, +params.get('w') || 1280, +params.get('h') || 720); updateMusicUi(th, +params.get('t') || 0); document.getElementById('musicBar').classList.remove('on'); document.title = 'done'; }
+  catch (e) { err.textContent = e.message; document.title = 'error'; }
+} else {
+  const grid = document.getElementById('grid');
+  const tiles = [];
+  DATA.themes.forEach((th, i) => {
+    const b = document.createElement('button'); b.className = 'tile';
+    const c = document.createElement('canvas'); c.width = 320; c.height = 180;
+    const s = document.createElement('span'); s.innerHTML = '<b>' + th.label + '</b> · ' + th.motif.toLowerCase().replace('_', ' ');
+    b.append(c, s); b.onclick = () => { sel.value = i; sel.onchange(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+    grid.appendChild(b); tiles.push({ th, c, b });
+  });
+  function markTiles() { tiles.forEach(x => x.b.classList.toggle('sel', x.th === current)); }
+  window.markTiles = markTiles; markTiles();
+  let ti = 0;
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (!paused) t += dt * speed;
+    try {
+      // One thumbnail per frame, then the main view.
+      const tile = tiles[ti++ % tiles.length];
+      draw(tile.th, t, 320, 180); tile.c.getContext('2d').drawImage(canvas, 0, 0);
+      const r = canvas.getBoundingClientRect(); const dpr = Math.min(devicePixelRatio || 1, 2);
+      draw(current, t, Math.round(r.width * dpr), Math.round(r.height * dpr));
+      updateMusicUi(current, t);
+      err.textContent = '';
+    } catch (e) { err.textContent = e.message; }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

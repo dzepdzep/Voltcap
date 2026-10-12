@@ -1,0 +1,30 @@
+// Pixel flow: a field of rounded pixels that swell and glow as a slow current passes through
+// them, colours shifting across the screen, with the odd pixel sparkling.
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float cs = max(14.0, floor(uRes.y / 30.0));
+    float2 id = floor(fc / cs);
+    float2 local = fract(fc / cs) - 0.5;
+    float2 g = id * 0.07;
+
+    float flow = fbm(g * 1.4 + float2(t * 0.06, t * 0.025)) + 0.22 * sin(id.x * 0.16 - id.y * 0.07 + t * 0.5);
+    float b = smoothstep(0.3, 0.8, flow);
+    float sparkle = step(0.997, hash12(id + floor(t * 1.5)));
+    b = max(b, sparkle);
+
+    float size = 0.08 + 0.32 * b;
+    float d = sdRoundBox(local, float2(size), 0.12);
+    float px = 1.0 / cs;
+    float m = 1.0 - smoothstep(-px, px, d);
+
+    float3 c = mix(A, S, vnoise(g * 0.6 + float2(t * 0.02, 0.0)));
+    float3 col = BG + c * 0.03;
+    col += c * m * (0.12 + 0.6 * b);
+    // Soft glow under bright pixels.
+    col += c * b * exp(-max(d, 0.0) * 6.0) * 0.12;
+    return half4(finish(col, fc), 1.0);
+}

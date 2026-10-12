@@ -1,0 +1,179 @@
+// Arcade attract: an original arcade cabinet in a dark arcade, running its attract mode. The marquee
+// glows with a bolt and racing stripes; on the curved screen a little shooter plays itself - a ship
+// weaving and firing at a marching formation that bursts apart wave after wave - the score ticking up,
+// "INSERT COIN" blinking under it. The joystick and buttons glow, the coin slots shine, neighbouring
+// cabinets flicker in the dark and everything is mirrored in the polished floor.
+//#include font
+
+// "INSERT COIN": the code of character i (spaces are 0).
+float coinChar(float i) {
+    if (i < 0.5) return 29847.0;   // I
+    if (i < 1.5) return 24557.0;   // N
+    if (i < 2.5) return 31183.0;   // S
+    if (i < 3.5) return 31143.0;   // E
+    if (i < 4.5) return 27565.0;   // R
+    if (i < 5.5) return 29842.0;   // T
+    if (i < 6.5) return 0.0;
+    if (i < 7.5) return 31015.0;   // C
+    if (i < 8.5) return 31599.0;   // O
+    if (i < 9.5) return 29847.0;   // I
+    return 24557.0;                // N
+}
+
+// The demo game at screen pixel q (0..96 across, 0..120 down): colour.
+float3 demo(float2 q, float t, float3 A, float3 S) {
+    float3 col = float3(0.0, 0.0, 0.03);
+    // Scrolling starfield.
+    float2 sp = float2(q.x, q.y - t * 20.0);
+    col += float3(0.5, 0.6, 0.9) * step(0.985, hash12(floor(sp))) * 0.8;
+    // Score and high score along the top.
+    float wave = floor(t / 16.0);
+    float wt = mod(t, 16.0);
+    float score = wave * 1800.0 + floor(wt * 7.0) * 50.0;
+    col = mix(col, float3(1.0), fontNumber(mod(score, 1000000.0), 6.0, floor(q - float2(4.0, 3.0))));
+    col = mix(col, mix(A, float3(1.0), 0.3), fontBit(23533.0, floor(q - float2(58.0, 3.0))) + fontBit(29847.0, floor(q - float2(62.0, 3.0))));
+    col = mix(col, mix(A, float3(1.0), 0.3), fontNumber(50000.0 + wave * 0.0, 5.0, floor(q - float2(67.0, 3.0))));
+    // The formation: 6 x 3 drones, marching side to side and down a little.
+    float march = floor(wt * 2.0);
+    float2 fo = float2(14.0 + 10.0 * abs(mod(march, 8.0) - 4.0) / 4.0 * 2.0, 18.0 + min(wt, 12.0) * 1.2);
+    float2 fq = q - fo;
+    float2 gi = floor(fq / float2(12.0, 11.0));
+    float2 gf = fq - gi * float2(12.0, 11.0);
+    if (gi.x >= 0.0 && gi.x < 6.0 && gi.y >= 0.0 && gi.y < 3.0) {
+        float id = gi.y * 6.0 + gi.x;
+        float dieAt = 1.0 + hash11(id + wave * 31.0) * 13.0;
+        float2 e = floor(gf) - float2(1.0, 1.0);
+        float frame = mod(march, 2.0);
+        if (wt < dieAt) {
+            // An 8 x 7 drone: a diamond core with an eye, wings that flap each step.
+            float core = step(abs(e.x - 3.5) + abs(e.y - 3.0) * 1.2, 3.1);
+            float eye = step(abs(e.x - 3.5), 1.0) * step(abs(e.y - 3.0), 0.5);
+            float wy = frame < 0.5 ? 2.0 : 4.0;
+            float wings = step(abs(e.y - wy), 0.5) * (step(-1.0, e.x) * step(e.x, 0.5) + step(6.5, e.x) * step(e.x, 8.0));
+            float body = core; float eyes = eye; float legs = wings; float ant = 0.0;
+            float3 ec = gi.y < 0.5 ? mix(A, float3(1.0, 0.4, 0.6), 0.4) : (gi.y < 1.5 ? mix(S, float3(0.4, 1.0, 0.6), 0.4) : mix(A, S, 0.5));
+            col = mix(col, ec, sat(body + legs + ant) * (1.0 - eyes));
+        } else if (wt < dieAt + 0.3) {
+            // Burst.
+            float2 bq = e - float2(3.5, 3.0);
+            col = mix(col, float3(1.0, 0.9, 0.5), step(abs(length(bq) - (wt - dieAt) * 18.0), 0.8) * step(0.5, fract(atan(bq.y, bq.x) / TAU * 8.0)));
+        }
+    }
+    // The ship: weaving along the bottom.
+    float sx = 48.0 + 34.0 * sin(t * 0.9) * cos(t * 0.37);
+    float2 sq = floor(q - float2(sx, 106.0));
+    float ship = step(abs(sq.x), 4.0 - max(sq.y, 0.0) * 0.0) * step(0.0, sq.y) * step(sq.y, 4.0) * step(abs(sq.x), 1.0 + sq.y);
+    ship = max(ship, step(abs(sq.x), 0.5) * step(-2.0, sq.y) * step(sq.y, 0.0));
+    col = mix(col, mix(float3(0.6, 0.9, 1.0), S, 0.3), ship);
+    // Shots going up.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float st = fract(t * 1.6 + fi * 0.25);
+        float bx = 48.0 + 34.0 * sin((t - st / 1.6) * 0.9) * cos((t - st / 1.6) * 0.37);
+        float by = 104.0 - st * 110.0;
+        col = mix(col, float3(1.0, 1.0, 0.6), step(abs(q.x - bx), 0.6) * step(abs(q.y - by), 2.0));
+    }
+    // INSERT COIN, blinking.
+    if (fract(t * 0.8) < 0.6) {
+        float2 tq = floor(q - float2(26.0, 114.0) + float2(0.0, 0.0));
+        float ci = floor(tq.x / 4.0);
+        if (ci >= 0.0 && ci < 11.0) col = mix(col, float3(1.0, 0.85, 0.3), fontBit(coinChar(ci), float2(tq.x - ci * 4.0, tq.y + 5.0)));
+    }
+    return col;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float px = 1.5 / uRes.y;
+    float cx = asp * 0.5;
+    float x = uv.x - cx;
+
+    // The arcade: dark walls with a neon strip, other cabinets glowing dimly on both sides.
+    float3 col = mix(BG * 0.5, BG * 1.2, uv.y);
+    col += mix(A, S, 0.5) * 0.08 * exp(-abs(uv.y - 0.08) * 40.0);
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float side = fi < 2.0 ? -1.0 : 1.0;
+        float k = mod(fi, 2.0);
+        float ox = side * (0.48 + k * 0.32);
+        float2 q = uv - float2(cx + ox, 0.48);
+        float cab = sdRoundBox(q, float2(0.11, 0.42), 0.01);
+        col = mix(col, BG * 0.35, 1.0 - smoothstep(0.0, px, cab));
+        float scr = sdRoundBox(q - float2(0.0, -0.1), float2(0.075, 0.08), 0.01);
+        float3 sc = mix(A, S, hash11(fi)) * (0.3 + 0.15 * sin(t * 3.0 + fi * 2.0));
+        col = mix(col, sc, 1.0 - smoothstep(0.0, px, scr));
+        col += sc * 0.15 * exp(-max(scr, 0.0) * 20.0);
+    }
+    // Polished floor with reflections.
+    if (uv.y > 0.9) col = mix(col, BG * 0.4, 0.6);
+
+    // The cabinet: side panels with stripes, then the face.
+    float2 q = float2(x, uv.y);
+    float sideP = step(abs(x), 0.25) * step(0.06, uv.y) * step(uv.y, 0.92);
+    float face = step(abs(x), 0.21);
+    float3 cabC = mix(float3(0.1, 0.1, 0.13), BG, 0.3);
+    col = mix(col, cabC * 1.3, sideP);
+    col = mix(col, mix(A, S, step(0.0, x)), sideP * step(0.21, abs(x)) * step(abs(fract(uv.y * 6.0 - abs(x) * 4.0) - 0.5), 0.12));
+    // Marquee.
+    float mq = sdRoundBox(q - float2(0.0, 0.13), float2(0.2, 0.055), 0.01);
+    if (mq < 0.0) {
+        float3 m = mix(A * 0.35, S * 0.35, (x + 0.2) / 0.4);
+        m += 0.15 * step(abs(fract((x + uv.y * 0.6) * 12.0 - t * 0.5) - 0.5), 0.12);
+        float2 b = q - float2(0.0, 0.13);
+        float bolt = step(abs(b.x + b.y * 0.6 + 0.01), 0.012) * step(-0.04, b.y) * step(b.y, 0.003) + step(abs(b.x + b.y * 0.6 - 0.01), 0.012) * step(-0.003, b.y) * step(b.y, 0.04);
+        m = mix(m, float3(1.0, 0.95, 0.8), sat(bolt));
+        col = m * (0.9 + 0.1 * sin(t * 13.0) * step(0.97, fract(t * 0.2)));
+    }
+    col += mix(A, S, 0.5) * 0.2 * exp(-max(mq, 0.0) * 25.0) * (1.0 - step(mq, 0.0));
+    // The bezel and the screen.
+    float bz = sdRoundBox(q - float2(0.0, 0.4), float2(0.2, 0.2), 0.02);
+    col = mix(col, float3(0.04), (1.0 - smoothstep(0.0, px, bz)) * face);
+    float2 sh = float2(0.16, 0.19);
+    float2 s = (q - float2(0.0, 0.4) + sh) / (2.0 * sh);
+    // Curved tube: barrel distortion.
+    float2 sc = s * 2.0 - 1.0;
+    sc *= 1.0 + 0.06 * dot(sc, sc);
+    float2 s2 = sc * 0.5 + 0.5;
+    if (s2.x > 0.0 && s2.x < 1.0 && s2.y > 0.0 && s2.y < 1.0) {
+        float3 g = demo(s2 * float2(96.0, 120.0), t, A, S);
+        g *= 0.85 + 0.15 * sin(s2.y * 120.0 * PI);            // scanlines
+        g *= 1.0 - 0.35 * dot(sc, sc) * 0.5;
+        col = g * 1.2 + 0.03;
+        col += 0.04 * smoothstep(0.3, 0.0, abs(s2.x + s2.y * 0.4 - 0.4));
+    }
+    col += mix(A, S, 0.5) * 0.06 * exp(-max(bz, 0.0) * 30.0) * step(0.0, bz) * face;
+    // Control panel: slanted, with a joystick and three buttons.
+    float cp = sdRoundBox(q - float2(0.0, 0.66), float2(0.23, 0.04), 0.008);
+    col = mix(col, mix(cabC * 2.2, A * 0.4, 0.2), 1.0 - smoothstep(0.0, px, cp));
+    col = mix(col, cabC * 3.0, (1.0 - smoothstep(0.0, px, cp)) * step(q.y, 0.63));
+    float js = sin(t * 0.9 * 1.0) * cos(t * 0.37);
+    float2 jq = q - float2(-0.11, 0.66);
+    col = mix(col, float3(0.1), 1.0 - smoothstep(0.0, px, length(jq * float2(1.0, 2.0)) - 0.025));
+    col = mix(col, float3(0.15), 1.0 - smoothstep(0.0, px, sdSegment(q, float2(-0.11, 0.66), float2(-0.11 + js * 0.015, 0.6)) - 0.004));
+    col = mix(col, mix(A, float3(1.0, 0.3, 0.3), 0.3), 1.0 - smoothstep(0.0, px, length(q - float2(-0.11 + js * 0.015, 0.598)) - 0.014));
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float2 bq = (q - float2(0.03 + fi * 0.055, 0.66 - fi * 0.006)) * float2(1.0, 2.0);
+        float lit = step(0.7, fract(t * 1.6 + fi * 0.33));
+        float3 bc = fi < 0.5 ? A : (fi < 1.5 ? S : mix(A, S, 0.5));
+        col = mix(col, bc * (0.6 + 0.6 * lit), 1.0 - smoothstep(0.0, px, length(bq) - 0.018));
+        col += bc * 0.2 * lit * exp(-max(length(bq) - 0.018, 0.0) * 40.0);
+    }
+    // Coin door.
+    float cd = sdRoundBox(q - float2(0.0, 0.8), float2(0.08, 0.07), 0.006);
+    col = mix(col, cabC * 1.7, (1.0 - smoothstep(0.0, px, cd)));
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i) * 2.0 - 1.0;
+        float slot = sdRoundBox(q - float2(fi * 0.035, 0.78), float2(0.016, 0.022), 0.004);
+        col = mix(col, mix(float3(1.0, 0.25, 0.2), A, 0.3) * (0.7 + 0.3 * sin(t * 2.0 + fi)), 1.0 - smoothstep(0.0, px, slot));
+        col = mix(col, float3(0.05), 1.0 - smoothstep(0.0, px, sdRoundBox(q - float2(fi * 0.035, 0.78), float2(0.002, 0.014), 0.001)));
+    }
+    // Floor reflection of the screen glow.
+    col += mix(A, S, 0.5) * 0.12 * step(0.92, uv.y) * exp(-abs(x) * 6.0) * (0.8 + 0.2 * sin(uv.y * 200.0 + t));
+    return half4(finish(col, fc), 1.0);
+}

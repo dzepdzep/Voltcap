@@ -1,0 +1,89 @@
+// Firefly glade: a forest clearing at night seen from inside the trees. Dark trunks frame the left and
+// right edges, layered back into blue mist; leaves hang in the top corners, bushes and grass fill the
+// bottom corners, and fireflies drift and blink slowly. A thin moonbeam falls through (original design).
+
+// Trunks of one depth layer: returns coverage, and the trunk's horizontal shading in sh.
+float trunks(float2 uv, float asp, float layer, float t, out float sh) {
+    float sc = 3.0 + layer * 2.5;
+    float x = uv.x / asp;
+    // Trees only near the left and right edges.
+    float cell = floor(x * sc);
+    float fx = fract(x * sc);
+    float h = hash11(cell * 3.7 + layer * 11.0);
+    float cx = 0.5 + (h - 0.5) * 0.5;
+    float w = (0.09 + 0.06 * hash11(cell + layer * 5.0)) * (1.4 - layer * 0.3);
+    // A slight lean and taper.
+    float lean = (hash11(cell * 9.1 + layer) - 0.5) * 0.15;
+    float d = abs(fx - cx - lean * (uv.y - 0.5)) - w * (1.0 + 0.25 * (uv.y - 0.5));
+    float xc = (cell + 0.5) / sc;
+    float edge = max(sat((0.3 - xc) / 0.3), sat((xc - 0.7) / 0.3));
+    float keep = step(0.05 + 0.25 * h, edge + 0.08 * layer);
+    sh = sat((fx - cx) / max(w, 1e-3) * 0.5 + 0.5);
+    return smoothstep(0.004 * sc, -0.004 * sc, d) * keep;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;      // firefly glow
+    float3 S = uSec.rgb;      // leaf / mist green
+    float3 BG = uBg.rgb;
+    float x = uv.x / asp;
+
+    // Deep blue-green night, mist glowing faintly in the middle distance.
+    float3 col = mix(BG * 2.6 + S * 0.08, BG * 1.4 + S * 0.04, smoothstep(0.2, 1.0, uv.y));
+    float mist = fbm3(float2(uv.x * 1.5 + t * 0.01, uv.y * 4.0));
+    col += mix(S, float3(0.7, 0.85, 0.9), 0.4) * smoothstep(0.35, 0.8, mist) * exp(-sqf((uv.y - 0.7) / 0.2)) * 0.16;
+    // Moonlit mist glowing softly in the clearing beyond the trees.
+    col += mix(S, float3(0.75, 0.9, 0.95), 0.5) * exp(-sqf((uv.y - 0.72) / 0.22)) * exp(-sqf((x - 0.5) / 0.35)) * 0.12;
+    // A thin moonbeam slanting down through the canopy.
+    float bx = uv.x - asp * 0.62 + uv.y * 0.25;
+    col += float3(0.7, 0.8, 0.9) * exp(-sqf(bx / 0.06)) * smoothstep(1.0, 0.0, uv.y) * 0.1 * (0.8 + 0.2 * sin(t * 0.2));
+
+    // Trees, far (misty) to near (black).
+    for (int i = 2; i >= 0; i--) {
+        float fl = float(i);
+        float sh;
+        float tr = trunks(uv, asp, fl, t, sh);
+        float3 bark = mix(BG * 0.35, BG * 1.2 + S * 0.05, sh * 0.6);
+        bark += float3(0.6, 0.7, 0.8) * exp(-sqf((sh - 0.25) / 0.12)) * 0.03 * (1.0 - fl * 0.3);   // moonlit edge
+        // Bark texture on the near ones.
+        bark *= 0.85 + 0.15 * vnoise(float2(uv.x * 80.0, uv.y * 12.0));
+        float3 hazed = mix(bark, BG * 1.6 + S * 0.06, fl * 0.33);
+        col = mix(col, hazed, tr);
+    }
+
+    // Leaves hanging in the top corners.
+    float canopy = max(sqf(sat((0.45 - x) / 0.45)), sqf(sat((x - 0.55) / 0.45))) * smoothstep(0.42, 0.0, uv.y);
+    float sway = 0.01 * sin(t * 0.4 + uv.x * 3.0);
+    float leaves = smoothstep(0.5, 0.56, fbm(float2(uv.x * 7.0 + sway * 20.0, uv.y * 9.0)) + canopy * 0.55 - 0.35);
+    float leafLit = fbm3(float2(uv.x * 20.0, uv.y * 20.0));
+    col = mix(col, mix(BG * 0.5, S * 0.18 + BG * 0.5, leafLit), leaves * smoothstep(0.0, 0.2, canopy));
+
+    // Bushes and grass in the bottom corners.
+    float ground = max(sqf(sat((0.42 - x) / 0.42)), sqf(sat((x - 0.58) / 0.42)));
+    float gh = 0.94 - 0.16 * ground;
+    float blades = fract(uv.x * 140.0 + 0.3 * sin(uv.x * 20.0));
+    float bladeH = gh - 0.05 * hash11(floor(uv.x * 140.0)) * ground - 0.01 * sin(t * 0.8 + uv.x * 30.0) * (gh - uv.y + 0.1);
+    float grass = step(bladeH + abs(blades - 0.5) * 0.08, uv.y);
+    // Low bushes: soft rounded mounds in the corners behind the grass.
+    float bush = 0.94 - 0.13 * ground - 0.05 * fbm3(float2(uv.x * 9.0, 2.0)) * ground - 0.02 * sin(t * 0.3 + uv.x * 4.0) * ground * 0.3;
+    float fern = step(bush, uv.y) * step(0.05, ground);
+    float plants = max(grass, fern);
+    col = mix(col, BG * 0.4 + S * 0.03, plants);
+
+    // Fireflies: drifting, blinking slowly, mostly low and near the trees.
+    for (int i = 0; i < 20; i++) {
+        float fi = float(i);
+        float side = step(0.5, hash11(fi * 1.9));
+        float2 home = float2(asp * (side < 0.5 ? 0.04 + 0.3 * hash11(fi * 3.1) : 0.66 + 0.3 * hash11(fi * 3.1)), 0.45 + 0.5 * hash11(fi * 5.7));
+        float2 p = home + float2(0.05 * sin(t * (0.11 + 0.05 * hash11(fi)) + fi * 2.0), 0.035 * sin(t * (0.13 + 0.04 * hash11(fi + 2.0)) + fi * 3.0));
+        float blink = sqf(sat(sin(t * (0.5 + 0.4 * hash11(fi * 7.0)) + fi * 4.0)));
+        float d = length(uv - p);
+        col += mix(A, float3(1.0), 0.4) * exp(-d * 300.0) * blink;
+        col += A * exp(-d * 25.0) * blink * 0.14;
+    }
+
+    return half4(finish(col, fc), 1.0);
+}

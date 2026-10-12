@@ -1,0 +1,71 @@
+// Koi pond: Toni's painting of koi among lily pads (res scene_chill_koi), brought to life. The koi swim in
+// place — gliding a little forward and back, bodies rippling, tails swishing — the water shimmers over them
+// with moving caustic light, and rings spread now and then where one touches the surface. The lily pads
+// float still. (The procedural version is kept as chill_koi_drawn.agsl.)
+//#include paint
+
+// How far the painting moves at reference point r for one koi (head h, tail tip e, half-width hw), at phase ph.
+float2 koiMove(float2 r, float2 h, float2 e, float hw, float ph, float t) {
+    float2 axis = e - h;
+    float L = length(axis);
+    float2 d = axis / L;
+    float2 n = float2(-d.y, d.x);
+    float u = dot(r - h, d) / L;          // 0 at the head, 1 at the tail tip
+    float v = dot(r - h, n);
+    float w = exp(-sqf(v / (hw * 1.9))) * smoothstep(-0.35, 0.0, u) * smoothstep(1.35, 1.0, u);
+    float glide = 4.0 * sin(t * 0.55 + ph);
+    float wag = 7.0 * sqf(sat((u - 0.4) / 0.6)) * sin(t * 2.6 + ph * 2.0);
+    float ripple = 1.6 * sin(u * 7.0 - t * 2.6 + ph) * sat(u * 2.0);
+    return (d * glide + n * (wag + ripple)) * w;
+}
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(BG * 2.0, BG * 1.2, uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+    float2 r = q * float2(1672.0, 941.0);
+    float aspP = sz.x / sz.y;
+
+    // The lily pads (green, lit) stay put; everything else is under rippling water.
+    float3 here = paintAt(p);
+    float pad = sat((here.g - max(here.r * 1.25, here.b * 1.1)) * 6.0) * smoothstep(0.15, 0.3, luma(here));
+    float flower = smoothstep(0.7, 0.85, luma(here)) * step(here.b, here.g + 0.1);
+    float still = sat(pad + flower);
+
+    float2 move = koiMove(r, float2(1450.0, 177.0), float2(1650.0, 270.0), 32.0, 0.0, t)
+                + koiMove(r, float2(205.0, 780.0), float2(355.0, 925.0), 32.0, 2.1, t)
+                + koiMove(r, float2(1600.0, 680.0), float2(1555.0, 790.0), 22.0, 4.2, t) * 0.6
+                + koiMove(r, float2(8.0, 222.0), float2(110.0, 262.0), 26.0, 5.3, t) * 0.5;
+    // Water shimmer.
+    float2 wv = float2(sin(r.y * 0.045 + t * 0.9) + sin(r.x * 0.02 - t * 0.6), cos(r.x * 0.04 - t * 0.8) + sin(r.y * 0.025 + t * 0.5)) * 0.9;
+    float2 off = (move + wv) * (1.0 - still);
+    float3 col = paintAt(p - off / float2(1672.0, 941.0) * sz);
+
+    // Moving caustic light over the water (not on the pads).
+    float2 cp = r * 0.009;
+    float c1 = abs(sin(cp.x + sin(cp.y * 1.3 + t * 0.35) * 1.2 + t * 0.2));
+    float c2 = abs(sin(cp.y * 1.1 + sin(cp.x * 0.9 - t * 0.3) * 1.3 - t * 0.15));
+    float caus = pow(sat(1.0 - min(c1, c2)), 7.0);
+    col += float3(0.7, 0.95, 0.85) * caus * 0.07 * (1.0 - still);
+
+    // Rings spreading where a koi touches the surface (near the fish, now and then).
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float cyc = t * 0.09 + fi * 0.37;
+        float ph = fract(cyc);
+        float n = floor(cyc);
+        float2 c = i == 0 ? float2(1460.0, 175.0) : i == 1 ? float2(210.0, 780.0) : float2(600.0 + 500.0 * hash11(n * 3.1), 150.0 + 600.0 * hash11(n * 7.3));
+        float rr = ph * 140.0;
+        float d = length(r - c);
+        float ring = exp(-abs(d - rr) * 0.35) + exp(-abs(d - rr * 0.6) * 0.45) * 0.6;
+        col += float3(0.75, 0.95, 0.9) * ring * (1.0 - ph) * (1.0 - ph) * 0.1 * (1.0 - still);
+    }
+
+    return half4(finishPaint(col, fc), 1.0);
+}

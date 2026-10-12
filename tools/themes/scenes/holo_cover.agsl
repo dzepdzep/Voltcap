@@ -1,0 +1,102 @@
+// Holo cover (music): the album cover as a holographic foil trading card, turning slowly from side to
+// side in perspective. The song's name and the artist are printed in the strip under the art in the
+// same foil (uLabel: NowPlayingScene.songLabel, clean style), so the rainbow sheen sweeps across them
+// too as the card turns. The foil pattern (fine diagonal lines and stars) catches the light on the
+// kick, the border glints, sparkles twinkle with the highs, and the background is a soft iridescent
+// wash in the cover's colours.
+//#include reactive
+
+float3 rainbow(float x) { return 0.5 + 0.5 * cos(TAU * (x + float3(0.0, 0.33, 0.67))); }
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.8;
+    // Iridescent background.
+    float3 col = mix(BG * 0.7, mix(A, S, 0.5) * 0.35, 0.5 + 0.5 * sin(uv.x * 2.0 + uv.y * 3.0 + t * 0.2));
+    col += rainbow(uv.x * 0.4 + uv.y * 0.3 + t * 0.03) * 0.05;
+
+    // The card turns a little from side to side (about 20 degrees) and nods a touch, seen in
+    // perspective: the near edge grows, the far one shrinks. Each pixel's ray is followed back to the
+    // card's plane to find where on the card it lands.
+    float yaw = 0.34 * sin(t * 0.33) + 0.04 * bass * k;
+    float pitch = 0.06 * sin(t * 0.21 + 1.3);
+    float cy = cos(yaw);
+    float sy = sin(yaw);
+    float cp = cos(pitch);
+    float sp = sin(pitch);
+    float3 eu = float3(cy, sy * sp, -sy * cp);
+    float3 ev = float3(0.0, cp, sp);
+    float3 nrm = float3(sy, -cy * sp, cy * cp);
+    float D = R * 6.0;
+    float3 eye = float3(0.0, 0.0, -D);
+    float3 dir = float3(uv - c, D);
+    float lam = D * nrm.z / dot(dir, nrm);
+    float3 P = eye + dir * lam;
+    float2 d = float2(dot(P, eu), dot(P, ev));
+    float2 hw = float2(R * 0.76, R);
+    // Soft shadow under the card (flat, a little behind it).
+    float2 dsh = uv - c - float2(R * 0.04, R * 0.06);
+    col *= 1.0 - 0.35 * (1.0 - smoothstep(-0.01, 0.06, sdRoundBox(dsh, hw * float2(abs(cy), 1.0), R * 0.06)));
+    float card = sdRoundBox(d, hw, R * 0.06);
+    // The card's pixels are stretched where it turns away: keep the edge one screen pixel soft.
+    float pxc = px / max(abs(cy), 0.4);
+    if (card < pxc) {
+        float2 q = d / (2.0 * hw) + 0.5;
+        // Border with the art window inside it, and the name strip under the art.
+        float side = R * 0.66;
+        float2 wc = float2(0.0, -R * 0.12);
+        float win = sdRoundBox(d - wc, float2(side), R * 0.02);
+        float stripTop = wc.y + side + R * 0.04;
+        float stripBot = hw.y - R * 0.07;
+        float strip = sdRoundBox(d - float2(0.0, (stripTop + stripBot) * 0.5), float2(side, (stripBot - stripTop) * 0.5), R * 0.02);
+        float3 base = mix(A, S, q.y) * 0.8 + 0.15;
+        // The foil's light: a rainbow band that slides across as the card turns.
+        float band = q.x * 0.8 + q.y * 0.6 + yaw * 2.4 + pitch * 1.5 - t * 0.05;
+        float sheen = pow(0.5 + 0.5 * sin(band * 6.0), 4.0);
+        float3 foil = rainbow(band * 1.3);
+        if (win < 0.0) base = sharpCover((d - wc) / (2.0 * side) + 0.5, A, S);
+        if (strip < 0.0) {
+            // The name strip: a dark foil panel; the title and artist in bright holographic ink.
+            float3 panel = mix(BG, mix(A, S, q.x), 0.35) * 0.55;
+            float2 lq = float2((d.x + side) / (2.0 * side), (d.y - stripTop) / (stripBot - stripTop));
+            // Four taps a pixel apart: the label is drawn larger than the strip, this keeps it smooth.
+            float2 lpx = float2(0.5 / uLabelSize.x, 0.5 / uLabelSize.y);
+            float ink = 0.25 * (labelInk(lq + lpx * float2(-1.0, -1.0)) + labelInk(lq + lpx * float2(1.0, -1.0))
+                + labelInk(lq + lpx * float2(-1.0, 1.0)) + labelInk(lq + lpx * float2(1.0, 1.0)));
+            // An embossed edge: the ink's shadow a touch down-right.
+            float shade = labelInk(lq + float2(0.006, 0.03));
+            panel *= 1.0 - 0.45 * shade * (1.0 - ink);
+            float3 inkCol = mix(float3(0.93, 0.94, 0.98), rainbow(band * 1.6 + lq.x * 0.5), 0.55);
+            inkCol *= 0.8 + 0.45 * sheen + 0.25 * kick * k;
+            base = mix(panel, inkCol, ink);
+        }
+        // Foil pattern: fine diagonal lines + little stars.
+        float lines = step(0.5, fract((d.x + d.y) * 220.0));
+        float2 sg = fract(q * float2(9.0, 12.0)) - 0.5;
+        float star = step(abs(sg.x) + abs(sg.y), 0.12);
+        float pattern = max(lines * 0.4, star);
+        float shine = sheen * (0.35 + 0.6 * kick * k) + pattern * 0.12 * (0.5 + kick);
+        base = mix(base, base * 0.55 + foil * 0.8, shine * 0.8);
+        // Sparkles on the highs.
+        float sp2 = dots(q * 3.0, 14.0, float2(0.0), 0.15 * (0.3 + uHigh * play), 0.08, 9.0);
+        base += float3(1.0) * sp2 * 0.8;
+        // The side turned towards the light is a little brighter.
+        base *= 0.92 + 0.16 * sat(0.5 + yaw * 1.4 * (q.x - 0.5) * 2.0);
+        col = mix(col, base, 1.0 - smoothstep(-pxc, pxc, card));
+        // Glinting border.
+        col += rainbow(band + 0.3) * (1.0 - smoothstep(0.0, pxc * 3.0, abs(card))) * (0.4 + 0.6 * sheen);
+    }
+    return half4(finish(col, fc), 1.0);
+}

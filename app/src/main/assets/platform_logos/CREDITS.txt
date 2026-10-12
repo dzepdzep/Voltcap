@@ -1,0 +1,9 @@
+Console logos in this folder
+
+From "v2 Platform Logos (professionally redrawn official versions)" by Dan Patrick,
+made for LaunchBox / Big Box:
+https://forums.launchbox-app.com/files/file/3402-v2-platform-logos-professionally-redrawn-official-versions-new-bigbox-defaults/
+
+Voltcap uses them as the console folders' logos (Cross menu and the second screen's Games page).
+Some are cropped to the console's emblem alone (no extra text under it). All credit for the
+artwork goes to Dan Patrick. The logos themselves are trademarks of their owners.

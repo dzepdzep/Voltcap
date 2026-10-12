@@ -1,0 +1,106 @@
+// Dojo (fighting type): a training hall at sunset. Low sun pours through the paper screens of the
+// back wall in long beams full of dust; the polished plank floor mirrors them; a plain cloth banner
+// sways from the beam. In the middle a wooden training post takes a strike every few seconds - it
+// shudders, a shockwave ring rolls across the floor, dust jumps, impact lines flash and the hall
+// shakes for a moment.
+
+half4 main(float2 fc) {
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    // The strike: every 5 s; hit = 1 at the moment, fading.
+    float cyc = mod(t, 5.0);
+    float hit = exp(-cyc * 5.0);
+    float shake = 0.006 * hit * sin(cyc * 90.0);
+    float2 uv = fc / uRes.y + float2(shake, shake * 0.5);
+    float px = 1.5 / uRes.y;
+    float cx = asp * 0.5;
+
+    float wallBase = 0.62;
+    float3 wood = mix(float3(0.36, 0.22, 0.12), A * 0.4, 0.1);
+    float3 warm = mix(float3(1.0, 0.72, 0.42), S, 0.2);
+    // Back wall: dark wooden frame with glowing paper screens (a lattice of thin bars).
+    float3 col = wood * 0.35;
+    float2 sq = float2((uv.x - cx) / 0.26, (uv.y - 0.12) / (wallBase - 0.16));
+    float pid = floor(sq.x + 0.5);
+    float2 pf = float2(fract(sq.x + 0.5) - 0.5, sq.y);
+    float panel = step(abs(pf.x), 0.44) * step(0.0, pf.y) * step(pf.y, 1.0) * step(abs(pid), 3.0);
+    float2 lat = abs(fract(float2(pf.x * 4.0, pf.y * 6.0)) - 0.5);
+    float bars = 1.0 - step(0.06, min(lat.x * 1.0, lat.y * 1.0));
+    float glowP = 0.75 + 0.25 * vnoise(float2(uv.x * 30.0, uv.y * 30.0));
+    float3 paper = warm * glowP * (0.85 + 0.2 * pf.y);
+    paper *= 1.0 - 0.35 * smoothstep(0.2, 1.0, abs(pid) / 3.0);
+    col = mix(col, mix(paper, wood * 0.3, bars), panel);
+    // Beams: a lintel above the screens and posts between them.
+    col = mix(col, wood * 0.55, step(abs(uv.y - 0.1), 0.018));
+    col = mix(col, wood * 0.45, step(abs(pf.x), 0.5) * (1.0 - step(abs(pf.x), 0.44)) * step(0.0, pf.y) * step(pf.y, 1.0));
+    col = mix(col, wood * 0.5, step(abs(uv.y - wallBase), 0.008));
+
+    // Floor: planks in perspective, polished, mirroring the screens.
+    if (uv.y > wallBase) {
+        float fy = uv.y - wallBase;
+        float z = 0.12 / max(fy, 0.002);
+        float fx = (uv.x - cx) * z;
+        float plank = floor(fx * 3.0);
+        float3 fl = wood * (0.7 + 0.25 * hash11(plank)) * (0.85 + 0.15 * vnoise(float2(fx * 3.0, z * 4.0 + plank)));
+        fl *= 1.0 - 0.5 * step(0.96, fract(fx * 3.0));
+        // Reflection: the screens mirrored in the polish, blurred with distance.
+        float ry = wallBase - fy * 1.6;
+        float2 rq = float2((uv.x - cx) / 0.26, (ry - 0.12) / (wallBase - 0.16));
+        float rpid = floor(rq.x + 0.5);
+        float rpanel = step(abs(fract(rq.x + 0.5) - 0.5), 0.44) * step(0.0, rq.y) * step(rq.y, 1.0) * step(abs(rpid), 3.0);
+        fl += warm * rpanel * 0.28 * exp(-fy * 4.0) * (1.0 - 0.35 * smoothstep(0.2, 1.0, abs(rpid) / 3.0));
+        col = fl;
+    }
+    // Light beams falling from the screens across the hall, with dust in them.
+    for (int i = -2; i <= 2; i++) {
+        float fi = float(i);
+        float2 o = float2(cx + fi * 0.26, 0.2);
+        float2 d = normalize(float2(-0.35, 1.0));
+        float2 rel = uv - o;
+        float along = dot(rel, d);
+        float across = abs(dot(rel, float2(-d.y, d.x)));
+        float beam = step(0.0, along) * exp(-across / (0.03 + max(along, 0.0) * 0.06)) * exp(-along * 1.6);
+        col += warm * beam * 0.12;
+    }
+    float dust = dots(uv + float2(t * 0.004, -t * 0.006), 90.0, float2(0.0), 0.12, 0.05, 2.0);
+    col += warm * dust * 0.35 * smoothstep(0.75, 0.2, uv.y);
+
+    // The banner, hanging from the lintel and swaying.
+    float2 bq = uv - float2(cx - 0.42, 0.12);
+    float sway = 0.01 * sin(t * 0.8) * sat(bq.y / 0.3) + 0.02 * hit * sin(cyc * 20.0) * sat(bq.y / 0.3);
+    float banner = step(abs(bq.x - sway), 0.035) * step(0.0, bq.y) * step(bq.y, 0.3 - 0.02 * abs(sin((bq.x - sway) * 60.0)));
+    float3 bc = mix(A, float3(0.75, 0.12, 0.1), 0.4) * (0.75 + 0.25 * vnoise(bq * 40.0));
+    bc = mix(bc, float3(0.95, 0.9, 0.8), step(abs(bq.y - 0.12), 0.05) * step(abs(bq.x - sway), 0.02) * 0.6);
+    col = mix(col, bc, banner);
+
+    // The training post: a wrapped wooden pole on a base, shuddering on each strike.
+    float2 pp = uv - float2(cx, wallBase + 0.17);
+    float wob = 0.02 * hit * sin(cyc * 40.0) * sat(-pp.y / 0.4);
+    float pole = sdRoundBox(pp - float2(wob, -0.2), float2(0.025, 0.2), 0.01);
+    float3 pc = wood * (0.9 + 0.25 * sat(0.5 - (pp.x - wob) / 0.05));
+    float wrap = step(abs(pp.y + 0.28), 0.04) * step(0.5, fract((pp.y + 0.28) * 90.0));
+    pc = mix(pc, float3(0.85, 0.78, 0.62) * 0.8, wrap);
+    col = mix(col, pc, 1.0 - smoothstep(-px, px, pole));
+    col *= 1.0 - 0.3 * exp(-length((uv - float2(cx + 0.03, wallBase + 0.175)) * float2(1.0, 5.0)) * 18.0);
+
+    // The strike: a shockwave ring rolling out across the floor, a flash and radiating impact lines.
+    float2 sp = uv - float2(cx, wallBase + 0.17);
+    float rr = length(sp * float2(1.0, 4.0));
+    float ring = exp(-abs(rr - cyc * 1.2) * 60.0) * exp(-cyc * 2.5) * step(0.0, sp.y + 0.005);
+    col += mix(warm, float3(1.0), 0.5) * ring * 0.6;
+    float2 hp = uv - float2(cx, wallBase - 0.1);
+    float ang = atan(hp.y, hp.x);
+    float lines = step(0.7, hash11(floor(ang * 18.0 / TAU * 2.0) + floor(t / 5.0))) * smoothstep(0.05, 0.12, length(hp));
+    col += float3(1.0, 0.95, 0.85) * lines * exp(-cyc * 9.0) * 0.5 * exp(-length(hp) * 3.0);
+    col += float3(1.0, 0.9, 0.7) * exp(-length(hp) * 12.0) * hit * 0.8;
+    // Dust kicked up off the floor on the strike.
+    float kick = fbm3(float2(uv.x * 10.0, uv.y * 14.0 - cyc * 0.6)) * exp(-abs(uv.y - wallBase - 0.17) * 12.0) * smoothstep(0.35, 0.0, abs(uv.x - cx));
+    col += warm * kick * exp(-cyc * 1.2) * (1.0 - exp(-cyc * 8.0)) * 0.35;
+
+    // A soft vignette keeps the edges for the text.
+    col *= 1.0 - 0.4 * smoothstep(0.4, 1.0, length((uv - float2(cx, 0.45)) / float2(asp * 0.6, 0.7)));
+    return half4(finish(col, fc), 1.0);
+}

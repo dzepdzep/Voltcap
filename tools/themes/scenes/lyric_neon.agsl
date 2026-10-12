@@ -1,0 +1,51 @@
+// Neon lyrics (music, lyrics): a dark brick wall at night where the song's words light up as neon
+// tubes, word by word as they're sung (drawn by the app on top, LyricThemes.kt). The wall here takes
+// the tubes' glow in the cover's colours, brightest in the middle, breathing with the bass and
+// buzzing now and then; a wet pavement at the bottom catches the light in long streaks.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    // Bricks, each a slightly different shade, soft mortar lines.
+    float2 bq = uv * float2(7.0, 14.0);
+    bq.x += step(0.5, fract(bq.y * 0.5)) * 0.5;
+    float2 bf = fract(bq);
+    float mortar = 1.0 - smoothstep(0.04, 0.08, min(min(bf.x, 1.0 - bf.x) * 2.0, min(bf.y, 1.0 - bf.y)));
+    float3 brick = mix(float3(0.13, 0.065, 0.06), float3(0.2, 0.1, 0.085), hash12(floor(bq)));
+    brick *= 0.85 + 0.15 * vnoise(uv * 60.0);
+    float3 col = mix(brick, float3(0.035), mortar) * (0.7 + 0.3 * BG.r);
+    // The tubes' light on the wall: a wide pool in the middle, in the cover's colours.
+    float buzz = 0.9 + 0.1 * step(0.06, hash11(floor(t * 9.0)));
+    float2 c = float2(asp * 0.5, 0.45);
+    float2 d = (uv - c) * float2(0.55, 1.2);
+    float pool = exp(-length(d) * 2.6);
+    float3 neon = mix(A, S, 0.5 + 0.5 * sin(t * 0.15));
+    float br = (0.55 + 0.45 * bass * k + 0.2 * kick * k) * buzz;
+    // Light grazes the bricks: their top edges catch it.
+    float edge = (1.0 - smoothstep(0.0, 0.12, bf.y)) * (1.0 - mortar);
+    col += neon * pool * br * (0.5 + 0.35 * edge);
+    // A little stray glow from a second colour on one side.
+    col += S * exp(-length((uv - float2(asp * 0.15, 0.2)) * float2(0.8, 1.4)) * 3.0) * 0.12 * br;
+    // Wet pavement: darker, with the glow smeared down in streaks.
+    float floorY = 0.84;
+    if (uv.y > floorY) {
+        float fy = (uv.y - floorY) / (1.0 - floorY);
+        float3 wet = float3(0.03, 0.03, 0.035) * (0.8 + 0.4 * vnoise(float2(uv.x * 40.0, fy * 6.0)));
+        float streak = exp(-abs(uv.x - c.x) * 1.6) * (0.6 + 0.4 * vnoise(float2(uv.x * 90.0, fy * 2.0 + t * 0.2)));
+        wet += neon * streak * br * 0.35 * (1.0 - fy * 0.7);
+        col = mix(col, wet, smoothstep(floorY - px, floorY + px, uv.y));
+    }
+    col *= 1.0 - 0.35 * smoothstep(0.3, 0.75, length((uv - c) * float2(0.6 / max(asp, 1.0), 1.0)));
+    return half4(finish(col, fc), 1.0);
+}

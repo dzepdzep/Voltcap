@@ -1,0 +1,75 @@
+// Wave menu: the flowing light waves of a 2000s console menu, given real depth. A deep gradient sky
+// with a soft horizon glow; three layers of ribbons - far ones thin, hazy and slow, near ones wide and
+// crisp - each shaded like a sheet of light (bright front face, darker underside, a highlight sliding
+// along the crest); a glossy floor below reflecting them; and soft bokeh motes at different depths.
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float x = uv.x / asp;
+    float horizon = 0.7;
+
+    // Sky: deep at the top, glowing towards the horizon, a slow light shaft.
+    float3 top = mix(BG * 1.3, A * 0.35, 0.35);
+    float3 low = mix(BG * 1.8, A * 0.6, 0.55);
+    float3 col = mix(top, low, smoothstep(0.0, horizon, uv.y));
+    col += A * 0.12 * exp(-abs(uv.y - horizon) * 9.0);
+    col += mix(A, float3(1.0), 0.5) * 0.035 * smoothstep(0.6, 1.0, sin(x * 3.0 - uv.y * 1.5 + t * 0.03));
+
+    // The ribbons, far to near. Reflection pass uses the mirrored height.
+    float3 light = float3(0.0);
+    float3 refl = float3(0.0);
+    for (int i = 0; i < 6; i++) {
+        if (uLod > 1.5 && i > 3) break;
+        float fi = float(i);
+        float near = fi / 5.0;                      // 0 far .. 1 near
+        float sp = mix(0.08, 0.26, near);
+        float amp = mix(0.045, 0.12, near);
+        float y0 = mix(0.5, 0.6, near) + 0.02 * sin(fi * 2.1);
+        float freq = mix(3.6, 1.8, near);
+        float ph = x * freq + t * sp + fi * 1.7;
+        float y = y0 + amp * sin(ph) + amp * 0.35 * sin(x * freq * 2.3 - t * sp * 1.6 + fi);
+        // Slope of the wave, for shading the sheet (facing up = lit).
+        float slope = amp * freq * cos(ph);
+        float th = mix(0.012, 0.045, near);
+        float blur = mix(3.0, 1.0, near);           // far ribbons are softer
+        float d = uv.y - y;
+        // Sheet: a band below the crest; brighter where it faces the light.
+        float sheet = smoothstep(-th * 0.2, th * 0.4, d) * (1.0 - smoothstep(th * 0.6, th * (1.6 + blur), d));
+        float face = 0.55 + 0.45 * sat(-slope * 3.0 + 0.4);
+        float crest = exp(-abs(d) * mix(90.0, 260.0, near) / blur);
+        // A highlight running along the crest.
+        float run = exp(-sqf(fract(x * 0.6 - t * sp * 0.5 + fi * 0.37) - 0.5) * 40.0);
+        float haze = mix(0.45, 1.0, near);          // atmospheric fade
+        float3 rc = mix(mix(A, S, 0.25 * fi / 5.0), float3(1.0), 0.25 + 0.35 * near);
+        light += rc * haze * (sheet * 0.16 * face + crest * (0.32 + 0.6 * run)) * (0.7 + 0.3 * near);
+        // Reflection on the floor (mirrored about the horizon, squashed and faded).
+        float ry = horizon + (horizon - uv.y) * 2.2;
+        float rd = ry - y;
+        refl += rc * haze * exp(-abs(rd) * mix(40.0, 90.0, near)) * 0.22;
+    }
+    // Floor: below the horizon, darker and glossy, with the reflections and a fresnel lift at the back.
+    float floorM = smoothstep(horizon - 0.002, horizon + 0.004, uv.y);
+    float3 floorC = mix(BG * 0.8, BG * 0.5, sat((uv.y - horizon) * 3.0)) + A * 0.08 * exp(-(uv.y - horizon) * 10.0);
+    col = mix(col + light, floorC + refl * exp(-(uv.y - horizon) * 4.0), floorM);
+    col += A * 0.25 * exp(-abs(uv.y - horizon) * 160.0);    // the horizon line glints
+
+    // Bokeh motes at three depths, drifting slowly.
+    for (int k = 0; k < 3; k++) {
+        if (uLod > 1.5 && k > 1) break;
+        float fk = float(k);
+        float sc = 4.0 + fk * 4.0;
+        float2 bp = uv * sc + float2(t * (0.02 + 0.015 * fk), sin(t * 0.1 + fk) * 0.2);
+        float2 id = floor(bp);
+        float2 h = hash22(id + fk * 11.0);
+        float2 f = fract(bp) - 0.5 - (h - 0.5) * 0.5;
+        float rad = 0.12 + 0.18 * h.y;
+        float on = step(0.72, h.x) * (1.0 - floorM * 0.7);
+        float disc = 1.0 - smoothstep(rad * 0.7, rad, length(f));
+        col += mix(A, float3(1.0), 0.6) * disc * on * mix(0.05, 0.02, fk / 2.0);
+    }
+    return half4(finish(col, fc), 1.0);
+}

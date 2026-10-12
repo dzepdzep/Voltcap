@@ -1,0 +1,72 @@
+// Sand patterns: fine sand on a vibrating plate gathers along the lines that stay still, drawing
+// the classic symmetric figures. The figure changes with the music — the loudest band picks the
+// mode, the bass shakes the grains loose on every kick and they settle again — in the cover's colours.
+//#include reactive
+
+// The plate's standing wave for modes (n, m): zero on the lines where sand collects.
+float plate(float2 q, float n, float m) {
+    return cos(n * PI * q.x) * cos(m * PI * q.y) - cos(m * PI * q.x) * cos(n * PI * q.y);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 3.5) * play;
+
+    float3 col = coverField(uv, asp, t, bass, 0.45, BG, A, S);
+    float s = room(0.26) / 0.3;
+    float2 c = float2(waveX(asp), uWaveY);
+    // The plate: a square centred where the equalizer goes.
+    float half_ = 0.3 * s;
+    float2 q = (uv - c) / half_;                  // -1..1 on the plate
+    float onPlate = 1.0 - smoothstep(0.98, 1.0, max(abs(q.x), abs(q.y)));
+
+    // Mode from the music: slow drift plus the balance of lows and highs; blended between two
+    // neighbouring figures so it morphs instead of jumping.
+    float lowE = (uEqA.x + uEqA.y + uEqA.z + uEqA.w) * 0.25;
+    float highE = (uEqB.x + uEqB.y + uEqB.z + uEqB.w) * 0.25;
+    float drive = t * 0.07 + 2.0 * highE * play + 0.6 * lowE;
+    float stepI = floor(drive);
+    float f = smoothstep(0.35, 0.65, fract(drive));
+    float n1 = 1.0 + mod(stepI * 3.0, 6.0);
+    float m1 = n1 + 1.0 + mod(stepI, 3.0);
+    float n2 = 1.0 + mod((stepI + 1.0) * 3.0, 6.0);
+    float m2 = n2 + 1.0 + mod(stepI + 1.0, 3.0);
+    float2 qq = q * 0.5 + 0.5;
+    float w = mix(plate(qq, n1, m1), plate(qq, n2, m2), f);
+
+    // Sand: grains are densest where the plate is still, scattered by the kick.
+    float shake = 0.05 + 0.25 * kick * k + 0.05 * bass;
+    float line = exp(-abs(w) / max(shake, 0.02) * 1.2);
+    float2 g = fc / max(uRes.y / 540.0, 1.0);
+    float grain = hash12(floor(g * 0.9) + floor(t * 12.0) * step(0.15, kick));
+    float sand = smoothstep(1.0 - line, 1.0 - line + 0.25, grain) * onPlate;
+    // A soft ridge under the grains, so the figure reads from a distance.
+    float ridge = exp(-abs(w) * 9.0) * onPlate;
+
+    // The plate itself: dark metal with the cover tinted in, a rim, a little sheen.
+    float3 metal = mix(BG * 0.6, mix(A, S, 0.5) * 0.18, 0.5);
+    float sheen = smoothstep(-0.9, 0.9, q.x - q.y) * 0.06;
+    col = mix(col, metal + sheen, onPlate * 0.92);
+    float rim = 1.0 - smoothstep(0.0, 0.012, abs(max(abs(q.x), abs(q.y)) - 0.995));
+    col += mix(A, float3(1.0), 0.5) * rim * 0.35;
+    // Sand lit by the music: colour runs along the figure from A to S.
+    float3 sandCol = mix(mix(float3(1.0, 0.93, 0.8), A, 0.35), mix(float3(1.0), S, 0.5), 0.5 + 0.5 * sin(atan(q.y, q.x) * 2.0 + t * 0.3));
+    col += sandCol * ridge * (0.2 + 0.35 * bass * k);
+    col = mix(col, sandCol, sand * (0.75 + 0.25 * play));
+    // Grains thrown into the air on a kick sparkle over the plate.
+    float jump = dots(uv, 70.0, float2(0.0, -t * 0.4), 0.05 * kick * k, 0.15, 11.0);
+    col += sandCol * jump * onPlate * 0.8;
+    // Glow around the plate with the bass.
+    float edge = max(abs(q.x), abs(q.y));
+    col += A * exp(-max(edge - 1.0, 0.0) * 6.0) * step(1.0, edge) * (0.06 + 0.2 * bass * k);
+
+    return half4(finish(col, fc), 1.0);
+}

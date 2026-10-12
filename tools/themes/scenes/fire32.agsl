@@ -1,0 +1,71 @@
+// 32-bit fire (music): the old demo-scene fire effect at a chunky 32-bit resolution, played by the
+// song. A wall of pixel fire burns along the visualizer line, each column's height following its
+// band of the equalizer; the kick flares the whole wall and throws pixel sparks; the cover hangs above
+// as a pixelated picture in a bevelled frame, glowing in the firelight. Colours run from the cover's
+// own through the classic fire ramp.
+//#include reactive
+
+half4 main(float2 fc) {
+    float res = 160.0;
+    float2 cell = floor(fc / uRes.y * res);
+    float2 uv = (cell + 0.5) / res;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = vivid(uAcc.rgb, 1.25);
+    float3 S = vivid(uSec.rgb, 1.25);
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 4.0) * play;
+    float R = room(0.3);
+    float2 c = float2(waveX(asp), uWaveY);
+    float base = min(c.y + R, 0.98);
+
+    // Backdrop: dark, warming towards the fire.
+    float3 col = mix(BG * 0.5, mix(BG, A * 0.4, 0.4), smoothstep(base - 0.6, base, uv.y));
+
+    // The fire: each pixel column a band of the spectrum (mirrored from the middle), rising with
+    // noise that scrolls up at the fire's speed; the heat falls off with height.
+    float xn = (uv.x - c.x) / (asp * 0.5);
+    float e = eqAt(sat(abs(xn) * 1.1)) * play;
+    float H = (0.12 + 0.38 * e * (0.5 + 0.7 * k) + 0.1 * kick) * R / 0.3 + 0.04 * (1.0 - play);
+    float up = base - uv.y;
+    float n = vnoise(float2(cell.x * 0.35, cell.y * 0.25 + t * 9.0)) * 0.6 + vnoise(float2(cell.x * 0.9, cell.y * 0.7 + t * 14.0)) * 0.4;
+    float heat = sat(1.0 - up / max(H, 0.01)) * (0.55 + 0.6 * n);
+    heat = up < 0.0 ? (0.25 + 0.6 * exp(up * 14.0)) * (0.6 + 0.5 * n) : heat;   // a glowing ember bed below
+    heat *= smoothstep(1.05, 0.85, abs(xn));
+    // Classic ramp: black, deep red, the cover's colour, orange, yellow, white.
+    float3 fire = mix(float3(0.0), float3(0.5, 0.04, 0.02), smoothstep(0.08, 0.25, heat));
+    fire = mix(fire, mix(float3(1.0, 0.35, 0.05), A, 0.45), smoothstep(0.25, 0.45, heat));
+    fire = mix(fire, mix(float3(1.0, 0.75, 0.15), S, 0.25), smoothstep(0.45, 0.7, heat));
+    fire = mix(fire, float3(1.0, 0.98, 0.85), smoothstep(0.75, 0.95, heat));
+    // Posterize into a small palette, the way the old effect looked.
+    fire = floor(fire * 6.0 + 0.5) / 6.0;
+    col = mix(col, fire, smoothstep(0.06, 0.12, heat));
+
+    // The cover above the fire: pixelated, in a bevelled frame, lit warm from below.
+    float cs = R * 0.8;
+    float2 cc = float2(c.x, base - R * 1.25 - cs * 0.2);
+    float2 q = (uv - cc) / cs + 0.5;
+    if (q.x > -0.06 && q.x < 1.06 && q.y > -0.06 && q.y < 1.06) {
+        float inArt = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, q.y) * step(q.y, 1.0);
+        float3 frame = mix(float3(0.55, 0.5, 0.45), A, 0.25) * (q.x + q.y < 1.0 ? 1.2 : 0.6);
+        float3 art = sharpCover((floor(q * 32.0) + 0.5) / 32.0, A, S);
+        art *= 0.75 + 0.35 * q.y + 0.25 * kick;
+        col = mix(frame, art, inArt);
+    }
+    // Warm light from the fire on the frame's surroundings.
+    col += mix(float3(1.0, 0.45, 0.1), A, 0.3) * exp(-max(up, 0.0) * 6.0) * 0.12 * (0.6 + 0.6 * uBass * play);
+
+    // Pixel sparks thrown up on the kick.
+    for (int i = 0; i < 12; i++) {
+        float fi = float(i);
+        float life = fract(uBeatAge * 0.7 + hash11(fi) * 0.4);
+        float2 p = float2(c.x + (hash11(fi * 3.3) - 0.5) * asp * 0.8, base - life * (0.3 + 0.3 * hash11(fi * 5.1)) * R / 0.3 * 1.5);
+        p.x += sin(life * 8.0 + fi) * 0.02;
+        float2 pc = floor(p * res);
+        float on = step(abs(cell.x - pc.x), 0.5) * step(abs(cell.y - pc.y), 0.5) * (1.0 - life) * play;
+        col = mix(col, mix(float3(1.0, 0.85, 0.3), S, 0.3), on * (0.5 + kick));
+    }
+    return half4(finish(col, fc), 1.0);
+}

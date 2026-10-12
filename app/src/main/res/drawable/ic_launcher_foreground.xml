@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Dark-glass capsule with a glowing orange rim, as in the start-up intro. -->
+    <path android:fillColor="#EB160F0A" android:pathData="M36.08,39.92 L71.92,39.92 A14.08,14.08 0 0 1 71.92,68.08 L36.08,68.08 A14.08,14.08 0 0 1 36.08,39.92 Z" />
+    <path android:pathData="M36.08,39.92 L71.92,39.92 A14.08,14.08 0 0 1 71.92,68.08 L36.08,68.08 A14.08,14.08 0 0 1 36.08,39.92 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="54" android:gradientRadius="30">
+                <item android:offset="0" android:color="#99FFBE5A" />
+                <item android:offset="0.45" android:color="#4DE66E1E" />
+                <item android:offset="1" android:color="#0078280A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:strokeWidth="2.2" android:pathData="M36.08,39.92 L71.92,39.92 A14.08,14.08 0 0 1 71.92,68.08 L36.08,68.08 A14.08,14.08 0 0 1 36.08,39.92 Z">
+        <aapt:attr name="android:strokeColor">
+            <gradient android:type="linear" android:startX="22" android:startY="40" android:endX="86" android:endY="68">
+                <item android:offset="0" android:color="#FFFFD84A" />
+                <item android:offset="0.5" android:color="#FFF59A2C" />
+                <item android:offset="1" android:color="#FFFF6E28" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- The bolt: halo, then bright fill. -->
+    <path android:strokeColor="#FFAA3C" android:strokeAlpha="0.35" android:strokeWidth="3" android:strokeLineJoin="round" android:pathData="M58.16,43.44 L48.56,55.44 L53.52,55.44 L50.48,64.56 L60.08,52.24 L55.12,52.24 Z" />
+    <path android:pathData="M58.16,43.44 L48.56,55.44 L53.52,55.44 L50.48,64.56 L60.08,52.24 L55.12,52.24 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="58" android:startY="43" android:endX="51" android:endY="65">
+                <item android:offset="0" android:color="#FFFFFFFF" />
+                <item android:offset="0.45" android:color="#FFFFF0A8" />
+                <item android:offset="1" android:color="#FFFFC23A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

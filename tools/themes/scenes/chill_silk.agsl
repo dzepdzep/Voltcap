@@ -1,0 +1,63 @@
+// Silk folds: Toni's painting of two satin sheets in the corners (res scene_chill_silk), brought to life.
+// The silk ripples softly as if a breeze ran under it, a sheen slides slowly along the folds, a glint of
+// light travels along each sheet's edge, and the dark middle breathes a faint glow.
+// (The procedural version is kept as chill_silk_drawn.agsl.)
+//#include paint
+
+// The sheets' edges (painting y, 0..1) at painting x (0..1): fitted to the painting.
+float edgeTop(float x) {
+    return ((((((-61.13881 * x + 194.20068) * x - 227.62858) * x + 114.76571) * x - 18.93335) * x - 0.72892) * x - 0.95247) * x + 0.41563;
+}
+float edgeBottom(float x) {
+    if (x < 0.465) return 1.2;
+    return (((((250.43554 * x - 994.46539) * x + 1618.72717) * x - 1379.98375) * x + 646.99592) * x - 158.02938) * x + 16.74349;
+}
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(BG * 1.2, BG * 0.8, uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+
+    // How deep inside a sheet this point is (0 at its edge and outside, 1 well inside).
+    float dTop = edgeTop(q.x) - q.y;
+    float dBot = q.y - edgeBottom(q.x);
+    float inTop = smoothstep(0.012, 0.07, dTop);
+    float inBot = smoothstep(0.012, 0.07, dBot);
+    float m = max(inTop, inBot);
+
+    // A breeze under the silk: ripples running along the folds (the edges themselves stay put).
+    float2 dir = inTop > inBot ? float2(0.75, -0.66) : float2(0.6, -0.8);
+    float u = dot(q, dir);
+    float2 wave = float2(-dir.y, dir.x) * (sin(u * 18.0 - t * 0.55) * 0.6 + sin(u * 31.0 + q.y * 9.0 - t * 0.8 + 1.7) * 0.4);
+    float3 col = paintAt(p + wave * m * 0.0045 * sz.y);
+    float lum = luma(col);
+
+    // The sheen: a broad soft band of light sliding slowly along each sheet.
+    float band = sin(u * 7.0 - t * 0.3 + (inTop > inBot ? 0.0 : 2.0));
+    float sheen = exp(-sqf(band - 0.8) * 6.0);
+    col *= 1.0 + m * sheen * smoothstep(0.12, 0.5, lum) * 0.35;
+    col += mix(A, float3(1.0), 0.5) * m * sheen * smoothstep(0.35, 0.7, lum) * 0.05;
+
+    // A glint travelling along each edge.
+    float onEdge = max(exp(-abs(dTop) * 900.0) * step(q.x, 0.62), exp(-abs(dBot) * 900.0) * step(0.47, q.x));
+    float travel = fract(t * 0.045);
+    float alongTop = 1.0 - q.x / 0.62;
+    float alongBot = (q.x - 0.47) / 0.53;
+    float along = dTop > -0.05 && q.x < 0.62 ? alongTop : alongBot;
+    float glint = exp(-sqf((along - travel) * 9.0)) + exp(-sqf((along - fract(travel + 0.5)) * 9.0)) * 0.6;
+    col += mix(mix(S, A, along), float3(1.0), 0.5) * onEdge * glint * 0.5;
+
+    // The middle breathes a faint glow.
+    float2 c = (q - float2(0.5, 0.45)) * float2(1.6, 1.0);
+    col += mix(S, A, 0.5) * exp(-dot(c, c) * 4.0) * (1.0 - m) * 0.025 * (0.6 + 0.4 * sin(t * 0.25));
+
+    return half4(finishPaint(col, fc), 1.0);
+}

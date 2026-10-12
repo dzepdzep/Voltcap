@@ -1,0 +1,92 @@
+// Dojo · 32-bit: the user's painting of a training yard at sunset (res scene_dojo), brought to life.
+// The two banners ripple in the wind, the sandbag swings after every punch and settles, the lanterns
+// either side of the door flicker, the setting sun shimmers, blossom petals blow off the tree and
+// across the yard, and dust motes drift in the low light.
+//#include paint
+
+// Where things are in the painting (its own pixels, 1672 x 941; scaled if it's decoded smaller).
+const float2 PAINT_REF = float2(1672.0, 941.0);
+const float2 BAG_PIVOT = float2(1169.0, 463.0);      // the rope's knot on the beam
+const float2 BAG_C = float2(1167.5, 609.0);          // the bag's middle
+const float2 BAG_H = float2(25.0, 71.0);             // and half its size
+
+float bagBox(float2 r) { return sdRoundBox(r - BAG_C, BAG_H, 6.0); }
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(float3(0.95, 0.45, 0.25), float3(0.25, 0.15, 0.2), uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+    float2 r = q * PAINT_REF;                         // in the painting's reference pixels
+    float2 k = sz / PAINT_REF;                        // reference pixels -> decoded pixels
+    float asp = sz.x / sz.y;
+
+    // The banners: the cloth ripples, more towards its free end (the bottom).
+    float2 sp2 = r;
+    for (int i = 0; i < 2; i++) {
+        float x0 = i == 0 ? 457.0 : 1392.0;
+        float inB = step(x0, r.x) * step(r.x, x0 + 62.0) * step(208.0, r.y) * step(r.y, 412.0);
+        float f = sat((r.y - 212.0) / 195.0);
+        sp2.x += inB * sin(r.y * 0.075 - t * 4.5 + float(i) * 2.0) * 2.4 * f;
+    }
+    float3 col = paintAt(sp2 * k);
+
+    // The sandbag swings on its rope after each punch (every 6 s), settling slowly; a little sway between.
+    float ph = fract(t / 6.0) * 6.0;
+    float ang = 0.11 * exp(-ph * 0.7) * sin(ph * 3.2) + 0.012 * sin(t * 0.9);
+    float2 rel = r - BAG_PIVOT;
+    if (abs(rel.x) < 60.0 && rel.y > -4.0 && rel.y < 230.0) {
+        float2 s = BAG_PIVOT + rot(ang) * rel;        // where this pixel was before the swing
+        bool wasBag = bagBox(s) < 0.0;
+        bool wasRope = abs(s.x - 1169.0) < 4.5 && s.y > 460.0 && s.y < 542.0;
+        float3 srcC = paintAt(s * k);
+        bool rope = wasRope && luma(srcC) > 0.42 && srcC.r > srcC.b;
+        bool here = bagBox(r) < 1.5 || (abs(r.x - 1169.0) < 5.0 && r.y > 460.0 && r.y < 542.0);
+        if (wasBag || rope) col = srcC;
+        else if (here) {
+            // What's behind the bag (fence, wall, yard run across in bands): from either side of it.
+            float3 lc = paintAt(float2(1137.0, r.y) * k);
+            float3 rc = paintAt(float2(1199.0, r.y) * k);
+            col = mix(lc, rc, sat((r.x - 1137.0) / 62.0));
+        }
+    }
+    float lum = luma(col);
+
+    // The sun: a slow shimmer and a breathing glow round it.
+    float2 sunQ = float2(0.4994, 0.229);
+    float sd = length((q - sunQ) * float2(asp, 1.0));
+    col += float3(1.0, 0.75, 0.4) * (exp(-sd * 14.0) * (0.07 + 0.05 * sin(t * 0.8)) + exp(-sd * 4.0) * 0.025);
+
+    // The lanterns flicker and throw a warm glow.
+    for (int i = 0; i < 2; i++) {
+        float2 lq = i == 0 ? float2(0.414, 0.506) : float2(0.580, 0.506);
+        float fl = 0.8 + 0.12 * sin(t * 7.0 + float(i) * 2.0) + 0.08 * sin(t * 13.0 + float(i));
+        float ld = length((q - lq) * float2(asp, 1.0));
+        float lit = step(0.55, lum) * (1.0 - smoothstep(0.012, 0.02, ld));
+        col *= 1.0 + lit * (fl - 0.85) * 1.5;
+        col += float3(1.0, 0.65, 0.3) * exp(-ld * 60.0) * 0.12 * fl;
+    }
+
+    // Blossom petals: blown off the tree on the left, across the yard to the right.
+    float2 uv = q * float2(asp, 1.0);
+    float pxs = 3.0 / PAINT_REF.y;                       // one of the painting's pixel blocks
+    for (int i = 0; i < 14; i++) {
+        float fi = float(i);
+        float life = fract(t * (0.05 + 0.03 * hash11(fi)) + hash11(fi * 3.7));
+        float2 start = float2(asp * (0.03 + 0.17 * hash11(fi * 5.1)), 0.38 + 0.15 * hash11(fi * 2.3));
+        float2 c = start + float2(life * asp * (0.45 + 0.4 * hash11(fi * 7.7)), life * (0.3 + 0.2 * hash11(fi * 1.9)) + 0.02 * sin(life * 18.0 + fi));
+        c = (floor(c / pxs) + 0.5) * pxs;                // whole blocks, like the painting
+        float2 d = abs(uv - c) / pxs;
+        float flutter = step(0.0, sin(t * 6.0 + fi * 2.0));
+        float petal = step(d.x, 0.5 + 0.5 * flutter) * step(d.y, 0.5) * (1.0 - smoothstep(0.85, 1.0, life));
+        col = mix(col, mix(float3(1.0, 0.72, 0.82), float3(1.0, 0.86, 0.9), step(0.5, hash11(fi * 9.0))), petal);
+    }
+    // Dust motes drifting in the low sunlight.
+    col += float3(1.0, 0.85, 0.6) * dots(uv + float2(t * 0.01, -t * 0.004), 60.0, float2(0.0), 0.05, 0.05, 6.0) * 0.25 * smoothstep(0.55, 0.8, q.y);
+    return half4(finish(col, fc), 1.0);
+}

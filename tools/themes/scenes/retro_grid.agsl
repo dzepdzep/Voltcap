@@ -1,0 +1,69 @@
+// Synthwave / Retro wave: a striped sun sinking behind dark ridges with neon edges, and a
+// glowing grid rolling towards you across the plain.
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float px = 1.0 / uRes.y;
+    float h = 0.6;
+
+    float3 col;
+    if (uv.y < h) {
+        // Sky: deep at the top, warm near the horizon, a few stars.
+        float k = uv.y / h;
+        col = mix(BG * 0.9, mix(BG, A, 0.35), pow(k, 2.2));
+        col += float3(1.0) * dots(uv, 30.0, float2(t * 0.02, 0.0), 0.3, 0.06, 2.0) * 0.5 * (1.0 - k);
+
+        // Sun with slats that slide down.
+        float2 sc = float2(asp * 0.5, h - 0.14);
+        float sr = 0.25;
+        float sd = length(uv - sc);
+        float sy = (uv.y - sc.y) / sr; // -1 top .. 1 bottom
+        float slat = 1.0;
+        if (sy > -0.1) {
+            float s = fract(sy * 5.0 - t * 0.25);
+            float w = 0.12 + 0.45 * sat((sy + 0.1) / 1.1);
+            slat = smoothstep(w - 0.04, w, s);
+        }
+        float3 sunCol = mix(S, A, sat(sy * 0.5 + 0.5));
+        float disc = (1.0 - smoothstep(sr - px * 1.5, sr, sd)) * slat;
+        col = mix(col, sunCol, disc);
+        col += mix(A, S, 0.4) * exp(-max(sd - sr, 0.0) * 7.0) * 0.28;
+
+        // Ridges in front of the sun, edged with neon.
+        float x = uv.x;
+        float ridge = h - 0.035 - 0.09 * pow(fbm(float2(x * 2.2 + 7.0, 1.0)), 1.6) - 0.05 * sqf(1.0 - abs(2.0 * vnoise(float2(x * 6.0, 3.0)) - 1.0));
+        float far = h - 0.02 - 0.05 * fbm3(float2(x * 4.0 + 20.0, 2.0));
+        if (uv.y > far) col = mix(col, BG * 1.25 + A * 0.06, 0.85);
+        if (uv.y > ridge) {
+            col = BG * 0.7;
+            col += A * exp(-(uv.y - ridge) * 140.0) * 0.8;
+        }
+    } else {
+        // The plain: a perspective grid scrolling towards the viewer.
+        float dy = uv.y - h;
+        float z = 0.32 / (dy + 0.002);
+        float xw = (uv.x - asp * 0.5) * z;
+        float zw = z + t * 1.6;
+        float fx = z * px * 1.6;
+        float fz = z * z / 0.32 * px * 1.6;
+        float dx = abs(fract(xw + 0.5) - 0.5);
+        float dz = abs(fract(zw * 0.5 + 0.5) - 0.5) * 2.0;
+        float lx = (1.0 - smoothstep(0.0, fx * 1.5, dx)) + 0.35 * exp(-dx / (fx * 6.0));
+        float lz = (1.0 - smoothstep(0.0, fz * 1.5, dz)) + 0.35 * exp(-dz / (fz * 6.0));
+        lx *= 1.0 - smoothstep(0.08, 0.45, fx);
+        lz *= 1.0 - smoothstep(0.08, 0.45, fz);
+        float dist = exp(-z * 0.05);
+        col = BG * 0.6 + mix(A, S, 0.25) * 0.08 * exp(-dy * 10.0);
+        col += mix(S, A, sat(dy * 3.0)) * sat(lx + lz) * (0.25 + 0.75 * dist) * 0.85;
+        // Sun reflected on the ground.
+        float refl = exp(-abs(uv.x - asp * 0.5) * 9.0) * exp(-dy * 6.0);
+        col += mix(S, A, 0.5) * refl * 0.25 * (0.7 + 0.3 * sin(dy * 120.0 - t * 2.0));
+    }
+    // Horizon haze.
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - h) * 45.0) * 0.35;
+    return half4(finish(col, fc), 1.0);
+}

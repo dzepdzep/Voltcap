@@ -1,0 +1,135 @@
+// Orbital window: looking out of a station's round porthole. A planet fills the lower part of the
+// view - oceans with a sun glint, continents with mountain shading, clouds that drift and cast
+// shadows, a crisp day/night line with city lights and auroras on the night side, and a glowing
+// layered atmosphere. A moon hangs far off, a satellite crosses now and then. Around the glass:
+// the station's lit metal wall with a ring of bolts and soft reflections on the window.
+
+float3 planetAt(float2 d, float R, float t, float3 light, float3 A, float3 S) {
+    float r = length(d);
+    float z = sqrt(max(R * R - r * r, 0.0));
+    float3 n = normalize(float3(d, z));
+    float lon = atan(n.x, n.z) + t * 0.008;
+    float lat = asin(clamp(n.y, -1.0, 1.0));
+    float2 sp = float2(lon * 2.2, lat * 2.6);
+    // Continents with coasts and mountains.
+    float hgt = fbm(sp * 1.6 + 3.0);
+    float land = smoothstep(0.5, 0.53, hgt);
+    float mount = smoothstep(0.6, 0.8, hgt);
+    float coast = smoothstep(0.47, 0.5, hgt) * (1.0 - land);
+    float3 ocean = mix(float3(0.02, 0.12, 0.32), mix(A, float3(0.05, 0.3, 0.55), 0.7), 0.5);
+    ocean = mix(ocean, float3(0.1, 0.45, 0.55), coast * 0.6);
+    float3 ground = mix(float3(0.18, 0.32, 0.14), mix(float3(0.55, 0.45, 0.3), S, 0.2), smoothstep(0.55, 0.7, hgt));
+    ground = mix(ground, float3(0.92), smoothstep(0.82, 0.86, hgt) + smoothstep(0.75, 0.95, abs(n.y)));
+    float3 surf = mix(ocean, ground, land);
+    // Lighting with a soft terminator.
+    float ndl = dot(n, light);
+    float lit = smoothstep(-0.12, 0.35, ndl);
+    // Mountain shading from the slope (cheap: compare with a nearby sample).
+    float hgt2 = fbm(sp * 1.6 + 3.0 + float2(0.02, 0.02));
+    surf *= 1.0 + (hgt - hgt2) * 6.0 * land * lit;
+    // Clouds, with their shadow a little offset.
+    float2 cs = sp * 2.0 + float2(t * 0.015, 0.0);
+    float clouds = smoothstep(0.5, 0.78, fbm(cs));
+    float cshadow = smoothstep(0.5, 0.78, fbm(cs + float2(0.05, -0.03)));
+    surf *= 1.0 - 0.35 * cshadow * lit;
+    surf = mix(surf, float3(0.97), clouds * 0.9);
+    float3 col = surf * (0.03 + 0.97 * lit);
+    // Sun glint on the water.
+    float3 h = normalize(light + float3(0.0, 0.0, 1.0));
+    col += float3(1.0, 0.92, 0.8) * pow(sat(dot(n, h)), 80.0) * (1.0 - land) * (1.0 - clouds) * 0.9;
+    // Night side: city lights along coasts and plains, auroras near the poles.
+    float night = 1.0 - smoothstep(-0.2, 0.05, ndl);
+    float2 cg = sp * 70.0;
+    float city = step(0.9, hash12(floor(cg))) * (1.0 - smoothstep(0.0, 0.35, length(fract(cg) - 0.5)));
+    city *= land * (1.0 - mount) * (1.0 - clouds) * night;
+    col += mix(float3(1.0, 0.75, 0.4), A, 0.2) * city * 1.2;
+    float aur = smoothstep(0.55, 0.75, abs(n.y)) * night * (0.5 + 0.5 * sin(lon * 10.0 + t * 0.6 + fbm3(sp * 3.0) * 6.0));
+    col += mix(float3(0.2, 1.0, 0.6), S, 0.4) * aur * 0.35;
+    // Limb darkening + atmosphere haze over the disc's edge.
+    float limb = 1.0 - n.z;
+    col = mix(col, mix(float3(0.35, 0.6, 1.0), A, 0.25) * (0.1 + 0.9 * lit), pow(limb, 3.0) * 0.8);
+    return col;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float px = 1.5 / uRes.y;
+
+    // Space: crisp stars of a few sizes, a faint band of the galaxy.
+    float3 col = BG * 0.15;
+    float band = exp(-sqf((uv.y - 0.25 + uv.x * 0.15) * 5.0)) * fbm3(uv * 3.0 + 1.0);
+    col += mix(S, float3(0.8, 0.85, 1.0), 0.5) * band * 0.12;
+    col += float3(1.0) * dots(uv, 120.0, float2(t * 0.001, 0.0), 0.1, 0.05, 2.0) * 0.55;
+    col += float3(1.0) * dots(uv, 45.0, float2(t * 0.0006, 0.0), 0.06, 0.06, 6.0) * 0.7;
+    col += mix(float3(1.0), A, 0.3) * dots(uv, 18.0, float2(t * 0.0003, 0.0), 0.03, 0.07, 9.0) * 0.6;
+
+    // A distant moon.
+    float2 mc = float2(asp * 0.78, 0.2);
+    float mr = 0.045;
+    float md = length(uv - mc);
+    if (md < mr) {
+        float3 mn = normalize(float3(uv - mc, sqrt(mr * mr - md * md)));
+        float crater = fbm3((uv - mc) * 60.0);
+        float ml = sat(dot(mn, normalize(float3(-0.7, -0.3, 0.5))));
+        col = float3(0.75, 0.74, 0.72) * (0.85 + 0.3 * crater) * (0.05 + ml);
+    }
+
+    // The planet.
+    float3 light = normalize(float3(-0.55, -0.45, 0.7));
+    float2 pc = float2(asp * 0.42, 1.42);
+    float R = 1.05;
+    float2 d = uv - pc;
+    float r = length(d);
+    if (r < R) col = planetAt(d, R, t, light, A, S);
+    // Atmosphere: a bright thin rim plus a wide soft glow, bluer on the day side.
+    float day = sat(dot(normalize(float3(d / max(r, 1e-4), 0.25)), light) + 0.55);
+    float3 atm = mix(float3(0.35, 0.65, 1.0), A, 0.2);
+    col += atm * exp(-abs(r - R) / 0.004) * 0.9 * day;
+    col += atm * exp(-max(r - R, 0.0) / 0.03) * 0.45 * day * step(R, r);
+    col += mix(atm, float3(1.0, 0.6, 0.35), 0.5) * exp(-abs(r - R) / 0.01) * 0.25 * (1.0 - day) * day * 4.0;
+
+    // A satellite crossing now and then, with its blinking light.
+    float st = fract(t / 26.0);
+    float2 satp = float2(-0.1 + st * (asp + 0.2), 0.32 + 0.04 * sin(st * 3.0));
+    float sd = sdRoundBox(uv - satp, float2(0.004, 0.0015), 0.0005);
+    float panels = sdRoundBox(abs(uv - satp) - float2(0.009, 0.0), float2(0.004, 0.0012), 0.0);
+    col = mix(col, float3(0.85), 1.0 - smoothstep(0.0, px, min(sd, panels)));
+    col += float3(1.0, 0.3, 0.25) * glow(length(uv - satp), 0.0015) * step(0.85, fract(t * 1.1)) * 0.5;
+
+    // The porthole: a round window in the station wall.
+    float2 wc = float2(asp * 0.5, 0.5);
+    float wr = 0.46;
+    float wd = length(uv - wc) - wr;
+    // Reflections on the glass: a soft streak and the room's glow.
+    float gx = (uv.x - wc.x) * 0.8 + (uv.y - wc.y) - 0.15 * sin(t * 0.04);
+    float3 glassRefl = float3(1.0) * exp(-gx * gx * 60.0) * 0.06 + mix(A, S, 0.5) * 0.03 * smoothstep(-0.15, 0.0, wd);
+    col += glassRefl * step(wd, 0.0);
+    // Wall: brushed panels with seams, lit from the window and a strip light.
+    if (wd > 0.0) {
+        float2 pp = uv * float2(4.0, 3.0);
+        float seam = 1.0 - smoothstep(0.0, 0.02, min(abs(fract(pp.x) - 0.5), abs(fract(pp.y) - 0.5)) - 0.47);
+        float brushed = 0.9 + 0.1 * vnoise(float2(uv.x * 400.0, uv.y * 8.0));
+        float3 wall = mix(float3(0.16, 0.17, 0.19), BG * 1.3 + 0.05, 0.4) * brushed;
+        wall *= 1.0 - 0.35 * seam;
+        wall += mix(atm, float3(1.0), 0.4) * 0.25 * exp(-wd * 10.0);
+        wall += mix(A, float3(1.0), 0.6) * 0.08 * exp(-abs(uv.y - 0.06) * 30.0);
+        col = wall;
+    }
+    // The frame: a thick ring with bevels and bolts.
+    float ring = abs(wd - 0.025) - 0.025;
+    float bev = sat(-(uv.y - wc.y) * 3.0 + (uv.x - wc.x) * 1.2) * 0.5 + 0.5;
+    float3 metal = mix(float3(0.32, 0.33, 0.36), float3(0.75, 0.76, 0.8), bev) * (0.8 + 0.2 * sin(wd * 260.0));
+    col = mix(col, metal, 1.0 - smoothstep(0.0, px, ring));
+    float ang = atan(uv.y - wc.y, uv.x - wc.x);
+    float2 bp = float2(fract(ang / TAU * 20.0) - 0.5, (wd - 0.025) * 18.0);
+    float bolt = length(bp) - 0.16;
+    col = mix(col, float3(0.85), (1.0 - smoothstep(0.0, 0.04, bolt)) * step(ring, 0.0));
+    col *= 1.0 - 0.5 * exp(-abs(wd) / 0.004) * step(wd, 0.0);
+
+    return half4(finish(col, fc), 1.0);
+}

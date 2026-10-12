@@ -1,0 +1,33 @@
+// Leaves / petals tumbling down (or along the wind). One per cell at most, so it stays cheap.
+// kind 0 = leaf, 1 = petal. Returns colour (not premultiplied) and coverage.
+float4 fallingLayer(float2 uv, float scale, float2 vel, float sway, float seed, float kind, float blur, float3 c1, float3 c2) {
+    float2 p = uv * scale - vel * uTime;
+    p.x += sway * sin(uTime * 0.55 + p.y * 1.7 + seed);
+    float2 id = floor(p);
+    float2 f = fract(p) - 0.5;
+    float2 r = hash22(id + seed);
+    if (r.x > 0.5) return float4(0.0);
+    float2 o = (hash22(id + seed + 3.7) - 0.5) * 0.36;
+    float2 q = f - o;
+    float dir = r.x > 0.25 ? 1.0 : -1.0;
+    q = rot(uTime * (0.35 + 0.7 * r.y) * dir + r.y * TAU) * q;
+    float flip = cos(uTime * (0.7 + r.x) + r.y * 9.0);
+    q.y /= max(abs(flip), 0.22);
+    float d;
+    float shade;
+    if (kind < 0.5) {
+        float L = 0.2;
+        float x = q.x / L;
+        float w = 0.075 * (1.0 - x * x) * (1.0 + 0.25 * x);
+        d = max(abs(q.y) - w, abs(q.x) - L);
+        float vein = (1.0 - smoothstep(0.0, 0.01, abs(q.y))) * step(abs(q.x), L * 0.85);
+        shade = (0.8 + 0.3 * sign(q.y) * flip) * (1.0 - 0.3 * vein);
+    } else {
+        float w = 0.1 * (0.5 + 0.5 * sat((q.x + 0.15) / 0.3));
+        d = (length(float2(q.x / 0.15, q.y / w)) - 1.0) * 0.07;
+        d = max(d, -(length(q - float2(0.165, 0.0)) - 0.04));
+        shade = 0.85 + 0.25 * (q.x / 0.15) * flip;
+    }
+    float a = 1.0 - smoothstep(-blur, blur, d);
+    return float4(mix(c1, c2, r.y) * shade, a);
+}

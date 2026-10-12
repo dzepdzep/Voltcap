@@ -1,0 +1,123 @@
+// Now playing: a soft field of the cover's colours (or the cover itself, heavily blurred), and across
+// it an equalizer wave: a glowing band whose height follows eight frequency bands (bass in the middle,
+// highs towards the edges), with thin lines riding it like an audio visualizer. A ring rolls out on
+// every kick and sparks are lifted by the highs. Without real audio the bands are simulated.
+uniform shader uArt;     // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize; // its size in pixels
+uniform float uHasArt;   // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;     // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;  // seconds since the last kick (large = none)
+uniform float uPlaying;  // 0..1, fades when paused
+uniform float uPlayT;    // seconds spent playing (NowPlayingScene): motion that eases to a stop when paused
+uniform float uIntensity; // 0..1, Settings › strength
+uniform float4 uEqA;     // bands 0-3 (low), 0..1
+uniform float4 uEqB;     // bands 4-7 (high)
+uniform float uWaveY;    // 0..1 from the top: where the wave runs (clear of the game row)
+uniform float uWaveH;    // room for the wave above / below that line (share of the height; the player sits under it)
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = centre of the screen = bass, 1 = edge = highs), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float mid = uMid * play;
+    float high = uHigh * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    // 1. Background: the cover, very soft and slowly drifting; or, without one, the palette swirling.
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.6 + 0.08 * sin(t * 0.045) - (0.05 * bass + 0.03 * kick) * k;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    float2 wq = p * 2.0;
+    p += (float2(vnoise(wq + float2(t * 0.1, 0.0)), vnoise(wq + float2(7.3, -t * 0.08))) - 0.5) * (0.08 + 0.08 * mid * k);
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float al = dot(art, float3(0.299, 0.587, 0.114));
+    art = max(mix(float3(al), art, 1.3), 0.0);
+    float3 col = mix(noArt, art * (0.56 + 0.12 * bass * k), uHasArt);
+    col = mix(col, BG, 0.16);
+
+    // 2. Coloured light that swells with the overall level.
+    float lvl = bass * 0.5 + mid * 0.3 + high * 0.2;
+    float2 g1 = float2(asp * (0.25 + 0.1 * sin(t * 0.07)), uWaveY - 0.15 + 0.08 * cos(t * 0.05));
+    float2 g2 = float2(asp * (0.78 + 0.08 * cos(t * 0.06)), uWaveY + 0.05 + 0.1 * sin(t * 0.04));
+    col += A * exp(-length(uv - g1) * 2.6) * (0.06 + 0.25 * lvl * k);
+    col += S * exp(-length(uv - g2) * 3.0) * (0.05 + 0.2 * lvl * k);
+
+    // 3. The equalizer wave. m: 0 in the middle (bass) to 1 at the edges (highs).
+    float x = uv.x / asp;
+    float m = abs(x - 0.5) * 2.0;
+    float e = eqAt(m) * play;
+    // A little travelling ripple so neighbouring bands never look like flat steps.
+    e *= 0.85 + 0.15 * sin(x * 38.0 - t * 4.0);
+    float gain = 0.45 + 0.55 * k;
+    // Tapers to nothing at the screen edges.
+    float edge = smoothstep(1.0, 0.82, m);
+    // Never taller than its room, so the player right under it doesn't cover it.
+    float room = uWaveH > 0.001 ? uWaveH : 0.2;
+    float h = (0.006 + (room - 0.012) * e * gain) * edge;
+    float dy = uv.y - uWaveY;
+    // The filled band: brightest along its rims, soft inside.
+    float inside = smoothstep(h + 0.004, h - 0.004, abs(dy));
+    float rim = exp(-abs(abs(dy) - h) / 0.0035);
+    float3 waveCol = mix(A, S, smoothstep(0.0, 1.0, m));
+    col += waveCol * inside * (0.1 + 0.25 * e) * (abs(dy) / max(h, 0.001) * 0.6 + 0.4);
+    col += mix(waveCol, float3(1.0), 0.35) * rim * (0.35 + 0.65 * e) * edge;
+    // Thin lines riding the band, each a different frequency and speed, scaled by the spectrum.
+    float l1 = uWaveY + h * 0.85 * sin(x * 9.0 + t * 1.6);
+    float l2 = uWaveY + h * 0.7 * sin(x * 14.0 - t * 2.3 + 1.7);
+    float l3 = uWaveY + h * 0.55 * sin(x * 23.0 + t * 3.1 + 4.0);
+    float lines = exp(-abs(uv.y - l1) / 0.0025) + 0.8 * exp(-abs(uv.y - l2) / 0.002) + 0.6 * exp(-abs(uv.y - l3) / 0.0018);
+    col += mix(S, A, 0.5) * lines * (0.15 + 0.6 * e) * edge * (0.4 + 0.6 * play);
+    // A wide glow around the band that pumps with the bass.
+    col += waveCol * exp(-abs(dy) / (0.04 + h)) * (0.04 + 0.18 * bass * k) * edge;
+
+    // 4. A ring rolling out from the wave's centre on every kick.
+    float2 rc = float2(asp * 0.5, uWaveY);
+    float r = length((uv - rc) * float2(1.0, 1.25));
+    float ringR = uBeatAge * 0.8;
+    r += (vnoise(float2(atan(uv.y - rc.y, uv.x - rc.x) * 3.0, t * 0.5)) - 0.5) * 0.08 * min(ringR, 0.4);
+    float ring = exp(-abs(r - ringR) * 20.0) + 0.5 * exp(-abs(r - ringR * 0.7) * 30.0);
+    col += mix(A, S, 0.4) * ring * exp(-uBeatAge * 2.4) * smoothstep(0.02, 0.12, ringR) * 0.4 * k * play;
+
+    // 5. Sparks lifted by the highs.
+    float rise = 0.15 * t + 0.25 * uPlayT;
+    float sp = dots(uv + float2(sin(uv.y * 5.0 + t) * 0.02, 0.0), 22.0, float2(0.0, rise * 22.0 / 6.0), 0.3, 0.1, 3.0);
+    float sp2 = dots(uv, 12.0, float2(t * 0.05, rise * 2.0), 0.2, 0.08, 9.0);
+    col += mix(S, float3(1.0), 0.4) * sp * (0.12 + 0.6 * high * k) + A * sp2 * (0.1 + 0.4 * high * k);
+
+    // 6. The whole picture pumps a little on the kick.
+    col *= 1.0 + 0.12 * kick * k;
+    return half4(finish(col, fc), 1.0);
+}

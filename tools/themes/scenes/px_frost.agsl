@@ -1,0 +1,96 @@
+// Frost · 32-bit (ice type): inside an ice cave looking out. Blue crystal walls frame the mouth of the
+// cave; through it a frozen lake lies under green aurora curtains; icicles drip at the top, crystals
+// glint one after another, and snow blows in across the opening.
+//#include pixel
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float2 c = float2(asp * 0.5, 0.52);
+
+    // Outside: night sky, aurora, mountains, a frozen lake.
+    float3 col = mix(BG * 0.9, mix(BG * 2.0, S * 0.3, 0.4), pxBand(uv.y * 1.6, 4.0, cell));
+    col = mix(col, float3(0.9, 0.95, 1.0), step(0.99, hash12(cell)) * step(uv.y, 0.45));
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float ax = uv.x * (3.0 + fi) + t * (0.05 + 0.03 * fi);
+        float cy = 0.18 + fi * 0.08 + 0.05 * sin(ax) + 0.025 * sin(ax * 2.7 + t * 0.2);
+        float band = sat(1.0 - (uv.y - cy) / 0.12) * step(cy, uv.y) * (0.5 + 0.5 * sin(uv.x * 40.0 + t * 0.8 + fi));
+        col = mix(col, mix(float3(0.3, 1.0, 0.6), A, 0.35 + 0.3 * fi), pxBand(band, 3.0, cell) * 0.75);
+    }
+    float mtn = 0.5 - 0.1 * abs(fract(uv.x * 2.2 + 0.3) - 0.5) * 2.0 - 0.03 * sin(uv.x * 11.0);
+    if (uv.y > mtn) col = mix(float3(0.75, 0.85, 0.95), float3(0.35, 0.45, 0.6), pxBand((uv.y - mtn) * 8.0 + step(0.5, fract(uv.x * 2.2 + 0.3)) * 0.4, 3.0, cell));
+    if (uv.y > 0.58) {
+        col = mix(mix(S, float3(0.6, 0.8, 0.95), 0.6), float3(0.3, 0.45, 0.65), pxBand((uv.y - 0.58) * 3.0, 3.0, cell));
+        // The aurora reflected, and cracks in the ice.
+        col += mix(float3(0.3, 1.0, 0.6), A, 0.4) * 0.15 * step(0.6, sin(uv.x * 40.0 + t * 0.8)) * step(uv.y, 0.66);
+        col = mix(col, float3(0.9, 0.97, 1.0), step(abs(sin(uv.x * 9.0 + uv.y * 30.0) * 0.02 - (uv.y - 0.72)), PX * 0.5) * 0.8);
+    }
+    // The cave mouth: everything outside the arch is ice wall.
+    float2 q = (uv - c) / float2(asp * 0.36, 0.42);
+    float arch = length(q * float2(1.0, q.y < 0.0 ? 1.0 : 0.6)) + 0.06 * vnoise(uv * 25.0) + 0.04 * sin(atan(q.y, q.x) * 9.0);
+    if (arch > 1.0) {
+        // Crystal facets: a cheap Voronoi, each cell one flat shade.
+        float2 g = uv * 9.0;
+        float2 gi = floor(g);
+        float best = 9.0;
+        float2 id = gi;
+        for (int yy = -1; yy <= 1; yy++) {
+            for (int xx = -1; xx <= 1; xx++) {
+                float2 o = gi + float2(float(xx), float(yy));
+                float2 pnt = o + hash22(o);
+                float dd = length(g - pnt);
+                if (dd < best) { best = dd; id = o; }
+            }
+        }
+        float facet = hash12(id);
+        float3 ice0 = mix(float3(0.05, 0.15, 0.3), BG, 0.3);
+        float3 ice1 = mix(float3(0.2, 0.45, 0.7), S, 0.3);
+        float3 ice2 = mix(float3(0.55, 0.8, 0.95), S, 0.2);
+        col = pxRamp(facet * 0.55 + sat(1.6 - arch) * 0.45, cell, ice0, ice1, ice2, float3(0.9, 0.98, 1.0));
+        // The rim lit from outside.
+        col = mix(col, float3(0.85, 0.97, 1.0), step(arch, 1.04));
+    }
+    // Icicles along the top, with drips.
+    float ix = uv.x * 30.0;
+    float il = (0.06 + 0.08 * hash11(floor(ix))) * (1.0 - abs(fract(ix) - 0.5) * 2.0);
+    if (uv.y < il) col = mix(float3(0.7, 0.9, 1.0), float3(0.95, 1.0, 1.0), step(fract(ix), 0.35));
+    float dripT = fract(t * 0.4 + hash11(floor(ix) * 3.0));
+    float2 dp = pxSnap(float2((floor(ix) + 0.5) / 30.0, (0.06 + 0.08 * hash11(floor(ix))) + dripT * dripT * 0.8));
+    col = mix(col, float3(0.85, 0.97, 1.0), step(length(uv - dp), PX * 0.8) * step(0.7, hash11(floor(ix) * 5.0)));
+    // Crystal clusters on the cave floor, glinting in turn.
+    for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float2 cb = float2((fi < 2.5 ? 0.05 + fi * 0.08 : asp - 0.05 - (fi - 3.0) * 0.09), 0.98);
+        for (int j = 0; j < 3; j++) {
+            float fj = float(j);
+            float2 dir = normalize(float2((fj - 1.0) * 0.5, -1.0));
+            float len = 0.08 + 0.06 * hash11(fi * 3.0 + fj);
+            float2 rel = uv - cb;
+            float along = dot(rel, dir);
+            float across = dot(rel, float2(-dir.y, dir.x));
+            float w = 0.018 * (1.0 - along / len);
+            float shard = step(0.0, along) * step(along, len) * step(abs(across), w);
+            float lit = step(0.0, across);
+            col = mix(col, mix(mix(float3(0.3, 0.6, 0.9), A, 0.3), float3(0.8, 0.95, 1.0), lit), shard);
+            float gl = step(0.92, fract(t * 0.3 + fi * 0.37 + fj * 0.13));
+            float2 tip = cb + dir * len;
+            col = mix(col, float3(1.0), gl * (step(abs(uv.x - tip.x), PX * 0.5) * step(abs(uv.y - tip.y), PX * 3.0) + step(abs(uv.y - tip.y), PX * 0.5) * step(abs(uv.x - tip.x), PX * 3.0)));
+        }
+    }
+    // Snow blowing in.
+    for (int l = 0; l < 2; l++) {
+        float fl = float(l);
+        float2 sp = float2(uv.x - t * (0.08 + 0.05 * fl), uv.y - t * (0.04 + 0.03 * fl) + 0.02 * sin(uv.x * 10.0 + t)) * (35.0 - fl * 12.0);
+        float2 si = floor(sp);
+        float2 sf = fract(sp) - 0.5;
+        col = mix(col, float3(1.0), step(0.93, hash12(si + fl * 50.0)) * step(max(abs(sf.x), abs(sf.y)), 0.18 + fl * 0.1));
+    }
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,111 @@
+// Portal gallery: gliding down a long dark hall lined with glowing portal rings, left and right in
+// turn. Each ring opens onto a different world - a sunset sea, a nebula, a misty forest, dunes under two
+// moons, a crystal cave - seen with a little parallax as it passes; sparks orbit the rims and their light
+// pools on the polished floor.
+
+float3 world(float id, float2 q, float t, float3 A, float3 S) {
+    // q: -1..1 across the portal. Five worlds, chosen by the portal's number.
+    float w = mod(id, 5.0);
+    float3 c;
+    if (w < 0.5) {
+        // Sunset sea.
+        c = mix(float3(1.0, 0.55, 0.3), float3(0.3, 0.15, 0.4), sat(-q.y * 0.8 + 0.3));
+        c = mix(c, float3(1.0, 0.9, 0.6), 1.0 - smoothstep(0.28, 0.3, length(q - float2(0.0, 0.05))));
+        if (q.y > 0.15) c = mix(float3(0.15, 0.2, 0.4), float3(1.0, 0.6, 0.3), 0.4 * step(0.6, sin(q.y * 80.0 + sin(q.x * 10.0 + t) * 2.0)) * step(abs(q.x), 0.3));
+        if (q.y > 0.15 && abs(q.x) > 0.3) c = float3(0.15, 0.2, 0.4) * (0.8 + 0.2 * sin(q.y * 60.0 + t));
+    } else if (w < 1.5) {
+        // Nebula.
+        float n = fbm3(q * 2.0 + float2(t * 0.05, 0.0));
+        c = mix(float3(0.03, 0.02, 0.08), mix(A, S, n), smoothstep(0.35, 0.8, n));
+        c += float3(1.0) * step(0.985, hash12(floor(q * 60.0)));
+    } else if (w < 2.5) {
+        // Misty forest at dawn.
+        c = mix(float3(0.9, 0.85, 0.7), float3(0.5, 0.7, 0.8), sat(-q.y));
+        for (int i = 0; i < 3; i++) {
+            float fi = float(i);
+            float tx = fract(q.x * (2.0 + fi) + fi * 0.3) - 0.5;
+            float tree = step(abs(tx), 0.25 * sat(q.y + 0.6 - fi * 0.15) * (1.0 + fi * 0.3));
+            c = mix(c, mix(float3(0.2, 0.35, 0.25), float3(0.6, 0.7, 0.6), 0.6 - fi * 0.25), tree * step(-0.3 + fi * 0.2, q.y));
+        }
+    } else if (w < 3.5) {
+        // Dunes under two moons.
+        c = mix(float3(0.1, 0.1, 0.3), float3(0.6, 0.35, 0.5), sat(q.y + 0.5));
+        c = mix(c, float3(0.95, 0.9, 0.8), 1.0 - smoothstep(0.12, 0.13, length(q - float2(-0.3, -0.4))));
+        c = mix(c, float3(0.8, 0.85, 1.0), 1.0 - smoothstep(0.06, 0.07, length(q - float2(0.25, -0.5))));
+        float d1 = 0.2 + 0.1 * sin(q.x * 4.0 + 1.0);
+        if (q.y > d1) c = mix(float3(0.85, 0.55, 0.35), float3(0.5, 0.3, 0.25), sat((q.y - d1) * 3.0));
+    } else {
+        // Crystal cave.
+        c = float3(0.05, 0.08, 0.15);
+        for (int i = 0; i < 6; i++) {
+            float fi = float(i);
+            float2 b = float2(-0.8 + fi * 0.32, 1.0);
+            float2 r = q - b;
+            float along = -r.y;
+            float sh = step(abs(r.x + along * (hash11(fi) - 0.5) * 0.5), 0.1 * (1.0 - along / (0.6 + 0.6 * hash11(fi * 3.0)))) * step(0.0, along);
+            c = mix(c, mix(S, float3(0.7, 0.95, 1.0), step(0.0, r.x)) * (0.6 + 0.4 * sin(t * 2.0 + fi)), sh);
+        }
+    }
+    return c;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float2 c = float2(asp * 0.5, 0.48);
+    float2 p = uv - c;
+    float px = 1.5 / uRes.y;
+
+    // The hall: dark walls, a floor with a long glossy sheen and tile seams in perspective.
+    float3 col = BG * 0.55 + mix(A, S, 0.5) * 0.05 * exp(-abs(p.y) * 6.0);
+    if (p.y > 0.0) {
+        float z = 0.25 / max(p.y, 0.002);
+        float x = p.x * z;
+        float seam = step(abs(fract(x * 1.0 + 0.5) - 0.5), 0.01 * z) + step(abs(fract(z * 0.5 - t * 0.6) - 0.5), 0.005 * z * z);
+        col = mix(BG * 0.35, BG * 0.6, exp(-z * 0.15)) + float3(0.04) * sat(seam) * exp(-z * 0.2);
+    }
+
+    // Portals: six slots from far to near (painted in that order), the hall gliding forward.
+    float speed = 0.28;
+    float f = fract(t * speed);
+    float n = floor(t * speed);
+    for (int k = 0; k < 6; k++) {
+        float fk = float(k);
+        float z = 6.3 - fk - f;                        // depth
+        float id = fk - n;
+        float side = mod(id, 2.0) < 0.5 ? -1.0 : 1.0;
+        float2 sp = c + float2(side * 1.15, -0.05) / z * 0.9;
+        float r = 0.55 / z * 0.9;
+        float near = smoothstep(0.35, 0.9, z);           // fades out as it passes
+        float2 q = (uv - sp) / r;
+        float d = length(q);
+        float3 rc = mix(A, S, mod(id, 3.0) * 0.5);
+        // The world inside, slightly offset by the view (parallax).
+        if (d < 1.0) {
+            float2 wq = q + float2(side * 0.15 * (1.0 / z), 0.0);
+            float3 wcol = world(id, wq, t, A, S);
+            wcol = mix(wcol, rc * 0.4, smoothstep(0.75, 1.0, d) * 0.6);
+            col = mix(col, wcol, near);
+        }
+        // The rim: a thick glowing ring with orbiting sparks.
+        float ring = abs(d - 1.0) * r;
+        col += rc * (exp(-ring * 400.0 / max(r * 3.0, 0.3)) * 1.2 + exp(-ring * 30.0) * 0.25) * near;
+        col = mix(col, mix(rc, float3(1.0), 0.6), (1.0 - smoothstep(0.0, px, ring - 0.005 * (1.0 / z))) * near);
+        for (int j = 0; j < 3; j++) {
+            float fj = float(j);
+            float a = t * 1.5 + fj * 2.1 + id;
+            float2 s = sp + float2(cos(a), sin(a)) * r;
+            col += float3(1.0) * exp(-length(uv - s) / r * 25.0) * near;
+        }
+        // Its light on the floor below.
+        float2 fl = uv - float2(sp.x, c.y + (c.y - sp.y) * 0.0 + 0.5 / z * 0.6);
+        col += rc * 0.18 * exp(-length(fl * float2(1.0, 3.0)) / r * 2.0) * step(0.0, p.y) * near;
+    }
+    // Dust in the air.
+    col += mix(A, float3(1.0), 0.6) * 0.35 * dots(uv, 30.0, float2(t * 0.15, -t * 0.25), 0.12, 0.06, 3.0);
+    return half4(finish(col, fc), 1.0);
+}

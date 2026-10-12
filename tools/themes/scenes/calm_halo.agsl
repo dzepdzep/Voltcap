@@ -1,0 +1,23 @@
+// Calm halo: one big soft halo of light breathing very slowly, faint concentric rings and a hint of
+// colour drifting round it. Minimal, quiet, original.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime * 0.2;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float2 c = float2(asp * 0.62, 0.42);
+    float2 d = uv - c;
+    float r = length(d);
+    float a = atan(d.y, d.x);
+    float breathe = 0.5 + 0.5 * sin(t * 0.8);
+    float3 col = mix(BG * 1.1, BG * 0.7, uv.y);
+    float3 tint = mix(A, S, 0.5 + 0.5 * sin(a + t * 0.6));
+    col += tint * exp(-r * (2.2 - 0.4 * breathe)) * 0.38;
+    col += float3(1.0) * exp(-abs(r - 0.28 - 0.02 * breathe) * 60.0) * 0.08;
+    col += float3(1.0) * exp(-abs(r - 0.46 - 0.03 * breathe) * 50.0) * 0.03;
+    col += A * exp(-abs(r - 0.7) * 30.0) * 0.025;
+    return half4(finish(col, fc), 1.0);
+}

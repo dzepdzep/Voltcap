@@ -1,0 +1,179 @@
+// Campfire: a camp in a pine forest at night, seen from low down by the fire. A teepee of logs burns
+// inside a ring of stones - tall licking flames, glowing coals, embers spiralling up and winking out,
+// a thin column of smoke. The firelight breathes on everything: the ground, the stones, a tent on
+// the left with its canvas glowing, a log bench on the right, the nearest pines; the forest behind
+// fades into the dark under a sky full of slowly wheeling stars.
+
+// A pine tree: negative inside. p relative to its foot, h = height.
+float pineD(float2 p, float h) {
+    float y = -p.y / h;
+    float tiers = fract(y * 5.0);
+    float w = (1.0 - y) * 0.30 * h * (0.75 + 0.25 * tiers);
+    float d = abs(p.x) - w;
+    d = max(d, p.y);
+    d = max(d, -p.y - h);
+    return d;
+}
+
+// Firelight reaching a point at distance d (screen units), flickering.
+float3 fireLight(float d, float3 fire, float flick) { return fire * flick / (1.0 + d * d * 12.0); }
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float px = 1.5 / uRes.y;
+
+    float2 fire = float2(asp * 0.5, 0.74);
+    float flick = 0.82 + 0.1 * sin(t * 11.0) * sin(t * 7.3) + 0.08 * vnoise(float2(t * 6.0, 0.0));
+    float3 FIRE = mix(float3(1.0, 0.52, 0.14), A, 0.3);
+
+    // Sky: stars wheeling round the pole, a faint galaxy.
+    float3 col = mix(BG * 0.3, BG * 0.9 + S * 0.02, uv.y);
+    float2 sp = rot(t * 0.004) * (uv - float2(asp * 0.5, 1.4)) + float2(asp * 0.5, 1.4);
+    col += float3(1.0) * dots(sp, 80.0, float2(0.0), 0.18, 0.07, 1.0) * 0.55;
+    col += mix(float3(1.0), S, 0.4) * dots(sp, 28.0, float2(0.0), 0.08, 0.06, 4.0) * 0.6;
+    float milky = fbm3(rot(0.5) * sp * 2.0) * exp(-sqf((sp.y - 0.25 + sp.x * 0.12) * 4.0));
+    col += mix(S, float3(1.0), 0.5) * milky * 0.09;
+
+    // The far forest: a ragged band of small pines, barely there.
+    float fx = uv.x * 22.0;
+    float fid = floor(fx);
+    float fh = 0.07 + 0.06 * hash11(fid * 1.7);
+    float far = pineD(float2((fract(fx) - 0.5) / 22.0, uv.y - 0.60), fh);
+    col = mix(col, BG * 0.4 + fireLight(length(uv - fire), FIRE, flick) * 0.02, smoothstep(px, -px, far));
+    col = mix(col, BG * 0.4, smoothstep(0.595, 0.6, uv.y));
+
+    // Nearer pines, lit on the side that faces the fire.
+    for (int i = 0; i < 9; i++) {
+        float fi = float(i);
+        float side = fi < 4.5 ? -1.0 : 1.0;
+        float k = fi < 4.5 ? fi : fi - 5.0;
+        float x = fire.x + side * (0.32 + k * 0.17 + 0.05 * hash11(fi * 3.3)) * (0.8 + 0.25 * asp / 1.78);
+        float base = 0.63 + 0.015 * k;
+        float h = 0.30 + 0.18 * hash11(fi * 5.1) + 0.05 * k;
+        float2 q = uv - float2(x, base);
+        float d = pineD(q, h);
+        if (d < px) {
+            float facing = sat(-side * q.x / max(0.3 * h * (1.0 + q.y / h), 0.01) * 0.5 + 0.5);
+            float dist = length(float2(x, base - h * 0.3) - fire);
+            float needles = 0.7 + 0.3 * vnoise(q * float2(90.0, 40.0));
+            float3 tc = BG * 0.18 + fireLight(dist, FIRE, flick) * (0.08 + 0.45 * facing * facing) * (0.4 + 0.6 * sat(1.0 + q.y / h * 1.6)) * needles;
+            col = mix(col, tc, smoothstep(px, -px, d));
+        }
+    }
+
+    // The clearing: earth and grass, a pool of light round the fire.
+    float gy = 0.62;
+    if (uv.y > gy) {
+        float g = vnoise(uv * float2(40.0, 120.0)) * 0.6 + vnoise(uv * float2(160.0, 300.0)) * 0.4;
+        float3 ground = BG * (0.35 + 0.15 * g) + float3(0.02, 0.025, 0.012);
+        float2 gp = (uv - fire) * float2(1.0, 3.0);
+        ground += fireLight(length(gp), FIRE, flick) * (0.75 + 0.4 * g) * exp(-length(gp) * 1.5);
+        ground *= smoothstep(gy, gy + 0.03, uv.y) * 0.6 + 0.4;
+        col = mix(col, ground, smoothstep(gy, gy + px, uv.y));
+    }
+
+    // The tent, left: a glowing canvas A-frame with a dark doorway.
+    float2 tq = uv - float2(fire.x - 0.42 * (0.8 + 0.2 * asp / 1.78), 0.70);
+    float tent = max(abs(tq.x) * 0.95 + (-tq.y) * 0.62 - 0.12, tq.y);
+    if (tent < px) {
+        float lit = sat(0.5 + tq.x * 5.0);
+        float3 canvas = mix(float3(0.10, 0.08, 0.05), FIRE * 0.55 * flick, lit * 0.8);
+        canvas *= 0.8 + 0.2 * step(0.5, fract(tq.x * 30.0 + tq.y * 8.0));
+        float door = max(abs(tq.x - 0.01) * 1.6 + (-tq.y) * 0.62 - 0.06, tq.y);
+        canvas = mix(canvas, float3(0.015, 0.012, 0.01) + FIRE * 0.04 * flick, step(door, 0.0));
+        float ridge = exp(-abs(tq.x) * 300.0) * step(-0.19, tq.y);
+        canvas += FIRE * ridge * 0.15;
+        col = mix(col, canvas, smoothstep(px, -px, tent));
+    }
+
+    // The log bench, right.
+    float2 bq = uv - float2(fire.x + 0.36 * (0.8 + 0.2 * asp / 1.78), 0.77);
+    float bench = sdRoundBox(bq, float2(0.12, 0.018), 0.018);
+    if (bench < px) {
+        float3 bark = float3(0.12, 0.07, 0.04) * (0.7 + 0.5 * vnoise(bq * float2(60.0, 15.0)));
+        bark += FIRE * sat(-bq.x * 4.0 + 0.6) * 0.3 * flick * sat(0.5 - bq.y * 20.0);
+        // The cut end, facing us, with its rings.
+        float endD = length((bq - float2(-0.12, 0.0)) * float2(1.6, 1.0)) - 0.018;
+        bark = mix(bark, mix(float3(0.35, 0.22, 0.12), float3(0.25, 0.15, 0.08), step(0.5, fract(length(bq - float2(-0.12, 0.0)) * 220.0))) * (0.5 + 0.7 * flick), step(endD, 0.0));
+        col = mix(col, bark, smoothstep(px, -px, bench));
+    }
+
+    // The ring of stones round the fire.
+    for (int i = 0; i < 12; i++) {
+        float fi = float(i);
+        float a = fi / 12.0 * TAU + 0.2;
+        float2 c = fire + float2(cos(a) * 0.11, sin(a) * 0.028 + 0.012);
+        float r = 0.016 + 0.006 * hash11(fi * 4.7);
+        float2 sq = (uv - c) * float2(1.0, 1.35);
+        float sd = length(sq) - r;
+        if (sd < px) {
+            // Front stones show their lit inner top; back ones their lit face.
+            float lit = sat(0.6 - sq.y / r * 0.6) * (sin(a) < 0.0 ? 1.0 : 0.6);
+            float3 stone = float3(0.12, 0.11, 0.1) + FIRE * lit * 0.45 * flick;
+            stone *= 0.85 + 0.25 * vnoise(sq * 300.0);
+            col = mix(col, stone, smoothstep(px, -px, sd) * step(0.0, sin(a) + 0.35 + (uv.y - fire.y) * 20.0));
+        }
+    }
+
+    // Logs leaning together, glowing where they burn.
+    float2 lp = uv - fire;
+    float log1 = sdSegment(lp, float2(-0.075, 0.012), float2(0.015, -0.07)) - 0.011;
+    float log2 = sdSegment(lp, float2(0.075, 0.012), float2(-0.015, -0.07)) - 0.011;
+    float log3 = sdSegment(lp, float2(-0.02, 0.016), float2(0.0, -0.075)) - 0.010;
+    float logs = min(min(log1, log2), log3);
+    float coal = vnoise(lp * 120.0 + float2(0.0, t * 0.5));
+    float burn = sat(smoothstep(0.012, -0.06, lp.y) * 0.4 + smoothstep(0.6, 0.85, coal) * 0.5);
+    float3 logCol = mix(float3(0.10, 0.06, 0.035), FIRE * (0.6 + 0.8 * smoothstep(0.55, 0.8, coal)) * flick, burn);
+    col = mix(col, logCol, smoothstep(px, -px, logs));
+    // Bed of coals.
+    float bed = length((lp - float2(0.0, 0.005)) * float2(1.0, 3.5)) - 0.07;
+    col += FIRE * smoothstep(0.02, -0.02, bed) * (0.25 + 0.6 * smoothstep(0.5, 0.8, vnoise(lp * 200.0 + t * 0.7))) * flick * step(px, logs);
+
+    // Flames: one turbulent heat field, cut into layers - deep orange, yellow, a pale core.
+    float2 fq = (uv - fire - float2(0.0, 0.0)) / 0.36;
+    float fy = -fq.y;
+    float n = fbm3(float2(fq.x * 3.0, fy * 2.4 - t * 2.6));
+    float n2 = vnoise(float2(fq.x * 8.0, fy * 7.0 - t * 4.8));
+    float heat = 1.0 - fy * 1.05 - abs(fq.x + (n - 0.5) * 0.3 * fy) * (3.6 + fy * 4.0) + (n - 0.5) * (0.35 + 1.25 * fy) + (n2 - 0.5) * 0.4 * fy;
+    heat *= step(-0.06, fy) * flick;
+    // A smooth black-body ramp, drawn as light: soft tongues, a hot white heart.
+    float3 deep = mix(float3(0.95, 0.24, 0.04), A, 0.35);
+    float3 yel = mix(float3(1.0, 0.70, 0.2), S, 0.25);
+    float hh = max(heat, 0.0);
+    float3 flame = deep * smoothstep(0.0, 0.25, hh) * 1.1 + (yel - deep * 0.5) * smoothstep(0.2, 0.55, hh) + float3(0.6, 0.5, 0.35) * smoothstep(0.5, 0.9, hh);
+    float alpha = smoothstep(0.0, 0.12, hh);
+    col = col * (1.0 - alpha * 0.85) + flame;
+    // Licks of flame breaking off at the tips.
+    float tip = smoothstep(0.55, 0.75, vnoise(float2(fq.x * 10.0, fy * 5.0 - t * 5.0))) * smoothstep(0.1, -0.05, heat) * smoothstep(-0.25, -0.05, heat) * step(0.2, fy) * step(fy, 1.2) * exp(-abs(fq.x) * 6.0);
+    col += deep * tip * 0.7 * flick;
+    // Glow round the flames and the light they throw up into the air.
+    col += FIRE * glow(length((uv - fire + float2(0.0, 0.09)) * float2(1.0, 0.8)), 0.06) * 0.3 * flick;
+    col += FIRE * 0.06 * exp(-length(uv - fire + float2(0.0, 0.15)) * 3.0) * flick;
+
+    // Embers spiralling up and winking out.
+    for (int i = 0; i < 16; i++) {
+        float fi = float(i);
+        float per = 2.2 + 2.2 * hash11(fi);
+        float cyc = t / per + hash11(fi + 3.0);
+        float ph = fract(cyc);
+        float sd = hash11(fi + floor(cyc) * 7.0);
+        float2 e = fire + float2((sd - 0.5) * 0.12 + sin(ph * 7.0 + fi) * 0.04 * ph, -0.05 - ph * 0.62);
+        float2 vel = float2(cos(ph * 7.0 + fi) * 0.28 * ph, -0.62);
+        float ed = sdSegment(uv, e, e - normalize(vel) * 0.012);
+        float life = (1.0 - ph) * step(0.15, hash11(fi + 9.0)) * (0.6 + 0.4 * sin(t * 20.0 + fi));
+        col += FIRE * (1.0 - smoothstep(0.0, 0.003, ed)) * life * 1.6;
+        col += FIRE * glow(ed, 0.004) * life * 0.12;
+    }
+    // Smoke drifting up and off to the side.
+    float sm = fbm3(float2(uv.x * 4.0 - t * 0.05, uv.y * 3.0 + t * 0.25));
+    float rise = fire.y - 0.25 - uv.y;
+    float smoke = smoothstep(0.45, 0.75, sm) * exp(-abs(uv.x - fire.x - max(rise, 0.0) * 0.35) * (8.0 - rise * 4.0)) * smoothstep(0.0, 0.15, rise) * (1.0 - smoothstep(0.3, 0.6, rise));
+    col = mix(col, BG * 0.8 + FIRE * 0.05, smoke * 0.3);
+
+    return half4(finish(col, fc), 1.0);
+}

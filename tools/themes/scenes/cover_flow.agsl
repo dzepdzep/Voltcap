@@ -1,0 +1,118 @@
+// Cover flow (music): the classic carousel. The song's cover stands big in the middle, facing you,
+// on a glossy floor that mirrors it; the covers of the songs you played before stand angled away to
+// the left, and when the song changes the whole row glides one place: the old cover turns away into
+// the left stack while the new one swings in from the right to face you. Everything is lit in the
+// cover's own colours - a soft blur of the artwork behind, a tinted floor and a coloured rim on each
+// sleeve. The row sways gently, the middle cover lifts with the bass, a light sweeps across its glass,
+// and thin equalizer lines glow along the floor.
+//#include reactive
+uniform float uSwapAge;   // seconds since the cover changed (large = long ago)
+
+// A cover drawn as a quad turned about its vertical axis: returns uv inside it (or -1).
+float2 cardUv(float2 p, float2 c, float hw, float hh, float ang) {
+    // Perspective: the far edge gets shorter.
+    float2 d = p - c;
+    float ca = cos(ang);
+    float sa = sin(ang);
+    float x = d.x / (hw * max(ca, 0.05));
+    float persp = 1.0 + x * sa * 0.35;
+    float y = d.y / (hh * persp);
+    if (abs(x) > 1.0 || abs(y) > 1.0) return float2(-1.0);
+    return float2(x, y) * 0.5 + 0.5;
+}
+
+// Where a card in slot f sits (0 = middle, negative = left stack, positive = right), continuously,
+// so the row can glide between slots: x offset, size, turn.
+float3 slot(float f, float R) {
+    float a = min(abs(f), 1.0);
+    float x = sign(f) * (a * R * 1.35 + max(abs(f) - 1.0, 0.0) * R * 0.42);
+    return float3(x, mix(1.0, 0.62, a), -clamp(f, -1.0, 1.0) * 1.05);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = vivid(uAcc.rgb, 1.2);
+    float3 S = vivid(uSec.rgb, 1.2);
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.78;
+    float floorY = c.y + R;
+    // Behind: the artwork itself, blurred and dark, with a glow of its colours around the middle.
+    float3 col = coverField(uv, asp, t, bass, 0.55, BG, A, S);
+    col = mix(col, BG * 0.15, smoothstep(c.y - R * 2.5, floorY + 0.3, uv.y) * 0.6);
+    col += mix(A, S, 0.5) * exp(-length((uv - c) * float2(0.5, 1.0)) / R * 0.9) * 0.18;
+    float sway = 0.015 * sin(t * 0.3);
+
+    // The glide after a song change: o runs 1 -> 0 (eased), shifting every card by o slots.
+    float sw = sat(uSwapAge / 1.2);
+    float o = 1.0 - sw * sw * (3.0 - 2.0 * sw);
+
+    // Floor reflection: mirror y about the floor line.
+    float refl = 0.0;
+    float2 pu = uv;
+    if (uv.y > floorY) { pu.y = 2.0 * floorY - uv.y; refl = 1.0; }
+
+    float3 layer = float3(0.0);
+    float cover = 0.0;
+    float3 rimC = mix(A, float3(1.0), 0.35);
+    // Side cards, back to front: the left stack (earlier songs; the one just played is slot -1)
+    // and the right one (older covers repeated), all shifted by the glide.
+    for (int s = 0; s < 2; s++) {
+        float side = s == 0 ? -1.0 : 1.0;
+        for (int j = 3; j >= 0; j--) {
+            float fj = float(j);
+            if (s == 0 && j == 0) continue;            // slot -1 is drawn with the middle pair below
+            float f = side * (fj + 1.0) + o;
+            float3 sl = slot(f, R);
+            float2 cc = float2(c.x + sl.x + sway, c.y + R * 0.08 * (1.0 - sl.y) / 0.38);
+            float2 q = cardUv(pu, cc, R * sl.y, R * sl.y * 0.95, sl.z);
+            if (q.x >= 0.0) {
+                float3 cv = pastCover(side < 0.0 ? fj : fj + 4.0, q, A, S);
+                float shade = mix(0.8, 0.45, q.x * step(0.0, side) + (1.0 - q.x) * step(side, 0.0)) * (1.0 - min(abs(f), 4.0) * 0.12);
+                float edge = 1.0 - smoothstep(0.0, 0.04, min(min(q.x, 1.0 - q.x), min(q.y, 1.0 - q.y)));
+                layer = cv * shade + rimC * edge * 0.25;
+                cover = 1.0;
+            }
+        }
+    }
+    // The middle pair: the cover just played (slot -1 + o) and the current one (slot o); the one
+    // nearer the middle is drawn last.
+    float lift = bass * k * R * 0.05;
+    for (int m = 0; m < 2; m++) {
+        bool cur = (m == 1) == (o < 0.5);
+        float f = cur ? o : -1.0 + o;
+        float af = min(abs(f), 1.0);
+        float3 sl = slot(f, R);
+        float2 mc = float2(c.x + sl.x + sway, c.y + R * 0.08 * (1.0 - sl.y) / 0.38 - lift * (1.0 - af));
+        float2 mq = cardUv(pu, mc, R * sl.y, R * sl.y * mix(1.0, 0.95, af), sl.z + 0.12 * sin(t * 0.25) * (1.0 - af));
+        if (mq.x >= 0.0) {
+            float3 cv = cur ? sharpCover(mq, A, S) : pastCover(0.0, mq, A, S);
+            cv *= mix(1.0, 0.7, af);
+            cv += float3(1.0) * 0.12 * pow(sat(1.0 - abs(mq.x + mq.y - fract(t * 0.07) * 3.0 + 0.5) * 4.0), 3.0) * (1.0 - af);
+            float edge = 1.0 - smoothstep(0.0, 0.025, min(min(mq.x, 1.0 - mq.x), min(mq.y, 1.0 - mq.y)));
+            layer = cv + rimC * edge * 0.2;
+            cover = 1.0;
+        }
+    }
+    if (refl > 0.5) {
+        // The floor: dark glass tinted by the cover's colours, the row mirrored in it.
+        col = mix(col, mix(BG * 0.2, mix(A, S, 0.5) * 0.25, 0.4) + col * 0.3, 0.6);
+        col = mix(col, layer, cover * exp(-(uv.y - floorY) / (R * 0.45)) * 0.4);
+    } else {
+        col = mix(col, layer, cover);
+    }
+    // Equalizer lines glowing along the floor.
+    float fx = (uv.x - c.x) / (asp * 0.5);
+    float e = eqAt(sat(abs(fx))) * play;
+    float line = exp(-abs(uv.y - floorY - 0.004) * 400.0) * (0.25 + 1.2 * e);
+    col += mix(A, S, sat(abs(fx))) * line * 0.6;
+    // A flash of the new cover's colours as it lands.
+    col += mix(A, S, 0.5) * 0.08 * exp(-uSwapAge * 3.0) * exp(-length(uv - c) / R);
+    return half4(finish(col, fc), 1.0);
+}

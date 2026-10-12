@@ -1,0 +1,85 @@
+// Moon blade: a night field under a huge moon, thin clouds sliding across it, petals on the wind
+// and grass swaying below - and every few seconds a crescent sword slash flashes across the screen
+// with speed lines, an afterimage and a brief white flash.
+//#include falling
+//#include anime
+
+// The slash: a bright crescent stroke along a big circle, drawn in quickly, then fading.
+float slashStroke(float2 uv, float2 c, float R, float a0, float a1, float prog, float width) {
+    float2 d = uv - c;
+    float ang = atan(d.y, d.x);
+    float u = (ang - a0) / (a1 - a0);
+    if (u < 0.0 || u > 1.0) return 0.0;
+    float w = width * sin(PI * u) * sin(PI * u);
+    float reveal = 1.0 - smoothstep(prog - 0.05, prog, u);
+    return (1.0 - smoothstep(w * 0.4, w, abs(length(d) - R))) * reveal;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Night sky, a little lighter round the moon.
+    float3 col = mix(BG * 0.7, BG + A * 0.08, smoothstep(0.0, 1.0, uv.y));
+    col += S * 0.5 * dots(uv, 60.0, float2(t * 0.01, 0.0), 0.12, 0.08, 4.0);
+
+    // The moon: big, pale, with soft mottling and a wide glow.
+    float2 mc = float2(asp * 0.62, 0.38);
+    float md = length(uv - mc);
+    float3 moonCol = mix(S, float3(1.0), 0.65);
+    col += moonCol * exp(-md * 3.0) * 0.28;
+    float disc = 1.0 - smoothstep(0.235, 0.24, md);
+    float mott = fbm3((uv - mc) * 7.0 + 2.0);
+    col = mix(col, moonCol * (0.86 + 0.14 * smoothstep(0.35, 0.7, mott)), disc);
+
+    // Thin clouds sliding across, dark with lit edges near the moon.
+    float cl = fbm(float2(uv.x * 2.2 - t * 0.02, uv.y * 9.0));
+    float band = smoothstep(0.5, 0.62, cl) * (1.0 - smoothstep(0.15, 0.55, abs(uv.y - 0.42)));
+    float nearMoon = exp(-md * 3.5);
+    col = mix(col, BG * 0.6 + moonCol * 0.25 * nearMoon, band * 0.75);
+    col += moonCol * (smoothstep(0.5, 0.53, cl) - smoothstep(0.53, 0.58, cl)) * nearMoon * 0.35 * (1.0 - smoothstep(0.15, 0.55, abs(uv.y - 0.42)));
+
+    // Grass: a swaying silhouette of blades along the bottom.
+    float wind = sin(t * 0.8 + uv.x * 3.0) * 0.6;
+    float blades = pow(abs(fract(uv.x * 70.0 + wind * (1.0 - uv.y) * 2.0) - 0.5) * 2.0, 3.0);
+    float gl = 0.85 + 0.04 * vnoise(float2(uv.x * 30.0 + wind, 0.0)) + 0.035 * blades;
+    float grass = step(gl, uv.y);
+    col = mix(col, BG * 0.35, grass);
+    col += moonCol * exp(-abs(uv.y - gl) * 300.0) * 0.12 * (1.0 - grass);
+
+    // Petals on the wind.
+    float4 p = fallingLayer(uv, 8.0, float2(-0.6, 0.35), 0.5, 4.0, 1.0, 0.03, A, S);
+    col = mix(col, p.rgb * 0.75, p.a * 0.45);
+    p = fallingLayer(uv, 4.5, float2(-0.45, 0.3), 0.45, 9.0, 1.0, 0.012, A, mix(S, float3(1.0), 0.4));
+    col = mix(col, p.rgb, p.a * 0.85);
+
+    // The slash: every 5 s, a new angle and place.
+    float cyc = fract(t / 5.0);
+    float epoch = floor(t / 5.0);
+    if (cyc < 0.3) {
+        float tilt = (hash11(epoch) - 0.5) * 1.1;
+        float2 cc = float2(asp * 0.5, 0.5);
+        float2 q = rot(tilt) * (uv - cc) + cc;
+        float2 sc2 = cc + float2((hash11(epoch + 2.0) - 0.5) * 0.4, 1.0);
+        float R = 1.0;
+        float prog = sat(cyc / 0.06);
+        float fade = 1.0 - smoothstep(0.06, 0.3, cyc);
+        float main1 = slashStroke(q, sc2, R, -2.45, -0.7, prog, 0.035);
+        float after1 = slashStroke(q, sc2 + float2(0.0, 0.03), R, -2.4, -0.75, prog, 0.02);
+        col += float3(1.0) * main1 * fade;
+        col += mix(A, S, 0.5) * slashStroke(q, sc2, R, -2.45, -0.7, prog, 0.09) * fade * 0.5;
+        col += mix(A, float3(1.0), 0.3) * after1 * fade * 0.5;
+        // Speed lines along the slash.
+        float row = floor(q.y * 50.0);
+        float hr = hash11(row + epoch * 7.0);
+        float xs = fract(q.x * 0.6 + hr * 5.0 + cyc * 9.0);
+        col += float3(1.0) * step(0.8, hr) * step(0.7, xs) * (1.0 - step(0.9, xs)) * fade * 0.18;
+        col += float3(1.0) * exp(-cyc * 35.0) * 0.18;
+    }
+
+    return half4(finish(col, fc), 1.0);
+}

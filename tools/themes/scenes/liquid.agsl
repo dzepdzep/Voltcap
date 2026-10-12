@@ -1,0 +1,62 @@
+// Tide / Liquid: looking up from shallow water. Light shafts sway down from the surface,
+// caustic light ripples across the sand below, and specks drift in the current.
+
+// Caustic web: the gap between the nearest and second-nearest moving cell points.
+float caustic(float2 p, float t) {
+    float2 i = floor(p);
+    float2 f = fract(p);
+    float f1 = 8.0;
+    float f2 = 8.0;
+    for (int y = -1; y <= 1; y++) {
+        for (int x = -1; x <= 1; x++) {
+            float2 g = float2(float(x), float(y));
+            float2 o = hash22(i + g);
+            o = 0.5 + 0.42 * sin(t * 0.55 + TAU * o);
+            float d = length(g + o - f);
+            if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) { f2 = d; }
+        }
+    }
+    return f2 - f1;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Water: lighter towards the surface.
+    float3 col = mix(BG + A * 0.16, BG * 0.8, smoothstep(0.0, 0.9, uv.y));
+
+    // The surface: a bright, rippling band at the very top.
+    float wave = sin(uv.x * 9.0 + t * 0.8) * 0.006 + sin(uv.x * 23.0 - t * 1.3) * 0.003;
+    col += mix(A, S, 0.3) * 0.35 * exp(-max(uv.y - 0.02 - wave, 0.0) * 30.0);
+
+    // Light shafts fanning down from above the screen.
+    float2 src = float2(asp * 0.5 + 0.25 * sin(t * 0.05), -0.6);
+    float2 d = uv - src;
+    float ang = atan(d.x, d.y);
+    float rays = vnoise(float2(ang * 14.0, t * 0.12)) * 0.6 + vnoise(float2(ang * 31.0 + 4.0, -t * 0.09)) * 0.4;
+    rays = smoothstep(0.42, 0.95, rays) * exp(-max(length(d) - 0.6, 0.0) * 1.3);
+    col += mix(A, float3(1.0), 0.25) * rays * 0.22;
+
+    // Caustics: strongest on the "floor" (lower part), warped so the web looks liquid.
+    float2 cp = float2(uv.x, uv.y * 1.6) * 3.2;
+    cp += float2(vnoise(cp * 0.7 + t * 0.1), vnoise(cp * 0.7 - t * 0.1 + 5.0)) * 0.9;
+    float c = caustic(cp, t);
+    float web = pow(1.0 - smoothstep(0.0, 0.16, c), 4.0);
+    float c2 = caustic(cp * 1.7 + 3.0, t * 1.2);
+    web = web * 0.7 + 0.45 * pow(1.0 - smoothstep(0.0, 0.12, c2), 4.0);
+    web *= smoothstep(0.25, 0.75, vnoise(cp * 0.45 + t * 0.05));
+    float floorMask = smoothstep(0.25, 0.85, uv.y);
+    col += mix(A, S, 0.35) * web * (0.02 + 0.2 * floorMask);
+
+    // Drifting specks, two depths.
+    float2 cur = float2(t * 0.03, -t * 0.012);
+    col += mix(A, float3(1.0), 0.5) * dots(uv, 22.0, cur * 22.0, 0.25, 0.1, 3.0) * 0.35;
+    col += S * dots(uv, 9.0, cur * 14.0 + float2(0.0, sin(t * 0.3)), 0.18, 0.08, 11.0) * 0.4;
+
+    return half4(finish(col, fc), 1.0);
+}

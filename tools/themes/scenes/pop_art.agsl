@@ -1,0 +1,72 @@
+// Pop art cover: the album cover printed four times in bold two-colour screen prints, comic
+// halftone dots growing with the bass, each print bouncing with its own part of the spectrum. On
+// every kick the colour sets jump to the next print.
+//#include reactive
+
+float3 popInk(float i, float3 A, float3 S) {
+    if (i < 0.5) return A;
+    if (i < 1.5) return S;
+    if (i < 2.5) return float3(S.z, A.x, A.y);
+    return float3(1.0 - A.x * 0.6, A.z, 1.0 - S.y * 0.6);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    // The kick count moves the colours on by one print.
+    float beats = floor(t * 0.5);
+    float shift = floor(t / 4.0);
+
+    // Paper background with big halftone dots in the palette.
+    float2 hp = rot(0.6) * uv * 34.0;
+    float dotsBg = 1.0 - smoothstep(0.2, 0.26, length(fract(hp) - 0.5) - 0.12 * bass * k);
+    float3 col = mix(mix(BG, A, 0.18) * 1.2, mix(BG, S, 0.25) * 1.4, dotsBg);
+
+    // Four prints in a 2x2 block where the equalizer is set.
+    float2 c = float2(waveX(asp), uWaveY);
+    float H = room(0.28) * 0.95;
+    float cell = H;                         // each print's side
+    float2 d = uv - c;
+    float2 gi = floor(d / cell);
+    if (gi.x >= -1.0 && gi.x <= 0.0 && gi.y >= -1.0 && gi.y <= 0.0) {
+        float i = (gi.x + 1.0) + (gi.y + 1.0) * 2.0;
+        float e = eqBand(i * 2.0) * play;
+        float2 q = fract(d / cell);
+        float sc = 0.9 + 0.08 * e * k;
+        float2 tq = (q - 0.5) / sc + 0.5;
+        if (tq.x > 0.0 && tq.x < 1.0 && tq.y > 0.0 && tq.y < 1.0) {
+            float3 art = sharpCover(tq, A, S);
+            float lum = dot(art, float3(0.299, 0.587, 0.114));
+            float ink = mod(i + shift, 4.0);
+            float3 c1 = popInk(ink, A, S);
+            float3 c2 = popInk(mod(ink + 2.0, 4.0), A, S);
+            // Two-colour print: posterised into 3 tones.
+            float tone = floor(lum * 3.0 + 0.5) / 3.0;
+            float3 print = mix(c2 * 0.35, mix(c1, float3(1.0), 0.15), tone);
+            // Halftone in the shadows.
+            float2 dp = rot(0.785) * tq * 48.0;
+            float dt = 1.0 - smoothstep(0.0, 0.08, length(fract(dp) - 0.5) - (0.42 - tone * 0.4));
+            print = mix(print, c2 * 0.25, dt * (1.0 - tone) * 0.6);
+            // A white border, like a print on paper.
+            float b = min(min(tq.x, 1.0 - tq.x), min(tq.y, 1.0 - tq.y));
+            print = mix(float3(0.97), print, smoothstep(0.035, 0.04, b));
+            col = print * (0.9 + 0.25 * e);
+        }
+        // Drop shadow under each print.
+    }
+    // Comic "pow" burst lines from behind the block on the kick.
+    float a = atan(d.y, d.x);
+    float burst = step(0.5, fract(a * 4.0 + 0.25)) * exp(-uBeatAge * 3.0) * play;
+    float outside = step(H * 1.05, max(abs(d.x), abs(d.y)));
+    col = mix(col, mix(A, float3(1.0), 0.4), burst * outside * exp(-length(d) * 2.2) * 0.5 * k);
+
+    return half4(finish(col, fc), 1.0);
+}

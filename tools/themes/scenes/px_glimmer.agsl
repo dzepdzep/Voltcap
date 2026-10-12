@@ -1,0 +1,90 @@
+// Glimmer · 32-bit (fairy type): an enchanted glade at twilight. A ring of glowing mushrooms circles a
+// mossy clearing, fairies loop through the air leaving sparkling trails, giant bell flowers sway and
+// chime with light, and petals and stars float down.
+//#include pixel
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Twilight: pink to violet bands, stars.
+    float3 col = mix(mix(float3(0.3, 0.2, 0.45), BG * 1.5, 0.4), mix(float3(0.95, 0.6, 0.75), A, 0.35), pxBand(uv.y * 1.5, 5.0, cell));
+    col = mix(col, float3(1.0, 0.95, 1.0), step(0.99, hash12(cell)) * step(uv.y, 0.4) * step(0.3, sin(t * 2.0 + hash12(cell) * 40.0)));
+    // Tree line silhouettes with round crowns.
+    float trees = 0.5 - 0.06 * abs(sin(uv.x * 8.0)) - 0.03 * abs(sin(uv.x * 19.0 + 1.0));
+    if (uv.y > trees) col = mix(float3(0.18, 0.12, 0.28), BG, 0.3);
+    // Glade floor.
+    float floorY = 0.66;
+    if (uv.y > floorY) col = mix(mix(float3(0.25, 0.45, 0.3), S * 0.5, 0.2), float3(0.18, 0.32, 0.22), pxBand((uv.y - floorY) * 3.0 + hash12(cell) * 0.2, 3.0, cell));
+    // The ring's glow on the moss.
+    float2 rc = float2(asp * 0.5, 0.8);
+    float2 rq = (uv - rc) / float2(0.4, 0.1);
+    float rr = length(rq);
+    col += mix(A, S, 0.4) * 0.25 * pxBand(sat(1.0 - abs(rr - 1.0) * 2.5), 3.0, cell) * step(floorY, uv.y);
+    // Bell flowers swaying at the sides.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float bx = fi < 2.0 ? 0.08 + fi * 0.12 : asp - 0.08 - (fi - 2.0) * 0.12;
+        float sw = 0.02 * sin(t * 0.8 + fi);
+        float topY = 0.42 + 0.05 * hash11(fi);
+        float f = sat((uv.y - topY) / (0.95 - topY));
+        col = mix(col, float3(0.2, 0.45, 0.25), step(abs(uv.x - bx - sw * (1.0 - f)), PX * 1.2) * step(topY, uv.y) * step(uv.y, 0.95));
+        float2 bell = uv - float2(bx + sw + 0.03, topY + 0.04);
+        float b = step(-0.03, bell.y) * step(bell.y, 0.02) * step(abs(bell.x), 0.018 + (bell.y + 0.03) * 0.3);
+        float glow = 0.6 + 0.4 * sin(t * 1.5 + fi * 1.7);
+        col = mix(col, mix(mix(A, float3(1.0, 0.7, 0.9), 0.4), float3(1.0), step(0.02 - (bell.y + 0.03) * 0.0, bell.y) * 0.5) * (0.8 + 0.3 * glow), b);
+        col = mix(col, mix(S, float3(1.0), 0.5), pxDisc(uv, float2(bx + sw + 0.03, topY + 0.07), PX * 1.2) * glow);
+    }
+    // The mushroom ring: back half, then front half (drawn by order of depth).
+    for (int i = 0; i < 14; i++) {
+        float fi = float(i);
+        float an = fi / 14.0 * TAU;
+        float2 m = pxSnap(rc + float2(cos(an) * 0.4, sin(an) * 0.1));
+        float sc = 1.1 + 0.6 * (sin(an) * 0.5 + 0.5);
+        float2 q = (uv - m) / sc;
+        float cap = step(length(q * float2(1.0, 1.7) + float2(0.0, 0.022)), 0.018) * step(q.y, -0.012);
+        float stem = pxBox(q, float2(0.0, -0.006), float2(0.005, 0.007));
+        float pulse = 0.65 + 0.35 * sin(t * 2.0 - fi * 0.45);
+        col = mix(col, float3(0.95, 0.9, 0.85), stem);
+        col = mix(col, mix(mix(A, S, mod(fi, 2.0)), float3(1.0), 0.15) * (0.75 + 0.4 * pulse), cap);
+        col = mix(col, float3(1.0), cap * step(length(q + float2(0.006, 0.022)), 0.004));
+    }
+    // Fairies looping with sparkle trails.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        for (int j = 0; j < 8; j++) {
+            float fj = float(j);
+            float s = t * 0.7 + fi * 2.1 - fj * 0.045;
+            float2 p = float2(asp * 0.5 + cos(s) * (0.35 + 0.1 * fi) * asp / 1.78, 0.45 + 0.15 * sin(s * 2.0 + fi) + 0.05 * sin(s * 3.0));
+            p = pxSnap(p);
+            float d = length(uv - p);
+            if (j == 0) {
+                col = mix(col, mix(col, mix(A, S, fi / 2.0), 0.7), step(d, PX * 6.0) * step(0.5, mod(cell.x + cell.y, 2.0)));
+                col = mix(col, mix(mix(A, S, fi / 2.0), float3(1.0), 0.6), step(d, PX * 3.0));
+                col = mix(col, float3(1.0), step(d, PX * 1.6));
+                float2 wq = (uv - p) / PX;
+                float wing = step(length((abs(wq) - float2(3.5, 2.5)) * float2(0.7, 1.1)), 2.4 + 1.0 * step(0.0, sin(t * 30.0 + fi)));
+                col = mix(col, mix(col, float3(0.9, 1.0, 1.0), 0.6), wing);
+            } else {
+                float tw = step(0.4, fract(t * 4.0 + fj * 0.3 + fi));
+                col = mix(col, mix(mix(A, S, fi / 2.0), float3(1.0), 0.4), step(d, PX * 1.3) * tw * (1.0 - fj / 10.0));
+            }
+        }
+    }
+    // Petals and stars drifting down.
+    for (int i = 0; i < 10; i++) {
+        float fi = float(i);
+        float2 p = pxSnap(float2(fract(hash11(fi * 3.0) + 0.03 * sin(t * 0.5 + fi)) * asp, fract(hash11(fi) + t * (0.02 + 0.015 * hash11(fi * 2.0)))));
+        float2 q = (uv - p) / PX;
+        float star = step(abs(q.x), 0.6) * step(abs(q.y), 2.0) + step(abs(q.y), 0.6) * step(abs(q.x), 2.0);
+        float petal = step(length(q * float2(1.0, 1.6)), 1.4);
+        col = mix(col, mod(fi, 2.0) < 0.5 ? float3(1.0, 0.95, 0.7) : mix(float3(1.0, 0.7, 0.85), A, 0.3), sat(mod(fi, 2.0) < 0.5 ? star : petal) * step(0.3, sin(t * 3.0 + fi)));
+    }
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed (monochrome) icon on Android 13+: capsule outline and bolt. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="3" android:pathData="M36.08,39.92 L71.92,39.92 A14.08,14.08 0 0 1 71.92,68.08 L36.08,68.08 A14.08,14.08 0 0 1 36.08,39.92 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M58.16,43.44 L48.56,55.44 L53.52,55.44 L50.48,64.56 L60.08,52.24 L55.12,52.24 Z" />
+</vector>

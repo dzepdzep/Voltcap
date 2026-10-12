@@ -1,0 +1,89 @@
+// Shinobi: dusk over layered mountain ridges under a big cel-shaded sun with slowly turning rays.
+// Soft wind lines drift past (straight, no vortex) and leaves drift on the breeze at four depths (small and soft far away, big
+// and sharp up close) so they fill the whole sky; every few seconds a dash tears across: speed
+// lines, a white flash of a streak and the leaves blown sideways.
+//#include falling
+//#include anime
+
+float ridgeH(float x, float base, float amp, float seed) {
+    float n = fbm(float2(x * 1.4 + seed, seed));
+    float sharp = 1.0 - abs(2.0 * vnoise(float2(x * 3.5 + seed * 2.0, 1.0)) - 1.0);
+    return base - amp * (n * 0.7 + sharp * 0.5);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // The dash: every 7 s, for about half a second.
+    float dc = fract(t / 7.0 + 0.3);
+    float dash = smoothstep(0.0, 0.01, dc) * (1.0 - smoothstep(0.05, 0.085, dc));
+    float dashEpoch = floor(t / 7.0 + 0.3);
+
+    // Sky: deep blue above, warm towards the horizon.
+    float3 col = mix(BG * 0.9, mix(A, S, 0.4) * 0.6, pow(sat(uv.y / 0.75), 2.2));
+
+    // Big sun low behind the ranges: flat cel disc, a brighter core, slowly turning rays.
+    float2 sc = float2(asp * 0.68, 0.56);
+    float2 sdv = uv - sc;
+    float sd = length(sdv);
+    float sa = atan(sdv.y, sdv.x);
+    float rays = smoothstep(0.35, 0.65, 0.5 + 0.5 * sin(sa * 14.0 + t * 0.08));
+    col += mix(A, S, 0.6) * rays * exp(-sd * 2.2) * 0.12 * step(0.15, sd);
+    col += mix(A, S, 0.5) * exp(-sd * 4.0) * 0.35;
+    col = mix(col, mix(S, A, 0.25), 1.0 - smoothstep(0.15, 0.153, sd));
+    col = mix(col, mix(S, float3(1.0), 0.45), 1.0 - smoothstep(0.105, 0.108, sd));
+
+    // Three ranges, each darker and nearer, with haze between them.
+    float x = uv.x;
+    float h1 = ridgeH(x + t * 0.004, 0.66, 0.16, 3.0);
+    float h2 = ridgeH(x + t * 0.009, 0.78, 0.18, 7.0);
+    float h3 = ridgeH(x + t * 0.016, 0.92, 0.2, 11.0);
+    float3 haze = mix(A, S, 0.4) * 0.3;
+    if (uv.y > h1) col = mix(BG * 1.3 + haze * 0.8, col, 0.15 * exp(-(uv.y - h1) * 10.0));
+    if (uv.y > h2) col = mix(BG * 0.9 + haze * 0.35, haze, 0.25 * exp(-(uv.y - h2) * 12.0));
+    if (uv.y > h3) col = BG * 0.55 + haze * 0.08;
+    // Rim light along the nearest ridge.
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - h3) * 260.0) * 0.25;
+    // Haze lying in the valleys.
+    col += haze * 0.35 * smoothstep(0.35, 0.8, fbm3(float2(uv.x * 2.0 + t * 0.02, uv.y * 6.0))) * smoothstep(0.55, 0.85, uv.y);
+
+    // Wind: thin, almost straight streaks left to right (much faster during a dash).
+    float gust = 1.0 + dash * 6.0;
+    float2 wp = float2(uv.x * 1.2 - t * 0.12 * gust, uv.y * 7.0 + sin(uv.x * 1.3 - t * 0.2) * 0.18);
+    float line = abs(fract(wp.y) - 0.5);
+    float seg = smoothstep(0.55, 0.85, vnoise(float2(wp.x * 3.0, floor(wp.y))));
+    col += mix(S, float3(1.0), 0.4) * (1.0 - smoothstep(0.0, 0.035, line)) * seg * (0.09 + 0.15 * dash) * (1.0 - smoothstep(0.5, 0.9, uv.y));
+
+    // Leaves riding the wind at four depths (fast sideways, slow fall), shoved hard by a dash: far
+    // ones small, soft and hazed into the sky, near ones big and crisp. Together they fill the frame.
+    float push = dash * 2.5;
+    float4 lf = fallingLayer(uv + float2(push * 0.03, 0.0), 13.0, float2(-1.3 - push, 0.32), 0.7, 11.0, 0.0, 0.06, A * 0.7, S * 0.7);
+    col = mix(col, mix(lf.rgb, haze * 1.8 + BG * 1.2, 0.55), lf.a * 0.3);
+    lf = fallingLayer(uv + float2(push * 0.05, 0.0), 9.0, float2(-1.0 - push, 0.25), 0.6, 2.0, 0.0, 0.03, A * 0.8, S * 0.8);
+    col = mix(col, lf.rgb * 0.75, lf.a * 0.6);
+    lf = fallingLayer(uv + float2(push * 0.08, 0.0), 5.0, float2(-0.75 - push, 0.2), 0.5, 6.0, 0.0, 0.012, A, S);
+    col = mix(col, lf.rgb, lf.a * 0.9);
+    lf = fallingLayer(uv + float2(push * 0.12, 0.0), 2.6, float2(-0.55 - push, 0.13), 0.45, 17.0, 0.0, 0.02, mix(A, float3(1.0), 0.1), S);
+    col = mix(col, lf.rgb * 1.05, lf.a * 0.95);
+
+    // The dash itself: horizontal speed lines and one bright streak crossing the screen.
+    if (dash > 0.001) {
+        float row = floor(uv.y * 46.0);
+        float hr = hash11(row + dashEpoch * 17.0);
+        float xs = fract(uv.x / asp * 0.8 + hr * 3.0 - dc * 14.0);
+        float thin = 1.0 - smoothstep(0.0, 0.18, abs(fract(uv.y * 46.0) - 0.5) - 0.32);
+        col += float3(1.0) * step(0.78, hr) * smoothstep(0.0, 0.6, xs) * (1.0 - smoothstep(0.6, 0.62, xs)) * thin * dash * 0.35;
+        float sy = 0.3 + 0.35 * hash11(dashEpoch * 3.1);
+        float head = (dc / 0.085) * (asp + 0.6) - 0.3;
+        float tail = smoothstep(head - 0.9, head, uv.x) * (1.0 - smoothstep(head, head + 0.02, uv.x));
+        col += mix(S, float3(1.0), 0.6) * exp(-abs(uv.y - sy) * 380.0) * tail * dash;
+        col += float3(1.0) * dash * 0.04;
+    }
+
+    return half4(finish(col, fc), 1.0);
+}

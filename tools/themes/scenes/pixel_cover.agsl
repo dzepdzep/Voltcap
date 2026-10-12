@@ -1,0 +1,56 @@
+// Pixel cover (music): the album cover turned into chunky pixel art - fewer, bigger pixels and a
+// small retro palette - on a dark pixel grid. Pixels shake loose and fall away on the kick and click
+// back into place, the pixel size breathes with the bass, a pixel equalizer runs along the bottom
+// of the picture and pixel stars twinkle around it.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.74;
+    float3 col = BG * 0.5;
+    float2 g = floor(uv * 160.0);
+    col *= 0.9 + 0.1 * mod(g.x + g.y, 2.0);
+    // Pixel stars.
+    float st = step(0.994, hash12(g)) * step(0.5, fract(t * 0.7 + hash12(g + 3.0)));
+    col = mix(col, mix(S, float3(1.0), 0.5), st);
+
+    // The pixel grid of the cover: 24 cells across (fewer when the bass is big).
+    float n = floor(28.0 - 8.0 * bass * k);
+    float2 d = uv - c;
+    float2 q = d / (2.0 * R) + 0.5;
+    float2 cell = floor(q * n);
+    // Falling pixels on the kick: some cells drop and drift down, then come back.
+    float h = hash12(cell + 7.0);
+    float fall = step(0.82, h) * kick * k;
+    float2 qq = q - float2(0.0, fall * 0.25 * (1.0 + h));
+    float2 cell2 = floor(qq * n);
+    float2 cf = fract(qq * n);
+    float inP = step(0.0, qq.x) * step(qq.x, 1.0) * step(0.0, qq.y) * step(qq.y, 1.0);
+    float3 pc = sharpCover((cell2 + 0.5) / n, A, S);
+    pc = floor(pc * 4.0 + 0.5) / 4.0;            // 4 levels per channel: a small retro palette
+    pc *= 0.88 + 0.12 * step(0.12, min(cf.x, cf.y));
+    col = mix(col, pc, inP);
+    // Pixel equalizer under the picture.
+    float ey = (uv.y - (c.y + R * 1.06)) / (R * 0.3);
+    float ex = floor(q.x * 16.0);
+    float e = eqAt(abs(ex / 15.0 - 0.5) * 2.0) * play;
+    float lvl = floor((1.0 - ey) * 6.0);
+    float onBar = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, ey) * step(ey, 1.0) * step(lvl, e * 6.0) * step(0.18, fract(q.x * 16.0)) * step(0.2, fract((1.0 - ey) * 6.0));
+    col = mix(col, mix(A, S, lvl / 6.0), onBar);
+    // Frame.
+    float box = max(abs(d.x), abs(d.y)) - R;
+    col = mix(col, mix(A, float3(1.0), 0.5), step(abs(box - 0.008), 0.006));
+    return half4(finish(col, fc), 1.0);
+}

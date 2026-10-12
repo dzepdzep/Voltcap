@@ -1,0 +1,77 @@
+// Circuit: a dark circuit board seen from above. Traces run between pads on a grid, pulses of light
+// race along them (rows one way, columns the other), chips sit in the gaps with status LEDs
+// blinking, and now and then a wave of power sweeps across the whole board.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float3 col = BG * 0.75 + mix(A, S, 0.5) * 0.025;
+    // Faint solder-mask texture.
+    col += BG * 0.15 * (vnoise(uv * 60.0) - 0.5);
+
+    float scale = 13.0;
+    float2 p = uv * scale;
+    float2 id = floor(p);
+    float2 f = fract(p) - 0.5;
+
+    // Connections from this cell to its neighbours (shared hashes so both sides agree).
+    float r = step(0.42, hash12(id + 1.3));
+    float l = step(0.42, hash12(id - float2(1.0, 0.0) + 1.3));
+    float dn = step(0.5, hash12(id + 5.7));
+    float up = step(0.5, hash12(id - float2(0.0, 1.0) + 5.7));
+    float dH = 1e3;
+    float dV = 1e3;
+    if (r > 0.5) dH = min(dH, sdSegment(f, float2(0.0), float2(0.5, 0.0)));
+    if (l > 0.5) dH = min(dH, sdSegment(f, float2(0.0), float2(-0.5, 0.0)));
+    if (dn > 0.5) dV = min(dV, sdSegment(f, float2(0.0), float2(0.0, 0.5)));
+    if (up > 0.5) dV = min(dV, sdSegment(f, float2(0.0), float2(0.0, -0.5)));
+    float links = r + l + dn + up;
+    float d = min(dH, dV);
+    float trace = 1.0 - smoothstep(0.035, 0.06, d);
+    float3 copper = mix(A, S, 0.35) * 0.35;
+    col = mix(col, copper, trace * 0.8);
+
+    // Pads where traces meet or end.
+    float pd = length(f);
+    float pad = (1.0 - smoothstep(0.1, 0.13, pd)) * step(0.5, links) * (step(links, 1.5) + step(2.5, links));
+    col = mix(col, mix(copper, S, 0.4), pad);
+    col = mix(col, BG * 0.4, (1.0 - smoothstep(0.04, 0.06, pd)) * pad);
+
+    // Pulses: along each row to the right, along each column downwards.
+    float rowPh = fract((uv.x * scale) * 0.08 - t * 0.35 + hash11(id.y * 3.1));
+    float colPh = fract((uv.y * scale) * 0.08 - t * 0.28 + hash11(id.x * 7.7));
+    float hHead = exp(-rowPh * 30.0) + 0.0 * rowPh;
+    float vHead = exp(-colPh * 30.0);
+    float onH = 1.0 - smoothstep(0.03, 0.08, dH);
+    float onV = 1.0 - smoothstep(0.03, 0.08, dV);
+    col += S * (onH * hHead + onV * vHead) * 1.2;
+    col += S * (exp(-dH * 30.0) * hHead + exp(-dV * 30.0) * vHead) * 0.25;
+
+    // Chips: dark blocks with pins, in some cells, each with a blinking LED.
+    float2 cid = floor(uv * scale / float2(3.0, 2.0));
+    float ch = hash12(cid + 17.0);
+    if (ch > 0.86) {
+        float2 cf = fract(uv * scale / float2(3.0, 2.0)) - 0.5;
+        float body = sdRoundBox(cf * float2(3.0, 2.0), float2(0.9, 0.5), 0.08);
+        float pinsX = step(0.5, fract(cf.x * 3.0 * 3.0)) * step(abs(cf.y * 2.0), 0.72) * step(0.5, abs(cf.y * 2.0));
+        col = mix(col, copper * 1.4, pinsX * step(abs(cf.x * 3.0), 0.8));
+        col = mix(col, BG * 0.3 + float3(0.03), 1.0 - smoothstep(0.0, 0.02, body));
+        float2 ledP = cf * float2(3.0, 2.0) - float2(0.7, -0.3);
+        float blink = step(0.5, fract(t * (0.6 + ch * 2.0) + ch * 9.0));
+        col += mix(A, S, step(0.93, ch)) * (1.0 - smoothstep(0.03, 0.06, length(ledP))) * (0.3 + 0.9 * blink);
+        // A faint marking line on the chip.
+        col += float3(0.08) * (1.0 - smoothstep(0.0, 0.02, abs(cf.y * 2.0))) * step(abs(cf.x * 3.0), 0.5) * (1.0 - step(0.0, body));
+    }
+
+    // Power wave sweeping across every 9 s.
+    float wave = fract(t / 9.0) * (asp + 1.0) - 0.5;
+    float band = exp(-abs(uv.x + uv.y * 0.3 - wave) * 14.0);
+    col += A * trace * band * 0.5 + A * band * 0.03;
+
+    return half4(finish(col, fc), 1.0);
+}

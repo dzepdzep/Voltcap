@@ -1,0 +1,84 @@
+// 16-bit cartridge (music): a chunky game cartridge plugged into a console, its label printed with
+// the album cover - the whole scene drawn on a coarse 16-bit pixel grid with a limited palette. The
+// console's power light blinks on the beat, a row of pixel equalizer bars glows in the cartridge
+// slot, star sprites twinkle in the dithered sky behind, and the cartridge hops a pixel or two on
+// each kick.
+//#include reactive
+
+half4 main(float2 fc) {
+    float P = uRes.y / 160.0;
+    float2 g = floor(fc / P) + 0.5;           // 16-bit pixel grid, 160 rows tall
+    float W = floor(uRes.x / P);
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float asp = uRes.x / uRes.y;
+    float cx = floor(waveX(asp) / asp * W);
+    float cy = floor(uWaveY * 160.0);
+    float rm = clamp(floor(room(0.3) * 160.0), 26.0, 60.0);
+
+    // Dithered sky gradient in four bands.
+    float yy = g.y / 160.0;
+    float lvl = yy * 4.0 + (mod(g.x + g.y, 2.0) - 0.5) * 0.5;
+    float band = floor(lvl);
+    float3 col = mix(BG * 0.5, mix(BG, A, 0.35), sat(band / 3.0));
+    // Twinkling star sprites (plus shapes).
+    float2 sc = floor(g / 12.0);
+    float2 sl = g - sc * 12.0 - 6.0;
+    float sh = hash12(sc);
+    float tw = step(0.5, fract(t * (0.5 + sh) + sh * 7.0));
+    float star = step(0.93, sh) * (step(abs(sl.x), 0.5) * step(abs(sl.y), 0.5 + tw) + step(abs(sl.y), 0.5) * step(abs(sl.x), 0.5 + tw));
+    col = mix(col, mix(S, float3(1.0), 0.6), sat(star) * step(g.y, cy - rm * 0.2));
+
+    // Console body (bottom part), slot on top.
+    float conW = floor(rm * 1.5);
+    float conTop = cy + floor(rm * 0.35);
+    float conBot = conTop + floor(rm * 0.55);
+    float inCon = step(abs(g.x - cx), conW) * step(conTop, g.y) * step(g.y, conBot);
+    float3 conC = mix(float3(0.62, 0.62, 0.66), float3(0.42, 0.42, 0.48), step(conTop + 3.0, g.y));
+    conC = mix(conC, float3(0.25, 0.25, 0.3), step(conBot - 2.0, g.y));
+    col = mix(col, conC, inCon);
+    // Vents and the power light.
+    col = mix(col, float3(0.2, 0.2, 0.24), inCon * step(abs(g.x - cx - conW * 0.5), conW * 0.3) * step(conTop + 6.0, g.y) * step(g.y, conBot - 5.0) * step(mod(g.y, 3.0), 0.9));
+    float led = step(abs(g.x - (cx - conW + 6.0)), 1.0) * step(abs(g.y - (conTop + 6.0)), 1.0);
+    col = mix(col, mix(float3(0.4, 0.05, 0.05), float3(1.0, 0.2, 0.2), 0.3 + 0.7 * kick), led);
+    // EQ bars glowing in the slot.
+    float slotW = floor(rm * 0.95);
+    float inSlot = step(abs(g.x - cx), slotW) * step(conTop - 1.0, g.y) * step(g.y, conTop + 1.0);
+    float bi = floor((g.x - cx + slotW) / 4.0);
+    float e = eqAt(sat(abs(bi - slotW / 4.0) / (slotW / 4.0))) * play;
+    col = mix(col, mix(A, S, e), inSlot * step(1.0, mod(g.x - cx + slotW, 4.0)) * (0.3 + 0.7 * step(0.25, e)));
+
+    // The cartridge, hopping on the kick.
+    float hop = floor(2.0 * kick * k);
+    float cw = floor(rm * 0.85);
+    float ch = floor(rm * 1.05);
+    float cTop = conTop - ch - hop;
+    float2 cl = g - float2(cx, cTop);
+    float inCart = step(abs(cl.x), cw) * step(0.0, cl.y) * step(cl.y, ch);
+    // Notched top corners and grip ridges.
+    inCart *= 1.0 - step(cw - 3.0, abs(cl.x)) * step(cl.y, 3.0);
+    float3 cart = float3(0.32, 0.32, 0.36);
+    cart = mix(cart, float3(0.22, 0.22, 0.26), step(mod(cl.y, 3.0), 0.9) * step(cl.y, 7.0) * step(abs(cl.x), cw - 4.0));
+    // Outline.
+    float outl = inCart * (step(cw - 0.6, abs(cl.x)) + step(ch - 0.6, cl.y));
+    col = mix(col, cart, inCart);
+    col = mix(col, float3(0.08), sat(outl));
+    // The label: the album cover, quantised to a 16-bit palette.
+    float lw = cw - 5.0;
+    float ltop = 10.0;
+    float lh = ch - ltop - 6.0;
+    float2 lq = (cl - float2(-lw, ltop)) / float2(2.0 * lw, lh);
+    float inLab = step(0.0, lq.x) * step(lq.x, 1.0) * step(0.0, lq.y) * step(lq.y, 1.0) * inCart;
+    float3 lab = sharpCover((floor(lq * float2(2.0 * lw, lh)) + 0.5) / float2(2.0 * lw, lh), A, S);
+    lab = floor(lab * 5.0 + 0.5) / 5.0;
+    col = mix(col, lab, inLab);
+    // A shine pixel line on the label.
+    col = mix(col, float3(1.0), inLab * step(abs(lq.x + lq.y * 0.6 - fract(t * 0.2) * 2.0 + 0.3), 0.012) * 0.6);
+
+    return half4(finish(col, fc), 1.0);
+}

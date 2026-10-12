@@ -1,0 +1,63 @@
+// Above the clouds: Toni's painting of a sunrise over a sea of clouds (res scene_chill_clouds), brought to
+// life. The cloud sea drifts slowly past (nearer clouds faster), the thin streaks in the sky glide by, the sun
+// glows and breathes, and light glints along the cloud tops near it. The peaks stand still.
+// (The procedural version is kept as chill_clouds_drawn.agsl.)
+//#include paint
+
+// The painting drifting sideways by up to `dist` reference pixels, endlessly: two copies offset by half a
+// cycle, cross-faded so neither ever jumps (a flow-map drift).
+float3 driftAt(float2 p, float2 sz, float dist, float t, float speed) {
+    float ph = fract(t * speed);
+    float ph2 = fract(t * speed + 0.5);
+    float2 k = float2(1.0 / 1672.0, 0.0) * sz.x;
+    // Never reach past the painting's left edge (it would smear): drift less right at the edge.
+    dist = min(dist, p.x / k.x);
+    float3 a = paintAt(p - float2(ph * dist, 0.0) * k);
+    float3 b = paintAt(p - float2(ph2 * dist, 0.0) * k);
+    float wa = 1.0 - abs(ph * 2.0 - 1.0);
+    return mix(b, a, wa);
+}
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(BG * 1.6, mix(BG, A, 0.5), uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+    float2 r = q * float2(1672.0, 941.0);
+    float aspP = sz.x / sz.y;
+
+    float2 sunC = float2(1435.0, 493.0);
+    float sd = length(r - sunC);
+    // Where things drift: the cloud sea (below the horizon, not the peaks) and the sky streaks (not the sun).
+    float peaks = smoothstep(600.0, 540.0, r.x) * smoothstep(605.0, 585.0, r.y);
+    float sea = smoothstep(552.0, 575.0, r.y) * (1.0 - peaks);
+    float sky = smoothstep(530.0, 500.0, r.y) * smoothstep(55.0, 110.0, sd) * (1.0 - step(r.x, 560.0) * step(400.0, r.y));
+    float3 col = paintAt(p);
+    if (sea > 0.0) {
+        float near = sat((r.y - 550.0) / 390.0);
+        float3 d = driftAt(p, sz, 30.0 + 60.0 * near, t, 0.02);
+        col = mix(col, d, sea);
+    } else if (sky > 0.0) {
+        float3 d = driftAt(p, sz, 40.0, t, 0.008);
+        col = mix(col, d, sky);
+    }
+    float lum = luma(col);
+
+    // The sun breathes; its glow and a soft horizontal flare.
+    float breathe = 0.5 + 0.5 * sin(t * 0.35);
+    col += float3(1.0, 0.85, 0.6) * exp(-sd * 0.012) * (0.04 + 0.04 * breathe);
+    col += float3(1.0, 0.85, 0.6) * exp(-abs(r.y - sunC.y) * 0.08) * exp(-abs(r.x - sunC.x) * 0.004) * 0.04 * breathe;
+
+    // Light glinting along the cloud tops near the sun.
+    float tops = smoothstep(0.6, 0.85, lum) * sea * exp(-abs(r.x - sunC.x) * 0.0025);
+    float gl = smoothstep(0.75, 0.95, vnoise(float2(r.x * 0.03 - t * 0.3, r.y * 0.05)));
+    col += float3(1.0, 0.92, 0.75) * tops * gl * 0.12;
+
+    return half4(finishPaint(col, fc), 1.0);
+}

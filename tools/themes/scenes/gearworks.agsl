@@ -1,0 +1,183 @@
+// Gearworks: inside a brass machine, lit by a warm lamp. Heavy bevelled gears of brass, steel and
+// copper mesh and turn (each at the speed its teeth demand), catching the light on their edges and
+// brushed faces and throwing soft shadows on the riveted plate behind; a big flywheel turns out of
+// focus at the back. Pipes run across, a pressure gauge's needle trembles, pistons pump, steam puffs
+// from a vent and sparks fly where the teeth bite.
+
+// A gear: radius R, n teeth, turned by a (tooth phase); spoke holes and a hub. Negative inside.
+float gearD(float2 p, float R, float n, float a) {
+    float r = length(p);
+    float ang = atan(p.y, p.x);
+    float tooth = sat(cos(ang * n + a) * 2.4 + 0.3);
+    float d = r - (R + R * 0.13 * tooth);
+    // Five spoke holes, turning with the gear.
+    float sector = TAU / 5.0;
+    float la = mod(ang + a / n, sector) - sector * 0.5;
+    float2 q = r * float2(cos(la), sin(la));
+    float hole = length(q - float2(R * 0.56, 0.0)) - R * 0.2;
+    d = max(d, -hole);
+    // Axle hole.
+    d = max(d, -(r - R * 0.09));
+    return d;
+}
+
+// Shades one gear over col: bevelled metal lit by the lamp (top left) and an accent rim light.
+float3 gear(float3 col, float2 p, float R, float n, float a, float3 metal, float3 rim, float blur, float px) {
+    if (length(p) > R * 1.3 + 0.02) return col;
+    float e = 0.0015;
+    float d = gearD(p, R, n, a);
+    float dx = gearD(p + float2(e, 0.0), R, n, a) - d;
+    float dy = gearD(p + float2(0.0, e), R, n, a) - d;
+    float2 g = float2(dx, dy) / e;
+    float bevel = R * 0.07;
+    float edge = sat(1.0 + d / bevel);                  // 1 at the outline, 0 on the flat face
+    float3 nrm = normalize(float3(g * edge * 1.6, 1.0));
+    nrm.y = -nrm.y;
+    // Raised hub ring.
+    float r = length(p);
+    float hub = smoothstep(R * 0.24, R * 0.22, r) * smoothstep(R * 0.09, R * 0.12, r);
+    float3 L = normalize(float3(-0.55, 0.6, 0.6));
+    float3 V = float3(0.0, 0.0, 1.0);
+    float dif = sat(dot(nrm, L));
+    float spec = pow(sat(dot(nrm, normalize(L + V))), 40.0);
+    // Brushed face: fine rings round the axle.
+    float brush = 0.85 + 0.15 * vnoise(float2(r * 500.0, atan(p.y, p.x) * 2.0));
+    float aniso = pow(sat(1.0 - abs(dot(normalize(float2(p.y, -p.x) + 1e-4), normalize(float2(-0.55, -0.6))))), 6.0);
+    float3 c = metal * (0.25 + 0.85 * dif) * brush;
+    c += mix(float3(1.0, 0.9, 0.75), metal, 0.3) * (spec * 0.9 + aniso * 0.25 * (1.0 - edge));
+    c += rim * pow(sat(dot(nrm, normalize(float3(0.8, -0.3, 0.4)))), 3.0) * 0.5;
+    c *= 1.0 + hub * 0.25;
+    // Teeth biting into each other get darker in the gaps.
+    float cover = smoothstep(px * blur, -px * blur, d);
+    return mix(col, c, cover);
+}
+
+// Soft shadow of a gear on the plate behind it.
+float gearShadow(float2 p, float R, float n, float a) {
+    if (length(p) > R * 1.5) return 0.0;
+    return smoothstep(0.03, -0.02, gearD(p, R, n, a)) * 0.6;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float3 brass = mix(float3(0.78, 0.58, 0.28), A, 0.25);
+    float3 steel = mix(float3(0.55, 0.58, 0.62), S, 0.25);
+    float3 copper = float3(0.72, 0.38, 0.22);
+
+    // The lamp: a warm pool from the top left.
+    float2 lampP = float2(asp * 0.18, -0.1);
+    float lamp = exp(-length(uv - lampP) * 1.3);
+
+    // The riveted plate, grimy, with seams.
+    float3 col = BG * 0.8 + brass * 0.05;
+    float2 pp = uv * float2(3.0, 2.5);
+    float2 seam = abs(fract(pp) - 0.5);
+    col *= 0.85 + 0.25 * fbm3(uv * 6.0);
+    col *= 1.0 - 0.35 * smoothstep(0.485, 0.5, max(seam.x, seam.y));
+    float2 rv = fract(pp * float2(4.0, 4.0)) - 0.5;
+    float rivet = smoothstep(0.12, 0.08, length(rv)) * step(0.4, max(seam.x, seam.y));
+    col += brass * rivet * 0.25 * (0.5 + 0.5 * sat(-rv.x - rv.y + 0.1));
+    col *= 0.45 + 1.1 * lamp;
+
+    float spin = t * 0.55;
+    float2 g1 = float2(asp * 0.52, 0.47);
+    float2 g2 = g1 + float2(0.262, -0.07);
+    float2 g3 = g1 + float2(-0.07, 0.315);
+    float2 g4 = g2 + float2(0.16, 0.17);
+    float2 fw = float2(asp * 0.2, 0.36);
+
+    // Shadows of the near gears on the plate (cast down and right, away from the lamp).
+    float2 so = float2(0.025, 0.03);
+    float sh = gearShadow(uv - g1 - so, 0.17, 16.0, spin);
+    sh = max(sh, gearShadow(uv - g2 - so, 0.085, 8.0, -spin * 2.0 + 0.4));
+    sh = max(sh, gearShadow(uv - g3 - so, 0.12, 12.0, -spin * 16.0 / 12.0 + 0.2));
+    sh = max(sh, gearShadow(uv - g4 - so, 0.11, 11.0, spin * 16.0 / 11.0));
+    col *= 1.0 - sh * 0.75;
+
+    // Pipes across the back: round, lit along the top.
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float y = 0.16 + fi * 0.62;
+        float rr = 0.022 + fi * 0.008;
+        float dy = (uv.y - y) / rr;
+        if (abs(dy) < 1.0) {
+            float3 pc = mix(copper, steel, fi) * (0.25 + 0.9 * sat(1.0 - abs(dy + 0.45) * 1.2)) * (0.5 + lamp);
+            pc += float3(1.0, 0.9, 0.7) * exp(-abs(dy + 0.55) * 14.0) * 0.4 * (0.4 + lamp);
+            float flange = step(abs(fract(uv.x * 2.2 + fi * 0.3) - 0.5), 0.02);
+            pc *= 1.0 + flange * 0.4;
+            col = mix(col, pc, smoothstep(1.0, 0.85, abs(dy)));
+        }
+    }
+
+    // The flywheel at the back, out of focus.
+    col = gear(col, uv - fw, 0.30, 26.0, t * 0.22, steel * 0.45, A * 0.2, 9.0, px);
+
+    // The gear train: speeds in proportion to tooth counts so the teeth mesh.
+    col = gear(col, uv - g1, 0.17, 16.0, spin, brass, A, 1.0, px);
+    col = gear(col, uv - g2, 0.085, 8.0, -spin * 2.0 + 0.4, steel, A, 1.0, px);
+    col = gear(col, uv - g3, 0.12, 12.0, -spin * 16.0 / 12.0 + 0.2, copper, A, 1.0, px);
+    col = gear(col, uv - g4, 0.11, 11.0, spin * 16.0 / 11.0, brass * 0.92, A, 1.0, px);
+
+    // Pressure gauge: a brass rim, a cream face, a trembling needle.
+    float2 gc = float2(asp * 0.12, 0.62);
+    float2 gq = uv - gc;
+    float gr = length(gq);
+    if (gr < 0.075) {
+        float3 face = float3(0.85, 0.8, 0.68) * (0.55 + 0.6 * lamp);
+        float ang = atan(gq.y, gq.x);
+        face *= 1.0 - 0.6 * step(0.052, gr) * step(gr, 0.056) * step(0.6, fract(ang / TAU * 30.0)) * step(gq.y, 0.01);
+        float na = PI * 0.75 + (0.55 + 0.25 * sin(t * 0.5) + 0.03 * sin(t * 17.0)) * PI * 1.5;
+        float2 nd = float2(cos(na), sin(na));
+        float needle = sdSegment(gq, float2(0.0), nd * 0.05) - 0.0025;
+        face = mix(face, float3(0.6, 0.05, 0.03), smoothstep(px, -px, needle));
+        float3 rimC = brass * (0.4 + 0.9 * sat(-gq.x - gq.y + 0.04) * 6.0) * (0.5 + lamp);
+        float3 gcol = mix(face, rimC, smoothstep(0.058, 0.062, gr));
+        gcol = mix(gcol, BG * 0.3, smoothstep(0.012, 0.009, gr));
+        gcol += float3(1.0) * 0.12 * smoothstep(0.06, 0.0, length(gq - float2(-0.02, -0.025)));
+        col = mix(col, gcol, smoothstep(0.075, 0.072, gr));
+    }
+
+    // Pistons on the right, pumping in turn.
+    for (int k = 0; k < 3; k++) {
+        float fk = float(k);
+        float x = asp * 0.88 + fk * 0.055 - 0.055;
+        float stroke = 0.5 + 0.5 * sin(t * 2.4 + fk * 2.1);
+        float top = 0.42 + stroke * 0.12;
+        float rodD = abs(uv.x - x) / 0.009;
+        if (rodD < 1.0 && uv.y > top && uv.y < 0.86) {
+            float3 rc = steel * (0.3 + 0.9 * sat(1.0 - abs(rodD + 0.4))) + float3(1.0) * exp(-abs(rodD + 0.5) * 8.0) * 0.4;
+            col = mix(col, rc, smoothstep(1.0, 0.8, rodD));
+        }
+        float hd = sdRoundBox(uv - float2(x, top), float2(0.022, 0.024), 0.005);
+        if (hd < px) {
+            float2 hq = (uv - float2(x, top)) / float2(0.022, 0.024);
+            float3 hc = brass * (0.3 + 0.8 * sat(-hq.x * 0.5 - hq.y * 0.5 + 0.5)) * (0.6 + lamp);
+            hc += float3(1.0, 0.9, 0.7) * exp(-abs(hq.y + 0.8) * 6.0) * 0.2;
+            col = mix(col, hc, smoothstep(px, -px, hd));
+        }
+        col += A * exp(-abs(uv.y - top) * 60.0) * step(abs(uv.x - x), 0.028) * 0.08;
+    }
+
+    // Steam: a puff every 6 s from a vent at the lower left, rising and spreading.
+    float sc = fract(t / 6.0);
+    float2 vent = float2(asp * 0.1, 0.9);
+    float2 q = (uv - vent) / (0.06 + sc * 0.35);
+    float steam = smoothstep(0.45, 0.75, fbm3(uv * 5.0 + float2(0.0, t * 0.5))) * exp(-length(q + float2(0.0, 0.8)) * 1.6) * (1.0 - sc);
+    col = mix(col, float3(0.8, 0.78, 0.74) * (0.6 + 0.6 * lamp), steam * 0.55);
+
+    // Sparks where the big gears bite.
+    float2 mesh = g1 + normalize(g2 - g1) * 0.19;
+    float sp = dots((uv - mesh) * float2(1.0, 0.6) + float2(0.0, t * 0.4), 40.0, float2(t * 2.0, 0.0), 0.12, 0.12, 5.0);
+    col += mix(A, float3(1.0), 0.5) * sp * exp(-length(uv - mesh) * 14.0) * 1.6;
+    // Dust hanging in the lamp light.
+    col += float3(1.0, 0.85, 0.6) * dots(uv + float2(t * 0.004, t * 0.002), 30.0, float2(0.0), 0.2, 0.05, 8.0) * lamp * 0.3;
+
+    return half4(finish(col, fc), 1.0);
+}

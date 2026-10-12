@@ -1,0 +1,96 @@
+// Phantom · 32-bit (ghost type): a haunted manor on a hill under a big moon. Clouds slide across the
+// moon, windows light up and go dark one by one, ghosts drift through the graveyard in see-through
+// dither, bats flap past and bare trees claw at the sky.
+//#include pixel
+
+float ghostSprite(float2 q, float t) {
+    // q in pixels, the ghost about 10 x 12 pixels.
+    float top = step(length(q - float2(0.0, -2.0)), 5.0) * step(q.y, -2.0);
+    float body = step(abs(q.x), 5.0) * step(-2.0, q.y) * step(q.y, 5.0 + 1.5 * sin(q.x * 1.2 + t * 6.0));
+    return max(top, body);
+}
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Night sky: violet bands, stars, a big moon.
+    float3 col = mix(BG * 0.8, mix(BG * 1.8, A * 0.35, 0.4), pxBand(uv.y * 1.4, 4.0, cell));
+    col = mix(col, float3(0.9, 0.9, 1.0), step(0.992, hash12(cell)) * step(uv.y, 0.5));
+    float2 moon = float2(asp * 0.7, 0.24);
+    float md = length(uv - moon);
+    if (md < 0.13) {
+        col = mix(float3(0.95, 0.95, 0.85), mix(float3(0.8, 0.8, 0.75), S, 0.2), step(0.62, vnoise((uv - moon) * 30.0)));
+    } else col += mix(A, float3(0.8), 0.5) * 0.12 * pxBand(sat(0.25 - md) * 4.0, 2.0, cell);
+    // Clouds passing over.
+    float cl = fbm3(float2(uv.x * 2.5 - t * 0.03, uv.y * 6.0));
+    if (cl > 0.6 && uv.y < 0.45) col = mix(BG * 2.0 + S * 0.1, float3(0.55, 0.52, 0.65), step(0.68, cl));
+    // Hill.
+    float hill = 0.68 - 0.12 * exp(-sqf((uv.x - asp * 0.42) * 2.2)) + 0.01 * sin(uv.x * 20.0);
+    if (uv.y > hill) col = float3(0.07, 0.06, 0.1);
+    // The manor: a block with a tower and pointed roofs.
+    float mx = asp * 0.42;
+    float base = hill + 0.01;
+    float house = pxBox(uv, float2(mx, base - 0.08), float2(0.16, 0.08));
+    float roof = step(base - 0.16 - (0.17 - abs(uv.x - mx)) * 0.5, uv.y) * step(uv.y, base - 0.16) * step(abs(uv.x - mx), 0.17);
+    float tower = pxBox(uv, float2(mx + 0.1, base - 0.2), float2(0.035, 0.12));
+    float spire = step(base - 0.32 - (0.04 - abs(uv.x - mx - 0.1)) * 2.8, uv.y) * step(uv.y, base - 0.32) * step(abs(uv.x - mx - 0.1), 0.04);
+    float m = max(max(house, roof), max(tower, spire));
+    col = mix(col, float3(0.1, 0.08, 0.14), m);
+    // Windows: lit at random, changing every few seconds.
+    float2 wg = (uv - float2(mx - 0.14, base - 0.14)) / float2(0.04, 0.05);
+    float2 wi = floor(wg);
+    float2 wf = fract(wg);
+    float inWin = step(0.0, wi.x) * step(wi.x, 6.0) * step(0.0, wi.y) * step(wi.y, 1.0) * step(abs(wf.x - 0.5), 0.22) * step(abs(wf.y - 0.5), 0.3);
+    float litW = step(0.55, hash12(wi + floor(t / 3.0 + hash12(wi) * 3.0)));
+    col = mix(col, litW > 0.5 ? mix(float3(1.0, 0.85, 0.4), A, 0.3) : float3(0.05, 0.05, 0.1), inWin * house);
+    float tw = pxBox(uv, float2(mx + 0.1, base - 0.26), float2(0.01, 0.015)) * step(0.5, sin(t * 1.3));
+    col = mix(col, mix(float3(0.6, 1.0, 0.8), S, 0.5), tw);
+    // Bare trees.
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float2 tb = float2(fi < 0.5 ? asp * 0.12 : asp * 0.9, 0.85);
+        float tr = pxLine(uv, tb, tb - float2(0.0, 0.25), 3.0);
+        tr = max(tr, pxLine(uv, tb - float2(0.0, 0.15), tb - float2(0.08, 0.25), 2.0));
+        tr = max(tr, pxLine(uv, tb - float2(0.0, 0.2), tb - float2(-0.07, 0.3), 2.0));
+        tr = max(tr, pxLine(uv, tb - float2(0.04, 0.2), tb - float2(0.09, 0.22), 1.0));
+        tr = max(tr, pxLine(uv, tb - float2(-0.035, 0.25), tb - float2(-0.02, 0.33), 1.0));
+        col = mix(col, float3(0.04, 0.03, 0.06), tr);
+    }
+    // Graveyard: crosses and stones.
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float2 g = pxSnap(float2((0.08 + fi * 0.17) * asp, 0.86 + 0.03 * hash11(fi)));
+        float stone = mod(fi, 2.0) < 0.5 ? max(pxBox(uv, g, float2(PX * 0.6, 0.03)), pxBox(uv, g - float2(0.0, 0.012), float2(0.012, PX * 0.6)))
+                                       : max(pxBox(uv, g + float2(0.0, 0.006), float2(0.014, 0.024)), pxDisc(uv, g - float2(0.0, 0.018), 0.014));
+        col = mix(col, float3(0.32, 0.3, 0.38), stone);
+    }
+    if (uv.y > 0.93) col = float3(0.05, 0.05, 0.08);
+    // Ghosts drifting, see-through (every other pixel).
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float2 g = float2(fract(fi * 0.29 + t * (0.02 + 0.006 * fi)) * (asp + 0.3) - 0.15, 0.55 + 0.2 * hash11(fi) + 0.03 * sin(t * 1.3 + fi));
+        g = pxSnap(g);
+        float2 q = (uv - g) / PX;
+        float gh = ghostSprite(q, t + fi);
+        float see = mod(cell.x + cell.y, 2.0) < 0.5 ? 1.0 : 0.55;
+        col = mix(col, mix(float3(0.85, 1.0, 0.95), S, 0.25) * see, gh * 0.85);
+        col = mix(col, float3(0.05), gh * (step(length(q - float2(-2.0, -2.0)), 1.0) + step(length(q - float2(2.0, -2.0)), 1.0)));
+    }
+    // Bats.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float2 b = pxSnap(float2(fract(fi * 0.23 - t * 0.05) * (asp + 0.2) - 0.1, 0.18 + 0.15 * hash11(fi * 3.0) + 0.02 * sin(t * 3.0 + fi)));
+        float2 q = (uv - b) / PX;
+        float flap = sin(t * 14.0 + fi * 2.0);
+        float bat = step(abs(q.x), 4.0) * step(abs(q.y - abs(q.x) * 0.4 * flap), 0.8) + step(length(q), 1.2);
+        col = mix(col, float3(0.02, 0.02, 0.04), step(0.5, bat));
+    }
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

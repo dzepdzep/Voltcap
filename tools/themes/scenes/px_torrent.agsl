@@ -1,0 +1,102 @@
+// Torrent · 32-bit (water type): a sunny bay cut at the waterline. Above, a little sailboat bobs on
+// rolling pixel waves under a high sun and gulls; below, light shafts sway through banded blue water,
+// a school of fish wheels past, kelp sways from the sandy floor and bubbles climb to the surface.
+//#include pixel
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float sea = 0.36 + 0.012 * sin(uv.x * 9.0 - t * 1.6) + 0.006 * sin(uv.x * 23.0 + t * 2.3);
+    float3 col;
+    if (uv.y < sea) {
+        // Sky, sun and clouds.
+        float3 skyTop = mix(float3(0.25, 0.55, 0.9), A * 0.7, 0.3);
+        float3 skyLow = mix(float3(0.75, 0.9, 1.0), S, 0.25);
+        col = mix(skyTop, skyLow, pxBand(uv.y / sea, 4.0, cell));
+        float2 sun = float2(asp * 0.78, 0.1);
+        float sd = length(uv - sun);
+        if (sd < 0.075) col = mix(float3(1.0, 0.95, 0.7), float3(1.0), step(sd, 0.05));
+        else col = mix(col, float3(1.0, 0.97, 0.85), pxBand(sat(0.11 - sd) * 4.0, 2.0, cell) * 0.5);
+        float cl = fbm3(float2(uv.x * 3.0 + t * 0.02, uv.y * 9.0));
+        if (cl > 0.62 - uv.y * 0.3 && uv.y < 0.25) col = mix(float3(0.92, 0.95, 1.0), float3(1.0), step(0.7, cl));
+        // Gulls: little "v"s gliding.
+        for (int i = 0; i < 3; i++) {
+            float fi = float(i);
+            float2 g = pxSnap(float2(fract(fi * 0.37 + t * 0.012 * (1.0 + fi * 0.3)) * (asp + 0.2) - 0.1, 0.12 + 0.06 * fi + 0.01 * sin(t + fi)));
+            float2 q = (uv - g) / PX;
+            float flap = step(0.0, sin(t * 6.0 + fi * 2.0));
+            float wing = step(abs(abs(q.x) - 2.0 - (flap > 0.5 ? 0.0 : 0.0)), 1.6) * step(abs(q.y + abs(q.x) * (flap > 0.5 ? 0.5 : -0.3)), 0.6) * step(abs(q.x), 3.6);
+            col = mix(col, float3(0.15, 0.18, 0.25), wing);
+        }
+        // The boat: hull, mast and sail, rocking with the waves.
+        float bx = asp * 0.3;
+        float by = 0.36 + 0.012 * sin(bx * 9.0 - t * 1.6) - 0.004;
+        float2 bq = rot(0.08 * sin(t * 1.6 - bx * 9.0 + 1.5)) * (uv - float2(bx, by));
+        float hull = step(bq.y, 0.0) * step(-0.022, bq.y) * step(abs(bq.x), 0.06 - (bq.y + 0.022) * -0.9);
+        float mast = pxBox(bq, float2(0.0, -0.075), float2(PX * 0.5, 0.055));
+        float sail = step(bq.y, -0.03) * step(-0.12, bq.y) * step(PX, bq.x) * step(bq.x, (bq.y + 0.12) * 0.55);
+        float jib = step(bq.y, -0.03) * step(-0.1, bq.y) * step(bq.x, -PX) * step(-(bq.y + 0.1) * 0.4, bq.x);
+        col = mix(col, float3(0.98, 0.96, 0.9), max(sail, jib));
+        col = mix(col, mix(A, float3(0.7, 0.25, 0.2), 0.4), hull);
+        col = mix(col, float3(0.35, 0.25, 0.2), mast);
+    } else {
+        // Under the water: banded depth.
+        float d = (uv.y - sea) / (1.0 - sea);
+        float3 w0 = mix(float3(0.2, 0.65, 0.85), S, 0.3);
+        float3 w1 = mix(float3(0.05, 0.25, 0.5), A * 0.4, 0.25);
+        col = mix(w0, w1, pxBand(d, 5.0, cell));
+        // Light shafts, swaying.
+        float sh = sin((uv.x + uv.y * 0.35) * 14.0 + sin(t * 0.5) * 1.5) * sin((uv.x + uv.y * 0.35) * 5.0 - t * 0.3);
+        col += float3(0.6, 0.9, 1.0) * 0.12 * pxBand(sat(sh) * (1.0 - d), 3.0, cell);
+        // The surface seen from below: a bright rippling band.
+        col = mix(col, float3(0.75, 0.95, 1.0), step(uv.y - sea, PX * 1.5) * 0.8);
+        // Sand and rocks.
+        float floorY = 0.9 + 0.025 * sin(uv.x * 4.0 + 1.0);
+        if (uv.y > floorY) col = mix(float3(0.85, 0.75, 0.5), float3(0.65, 0.55, 0.35), pxBand(hash12(cell) * 0.4 + (uv.y - floorY) * 6.0, 3.0, cell));
+        float rk = length((uv - float2(asp * 0.72, 0.93)) * float2(1.0, 1.6)) - 0.06;
+        if (rk < 0.0) col = mix(float3(0.3, 0.32, 0.38), float3(0.45, 0.47, 0.52), step(uv.y, 0.905));
+        // Kelp: wavy stalks swaying.
+        for (int i = 0; i < 7; i++) {
+            float fi = float(i);
+            float kx = (fi + 0.5 + 0.3 * hash11(fi)) / 7.0 * asp;
+            float kh = 0.3 + 0.2 * hash11(fi * 3.0);
+            float yy = (floorY - uv.y) / kh;
+            float sway = sin(t * 1.2 + fi + uv.y * 10.0) * 0.015 * yy;
+            float stalk = step(0.0, yy) * step(yy, 1.0) * step(abs(uv.x - kx - sway), PX * 1.2);
+            float leaf = step(0.0, yy) * step(yy, 0.95) * step(abs(uv.x - kx - sway - 0.012 * sin(uv.y * 60.0)), PX * 2.0) * step(0.5, fract(uv.y * 25.0 + fi));
+            col = mix(col, mix(float3(0.15, 0.5, 0.25), float3(0.35, 0.7, 0.3), step(0.5, fract(uv.y * 40.0))), max(stalk, leaf));
+        }
+        // A school of fish wheeling round.
+        float2 sc = float2(asp * 0.55 + 0.25 * sin(t * 0.21), 0.6 + 0.08 * sin(t * 0.33));
+        float dirX = cos(t * 0.21) >= 0.0 ? 1.0 : -1.0;
+        for (int i = 0; i < 10; i++) {
+            float fi = float(i);
+            float2 o = float2(cos(fi * 2.4 + t * 0.8), sin(fi * 1.7 + t * 0.6)) * float2(0.16, 0.08) * (0.5 + 0.5 * hash11(fi));
+            float2 f = pxSnap(sc + o);
+            float2 q = (uv - f) / PX / 1.5;
+            q.x *= dirX;
+            float body = step(abs(q.y), 1.1 - abs(q.x) * 0.3) * step(abs(q.x), 2.6);
+            float tail = step(-4.6, q.x) * step(q.x, -2.4) * step(abs(q.y), (-q.x - 2.4) * 0.8 + 0.2);
+            float3 fcol = mix(mix(float3(1.0, 0.55, 0.2), S, 0.25), float3(1.0, 0.9, 0.55), step(q.y, -0.5));
+            fcol = mix(fcol, float3(1.0), step(abs(q.x + 0.3), 0.45) * step(abs(q.y), 1.0));
+            col = mix(col, fcol, max(body, tail));
+            col = mix(col, float3(0.05), step(length(q - float2(1.4, -0.3)), 0.5));
+        }
+        // Bubbles.
+        for (int i = 0; i < 8; i++) {
+            float fi = float(i);
+            float life = fract(t * (0.12 + 0.05 * hash11(fi)) + hash11(fi * 9.0));
+            float2 b = pxSnap(float2((hash11(fi * 4.3) * 0.9 + 0.05) * asp + 0.01 * sin(life * 20.0), mix(0.92, sea + 0.02, life)));
+            float r = length(uv - b);
+            col = mix(col, float3(0.85, 0.97, 1.0), step(abs(r - PX * 1.6), PX * 0.6) + step(length(uv - b + float2(PX * 0.6, PX * 0.6)), PX * 0.5));
+        }
+    }
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

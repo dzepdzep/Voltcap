@@ -1,0 +1,67 @@
+// Magazine (music): the album cover laid out as a music magazine's front page - a bold masthead bar
+// in the cover's colours, the song's title in big type across the bottom, cover-line stripes and a
+// price sticker - lying on a table, slightly turned, with the pages of other issues (earlier songs)
+// fanned out underneath. The page lifts a little on the kick; a light sweeps across the glossy paper.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3) * 0.86;
+    // Table.
+    float3 col = mix(BG * 0.6 + float3(0.05, 0.03, 0.02), BG * 0.3, length(uv - c) / (R * 4.0));
+    col *= 0.9 + 0.1 * vnoise(uv * float2(4.0, 60.0));
+    float2 hw = float2(R * 0.78, R);
+    // Older issues fanned underneath.
+    for (int i = 2; i >= 0; i--) {
+        float fi = float(i);
+        float2 d = rot(-0.18 - fi * 0.14) * (uv - c - float2(-R * (0.25 + fi * 0.2), R * 0.05));
+        float pg = max(abs(d.x) - hw.x, abs(d.y) - hw.y);
+        col *= 1.0 - 0.25 * (1.0 - smoothstep(-0.01, 0.03, pg));
+        if (pg < 0.0) col = pastCover(fi, d / (2.0 * hw) + 0.5, A, S) * 0.75;
+    }
+    // The current issue, lifting on the kick.
+    float lift = kick * k * 0.012;
+    float2 d = rot(0.06 + 0.01 * sin(t * 0.3)) * (uv - c - float2(0.0, -lift));
+    float pg = max(abs(d.x) - hw.x, abs(d.y) - hw.y);
+    col *= 1.0 - 0.35 * (1.0 - smoothstep(-0.01, 0.04 + lift * 2.0, max(abs(d.x - 0.012) - hw.x, abs(d.y - 0.02 - lift) - hw.y)));
+    if (pg < 0.0) {
+        float2 q = d / (2.0 * hw) + 0.5;
+        // The cover fills the page (cropped to the page's shape).
+        float3 page = sharpCover(float2((q.x - 0.5) * 0.78 + 0.5, q.y), A, S);
+        // Masthead bar.
+        float mast = step(q.y, 0.15);
+        page = mix(page, mix(A, S, 0.2), mast);
+        // Masthead "letters": chunky blocks.
+        float2 lq = float2(q.x * 7.0, (q.y - 0.03) / 0.1);
+        float letter = step(0.15, fract(lq.x)) * step(0.0, lq.y) * step(lq.y, 1.0) * step(0.3, hash11(floor(lq.x) + 3.0));
+        letter *= step(0.2, abs(fract(lq.x) - 0.55) + step(0.5, lq.y) * 0.4);
+        page = mix(page, float3(1.0), letter * mast);
+        // The song's title in big type at the bottom.
+        float2 tq = float2(q.x * 1.0, (q.y - 0.72) / 0.3);
+        float ink = labelInk(float2(tq.x, mix(0.1, 0.95, tq.y)));
+        float plate = step(0.72, q.y) * 0.45;
+        page = mix(page, page * 0.4, plate);
+        page = mix(page, float3(1.0), ink * step(0.72, q.y));
+        // Cover lines on the left.
+        float lines = step(0.22, q.y) * step(q.y, 0.6) * step(q.x, 0.32) * step(0.55, fract(q.y * 22.0)) * step(0.05, q.x);
+        page = mix(page, float3(1.0), lines * 0.85);
+        // Price sticker.
+        float st = length(q - float2(0.85, 0.26)) - 0.08;
+        page = mix(page, mix(S, float3(1.0), 0.3), step(st, 0.0));
+        // Gloss sweep.
+        page += float3(1.0) * 0.12 * pow(sat(1.0 - abs(q.x + q.y - fract(t * 0.07) * 3.0 + 0.5) * 3.0), 3.0);
+        col = page;
+    }
+    return half4(finish(col, fc), 1.0);
+}

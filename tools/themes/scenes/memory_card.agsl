@@ -1,0 +1,111 @@
+// Memory card: the save screen of a late-90s console, reimagined. A big translucent memory card
+// floats at an angle over a dark, glossy surface; through its shell you see the board and chips;
+// beside it a grid of 15 save blocks, each with its own little animated pixel icon (gem, heart,
+// sword, star, coin...), slowly filling up as data streams in; the access light blinks while it saves.
+
+// A 8x8 pixel icon, picked by k, at cell coordinate c (0..7); returns 0/1 and a frame flip.
+float icon(float2 c, float k, float frame) {
+    float2 p = c - 3.5;
+    float v = 0.0;
+    if (k < 1.0) v = step(abs(p.x) + abs(p.y), 3.0 + frame);                               // gem
+    else if (k < 2.0) v = step(length(float2(abs(p.x) - 1.5, p.y + 1.0)), 2.0) + step(abs(p.x) + p.y, 2.8 + frame * 0.5) * step(-1.0, p.y);   // heart
+    else if (k < 3.0) v = step(abs(p.x - p.y), 0.8) * step(abs(p.x), 3.0 - frame) + step(abs(p.x + p.y), 0.8) * step(abs(p.x - 1.5), 0.6); // sword
+    else if (k < 4.0) v = step(length(p), 3.3 - frame * 0.6) * (1.0 - step(length(p), 1.5));   // ring / coin
+    else v = step(abs(p.x) * 0.6 + abs(p.y), 2.0 + frame) + step(abs(p.y) * 0.6 + abs(p.x), 2.0 + frame); // star
+    return sat(v);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Background: deep gradient with slow diagonal light bands (a menu backdrop).
+    float3 col = mix(BG * 1.6, BG * 0.6, uv.y);
+    col += mix(A, S, 0.5) * 0.05 * smoothstep(0.6, 1.0, sin((uv.x + uv.y) * 4.0 - t * 0.2));
+    float horizon = 0.78;
+    col = mix(col, BG * 0.4, step(horizon, uv.y));
+
+    // The card: a tilted rounded slab with a notch, translucent smoky shell.
+    float2 cc = float2(asp * 0.3, 0.46 + 0.012 * sin(t * 0.6));
+    float tilt = -0.18 + 0.03 * sin(t * 0.4);
+    float2 cq = rot(tilt) * (uv - cc);
+    cq.x *= 1.0 + cq.y * 0.4;                                // a touch of perspective
+    float2 half_ = float2(0.15, 0.2);
+    float card = sdRoundBox(cq, half_, 0.012);
+    card = max(card, -sdRoundBox(cq - float2(half_.x, -half_.y), float2(0.04, 0.04), 0.004));   // corner notch
+    float inCard = 1.0 - smoothstep(-px, px, card);
+    float3 shell = mix(float3(0.25, 0.26, 0.3), A * 0.4, 0.25);
+    // Inside: a board with a chip and traces, seen through the shell.
+    float3 inside = mix(float3(0.06, 0.18, 0.1), BG, 0.3);
+    float chip = sdRoundBox(cq - float2(-0.02, 0.0), float2(0.06, 0.05), 0.004);
+    inside = mix(inside, float3(0.08), 1.0 - smoothstep(0.0, px, chip));
+    float pins = step(abs(fract(cq.x * 70.0) - 0.5), 0.2) * step(abs(abs(cq.y) - 0.056), 0.006) * step(abs(cq.x + 0.02), 0.06);
+    inside = mix(inside, float3(0.75, 0.65, 0.35), pins);
+    float trace = step(abs(fract(cq.y * 30.0) - 0.5), 0.06) * step(0.045, cq.x) * step(cq.x, 0.11);
+    inside += float3(0.7, 0.6, 0.3) * trace * 0.5;
+    // Gold contacts at the bottom.
+    float contacts = step(half_.y - 0.03, cq.y) * step(abs(fract(cq.x * 40.0) - 0.5), 0.3) * step(abs(cq.x), half_.x - 0.02);
+    float3 cardC = mix(inside, shell, 0.55) + float3(1.0) * 0.12 * smoothstep(0.1, -0.1, cq.x + cq.y);
+    cardC = mix(cardC, float3(0.85, 0.7, 0.3), contacts);
+    // A label area at the top with stripes in the theme colours.
+    float label = step(cq.y, -0.06) * step(abs(cq.x), half_.x - 0.02) * step(-half_.y + 0.02, cq.y);
+    cardC = mix(cardC, mix(A, S, step(0.5, fract(cq.y * 25.0))) * 0.75 + 0.1, label);
+    // Access light: blinks quickly while saving.
+    float save = step(0.5, fract(t / 9.0)) ;
+    float led = length(cq - float2(half_.x - 0.03, -half_.y + 0.03 + 0.0)) - 0.007;
+    float ledOn = save * step(0.5, fract(t * 6.0)) + (1.0 - save) * 0.15;
+    cardC = mix(cardC, mix(float3(0.2, 0.05, 0.05), float3(1.0, 0.3, 0.2), ledOn), 1.0 - smoothstep(0.0, px, led));
+    col = mix(col, cardC, inCard);
+    col += float3(1.0, 0.3, 0.2) * exp(-length(cq - float2(half_.x - 0.03, -half_.y + 0.03)) * 60.0) * ledOn * 0.4;
+    col += mix(A, float3(1.0), 0.5) * exp(-abs(card) * 300.0) * 0.25;
+    // Its reflection on the glossy floor.
+    if (uv.y > horizon) {
+        float2 ruv = float2(uv.x, 2.0 * horizon - uv.y);
+        float2 rq = rot(tilt) * (ruv - cc);
+        float rc = sdRoundBox(rq, half_, 0.012);
+        col = mix(col, cardC * 0.3, (1.0 - smoothstep(-px, px, rc)) * exp(-(uv.y - horizon) * 10.0));
+    }
+
+    // The save grid: 5 x 3 blocks; filled ones show their animated icon, the next one fills with
+    // a progress sweep while saving.
+    float2 g0 = float2(asp * 0.52, 0.26);
+    float bs = 0.085;
+    float filled = 4.0 + mod(floor(t / 9.0), 11.0);
+    float progress = fract(t / 9.0) * 2.0 - 1.0;                 // the second half of each 9 s saves
+    for (int i = 0; i < 15; i++) {
+        float fi = float(i);
+        float2 o = g0 + float2(mod(fi, 5.0), floor(fi / 5.0)) * (bs + 0.018);
+        float2 q = uv - o;
+        float box = sdRoundBox(q - bs * 0.5, float2(bs * 0.5), 0.008);
+        float inB = 1.0 - smoothstep(-px, px, box);
+        float3 bc = BG * 1.8 + 0.03;
+        float isFull = step(fi, filled - 1.0);
+        float isSaving = step(abs(fi - filled), 0.5) * step(0.0, progress);
+        float2 cell = floor(q / bs * 10.0) - 1.0;                 // 8x8 icon in the middle
+        float inIcon = step(0.0, cell.x) * step(cell.x, 7.0) * step(0.0, cell.y) * step(cell.y, 7.0);
+        float k = mod(fi * 3.0 + 1.0, 5.0);
+        float frame = step(0.5, fract(t * 1.5 + fi * 0.37));
+        float ic = icon(cell, k, frame) * inIcon;
+        float3 icC = mix(mix(A, S, hash11(fi)), float3(1.0), 0.2);
+        bc = mix(bc, mix(bc * 1.3, icC, ic), isFull);
+        // Saving: a sweep filling the block from the bottom.
+        float fillY = 1.0 - progress;
+        bc = mix(bc, mix(A, float3(1.0), 0.3) * 0.6, isSaving * step(fillY, q.y / bs) * 0.6);
+        col = mix(col, bc, inB);
+        col += mix(A, float3(1.0), 0.4) * exp(-abs(box) * 400.0) * (0.15 + 0.5 * isSaving);
+    }
+    // Data streaming from the card to the slot being saved.
+    float2 a = cc + float2(0.14, -0.05);
+    float2 b = g0 + float2(mod(filled, 5.0), floor(filled / 5.0)) * (bs + 0.018) + bs * 0.5;
+    float2 ab = b - a;
+    float h = sat(dot(uv - a, ab) / dot(ab, ab));
+    float dline = length(uv - a - ab * h);
+    float bits = step(0.6, fract(h * 20.0 - t * 4.0));
+    col += mix(A, S, h) * exp(-dline * 600.0) * bits * step(0.0, progress) * 0.8;
+    return half4(finish(col, fc), 1.0);
+}

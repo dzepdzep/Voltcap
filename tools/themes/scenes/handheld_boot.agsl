@@ -1,0 +1,174 @@
+// Handheld boot: an original pocket console standing front-on, booting up over and over. The power
+// light comes on, a bolt capsule logo drops down the four-shade LCD, a shine sweeps across it with a
+// ripple, then it fades into a menu of icons where a cursor hops from one to the next before the screen
+// goes dark again (a 12 s loop). Soft bokeh drifts behind; the device bobs gently on its shadow.
+
+// The LCD's picture at pixel q (0..80 across, 0..64 down) at loop time T: a shade 0 (dark) .. 3 (light).
+float lcdShade(float2 q, float T) {
+    float on = step(0.6, T) * (1.0 - step(11.4, T));
+    if (on < 0.5) return -1.0;                       // screen off
+    float shade = 3.0;                                // the light background
+    // The logo: a capsule 30 x 14 pixels with a bolt, sliding down, then fading.
+    float ly = floor(mix(-16.0, 20.0, smoothstep(0.6, 2.6, T)));
+    float2 lp = q - float2(40.0, ly + 7.0);
+    float fade = 1.0 - smoothstep(4.6, 5.2, T);
+    if (fade > 0.0) {
+        float2 b = abs(lp) - float2(15.0, 7.0);
+        float capD = length(max(b + float2(6.0, 0.0), 0.0)) - 7.0;
+        if (abs(lp.y) <= 7.0 && abs(lp.x) <= 15.0 && capD < 0.0) {
+            shade = capD > -1.5 ? 0.0 : 2.0;
+            // The bolt: two slanted bars.
+            float2 bq = lp;
+            float bolt = step(abs(bq.x + bq.y * 0.6 + 1.0), 1.6) * step(-5.0, bq.y) * step(bq.y, 0.5)
+                       + step(abs(bq.x + bq.y * 0.6 - 1.0), 1.6) * step(-0.5, bq.y) * step(bq.y, 5.0)
+                       + step(abs(bq.y), 0.6) * step(abs(bq.x), 3.0);
+            if (bolt > 0.5) shade = 0.0;
+            // The shine sweeping across.
+            float sh = (T - 2.9) * 70.0 - 20.0;
+            if (abs(lp.x + lp.y * 0.5 - sh) < 2.5 && T > 2.9 && T < 3.6) shade = 3.0;
+        }
+        // Ripples round the logo just after the shine.
+        float rr = length(lp * float2(0.6, 1.0));
+        float rt = (T - 3.0) * 30.0;
+        if (T > 3.0 && T < 4.0 && abs(rr - rt) < 0.8) shade = min(shade, 1.0);
+        shade = mix(3.0, shade, step(0.5, fade * 3.0 - floor(fade * 3.0) * 0.0) * step(0.34, fade));
+        if (fade < 0.67 && shade < 3.0) shade = min(3.0, shade + 1.0);
+    }
+    // The menu: six icons in a 3 x 2 grid sliding in, a cursor hopping between them.
+    float mIn = smoothstep(5.2, 6.0, T) * (1.0 - smoothstep(10.8, 11.3, T));
+    if (mIn > 0.0) {
+        float slide = floor((1.0 - mIn) * 80.0);
+        float2 mq = q - float2(slide, 0.0);
+        // Title bar.
+        if (mq.y < 9.0 && mq.x > 2.0 && mq.x < 78.0) shade = mq.y < 1.0 || mq.y > 8.0 ? 3.0 : 1.0;
+        float2 cellG = floor((mq - float2(4.0, 14.0)) / float2(25.0, 24.0));
+        float2 inC = mq - float2(4.0, 14.0) - cellG * float2(25.0, 24.0);
+        if (cellG.x >= 0.0 && cellG.x < 3.0 && cellG.y >= 0.0 && cellG.y < 2.0) {
+            float id = cellG.y * 3.0 + cellG.x;
+            float2 ic = inC - float2(11.0, 10.0);
+            float icon = 0.0;
+            if (id < 0.5) icon = step(abs(ic.x), 6.0) * step(abs(ic.y), 7.0) * (1.0 - step(abs(ic.x), 4.0) * step(abs(ic.y + 2.0), 3.0));    // cartridge
+            else if (id < 1.5) icon = step(length(ic), 7.5) * step(1.8, length(ic));                                                   // disc
+            else if (id < 2.5) icon = step(abs(ic.x) + abs(ic.y) * 0.6, 6.0) + step(abs(ic.y) + abs(ic.x) * 0.6, 6.0) * 0.0;           // star-ish
+            else if (id < 3.5) icon = step(length(ic - float2(-2.0, 4.0)), 3.0) + step(abs(ic.x - 0.5), 1.0) * step(-7.0, ic.y) * step(ic.y, 4.0) + step(abs(ic.y + 6.5), 1.0) * step(0.0, ic.x) * step(ic.x, 5.0); // note
+            else if (id < 4.5) icon = step(length(ic), 6.5 + step(0.5, fract(atan(ic.y, ic.x) / TAU * 8.0)) * 1.5) * step(2.5, length(ic)); // gear
+            else icon = step(length(ic - float2(-2.6, -2.0)), 3.5) + step(length(ic - float2(2.6, -2.0)), 3.5) + step(ic.y, 6.0 - abs(ic.x) * 1.1) * step(-2.0, ic.y); // heart
+            if (icon > 0.5) shade = 0.0;
+            // The cursor: a frame round the current icon.
+            float cur = mod(floor((T - 6.0) / 1.0), 6.0);
+            if (T > 6.0 && abs(id - cur) < 0.5) {
+                float2 f = abs(inC - float2(11.0, 10.0)) - float2(11.0, 10.5);
+                if (max(f.x, f.y) > -1.5 && max(f.x, f.y) < 0.0) shade = 0.0;
+                if (icon > 0.5) shade = 1.0;
+            }
+        }
+    }
+    return shade;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float T = mod(t, 12.0);
+
+    // Backdrop: the theme's colours in a soft pool of light, bokeh drifting.
+    float3 col = mix(BG, mix(BG, S, 0.25), exp(-length(uv - float2(asp * 0.5, 0.45)) * 2.0));
+    for (int i = 0; i < 9; i++) {
+        float fi = float(i);
+        float2 p = float2(fract(hash11(fi) + t * 0.006 * (1.0 + hash11(fi * 3.0))) * asp, hash11(fi * 5.0) * 0.9 + 0.05);
+        float r = 0.04 + 0.06 * hash11(fi * 7.0);
+        float d = length(uv - p);
+        col += mix(A, S, hash11(fi * 2.0)) * 0.08 * (1.0 - smoothstep(r * 0.85, r, d));
+    }
+
+    float bob = 0.008 * sin(t * 0.8);
+    float2 c = float2(asp * 0.5, 0.5 + bob);
+    float R = 0.43;
+    float2 p = (uv - c) / R;
+    float px = 1.5 / uRes.y / R;
+    // Shadow on the floor below.
+    float sh = length((uv - float2(asp * 0.5, 0.95)) * float2(1.0, 6.0));
+    col *= 1.0 - 0.45 * (1.0 - smoothstep(0.1, 0.35 + bob, sh));
+
+    // Body: Voltcap's own capsule shape stood on end - a tall pill, two-tone (light top, theme-coloured
+    // lower shell) with a seam across the middle.
+    float2 hb = float2(0.62, 1.0);
+    float body = sdRoundBox(p, hb, 0.55);
+    float3 shell = mix(float3(0.86, 0.85, 0.83), S, 0.12);
+    float3 lower = mix(shell, A, 0.45) * 0.92;
+    if (body < 0.0) {
+        col = p.y < 0.12 ? shell : lower;
+        col *= 0.92 + 0.1 * (-p.y * 0.5 + 0.5) * 0.4;
+        // Rim light round the top-left, shade bottom-right.
+        float edge = smoothstep(-0.06, 0.0, body);
+        col = mix(col, col * (p.x + p.y > 0.0 ? 0.68 : 1.12), edge);
+        col = mix(col, col * 0.75, (1.0 - smoothstep(0.0, px * 1.5, abs(p.y - 0.12))) * 0.8);
+    }
+    col = mix(col, shell * 0.45, (1.0 - smoothstep(0.0, px, abs(body))) * 0.6);
+
+    // The screen's bezel (rounded, dark glass) and the power light above it.
+    float2 bc = float2(0.0, -0.42);
+    float bez = sdRoundBox(p - bc, float2(0.46, 0.38), 0.12);
+    col = mix(col, mix(float3(0.16, 0.16, 0.2), BG, 0.3), 1.0 - smoothstep(0.0, px, bez));
+    col += 0.06 * (1.0 - smoothstep(0.0, px, bez)) * smoothstep(-0.3, -0.36, p.y - bc.y);
+    float on = step(0.6, T) * (1.0 - step(11.4, T));
+    float led = length(p - float2(0.0, -0.88)) - 0.022;
+    col = mix(col, mix(float3(0.15, 0.2, 0.15), mix(float3(0.4, 1.0, 0.5), A, 0.4), on), 1.0 - smoothstep(0.0, px, led));
+    col += mix(float3(0.4, 1.0, 0.5), A, 0.4) * on * 0.25 * exp(-max(led, 0.0) * 30.0);
+
+    // The LCD.
+    float2 lc = float2(0.0, -0.42);
+    float2 lh = float2(0.36, 0.29);
+    float2 lq = (p - lc + lh) / (2.0 * lh);            // 0..1 across the LCD
+    if (lq.x > 0.0 && lq.x < 1.0 && lq.y > 0.0 && lq.y < 1.0) {
+        float2 pixq = lq * float2(64.0, 51.2);
+        float s = lcdShade(floor(pixq) * 1.25, T);
+        float3 c0 = mix(float3(0.06, 0.12, 0.09), A * 0.3, 0.35);
+        float3 c1 = mix(float3(0.2, 0.32, 0.18), A * 0.6, 0.35);
+        float3 c2 = mix(float3(0.45, 0.58, 0.3), A, 0.3);
+        float3 c3 = mix(float3(0.66, 0.76, 0.42), mix(A, float3(1.0), 0.5), 0.3);
+        float3 off = mix(float3(0.38, 0.45, 0.3), c2, 0.2) * 0.75;
+        float3 lcd = s < -0.5 ? off : (s < 0.5 ? c0 : (s < 1.5 ? c1 : (s < 2.5 ? c2 : c3)));
+        // Pixel gaps and a soft shadow under the bezel's top edge.
+        float2 g = abs(fract(pixq) - 0.5);
+        lcd *= 0.9 + 0.1 * step(max(g.x, g.y), 0.4);
+        lcd *= 0.85 + 0.15 * smoothstep(0.0, 0.08, lq.y);
+        col = lcd;
+    }
+
+    // The home button: a round key with the bolt, between the controls.
+    float2 hp = p - float2(0.0, 0.3);
+    col = mix(col, lower * 0.6, 1.0 - smoothstep(0.0, px, length(hp) - 0.075));
+    col = mix(col, shell, 1.0 - smoothstep(0.0, px, length(hp) - 0.06));
+    float emblem = step(abs(hp.x + hp.y * 0.6 + 0.01), 0.012) * step(-0.038, hp.y) * step(hp.y, 0.004) + step(abs(hp.x + hp.y * 0.6 - 0.01), 0.012) * step(-0.004, hp.y) * step(hp.y, 0.038);
+    col = mix(col, mix(A, float3(0.2), 0.35), sat(emblem));
+    // D-pad on the left.
+    float2 dp = p - float2(-0.33, 0.36);
+    float dcross = min(sdRoundBox(dp, float2(0.15, 0.05), 0.02), sdRoundBox(dp, float2(0.05, 0.15), 0.02));
+    col = mix(col, lower * 0.55, (1.0 - smoothstep(0.0, px, dcross - 0.02)) * 0.6);
+    col = mix(col, float3(0.15, 0.15, 0.18), 1.0 - smoothstep(0.0, px, dcross));
+    col = mix(col, float3(0.24, 0.24, 0.28), 1.0 - smoothstep(0.0, px, length(dp) - 0.025));
+    // One big action key and a small one on the right; the big one presses as the cursor hops.
+    float hop = step(6.0, T) * step(fract(T - 6.0), 0.15) * step(T, 11.0);
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float2 bp = p - (fi < 0.5 ? float2(0.33, 0.34) : float2(0.24, 0.5));
+        float r = fi < 0.5 ? 0.1 : 0.055;
+        float pressed = fi < 0.5 ? hop : 0.0;
+        col = mix(col, lower * 0.55, (1.0 - smoothstep(0.0, px, length(bp) - r - 0.02)) * 0.6);
+        col = mix(col, mix(float3(0.95, 0.95, 0.92), S, 0.3) * (1.0 - 0.3 * pressed), 1.0 - smoothstep(0.0, px, length(bp) - r * (1.0 - 0.06 * pressed)));
+        col += 0.12 * (1.0 - smoothstep(0.0, px, length(bp + float2(r * 0.35, r * 0.35)) - r * 0.3)) * (1.0 - pressed);
+    }
+    // The speaker: a ring of holes at the bottom.
+    float2 spq = p - float2(0.0, 0.72);
+    float sr = length(spq);
+    float sa = atan(spq.y, spq.x);
+    float hole = (1.0 - smoothstep(0.0, px, length(float2(fract(sa / TAU * 10.0) - 0.5, (sr - 0.09) * 6.0)) * 0.11 - 0.014)) * step(abs(sr - 0.09), 0.03);
+    hole = max(hole, 1.0 - smoothstep(0.0, px, sr - 0.02));
+    col = mix(col, lower * 0.4, hole);
+    return half4(finish(col, fc), 1.0);
+}

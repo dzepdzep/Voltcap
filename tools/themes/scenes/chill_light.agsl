@@ -1,0 +1,75 @@
+// Morning light: a quiet room. Sun from a window you can't see falls on the wall in the top-right corner
+// as a warm four-paned patch, the shadow of a plant outside swaying gently in it; a soft beam crosses the
+// air with dust drifting through it, and the light pools on the floor in the bottom-left (original design).
+
+// The window's light pattern at w (0..1 in both directions inside the window, mullions as a cross).
+float panes(float2 w, float blur, float t) {
+    float inside = smoothstep(-blur, blur, w.x) * smoothstep(1.0 + blur, 1.0 - blur, w.x)
+                 * smoothstep(-blur, blur, w.y) * smoothstep(1.0 + blur, 1.0 - blur, w.y);
+    float bar = 0.045;
+    float mx = smoothstep(bar - blur, bar + blur, abs(w.x - 0.5));
+    float my = smoothstep(bar * 0.8 - blur, bar * 0.8 + blur, abs(w.y - 0.5));
+    // The plant outside: leaves swaying across the lower panes.
+    float2 lp = w * float2(5.0, 4.0) + float2(0.3 * sin(t * 0.4 + w.y * 2.0), 0.15 * sin(t * 0.33));
+    float leaf = smoothstep(0.66, 0.56, fbm3(lp)) * smoothstep(0.45, 1.0, w.y) * smoothstep(0.95, 0.55, w.x);
+    return inside * mx * my * (1.0 - 0.75 * (1.0 - leaf));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;      // sunlight
+    float3 S = uSec.rgb;      // cool shade
+    float3 BG = uBg.rgb;
+
+    float floorY = 0.86;
+    // Wall: warm plaster, a faint texture, cooler in the shade.
+    float plaster = fbm(uv * float2(9.0, 7.0)) * 0.6 + vnoise(uv * 60.0) * 0.4;
+    float3 col = mix(BG * 2.5 + A * 0.13, BG * 1.7 + A * 0.07, sat(uv.y));
+    col *= 0.93 + 0.1 * plaster;
+    // Ambient bounce from the sunny patch.
+    col += A * exp(-length(uv - float2(asp * 0.85, 0.2)) * 2.2) * 0.12;
+
+    // The sunny patch on the wall: the window seen slanted (the sun is low and to the left).
+    float2 o = float2(asp * 0.6, -0.12);
+    float2 rel = uv - o;
+    // Shear: further down means further right.
+    float2 w = float2((rel.x - rel.y * 0.5) / 0.62, rel.y / 0.6);
+    float blur = 0.015 + 0.03 * sat(w.y);
+    float sun = panes(w, blur, t) * step(uv.y, floorY);
+    float flick = 0.94 + 0.06 * sin(t * 0.3) * sin(t * 0.17 + 1.0);
+    col += mix(A, float3(1.0, 0.97, 0.9), 0.3) * sun * 0.6 * flick;
+    col += A * sun * plaster * 0.06;
+
+    // Floor: wooden boards in the bottom strip, the light pooling in the bottom-left corner.
+    if (uv.y > floorY) {
+        float fy = uv.y - floorY;
+        float z = 1.0 / (fy + 0.05);
+        float bx = uv.x * z * 0.12;
+        float board = fract(bx * 6.0);
+        float grain = fbm3(float2(bx * 40.0, z * 0.4 + floor(bx * 6.0) * 7.0));
+        float3 wood = mix(BG * 2.0 + A * 0.08, BG * 3.0 + A * 0.16, grain);
+        wood *= 1.0 - 0.3 * smoothstep(0.03, 0.0, board) - 0.2 * smoothstep(0.97, 1.0, board);
+        float2 pool = (uv - float2(asp * 0.12, 1.0)) * float2(0.8, 3.0);
+        float lightPool = exp(-dot(pool, pool) * 6.0);
+        wood += A * lightPool * 0.35 + A * lightPool * grain * 0.1;
+        col = mix(col, wood, smoothstep(0.0, 0.003, fy));
+        // Skirting line.
+        col *= 1.0 - 0.35 * exp(-fy * 120.0);
+    }
+
+    // The beam through the air: from the top-left towards the patch, faint, with dust in it.
+    float2 bdir = normalize(float2(1.0, 0.42));
+    float2 bp = uv - float2(-0.1, -0.05);
+    float along = dot(bp, bdir);
+    float across = abs(bp.x * bdir.y - bp.y * bdir.x);
+    float beam = exp(-sqf(across / 0.16)) * smoothstep(0.0, 0.5, along) * smoothstep(asp * 1.2, asp * 0.6, along);
+    beam *= 0.7 + 0.3 * fbm3(float2(along * 3.0 - t * 0.03, across * 8.0));
+    col += A * beam * 0.09;
+    float dust = dots(uv, 70.0, float2(t * 0.006, -t * 0.004), 0.12, 0.05, 3.0)
+               + dots(uv, 35.0, float2(-t * 0.004, t * 0.003), 0.06, 0.06, 8.0) * 0.7;
+    col += mix(A, float3(1.0), 0.6) * dust * (beam * 1.6 + sun * 0.6) * 0.8;
+
+    return half4(finish(col, fc), 1.0);
+}

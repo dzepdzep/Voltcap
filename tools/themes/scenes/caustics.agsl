@@ -1,0 +1,89 @@
+// Sunlit shallows: looking down into clear shallow water. Bright caustic nets dance over the sandy
+// bottom, soft sun rays slant through the water, little fish shadows glide past, and now and then
+// a ripple rolls across the surface.
+
+// Caustic net: the bright lines where light focuses, from two layers of warped cells.
+float caustic(float2 p, float t) {
+    float2 q = p;
+    float v = 0.0;
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float2 w = q * (1.0 + fi * 0.6) + float2(t * (0.12 + fi * 0.05), t * (0.08 - fi * 0.06));
+        w += 0.35 * float2(vnoise(w * 0.9 + t * 0.1), vnoise(w * 0.9 + 4.0 - t * 0.1));
+        float2 id = floor(w);
+        float2 f = fract(w);
+        // Distance to the nearest and second-nearest wandering point (cell edges = bright lines).
+        float d1 = 8.0;
+        float d2 = 8.0;
+        for (int y = -1; y <= 1; y++) {
+            for (int x = -1; x <= 1; x++) {
+                float2 o = float2(float(x), float(y));
+                float2 h = hash22(id + o + fi * 13.0);
+                h = 0.5 + 0.4 * sin(t * 0.6 + h * TAU);
+                float d = length(o + h - f);
+                if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+            }
+        }
+        v += pow(sat(1.0 - (d2 - d1) * 2.2), 6.0) * (0.7 - fi * 0.25);
+    }
+    return v;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // A ripple rolling across now and then bends everything a little.
+    float rp = fract(t / 9.0);
+    float2 rc = float2(asp * hash11(floor(t / 9.0)), 0.3 + 0.4 * hash11(floor(t / 9.0) + 3.0));
+    float rd = length(uv - rc) - rp * 1.6;
+    float2 bend = normalize(uv - rc + 1e-4) * sin(rd * 60.0) * exp(-abs(rd) * 18.0) * 0.006 * (1.0 - rp);
+    float2 p = uv + bend;
+
+    // Sandy bottom: soft ripples in the sand and a few pebbles.
+    float sand = vnoise(float2(p.x * 3.0 + sin(p.y * 9.0) * 0.4, p.y * 9.0));
+    float3 bottom = mix(BG * 1.6, mix(S, A, 0.3) * 0.35 + BG, 0.5 + 0.4 * sand);
+    float2 pid = floor(p * 18.0);
+    float pb = step(0.93, hash12(pid)) * (1.0 - smoothstep(0.15, 0.3, length(fract(p * 18.0) - 0.5 - (hash22(pid) - 0.5) * 0.3)));
+    bottom = mix(bottom, BG * 0.8, pb * 0.6);
+    // Deeper water towards the top, shallower and brighter at the bottom.
+    float depth = 1.0 - uv.y;
+    float3 water = mix(A * 0.55, BG * 0.6, depth * 0.7);
+    float3 col = mix(bottom, water, 0.45 + 0.3 * depth);
+
+    // The caustics, slightly split by colour like real light through water.
+    float cG = caustic(p * 3.2, t);
+    // A faint colour fringe (cheaper than computing the net twice).
+    float3 cau = float3(cG * 1.05, cG, cG * 0.92);
+    col += mix(float3(1.0), S, 0.35) * cau * (0.55 - 0.25 * depth);
+
+    // Fish shadows gliding by (and their caustic-free shade on the sand).
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float sp = 0.03 + 0.02 * hash11(fi);
+        float dir = hash11(fi + 7.0) > 0.5 ? 1.0 : -1.0;
+        float x = fract(t * sp + hash11(fi * 3.0)) * (asp + 0.4) - 0.2;
+        if (dir < 0.0) x = asp - x;
+        float y = 0.2 + 0.6 * hash11(fi * 5.0) + 0.03 * sin(t * 0.5 + fi);
+        float2 f = uv - float2(x, y);
+        f.x *= dir;
+        float wig = sin(t * 4.0 + fi) * 0.15;
+        float body = length(f * float2(1.0, 2.6)) - 0.03;
+        float tail = length((f - float2(-0.04, f.x * wig)) * float2(1.6, 1.2)) - 0.014;
+        float fish = 1.0 - smoothstep(-0.004, 0.006, min(body, tail));
+        col = mix(col, col * 0.55, fish * 0.6);
+    }
+
+    // Sun rays slanting through the water.
+    float2 sp2 = rot(-0.35) * uv;
+    float rays = fbm3(float2(sp2.x * 6.0 + t * 0.05, t * 0.03));
+    col += mix(float3(1.0), A, 0.4) * smoothstep(0.5, 0.85, rays) * 0.12 * depth;
+    // Specks drifting in the water.
+    col += float3(1.0) * dots(uv, 40.0, float2(t * 0.01, t * 0.008), 0.06, 0.1, 3.0) * 0.25;
+
+    return half4(finish(col, fc), 1.0);
+}

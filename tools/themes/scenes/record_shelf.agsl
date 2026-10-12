@@ -1,0 +1,253 @@
+// Record shelf (music): a corner of a record store. The current album stands on a little display
+// stand in front of a neon ring in the song's colours, its record slid half out of the sleeve and
+// spinning while it plays (the shine on the vinyl stays put while the label turns, like a real
+// record). Two wooden crates either side are packed with the sleeves of the songs you played before,
+// their tops peeking out front to back; more of them stand face-out on the wall ledges under two
+// warm lamps. Dust drifts in the lamplight; the crate sleeves nudge on the kick as if someone were
+// flicking through them.
+//#include reactive
+
+// One past song's sleeve standing face-out on a wall ledge: cover i, centre p, half-size h, lean a.
+float3 wallSleeve(float3 col, float2 uv, float2 p, float h, float a, float i, float px, float3 A, float3 S) {
+    float2 d = rot(a) * (uv - p);
+    // Shadow on the wall, down-right.
+    col *= 1.0 - 0.45 * (1.0 - smoothstep(-h * 0.02, h * 0.18, sdRoundBox(d - float2(h * 0.08, h * 0.1), float2(h), h * 0.03)));
+    float box = sdRoundBox(d, float2(h), h * 0.03);
+    if (box < px) {
+        float2 q = d / (2.0 * h) + 0.5;
+        float3 cv = pastCover(i, q, A, S);
+        // Cardboard: a little grain, worn lighter edges, a soft gloss across the top corner.
+        cv *= 0.9 + 0.1 * vnoise(d * 180.0 / h);
+        cv = mix(cv, float3(0.92, 0.88, 0.8), smoothstep(-h * 0.06, 0.0, box) * 0.35);
+        cv += float3(1.0) * 0.08 * smoothstep(0.35, 0.0, abs(q.x + q.y - 0.55));
+        col = mix(col, cv * 0.88, 1.0 - smoothstep(-px, px, box));
+    }
+    return col;
+}
+
+// A wooden crate packed with sleeves seen from the front: x from x0 to x1, front wall from top to bot.
+// Sleeves stand front to back, each one's top a little higher than the one in front of it.
+float3 crate(float3 col, float2 uv, float x0, float x1, float top, float bot, float R, float px, float seed, float nudge, float3 A, float3 S) {
+    float w = x1 - x0;
+    float inX = smoothstep(x0 - px, x0 + px, uv.x) * (1.0 - smoothstep(x1 - px, x1 + px, uv.x));
+    // Its shadow on the floor.
+    float2 sd = float2((uv.x - (x0 + x1) * 0.5) / (w * 0.56), (uv.y - bot) / (R * 0.09));
+    col *= 1.0 - 0.5 * (1.0 - smoothstep(0.5, 1.1, length(sd)));
+    if (inX <= 0.0) return col;
+    // The sleeves (front first: the first one that covers the pixel wins).
+    float step0 = R * 0.085;
+    float prevTop = top;
+    float done = 0.0;
+    for (int j = 0; j < 7; j++) {
+        if (done > 0.5) break;
+        float fj = float(j);
+        float r = hash11(fj * 7.3 + seed);
+        float r2 = hash11(fj * 3.1 + seed + 1.7);
+        // Height above the crate's front edge, a little uneven; the front ones flick on the kick.
+        float lift = R * 0.2 + fj * step0 + (r - 0.5) * R * 0.05 + nudge * R * 0.05 * (1.0 - fj / 7.0);
+        float sTop = top - lift;
+        // Each sleeve is a touch narrower further back (perspective) and sits a little off-centre.
+        float inset = w * (0.02 + 0.012 * fj) + (r2 - 0.5) * w * 0.02;
+        float sx0 = x0 + inset;
+        float sx1 = x1 - inset + (r - 0.5) * w * 0.02;
+        if (uv.y >= sTop - px && uv.y < prevTop && uv.x > sx0 && uv.x < sx1) {
+            float2 q = float2((uv.x - sx0) / (sx1 - sx0), (uv.y - sTop) / ((sx1 - sx0)));
+            float3 sl = pastCover(4.0 + fj, q, A, S);
+            // Further back = darker; deeper into the gap = in the shadow of the sleeve in front.
+            float depthShade = 0.82 - 0.07 * fj;
+            float gap = sat((uv.y - sTop) / max(prevTop - sTop, 1e-4));
+            sl *= depthShade * (1.0 - 0.45 * gap * gap);
+            // The paper edge catches the light.
+            sl = mix(sl, float3(0.95, 0.9, 0.82), (1.0 - smoothstep(0.0, px * 2.0, uv.y - sTop)) * 0.6);
+            float aa = smoothstep(sTop - px, sTop + px, uv.y) * smoothstep(sx0, sx0 + px * 2.0, uv.x) * (1.0 - smoothstep(sx1 - px * 2.0, sx1, uv.x));
+            col = mix(col, sl, aa);
+            done = aa > 0.99 ? 1.0 : 0.0;
+        }
+        prevTop = min(prevTop, sTop);
+    }
+    // The front wall: two planks with a gap, a handle cut-out, darker corner posts, warm grain.
+    if (uv.y > top - px) {
+        float2 p = float2(uv.x - x0, uv.y - top);
+        float hh = bot - top;
+        float grain = vnoise(float2(p.x * 9.0 / R, p.y * 60.0 / R + seed)) * 0.5 + vnoise(float2(p.x * 2.0 / R, p.y * 160.0 / R)) * 0.5;
+        float3 wood = mix(float3(0.36, 0.22, 0.12), float3(0.55, 0.36, 0.2), grain);
+        wood *= 0.95 + 0.1 * hash11(floor(p.y / (hh * 0.5)) + seed);
+        float plankGap = 1.0 - smoothstep(px * 0.5, px * 1.5, abs(p.y - hh * 0.5));
+        wood *= 1.0 - 0.6 * plankGap;
+        // Handle: a rounded slot in the top plank.
+        float handle = sdRoundBox(float2(uv.x - (x0 + x1) * 0.5, p.y - hh * 0.24), float2(R * 0.16, hh * 0.08), hh * 0.08);
+        wood = mix(wood, float3(0.06, 0.04, 0.03), 1.0 - smoothstep(-px, px, handle));
+        // Corner posts.
+        float post = step(p.x, w * 0.05) + step(w * 0.95, p.x);
+        wood *= 1.0 - 0.25 * post;
+        // Top edge highlight, bottom shade.
+        wood += float3(1.0, 0.85, 0.6) * 0.12 * (1.0 - smoothstep(0.0, px * 3.0, p.y));
+        wood *= 1.0 - 0.3 * smoothstep(hh * 0.6, hh, p.y);
+        float inY = smoothstep(top - px, top + px, uv.y) * (1.0 - smoothstep(bot - px, bot + px, uv.y));
+        col = mix(col, wood, inY * inX);
+    }
+    return col;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.0 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.62;
+    float floorY = c.y + R * 1.25;
+
+    // The shop wall: warm vertical boards with a soft grain, a little lighter where the lamps hit.
+    float bx = uv.x / (R * 0.36);
+    float board = floor(bx);
+    float3 wall = mix(float3(0.17, 0.1, 0.07), float3(0.24, 0.15, 0.1), hash11(board * 1.7));
+    wall *= 0.9 + 0.1 * vnoise(float2(bx * 3.0, uv.y * 40.0 / R));
+    wall *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.06, fract(bx)) * smoothstep(1.0, 0.94, fract(bx)));
+    wall = mix(wall, BG * 0.8, 0.25);
+    float3 col = wall;
+    // The two lamps: warm pools of light on the wall.
+    float lampL = c.x - R * 2.35;
+    float lampR = c.x + R * 2.35;
+    float3 warm = float3(1.0, 0.72, 0.42);
+    float pool = exp(-length((uv - float2(lampL, c.y - R * 0.9)) * float2(1.0, 0.7)) / (R * 1.2))
+               + exp(-length((uv - float2(lampR, c.y - R * 0.9)) * float2(1.0, 0.7)) / (R * 1.2));
+    col += warm * pool * 0.22 * (0.9 + 0.2 * bass);
+    // Light cones down from the lamps.
+    for (int i = 0; i < 2; i++) {
+        float lx = i == 0 ? lampL : lampR;
+        float2 lp = uv - float2(lx, c.y - R * 2.1);
+        float cone = (1.0 - smoothstep(0.0, R * 0.08 + lp.y * 0.42, abs(lp.x))) * step(0.0, lp.y) * (1.0 - smoothstep(R * 1.6, R * 3.4, lp.y));
+        col += warm * cone * 0.07;
+        // The shade itself, a dark dome with a glowing rim.
+        float shade = sdRoundBox(lp + float2(0.0, R * 0.05), float2(R * 0.22, R * 0.07), R * 0.06);
+        col = mix(col, float3(0.08, 0.06, 0.05), 1.0 - smoothstep(-px, px, shade));
+        col += warm * 0.8 * (1.0 - smoothstep(0.0, px * 3.0, abs(lp.y - R * 0.02))) * step(abs(lp.x), R * 0.2);
+        float cord = (1.0 - smoothstep(0.0, px, abs(lp.x))) * step(lp.y, -R * 0.12);
+        col = mix(col, float3(0.05), cord * 0.8);
+    }
+    // The neon ring behind the display, in the song's colours, breathing with the bass.
+    float2 nd = uv - float2(c.x + R * 0.18, c.y - R * 0.05);
+    float ring = abs(sdRoundBox(nd, float2(R * 1.45, R * 1.15), R * 0.5));
+    float3 neon = mix(A, S, 0.5 + 0.5 * sin(atan(nd.y, nd.x) + t * 0.2));
+    float nPow = 0.75 + 0.35 * bass * k + 0.25 * kick * k;
+    col += neon * (exp(-ring / (R * 0.08)) * 0.45 + (1.0 - smoothstep(0.0, px * 2.5, ring - R * 0.012)) * 0.9) * nPow;
+
+    // Wall ledges with past sleeves face-out.
+    float ledgeY = c.y - R * 0.38;
+    float hs = R * 0.42;
+    col = wallSleeve(col, uv, float2(c.x - R * 2.05, ledgeY - hs), hs, 0.04, 0.0, px, A, S);
+    col = wallSleeve(col, uv, float2(c.x - R * 3.1, ledgeY - hs), hs, -0.03, 1.0, px, A, S);
+    col = wallSleeve(col, uv, float2(c.x + R * 2.35, ledgeY - hs), hs, -0.04, 2.0, px, A, S);
+    col = wallSleeve(col, uv, float2(c.x + R * 3.4, ledgeY - hs), hs, 0.03, 3.0, px, A, S);
+    for (int i = 0; i < 2; i++) {
+        float lx0 = i == 0 ? c.x - R * 3.7 : c.x + R * 1.75;
+        float lx1 = i == 0 ? c.x - R * 1.45 : c.x + R * 4.0;
+        float ledge = sdRoundBox(uv - float2((lx0 + lx1) * 0.5, ledgeY + R * 0.03), float2((lx1 - lx0) * 0.5, R * 0.03), R * 0.01);
+        col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, R * 0.1, ledge - R * 0.02)) * step(ledgeY, uv.y);
+        col = mix(col, float3(0.42, 0.27, 0.15) * (0.9 + 0.2 * step(uv.y, ledgeY + R * 0.01)), 1.0 - smoothstep(-px, px, ledge));
+    }
+
+    // The floor: boards running away from you in perspective, the neon and the lamps reflected in the varnish.
+    if (uv.y > floorY) {
+        float fy = (uv.y - floorY) / R;
+        float persp = 1.0 / (0.35 + fy);
+        float plank = (uv.x - c.x) / (R * 0.55) / (1.0 + fy * 1.6);
+        float pid = floor(plank);
+        float3 fl = mix(float3(0.11, 0.07, 0.05), float3(0.17, 0.11, 0.07), hash11(pid * 3.7));
+        fl *= 0.9 + 0.1 * vnoise(float2(plank * 6.0, persp * 8.0 + pid * 13.0));
+        fl *= 1.0 - 0.45 * (1.0 - smoothstep(0.0, 0.05, fract(plank)) * smoothstep(1.0, 0.95, fract(plank)));
+        // Reflections: the neon ring and the lamps' light, smeared down the boards.
+        float fade = exp(-fy * 2.2);
+        float nx = 1.0 - smoothstep(R * 1.2, R * 1.9, abs(uv.x - c.x - R * 0.18));
+        fl += neon * nx * fade * 0.12 * nPow;
+        fl += warm * fade * 0.05 * (exp(-abs(uv.x - lampL) / R) + exp(-abs(uv.x - lampR) / R));
+        fl *= 0.55 + 0.45 * exp(-fy * 0.8);
+        col = mix(col, fl, smoothstep(floorY - px, floorY + px, uv.y));
+    }
+    // A skirting board where wall meets floor.
+    col = mix(col, float3(0.07, 0.045, 0.03), (1.0 - smoothstep(R * 0.035 - px, R * 0.035 + px, abs(uv.y - floorY + R * 0.035))));
+
+    // The crates either side.
+    float crTop = c.y + R * 0.42;
+    float crBot = floorY - R * 0.02;
+    col = crate(col, uv, c.x - R * 3.85, c.x - R * 1.3, crTop, crBot, R, px, 3.0, kick * k, A, S);
+    col = crate(col, uv, c.x + R * 1.75, c.x + R * 4.3, crTop, crBot, R, px, 11.0, kick * k, A, S);
+
+    // The display: a small wooden stand on the floor, the sleeve on it, the record half out.
+    float2 standP = uv - float2(c.x, floorY - R * 0.11);
+    float stand = sdRoundBox(standP, float2(R * 0.75, R * 0.11), R * 0.02);
+    col *= 1.0 - 0.45 * (1.0 - smoothstep(-px, R * 0.12, sdRoundBox(standP - float2(R * 0.05, R * 0.12), float2(R * 0.78, R * 0.04), R * 0.04)));
+    col = mix(col, mix(float3(0.3, 0.18, 0.1), float3(0.45, 0.29, 0.16), smoothstep(R * 0.11, -R * 0.11, standP.y)), 1.0 - smoothstep(-px, px, stand));
+
+    float hsz = R * 0.95;
+    float sway = -0.035 + 0.012 * sin(t * 0.5);
+    float2 sc = float2(c.x - R * 0.2, floorY - R * 0.22 - hsz - bass * k * R * 0.02);
+    float2 d = rot(sway) * (uv - sc);
+    // The record, slid out to the right (further while it plays).
+    float2 rc = float2(hsz * (0.32 + 0.3 * play), -hsz * 0.02);
+    float Rv = hsz * 0.93;
+    float2 rv = d - rc;
+    float rr = length(rv);
+    float spin = 3.5 * uPlayT;
+    if (rr < Rv + px * 2.0) {
+        float rn = rr / Rv;
+        // Grooves: fine rings (faded out when they'd be finer than a pixel) with the track gaps between songs.
+        float gF = 40.0 / Rv;
+        float gC = sat(1.0 - gF * px * 1.5);
+        float groove = 0.5 + 0.5 * sin(rr * gF * TAU);
+        float tracks = 0.0;
+        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.52));
+        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.64));
+        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.77));
+        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.9));
+        float3 vinyl = float3(0.035, 0.035, 0.04) * (0.85 + 0.3 * groove * gC) + float3(0.05) * tracks;
+        // The shine stays where the light is (a bow tie across the record), tinted by the neon.
+        float ang = atan(rv.y, rv.x);
+        float bow = pow(abs(cos(ang - 0.7)), 24.0) * smoothstep(0.36, 0.5, rn) * (1.0 - smoothstep(0.96, 1.0, rn));
+        vinyl += (float3(0.35) + neon * 0.25) * bow * (0.6 + 0.4 * groove * gC);
+        vinyl += float3(0.06) * pow(abs(cos(ang + 0.9)), 6.0) * smoothstep(0.4, 1.0, rn);
+        // Rim.
+        vinyl += float3(0.15) * (1.0 - smoothstep(0.0, px * 2.0, abs(rr - Rv + px)));
+        // The label: the cover, turning; a ring round it and the spindle hole.
+        float lr = Rv * 0.34;
+        if (rr < lr + px) {
+            float2 lq = rot(spin) * rv;
+            float3 lab = sharpCover(lq / (2.0 * lr) * 0.92 + 0.5, A, S);
+            lab = mix(lab, lab * 0.7, smoothstep(lr * 0.9, lr, rr));
+            lab = mix(lab, float3(0.02), 1.0 - smoothstep(Rv * 0.022 - px, Rv * 0.022 + px, rr));
+            vinyl = mix(vinyl, lab, 1.0 - smoothstep(lr - px, lr + px, rr));
+        }
+        col = mix(col, vinyl, 1.0 - smoothstep(Rv - px, Rv + px, rr));
+    }
+    // The sleeve in front of the record: the cover, with a shadow, worn edges and a gloss.
+    col *= 1.0 - 0.5 * (1.0 - smoothstep(-px, hsz * 0.12, sdRoundBox(d - float2(hsz * 0.05, hsz * 0.04), float2(hsz), hsz * 0.02)));
+    float sleeve = sdRoundBox(d, float2(hsz), hsz * 0.02);
+    if (sleeve < px) {
+        float2 q = d / (2.0 * hsz) + 0.5;
+        float3 cv = sharpCover(q, A, S);
+        cv *= 0.93 + 0.07 * vnoise(d * 160.0 / hsz);
+        cv = mix(cv, float3(0.93, 0.9, 0.84), smoothstep(-hsz * 0.035, 0.0, sleeve) * 0.4);
+        // The record's round bulge pressing through the sleeve on the right.
+        float bulge = abs(length(d - rc) - Rv);
+        cv *= 1.0 - 0.06 * (1.0 - smoothstep(0.0, hsz * 0.03, bulge)) * step(0.0, d.x - rc.x + Rv * 0.2);
+        // A soft gloss across the top-left.
+        cv += float3(1.0) * 0.1 * smoothstep(0.3, 0.0, abs(q.x + q.y - 0.6)) * (0.8 + 0.2 * sin(t * 0.3));
+        // The lamp's warmth on it.
+        cv *= float3(1.0, 0.96, 0.9);
+        col = mix(col, cv, 1.0 - smoothstep(-px, px, sleeve));
+    }
+
+    // Dust drifting in the lamplight.
+    float motes = dots(uv, 26.0, float2(t * 0.01, -t * 0.015), 0.06, 0.06, 2.0) + dots(uv * 1.7, 22.0, float2(-t * 0.008, -t * 0.011), 0.05, 0.07, 5.0);
+    col += float3(1.0, 0.9, 0.7) * motes * 0.2 * (0.3 + pool * 2.0);
+    return half4(finish(col, fc), 1.0);
+}

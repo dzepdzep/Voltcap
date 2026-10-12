@@ -1,0 +1,88 @@
+// Pixel sky: a 32-bit day in the clouds. Chunky pixel clouds drift past in parallax layers, a
+// little Voltcap capsule airship putters along with its propeller spinning, pixel birds flap by,
+// hot-air balloons in the theme's colours rise and fall, and the sun's rays turn slowly - all on a
+// coarse pixel grid with a dithered sky.
+//#include voltcap
+
+half4 main(float2 fc) {
+    float P = uRes.y / 150.0;
+    float2 g = floor(fc / P) + 0.5;
+    float2 uv = g * P / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Dithered sky in bands.
+    float lvl = uv.y * 5.0 + (mod(g.x + g.y, 2.0) - 0.5) * 0.45;
+    float3 top = mix(float3(0.25, 0.5, 0.95), BG * 2.0 + float3(0.1, 0.3, 0.7), 0.2);
+    float3 bot = float3(0.75, 0.88, 1.0);
+    float3 col = mix(top, bot, floor(lvl) / 4.0);
+    // Sun with turning rays (pixelated).
+    float2 sp = uv - float2(asp * 0.82, 0.2);
+    float a = atan(sp.y, sp.x);
+    float r = length(sp);
+    float rays = step(0.5, fract(a / TAU * 12.0 + t * 0.02)) * step(r, 0.16) * step(0.08, r);
+    col = mix(col, float3(1.0, 0.95, 0.6), rays * 0.35);
+    col = mix(col, float3(1.0, 0.9, 0.35), step(r, 0.07));
+    col = mix(col, float3(1.0, 1.0, 0.8), step(r, 0.05));
+
+    // Cloud layers: puffs made of overlapping circles, pixel-snapped, three speeds.
+    for (int L = 0; L < 3; L++) {
+        float fl = float(L);
+        float sc = 0.45 - fl * 0.08;
+        float x = uv.x + t * (0.01 + fl * 0.015);
+        float id = floor(x / sc);
+        float lx = x - (id + 0.5) * sc;
+        float h = hash11(id + fl * 13.0);
+        float cy = 0.22 + fl * 0.17 + (hash11(id * 3.3 + fl) - 0.5) * 0.16;
+        float2 q = float2(lx, uv.y - cy);
+        float d = min(min(length(q * float2(1.0, 1.8)) - 0.07 * (0.7 + h), length((q - float2(0.06, 0.01)) * float2(1.0, 1.6)) - 0.05),
+                      length((q + float2(0.06, -0.01)) * float2(1.0, 1.6)) - 0.045);
+        float inC = step(d, 0.0) * step(0.4, h);
+        float3 cc = mix(float3(1.0), float3(0.82, 0.88, 0.98), step(0.0, q.y) * 0.8);
+        col = mix(col, mix(cc, col, 0.15 * (2.0 - fl)), inC);
+        col = mix(col, float3(0.55, 0.62, 0.8), step(d, 0.006) * (1.0 - inC) * step(0.4, h) * 0.5);
+    }
+
+    // Balloons rising and falling.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float2 bp = float2(asp * (0.15 + fi * 0.3) + sin(t * 0.1 + fi) * 0.05, 0.45 + 0.12 * sin(t * 0.2 + fi * 2.0));
+        float2 q = uv - bp;
+        float env = length(q * float2(1.0, 0.85)) - 0.045;
+        float stripes = step(0.5, fract(q.x * 40.0));
+        col = mix(col, mix(i == 1 ? S : A, float3(1.0), stripes * 0.5), step(env, 0.0));
+        float basket = step(abs(q.x), 0.012) * step(0.06, q.y) * step(q.y, 0.075);
+        col = mix(col, float3(0.5, 0.3, 0.15), basket);
+        float rope = step(abs(abs(q.x) - 0.01), 0.002) * step(0.045, q.y) * step(q.y, 0.06);
+        col = mix(col, float3(0.3), rope);
+    }
+
+    // The capsule airship.
+    float ax = fract(t * 0.02) * (asp + 0.5) - 0.25;
+    float2 ap = uv - float2(ax, 0.3 + 0.02 * sin(t * 0.8));
+    float2 aq = ap / 0.06;
+    float dShip = sdCapsuleMark(aq);
+    float3 shipC = mix(A * 0.8, A * 1.15, step(aq.y, 0.0));
+    shipC = mix(shipC, mix(S, float3(1.0), 0.3), step(sdBoltMark(aq * 0.9), 0.0));
+    col = mix(col, float3(0.05), step(dShip, 0.12));
+    col = mix(col, shipC, step(dShip, 0.0));
+    // Gondola and propeller.
+    float gond = step(abs(ap.x), 0.015) * step(0.03, ap.y) * step(ap.y, 0.04);
+    col = mix(col, float3(0.25, 0.2, 0.3), gond);
+    float prop = step(abs(ap.x + 0.07), 0.003) * step(abs(ap.y), 0.02 * abs(sin(t * 20.0)));
+    col = mix(col, float3(0.2), prop);
+
+    // Pixel birds: little Vs flapping.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float bx = fract(t * 0.03 + fi * 0.27) * (asp + 0.2) - 0.1;
+        float2 q = uv - float2(bx, 0.15 + fi * 0.05);
+        float up = step(0.5, fract(t * 4.0 + fi));
+        float v = step(abs(q.y + abs(q.x) * (up > 0.5 ? 0.8 : -0.3)), 0.004) * step(abs(q.x), 0.016);
+        col = mix(col, float3(0.15, 0.15, 0.25), v);
+    }
+    return half4(finish(col, fc), 1.0);
+}

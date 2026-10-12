@@ -1,0 +1,84 @@
+// Summer festival: an anime summer-night festival. Strings of glowing paper lanterns sway over the
+// lane, food-stall roofs line the bottom in silhouette with warm light under their awnings, and
+// fireworks bloom and fade in the deep blue sky, their light flashing across everything.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float3 col = mix(mix(BG, float3(0.02, 0.04, 0.14), 0.5), mix(BG, float3(0.25, 0.1, 0.25), 0.4) * 1.4, smoothstep(0.0, 0.8, uv.y));
+    col += float3(1.0) * dots(uv, 70.0, float2(0.0), 0.06, 0.05, 4.0) * 0.35 * (1.0 - uv.y);
+
+    // Fireworks: a few bursts on their own timers.
+    float flash = 0.0;
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float per = 3.3 + fi * 0.9;
+        float ft = fract(t / per + fi * 0.37);
+        float bid = floor(t / per + fi * 0.37);
+        float2 fcn = float2(asp * (0.2 + 0.6 * hash11(bid * 3.1 + fi)), 0.16 + 0.18 * hash11(bid * 5.7 + fi));
+        float3 fcol = hash11(bid + fi * 9.0) < 0.5 ? mix(A, float3(1.0), 0.3) : mix(S, float3(1.0), 0.3);
+        float2 d = uv - fcn;
+        float r = length(d);
+        float a = atan(d.y, d.x);
+        float rad = 0.16 * (1.0 - (1.0 - ft) * (1.0 - ft));
+        float rays = pow(sat(cos(a * 14.0 + bid)), 30.0);
+        float droop = d.y - ft * ft * 0.04;
+        float spark = exp(-abs(r - rad) * 90.0) * (0.3 + 0.7 * rays) * (1.0 - ft);
+        // Trails from the centre to the sparks.
+        spark += exp(-abs(sin(a * 7.0 + bid)) * 30.0) * step(r, rad) * smoothstep(rad * 0.3, rad, r) * (1.0 - ft) * 0.25;
+        col += fcol * spark * step(-0.02, droop + 0.2);
+        flash += exp(-ft * 6.0) * 0.12;
+    }
+    col += mix(A, S, 0.5) * flash * 0.25;
+
+    // Lantern strings: two sagging wires with paper lanterns hanging, swaying a little.
+    for (int w = 0; w < 2; w++) {
+        float fw = float(w);
+        float y0 = 0.28 + fw * 0.16;
+        float span = 0.9 + fw * 0.3;
+        float seg = fract(uv.x / span);
+        float sag = y0 + 0.06 * 4.0 * seg * (1.0 - seg);
+        col = mix(col, float3(0.05), (1.0 - smoothstep(0.0, px, abs(uv.y - sag))) * 0.7);
+        float lx = uv.x * (7.0 - fw * 2.0);
+        float id = floor(lx);
+        float f = fract(lx) - 0.5;
+        float segc = fract((id + 0.5) / (7.0 - fw * 2.0) / span);
+        float hang = y0 + 0.06 * 4.0 * segc * (1.0 - segc) + 0.045;
+        float sw = 0.02 * sin(t * 1.4 + id * 1.3 + fw);
+        float2 lp = float2((f - sw * (7.0 - fw * 2.0)) / (7.0 - fw * 2.0), uv.y - hang);
+        float s = 0.028 - fw * 0.004;
+        float lan = length(lp * float2(1.0, 0.8)) - s;
+        float3 lc = hash11(id + fw * 13.0) < 0.6 ? mix(float3(1.0, 0.35, 0.2), A, 0.3) : mix(float3(1.0, 0.85, 0.5), S, 0.3);
+        float ribs = 0.85 + 0.15 * step(0.5, fract(lp.y / s * 3.0));
+        float3 lit = lc * (1.1 + 0.3 * sin(t * 3.0 + id)) * ribs;
+        col = mix(col, lit, 1.0 - smoothstep(0.0, px, lan));
+        col += lc * glow(max(lan, 0.0), 0.02) * 0.35;
+        // Caps.
+        float cap = sdRoundBox(lp - float2(0.0, -s * 0.85), float2(s * 0.45, s * 0.12), 0.002);
+        col = mix(col, float3(0.08), 1.0 - smoothstep(0.0, px, cap));
+    }
+
+    // Stall roofs along the bottom with warm light underneath.
+    float rx = uv.x * 3.2;
+    float rid = floor(rx);
+    float rf = fract(rx);
+    float roofY = 0.74 - 0.03 * hash11(rid) - 0.05 * (1.0 - abs(rf - 0.5) * 2.0);
+    float under = step(roofY + 0.025, uv.y);
+    col = mix(col, float3(0.05, 0.04, 0.06), step(roofY, uv.y));
+    // Striped awning edge.
+    float awn = step(roofY + 0.012, uv.y) * step(uv.y, roofY + 0.04);
+    col = mix(col, mix(float3(0.85, 0.2, 0.2), float3(0.95), step(0.5, fract(uv.x * 40.0))) * 0.7, awn);
+    // Warm stall light and a crowd of shapes in front of it.
+    col += mix(S, float3(1.0, 0.7, 0.35), 0.5) * under * exp(-(uv.y - roofY) * 6.0) * 0.45;
+    float crowd = step(0.88 - 0.04 * hash11(floor(uv.x * 25.0)) - 0.02 * sin(uv.x * 160.0), uv.y);
+    col = mix(col, float3(0.03, 0.03, 0.05), crowd);
+    col += mix(A, S, 0.5) * flash * 0.15 * (1.0 - crowd);
+
+    return half4(finish(col, fc), 1.0);
+}

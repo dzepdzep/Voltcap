@@ -1,0 +1,64 @@
+// Winter peaks: Toni's painting of a snowy night in the mountains (res scene_chill_peaks), brought to life.
+// Snow falls gently, the cabin's smoke drifts and curls upward, its windows flicker like a fire inside and
+// the glow on the snow breathes with them, the stars twinkle and the lights down in the valley shimmer.
+// (The procedural version is kept as chill_peaks_drawn.agsl.)
+//#include paint
+
+// Centre of the painted smoke column at painting row y (it leans right as it rises from the chimney).
+float smokeX(float y) { return 1432.0 + 75.0 * pow(sat((605.0 - y) / 400.0), 0.7); }
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(BG * 0.8, mix(BG, A, 0.3), uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+    float2 r = q * float2(1672.0, 941.0);          // painting reference pixels
+
+    // The smoke: the painted column sways and flows upward.
+    float rise = sat((605.0 - r.y) / 420.0);
+    float band = exp(-sqf((r.x - smokeX(r.y)) / (14.0 + 40.0 * rise))) * smoothstep(600.0, 570.0, r.y) * step(160.0, r.y);
+    float flow = sin(r.y * 0.045 + t * 1.1) * 0.6 + sin(r.y * 0.11 - t * 0.7 + 1.3) * 0.4;
+    float2 warp = float2(flow * (2.0 + 9.0 * rise) * band, 0.0);
+    float3 col = paintAt(p + warp / float2(1672.0, 941.0) * sz);
+    float lum = luma(col);
+    // A soft puff drifting up through it.
+    float puff = fbm3(float2((r.x - smokeX(r.y)) * 0.025, r.y * 0.012 + t * 0.35));
+    col += float3(0.6, 0.65, 0.78) * band * smoothstep(0.45, 0.8, puff) * 0.12 * (1.0 - rise * 0.6);
+
+    // The windows: warm, bright pixels round the cabin flicker like a fire inside.
+    float warm = sat((col.r - col.b) * 2.5) * smoothstep(0.35, 0.7, lum);
+    float cabin = step(1300.0, r.x) * step(r.x, 1500.0) * step(660.0, r.y) * step(r.y, 735.0);
+    float fire = 0.9 + 0.07 * sin(t * 5.3) * sin(t * 2.1 + 1.0) + 0.05 * sin(t * 11.0);
+    col *= 1.0 + warm * cabin * (fire - 0.95) * 1.6;
+    // Their glow on the snow below breathes with them.
+    float2 g = (r - float2(1395.0, 745.0)) / float2(240.0, 70.0);
+    col += float3(1.0, 0.7, 0.35) * exp(-dot(g, g) * 1.5) * (fire - 0.9) * 0.35;
+
+    // Stars twinkle (bright specks in the sky), the valley lights shimmer.
+    float sky = step(r.y, 470.0);
+    float speck = speckAt(p, lum) * sky * (1.0 - band);
+    float2 cell = floor(r / 3.0);
+    float tw = 0.5 + 0.5 * sin(t * (1.3 + 2.2 * hash12(cell)) + hash12(cell + 7.0) * 40.0);
+    col *= 1.0 + speck * (tw - 0.5) * 0.9;
+    float valley = exp(-sqf((r.x - 800.0) / 60.0) - sqf((r.y - 737.0) / 8.0));
+    col += float3(1.0, 0.8, 0.45) * valley * smoothstep(0.3, 0.6, lum) * (0.5 + 0.5 * sin(t * 3.0 + r.x * 0.7)) * 0.2;
+
+    // Snow falling: small far flakes, bigger soft near ones, drifting with a little wind.
+    float2 sv = q * float2(sz.x / sz.y, 1.0);
+    sv.x += 0.015 * sin(t * 0.3 + sv.y * 4.0);
+    float flakes = dots(sv, 60.0, float2(t * 0.012, -t * 0.06), 0.16, 0.08, 3.0) * 0.45
+                 + dots(sv, 28.0, float2(t * 0.02, -t * 0.1), 0.08, 0.1, 7.0) * 0.55
+                 + dots(sv, 11.0, float2(t * 0.03, -t * 0.17), 0.05, 0.16, 11.0) * 0.35;
+    col += float3(0.92, 0.95, 1.0) * flakes * 0.55;
+    // Snow sparkling on the slope in the cabin's light.
+    float slope = step(740.0, r.y);
+    col += float3(1.0, 0.9, 0.75) * dots(sv, 190.0, float2(0.0), 0.06, 0.08, 13.0) * slope * smoothstep(0.45, 0.8, lum) * 0.6;
+
+    return half4(finishPaint(col, fc), 1.0);
+}

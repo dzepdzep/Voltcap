@@ -1,0 +1,130 @@
+// Volt / Spark: a thunderstorm rolling over flooded plains at night. Towering clouds churn, lit
+// from inside by flickering charge; every few seconds a branching bolt rips down to the horizon,
+// floods the clouds with light and strikes the ground with a flash - all of it mirrored in the
+// water below. Rain curtains sweep across, sparks drift up off the plain.
+
+// Straight segments between random points: jagged like real lightning, not wavy.
+float jag(float y, float n, float seed) {
+    float i = floor(y * n);
+    float f = fract(y * n);
+    return mix(hash11(i + seed * 31.0), hash11(i + 1.0 + seed * 31.0), f) - 0.5;
+}
+
+float boltDist(float2 uv, float x0, float seed, float top, float bottom) {
+    float y = uv.y - top;
+    float x = x0 + jag(y, 6.0, seed) * 0.17 + jag(y, 19.0, seed + 5.0) * 0.05 + jag(y, 57.0, seed + 9.0) * 0.014;
+    float inside = step(0.0, y) * (1.0 - smoothstep(bottom - top - 0.06, bottom - top, y));
+    return abs(uv.x - x) + (1.0 - inside) * 0.25 + step(y, 0.0) * 10.0;
+}
+
+// Where bolt k strikes, and how bright it is at phase ph (seconds into its cycle).
+float strike(float ph) {
+    return exp(-ph * 5.0) * (0.55 + 0.45 * sin(ph * 80.0)) + 0.8 * exp(-abs(ph - 0.22) * 24.0) + 0.5 * exp(-abs(ph - 0.42) * 30.0);
+}
+
+// Cloud density and how lit its top is (x = density, y = light from above).
+float2 cloud(float2 q, float t) {
+    float2 w = float2(fbm3(q * 0.7 + float2(t * 0.01, 0.0)), fbm3(q * 0.7 + float2(5.2, t * 0.008)));
+    float2 p = q * 2.1 + (w - 0.5) * 0.9 + float2(t * 0.025, 0.0);
+    float d = fbm(p);
+    float u = fbm(p + float2(0.035, -0.075));
+    return float2(d, sat((d - u) * 8.0 + 0.45));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.0 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float horizon = 0.70;
+
+    // Bolt timing: a strike every 5 s, alternating sides of the screen.
+    float cyc = 5.0;
+    float k = floor(t / cyc);
+    float ph = t - k * cyc;
+    float flash = strike(ph);
+    float bx = asp * (0.15 + 0.7 * hash11(k * 13.7));
+    float boltOn = sat(flash * 1.6) * (1.0 - smoothstep(0.5, 0.7, ph));
+    // Charge flickering inside the clouds between strikes.
+    float pc = 1.7;
+    float pk = floor(t / pc);
+    float pph = t - pk * pc;
+    float2 pp = float2(asp * hash11(pk * 4.7 + 2.0), 0.12 + 0.3 * hash11(pk * 8.3));
+    float pulse = exp(-pph * 4.0) * (0.6 + 0.4 * sin(pph * 55.0)) * step(0.3, hash11(pk * 2.9));
+
+    // Above the horizon draw the sky; below it, the same sky mirrored in the water.
+    float water = step(horizon, uv.y);
+    float2 s = uv;
+    if (water > 0.5) {
+        s.y = 2.0 * horizon - uv.y;
+        // Ripples break the reflection up.
+        s.x += 0.006 * sin(uv.y * 160.0 + t * 2.0) * (uv.y - horizon) * 8.0;
+        s.y += 0.004 * sin(uv.x * 60.0 + t * 1.3);
+    }
+
+    float3 col = mix(BG * 0.5, BG * 1.4 + A * 0.04, sat(s.y / horizon));
+    // The clouds: a heavy deck, thickest high up, with towers rising into it.
+    float2 cq = float2(s.x, s.y * 1.3);
+    float2 c = cloud(cq, t);
+    float cover = smoothstep(0.36, 0.62, c.x + 0.22 * (1.0 - s.y / horizon)) * smoothstep(horizon + 0.02, horizon - 0.22, s.y);
+    float3 shadow = mix(BG * 0.7, float3(0.035, 0.04, 0.055), 0.5);
+    float3 lit = mix(float3(0.20, 0.21, 0.25), S * 0.35 + A * 0.05, 0.35);
+    float3 cc = mix(shadow, lit, c.y * c.y);
+    // Glow of a far-off town under the clouds, low on the horizon.
+    col += A * 0.10 * exp(-abs(s.y - horizon + 0.03) * 14.0);
+    // Lit from inside: near the bolt during a strike, and in flickering pockets.
+    float near = exp(-abs(s.x - bx) * 2.2) * exp(-max(s.y - 0.1, 0.0) * 1.5);
+    float glowIn = flash * near * 1.6 + pulse * exp(-length((s - pp) * float2(1.0, 1.6)) * 6.0) * 1.2;
+    cc += mix(A, float3(1.0), 0.45) * glowIn * (0.35 + 0.65 * c.y) * smoothstep(0.35, 0.7, c.x);
+    col = mix(col, cc, cover);
+    // The whole sky brightens for an instant.
+    col += mix(A, S, 0.5) * flash * 0.06 * (1.0 - cover * 0.5);
+
+    // Distant land: two ridges along the horizon, a darker strip of shore.
+    float r1 = horizon - 0.02 - 0.035 * fbm3(float2(s.x * 3.0, 1.0)) - 0.02 * vnoise(float2(s.x * 14.0, 3.0));
+    float r2 = horizon - 0.004 - 0.012 * vnoise(float2(s.x * 9.0 + 4.0, 0.0));
+    col = mix(col, BG * 0.55 + A * 0.02 * flash, smoothstep(r1, r1 + 0.002, s.y));
+    col = mix(col, BG * 0.25, smoothstep(r2, r2 + 0.002, s.y));
+
+    // The bolt, a fork, and the strike's flash on the ground.
+    float bottom = horizon - 0.01;
+    float d = boltDist(s, bx, k, 0.02, bottom);
+    float by = 0.18 + 0.2 * hash11(k * 7.1);
+    float bdir = hash11(k * 5.9) > 0.5 ? 1.0 : -1.0;
+    float2 buv = s;
+    buv.x -= (s.y - by) * 0.55 * bdir;
+    float bx2 = bx + jag(by - 0.02, 6.0, k) * 0.17 + jag(by - 0.02, 19.0, k + 5.0) * 0.05;
+    float d2 = boltDist(buv, bx2, k + 17.0, by, by + 0.2 + 0.12 * hash11(k));
+    float core = (1.0 - smoothstep(0.6 * px, 2.2 * px, d)) + 0.7 * (1.0 - smoothstep(0.4 * px, 1.6 * px, d2));
+    float halo = exp(-d * 80.0) * 0.8 + exp(-d * 14.0) * 0.22 + exp(-d2 * 100.0) * 0.45;
+    float3 boltCol = float3(1.0) * core + mix(A, float3(1.0), 0.45) * halo;
+    float impact = exp(-length((s - float2(bx + jag(bottom - 0.02, 6.0, k) * 0.17, bottom)) * float2(0.5, 2.5)) * 7.0);
+    boltCol += mix(A, float3(1.0), 0.5) * impact * 1.8;
+    col += boltCol * boltOn;
+
+    // The water: darker, a little bluer, brighter streaks where it catches the light.
+    if (water > 0.5) {
+        float depth = (uv.y - horizon) / (1.0 - horizon);
+        col *= 0.72 - 0.3 * depth;
+        col += BG * 0.15;
+        float glint = pow(sat(sin(uv.y * 300.0 - t * 3.0 + vnoise(uv * float2(8.0, 40.0)) * 6.0)), 12.0);
+        col += mix(A, float3(1.0), 0.4) * glint * (flash * near * 0.5 + 0.04) * (1.0 - depth);
+    }
+
+    // Rain: curtains of streaks, seen where there's light behind them.
+    float rainAmt = 0.3 + 0.7 * smoothstep(0.3, 0.7, vnoise(float2(uv.x * 1.5 - t * 0.15, 0.0)));
+    float2 rp = float2(uv.x * 140.0 + uv.y * 30.0, uv.y * 3.0 + t * 7.0);
+    float drop = step(0.92, hash12(floor(rp))) * smoothstep(0.5, 0.0, abs(fract(rp.x) - 0.5)) * fract(rp.y);
+    float bright = dot(col, float3(0.33));
+    col += mix(S, float3(1.0), 0.5) * drop * rainAmt * (0.03 + bright * 0.5 + flash * 0.08);
+
+    // Sparks drifting up off the plain.
+    float s1 = dots(uv + float2(sin(uv.y * 6.0 + t * 0.5) * 0.02, 0.0), 14.0, float2(0.0, t * 0.35), 0.3, 0.09, 1.0);
+    float s2 = dots(uv, 26.0, float2(t * 0.1, t * 0.5), 0.25, 0.12, 9.0);
+    col += (A * s1 * 0.6 + S * s2 * 0.25) * smoothstep(0.2, 0.75, uv.y);
+
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,55 @@
+// Bloom: a flower of light that opens with the music. Rings of petals turn against each other,
+// each petal as long as its band is loud (lows in the inner ring, highs in the outer), the centre
+// pulses on the kick and pollen drifts outwards with the highs. Kaleidoscopic, in the cover's colours.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float play = uPlaying;
+    float k = uIntensity;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float rm = room(0.24);
+
+    float3 col = coverField(uv, asp, t, uBass * play, 0.55, BG, A, S);
+    float2 c = float2(waveX(asp), uWaveY);
+    float2 d = uv - c;
+    float r = length(d) / rm;
+    float a = atan(d.y, d.x);
+
+    // Three rings of petals, outer to inner (drawn back to front).
+    for (int i = 2; i >= 0; i--) {
+        float fi = float(i);
+        float n = 6.0 + fi * 3.0;
+        float spin = t * (0.12 + 0.05 * fi) * (fi == 1.0 ? -1.0 : 1.0);
+        float pa = a + spin;
+        float sector = floor((pa / TAU + 0.5) * n);
+        float local = fract((pa / TAU + 0.5) * n) - 0.5;
+        float e = eqAt(fi * 0.33 + hash11(sector + fi * 13.0) * 0.25) * play;
+        float len = (0.3 + 0.2 * fi) + (0.25 + 0.15 * fi) * e * (0.5 + 0.5 * k);
+        // Petal: a tapered teardrop along the sector's middle.
+        float along = r / len;
+        float width = 0.42 * sin(PI * sat(along)) * (1.0 - 0.3 * along);
+        float petal = step(along, 1.0) * (1.0 - smoothstep(width - 0.05, width, abs(local)));
+        float3 pc = mix(mix(A, S, fi * 0.45), float3(1.0), sat(along - 0.4) * 0.4) * (0.65 + 0.35 * (1.0 - abs(local) * 2.0));
+        col = mix(col, pc * (0.8 + 0.4 * e), petal * (0.85 - fi * 0.1));
+        col += pc * exp(-abs(along - 1.0) * 30.0) * petal * 0.3;
+    }
+
+    // Centre pulsing on the kick.
+    float core = 1.0 - smoothstep(0.12 + 0.05 * kick, 0.14 + 0.05 * kick, r);
+    col = mix(col, mix(S, float3(1.0), 0.5), core);
+    col += mix(A, S, 0.5) * exp(-r * 4.0) * (0.15 + 0.4 * kick * k);
+
+    // Pollen drifting outwards.
+    float2 pp = float2((a / TAU + 0.5) * 40.0, log(max(r, 0.01)) * 6.0 - (0.5 * t + 1.5 * uHighT));
+    float2 h = hash22(floor(pp) + 9.0);
+    float pollen = step(h.x, 0.1) * (1.0 - smoothstep(0.05, 0.15, length(fract(pp) - 0.5 - (h - 0.5) * 0.4))) * step(0.3, r);
+    col += mix(S, float3(1.0), 0.6) * pollen * exp(-max(r - 1.0, 0.0) * 1.5) * 0.7;
+
+    return half4(finish(col, fc), 1.0);
+}

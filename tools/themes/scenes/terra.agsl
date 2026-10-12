@@ -1,0 +1,84 @@
+// Terra: a ground-type desert. Dunes roll away in layers under a hazy sun, a sandstorm sweeps
+// across in streaks and gusts, pebbles bounce along, heat shimmer bends the horizon and glowing
+// cracks pulse in the hard ground at the front.
+
+float duneH(float x, float base, float amp, float seed) {
+    return base - amp * (0.6 * (0.5 + 0.5 * sin(x * 2.2 + seed)) + 0.4 * fbm3(float2(x * 1.6 + seed, seed)));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Gusts: the storm swells every few seconds.
+    float gust = 0.5 + 0.5 * sin(t * 0.5) * sin(t * 0.21 + 1.0);
+
+    // Sky: dusty, warmer near the horizon; a soft sun.
+    float3 col = mix(BG * 0.9, mix(A, S, 0.5) * 0.6, pow(sat(uv.y / 0.7), 1.6));
+    float sd = length(uv - float2(asp * 0.3, 0.3));
+    col += mix(S, float3(1.0), 0.4) * exp(-sd * 6.0) * 0.5;
+    col = mix(col, mix(S, float3(1.0), 0.6), (1.0 - smoothstep(0.06, 0.065, sd)) * (0.7 - 0.4 * gust));
+
+    // Heat shimmer near the horizon.
+    float2 hu = uv + float2(0.0, (vnoise(float2(uv.x * 20.0, t * 2.0)) - 0.5) * 0.006 * smoothstep(0.45, 0.6, uv.y));
+
+    // Dune layers, far to near, each darker and slowly drifting.
+    for (int k = 0; k < 3; k++) {
+        float fk = float(k);
+        float x = hu.x * (1.0 + fk * 0.5) + t * 0.006 * (fk + 1.0) + fk * 5.0;
+        float h = duneH(x, 0.6 + fk * 0.13, 0.09 + fk * 0.04, fk * 3.0);
+        float inD = smoothstep(h - 0.0015, h + 0.0015, hu.y);
+        float lit = 0.5 + 0.5 * sin(x * 2.2 + fk * 3.0 + 1.2);
+        float3 sand = mix(A * 0.55, mix(A, S, 0.6) * 0.85, lit) * (1.0 - fk * 0.18);
+        col = mix(col, sand, inD);
+        // Ripples on the near dunes.
+        // Soft wind ripples on the near dunes (a smooth sine, no hard steps).
+        col *= 1.0 - inD * 0.04 * (0.5 + 0.5 * sin((hu.y - h) * 700.0 + hu.x * 60.0 + sin(hu.x * 9.0) * 2.0)) * step(0.5, fk);
+        // Wind lifting sand off the crests.
+        col += mix(S, float3(1.0), 0.3) * exp(-abs(hu.y - h + 0.01) * 120.0) * 0.12 * gust * (1.0 - inD);
+    }
+
+    // Cracked hard ground at the front with glowing seams.
+    float groundY = 0.9;
+    if (uv.y > groundY) {
+        float2 c = float2(uv.x * 6.0, (uv.y - groundY) * 30.0);
+        float2 ci = floor(c);
+        float2 cf = fract(c);
+        float best = 9.0;
+        float second = 9.0;
+        for (int j = -1; j <= 1; j++) {
+            for (int i = -1; i <= 1; i++) {
+                float2 g = float2(float(i), float(j));
+                float dd = length(g + hash22(ci + g) - cf);
+                if (dd < best) { second = best; best = dd; } else if (dd < second) { second = dd; }
+            }
+        }
+        float seam = 1.0 - smoothstep(0.02, 0.12, second - best);
+        col = mix(col, A * 0.35, 0.7);
+        col += mix(A, S, 0.5) * seam * (0.35 + 0.35 * sin(t * 1.5 + ci.x));
+    }
+
+    // Pebbles hopping along the ground.
+    for (int k = 0; k < 4; k++) {
+        float fk = float(k);
+        float x = fract(t * (0.05 + 0.03 * hash11(fk)) + hash11(fk + 4.0)) * (asp + 0.2) - 0.1;
+        float hop = abs(sin(t * (2.0 + fk) + fk)) * 0.04 * gust;
+        float2 pp = float2(x, groundY - 0.01 - hop);
+        float pd = length((uv - pp) * float2(1.0, 1.3)) - 0.008 - 0.004 * hash11(fk + 9.0);
+        col = mix(col, A * 0.3, 1.0 - smoothstep(0.0, 0.002, pd));
+    }
+
+    // Sandstorm: soft, wavy veils of sand blown across (warped noise stretched sideways, no hard lines).
+    float2 wp = float2(uv.x * 1.2 - t * (0.25 + 0.5 * gust), uv.y * 7.0 + sin(uv.x * 2.5 + t * 0.4) * 0.8);
+    float veil = fbm3(wp + float2(fbm3(wp * 0.7 + t * 0.1), 0.0) * 0.8);
+    float streak = smoothstep(0.5, 0.85, veil) * smoothstep(0.25, 0.7, uv.y);
+    col = mix(col, mix(A, S, 0.6) * 0.9, streak * (0.1 + 0.25 * gust));
+    // Dust haze.
+    col = mix(col, mix(A, S, 0.5) * 0.6, fbm3(float2(uv.x * 2.0 - t * 0.3, uv.y * 3.0)) * 0.25 * gust);
+
+    return half4(finish(col, fc), 1.0);
+}

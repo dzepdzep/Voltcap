@@ -1,0 +1,265 @@
+package com.shelf.launcher.ui
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import com.shelf.launcher.data.Features
+import com.shelf.launcher.data.Game
+
+/**
+ * Update 134: a game as a real 3D case (the carousel's "3D cases", and its Arc, Spine wall and Turned row views): a box
+ * with the game's cover on the front, its spine on the left side (the same spine the Spines look uses: the game's real
+ * spine scan, else your console spine with the name, else a plain one with the name), the plastic edge on the right and
+ * a lid on top, drawn in true perspective at any turn — [yaw] in degrees (positive: the front turns to the right, so the
+ * spine comes round to face you; 90 = spine on). [shade] darkens it (0–1); [reflect] draws its mirror image on a glossy
+ * floor under it; [frame] outlines the front in [frameColor]. Fills [modifier]: the front is as big as fits, centred.
+ */
+@Composable
+internal fun Case3D(
+    g: Game, cover: Any?, physical: List<Pair<String, String>>?, yaw: Float, aspect: Float,
+    modifier: Modifier, shade: Float = 0f, reflect: Boolean = false,
+    frame: Boolean = false, frameColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.White,
+    pitch: Float = 4f
+) {
+    val title = gameDisplayName(g.name)
+    val front = rememberSoftBitmap(cover, 480)
+    // The spine, in the same order as the Spines look (GameSpine): the real scan first, then your console spine.
+    val scans = physical ?: HomeScans.map[g.stableKey]
+    // Not looked up yet (far along the Spine wall): ask once it has stayed on screen a moment, as the Spines look does.
+    if (physical == null && !HomeScans.map.containsKey(g.stableKey)) {
+        androidx.compose.runtime.LaunchedEffect(g.stableKey) { kotlinx.coroutines.delay(400); HomeScans.need?.invoke(g) }
+    }
+    val forAll = LookStyles.spineForAll()
+    val realSpine = if (forAll) null else scans?.firstOrNull { it.first == "Spine" }?.second
+    val own = realSpine ?: if (Features.originalCases.state.value && !forAll) BoxTexture.spine(scans, g.platform) else null
+    val ownBmp = rememberSoftBitmap(own, 600)
+    val tpl = if (Features.coverTemplates.state.value || forAll) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
+    // (Made once per game, away from the screen's thread: SpineCache.)
+    val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false)
+    val spine: android.graphics.Bitmap = remember(ownBmp, tplSpine, title) {
+        ownBmp?.let { orientSpine(it, landscape = false) }
+            ?: tplSpine.bitmap
+            // (A plain dark strip for the moment your console spine is being made, then the plain one with the name.)
+            ?: if (!tplSpine.done) SpineCache.WAITING else plainSpine(title)
+    }
+    // How thick the case is (its spine's width against its height): the spine picture's own shape, kept to real cases'.
+    val depth = remember(spine, tpl, ownBmp) {
+        val own = spine.width.toFloat() / spine.height.coerceAtLeast(1)
+        (if (ownBmp != null) own else tpl?.aspect ?: 0.085f).coerceIn(0.05f, 0.16f)
+    }
+    val face = remember(front, aspect) { front?.let { cropTo(it, aspect) } }
+    val noCover = remember(title, g.hue, cover == null) { if (cover == null) plainFront(title, g.hue) else null }
+    val frameArgb = frameColor.toArgb()
+    Canvas(modifier) {
+        val fit = minOf(size.height, size.width / aspect) * 0.94f
+        val h = fit
+        val w = h * aspect
+        val d = h * depth
+        drawIntoCanvas { canvas ->
+            CaseDraw.draw(
+                canvas.nativeCanvas, size.width / 2f, size.height / 2f, w, h, d, yaw, pitch,
+                face ?: noCover, spine, (1f - shade).coerceIn(0f, 1f), reflect,
+                if (frame) frameArgb else 0, 2.5f * density
+            )
+        }
+    }
+}
+
+/** Width / height of a game's 3D case: its console's cover shape (the cover templates), else a game case's. */
+internal fun case3dAspect(g: Game, mixed: Boolean): Float =
+    (if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null)?.coerceIn(0.55f, 1.45f) ?: 0.71f
+
+/** [src] cut in the middle to [aspect] (width / height), no stretching. */
+private fun cropTo(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+    val cur = src.width.toFloat() / src.height
+    if (aspect <= 0f || kotlin.math.abs(cur - aspect) < 0.02f) return src
+    val w = if (cur > aspect) (src.height * aspect).toInt().coerceAtLeast(1) else src.width
+    val h = if (cur > aspect) src.height else (src.width / aspect).toInt().coerceAtLeast(1)
+    return runCatching { android.graphics.Bitmap.createBitmap(src, (src.width - w) / 2, (src.height - h) / 2, w, h) }.getOrDefault(src)
+}
+
+/** A plain dark spine with the name up it (reads top to bottom), for a game without any spine picture. */
+private fun plainSpine(title: String): android.graphics.Bitmap {
+    val b = android.graphics.Bitmap.createBitmap(56, 600, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(b)
+    c.drawColor(0xFF1C1E26.toInt())
+    val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFE8E8EE.toInt(); textSize = 32f; isFakeBoldText = true
+    }
+    val room = 560f
+    while (p.measureText(title) > room && p.textSize > 16f) p.textSize -= 1f
+    var t = title
+    if (p.measureText(t) > room) {
+        while (t.length > 2 && p.measureText("$t…") > room) t = t.dropLast(1)
+        t = t.trimEnd() + "…"
+    }
+    c.save(); c.rotate(90f); c.translate(20f, -(28f - 0.36f * p.textSize))
+    c.drawText(t, 0f, 0f, p); c.restore()
+    return b
+}
+
+/** A front for a game without a cover: its colour with the name across it. */
+private fun plainFront(title: String, hue: Int): android.graphics.Bitmap {
+    val b = android.graphics.Bitmap.createBitmap(360, 500, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(b)
+    c.drawColor(android.graphics.Color.HSVToColor(floatArrayOf(((hue % 360) + 360f) % 360f, 0.45f, 0.32f)))
+    val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFF2F2F6.toInt(); textSize = 40f; isFakeBoldText = true; textAlign = android.graphics.Paint.Align.CENTER
+    }
+    // Word-wrapped over up to four lines.
+    val lines = ArrayList<String>()
+    var cur = ""
+    for (word in title.split(' ')) {
+        val next = if (cur.isEmpty()) word else "$cur $word"
+        if (p.measureText(next) > 320f && cur.isNotEmpty()) { lines.add(cur); cur = word } else cur = next
+    }
+    if (cur.isNotEmpty()) lines.add(cur)
+    val shown = lines.take(4)
+    val top = 250f - (shown.size - 1) * 24f
+    shown.forEachIndexed { i, l -> c.drawText(l, 180f, top + i * 48f + 14f, p) }
+    return b
+}
+
+/** The perspective drawing of one case (plain maths, no Compose): see [Case3D]. */
+private object CaseDraw {
+    private val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
+    private val fill = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+    private val line = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { style = android.graphics.Paint.Style.STROKE }
+    private val fade = android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN) }
+    private val matrix = android.graphics.Matrix()
+    private val path = android.graphics.Path()
+
+    // The faces' corners (TL, TR, BR, BL as seen from outside, upright), in half sizes: x, y, z of each.
+    private val FRONT = floatArrayOf(-1f, -1f, 1f, 1f, -1f, 1f, 1f, 1f, 1f, -1f, 1f, 1f)
+    private val SPINE = floatArrayOf(-1f, -1f, -1f, -1f, -1f, 1f, -1f, 1f, 1f, -1f, 1f, -1f)
+    private val EDGE = floatArrayOf(1f, -1f, 1f, 1f, -1f, -1f, 1f, 1f, -1f, 1f, 1f, 1f)
+    private val TOP = floatArrayOf(-1f, -1f, -1f, 1f, -1f, -1f, 1f, -1f, 1f, -1f, -1f, 1f)
+    private val BACK = floatArrayOf(1f, -1f, -1f, -1f, -1f, -1f, -1f, 1f, -1f, 1f, 1f, -1f)
+    // Each face's outward direction (for its light).
+    private val NORMALS = arrayOf(floatArrayOf(0f, 0f, 1f), floatArrayOf(-1f, 0f, 0f), floatArrayOf(1f, 0f, 0f), floatArrayOf(0f, -1f, 0f), floatArrayOf(0f, 0f, -1f))
+    private val FACES = arrayOf(FRONT, SPINE, EDGE, TOP, BACK)
+
+    @Synchronized
+    fun draw(
+        c: android.graphics.Canvas, cx: Float, cy: Float, w: Float, h: Float, d: Float, yaw: Float, pitch: Float,
+        front: android.graphics.Bitmap?, spine: android.graphics.Bitmap, light: Float, reflect: Boolean,
+        frameArgb: Int, frameWidth: Float
+    ) {
+        val ty = Math.toRadians(yaw.toDouble()); val tp = Math.toRadians(pitch.toDouble())
+        val cy0 = kotlin.math.cos(ty).toFloat(); val sy0 = kotlin.math.sin(ty).toFloat()
+        val cp = kotlin.math.cos(tp).toFloat(); val sp = kotlin.math.sin(tp).toFloat()
+        val focal = h * 3.4f
+        val hw = w / 2f; val hh = h / 2f; val hd = d / 2f
+        val out = FloatArray(8)
+        // Projects corner [i] of [face] (mirrored under the floor when [mirror]) into [out] at [i]; false when behind the eye.
+        fun project(face: FloatArray, i: Int, mirror: Boolean): Boolean {
+            val x = face[i * 3] * hw
+            var y = face[i * 3 + 1] * hh
+            val z = face[i * 3 + 2] * hd
+            if (mirror) y = h - y
+            // Turn round the upright, then tip towards you.
+            val x1 = x * cy0 + z * sy0
+            val z1 = -x * sy0 + z * cy0
+            val y2 = y * cp + z1 * sp
+            val z2 = -y * sp + z1 * cp
+            val k = focal - z2
+            if (k <= 1f) return false
+            val s = focal / k
+            out[i * 2] = cx + x1 * s
+            out[i * 2 + 1] = cy + y2 * s
+            return true
+        }
+        fun area(): Float {
+            var a = 0f
+            for (i in 0 until 4) { val j = (i + 1) % 4; a += out[i * 2] * out[j * 2 + 1] - out[j * 2] * out[i * 2 + 1] }
+            return a
+        }
+        // How much light a face gets: full facing you, darker the more it turns away (the top a little lit from above).
+        fun lightOf(n: FloatArray): Float {
+            val nz1 = -n[0] * sy0 + n[2] * cy0
+            val nz = -n[1] * sp + nz1 * cp
+            val up = if (n[1] < 0f) 0.12f else 0f
+            return ((0.5f + 0.5f * nz.coerceIn(0f, 1f)) + up).coerceAtMost(1f) * light
+        }
+        fun filterOf(l: Float): android.graphics.ColorFilter? {
+            if (l >= 0.995f) return null
+            val v = (l.coerceIn(0f, 1f) * 255f).toInt()
+            return android.graphics.LightingColorFilter(android.graphics.Color.rgb(v, v, v), 0)
+        }
+        fun pathOf(): android.graphics.Path {
+            path.reset()
+            path.moveTo(out[0], out[1]); path.lineTo(out[2], out[3]); path.lineTo(out[4], out[5]); path.lineTo(out[6], out[7]); path.close()
+            return path
+        }
+        fun warp(bmp: android.graphics.Bitmap, filter: android.graphics.ColorFilter?) {
+            val src = floatArrayOf(0f, 0f, bmp.width.toFloat(), 0f, bmp.width.toFloat(), bmp.height.toFloat(), 0f, bmp.height.toFloat())
+            matrix.reset()
+            if (matrix.setPolyToPoly(src, 0, out, 0, 4)) {
+                paint.colorFilter = filter
+                c.save(); c.concat(matrix); c.drawBitmap(bmp, 0f, 0f, paint); c.restore()
+                paint.colorFilter = null
+            }
+        }
+        fun drawFaces(mirror: Boolean) {
+            for (f in FACES.indices) {
+                val face = FACES[f]
+                var ok = true
+                for (i in 0 until 4) if (!project(face, i, mirror)) { ok = false; break }
+                if (!ok) continue
+                val a = area()
+                // Facing you (the mirror image winds the other way).
+                if (if (mirror) a >= 0f else a <= 0f) continue
+                val l = lightOf(NORMALS[f])
+                when (f) {
+                    0 -> {
+                        if (front != null) warp(front, filterOf(l)) else {
+                            fill.shader = null; fill.color = scaled(0xFF2A2D36.toInt(), l); c.drawPath(pathOf(), fill)
+                        }
+                        if (!mirror) {
+                            // The case's glossy plastic over the cover, and its thin rim.
+                            fill.shader = android.graphics.LinearGradient(out[0], out[1], out[4], out[5],
+                                intArrayOf(0x33FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x14FFFFFF), floatArrayOf(0f, 0.45f, 0.8f, 1f), android.graphics.Shader.TileMode.CLAMP)
+                            c.drawPath(pathOf(), fill)
+                            fill.shader = null
+                            line.strokeWidth = 1f; line.color = scaled(0x55FFFFFF, light)
+                            c.drawPath(pathOf(), line)
+                            if (frameArgb != 0) { line.strokeWidth = frameWidth; line.color = frameArgb; c.drawPath(pathOf(), line) }
+                        }
+                    }
+                    1 -> warp(spine, filterOf(l))
+                    else -> {
+                        // The plastic: the open edge, the top and the back.
+                        fill.shader = null
+                        fill.color = scaled(if (f == 3) 0xFF3A3D47.toInt() else 0xFF22242C.toInt(), l)
+                        c.drawPath(pathOf(), fill)
+                    }
+                }
+            }
+        }
+        if (reflect) {
+            // The floor line (the case's foot) and the mirror image under it, fading out.
+            project(FRONT, 2, false); project(FRONT, 3, false)
+            val floorY = maxOf(out[5], out[7])
+            val l = c.saveLayerAlpha(cx - w * 2f, floorY - d, cx + w * 2f, floorY + h * 1.2f, 80)
+            drawFaces(true)
+            fade.shader = android.graphics.LinearGradient(0f, floorY, 0f, floorY + h * 0.55f,
+                intArrayOf(0xFF000000.toInt(), 0x00000000), null, android.graphics.Shader.TileMode.CLAMP)
+            c.drawRect(cx - w * 2f, floorY - d, cx + w * 2f, floorY + h * 1.2f, fade)
+            fade.shader = null
+            c.restoreToCount(l)
+        }
+        drawFaces(false)
+    }
+
+    /** [argb] with its colour times [l] (alpha kept). */
+    private fun scaled(argb: Int, l: Float): Int {
+        val k = l.coerceIn(0f, 1f)
+        val a = argb ushr 24
+        val r = (((argb shr 16) and 255) * k).toInt(); val g = (((argb shr 8) and 255) * k).toInt(); val b = ((argb and 255) * k).toInt()
+        return (a shl 24) or (r shl 16) or (g shl 8) or b
+    }
+}

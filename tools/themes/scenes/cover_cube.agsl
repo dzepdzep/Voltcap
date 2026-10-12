@@ -1,0 +1,93 @@
+// Cover cube (music): a big cube floating and slowly turning in a soft void, the current cover on
+// the face turned towards you and earlier songs' covers on the other faces. It turns faster when the
+// song gets busy, bounces a little on the kick, casts a soft shadow on the floor and is ringed by a
+// glowing equalizer halo.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.6;
+    // A bright, colourful backdrop in the cover's colours.
+    float3 col = mix(mix(A, S, 0.35) * 0.45 + BG * 0.6, BG * 0.55, sat(length((uv - c) / (R * 4.0))));
+    // Halo: an equalizer ring behind the cube.
+    float2 hd = (uv - c) * float2(1.0, 1.0);
+    float ang = atan(hd.y, hd.x);
+    float m = abs(ang) / PI;
+    float e = eqAt(m) * play;
+    float rr = length(hd);
+    float ringR = R * 1.75;
+    // Soft-edged bars (a pixel of fade on every side) so the ring doesn't shimmer as it pulses.
+    float barW = px / max(rr * TAU / 64.0, px);
+    float bar = smoothstep(ringR - px, ringR + px, rr) * (1.0 - smoothstep(ringR + R * (0.05 + 0.5 * e * k) - px, ringR + R * (0.05 + 0.5 * e * k) + px, rr))
+        * (1.0 - smoothstep(0.3 - barW, 0.3 + barW, abs(fract(ang / TAU * 64.0) - 0.5)));
+    col = mix(col, mix(A, S, m) * (0.7 + 0.6 * e), bar);
+    // Shadow on the floor.
+    float2 sh = (uv - float2(c.x, c.y + R * 1.6)) / float2(R * 1.2, R * 0.18);
+    col *= 1.0 - 0.4 * (1.0 - smoothstep(0.6, 1.0, length(sh))) * (1.0 - 0.3 * kick);
+
+    // Ray-cast the cube (rotation about y, slight tilt about x).
+    float spin = 0.2 * t + 0.45 * (uMidT + uHighT);
+    float bob = kick * k * 0.06;
+    float3 ro = float3(0.0, 0.0, -4.0);
+    float3 rd = normalize(float3((uv - c - float2(0.0, -bob * R)) / R, 3.4));
+    float ca = cos(spin);
+    float sa = sin(spin);
+    float cb = cos(0.35);
+    float sb = sin(0.35);
+    // Rotate the ray into the cube's space.
+    float3 o = ro;
+    float3 dvec = rd;
+    o = float3(ca * o.x + sa * o.z, o.y, -sa * o.x + ca * o.z);
+    dvec = float3(ca * dvec.x + sa * dvec.z, dvec.y, -sa * dvec.x + ca * dvec.z);
+    o = float3(o.x, cb * o.y - sb * o.z, sb * o.y + cb * o.z);
+    dvec = float3(dvec.x, cb * dvec.y - sb * dvec.z, sb * dvec.y + cb * dvec.z);
+    float3 inv = 1.0 / dvec;
+    float3 t0 = (-1.0 - o) * inv;
+    float3 t1 = (1.0 - o) * inv;
+    float3 tmin = min(t0, t1);
+    float3 tmax = max(t0, t1);
+    float tn = max(max(tmin.x, tmin.y), tmin.z);
+    float tf = min(min(tmax.x, tmax.y), tmax.z);
+    // How far inside the silhouette the ray is (the ray's path through the cube shrinks to 0 at the edge):
+    // a soft, anti-aliased outline instead of a stair-stepped one that crawls as the cube turns.
+    float edgePx = 4.0 / (3.4 * R * uRes.y);
+    float cover = sat((tf - tn) / (edgePx * 2.5));
+    if (cover > 0.0 && tf > 0.0) {
+        float3 p = o + dvec * tn;
+        float3 ap = abs(p);
+        float2 fq = float2(0.0);
+        float face = 0.0;
+        float3 nrm = float3(0.0);
+        if (ap.x > ap.y && ap.x > ap.z) { fq = p.zy * float2(sign(p.x), 1.0); face = p.x > 0.0 ? 1.0 : 3.0; nrm = float3(sign(p.x), 0.0, 0.0); }
+        else if (ap.y > ap.z) { fq = p.xz; face = 4.0; nrm = float3(0.0, sign(p.y), 0.0); }
+        else { fq = p.xy * float2(-sign(p.z), 1.0); face = p.z < 0.0 ? 0.0 : 2.0; nrm = float3(0.0, 0.0, sign(p.z)); }
+        float2 q = fq * 0.5 + 0.5;
+        // Every face shows the song playing now (the cube is about this cover, not the history).
+        float3 cv = sharpCover(q, A, S);
+        // A little more colour: lift saturation round the face's own grey.
+        float lum = dot(cv, float3(0.299, 0.587, 0.114));
+        cv = mix(float3(lum), cv, 1.25) * 1.08;
+        // Lighting: a key light from the top left.
+        float3 L = normalize(float3(-0.5, -0.6, -0.6));
+        float3 Ln = float3(ca * L.x + sa * L.z, L.y, -sa * L.x + ca * L.z);
+        float dif = 0.8 + 0.35 * sat(dot(nrm, -Ln));
+        cv *= dif;
+        // Edges.
+        float2 eq = abs(fq);
+        cv = mix(cv, float3(1.0), smoothstep(0.96, 1.0, max(eq.x, eq.y)) * 0.25);
+        col = mix(col, cv, cover);
+    }
+    return half4(finish(col, fc), 1.0);
+}

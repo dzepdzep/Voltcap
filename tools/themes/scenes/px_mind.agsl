@@ -1,0 +1,84 @@
+// Mind · 32-bit (psychic type): a floating temple in a violet void. A great eye glyph hangs in the
+// middle, slowly opening and closing; rings of runes turn round it in opposite directions; waves of
+// thought ripple out in dithered rings; stone slabs and pillars float and bob, and stars twinkle behind.
+//#include pixel
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float2 c = float2(asp * 0.5, 0.45);
+    float2 p = uv - c;
+    float r = length(p);
+    float a = atan(p.y, p.x);
+
+    // The void: violet bands swirling outwards, stars.
+    float sw = fract(r * 3.0 - t * 0.08 + 0.15 * sin(a * 3.0 + t * 0.2));
+    float3 col = mix(BG * 1.2 + S * 0.08, mix(BG, A, 0.25), pxBand(sw * (1.0 - r * 0.8), 4.0, cell) * 0.7);
+    float st = step(0.985, hash12(cell)) * step(0.5, sin(t * 2.0 + hash12(cell + 3.0) * 30.0));
+    col = mix(col, float3(1.0, 0.9, 1.0), st * step(0.25, r));
+
+    // Thought waves rippling out.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float wr = fract(t * 0.15 + fi / 3.0) * 0.6;
+        col = mix(col, mix(A, S, 0.5), step(abs(r - wr), PX * 0.8) * (1.0 - wr / 0.6) * step(0.5, fract(a * 8.0 / TAU + t * 0.2)));
+    }
+    // Two rune rings turning in opposite directions.
+    for (int k = 0; k < 2; k++) {
+        float fk = float(k);
+        float rr = 0.2 + fk * 0.08;
+        float n = 16.0 + fk * 8.0;
+        float aa = a + (fk < 0.5 ? t * 0.25 : -t * 0.18);
+        float seg = floor(aa / TAU * n);
+        float sa = fract(aa / TAU * n) - 0.5;
+        float2 q = float2(sa * TAU * rr / n, r - rr) / PX;      // in pixels round the ring
+        float h = hash11(seg + fk * 40.0);
+        float rune = 0.0;
+        rune = max(rune, step(abs(q.x), 0.6) * step(abs(q.y), 2.6));
+        rune = max(rune, step(abs(q.y - (h > 0.5 ? 2.0 : -2.0)), 0.6) * step(abs(q.x), 2.0));
+        rune = max(rune, step(abs(q.x - (h > 0.3 ? 1.5 : -1.5)), 0.6) * step(abs(q.y), 1.0) * step(0.3, fract(h * 7.0)));
+        col = mix(col, mix(S, float3(1.0), 0.3), rune * step(abs(q.x), 3.0));
+        col = mix(col, A * 0.8, step(abs(r - rr - (fk < 0.5 ? 0.025 : -0.025)), PX * 0.5));
+    }
+    // The eye: almond outline, iris and pupil, blinking every 7 s.
+    float bl = fract(t / 7.0);
+    float open = 1.0 - smoothstep(0.9, 0.95, bl) + smoothstep(0.95, 1.0, bl);
+    float2 e = p / float2(0.13, 0.07 * max(open, 0.05));
+    float lid = length(float2(e.x, abs(e.y) + 0.6)) ;
+    float almond = step(abs(e.y), (1.0 - e.x * e.x)) * step(abs(e.x), 1.0);
+    float outline = step(abs(e.y), (1.0 - e.x * e.x) + 0.25 / max(open, 0.2)) * step(abs(e.x), 1.12) * (1.0 - almond);
+    col = mix(col, float3(1.0, 0.95, 1.0) * 0.95, almond);
+    float2 look = float2(0.02 * sin(t * 0.5), 0.008 * sin(t * 0.37));
+    float ir = length(p - look);
+    col = mix(col, mix(A, S, pxBand(sat(ir / 0.045), 2.0, cell)), almond * step(ir, 0.045));
+    col = mix(col, float3(0.05, 0.0, 0.08), almond * step(ir, 0.018));
+    col = mix(col, float3(1.0), almond * step(length(p - look - float2(-0.012, -0.012)), 0.007));
+    col = mix(col, mix(A, float3(1.0), 0.4), outline);
+    // Rays from the eye.
+    col = mix(col, mix(A, float3(1.0), 0.5), step(0.97, cos(a * 12.0)) * step(0.16, r) * step(r, 0.19) * open);
+
+    // Floating stones: slabs with a lit top, bobbing.
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float side = mod(fi, 2.0) < 0.5 ? -1.0 : 1.0;
+        float2 sp = float2(c.x + side * (0.42 + 0.22 * hash11(fi)) * asp / 1.78, 0.2 + 0.6 * hash11(fi * 3.0));
+        sp.y += 0.015 * sin(t * 0.8 + fi * 1.7);
+        sp = pxSnap(sp);
+        float2 hw = float2(0.03 + 0.03 * hash11(fi * 5.0), 0.012);
+        float slab = pxBox(uv, sp, hw);
+        float topL = pxBox(uv, sp - float2(0.0, hw.y - PX), float2(hw.x, PX));
+        float under = step(sp.y + hw.y, uv.y) * step(uv.y, sp.y + hw.y + 0.03) * step(abs(uv.x - sp.x), hw.x * (1.0 - (uv.y - sp.y - hw.y) / 0.03));
+        col = mix(col, float3(0.32, 0.28, 0.4), max(slab, under));
+        col = mix(col, float3(0.6, 0.55, 0.72), topL);
+        // A pillar on some.
+        float pil = step(0.5, hash11(fi * 11.0)) * pxBox(uv, sp - float2(0.0, hw.y + 0.04), float2(0.008, 0.04));
+        col = mix(col, mix(float3(0.75, 0.7, 0.85), float3(0.55, 0.5, 0.68), step(sp.x, uv.x)), pil);
+    }
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

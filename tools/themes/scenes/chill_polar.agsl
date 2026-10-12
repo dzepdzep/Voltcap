@@ -1,0 +1,64 @@
+// Polar veil: Toni's painting of northern lights over a snowy peak (res scene_chill_polar), brought to life.
+// The curtains sway and shimmer — fine rays drifting along them, brightness rolling slowly across —
+// the stars twinkle, a shooting star crosses now and then, and the snow sparkles in the green light.
+// (The procedural version is kept as chill_polar_drawn.agsl.)
+//#include paint
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(BG * 1.2, BG * 0.7, uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+    float aspP = sz.x / sz.y;
+
+    // The aurora's area (top-left): its curtains sway sideways, more at their lower hem.
+    float area = smoothstep(0.75, 0.6, q.x + q.y * 0.35) * smoothstep(0.48, 0.36, q.y);
+    float sway = sin(q.y * 9.0 - t * 0.4 + q.x * 3.0) * 0.6 + sin(q.x * 13.0 + t * 0.3) * 0.4;
+    float2 off = float2(sway * 0.0035 * (0.4 + q.y * 2.0), 0.0) * area;
+    float3 col = paintAt(p + off * sz);
+    float lum = luma(col);
+
+    // Shimmer on the green / violet light.
+    float green = sat((col.g - max(col.r, col.b * 0.8)) * 4.0);
+    float violet = sat((col.b - col.g) * 3.0) * sat((col.r - col.g * 0.55) * 3.0);
+    float aur = sat(green + violet * 0.8) * sat(lum * 2.5 - 0.1) * smoothstep(0.55, 0.42, q.y);
+    float rays = vnoise(float2(q.x * 120.0 + q.y * 30.0 + t * 0.45, q.y * 2.0 + t * 0.12));
+    float roll = 0.5 + 0.5 * sin(q.x * 5.5 - t * 0.3 + sin(t * 0.11) * 2.0);
+    col *= 1.0 + aur * ((rays - 0.5) * 0.5 + (roll - 0.5) * 0.4);
+    col += col * aur * 0.1 * (0.5 + 0.5 * sin(t * 0.55 + q.x * 4.0));
+    // The hem glows brighter now and then as a wave runs along it.
+    float hemWave = exp(-sqf(fract(q.x * 0.8 - t * 0.05) - 0.5) * 30.0);
+    col += A * aur * hemWave * smoothstep(0.2, 0.38, q.y) * 0.18;
+
+    // Stars twinkle (bright specks outside the aurora and above the mountain).
+    float sky = (1.0 - aur) * step(q.y, 0.55) * (1.0 - smoothstep(0.0, 0.3, area));
+    float speck = speckAt(p, lum) * sky * (1.0 - green);
+    float2 cell = floor(q * sz / 3.0);
+    float tw = 0.5 + 0.5 * sin(t * (1.4 + 2.0 * hash12(cell)) + hash12(cell + 9.0) * 40.0);
+    col *= 1.0 + speck * (tw - 0.5);
+
+    // A shooting star every 13 s, across the right side of the sky.
+    float ts = fract(t / 13.0) * 13.0;
+    if (ts < 0.8) {
+        float2 a = float2(0.62 + 0.25 * hash11(floor(t / 13.0)), 0.05 + 0.08 * hash11(floor(t / 13.0) + 3.0));
+        float2 dir = float2(-0.22, 0.1);
+        float2 head = a + dir * ts;
+        float2 tail = head - dir * min(ts, 0.25);
+        float d = sdSegment(q * float2(aspP, 1.0), tail * float2(aspP, 1.0), head * float2(aspP, 1.0));
+        col += float3(0.9, 1.0, 0.95) * exp(-d * 1200.0) * (1.0 - ts / 0.8);
+    }
+
+    // Snow on the mountain and the slope sparkles in the green light.
+    float snow = smoothstep(0.55, 0.62, q.y) * smoothstep(0.35, 0.6, lum);
+    col += mix(A, float3(1.0), 0.6) * dots(q * float2(aspP, 1.0), 180.0, float2(0.0), 0.05, 0.08, 7.0) * snow * 0.7;
+    // The aurora's light on the snow breathes with it.
+    col += A * snow * 0.04 * (0.5 + 0.5 * sin(t * 0.55 + 1.0));
+
+    return half4(finishPaint(col, fc), 1.0);
+}

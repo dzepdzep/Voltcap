@@ -1,0 +1,30 @@
+# Voltcap R8 rules (release builds are shrunk + optimised since 0.2.0).
+
+# Voltcap's own code is kept as it is. Settings, caches, playtime, layouts, sync state… are
+# saved with Gson, which reads class and field names at run time; renaming or removing any
+# of them would silently lose saved data. Voltcap is open source, so there's nothing to hide.
+# The libraries (Compose, Material icons, Coil, OkHttp, Play Services…) still get shrunk.
+-keep class com.shelf.launcher.** { *; }
+-keepattributes Signature, InnerClasses, EnclosingMethod, *Annotation*, SourceFile, LineNumberTable
+
+# Gson: generic types (List<Foo>) come from anonymous TypeToken subclasses.
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+-keepclassmembers,allowobfuscation class * { @com.google.gson.annotations.SerializedName <fields>; }
+
+# Discord Social SDK (its own rules say the same; repeated in case the .aar is swapped).
+-keep class com.discord.** { *; }
+-keep class org.webrtc.** { *; }
+
+# security-crypto / Tink.
+-keepclassmembers class * extends com.google.crypto.tink.shaded.protobuf.GeneratedMessageLite { <fields>; }
+
+# Annotations and optional TLS providers some libraries mention but don't ship.
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
+-dontwarn org.jetbrains.annotations.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
+-dontwarn com.google.api.client.http.**
+-dontwarn org.joda.time.**

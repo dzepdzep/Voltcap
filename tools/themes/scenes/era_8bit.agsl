@@ -1,0 +1,97 @@
+// 8-bit quest: a chunky pixel world scrolling by like an 8-bit platformer's attract mode - banded
+// sky, a blocky sun, puffy pixel clouds, two rows of hills at their own speeds, a brick ground with
+// floating gem blocks and spinning coins. Every layer snaps to a coarse pixel grid; a short palette.
+float bayer2(float2 a) { a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
+
+half4 main(float2 fc) {
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    // ~96 "pixels" from top to bottom.
+    float P = 96.0;
+    float2 g = floor(fc / uRes.y * P);
+    float2 uv = g / P;
+    float x = uv.x;
+    float y = uv.y;
+
+    // Sky in four flat bands, dithered at the seams.
+    float sk = y / 0.72;
+    float band = floor(sk * 4.0 + bayer2(g) * 0.9);
+    float3 sky0 = float3(0.12, 0.16, 0.42);
+    float3 sky1 = float3(0.22, 0.38, 0.85);
+    float3 col = mix(sky0, sky1, band / 3.0);
+    col = mix(col, BG * 2.0 + sky0 * 0.5, 0.15);
+
+    // Blocky sun.
+    float2 sc = float2(asp * 0.78, 0.2);
+    float sd = max(abs(uv.x - sc.x), abs(uv.y - sc.y)) * 0.75 + length(uv - sc) * 0.25;
+    col = mix(col, float3(1.0, 0.86, 0.35), step(sd, 0.075));
+    col = mix(col, float3(1.0, 0.97, 0.75), step(sd, 0.05));
+
+    // Clouds: puffs of rounded blocks drifting left.
+    float cx = x + t * 0.025;
+    float cid = floor(cx / 0.55);
+    float cf = cx - cid * 0.55;
+    float ch = hash11(cid * 3.7);
+    float cy = 0.12 + 0.18 * ch;
+    float2 cp = float2(cf - 0.27, y - cy);
+    float cloud = step(length(cp * float2(1.0, 2.2)), 0.11) + step(length((cp - float2(-0.07, 0.015)) * float2(1.3, 1.9)), 0.07) + step(length((cp - float2(0.08, 0.02)) * float2(1.3, 2.0)), 0.07);
+    float3 cloudCol = mix(float3(1.0), float3(0.75, 0.85, 1.0), step(0.02, cp.y));
+    col = mix(col, cloudCol, step(0.5, cloud) * step(0.3, ch));
+
+    // Far hills (slow) and near hills (faster), stepped.
+    float hx1 = x + t * 0.04;
+    float h1 = 0.58 - 0.08 * abs(sin(hx1 * 4.0)) - 0.04 * abs(sin(hx1 * 9.0 + 1.0));
+    col = mix(col, float3(0.10, 0.45, 0.42), step(h1, y));
+    float hx2 = x + t * 0.09;
+    float hh = fract(hx2 * 2.2);
+    float h2 = 0.70 - 0.1 * (1.0 - abs(hh - 0.5) * 2.0) * step(0.35, hash11(floor(hx2 * 2.2)));
+    float3 hill2 = mix(float3(0.18, 0.72, 0.30), float3(0.10, 0.52, 0.22), step(0.5, fract(g.x * 0.25 + g.y * 0.25)) * 0.4);
+    col = mix(col, hill2, step(h2, y));
+    // Little bushes.
+    float bx = fract(hx2 * 5.0);
+    col = mix(col, float3(0.30, 0.85, 0.35), step(0.7, y) * step(y, 0.72) * step(0.2, bx) * step(bx, 0.5));
+
+    // Ground: bricks scrolling at the ground speed.
+    float gx = x + t * 0.16;
+    float gy = 0.78;
+    if (y >= gy) {
+        float2 bp = float2(gx * 12.0, (y - gy) * 24.0);
+        float row = floor(bp.y);
+        float2 bf = fract(bp + float2(0.5 * step(0.5, fract(row * 0.5)), 0.0));
+        float mortar = step(bf.x, 0.08) + step(bf.y, 0.15);
+        float3 brick = mix(A * 0.9 + float3(0.15, 0.05, 0.0), float3(0.15, 0.08, 0.06), step(0.5, mortar));
+        col = mix(brick, float3(0.95, 0.7, 0.4), step(y, gy + 1.0 / P) * 0.7);
+    }
+
+    // Floating gem blocks and coins on the ground's layer.
+    float bxw = gx * 3.0;
+    float bid = floor(bxw);
+    float bfr = fract(bxw);
+    float hasBlock = step(0.55, hash11(bid * 5.3));
+    float by = 0.56 - 0.06 * step(0.5, hash11(bid * 1.9));
+    float2 bq = float2(bfr - 0.5, y - by);
+    float blk = step(abs(bq.x) * 3.0, 0.11) * step(abs(bq.y), 0.036);
+    float bump = sin(t * 3.0 + bid) * 0.004;
+    if (blk * hasBlock > 0.5) {
+        float edge = step(abs(bq.x) * 3.0, 0.09) * step(abs(bq.y), 0.026);
+        float3 bc = mix(S * 0.6, S, edge);
+        // A blinking gem in the middle.
+        bc = mix(bc, mix(float3(1.0), A, 0.3), step(length(bq * float2(3.0, 1.0)), 0.012) * step(0.5, fract(t * 1.5 + bid * 0.3)));
+        col = bc;
+    }
+    float cxw = gx * 6.0;
+    float cidx = floor(cxw);
+    float coin = step(0.45, hash11(cidx * 2.1 + 7.0));
+    float spin = abs(cos(t * 3.0 + cidx));
+    float2 cq = float2((fract(cxw) - 0.5) / max(spin, 0.25), y - (0.72 + bump * 0.0));
+    float cd = length(cq * float2(1.0 / 6.0, 1.0) * float2(6.0, 1.0));
+    float coinShape = step(length(float2(cq.x * 0.16, cq.y)), 0.022) * coin;
+    col = mix(col, mix(float3(1.0, 0.8, 0.2), float3(1.0, 0.97, 0.7), step(cq.x, -0.5)), coinShape);
+
+    // A faint scanline every other pixel row, like a CRT.
+    col *= 0.93 + 0.07 * step(0.5, fract(fc.y * 0.5));
+    return half4(finish(col, fc), 1.0);
+}

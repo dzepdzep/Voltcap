@@ -1,0 +1,87 @@
+// Bass cones: two big loudspeakers whose cones pump with the bass (the rings of the cone stretch
+// and the dust cap shines as it pushes out), tweeters flickering with the highs, and shock rings
+// thrown out on every kick, all in the cover's colours over a speaker-grille wall.
+//#include reactive
+
+float3 cone(float2 p, float R, float push, float t, float3 A, float3 S, float3 BG) {
+    float r = length(p) / R;
+    // Surround (rubber edge), cone with ribs, dust cap.
+    float3 col = BG * 0.4;
+    float surround = smoothstep(0.80, 0.84, r) * (1.0 - smoothstep(0.97, 1.0, r));
+    float rib = 0.5 + 0.5 * sin(r * 60.0 - push * 18.0);
+    float3 coneCol = mix(float3(0.08), mix(A, S, r) * 0.35, 0.6) * (0.7 + 0.3 * rib);
+    // Light from the upper left; the cone's slope steepens as it pushes out.
+    float2 n = normalize(p + 1e-5);
+    float lit = 0.5 + 0.5 * dot(n, normalize(float2(-0.6, -0.8))) * (0.5 + push);
+    coneCol *= 0.6 + 0.6 * lit;
+    col = coneCol;
+    float3 sur = float3(0.12) + mix(A, S, 0.5) * 0.15 * (0.5 + 0.5 * sin(atan(p.y, p.x) * 2.0 + 1.0));
+    col = mix(col, sur * (0.8 + 0.4 * lit), surround);
+    // Chrome ring and coloured light ring.
+    col = mix(col, float3(0.75), (1.0 - smoothstep(0.0, 0.015, abs(r - 0.985))) * 0.8);
+    col += A * (1.0 - smoothstep(0.0, 0.02, abs(r - 1.03))) * (0.5 + push * 1.5);
+    // Dust cap.
+    float cap = 1.0 - smoothstep(0.26, 0.27, r);
+    float3 capCol = mix(float3(0.1), S * 0.6, 0.4) + float3(1.0) * sqf(sat(1.0 - length(p / R + float2(0.08, 0.1)) * 4.0)) * (0.25 + 0.6 * push);
+    col = mix(col, capCol, cap);
+    return col * step(r, 1.06) + float3(0.0) * (1.0 - step(r, 1.06));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float high = uHigh * play;
+    float kick = exp(-uBeatAge * 6.0) * play;
+    float lvl = bass * 0.5 + uMid * play * 0.3 + high * 0.2;
+
+    float3 col = paletteField(uv, asp, t, lvl * k, BG, A, S) * 0.7;
+    // Grille: a field of small holes.
+    float2 gp = uv * 70.0;
+    float2 gf = fract(gp + float2(0.5 * step(0.5, fract(floor(gp.y) * 0.5)), 0.0)) - 0.5;
+    col *= 0.82 + 0.18 * smoothstep(0.18, 0.28, length(gf));
+
+    float R = room(0.24) * 0.95;
+    float gap = R * 1.25;
+    float2 c = float2(waveX(asp), uWaveY);
+    float push = (0.6 * bass + 0.6 * kick) * (0.4 + 0.6 * k);
+    float scale = 1.0 + 0.04 * push;
+    float2 cl = c - float2(gap, 0.0);
+    float2 cr = c + float2(gap, 0.0);
+    // Shock rings from both cones on the kick.
+    float age = uBeatAge;
+    float ringR = R * (1.05 + age * 1.6);
+    float sh = exp(-age * 2.6) * play * k;
+    col += mix(A, float3(1.0), 0.3) * (exp(-abs(length(uv - cl) - ringR) * 80.0) + exp(-abs(length(uv - cr) - ringR) * 80.0)) * sh * 0.5;
+    // Light pooling round the speakers.
+    col += mix(A, S, 0.5) * (exp(-length(uv - cl) / R * 1.5) + exp(-length(uv - cr) / R * 1.5)) * (0.06 + 0.25 * bass * k);
+
+    float dl = length(uv - cl);
+    float dr = length(uv - cr);
+    if (dl < R * 1.06 * scale) col = cone((uv - cl) / scale, R, push, t, A, S, BG);
+    if (dr < R * 1.06 * scale) col = cone((uv - cr) / scale, R, push, t, S, A, BG);
+
+    // Tweeters between them, flickering with the highs; a spectrum strip of LEDs under them.
+    float2 tw = c - float2(0.0, R * 0.45);
+    float td = length(uv - tw) / (R * 0.22);
+    if (td < 1.0) {
+        col = mix(float3(0.06), mix(S, float3(1.0), 0.4) * (0.3 + 0.9 * high * k), 1.0 - smoothstep(0.35, 0.45, td));
+        col = mix(col, float3(0.7), 1.0 - smoothstep(0.0, 0.08, abs(td - 0.9)));
+    }
+    float2 lp = uv - (c + float2(0.0, R * 0.35));
+    float lx = lp.x / (R * 0.7) * 0.5 + 0.5;
+    if (abs(lp.y) < R * 0.18 && lx > 0.0 && lx < 1.0) {
+        float id = floor(lx * 8.0);
+        float e = eqBand(id) * play;
+        float seg = floor((R * 0.18 - lp.y) / (R * 0.36) * 6.0) / 6.0;
+        float led = step(seg, e) * step(0.15, fract(lx * 8.0)) * step(fract(lx * 8.0), 0.85) * step(0.2, fract((R * 0.18 - lp.y) / (R * 0.36) * 6.0));
+        col = mix(col * 0.6, mix(mix(A, S, id / 7.0), float3(1.0, 0.3, 0.2), step(0.8, seg)), led);
+    }
+    return half4(finish(col, fc), 1.0);
+}

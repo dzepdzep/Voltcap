@@ -1,0 +1,602 @@
+[
+  {
+    "name": "VOLTCAP",
+    "label": "Voltcap"
+  },
+  {
+    "name": "VOLTCAP_BEAT",
+    "label": "Voltcap beat"
+  },
+  {
+    "name": "VOLTCAP_PIXELS",
+    "label": "Voltcap 32-bit"
+  },
+  {
+    "name": "RETRO_BOUNCE",
+    "label": "Retro bounce"
+  },
+  {
+    "name": "LYRIC_CLOUD",
+    "label": "Lyric cloud"
+  },
+  {
+    "name": "LYRIC_KARAOKE",
+    "label": "Karaoke"
+  },
+  {
+    "name": "LYRIC_SHEET",
+    "label": "Lyric sheet"
+  },
+  {
+    "name": "LYRIC_NEON",
+    "label": "Neon lyrics"
+  },
+  {
+    "name": "VOLT",
+    "label": "Volt"
+  },
+  {
+    "name": "TIDE",
+    "label": "Tide"
+  },
+  {
+    "name": "EMBER",
+    "label": "Ember"
+  },
+  {
+    "name": "COBALT",
+    "label": "Cobalt"
+  },
+  {
+    "name": "SYNTHWAVE",
+    "label": "Synthwave"
+  },
+  {
+    "name": "MATCHA",
+    "label": "Matcha"
+  },
+  {
+    "name": "MONO",
+    "label": "Mono (OLED)"
+  },
+  {
+    "name": "NOW_PLAYING",
+    "label": "Now playing"
+  },
+  {
+    "name": "SPECTRUM",
+    "label": "Spectrum"
+  },
+  {
+    "name": "PULSE_RING",
+    "label": "Pulse ring"
+  },
+  {
+    "name": "BEAT_TUNNEL",
+    "label": "Beat tunnel"
+  },
+  {
+    "name": "REACTOR",
+    "label": "Reactor core"
+  },
+  {
+    "name": "THUNDER",
+    "label": "Thunderstorm"
+  },
+  {
+    "name": "BLOOM",
+    "label": "Bloom"
+  },
+  {
+    "name": "TAPE_DECK",
+    "label": "Tape deck"
+  },
+  {
+    "name": "CHLADNI",
+    "label": "Sand patterns"
+  },
+  {
+    "name": "LASER_STAGE",
+    "label": "Laser stage"
+  },
+  {
+    "name": "KALEIDO",
+    "label": "Kaleido cover"
+  },
+  {
+    "name": "SHATTER",
+    "label": "Cover shatter"
+  },
+  {
+    "name": "TERRAIN",
+    "label": "Wire terrain"
+  },
+  {
+    "name": "FIREWORKS",
+    "label": "Fireworks"
+  },
+  {
+    "name": "NEON_PUDDLE",
+    "label": "Neon puddle"
+  },
+  {
+    "name": "VINYL",
+    "label": "Vinyl spin"
+  },
+  {
+    "name": "CD_SPIN",
+    "label": "Disc spin"
+  },
+  {
+    "name": "LAVA",
+    "label": "Album lava"
+  },
+  {
+    "name": "RIBBONS",
+    "label": "Sound ribbons"
+  },
+  {
+    "name": "DISCO",
+    "label": "Disco floor"
+  },
+  {
+    "name": "SPEAKER",
+    "label": "Bass cones"
+  },
+  {
+    "name": "SPARK_TYPE",
+    "label": "Spark"
+  },
+  {
+    "name": "TORRENT_TYPE",
+    "label": "Torrent"
+  },
+  {
+    "name": "SPROUT_TYPE",
+    "label": "Sprout"
+  },
+  {
+    "name": "MIND_TYPE",
+    "label": "Mind"
+  },
+  {
+    "name": "BLAZE_TYPE",
+    "label": "Blaze"
+  },
+  {
+    "name": "PHANTOM_TYPE",
+    "label": "Phantom"
+  },
+  {
+    "name": "FROST_TYPE",
+    "label": "Frost"
+  },
+  {
+    "name": "TERRA_TYPE",
+    "label": "Terra"
+  },
+  {
+    "name": "VENOM_TYPE",
+    "label": "Venom"
+  },
+  {
+    "name": "MEADOW_TYPE",
+    "label": "Meadow"
+  },
+  {
+    "name": "DOJO_TYPE",
+    "label": "Dojo"
+  },
+  {
+    "name": "GALE_TYPE",
+    "label": "Gale"
+  },
+  {
+    "name": "THICKET_TYPE",
+    "label": "Thicket"
+  },
+  {
+    "name": "BEDROCK_TYPE",
+    "label": "Bedrock"
+  },
+  {
+    "name": "WYRM_TYPE",
+    "label": "Wyrm"
+  },
+  {
+    "name": "UMBRA_TYPE",
+    "label": "Umbra"
+  },
+  {
+    "name": "ALLOY_TYPE",
+    "label": "Alloy"
+  },
+  {
+    "name": "GLIMMER_TYPE",
+    "label": "Glimmer"
+  },
+  {
+    "name": "POCKET_LCD",
+    "label": "Pocket LCD"
+  },
+  {
+    "name": "POCKET_SHELL",
+    "label": "Pocket shell"
+  },
+  {
+    "name": "SHINOBI",
+    "label": "Shinobi"
+  },
+  {
+    "name": "POWER_AURA",
+    "label": "Power aura"
+  },
+  {
+    "name": "SUMMER_SKY",
+    "label": "Summer sky"
+  },
+  {
+    "name": "MECHA_HUD",
+    "label": "Mecha HUD"
+  },
+  {
+    "name": "MOON_BLADE",
+    "label": "Moon blade"
+  },
+  {
+    "name": "CIRCUIT",
+    "label": "Circuit board"
+  },
+  {
+    "name": "GEARWORKS",
+    "label": "Gearworks"
+  },
+  {
+    "name": "WARP",
+    "label": "Warp drive"
+  },
+  {
+    "name": "PRISM_ATRIUM",
+    "label": "Prism atrium"
+  },
+  {
+    "name": "ORBIT_STATION",
+    "label": "Orbit station"
+  },
+  {
+    "name": "AURORA",
+    "label": "Aurora"
+  },
+  {
+    "name": "NEBULA",
+    "label": "Nebula"
+  },
+  {
+    "name": "PIXEL_FLOW",
+    "label": "Pixel flow"
+  },
+  {
+    "name": "GLASS",
+    "label": "Glass"
+  },
+  {
+    "name": "RETRO_WAVE",
+    "label": "Retro wave"
+  },
+  {
+    "name": "ORBIT",
+    "label": "Orbit"
+  },
+  {
+    "name": "DIGITAL_RAIN",
+    "label": "Digital rain"
+  },
+  {
+    "name": "CONSTELLATION",
+    "label": "Constellation"
+  },
+  {
+    "name": "LIQUID",
+    "label": "Liquid"
+  },
+  {
+    "name": "MINIMAL_CONSOLE",
+    "label": "Minimal console"
+  },
+  {
+    "name": "SHALLOWS",
+    "label": "Sunlit shallows"
+  },
+  {
+    "name": "INK_WASH",
+    "label": "Ink wash"
+  },
+  {
+    "name": "PAPER_LAYERS",
+    "label": "Paper layers"
+  },
+  {
+    "name": "PIXEL_VALLEY",
+    "label": "16-bit valley"
+  },
+  {
+    "name": "HOLO_FOIL",
+    "label": "Holo foil"
+  },
+  {
+    "name": "CAMPFIRE",
+    "label": "Campfire"
+  },
+  {
+    "name": "ERA_8BIT",
+    "label": "8-bit quest"
+  },
+  {
+    "name": "MODE7",
+    "label": "16-bit mode 7"
+  },
+  {
+    "name": "PS1_POLY",
+    "label": "32-bit polygons"
+  },
+  {
+    "name": "N64_PLAINS",
+    "label": "64-bit plains"
+  },
+  {
+    "name": "PS2_HAZE",
+    "label": "128-bit haze"
+  },
+  {
+    "name": "BLUE_SKY",
+    "label": "Blue sky cruise"
+  },
+  {
+    "name": "XMB_WAVE",
+    "label": "Wave menu"
+  },
+  {
+    "name": "PLAZA",
+    "label": "Motion plaza"
+  },
+  {
+    "name": "VECTOR",
+    "label": "Vector arcade"
+  },
+  {
+    "name": "CRT_TUNNEL",
+    "label": "CRT tunnel"
+  },
+  {
+    "name": "MEMORY_CARD",
+    "label": "Memory card"
+  },
+  {
+    "name": "ENERGY_CORE",
+    "label": "Energy core"
+  },
+  {
+    "name": "RACING_32",
+    "label": "32-bit racing"
+  },
+  {
+    "name": "FIRE_32",
+    "label": "32-bit fire"
+  },
+  {
+    "name": "SHOWCASE_PARALLAX",
+    "label": "Hero parallax"
+  },
+  {
+    "name": "SHOWCASE_CINEMA",
+    "label": "Cinematic"
+  },
+  {
+    "name": "SHOWCASE_FILMSTRIP",
+    "label": "Filmstrip"
+  },
+  {
+    "name": "SHOWCASE_MOSAIC",
+    "label": "Screenshot wall"
+  },
+  {
+    "name": "ARENA",
+    "label": "Arena entrance"
+  },
+  {
+    "name": "SPECIMEN_LAB",
+    "label": "Specimen lab"
+  },
+  {
+    "name": "MAGICAL",
+    "label": "Magical sparkle"
+  },
+  {
+    "name": "SPIRIT_FOREST",
+    "label": "Spirit forest"
+  },
+  {
+    "name": "FESTIVAL",
+    "label": "Summer festival"
+  },
+  {
+    "name": "AURA_CLASH",
+    "label": "Aura clash"
+  },
+  {
+    "name": "COVER_WALL",
+    "label": "Cover wall"
+  },
+  {
+    "name": "COVER_TUNNEL",
+    "label": "Cover tunnel"
+  },
+  {
+    "name": "POP_ART",
+    "label": "Pop art cover"
+  },
+  {
+    "name": "COVER_RIPPLE",
+    "label": "Cover ripple"
+  },
+  {
+    "name": "BLAZE_BEAT",
+    "label": "Blaze beat"
+  },
+  {
+    "name": "AURA_BEAT",
+    "label": "Aura clash · music"
+  },
+  {
+    "name": "MOUNTAINS",
+    "label": "Mountains forming"
+  },
+  {
+    "name": "SPECIMEN_BEAT",
+    "label": "Specimen lab · music"
+  },
+  {
+    "name": "TOWERS_128",
+    "label": "128-bit towers"
+  },
+  {
+    "name": "CARTRIDGE_16",
+    "label": "16-bit cartridge"
+  },
+  {
+    "name": "HANDHELD",
+    "label": "Handheld"
+  },
+  {
+    "name": "PIXEL_PARADE",
+    "label": "Pixel parade"
+  },
+  {
+    "name": "CAMPFIRE_BEAT",
+    "label": "Campfire beat"
+  },
+  {
+    "name": "MANGA_BEAT",
+    "label": "Manga beat"
+  },
+  {
+    "name": "COMIC_PANELS",
+    "label": "Comic pages"
+  },
+  {
+    "name": "PIXEL_SKY",
+    "label": "Pixel sky"
+  },
+  {
+    "name": "CRT_ROOM",
+    "label": "CRT room"
+  },
+  {
+    "name": "COVER_FLOW",
+    "label": "Cover flow"
+  },
+  {
+    "name": "RECORD_SHELF",
+    "label": "Record shelf"
+  },
+  {
+    "name": "COVER_CUBE",
+    "label": "Cover cube"
+  },
+  {
+    "name": "COVER_FLOAT",
+    "label": "Floating cover"
+  },
+  {
+    "name": "HOLO_COVER",
+    "label": "Holo card"
+  },
+  {
+    "name": "COVER_HALO",
+    "label": "Cover halo"
+  },
+  {
+    "name": "BIG_TYPE",
+    "label": "Big type"
+  },
+  {
+    "name": "PIXEL_COVER",
+    "label": "Pixel cover"
+  },
+  {
+    "name": "POLAROID",
+    "label": "Polaroids"
+  },
+  {
+    "name": "RETRO_TV",
+    "label": "Retro TV"
+  },
+  {
+    "name": "JUKEBOX",
+    "label": "Jukebox"
+  },
+  {
+    "name": "NEON_FRAME",
+    "label": "Neon frame"
+  },
+  {
+    "name": "MAGAZINE",
+    "label": "Magazine"
+  },
+  {
+    "name": "COVER_FOCUS",
+    "label": "Pan & zoom"
+  },
+  {
+    "name": "DISC_SLEEVE",
+    "label": "Disc & sleeve"
+  },
+  {
+    "name": "STILL_DUSK",
+    "label": "Still dusk"
+  },
+  {
+    "name": "STILL_HORIZON",
+    "label": "Still horizon"
+  },
+  {
+    "name": "STILL_GLOW",
+    "label": "Still glow"
+  },
+  {
+    "name": "CALM_RIBBON",
+    "label": "Light ribbon"
+  },
+  {
+    "name": "CALM_DRIFT",
+    "label": "Night drift"
+  },
+  {
+    "name": "CALM_HALO",
+    "label": "Soft halo"
+  },
+  {
+    "name": "BOLD_SPLIT",
+    "label": "Bold split"
+  },
+  {
+    "name": "BOLD_DOTS",
+    "label": "Bold dots"
+  },
+  {
+    "name": "BOLD_BANDS",
+    "label": "Bold bands"
+  },
+  {
+    "name": "SAKURA",
+    "label": "Sakura"
+  },
+  {
+    "name": "ARCADE_CRT",
+    "label": "Arcade CRT"
+  },
+  {
+    "name": "DEEP_SEA",
+    "label": "Deep sea"
+  }
+]

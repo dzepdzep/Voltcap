@@ -1,0 +1,163 @@
+// Arena entrance (music): a packed arena at showtime with your song as the entrance theme. The
+// album cover fills the giant screen hanging over the stage, framed by LED strips that chase with
+// the spectrum; spotlights sweep the haze faster when the song gets busy, pyro fountains erupt on
+// both sides of the ramp on every real kick, the ramp's light bars pulse with the bass, and the
+// crowd below twinkles with camera flashes on the highs.
+//#include reactive
+
+// A column of fire rising from a flame pot at the origin (y up = negative screen y): its height h
+// follows the kick; noise rising through it tears the top into tongues. Returns colour (premultiplied).
+float3 fireColumn(float2 q, float h, float w, float t, float seed, float3 A) {
+    float up = -q.y;
+    if (up < -0.01 || h < 0.004 || abs(q.x) > w * 3.0) return float3(0.0);
+    float n = fbm3(float2(q.x / w * 1.3 + seed, up * 9.0 - t * 5.0));
+    float n2 = vnoise(float2(q.x / w * 3.0 - seed, up * 22.0 - t * 9.0));
+    float ww = w * (0.7 + 1.4 * sat(up / h)) * (0.8 + 0.4 * n2);           // widens as it rises
+    float across = 1.0 - smoothstep(0.4, 1.0, abs(q.x + (n - 0.5) * w * 1.5 * sat(up / h)) / ww);
+    float T = sat(1.0 - max(up, 0.0) / (h * (0.6 + 0.7 * n))) * across * (0.8 + 0.4 * n2);
+    float3 c = mix(mix(float3(0.6, 0.08, 0.02), A * 0.6, 0.15), float3(1.0, 0.45, 0.08), smoothstep(0.08, 0.35, T));
+    c = mix(c, float3(1.0, 0.85, 0.35), smoothstep(0.4, 0.7, T));
+    c = mix(c, float3(1.0, 0.97, 0.88), smoothstep(0.75, 0.95, T));
+    return c * smoothstep(0.03, 0.2, T);
+}
+
+float3 bc0(float fi, float3 A, float3 S) { return mix(fi < 2.0 ? A : S, float3(1.0), 0.25); }
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float busy = (uMid + uHigh) * 0.5 * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    // Dark arena, coloured haze.
+    float3 col = BG * 0.5 + float3(0.01, 0.008, 0.02);
+    col += mix(A, S, uv.x / asp) * 0.08 * fbm3(uv * 3.0 + float2(t * 0.03, 0.0)) * (0.6 + 0.6 * bass);
+
+    // The giant screen with the cover, where the visualizer sits.
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3) * 0.82;
+    float2 sp = uv - c;
+    float2 half_ = float2(R * 1.0, R * 1.0);
+    float scr = sdRoundBox(sp, half_, R * 0.03);
+    // Truss above it.
+    float truss = step(abs(sp.y + half_.y + R * 0.12), R * 0.03) * step(abs(sp.x), half_.x * 1.6);
+    float trussX = step(abs(fract((sp.x / (R * 0.06))) - 0.5), 0.12) * truss;
+    col = mix(col, float3(0.18, 0.18, 0.22), truss * 0.8);
+    col = mix(col, float3(0.32), trussX);
+    // LED frame chasing with the spectrum round the screen.
+    float frame = sdRoundBox(sp, half_ + R * 0.06, R * 0.06);
+    float onFrame = step(frame, 0.0) * step(0.0, scr);
+    float per = atan(sp.y, sp.x) / TAU + 0.5;
+    float seg = floor(per * 64.0);
+    float e = eqAt(abs(fract(seg / 64.0 + 0.25) * 2.0 - 1.0)) * play;
+    float chase = step(0.5, fract(seg * 0.5 + t * (1.0 + 3.0 * busy)));
+    float3 led = mix(A, S, fract(seg / 16.0 + t * 0.1)) * (0.25 + 1.2 * e + 0.4 * chase * busy);
+    col = mix(col, led, onFrame * step(abs(fract(per * 64.0) - 0.5), 0.38));
+    // The cover on the screen: slightly zooming with the bass, scanlines, flashing on the kick.
+    if (scr < px) {
+        float2 cq = sp / (2.0 * half_) / (1.0 + 0.03 * bass * k) + 0.5;
+        float3 cov = sharpCover(cq, A, S);
+        cov *= 0.88 + 0.12 * step(0.5, fract(cq.y * 140.0));
+        cov += float3(1.0) * kick * k * 0.18;
+        col = mix(col, cov, 1.0 - smoothstep(-px, px, scr));
+    }
+    // Screen glow on the haze.
+    col += mix(A, S, 0.5) * exp(-max(scr, 0.0) * 6.0) * 0.12 * (0.6 + 0.8 * bass);
+
+    // The stage and the ramp, under the screen.
+    float stageY = c.y + half_.y + R * 0.35;
+    float ramp = step(stageY, uv.y) * step(abs(uv.x - c.x), 0.08 + (uv.y - stageY) * 1.4);
+    float3 rampC = float3(0.06, 0.06, 0.09);
+    // Light bars across the ramp, pulsing outwards with the bass.
+    float bars = step(0.6, fract((uv.y - stageY) * 30.0 - (0.5 * t + 2.0 * uBassT)));
+    rampC += mix(A, S, 0.5) * bars * (0.15 + 0.7 * bass * k) * step(abs(uv.x - c.x), 0.07 + (uv.y - stageY) * 1.35);
+    col = mix(col, rampC, ramp);
+    col = mix(col, float3(0.05), step(stageY - 0.01, uv.y) * step(uv.y, stageY) * step(abs(uv.x - c.x), half_.x * 1.8));
+
+    // Spotlights sweeping the haze from both sides.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float side = i < 2 ? -1.0 : 1.0;
+        float2 o = float2(c.x + side * (half_.x * (1.0 + 0.4 * fi - (fi > 1.5 ? 0.8 : 0.0))), c.y - half_.y - R * 0.12);
+        float sweep = sin(t * (0.35 + 0.6 * busy) + fi * 1.7) * 0.35;
+        float a = side * (0.25 + mod(fi, 2.0) * 0.2) + sweep;
+        float2 dir = float2(-sin(a), cos(a));
+        float3 bc = bc0(fi, A, S);
+        float2 rel = uv - o;
+        float along = dot(rel, dir);
+        float across = abs(dot(rel, float2(-dir.y, dir.x)));
+        float beam = exp(-across / (0.006 + max(along, 0.0) * 0.12) * 2.0) * step(0.0, along) * exp(-along * 0.9);
+        // A bright lamp head on the truss and a pool where the beam meets the floor.
+        col += mix(bc0(fi, A, S), float3(1.0), 0.6) * exp(-length(rel) * 220.0) * 0.8;
+        col += bc * beam * (0.18 + 0.25 * busy + 0.2 * kick) * (0.6 + 0.4 * fbm3(uv * 4.0 + t * 0.1));
+    }
+
+    // Flame pots: four along the stage front. A pilot flame always flickers; on every real kick they
+    // roar up into fire columns, throwing orange light over the stage, the truss and the crowd.
+    float fireLight = 0.0;
+    for (int s = 0; s < 4; s++) {
+        float fs = float(s);
+        float side = fs < 1.5 ? -1.0 : 1.0;
+        float outer = mod(fs, 2.0);
+        float2 base = float2(c.x + side * half_.x * (1.25 + 0.45 * outer), stageY - 0.006);
+        float2 q = uv - base;
+        float burst = kick * (0.6 + 0.6 * k) * (1.0 - 0.25 * outer);
+        float h = 0.03 + 0.04 * bass + 0.34 * burst;
+        float3 fcol = fireColumn(q, h, 0.012 + 0.018 * burst, t, fs * 3.1, A);
+        col = col + fcol * (1.0 - 0.3 * sat(length(col)));
+        // The pot itself.
+        float pot = sdRoundBox(q - float2(0.0, 0.008), float2(0.016, 0.008), 0.002);
+        col = mix(col, float3(0.08, 0.08, 0.1) + float3(1.0, 0.5, 0.15) * 0.25 * (0.3 + burst), 1.0 - smoothstep(-px, px, pot));
+        // Sparks thrown up and falling back.
+        float sparks = dots(q * float2(1.0, 0.6) + float2(0.0, t * 0.6), 60.0, float2(0.0), 0.3, 0.08, 3.0 + fs);
+        col += float3(1.0, 0.8, 0.4) * sparks * 0.7 * step(abs(q.x), 0.03 + -q.y * 0.25) * step(-h * 1.3, q.y) * step(q.y, 0.0) * burst;
+        fireLight += (0.15 + burst) * exp(-length((uv - base) * float2(0.7, 1.0)) * 4.0);
+    }
+    float3 FIREC = float3(1.0, 0.5, 0.15);
+    col += FIREC * fireLight * 0.18;
+
+    // Pools of the spotlights on the stage floor, and the screen reflected faintly in it.
+    if (uv.y > stageY && uv.y < stageY + 0.06) {
+        float2 rq = float2(uv.x - c.x, (stageY - (uv.y - stageY) * 3.0) - c.y);
+        if (sdRoundBox(rq, half_, R * 0.03) < 0.0) {
+            col += sharpCover(rq / (2.0 * half_) + 0.5, A, S) * 0.12 * (1.0 - (uv.y - stageY) / 0.06);
+        }
+    }
+
+    // The crowd: rows of heads and shoulders, rim-lit by the stage and the fire, swaying to the
+    // beat; camera flashes on the highs and arms going up on the kick.
+    float3 crowdC = float3(0.02, 0.02, 0.04);
+    for (int r = 0; r < 2; r++) {
+        float fr = float(r);
+        float rowY = 0.84 + fr * 0.06;
+        float hs = 0.016 + fr * 0.006;                 // head size (near row larger)
+        float cx = uv.x / (hs * 2.4) + fr * 0.5;
+        float id = floor(cx);
+        float lx = (fract(cx) - 0.5) * hs * 2.4;
+        float bob = (0.004 + 0.006 * kick) * sin(t * 6.0 + id * 1.3) * play;
+        float hy = rowY - hs * 1.6 + bob + 0.006 * hash11(id + fr * 9.0);
+        float head = length(float2(lx, uv.y - hy)) - hs * (0.75 + 0.2 * hash11(id * 1.7));
+        float body = sdRoundBox(float2(lx * (1.0 + 0.4 * sat((hy + hs * 1.2 - uv.y) / hs)), uv.y - hy - hs * 2.2), float2(hs * 1.25, hs * 1.6), hs * 0.9);
+        float arm = sdSegment(float2(lx, uv.y), float2(hs * 0.6, hy + hs), float2(hs * 0.9, hy - hs * 2.2)) - hs * 0.18;
+        arm += (1.0 - step(0.55, hash11(id * 4.1 + fr))) * 1.0 + (1.0 - kick) * 0.05;
+        float person = min(min(head, body), arm);
+        float m = 1.0 - smoothstep(-px, px, person);
+        // Rim light on the top edge.
+        float rim = smoothstep(-px * 3.0, 0.0, head) * (1.0 - smoothstep(-px, px, head)) * step(uv.y, hy);
+        float3 rimC = mix(mix(A, S, 0.5) * 0.5, FIREC, sat(fireLight * 2.0));
+        col = mix(col, crowdC + rimC * rim * (0.5 + 0.5 * bass) * (1.0 - fr * 0.3), m);
+    }
+    col = mix(col, crowdC, step(0.93, uv.y));
+    float flash = dots(uv + float2(floor(t * 6.0) * 0.137, 0.0), 70.0, float2(0.0), 0.04 + 0.1 * uHigh * play, 0.06, 5.0) * step(0.83, uv.y);
+    col += float3(1.0) * flash * 1.2;
+
+    return half4(finish(col, fc), 1.0);
+}

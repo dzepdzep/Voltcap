@@ -1,0 +1,65 @@
+// Rooftop dusk: Toni's painting of a city skyline at dusk (res scene_chill_city), brought to life. Lights in
+// the windows dim and come back here and there as people come and go, the far skyline's windows shimmer,
+// the antenna's red light blinks, the pink clouds drift, the stars twinkle and a plane glides over.
+// (The procedural version is kept as chill_city_drawn.agsl.)
+//#include paint
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(BG * 1.2, mix(BG, A, 0.3), uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+    float2 r = q * float2(1672.0, 941.0);
+    float aspP = sz.x / sz.y;
+
+    // The pink clouds drift slowly to the right (their band only).
+    float cloudBand = exp(-sqf((r.y - 365.0) / 60.0));
+    float2 coff = float2(sin(r.y * 0.05 + t * 0.07) * 12.0 + sin(t * 0.03) * 10.0, 0.0) * cloudBand;
+    float3 col = paintAt(p - coff / float2(1672.0, 941.0) * sz);
+    float lum = luma(col);
+
+    // Windows: warm lit pixels below the skyline. Areas of them dim and come back slowly.
+    float city = smoothstep(560.0, 600.0, r.y);
+    // (Yellow, not the pink-orange sky: windows have far less blue than green.)
+    float warm = sat((col.g - col.b) * 5.0) * sat((col.r - col.b) * 3.0) * smoothstep(0.25, 0.45, lum) * city;
+    float area = vnoise(r * float2(0.018, 0.022) + float2(t * 0.03, t * 0.017));
+    float dim = smoothstep(0.62, 0.78, area);
+    float3 wall = float3(0.05, 0.04, 0.07);
+    col = mix(col, mix(col, wall, 0.85), warm * dim);
+    // A gentle flicker on the near windows (TV light), and a shimmer on the far ones.
+    float near = smoothstep(640.0, 720.0, r.y);
+    float flick = 0.94 + 0.06 * sin(t * 6.0 + floor(r.x / 21.0) * 1.7) * sin(t * 2.3 + floor(r.y / 18.0));
+    col *= 1.0 + warm * (1.0 - dim) * (flick - 0.97) * 2.0 * near;
+    col *= 1.0 + warm * (1.0 - near) * 0.15 * sin(t * 1.5 + r.x * 0.3 + r.y * 0.2);
+
+    // The antenna's red light blinks.
+    float2 ant = float2(1514.0, 557.0);
+    float red = step(0.55, fract(t * 0.5));
+    float ad = length(r - ant);
+    col += float3(1.0, 0.18, 0.12) * (exp(-ad * 0.45) * 0.9 + exp(-ad * 0.05) * 0.12) * red;
+
+    // Stars twinkle.
+    float sky = step(r.y, 300.0);
+    float speck = speckAt(p, lum) * sky;
+    float2 cell = floor(r / 3.0);
+    float tw = 0.5 + 0.5 * sin(t * (1.3 + 2.0 * hash12(cell)) + hash12(cell + 5.0) * 40.0);
+    col *= 1.0 + speck * (tw - 0.5) * 0.9;
+
+    // A plane gliding across high up, its lights blinking (once every 70 s).
+    float pt = fract(t / 70.0) * 70.0;
+    if (pt < 40.0) {
+        float2 pl = float2(-40.0 + pt / 40.0 * 1750.0, 150.0 + 25.0 * sin(pt * 0.05));
+        float pd = length(r - pl);
+        float blink = step(0.85, fract(t * 0.9));
+        col += float3(1.0, 0.3, 0.25) * exp(-pd * 0.7) * (0.25 + 0.75 * blink);
+        col += float3(1.0) * exp(-length(r - pl - float2(-6.0, 0.0)) * 0.9) * 0.6;
+    }
+
+    return half4(finishPaint(col, fc), 1.0);
+}

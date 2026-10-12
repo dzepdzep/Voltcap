@@ -1,0 +1,117 @@
+// Mountains forming (music): a range of mountains that rises out of the plain - every peak is one
+// band of the equalizer, so the range grows and sinks with the song (bass in the middle, highs out
+// to the sides). Snow settles on the peaks that stand tall, a big sun sits behind, clouds stream
+// past the summits, the plain below glows in the cover's colours, and a kick sends a tremor and a
+// puff of dust along the foot of the range. With nothing playing it forms and erodes slowly by itself.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float H = room(0.28) * 1.7;
+    float baseY = c.y + room(0.28) * 0.9;
+    // Sky: the song's colours, deep above, warming to a glowing band at the horizon.
+    float3 sky = mix(BG * 0.7 + A * 0.05, mix(A, S, 0.5) * 0.55 + BG * 0.3, smoothstep(c.y - H, baseY, uv.y));
+    float3 warm = mix(S, float3(1.0, 0.62, 0.3), 0.45);
+    sky += warm * 0.22 * exp(-abs(uv.y - baseY + H * 0.2) / (H * 0.35));
+    float3 col = sky;
+    // The sun: a big setting disc low behind the range, hot white-gold in the middle, deeper at the
+    // rim (limb darkening), with slow rays, a corona that breathes with the bass, thin cloud bars
+    // drifting across its face and a shimmer of heat at the lower edge.
+    float2 sunP = float2(c.x, baseY - H * 0.42);
+    float sunR = H * 0.36 * (1.0 + 0.03 * uBass * play * k);
+    float2 sq = uv - sunP;
+    sq.x += 0.004 * sin(uv.y * 160.0 + t * 6.0) * smoothstep(sunP.y, sunP.y + sunR, uv.y);
+    float sd = length(sq);
+    float ang = atan(sq.y, sq.x);
+    float rays = 0.5 + 0.5 * sin(ang * 14.0 + t * 0.15) * sin(ang * 5.0 - t * 0.1);
+    float3 sunHot = mix(float3(1.0, 0.97, 0.86), S, 0.15);
+    float3 sunRim = mix(float3(1.0, 0.5, 0.2), mix(A, S, 0.5), 0.35);
+    col += sunRim * exp(-(sd - sunR) * 6.0 / H) * step(sunR, sd) * (0.35 + 0.25 * uBass * play) * (0.75 + 0.25 * rays);
+    col += sunHot * exp(-sd * 2.0 / H) * 0.12;
+    float disc = 1.0 - smoothstep(sunR - px, sunR + px, sd);
+    float limb = sqrt(max(1.0 - sqf(sd / sunR), 0.0));
+    float3 face = mix(sunRim, sunHot, smoothstep(0.0, 0.85, limb)) * (1.0 + 0.15 * kick);
+    // Lower half redder, as the light passes through more air.
+    face = mix(face, sunRim * 1.1, smoothstep(sunP.y - sunR * 0.2, sunP.y + sunR, uv.y) * 0.45);
+    col = mix(col, face, disc);
+    // Thin cloud bars crossing the sun, lit at their edges.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float cy = sunP.y + sunR * (-0.35 + 0.42 * fi) + 0.01 * sin(t * 0.1 + fi);
+        float cx = uv.x - sunP.x + mod(t * (0.008 + 0.004 * fi) + fi * 0.37, 1.2) * asp * 0.4 - asp * 0.24;
+        float thick = sunR * (0.05 + 0.03 * fi) * (0.6 + 0.8 * vnoise(float2(cx * 8.0, fi * 4.0)));
+        float bar = (1.0 - smoothstep(thick * 0.6, thick, abs(uv.y - cy))) * smoothstep(sunR * 1.8, sunR * 0.4, abs(cx));
+        float3 cc = mix(BG * 0.5 + A * 0.08, sunRim * 0.55, 0.5);
+        cc += sunHot * 0.4 * smoothstep(thick * 0.3, thick, abs(uv.y - cy)) * disc;
+        col = mix(col, cc, bar * mix(0.3, 0.85, disc));
+    }
+
+    // The range: several layers; the front one is the equalizer.
+    float idle = 1.0 - play;
+    for (int L = 0; L < 3; L++) {
+        float fl = float(L);
+        float scale = 1.0 - fl * 0.25;          // front layer is L = 2
+        float x = (uv.x - c.x) / (asp * 0.5);  // -1..1 across
+        float n = 16.0 - fl * 4.0;
+        float slot = (x * 0.5 + 0.5) * n;
+        float id0 = floor(slot);
+        float ridge = 0.0;
+        float hgt = 0.0;
+        float localBest = 0.0;
+        for (int j = -1; j <= 1; j++) {
+            float id = id0 + float(j);
+            float cxn = (id + 0.5) / n * 2.0 - 1.0;
+            float m = abs(cxn);
+            float e = eqAt(m) * play;
+            float slow = 0.35 + 0.35 * sin(t * 0.15 + id * 1.7 + fl) * sin(t * 0.07 + id * 0.6);
+            float hh = mix(slow, 0.15 + 0.85 * e * (0.5 + 0.7 * k), play) * (0.4 + 0.6 * scale) * (1.0 - 0.35 * m);
+            float local = slot - id - 0.5;
+            // A broad peak (about two slots wide) with a jagged edge.
+            float r = hh * (1.0 - abs(local) * (0.75 + 0.25 * vnoise(float2(local * 7.0 + id, fl))));
+            if (r > ridge) { ridge = r; hgt = hh; localBest = local; }
+        }
+        float local = localBest;
+        ridge += 0.03 * (vnoise(float2(x * 40.0, fl * 3.0)) - 0.5) * scale;
+        float top = baseY - H * max(ridge, 0.02) * (0.7 + 0.3 * scale) + (2.0 - fl) * 0.02;
+        top += 0.006 * kick * sin(uv.x * 80.0 + t * 40.0) * step(1.5, fl);      // tremor on the kick
+        if (uv.y > top) {
+            float3 rock = mix(mix(BG, A, 0.35) * 0.6, mix(BG, S, 0.3) * 0.9, scale * 0.6 + 0.2);
+            // Lit face towards the sun (left of each peak), shadow on the other side.
+            rock *= 0.7 + 0.45 * step(local, 0.0) * (1.0 - fl * 0.2);
+            // Snow on the tall peaks.
+            float snow = smoothstep(0.35, 0.55, hgt) * smoothstep(top + H * 0.12 * hgt, top, uv.y);
+            rock = mix(rock, float3(0.95, 0.96, 1.0) * (0.75 + 0.25 * step(local, 0.0)), snow);
+            // Rim light where the ridge stands against the sun.
+            rock += sunRim * 0.6 * exp(-(uv.y - top) * 160.0) * exp(-abs(uv.x - sunP.x) / (sunR * 1.6)) * (0.4 + 0.6 * scale);
+            // Distance haze (towards the sky, not the sun, so the range stays solid).
+            rock = mix(rock, sky + sunRim * 0.12 * exp(-abs(uv.x - sunP.x) / (sunR * 2.0)), (2.0 - fl) * 0.22);
+            col = rock;
+        }
+    }
+    // Clouds streaming past the summits.
+    float cl = fbm3(float2(uv.x * 3.0 - t * 0.05, uv.y * 9.0));
+    float band = exp(-sqf((uv.y - (baseY - H * 0.55)) / (H * 0.12)));
+    col = mix(col, mix(float3(1.0), S, 0.2), smoothstep(0.5, 0.75, cl) * band * 0.55);
+    // The plain glowing at the foot, dust puff on the kick.
+    if (uv.y > baseY) {
+        float3 plain = mix(mix(BG, A, 0.25), BG * 0.4, smoothstep(baseY, baseY + 0.25, uv.y));
+        plain += mix(A, S, 0.5) * 0.25 * step(0.92, fract((uv.x - c.x) / (0.04 + (uv.y - baseY) * 0.6))) * smoothstep(baseY + 0.3, baseY, uv.y);
+        col = plain;
+    }
+    float dust = fbm3(float2(uv.x * 6.0 + t * 0.2, uv.y * 20.0)) * exp(-abs(uv.y - baseY) * 40.0);
+    col += float3(1.0, 0.9, 0.8) * dust * kick * 0.5 * k;
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - baseY) * 60.0) * (0.2 + 0.4 * uBass * play);
+
+    return half4(finish(col, fc), 1.0);
+}

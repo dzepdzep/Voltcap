@@ -1,0 +1,110 @@
+// Pixel parade (music): the 32-bit Voltcap capsules and bolts throw a dance party. A row of pixel
+// sprites stands on a lit dance floor and hops in time with the real beat - each one on its own
+// part of the spectrum, the busier bands jumping higher - squashing on every landing. The floor
+// tiles light up under them with the bass, pixel spotlights swing overhead and the album cover
+// hangs above the stage as a pixel-art banner.
+//#include reactive
+//#include voltcap
+
+float3 sprite(float2 local, float kind, float3 A, float3 S, out float a) {
+    // local: -0.5..0.5 across a 32x32 sprite.
+    float2 pix = (floor((local + 0.5) * 32.0) + 0.5) / 32.0 - 0.5;
+    float2 pq = pix * 2.2;
+    float dShape = kind < 0.5 ? sdCapsuleMark(pq) : sdBoltMark(pq * 0.42);
+    float pxs = 2.2 / 32.0 * (kind < 0.5 ? 1.0 : 0.42);
+    float inside = step(dShape, 0.0);
+    float outline = step(dShape, pxs * 1.1) * (1.0 - inside);
+    a = sat(inside + outline);
+    float3 body;
+    if (kind < 0.5) {
+        body = mix(A * 0.8, A * 1.15, step(pq.y, 0.0));
+        body = mix(body, mix(S, float3(1.0), 0.3), step(sdBoltMark(pq * 0.85), 0.0));
+    } else {
+        body = mix(S * 0.85, mix(S, float3(1.0), 0.45), step(pq.x + pq.y * 0.5, 0.0));
+    }
+    body += float3(1.0) * 0.25 * step(pix.y, -0.28) * step(pix.x, -0.1) * inside;
+    return mix(float3(0.05, 0.04, 0.06), body, inside);
+}
+
+half4 main(float2 fc) {
+    float P = uRes.y / 180.0;
+    float2 g = floor(fc / P) + 0.5;
+    float2 uv = g * P / uRes.y;                 // pixel-snapped uv
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 6.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3);
+    float floorY = c.y + R * 0.55;
+    float3 col = mix(BG * 0.6, BG * 1.2 + A * 0.05, uv.y);
+    float2 ck = floor(uv * 30.0);
+    col *= 0.94 + 0.06 * mod(ck.x + ck.y, 2.0);
+
+    // Pixel spotlights swinging from the top.
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float2 o = float2(c.x + (fi - 0.5) * asp * 0.6, 0.0);
+        float ang = (fi - 0.5) * -0.6 + sin(t * 1.2 + fi * 2.0) * 0.35;
+        float2 dir = float2(sin(ang), cos(ang));
+        float2 rel = uv - o;
+        float along = dot(rel, dir);
+        float across = abs(dot(rel, float2(-dir.y, dir.x)));
+        float beam = step(across, 0.02 + along * 0.15) * step(0.0, along) * step(along, floorY + 0.1);
+        col += (fi < 0.5 ? A : S) * beam * (0.1 + 0.15 * kick) * step(0.5, mod(g.x + g.y, 2.0) + 0.5);
+    }
+
+    // The cover as a pixel banner above the stage.
+    float bw = R * 0.6;
+    float2 bc = float2(c.x, c.y - R * 0.5);
+    float2 bq = (uv - bc) / (2.0 * bw) + 0.5;
+    float inBan = step(0.0, bq.x) * step(bq.x, 1.0) * step(0.0, bq.y) * step(bq.y, 1.0);
+    float3 ban = sharpCover((floor(bq * 32.0) + 0.5) / 32.0, A, S);
+    ban = floor(ban * 6.0 + 0.5) / 6.0;
+    col = mix(col, ban, inBan);
+    float frameB = inBan * (step(bq.x, 1.0 / 32.0) + step(31.0 / 32.0, bq.x) + step(bq.y, 1.0 / 32.0) + step(31.0 / 32.0, bq.y));
+    col = mix(col, mix(A, float3(1.0), 0.5), sat(frameB));
+
+    // Dance floor: tiles lighting with the bass.
+    if (uv.y > floorY) {
+        float2 tile = floor((uv - float2(c.x, floorY)) / 0.05);
+        float lit = step(0.6 - 0.4 * bass, hash12(tile + floor(t * 4.0 - uBeatAge)));
+        col = mix(BG * 0.7 + mix(A, S, 0.5) * 0.05, mix(A, S, hash12(tile)), lit * (0.2 + 0.5 * bass));
+        float2 tf = fract((uv - float2(c.x, floorY)) / 0.05);
+        col *= 0.8 + 0.2 * step(0.1, min(tf.x, tf.y));
+    }
+
+    // The dancers: a row of sprites, each on its band.
+    float size = R * 0.62;
+    float n = 7.0;
+    float span = min(asp * 0.85, size * 9.0);
+    for (int i = 0; i < 7; i++) {
+        float fi = float(i);
+        float x = c.x + (fi / (n - 1.0) - 0.5) * span;
+        float m = abs(fi / (n - 1.0) - 0.5) * 2.0;
+        float e = eqAt(1.0 - m) * play;
+        // Hop on the beat, height from the band; idle bob when nothing plays.
+        float ph = uBeatAge * 3.0 + fi * 0.05;
+        float hop = play > 0.05 ? sat(1.0 - ph) * (0.3 + 0.7 * e) * (0.5 + 0.6 * k) * sin(sat(ph) * PI) : abs(sin(t * 1.5 + fi)) * 0.3;
+        float land = sat(1.0 - ph * 6.0) * play;
+        float2 base = float2(x, floorY);
+        float2 pos = base - float2(0.0, size * 0.5 + hop * size * 0.9);
+        float2 sh = (uv - base) / float2(size * 0.5 * (1.0 - hop * 0.4), size * 0.08);
+        col *= 1.0 - 0.4 * (1.0 - smoothstep(0.7, 1.0, length(sh)));
+        float2 sq = float2(1.0 + 0.2 * land, 1.0 - 0.2 * land);
+        float2 local = (uv - pos) / (size * sq);
+        if (abs(local.x) < 0.55 && abs(local.y) < 0.55) {
+            float a;
+            float3 sp = sprite(local, mod(fi, 2.0), A, S, a);
+            col = mix(col, sp, a);
+        }
+    }
+    col += mix(S, float3(1.0), 0.5) * dots(uv, 18.0, float2(0.0), 0.05, 0.05, 11.0) * (0.3 + 0.6 * kick);
+    return half4(finish(col, fc), 1.0);
+}

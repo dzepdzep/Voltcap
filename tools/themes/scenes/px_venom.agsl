@@ -1,0 +1,87 @@
+// Venom · 32-bit (poison type): a toxic swamp at dusk. A glowing purple-green pool bubbles and pops,
+// sending up rings and fumes; spotted mushrooms glow on the bank, twisted roots drip, and sickly
+// fireflies drift through the mist.
+//#include pixel
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 goo0 = mix(float3(0.2, 0.05, 0.3), A * 0.4, 0.3);
+    float3 goo1 = mix(float3(0.45, 0.15, 0.6), A, 0.4);
+    float3 goo2 = mix(float3(0.5, 1.0, 0.3), S, 0.4);
+
+    // Dusky sky and dead trees.
+    float3 col = mix(BG * 0.8, mix(float3(0.3, 0.2, 0.35), A * 0.3, 0.4), pxBand(uv.y * 1.5, 4.0, cell));
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float bx = (fi + 0.3 + 0.4 * hash11(fi)) / 4.0 * asp;
+        float lean = (hash11(fi * 3.0) - 0.5) * 0.15;
+        float y0 = 0.62;
+        float h = 0.4 + 0.15 * hash11(fi * 5.0);
+        float f = sat((y0 - uv.y) / h);
+        float trunk = step(abs(uv.x - bx - lean * f - 0.01 * sin(f * 9.0)), 0.012 * (1.0 - f) + PX) * step(y0 - h, uv.y) * step(uv.y, y0);
+        float br = pxLine(uv, float2(bx + lean * 0.6, y0 - h * 0.6), float2(bx + lean * 0.6 + 0.08, y0 - h * 0.8), 2.0)
+                 + pxLine(uv, float2(bx + lean * 0.75, y0 - h * 0.75), float2(bx + lean * 0.75 - 0.06, y0 - h * 0.95), 1.0);
+        col = mix(col, mix(float3(0.12, 0.08, 0.14), BG, 0.3) * (1.0 - 0.3 * fi / 4.0), sat(trunk + br));
+    }
+    // Mist band.
+    float mist = fbm3(float2(uv.x * 3.0 + t * 0.03, uv.y * 8.0));
+    col = mix(col, mix(goo1, goo2, 0.3) * 0.7, step(0.58, mist) * step(0.45, uv.y) * step(uv.y, 0.65) * step(0.5, mod(cell.x + cell.y, 2.0)) * 0.5);
+    // The bank.
+    float bank = 0.62 + 0.02 * sin(uv.x * 12.0);
+    if (uv.y > bank) col = mix(float3(0.14, 0.1, 0.12), float3(0.2, 0.16, 0.14), pxBand(vnoise(uv * 50.0), 2.0, cell));
+    // The pool: glowing, swirling.
+    float2 pc = float2(asp * 0.5, 0.82);
+    float2 pq = (uv - pc) / float2(asp * 0.38, 0.12);
+    float pd = length(pq);
+    if (pd < 1.0) {
+        float sw = vnoise(float2(atan(pq.y, pq.x) * 2.0 + t * 0.3, pd * 5.0 - t * 0.5));
+        col = pxRamp(sw * 0.7 + (1.0 - pd) * 0.4, cell, goo0, goo1, mix(goo1, goo2, 0.5), goo2);
+        col = mix(col, mix(goo1, goo2, 0.5), step(0.94, pd) * 0.6);
+        // Bubbles popping: a dome, then a ring.
+        for (int i = 0; i < 6; i++) {
+            float fi = float(i);
+            float bt = fract(t * 0.35 + hash11(fi * 1.7));
+            float2 bc = pxSnap(pc + float2((hash11(fi * 5.0) - 0.5) * asp * 0.5, (hash11(fi * 3.0) - 0.5) * 0.12));
+            float r = length((uv - bc) * float2(1.0, 1.8));
+            float dome = step(r, 0.02 * smoothstep(0.0, 0.6, bt)) * step(bt, 0.6);
+            float ring = step(abs(r - (bt - 0.6) * 0.12), PX * 0.7) * step(0.6, bt);
+            col = mix(col, goo2, dome);
+            col = mix(col, float3(1.0), dome * step(length(uv - bc + float2(0.006, 0.006)), PX * 1.2));
+            col = mix(col, goo2, ring * (1.0 - bt));
+        }
+    }
+    // Fumes rising from the pool.
+    float fume = fbm3(float2(uv.x * 6.0, uv.y * 4.0 + t * 0.4));
+    col = mix(col, mix(goo1, goo2, 0.5), step(0.62, fume) * step(0.45, uv.y) * step(uv.y, 0.72) * step(abs(uv.x - pc.x), asp * 0.3) * 0.5 * step(0.5, mod(cell.x + cell.y, 2.0)));
+    // Glowing mushrooms on the bank.
+    for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float side = fi < 2.5 ? 0.1 + fi * 0.09 : asp - 0.1 - (fi - 3.0) * 0.1;
+        float2 m = pxSnap(float2(side, 0.95 - 0.02 * hash11(fi)));
+        float sz = 0.025 + 0.015 * hash11(fi * 7.0);
+        float2 q = uv - m;
+        float cap = step(length(q * float2(1.0, 1.6) + float2(0.0, sz * 1.1)), sz) * step(q.y, -sz * 0.45);
+        float stem = pxBox(q, float2(0.0, -sz * 0.25), float2(sz * 0.3, sz * 0.3));
+        float pulse = 0.6 + 0.4 * sin(t * 2.0 + fi);
+        col = mix(col, float3(0.85, 0.8, 0.75), stem);
+        col = mix(col, mix(goo1, goo2, step(0.5, hash11(fi * 11.0))) * (0.7 + 0.5 * pulse), cap);
+        col = mix(col, float3(1.0), cap * step(0.82, vnoise(q * 300.0 + fi)));
+        col += goo2 * 0.15 * pulse * step(length(q + float2(0.0, sz)), sz * 2.5) * (1.0 - cap) * step(0.5, mod(cell.x + cell.y, 2.0));
+    }
+    // Fireflies.
+    for (int i = 0; i < 8; i++) {
+        float fi = float(i);
+        float2 f = pxSnap(float2(fract(hash11(fi) + t * 0.01 * (fi + 1.0) * 0.4) * asp, 0.35 + 0.3 * hash11(fi * 2.0) + 0.04 * sin(t * 0.9 + fi * 2.0)));
+        float bl = step(0.3, sin(t * 2.5 + fi * 1.9));
+        col = mix(col, goo2 + 0.2, step(length(uv - f), PX * 0.7) * bl);
+        col = mix(col, mix(col, goo2, 0.5), step(length(uv - f), PX * 2.0) * bl * step(0.5, mod(cell.x + cell.y, 2.0)));
+    }
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

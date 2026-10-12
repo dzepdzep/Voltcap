@@ -1,0 +1,207 @@
+// Arcade CRT: an arcade cabinet's attract mode on a curved tube. A vector shooter plays itself: a
+// formation of neon ships sways over a scrolling perspective grid and wireframe mountains, the
+// player's ship slides along the bottom and picks them off one by one - laser, flash, a burst of
+// sparks, the score ticking up - while INSERT COIN blinks. Glowing phosphor, scanlines, a shadow
+// mask, a rolling band, the glass's curve and reflection, and the cabinet's bezel round it.
+
+float vline(float d, float w) { return 1.0 - smoothstep(0.0, w, abs(d)); }
+
+// 3 x 5 pixel font: 0-9, then C H I N E R T U P S O, 21 = space.
+float fontCode(float g) {
+    if (g < 0.5) return 31599.0;
+    if (g < 1.5) return 11415.0;
+    if (g < 2.5) return 29671.0;
+    if (g < 3.5) return 29647.0;
+    if (g < 4.5) return 23497.0;
+    if (g < 5.5) return 31183.0;
+    if (g < 6.5) return 31215.0;
+    if (g < 7.5) return 29257.0;
+    if (g < 8.5) return 31727.0;
+    if (g < 9.5) return 31695.0;
+    if (g < 10.5) return 31015.0;
+    if (g < 11.5) return 23533.0;
+    if (g < 12.5) return 29847.0;
+    if (g < 13.5) return 27501.0;
+    if (g < 14.5) return 31143.0;
+    if (g < 15.5) return 27565.0;
+    if (g < 16.5) return 29842.0;
+    if (g < 17.5) return 23407.0;
+    if (g < 18.5) return 31716.0;
+    if (g < 19.5) return 31183.0;
+    if (g < 20.5) return 31599.0;
+    return 0.0;
+}
+
+float glyphBit(float2 p, float g) {
+    if (p.x < 0.0 || p.y < 0.0 || p.x >= 3.0 || p.y >= 5.0) return 0.0;
+    float idx = 14.0 - (floor(p.y) * 3.0 + floor(p.x));
+    return mod(floor(fontCode(g) / exp2(idx)), 2.0);
+}
+
+// "INSERT COIN"
+float insertCoin(float i) {
+    if (i < 0.5) return 12.0;
+    if (i < 1.5) return 13.0;
+    if (i < 2.5) return 19.0;
+    if (i < 3.5) return 14.0;
+    if (i < 4.5) return 15.0;
+    if (i < 5.5) return 16.0;
+    if (i < 6.5) return 21.0;
+    if (i < 7.5) return 10.0;
+    if (i < 8.5) return 20.0;
+    if (i < 9.5) return 12.0;
+    return 13.0;
+}
+
+// p in glyph pixels (4 per character). n characters of text; kind 0 = INSERT COIN, 1 = "1UP", 2 = "HI".
+float label(float2 p, float kind) {
+    float cell = floor(p.x / 4.0);
+    float2 lp = float2(p.x - cell * 4.0, p.y);
+    float g = 21.0;
+    if (kind < 0.5) { if (cell >= 0.0 && cell < 11.0) g = insertCoin(cell); }
+    else if (kind < 1.5) { if (cell < 0.5 && cell > -0.5) g = 1.0; else if (cell < 1.5 && cell > 0.5) g = 17.0; else if (cell < 2.5 && cell > 1.5) g = 18.0; }
+    else { if (cell < 0.5 && cell > -0.5) g = 11.0; else if (cell < 1.5 && cell > 0.5) g = 12.0; }
+    return glyphBit(lp, g);
+}
+
+// A 6-digit number at glyph pixels p.
+float number(float2 p, float v) {
+    float cell = floor(p.x / 4.0);
+    if (cell < 0.0 || cell > 5.0) return 0.0;
+    float dgt = mod(floor(v / exp2(log2(10.0) * (5.0 - cell)) + 0.0001), 10.0);
+    return glyphBit(float2(p.x - cell * 4.0, p.y), floor(dgt));
+}
+
+// An enemy ship's outline distance, shape by row.
+float enemyD(float2 p, float row, float s) {
+    if (row < 0.5) return max(abs(p.x) + abs(p.y) - s, -(abs(p.x) + abs(p.y) - s * 0.45));
+    if (row < 1.5) {
+        float2 q = float2(abs(p.x), p.y);
+        return min(sdSegment(q, float2(0.0, -s * 0.6), float2(s, s * 0.5)), sdSegment(q, float2(s, s * 0.5), float2(s * 0.4, s * 0.1)));
+    }
+    float r = length(p) - s * 0.6;
+    float a = atan(p.y, p.x);
+    return min(abs(r), max(abs(length(p) - s * 0.95), abs(fract(a / TAU * 6.0) - 0.5) * 2.0 - 0.25 + 0.0));
+}
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float asp = uRes.x / uRes.y;
+
+    // The tube: the picture bulges, with a bezel round its rounded corners.
+    float2 q = fc / uRes * 2.0 - 1.0;
+    q *= 0.94;
+    float2 qc = q * (1.0 + 0.05 * float2(q.y * q.y, q.x * q.x));
+    float2 uv = (qc * 0.5 + 0.5) * float2(asp, 1.0);
+    float edge = sdRoundBox(qc * float2(asp, 1.0), float2(asp, 1.0) - 0.002, 0.12);
+    float w = 2.4 / uRes.y;
+
+    float3 col = BG * 0.6;
+    // Stars streaming down behind everything.
+    col += float3(0.9, 0.95, 1.0) * dots(uv, 34.0, float2(0.0, -t * 0.9), 0.3, 0.08, 2.0) * 0.55;
+    col += S * dots(uv, 16.0, float2(0.0, -t * 0.45), 0.2, 0.07, 6.0) * 0.4;
+
+    // Horizon: wireframe mountains and the grid rushing towards us.
+    float hz = 0.60;
+    float mx = uv.x * 4.0;
+    float mt = hz - 0.07 * abs(fract(mx) - 0.5) * 2.0 * (0.5 + hash11(floor(mx))) - 0.02 * abs(fract(mx * 3.0) - 0.5);
+    float mdist = abs(uv.y - mt);
+    col += mix(A, S, 0.5) * (vline(mdist, w) * 0.8 + exp(-mdist * 120.0) * 0.25) * step(uv.y, hz + 0.002);
+    col += A * 0.18 * exp(-abs(uv.y - hz) * 30.0);
+    if (uv.y > hz) {
+        float camH = 0.06;
+        float z = camH / (uv.y - hz);
+        float gx = (uv.x - asp * 0.5) * z;
+        float gz = z + t * 0.35;
+        float sx = abs(fract(gx * 22.0) - 0.5) / 22.0 / z;
+        float sz = abs(fract(gz * 7.0) - 0.5) / 7.0 * camH / (z * z);
+        float fade = sat((uv.y - hz) * 9.0);
+        float grid = vline(sx, w * 1.3) + vline(sz, w * 1.3);
+        float glowG = exp(-sx * 220.0) + exp(-sz * 220.0);
+        col += mix(S, A, 0.35) * (sat(grid) * 1.1 + glowG * 0.25) * fade;
+        col += A * 0.06 * fade * (1.0 - sat((uv.y - hz) * 2.0));
+    }
+
+    // The formation: 3 rows of 7, swaying. Each round of 16 s the player shoots some down.
+    float wave = floor(t / 16.0);
+    float rt = t - wave * 16.0;
+    float2 sway = float2(0.09 * sin(t * 0.55), 0.015 * sin(t * 1.3));
+    float3 shipsCol = float3(0.0);
+    float2 target = float2(-10.0);
+    float laserT = -1.0;
+    float score = 1200.0 + wave * 4200.0;
+    for (int r = 0; r < 3; r++) {
+        for (int c = 0; c < 7; c++) {
+            float fr = float(r);
+            float fcol = float(c);
+            float n = fr * 7.0 + fcol;
+            float2 pos = float2(asp * 0.5 + (fcol - 3.0) * 0.105, 0.17 + fr * 0.085) + sway;
+            pos.y += 0.01 * sin(t * 2.0 + fcol * 0.8 + fr);
+            // When this one is shot (some survive the round).
+            float hit = 1.0 + 13.5 * hash11(n * 7.3 + wave * 3.1);
+            float shot = step(0.35, hash11(n * 2.9 + wave));
+            float dead = shot * step(hit, rt);
+            score += shot * step(hit, rt) * (150.0 - fr * 50.0);
+            float since = rt - hit;
+            // The next one due gets the laser.
+            if (shot > 0.5 && since > -0.3 && since < 0.0) { target = pos; laserT = since; }
+            if (dead < 0.5) {
+                float d = enemyD(uv - pos, fr, 0.026);
+                float3 ec = fr < 0.5 ? A : (fr < 1.5 ? S : mix(A, S, 0.5));
+                shipsCol += ec * (vline(d, w) + exp(-abs(d) * 90.0) * 0.35);
+            } else if (since < 0.7) {
+                // Explosion: a flash and sparks flying out.
+                float2 e = uv - pos;
+                float el = length(e);
+                float ring = 0.01 + since * 0.09;
+                float ea = atan(e.y, e.x);
+                float spark = step(0.5, hash11(floor(ea / TAU * 16.0) + n)) * exp(-abs(el - ring) * 260.0) * step(abs(fract(ea / TAU * 16.0) - 0.5), 0.22) * (1.0 - since / 0.7);
+                shipsCol += mix(float3(1.0), A, sat(since * 2.0)) * (spark * 1.5 + exp(-el * 40.0) * (1.0 - since / 0.7) * 1.2);
+            }
+        }
+    }
+    col += shipsCol;
+
+    // The player's ship: slides under its next target, fires.
+    float px0 = asp * 0.5 + 0.32 * sin(t * 0.43) * cos(t * 0.17);
+    if (laserT > -0.3) px0 = mix(px0, target.x, 0.85);
+    float2 sp = float2(px0, 0.82);
+    float2 sq = uv - sp;
+    float hull = min(sdSegment(float2(abs(sq.x), sq.y), float2(0.0, -0.03), float2(0.03, 0.015)), sdSegment(float2(abs(sq.x), sq.y), float2(0.03, 0.015), float2(0.0, 0.006)));
+    col += float3(0.85, 1.0, 0.95) * (vline(hull, w) + exp(-hull * 80.0) * 0.4);
+    col += A * exp(-length(sq - float2(0.0, 0.02)) * 90.0) * (0.6 + 0.4 * sin(t * 30.0));
+    if (laserT > -0.3) {
+        float ld = sdSegment(uv, sp + float2(0.0, -0.035), target);
+        col += mix(S, float3(1.0), 0.5) * (vline(ld, w * 1.2) * 1.4 + exp(-ld * 160.0) * 0.5);
+    }
+
+    // The score, the high score, INSERT COIN blinking.
+    float gs = 170.0;
+    float2 hud = uv * gs;
+    float txt = label(hud - float2(0.08 * gs, 0.05 * gs), 1.0) + number(hud - float2(0.08 * gs, 0.09 * gs), score);
+    txt += label(hud - float2(asp * 0.5 * gs - 4.0, 0.05 * gs), 2.0) + number(hud - float2(asp * 0.5 * gs - 12.0, 0.09 * gs), 42000.0 + wave * 1000.0);
+    float blink = step(0.5, fract(t * 0.8));
+    txt += label(hud - float2(asp * 0.5 * gs - 22.0, 0.92 * gs), 0.0) * blink;
+    col = mix(col, float3(1.0, 0.95, 0.85), sat(txt) * 0.9);
+
+    // Tube: scanlines (about 240 of them), the shadow mask, a rolling band, phosphor bloom.
+    float lines = 240.0;
+    float scan = 0.72 + 0.28 * (0.5 + 0.5 * cos(uv.y * lines * TAU));
+    float m = mod(floor(fc.x), 3.0);
+    float3 mask = m < 1.0 ? float3(1.0, 0.85, 0.85) : (m < 2.0 ? float3(0.85, 1.0, 0.85) : float3(0.85, 0.85, 1.0));
+    col *= scan * mask;
+    col *= 1.0 + 0.08 * exp(-abs(fract(uv.y * 0.5 - t * 0.06) - 0.5) * 16.0);
+    col += col * col * 0.3;
+    float vig = pow(max((1.0 - q.x * q.x * 0.9) * (1.0 - q.y * q.y * 0.9), 0.0), 0.4);
+    col *= vig;
+    // The glass catches the room: a soft highlight top left.
+    col += float3(0.6, 0.65, 0.8) * 0.05 * exp(-length((q - float2(-0.55, -0.6)) * float2(1.0, 1.6)) * 2.5);
+    // Outside the tube: the cabinet's bezel, black plastic with a little sheen.
+    float inside = smoothstep(0.004, -0.004, edge);
+    float3 bezel = float3(0.025, 0.025, 0.03) + mix(A, S, 0.5) * 0.04 * exp(-max(edge, 0.0) * 18.0) + float3(0.05) * sat(-q.y) * 0.3;
+    col = mix(bezel, col, inside);
+    return half4(finish(col, fc), 1.0);
+}

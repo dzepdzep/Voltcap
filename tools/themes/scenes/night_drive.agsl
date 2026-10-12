@@ -1,0 +1,142 @@
+// Night drive (music): cruising through the city at night from behind the wheel. A layered skyline
+// with lit windows glows on the horizon under a hazy sky, streetlights on poles sweep past and pulse
+// with the beat, their light shining off the wet road, tail-lights of the car ahead glow red, the lane
+// dashes rush towards you faster when the song gets busy, and on the curved dashboard the stereo's
+// glass screen shows the album cover with a little equalizer, its buttons lit in the cover's colours.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+    float busy = (uMid + uHigh) * 0.5 * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3) * 0.55;
+    float hz = 0.46;
+    float mid = asp * 0.5;
+    float speed = 0.8 + 2.2 * busy * k;
+    float drive = t * speed;
+    float3 lamp = float3(1.0, 0.72, 0.38);
+
+    // Sky: deep night above, the city's glow at the horizon, a few stars.
+    float3 col = mix(BG * 0.25, mix(A, S, 0.5) * 0.4 + BG * 0.2, pow(sat(uv.y / hz), 2.5));
+    col += float3(1.0) * step(0.997, hash12(floor(fc / 2.0))) * (1.0 - smoothstep(0.0, hz * 0.7, uv.y)) * 0.5;
+    // Skyline: two layers of buildings with lit windows.
+    for (int l = 0; l < 2; l++) {
+        float fl = float(l);
+        float w = 26.0 + fl * 14.0;
+        float bx = floor(uv.x * w + fl * 31.0 + drive * (0.02 + fl * 0.03));
+        float hgt = hz - (0.04 + 0.12 * hash11(bx + fl * 9.0)) * (1.0 - 0.6 * abs(uv.x - mid) / asp) * (1.0 - fl * 0.35);
+        float inB = smoothstep(hgt - px, hgt + px, uv.y) * step(uv.y, hz);
+        float3 bc = mix(BG * 0.12, BG * 0.2 + mix(A, S, 0.5) * 0.05, fl);
+        col = mix(col, bc, inB);
+        float2 wg = floor(float2(uv.x * w * 5.0, uv.y * 140.0));
+        float lit = step(0.72, hash12(wg + fl * 17.0)) * inB;
+        col += mix(lamp, float3(0.6, 0.8, 1.0), hash12(wg + 3.0)) * lit * (0.25 - fl * 0.08);
+    }
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - hz) * 30.0) * 0.12;
+
+    // The road: wet asphalt with lane dashes and reflections of the lights.
+    if (uv.y > hz) {
+        float dy = uv.y - hz;
+        float z = 0.1 / dy;
+        float x = (uv.x - mid) * z;
+        float3 road = mix(float3(0.045, 0.045, 0.06), BG * 0.3, 0.3);
+        float dashPat = smoothstep(0.45, 0.5, fract(z * 0.7 - drive)) * (1.0 - smoothstep(0.9, 0.95, fract(z * 0.7 - drive)));
+        float laneW = 0.035 + 0.02 / z;
+        float lane = (1.0 - smoothstep(laneW * 0.6, laneW, abs(abs(x) - 0.65))) * dashPat;
+        float edge = 1.0 - smoothstep(laneW * 0.6, laneW, abs(abs(x) - 1.9));
+        road = mix(road, float3(0.92, 0.88, 0.75), (lane + edge * 0.7) * exp(-z * 0.04));
+        // Streaks of reflected light: streetlights at the sides, tail-lights in the middle.
+        float refl = exp(-abs(abs(x) - 1.6) * 3.0) * (0.5 + 0.5 * sin(z * 2.0 - drive * 6.0));
+        road += lamp * refl * 0.08 * exp(-z * 0.08) * (0.6 + 0.6 * kick * k);
+        road += float3(1.0, 0.1, 0.1) * exp(-abs(x) * 2.5) * exp(-z * 0.15) * 0.06;
+        road += mix(A, S, 0.5) * 0.06 * exp(-z * 0.25);
+        col = road;
+    }
+    // Tail-lights of the car ahead.
+    float bob = sin(t * 1.3) * 0.002;
+    for (int s = 0; s < 2; s++) {
+        float side = s == 0 ? -1.0 : 1.0;
+        float2 tl = float2(mid + side * 0.035, hz + 0.03 + bob);
+        float d = length((uv - tl) * float2(1.0, 1.6));
+        col += float3(1.0, 0.12, 0.08) * (0.0012 / (d + 0.0012)) * (0.5 + 0.3 * kick * k);
+    }
+    // Streetlights on poles, sweeping past.
+    for (int i = 0; i < 7; i++) {
+        float fi = float(i);
+        float zz = fract(fi / 7.0 - drive * 0.1);
+        float persp = 1.0 / (0.12 + zz * 3.2);
+        float fade = smoothstep(0.0, 0.08, zz) * (1.0 - smoothstep(0.85, 0.98, zz));
+        for (int s = 0; s < 2; s++) {
+            float side = s == 0 ? -1.0 : 1.0;
+            float2 lp = float2(mid + side * 0.16 * persp, hz - 0.075 * persp);
+            // The pole: a thin dark line from the lamp down to the road edge.
+            float poleX = mid + side * 0.19 * persp;
+            float pole = (1.0 - smoothstep(0.0, 0.0015 * persp + px, abs(uv.x - poleX))) * step(lp.y, uv.y) * step(uv.y, hz + 0.05 * persp);
+            col = mix(col, BG * 0.08, pole * fade * 0.9);
+            float d = length((uv - lp) * float2(1.0, 1.5));
+            col += lamp * (0.0035 * persp / (d + 0.0035 * persp)) * (0.22 + 0.35 * kick * k) * fade;
+            // Its cone of light down onto the road.
+            float2 cv = uv - lp;
+            float cone = step(0.0, cv.y) * exp(-abs(cv.x - side * cv.y * 0.15) / (0.02 * persp + cv.y * 0.6)) * exp(-cv.y * 4.0 / persp);
+            col += lamp * cone * 0.04 * fade;
+        }
+    }
+
+    // Windscreen frame: the dark pillars at the sides and a soft vignette.
+    float pillar = smoothstep(0.0, 0.01, uv.x - (0.12 - uv.y * 0.1)) * smoothstep(0.0, 0.01, (asp - 0.12 + uv.y * 0.1) - uv.x);
+    col *= 0.25 + 0.75 * pillar;
+
+    // Dashboard: a curved dark shape with a faint sheen and the instrument glow.
+    float dashY = 0.9 - 0.035 * cos((uv.x - c.x) * 2.0);
+    float inDash = smoothstep(dashY - px, dashY + px, uv.y);
+    float3 dashC = mix(float3(0.07, 0.07, 0.09), float3(0.03), smoothstep(dashY, 1.0, uv.y));
+    dashC += float3(1.0) * exp(-abs(uv.y - dashY - 0.008) * 300.0) * 0.06;
+    dashC += mix(A, S, 0.5) * exp(-(uv.y - dashY) * 18.0) * 0.06;
+    col = mix(col, dashC, inDash);
+
+    // The stereo head unit.
+    float2 sq = uv - c;
+    float unit = sdRoundBox(sq, float2(R * 1.6, R * 1.05), R * 0.1);
+    float inU = 1.0 - smoothstep(-px, px, unit);
+    float3 unitC = mix(float3(0.13, 0.13, 0.15), float3(0.06), smoothstep(-R, R, sq.y));
+    unitC += float3(1.0) * exp(-abs(unit + R * 0.02) / px * 0.4) * 0.12;           // bevel highlight
+    col = mix(col, unitC, inU);
+    col += mix(A, S, 0.5) * exp(-max(unit, 0.0) * 40.0) * (1.0 - inU) * 0.08;
+    float2 so = sq - float2(-R * 0.45, 0.0);
+    float scr = sdRoundBox(so, float2(R * 0.85, R * 0.85), R * 0.05);
+    if (scr < px) {
+        float2 q = so / (R * 1.7) + 0.5;
+        float3 pic = sharpCover(q, A, S);
+        float strip = step(0.84, q.y);
+        float bi = floor(q.x * 12.0);
+        float e = eqAt(abs(bi / 11.0 - 0.5) * 2.0) * play;
+        pic = mix(pic, mix(float3(0.02), mix(A, S, bi / 11.0), step(1.0 - (q.y - 0.84) / 0.16, e) * step(0.2, fract(q.x * 12.0))), strip);
+        pic += float3(1.0) * (1.0 - smoothstep(0.0, 0.12, abs(q.x - q.y * 0.6 - 0.15))) * 0.08;  // glass glare
+        col = mix(col, pic, 1.0 - smoothstep(-px, px, scr));
+    }
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float b = sdRoundBox(sq - float2(R * 0.85, -R * 0.6 + fi * R * 0.5), float2(R * 0.28, R * 0.12), R * 0.05);
+        float on = step(fi, floor(bass * 3.0 * k + 0.2));
+        float3 bc = mix(A, S, fi * 0.5) * (0.35 + 0.65 * on);
+        col = mix(col, bc, 1.0 - smoothstep(-px, px, b));
+        col += mix(A, S, fi * 0.5) * exp(-max(b, 0.0) * 120.0) * on * 0.2;
+    }
+    float2 kq = sq - float2(R * 1.35, 0.0);
+    float knob = length(kq) - R * 0.18;
+    float ridges = 0.85 + 0.15 * sin(atan(kq.y, kq.x) * 24.0);
+    col = mix(col, mix(float3(0.2), float3(0.55), 0.5 - kq.y / (R * 0.36)) * ridges, 1.0 - smoothstep(-px, px, knob));
+    col += mix(A, S, 0.5) * (1.0 - smoothstep(0.0, px * 3.0, abs(knob))) * (0.4 + 0.6 * bass);
+    return half4(finish(col, fc), 1.0);
+}

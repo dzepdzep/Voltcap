@@ -1,0 +1,45 @@
+// Badge bounce: the backdrop for your earned badges bouncing round the screen (BadgeBounceLayer draws
+// them on top, in their own full quality and a little see-through). A deep velvet gradient in the
+// theme's colours, big soft lights drifting slowly behind a faint honeycomb, and a shimmer that sweeps
+// across the cells now and then, like light catching a trophy cabinet's glass.
+
+// Distance to the nearest hexagon cell's edge (0 on the edge), for a honeycomb of size s.
+float hexEdge(float2 p, float s) {
+    float2 q = p / s;
+    float2 r = float2(1.0, 1.7320508);
+    float2 h = r * 0.5;
+    float2 a = mod(q, r) - h;
+    float2 b = mod(q - h, r) - h;
+    float2 g = dot(a, a) < dot(b, b) ? a : b;
+    float2 ag = abs(g);
+    return 0.5 - max(dot(ag, normalize(float2(1.0, 1.7320508))), ag.x);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Velvet: a diagonal gradient, deepest in the corners.
+    float d = (uv.x / asp + uv.y) * 0.5;
+    float3 col = mix(BG * 1.6 + S * 0.05, BG * 0.7 + A * 0.03, d);
+    // Big soft lights drifting.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float2 c = float2(asp * (0.5 + 0.38 * sin(t * (0.05 + fi * 0.017) + fi * 2.1)), 0.5 + 0.32 * cos(t * (0.043 + fi * 0.013) + fi * 1.3));
+        float3 lc = fi < 0.5 ? A : (fi < 1.5 ? S : mix(A, S, 0.5));
+        col += lc * 0.16 * exp(-dot(uv - c, uv - c) * 4.0);
+    }
+    // A faint honeycomb with a shimmer sweeping across it.
+    float e = hexEdge(uv + float2(t * 0.004, 0.0), 0.075);
+    float line = 1.0 - smoothstep(0.0, 0.035, e);
+    float sweep = exp(-sqf((uv.x / asp - uv.y * 0.35) - (fract(t / 9.0) * 1.8 - 0.4)) * 60.0);
+    col += mix(A, float3(1.0), 0.4) * line * (0.025 + 0.12 * sweep);
+    col += mix(S, A, 0.5) * (1.0 - smoothstep(0.0, 0.5, e)) * 0.015;
+    // Tiny glints drifting up.
+    col += mix(A, float3(1.0), 0.6) * dots(uv + float2(0.0, t * 0.01), 40.0, float2(0.0), 0.08, 0.05, 3.0) * 0.4;
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,101 @@
+// Alloy (steel type): a vault of brushed metal. Bevelled steel panels with rivets line the back wall,
+// their brushed grain catching a light that sweeps slowly across; a mirror-polished floor reflects
+// it all; chrome spheres hover and bob, each reflecting a little world of sky and floor and the moving
+// light; far off, a welder's sparks spit now and then.
+
+// What a chrome sphere sees in direction r: a bright ceiling strip, the theme-tinted wall and the
+// dark floor below the horizon.
+float3 envLook(float3 r, float3 A, float3 S, float3 BG, float sweep) {
+    float3 c = mix(BG * 0.6, mix(float3(0.7, 0.74, 0.8), S, 0.2), smoothstep(-0.05, 0.4, -r.y));
+    c = mix(c, BG * 0.25, smoothstep(0.0, 0.15, r.y));
+    c += float3(1.0) * exp(-abs(r.x - sweep) * 18.0) * smoothstep(0.1, 0.6, -r.y) * 0.8;
+    c += A * 0.25 * exp(-abs(r.y + 0.05) * 30.0);
+    return c;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float horizon = 0.68;
+    float sweep = sin(t * 0.25) * 0.9;                 // the light sweeping across (-1..1)
+    float sweepX = asp * (0.5 + 0.5 * sweep);
+
+    float3 steel = mix(float3(0.42, 0.45, 0.5), BG * 2.5, 0.3);
+    float3 col;
+    float2 wuv = uv;
+    float refl = 0.0;
+    if (uv.y > horizon) { wuv.y = 2.0 * horizon - uv.y; refl = 1.0; }
+    // Panels: a grid of bevelled plates.
+    float2 pg = float2(wuv.x / 0.3, wuv.y / 0.22);
+    float2 pid = floor(pg);
+    float2 pf = fract(pg) - 0.5;
+    float2 edge = 0.5 - abs(pf);
+    float bevel = min(edge.x * 0.3, edge.y * 0.22);
+    // Brushed grain: fine streaks along each plate, alternating direction plate to plate.
+    float dir = mod(pid.x + pid.y, 2.0);
+    float2 gq = dir > 0.5 ? float2(wuv.x * 3.0, wuv.y * 900.0) : float2(wuv.x * 900.0, wuv.y * 3.0);
+    float grain = vnoise(gq + pid * 17.0) * 0.6 + vnoise(gq * 2.3) * 0.4;
+    // The sweep: anisotropic highlight, stretched along the grain.
+    float hl = dir > 0.5 ? exp(-abs(wuv.x - sweepX) * 5.0) : exp(-abs(wuv.x - sweepX) * 14.0);
+    col = steel * (0.65 + 0.2 * hash12(pid)) * (0.85 + 0.25 * grain);
+    col += float3(1.0, 0.98, 0.95) * hl * (0.25 + 0.3 * grain) * 0.6;
+    // Bevels: top/left edges lit, bottom/right in shadow; dark seams between plates.
+    float bevM = 1.0 - smoothstep(0.004, 0.009, bevel);
+    float litSide = step(pf.y, 0.0) * step(abs(pf.x) * 0.3, abs(pf.y) * 0.22) + step(pf.x, 0.0) * step(abs(pf.y) * 0.22, abs(pf.x) * 0.3);
+    col = mix(col, col * mix(0.55, 1.5, litSide), bevM);
+    col *= smoothstep(0.0, 0.003, bevel);
+    // Rivets at the corners.
+    float2 rq = abs(pf * float2(0.3, 0.22)) - float2(0.3, 0.22) * 0.5 + 0.018;
+    float rv = length(rq) - 0.006;
+    float3 rivet = steel * (0.9 + 0.8 * sat(-(rq.x + rq.y) * 120.0)) + float3(1.0) * hl * 0.3;
+    col = mix(col, rivet, 1.0 - smoothstep(-px, px, rv));
+    // A channel of the theme colour along the horizon.
+    col += A * exp(-abs(wuv.y - horizon + 0.02) * 120.0) * 0.4;
+    if (refl > 0.5) {
+        float fd = uv.y - horizon;
+        col = mix(BG * 0.15, col * 0.55, exp(-fd * 6.0));
+        col += float3(1.0) * exp(-abs(uv.x - sweepX) * 8.0) * exp(-fd * 10.0) * 0.12;
+    }
+
+    // Chrome spheres hovering, each with its reflection in the floor.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float r = 0.07 + 0.03 * fi;
+        float2 c = float2(asp * (0.22 + 0.3 * fi), horizon - 0.2 - 0.06 * sin(fi * 2.0) + 0.02 * sin(t * 0.6 + fi * 2.0));
+        for (int m = 0; m < 2; m++) {
+            float2 cc = m == 0 ? c : float2(c.x, 2.0 * horizon - c.y);
+            float2 q = (uv - cc) / r;
+            float d = length(q);
+            if (d < 1.0 && (m == 0 || uv.y > horizon)) {
+                float3 n = float3(q.x, q.y, -sqrt(max(1.0 - d * d, 0.0)));
+                float3 rr = reflect(float3(0.0, 0.0, 1.0), n);
+                if (m == 1) rr.y = -rr.y;
+                float3 sc = envLook(rr, A, S, BG, sweep);
+                sc *= 0.6 + 0.4 * (1.0 - d * d);
+                sc += float3(1.0) * pow(sat(1.0 - length(q - float2(-0.35, -0.4)) * 2.4), 6.0) * 0.8;
+                float aa = 1.0 - smoothstep(1.0 - px / r * 1.5, 1.0, d);
+                col = mix(col, sc * (m == 1 ? 0.45 * exp(-(uv.y - horizon) * 5.0) : 1.0), aa);
+            }
+        }
+        // Soft contact shadow on the floor.
+        col *= 1.0 - 0.3 * exp(-length((uv - float2(c.x, horizon + 0.012)) * float2(1.0, 6.0)) / r * 2.0) * step(horizon, uv.y);
+    }
+
+    // Distant welding sparks: bursts every few seconds, tiny falling arcs.
+    float cyc = mod(t, 3.7);
+    float2 wp = float2(asp * (0.15 + 0.7 * hash11(floor(t / 3.7))), horizon - 0.01);
+    float burst = exp(-cyc * 1.6) * step(cyc, 1.8);
+    for (int i = 0; i < 10; i++) {
+        float fi = float(i);
+        float2 v = float2((hash11(fi * 3.3) - 0.5) * 0.25, -0.15 - 0.15 * hash11(fi * 1.9));
+        float2 p = wp + v * cyc + float2(0.0, 0.25 * cyc * cyc);
+        col += mix(float3(1.0, 0.7, 0.3), float3(1.0), 0.4) * exp(-length(uv - p) * 1200.0) * burst * 2.0;
+    }
+    col += float3(0.8, 0.9, 1.0) * exp(-length(uv - wp) * 60.0) * burst * (0.5 + 0.5 * sin(t * 50.0));
+    return half4(finish(col * 0.85, fc), 1.0);
+}

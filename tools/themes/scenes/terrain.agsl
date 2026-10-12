@@ -1,0 +1,81 @@
+// Wire terrain: a glowing wireframe floor rushing towards you, a range of mountains on the horizon
+// built from the spectrum (bass in the middle peaks, highs out to the sides) and a big striped sun
+// sinking behind them. The mountains rise with the music, the grid flashes on the kick. The horizon
+// sits on the equalizer's line.
+//#include reactive
+
+float tri(float x) { return abs(fract(x) - 0.5) * 2.0; }
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 6.0) * play;
+
+    float hz = clamp(uWaveY + room(0.16) * 0.6, 0.3, 0.72);    // horizon, a little under the line
+    float3 col = mix(BG * 0.5, mix(BG, A, 0.4), smoothstep(0.0, hz, uv.y));
+    col = mix(col, coverField(uv, asp, t, bass, 0.8, BG, A, S), 0.15);
+    col += float3(1.0) * dots(uv, 60.0, float2(t * 0.003, 0.0), 0.12, 0.08, 2.0) * 0.5 * smoothstep(hz, 0.0, uv.y);
+
+    // The sun: striped at the bottom, swelling with the bass.
+    float2 sc = float2(asp * 0.5, hz - 0.11);
+    float sr = 0.18 + 0.012 * bass * k;
+    float sd = length(uv - sc);
+    float band = fract((uv.y - sc.y) * 28.0 - t * 0.5);
+    float cut = step(band, smoothstep(sc.y - sr * 0.4, sc.y + sr, uv.y) * 0.75);
+    float sun = (1.0 - smoothstep(sr - px, sr + px, sd)) * (1.0 - cut);
+    float3 sunCol = mix(S, A, smoothstep(sc.y - sr, sc.y + sr, uv.y));
+    col = mix(col, sunCol * 1.15, sun * step(uv.y, hz));
+    col += sunCol * exp(-max(sd - sr, 0.0) * 8.0) * 0.22 * step(uv.y, hz);
+
+    // Spectrum mountains on the horizon.
+    float x = uv.x - asp * 0.5;
+    float m = sat(abs(x) / (asp * 0.5));
+    float e = eqAt(m) * play;
+    float jag = tri(x * 7.0 + 0.3) * 0.5 + tri(x * 17.0 + 0.7) * 0.25 + tri(x * 41.0) * 0.1;
+    float rangeH = (0.03 + (0.08 + 0.22 * e * (0.5 + 0.5 * k)) * (0.55 + 0.45 * jag)) * room(0.16) / 0.16;
+    float ridge = hz - rangeH;
+    if (uv.y > ridge && uv.y < hz) {
+        float hIn = (uv.y - ridge) / max(rangeH, 1e-3);           // 0 at the ridge, 1 at the base
+        float3 mount = mix(BG * 0.25, BG * 0.6, hIn);
+        // Contour lines across the slopes, and the wire edges.
+        float contour = 1.0 - smoothstep(0.0, 0.08, abs(fract((hz - uv.y) * 60.0) - 0.5) - 0.38);
+        float vert = 1.0 - smoothstep(0.0, 0.08, abs(fract(x * 30.0) - 0.5) - 0.42);
+        float3 wire = mix(S, A, hIn);
+        mount += wire * max(contour, vert) * 0.35 * (1.0 - hIn * 0.6);
+        col = mount;
+    }
+    // Glowing ridge line.
+    col += mix(S, A, 0.3) * exp(-abs(uv.y - ridge) / px * 0.5) * 0.9 * step(uv.y, hz + px);
+    col += mix(S, A, 0.3) * exp(-max(ridge - uv.y, 0.0) * 40.0) * step(uv.y, ridge) * (0.1 + 0.3 * e);
+
+    // The floor grid, rushing towards you.
+    if (uv.y > hz) {
+        float yv = uv.y - hz;
+        float z = 0.16 / max(yv, 1e-3);
+        float gx = (uv.x - asp * 0.5) * z * 3.0;
+        float zs = z - t * 2.4 * (0.6 + 0.4 * play);
+        float lz = abs(fract(zs) - 0.5);
+        float lx = abs(fract(gx) - 0.5);
+        float wz = 0.025 + 0.02 * z;
+        float wx = 0.02 + 0.012 * z;
+        float line = max(smoothstep(0.5 - wz, 0.5 - wz * 0.25, lz), smoothstep(0.5 - wx, 0.5 - wx * 0.25, lx));
+        float fade = exp(-z * 0.08);
+        float3 lineCol = mix(A, S, 0.3 + 0.3 * sin(gx * 0.3)) * (0.9 + 1.0 * kick * k);
+        col = BG * 0.3 + lineCol * line * fade;
+        // The sun's reflection streaking on the floor.
+        col += sunCol * exp(-abs(uv.x - asp * 0.5) * 10.0) * exp(-yv * 6.0) * 0.25;
+        // Haze at the horizon.
+        col = mix(col, mix(A, S, 0.5) * 0.4, exp(-yv * 30.0) * 0.7);
+    }
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - hz) / px * 0.4) * (0.35 + 0.4 * bass * k);
+
+    return half4(finish(col, fc), 1.0);
+}

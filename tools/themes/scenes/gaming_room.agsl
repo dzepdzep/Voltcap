@@ -1,0 +1,115 @@
+// Gaming room (game showcase): the user's painting of a cosy gaming room at night
+// (res/drawable-nodpi/gaming_room.webp, 1692 x 845), with the game you're on playing on the monitor: its hero
+// art, then its screenshots, a new one every 9 s (ShowcaseScene feeds uShot like the CRT room's TV). The picture
+// is cropped and zoomed a little so the monitor always sits in the middle of the screen, clear of the game
+// row whether that is at the top or the bottom. The monitor's light spills onto the wall and desk in the
+// colours of what it shows; the PC's fans turn, the LED strips breathe, the lamp flickers softly, stars
+// twinkle through the window and dust drifts in the moonlight.
+
+uniform shader uRoom;     // the room picture
+uniform float2 uRoomSize; // its decoded size in pixels (it may be decoded smaller than 1692 x 845)
+uniform shader uShot;     // the game's picture for the monitor
+uniform float2 uShotSize;
+uniform float uHasShot;   // 0 = no art yet: the painting's own screen shows
+uniform float3 uTvL;      // average colour of the picture's left half
+uniform float3 uTvR;      // and right half (the light it throws)
+uniform float uTune;      // 1 -> 0 just after the picture changed (a quick blink)
+uniform shader uPoster;   // the game's cover, for the framed poster above the monitor
+uniform float2 uPosterSize;
+uniform float uHasPoster;
+uniform float uFocusY;    // 0..1 down the screen: where the monitor goes (the middle of the open space, clear of the row)
+
+const float2 ROOM = float2(1692.0, 845.0);
+const float2 SCR0 = float2(811.0, 324.0);        // the monitor's screen in the painting
+const float2 SCR1 = float2(1134.0, 492.0);
+const float2 POS0 = float2(920.0, 77.0);         // the framed poster's picture
+const float2 POS1 = float2(1086.0, 271.0);
+const float2 FAN1 = float2(1508.0, 396.0);
+const float2 FAN2 = float2(1508.0, 471.0);
+
+float3 room(float2 ip) { return float3(uRoom.eval(clamp(ip, float2(0.5), ROOM - 0.5) * uRoomSize / ROOM).rgb); }
+
+half4 main(float2 fc) {
+    float t = uTime;
+    // Cover the screen, zoomed in a touch, with the monitor where the open space is (uFocusY: above the game
+    // row when it's at the bottom, below it when it's at the top), zooming in further when needed so the
+    // picture still fills the screen.
+    float2 M = (SCR0 + SCR1) * 0.5;
+    float fy = clamp(uFocusY, 0.25, 0.75);
+    float k = max(1.12 * max(uRes.x / ROOM.x, uRes.y / ROOM.y),  // screen pixels per picture pixel
+                  max(fy * uRes.y / M.y, (1.0 - fy) * uRes.y / (ROOM.y - M.y)));
+    float2 P = float2(clamp(uRes.x * 0.55, uRes.x - (ROOM.x - M.x) * k, M.x * k),
+                      clamp(uRes.y * fy, uRes.y - (ROOM.y - M.y) * k, M.y * k));
+    float2 ip = M + (fc - P) / k;                               // the picture pixel under this screen pixel
+    float3 col = room(ip);
+
+    // The poster above it: the game's cover, cropped to fill the frame, a little faded like printed paper.
+    float2 pq = (ip - POS0) / (POS1 - POS0);
+    if (uHasPoster > 0.5 && pq.x >= 0.0 && pq.x <= 1.0 && pq.y >= 0.0 && pq.y <= 1.0) {
+        float fa = (POS1.x - POS0.x) / (POS1.y - POS0.y);
+        float ca = uPosterSize.x / max(uPosterSize.y, 1.0);
+        float2 aq = pq;
+        if (ca > fa) aq.x = 0.5 + (pq.x - 0.5) * fa / ca; else aq.y = 0.5 + (pq.y - 0.5) * ca / fa;
+        float3 pc = float3(uPoster.eval(aq * uPosterSize).rgb);
+        pc = mix(pc, float3(dot(pc, float3(0.33))), 0.08) * 0.82 + 0.02;           // printed, in a dim room
+        pc *= 0.85 + 0.15 * (1.0 - pq.y);                                           // the lamp-less top is lighter
+        pc *= 1.0 - 0.18 * smoothstep(0.35, 0.75, length(pq - 0.5));                // and its corners darker
+        pc += 0.05 * smoothstep(0.1, 0.0, abs(pq.x - pq.y * 0.5 - 0.2));            // glass glare
+        col = pc;
+    }
+    // The monitor: the game's picture fitted to the screen (cropped to fill), a soft LCD look and a glass sheen.
+    float2 q = (ip - SCR0) / (SCR1 - SCR0);
+    float inScr = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, q.y) * step(q.y, 1.0);
+    if (inScr > 0.5 && uHasShot > 0.5) {
+        float sa = (SCR1.x - SCR0.x) / (SCR1.y - SCR0.y);
+        float pa = uShotSize.x / max(uShotSize.y, 1.0);
+        float2 aq = q;
+        if (pa > sa) aq.x = 0.5 + (q.x - 0.5) * sa / pa; else aq.y = 0.5 + (q.y - 0.5) * pa / sa;
+        float3 g = float3(uShot.eval(aq * uShotSize).rgb);
+        g *= 1.05 - 0.25 * sqf(length(q - 0.5) * 1.2);
+        g = mix(g, float3(0.02), uTune);                        // the blink as the picture changes
+        // Rounded corners of the panel.
+        float2 e = min(q, 1.0 - q) * (SCR1 - SCR0);
+        float corner = step(length(max(3.0 - e, 0.0)), 3.0);
+        col = mix(col, g, corner);
+    }
+    if (inScr > 0.5) col += 0.05 * smoothstep(0.12, 0.0, abs(q.x - q.y * 0.6 - 0.15)) * (1.0 - q.y);
+    // Its light on the wall, the desk and the lamp side, in the picture's colours.
+    float3 tv = uHasShot > 0.5 ? mix(uTvL, uTvR, sat((ip.x - SCR0.x) / (SCR1.x - SCR0.x))) : float3(0.35, 0.6, 0.95);
+    float2 d = max(abs(ip - M) - (SCR1 - SCR0) * 0.5, 0.0);
+    float spill = exp(-length(d) / 90.0) * (1.0 - inScr);
+    float flick = 0.9 + 0.1 * sin(t * 2.3) * sin(t * 0.7);
+    col += tv * spill * 0.22 * flick;
+    // On the desk top just under it, stronger.
+    col += tv * 0.18 * exp(-abs(ip.y - 560.0) / 12.0) * exp(-abs(ip.x - M.x) / 220.0) * flick;
+
+    // PC fans: a turning highlight round each ring.
+    for (int i = 0; i < 2; i++) {
+        float2 f = (i == 0 ? FAN1 : FAN2);
+        float2 fq = ip - f;
+        float r = length(fq);
+        float a = atan(fq.y, fq.x);
+        float blades = 0.5 + 0.5 * cos(a * 5.0 - t * 7.0 - float(i));
+        col *= 1.0 + 0.35 * blades * (1.0 - smoothstep(24.0, 30.0, r)) * smoothstep(5.0, 9.0, r);
+        col *= 1.0 + 0.25 * (0.5 + 0.5 * sin(t * 1.4)) * exp(-abs(r - 31.0) / 3.0);
+    }
+    // LED strips under the shelf and the desk breathe.
+    float breathe = 0.5 + 0.5 * sin(t * 1.1);
+    col *= 1.0 + 0.3 * breathe * exp(-abs(ip.y - 280.0) / 10.0) * step(1210.0, ip.x) * step(ip.x, 1585.0);
+    col *= 1.0 + 0.25 * breathe * exp(-abs(ip.y - 566.0) / 8.0) * step(660.0, ip.x) * step(ip.x, 1620.0);
+    // The lamp's warm pool flickers a little.
+    col *= 1.0 + 0.05 * (vnoise(float2(t * 6.0, 1.0)) - 0.5) * exp(-length(ip - float2(760.0, 470.0)) / 160.0);
+    // Stars twinkling and the moon glowing in the window.
+    float2 w = ip - float2(83.0, 73.0);
+    if (w.x > 0.0 && w.x < 393.0 && w.y > 0.0 && w.y < 230.0) {
+        float2 sc = floor(ip / 6.0);
+        float tw = step(0.985, hash12(sc)) * (0.5 + 0.5 * sin(t * 2.5 + hash12(sc + 3.0) * 30.0));
+        col += float3(0.8, 0.85, 1.0) * tw * 0.5 * (1.0 - smoothstep(1.5, 2.5, length(fract(ip / 6.0) * 6.0 - 3.0)));
+    }
+    col += float3(0.7, 0.75, 1.0) * 0.06 * (0.5 + 0.5 * sin(t * 0.8)) * exp(-length(ip - float2(287.0, 149.0)) / 45.0);
+    // Dust drifting in the moonlight below the window.
+    float beam = step(60.0, ip.x) * step(ip.x, 560.0) * step(380.0, ip.y) * step(abs(ip.x - 280.0 + (ip.y - 460.0) * 0.55), 190.0);
+    float2 dg = floor((ip + float2(t * 6.0, -t * 9.0)) / 5.0);
+    col += float3(0.6, 0.7, 1.0) * 0.35 * beam * step(0.993, hash12(dg));
+    return half4(finish(col, fc), 1.0);
+}

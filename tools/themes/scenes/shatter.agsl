@@ -1,0 +1,91 @@
+// Cover shatter: the song's cover as a pane of glass where the equalizer is set, cracked from an
+// impact point in its middle. On every kick the pane bursts: rings of shards fly outwards (the outer
+// ones further), each tilting and catching the light, with the music's light blazing through the
+// gaps - then the shards glide back together. Rays of light through the cracks follow the spectrum.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+
+    // A colourful room in the cover's colours.
+    float3 col = paletteField(uv, asp, t, bass * k, BG, A, S) * 0.7;
+    col = mix(col, coverField(uv, asp, t, bass, 0.8, BG, A, S), 0.4 * uHasArt);
+
+    float s = room(0.26) / 0.26;
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = 0.24 * s;                       // half the pane's side
+    float2 d = uv - c;
+    float r = length(d);
+    float a = atan(d.y, d.x);
+
+    // Burst: jumps on the kick, glides back; a little breathing with the bass between kicks.
+    float burst = exp(-uBeatAge * 2.2) * play * (0.35 + 0.65 * k) + bass * 0.12 * k;
+
+    // Light blazing from behind the pane (seen through the gaps), with rays following the spectrum.
+    float a01 = fract(a / TAU + 0.25);
+    float m = abs(a01 - 0.5) * 2.0;
+    float e = eqAt(m) * play;
+    float rays = pow(sat(0.5 + 0.5 * sin(a * 18.0 + t * 0.4)), 6.0) * (0.3 + e);
+    float3 blaze = mix(mix(A, S, m), float3(1.0), 0.45);
+    col += blaze * exp(-r / (R * (0.7 + 0.9 * burst))) * (0.25 + 0.9 * burst) * (0.5 + rays);
+
+    // Shadow of the pane.
+    float shadow = sdRoundBox(d - float2(0.012, 0.018) * s, float2(R * (1.0 + 0.25 * burst)), 0.01);
+    col *= 1.0 - 0.35 * (1.0 - smoothstep(-0.02, 0.03, shadow)) * (1.0 - burst);
+
+    // Shards: five rings around the impact point, each split into wedges with uneven edges. Ring i
+    // flies out by push(i), so for this pixel only one ring can be the one it shows.
+    float ringW = R * 1.45 / 5.0;
+    for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float push = burst * (0.004 + fi * 0.03) * s;
+        float spin = burst * 0.35 * (hash11(fi * 4.7) - 0.5);
+        float rs = r - push;
+        float r0 = fi * ringW;
+        // A wavy inner / outer edge per ring (cracks aren't perfect circles).
+        float wob = 0.18 * ringW * (vnoise(float2(a * 3.0, fi * 7.0)) - 0.5);
+        if (rs < r0 + (i == 0 ? 0.0 : wob) || rs >= r0 + ringW + wob) continue;
+        float as = a - spin;
+        float n = 5.0 + fi * 3.0;
+        float off = hash11(fi * 7.1) * TAU;
+        float sec = (as + off) / TAU * n;
+        float sid = floor(sec);
+        float sf = fract(sec);
+        // Each shard tilts a little on its own when it flies: brighter / darker.
+        float tilt = (hash12(float2(sid, fi)) - 0.5) * burst;
+        // Where this point was on the intact pane.
+        float2 src = float2(cos(as), sin(as)) * rs;
+        // Shards keep a tiny gap even at rest: hairline cracks.
+        float edgeA = min(sf, 1.0 - sf) * TAU / n * rs;
+        float edgeR = min(rs - r0 - wob, r0 + ringW + wob - rs);
+        float edge = min(edgeA, edgeR);
+        float gapW = 0.0012 * s + burst * 0.006 * s;
+        if (abs(src.x) > R || abs(src.y) > R) continue;
+        if (edge < gapW) continue;
+        float2 q = src / (2.0 * R) + 0.5;
+        float3 face = sharpCover(q, A, S);
+        face *= 0.88 + 0.6 * tilt;
+        // Glass: a highlight running along the shard's edges and a sheen across the pane.
+        face += float3(1.0) * (1.0 - smoothstep(gapW, gapW + 0.006 * s, edge)) * (0.18 + 0.5 * burst);
+        face += float3(1.0) * 0.08 * sqf(sat(1.0 - abs(src.x + src.y * 0.5 - R * (2.0 * fract(t * 0.07) - 1.0) * 2.0) / (R * 0.25)));
+        col = face;
+    }
+    // The pane's outer edge (intact, between bursts).
+    float frame = sdRoundBox(d, float2(R), 0.004);
+    col += mix(A, float3(1.0), 0.5) * (1.0 - smoothstep(0.0, px * 2.0, abs(frame))) * (1.0 - burst) * 0.35;
+
+    // Glitter: tiny glass bits flying out on the kick.
+    float2 gp = d / (R * (1.0 + 2.5 * burst));
+    col += blaze * dots(gp + 10.0, 14.0, float2(0.0), 0.12, 0.08, 3.0) * burst * 0.8 * step(R * 0.9, r);
+
+    return half4(finish(col, fc), 1.0);
+}

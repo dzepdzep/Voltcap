@@ -1,0 +1,70 @@
+// Cover float (music): the album cover floating in a soft studio light, tilting in 3D as if hung on
+// a thread - it leans with the bass, turns back and forth slowly, bobs up and down - with a glossy
+// mirrored reflection beneath it, a band of light gliding across its glass, a glow in its own
+// colours behind it and a few slow particles in the cover's colours drifting through the light.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.72;
+    float3 col = coverField(uv, asp, t, bass, 0.5, BG, A, S);
+    col += mix(A, S, 0.5) * exp(-length(uv - c) / R * 1.2) * (0.18 + 0.25 * bass);
+    float floorY = c.y + R * 1.18;
+
+    // Tilt angles: slow sway plus a lean on the bass.
+    float ay = 0.35 * sin(t * 0.33) + 0.12 * bass * k;
+    float ax = 0.12 * sin(t * 0.21 + 1.0) - 0.06 * kick * k;
+    float bob = 0.02 * sin(t * 0.7) * R / 0.2;
+
+    // Ray-plane intersection for a tilted square card.
+    for (int pass = 0; pass < 2; pass++) {
+        float2 p = uv;
+        float refl = float(pass);
+        if (pass == 1) {
+            if (uv.y < floorY) continue;
+            p.y = 2.0 * floorY - uv.y;
+        }
+        float3 ro = float3(0.0, 0.0, -3.0);
+        float3 rd = normalize(float3((p - c - float2(0.0, bob)) / R, 2.4));
+        float3 n = float3(sin(ay) * cos(ax), -sin(ax), -cos(ay) * cos(ax));
+        float3 ux = normalize(float3(cos(ay), 0.0, sin(ay)));
+        float3 uy = normalize(cross(n, ux));
+        float dn = dot(rd, n);
+        if (abs(dn) < 1e-3) continue;
+        float tt = dot(-ro, n) / dn;
+        float3 hit = ro + rd * tt;
+        float2 q = float2(dot(hit, ux), dot(hit, uy));
+        float box = max(abs(q.x), abs(q.y)) - 1.0;
+        if (box < 0.0) {
+            float2 cq = float2(q.x, -q.y) * 0.5 + 0.5;
+            float3 cv = sharpCover(cq, A, S);
+            // Light band gliding across the glass, brighter facing the light.
+            cv += float3(1.0) * 0.18 * pow(sat(1.0 - abs(cq.x + cq.y - fract(t * 0.08) * 3.0 + 0.5) * 3.5), 3.0);
+            cv *= 0.8 + 0.25 * sat(dot(n, normalize(float3(-0.4, -0.5, -1.0))));
+            float edge = smoothstep(-0.03, 0.0, box);
+            cv = mix(cv, float3(1.0), edge * 0.35);
+            if (pass == 0) col = cv;
+            else col = mix(col, cv, exp(-(uv.y - floorY) / (R * 0.5)) * 0.3);
+        } else if (pass == 0) {
+            // Soft shadow of the card on the background (offset down-right).
+            col *= 1.0 - 0.18 * (1.0 - smoothstep(0.0, 0.25, box));
+        }
+    }
+    // Floor line glow.
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - floorY) * 300.0) * 0.25;
+    // Particles in the cover's colours.
+    col += mix(A, S, fract(uv.x * 3.0)) * dots(uv, 18.0, float2(t * 0.012, -t * 0.02), 0.08, 0.07, 6.0) * (0.3 + 0.5 * bass);
+    return half4(finish(col, fc), 1.0);
+}

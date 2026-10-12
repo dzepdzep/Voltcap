@@ -1,0 +1,165 @@
+// Power aura: a transformation aura flaring up from the bottom centre. Golden energy pours upward in
+// flame tongues that keep travelling up its edge, thin power streaks race through it, sparks and rocks
+// lift off the ground, the whole aura breathes with a slow heartbeat pulse, and lightning crackles now
+// and then. Every 150 s it powers up further: over half a minute the gold deepens into an electric blue
+// form (the theme's secondary colour) with a white-hot core and far more lightning, holds it, then
+// calms back down to gold. A short burst (flash, shockwave, a little shake) marks each power-up.
+// The aura's colours come from the theme (accent = first form, secondary = evolved form).
+//#include anime
+
+// One upward-flowing flame layer: noise in a frame that scrolls up, so tongues travel up the edge.
+float tongue(float2 q, float t, float speed, float lod) {
+    float2 p = float2(q.x * 3.2, q.y * 2.2 + t * speed);
+    float n = vnoise(p) * 0.55 + vnoise(p * 2.1 + 7.3) * 0.3;
+    if (lod < 1.5) n += vnoise(p * 4.3 + 1.7) * 0.15;
+    return n;
+}
+
+half4 main(float2 fc) {
+    float2 uv0 = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 BG = uBg.rgb;
+
+    // ---- Form: 0 = first (gold), 1 = evolved (blue). 150 s cycle: 45 s gold, 30 s rising, 45 s blue, 30 s back.
+    float cy = mod(t, 150.0);
+    float form = smoothstep(45.0, 75.0, cy) * (1.0 - smoothstep(120.0, 150.0, cy));
+    // The power-up burst: once as the change starts, once more as it lands, and a small one every 7 s.
+    float jump = exp(-abs(cy - 47.0) * 2.2) + exp(-abs(cy - 72.0) * 1.6);
+    float cyc = fract(t / 7.0);
+    float burst = exp(-cyc * 9.0) * smoothstep(0.0, 0.35, t) * (0.6 + 0.4 * form) + jump;
+    float2 uv = uv0 + min(burst, 1.2) * 0.005 * float2(sin(t * 91.0), cos(t * 77.0));
+
+    float3 gold = uAcc.rgb;
+    float3 blue = uSec.rgb;
+    float3 A = mix(gold, blue, form);
+    float3 hot = mix(mix(gold, float3(1.0, 0.97, 0.86), 0.6), mix(blue, float3(0.9, 0.97, 1.0), 0.7), form);
+    float3 core = mix(float3(1.0, 0.98, 0.9), float3(0.94, 0.98, 1.0), form);
+
+    // Heartbeat: a soft double pulse every 2.6 s (faster when evolved).
+    float beatT = fract(t / mix(2.6, 1.9, form));
+    float beat = exp(-beatT * 14.0) + 0.6 * exp(-abs(beatT - 0.18) * 16.0);
+
+    float3 col = mix(BG * 0.7, BG + A * 0.07, smoothstep(0.0, 1.0, uv.y));
+    col += A * exp(-(1.0 - uv.y) * 4.5) * (0.13 + 0.06 * beat);
+
+    // ---- The aura body: spiky flame crown around the source. The spikes sway, and flame tongues flow
+    // up along the edge (noise scrolling outward), so the outline is never still.
+    float2 c = float2(asp * 0.5, 1.06);
+    float2 d = uv - c;
+    float grow = 1.0 + 0.05 * beat + 0.12 * min(burst, 1.0) + 0.1 * form;
+    float2 q = d / grow;
+    float r = length(q * float2(1.0, 0.6));
+    float ang = atan(q.x, -q.y);
+    float sway = sin(t * 1.7 + ang * 2.0) * 0.06;
+    // Sharp spikes, each its own length, flickering a little.
+    float sa = ang * 6.0 + sway + t * 0.05;
+    float teeth = 1.0 - abs(fract(sa) * 2.0 - 1.0);
+    float len = 0.7 + 0.45 * vnoise(float2(floor(sa) * 3.1, t * 1.3));
+    teeth = sqf(teeth) * len;
+    float flow = fbm3(float2(ang * 5.0, r * 4.5 - t * (3.2 + 1.5 * form)));
+    float flow2 = vnoise(float2(ang * 13.0 + 4.0, r * 9.0 - t * (5.0 + 2.0 * form)));
+    float flame = flow * 0.7 + flow2 * 0.3;
+    // Tallest straight up, shorter towards the sides.
+    float crown = 0.5 + 0.5 * smoothstep(-0.4, 1.0, cos(ang));
+    float edgeR = (0.3 + 0.24 * teeth + 0.16 * flame + 0.08 * beat + 0.14 * min(burst, 1.0) + 0.06 * form) * crown;
+    float u = r / max(edgeR, 0.01);
+    float outer = 1.0 - smoothstep(0.985, 1.0, u);
+    float mid = 1.0 - smoothstep(0.72, 0.735, u + 0.06 * flow2);
+    float inner = 1.0 - smoothstep(0.44, 0.455, u + 0.05 * flow);
+    // Loose tongues breaking off above the edge and rising away.
+    float wisp = smoothstep(0.62, 0.8, vnoise(float2(ang * 9.0, r * 6.0 - t * 4.0))) * (1.0 - smoothstep(1.0, 1.35, u)) * step(1.0, u);
+
+    // The evolved colour grows from the core outward while it powers up (not a flat colour swap).
+    float fm = smoothstep(u - 0.3, u + 0.02, form * 1.35);
+    float3 Al = mix(gold, blue, fm);
+    float3 hotl = mix(mix(gold, float3(1.0, 0.97, 0.86), 0.6), mix(blue, float3(0.9, 0.97, 1.0), 0.7), fm);
+    float3 corel = mix(float3(1.0, 0.98, 0.9), float3(0.94, 0.98, 1.0), fm);
+
+    // Glow spilling outside the edge.
+    col += A * exp(-max(u - 1.0, 0.0) * 4.0) * (0.18 + 0.16 * beat + 0.25 * min(burst, 1.0)) * (1.0 - outer);
+    col = mix(col, Al * 0.9, wisp * 0.7);
+    // Cel bands with energy running up through them.
+    col = mix(col, Al * (0.85 + 0.3 * flame), outer * 0.84);
+    col = mix(col, hotl, mid * 0.86);
+    col = mix(col, corel, inner * 0.92);
+    // Dark ink outline (anime style), thinner in the evolved form where it burns brighter.
+    col = mix(col, BG * 0.4, (1.0 - smoothstep(0.0, 0.03, abs(u - 1.0))) * mix(0.55, 0.28, form));
+    float3 hotc = hotl;
+
+    // Power streaks: thin vertical lines shooting up through the aura.
+    float2 sq = float2(d.x * 70.0, d.y * 2.2 + t * (3.0 + 2.0 * form));
+    float streak = smoothstep(0.72, 0.97, vnoise(sq)) * smoothstep(0.55, 0.95, vnoise(float2(d.x * 9.0, d.y * 1.4 + t * 2.0)));
+    col += hotc * streak * outer * (1.0 - inner * 0.6) * 0.55;
+
+    // ---- Lightning: occasional in the first form, crackling all round in the evolved one.
+    for (int k = 0; k < 4; k++) {
+        if (uLod > 1.5 && k > 1) break;
+        float fk = float(k);
+        float seed = fk * 13.1;
+        float per = mix(1.6, 0.55, form) + 0.6 * hash11(seed + 0.5);
+        float run = t / per + hash11(seed + 1.0);
+        float ph = fract(run);
+        float epoch = floor(run);
+        // In the first form only two of the four bolts ever fire, and only sometimes.
+        float allowed = (fk < 2.0 ? step(0.45 - 0.45 * form, hash11(epoch + seed + 9.0)) : form);
+        float on = (1.0 - step(0.14, ph)) * (0.6 + 0.4 * step(0.5, fract(ph * 25.0))) * allowed;
+        if (on <= 0.0) continue;
+        float2 a = c + float2((hash11(epoch + seed) - 0.5) * 0.7, -0.15 - 0.3 * hash11(epoch + seed + 2.0));
+        float2 b = a + float2((hash11(epoch + seed + 3.0) - 0.5) * 0.7, -0.2 - 0.35 * hash11(epoch + seed + 4.0));
+        float bd = bolt(uv, a, b, epoch + seed, 0.07);
+        float3 lc = mix(mix(blue, float3(1.0), 0.6), mix(gold, float3(1.0), 0.55), form * 0.5);
+        col += lc * on * (exp(-bd * 700.0) + 0.3 * exp(-bd * 45.0));
+    }
+
+    // ---- Sparks rising with short trails, more of them when evolved.
+    float density = (uDensity > 0.0 ? uDensity - 1.0 : 1.0) * (1.0 + form);
+    for (int k = 0; k < 14; k++) {
+        if (float(k) > 5.0 + 9.0 * min(density, 1.5) / 1.5) break;
+        if (uLod > 1.5 && k > 5) break;
+        float fk = float(k);
+        float h = hash11(fk * 5.3 + 2.0);
+        float life = fract(t * (0.22 + 0.25 * h) + h * 3.0);
+        float2 p = float2(asp * 0.5 + (hash11(fk * 7.7) - 0.5) * 0.9 * (0.6 + life), 1.05 - life * 1.05);
+        p.x += sin(t * 2.0 + fk * 3.0) * 0.012;
+        float2 dq = uv - p;
+        // Elongated upward: a spark with a trail below it.
+        float trail = exp(-length(float2(dq.x * 1.0, max(dq.y, 0.0) * 0.22 + min(dq.y, 0.0))) * 260.0);
+        col += hot * trail * (1.0 - life) * 0.9;
+    }
+
+    // ---- Rocks lifting off the ground, lit from below.
+    for (int k = 0; k < 8; k++) {
+        if (uLod > 1.5 && k > 3) break;
+        float fk = float(k);
+        float h = hash11(fk * 3.7 + 1.0);
+        float life = fract(t * (0.04 + 0.05 * h + 0.03 * form) + h);
+        float2 p = float2(asp * (0.1 + 0.8 * hash11(fk * 9.1)), 1.04 - life * 1.15);
+        p.x += sin(t * 0.8 + fk) * 0.01;
+        float size = 0.01 + 0.018 * h;
+        float2 rq = uv - p;
+        if (dot(rq, rq) < size * size * 6.0) {
+            rq = rot(t * (0.3 + h) + fk) * rq;
+            float dd = sdRoundBox(rq, float2(size, size * 0.7), size * 0.35) + (vnoise(rq * 90.0 + fk) - 0.5) * size * 0.35;
+            float rock = (1.0 - smoothstep(0.0, 0.0015, dd)) * smoothstep(0.0, 0.08, life) * (1.0 - smoothstep(0.8, 1.0, life));
+            float lit = sat(0.5 + 0.6 * (rq.y / size));
+            float3 rc = mix(uSurf.rgb * 0.7, mix(A, hot, 0.4), step(0.55, lit));
+            col = mix(col, rc, rock);
+        }
+    }
+
+    // Dust in the aura's light.
+    float2 su = float2(uv.x, uv.y * 0.4);
+    float sp = dots(su, 22.0, float2(0.0, t * 1.1), 0.22, 0.12, 3.0);
+    col += hot * sp * 0.45 * smoothstep(0.15, 0.9, uv.y);
+
+    // Focus lines and the ground shockwave on each burst; a ring on every heartbeat.
+    col += float3(1.0) * focusLines(uv, float2(asp * 0.5, 0.72), t, 110.0, 1.0) * (0.04 + 0.3 * min(burst, 1.0));
+    float rr = length((uv - float2(asp * 0.5, 1.02)) * float2(1.0, 3.2));
+    col += hot * exp(-abs(rr - cyc * 2.4) * 35.0) * (1.0 - cyc) * 0.5;
+    col += hot * exp(-abs(rr - beatT * 1.3) * 60.0) * (1.0 - beatT) * 0.18;
+    // Flash (the power-up gets a big one).
+    col += mix(A, float3(1.0), 0.5) * min(burst, 1.5) * 0.16;
+
+    return half4(finish(col, fc), 1.0);
+}

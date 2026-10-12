@@ -1,0 +1,97 @@
+// Meadow · 32-bit (normal type): a hilltop village on a lazy afternoon. Cottages with smoking chimneys
+// sit on rolling tiled hills, washing flaps on a line, a path winds down past a fence, clouds sail
+// over and birds cross the sky.
+//#include pixel
+
+float cottage(float2 q, float s) {
+    // q relative to the cottage's foot (middle), s its scale.
+    float wall = pxBox(q, float2(0.0, -0.025 * s), float2(0.035 * s, 0.025 * s));
+    float roof = step(-0.08 * s + abs(q.x) * 0.9, q.y) * step(q.y, -0.048 * s) * step(abs(q.x), 0.045 * s);
+    return max(wall, roof * 2.0);
+}
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float3 col = mix(mix(float3(0.45, 0.68, 0.92), S * 0.5 + 0.3, 0.2), float3(0.92, 0.95, 0.88), pxBand(uv.y * 1.6, 4.0, cell));
+    // Clouds: chunky pixel puffs sailing.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float2 c = float2(fract(fi * 0.27 + t * 0.006 * (1.0 + fi * 0.2)) * (asp + 0.5) - 0.25, 0.08 + fi * 0.05);
+        float p = step(length((uv - c) * float2(0.5, 1.0)), 0.025) + step(length((uv - c - float2(0.035, 0.008)) * float2(0.5, 1.0)), 0.02) + step(length((uv - c + float2(0.03, -0.01)) * float2(0.55, 1.0)), 0.018);
+        col = mix(col, mix(float3(1.0), float3(0.85, 0.88, 0.95), step(c.y + 0.01, uv.y)), step(0.5, p));
+    }
+    // Birds.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float2 b = pxSnap(float2(fract(fi * 0.4 + t * 0.03) * (asp + 0.2) - 0.1, 0.2 + 0.03 * fi + 0.01 * sin(t * 2.0 + fi)));
+        float2 q = (uv - b) / PX;
+        float f = step(0.0, sin(t * 8.0 + fi));
+        col = mix(col, float3(0.2, 0.22, 0.3), step(abs(q.x), 3.0) * step(abs(q.y - abs(q.x) * (f > 0.5 ? -0.5 : 0.4)), 0.6));
+    }
+    // Far hills, then the village hill.
+    float h1 = 0.52 + 0.04 * sin(uv.x * 2.5 + 1.0);
+    if (uv.y > h1) col = mix(mix(float3(0.45, 0.65, 0.45), S, 0.15), float3(0.6, 0.75, 0.55), 0.4);
+    float h2 = 0.6 - 0.1 * exp(-sqf((uv.x - asp * 0.35) * 2.0)) + 0.015 * sin(uv.x * 7.0);
+    if (uv.y > h2) {
+        float tile = step(0.5, fract((uv.x + floor(uv.y * 40.0) * 0.5 / 40.0) * 40.0)) ;
+        col = mix(mix(float3(0.35, 0.62, 0.3), A, 0.1), float3(0.42, 0.7, 0.35), tile * 0.5 + pxBand(1.0 - (uv.y - h2) * 3.0, 2.0, cell) * 0.5);
+    }
+    // The path winding down.
+    float pathX = asp * 0.35 + 0.08 * sin(uv.y * 9.0) + (uv.y - 0.55) * 0.3;
+    float pw = 0.01 + (uv.y - 0.5) * 0.08;
+    if (uv.y > h2 + 0.02 && abs(uv.x - pathX) < pw) col = mix(float3(0.85, 0.75, 0.55), float3(0.75, 0.65, 0.45), step(0.6, hash12(cell)));
+    // Cottages.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float cx = asp * 0.35 + (fi - 1.5) * 0.12 + 0.02 * hash11(fi);
+        float hy = 0.6 - 0.1 * exp(-sqf((cx - asp * 0.35) * 2.0)) + 0.015 * sin(cx * 7.0) + 0.01;
+        float s = 1.0 + 0.2 * hash11(fi * 3.0);
+        float2 q = uv - float2(cx, hy);
+        float c = cottage(q, s);
+        float3 wallC = mix(float3(0.95, 0.9, 0.8), float3(0.85, 0.78, 0.65), step(0.0, q.x));
+        float3 roofC = mix(mix(float3(0.75, 0.3, 0.2), A, 0.3 * hash11(fi)), float3(0.55, 0.22, 0.15), step(0.0, q.x));
+        if (c > 1.5) col = roofC; else if (c > 0.5) col = wallC;
+        col = mix(col, mix(float3(1.0, 0.9, 0.5), float3(0.3, 0.4, 0.5), step(0.5, sin(t * 0.3 + fi))), pxBox(q, float2(-0.012 * s, -0.03 * s), float2(0.007 * s, 0.007 * s)));
+        col = mix(col, float3(0.4, 0.25, 0.15), pxBox(q, float2(0.014 * s, -0.012 * s), float2(0.006 * s, 0.012 * s)));
+        // Chimney and smoke puffs.
+        float2 ch = float2(0.02 * s, -0.075 * s);
+        col = mix(col, float3(0.5, 0.35, 0.3), pxBox(q, ch, float2(0.004 * s, 0.01 * s)));
+        for (int j = 0; j < 3; j++) {
+            float fj = float(j);
+            float life = fract(t * 0.25 + fj / 3.0 + fi * 0.3);
+            float2 sp = pxSnap(float2(cx + ch.x + life * 0.03 + 0.005 * sin(life * 8.0), hy + ch.y - 0.015 - life * 0.08));
+            col = mix(col, mix(float3(0.95), float3(0.75), life), step(length(uv - sp), (0.004 + 0.008 * life)) * (1.0 - step(0.85, life)));
+        }
+    }
+    // Fence and the washing line in front.
+    float fy = 0.85;
+    float post = step(fract(uv.x * 18.0), 0.12) * step(fy - 0.05, uv.y) * step(uv.y, fy + 0.02);
+    float rail = (step(abs(uv.y - (fy - 0.035)), PX * 0.6) + step(abs(uv.y - (fy - 0.01)), PX * 0.6));
+    col = mix(col, float3(0.55, 0.4, 0.25), sat(post + rail * step(fy - 0.06, uv.y)));
+    if (uv.y > fy + 0.02) col = mix(float3(0.3, 0.55, 0.25), float3(0.25, 0.48, 0.2), pxBand(hash12(cell), 2.0, cell));
+    float lx0 = asp * 0.62;
+    float lx1 = asp * 0.92;
+    float u = (uv.x - lx0) / (lx1 - lx0);
+    float ly = 0.66 + 0.03 * 4.0 * u * (1.0 - u);
+    col = mix(col, float3(0.3), step(abs(uv.y - ly), PX * 0.5) * step(0.0, u) * step(u, 1.0));
+    col = mix(col, float3(0.5, 0.38, 0.25), (pxBox(uv, float2(lx0, 0.76), float2(PX, 0.1)) + pxBox(uv, float2(lx1, 0.76), float2(PX, 0.1))));
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float cu = 0.15 + fi * 0.22;
+        float cx = mix(lx0, lx1, cu);
+        float cy = 0.66 + 0.12 * cu * (1.0 - cu);
+        float flap = 0.008 * sin(t * 3.0 + fi * 1.3);
+        float2 q = uv - float2(cx, cy);
+        float cloth = step(0.0, q.y) * step(q.y, 0.035 + 0.01 * hash11(fi)) * step(abs(q.x - flap * q.y / 0.035), 0.018);
+        col = mix(col, mix(mix(A, S, hash11(fi * 2.0)), float3(1.0), 0.3 * step(0.5, fract(q.y * 80.0))), cloth);
+    }
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

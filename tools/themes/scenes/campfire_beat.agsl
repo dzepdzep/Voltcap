@@ -1,0 +1,125 @@
+// Campfire (music): a campfire in a clearing at night that plays along with the song. The flames
+// are an equalizer - each tongue of fire is a band, leaping with its part of the spectrum - sparks
+// burst up on every kick and drift off into the stars, the glow breathes over the ground and the
+// pine silhouettes with the bass, and the smoke curls faster when it's loud. The cover glows softly
+// in the night sky like a moon.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3);
+    float2 fire = float2(c.x, c.y + R * 0.75);
+    float3 FIRE = mix(float3(1.0, 0.55, 0.15), A, 0.3);
+
+    // Night sky with stars.
+    float3 col = mix(BG * 0.3, BG * 0.7, uv.y);
+    col += float3(1.0) * dots(uv, 70.0, float2(t * 0.002, 0.0), 0.25, 0.04, 1.0) * 0.6 * (1.0 - uv.y);
+    // The cover as a moon.
+    float2 mp = float2(c.x + asp * 0.3, c.y - R * 0.7);
+    float mr = R * 0.32;
+    float md = length(uv - mp);
+    col += mix(S, float3(1.0), 0.5) * exp(-md * 10.0) * 0.18;
+    if (md < mr) {
+        float3 cov = sharpCover((uv - mp) / (2.0 * mr) + 0.5, A, S);
+        col = mix(col, cov * 0.85 + 0.1, 1.0 - smoothstep(mr - px, mr, md));
+    }
+    // Pine silhouettes in two rows: tiered trees (stacked, drooping boughs) of different heights,
+    // the near row lit warm from below by the fire.
+    float glowAmt = 0.5 + 0.5 * bass + 0.3 * kick;
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float sc = 9.0 - fi * 3.5;                       // trees per screen height (near row larger)
+        float x = uv.x * sc + fi * 3.7;
+        float id = floor(x);
+        float lx = fract(x) - 0.5 - (hash11(id + fi * 5.0) - 0.5) * 0.3;
+        float base = fire.y + 0.01 + 0.015 * fi;
+        float th = (0.16 + 0.14 * hash11(id * 1.7 + fi * 9.0)) * (1.0 + 0.5 * fi);
+        float yy = (base - uv.y) / th;                   // 0 at the base, 1 at the tip
+        // Five tiers: each widens downward, then steps in.
+        float tier = fract(yy * 5.0);
+        float wd = (1.0 - yy) * 0.42 * (0.35 + 0.65 * tier) + 0.012;
+        float droop = 0.03 * (1.0 - tier);
+        float tree = step(0.0, yy) * step(yy, 1.0) * step(abs(lx) + droop * 0.0, wd);
+        float trunk = step(abs(lx), 0.03) * step(-0.02, yy) * step(yy, 0.1);
+        float m = max(tree, trunk) * step(hash11(id * 3.3 + fi), 0.8 + 0.2 * fi);
+        float warm = exp(-abs(uv.x - fire.x) * (3.0 - fi)) * (0.3 + 0.7 * sat(1.0 - yy)) * fi;
+        float3 tc = BG * (0.12 + 0.08 * fi) + FIRE * 0.2 * glowAmt * warm;
+        tc += mix(S, float3(1.0), 0.5) * 0.05 * step(0.0, lx) * (1.0 - fi);  // moonlit side, far row
+        col = mix(col, tc, m);
+    }
+    // Ground lit by the fire.
+    if (uv.y > fire.y) {
+        float3 g = BG * 0.2;
+        g += FIRE * 0.45 * glowAmt * exp(-length((uv - fire) * float2(0.6, 2.2)) * 3.5);
+        col = g;
+    }
+    // Flames: one living fire whose height across follows the spectrum (bass in the middle, highs
+    // at the sides). Noise rising through it splits the top into licking tongues; colour runs from a
+    // white-hot heart through yellow and orange to deep red at the ragged edges.
+    float2 fp = uv - fire;
+    float FW = 0.15 * (0.7 + 0.6 * R / 0.3);
+    float up = -fp.y;
+    if (up > -0.03 && abs(fp.x) < FW * 1.4 && up < 0.75) {
+        float xn = fp.x / FW;
+        float e = eqAt(abs(xn)) * play;
+        float H = (0.1 + 0.3 * e * (0.5 + 0.7 * k) + 0.06 * kick) * (1.0 - 0.45 * xn * xn) * (0.7 + 0.6 * R / 0.3);
+        H = max(H, 0.04);
+        // Sway: the whole fire leans and wobbles more the higher it goes.
+        float sway = (vnoise(float2(t * 0.8, up * 3.0)) - 0.5) * 0.06 * up / H;
+        float xd = fp.x - sway;
+        float n = fbm3(float2(xd * 11.0, up * 6.0 - t * 3.2));
+        float n2 = vnoise(float2(xd * 26.0, up * 14.0 - t * 6.0));
+        float Hl = H * (0.55 + 0.9 * n);
+        float w = FW * (1.05 - 0.55 * sat(up / H)) * (0.85 + 0.3 * n2);
+        float across = 1.0 - smoothstep(0.55, 1.0, abs(xd) / max(w, 0.001));
+        float T = sat(1.0 - max(up, 0.0) / Hl) * across;
+        T *= 0.8 + 0.4 * n2;
+        T = sat(T * (1.0 + 0.25 * kick) + smoothstep(0.0, -0.03, up) * across * 0.4);
+        float3 red = mix(float3(0.55, 0.06, 0.02), A * 0.6, 0.15);
+        float3 orange = mix(float3(1.0, 0.42, 0.08), FIRE, 0.25);
+        float3 yellow = float3(1.0, 0.82, 0.32);
+        float3 white = float3(1.0, 0.97, 0.86);
+        float3 fc3 = mix(red, orange, smoothstep(0.08, 0.35, T));
+        fc3 = mix(fc3, yellow, smoothstep(0.38, 0.68, T));
+        fc3 = mix(fc3, white, smoothstep(0.72, 0.95, T));
+        float alpha = smoothstep(0.03, 0.2, T);
+        col = mix(col, fc3, alpha * 0.92);
+        col += orange * smoothstep(0.0, 0.1, T) * 0.12;
+    }
+    // Logs.
+    float l1 = sdSegment(uv, fire + float2(-0.08, 0.025), fire + float2(0.08, -0.005)) - 0.012;
+    float l2 = sdSegment(uv, fire + float2(-0.08, -0.005), fire + float2(0.08, 0.025)) - 0.012;
+    col = mix(col, float3(0.18, 0.1, 0.06) + FIRE * 0.15 * glowAmt, 1.0 - smoothstep(0.0, px, min(l1, l2)));
+
+    // Embers glowing in the bed under the logs.
+    float bed = exp(-length((uv - fire - float2(0.0, 0.012)) * float2(0.9, 4.0)) * 22.0);
+    col += mix(float3(1.0, 0.35, 0.05), FIRE, 0.3) * bed * (0.5 + 0.4 * vnoise(float2(uv.x * 60.0, t * 2.0))) * 0.8;
+    col += FIRE * exp(-length((uv - fire - float2(0.0, -0.06)) * float2(1.0, 0.8)) * 8.0) * (0.25 + 0.5 * glowAmt);
+
+    // Sparks bursting up on the kick and drifting.
+    for (int i = 0; i < 14; i++) {
+        float fi = float(i);
+        float life = fract(uBeatAge * 0.6 + hash11(fi) * 0.3);
+        float2 v = float2((hash11(fi * 3.1) - 0.5) * 0.25, -0.35 - 0.3 * hash11(fi * 7.7));
+        float2 sp = fire + v * life + float2(sin(life * 6.0 + fi) * 0.02, 0.0);
+        float d = length(uv - sp);
+        col += mix(float3(1.0, 0.8, 0.4), FIRE, life) * (1.0 - smoothstep(0.0, 0.004, d)) * (1.0 - life) * (0.3 + 0.9 * kick) * play;
+    }
+    // Smoke curling up.
+    float sm = fbm3(float2(uv.x * 4.0, uv.y * 3.0 + 0.2 * t + 0.4 * uBassT));
+    col = mix(col, float3(0.4, 0.38, 0.4), smoothstep(0.55, 0.8, sm) * exp(-abs(uv.x - fire.x - (fire.y - uv.y) * 0.2) * 9.0) * step(uv.y, fire.y - 0.1) * 0.25);
+
+    return half4(finish(col, fc), 1.0);
+}

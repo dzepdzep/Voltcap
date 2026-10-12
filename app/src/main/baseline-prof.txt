@@ -1,0 +1,5 @@
+# Voltcap baseline profile: compile all of Voltcap's own code ahead of time
+# (startup, the home screen, scrolling the row, dialogs). The Compose / Coil
+# libraries bring their own profiles, which the build merges in.
+HSPLcom/shelf/launcher/**->**(**)**
+Lcom/shelf/launcher/**;

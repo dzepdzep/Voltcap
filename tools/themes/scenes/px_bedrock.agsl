@@ -1,0 +1,78 @@
+// Bedrock · 32-bit (rock type): an old mine cut into a cliff. Banded rock strata, wooden supports and
+// hanging lanterns, gem veins that sparkle, a mine cart rattling along the track, and pebbles that
+// bounce down the slope now and then.
+//#include pixel
+
+half4 main(float2 fc) {
+    float2 cell = pxCell(fc);
+    float2 uv = pxUv(cell);
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Rock: wavy strata in four shades, cracked blocks.
+    float strata = uv.y * 12.0 + 0.6 * sin(uv.x * 3.0) + 0.3 * sin(uv.x * 9.0 + 2.0);
+    float band = fract(strata * 0.25);
+    float3 r0 = mix(float3(0.25, 0.18, 0.14), BG, 0.2);
+    float3 r1 = mix(float3(0.45, 0.32, 0.22), A * 0.4, 0.15);
+    float3 r2 = mix(float3(0.6, 0.45, 0.32), A * 0.5, 0.15);
+    float3 r3 = float3(0.72, 0.58, 0.42);
+    float3 col = band < 0.25 ? r0 : (band < 0.5 ? r1 : (band < 0.75 ? r2 : r1));
+    float2 bk = float2(uv.x * 14.0 + floor(strata) * 0.37, strata);
+    col = mix(col, r0, step(abs(fract(bk.x) - 0.5), 0.03) * 0.8);
+    col = mix(col, r3, step(0.985, hash12(cell)) * 0.6);
+    // Gem veins sparkling in the wall.
+    float vein = step(abs(uv.y - 0.25 - 0.06 * sin(uv.x * 5.0) - 0.02 * sin(uv.x * 17.0)), 0.006);
+    col = mix(col, mix(S, float3(0.6, 0.9, 1.0), 0.3), vein);
+    float gem = step(0.97, hash12(floor(uv * float2(40.0, 30.0)))) * step(uv.y, 0.55);
+    float sp = step(0.85, fract(t * 0.5 + hash12(floor(uv * float2(40.0, 30.0))) * 7.0));
+    col = mix(col, mix(mix(A, S, 0.5), float3(1.0), sp), gem * step(length(fract(uv * float2(40.0, 30.0)) - 0.5), 0.3));
+    // The mine mouth: a dark tunnel with timber frame.
+    float2 mq = uv - float2(asp * 0.62, 0.62);
+    float mouth = step(abs(mq.x), 0.13) * step(-0.18, mq.y) * step(mq.y, 0.12);
+    if (mouth > 0.5) col = mix(float3(0.03, 0.02, 0.02), mix(float3(0.3, 0.18, 0.08), A, 0.15), pxBand(sat(1.0 - length(mq * float2(1.0, 0.8)) / 0.16), 3.0, cell) * pxBand(sat((mq.y + 0.18) * 4.0), 2.0, cell));
+    float frame = (step(abs(abs(mq.x) - 0.13), 0.012) * step(-0.19, mq.y) * step(mq.y, 0.12)) + step(abs(mq.y + 0.19), 0.012) * step(abs(mq.x), 0.15);
+    col = mix(col, mix(float3(0.45, 0.3, 0.15), float3(0.6, 0.42, 0.22), step(0.5, fract(uv.y * 60.0 + uv.x * 60.0))), sat(frame));
+    // Lanterns hanging, flickering, lighting the rock round them.
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float2 lp = float2(asp * 0.62 + (fi - 0.5) * 0.36, 0.38);
+        float fl = 0.8 + 0.2 * sin(t * 11.0 + fi * 3.0) * sin(t * 7.0 + fi);
+        col += mix(float3(1.0, 0.6, 0.2), A, 0.3) * 0.35 * fl * pxBand(sat(1.0 - length(uv - lp) * 5.0), 3.0, cell);
+        col = mix(col, float3(0.2), pxBox(uv, lp - float2(0.0, 0.03), float2(PX * 0.4, 0.02)));
+        col = mix(col, float3(0.25, 0.2, 0.15), pxBox(uv, lp, float2(0.012, 0.016)));
+        col = mix(col, mix(float3(1.0, 0.85, 0.4), float3(1.0, 0.6, 0.2), 1.0 - fl), pxBox(uv, lp, float2(0.007, 0.01)));
+    }
+    // The track and its slope.
+    float ground = 0.8;
+    if (uv.y > ground) col = mix(r0, r1, pxBand(hash12(cell) * 0.6 + (1.0 - uv.y) * 2.0, 2.0, cell));
+    float rails = step(abs(uv.y - (ground - 0.005)), PX * 0.6) + step(abs(uv.y - (ground + 0.008)), PX * 0.5);
+    float ties = step(fract(uv.x * 25.0), 0.3) * step(ground - 0.005, uv.y) * step(uv.y, ground + 0.015);
+    col = mix(col, float3(0.4, 0.26, 0.15), ties);
+    col = mix(col, float3(0.7, 0.72, 0.78), sat(rails));
+    // The mine cart: rolls out of the tunnel and across, loaded with ore.
+    float ct = fract(t / 10.0);
+    float cx = asp * 0.62 - 0.05 - ct * (asp * 0.62 + 0.3);
+    float2 cq = uv - float2(cx, ground - 0.012);
+    float bounce = step(0.5, fract(t * 6.0)) * PX;
+    cq.y += bounce;
+    float tub = step(-0.06, cq.y) * step(cq.y, -0.01) * step(abs(cq.x), 0.05 - (cq.y + 0.06) * -0.25);
+    col = mix(col, mix(float3(0.45, 0.47, 0.52), float3(0.3, 0.32, 0.36), step(0.0, cq.x)), tub);
+    col = mix(col, float3(0.6, 0.62, 0.68), tub * step(abs(cq.y + 0.045), PX * 0.6));
+    float ore = step(length((cq - float2(0.0, -0.06)) * float2(0.7, 1.4)), 0.035) * step(cq.y, -0.06);
+    col = mix(col, mix(r1, mix(A, S, 0.5), step(0.8, hash12(floor(cq * 200.0)))), ore);
+    float wheel = step(length(cq - float2(-0.03, -0.005)), 0.012) + step(length(cq - float2(0.03, -0.005)), 0.012);
+    col = mix(col, float3(0.15), sat(wheel));
+    // Pebbles bouncing down from the top right.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float pt = fract(t * 0.15 + fi / 3.0);
+        float x = asp * (0.95 - 0.5 * pt) + 0.05 * fi;
+        float y = 0.05 + pt * 0.75 - 0.05 * abs(sin(pt * 12.0 + fi));
+        col = mix(col, r3, step(length(uv - pxSnap(float2(x, y))), PX * 1.3));
+    }
+    col = pxQuant(col, 10.0, cell);
+    return half4(finish(col, fc), 1.0);
+}

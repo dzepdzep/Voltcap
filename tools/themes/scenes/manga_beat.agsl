@@ -1,0 +1,71 @@
+// Manga beat (music): a black-and-white manga page in action. The album cover sits in the middle
+// panel inked like a manga frame, screentone shading fills the background, speed lines rush in
+// towards it with the song's energy, ink splashes and impact bursts hit on every real kick, the
+// panel borders jolt, and a splash of the cover's colour bleeds in when the bass swells.
+//#include reactive
+//#include anime
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float loud = sat((uEqA.x + uEqA.y + uEqB.x + uEqB.y) * 0.25) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.78;
+    float3 paper = float3(0.95, 0.94, 0.9);
+    float3 ink = float3(0.06, 0.06, 0.08);
+
+    // Screentone: dot size grows away from the centre.
+    float r = length((uv - c) * float2(0.7, 1.0));
+    float3 col = mix(paper, ink, halftone(uv, 70.0, sat(r * 0.9 - 0.1)) * 0.85);
+    // Speed lines towards the panel, denser when it's loud.
+    float fl = focusLines(uv, c, t * (1.0 + 2.0 * loud), 80.0 + 120.0 * loud, 3.0);
+    col = mix(col, ink, fl * (0.35 + 0.6 * loud));
+    // The cover's colour bleeding in with the bass.
+    col = mix(col, col * mix(A, float3(1.0), 0.35), smoothstep(0.2, 0.9, bass) * (1.0 - smoothstep(R, R * 4.0, r)) * 0.6);
+
+    // Impact burst on the kick: a jagged star behind the panel.
+    float2 d = uv - c;
+    float a = atan(d.y, d.x);
+    float burstR = R * (1.45 + 0.6 * kick * k) * (0.85 + 0.15 * step(0.5, fract(a / TAU * 18.0 + floor(t * 4.0) * 0.37)));
+    float burst = step(length(d * float2(0.8, 1.0)), burstR) * step(0.05, kick);
+    col = mix(col, paper, burst);
+    col = mix(col, ink, step(abs(length(d * float2(0.8, 1.0)) - burstR), 0.004) * step(0.05, kick));
+
+    // Ink splashes on the kick.
+    for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float ang = fi * 1.26 + floor(t - uBeatAge) * 2.3;
+        float2 sp = c + float2(cos(ang), sin(ang)) * R * (1.7 + 0.4 * hash11(fi));
+        float sr = R * 0.12 * kick * (0.6 + 0.6 * hash11(fi + 3.0));
+        float blob = length(uv - sp) - sr * (0.8 + 0.3 * vnoise(float2(atan(uv.y - sp.y, uv.x - sp.x) * 3.0, fi)));
+        col = mix(col, ink, (1.0 - smoothstep(0.0, px, blob)) * step(0.02, kick));
+    }
+
+    // The panel with the cover, jolting on the kick.
+    float2 jolt = float2(hash11(floor(t * 25.0)) - 0.5, hash11(floor(t * 25.0) + 1.0) - 0.5) * 0.01 * kick * k;
+    float2 pd = rot(0.03 * sin(t * 0.3)) * (uv - c - jolt);
+    float box = sdRoundBox(pd, float2(R), 0.0);
+    if (box < 0.0) {
+        float3 cov = sharpCover(pd / (2.0 * R) + 0.5, A, S);
+        // Inked look: crush to a few tones, keep a little colour.
+        float lum = dot(cov, float3(0.299, 0.587, 0.114));
+        float tone = floor(lum * 4.0) / 3.0;
+        float3 inked = mix(ink, paper, tone);
+        inked = mix(inked, ink, halftone(pd, 90.0, sat(0.7 - lum)) * step(tone, 0.5));
+        col = mix(inked, cov, 0.35 + 0.3 * bass);
+    }
+    col = mix(col, ink, step(abs(box), 0.006));
+    // Outer page borders.
+    float2 e = min(uv, float2(asp, 1.0) - uv);
+    col = mix(col, ink, step(min(e.x, e.y), 0.012));
+    return half4(finish(col, fc), 1.0);
+}

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Auto Backup rules (Android 11 and older; Android 12+ uses data_extraction_rules.xml).
+   Everything in shared_prefs is backed up EXCEPT credentials and per-install state:
+   the Keystore master key never leaves the device, so a restored encrypted file
+   (and its Tink keyset) can't be read on the new device, and sign-in tokens,
+   sync ids and crash bookkeeping belong to one install. Keep this list in step
+   with SettingsScopes.kt (AUTH and INTERNAL files).
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="ra_credentials.xml" />
+    <exclude domain="sharedpref" path="ra_credentials_encrypted.xml" />
+    <exclude domain="sharedpref" path="sgdb_settings.xml" />
+    <exclude domain="sharedpref" path="sgdb_settings_encrypted.xml" />
+    <exclude domain="sharedpref" path="igdb_credentials.xml" />
+    <exclude domain="sharedpref" path="igdb_credentials_encrypted.xml" />
+    <exclude domain="sharedpref" path="tgdb_credentials.xml" />
+    <exclude domain="sharedpref" path="tgdb_credentials_encrypted.xml" />
+    <exclude domain="sharedpref" path="screenscraper_credentials.xml" />
+    <exclude domain="sharedpref" path="screenscraper_credentials_encrypted.xml" />
+    <exclude domain="sharedpref" path="metadata_source.xml" />
+    <exclude domain="sharedpref" path="metadata_source_encrypted.xml" />
+    <exclude domain="sharedpref" path="rawg.xml" />
+    <exclude domain="sharedpref" path="rawg_encrypted.xml" />
+    <exclude domain="sharedpref" path="discord.xml" />
+    <exclude domain="sharedpref" path="discord_encrypted.xml" />
+    <exclude domain="sharedpref" path="spotify_encrypted.xml" />
+    <exclude domain="sharedpref" path="cloud_sync.xml" />
+    <exclude domain="sharedpref" path="cloud_sync_folders.xml" />
+    <exclude domain="sharedpref" path="secure_store_flags.xml" />
+    <exclude domain="sharedpref" path="session.xml" />
+    <exclude domain="sharedpref" path="crash_guard.xml" />
+    <exclude domain="sharedpref" path="migrations.xml" />
+    <exclude domain="sharedpref" path="sync_status.xml" />
+    <exclude domain="sharedpref" path="launch_context.xml" />
+    <exclude domain="sharedpref" path="perf_settings.xml" />
+    <exclude domain="sharedpref" path="steam_import.xml" />
+    <exclude domain="sharedpref" path="device_profile.xml" />
+    <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml" />
+    <exclude domain="file" path="cloud_sync" />
+    <exclude domain="file" path="settings_snapshots" />
+</full-backup-content>

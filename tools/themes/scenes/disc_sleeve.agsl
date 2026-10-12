@@ -1,0 +1,92 @@
+// Disc & sleeve: a square album cover with its disc slid halfway out from behind it, spinning slowly
+// under a soft spotlight. The art is on the sleeve and printed on the disc; the rainbow and the
+// highlights stay fixed to the light while the print turns. Rings roll off the disc on every kick.
+//#include reactive
+
+float3 hue3(float h) {
+    return clamp(abs(fract(h + float3(0.0, 0.6667, 0.3333)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
+}
+
+float rbox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + r;
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float high = uHigh * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float lvl = bass * 0.5 + uMid * play * 0.3 + high * 0.2;
+
+    float3 col = paletteField(uv, asp, t, lvl * k, BG, A, S) * 0.85;
+    float2 c = float2(waveX(asp), uWaveY);
+    float H = room(0.28) * 0.9 * (1.0 + 0.012 * kick * k); // half the sleeve's side
+    float2 cc = c - float2(H * 0.5, 0.0);                  // sleeve centre
+    float R = H * 0.93;
+    float2 dc = cc + float2(H * 1.0, 0.0);                 // disc centre: half of it out of the sleeve
+
+    // A soft spotlight from above and a faint floor glow under the pair.
+    float2 sp = (uv - c) * float2(0.5, 1.0);
+    col += mix(A, float3(1.0), 0.45) * exp(-length(sp) * 2.4) * (0.10 + 0.14 * lvl * k);
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - (c.y + H * 1.12)) * 30.0) * 0.06 * (1.0 - smoothstep(0.0, H * 2.2, abs(uv.x - c.x)));
+
+    // The disc (behind the sleeve).
+    float2 d = uv - dc;
+    float r = length(d);
+    float ang = atan(d.y, d.x);
+    col += mix(A, S, 0.5) * exp(-max(r - R, 0.0) * 9.0) * (0.06 + 0.35 * bass * k);
+    float rr = R + uBeatAge * 0.45;
+    col += mix(S, float3(1.0), 0.3) * exp(-abs(r - rr) * 90.0) * exp(-uBeatAge * 2.5) * 0.45 * k * play;
+    col *= 1.0 - 0.35 * exp(-max(length(d - float2(0.01, 0.018)) - R, 0.0) * 40.0) * step(R, r);
+    if (r < R) {
+        float rn = r / R;
+        float spin = 2.6 * uPlayT + t * 0.12; // slower than before: calm, still clearly spinning
+        float la = ang - spin;
+        float2 q = float2(cos(la), sin(la)) * rn;
+        float3 print = mix(mix(A, S, q.y * 0.5 + 0.5), float3(1.0), 0.1);
+        float3 art = float3(uCover.eval(clamp(q * 0.5 + 0.5, 0.0, 1.0) * uCoverSize).rgb);
+        print = mix(print, art, uHasArt);
+        float band = pow(abs(cos(ang - 0.7 + 0.08 * sin(t * 0.4))), 6.0);
+        float3 rainbow = hue3(rn * 1.2 + 0.1 * sin(t * 0.2) + 0.15 * cos(ang - 0.7));
+        float3 disc = mix(print, rainbow, 0.06 + 0.3 * band);
+        disc += float3(1.0) * pow(band, 8.0) * 0.32;
+        disc = mix(disc, mix(float3(0.85), rainbow, 0.4), smoothstep(0.96, 0.975, rn));
+        float hub = smoothstep(0.30, 0.31, rn);
+        float3 clear = mix(col * 0.75 + float3(0.12), rainbow * 0.4 + 0.4, 0.3 * smoothstep(0.18, 0.3, rn));
+        disc = mix(clear, disc, hub);
+        disc = mix(disc, float3(0.9), (1.0 - smoothstep(0.0, 0.006, abs(rn - 0.305))) * 0.6);
+        disc = mix(col * 0.6, disc, smoothstep(0.12, 0.13, rn));
+        disc = mix(disc, float3(0.95), (1.0 - smoothstep(0.0, 0.004, abs(rn - 0.995))) * 0.7);
+        col = disc;
+    }
+
+    // The sleeve on top: its shadow on the disc and the floor, then the cover.
+    float2 q = uv - cc;
+    float sh = rbox(q - float2(H * 0.05, H * 0.06), float2(H), H * 0.03);
+    col *= 1.0 - 0.5 * (1.0 - smoothstep(0.0, H * 0.16, sh)) * step(0.0, sh);
+    float bd = rbox(q, float2(H), H * 0.03);
+    if (bd < 0.0) {
+        float2 st = q / (2.0 * H) + 0.5;
+        float3 art = float3(uCover.eval(clamp(st, 0.0, 1.0) * uCoverSize).rgb);
+        float3 fallback = mix(mix(A, S, st.y), BG * 1.4 + 0.05, 0.35 * st.x);
+        float3 cv = mix(fallback, art, uHasArt);
+        // Glossy sleeve: a slow diagonal sheen, light from the top, a bevelled edge.
+        float sheen = 1.0 - smoothstep(0.0, 0.22, abs(st.x * 0.8 + st.y * 0.6 - 0.45 - 0.15 * sin(t * 0.12)));
+        cv += float3(1.0) * sheen * 0.07;
+        cv *= 1.04 - 0.1 * st.y;
+        float edge = 1.0 - smoothstep(0.0, H * 0.025, -bd);
+        cv = mix(cv, cv * 0.55 + float3(0.28), edge * 0.45);
+        col = cv;
+    }
+
+    col += float3(1.0) * dots(uv, 34.0, float2(-t * 0.05, t * 0.025), 0.1, 0.07, 9.0) * (0.1 + 0.5 * high * k);
+    return half4(finish(col, fc), 1.0);
+}

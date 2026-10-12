@@ -1,0 +1,113 @@
+// Voltcap: the start-up mark as a living background that never stops - two sparks chase each other
+// round the capsule's outline forever, the glass glows warm and a light sweeps across it, the bolt
+// breathes and every few seconds surges: a flash, small arcs jumping to the outline and a shock wave
+// rolling out. The capsule is mirrored on a glossy floor; embers drift up through the warm dark.
+// Every motion is periodic, so it loops seamlessly with no restart.
+//#include voltcap
+
+// The lit mark at q (capsule units), returns its colour (added light) and coverage in .a.
+float4 markAt(float2 q, float K, float px, float t, float surge, float3 A, float3 S, float3 CREAM) {
+    float d = sdCapsuleMark(q);
+    float inside = 1.0 - smoothstep(-px / K, px / K, d);
+    float3 col = float3(0.0);
+    // Glass: warm gradient, darker at the rims, a soft inner glow behind the bolt.
+    float3 fill = mix(A, S, sat(0.55 - q.y * 0.9)) * (0.28 + 0.22 * sat(1.0 - length(q * float2(0.8, 1.6))));
+    fill += A * 0.25 * exp(-length(q) * 2.2) * (0.7 + 0.6 * surge);
+    // A slow band of light sweeping across, and a fixed highlight along the top.
+    float sweep = exp(-sqf((q.x + q.y * 0.5 - (fract(t / 6.0) * 4.4 - 2.2)) * 2.4));
+    fill += CREAM * sweep * 0.16;
+    fill += CREAM * 0.18 * smoothstep(0.1, 0.0, abs(q.y + VR * 0.62)) * smoothstep(0.85, 0.3, abs(q.x));
+    col += fill * inside;
+    // The outline: a bright rim with a glow.
+    col += mix(A, S, 0.3) * glow(abs(d) * K, 0.0022) * (0.9 + 0.5 * surge);
+    col += mix(S, CREAM, 0.4) * (1.0 - smoothstep(0.0, px / K * 2.2, abs(d))) * 0.6;
+    // The bolt: always on, breathing, white-hot on a surge.
+    float db = sdBoltMark(q * (1.0 - 0.05 * surge));
+    float boltIn = 1.0 - smoothstep(0.0, px / K * 2.0, db);
+    float3 boltCol = mix(mix(S, CREAM, 0.35), CREAM, surge);
+    col = mix(col, boltCol, boltIn);
+    col += S * glow(max(db, 0.0) * K, 0.005 + 0.008 * surge) * (0.45 + 0.9 * surge);
+    return float4(col, max(inside, boltIn));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;      // orange
+    float3 S = uSec.rgb;      // yellow
+    float3 BG = uBg.rgb;
+    float3 CREAM = float3(1.0, 0.965, 0.84);
+
+    float2 c = float2(asp * 0.5, 0.42);
+    float K = 0.27;                       // capsule half width, in screen heights
+    // A slow float up and down.
+    c.y += 0.008 * sin(t * TAU / 8.0);
+    float2 q = (uv - c) / K;
+
+    // A surge every 4 seconds: quick rise, slower fall.
+    float ph = fract(t / 4.0);
+    float surge = smoothstep(0.0, 0.03, ph) * exp(-ph * 9.0);
+
+    // Stage: warm black, a glow behind the mark, a glossy floor under it.
+    float floorY = c.y + K * VR + 0.11;
+    float3 col = BG * 0.55 + float3(0.012, 0.01, 0.014);
+    col += A * exp(-length((uv - c) * float2(0.55, 1.0)) * 2.6) * (0.12 + 0.12 * surge);
+    col += A * 0.05 * smoothstep(floorY - 0.01, floorY + 0.3, uv.y) * exp(-abs(uv.x - c.x) * 1.5);
+    col += mix(A, CREAM, 0.5) * exp(-abs(uv.y - floorY) * 160.0) * exp(-abs(uv.x - c.x) * 2.5) * 0.15;
+
+    // Reflection on the floor: the mark mirrored, fading and a little blurred by distance.
+    if (uv.y > floorY) {
+        float2 mq = (float2(uv.x, 2.0 * floorY - uv.y) - c) / K;
+        float fade = exp(-(uv.y - floorY) * 9.0) * 0.32;
+        float4 m = markAt(mq + float2(sin(uv.y * 90.0 + t) * 0.004, 0.0), K, px * 3.0, t, surge, A, S, CREAM);
+        col += m.rgb * fade;
+    }
+
+    // The mark.
+    float4 m = markAt(q, K, px, t, surge, A, S, CREAM);
+    col = mix(col, col * 0.25, m.a * 0.8);
+    col += m.rgb;
+
+    // Two sparks chasing round the outline, forever (a full lap every 3 s), with long tails.
+    for (int i = 0; i < 2; i++) {
+        float a = t * TAU / 3.0 + float(i) * PI;
+        float2 sp = capsulePoint(a);
+        col += mix(S, CREAM, 0.6) * glow(length(q - sp) * K, 0.0045);
+        for (int j = 1; j < 9; j++) {
+            float aj = a - float(j) * 0.06;
+            col += mix(A, S, 0.4) * glow(length(q - capsulePoint(aj)) * K, 0.0026) * (0.42 - float(j) * 0.045);
+        }
+    }
+
+    // Surge: arcs jumping from the bolt to the outline, and a shock wave.
+    if (surge > 0.02) {
+        for (int i = 0; i < 4; i++) {
+            float fi = float(i);
+            float a = fi * 1.57 + floor(t / 4.0) * 2.1 + 0.4;
+            float2 to = capsulePoint(a) * 0.98;
+            float2 from = to * 0.25;
+            float2 ab = to - from;
+            float h = sat(dot(q - from, ab) / dot(ab, ab));
+            float2 nrm = float2(-ab.y, ab.x) / length(ab);
+            float jag = (vnoise(float2(h * 9.0, t * 30.0 + fi * 7.0)) - 0.5) * 0.18 * sin(h * PI);
+            float dd = length(q - (from + ab * h + nrm * jag));
+            col += mix(S, CREAM, 0.6) * glow(dd * K, 0.0016) * surge * 1.2;
+        }
+    }
+    float age = ph * 4.0;
+    float ring = exp(-abs(length((uv - c) * float2(0.85, 1.5)) - K * 0.9 - age * 0.32) * 55.0) * exp(-age * 1.6);
+    col += mix(S, CREAM, 0.4) * ring * 0.55;
+    col += CREAM * surge * exp(-length(uv - c) * 5.0) * 0.35;
+
+    // Embers drifting up through the warm air.
+    float2 ep = uv + float2(sin(uv.y * 7.0 + t * 0.8) * 0.012, t * 0.045);
+    col += mix(A, S, 0.5) * dots(ep, 30.0, float2(0.0), 0.08, 0.07, 7.0) * 0.55 * smoothstep(0.05, 0.9, uv.y);
+    col += mix(S, CREAM, 0.5) * dots(ep * 1.7 + 3.0, 26.0, float2(0.0), 0.05, 0.05, 11.0) * 0.3;
+
+    // Vignette.
+    float2 vv = fc / uRes - 0.5;
+    col *= 1.0 - 0.45 * dot(vv, vv);
+    return half4(finish(col, fc), 1.0);
+}

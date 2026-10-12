@@ -1,0 +1,124 @@
+// Sewer & skyline: a city at night split down the street line. Above: rooftops and water towers
+// against a big moon, lit windows, and shadowy ninjas leaping from roof to roof. Below the street:
+// a brick sewer tunnel where a glowing green stream flows, bubbles popping, pipes dripping, light
+// falling through a manhole grate, and spray-paint tags on the walls. Original mood only - no
+// characters, names or logos.
+
+float ninja(float2 p, float s) {
+    // A small running / leaping figure in silhouette, height ~s.
+    p /= s;
+    float head = length(p - float2(0.0, -0.78)) - 0.13;
+    float body = sdSegment(p, float2(0.0, -0.62), float2(0.05, -0.2)) - 0.09;
+    float arm1 = sdSegment(p, float2(0.02, -0.55), float2(0.32, -0.42)) - 0.045;
+    float arm2 = sdSegment(p, float2(0.02, -0.55), float2(-0.28, -0.68)) - 0.045;
+    float leg1 = sdSegment(p, float2(0.05, -0.22), float2(0.34, 0.0)) - 0.055;
+    float leg2 = sdSegment(p, float2(0.05, -0.22), float2(-0.22, 0.05)) - 0.055;
+    // Mask tails flying behind the head.
+    float tail = sdSegment(p, float2(-0.08, -0.78), float2(-0.42, -0.7 + 0.05 * sin(p.x * 20.0))) - 0.025;
+    return min(min(min(head, body), min(arm1, arm2)), min(min(leg1, leg2), tail)) * s;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;      // the glow (ooze green)
+    float3 S = uSec.rgb;      // warm city light
+    float3 BG = uBg.rgb;
+    float street = 0.56;
+
+    float3 col;
+    if (uv.y < street) {
+        // Night sky with a big moon and haze.
+        col = mix(BG * 0.5 + float3(0.02, 0.02, 0.06), mix(BG, S, 0.15) * 1.3, smoothstep(0.0, street, uv.y));
+        float2 mc = float2(asp * 0.72, 0.17);
+        float md = length(uv - mc);
+        col = mix(col, float3(0.96, 0.95, 0.85), 1.0 - smoothstep(0.075, 0.075 + px, md));
+        col += float3(0.9, 0.9, 1.0) * exp(-max(md - 0.075, 0.0) * 14.0) * 0.18;
+        col += float3(1.0) * dots(uv, 60.0, float2(0.0), 0.07, 0.05, 2.0) * 0.4 * (1.0 - uv.y / street);
+        // Far skyline.
+        float fx = uv.x * 9.0 + t * 0.006;
+        float fh = street - 0.12 - 0.12 * hash11(floor(fx)) - 0.06 * step(0.8, hash11(floor(fx) + 3.0));
+        col = mix(col, mix(BG, float3(0.1, 0.1, 0.18), 0.5), step(fh, uv.y) * 0.8);
+        // Near rooftops: blocks with lit windows, water towers on some.
+        float nx = uv.x * 4.0 + t * 0.012;
+        float id = floor(nx);
+        float lx = fract(nx);
+        float rh = street - 0.05 - 0.13 * hash11(id * 1.7);
+        float roof = step(rh, uv.y);
+        float3 bld = float3(0.04, 0.045, 0.07);
+        float2 wg = float2(nx * 7.0, (uv.y - rh) * 40.0);
+        float win = step(0.35, fract(wg.x)) * step(0.4, fract(wg.y)) * step(0.55, hash12(floor(wg) + id));
+        bld += mix(S, float3(1.0, 0.8, 0.5), 0.5) * win * 0.55 * step(rh + 0.02, uv.y) * step(0.06, lx) * step(lx, 0.94);
+        // Gaps between buildings.
+        roof *= step(0.04, lx) * step(lx, 0.96);
+        col = mix(col, bld, roof);
+        // Water tower on some roofs.
+        float hasT = step(0.55, hash11(id * 5.3));
+        float2 tp = float2((lx - 0.7) / 4.0 * asp, uv.y - (rh - 0.045));
+        float tank = sdRoundBox(tp, float2(0.018, 0.022), 0.006);
+        float legs = min(sdSegment(tp, float2(-0.015, 0.02), float2(-0.02, 0.045)), sdSegment(tp, float2(0.015, 0.02), float2(0.02, 0.045))) - 0.0015;
+        col = mix(col, bld * 0.8, (1.0 - smoothstep(0.0, px, min(tank, legs))) * hasT);
+        // Ninjas leaping between the roofs: each follows an arc, then runs on.
+        for (int i = 0; i < 3; i++) {
+            float fi = float(i);
+            float cyc = 6.0 + fi * 1.7;
+            float ph = fract(t / cyc + fi * 0.33);
+            float x = -0.1 + ph * (asp + 0.2);
+            float jump = abs(sin(ph * PI * 3.0));
+            float y = street - 0.2 - 0.08 * fi * 0.3 - jump * 0.09;
+            float d = ninja(uv - float2(x, y), 0.075);
+            col = mix(col, float3(0.01, 0.01, 0.02), 1.0 - smoothstep(0.0, px, d));
+            // Rim of moonlight.
+            col += float3(0.8, 0.85, 1.0) * (1.0 - smoothstep(0.0, px * 2.0, abs(d))) * 0.25 * step(uv.x, x);
+        }
+        // Street edge, with a manhole glowing up through the road.
+        col = mix(col, float3(0.08, 0.08, 0.1), smoothstep(street - 0.012, street - 0.008, uv.y));
+    } else {
+        // The sewer: a brick arch tunnel.
+        float2 sp = float2(uv.x, uv.y - street);
+        float depth = sp.y / (1.0 - street);
+        float2 br = float2(uv.x * 14.0, uv.y * 30.0);
+        float row = floor(br.y);
+        float2 bf = fract(br + float2(0.5 * mod(row, 2.0), 0.0));
+        float mortar = step(bf.x, 0.06) + step(bf.y, 0.1);
+        float3 brick = mix(float3(0.22, 0.15, 0.13), BG * 1.4 + float3(0.05, 0.06, 0.05), 0.4) * (0.75 + 0.25 * hash12(floor(br + float2(0.5 * mod(row, 2.0), 0.0))));
+        col = mix(brick, brick * 0.45, sat(mortar));
+        // The green stream glowing up onto the walls.
+        float water = 0.82 + 0.008 * sin(uv.x * 30.0 + t * 2.0);
+        col += A * exp(-max(water - uv.y, 0.0) * 9.0) * 0.45;
+        // Spray-paint tags: loopy strokes of colour.
+        float tg = fbm3(float2(uv.x * 3.0, uv.y * 6.0) + 9.0);
+        float tagMask = step(0.5, hash11(floor(uv.x * 2.5) + 2.0)) * smoothstep(0.62, 0.66, depth) * (1.0 - smoothstep(0.75, 0.79, depth));
+        float stroke = 1.0 - smoothstep(0.0, 0.03, abs(sin(uv.x * 40.0 + tg * 12.0) * 0.5 - (fract(uv.y * 14.0) - 0.5)));
+        col = mix(col, mix(S, float3(0.9, 0.3, 0.8), step(0.5, hash11(floor(uv.x * 2.5)))) * 0.8, stroke * tagMask * 0.45);
+        // Pipes along the wall with drips.
+        float pipe = 1.0 - smoothstep(0.012, 0.012 + px, abs(uv.y - (street + 0.08)));
+        col = mix(col, float3(0.3, 0.32, 0.3) * (0.7 + 0.3 * sin(uv.y * 400.0)), pipe);
+        float dx = floor(uv.x * 6.0);
+        float drip = fract(t * 0.6 + hash11(dx));
+        float2 dp = float2((fract(uv.x * 6.0) - 0.5) / 6.0 * asp, uv.y - (street + 0.095) - drip * 0.2);
+        col += A * (1.0 - smoothstep(0.0, 0.004, length(dp * float2(1.0, 0.6)))) * step(0.6, hash11(dx + 4.0)) * 0.8;
+        // The stream.
+        if (uv.y > water) {
+            float flow = fbm3(float2(uv.x * 6.0 - t * 0.6, uv.y * 20.0));
+            float3 ooze = mix(A * 0.5, A * 1.3 + 0.1, flow);
+            ooze += float3(1.0) * pow(flow, 6.0) * 0.3;
+            // Bubbles popping.
+            float2 bp = float2(uv.x * 20.0 - t * 0.5, uv.y * 40.0);
+            float2 bi = floor(bp);
+            float bt = fract(t * 0.7 + hash12(bi));
+            float bub = (1.0 - smoothstep(0.0, 0.08, abs(length(fract(bp) - 0.5) - 0.25 * bt))) * step(0.85, hash12(bi + 1.0)) * (1.0 - bt);
+            col = ooze + A * bub * 0.6;
+        }
+        // Light falling through a manhole grate.
+        float mx = asp * 0.3;
+        float shaft = exp(-abs(uv.x - mx - (uv.y - street) * 0.15) * 20.0) * (1.0 - depth * 0.6);
+        float grate = step(0.5, fract((uv.x - mx) * 120.0));
+        col += mix(S, float3(1.0), 0.6) * shaft * 0.35 * (0.7 + 0.3 * grate);
+        // Arch darkness at the top corners.
+        col *= 0.55 + 0.45 * smoothstep(0.0, 0.3, depth + 0.2 * sin(uv.x / asp * PI));
+    }
+    return half4(finish(col, fc), 1.0);
+}

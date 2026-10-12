@@ -1,0 +1,60 @@
+// 16-bit mode 7: a racetrack sweeping under you on a rotating, scaled floor - checkered grass, a road
+// with red-and-white kerbs and a dashed line - under a sky with two parallax mountain ranges and
+// stepped clouds. Drawn at a 16-bit-ish resolution with a horizon haze.
+half4 main(float2 fc) {
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float P = 224.0;
+    float2 g = floor(fc / uRes.y * P) + 0.5;
+    float2 uv = g / P;
+    float hz = 0.46;
+    float turn = 0.35 * sin(t * 0.11);
+    float3 col;
+    if (uv.y < hz) {
+        float k = uv.y / hz;
+        col = mix(float3(0.18, 0.22, 0.62), mix(float3(0.98, 0.55, 0.45), A, 0.35), pow(k, 1.6));
+        col = mix(col, BG * 1.5, 0.1);
+        // Stepped cloud bands.
+        float cb = step(0.6, fbm3(float2((uv.x + t * 0.01 + turn * 0.3) * 4.0, floor(uv.y * 40.0) * 0.3)));
+        col = mix(col, float3(1.0, 0.92, 0.9), cb * 0.5 * (1.0 - k));
+        // Far mountains (move with the turn), near mountains (move more).
+        float mx1 = uv.x * 2.2 + turn * 1.2;
+        float m1 = hz - 0.13 * pow(abs(sin(mx1 * 1.3)), 0.8) - 0.05 * abs(sin(mx1 * 4.1));
+        col = mix(col, mix(S, float3(0.35, 0.3, 0.6), 0.6), step(m1, uv.y));
+        float mx2 = uv.x * 3.0 + turn * 2.4 + 7.0;
+        float m2 = hz - 0.07 * abs(sin(mx2 * 1.7)) - 0.03 * abs(sin(mx2 * 5.3));
+        col = mix(col, float3(0.20, 0.30, 0.45), step(m2, uv.y));
+    } else {
+        // The mode-7 plane: rotate and scale by distance.
+        float dy = uv.y - hz;
+        float z = 0.18 / dy;
+        float2 p = float2((uv.x - asp * 0.5) * z, z);
+        float c = cos(turn);
+        float s = sin(turn);
+        p = float2(p.x * c - p.y * s, p.x * s + p.y * c);
+        p.y += t * 2.2;
+        // The road curves through the world.
+        float roadX = 1.2 * sin(p.y * 0.08) + 0.6 * sin(p.y * 0.031 + 2.0);
+        float dx = p.x - roadX;
+        float roadW = 0.55;
+        float checker = step(0.5, fract(floor(p.x * 1.5) * 0.5 + floor(p.y * 1.5) * 0.5));
+        float3 grass = mix(float3(0.16, 0.55, 0.22), float3(0.12, 0.45, 0.18), checker);
+        col = grass;
+        float onRoad = step(abs(dx), roadW);
+        float3 road = float3(0.32, 0.32, 0.38);
+        // Dashed centre line and kerbs.
+        road = mix(road, float3(0.95), step(abs(dx), 0.03) * step(0.5, fract(p.y * 0.8)));
+        col = mix(col, road, onRoad);
+        float kerb = step(roadW, abs(dx)) * step(abs(dx), roadW + 0.12);
+        col = mix(col, mix(float3(0.92, 0.18, 0.16), float3(0.96), step(0.5, fract(p.y * 1.6))), kerb);
+        // Boost pads in the accent colour.
+        float pad = step(abs(dx - 0.25 * sin(floor(p.y * 0.25) * 2.0)), 0.12) * step(0.85, fract(p.y * 0.25)) * onRoad;
+        col = mix(col, mix(A, float3(1.0), 0.3 + 0.3 * step(0.5, fract(t * 4.0))), pad);
+        // Haze towards the horizon.
+        col = mix(col, mix(float3(0.98, 0.65, 0.55), A, 0.3), exp(-dy * 18.0) * 0.8);
+    }
+    return half4(finish(col, fc), 1.0);
+}

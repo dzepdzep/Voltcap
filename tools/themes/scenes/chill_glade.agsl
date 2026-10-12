@@ -1,0 +1,73 @@
+// Firefly glade: Toni's painting of a misty night forest (res scene_chill_glade), brought to life. The
+// fireflies blink and more drift between the trees, mist rolls slowly through the clearing, the moonbeam
+// shimmers with motes floating in it, and the leaves and grass sway a little.
+// (The procedural version is kept as chill_glade_drawn.agsl.)
+//#include paint
+
+// The painted fireflies (painting reference pixels).
+float paintedFly(float2 r, float2 c, float rad) { return exp(-dot(r - c, r - c) / (rad * rad)); }
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(BG * 2.0, BG, uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+    float2 r = q * float2(1672.0, 941.0);
+    float aspP = sz.x / sz.y;
+
+    // Leaves in the top corners and grass along the bottom sway a little.
+    float leaves = max(smoothstep(320.0, 120.0, r.x), smoothstep(1420.0, 1600.0, r.x)) * smoothstep(260.0, 60.0, r.y);
+    float grass = smoothstep(760.0, 860.0, r.y);
+    float sway = sin(t * 0.7 + r.x * 0.01) * 0.6 + sin(t * 1.3 + r.y * 0.05) * 0.4;
+    float2 off = float2(sway * (2.2 * leaves + 1.6 * grass * (1.0 - smoothstep(860.0, 941.0, r.y) * 0.7)), sway * 0.8 * leaves);
+    float3 col = paintAt(p + off / float2(1672.0, 941.0) * sz);
+    float lum = luma(col);
+
+    // The moonbeam shimmers; motes float in it.
+    float cx = mix(1040.0, 880.0, r.y / 600.0);
+    float w = mix(55.0, 170.0, sat(r.y / 600.0));
+    float beam = exp(-sqf((r.x - cx) / w)) * smoothstep(720.0, 300.0, r.y);
+    float shim = fbm3(float2((r.x - cx) * 0.02, r.y * 0.006 - t * 0.08));
+    col *= 1.0 + beam * (shim - 0.5) * 0.25;
+    col += float3(0.8, 0.95, 0.9) * dots(q * float2(aspP, 1.0), 70.0, float2(t * 0.004, t * 0.01), 0.18, 0.06, 5.0) * beam * 0.6;
+
+    // Mist rolling slowly through the clearing.
+    float2 mp = float2(r.x * 0.0022 + t * 0.012, r.y * 0.006);
+    float mist = fbm(mp + float2(fbm3(mp * 1.7 - t * 0.01) * 0.8, 0.0));
+    float band = exp(-sqf((r.y - 620.0) / 160.0));
+    col = mix(col, mix(S, float3(0.6, 0.8, 0.75), 0.5) * 0.42, smoothstep(0.5, 0.85, mist) * band * 0.16);
+
+    // The painted fireflies blink, each at its own pace: dimming one fades it towards the forest just above it.
+    for (int i = 0; i < 6; i++) {
+        float2 c = i == 0 ? float2(22.0, 403.0) : i == 1 ? float2(240.0, 518.0) : i == 2 ? float2(533.0, 428.0)
+                 : i == 3 ? float2(275.0, 683.0) : i == 4 ? float2(1477.0, 414.0) : float2(1498.0, 575.0);
+        float g = paintedFly(r, c, 26.0);
+        if (g > 0.01) {
+            float blink = 0.5 + 0.5 * sin(t * (0.5 + 0.13 * float(i)) + float(i) * 2.3);
+            // The trunks run up and down: the forest just above has the same colours as round the fly.
+            float3 beside = paintAt(p + float2(0.0, -70.0) / float2(1672.0, 941.0) * sz);
+            col = mix(col, beside, g * (1.0 - blink) * 0.85);
+            col += col * g * blink * 0.25;
+        }
+    }
+    // More fireflies drifting between the trees.
+    for (int i = 0; i < 10; i++) {
+        float fi = float(i);
+        float side = step(0.45, hash11(fi * 2.7));
+        float2 home = float2(side < 0.5 ? 60.0 + 380.0 * hash11(fi * 3.1) : 1300.0 + 340.0 * hash11(fi * 3.1), 380.0 + 420.0 * hash11(fi * 5.9));
+        float2 c = home + float2(70.0 * sin(t * (0.09 + 0.05 * hash11(fi)) + fi * 2.0), 45.0 * sin(t * (0.12 + 0.04 * hash11(fi + 3.0)) + fi * 1.4));
+        float blink = sqf(sat(sin(t * (0.45 + 0.35 * hash11(fi * 7.0)) + fi * 4.0)));
+        float d = length(r - c);
+        col += mix(A, float3(1.0), 0.45) * exp(-d * 0.28) * blink * 0.9;
+        col += A * exp(-d * 0.03) * blink * 0.05;
+    }
+
+    return half4(finishPaint(col, fc), 1.0);
+}

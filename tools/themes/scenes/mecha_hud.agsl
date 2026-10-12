@@ -1,0 +1,96 @@
+// Mecha HUD: a cockpit display. A faint hex grid with pulses running through it, target rings
+// turning at different speeds with tick marks, a radar sweep, data bars ticking along the left,
+// a horizon ladder on the right and a warning chevron band that flashes now and then.
+
+float4 hexCell(float2 p) {
+    float2 r = float2(1.0, 1.7320508);
+    float2 h = r * 0.5;
+    float2 a = mod(p, r) - h;
+    float2 b = mod(p - h, r) - h;
+    float2 gv = dot(a, a) < dot(b, b) ? a : b;
+    return float4(gv, p - gv);
+}
+
+float hexEdge(float2 gv) {
+    float2 q = abs(gv);
+    return 0.5 - max(dot(q, float2(0.5, 0.8660254)), q.x);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float3 col = BG * 0.85 + mix(A, S, 0.5) * 0.03 * (1.0 - uv.y);
+
+    // Hex grid with pulses.
+    float4 hc = hexCell(uv * 16.0);
+    float e = hexEdge(hc.xy);
+    float grid = 1.0 - smoothstep(0.0, 0.05, e);
+    float pulse = sin(length(hc.zw / 16.0 - float2(asp * 0.5, 0.5)) * 9.0 - t * 1.6);
+    float cellLit = step(0.97, hash12(hc.zw + floor(t * 1.5)));
+    col += S * grid * (0.05 + 0.08 * smoothstep(0.85, 1.0, pulse));
+    col += S * cellLit * (1.0 - smoothstep(0.0, 0.35, -e + 0.5)) * 0.04;
+
+    // Target rings in the middle.
+    float2 c = float2(asp * 0.5, 0.48);
+    float2 d = uv - c;
+    float r = length(d);
+    float a = atan(d.y, d.x) / TAU + 0.5;
+    float ring1 = 1.0 - smoothstep(0.0015, 0.003, abs(r - 0.17));
+    float ring2 = (1.0 - smoothstep(0.002, 0.0035, abs(r - 0.25))) * step(0.5, fract(a * 3.0 + t * 0.06));
+    float ring3 = (1.0 - smoothstep(0.004, 0.007, abs(r - 0.33))) * step(0.82, fract(a * 8.0 - t * 0.035));
+    float ticks = (1.0 - smoothstep(0.0, 0.012, abs(r - 0.205) - 0.012)) * step(0.85, fract(a * 72.0 + t * 0.02));
+    float majors = (1.0 - smoothstep(0.0, 0.02, abs(r - 0.21) - 0.02)) * step(0.93, fract(a * 8.0 + t * 0.02));
+    col += A * (ring1 * 0.5 + ring2 * 0.4 + ring3 * 0.35 + ticks * 0.45 + majors * 0.6);
+    // Crosshair gaps.
+    float xhair = (1.0 - smoothstep(0.0008, 0.0018, min(abs(d.x), abs(d.y)))) * step(0.04, r) * (1.0 - step(0.12, r));
+    col += A * xhair * 0.6;
+    // Radar sweep with its fading trail.
+    float sw = fract(t * 0.12);
+    float lag = fract(sw - a);
+    col += S * (1.0 - step(0.33, r)) * exp(-lag * 18.0) * 0.18;
+    col += S * (1.0 - step(0.33, r)) * (1.0 - smoothstep(0.0, 0.004, lag)) * 0.35;
+    // Blips the sweep has just passed.
+    float2 bp = floor(d * 18.0);
+    float bh = hash12(bp + 7.0);
+    float ba = atan(bp.y + 0.5, bp.x + 0.5) / TAU + 0.5;
+    float blipLag = fract(sw - ba);
+    float blip = step(0.985, bh) * (1.0 - step(0.31, r)) * exp(-blipLag * 4.0) * (1.0 - smoothstep(0.1, 0.25, length(fract(d * 18.0) - 0.5)));
+    col += A * blip * 0.9;
+
+    // Data bars along the left, a new reading every half second.
+    float lx = uv.x - 0.06;
+    float row = floor((uv.y - 0.2) * 40.0);
+    if (row >= 0.0 && row < 14.0 && lx > 0.0) {
+        float len = 0.04 + 0.16 * hash11(row * 3.1 + floor(t * 2.0 + row * 0.13));
+        float inRow = step(0.2, fract((uv.y - 0.2) * 40.0));
+        col += mix(S, A, step(0.15, len - 0.04)) * step(lx, len) * inRow * 0.35;
+    }
+
+    // Horizon ladder on the right, rolling slowly.
+    float rx = uv.x - asp * 0.86;
+    if (abs(rx) < 0.07) {
+        float roll = sin(t * 0.3) * 0.15;
+        float2 q = rot(roll) * float2(rx, uv.y - 0.5);
+        float rung = abs(fract(q.y * 9.0 + t * 0.15) - 0.5);
+        float rl = (1.0 - smoothstep(0.02, 0.05, rung)) * step(abs(q.x), 0.05) * step(0.012, abs(q.x));
+        col += S * rl * 0.4 * (1.0 - smoothstep(0.2, 0.32, abs(uv.y - 0.5)));
+    }
+
+    // Warning band: chevrons racing along the bottom, flashing for a few seconds every 15 s.
+    float wc = fract(t / 15.0);
+    float warn = step(wc, 0.18) * step(0.5, fract(t * 2.5));
+    float band = step(abs(uv.y - 0.9), 0.012);
+    float chev = step(0.5, fract((uv.x + abs(uv.y - 0.9) * 1.5) * 14.0 - t * 2.0));
+    col = mix(col, mix(col, A, 0.75), band * chev * warn);
+    col += A * warn * 0.04;
+
+    // Scanlines.
+    col *= 0.93 + 0.07 * sin(fc.y * 1.6);
+
+    return half4(finish(col, fc), 1.0);
+}

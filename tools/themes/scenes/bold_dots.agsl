@@ -1,0 +1,22 @@
+// Bold dots: a flat console-style backdrop — a solid colour field with a tidy grid of big round dots
+// in a slightly lighter tone, a few picked out in the accent. Static, crisp and clean.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 base = mix(BG, A, 0.18) * 1.1;
+    float3 col = base;
+    float n = 7.0;
+    float2 g = uv * n;
+    float2 id = floor(g);
+    float2 f = fract(g) - 0.5;
+    float h = hash12(id + 3.0);
+    float rad = 0.28 + 0.06 * step(0.7, h);
+    float d = length(f) - rad;
+    float3 dotc = mix(base * 1.25 + 0.03, h > 0.88 ? A : (h > 0.8 ? S : base * 1.25 + 0.03), 1.0);
+    col = mix(col, dotc, 1.0 - smoothstep(-px * n, px * n, d));
+    return half4(col, 1.0);
+}

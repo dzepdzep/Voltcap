@@ -1,0 +1,52 @@
+// Cover halo (music): the cover as a round disc in the middle, framed by three rings that all move
+// with the song - an inner waveform that ripples round the edge like a frame, a circular spectrum of
+// bars around it (bass at the top), and an outer ring of dots that flash on the kick. The border
+// pulses with the bass and the background glows in the cover's colours.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.52;
+    float3 col = coverField(uv, asp, t, bass, 0.45, BG, A, S);
+    float2 d = uv - c;
+    float r = length(d);
+    float ang = atan(d.x, -d.y);                 // 0 at the top, clockwise
+    float m = abs(ang) / PI;                      // 0 top .. 1 bottom (mirrored left / right)
+    col += mix(A, S, 0.5) * exp(-max(r - R, 0.0) / R * 3.0) * (0.15 + 0.3 * bass);
+
+    // Circular spectrum.
+    float e = eqAt(m) * play;
+    float n = 96.0;
+    float lane = abs(fract((ang / TAU + 0.5) * n) - 0.5);
+    float r0 = R * 1.22;
+    float h = R * (0.04 + 0.6 * e * (0.5 + 0.7 * k));
+    float bar = step(lane, 0.32) * step(r0, r) * step(r, r0 + h);
+    col = mix(col, mix(mix(A, S, m), float3(1.0), sat((r - r0) / max(h, 0.001)) * 0.4), bar);
+    // Outer dot ring flashing on the kick.
+    float dr = R * 1.22 + R * 0.75;
+    float dots_ = step(length(float2(fract((ang / TAU + 0.5) * 48.0) - 0.5, (r - dr) / (R * 0.035))), 0.35);
+    col += mix(S, float3(1.0), 0.5) * dots_ * (0.2 + 0.9 * kick);
+    // Waveform frame: a ring that ripples with the mids and highs.
+    float wav = R * (1.08 + 0.04 * sin(ang * 12.0 + t * 6.0) * (0.2 + uMid * play) + 0.025 * sin(ang * 31.0 - t * 9.0) * uHigh * play);
+    col += mix(A, S, 0.3) * glow(abs(r - wav), 0.0018) * (0.6 + 0.8 * bass);
+    // The cover disc, its border pulsing.
+    float edge = R * (1.0 + 0.02 * bass * k);
+    if (r < edge) {
+        float3 cv = sharpCover(rot(0.05 * sin(t * 0.3)) * d / (2.0 * R) + 0.5, A, S);
+        col = mix(col, cv, 1.0 - smoothstep(edge - px, edge, r));
+    }
+    col += float3(1.0) * (1.0 - smoothstep(0.0, px * 2.5, abs(r - edge))) * (0.5 + 0.5 * kick);
+    return half4(finish(col, fc), 1.0);
+}

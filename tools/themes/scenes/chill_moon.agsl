@@ -1,0 +1,66 @@
+// Moon tide: Toni's painting of a lighthouse under a full moon (res scene_chill_moon), brought to life.
+// The sea swells and glitters along the moon's path, the lighthouse lamp pulses and its beam breathes with
+// mist drifting through it, the moon's halo glows softly, thin wisps drift past and the stars twinkle.
+// (The procedural version is kept as chill_moon_drawn.agsl.)
+//#include paint
+
+half4 main(float2 fc) {
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 BG = uBg.rgb;
+    if (uHasPaint < 0.5) {
+        float2 uv = fc / uRes;
+        return half4(finish(mix(BG * 1.2, BG * 0.8, uv.y), fc), 1.0);
+    }
+    float2 sz = max(uPaintSize, float2(1.0));
+    float2 p = paintPx(fc, 0.5, 0.5);
+    float2 q = p / sz;
+    float2 r = q * float2(1672.0, 941.0);          // painting reference pixels
+    float aspP = sz.x / sz.y;
+
+    // The sea (below the horizon, right of the rock): a slow swell sways the reflections.
+    float hz = 668.0;
+    float rockX = 240.0 + max(r.y - 680.0, 0.0) * 0.8;
+    float sea = smoothstep(hz + 2.0, hz + 10.0, r.y) * smoothstep(rockX + 10.0, rockX + 45.0, r.x);
+    float depth = sat((r.y - hz) / 270.0);
+    float sw = sin(r.y * 0.09 - t * 0.9 + sin(r.x * 0.01) * 2.0) * 0.6 + sin(r.y * 0.23 + r.x * 0.004 - t * 1.4) * 0.4;
+    float2 off = float2(sw * (0.6 + 4.5 * depth), sin(r.x * 0.02 + t * 0.6) * 0.6 * depth) * sea;
+    float3 col = paintAt(p + off / float2(1672.0, 941.0) * sz);
+    float lum = luma(col);
+
+    // Glitter on the moon's path: bright crests sparkling and moving.
+    float path = exp(-sqf((r.x - 1420.0) / (55.0 + depth * 90.0))) * sea;
+    float2 gp = float2(r.x * 0.05, r.y * (0.12 + 0.3 * (1.0 - depth)));
+    float glit = smoothstep(0.78, 0.95, vnoise(gp + float2(t * 0.6, -t * 0.4))) * (0.5 + 0.5 * sin(t * 3.0 + r.x));
+    col += float3(0.9, 0.93, 1.0) * glit * path * 0.45;
+    col *= 1.0 + path * smoothstep(0.3, 0.6, lum) * 0.12 * sin(t * 1.2 + r.y * 0.1);
+
+    // The lighthouse: the lamp pulses, the beam breathes, mist drifts through it.
+    float2 lamp = float2(140.0, 508.0);
+    float pulse = 0.85 + 0.15 * sin(t * 1.6) + 0.05 * sin(t * 4.3);
+    float2 bdir = normalize(float2(460.0, 372.0));
+    float2 bp = r - lamp;
+    float along = dot(bp, bdir);
+    float across = abs(bp.x * bdir.y - bp.y * bdir.x);
+    float beam = step(0.0, along) * exp(-across / (6.0 + max(along, 0.0) * 0.07)) * exp(-max(along, 0.0) * 0.0018);
+    float mist = fbm3(float2(along * 0.012 - t * 0.25, across * 0.05 + t * 0.05));
+    col *= 1.0 + beam * ((pulse - 0.9) * 1.2 + (mist - 0.5) * 0.5);
+    col += float3(1.0, 0.92, 0.75) * beam * smoothstep(0.5, 0.8, mist) * 0.06;
+    col += float3(1.0, 0.85, 0.55) * exp(-length(r - lamp) * 0.06) * (pulse - 0.8) * 0.6;
+
+    // The moon's halo glows softly; thin wisps drift past it.
+    float md = length(r - float2(1420.0, 185.0));
+    col += float3(0.85, 0.9, 1.0) * exp(-max(md - 105.0, 0.0) * 0.02) * step(105.0, md) * 0.04 * (0.6 + 0.4 * sin(t * 0.3));
+    float wisp = fbm(float2(r.x * 0.0025 + t * 0.008, r.y * 0.012));
+    float wispBand = exp(-sqf((r.y - 230.0) / 110.0)) * smoothstep(900.0, 1250.0, r.x) * step(r.y, hz);
+    col += float3(0.75, 0.8, 0.95) * smoothstep(0.55, 0.78, wisp) * wispBand * exp(-max(md - 105.0, 0.0) * 0.004) * 0.14;
+
+    // Stars twinkle.
+    float sky = step(r.y, hz - 20.0) * step(130.0, md) * (1.0 - beam);
+    float speck = speckAt(p, lum) * sky;
+    float2 cell = floor(r / 3.0);
+    float tw = 0.5 + 0.5 * sin(t * (1.3 + 2.0 * hash12(cell)) + hash12(cell + 5.0) * 40.0);
+    col *= 1.0 + speck * (tw - 0.5) * 0.9;
+
+    return half4(finishPaint(col, fc), 1.0);
+}

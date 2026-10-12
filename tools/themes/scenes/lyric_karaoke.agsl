@@ -1,0 +1,38 @@
+// Karaoke (music, lyrics): the stage of a karaoke video for the song's words. The cover, soft and
+// slowly panning, in the cover's colours; long beams of light sweep across it, little stars twinkle
+// with the highs and the whole picture lifts on the kick. The words themselves (the line being sung
+// filling with colour, a bouncing ball, the next line) are drawn by the app on top (LyricThemes.kt).
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float play = uPlaying;
+    float k = uIntensity;
+    float bass = uBass * play * k;
+    float kick = exp(-uBeatAge * 3.5) * play * k;
+
+    // The cover, panning slowly from side to side (a video's slow camera move).
+    float2 pan = float2(0.06 * sin(t * 0.05), 0.03 * sin(t * 0.037 + 1.0));
+    float3 col = coverField(uv + pan, asp, t * 0.5, bass, 0.5, BG, A, S);
+    col = mix(col, paletteField(uv, asp, t * 0.4, bass, BG, A, S) * 0.6, 0.35);
+    col = vivid(col, 1.3);
+    // Beams of light sweeping across, slanted, in the cover's two colours.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float x = uv.x - uv.y * 0.35 - (fract(t * (0.018 + 0.006 * fi) + fi * 0.37) * (asp + 1.0) - 0.5);
+        float beam = exp(-x * x / (0.004 + 0.003 * fi));
+        col += mix(A, S, fi * 0.5) * beam * (0.16 + 0.1 * bass);
+    }
+    // Twinkling stars, a few more with the highs.
+    col += float3(1.0) * dots(uv, 30.0, float2(t * 0.004, 0.0), 0.05 + 0.08 * uHigh * play, 0.06, 4.0) * 0.5;
+    // Video letterbox: the top and bottom fall darker, the middle (where the words go) stays open.
+    float mid = abs(uv.y - 0.5);
+    col *= mix(1.0, 0.45, smoothstep(0.28, 0.5, mid));
+    col += mix(A, S, 0.5) * exp(-length((uv - float2(asp * 0.5, 0.5)) * float2(0.6, 1.6)) * 2.0) * kick * 0.1;
+    return half4(finish(col, fc), 1.0);
+}

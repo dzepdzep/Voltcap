@@ -1,0 +1,94 @@
+// CRT tunnel: a slow flight down a tunnel built from stacked old television sets. Each set has a
+// curved, glowing screen showing its own channel - colour bars, static, a rolling test card, a
+// blue "no signal" - with scanlines and RGB fringes; screens flicker, switch channel now and then,
+// and the far end of the tunnel glows like a warm-up dot.
+
+float3 channel(float2 q, float id, float t, float3 A, float3 S) {
+    float ch = floor(hash11(id * 3.7 + floor(t * 0.25 + hash11(id) * 4.0)) * 5.0);
+    float3 c;
+    if (ch < 1.0) {
+        // Colour bars.
+        float b = floor(q.x * 7.0);
+        c = float3(step(0.5, mod(b, 2.0)), step(0.5, mod(floor(b / 2.0), 2.0)), step(0.5, mod(floor(b / 4.0), 2.0)));
+        c = mix(float3(1.0) - c, float3(0.9), 0.15);
+        c = mix(c, float3(0.1), step(0.75, q.y));
+    } else if (ch < 2.0) {
+        // Static.
+        float n = hash12(floor(q * float2(60.0, 45.0)) + floor(t * 24.0));
+        c = float3(n * 0.9);
+    } else if (ch < 3.0) {
+        // A rolling test card: rings and a cross in the theme colours.
+        float2 p = q - 0.5;
+        p.y = fract(p.y + 0.5 + t * 0.05) - 0.5;
+        float r = length(p * float2(1.3, 1.0));
+        c = mix(A, S, step(0.5, fract(r * 6.0))) * 0.8;
+        c = mix(c, float3(1.0), step(abs(p.x), 0.01) + step(abs(p.y), 0.012));
+    } else if (ch < 4.0) {
+        // No signal: flat blue with a bright bar.
+        c = float3(0.1, 0.2, 0.75);
+        c = mix(c, float3(0.9), step(abs(q.y - 0.5), 0.06) * step(abs(q.x - 0.5), 0.3) * 0.7);
+    } else {
+        // A glowing waveform on black.
+        c = float3(0.02);
+        float w = 0.5 + 0.25 * sin(q.x * 18.0 + t * 4.0 + id) * sin(q.x * 5.0 - t);
+        c += mix(A, float3(1.0), 0.3) * exp(-abs(q.y - w) * 80.0);
+    }
+    return c;
+}
+
+half4 main(float2 fc) {
+    float2 uv = (fc - 0.5 * uRes) / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Square tunnel: depth from the larger of |x| and |y| (a box seen from inside).
+    float2 p = uv;
+    p = rot(0.04 * sin(t * 0.13)) * p;
+    float m = max(abs(p.x) * 0.85, abs(p.y));
+    float z = 0.18 / max(m, 0.001);
+    float zz = z + t * 0.6;
+    // Which wall, and the coordinate along it.
+    float horiz = step(abs(p.y), abs(p.x) * 0.85);
+    float u = horiz > 0.5 ? p.y / max(abs(p.x) * 0.85, 0.001) : p.x * 0.85 / max(abs(p.y), 0.001);
+    float side = horiz > 0.5 ? sign(p.x) : 2.0 + sign(p.y);
+    // A grid of TV sets on each wall: 4 across, one set per unit of depth.
+    float2 g = float2(u * 2.0 + 2.0, zz);
+    float2 cell = floor(g);
+    float2 f = fract(g);
+    float id = cell.x + cell.y * 7.0 + side * 31.0;
+    // The set: a plastic case with a rounded screen inset.
+    float3 caseC = mix(float3(0.2, 0.19, 0.18), BG * 2.0, 0.3) * (0.7 + 0.3 * hash11(id));
+    float2 sq = (f - float2(0.45, 0.5)) / float2(0.36, 0.38);
+    float scr = length(max(abs(sq) - 0.75, 0.0)) - 0.25;
+    float3 col = caseC * (0.85 + 0.15 * f.y);
+    if (scr < 0.0) {
+        // Curved screen: bulge the picture a little.
+        float2 q = sq * (1.0 + 0.08 * dot(sq, sq)) * 0.5 + 0.5;
+        // RGB fringe: sample the channel shifted per colour.
+        float3 c;
+        c.r = channel(q + float2(0.006, 0.0), id, t, A, S).r;
+        c.g = channel(q, id, t, A, S).g;
+        c.b = channel(q - float2(0.006, 0.0), id, t, A, S).b;
+        c *= 0.8 + 0.2 * sin(q.y * 220.0);                                     // scanlines
+        c *= 0.85 + 0.15 * hash11(floor(t * 15.0) + id);                       // flicker
+        c *= 1.0 - 0.4 * dot(sq, sq) * 0.5;                                     // darker corners
+        col = c;
+    }
+    // A knob or two on the right of each set.
+    col = mix(col, caseC * 0.4, 1.0 - smoothstep(0.02, 0.03, length(f - float2(0.88, 0.35))));
+    col = mix(col, caseC * 0.4, 1.0 - smoothstep(0.02, 0.03, length(f - float2(0.88, 0.6))));
+    // Seams between sets.
+    col *= smoothstep(0.0, 0.03, min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y)));
+    // Depth: fade to the warm glow at the far end.
+    float fog = 1.0 - exp(-z * 0.12);
+    float3 far = mix(A, float3(1.0, 0.9, 0.75), 0.4) * 0.35;
+    col = mix(col, far * 0.4 + BG * 0.3, fog);
+    col += far * exp(-length(uv) * 9.0) * 1.2;
+    col += float3(1.0) * exp(-length(uv) * 60.0) * 0.6;
+    // Glow cast between the screens.
+    col += mix(A, S, 0.5) * 0.04;
+    col *= 0.7;
+    return half4(finish(col, fc), 1.0);
+}

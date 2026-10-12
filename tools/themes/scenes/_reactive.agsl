@@ -1,0 +1,116 @@
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}

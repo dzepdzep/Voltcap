@@ -1,0 +1,111 @@
+// Shared by every scene. AGSL (Android 13+), written in the GLSL ES 1.0 subset so the same text
+// also runs in the WebGL preview (tools/themes/preview.html): constant loop bounds, no arrays,
+// no integer %, no derivatives.
+uniform float2 uRes;     // size in pixels
+uniform float uTime;     // seconds, wrapped every hour
+uniform float4 uBg;      // theme background
+uniform float4 uSurf;    // theme surface
+uniform float4 uAcc;     // theme accent
+uniform float4 uSec;     // theme secondary
+uniform float uLod;      // 0 = full detail; 1-2 = fewer noise octaves (Low / Lowest background quality)
+uniform float uDensity;  // scene editor's particles + 1 (0 = not set: normal amount)
+
+const float PI = 3.14159265;
+const float TAU = 6.2831853;
+
+float sat(float x) { return clamp(x, 0.0, 1.0); }
+// x squared. Use this, not pow(x, 2.0): pow() of a negative number is undefined on GPUs (NaN, black).
+float sqf(float x) { return x * x; }
+
+// Sine-free hashes: stable on mobile GPUs.
+float hash11(float p) { p = fract(p * 0.1031); p *= p + 33.33; p *= p + p; return fract(p); }
+float hash12(float2 p) {
+    float3 p3 = fract(float3(p.x, p.y, p.x) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+float2 hash22(float2 p) {
+    float3 p3 = fract(float3(p.x, p.y, p.x) * float3(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+float vnoise(float2 p) {
+    float2 i = floor(p);
+    float2 f = fract(p);
+    float2 u = f * f * (3.0 - 2.0 * f);
+    float a = hash12(i);
+    float b = hash12(i + float2(1.0, 0.0));
+    float c = hash12(i + float2(0.0, 1.0));
+    float d = hash12(i + float2(1.0, 1.0));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+// At reduced resolution (Low / Lowest quality) the finest octaves are smaller than a pixel anyway:
+// uLod skips them, and the sum is rescaled so the scene keeps the same brightness and coverage.
+float fbm(float2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    float n = max(2.0, 4.0 - uLod);
+    for (int i = 0; i < 4; i++) {
+        if (float(i) >= n) break;
+        v += a * vnoise(p);
+        p = p * 2.03 + float2(17.1, 9.2);
+        a *= 0.5;
+    }
+    return v * 0.9375 / (1.0 - 2.0 * a);
+}
+
+float fbm3(float2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    float n = max(2.0, 3.0 - uLod);
+    for (int i = 0; i < 3; i++) {
+        if (float(i) >= n) break;
+        v += a * vnoise(p);
+        p = p * 2.07 + float2(5.3, 11.7);
+        a *= 0.5;
+    }
+    return v * 0.875 / (1.0 - 2.0 * a);
+}
+
+float2x2 rot(float a) { float c = cos(a); float s = sin(a); return float2x2(c, s, -s, c); }
+
+float sdSegment(float2 p, float2 a, float2 b) {
+    float2 pa = p - a;
+    float2 ba = b - a;
+    float h = sat(dot(pa, ba) / max(dot(ba, ba), 1e-6));
+    return length(pa - ba * h);
+}
+
+float sdRoundBox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + r;
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+// Soft light falloff: 1 at d = 0, about r/d further out.
+float glow(float d, float r) { return r / (d + r); }
+
+// One layer of drifting, twinkling points. uv is in screen heights; the layer moves by drift.
+float dots(float2 uv, float scale, float2 drift, float density, float size, float seed) {
+    float2 p = uv * scale + drift;
+    float2 id = floor(p);
+    float2 f = fract(p) - 0.5;
+    float2 r = hash22(id + seed);
+    if (r.x > density * (uDensity > 0.5 ? uDensity - 1.0 : 1.0)) return 0.0;
+    float2 o = (hash22(id + seed + 7.31) - 0.5) * 0.6;
+    float d = length(f - o);
+    float tw = 0.55 + 0.45 * sin(uTime * (0.6 + 1.6 * r.y) + r.x * 40.0);
+    return (1.0 - smoothstep(0.0, size, d)) * tw;
+}
+
+// Vignette, plus a little noise so dark gradients don't band on 8-bit panels.
+float3 finish(float3 col, float2 fc) {
+    float2 q = fc / uRes;
+    float v = 16.0 * q.x * q.y * (1.0 - q.x) * (1.0 - q.y);
+    col *= 0.62 + 0.38 * pow(max(v, 0.0), 0.3);
+    // Pure black stays pure black (OLED themes).
+    float lit = sat(max(col.r, max(col.g, col.b)) * 80.0);
+    col += (hash12(fc + fract(uTime) * 61.0) - 0.5) / 255.0 * lit;
+    return max(col, 0.0);
+}

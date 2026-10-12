@@ -1,0 +1,87 @@
+// 128-bit towers (music): a boot-screen-style void of the early-2000s consoles - deep blue fog,
+// a field of glowing translucent towers of stacked cubes stretching away on a grid - except every
+// tower is a band of the equalizer, growing and shrinking with the song. Little lights rise up
+// the towers on the beat, the floor's grid ripples out from the middle on each kick, and the album
+// cover floats above it all like the console's logo, slowly turning.
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float hz = c.y + room(0.26) * 0.25;          // horizon
+    // Void: deep blue fog, brighter towards the horizon.
+    float3 fogC = mix(float3(0.05, 0.08, 0.3), mix(A, S, 0.5) * 0.4, 0.25);
+    float3 col = mix(BG * 0.5 + float3(0.0, 0.01, 0.05), fogC * 1.6, exp(-abs(uv.y - hz) * 5.0));
+
+    // Floor grid in perspective, rippling on the kick.
+    if (uv.y > hz) {
+        float z = 0.12 / (uv.y - hz + 0.001);
+        float x = (uv.x - c.x) * z;
+        float2 g = float2(x, z + t * 0.4);
+        float2 gf = abs(fract(g * 2.0) - 0.5);
+        float line = 1.0 - smoothstep(0.0, 0.03 * z, min(gf.x, gf.y));
+        float ring = exp(-abs(length(float2(x, z * 0.3)) - uBeatAge * 4.0) * 3.0) * kick;
+        col += mix(A, S, 0.5) * line * 0.4 * exp(-z * 0.25) * (0.5 + 1.5 * ring);
+    }
+
+    // Towers: rows going back; columns across. Each column is a band.
+    for (int r = 0; r < 4; r++) {
+        float fr = float(r);
+        float z = 4.5 - fr * 1.0;                 // far to near
+        float sc = 0.12 / z;
+        float baseY = hz + sc * 0.45;
+        float colW = sc * 0.55;
+        float xi = (uv.x - c.x) / colW;
+        float id = floor(xi + 0.5);
+        if (abs(id) > 9.0) continue;
+        float lx = xi - id;
+        float m = sat(abs(id) / 9.0);
+        float e = eqAt(m) * play;
+        float idle = 0.15 + 0.1 * sin(t * 0.5 + id * 0.9 + fr);
+        float hgt = mix(idle, 0.1 + e * (0.6 + 0.6 * k), play) * (1.0 + hash11(id + fr * 7.0) * 0.4) * sc * 8.0;
+        float topY = baseY - hgt;
+        float inT = step(abs(lx), 0.32) * step(topY, uv.y) * step(uv.y, baseY);
+        if (inT > 0.5) {
+            // Stacked cubes: bands with darker seams, translucent, brighter towards the top.
+            float cube = colW * 0.64;
+            float yy = (baseY - uv.y) / cube;
+            float seam = step(0.9, fract(yy));
+            float3 tc = mix(mix(A, S, m), float3(0.6, 0.8, 1.0), 0.35) * (0.35 + 0.5 * sat(yy * cube / max(hgt, 0.001)));
+            tc *= 1.0 - 0.45 * seam;
+            tc *= 0.75 + 0.35 * step(lx, 0.0);
+            // A light climbing the tower on the beat.
+            float climb = fract(uBeatAge * 0.8);
+            tc += float3(1.0) * exp(-abs(yy * cube / max(hgt, 0.001) - climb) * 30.0) * kick * 0.6;
+            float fogK = 1.0 - exp(-z * 0.35);
+            col = mix(col, mix(tc, fogC, fogK * 0.7), 0.85);
+        }
+    }
+
+    // The cover floating above like the logo, slowly turning about its vertical axis.
+    float R = room(0.26) * 0.3;
+    float2 lc = float2(c.x, c.y - room(0.26) * 0.72);
+    float turn = cos(t * 0.5);
+    float2 d = uv - lc;
+    d.x /= max(abs(turn), 0.06);
+    float box = sdRoundBox(d, float2(R), R * 0.06);
+    col += mix(A, S, 0.5) * exp(-max(box, 0.0) * 20.0) * (0.25 + 0.5 * kick);
+    if (box < px) {
+        float2 q = d / (2.0 * R) + 0.5;
+        float3 cov = turn > 0.0 ? sharpCover(q, A, S) : mix(A, S, q.y) * 0.6;
+        cov *= 0.7 + 0.3 * abs(turn);
+        col = mix(col, cov, 1.0 - smoothstep(-px, px, box));
+    }
+    // Floating particles in the fog.
+    col += float3(0.6, 0.8, 1.0) * dots(uv, 30.0, float2(t * 0.01, -t * 0.02), 0.05, 0.06, 4.0) * 0.4;
+    return half4(finish(col, fc), 1.0);
+}

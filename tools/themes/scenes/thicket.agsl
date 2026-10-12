@@ -1,0 +1,98 @@
+// Thicket (bug type): the undergrowth at dusk, seen from an insect's height. Huge leaves lean in from
+// the sides, backlit so their veins glow; grass stalks rise against a green-gold haze; a spider web
+// strung between two stems sways and its dew drops glint; swarms of fireflies wander and blink, and a
+// beetle trundles along a stalk.
+
+// A leaf: an almond shape along a curved midrib from a to b; returns (distance, along, across).
+float3 leaf(float2 p, float2 a, float2 b, float w, float curve) {
+    float2 ab = b - a;
+    float L = length(ab);
+    float2 dir = ab / L;
+    float2 q = float2(dot(p - a, dir), dot(p - a, float2(-dir.y, dir.x)));
+    float u = q.x / L;
+    q.y -= curve * L * u * (1.0 - u) * 4.0;
+    float half_ = w * L * sin(PI * sat(u)) * (0.7 + 0.3 * sat(1.0 - u));
+    float d = max(abs(q.y) - half_, max(-q.x, q.x - L));
+    return float3(d, u, q.y / max(half_, 1e-4));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Haze: deep green above, warm gold glow low down where the last light comes through.
+    float3 col = mix(mix(BG * 1.4, A * 0.25, 0.4), mix(float3(0.85, 0.7, 0.35), S, 0.3) * 0.75, smoothstep(0.1, 0.85, uv.y));
+    col += mix(float3(1.0, 0.8, 0.4), S, 0.3) * exp(-length((uv - float2(asp * 0.55, 0.7)) * float2(0.6, 1.0)) * 3.0) * 0.25;
+    // Far stalks: soft, out of focus.
+    float fs = abs(fract(uv.x * 9.0 + 0.3 * sin(uv.y * 3.0 + floor(uv.x * 9.0))) - 0.5);
+    col = mix(col, col * 0.6, (1.0 - smoothstep(0.03, 0.08, fs)) * step(hash11(floor(uv.x * 9.0)), 0.6) * smoothstep(0.2, 0.6, uv.y) * 0.6);
+
+    // Near stalks with the web between two of them.
+    float2 s1a = float2(asp * 0.62, 1.05), s1b = float2(asp * 0.6 + 0.02 * sin(t * 0.4), 0.18);
+    float2 s2a = float2(asp * 0.86, 1.05), s2b = float2(asp * 0.9 + 0.02 * sin(t * 0.37 + 1.0), 0.28);
+    float st = min(sdSegment(uv, s1a, s1b) - 0.006, sdSegment(uv, s2a, s2b) - 0.005);
+    float3 stalkC = mix(float3(0.16, 0.26, 0.1), BG, 0.3);
+    col = mix(col, stalkC + float3(0.9, 0.7, 0.3) * 0.08 * step(0.0, uv.x - asp * 0.6), 1.0 - smoothstep(-px, px, st));
+    // The web: radial threads and a spiral between the stalks, swaying, with dew.
+    float2 wc = float2(asp * 0.75 + 0.01 * sin(t * 0.5), 0.45 + 0.006 * sin(t * 0.7));
+    float2 wq = uv - wc;
+    float wr = length(wq);
+    float wa = atan(wq.y, wq.x);
+    float inWeb = step(wr, 0.15);
+    float radial = exp(-abs(fract(wa / TAU * 14.0) - 0.5) * (TAU / 14.0) * wr * 700.0);
+    float spiral = exp(-abs(fract((wr - wa / TAU * 0.012) / 0.012) - 0.5) * 0.012 * 700.0);
+    float thread = max(radial, spiral * step(0.012, wr)) * inWeb;
+    float shimmer = 0.5 + 0.5 * sin(wa * 3.0 + t * 0.6 + wr * 20.0);
+    col += float3(0.95, 0.95, 0.85) * thread * (0.08 + 0.18 * shimmer);
+    float2 dg = floor(float2(wa / TAU * 14.0, (wr - wa / TAU * 0.012) / 0.012));
+    float dew = step(0.75, hash12(dg)) * inWeb * spiral * radial;
+    col += float3(1.0) * dew * (0.6 + 0.4 * sin(t * 2.0 + hash12(dg) * 6.0));
+
+    // The beetle on the left stalk, slowly climbing and coming back down.
+    float by = mix(0.75, 0.35, 0.5 + 0.5 * sin(t * 0.12));
+    float2 bpos = mix(s1a, s1b, (1.05 - by) / (1.05 - 0.18)) + float2(-0.012, 0.0);
+    float2 bq = uv - bpos;
+    float shell = length(bq * float2(1.6, 1.0)) - 0.016;
+    float head = length(bq - float2(0.0, -0.019)) - 0.006;
+    float3 beetle = mix(A * 0.6, float3(0.1, 0.35, 0.3), 0.5);
+    beetle += float3(1.0) * 0.35 * exp(-length(bq - float2(-0.004, -0.006)) * 300.0);
+    col = mix(col, beetle, 1.0 - smoothstep(-px, px, min(shell, head)));
+    col = mix(col, float3(0.05), (1.0 - smoothstep(0.0, px, abs(bq.x))) * step(abs(bq.y + 0.002), 0.014) * step(shell, 0.0));
+
+    // Big leaves leaning in from the sides, backlit: translucent green with glowing veins.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float side = fi < 2.0 ? -1.0 : 1.0;
+        float2 a = float2(side < 0.0 ? -0.05 : asp + 0.05, 0.95 - fi * 0.0 - mod(fi, 2.0) * 0.35);
+        float2 b = a + float2(-side * (0.55 - mod(fi, 2.0) * 0.15), -0.3 + mod(fi, 2.0) * 0.08) * (1.0 + 0.02 * sin(t * 0.5 + fi));
+        float3 lf = leaf(uv, a, b, 0.32, 0.12 * side);
+        float m = 1.0 - smoothstep(-px, px, lf.x);
+        float veins = exp(-abs(lf.z) * 60.0) + exp(-abs(fract(lf.y * 9.0 - abs(lf.z) * 1.2) - 0.5) * 16.0) * 0.5 * (1.0 - abs(lf.z));
+        float3 lc = mix(float3(0.12, 0.28, 0.08), float3(0.45, 0.62, 0.15), 0.4 + 0.4 * (1.0 - abs(lf.z)));
+        lc = mix(lc, A * 0.4 + lc * 0.7, 0.15);
+        lc += mix(float3(0.9, 0.85, 0.35), S, 0.2) * veins * 0.18;
+        lc *= 0.85 + 0.15 * vnoise(uv * 80.0);
+        col = mix(col, lc * (0.7 + 0.15 * mod(fi, 2.0)), m);
+    }
+
+    // Fireflies: swarms wandering on slow curling paths, each blinking on its own rhythm.
+    float n = uLod > 1.5 ? 14.0 : 26.0;
+    for (int i = 0; i < 26; i++) {
+        float fi = float(i);
+        if (fi >= n) break;
+        float2 h = hash22(float2(fi, fi * 1.7));
+        float2 p = float2(h.x * asp, 0.2 + 0.65 * h.y);
+        p += 0.08 * float2(sin(t * (0.21 + 0.1 * h.y) + fi), cos(t * (0.17 + 0.1 * h.x) + fi * 1.3));
+        p += 0.03 * float2(sin(t * 0.9 + fi * 2.1), sin(t * 1.1 + fi * 0.7));
+        float blink = smoothstep(0.55, 0.9, sin(t * (1.2 + h.x) + fi * 3.0));
+        float d = length(uv - p);
+        float3 fcol = mix(float3(0.85, 1.0, 0.4), S, 0.25);
+        col += fcol * (exp(-d * 700.0) * 1.2 + exp(-d * 60.0) * 0.15) * blink;
+    }
+    return half4(finish(col, fc), 1.0);
+}

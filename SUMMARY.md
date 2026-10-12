@@ -1,0 +1,6984 @@
+# Voltcap — what's been done (running summary)
+
+Newest update at the top. Each update lists the files touched in `src_copy` (robocopy them into the real source).
+
+---
+
+## Update — 12 Oct 2026 (144): Full bug check (72 fixes), the row glides, cases all one height, slimmer Settings, one signing key, code on GitHub
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`). Changed (77):
+- Top level: `LauncherViewModel.kt`, `MainActivity.kt`.
+- `data\`: `ArtFiles.kt`, `ArtStorage.kt`, `CloudSync.kt`, `EmulatorCatalog.kt`, `EmulatorRegistry.kt`, `LayoutPresetStore.kt`,
+  `OtherDevices.kt`, `PlaytimeStore.kt`, `RaOverlayData.kt`, `SaveCapsules.kt`, `SettingsScopes.kt`, `SleepRadios.kt`,
+  `SteamGridDbRepository.kt`, `guide\GuideParser.kt`, `guide\GuideProviders.kt`, `perf\PerfSampler.kt`.
+- `device\`: `ChargeLimitService.kt`, `DeviceInfo.kt`, `audio\AppMixer.kt`, `audio\MixerTileService.kt`, `tune\GameNotification.kt`.
+- `spotify\SpotifyRepository.kt`.
+- `ui\`: `AchievementDetailDialog.kt`, `AchievementFx.kt`, `AchievementViews.kt`, `ArtworkPickerDialog.kt`, `Carousel.kt`,
+  `CategoryScreen.kt`, `CloudSyncContent.kt`, `CompanionHub.kt`, `CrossTrophies.kt`, `CustomPacks.kt`, `CustomPacksUi.kt`,
+  `DiagnosticsContent.kt`, `DockBacking.kt`, `EmulatorPickerDialog.kt`, `EmulatorSettingsDialog.kt`, `FirstRunDialog.kt`,
+  `FullMusicScreen.kt`, `GameCard.kt`, `GameDetailsOverlay.kt`, `GameDock.kt`, `GameLookPicker.kt`, `GameOptionsDialog.kt`,
+  `GamePlayStats.kt`, `GameWindow.kt`, `GuideScreen.kt`, `GuideWebActivity.kt`, `HeroCarousel.kt`, `HomeEdit.kt`,
+  `HomeParts.kt`, `LauncherScreen.kt`, `LyricScatter.kt`, `MixerActivity.kt`, `NotificationsPanel.kt`, `PacksUi.kt`,
+  `PerfOverlayService.kt`, `PhysicalMedia.kt`, `PlayerPages.kt`, `QuickMenuActivity.kt`, `RaOverlayView.kt`,
+  `RealMedia.kt`, `RommBrowser.kt`, `RowInfoPanel.kt`, `SaveExplorer.kt`, `ScreenMirror.kt`, `SecondScreenHome.kt`,
+  `SecondScreenTools.kt`, `SettingsDialog.kt`, `StyleDashboard.kt`, `StyleIconBar.kt`, `StyleSpotlight.kt`, `TileHome.kt`,
+  `TunerContent.kt`, `WidgetBoard.kt`.
+- Emptied: `ui\MetadataPanel.kt` (just its package line; it was never used).
+
+**Copy `project_copy`:** `project_copy\.gitignore` (changed), `project_copy\app\build.gradle.kts` (changed),
+`project_copy\tools\release\release.ps1` (changed), `project_copy\tools\release\setup_github.ps1` (new).
+
+**Files to delete** (the block below does it), in both `src_copy\ui\` and `app\src\main\java\com\shelf\launcher\ui\`:
+`GameBrowser.kt`, `GameClientsSettings.kt` (empty since update 42), `MetadataPanel.kt`.
+
+### What changed
+- **The Voltcap row slides again (normal view, not carousel).** Recorded on the Odin with the screen recorder (a frame
+  every 8 ms): the whole row jumped to its new place in one frame — every card's own spring never ran. The row now glides
+  with one shared position, the way the carousel does (Settings › Home › Animations › Moving between games sets the
+  speed), and the room the game you're on takes glides along too. In the carousel the name line now starts at the left
+  (it was centred and ran under the game's big logo, cutting off the play time).
+- **Cases all one height.** A case with its disc (Case + disc) or with its cartridge / disc beside it used to shrink so
+  both fitted in its place — smaller than cases with nothing beside them (your Android case). Now every case is as big as
+  a case on its own; the disc sticks out to the right, behind the next game. The row leaves room after the game you're on
+  so its disc shows whole. "Cases · real sizes" uses the real size for the case itself (the disc no longer shrinks it),
+  and 3D-model cases follow real sizes too.
+- **Settings is slimmer.** The header is one bar (title, a one-line description, search, ✕), the window is taller, and the
+  Close button floating under the settings is gone (✕ and B close). About twice as many rows show on the Odin.
+- **One signing key for every build** (app\build.gradle.kts): with `keystore.properties` (your release key), the debug
+  builds Android Studio installs are signed with it too, so they, the GitHub releases and the in-app updater install over
+  each other. Your RP Classic couldn't install the signed APK because it had the debug-signed Voltcap (a different key).
+  `release.ps1` now also updates `project_copy\app\build.gradle.kts`, so a robocopy no longer puts the old version back.
+- **Code on GitHub:** `.gitignore` keeps off GitHub: Discord's SDK (`app\libs\discord`, files up to 290 MB and not ours to
+  share), `src_copy`, `project_copy`, `Claude outputs`, `screens`, logs. `setup_github.ps1` sets git up once (see below).
+
+**Bug check — every file read (460 files, 132,000 lines), 75 findings, 72 confirmed by a second check and fixed:**
+- *Saved art:* the image cache sat in the same folder as your saved art, so a damaged cache journal (a crash, or Voltcap
+  killed when a game starts) wiped all saved art. The cache now has its own `cache` folder (moved there once). Finding a
+  saved picture no longer touches the disk on the main thread (a list in memory).
+- *SteamGridDB:* starting without Wi-Fi said the saved key "stopped working" and switched automatic art off until a
+  restart. Now it's kept and checked again a little later; only a real refusal says the key is wrong.
+- *Crashes / freezes:* an early exit out of a Column (game header's achievements, RomM browser) that can crash; the
+  charge-limit service could crash Voltcap when its notification failed; the RetroAchievements game lists were read and
+  indexed on the main thread (the home froze while matching ran).
+- *Settings transfer / sync:* this handheld's sync id travelled with "Share settings", so two handhelds wiped each other's
+  play from the recaps — each device now keeps its own (made new once; the old one is cleaned off Google Drive). Sleep
+  mode's state no longer travels, and Wi-Fi / Bluetooth are checked after waking and switched on another way if needed.
+- *Undo after one of your own presets* now puts back the whole home screen, not only about 45 settings.
+- *Mixer:* turning Spotify down changed the volume of whatever Spotify Connect device was playing (speaker, PC) — now
+  only this handheld; the mixer tile ignores apps that were uninstalled.
+- *First setup:* B / a tap outside on any step ended the whole setup — now it goes back a step. The Extra art step shows
+  your choice.
+- *Home and looks:* console badge drawn over the favourite star / Open tag / game-state mark; Spine wall carousel lost
+  every game aside except with 3D cases; hero backdrop showing the previous game blurred; Icon bar name over the big
+  tile; Spotlight cards acting on the previous game; Dashboard quick access repeating the menu's shortcuts; corner
+  shortcuts' ✕ that did nothing; news card stealing the D-pad; game window text unreadable on a light accent.
+- *Other:* crash screen buttons squeezed off on small screens; achievement unlock times shown in UTC; new-unlock stage
+  squashing many badges; lyric cloud ignoring Timing; guide reader running Back twice; guide ids colliding; Edit Home
+  drag restarting on resize; folded overlay that couldn't be unfolded; RA comments saying "sign in" when offline; RomM
+  browser keeping the old console's games; player pages white on light skins; second-screen trackpad dot never moving,
+  wall toolbar's Reset / Done squeezed away, apps drawer letting taps through; widget sizes too big; Save Vault PS2 saves
+  synced from another device showing 0 B; emulator names ("Genshin" shown as "eden (Optimized)").
+- *Text:* every label, hint and note that started with a lower-case letter now starts with a capital ("<1 min" instead
+  of "under a minute", "Missable", "Off", "Crisp", "✓ Connected", "Target 60 fps"…).
+- *Tidied:* about 300 unused lines in the details window, unused options parameters, the unused MetadataPanel.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** all 78 files fetched fresh, the same as 143.
+- **Reviewed:** 8 reviewers read every file; each finding was re-checked by a second agent (3 rejected); fixes were
+  applied per group and each group's diff was reviewed again (6 problems found and fixed in that pass); I reread the
+  risky ones (saved art, sync id, sleep mode, presets, SteamGridDB, row glide).
+- **On the Odin (143 installed 11:08):** the PS1 band and the carousel's dark boxes are fixed there. The row jump was
+  measured on it (screen recording). For the measurements I turned the row's carousel off and on again — it's back on.
+- **Not tested yet:** 144 itself (needs your build). Check the row glide, the case sizes and Settings first.
+
+**Once, before installing 144 (signing):** on each handheld, Settings › Backup › turn on "Include game data", "Include
+this device's setup" and "Include accounts" › Export; then uninstall Voltcap (Android Settings › Apps › Voltcap ›
+Uninstall). After installing: Settings › Backup › Import from Voltcap settings sync.
+
+```powershell
+# 1. Delete, copy
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+foreach ($f in "GameBrowser.kt","GameClientsSettings.kt","MetadataPanel.kt") { Remove-Item -LiteralPath "$P\src_copy\ui\$f" -ErrorAction SilentlyContinue; Remove-Item -LiteralPath "$P\app\src\main\java\com\shelf\launcher\ui\$f" -ErrorAction SilentlyContinue }
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+```
+
+```powershell
+# 2. Once only (asks for your .jks key and signs you in to GitHub) - paste this one line on its own
+powershell -ExecutionPolicy Bypass -File "C:\Users\User\AndroidStudioProjects\ShelfLauncher\tools\release\setup_github.ps1"
+```
+
+```powershell
+# 3. Commit, push, install
+cd "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+git add -A
+git commit -q -m "Update 144: full bug check (72 fixes), row glide, cases one height, slimmer Settings, one signing key"
+git push origin main
+.\gradlew installDebug
+```
+
+---
+
+## Update — 12 Oct 2026 (143): the row slides again, PS1 cases without the band, no dark boxes in the carousel, the whole cover by default
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- Changed (7): `src_copy\ui\GameDock.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\CoverCases.kt`,
+  `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\Models3D.kt`, `src_copy\ui\QuickSettings.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **No animation moving through games in the normal row.** Measured on the Odin (screen captures every ~95 ms): the
+  covers right of the game you're on did slide, but the game you moved to vanished from the row and popped up at the
+  left. That was the fixed wide place (update 136, for wide capsules with the game you're on at the left), and it was
+  used even when the game you're on is a case / cartridge / disc that never opens wide.
+  - Now the fixed place is only there while the game you're on really opens into a wide capsule (e.g. an Android app
+    in a case look, or the Covers look). For cases, cartridges and discs the next game slides along into its place and
+    the one you were on slides off to the left, like the carousel.
+- **PS1 cases: the left band.** The PlayStation case no longer shows its black "PlayStation" band, and no white strip
+  where it was:
+  - the game's own case scan is cut so the band is off its left side (Case, Case + disc);
+  - without a scan, Case + disc shows the flat case with the cover (it was the 3D box turned to its side);
+  - "Box turned to show its spine" leaves PS1 cases flat.
+- **Carousel: black boxes behind the games aside.** The darkening of the games beside the middle one was a dark box
+  over each whole place, so it showed round every case / cartridge / disc smaller than it. Now only the game itself is
+  darkened.
+- **Art position cut the cover off.** The cover is now fitted whole into the case's window by default (flat cases and
+  3D models), so Art position (R1 › Art position) moves and sizes the whole cover. Art size above 100 % fills the
+  window (yours is 103 % for cases — set it to 100 % to see the whole cover).
+- R1 › Carousel: the note on the carousel views said 3D cases only in Grid / Side menu / TV room; it now says
+  "3D cases with a case look".
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** the 7 files fetched fresh, the same as 141 / 142.
+- **On the Odin:** 142 is installed (12 Oct 10:23). For the measurements I turned the Voltcap row's carousel and Endless
+  off for a moment; both are back on (Carousel: Grid + Voltcap row, Endless on). 143 itself isn't tested yet.
+
+```powershell
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+cd "C:\Users\User\AndroidStudioProjects\ShelfLauncher"; .\gradlew installDebug
+```
+
+---
+
+## Update — 12 Oct 2026 (142): 3D models' "Stand" works with Real cases; the release command fixed
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- Changed (4): `src_copy\ui\Models3D.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\PhysicalMedia.kt`,
+  `src_copy\ui\GameLookPicker.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **Changing how the games face you did nothing.** Read on the Odin: your look is **Real cases** with 3D models on
+  (Real, Straight on). The 3D models were only used by the Cartridges & discs look, so with cases nothing changed.
+  - Now, with 3D models on, the case looks (Real cases, Cases · real sizes) show each game in its console's 3D case
+    from your shape library: PS1–PS5, PSP, GameCube, Wii, Wii U, Xbox, Xbox 360, Xbox One / Series, Dreamcast, Saturn,
+    Sega CD, 3DO, the PC Engine / Neo Geo CDs, DS, 3DS and Switch.
+  - They stand as Settings › Game look › 3D models › Stand says (Straight on / Turned / Turned, yours facing you).
+  - Cartridge consoles without a 3D case keep their flat case.
+  - Off (3D models › Off) brings back the flat cases.
+- **The release command** errored in PowerShell (it needs to be run as a script). The working form:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "C:\Users\User\AndroidStudioProjects\ShelfLauncher\tools\release\release.ps1" 0.3.0 "What's new"
+```
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** the 4 files fetched fresh, the same as 141.
+- **On the Odin:** 141 is installed (12 Oct 10:14). 142 itself isn't tested yet.
+
+```powershell
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher" /E /NJH /NP
+cd "C:\Users\User\AndroidStudioProjects\ShelfLauncher"; .\gradlew installDebug
+```
+
+---
+
+## Update — 12 Oct 2026 (141): Carousel for every look, first-one-wide fixed, updates in Settings, art packs in setup
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (2):
+  - `src_copy\data\AppUpdates.kt`;
+  - `src_copy\ui\UpdatesUi.kt`.
+- Changed (22):
+  - `src_copy\LauncherViewModel.kt`;
+  - `src_copy\data\ArtFiles.kt`, `src_copy\data\Features.kt`;
+  - `src_copy\ui\Carousel.kt`, `CoverCases.kt`, `CustomCarts.kt`, `FirstRunDialog.kt`, `GameCard.kt`, `GameDock.kt`,
+    `GameLookPicker.kt`, `GridHome.kt`, `LauncherScreen.kt`, `MediaCovers.kt`, `Models3D.kt`, `PacksUi.kt`,
+    `PhysicalMedia.kt`, `RealMedia.kt`, `SaveExplorer.kt`, `SaveVaultStyles.kt`, `SettingsDialog.kt`,
+    `SettingsIndex.kt`, `StyleHomes.kt` (all in `src_copy\ui\`).
+
+**Copy `project_copy`** (over the project root):
+- Changed: `project_copy\app\src\main\AndroidManifest.xml` (permission to install a downloaded update).
+- Changed: `project_copy\app\src\main\res\drawable-nodpi\cov_front_ps1.webp` (no black band).
+- New: `project_copy\tools\release\release.ps1` (publishes a new version on GitHub).
+
+**Files to delete:** none.
+
+### What changed
+- **Art packs in the first-time setup.** A new step, "Extra art" (after Artwork), asks: Download all / Only my consoles /
+  Not now, with the download's progress. "Not now" leaves them in Settings. If the setup is skipped, the old question
+  still comes once afterwards.
+- **Settings › Updates & downloads** (new, last in the list):
+  - the version and build installed;
+  - **Check for updates**: reads the latest release on GitHub (`dzepdzep/Voltcap` › Releases); a newer one shows its
+    notes and **Download and install** (Android asks to allow installs from Voltcap the first time, then asks before
+    updating);
+  - **Check when Voltcap starts** (on, at most once a day; a short note on the home screen when there's a new one);
+  - the **Extra art packs** card (also still in Game look).
+  - To publish a version, run the release script (below). It must be signed with the same key as the installed app:
+    without `keystore.properties` that's this PC's debug key, the same as Android Studio's installs.
+- **Moving between games slides again.** The rows and carousels moved with a spring so fast (~0.1 s) that the next game
+  seemed to just appear. New: Settings › Home › Animations › Moving between games › **Slide: Quick / Smooth / Slow**
+  (Smooth by default; Quick is the old one).
+- **The Voltcap row's carousel is the real carousel** (the one the Grid, TV room and Side menu use):
+  - the Spines look: the spines aside at two-thirds of the game you're on (they were blown up to several times its
+    size, the middle game small);
+  - every view works (Arc, Spine wall and Turned row too), and the games glide between places.
+- **Carousel views for every look.** Arc, Spine wall and Turned row drew every game as a 3D case whatever the look; now
+  only the case looks (covers, real cases) become 3D cases. Cartridges, discs, wide capsules, pictures and spines keep
+  their look in those views, turned the same way. With 3D models on, the cartridges & discs look shows each game as its
+  3D model in every view.
+- **Covers · first one wide** (as you described):
+  - game 1 is a fixed wide capsule at the left end, always, and never rolls out;
+  - every other game is a cover, the one you're on too;
+  - no game shows left of it;
+  - ◀ on game 1 goes round to the last game (▶ on the last back to game 1);
+  - Endless is off in this view, and "Game you're on: middle" doesn't move it.
+  - The "First game's wide capsule" reveal choice is gone (nothing rolls out any more).
+- **Scrape only the missing real covers**: Settings › Metadata (next to Scrape spines now), and in Settings › Game look
+  for the real-media looks. It only looks up games with no box scan, disc / cartridge or full box yet, on ScreenScraper.
+- **PS1 case**: the black PlayStation band down the left is gone; the case is just the cover.
+- **Another console's case or disc for every game** (R1 › Case / Disc):
+  - only the shape is used, nothing printed on it. A case's frame is drawn in its own plain colour (the publisher and
+    rating marks over the art go), with the game's own console logo in its biggest band;
+  - a disc becomes the game's own console's disc (ES-DE system disc, or the plain CD with its logo); a UMD the plain one.
+- **Console badges on every look**: real cases, cartridges, discs and 3D models too (the Voltcap row, Grid, carousels,
+  the style homes). Too narrow a slot (a slim spine) still skips it. Settings › Game look › Console badges.
+- **3D models are a look of their own**: Settings › Game look › "3D models" chip, and the R1 Game look tile steps to
+  "3D models". Leaving it turns them off; coming back restores your Real / Custom / Clear choice.
+- **Save Vault, 3D card style**:
+  - the whole 3D card turns (left and right) with "3D turn", in the vault and once a save is open (it was only its
+    picture turning);
+  - the loading / insert animation after opening a save and the capsule cracking open are gone (the Motion chip for
+    them too).
+- **Clear looks** (3D models Clear, the Save Vault's clear cards, the clear cartridge pack):
+  - the game's picture shows in its own colours (it was tinted by the plastic) and a bit brighter;
+  - the plastic is more see-through over it.
+
+### Publishing a new version (once you want to)
+
+```powershell
+& "C:\Users\User\AndroidStudioProjects\ShelfLauncher\tools\release\release.ps1" 0.3.0 "What's new"
+```
+
+This bumps versionCode / versionName, builds the release APK and makes the GitHub release `v0.3.0` with it. The first
+time it installs GitHub's command-line tool and asks you to sign in once.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** all 22 changed files fetched fresh; identical to the 140 state (no edits of yours in between).
+- **Read on the Odin 2 Portal:**
+  - build from 12 Oct 09:29 (with 136–140);
+  - Voltcap row, Carousel look on for the row and Grid (Tucked behind), Spines look, Endless on;
+  - art packs all downloaded; console badges off.
+  - That's where the giant spines and small middle game came from: the row's own carousel scaled the spines by the
+    middle cover's width.
+- **Clear art:** checked on your SNES clear cartridge render (old vs new), the cover shows in full colour.
+- **Not tested on a device:** all of 141 (needs a build).
+
+```powershell
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher" /E /NJH /NP
+cd "C:\Users\User\AndroidStudioProjects\ShelfLauncher"; .\gradlew installDebug
+```
+
+---
+
+## Update — 12 Oct 2026 (140): The cartridge, spine and disc packs rebuilt for dzepdzep/Voltcap
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `project_copy`** (over the project root). No code changed.
+- New (152), all in `project_copy\packs\v1\`:
+  - `carts_<console>.zip` (64), e.g. `project_copy\packs\v1\carts_snes.zip`;
+  - `carts_CREDITS.txt` (the collection's README and its CC0 licence);
+  - `spine_<name>.webp` (60), e.g. `project_copy\packs\v1\spine_snes.webp`;
+  - `disc_<name>.webp` (27), e.g. `project_copy\packs\v1\disc_playstation.webp`.
+- With the 82 `model_*.zip` already there (since 137), `project_copy\packs\v1\` now holds all **234** files the app downloads (about 131 MB).
+
+**Files to delete:** none.
+
+### What changed
+- The cartridge, spine and disc-console packs from 131 were made for `thebigpocket/Voltcap`, which isn't your account, so they were never anywhere the app can reach. They are rebuilt from your originals in Downloads:
+  - `Downloads\cartridges\<shape>\<opaque|translucent>\png\<console>.png` → 1,792 pictures, lossless WebP, packed as one zip per console: `<shape>/<o|t>/<console>.webp` (14 shapes × opaque / clear = 28 per zip);
+  - `Downloads\VoltCap_Custom_Console_Spines_All` → the 60 spines, lossless WebP, same size as your PNGs (`spine_tg_cd` from `tg-cd.png`);
+  - `Downloads\VoltCap_Optical_Disc_Systems_SystemLogoWhite_v3_30_with_Android_Steam` → the 27 disc consoles, cut to the shell, 560 px wide, lossless WebP.
+- **Don't push the whole project to GitHub.** `app\libs\discord\lib\debug` has files of 165–277 MB; GitHub refuses anything over 100 MB, which is why the push failed. Only the packs need to be online. Upload them on github.com instead (the steps are in Claude's reply for 140, and below).
+- The 139 entry said Claude had changed `.git\config`; it hadn't (writes inside `.git` are refused). Corrected there. For the web upload the remote doesn't matter.
+
+### Upload the packs (github.com, signed in as dzepdzep)
+1. Create the repo: **New repository** › name `Voltcap` › **Public** › tick **Add a README file** (so `main` exists) › **Create repository**.
+2. **Add file › Create new file**, type `packs/v1/README.md` as the name (the slashes make the folders), write one line, **Commit changes**.
+3. Open `packs/v1`, then **Add file › Upload files**. The page takes up to 100 files at a time, so do it in three goes from `C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy\packs\v1\` (type the prefix in Explorer's search box, Ctrl+A, drag):
+   - `carts_` and `disc_` (92 files, ~100 MB);
+   - `model_` (82 files, ~27 MB);
+   - `spine_` (60 files, under 1 MB).
+   Each time: **Commit directly to the `main` branch** › **Commit changes**.
+4. Check one in a browser: `https://raw.githubusercontent.com/dzepdzep/Voltcap/main/packs/v1/carts_CREDITS.txt` should show text.
+
+### Check
+- **Cart pictures:** all 1,792 converted; 120 picked at random compared pixel by pixel with your PNGs: identical (alpha and colour).
+- **Names:** the 64 zip names match `CustomCarts`' 64 console ids exactly; the 60 spine and 27 disc names match `CustomSpines` and `DiscShells` exactly (no missing, no extra).
+- **Sizes:** largest zip 2.4 MB, all under GitHub's 25 MB per-file web limit.
+- **Your PC copies:** `SUMMARY.md` and `HANDOVER.md` fetched fresh before editing. No Kotlin touched, so no type-check needed.
+- **Not tested:** the download on a device (needs the public repo first, and a build with 136–139; the Odin still has the build from 11 Oct 20:18).
+
+```powershell
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher" /E /NJH /NP
+```
+
+---
+
+## Update — 12 Oct 2026 (139): The packs come from your dzepdzep GitHub account
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- Changed (2):
+  - `src_copy\data\Packs.kt`;
+  - `src_copy\ui\PacksUi.kt`.
+
+**You change:** the project's Git remote `origin` from `https://github.com/thebigpocket/Voltcap.git` to `https://github.com/dzepdzep/Voltcap.git` (Android Studio › Git › Manage Remotes). Claude can't write inside `.git`. *(Corrected in 140: an earlier version of this line said Claude had changed it; that write was refused.)*
+
+**Files to delete:** none.
+
+### What changed
+- The push failed with "Repository not found": the remote and the app both pointed at `thebigpocket/Voltcap`, but your GitHub account is **dzepdzep**.
+- The app now downloads the extra art packs from `https://raw.githubusercontent.com/dzepdzep/Voltcap/main/packs/v1/`.
+- Settings › Game look › Extra art packs names `dzepdzep/Voltcap`.
+- The repo must be named **Voltcap**, be **public**, and the packs must be on the **main** branch under `packs/v1`.
+
+### Check
+- **Type-check:** 0 errors.
+- No other place in the code names the old account.
+- Not tested on a device.
+
+```powershell
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher" /E /NJH /NP
+```
+
+---
+
+## Update — 11 Oct 2026 (138): The Voltcap row and Tiles carousels reach the screen's edges
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- Changed (3):
+  - `src_copy\ui\Carousel.kt`;
+  - `src_copy\ui\GameDock.kt`;
+  - `src_copy\ui\TileHome.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **"To the edge" didn't reach the edges in the Voltcap row and Tiles carousels.**
+  - The cause: those two only drew as many games as a plain row of covers fits on screen, about four each side. The carousel packs the games much closer, so the last ones stopped well before the edge.
+  - Now they draw as many as the carousel needs to pass both screen edges (`Carousel.flatReach`): the middle game's width and each view's own spacing and sizes.
+  - Grid, Side menu and TV room already drew all of them.
+- With a set number each side (Settings › Home › Carousel look › Games each side: 1–5), it still shows only that many. "To the edge" is the choice that fills the screen.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Your PC copies:** fetched fresh, unchanged since 137.
+- **Read on the Odin 2 Portal:** your settings are Voltcap row, Carousel look on (Voltcap row and Grid), To the edge, view Turned row.
+  - The Voltcap row shows Turned row as Flat row, since 137.
+  - The Voltcap build installed on it is from 20:18 today, before 136 and 137, so none of 136–138 is on it yet.
+- **Not tested on a device.**
+
+```powershell
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher" /E /NJH /NP
+```
+
+---
+
+## Update — 11 Oct 2026 (137): Your v6.8 designs as paintable cartridges (console colours and logos, R1 › Cart colour), Art position (drag / pinch), R1 controls on the home screen, the wide place slides again, carousel views everywhere, artwork source per look, every picture pickable per game, Screensaver's own section, the AYN home handle hidden
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (2):
+  - `src_copy\ui\HomeAdjust.kt`;
+  - `src_copy\data\PhysicalOverrides.kt`.
+- Changed (18):
+  - `src_copy\LauncherViewModel.kt`;
+  - `src_copy\data\Features.kt`;
+  - `src_copy\data\GestureHint.kt`;
+  - `src_copy\data\Packs.kt`;
+  - `src_copy\ui\ArtworkPickerDialog.kt`;
+  - `src_copy\ui\Carousel.kt`;
+  - `src_copy\ui\CoverCases.kt`;
+  - `src_copy\ui\GameDock.kt`;
+  - `src_copy\ui\GameLookPicker.kt`;
+  - `src_copy\ui\LauncherScreen.kt`;
+  - `src_copy\ui\Models3D.kt`;
+  - `src_copy\ui\PhysicalMedia.kt`;
+  - `src_copy\ui\QuickSettings.kt`;
+  - `src_copy\ui\SaveExplorer.kt`;
+  - `src_copy\ui\SaveVaultStyles.kt`;
+  - `src_copy\ui\SettingsDialog.kt`;
+  - `src_copy\ui\SettingsIndex.kt`;
+  - `src_copy\ui\TileHome.kt`.
+
+**Copy `project_copy`** (over the project root):
+- `project_copy\packs\v1\model_*.zip` (82: the 81 models re-made from v6.8, replacing 136's, and the new `model_logos.zip`; 27 MB);
+- `project_copy\tools\render3d\` (`render.js`, `render.html`, `drive.js`, `batch2.js`, `logos.js`, `comp.py`, `comp2.py`, `truth.js`, `README.md`).
+
+**Files to delete:** none.
+
+**Then push `packs\v1`** to `thebigpocket/Voltcap` (Android Studio › Git › Commit and Push, or GitHub's web upload). The app only sees the new pieces once they're there; a phone that downloaded 136's pieces fetches them again by itself (the markers are now `.v68`).
+
+### What changed
+- **Your refined designs (library v6.8)**, all 81 pieces rendered again from seven angles.
+  - **Custom and clear cartridges** come without a colour or logo of their own. Each one is painted in its console's colours (shell and badge, from the library's `systems.json`), and that console's logo is printed on the badge.
+    - Solid shells are painted exactly: the pre-render's tone curve is undone, the colour applied, and the curve put back.
+    - Clear shells blend between five pre-rendered greys, and the cover behind the plastic takes the plastic's colour.
+  - **Consoles without a custom cartridge of their own** (Saturn, PS3, Steam, Android…) now get the SNES-shaped custom cartridge in their own colours and logo, with Custom or Clear picked.
+  - **The real cartridges stay exactly as the library has them.**
+  - **The Save Vault's 3D cards** keep their own colours and now wear the save's console logo.
+- **R1 › Cart colour** (3D models look, Custom or Clear finish):
+  - The R1 panel closes, and a bar shows on the home screen: under the game, or above it when the row sits at the bottom (Settings › Home › Where the row sits: Bottom).
+  - **This game / All custom cartridges.**
+  - Swatches, Hue, Saturation and Brightness, a HEX box, and "Back to the usual colour" / "Console colours".
+  - It changes live.
+- **R1 › Art position** (was Art drop): the panel closes, then:
+  - drag anywhere on the screen to move the cover in its window, pinch to resize;
+  - with the D-pad: ◀ ▶ ▲ ▼ move it, L1 / R1 (or L2 / R2) size it, A is Done, Y resets;
+  - there are also Smaller, Bigger, Reset and Done buttons.
+  - Each look keeps its own: Box art looks, and the 3D models.
+  - Also as sliders: Settings › Game look › Covers, cases & discs, under the look (Art drop, Art left / right, Art size).
+- **Moving between games:** with wide capsules and the game you're on at the left, the next game just popped into the wide place (since 136). Now:
+  - it **slides in** from the right (from the left going back);
+  - Settings › Home › Animations › **Moving between games** has Slides in / Fades in / Just appears;
+  - the "How far the game you're on stands out" slider for the layout in use is right there (yours was 0 % for the Voltcap row).
+- **Carousel views work in every carousel:**
+  - The Voltcap row and Tiles carousels now follow the view you pick (Wheel, Deck, Flat row, Even row, Record flip…). They used to always be Tucked behind.
+  - Arc, Spine wall and Turned row are real 3D cases in Grid, Side menu and TV room. In the Voltcap row and Tiles they show as Wheel, Record flip and Flat row.
+  - The View picker (Settings › Home › Carousel look, and R1 › Carousel hold) now says where each view works, and has a "Spines aside" chip.
+- **Artwork source per look** (Settings › Metadata › Artwork source per look):
+  - Pick where covers, wide capsules, backgrounds and logos are fetched first: SteamGridDB, TheGamesDB, ScreenScraper, IGDB or RAWG, or the same as the main source.
+  - Real cases, discs, cartridges, labels and spines only exist on ScreenScraper (plus RetroAchievements' box front).
+  - It also has a "Fetch all artwork again" button.
+  - The same chips show under each look in Settings › Game look.
+- **Game settings › Artwork & details:** besides cover, capsule, background and logo, you can now pick each of these:
+  - box front, disc / cartridge, disc / cartridge label, spine, 3D box and back of the box.
+  - Choose from any of the game's scans (or its cover or background), or upload your own.
+  - The looks that draw them (Box art, Cartridge / disc, Discs only, Spines, the 3D boxes) use your pick.
+- **Screensaver** has its own section in Settings, right under Theme. It holds the whole screensaver card and "Lights off with the screensaver".
+- **Hide navigation bar on AYN handhelds:**
+  - Checked on your Odin 2 Portal: Android's own bar was hidden. The pill left over is AYN's own home handle, which only AYN's `hide_nav_bar` setting removes. With it on, the handle's window is gone; I watched it go when you switched it on in AYN's settings.
+  - Voltcap's force-hide (which uses exactly that setting, through the handheld's own root service) was off by default. Now, on a handheld with that service, it follows Hide navigation bar: on in Voltcap, and put back when you leave.
+  - Turning Force-hide off yourself (Settings › Device › Gesture hint) still wins.
+
+### Check
+- **Type-check:** 0 errors (kotlinc 2.2.10 against the project's jars). No `NON_LOCAL_RETURN` in the compiled classes.
+- **Your PC copies:** all 18 changed files were fetched fresh before writing, and every one was unchanged since 136. Every change was reread line by line against them.
+- **Painting checked off the device:**
+  - The app's maths was run in Python against direct renders in the same colour.
+  - Solid shells: mean error 0.6 of 255.
+  - Clear shells in greys: under 1. A saturated purple clear shell comes out a little paler than a direct render (mean 9).
+  - A sheet of Saturn, GameCube, PlayStation, Dreamcast and N64 cartridges from three angles, with covers and logos, looked right.
+- **Fixed during the check:**
+  - The Save Vault cards showed a PlayStation logo for every save, so they were rendered again with their own colours.
+  - The 3D-case views showed edge-on covers in the row carousels (Spine wall turns them 90°), so they now take the nearest flat view there.
+- **Checked on the Odin 2 Portal (read only, nothing written):** which window draws the pill (`SecondaryHomeHandle`, systemui), that Voltcap's immersive mode already hides Android's bar, and that `global hide_nav_bar 1` removes the handle.
+- **Not tested on a device** (needs a build):
+  - painting speed on the device (one picture per piece and colour, cached);
+  - the drag and pinch on the Art position bar;
+  - the wide place's slide;
+  - the Voltcap row and Tiles with the other carousel views;
+  - the per-game box / disc / spine picks;
+  - the force-hide switching on by itself.
+  - The packs aren't on GitHub yet.
+
+```powershell
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher" /E /NJH /NP
+```
+
+---
+
+## Update — 11 Oct 2026 (136): Your 3D shape library as a look (and the Save Vault's cards), Art drop, the Even row carousel, the mixer and gesture hint fixed, the fixed wide capsule, and a visual sweep of every layout
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (1):
+  - `src_copy\ui\Models3D.kt`.
+- Changed (92):
+  - `src_copy\data\Features.kt`;
+  - `src_copy\data\GestureHint.kt`;
+  - `src_copy\data\Packs.kt`;
+  - `src_copy\device\audio\AppMixer.kt`;
+  - `src_copy\device\audio\MixerEffects.kt`;
+  - `src_copy\ui\AppDrawer.kt`;
+  - `src_copy\ui\AppsLibraryDialog.kt`;
+  - `src_copy\ui\ArtworkGallery.kt`;
+  - `src_copy\ui\BadgeWall.kt`;
+  - `src_copy\ui\BigMusicPlayer.kt`;
+  - `src_copy\ui\Carousel.kt`;
+  - `src_copy\ui\CategoryScreen.kt`;
+  - `src_copy\ui\CompanionActivity.kt`;
+  - `src_copy\ui\ConsoleBadge.kt`;
+  - `src_copy\ui\CoverCases.kt`;
+  - `src_copy\ui\DialogChrome.kt`;
+  - `src_copy\ui\EmulatorPickerDialog.kt`;
+  - `src_copy\ui\FirstRunDialog.kt`;
+  - `src_copy\ui\FitText.kt`;
+  - `src_copy\ui\FoldGroup.kt`;
+  - `src_copy\ui\FullMusicScreen.kt`;
+  - `src_copy\ui\GameCard.kt`;
+  - `src_copy\ui\GameDetailsOverlay.kt`;
+  - `src_copy\ui\GameDock.kt`;
+  - `src_copy\ui\GameJourneyUi.kt`;
+  - `src_copy\ui\GameLookPicker.kt`;
+  - `src_copy\ui\GameLookUi.kt`;
+  - `src_copy\ui\GamePlayStats.kt`;
+  - `src_copy\ui\GameWindow.kt`;
+  - `src_copy\ui\GridHome.kt`;
+  - `src_copy\ui\GuideScreen.kt`;
+  - `src_copy\ui\GuideSecondScreen.kt`;
+  - `src_copy\ui\HeroCarousel.kt`;
+  - `src_copy\ui\HomeChrome.kt`;
+  - `src_copy\ui\HomeEdit.kt`;
+  - `src_copy\ui\HomeParts.kt`;
+  - `src_copy\ui\HubScreens.kt`;
+  - `src_copy\ui\LaunchAnimation.kt`;
+  - `src_copy\ui\LauncherScreen.kt`;
+  - `src_copy\ui\MixerActivity.kt`;
+  - `src_copy\ui\MusicPlayer.kt`;
+  - `src_copy\ui\NewArrival.kt`;
+  - `src_copy\ui\NotificationsPanel.kt`;
+  - `src_copy\ui\NowPlayingPanel.kt`;
+  - `src_copy\ui\OverlayControlActivity.kt`;
+  - `src_copy\ui\PerfPage.kt`;
+  - `src_copy\ui\PhysicalMedia.kt`;
+  - `src_copy\ui\PinShortcutActivity.kt`;
+  - `src_copy\ui\PlatformBrowser.kt`;
+  - `src_copy\ui\PlayHeader.kt`;
+  - `src_copy\ui\PlayerPages.kt`;
+  - `src_copy\ui\PresetsCard.kt`;
+  - `src_copy\ui\QsTilesCard.kt`;
+  - `src_copy\ui\QuickMenuActivity.kt`;
+  - `src_copy\ui\QuickSettings.kt`;
+  - `src_copy\ui\RaSocialUi.kt`;
+  - `src_copy\ui\RetroAchievementsDialog.kt`;
+  - `src_copy\ui\RowInfoPanel.kt`;
+  - `src_copy\ui\SaveExplorer.kt`;
+  - `src_copy\ui\SaveSyncUi.kt`;
+  - `src_copy\ui\SaveVaultStyles.kt`;
+  - `src_copy\ui\ScreenSaver.kt`;
+  - `src_copy\ui\ScrollingName.kt`;
+  - `src_copy\ui\SecondScreen.kt`;
+  - `src_copy\ui\SecondScreenDetails.kt`;
+  - `src_copy\ui\SecondScreenHome.kt`;
+  - `src_copy\ui\SecondScreenVolt.kt`;
+  - `src_copy\ui\SessionSummary.kt`;
+  - `src_copy\ui\SettingsDialog.kt`;
+  - `src_copy\ui\SettingsIndex.kt`;
+  - `src_copy\ui\SettingsSlider.kt`;
+  - `src_copy\ui\ShelfHome.kt`;
+  - `src_copy\ui\ShortcutsPanel.kt`;
+  - `src_copy\ui\StatsContent.kt`;
+  - `src_copy\ui\SteamImportDialog.kt`;
+  - `src_copy\ui\StyleCircuit.kt`;
+  - `src_copy\ui\StyleConsoleHomes.kt`;
+  - `src_copy\ui\StyleCrossMenu.kt`;
+  - `src_copy\ui\StyleDashboard.kt`;
+  - `src_copy\ui\StyleHomes.kt`;
+  - `src_copy\ui\StyleIconBar.kt`;
+  - `src_copy\ui\StyleLiveTiles.kt`;
+  - `src_copy\ui\StyleSideMenu.kt`;
+  - `src_copy\ui\StyleSpotlight.kt`;
+  - `src_copy\ui\SyncPrompts.kt`;
+  - `src_copy\ui\TileHome.kt`;
+  - `src_copy\ui\TvRoomHome.kt`;
+  - `src_copy\ui\VoltUi.kt`;
+  - `src_copy\ui\WidgetBoard.kt`;
+  - `src_copy\ui\YearRecapDialog.kt`;
+  - `src_copy\ui\spotify\SpotifyPlayer.kt`;
+  - `src_copy\ui\spotify\SpotifyScreen.kt`.
+
+**Copy `project_copy`** (new):
+- `project_copy\app\src\main\assets\badge_icons\N64.webp` and `Atomiswave.webp` (replace the old ones: the outlines filled in, so they read at badge size);
+- `project_copy\packs\v1\model_<id>.zip` (81 files, 11 MB): the 3D models pack;
+- `project_copy\tools\render3d\` (`render.html`, `render.js`, `drive.js`, `batch.js`, `comp.py`, `README.md`): what made the pack.
+
+**Files to delete:** none.
+
+**Upload the 3D models pack (once):** the app downloads packs from your repo `thebigpocket/Voltcap`, folder `packs/v1`. This project folder is that repo. After the robocopy the 81 zips sit in `C:\Users\User\AndroidStudioProjects\ShelfLauncher\packs\v1\`. In Android Studio: **Git › Pull** first (the other packs are already in `packs/v1` on GitHub), then commit `packs/v1/model_*.zip` and **Push**. (Or on github.com: the repo › `packs/v1` › Add file › Upload files, drop the 81 zips.) Then on the handheld: Settings › Game look › Extra art packs › 3D models › download.
+
+**PowerShell** (paste it all):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### What changed
+
+**Your 3D shape library as a look** (`ui\Models3D.kt`, Settings › Game look › Covers, cases & discs › **3D models**)
+- All 81 models (real cartridges and cards, your custom cartridges, the clear ones, memory cards, the SD card, every case and disc), with their logos as they are.
+- Pre-rendered, as you picked: each model from 7 angles (−60° to +60°, every 20°), in a small renderer I wrote for it (same light, gloss and clear tinted plastic for every model). The game's cover goes into the model's art window at whatever angle, lit and tinted like the model (through the clear plastic too). It costs drawing two pictures, so it's light on the handheld.
+- **Off / Real / Custom / Clear:**
+  - **Real:** each console's real cartridge or card (GB, GBC, GBA, N64, SNES, Super Famicom, Mega Drive / Genesis, Game Gear, WonderSwan, DS, 3DS, Switch), and the real case for disc consoles (PS1 jewel, PS2, PS3, PS4, GameCube, Wii, Wii U as Blu-ray, Xbox, Xbox 360, Dreamcast, Saturn, PSP, Sega CD as the long box…).
+  - **Custom:** your custom cartridges (also the PlayStation, PlayStation 2, GameCube, Dreamcast and PSP ones); consoles without a custom one get their real piece.
+  - **Clear:** the custom cartridges in tinted clear plastic (the board shows inside).
+- Consoles without a piece of their own (PC, Android, Steam, arcade…) keep their usual look. The SD card and the memory cards are for the Save Vault (below).
+- **Name on the label** (same place, a toggle, off by default): the game's name on a dark strip along the bottom of the label, drawn into the label so it follows the angle and the light. It costs nothing extra (it's made with the picture, once).
+- **Stand:** turned a little with the game you're on facing you (default), all turned, or all straight on.
+- Where it shows: the **Cartridges & discs** look (every row and grid, the game window), and the carousels' **3D cases** (Arc, Spine wall, Turned row, or the 3D cases switch): there each game is its model, at the angle nearest its turn.
+- The pictures are a download (Extra art packs › **3D models**), like your other packs; until it's there, nothing changes.
+
+**Art drop** (like your Unifideck screenshot; **R1 › Art drop**, and Settings › Game look › Covers, cases & discs)
+- How far the cover drops below the top: in the Box art looks, below the case template's top band (up to 15 % of the case); in the 3D models look, below the top of the model's window.
+- Each look keeps its own value (Box art one, 3D models another).
+- The R1 tile shows only on those looks. Pick it and a slider appears along the bottom of the screen, under the game you're on, without dimming it, so you see the cover move while you change it (◀ ▶ step it). Reset puts it back to 0.
+
+**Save Vault: 3D cards** (Save Vault › Settings › Style › **3D card**)
+- Each save is your 3D memory card or SD card, the game's cover on its label and its name on the label's strip; the save you're on faces you, the others are turned a little.
+- Pick the card under it: SD card, Black, Blue, Green, Red or Smoke card, and **Clear** for the see-through ones.
+- They come with the 3D models pack; until it's downloaded, 3D card shows the drawn memory card.
+
+**Even row carousel** (Settings › Home › Layout options › Carousel look › View › **Even row**; also on the R1 Carousel tile, hold it)
+- The games beside the middle one at their normal size, side by side with a small gap, no tilt and hardly any shade; only the game you're on pops out a little (a quarter bigger).
+- With Games each side › **To the edge** (the default) the row runs past both screen edges; or pick 1–5 each side.
+
+**The wide capsule, fixed in place** (Voltcap row, game you're on = wide capsule, on the left)
+- It's always the big wide capsule now, with no roll-out animation, and no games appear on its left: it stays put and the row moves past it.
+
+**N64 and Atomiswave badges:** the symbol badges were too thin to see. The two pictures have their outlines filled in, and every symbol badge is drawn bigger and bolder in its pill.
+
+**Volume mixer** (Settings › Device › Volume mixer)
+- Volumes not changing:
+  - On your AYN handhelds the firmware moves a per-app sound effect onto the whole output ("session 0"), so Automatic (sound effect) did nothing per app. Voltcap now checks whether its effects really sit on each app's own session; when they don't, it switches to Player volume for that handheld by itself and says so in Mixer check.
+  - Player volume worked once and then hung: starting the helper waited forever for the root service, holding the mixer. It now starts in the background and returns at once, so later changes go through.
+- The mixer's own screen (and the R1 quick menu, the overlay controls, the pin-shortcut screen) no longer have a black strip where the navigation bar was.
+
+**Navigation bar hiding** (Settings › Device › Gesture hint › **Force-hide gesture hint**)
+- On AYN firmware, the white gesture line comes from the system's second home handle even with the bar hidden. Force-hide now also uses AYN's own "hide navigation bar" setting (it's tried first). Turn it on there to test.
+
+**Visual sweep, every layout and look** (seen on your Odin 2 Portal)
+- **Text everywhere:**
+  - Words that shrink to fit never get smaller than 10 sp any more (they went down to 6–7 sp, e.g. the TV room's info strip) — 282 places.
+  - Two-line names and descriptions keep their line spacing when they shrink (it was fixed and made lines overlap) — 25 files.
+  - Hero carousel: the description's spacing.
+- **Status bar:** a soft shade along its edge, so the clock, icons and points read over a bright picture.
+- **Dashboard:** a dark shade behind the menu and the title down the left (white words vanished over a yellow cover); the subtitle lifted if the accent is dark; Now playing has a shade along its bottom so "Last played" and the button read; the button's text is dark on a light accent; "MASTERED" on the small covers was cut to "MASTE" — narrow covers now show the trophy alone, or "65/65".
+- **Side menu:** the menu's buttons get shorter to fit instead of the last one ("Help") showing cut in half.
+- **Spotlight (Home menu):** long names under the tile you're on (two lines) didn't show at all; they do now.
+- **Live tiles:** no more lower-case labels ("all apps", "search", the category names, "sep 24").
+- **Cross menu, Icon bar, Live tiles:** "Last played: Sep 24, 2026" (the date was lower case).
+- **Icon bar, Console hub, Resume & discover, Dashboard, Spotlight, Side menu, Game shelf:** a game you've played without recorded time said "Never played" next to its last-played date; it now says "Under a minute".
+- **Console hub and Resume & discover:** their own clock and battery showed under the status bar's (two clocks); now they show only when the status bar is off; the achievements sliding behind the Achievements card fade out above its title instead of running through it.
+- **Game shelf:** the game you pull out used to cover the spines next to it (most of a short shelf); the games either side now slide apart to make room and close up again.
+- **TV room:** the hidden "badges" part left an empty frame; the progress bars were empty (no height).
+- Checked and fine: Voltcap row, Hero, Grid (carousel + spines), Cross menu, Live tiles, Spotlight, Icon bar, Console hub, Resume, Game shelf, Dashboard, Side menu, TV room. I put your Odin back on the Voltcap row.
+
+### Check
+- **Type-check:** 0 errors (a full compile with code generation).
+- **Dex marker:** no compiled class has `NON_LOCAL_RETURN`.
+- **Your PC's copies:** all 92 changed files were staged fresh; 88 are byte-identical to the copies I started from, and the other 4 (`Carousel.kt`, `LauncherScreen.kt`, `StyleSideMenu.kt`, `TvRoomHome.kt`) are exactly what 135 wrote. `SUMMARY.md` and `HANDOVER.md` were staged fresh too. Writes only go through if the file on your PC hasn't changed since.
+- **Reread** every change in the diffs.
+- **Bug check:**
+  - 3D models: I put a real cover (your Zelda) into 16 models from 5 angles with the same steps the app uses (cover cut to the window's shape, its corners onto the window's, × the window's light, + the model): the cover sits exactly in the window at every angle, under the clear plastic too. All 81 × 7 renders are there with their corners; each model's angles share one size, so turning never jumps.
+  - Without the pack, or with 3D models Off, every look draws exactly as before (`Models3D.on()` needs both).
+  - The pack unpacks like the cartridge pack (nothing outside its folder), and the app re-reads it when pieces arrive.
+  - The Spotlight name is now drawn with the same style, two lines and "…".
+  - Game shelf: only the shelf the game is on moves; the one going back closes its gap as it goes.
+  - Art drop at 0 draws exactly as before; the slider's popup is the only one without the dark veil.
+  - The name strip shrinks the name to fit and ends it with "…" when it's too long; the name is never made lower case.
+  - The Save Vault's 3D card falls back to the drawn memory card when its model isn't on the device, and the open animation still finds the card (its place is reported the same way).
+- **Not tested on a device:** the new build itself (your Odin still runs 135). Above all:
+  - the 3D models look (after you upload the pack) — how the light looks on your screen, and whether rows with many models stay smooth;
+  - Art drop with your PS2 / GameCube templates, the Save Vault's 3D cards, and the Even row carousel;
+  - the mixer on the Odin (Automatic should switch itself to Player volume, and changes should keep working);
+  - Force-hide gesture hint on the Odin;
+  - the fixed wide capsule;
+  - the Dashboard and status bar shades over a bright cover.
+
+---
+
+## Update — 11 Oct 2026 (135): Carousel with spines (smaller spines, packed to the edge), Endless carousels, a screen bridge for the handheld
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`). Changed (5):
+- `src_copy\ui\Carousel.kt`;
+- `src_copy\ui\EndlessRow.kt`;
+- `src_copy\ui\LauncherScreen.kt`;
+- `src_copy\ui\StyleSideMenu.kt`;
+- `src_copy\ui\TvRoomHome.kt`.
+
+**Copy `project_copy`:** nothing new.
+
+**Files to delete:** none. (`screens\` in the project root holds the Odin screenshots I took while checking; you can delete it whenever you like.)
+
+**PowerShell** (paste it all):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### What changed
+
+Seen on your Odin 2 Portal (Grid › Carousel look, Look = Covers, View = Record flip, 5 each side):
+
+**The carousel with spines aside** (Spines look, or Record flip turning the covers to their spines; in Tucked behind, Record flip and Flat row)
+- The spines aside were nearly as tall as the game you're on (84 % of it, shrinking further out), so the game in the middle looked small. Now they stand at two thirds of its height, all about the same height like books on a shelf (`Carousel.SPINE_SIZE`, `Carousel.spineScale`).
+- They're packed one after another from just beside the cover (a small gap, Settings › Home › Layout options › Carousel look › Spacing still widens it), instead of spread out with big gaps.
+- A spine never draws over the game you're on while the carousel slides.
+- Wheel and Deck with spines keep their own places.
+
+**Carousels reaching the edge of the screen**
+- Spines are slim, so "N each side" shows three times as many spines (like the Spine wall). 5 each side now fills to the screen's edges.
+- **Endless** (R1 › Endless) now goes round in the shared carousel (Grid, Side menu, TV room). Before, the first game had nothing on its left (your screenshot: only one spine on the left of WWE SmackDown! Vs. Raw), and the last game nothing on its right. Now the games repeat on both sides, ◀ on the first game slides on to the last one, and swipes go round too.
+- The Grid's and TV room's carousels no longer play the "comes back in from the other side" bump when they go round; they slide on their own (`loopsOnItsOwn`).
+
+**Seeing the handheld's screen** (not part of the app)
+- `tools\adb_mcp\server.js`: a small adb bridge for Claude (screenshots, D-pad / buttons, taps, swipes, logs). It's set up in Claude's config as `voltcap-adb`. mobile-mcp can't be used from Claude's cloud session, because the desktop bridge strips its `device` argument.
+
+### Check
+- **Type-check:** 0 errors (a full compile with code generation), the same as before the change.
+- **Dex marker:** no compiled class has `NON_LOCAL_RETURN`.
+- **Your PC's copies:** all 5 files were staged fresh first; writes only go through if the file on your PC hasn't changed since.
+- **Reread** every change line by line in the diff.
+- **Bug check:**
+  - Spine places worked out for the Odin (1080 p, Grid): the first spine starts 50 px right of the cover, spines are 546 px tall against the cover's 805 px, and with 5 each side (15 spines) they run past the screen's edge.
+  - Endless off: the carousel is exactly as before (`rememberLoopFocus` returns the focus as it is, keys stay the games' keys).
+  - Endless on: each place on the endless row has its own key, taps open / select the right game (place mod the count), and D-pad steps follow the view model's step (`loopTick` / `loopStep`), so with two games it still slides the right way on the D-pad.
+  - A swipe with Endless on wraps, and a swipe with it off stops at the ends as before.
+  - The 3D views (Arc, Spine wall, Turned row) don't use the spine packing.
+  - After testing, I put your Odin back as it was: Voltcap row, 5 each side.
+- **Not tested on a device:** the new build itself. Above all:
+  - how the shorter spines look next to your covers;
+  - Endless going round in the Grid, Side menu and TV room carousels.
+
+---
+
+## Update — 11 Oct 2026 (134): 3D cases for the carousel (Arc, Spine wall, Turned row) and faster spines
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (1):
+  - `src_copy\ui\Case3D.kt`.
+- Changed (8):
+  - `src_copy\data\Features.kt`;
+  - `src_copy\ui\AnimationPreviews.kt`;
+  - `src_copy\ui\Carousel.kt`;
+  - `src_copy\ui\CoverCases.kt`;
+  - `src_copy\ui\QuickSettings.kt`;
+  - `src_copy\ui\RealMedia.kt`;
+  - `src_copy\ui\SettingsDialog.kt`;
+  - `src_copy\ui\SettingsIndex.kt`.
+
+**Copy `project_copy`:** nothing new.
+
+**Files to delete:** none new. The block below still has the 131 deletions; it skips anything already gone.
+
+**PowerShell** (paste it all):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+
+# 1) Delete the pictures that are now downloaded or no longer used (first in project_copy, so robocopy can't bring them back; then in the project)
+$names = @(
+  'cov_spine_32x','cov_spine_3do','cov_spine_3ds','cov_spine_atari2600','cov_spine_atari7800','cov_spine_c64',
+  'cov_spine_colecovision','cov_spine_dreamcast','cov_spine_gamecube','cov_spine_gamegear','cov_spine_gb','cov_spine_gba',
+  'cov_spine_gbc','cov_spine_genesis','cov_spine_intellivision','cov_spine_jaguar','cov_spine_lynx','cov_spine_mastersystem',
+  'cov_spine_n64','cov_spine_nds','cov_spine_neogeo','cov_spine_neogeopocket','cov_spine_nes','cov_spine_pcengine',
+  'cov_spine_pico8','cov_spine_pokemonmini','cov_spine_ps1','cov_spine_ps2','cov_spine_psp','cov_spine_psvita',
+  'cov_spine_saturn','cov_spine_segacd','cov_spine_snes','cov_spine_switch','cov_spine_vectrex','cov_spine_virtualboy',
+  'cov_spine_wii','cov_spine_wiiu','cov_spine_wonderswan',
+  'tpl_spine_32x','tpl_spine_3ds','tpl_spine_colecovision','tpl_spine_dreamcast','tpl_spine_gamegear','tpl_spine_gb',
+  'tpl_spine_gba','tpl_spine_gbc','tpl_spine_genesis','tpl_spine_nds','tpl_spine_neogeopocket','tpl_spine_ps1',
+  'tpl_spine_saturn','tpl_spine_virtualboy','tpl_spine_wii','tpl_spine_wiiu',
+  'vc_spine_androidgames','vc_spine_androidapps',
+  'vc_spine_3do','vc_spine_amiga','vc_spine_arcade','vc_spine_atari2600','vc_spine_atari7800','vc_spine_atarijaguar',
+  'vc_spine_atarilynx','vc_spine_atomiswave','vc_spine_c64','vc_spine_colecovision','vc_spine_dos','vc_spine_dreamcast',
+  'vc_spine_famicom','vc_spine_fbneo','vc_spine_fds','vc_spine_gamegear','vc_spine_gb','vc_spine_gba',
+  'vc_spine_gbc','vc_spine_gc','vc_spine_intellivision','vc_spine_mame','vc_spine_mastersystem','vc_spine_megacd',
+  'vc_spine_megadrive','vc_spine_msx','vc_spine_n3ds','vc_spine_n64','vc_spine_naomi','vc_spine_nds',
+  'vc_spine_neogeo','vc_spine_neogeocd','vc_spine_nes','vc_spine_ngpc','vc_spine_pc','vc_spine_pcengine',
+  'vc_spine_pcenginecd','vc_spine_pico8','vc_spine_pokemini','vc_spine_ps2','vc_spine_ps3','vc_spine_ps4',
+  'vc_spine_psp','vc_spine_psvita','vc_spine_psx','vc_spine_saturn','vc_spine_scummvm','vc_spine_sega32x',
+  'vc_spine_sfc','vc_spine_snes','vc_spine_switch','vc_spine_tg16','vc_spine_tg_cd','vc_spine_vectrex',
+  'vc_spine_virtualboy','vc_spine_wii','vc_spine_wiiu','vc_spine_wonderswancolor','vc_spine_xbox','vc_spine_xbox360'
+)
+foreach ($dir in "$root\project_copy\app\src\main\res\drawable-nodpi", "$root\app\src\main\res\drawable-nodpi") {
+  foreach ($n in $names) { Remove-Item -LiteralPath "$dir\$n.webp" -ErrorAction SilentlyContinue -Verbose }
+}
+foreach ($dir in "$root\project_copy\app\src\main\assets\carts", "$root\app\src\main\assets\carts") {
+  Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue -Verbose
+}
+
+# 2) Copy the Kotlin files into the source, and project_copy over the project
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### What changed
+
+**3D cases** (the carousel, like your three Wii-loader screenshots)
+- Each game is a real box drawn in true 3D: the cover on the front, its spine on the side, the plastic edge and the back. It can be shown at any angle.
+- The spine is the same one the Spines look uses: the game's real spine scan first, then your console spine with the name, then a plain one with the name.
+- How thick each case is comes from its spine.
+- The game you're on gets the accent outline round its front (Cards & frames). The games aside are shaded.
+- Three new views (Settings › Home › Layout options › Carousel look › **View**; TV room: Settings › Home › Layout options › Games beside the TV › Carousel › **View**; also on the R1 Carousel tile, hold it):
+  - **Arc:** the cases fan round a wide arc, each turned towards the middle. The far ones are smaller and higher.
+  - **Spine wall:** the game you're on faces you; the others turn to their spines and are packed tight, like a shelf. There are three times as many each side, because spines are slim. The name is under it.
+  - **Turned row:** a flat row, every case turned a little so its spine shows. The name is above.
+- Picking Arc or Turned row turns **Reflection** on (the glossy floor). You can switch it off again under it.
+- With 3D cases, the reflection is a real mirror image of the box, fading out.
+- **3D cases** switch (same place, under Reflection): turns the other views (Tucked, Record flip, Wheel, Deck, Flat row) into 3D cases too. It is always on for the three new views.
+- Works with ◀ ▶, swipe and tap, as before.
+- Covers the carousels that use the shared carousel: TV room, Grid › Carousel look and Side menu › Carousel look.
+  - The Voltcap row's, Tiles' and Hero carousel's own carousels keep their flat cards (they only use the Tucked layout).
+
+**Faster spines** (the lag on spine shelves)
+- Before, every spine on screen decoded and flattened its own copy of the console's spine picture while the screen was being drawn. A shelf of 40 games did that 40 times.
+- Now each console's spine is made once, away from the screen's thread, and kept.
+  - That covers the bookcase, Spines look, TV room, the 3D boxes and the new 3D cases.
+- The titled spines (your console spine with the game's name) for the 3D boxes and cases are also made in the background and kept (up to about 24 MB).
+- For the moment a spine is first being made, a plain dark strip shows in its place.
+
+### Check
+- **Type-check:** 0 errors (a full compile with code generation).
+- **Dex marker:** I searched every compiled class for `NON_LOCAL_RETURN`, and none has it.
+- **Your PC's copies:** the 8 changed files, `SUMMARY.md` and `HANDOVER.md` were staged fresh first; all are byte-identical to what 133 delivered. `Case3D.kt` isn't on your PC yet. Writes only go through if the file on your PC hasn't changed since.
+- **Reread** every change line by line in the diffs.
+- **Bug check:**
+  - The 3D maths: I ran the same projection outside the app.
+    - Straight on, only the front shows.
+    - Turned 20° or 45°, the front and the spine show.
+    - At 90°, only the spine shows.
+    - Turned the other way, the front and the plastic edge show.
+    - The mirror image shows the same faces.
+  - A 3D case's slot fades op by op, so its reflection (drawn below the slot) isn't cut off.
+  - With no cover, the front is the game's colour with its name. With no spine picture, it gets the plain spine with the name.
+  - Spine scans are asked for along the whole Spine wall, not just the 3 games next to the middle.
+  - Spines are made one at a time, so several of the same console never decode it twice.
+  - A spine pushed out of the memory cache never leaves a shelf blank (each spine on screen keeps its picture).
+  - A console spine that can't be read still falls back to the plain one with the name, not the dark strip.
+  - All the other carousel views draw exactly as before when 3D cases is off.
+- **Not tested on a device:** all of it. Especially:
+  - how the three views look with your covers and spine pack;
+  - smoothness of the Spine wall with "To the edge" (about 25 cases on screen).
+
+---
+
+## Update — 11 Oct 2026 (133): "Only for this layout" for Home settings, stretchable Edit Home parts, Style from the resize handle, solider backings and transparency sliders
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (1):
+  - `src_copy\data\LayoutOnly.kt`.
+- Changed (6):
+  - `src_copy\LauncherViewModel.kt`;
+  - `src_copy\data\Features.kt`;
+  - `src_copy\ui\HomeEdit.kt`;
+  - `src_copy\ui\HomePartStyle.kt`;
+  - `src_copy\ui\HomeParts.kt`;
+  - `src_copy\ui\SettingsDialog.kt`.
+
+**Copy `project_copy`:** nothing new.
+
+**Files to delete:** none new. The block below still has the 131 deletions; it skips anything already gone.
+
+**PowerShell** (paste it all):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+
+# 1) Delete the pictures that are now downloaded or no longer used (first in project_copy, so robocopy can't bring them back; then in the project)
+$names = @(
+  'cov_spine_32x','cov_spine_3do','cov_spine_3ds','cov_spine_atari2600','cov_spine_atari7800','cov_spine_c64',
+  'cov_spine_colecovision','cov_spine_dreamcast','cov_spine_gamecube','cov_spine_gamegear','cov_spine_gb','cov_spine_gba',
+  'cov_spine_gbc','cov_spine_genesis','cov_spine_intellivision','cov_spine_jaguar','cov_spine_lynx','cov_spine_mastersystem',
+  'cov_spine_n64','cov_spine_nds','cov_spine_neogeo','cov_spine_neogeopocket','cov_spine_nes','cov_spine_pcengine',
+  'cov_spine_pico8','cov_spine_pokemonmini','cov_spine_ps1','cov_spine_ps2','cov_spine_psp','cov_spine_psvita',
+  'cov_spine_saturn','cov_spine_segacd','cov_spine_snes','cov_spine_switch','cov_spine_vectrex','cov_spine_virtualboy',
+  'cov_spine_wii','cov_spine_wiiu','cov_spine_wonderswan',
+  'tpl_spine_32x','tpl_spine_3ds','tpl_spine_colecovision','tpl_spine_dreamcast','tpl_spine_gamegear','tpl_spine_gb',
+  'tpl_spine_gba','tpl_spine_gbc','tpl_spine_genesis','tpl_spine_nds','tpl_spine_neogeopocket','tpl_spine_ps1',
+  'tpl_spine_saturn','tpl_spine_virtualboy','tpl_spine_wii','tpl_spine_wiiu',
+  'vc_spine_androidgames','vc_spine_androidapps',
+  'vc_spine_3do','vc_spine_amiga','vc_spine_arcade','vc_spine_atari2600','vc_spine_atari7800','vc_spine_atarijaguar',
+  'vc_spine_atarilynx','vc_spine_atomiswave','vc_spine_c64','vc_spine_colecovision','vc_spine_dos','vc_spine_dreamcast',
+  'vc_spine_famicom','vc_spine_fbneo','vc_spine_fds','vc_spine_gamegear','vc_spine_gb','vc_spine_gba',
+  'vc_spine_gbc','vc_spine_gc','vc_spine_intellivision','vc_spine_mame','vc_spine_mastersystem','vc_spine_megacd',
+  'vc_spine_megadrive','vc_spine_msx','vc_spine_n3ds','vc_spine_n64','vc_spine_naomi','vc_spine_nds',
+  'vc_spine_neogeo','vc_spine_neogeocd','vc_spine_nes','vc_spine_ngpc','vc_spine_pc','vc_spine_pcengine',
+  'vc_spine_pcenginecd','vc_spine_pico8','vc_spine_pokemini','vc_spine_ps2','vc_spine_ps3','vc_spine_ps4',
+  'vc_spine_psp','vc_spine_psvita','vc_spine_psx','vc_spine_saturn','vc_spine_scummvm','vc_spine_sega32x',
+  'vc_spine_sfc','vc_spine_snes','vc_spine_switch','vc_spine_tg16','vc_spine_tg_cd','vc_spine_vectrex',
+  'vc_spine_virtualboy','vc_spine_wii','vc_spine_wiiu','vc_spine_wonderswancolor','vc_spine_xbox','vc_spine_xbox360'
+)
+foreach ($dir in "$root\project_copy\app\src\main\res\drawable-nodpi", "$root\app\src\main\res\drawable-nodpi") {
+  foreach ($n in $names) { Remove-Item -LiteralPath "$dir\$n.webp" -ErrorAction SilentlyContinue -Verbose }
+}
+foreach ($dir in "$root\project_copy\app\src\main\assets\carts", "$root\app\src\main\assets\carts") {
+  Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue -Verbose
+}
+
+# 2) Copy the Kotlin files into the source, and project_copy over the project
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### What changed
+
+**"Only for this layout"** (Settings › Home, the first card: **Save changes for**)
+- Two choices:
+  - **All layouts** (as before);
+  - **Only <the layout on screen>**: what you change in Settings › Home from then on is kept for that layout alone. Every other layout keeps the shared setting.
+- When you switch layouts, the layout you leave gives the shared settings back and the one you go to brings its own.
+- A setting a layout has its own value for, changed somewhere else while that layout is on screen (an R1 tile, say), stays that layout's own.
+- With All layouts picked, changing a setting that this layout has its own value for makes it follow the shared one again.
+- The card says how many settings the layout has of its own. **Use the shared settings here again** drops them all.
+- Each time you leave Settings › Home it's back on All layouts, so you never keep saving for one layout by accident.
+
+**Edit Home**
+- **Stretchable parts:** every part has two new handles, ↔ in the middle of its right edge (wider) and ↕ in the middle of its bottom edge (taller). What's inside stretches with it.
+  - The same is in the part's ✎ Style as **Stretch wider** / **Stretch taller** sliders, 50–250 %, so it works with a controller too (L3 opens Style).
+  - X (Reset position) and Y (Reset layout) undo stretches too. So do Settings › Home › Move & resize › Put everything back, and Reset style.
+  - The round corner handle still makes the whole part bigger or smaller.
+- **Style from the resize handle:** a tap on the round corner handle (without dragging) opens that part's ✎ Style.
+- **Less see-through:** the backings behind the parts (layout colours, theme colours, dark glass, and a part's own "Dark glass") now have a dark layer under them.
+  - How strong it is: **Backing**, 0–100 %, default 70. 0 is as see-through as they were before.
+  - Where: Settings › Home › Layout options › Game info on screen › Backing, and in each part's ✎ Style as **Backing (every part)**.
+- **Transparency slider:** in each part's ✎ Style, **See-through (this part)** is a slider now (20 % to Solid) instead of five steps.
+
+### Check
+- **Type-check:** 0 errors (a full compile with code generation).
+- **Dex marker:** I searched every compiled class for `NON_LOCAL_RETURN`, and none has it.
+- **Your PC's copies:** the 6 files, `SUMMARY.md` and `HANDOVER.md` were staged fresh first; all are byte-identical to what 132 delivered. Writes only go through if the file on your PC hasn't changed since.
+- **Reread** every change line by line in the diffs.
+- **Bug check:**
+  - Switching layouts:
+    - the layout's own settings are noted before the switch is saved;
+    - the shared values come back only where the switch didn't bring another value itself (each layout's parked card size, say);
+    - the look settings are read again after the next layout's own ones go in, so the screen shows them at once.
+  - Never kept for one layout: the layout itself, the parked looks, device and account settings.
+  - Stretch is drawn the same way on moved parts, unmoved parts in the layout, and the layouts' own parts. The touch zones go in this order: ✕, the corner handle, then the stretch handles, then moving.
+  - A tap on the corner handle opens Style only when it didn't move.
+- **Not tested on a device:**
+  - all of it, especially switching back and forth between two layouts with their own settings, and stretching a part with text in it.
+- **Note:** Edit Home itself closes Settings. So to keep a moved part for one layout only, move it while that layout is on screen, then open Settings › Home with "Only …" picked and move it again (or change any setting of it there).
+
+---
+
+## Update — 11 Oct 2026 (132): Spotlight's Home menu (like your screenshot), the Cross menu's Trophies category, comments and order on the game popup's achievements
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- Changed (11):
+  - `src_copy\LauncherUiState.kt`;
+  - `src_copy\data\AppearanceStore.kt`;
+  - `src_copy\data\Features.kt`;
+  - `src_copy\ui\GameWindow.kt`;
+  - `src_copy\ui\LauncherScreen.kt`;
+  - `src_copy\ui\SettingsDialog.kt`;
+  - `src_copy\ui\SettingsIndex.kt`;
+  - `src_copy\ui\StyleCrossMenu.kt`;
+  - `src_copy\ui\StyleHomeSettings.kt`;
+  - `src_copy\ui\StyleHomes.kt`;
+  - `src_copy\ui\StyleSpotlight.kt`.
+
+**Copy `project_copy`:** nothing new.
+
+**Files to delete:** none new. The 131 deletions are still in the block below; if you already ran 131's block, they are already gone and the block skips them.
+
+**PowerShell** (paste it all):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+
+# 1) Delete the pictures that are now downloaded or no longer used (first in project_copy, so robocopy can't bring them back; then in the project)
+$names = @(
+  'cov_spine_32x','cov_spine_3do','cov_spine_3ds','cov_spine_atari2600','cov_spine_atari7800','cov_spine_c64',
+  'cov_spine_colecovision','cov_spine_dreamcast','cov_spine_gamecube','cov_spine_gamegear','cov_spine_gb','cov_spine_gba',
+  'cov_spine_gbc','cov_spine_genesis','cov_spine_intellivision','cov_spine_jaguar','cov_spine_lynx','cov_spine_mastersystem',
+  'cov_spine_n64','cov_spine_nds','cov_spine_neogeo','cov_spine_neogeopocket','cov_spine_nes','cov_spine_pcengine',
+  'cov_spine_pico8','cov_spine_pokemonmini','cov_spine_ps1','cov_spine_ps2','cov_spine_psp','cov_spine_psvita',
+  'cov_spine_saturn','cov_spine_segacd','cov_spine_snes','cov_spine_switch','cov_spine_vectrex','cov_spine_virtualboy',
+  'cov_spine_wii','cov_spine_wiiu','cov_spine_wonderswan',
+  'tpl_spine_32x','tpl_spine_3ds','tpl_spine_colecovision','tpl_spine_dreamcast','tpl_spine_gamegear','tpl_spine_gb',
+  'tpl_spine_gba','tpl_spine_gbc','tpl_spine_genesis','tpl_spine_nds','tpl_spine_neogeopocket','tpl_spine_ps1',
+  'tpl_spine_saturn','tpl_spine_virtualboy','tpl_spine_wii','tpl_spine_wiiu',
+  'vc_spine_androidgames','vc_spine_androidapps',
+  'vc_spine_3do','vc_spine_amiga','vc_spine_arcade','vc_spine_atari2600','vc_spine_atari7800','vc_spine_atarijaguar',
+  'vc_spine_atarilynx','vc_spine_atomiswave','vc_spine_c64','vc_spine_colecovision','vc_spine_dos','vc_spine_dreamcast',
+  'vc_spine_famicom','vc_spine_fbneo','vc_spine_fds','vc_spine_gamegear','vc_spine_gb','vc_spine_gba',
+  'vc_spine_gbc','vc_spine_gc','vc_spine_intellivision','vc_spine_mame','vc_spine_mastersystem','vc_spine_megacd',
+  'vc_spine_megadrive','vc_spine_msx','vc_spine_n3ds','vc_spine_n64','vc_spine_naomi','vc_spine_nds',
+  'vc_spine_neogeo','vc_spine_neogeocd','vc_spine_nes','vc_spine_ngpc','vc_spine_pc','vc_spine_pcengine',
+  'vc_spine_pcenginecd','vc_spine_pico8','vc_spine_pokemini','vc_spine_ps2','vc_spine_ps3','vc_spine_ps4',
+  'vc_spine_psp','vc_spine_psvita','vc_spine_psx','vc_spine_saturn','vc_spine_scummvm','vc_spine_sega32x',
+  'vc_spine_sfc','vc_spine_snes','vc_spine_switch','vc_spine_tg16','vc_spine_tg_cd','vc_spine_vectrex',
+  'vc_spine_virtualboy','vc_spine_wii','vc_spine_wiiu','vc_spine_wonderswancolor','vc_spine_xbox','vc_spine_xbox360'
+)
+foreach ($dir in "$root\project_copy\app\src\main\res\drawable-nodpi", "$root\app\src\main\res\drawable-nodpi") {
+  foreach ($n in $names) { Remove-Item -LiteralPath "$dir\$n.webp" -ErrorAction SilentlyContinue -Verbose }
+}
+foreach ($dir in "$root\project_copy\app\src\main\assets\carts", "$root\app\src\main\assets\carts") {
+  Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue -Verbose
+}
+
+# 2) Copy the Kotlin files into the source, and project_copy over the project
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### What changed
+
+**Spotlight: the Home menu look** (built from your blue home-menu screenshot; now Spotlight's default look; Row & menu and Big picture are still there under Settings › Home › Layout options › Spotlight options › Look)
+- **Along the very top:**
+  - your profile (picture, name, points) on the left;
+  - your shortcuts as plain icons spread across the middle;
+  - the battery and a big clock on the right.
+  
+  A thin line runs under them. On an icon (▲), its name shows in capitals in a gap in that line, right under it.
+- **The status bar steps aside on this look,** so the menu really sits at the very top. If you want it anyway, turn on Spotlight options › **Status bar**; the menu then leaves out its own battery and clock.
+- **The row of big tiles:** the one you're on is bigger and framed, with the game's name in capitals centred under it (two lines at most). Tile shape still comes from Spotlight options › Tiles along the top.
+- **Along the bottom: what the buttons do,** with the buttons drawn in your button style (Xbox letters, Nintendo letters or PlayStation shapes):
+  - **A** Open (or Play / Continue / Details: whatever A does for you);
+  - **X** Favourite / Remove favourite (Close game while the game is still open);
+  - **Y** Achievements (only for games with achievements);
+  - **Start** Options;
+  - **Select** Menu.
+  
+  Each hint is also a button: tap it, or ▼ then ◀ ▶ and A. They stand in for the legend on this look. Spotlight options › **Button hints along the bottom** turns them off (the legend comes back).
+- The other looks' options (big title, cards, category names …) are hidden while Home menu is picked.
+
+**Cross menu: Trophies category**
+- A new **Trophies** icon in the Cross menu's strip lists every game with achievements, last played first.
+- Under the one you're on: "earned / total achievements · %", a progress bar, and "A: its achievements".
+- **A** opens that game's achievements straight away, in the menu's own trophy column (from 127; ▲ ▼ through them, B back). Any other layout doesn't have the category; if you switch layouts while in it, you land on All.
+- Settings:
+  - on / off: Settings › Home › Layout options › Cross menu options › **Trophies category** (on by default);
+  - its place in the strip: Settings › Categories › Category order, where it's listed as "Trophies (Cross menu only)". It starts at the end of the strip.
+
+**The game popup's achievements page** (the game window: Achievements, on every layout except the Cross menu)
+- **Order** (the first row; A steps through them, and it stays for every game):
+  - Set order;
+  - Still to get first;
+  - Earned first;
+  - Latest earned first;
+  - Most points first;
+  - Rarest first.
+- **A on an achievement** opens it under itself:
+  - all of what it asks;
+  - when you earned it (and if hardcore);
+  - how many players have it, and whether it's missable;
+  - the comments people left on its RetroAchievements page (up to 8, newest first).
+  
+  A again closes it.
+
+### Check
+- **Type-check:** 0 errors (a full compile with code generation).
+- **Dex marker:** I searched every compiled class for `NON_LOCAL_RETURN`, and none has it.
+- **Your PC's copies:** the 11 files, `SUMMARY.md` and `HANDOVER.md` were staged fresh first; all are byte-identical to what 131 delivered. Writes only go through if the file on your PC hasn't changed since.
+- **Reread** every change line by line in the diffs.
+- **Bug check:**
+  - Spotlight's keys: Row & menu and Big picture behave as before (the checks that meant "Big picture" now say so instead of "not Row & menu").
+  - Home menu: ▲ the icons, ◀ ▶ along them, ▼ or B back; ▼ the hints, ▲ or B back.
+  - Edit Home's ✕ on "Button hints" also takes them off the D-pad.
+  - The status bar and the legend: every place that leaves room for them (the music dock, the row, the style homes) uses the same switch, so nothing keeps an empty gap on the Home menu.
+  - The Trophies category is left out of L2 / R2 and the category pills on every other layout.
+  - The comments use the same loading and caching as the big details window's achievements (a failed load isn't kept, so opening it again retries).
+- **Not tested on a device:**
+  - all of it, especially how the Home menu sits on your Thor's screen (icon spacing, the name under the tile) and the Trophies category with your library.
+- **I took my best reading of two items from your list.** Tell me if either isn't what you meant:
+  - "the new achievement popup (game-popup style)": I took it as the game popup's own achievements page;
+  - "reordering": I took it as picking the order there, not dragging single achievements around.
+
+---
+
+## Update — 11 Oct 2026 (131): Extra art packs downloaded (cartridges at full quality, spines, disc consoles), packs taken out of the app
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**One thing only you can do first:** make the GitHub repo public. I'm not allowed to change its visibility from here. Until it's public every download fails (Settings shows "… couldn't be downloaded").
+- Go to github.com › thebigpocket/Voltcap › Settings › General › Danger Zone › Change visibility › Change to public.
+- Everything is already uploaded: 152 files, about 101 MB, in the folder `packs/v1` of the repo.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (2):
+  - `src_copy\data\Packs.kt`;
+  - `src_copy\ui\PacksUi.kt`.
+- Changed (10):
+  - `src_copy\MainActivity.kt`;
+  - `src_copy\ui\CoverCases.kt`;
+  - `src_copy\ui\CustomCarts.kt`;
+  - `src_copy\ui\LauncherScreen.kt`;
+  - `src_copy\ui\PhysicalMedia.kt`;
+  - `src_copy\ui\QuickSettings.kt`;
+  - `src_copy\ui\RealMedia.kt`;
+  - `src_copy\ui\SettingsDialog.kt`;
+  - `src_copy\ui\SettingsIndex.kt`;
+  - `src_copy\ui\ShelfHome.kt`.
+
+**Copy `project_copy`:** nothing new.
+
+**Files to delete** (the PowerShell block below deletes them all, in `project_copy` first, then in the project):
+- New in 131:
+  - the folder `app\src\main\assets\carts\` (and `project_copy\app\src\main\assets\carts\`): the cartridge pack, now downloaded;
+  - in `app\src\main\res\drawable-nodpi\` (and `project_copy\app\src\main\res\drawable-nodpi\`): all 60 `vc_spine_<name>.webp`, your spine pack, now downloaded.
+- Still open from 125 and 126: the 39 old `cov_spine_<name>.webp`, the 16 `tpl_spine_<name>.webp`, `vc_spine_androidgames.webp` and `vc_spine_androidapps.webp`.
+- Not needed by the app: `C:\Users\User\Downloads\cartridges\voltcap_carts.zip` (the 560-px zip from 128). Keep it or delete it as you like.
+
+**PowerShell** (paste it all):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+
+# 1) Delete the pictures that are now downloaded or no longer used (first in project_copy, so robocopy can't bring them back; then in the project)
+$names = @(
+  'cov_spine_32x','cov_spine_3do','cov_spine_3ds','cov_spine_atari2600','cov_spine_atari7800','cov_spine_c64',
+  'cov_spine_colecovision','cov_spine_dreamcast','cov_spine_gamecube','cov_spine_gamegear','cov_spine_gb','cov_spine_gba',
+  'cov_spine_gbc','cov_spine_genesis','cov_spine_intellivision','cov_spine_jaguar','cov_spine_lynx','cov_spine_mastersystem',
+  'cov_spine_n64','cov_spine_nds','cov_spine_neogeo','cov_spine_neogeopocket','cov_spine_nes','cov_spine_pcengine',
+  'cov_spine_pico8','cov_spine_pokemonmini','cov_spine_ps1','cov_spine_ps2','cov_spine_psp','cov_spine_psvita',
+  'cov_spine_saturn','cov_spine_segacd','cov_spine_snes','cov_spine_switch','cov_spine_vectrex','cov_spine_virtualboy',
+  'cov_spine_wii','cov_spine_wiiu','cov_spine_wonderswan',
+  'tpl_spine_32x','tpl_spine_3ds','tpl_spine_colecovision','tpl_spine_dreamcast','tpl_spine_gamegear','tpl_spine_gb',
+  'tpl_spine_gba','tpl_spine_gbc','tpl_spine_genesis','tpl_spine_nds','tpl_spine_neogeopocket','tpl_spine_ps1',
+  'tpl_spine_saturn','tpl_spine_virtualboy','tpl_spine_wii','tpl_spine_wiiu',
+  'vc_spine_androidgames','vc_spine_androidapps',
+  'vc_spine_3do','vc_spine_amiga','vc_spine_arcade','vc_spine_atari2600','vc_spine_atari7800','vc_spine_atarijaguar',
+  'vc_spine_atarilynx','vc_spine_atomiswave','vc_spine_c64','vc_spine_colecovision','vc_spine_dos','vc_spine_dreamcast',
+  'vc_spine_famicom','vc_spine_fbneo','vc_spine_fds','vc_spine_gamegear','vc_spine_gb','vc_spine_gba',
+  'vc_spine_gbc','vc_spine_gc','vc_spine_intellivision','vc_spine_mame','vc_spine_mastersystem','vc_spine_megacd',
+  'vc_spine_megadrive','vc_spine_msx','vc_spine_n3ds','vc_spine_n64','vc_spine_naomi','vc_spine_nds',
+  'vc_spine_neogeo','vc_spine_neogeocd','vc_spine_nes','vc_spine_ngpc','vc_spine_pc','vc_spine_pcengine',
+  'vc_spine_pcenginecd','vc_spine_pico8','vc_spine_pokemini','vc_spine_ps2','vc_spine_ps3','vc_spine_ps4',
+  'vc_spine_psp','vc_spine_psvita','vc_spine_psx','vc_spine_saturn','vc_spine_scummvm','vc_spine_sega32x',
+  'vc_spine_sfc','vc_spine_snes','vc_spine_switch','vc_spine_tg16','vc_spine_tg_cd','vc_spine_vectrex',
+  'vc_spine_virtualboy','vc_spine_wii','vc_spine_wiiu','vc_spine_wonderswancolor','vc_spine_xbox','vc_spine_xbox360'
+)
+foreach ($dir in "$root\project_copy\app\src\main\res\drawable-nodpi", "$root\app\src\main\res\drawable-nodpi") {
+  foreach ($n in $names) { Remove-Item -LiteralPath "$dir\$n.webp" -ErrorAction SilentlyContinue -Verbose }
+}
+# The cartridge pack folder
+foreach ($dir in "$root\project_copy\app\src\main\assets\carts", "$root\app\src\main\assets\carts") {
+  Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue -Verbose
+}
+
+# 2) Copy the Kotlin files into the source, and project_copy over the project
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### What changed
+
+**The packs are downloads now** (the app gets about that much smaller)
+- Three packs, each split per console, so only what's needed is fetched:
+  - **Cartridges:** your cartridge pack at **full quality**. Your 1600-px originals, saved as lossless WebP (pixel for pixel the same as your PNGs, I checked), all 14 shapes, opaque and clear, one zip per console (64).
+  - **Console spines:** your spine pack (60 pictures).
+  - **Disc consoles:** your optical-system pack (27 shells, new in the app). With the Cartridges look on **Original**, a disc console's game (PS1, PS2, Dreamcast, GameCube, Saturn, Steam, Android …) sits in its own shell with the cover in the window, instead of a cartridge. With **Custom**, the cartridge pack still wins where it has that console.
+- **First start:** after the first-time setup (and "Who's playing?"), Voltcap asks once: "Download extra art?" with:
+  - **Download all:** every console, about 100 MB;
+  - **Only the consoles I have:** just what your library uses; a console you add later gets its pieces at the next start;
+  - **Not now** (B does the same).
+  
+  Updating from 130, you'll get this question once too.
+- **Settings › Game look › Extra art packs** (also found by searching "Extra art packs" or "Download"):
+  - how many consoles of each pack are on the device, and the space they take;
+  - the download's progress with **Stop**;
+  - **Download all**, **Only my consoles**, **Remove all**;
+  - a line if some pieces failed (try again with the same chip).
+- Each piece shows as soon as it's down; the shelves and cases redraw by themselves.
+- **Without a pack** the looks fall back to what they did before your packs:
+  - Voltcap's own drawn cartridges and discs;
+  - Steam's spine, else the plain spine with the name.
+- **R1 › Cartridge tile:** only shows while some of the cartridge pack is downloaded.
+- **Where they come from:** `https://raw.githubusercontent.com/thebigpocket/Voltcap/main/packs/v1/` (the repo's `packs/v1` folder). I couldn't create a GitHub *release* from this session, so the files sit in the repo instead; it works the same for the app. The repo's README says what they are; `packs/v1/carts_CREDITS.txt` carries the cartridge pack's credits.
+
+### Check
+- **Type-check:** 0 errors (a full compile with code generation).
+- **Dex marker:** I searched every compiled class for `NON_LOCAL_RETURN`, and none has it.
+- **Your PC's copies:** the 10 changed files, `SUMMARY.md` and `HANDOVER.md` were staged fresh first; all are byte-identical to what 130 delivered. The two new files don't exist on your PC yet. Writes only go through if the file on your PC hasn't changed since.
+- **Reread** every change line by line in the diffs.
+- **Pack files:**
+  - all 1792 cartridge pictures came from your `Downloads\cartridges\<shape>\<opaque|translucent>\png\`;
+  - 128 random pictures were decoded back and compared pixel by pixel with your PNGs: identical;
+  - every zip has its 28 pictures;
+  - every spine and disc file the code asks for is in the repo (60 and 27);
+  - all 152 files are on GitHub.
+- **Bug check:**
+  - every place that drew the cartridge pack (`CustomCart`, `mediaFor`, the R1 tile);
+  - every place that drew a spine by resource: `rememberSpine`, the 3D boxes' `Box3D`, the Game shelf and TV room shelf plans. The pack's spines get stand-in ids below zero, so all of them load the downloaded file.
+  - nothing in the code still names `vc_spine_*` or `assets/carts`;
+  - `assets/system_discs` is still used (disc art), so it stays;
+  - a returning user never sees the question flash (it starts as "asked" until the saved answer is read);
+  - a half-finished download is never counted: a zip only counts after it is fully unpacked, a picture only after its rename;
+  - zip entries can't be written outside the pack folder;
+  - fixed during the check: **Remove all** during a download now stops it after the piece it's on, then removes everything (before, it waited for the whole download and then removed it).
+- **Not tested on a device:**
+  - all of it, and above all after you make the repo public:
+    - the first-start question;
+    - a full download and "only my consoles";
+    - the disc-console shells' windows lining up with the cover;
+    - the spines on the shelves and the 3D boxes after the download.
+
+---
+
+## Update — 10 Oct 2026 (130): Hide navigation bar, Circuit board's ▼, blur, Cross menu folders, Shelf speed, Dashboard, Side menu
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- Changed (18):
+  - `src_copy\MainActivity.kt`;
+  - `src_copy\ui\AppIcons.kt`;
+  - `src_copy\ui\BakedBlur.kt`;
+  - `src_copy\ui\BatteryWatchUi.kt`;
+  - `src_copy\ui\GuideWebActivity.kt`;
+  - `src_copy\ui\HomeChrome.kt`;
+  - `src_copy\ui\MixerActivity.kt`;
+  - `src_copy\ui\OverlayControlActivity.kt`;
+  - `src_copy\ui\PinShortcutActivity.kt`;
+  - `src_copy\ui\PlatformLogos.kt`;
+  - `src_copy\ui\QuickMenuActivity.kt`;
+  - `src_copy\ui\ResetAndCompat.kt`;
+  - `src_copy\ui\ShelfHome.kt`;
+  - `src_copy\ui\ShowcaseScene.kt`;
+  - `src_copy\ui\StyleCrossMenu.kt`;
+  - `src_copy\ui\StyleDashboard.kt`;
+  - `src_copy\ui\StyleHomes.kt`;
+  - `src_copy\ui\SystemBars.kt`.
+
+**Copy `project_copy`:** nothing new.
+
+**Files to delete:** none new. Still open from 125 and 126 (the PowerShell block below deletes them): in `app\src\main\res\drawable-nodpi\` (and `project_copy\app\src\main\res\drawable-nodpi\` if they're there) the 39 old `cov_spine_<name>.webp` and 16 `tpl_spine_<name>.webp` listed in 125, and `vc_spine_androidgames.webp` and `vc_spine_androidapps.webp`.
+
+**PowerShell** (paste it all; it deletes the files above, then copies `src_copy` and `project_copy` in):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+
+# 1) Delete the pictures nothing uses any more (first in project_copy, so robocopy can't bring them back; then in the project)
+$names = @(
+  'cov_spine_32x','cov_spine_3do','cov_spine_3ds','cov_spine_atari2600','cov_spine_atari7800','cov_spine_c64',
+  'cov_spine_colecovision','cov_spine_dreamcast','cov_spine_gamecube','cov_spine_gamegear','cov_spine_gb','cov_spine_gba',
+  'cov_spine_gbc','cov_spine_genesis','cov_spine_intellivision','cov_spine_jaguar','cov_spine_lynx','cov_spine_mastersystem',
+  'cov_spine_n64','cov_spine_nds','cov_spine_neogeo','cov_spine_neogeopocket','cov_spine_nes','cov_spine_pcengine',
+  'cov_spine_pico8','cov_spine_pokemonmini','cov_spine_ps1','cov_spine_ps2','cov_spine_psp','cov_spine_psvita',
+  'cov_spine_saturn','cov_spine_segacd','cov_spine_snes','cov_spine_switch','cov_spine_vectrex','cov_spine_virtualboy',
+  'cov_spine_wii','cov_spine_wiiu','cov_spine_wonderswan',
+  'tpl_spine_32x','tpl_spine_3ds','tpl_spine_colecovision','tpl_spine_dreamcast','tpl_spine_gamegear','tpl_spine_gb',
+  'tpl_spine_gba','tpl_spine_gbc','tpl_spine_genesis','tpl_spine_nds','tpl_spine_neogeopocket','tpl_spine_ps1',
+  'tpl_spine_saturn','tpl_spine_virtualboy','tpl_spine_wii','tpl_spine_wiiu',
+  'vc_spine_androidgames','vc_spine_androidapps'
+)
+foreach ($dir in "$root\project_copy\app\src\main\res\drawable-nodpi", "$root\app\src\main\res\drawable-nodpi") {
+  foreach ($n in $names) { Remove-Item -LiteralPath "$dir\$n.webp" -ErrorAction SilentlyContinue -Verbose }
+}
+
+# 2) Copy the Kotlin files into the source, and project_copy over the project
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### What changed
+
+**Hide navigation bar** (Settings › Device › Gesture hint › Hide navigation bar)
+- A safety net: while Voltcap has the focus and no keyboard is open, a navigation bar that is really up (not a swipe's short peek) is hidden again within about 1.5 s. If a handheld can't hide it at all, Voltcap asks only every 15 s after four tries.
+- Two popups didn't hide it while open: the Battery watcher window (R1 › Battery watcher) and the "Reset all settings? / Reset everything?" question (Settings › Backup › Reset app).
+- Voltcap's other windows now hide it too: the in-game quick menu, the overlay panel, the volume mixer, the shortcut-pin window and the web guide.
+
+**Circuit board: ▼ to Play and back**
+- The arrows now follow what's on screen: ▼ from the board → Play (the power switch), ▼ from Play → Settings, ◀ ▶ between Settings and Details, ▲ from Settings / Details → Play, ▲ from Play → back to the board. (▼ from Play used to do nothing, so only ◀ ▶ got you away from it.)
+
+**Blur without blocks**
+- Blurred pictures made once and stretched (second screen, Showcase scenes, music screensaver, lyric themes) are now made at a size that suits the blur: a light blur used a 64-px copy stretched 15–20 times, which showed blocks.
+- "Whole picture" (Settings › Home › Layout options › Background picture): the soft copy round the picture is now blurred with Lite effects on as well (it was a tiny unblurred copy stretched over the screen).
+- Apps with no art: the enlarged icon behind them is blurred into the picture, so it's soft on every Android version and with Lite effects (it was a small icon blown up).
+- The Glass showcase's frosted panes are really blurred now (they were a tiny copy stretched ten times).
+
+**Cross menu folders**
+- At start-up the icon strip now waits until the consoles have loaded (at most 2.5 s with no consoles), so Last played and Apps no longer show first with the folders popping in after.
+- The folders' console logos are decoded ahead, so a folder sliding into the strip has its logo at once.
+
+**Game shelf: no lag going over many games**
+- Scrolling the shelf no longer rebuilds every shelf and spine on every frame (only a shelf coming into view is built), the pull-out animation only redraws the game coming out, and each shelf's games are found once instead of searching all games for every shelf on every frame.
+
+**Dashboard:** the middle (Now playing, the row and Quick access) is half way stronger than the side panels. Settings › Home › Layout options › Dashboard options › **Panel strength** still sets both.
+
+**Side menu (and Resume, Dashboard): the first game can be reached**
+- ◀ on the first game only goes into the menu on a new press at least about a quarter of a second after you landed on that game. Before, the stick's quick nudges (and a fast second press) went straight past the first game into the menu.
+
+### Check
+- **Type-check:** 0 errors (a full compile with code generation).
+- **Dex marker:** I searched every compiled class for `NON_LOCAL_RETURN`, and none has it.
+- **Your PC's copies:** the 18 files, `SUMMARY.md` and `HANDOVER.md` were staged fresh first; all are byte-identical to what 129 delivered. Writes only go through if the file on your PC hasn't changed since.
+- **Reread** every change line by line in the diffs.
+- **Bug check:**
+  - every Compose `Dialog` in the app has the hide-the-bars hook now (I listed them all; the two above were the only ones without it); there are no Compose `Popup`s or drop-down menus that open their own window;
+  - the bar watchdog only runs with Hide navigation bar on, skips while a keyboard is open or another window has the focus, and backs off on a device that can't hide the bar;
+  - every user of `BakedBlur` / `BakedBlurImage` / `rememberBakedBlur` (second screen home and details, companion screen, Volt page, screensaver, lyric theme, Showcase, app icons);
+  - the Circuit board's B and A on the buttons are unchanged; other layouts' bars keep their ◀ ▶ walking;
+  - the Shelf's ▲ ▼ between shelves (it uses the same row and centre tables, now made once per plan), the pull-out and put-back, tapping a spine;
+  - the first-game rule only changes ◀ on the first game of Side menu, Resume and Dashboard; ▲ into the menus is unchanged.
+- **Not tested on a device:**
+  - all of it;
+  - especially: whether the navigation bar stays hidden in the layouts where it came back (tell me which layout if it still does, and whether it shows as the bar or the gesture pill), the Shelf's speed with your big library, and the Side menu's first game with the stick.
+- **I couldn't find for sure:** what made the Cross menu's folders spawn late when you go through them (not at start-up). If it still happens, a short screen recording would help.
+
+---
+
+## Update — 10 Oct 2026 (129): Looks and game cards — badges, spines, cases, real discs, carousel size, Achievements tile
+
+This is the first part of your long list. The rest comes in 130–133 (see "Still to come" at the end).
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (1): `src_copy\ui\LookStyles.kt`.
+- Changed (24):
+  - `src_copy\data\AppearanceStore.kt`;
+  - `src_copy\data\BuiltinShortcuts.kt`;
+  - `src_copy\data\Features.kt`;
+  - `src_copy\ui\AnimationPreviews.kt`;
+  - `src_copy\ui\Carousel.kt`;
+  - `src_copy\ui\ConsoleBadge.kt`;
+  - `src_copy\ui\CoverCases.kt`;
+  - `src_copy\ui\GameCard.kt`;
+  - `src_copy\ui\GameDock.kt`;
+  - `src_copy\ui\GameLookPicker.kt`;
+  - `src_copy\ui\GameWindow.kt`;
+  - `src_copy\ui\GridHome.kt`;
+  - `src_copy\ui\HeroCarousel.kt`;
+  - `src_copy\ui\HomeChrome.kt`;
+  - `src_copy\ui\LauncherScreen.kt`;
+  - `src_copy\ui\MediaCovers.kt`;
+  - `src_copy\ui\PhysicalMedia.kt`;
+  - `src_copy\ui\QuickSettings.kt`;
+  - `src_copy\ui\RealMedia.kt`;
+  - `src_copy\ui\SettingsDialog.kt`;
+  - `src_copy\ui\ShelfHome.kt`;
+  - `src_copy\ui\StyleHomes.kt`;
+  - `src_copy\ui\TileHome.kt`;
+  - `src_copy\ui\TvRoomHome.kt`.
+
+**Copy `project_copy`** (into the project root):
+- New (22): `project_copy\app\src\main\assets\badge_icons\<console>.webp` — the console symbols without any lettering: PS1, PS2, PS3, PS4, PSVita, Xbox, Xbox360, GameCube, Switch, N64, Dreamcast, Saturn, SNES, NeoGeo, NeoGeoCD, 3DO, Atari2600, Atari7800, Lynx, GameGear, WonderSwan, Atomiswave (cut from Dan Patrick's set you already use, "Light - Just White").
+- Changed (1): `project_copy\app\src\main\res\drawable-nodpi\cov_front_ps1.webp` — the PS1 case without the ridged hinge on the left (replaces `app\src\main\res\drawable-nodpi\cov_front_ps1.webp`).
+
+**Files to delete:** none new. Still open from 125 and 126 (the PowerShell block below deletes them):
+- in `app\src\main\res\drawable-nodpi\` (and `project_copy\app\src\main\res\drawable-nodpi\` if they're there): the 39 old `cov_spine_<name>.webp` and 16 `tpl_spine_<name>.webp` listed in 125, and `vc_spine_androidgames.webp` and `vc_spine_androidapps.webp`.
+
+**PowerShell** (paste it all; it deletes the files above, then copies `src_copy` and `project_copy` in):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+
+# 1) Delete the pictures nothing uses any more (first in project_copy, so robocopy can't bring them back; then in the project)
+$names = @(
+  'cov_spine_32x','cov_spine_3do','cov_spine_3ds','cov_spine_atari2600','cov_spine_atari7800','cov_spine_c64',
+  'cov_spine_colecovision','cov_spine_dreamcast','cov_spine_gamecube','cov_spine_gamegear','cov_spine_gb','cov_spine_gba',
+  'cov_spine_gbc','cov_spine_genesis','cov_spine_intellivision','cov_spine_jaguar','cov_spine_lynx','cov_spine_mastersystem',
+  'cov_spine_n64','cov_spine_nds','cov_spine_neogeo','cov_spine_neogeopocket','cov_spine_nes','cov_spine_pcengine',
+  'cov_spine_pico8','cov_spine_pokemonmini','cov_spine_ps1','cov_spine_ps2','cov_spine_psp','cov_spine_psvita',
+  'cov_spine_saturn','cov_spine_segacd','cov_spine_snes','cov_spine_switch','cov_spine_vectrex','cov_spine_virtualboy',
+  'cov_spine_wii','cov_spine_wiiu','cov_spine_wonderswan',
+  'tpl_spine_32x','tpl_spine_3ds','tpl_spine_colecovision','tpl_spine_dreamcast','tpl_spine_gamegear','tpl_spine_gb',
+  'tpl_spine_gba','tpl_spine_gbc','tpl_spine_genesis','tpl_spine_nds','tpl_spine_neogeopocket','tpl_spine_ps1',
+  'tpl_spine_saturn','tpl_spine_virtualboy','tpl_spine_wii','tpl_spine_wiiu',
+  'vc_spine_androidgames','vc_spine_androidapps'
+)
+foreach ($dir in "$root\project_copy\app\src\main\res\drawable-nodpi", "$root\app\src\main\res\drawable-nodpi") {
+  foreach ($n in $names) { Remove-Item -LiteralPath "$dir\$n.webp" -ErrorAction SilentlyContinue -Verbose }
+}
+
+# 2) Copy the Kotlin files into the source, and project_copy over the project
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### What changed
+
+**Wide capsule of the first game**
+- With "Wide for the first game only", the first game's wide capsule no longer rolls out: it's simply there. Its animation is its own setting now, **Off** by default: Settings › Home › Layout options › **First game's wide capsule** (shows with "Wide for the first game only"). Every other row keeps Settings › Home › Animations › **Cover → wide capsule** (which also got **Off**).
+
+**"How far the game you're on stands out" can be none at all**
+- Settings › Home › Animations › How far the game you're on stands out: **0 %** now means the game you're on is the same size as the others (it used to always be 15 % bigger). 100 % and more = 15 % bigger, as before; above 100 % it also grows out of the row, as before.
+
+**Console badges: the symbols alone**
+- With the big logo badges on (R1 › Badges, or Settings › Game look › Covers, cases & discs › Console badges › Big logo), the 22 consoles above show just their symbol, in a short pill. Consoles whose logo is only lettering (no symbol) keep their logo.
+
+**Spines**
+- Slimmer: a spine is now 0.13 of its height wide (was 0.2), close to a real case.
+- Names like "God of War" and "Burnout 2" can shrink down to 4.5 sp (was 6 sp) before being cut. I couldn't find another cause; if a name is still cut, please send me a screenshot.
+- **Pulled out of the shelf, it shows** (Game shelf: Settings › Home › Layout options › Game shelf options › **Pulled out, it shows**; TV room: Settings › Home › Layout options › Games beside the TV › Shelf › **Pulled out, it shows**):
+  - **Real case, else Voltcap's** (default): the game's own scanned case when there is one, else Voltcap's case;
+  - **3D box from the side**;
+  - **Voltcap's case**: always the console's case with the cover in it;
+  - **Plain cover**.
+  - The TV room shelf now uses the same pulled-out case as the Game shelf.
+
+**PS1 case:** the ridged hinge on the left is gone (the cover sits next to the black band).
+
+**Real discs and cartridges stand free**
+- With "Real discs" (R1 › Real discs), the game's own cartridge / disc scan now stands free, with no dark square behind it, in the Voltcap row, Tiles, Grid, the style homes, Hero, the carousels and the TV room.
+
+**TV room grid:** the real cases, cartridges and discs show in the grid again (not only normal covers).
+
+**Background picture fills the screen by default**
+- Settings › Home › Layout options › **Background picture**: until you pick one for a layout, every layout fills the screen. The Voltcap row too, when its games are cases, cartridges, discs or spines; with covers or wide capsules it keeps Settings › Theme › Background › Background picture's choice.
+
+**R1 panel**
+- **Real / Drawn discs** tile: only shows with the Discs only look, or Cartridges & discs (not with Cartridges), so it no longer sits beside unrelated looks.
+- New tiles, each only while its look is on (tap: the next console, hold: the list; "Own" = each game's own):
+  - **Disc** (Discs only look): every game on one console's disc (PS1, PS2, PS3, PS4, PSP, Saturn, Dreamcast, Sega CD, GameCube, Wii, Wii U, Neo Geo CD, PC Engine CD, 3DO, Xbox, Xbox 360). Picking one turns Drawn discs on;
+  - **Case** (Real cases looks): every game in one console's case;
+  - **Spine** (Spines look): every game with one console's spine.
+- The **Cartridge** tile from 128 does the same for the Cartridges look.
+- **Achievements** tile (was "Progress"; in your shortcut list it's now "Achievements place"): where the achievement count sits on the game you're on, on covers, cartridges, discs and every layout, and on the wide capsule:
+  - tap: **Corner → Above → By name → Under → Off**; hold: the list;
+  - Corner: the pill in the corner from Settings › Achievements › Achievements on cards & pop-ups › On the cards › Trophy count › Corner;
+  - Above: at the top of the picture, and above the name on the wide capsule;
+  - By name: bottom left of the picture, and next to the name on the wide capsule;
+  - Under: at the bottom of the picture with a progress line along the bottom edge of the game you're on, and under the name on the wide capsule;
+  - Off: none.
+  - The same choice is in Settings › Achievements › Achievements on cards & pop-ups › On the cards › Trophy count › **Where on the game**.
+
+**Carousels: bigger games, to the edge**
+- The carousels' games (the Voltcap row's, Grid's, Side menu's and the TV room's carousel) are bigger by default, and the games aside are bigger too.
+- **To the edge** is now the default for "Games each side".
+- New **Game size** slider (60–200 %, default 130 %): Settings › Home › Layout options › Carousel look › **Game size** (and in the TV room: Settings › Home › Layout options › Games beside the TV › Carousel › **Game size**). It also sizes the Voltcap row's carousel.
+
+**Game popup**
+- The info line (year, maker, genres, last played) has two lines, so it isn't cut off with "…". The description still ends in "…" after the number of lines set in the popup's story setting, as before.
+- Button words shrink a little instead of being cut ("Achievements…").
+- **Achievements** always opens that game's own: its RetroAchievements list, a Steam game's Steam achievements, or (not matched yet) the matching for that game. It used to open the whole achievements hub.
+- **Play is lit right away** when the popup opens, without an extra press.
+
+### Check
+- **Type-check:** 0 errors (a full compile with code generation).
+- **Dex marker:** I searched every compiled class for `NON_LOCAL_RETURN`, and none has it.
+- **Your PC's copies:** the 24 changed files, `SUMMARY.md` and `HANDOVER.md` were staged fresh before writing back; the 24 code files are byte-identical to what 128 left. `LookStyles.kt` is new. Writes only go through if the file on your PC hasn't changed since.
+- **Reread** every change line by line in the diffs.
+- **Bug check:**
+  - every place that draws a cartridge / disc / real scan (`mediaFor`, `isFreeMedia`, `realScanOf` in the Voltcap row, Tiles, Grid, the style homes, Hero, both carousels, the TV room, the game window);
+  - the Disc / Case / Spine picks: a pick that no longer exists falls back to each game's own (no crash); the case pick also sizes the real-size cases;
+  - the achievement placement: the console badge, favourite star and game-state mark move out of the count's way; Off hides the count everywhere; the wide capsule's settings follow the tile;
+  - the size change of the game you're on: the row's width and height follow it (no overlap at 0 % or 100 %);
+  - the background picture default: only layouts you haven't set change.
+- **Not tested on a device:**
+  - all of it;
+  - especially: the new symbol badges' sizes, the PS1 case, the slimmer spines on the TV room shelf, the carousel at 200 %, Play lighting up first on the second screen.
+
+### Still to come (from your list)
+- **130:** the bottom navigation-bar look in some layouts, Hide nav bar sometimes failing, Circuit's D-pad down to Play, blur pixelation, folders spawning late, Shelf lag, Dashboard's middle panel, the Side menu's first game.
+- **131:** download your cartridges, spine pack and disc pack at first start (all / systems in use / none) and in Settings, from a GitHub release on thebigpocket/Voltcap; the packs then come out of the app.
+- **132:** Spotlight exactly like your screenshot, the Cross menu's achievements category, the new achievement popup with comments and reordering.
+- **133:** "Only for this layout" for every Home setting; Edit Home (contents scale with size, style from the resize handle, less see-through, a transparency slider).
+
+---
+
+## Update — 10 Oct 2026 (128): The Cartridges look, with your own cartridge pack
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (1): `src_copy\ui\CustomCarts.kt`.
+- Changed (6):
+  - `src_copy\data\Features.kt`;
+  - `src_copy\ui\Carousel.kt`;
+  - `src_copy\ui\GameLookPicker.kt`;
+  - `src_copy\ui\GameWindow.kt`;
+  - `src_copy\ui\PhysicalMedia.kt`;
+  - `src_copy\ui\QuickSettings.kt`.
+
+**Copy `project_copy`** (new, into the project root):
+- `project_copy\app\src\main\assets\carts\` — your cartridge pack: 14 shapes × 2 finishes × 64 consoles = 1792 pictures, as `carts\<shape>\o\<console>.webp` (opaque) and `carts\<shape>\t\<console>.webp` (clear), about 26 MB in all.
+  - **They come as one zip:** `C:\Users\User\Downloads\cartridges\voltcap_carts.zip`. The PowerShell block below unpacks it into `project_copy\app\src\main\assets\` first (200 of the pictures and `CREDITS.txt` are already there; unpacking just writes the same files again).
+- `project_copy\app\src\main\assets\carts\CREDITS.txt` — where the pack's parts come from (the CC0 label templates, the ES-DE logos and their owners).
+
+**Files to delete:** none new. Still open from 125 and 126 (the PowerShell block below deletes them):
+- in `app\src\main\res\drawable-nodpi\` (and `project_copy\app\src\main\res\drawable-nodpi\` if they're there): the 39 old `cov_spine_<name>.webp` and 16 `tpl_spine_<name>.webp` listed in 125, and `vc_spine_androidgames.webp` and `vc_spine_androidapps.webp`.
+
+**PowerShell** (paste it all; it unpacks your cartridge pack into `project_copy`, deletes the files above, then copies `src_copy` and `project_copy` in):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+
+# 0) Unpack the cartridge pack into project_copy\app\src\main\assets\carts
+Expand-Archive -LiteralPath "C:\Users\User\Downloads\cartridges\voltcap_carts.zip" -DestinationPath "$root\project_copy\app\src\main\assets" -Force
+
+# 1) Delete the pictures nothing uses any more (first in project_copy, so robocopy can't bring them back; then in the project)
+$names = @(
+  'cov_spine_32x','cov_spine_3do','cov_spine_3ds','cov_spine_atari2600','cov_spine_atari7800','cov_spine_c64',
+  'cov_spine_colecovision','cov_spine_dreamcast','cov_spine_gamecube','cov_spine_gamegear','cov_spine_gb','cov_spine_gba',
+  'cov_spine_gbc','cov_spine_genesis','cov_spine_intellivision','cov_spine_jaguar','cov_spine_lynx','cov_spine_mastersystem',
+  'cov_spine_n64','cov_spine_nds','cov_spine_neogeo','cov_spine_neogeopocket','cov_spine_nes','cov_spine_pcengine',
+  'cov_spine_pico8','cov_spine_pokemonmini','cov_spine_ps1','cov_spine_ps2','cov_spine_psp','cov_spine_psvita',
+  'cov_spine_saturn','cov_spine_segacd','cov_spine_snes','cov_spine_switch','cov_spine_vectrex','cov_spine_virtualboy',
+  'cov_spine_wii','cov_spine_wiiu','cov_spine_wonderswan',
+  'tpl_spine_32x','tpl_spine_3ds','tpl_spine_colecovision','tpl_spine_dreamcast','tpl_spine_gamegear','tpl_spine_gb',
+  'tpl_spine_gba','tpl_spine_gbc','tpl_spine_genesis','tpl_spine_nds','tpl_spine_neogeopocket','tpl_spine_ps1',
+  'tpl_spine_saturn','tpl_spine_virtualboy','tpl_spine_wii','tpl_spine_wiiu',
+  'vc_spine_androidgames','vc_spine_androidapps'
+)
+foreach ($dir in "$root\project_copy\app\src\main\res\drawable-nodpi", "$root\app\src\main\res\drawable-nodpi") {
+  foreach ($n in $names) { Remove-Item -LiteralPath "$dir\$n.webp" -ErrorAction SilentlyContinue -Verbose }
+}
+
+# 2) Copy the Kotlin files into the source, and project_copy over the project
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### The Cartridges look
+- **"Cartridges only" is now called "Cartridges"** (R1 › Look steps through it, and Settings › Game look › Games are drawn as › **Cartridges**).
+- **Your pack (from `Downloads\cartridges`) is built in** for the 64 consoles Voltcap knows (every console key it uses, Steam, Android games, Android apps and PC included). Each game's cover shows through the cartridge's window; the shell with the console's logo sits on top.
+- **Original / Custom:**
+  - **Original** (default): cartridge consoles keep their own cartridge (the real scan, or the drawn one). Every console without a cartridge — disc consoles, PSP, Steam, Android games and apps, PC, arcade, DOS, ScummVM and the others Voltcap had no media for — gets your pack's cartridge.
+  - **Custom:** every game on your pack.
+- **Shape and finish:** the 14 shapes (Game Boy, Nintendo 64, Super NES, Game Boy Advance, NES, Famicom, Genesis, Game Gear, Nintendo DS, Nintendo 3DS, Switch, PS Vita, Atari 2600, HuCard) in **Opaque** or **Clear** (the board shows through the shell).
+- **R1 panel › Cartridge tile** (new; it only shows while the Cartridges look is on, at the end of the Quick page if you've saved your own tile order):
+  - **tap:** the next shape;
+  - **hold:** a list with Original / Custom, Opaque / Clear and every shape.
+  - The tile is lit when Custom is on.
+- **The same options in Settings:** Settings › Game look › Games are drawn as › pick **Cartridges**, then the **Cartridges** row (Original / Custom, Opaque / Clear) and **Cartridge shape** appear under it.
+- **Everywhere the look shows:** the Voltcap row, Tiles, Grid, the style homes, Hero, the carousels, the dock, the TV room, mixed lists (Continue playing), and the game window's cartridge.
+  - In the game window, a game on your pack shows that cartridge, not its disc case or disc scan.
+  - With "Real discs" on, games on your pack still show your cartridge (there's no scan of it).
+  - Cartridges move like the others (Settings › Game look › Moving discs & cartridges).
+- **The other ~139 consoles of your pack** aren't bundled, since Voltcap has no console keys for them yet. Suggested for later: put them in a release zip on GitHub, and Voltcap downloads it into its own storage when it gets those consoles.
+
+### Check
+- **Type-check:** 0 errors (a full compile with code generation).
+- **Dex marker:** I searched every compiled class for `NON_LOCAL_RETURN`, and none has it.
+- **Your PC's copies:** the 6 changed files, `SUMMARY.md` and `HANDOVER.md` were staged fresh first. The 6 code files are byte-identical to what 127 delivered.
+  - **Found:** `SUMMARY.md` and `HANDOVER.md` on your PC don't have the PowerShell rule and 127's PowerShell block (that last write never reached your PC). This update's copies include them: rule 13 is in `HANDOVER.md` now.
+- **The pack:** all 1792 pictures converted (560 px wide WebP); I checked each shape's window against the transparent hole in the pictures, and they match to a pixel.
+- **Reread** every change line by line in the diffs.
+- **Bug check:**
+  - every place that draws a cartridge / disc (`mediaFor` in the Voltcap row, Tiles, Grid, the style homes, Hero, both carousels, the game window) and every place that decides whether a game stands free as media (`isFreeMedia`: the dock, TV room, the cards);
+  - the carousel's slot size (it uses the pack shape's proportions);
+  - mixed lists ("All cartridges" now includes consoles that only have your pack's cartridge);
+  - hidden media kinds (Settings › Appearance › Game row › Cards): a game on your pack counts as a cartridge;
+  - the label: always the game's cover (a disc scan or a real cartridge label never goes in the window);
+  - the game window: no disc case or disc scan for a game on your pack, and its slot shape;
+  - "Discs only" and "Cartridges & discs" are unchanged (the pack only applies with the Cartridges look).
+- **Not tested on a device:**
+  - all of it;
+  - especially: how the R1 tile's two-line name fits ("Cartridge / Game Boy Advance"), the clear shells on dark themes, and the loading speed of the first screen of cartridges (each picture is about 10–20 KB).
+  - The second screen still draws each console's own media (as before).
+
+---
+
+## Update — 10 Oct 2026 (127): Build fix (Cross menu), achievements in the Cross menu's own style
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (1): `src_copy\ui\CrossTrophies.kt`.
+- Changed (5):
+  - `src_copy\data\Features.kt`;
+  - `src_copy\ui\GameWindow.kt`;
+  - `src_copy\ui\LauncherScreen.kt`;
+  - `src_copy\ui\StyleCrossMenu.kt`;
+  - `src_copy\ui\StyleHomeSettings.kt`.
+
+**Copy `project_copy`:** nothing new.
+
+**Files to delete:** none new. Still open from 125 and 126 (in `app\src\main\res\drawable-nodpi\`, and in `project_copy\app\src\main\res\drawable-nodpi\` if they're there):
+- the 39 old `cov_spine_<name>.webp` and 16 `tpl_spine_<name>.webp` listed in 125;
+- `vc_spine_androidgames.webp` and `vc_spine_androidapps.webp`.
+
+**PowerShell** (paste it all; it deletes the files above, then copies `src_copy` and `project_copy` in):
+
+```powershell
+$root = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+
+# 1) Delete the pictures nothing uses any more (first in project_copy, so robocopy can't bring them back; then in the project)
+$names = @(
+  'cov_spine_32x','cov_spine_3do','cov_spine_3ds','cov_spine_atari2600','cov_spine_atari7800','cov_spine_c64',
+  'cov_spine_colecovision','cov_spine_dreamcast','cov_spine_gamecube','cov_spine_gamegear','cov_spine_gb','cov_spine_gba',
+  'cov_spine_gbc','cov_spine_genesis','cov_spine_intellivision','cov_spine_jaguar','cov_spine_lynx','cov_spine_mastersystem',
+  'cov_spine_n64','cov_spine_nds','cov_spine_neogeo','cov_spine_neogeopocket','cov_spine_nes','cov_spine_pcengine',
+  'cov_spine_pico8','cov_spine_pokemonmini','cov_spine_ps1','cov_spine_ps2','cov_spine_psp','cov_spine_psvita',
+  'cov_spine_saturn','cov_spine_segacd','cov_spine_snes','cov_spine_switch','cov_spine_vectrex','cov_spine_virtualboy',
+  'cov_spine_wii','cov_spine_wiiu','cov_spine_wonderswan',
+  'tpl_spine_32x','tpl_spine_3ds','tpl_spine_colecovision','tpl_spine_dreamcast','tpl_spine_gamegear','tpl_spine_gb',
+  'tpl_spine_gba','tpl_spine_gbc','tpl_spine_genesis','tpl_spine_nds','tpl_spine_neogeopocket','tpl_spine_ps1',
+  'tpl_spine_saturn','tpl_spine_virtualboy','tpl_spine_wii','tpl_spine_wiiu',
+  'vc_spine_androidgames','vc_spine_androidapps'
+)
+foreach ($dir in "$root\project_copy\app\src\main\res\drawable-nodpi", "$root\app\src\main\res\drawable-nodpi") {
+  foreach ($n in $names) { Remove-Item -LiteralPath "$dir\$n.webp" -ErrorAction SilentlyContinue -Verbose }
+}
+
+# 2) Copy the Kotlin files into the source, and project_copy over the project
+robocopy "$root\src_copy" "$root\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$root\project_copy" "$root" /E /NJH /NP
+```
+
+### Build fix
+- **Your build failed** at `:app:dexBuilderDebug` on `StyleCrossMenuKt.class`, with "Method name '<anonymous>' in class '$$$$$NON_LOCAL_RETURN$$$$$' cannot be represented in dex format".
+- **Cause:** in 125 I added a `return@key` inside the inline `key { }` of the Cross menu's game list (`CrossList` in `src_copy\ui\StyleCrossMenu.kt`). The Kotlin compiler left an internal marker class in the bytecode, which Android's dexer can't read. The Kotlin type-check passes; only dexing fails.
+- **Fixed:** the list item is now inside a plain `if`; it looks and works the same. I checked every compiled class for that marker, and none has it any more.
+
+### Achievements in the Cross menu's own style
+- **On the Cross menu, a game's achievements now open as a column beside the game,** like a console's trophy list (your screenshot):
+  - **left:** the game you're on with ◀ beside it, the games before and after it faded next to it, and the category's icon above it;
+  - **middle:** the achievements going down, each with its badge, a small cup in bronze, silver or gold (by points; the set's last one gold), and its name. Earned ones are in colour; the rest are grey.
+  - **the one you're on** is bigger, with what it asks for, its points, when you earned it (or "Not earned yet") and how many players have it;
+  - **top right:** a thin outlined box with earned / total, the %, and the date and time.
+  - **behind it:** the Cross menu's own colour wash and ribbons. With the wash set to None, the home screen shows through, darkened.
+- **Controls:**
+  - ▲ ▼ move one, L1 / R1 (or L2 / R2) eight at a time;
+  - **X** cycles All → Still to get → Earned;
+  - **A** opens the full achievement list popup (comments, rarity, "I missed this"); **B** in that popup comes back to the column;
+  - **B**, **◀** or **Y** go back to the games.
+  - Touch: drag up / down to move, tap one to pick it, tap the one you're on for the full list, tap the left side to go back.
+- **It opens from:** Y on the home screen, Achievements in the game window, and everywhere else the achievement list opened from while the Cross menu is your layout.
+- **Switch:** Settings › Home › Layout options › Cross menu options › **Achievements in the menu's style** (on by default). Off brings back the list popup.
+
+### Check
+- **Type-check:** 0 errors. This is a full compile with code generation.
+- **Dex marker:** I searched every compiled class for `NON_LOCAL_RETURN`, and none has it. I can't run Android's dexer here, so this is the closest check I have.
+- **Your PC's copies:** all 5 changed files, `SUMMARY.md` and `HANDOVER.md` were staged fresh from your PC first. Every one is byte-identical to what 126 delivered. `src_copy\ui\CrossTrophies.kt` didn't exist yet.
+- **Reread** every change line by line in the diffs.
+- **Bug check:**
+  - every way into the achievement list (Y, the game window, the details popup, the hub, the R1 panel) with the Cross menu on and off;
+  - the full list's B (back to the column) and every way of closing it (`closeAllDialogs` also resets it);
+  - the column's keys: the press that opened it is ignored when it's let go in the column;
+  - the touch drag still moves along the column when it starts on an achievement.
+- **Not tested on a device:**
+  - all of it;
+  - especially: the column's look on the Thor's main screen and at small Cross menu sizes; touch; Steam games (their achievements use their own page, not this column).
+
+---
+
+## Update — 10 Oct 2026 (126): Android spine redrawn, spines never cut, TV room follows the Look, themes at 60 fps
+
+**Copy `src_copy`.**
+- Changed (13):
+  - `data/`: `AppearanceStore.kt`.
+  - `ui/`: `CornerVisualizer.kt`, `CoverCases.kt`, `CustomPackRules.kt`, `CustomPacks.kt`, `CustomPacksUi.kt`, `LauncherScreen.kt`, `LyricThemes.kt`, `NowPlayingScene.kt`, `SettingsDialog.kt`, `ShelfHome.kt`, `ThemeScene.kt`, `TvRoomHome.kt`.
+
+**Copy `project_copy`** (changed):
+- `app/src/main/res/drawable-nodpi/cov_spine_android.webp`: the Android spine, redrawn.
+
+**Files to delete** (in `app/src/main/res/drawable-nodpi`, and in `project_copy`). Nothing refers to them any more:
+- `vc_spine_androidgames.webp` and `vc_spine_androidapps.webp`. Android games and apps use the redrawn Android spine instead.
+
+### Spines
+- **The Android spine is redrawn like your pack's spines,** at the same size (168 × 2280):
+  - a dark green band at the top with a white plate holding the robot and ANDROID;
+  - a green line;
+  - the green body with the outlined title box (the game's name goes there, in white);
+  - a green line;
+  - the small white robot and ANDROID at the bottom.
+  Nothing on it is turned sideways or cut any more. Android games and apps both use it.
+- **Spines are never cut to fit any more.** A spine slot narrower than its picture used to crop the picture's sides, cutting off the logos. Now:
+  - each of your spines knows its own shape (from your manifest's sizes);
+  - the Game shelf (both shelf modes) and the TV room's Shelf of spines give it a slot of exactly that shape;
+  - the widest a spine may be went from 10 % to 12.5 % of its height, so your chunkiest spines (DS, 12 %) fit too.
+  The Spines look on the other layouts uses its own wider slots, as before.
+
+### TV room
+- **The grid beside the TV now shows the games as R1 › Look picks.** Before, "Cases with spines" (the default) turned covers, tiles, Android games and every console without its own cartridge into 3D cases seen from the side. So whatever you picked, you saw spines.
+- **Now:**
+  - Covers show covers (in the console's cover frame);
+  - cases, cartridges and discs, and wide capsules show as themselves;
+  - only the **Spines** look shows the 3D cases turned to their spines.
+- In Settings › the TV room's options, "Games beside the TV" now reads **Grid · as the Look** (was Cases with spines) and **Grid · no 3D cases** (was Covers only), with a note under it. Your saved choice stays.
+
+### Frame rate: 60 instead of 30
+- **Automatic background quality now picks 60 fps on every strong handheld.** Before, it picked 60 only when the screen reported 90 Hz or more; 60 Hz screens got 30. Weaker handhelds still get Low or Balanced. If a device keeps dropping frames, Automatic still steps itself down (to 30), as before.
+- **Calm themes** are no longer held at ~15 fps. They run at the same rate as the others.
+- **Your own theme and visualizer packs** may run at up to ~60 fps (was ~30). If one proves heavy it drops to ~30 (was ~15), at the smaller size as before. A second slowdown still switches it off.
+- **Music visualizers:**
+  - they now follow Settings › Background frame rate too (in 125 only the themes did);
+  - the corner visualizers run at 60 while music plays (was 30);
+  - the lyric themes' fills update about 60 times a second (was 30).
+- **Unchanged on purpose:**
+  - the "Save power when idle" steps (30 after 30 s idle, 15 after three minutes); "Background frame rate › 60 fps" still turns these off;
+  - the second screen stays at 30 (two 60 fps scenes at once costs a lot of battery);
+  - the Pixel falls theme: its 8 hand-drawn frames are the picture itself, so it isn't a frame-rate cap.
+- **Texts** that named the old rates were updated: the theme browser's "Best on" line and the pack rules.
+
+### Check
+- **Type-check:** 0 errors. This is a full compile with code generation.
+- **Your PC's copies:** all 13 changed files, `cov_spine_android.webp`, `SUMMARY.md` and `HANDOVER.md` were staged fresh from your PC first. Every one is byte-identical to what 125 delivered, so nothing of yours gets overwritten.
+- **Reread** every change line by line in the diffs against those copies.
+- **Bug check:**
+  - every place a spine picture is drawn: the Game shelf (spines, fronts, angled; same-height and real sizes), the TV room shelf, the 3D boxes' side, and the Spines look;
+  - every caller of `CustomSpines` and `SPINE_MAX_ASPECT`;
+  - all three TV room grid paths (Grid, Shelf, Carousel) with each R1 Look step;
+  - every scene clock: themes, showcase, badge bounce, music visualizers, corner visualizers, lyric themes, packs (`PackGuard`), the screensaver's full-speed mode and the second screen's own cap;
+  - the 125 code these changes reach, reread again: the frame-rate setting, the endless-row helper and the old popup's ◀ ▶.
+- **Fixed during the check:** the music visualizers ignored Settings › Background frame rate (added in 125 for the themes only). They follow it now.
+- **Not tested on a device:**
+  - all of it;
+  - especially: the new Android spine on the Game shelf and the TV room shelf; the TV room grid with each Look; 60 fps on the Retroid Pocket Classic (Automatic should still pick Low there) and your packs at 60.
+
+---
+
+## Update — 10 Oct 2026 (125): Badges, cartridges only, your spines, game window per layout, endless rows everywhere, Spotlight Row & menu, Edit Home, screensaver themes
+
+**Copy `src_copy`.**
+- New (1): `ui/EndlessRow.kt`.
+- Changed (73):
+  - top level: `LauncherViewModel.kt`, `MainActivity.kt`.
+  - `data/`: `AppearanceStore.kt`, `Features.kt`, `LayoutPresetStore.kt`, `LayoutPresets.kt`, `ScreensaverStore.kt`, `SleepRadios.kt`.
+  - `device/`: `audio/AppMixer.kt`.
+  - `ui/`: `AchievementDetailDialog.kt`, `AchievementListDialog.kt`, `AchievementViews.kt`, `AnchoredStrip.kt`, `Carousel.kt`, `CollectionDialogs.kt`, `CompanionActivity.kt`, `CompanionHub.kt`, `ConsoleBadge.kt`, `CoverCases.kt`, `GameCard.kt`, `GameDetailsOverlay.kt`, `GameDock.kt`, `GameLookPicker.kt`, `GameOptionsDialog.kt`, `GamePlayStats.kt`, `GameProfileDialog.kt`, `GameTitles.kt`, `GameWindow.kt`, `GridHome.kt`, `GuideScreen.kt`, `HeroCarousel.kt`, `HomeChrome.kt`, `HomeEdit.kt`, `HomePartStyle.kt`, `HomeParts.kt`, `HubScreens.kt`, `LauncherScreen.kt`, `ManualViewer.kt`, `MediaCovers.kt`, `MediaTemplates.kt`, `MediaVariants.kt`, `PhysicalMedia.kt`, `PowerSaver.kt`, `QuickSettings.kt`, `RaSocialUi.kt`, `RealMedia.kt`, `SaveExplorer.kt`, `ScreenLayoutsUi.kt`, `ScreenSaver.kt`, `SecondGamesPage.kt`, `SecondScreenDetails.kt`, `SecondScreenHome.kt`, `SecondScreenVolt.kt`, `SettingsDialog.kt`, `ShelfHome.kt`, `StatsContent.kt`, `SteamAchievementsUi.kt`, `StyleCircuit.kt`, `StyleConsoleHomes.kt`, `StyleCrossMenu.kt`, `StyleDashboard.kt`, `StyleHomeSettings.kt`, `StyleHomes.kt`, `StyleIconBar.kt`, `StyleSideMenu.kt`, `StyleSpotlight.kt`, `SyncPrompts.kt`, `ThemeScene.kt`, `TileHome.kt`, `TipsDialog.kt`, `TvRoomHome.kt`, `WhatToPlayDialog.kt`, `YearRecapDialog.kt`.
+
+**Copy `project_copy`** (all new):
+- `app/src/main/assets/badge_logos/`: 49 console logos (`<console>.svg`) from Dan Patrick's "Light - Just White" set, plus `CREDITS.txt`.
+- `app/src/main/res/drawable-nodpi/`:
+  - 62 spines from your pack, `vc_spine_<console>.webp`;
+  - the Android case, spine and cartridge: `cov_front_android.webp`, `cov_spine_android.webp`, `tpl_cart_android.webp`.
+
+**Files to delete** (in `app/src/main/res/drawable-nodpi`, and in `project_copy` if they're there). Nothing refers to them any more:
+- 39 old console spines, `cov_spine_<name>.webp`, where `<name>` is: `32x`, `3do`, `3ds`, `atari2600`, `atari7800`, `c64`, `colecovision`, `dreamcast`, `gamecube`, `gamegear`, `gb`, `gba`, `gbc`, `genesis`, `intellivision`, `jaguar`, `lynx`, `mastersystem`, `n64`, `nds`, `neogeo`, `neogeopocket`, `nes`, `pcengine`, `pico8`, `pokemonmini`, `ps1`, `ps2`, `psp`, `psvita`, `saturn`, `segacd`, `snes`, `switch`, `vectrex`, `virtualboy`, `wii`, `wiiu`, `wonderswan`. **Keep `cov_spine_steam.webp`.**
+- 16 template spines, `tpl_spine_<name>.webp`, where `<name>` is: `32x`, `3ds`, `colecovision`, `dreamcast`, `gamegear`, `gb`, `gba`, `gbc`, `genesis`, `nds`, `neogeopocket`, `ps1`, `saturn`, `virtualboy`, `wii`, `wiiu`.
+
+### Badges and game look
+- **Android badges** now say GAME, MEDIA or APP. MEDIA covers Spotify, Netflix, YouTube and the like. The kind comes from what Android reports for the app, plus a list of known media apps.
+- **Logo badges:** the R1 badge tile cycles Off → Console badges → Logo badges. Logo badges show the console's logo in white on its own colour; the pill's width follows the logo's shape.
+- **The R1 "media" tile is merged into the Look tile.** The Look tile has a new step, **Cartridges only**: disc, UMD and Steam games show as a cartridge, with their cover as the label. Real cartridges stay as they are. The same choice is a chip in Game look.
+- **Hiding everything in brackets** works now. It also catches nested brackets, a bracket left open at the end, and curly or full-width brackets. It applies wherever a name is shown; matching and sorting still use the full name.
+- **Locked achievements are grey everywhere:** the achievement list, the detail popup, both lists in the old game popup, the achievements part on the home screen, the TV room wall, and the game window's achievement page.
+
+### Spines and cases
+- **Your spine pack** is the spine for every game that has no real spine scan. 62 consoles are covered, plus Android games and apps.
+- **Order:** the real scan first, then your spine, then Steam's own spine, then the plain spine.
+- **The name** goes in the title area you left in each spine, in the text colour from your manifest. It's as big as fits and gets smaller for long names. It shows on the Game shelf, the TV room and the side of the 3D boxes.
+- **Android** has its own original case, spine and cartridge (an Android game's cartridge, or a disc when discs are picked).
+- The old pack spines are gone (see Files to delete). Steam's stays.
+
+### The game window (the popup on every layout)
+- **Play / Continue is always the first button, and the window opens on it.**
+- **Its options open as a page of the window, in the layout's own style** (no separate screen). The list holds only what the window doesn't already have: Favorite, Game settings, Music, Guide, Status, Collections, Emulator, Achievement matching, Refetch icon, the icon and emulator switches, Hide / Uninstall / Remove. **App settings** is last. It opens Android's page for the app, or for the game's emulator.
+- **Achievements** open as a page of the window too, in its style, with locked ones grey.
+- **What it shows and where is set per layout:** Settings › the layout's options › What it shows and where. Each part goes on the picture, by the name, under the buttons, or off.
+- **The old Game options dialog is cleaned up:**
+  - removed: Auto-match achievements, Refetch all missing icons, the badge placement row and App info;
+  - added: **App settings**, last.
+- **TV room:** the window's name and buttons go under the TV when there's room, so they no longer cover the picture (the faces).
+- **Old game popup:** ◀ ▶ now act on the press. Before, only Play and the play time could be reached; now ◀ ▶ get to Favorite, Sync, More and Options too.
+
+### Endless rows on every layout
+- With **Endless** on, these layouts now go round: Side menu, Dashboard, Icon bar, Spotlight, Console hub, Resume & discover (the row beside the big game), Cross menu, Hero carousel and Circuit board.
+- From the last game the row slides on to the first, like the Voltcap row.
+- The "slide in from the side" over the whole layout no longer plays on these layouts. Grid, TV room, Live tiles, Game shelf and Channel grid keep it.
+
+### Layouts
+- **Spotlight › Look › Row & menu** (new default):
+  - **top:** your round shortcuts as round buttons (▲), your profile, points and the time;
+  - **middle:** the row of square tiles, the game you're on big with its name beside it and **Start** under it;
+  - **bottom:** **Overview · Recent activity · Related** (▼, then ◀ ▶) and what the one you're on shows.
+  - The earlier look is **Big picture**.
+- **Resume & discover:** the next game now flies out of the row into the big spot, growing as it comes, and the one you leave slides off. Going back does the reverse. *Little jump* does the same with a bounce.
+- **Circuit board:**
+  - ▼ always lands on the power switch (Play);
+  - the game window grows out of the chip, like on the other layouts;
+  - the window always lands on Play when it opens.
+- **Channel grid:** games scrolling out no longer show at the screen's left and right edges.
+- **Cross menu:** the console logos are about 30 % smaller.
+- **Dashboard:** its own player, with the album cover (on by default; off under Dashboard options › Album cover), the song in the panel's colours, ⏮ ⏯ ⏭ and the progress.
+- **Achievement progress on every layout:** with the R1 Progress tile on, the game you're on shows a small chip on all the style homes and on Grid: a bar with earned / total and a percentage, or MASTERED with the trophy. It's left out on the Circuit board, which already has its charge bar.
+- **The first game fixed as a wide capsule** (Wide for the first game only) stays completely still: no growing, leaning or glow pulse.
+- **Voltcap row:** game names sit above the capsules by default. If you'd switched names off, they stay off.
+- **In each layout's options (new):**
+  - **Background picture:** Fill the screen or Whole picture, for that layout. Carousel layouts fill the screen unless you pick otherwise.
+  - **Game names:** next to the row, on the art, or none; and above or under the row.
+- **Startup categories:**
+  - The category screen's Tiles look really shows tiles now: square tiles are the default card, with Wide cards and Small cards as choices.
+  - More choices to start in: Almost mastered, Never played, Not played lately, Android games, and Smart Continue when that's on.
+
+### Edit Home
+- **Added parts are always drawn over the games.** They stay under the game popup, the category screen and the screensaver.
+- **The ✕ is at the top right and the resize handle at the bottom left** (on floating parts and on the layouts' own parts).
+- **Snapping:** a part snaps to the other parts too: their edges and middles, or right beside them, with a guide line.
+- **Style:**
+  - "None (see-through)" removes the part's own backing, so the dark area can be fully transparent;
+  - a picked backing or shape replaces the part's own instead of sitting behind it;
+  - the outline is thicker;
+  - the sheet scrolls, so the last row (Reset style / Done) is always reachable.
+- **+ Add:** new parts **Logo (SteamGridDB)** and **Logo (RetroAchievements)** (the game's RA icon). The old Game logo part stays.
+- **The bar folds away** with its ◀ / ▶ arrows to a small "Edit Home" tab at the left or right. A tap on the tab opens it again.
+- **No screensaver** while Edit Home is open.
+- **Your own layout presets now carry everything:** every look setting and every feature setting, including Edit Home (where parts are, their sizes and styles, what's hidden), the parts added to each layout, the window plan, the layout options, names and pictures. Undo puts the feature settings back too. Presets saved before this update still apply as before.
+
+### Screensaver and frame rate
+- **No status bar over the screensaver.**
+- **Any theme can be the screensaver,** music visualizers included, both without and with music.
+- **The screensaver's theme always runs at full speed.** Only Background quality and the new frame-rate setting change it.
+- **New: Settings › Background quality › Background frame rate:**
+  - **Automatic:** the battery-saving steps as before;
+  - **60 fps** or **30 fps:** that rate all the time, everywhere, never lowered to save battery.
+
+### R1 and other fixes
+- **R1 music player tile:** tapping goes through the corners and then **Off**, then starts over. Holding still opens the full list.
+- **Sleep mode (Wi-Fi / Bluetooth off):**
+  - an exact wake-up instead of one Android could put off for a long time;
+  - more tries (10 instead of 4);
+  - it waits when the root service isn't ready yet, instead of giving up;
+  - a second command if the radio is still on 2.5 s later;
+  - it starts listening again whenever Voltcap comes back to the front.
+- **Volume mixer:** for apps whose sound has no audio session (AetherSX2 / ARMSX2-style low-latency native audio), Voltcap now tries their player volume through the root service instead of only showing "no audio session".
+
+### Check
+- **Type-check:** 0 errors. This is a full compile with code generation, so it would also have caught a method that's too large.
+- **Your PC's copies:** all 73 changed files were staged fresh from your PC just before writing back. Every one is byte-identical to the copy I started from, so nothing of yours gets overwritten.
+- **Reread** every change line by line in the diffs against those copies.
+- **Bug check** of everything these changes reach:
+  - every caller of `AnchoredStrip` (Icon bar, Console hub, Spotlight both looks) and of the changed rows;
+  - D-pad handling for Spotlight (both looks), Circuit, Resume and the old popup;
+  - Edit Home on the Voltcap row and the style homes;
+  - the preset store's apply and undo;
+  - the screensaver call sites.
+- **Fixed during the check:**
+  - The floating parts were at first raised over everything, including the popup and the screensaver. They now go under those while one is open.
+  - Spotlight's Row & menu got the wrong ▲ / ▼ when "Tiles sit at the bottom" was set from the old look. It now always treats its tiles as on top.
+  - Start sat one tile too far right on the first game of a row that doesn't go round.
+- **Not tested on a device:**
+  - all of it;
+  - especially: the endless rows' first / last step on each layout; the Spotlight Row & menu look; Resume's fly-in; your spines on the shelf and the boxes; the mixer with AetherSX2 / ARMSX2 (on the Thor the player-volume way may be ignored by the firmware, as before);
+  - Sleep mode over a long screen-off;
+  - the old popup's ◀ ▶;
+  - presets saved after this update, applied and undone.
+- **Your optical-disc pack** (VoltCap_Optical_Disc_Systems…, 30 systems) is in Downloads; I only looked at its readme. Tell me if you want it used for the discs.
+
+---
+
+## Update — 9 Oct 2026 (124): Slimmer console spines with names that fit, shuffle on the big players
+
+**Copy `src_copy`.**
+- New (1): `ui/MusicShuffle.kt`.
+- Changed (6): `ui/BigMusicPlayer.kt`, `ui/CoverCases.kt`, `ui/FullMusicScreen.kt`, `ui/MusicOverlayView.kt`, `ui/ShelfHome.kt`, `ui/TvRoomHome.kt`.
+- Nothing to delete.
+
+### Console spines (Game shelf and TV room)
+- **Slimmer.** A spine is never wider than a tenth of its height. The cartridge consoles' cardboard spines (NES, SNES, N64, Game Boy, Mega Drive…) were about 1.4 times that.
+  - Game shelf: at most 40 dp with Real sizes on (was 64), at most 26 dp otherwise (was 34). TV room: at most 44 dp (was 76).
+  - The console's spine picture is cropped at the sides to fit the slimmer slot, never squashed.
+  - Real spine scans are still drawn to fill their slot.
+- **The name fits.** It's as big as fits (11 sp down to 6 sp) and goes over two lines when it has to, so a long name no longer ends in "…" after a few letters. This applies to the console spine, the cover strip (games with no console spine) and the TV room's plain spine.
+
+### Shuffle on the big players
+- **Where:** the big player popup, the second screen's music page (both layouts), and the in-game music panel. Each one shows a shuffle button while Spotify is the app playing. Spotify's own library screen already had one.
+- **With Spotify connected** (Settings › Accounts): shuffle goes through the Spotify Web API. The button lights up in the accent colour while shuffle is on. If Spotify refuses (no Premium, no active device), its message shows as a toast.
+- **Without the connection:** it uses Spotify's own shuffle action from its media session, when Spotify offers one; the on/off state isn't known then. If there isn't one, it says to connect Spotify.
+- In the game panel, the result ("Shuffle on" / "Shuffle off", or the error) shows on the lyric line for a moment.
+
+### Spines from other scrapers (your question)
+- **None of the scrapers Voltcap already uses has spines:** SteamGridDB, IGDB, RAWG, TheGamesDB and RetroAchievements have covers, art, logos and screenshots only.
+- **LaunchBox's Games Database** has a "Box - Spine" type, but few games have one, and I couldn't confirm the terms for other apps using it. **EmuMovies** has spines for members.
+- So ScreenScraper is still the only practical source. Until it works again, games show their console's spine with their name, which this update makes look right.
+
+### Check
+- **Type-check:** 0 errors.
+- **Reread** all 7 files line by line against your PC's copies, staged fresh before editing.
+- **Bug check** of every place these changes reach:
+  - every caller of `SpinePicture` (Game shelf, TV room) and of the spine width (shelf plan, pulled-out and angled widths);
+  - the turned box and carousel, which use the spine width from 123 and aren't touched here;
+  - the Spotify poller's start / stop counting;
+  - the overlay's panel width with a fourth button (about 230 dp in a 275 dp panel).
+- **Fixed during the check:**
+  - Very slim spines at their minimum width would have been cropped top and bottom (the logo cut off). Now they crop only when the slot is narrower than the picture.
+  - The visualizer layout's buttons got a balancing gap so play stays in the middle.
+- **Not tested on a device:** the spines on the shelf; shuffle with and without the Spotify connection.
+
+---
+
+## Update — 9 Oct 2026 (123): Spines: real scans or the console's spine, no more cut strips
+
+**Copy `src_copy`.**
+- Changed (6):
+  - `data/`: `Features.kt`.
+  - `ui/`: `BoxTexture.kt`, `SettingsDialog.kt`, `SettingsIndex.kt`, `ShelfHome.kt`, `StyleHomeSettings.kt`.
+- Nothing to delete. Don't delete the `cov_spine_*.webp` pictures: they're the console spines from your template pack and are still used as the fallback. The code also refers to them, so removing them would break the build. Steam's custom spine stays as it is.
+
+### What changed
+- **Spines are now only:**
+  1. the game's real spine scan from ScreenScraper, or
+  2. without one, its console's spine (the template pack's `cov_spine_*` picture) with the game's name on it. Steam games keep your Steam spine.
+- **No more strips cut out of other scans.** A game without a spine scan used to get a strip cut from the middle of its full box scan, or the side of its 3D box picture. Those cuts often land in the wrong place, and they were most likely the "messed up" spines.
+  - New switch: **Game look › Spines cut from box scans** (also under the Game shelf's layout options). Default off. Turn it on to get the cut strips back.
+- This applies everywhere a spine shows: the Game shelf, the TV room's shelf, the carousel and the turned box.
+- **Real spine scans only arrive with ScreenScraper.** Until it works for you again, most games will show their console's spine with the name.
+
+### Check
+- **Type-check:** 0 errors.
+- **Reread** all 6 files line by line against your PC's copies, staged fresh just before the edit.
+- **Also checked:** the mascot files and pictures from 122 are deleted in both places.
+- **Not tested on a device:** the shelf with the switch off and on.
+
+---
+
+## Update — 9 Oct 2026 (122): Games page on the second screen, Handheld menu and mascot removed, console logos, overlay drag/resize, mixer on the sound effect
+
+**Copy `src_copy`.**
+- New (3): `ui/FocusedCard.kt`, `ui/PlatformLogos.kt`, `ui/SecondGamesPage.kt`.
+- Changed (54):
+  - `data/`: `AppearanceStore.kt`, `BuiltinShortcuts.kt`, `CloudSync.kt`, `Features.kt`, `Hotkeys.kt`, `ScreensaverStore.kt`.
+  - `device/audio/`: `AppMixer.kt`.
+  - `ui/`: `Carousel.kt`, `ConsoleBadge.kt`, `DualScreenGrid.kt`, `FirstRunDialog.kt`, `GameCard.kt`, `GameDock.kt`, `GameProfileDialog.kt`, `GameSize.kt`, `GameWindow.kt`, `GridHome.kt`, `HomeExtras.kt`, `HomeParts.kt`, `LauncherScreen.kt`, `MixerActivity.kt`, `OptionIcons.kt`, `OverlayControlActivity.kt`, `OverlayShell.kt`, `PerfOverlayService.kt`, `PhysicalMedia.kt`, `PlayerSkins.kt`, `PresetPreview.kt`, `PresetsCard.kt`, `QuickSettings.kt`, `R1Extras.kt`, `R1Shortcuts.kt`, `SaveExplorer.kt`, `ScreenLayoutsUi.kt`, `ScreenSaver.kt`, `SecondScreenHome.kt`, `SecondScreenVolt.kt`, `SettingsDialog.kt`, `SettingsIndex.kt`, `ShelfHome.kt`, `StyleConsoleHomes.kt`, `StyleCrossMenu.kt`, `StyleDashboard.kt`, `StyleHomeSettings.kt`, `StyleHomes.kt`, `StyleIconBar.kt`, `StyleLiveTiles.kt`, `StyleSideMenu.kt`, `StyleSpotlight.kt`, `TileHome.kt`, `TvRoomHome.kt`, `VoltHelp.kt`, `VoltSettings.kt`, `VoltcapIntro.kt`.
+- Emptied (3, just their `package` line): `ui/Mascot.kt`, `ui/VoltCompanion.kt`, `ui/VoltTour.kt`.
+
+**Copy `project_copy`.**
+- New (45): `app/src/main/assets/platform_logos/` — 44 console logos (`PS1.svg`, `N64.svg`, `GameCube.svg`…) and `CREDITS.txt`.
+
+**Files to delete.**
+- The 3 emptied files above, in both `src_copy` and `app/src/main/java/com/shelf/launcher/ui/`.
+- The mascot pictures, in both `app/src/main/res/drawable-nodpi/` and `project_copy/app/src/main/res/drawable-nodpi/`: every `mascot_*.png` (38 files, `mascot_alert.png` to `mascot_wave_blink.png`, including `mascot_logo_capsule.png`). Nothing uses them any more.
+- The mascot drawing script, in the project and `project_copy`: `tools/mascot/` (`gen.py`, `poses.py`).
+
+**Also changed:** `tools/compile_check/paths.txt` (edited in place): added `coil-svg-2.7.0.aar`. The type-check now has **0** errors; the 5 "known" `SvgDecoder` errors were only that missing jar.
+
+**Not part of this update, waiting for you:** I changed the root `settings.gradle.kts` directly (`rootProject.name = "Voltcap"`, so the project no longer shows as ShelfLauncher). That broke the project_copy rule. Keep it or put back `"ShelfLauncher"`. The package stays `com.shelf.launcher`, and the folder name is up to you.
+
+### Second screen: a Games page
+- **The Handheld menu layout is gone** (and its settings, preview, tips and search entries). A saved choice of it opens the Classic row.
+- **"Games below" and "Swap screens" are gone** too: the R1 tiles, the hotkey, the ⇅ button and their settings. The second screen keeps its own pages, as before.
+- **New first page: Games.** Every console as a folder in the theme's colour with its logo on it and the number of games on the tab. Tap a folder and a popup over the page shows its games as a grid of covers with names. Tap a game and the main screen goes to it (its console, the game selected) and opens its game window, the way A would.
+- **Arrows by the page tabs.** A small arrow at each end of the tabs shows the pages go on (tap or swipe).
+- The companion screen has no Games page; a saved "Games" choice shows Art there.
+
+### Console logos (Dan Patrick's v2 Platform Logos)
+- 44 logos from Dan Patrick's "v2 Platform Logos (professionally redrawn official versions)" for LaunchBox. Where the console has an emblem I kept only the emblem (the PlayStation symbol, the N64 and GameCube cubes, the Switch icon, the Dreamcast swirl), else the logo without the extra text under it. Black logos are shown in white on the coloured folders.
+- **Used on:** the second screen's Games folders, and the Cross menu's folders (Consoles as folders). The Cross menu folders no longer show a name under them.
+- **Credit:** in the Cross menu's "Consoles as folders" setting and in `assets/platform_logos/CREDITS.txt`.
+- A console without a logo in the set falls back to the ES-DE logo Voltcap had, then to its name.
+- **The console folder tile was already Cross menu only** (it was only ever offered there). If you saw it on another layout, tell me where.
+
+### Game window
+- **Opens on Play / Continue every time.** The focus is asked for again over the first ¾ second until something in the window has it (it could miss when the window was opened by touch or from the second screen).
+- **Disc games show their case with the disc half out of it**, by default. New switch under Home › Layout options › Game window › "Case with the disc" (shown when Its disc / cartridge is on). Off: the disc alone. Cartridges stay cartridges.
+
+### In-game overlays
+- **Drag anywhere.** The drag now uses the screen's real size (as it's turned now). Before, the service's own screen size could be smaller, which kept overlays in part of the screen.
+- **Resize:** drag from a corner (it starts straight away, no long press any more), or pinch with two fingers on the overlay.
+- **Fold arrow in the outer corner.** It now sits on the overlay's corner nearest the screen's corner (square on that side), not under it. Folded, the tab sits in that same corner.
+
+### Volume mixer
+- **Automatic now uses the sound effect** (Voltcap's own effect on each app's audio session). The player-volume helper and System duck are calls into the other app's process that some firmware drops silently, which matches what you saw: every check passed, nothing got quieter. Player volume can still be picked by hand.
+  - Once, on the first run of 122, the old helper is stopped and the player volumes it set are put back, so the two don't stack.
+- **Mixer check:** in effect mode each app's line now says whether the effect is on its sessions (on N of M, refused, or no audio session found).
+- **The slider jumping to 100 % and back is fixed.** A volume you just moved is kept on screen for 3 s over what a background reload reads.
+- The Player volume / System duck choice only shows when Player volume is picked.
+
+### Save Vault: GameCube saves back
+- **Cause:** the Save Vault reads a GameCube save's bytes to find its real game name. For a folder picked through Android's folder picker, a file is only found after the folder has been listed, and that read never listed it first. So every GameCube save was dropped.
+- **Fix:** the folder is listed first (once a minute at most). Saves are still shown only when they have a real game name, as before.
+
+### Spines and discs
+- **Real spines always win.** When a game has its real spine scan, the Game shelf uses it whatever "Original cases" says. Voltcap's own spines are used only for games without one. (Your custom spines weren't stored files: they're drawn, so nothing needed deleting.)
+- **Real discs:** with "Real discs" picked, a game without its disc scan yet now shows the drawn disc instead of the cover. Real disc and spine scans come from ScreenScraper, so they only appear once ScreenScraper works for you again and the games are scraped.
+
+### Colours tile (R1)
+- New R1 tile **Colours**: tap cycles where the colours come from: **Theme → Game → Music** (the album cover). Hold: opens Theme › Colours follow. Shown for themes that can be recoloured.
+
+### Theme players behind full-screen layouts
+- On Grid, Hero, TV room and the style homes, the music theme's own player panel and its lyric line are no longer drawn: they ran into those layouts' panels. The scene itself still plays behind, and the layout's own music player stays. The Classic row and Tiles keep them.
+
+### Mascot removed
+- **Volt the cat is gone everywhere:** first-run steps (now a plain line per step), the home-screen tour, Volt on your games and wandering the background, the napping corner, the empty-list tips, the Save Vault, the second screen's header, the pixel intro, the "Volt asleep" screensaver (a saved choice goes back to Library art), and Settings › Theme › Mascot with its search entries.
+- **Kept:** the Volt theme, the Volt interface style and the voltage line (not the mascot).
+- **Help** replaces the home Options "Volt" button: it opens the same help (replay the setup guide, the trickier pages, the "?" help switch), without the cat.
+- The Side menu's "Volt" emblem is gone; "Your picture" without a picture shows a person icon.
+- **The cover light and the game window's grow-from-the-card** used the mascot's "where's the card" marker. That's now `ui/FocusedCard.kt`, so both keep working.
+
+### Check
+- **Type-check:** 0 errors against the project's libraries (kotlinc 2.2.10, the jars from your Gradle cache, coil-svg added).
+- **Reread** every changed file line by line against your PC's copy (sizes matched the copies I started from; nothing on your PC had changed since).
+- **Fixed during the check:**
+  - The mascot's card marker also fed the cover light and the game window's grow animation: put back as `FocusedCard.kt`.
+  - New Mixer check lines start with a capital letter.
+- **Not tested on a device:** all of it. In particular: the Games page and its popup on the Thor's bottom screen; the logos (SVG through Coil); the overlay drag to every edge, corner drag and pinch; the mixer on the sound effect; GameCube saves in Save Vault; the case-with-disc game window.
+
+---
+
+## Update — 9 Oct 2026 (121): Overlay fold and resize, lighter backgrounds, second mixer way
+
+**Copy `src_copy`.**
+- New (2): `ui/OverlayShell.kt`, `ui/BakedBlur.kt`.
+- Changed (19):
+  - `data/`: `Features.kt`.
+  - `device/audio/`: `AppMixer.kt`, `MixerHelper.kt`.
+  - `ui/`: `CompanionActivity.kt`, `HomeChrome.kt`, `LauncherScreen.kt`, `MixerActivity.kt`, `OverlayControlActivity.kt`, `PerfOverlayService.kt`, `PowerSaver.kt`, `QuickSettings.kt`, `ScreenSaver.kt`, `SecondScreen.kt`, `SecondScreenDetails.kt`, `SecondScreenHome.kt`, `SecondScreenVolt.kt`, `SettingsDialog.kt`, `SmoothBlur.kt`, `ThemeScene.kt`.
+- Nothing to delete. No `project_copy` files.
+
+### In-game overlays (stats, music, trophies)
+- **Fold arrow.** A small arrow under each overlay points up. Tap it and the overlay shrinks into its corner.
+  - Only a small tab with a down arrow stays, flat against the top edge of the screen.
+  - Tap the tab and the overlay grows back out.
+  - An overlay at the bottom of the screen gets its arrow above it, and its tab points up.
+- **Resize.** Hold a corner of an overlay for about half a second (it buzzes), then drag. Out makes it bigger, in makes it smaller.
+  - Each overlay keeps its own size, on top of Overlay size.
+- **Remembered.** Folded or not, and the size, are remembered per overlay.
+  - "Back to the corners" also undoes the sizes and unfolds.
+- **New switch: Fold arrows.** In the overlay controls and in Quick Settings › Overlays. Default on. The folded tab always shows.
+- **Overlays now take touches on themselves.** The stats overlay is touchable whenever Drag to move or Fold arrows is on, so its arrow works.
+  - It still never takes the controller.
+- **Sharper at other sizes.** The size is now done inside the overlay's window, so touches land exactly where things are drawn at any size.
+
+### Backgrounds use less (your 1–4)
+1. **Half-resolution scenes.** New switch in Appearance, default on.
+   - The animated scenes are drawn at no more than half the screen's resolution (a quarter of the pixels each frame), then smoothly stretched.
+   - Low and Lowest already drew below that and don't change.
+2. **Second screen slower when unused.** New switch, default on.
+   - After 20 s without a touch on the second screen, its background runs at about 15 fps.
+   - A touch there brings it back to full speed at once.
+   - A music visualizer keeps full speed while music plays.
+3. **Paused only when fully covered.** The background now holds a still frame only when nothing of it can be seen:
+   - the screensaver;
+   - a category page;
+   - the guide;
+   - the manual;
+   - a picture viewer.
+   
+   Popups that leave it showing round their edges no longer freeze it; it moves on at about 15 fps instead. These are Settings, the details window, the app drawer, Save Vault, apps library and first run.
+   
+   The details window shown on the second screen used to freeze the main screen's background as well; it no longer does.
+4. **Blur once.** Blurred pictures are now made once, small, and stretched. They used to be blurred again on every redraw over them.
+   - Where:
+     - the "Whole picture" hero's soft copy (under the zoom);
+     - the lyric themes' cover background;
+     - the screensaver's music background;
+     - the second screen's blurred art (home, details, Showcase, companion panel);
+     - the in-game companion.
+   - These are now also blurred on Android 11 and older.
+   - **Theme look › Blur over the whole screen** has to run on every frame over a moving scene. It now runs on a small copy (up to ¼ across), which looks the same.
+- Appearance's idle text now gives the real numbers: about 30 fps after 30 s and 15 fps after 3 min.
+
+### Volume mixer
+- **The Android line is information, not a failure.** Info lines now show an "i" instead of an empty circle, and "INFO" in the copied report. It also names the version, for example "Android 14 (SDK 34)".
+- **New check lines:**
+  - **Volume keeper:** is the background process that holds the volumes still running? If the firmware ends it right after the start, this was the reason the check passed but nothing got quieter.
+  - **One line per turned-down app:** whether it's playing, and whether its players have a volume handle. Without one, only the sound effect can reach it (native audio).
+- **"Check again" button.**
+- **Second way to turn apps down: Way › System duck**, in the Mixer check.
+  - Still root only, no Shizuku and no other app. This is the same privileged audio access Mixer-1 gets through Shizuku.
+  - It holds the volume with a constant VolumeShaper on each player. That is how Android itself quiets an app under a notification, and the app can't undo it.
+  - The player's own volume goes back to 100 % so the two don't multiply. Switching ways puts every app back to normal once, then holds it the new way.
+  - If every step passes but an app doesn't get quieter, try System duck while it plays.
+
+### Check
+- All 19 changed files reread line by line against your PC's copies; both new files read in full.
+- Fixed during the check:
+  - the helper's "same volumes" check could see an empty set as different with System duck on;
+  - a stale comment in the helper.
+- Type-check clean apart from the 5 known `SvgDecoder` errors.
+
+**Not tested** on a device. In particular, these need a device to confirm:
+- how the fold and grow animations look;
+- the long-press resize (the 30 dp corner zones);
+- whether System duck reaches players on your firmware;
+- how soft half resolution looks on your favourite scenes (switch it off in Appearance if it's too soft).
+
+---
+
+## Update — 8 Oct 2026 (120): Lyrics in the music player popup
+
+**Copy `src_copy`.** Changed (2): `ui/`: `BigMusicPlayer.kt`, `ScreenSaver.kt`. Nothing to delete.
+
+- **Lyrics sometimes missing in the player popup** (a tap on the small music player), two causes:
+  - **A failed look-up was final.** When the lyrics couldn't be reached for a moment (Wi-Fi waking up after a game, LRCLIB slow), the popup said "No lyrics found" for the whole song. It now uses the same look-up as the lyric themes, which tries again (after 10 s, then less often). Meanwhile it says "Couldn't reach the lyrics right now — trying again…".
+  - **No room.** A long title or artist took two lines each and squeezed the lyrics out. With the lyrics on they keep to one line each, with less space between the parts.
+- The lyrics shown come straight from that look-up, so the popup never finds them and then shows nothing.
+
+### Check
+- Both files reread against your PC's copies.
+- Type-check clean apart from the 5 known `SvgDecoder` errors.
+
+**Not tested** on a device.
+
+---
+## Update — 8 Oct 2026 (119): Save Vault fixes, art scraped and saved in one go, Games below with your whole home, game windows in colour, real spines only, loop themes removed, Spotify volume
+
+**Copy `src_copy`.**
+
+Changed (49):
+- root: `LauncherViewModel.kt`
+- `data/`: `AppearanceStore.kt`, `ArtFiles.kt`, `BuiltinShortcuts.kt`, `Features.kt`, `SaveCapsules.kt`
+- `device/audio/`: `AppMixer.kt`, `MixerEffects.kt`
+- `ui/`: `AchievementListDialog.kt`, `AnimatedWallpaper.kt`, `AnimationPreviews.kt`, `Carousel.kt`, `ConsoleBadge.kt`, `CoverCases.kt`, `DualScreenGrid.kt`, `GameDetailsOverlay.kt`, `GameLookPicker.kt`, `GameWindow.kt`, `GridHome.kt`, `HeroCarousel.kt`, `HomeChrome.kt`, `HomeEdit.kt`, `HomeParts.kt`, `LauncherScreen.kt`, `LyricThemes.kt`, `MediaCovers.kt`, `Motion.kt`, `PhysicalMedia.kt`, `PresetPreview.kt`, `PresetsCard.kt`, `QuickSettings.kt`, `R1Extras.kt`, `R1Shortcuts.kt`, `RealMedia.kt`, `ScreenSaver.kt`, `SettingsDialog.kt`, `SettingsIndex.kt`, `ShelfHome.kt`, `StyleConsoleHomes.kt`, `StyleDashboard.kt`, `StyleHomeSettings.kt`, `StyleHomes.kt`, `StyleSpotlight.kt`, `ThemePreview.kt`, `ThemeScene.kt`, `ThemeThumbs.kt`, `TrophyShelf.kt`, `TvRoomHome.kt`
+- `ui/theme/`: `ShelfColors.kt`
+
+Emptied (3), **delete them**: `data/ThemePacks.kt`, `ui/LoopThemes.kt`, `ui/ThemePacksCard.kt`. They now hold only their package line, so the build works even before you delete them.
+
+**Copy `project_copy`:** `app/src/main/res/drawable-nodpi/cov_front_steam.webp` and `cov_spine_steam.webp` (new; made from your Steam case template).
+
+**Files to delete:**
+- the three emptied files above;
+- `app/src/main/assets/loops` (the video loop themes);
+- `tools/themes/make_theme_packs.py`.
+
+### Save Vault
+- **Game Boy Color games no longer land under Game Boy.**
+  - Emulators keep both consoles' saves in one folder, so the folder alone said "Game Boy".
+  - A save that isn't one of your games is now sorted by the file name's tags ("(GB Compatible)", "(SGB Enhanced)"), the title ("… DX", "… Color"), then RetroAchievements' game lists already on the device.
+  - One of your games kept as a `.gbc` file in a Game Boy folder is filed under Game Boy Color.
+- **No more numbered GameCube entries.**
+  - A `.gci` that couldn't be read was handled a second time as a plain save and became a "game" named after its number.
+  - Every `.gci` / Dolphin card is now read only by its content.
+  - A save that isn't one of your games shows only when its title has words (not a bare number or code).
+
+### Art
+- **Scraping and saving run as one job.** Each game's pictures are saved on the device right after they're found. Whatever's left (backgrounds, scans, screenshots) is saved straight after, with its own count.
+- **A progress line** along the status bar's edge fills up while art (or details, or achievement matching) runs. It stays visible with the music player there. Settings › Scraping and Saved on this device have a progress bar too.
+- **Why art was looked up again after a restart, two fixes:**
+  - games the sources have nothing for were asked again at every start; now at most every two weeks (Scrape missing still asks at once);
+  - when the handheld booted, the Voltcap folder could be missing for a moment and the app's own folder was used, so everything looked unsaved. Both folders are now always looked in.
+
+### Two screens
+- **Games below (R1 tile) = your whole home on the bottom screen**: your layout with its music player, achievements, shortcuts, app drawer and the rest.
+  - The top screen shows only the game's picture, the status bar along its top (not on both screens any more), and the game's logo and console in the corner. A tap on the picture opens the game.
+  - The tile steps Off → Your layout → Games grid → Off.
+  - On the old dual-screen layout, the tile first switches back to the layout you used before.
+- **"Dual-screen menu" is now called "Handheld menu"**, so it isn't confused with this.
+
+### Game looks
+- **Console badges:**
+  - apps and Android games show the Android robot in front of "APP" / "ANDROID", and the word is no longer cut off;
+  - new R1 tile **Console badges** turns them on and off.
+- **New R1 tile Cartridges & discs:** Off → Cartridges & discs → Discs only.
+  - Picking a physical look (here, with the Look tile or in Game look) turns off the Grid's "Games as square tiles". That switch always drew covers, which is why cartridges and discs never showed in the Grid.
+  - The Grid draws real cartridge / disc scans whole instead of cutting them to a card.
+- **Spines: real ones only.** The game's own scan, else the console's spine from the template pack. A game with neither shows a strip of its own cover with its name; the drawn coloured spines are gone.
+- **No more dark boxes before cases appear:**
+  - a case scan shows the game's cover while it loads;
+  - flat boxes show the picture straight away;
+  - 3D boxes show a faint panel instead of a black one.
+- **Carousel "To the edge"** (Games each side, and the R1 Carousel tile's list): games all the way to the screen's edges.
+- **Big logos** (Edit Home's logo, Hero, Spotlight, Games below) fade in quickly.
+- **Steam games** get a PlayStation 4-sized case from your Steam template (a Steam band on top, the Steam spine), and the plain CD with Steam's logo in Cartridges & discs / Discs only.
+
+### Game window
+- **Its own content choices** (every layout): the game's disc / cartridge, Description, Facts, Achievements, and Options / trophies / sync buttons.
+- **The Grid's window**: the game's disc or cartridge on top in the middle, then its name, facts, achievements and story.
+- **In colour:** the game's colours (from its cover) by default, or theme colours, or each layout's own look.
+- **Classic details window instead**, per layout: Layout options › "In <layout>, A opens".
+- **Three round buttons in the window's style:** the game's options, its achievements, its save sync.
+- **No lower-case labels** (Live tiles said "back / details / play").
+- **TV room:** the window opens on the TV's own screen, switching on like an old set.
+
+### Layouts
+- **Edit Home corner resize works.**
+  - The handle hung outside the part, so it never got the touch.
+  - The drag also restarted at every change of size.
+  - Handles are now inside the parts and bigger.
+- **Icon bar:** the sync button opens the game's save sync (it needed the details window open before).
+- **Console hub / Resume:** achievements still to get show in grey; earned ones in colour.
+- **Resume & discover:**
+  - ▼ from the game goes to the shortcuts under it, ▲ from their top row goes straight back to the game;
+  - ▶ from the right column goes to the Discover cards, ◀ from the first card goes back to the shortcuts.
+- **Dashboard:** every menu button always fits, getting smaller instead of scrolling, so none is cut in half.
+- **R1 volume:**
+  - the bar shows the real system step, so 93 no longer jumps back to 90;
+  - ◀ ▶ move one real step.
+- **R1 pages:** flipping between Quick and Device slides the tiles in.
+- **Edit Home › + Add:** new **Achievement progress bar** and **Award badge** parts, on every layout.
+- **Animations per layout:** each layout's animations are now in Layout options, under that layout. A new choice there is how the game's picture comes in, for that layout only. Home › Animations keeps the general ones.
+
+### Themes and music
+- **All 40 video loop themes and the theme packs are removed.**
+- **Badge constellations theme removed.**
+- **Karaoke follows the singing:**
+  - the line changes on the exact frame (it was checked only every half second);
+  - the fill follows how long the line takes to sing, not the gap to the next line;
+  - lyrics without timings just show the line;
+  - new **Timing** chips (−1 s … +1 s) for all lyric themes.
+- **Lyric themes over the album cover** (blurred and dimmed), on by default. Switch: "Album cover behind the words".
+- **Trophy vault / Badge bounce:**
+  - they show unlocked achievements from the achievement lists of the games you played last, not only the last 30 days;
+  - new switch **Only mastered games**.
+- **Spotify volume in the mixer:**
+  - Voltcap now listens for the audio session apps announce for equalizers (Spotify sends it as it starts playing) and turns that stream down with the mixer's sound effect;
+  - before Spotify has announced one, it sets Spotify's own volume through your Spotify account (when connected and Spotify allows it);
+  - the mixer says "pause and play it once" when Spotify has no session yet.
+
+### Check
+- Every changed line was reread against your PC's copies (all matched before the changes).
+- **Fixed in the check:**
+  - the Handheld menu name collided with its own "Pocket menu" look;
+  - a tap on the top screen's picture used the game from when it was first drawn;
+  - the game window on the TV room could have used the TV's place on the other screen;
+  - an app that announces its session and has a player the helper controls would have been turned down twice;
+  - a doc comment was in the wrong place.
+- Type-check clean apart from the known `SvgDecoder` errors, now 5 (ShelfHome's drawn spine with its logo is gone).
+
+**Not tested** on a device. Spotify's session broadcast and Spotify's own volume depend on the Spotify app and your account.
+
+---
+## Update — 8 Oct 2026 (118): Updates 114–118 — art kept for good, spine scraping, wide capsules, console badges, Edit Home overhaul, recaps from other devices, music player per layout, theme packs
+
+**Copy `src_copy`.**
+
+Changed (25):
+- root: `LauncherViewModel.kt`
+- `data/`: `ArtStorage.kt`, `CloudSync.kt`, `Features.kt`, `YearRecap.kt`
+- `ui/`: `Carousel.kt`, `GameCard.kt`, `GameLookPicker.kt`, `GameTitles.kt`, `GridHome.kt`, `HomeEdit.kt`, `HomeParts.kt`, `LauncherScreen.kt`, `LoopThemes.kt`, `Motion.kt`, `MusicPlayer.kt`, `PhysicalMedia.kt`, `PlayHeader.kt`, `SettingsDialog.kt`, `StatsContent.kt`, `StyleConsoleHomes.kt`, `StyleHomeSettings.kt`, `StyleHomes.kt`, `TvRoomHome.kt`, `YearRecapDialog.kt`
+
+New (7):
+- `data/`: `ArtFiles.kt`, `OtherDevices.kt`, `ThemePacks.kt`
+- `ui/`: `ConsoleBadge.kt`, `HomePartStyle.kt`, `PlayerSkins.kt`, `ThemePacksCard.kt`
+
+**Copy `project_copy`:** `tools/themes/make_theme_packs.py` (new).
+
+**Files to delete:** none now. After the theme packs are on GitHub (see 118 below), you can delete `app/src/main/assets/loops` to make the app much smaller.
+
+### 114 · Art kept on the device for good, spine scraping
+- **Why "Saving art" ran after every update or restart, and the store showed ~11 MB for 500+ games.**
+  - Saved art lived in the image loader's cache, behind one shared index file for everything.
+  - A launcher killed mid-write (a game starting on a small handheld) could leave that index unreadable.
+  - An unreadable index makes the cache throw everything away.
+- **Now every picture is its own file in a permanent store, written whole or not at all.**
+  - The pictures of your games are saved the first time they load and are always drawn from the file after that.
+  - "Save all" copies over what the old cache still has (no download), then fetches the rest.
+  - The store now holds covers, wide art, backgrounds, logos, RetroAchievements icons, the box / disc / spine scans and the screenshots already looked up.
+  - The size shown is what's really there, and a new size limit applies at once.
+  - When the store is full, new pictures aren't saved; saved ones never get pushed out.
+- **Scrape spines** (Settings › Metadata › Saved on this device):
+  - **"Scrape spines for every game"** looks up each game's box scans on ScreenScraper in the background: spine, full box and disc. It waits while a game is running.
+  - **"Scrape spines now"** asks again for every game without its own spine, with progress and Stop.
+
+### 115 · Wide capsules, console badges, Channel symbols
+- **Real wide-capsule look.** Every game is a true 920 × 430 capsule, not cropped into a cover's shape:
+  - in the Voltcap row, the game you're on is a bigger capsule;
+  - in the carousels and the Grid it keeps its shape;
+  - the carousels show wide, hero and screenshot looks as themselves (they used to show the cover in a case).
+  - It's in the R1 Look cycle too.
+- **Console badges** on every game's tile:
+  - where: the Voltcap row, Grid, carousels and every style layout;
+  - what: the console's logo in white on the console's own colour, or your theme's colour;
+  - settings: Game look › Console badges (Off / Console's colour / Theme's colour);
+  - they keep clear of the trophy corner;
+  - not on spines, free-standing cartridges or discs, or tiny tiles.
+- **Channel grid's corner circle** shows the category as a symbol by default:
+  - the console's small picture, or its logo in one colour;
+  - special categories show their icon.
+  - "Corner symbol" in Channel options turns it off.
+
+### 116 · Edit Home overhaul
+- **Snapping while you drag**, to the edges, thirds and the middle, with dashed guide lines across the screen.
+- **Size handle on the layouts' own parts too.** They can now be resized: corner handle, L2 / R2, or the fixed sizes below.
+- **✎ Style** (bar chip, or L3) for the picked part:
+
+| Option | Choices |
+|---|---|
+| Backing | As set / none / dark glass / light / theme |
+| See-through | 100–40 % |
+| Shape | Pill / rounded / square |
+| Outline | On / off |
+| Movement | Stays still or animated (still: no rise-in, lift or bobbing) |
+| Fixed sizes | 70–150 % |
+| Line up | Left / centre / right, top / middle / bottom |
+
+- **+ Add** has three new parts, on every layout:
+  - **Play / Continue** on its own;
+  - the **Round buttons** on their own. These two stay still and the D-pad still reaches them.
+  - an **Achievements** card: earned / total with a bar, points, the next badges and the next one's name.
+
+### 117 · Recaps from your other devices, music player per layout, real spines in side views
+- **Recaps include your other devices.**
+  - Each device now shares its recent play sessions through the Google Drive launcher data. Older builds simply ignore them.
+  - The week / month / year recaps count games played on your other handhelds, including ones that aren't on this device.
+  - Those show their cover (looked up by name) or a disc of their console, as chosen.
+  - Settings: Stats › "Recaps include your other devices".
+- **Music player in the layout's style:**
+  - an LCD on the Circuit board;
+  - a white pill on the Channel grid;
+  - the handheld's grey panel on the Dual-screen menu;
+  - a flat tile on Live tiles;
+  - a wooden label on the Shelf;
+  - remote-control plastic in the TV room;
+  - light panels on Spotlight and the Icon bar;
+  - glass on the Hero carousel, Resume and Hub.
+
+  Controls and D-pad stay the same. Music player › "Player in the layout's style" switches it off.
+- **Real spines in side views:**
+  - Record flip carousel: games turned side-on show their own spine, facing you, not a squashed cover.
+  - Boxes in the carousels: the game's own spine on their side.
+  - TV room shelf: games use their own spine when they have one.
+
+### 118 · Downloadable theme packs
+- **The video loop themes come as three packs:** `voltcap-themes-calm.zip`, `voltcap-themes-scenes.zip`, `voltcap-themes-worlds.zip`.
+- **Getting them** (Theme › a loop theme › Theme packs):
+  - **Download**, **Update** or **Remove** each pack, from the latest release of your GitHub repository (set "owner/name" there);
+  - or **Import a pack file** you have.
+- **Where they're kept:** this app's storage, the visible Voltcap folder, or the memory card. Themes downloaded elsewhere keep playing from where they are.
+- **A theme whose pack isn't here** shows its colours and a note to download it. Ones still inside the app keep working.
+- **Making the packs:**
+  1. Run `python tools/themes/make_theme_packs.py [SOURCE] [OUT]`. SOURCE defaults to `app/src/main/assets`; point it at your higher-resolution originals to ship those instead.
+  2. Upload the three zips to a GitHub release.
+  3. Put the repository in Voltcap.
+  4. Delete `app/src/main/assets/loops`.
+
+### Check
+- Every changed line was reread against your PC's copies.
+- **Fixed in the check:**
+  - a background sync without the library loaded would have sent file names instead of game names, re-uploading every time; the names are now remembered;
+  - the art store's size went wrong when a picture was replaced;
+  - side-on spines appeared on cartridges and discs in the Record flip carousel;
+  - the art-size message still said "after a restart";
+  - three comments were in the wrong place.
+- Type-check clean apart from the 6 known `SvgDecoder` errors (one more file draws a console logo).
+- The pack script was run on a sample folder.
+
+**Not tested** on a device.
+
+---
+
+## Update — 8 Oct 2026 (113): A game window on every layout, the Dual-screen menu's slot grid, Spines look, carousel sides, logo sources
+
+**Copy `src_copy`.** Changed (21): `LauncherUiState.kt`, `LauncherViewModel.kt`, `data/AppearanceStore.kt`, `data/Features.kt`, `data/SteamGridDbRepository.kt`, `ui/Carousel.kt`, `ui/CompanionHub.kt`, `ui/GameCard.kt`, `ui/GameLookPicker.kt`, `ui/GameTitles.kt`, `ui/GridHome.kt`, `ui/LauncherScreen.kt`, `ui/PhysicalMedia.kt`, `ui/QuickSettings.kt`, `ui/SettingsDialog.kt`, `ui/ShelfHome.kt`, `ui/StyleConsoleHomes.kt`, `ui/StyleHomeSettings.kt`, `ui/StyleHomes.kt`, `ui/StyleSpotlight.kt`, `ui/VoltCompanion.kt`. **New:** `ui/GameWindow.kt`. **Files to delete:** none.
+
+### A game window on every layout (Home › Layout options › Game window, on by default)
+- **What it is:** A, or a tap on the game you're on, opens a window instead of the big details window. It shows:
+  - the game's picture, then its preview video once found;
+  - its name and console;
+  - three buttons: back, **Details** and **Play** (Continue for a game you've played).
+- **Details:** turns the window over to the game's story, facts, play time and achievements. From there, **Full details** opens the big window and **Back** turns it back. A tap on the picture does the same.
+- **Where it opens:** always on the main screen, growing out of the game you picked. If you picked it on the second screen, it rises from the bottom edge.
+- **Switched off:** A starts the game straight away. The details stay on the details hotkey and the game's options.
+- **Each layout has its own look:**
+
+| Layout | Window |
+|---|---|
+| Channel grid | Its rounded screen on a white or dark veil; Home · Details · Start |
+| Dual-screen menu | The handheld's grey-edged screen, blue Start button (Pocket look) or dark frame (Tabs look) |
+| Circuit board | LCD panel, monospace, LCD keys: BACK · DETAILS · PLAY |
+| Cross menu | No panel; a soft wave of colour; Start game, Information, Back as glowing words |
+| Side menu | The buttons in a column beside the picture |
+| Live tiles | Flat square tiles in one solid colour, lower-case words |
+| Dashboard and Grid | Cover on the left, facts and buttons on the right (flat on the Dashboard, rounded on the Grid) |
+| Shelf | Wooden board, wooden-label buttons: Put back · Read the back · Play |
+| Hero carousel | Picture fills the window; name and big buttons over its foot |
+| TV room | Picture on a TV with a thick bezel |
+| Resume & discover and Console hub | Glass card |
+| Spotlight and Icon bar | Light rounded panel |
+| Voltcap row | The theme's glass panel |
+
+- **Channel grid:** its old window is replaced by this one, which also grows out of the tile you picked. Its own switch moved to Home › Layout options › Game window.
+
+### Dual-screen menu
+- **Slot grid on the bottom screen:** a grid of rounded, see-through slots across the whole width.
+  - The slots past your last game are drawn empty, like a handheld's home menu.
+  - Each game sits inside its slot in your game look (cover, case, cartridge or disc, capsule), fitted and never cropped. Before, they were always cropped square covers.
+  - The one-row view and the Pocket menu use the game look too.
+- **D-pad.** I couldn't reproduce it here, so three likely causes are fixed:
+  - A touch on the second screen now hands the controller straight back to the home screen.
+  - Closing the game window puts the controller back where it was.
+  - Tapping the Pocket menu's framed icon opens the game window instead of starting the game.
+
+### Carousel
+- **"Games each side"** goes up to 5 (it was 3).
+- **R1 panel's Carousel tile:** hold it to pick the carousel view and 1–5 games each side. The tile shows the number.
+
+### Spines look
+- **New look: Spines.** Every game shows as its spine:
+  - its own spine scan when ScreenScraper has one (or cut from its box scan);
+  - else the console's spine with the name on it.
+  
+  Missing scans are looked up as the spines come on screen.
+- **Where:**
+
+| Where | How it shows |
+|---|---|
+| Voltcap row | Spines; the game you're on shows its cover |
+| Carousels | Spines aside; the middle one shows its cover |
+| Grid | A wall of spines |
+| Style layouts | Spines |
+
+  Not in the Hero carousel's column or the Tile look.
+- **Picking it:** Game look picker, or the R1 panel's Look tile (between Tile and Real cases).
+
+### Logos
+- **By the game's name:** the RetroAchievements icon, now on by default (Game names › Logos from RetroAchievements).
+- **Big logos are SteamGridDB's by default:**
+  - which logos: Edit Home's logo part, the Hero carousel, Spotlight's title, the second screen's showcase and the launch intro;
+  - how: looked up once per game when its artwork's logo came from elsewhere, then kept;
+  - setting: Game names › "Big logos from SteamGridDB". Off uses any source;
+  - a logo you picked yourself always wins.
+
+### Check
+- Every changed line was reread against your PC's copies.
+- **Fixed in the check:**
+  - tapping the picture couldn't turn the game window back;
+  - after Details, the controller sat on a button that had gone;
+  - the window's buttons could overflow in the card-style windows;
+  - a failed SteamGridDB logo look-up retried on every move, now once per start;
+  - two comments sat on the wrong place.
+- Type-check clean apart from the 5 known `SvgDecoder` errors.
+
+**Not tested** on a device.
+
+---
+
+## Update — 8 Oct 2026 (112): Quick fixes from the big list, the Pocket menu look, second-screen FPS, tiles and magnifier
+
+**Copy `src_copy`.** Changed (34):
+
+- `data/`: `AppearanceStore.kt`, `CloudSync.kt`, `Features.kt`, `MemoryCards.kt`, `SaveCapsules.kt`, `perf/PerfSampler.kt`
+- `ui/`: `AnimationPreviews.kt`, `Carousel.kt`, `CompanionHub.kt`, `DockBacking.kt`, `DualScreenGrid.kt`, `GameCard.kt`, `GameDock.kt`, `GridHome.kt`, `HeroCarousel.kt`, `HomeExtras.kt`, `LauncherScreen.kt`, `Motion.kt`, `PerfPage.kt`, `PhysicalMedia.kt`, `PresetsCard.kt`, `QuickSettings.kt`, `RealMedia.kt`, `ScreenMirror.kt`, `SettingsDialog.kt`, `ShelfHome.kt`, `StyleCircuit.kt`, `StyleConsoleHomes.kt`, `StyleCrossMenu.kt`, `StyleHomeSettings.kt`, `StyleHomes.kt`, `StyleIconBar.kt`, `TileHome.kt`, `WidgetBoard.kt`
+
+**Files to delete:** none.
+
+### Circuit board
+- **The three buttons.** ▼ now gives:
+  - **PLAY** (or CONTINUE): the power switch, starts the game.
+  - **SETTINGS**: the game's own settings.
+  - **DETAILS**: its details window.
+- The switch and its two LCD buttons are one Edit Home part ("Power switch, Settings & Details"). It's pinned bottom right at a fixed height, so a long name or an achievement bar no longer moves it.
+- **Board colours:** your theme's colours (new default), Green board, or Black board.
+- **Behind the board:** the circuit board, or your own background (theme scene, loop theme, picture or video).
+
+### Save Vault
+- **Console names.** Full names everywhere, e.g. "Game Boy Color", not "GBC". Saves from games that aren't on this device are grouped under the library's own console ("gc" and "GameCube" are now one group).
+- **GameCube.** Dolphin's `.gci` saves and `.raw` memory cards are opened, and each save goes to its game:
+  - matched by the game code read from the disc's header (ISO, RVZ / WIA, CISO), or else by the save's own title;
+  - offline, a `.gci` is still matched by the code in its file name.
+- **SRAM** (Dolphin's system settings) is no longer listed. Raw `.gci` / card rows don't appear separately any more.
+- **Memory cards showing as cards first, then as games.** The saved list now has a new file name (the old one is deleted), and a card that couldn't be opened yet is never saved in it.
+
+### Layouts
+- **Tile home removed as a layout.** The look stays (Game look › Tiles). If Tile home was saved, it now opens as the Voltcap row with square tiles.
+- **Hero carousel:** "Covers beside the hero": the whole column, only the game you're on, or none.
+- **PS1 discs** in the disc-and-case view are their real size: 120 mm against the case's height, measured on the case's visible edge. Before, they were bigger than the case.
+- **Shelf:** putting a game back no longer flashes its plain cover.
+- **Channel grid:**
+  - The window's buttons are **Home · Details · Start**.
+  - The game's preview video plays in the screen.
+  - **Details** turns the screen over to its details in the same style (story, facts, play time, achievements). From there, **Back** returns and **Full details** opens the big window.
+  - A tap on the screen also turns it over.
+  - The window sits on a see-through white (or dark) veil.
+- **Channel grid and Dual-screen menu scroll on continuously:** ◀ ▶ moves a column and the grid glides along. You can turn it off ("Scroll on continuously") to get pages again.
+- **Cross menu:** folders carry their console's logo, and a new category's games fade in instead of sliding.
+- **Resume & discover:** the next game slides into the big spot, or jumps in. The row beside it glides along.
+- **Names readable over pictures** (Dock › "Names over pictures"):
+  - Soft shadow
+  - Dark edge
+  - Dark pill (the default), which also puts the Icon bar's small name on a dark pill.
+
+### Animations (Home › Animations)
+- **Pages and categories, everywhere:** Slide, Fade or Just change.
+- **The game's info, everywhere:** Rise in, Fade in or Just appear.
+- **"How far the game you're on stands out":** 0–300 %. Above 100 % the Voltcap row's game grows out of the row from its middle, so wide capsules grow evenly too.
+- **"Only the game you're on moves":** spinning, bobbing and hopping discs, cartridges and cases.
+- **Per layout:** each of the above can be "As everywhere" or the layout's own choice. The Cross menu fades by default.
+- **Each choice has a live preview.**
+- **Transitions added where things used to just appear:**
+  - Hero cover column
+  - Shelf
+  - Channel pages
+  - Dual-screen icons
+  - Resume row
+  - Cross categories
+
+### Dual-screen menu
+- **New look: Pocket menu** (Dual-screen settings › Look).
+  - **Top screen:** your name and volume, the date, time and battery, and the game's picture with its console and "Details" in the lower corners.
+  - **Bottom screen:**
+    - the category with ◀ ▶
+    - the game's name panel (name, console · maker)
+    - one row of icons, with the one you're on framed, a pointer above it and START under it
+    - a scroll bar with arrows
+  - It uses both screens like the other look.
+- **"Games below" / "Swap screens" with this layout:** not removed. They clashed because this layout already splits the two screens its own way, so while the Dual-screen layout is on:
+  - those R1 tiles are hidden;
+  - the setting is set aside;
+  - the swap hotkey just says so.
+  
+  They still work with every other layout.
+
+### Second screen
+- **FPS no longer shows n/a:**
+  - The last game reading is held for 4 seconds.
+  - With no game running, it shows the screen's own rate, marked "screen · no game running".
+- **Every tile the same size** on the Performance page and the Widgets board. The screen mirror no longer takes a whole wide row.
+- **Magnifier (and Widgets) while a game runs.** They showed "Not available yet." The second screen now has both pages, and asks Android for the capture itself. Android doesn't let Voltcap ask from the background. On Android 14+ the whole screen is asked for, not a single app.
+
+### What I took your words to mean
+- Circuit: Play + Settings + Details.
+- Cross menu: fade by default.
+- Channel corner logos as symbols only: left for 114, with the console badges.
+
+### Still to do
+- **113:** everything downloaded kept on the device; spine scraping; "saving art" at every start.
+- **114:** the real wide-capsule look, console badges on tiles, Channel symbol logos.
+- **115:** Edit Home overhaul.
+- **116:** recap from other devices, a music player per layout, real spines in side views.
+- **117:** theme packs from GitHub Releases or a file.
+
+### Check
+- Every changed line was reread against the copies on your PC.
+- **Fixed in the check:**
+  - the Resume row's index when a game appears twice;
+  - the Dual-screen settings showing grid options for the Pocket look;
+  - continuous scrolling not following "Just change";
+  - two comments that promised things the code didn't do.
+- Type-check clean apart from the 5 known `SvgDecoder` errors.
+
+**Not tested** on a device.
+
+---
+
+## Update — 8 Oct 2026 (111): Full check of updates 109–110, and four fixes
+
+**Copy `src_copy`.** Changed: `data/CloudSync.kt`, `data/DriveClient.kt`, `data/SaveCapsules.kt`, `ui/LoopThemes.kt`, `ui/StyleSpotlight.kt`. **Files to delete:** none.
+
+**What was checked.** Every change from 109 and 110 was reread line by line against the copies on your PC (all 25 files plus the two new ones): animation switches and previews, memory cards, hidden parts and the D-pad, loop themes, and Console dreamscape's screens. Things looked for:
+- logic and wrong indexes
+- what breaks if the assets aren't copied (the loop themes just show their colour, no crash)
+- memory and threads
+- leftover paint state between draws
+
+The type-check is clean apart from the 4 known `SvgDecoder` errors.
+
+**Fixed.**
+- **Spotlight, D-pad on the activity cards (109 bug).** With Title & Play taken off in Edit Home, ▼ went to the cards, but the focus ring and touch still counted from button 3. The first card now gets the ring, and A / tap do the right thing.
+- **Console dreamscape screens: the glass sheen faded after the first frame (110 bug).** The handheld's screen left its dark tint's transparency on the shared paint, so from the second frame the sheen on the glass pictures was nearly invisible. The paint is now reset before each sheen.
+- **Memory cards from another device, memory use.** A PS2 card of up to 64 MB used to be downloaded whole before its size was checked. Now:
+  - Drive's reported size is checked first, and a card that's too big isn't downloaded at all (`DriveClient.downloadBytes(id, maxBytes)`).
+  - On handhelds with little memory, only cards up to 16 MB are opened (the standard 8 MB ones are always fine).
+- **Save Vault refresh: the memory-card folders were listed twice.** They're now listed once per refresh and shared between the two steps that need them.
+
+**Not tested** on a device.
+
+---
+
+## Update — 8 Oct 2026 (110): Console dreamscape shows your game's screenshots on its floating pictures
+
+**Copy `src_copy`.** Changed: `ui/AnimatedWallpaper.kt`, `ui/LauncherScreen.kt`, `ui/LoopThemes.kt`. **Copy `project_copy`:** new file `app/src/main/assets/loops/world_console_dreamscape/panels.json`. **Files to delete:** none.
+
+**What you see.**
+- The Console dreamscape loop theme now puts the screenshots of the game you're on into the scene, inside its floating screens:
+  - the four glass pictures
+  - the handheld's screen on the right
+- The screenshots float with the pictures, frame by frame, in perspective. They're rounded like the glass, with a faint sheen, and the glowing rims stay visible.
+- Every 8 seconds each screen fades to the next screenshot.
+- If the game has no screenshots, its key art and cover are used instead. With no game (or before the art has loaded), the original pictures show.
+- Works at every quality: Low, Medium, High and Reactive follow the video; Still and the slow drift use the still picture.
+
+**How it works.**
+- `panels.json` holds each screen's four corners in all 60 frames of the video. They were tracked from the video itself (optical flow and homographies, checked on every frame) and matched onto the still picture, which is framed differently.
+- `WallpaperVideo` reports the player's position each time a new frame reaches the screen (`onFrame`). `LoopScreensLayer` draws the screenshots at that frame's corners with the same cover-crop as the video, so they stay locked to the pictures. The Low tier (8 fps) uses the same timeline, by time.
+- The screenshots come from the same place as the game showcase themes (`Showcase.art`). They're loaded once you rest on a game, at 512 × 320, up to 8 per game.
+- Another loop can get screens the same way: add its id to `LoopThemes.WITH_SCREENS` and a `panels.json` next to its videos.
+
+**Checked:** type-check clean apart from the 4 known `SvgDecoder` errors. The corner tracking was checked on all 60 frames, with test pictures composited into the video. **Not tested** on a device. Worth a look:
+- whether the screenshots stay locked to the pictures while the video plays. If they trail by a frame on your handheld, it's a one-line offset to tune.
+
+---
+
+## Update — 8 Oct 2026 (109): Animation switches with previews, memory card games listed, hidden parts skip the D-pad, 40 video loop themes
+
+**Copy `src_copy`.** Changed: `data/CloudSync.kt`, `data/Features.kt`, `data/MemoryCards.kt`, `data/SaveCapsules.kt`, `ui/AnimatedWallpaper.kt`, `ui/Carousel.kt`, `ui/GameLookUi.kt`, `ui/HomeEdit.kt`, `ui/LauncherScreen.kt`, `ui/Motion.kt`, `ui/PhysicalMedia.kt`, `ui/ScreenSaver.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `ui/StyleCircuit.kt`, `ui/StyleConsoleHomes.kt`, `ui/StyleIconBar.kt`, `ui/StyleLiveTiles.kt`, `ui/StyleSpotlight.kt`, `ui/ThemePreview.kt`, `ui/ThemeScene.kt`, `ui/ThemeThumbs.kt`, `ui/theme/ShelfColors.kt`. New: `ui/AnimationPreviews.kt`, `ui/LoopThemes.kt`. **Copy `project_copy`:** new folder `app/src/main/assets/loops/` (40 themes, 154 files, about 42 MB). **Files to delete:** none.
+
+**Animations: every one can be switched off, and each shows a preview.**
+- New switches in Home › Animations, each with a preview:
+  - **Pages slide** (Live tiles, Channel grid, Dual-screen menu)
+  - **Game info rises in** (the rise-in on every layout)
+  - **Pictures fade over each other** (the held pictures)
+- Off = the page, info or picture just changes. Saved in `Features.animPageSlide`, `animRiseIn` and `animHeldPictures`; read in `ui/Motion.kt`.
+- Each animation choice now has a looping preview of the one picked:
+  - Background art motion (all 12, incl. Portal, Pixel dissolve, CRT, Memory card). Also in a game's own look (Transition onto this game).
+  - Cover → wide capsule (Roll, Slide, Flip, Sweep, Wipe).
+  - Moving discs, cartridges & cases (disc, cartridge and case side by side, as picked).
+  - Carousel view (Tucked, Flip, Wheel, Deck, Flat).
+- Previews are drawn with simple shapes in the theme's colours (`ui/AnimationPreviews.kt`) and follow Transition speed.
+- Already switchable before: launch animation, new game arrival, details window zoom, startup intro.
+
+**Save Vault: the games on a memory card are listed, not just "memory card".**
+- Cards are now recognised by their content (PS2 "Sony PS2 Memory Card Format", PS1 "MC"), not only by their name (`MemoryCards.cardType` / `readAny`).
+- Cards synced from another device are now opened from the **PS1 / PS2 memory-card folders** too, not only from RetroArch / generic folders (`CloudSync.remoteCardFiles`).
+- **PS2 folder cards** from another device ("Mcd001.ps2/BASLUS-20312/…") list one save per folder. Each is named from its icon.sys (a small download) or, failing that, its product code.
+- PS2 cards of 16–64 MB are now downloaded (the limit was 16 MB).
+- A card that opens but is empty gets no capsule. Before, it got an empty "memory card" capsule.
+- A file named like a card that isn't one is listed as a normal save.
+- A card that can't be opened (offline, Drive unreachable) is still listed **by game** when its name says which game. That covers per-game cards like "Crash Bandicoot (USA)_1.mcd" or "SLUS-00067_1.mcr", matched to your library where possible.
+- Only a shared card ("Mcd001.ps2") still shows as the card. It says its games will show once it can be opened.
+- On this device, a card saved under another name in a memory-card folder is found by its size and content.
+- The files inside a folder card are no longer listed as stray saves (no more "icon" game).
+
+**Edit Home: a part taken off with ✕ is skipped by the D-pad.** Its buttons drop out of the layout's ▲ / ▼ lists (`LayoutParts.off`):
+- Channel grid: corner buttons (▲), clock bar & round buttons (▼)
+- Spotlight: category names (▲), title & Play, activity cards (▼)
+- Icon bar: title & Start (▼)
+- Live tiles: tabs (▲)
+- Console hub: top row (▲), cards (▼)
+- Resume: Discover cards (▼)
+- Circuit board: category LCD (▲), power switch & Details (▼)
+- Voltcap row: the round shortcuts and the small music player, when taken off. (The game header's buttons already went with their part.)
+- While editing, everything stays reachable, so a hidden part can be picked and brought back.
+
+**Theme: 40 video loop themes ("Living loops"), from the packs in VoltCap_All_Packs_Master_v2.**
+
+The theme browser has three new groups, sorted by how much of the device they use:
+- **Living loops · calm (light, any device):** 20 themes with tiny videos (about 0.1 MB each).
+  - Midnight tides, Ocean breath, Drifting dust, Electric fireflies, Aurora veil, Lavender haze, Amber horizon, Moonlit fog, Slow bokeh, Silent stars
+  - Glass rain, Silk current, Soft ripples, Quiet grid, Nebula drift, Winter air, Pixel embers, Dusk dunes, Calm pulse, Voltcap sparks
+- **Living loops · scenes (most handhelds):** 10 themes.
+  - Aurora dunes, Glass capsules, Cosmic orrery, Crystal cave, Koi night pond, Neon rain, Castle valley, Glow shoreline, Sunken city, Violet nebula
+  - Cosmic orrery, Crystal cave, Castle valley and Violet nebula came as pictures only, so they drift slowly instead of playing a video.
+- **Living loops · worlds (stronger handhelds):** 10 themes.
+  - Gaming retreat, Arcade portal, Night train city, Rooftop garden, Circuit valley, Data temple (Low only)
+  - Console dreamscape, Console shrine, Creature lake, Wrestling arena
+
+**Quality:**
+- Each theme has a still and up to four videos: **Low, Medium, High, Reactive**.
+- One setting covers all of them, on the theme's card in the browser:
+  - **Auto:** Low on budget handhelds or battery saver, High on strong ones, otherwise Medium.
+  - Or pick Still, Low, Medium, High or Reactive yourself.
+- A missing tier falls back to the nearest one.
+- **Reactive** = the best video plus light that moves with the music. Each theme uses its pack's own effect (waves, aurora, rain, pixels, ripple, bars, particles or glow). It follows the real sound where that's allowed; otherwise it pulses to a soft beat while a song plays.
+
+**Colours and playback:**
+- Each theme's menus use the colours from its pack (accent, secondary, background), or colours measured from its picture.
+- The loops keep their own colours (⊘).
+- The video pauses on a frame while the home screen is covered, on Lite effects, or with animations off.
+- Videos play from the APK (`assets/loops/<id>/`); the still shows at once underneath.
+
+**"Best on" for every theme:**
+- Under the preview in the theme browser, every theme now says which devices it suits (still / calm / animated / music / showcase / your own pack).
+- A loop theme also shows the quality picker and what plays on this device, e.g. "Plays here: Medium — sharper video. Best on: most handhelds: Retroid Pocket 4 Pro / 5 / Mini, AYN Odin 2 Mini…".
+
+**How it's built:**
+- `AppTheme` has a `loop` id. Its motif stays MINIMAL, so the generated `ThemeShaders.kt` is untouched.
+- `ThemeScene(..., loop = )` plays `LoopScene` (`ui/LoopThemes.kt`).
+- Every place that draws a theme passes the loop id: home, second screen, screensaver, theme browser, full preview.
+- `WallpaperVideo` can now play from the app's assets.
+
+**Checked:** type-check clean apart from the 4 known `SvgDecoder` errors. **Not tested** on a device. Worth a look:
+- a few loop themes at each quality (and what Auto picks on the Odin / Retroid)
+- Reactive with music playing
+- the animation previews in Settings
+- a memory card from the other handheld in the Save Vault.
+
+---
+
+## Update — 8 Oct 2026 (108): Finishing the partly-done items
+
+**Copy `src_copy`.** Changed: `LauncherViewModel.kt`, `data/CloudSync.kt`, `data/Features.kt`, `data/SaveCapsules.kt`, `ui/BoxTexture.kt`, `ui/HomeEdit.kt`, `ui/LauncherScreen.kt`, `ui/Motion.kt`, `ui/StyleCircuit.kt`, `ui/StyleConsoleHomes.kt`, `ui/StyleCrossMenu.kt`, `ui/StyleDashboard.kt`, `ui/StyleHomeSettings.kt`, `ui/StyleHomes.kt`, `ui/StyleIconBar.kt`, `ui/StyleLiveTiles.kt`, `ui/StyleSideMenu.kt`, `ui/StyleSpotlight.kt`, `ui/TileHome.kt`, `ui/TvRoomHome.kt`. **Files to delete:** none.
+
+**Every layout: the next game's info rises into place.** Moving between games now animates the info on every layout, not only Spotlight, Icon bar and Resume:
+- Voltcap row: the game header
+- Tile home: the name above the tile
+- Dashboard: the Now playing card's title and Play line
+- Console hub: the cards
+- Resume: the Discover cards
+- Side menu: the name under the orb
+- Live tiles: the name line
+- Channel grid: the name pill
+- Cross menu: the details under the game
+- Dual-screen menu: the name on the top screen
+- TV room: the info strip
+- Hero carousel, Grid and Shelf already had their own motion; Spotlight, Icon bar, Resume and Circuit board already did this.
+- Parts that publish things while drawn (the header's D-pad buttons) are animated in place (`Modifier.riseOnChange`), never drawn twice.
+
+**Edit Home: the layouts' own parts can be moved and taken off too.** Each layout's own parts now get a frame and their red ✕ in Edit Home. The parts:
+- Channel grid: corner buttons, clock bar
+- Spotlight: category names, title & Play, activity cards
+- Icon bar: title & Start
+- Live tiles: tabs
+- Dashboard: title, profile card, status card
+- Console hub: top row, cards
+- Resume: top row, Discover cards
+- Dual-screen menu: game name
+- Circuit board: category LCD, clock LCD, readout, power switch
+- TV room: console sticker, info, badges
+
+How it works:
+- **Move:** drag it, or pick it with L1 / R1 and move it with the D-pad (8 dp steps).
+- **Take off:** ✕ (or Select) hides it; + Add brings it back.
+- **Reset:** X puts one back in place, Y resets everything.
+- A part keeps its place in the layout, so nothing else jumps.
+- While editing, a touch on a part picks or drags it and never presses its buttons.
+- Saved in `Features.partShifts` (dp offsets) and the hidden list.
+
+**Save Vault: memory cards from another device are opened.** A card that's only on Google Drive (synced from another device) is downloaded once, cached by its content's hash, and read like a card on this device. Its saves are listed game by game ("… · synced from <device>"). The "PS1 / PS2 memory card · mcd001" capsule is only left for a card that can't be fetched or read.
+
+**Spines.**
+- Games still without their own spine or full box scan are looked up on ScreenScraper again every two weeks (it keeps adding scans). Game shelf options › **"Look for spines again"** asks again now for each game as the shelf reaches it.
+- New last fallback: the **spine face of the 3D box picture**. The side you see on a box turned to the left is cut out (checked: see-through background, a clear fold, the side getting shorter away from you); otherwise it's left alone.
+- A drawn spine now shows only when a game has no spine scan, no full box scan and no usable 3D box.
+
+**Checked:** type-check clean apart from the 4 known `SvgDecoder` errors. **Not tested** on a device. Worth a look:
+- the 3D-box spine cut on a few games
+- dragging the layouts' parts in Edit Home
+- a memory card synced from the other handheld.
+
+---
+
+## Update — 8 Oct 2026 (107): TV room: game info under the TV, recent badges on the wall
+
+**Copy `src_copy`.** Changed: `ui/TvRoomHome.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `data/Features.kt`. **Files to delete:** none.
+
+- **Game info under the TV.** The game's info strip now sits on the empty floor under the set, between its legs. It has the same look as before (name, stars, console · year · developer · time played · last played, the story line, the logo and picture layers behind).
+  - The games beside the TV get the whole height of the right side.
+  - It's placed from the room picture's own coordinates, so it follows the picture on any screen size.
+  - When there isn't enough room there (at least 200 × 44 dp), it stays under the games as before.
+- **Recently unlocked badges** on the strip of wall between the lamp and the TV, newest at the top (it has an accent border; older ones fade a little).
+  - The strip is under the lamp's shade and above the books, and clear of the plush figure, so nothing in the picture is covered.
+  - As many badges fit as the screen allows (up to 6, 22–46 dp each).
+  - The week's unlocks are fetched once when the TV room comes up.
+- Both are switches in Home › Layout options (TV room): "Game info under the TV" and "Recent badges on the wall" (on by default).
+- This applies to every "Games beside the TV" view (grid, spines, shelf, carousel), not just the grid.
+
+**Checked:** type-check clean apart from the 4 known `SvgDecoder` errors. I checked the placement against the room picture on a mock 1920 × 1080 screen. **Not tested** on a device.
+
+---
+
+## Update — 8 Oct 2026 (106): New layout "Circuit board" · bug check
+
+**Copy `src_copy`.** New: `ui/StyleCircuit.kt`. Changed: `data/AppearanceStore.kt`, `data/Features.kt`, `data/LayoutPresets.kt`, `ui/HomeParts.kt`, `ui/Motion.kt`, `ui/OptionIcons.kt`, `ui/PresetPreview.kt`, `ui/PresetsCard.kt`, `ui/SettingsIndex.kt`, `ui/StyleHomeSettings.kt`, `ui/StyleHomes.kt`. **Files to delete:** none.
+
+**New home layout: Circuit board** (`HomeLayout.CIRCUIT`). It's Voltcap's own design, made for the name, not a console's look.
+- The games are **chips on a circuit board**, plugged into one glowing **power line** across the middle of the screen. They zig-zag: one above the line, the next below it.
+  - Each chip has a trace down to its pad on the line, little legs, and a silkscreen label (U1, U2…).
+- The game you're on is **powered up**: its trace and pad light up, it lifts and glows, and a **spark runs along the line** to it as you move. While you rest on a game, **current flows** along the line.
+- **Top left:** the category on a small LCD (▲ to it, then ◀ ▶ step through categories, as L2 / R2 do). **Top right:** a clock and battery LCD.
+- **Bottom left:** an LCD readout with the name, console and time played, and the achievements as a ten-cell charge bar. It rises in when you move to another game.
+- **Bottom right:** a **power switch** (Power on / Continue) and Details; ▼ reaches them.
+- Swipe along the board, tap a chip to pick it, tap it again to open it.
+- **Options** (Home › Layout options): Green board (off: near-black with the theme's colour), Current flowing, Chip labels, Board behind.
+- Also works with the R1 Size tile / % slider, Edit Home + Add, the game info backing, and a preset in Layout & presets.
+
+**Bug check**
+- The no-black-flash pictures (update 104) faded in from black when you came back to the home screen. The first picture is now there from the first frame; only a change of picture fades.
+- Checked the rest of updates 104–105 (Edit Home ✕ / + Add, Channel grid nav and window, size %, carousel views, dual-screen split, notifications-only bell, Save Vault): nothing else found.
+
+**Checked:** type-check clean apart from the 4 known `SvgDecoder` errors. **Not tested** on a device.
+
+---
+
+## Update — 8 Oct 2026 (105): Bell opens just the notifications · game size in % everywhere
+
+**Copy `src_copy`.** Changed: `ui/GameSize.kt`, `ui/LauncherScreen.kt`, `ui/LauncherUiFlags.kt`, `ui/NotificationsPanel.kt`, `ui/QuickSettings.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `ui/StyleConsoleHomes.kt`, `ui/StyleLiveTiles.kt`. **Files to delete:** none.
+
+- **Bell buttons open only the notifications.** The R1 panel's quick tiles and background jobs are left out. This covers:
+  - the Channel grid's bell
+  - the status bar's bell
+  - the Notifications round shortcut and the control bar's bell
+  - the "Notifications" hotkey
+  - R1 (and the Quick menu hotkey, and R1 tiles pinned to L1) still open the full panel.
+- **Game size in %:** a "Game size" slider in **Home › Layout options** for every layout, and in the R1 Size tile's hold window.
+  - Tile home, Cross menu and Icon bar: their own size.
+  - Voltcap row and Grid: a fine % on top of Small / Medium / Large (70–140 %).
+  - Channel grid, Dual-screen menu and Live tiles: Small / Medium / Large is how many fit on a page, and the % makes the page of games smaller (60–100 %).
+  - TV room: 60–100 %. The rest: 70–140 %.
+  - The R1 Size tile shows the % when it isn't 100.
+
+**Checked:** type-check clean apart from the 4 known `SvgDecoder` errors. **Not tested** on a device.
+
+---
+
+## Update — 8 Oct 2026 (104): Edit Home ✕ / + Add, Channel grid, Save Vault consoles, R1 tiles, carousel views, no black flash
+
+**Copy `src_copy`.** New: `ui/GameSize.kt`, `ui/HomeParts.kt`, `ui/Motion.kt`. Changed: `data/AppearanceStore.kt`, `data/BuiltinShortcuts.kt`, `data/CloudSync.kt`, `data/Features.kt`, `data/SaveCapsules.kt`, `ui/BoxTexture.kt`, `ui/Carousel.kt`, `ui/DualScreenGrid.kt`, `ui/GameLookPicker.kt`, `ui/HeroCarousel.kt`, `ui/HomeChrome.kt`, `ui/HomeEdit.kt`, `ui/LauncherScreen.kt`, `ui/PhysicalMedia.kt`, `ui/QuickSettings.kt`, `ui/R1Shortcuts.kt`, `ui/RealMedia.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `ui/ShelfHome.kt`, `ui/StyleConsoleHomes.kt`, `ui/StyleCrossMenu.kt`, `ui/StyleDashboard.kt`, `ui/StyleHomeSettings.kt`, `ui/StyleHomes.kt`, `ui/StyleIconBar.kt`, `ui/StyleLiveTiles.kt`, `ui/StyleSideMenu.kt`, `ui/StyleSpotlight.kt`, `ui/TileHome.kt`, `ui/TvRoomHome.kt`. **Files to delete:** none.
+
+**Edit Home**
+- Every part has a **red ✕** (top right) that takes it off the screen; **Select** does the same with the controller.
+- **+ Add** (chip, or **Start**): a simple list of what can go on this layout: **Game logo**, **Description**, Title, Continue line, Stat boxes, Play & buttons, Console badge, Category name, Game info, News. It also lists the parts you took off, so you can bring them back.
+- Every layout can have these parts now (it used to be only Hero, Spotlight and Icon bar). The Voltcap row offers the logo and description; it already has the rest.
+- The **logo** sits straight on the art, with no backing, so it can go over the hero anywhere.
+- **Layout options › Game info on screen › "Behind them"**: the backing of all the parts. Choices:
+  - Layout's colours (default; Channel grid, Live tiles, Cross menu and so on each get their own look)
+  - Theme colours
+  - Dark glass
+  - Capsule
+  - Memory card, SD card, Floppy label (like the Save Vault)
+  - None
+
+**R1 tiles**
+- **Player**: hold → a list of the four corners, Anywhere (Edit Home) and **Off**.
+- **Round shortcuts**: hold → a list of By the row, each corner, Anywhere (moves it in Edit Home), "In a corner: folded behind ☰" or "always open" (new `Features.shortcutsOpen`), and Off.
+- **Look**: now cycles **Covers · wide capsule**, **Covers · first one wide**, Covers (no wide capsule), then the cases, cartridges and discs as before.
+- New **Corners** tile: Square → Rounded → Extra round → Capsule for the covers and tiles (it can be pinned to L1 too).
+- **Size** now works on every layout. It used to only size the Voltcap row's cards. Now it sizes:
+  - the row and Grid by card size
+  - Tile home's tiles
+  - Cross menu and Icon bar by their own sizes
+  - Channel grid's columns, Dual-screen menu's rows and the Live tiles page (how many fit)
+  - the other layouts by a new per-layout size (`Features.layoutScale`): Spotlight, Hub, Resume, Side menu, Dashboard, Shelf, Hero, TV room
+  - Hold opens Small / Medium / Large plus a slider.
+- **Carousel**: hold → the carousel view. **Spotlight**: hold → where the tile name and the big title go.
+
+**Channel grid**
+- The left circle shows the console's **logo in colour**, inside the circle (the special lists show their icon and name). The right circle shows Voltcap's **bolt in the theme colour** instead of the envelope.
+- Pages **slide** left / right. ▲ ▼ stay on the page. ◀ ▶ past the end of a row turn the page, onto the same row.
+- Top right: round **profile, Settings, notifications and save sync** buttons (▲ from the top row reaches them), plus the time. The **status bar is off by default** on this layout (Channel options › Status bar).
+- A opens the grid's **own game window**: the art on a big rounded screen, name, console and time played, with **Menu · Details · Start**. You can switch this off in the options.
+
+**Other layouts**
+- **Live tiles / Dual-screen menu**: pages slide in from the side.
+- **Cross menu**: consoles are **plain white folders** (their name shows under the one you're on); the other lists keep their own icons. Nothing fades or pops in any more. The R1 tile cycles Folders → Logos on tiles → Logos cut out.
+- **Resume & discover / Console hub**: the **next achievements to earn** (the ones most players get first) slide slowly up behind the Achievements card, faint (option "Next achievements").
+- **Side menu**: can be a **carousel** (Carousel look / R1 tile).
+- **Dual-screen menu**:
+  - 1 to 4 rows
+  - a **carousel view**
+  - on a device with a second screen, the top screen fills the main display and the tabs and games go onto the second one ("Use both screens").
+- **Spotlight**: "Big title across" (Left / Centre / Right) and "Big title sits" (By the tiles / Middle / Far edge).
+- **Carousel** (every layout that has one): View (**Tucked behind, Record flip, Wheel, Deck, Flat row**), Spacing, and Reflection.
+
+**Pictures and motion**
+- **No black flash between games.** Hero / backdrop pictures stay until the next one has loaded, then it fades in over them. This covers the Classic crossfade background, the Hero carousel, the style homes' art behind, the Dashboard hero and the Dual-screen top screen.
+- Moving between games: the Spotlight and Icon bar titles and Resume's big tile **rise into place** instead of just appearing.
+- All moving discs and cartridges on screen now **spin and hop in step** (one shared clock).
+- **Original media.** Case + its media and Case + disc use the game's **own disc / cartridge picture** (when scraped and drawn media is off), and Case + disc uses the case's own scan. Original cases no longer get a drawn 3D box round the scan. Shelf spines still fall back to the drawn one only when the game has no spine or full box scan.
+
+**Save Vault**
+- Games that aren't on this device now show under their **real console**, taken from:
+  - the folder type
+  - the file type (.eep / .dsv / .gci / .mcr / .ps2…)
+  - the emulator or system folder the save sits in (RetroArch core folders such as Snes9x, mGBA, Beetle PSX)
+  - Before, they were all under "other".
+- **Memory cards** (Mcd001.ps2, epsxe000.mcr…) in folders you picked yourself are now opened, and their saves are listed **game by game**. A card that only came from another device shows as "PS1 / PS2 memory card · mcd001" under that console, not "MC" under other.
+
+**Checked:** type-check clean apart from 4 `SvgDecoder` errors. These are the known ones; the new Channel logo adds one more, and they all come from the same missing coil-svg jar in my checker. **Not tested** on a device. Worth a look:
+- the dual-screen split on the Thor
+- the carousel views
+- the Channel game window with the controller.
+
+---
+
+## Update — 8 Oct 2026 (103): Game shelf: games as spines, facing forward or turned to the side
+
+**Copy `src_copy`.** Changed: `ui/ShelfHome.kt`, `ui/StyleHomeSettings.kt`, `data/Features.kt`, `ui/SettingsIndex.kt`. **Files to delete:** none.
+
+- New choice **Home › Layout options (Game shelf) › "The games stand"** (`Features.shelfStand`, default Spines):
+  - **Spines**: as before, like a bookcase (the look of the launcher you mentioned): the most games per shelf.
+  - **Facing forward**: every case shows its front (its own scanned front with Original cases on, else the cover template), side by side. Fewer per shelf, so it scrolls sooner.
+  - **Turned to the side**: every case stands turned, its spine on the left and its front going back from the corner nearest you (spine 35°, front 55°), so both show.
+- The shelf layout (how many per shelf, ▲ ▼ to the shelf above / below) follows the choice; "Real sizes" works with all three.
+- Taking a game out (update 102) fits each: a spine slides up and turns away while the front comes round; a front slides up and comes forward; a turned case slides up and turns to face you as it comes forward. Putting back works the same in reverse.
+
+**Checked:** type-check clean apart from the 3 known `SvgDecoder` errors. **Not tested** on a device (the turned look's angles are worth a look on the Thor and the Odin).
+
+---
+
+## Update — 8 Oct 2026 (102): Game shelf: taking a game out like a real case, 25 % smaller
+
+**Copy `src_copy`.** Changed: `ui/ShelfHome.kt`. **Files to delete:** none.
+
+- The pull-out is now one smooth move in three overlapping steps (620 ms): the spine **slides up out of its gap** (eased, ~40 % of its height), then **turns away** edge-on while the game's **front comes round** from the side and moves forward to its place a little above the shelf, with a shadow growing under it. Before, the spine faded and a bigger front flew out of it.
+- The game you leave **goes back into the shelf** the same way in reverse (320 ms) while the next one comes out; moving on quickly (holding the D-pad) never leaves a game half out.
+- The shown game is **25 % smaller** (0.9 × the shelf's height instead of 1.18 ×, at most 70 % of the room). Bob & turn starts once it's fully out, as before.
+
+**Checked:** type-check clean apart from the 3 known `SvgDecoder` errors. **Not tested** on a device.
+
+---
+
+## Update — 8 Oct 2026 (101): everything reachable with the D-pad, Round shortcuts settings page, original spines & cases, Cross menu icon flash
+
+**Copy `src_copy`.** Changed: `LauncherViewModel.kt`, `data/ArtStorage.kt`, `data/Features.kt`, `data/ScreenScraper.kt`, `ui/CompanionHub.kt`, `ui/CoverCases.kt`, `ui/GameCard.kt`, `ui/LauncherScreen.kt`, `ui/NowPlayingPanel.kt`, `ui/PlayHeader.kt`, `ui/RealMedia.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `ui/ShelfHome.kt`, `ui/StyleConsoleHomes.kt`, `ui/StyleCrossMenu.kt`, `ui/StyleDashboard.kt`, `ui/StyleHomeSettings.kt`, `ui/StyleHomes.kt`, `ui/StyleIconBar.kt`, `ui/StyleLiveTiles.kt`, `ui/StyleMusicCard.kt`, `ui/StyleSpotlight.kt`, `ui/TileHome.kt`. New: `ui/BoxTexture.kt`, `ui/HomeReach.kt`. **Files to delete:** none.
+
+**Cross menu: an icon flashing before the folder (collection) icon**
+- At start-up the category list fills in over a moment (consoles as the library loads, collections a moment later), so a slot in the icon strip first showed another category's icon (Almost mastered / Emulators…) and then the collection's folder. The strip now waits until the list has stayed the same for ~0.45 s and then fades in once (only the first time per run; switching back to Cross menu later shows it at once).
+- Each icon is now tied to its own category, not to its place in the strip, so a slot never shows the previous category's logo or icon for a frame while the strip slides.
+
+**Everything on every layout reachable with the D-pad / left stick** (the stick sends the same D-pad keys)
+- Rule everywhere: go past the edge of the games towards something to reach it — ▲ for what is above / at the top of the screen, ▼ for what is below. Going on the same way reaches the next thing further out, the other way (or B) comes back, ◀ ▶ move along the buttons, A presses. Any other button leaves and does its usual job.
+- What can now be reached that couldn't before (`ui/HomeReach.kt`):
+  - the game header's **Play / Continue, ★, ⓘ, ⚙ game options, ☁ save sync** (Voltcap row, and the "Game info on screen" Play & buttons part on Hero / Spotlight / Icon bar); the D-pad one gets the selected look.
+  - the **round shortcuts** folded into a corner ☰ (they fold out and the one you're on is ringed) or floating anywhere, on every layout that shows them (in a right-hand corner ◀ ▶ follow them as drawn).
+  - the **music player**: the small one (status bar or corner) and the music theme's Now playing panel (⏮ ⏯ ⏭). It is only reached by going past the edge, so it never takes the selection by accident (the reason it was made touch-only before).
+- Per layout:
+  - **Icon bar**: ▼ from the tiles → Play / Continue, ⚙, ☁, 🏆 (◀ ▶ along, ▲ / B back). The single category tab (▲): ◀ ▶ step through the categories, A goes to the next. Focus rings on all of them.
+  - **Dashboard**: ▲ → Play in the Now playing card (◀ from it → the menu; without the card ▲ still opens the menu). The player card's ⏮ ⏯ ⏭ come after Quick access (▼).
+  - **Live tiles**: ▲ from the top row → the category names (◀ ▶ along, A goes there). The player tile's ⏮ ⏯ ⏭ come after the shortcut tiles (▼).
+  - **Spotlight**: the category names on top (▲ with tiles on top; ▲ from Play / cards with tiles at the bottom): ◀ ▶ step categories, A next.
+  - **Channel grid**: ▼ past the last row → the two round buttons (category / details), ringed.
+  - **Dual-screen menu**: ▲ past the top row → the tabs, starting on the one you're in.
+  - **Cross menu, Game shelf, Side menu, Console hub, Resume, Grid, TV room, Hero carousel, Tile home**: past the first / last game (row, shelf) → the round shortcuts / music player / header as above. Hero carousel only when the endless row is off (it wraps round there).
+- Not changed: the status bar's search / notification / profile taps (they have buttons already: Select menu, R1, L1), and the Edit Home handles.
+
+**Settings › Home › Round shortcuts** (new section, the only place for them)
+- Shown / hidden and where (Tile home: "Under the tiles"; other layouts: Off / a corner ☰ / Anywhere), button colours, highlight, size, which buttons, the L1 app-icon colours, and "Move them (Edit Home)…".
+- When the layout has its own shortcut menus, an "In <layout>" card with them: Dashboard menu (on / names / how many) and Quick access buttons, Live tiles' shortcut tiles, Console hub's shortcuts along the top.
+- Removed from where they were, so nothing is in two places: Layout options (both the Tile home block and the other layouts' block), Move & resize ("Show the round shortcuts and move them…"), and the Dashboard / Live tiles / Console hub layout options. `RoundShortcutExtras` (TileHome.kt) is gone; the search index points to the new section.
+
+**Original spines and cases** (Settings › Game look › "Original cases", `Features.originalCases`, default on; also under Game shelf options)
+- ScreenScraper's **full box scan** ("box-texture": back | spine | front, like the picture you sent) is now scraped too, as "Box (full scan)" (fetched up to 1600 px wide).
+- `ui/BoxTexture.kt` cuts it: it finds the two folds round the middle (vertical edges running down most of the height; the case's real proportions say how wide the spine should be) and takes the **spine** from the middle and the **front** from the right. Done in Coil as a "voltcrop:" picture address, so the scan is downloaded and saved once and every cut is cached. A scan that isn't laid out that way falls back to what was used before. Checked on your SmackDown vs Raw 2011 scan: the spine and front came out exact.
+- **Game shelf**: each game's own spine — ScreenScraper's spine scan if it has one, else the strip cut from the full scan; only then the console's template spine. The pulled-out game shows its own scanned front (or the 3D box with its own front and spine).
+- **Box art / Cases · real sizes**: the case is the game's own scanned front (ScreenScraper's front scan, else the front cut from the full scan) at the console's real case proportions and size, with the plastic sheen — not the cover put into Voltcap's template frame. With "Spines on boxes" the turned box shows the game's real spine. Off: the old template look.
+- Lists saved before are looked up once more per game (flag `texture_checked:` in `physical_media`); a look-up that fails keeps the old list and is retried on a later run, not on every step.
+
+**Checked:** type-check of all of `src_copy` against the project's real libraries: clean apart from the 3 known `SvgDecoder` errors. The spine/front detection was tested (Python copy of the same steps) on your screenshot. **Not tested** on a device: the new D-pad paths, the fade-in, and the cut on other consoles' scans (cardboard boxes laid out as a cross are skipped on purpose).
+
+---
+
+## Update — 8 Oct 2026 (100): R1 panel gets the new options, volume-mixer notification buttons fixed, Underclock GHz, full bug-check fix pass
+
+**Copy `src_copy`.** Changed: `ui/QuickSettings.kt`, `data/BuiltinShortcuts.kt`, `ui/R1Shortcuts.kt`, `device/audio/MixerNotification.kt`, `ui/ScreenMirror.kt`, `ui/StyleHomes.kt`, `data/AppearanceStore.kt`, `device/DeviceControls.kt`, `device/tune/Tuner.kt`, `ui/OptionIcons.kt`, `LauncherUiState.kt`, `LauncherViewModel.kt`, `ui/LauncherScreen.kt`, `spotify/SpotifyRepository.kt`, `ui/GameLookPicker.kt`, `ui/StyleIconBar.kt`, `ui/EdgeBump.kt`, `ui/ShelfHome.kt`, `ui/StyleCrossMenu.kt`, `ui/ColorDrape.kt`, `ui/DetailLayers.kt`, `ui/PlayHeader.kt`, `data/SaveCapsules.kt`, `ui/SecondScreenMagnifier.kt`, `ui/SecondScreenHome.kt`, `ui/ResetAndCompat.kt`, `data/BatteryWatch.kt`, `device/audio/AppMixer.kt`, `ui/GameDetailsOverlay.kt`, `ui/StyleConsoleHomes.kt`, `ui/StyleSpotlight.kt`, `ui/StyleHomeSettings.kt`. **Files to delete:** none.
+
+**R1 quick settings** (everything from updates 98–99 is now there)
+- Hold the **Layout** tile: a list of all home layouts to pick from (scrolls on a short screen, starts on the one in use).
+- New tiles: Shelf look, Spotlight (tile position / name), Icon bar tabs, Cross menu logo cut-out, Tight header (each shows only on the layout it belongs to), Real/Drawn discs, Magnifier (dual screen with the Magnifier page on; hold = start the capture), Who plays on/off. The L1 shortcuts panel can pin any of them; they and the Sort tile have their own icons.
+- The **Underclock** tile also shows the top speed the underclock holds right now while it is on ("Light 2.4 GHz"; `Tuner.underclockTopGhz`). Off: just "Off".
+- A tile asked for from L1 is dropped if the panel never showed it; the "not available here" message waits 3 s (was 1.5) for tiles that fill in later.
+
+**Volume-mixer notification** (shade) — the − / + buttons
+- The buttons now step from the percentage the row shows (before, for a game with "Just for this game" volume they changed the app's usual volume, so nothing visibly moved) and for a game-only volume they change that one.
+- A tap redraws the notification at once, then the volume is set (the helper can take a second or two), then it is redrawn from a fresh look. Failures are logged (`MixerNotification` tag) instead of vanishing.
+- If a tap still seems to do nothing, check Logcat for `MixerNotification` / the Mixer card's "Check" results: it is then the volume not holding (helper / effect), not the button.
+
+**Bug-check fixes**
+- *RetroAchievements accounts:* answers from the account that was in use before a switch are dropped (they used to land on the new account's screens and in the saved data); the account list in Settings and "Who is playing?" updates at once (a second Remove tap could remove the wrong account); the start-up "Who is playing?" is no longer skipped for the whole run when the screen is recreated while it waits; "real discs by default" (update 98) is only marked done once it was really written.
+- *Spotify:* picking a song uses the player state only while it is fresh (it could flip your shuffle setting or ask a speaker that is gone; a gone device now falls back to Spotify's current one); a newer pick cancels the check behind the older one; cancelling is no longer swallowed as a Spotify error; shuffle is put back even when the check is cancelled; disconnect / reconnect no longer stops the now-playing refresh.
+- *Game look:* Tile never unfolds into a wide capsule (whatever the "focused card" setting is), picking Tile or cycling the look no longer overwrites that setting, and Covers is not ticked while Tile is on.
+- *Spotlight:* with the tiles at the bottom ▲ / ▼ go the right way; the name under / above a tile is now drawn (it was squeezed to nothing / squashed the art).
+- *Icon bar:* the corner ☰ shortcuts stay when only the current tab shows; the game name no longer vanishes with the tiles all one size.
+- *Resume:* the four shortcut tiles move as a 2 × 2 block. *Dual screen:* the time was shown twice; tiles no longer squashed on a short screen. *Hub:* a "Music player" switch that did nothing is gone.
+- *Shelf:* the bookcase fills the whole screen; ▲ / ▼ pick the neighbour really above / below; no wrong shelf count by rounding; "No games match." when empty; nearest spines fetched first; plan follows the cover-template setting. *Art warm-up:* waits for the media scan to settle (it restarted every 90 ms).
+- *Edge bump:* a bump from before is not replayed when the row comes back; an interrupted one leaves no glow / fade behind.
+- *Magnifier:* only on a real second screen (the on-screen panel would capture itself); a second capture can't start while one runs and the old one is stopped; a view going away no longer blanks a newer picture.
+- *Header (tight):* score / small buttons no longer drawn twice when stats or buttons are moved out in Edit Home; the category label moves with the title.
+- *Save capsules:* files already tied to a ROM no longer also show up as "games not on this device".
+- *Details window:* the fallback colour backdrop is full strength (was nearly invisible); a screenshot that doesn't load falls back to the cover's colours. *Cross menu:* a logo that doesn't load shows the icon; waves repaint without recomposing; no endless loop at width 0. *ColorDrape:* no crash at size 0.
+- *Reset settings:* the Volume-mixer line in the device check shows whether the mixer works (was "off" until an app was turned down); found covers / matches are kept; this device's own picks inside shared files (folders, wallpaper, second-screen) are kept; intro-video picks are kept.
+- *Mixer:* a failed look at who is playing no longer lets go of the volumes for seconds; saved volumes of uninstalled apps no longer keep the background work running. *Battery watcher:* the first sample after hours of sleep is not counted as one huge slice. *Battery tile:* no binder call on every recomposition.
+
+- *Build fix:* `ui/OptionIcons.kt` — the layout pictures `when` now covers Console hub, Resume, Channel grid and Dual-screen menu (they use the nearest existing picture).
+
+**Left alone (found by the check):** the RetroAchievements "missed" marks are shared by both accounts and the saved-data file is single (its source, `data/ra/*`, is not in `src_copy`); Resume / Hub claim all shortcuts but show 4 / 6; shelf recomposition cost while a spine is pulled out; MixerNotification could not be tested on a device.
+
+**Checked:** type-check clean apart from the 3 `SvgDecoder` library errors. **Not tested** on a device.
+
+---
+
+## Update — 7 Oct 2026 (99): Magnifier page on the second screen
+
+**Copy `src_copy`.** Changed: `data/AppearanceStore.kt` (new `SecondPage.MAGNIFIER`), `data/Features.kt` (`secondMagnifier`, `magnifierZoom`), `ui/SecondScreenHome.kt`, `ui/LauncherScreen.kt`, `ui/SecondScreenTools.kt`. New: `ui/SecondScreenMagnifier.kt`. **Files to delete:** none.
+
+**Done**
+- Dual-screen mode: a "Magnifier" tab on the second screen shows the main screen's picture enlarged. Pinch to zoom (about your fingers), drag to move, double-tap for the whole picture; steps Fit / 1.5× / 2× / 3× / 4× / 6× along the top; a small map in the corner shows which part of the main screen you are looking at; Stop at the top.
+- It uses the same screen capture as the Screen Mirror widget (Android asks once on the main screen; press "Start magnifier" on the page). The zoom you left it at is kept for next time (`Features.magnifierZoom`).
+- Settings › Screens › Second screen tools › Pages on the second screen › "Magnifier page" (on by default). It also shows in the second-screen page choices and the page hotkey.
+
+**Not done:** it doesn't follow the game's cursor or the controller's focus on its own (you move it with a finger); clicking through to the main screen is still the Screen Mirror widget's Trackpad mode.
+
+**Checked:** type-check clean apart from the 3 `SvgDecoder` library errors. **Not tested** on a device (needs a second display and the capture prompt).
+
+---
+
+## Update — 7 Oct 2026 (98): Spotlight options, second RA account, real discs/cartridges by default, case + disc and Tile looks, new shelf design, faster art, Voltcap row header, Cross menu cut-out logos, Icon bar tabs
+
+**Copy `src_copy`.** Changed: `LauncherViewModel.kt`, `data/Features.kt`, `data/AppearanceStore.kt`, `data/SettingsScopes.kt`, `data/RaCredentialsStore.kt`, `ui/StyleSpotlight.kt`, `ui/StyleHomeSettings.kt`, `ui/StyleHomes.kt`, `ui/ShelfHome.kt`, `ui/RetroAchievementsDialog.kt`, `ui/VoltSettings.kt`, `ui/GameLookPicker.kt`, `ui/LauncherScreen.kt`, `ui/PlayHeader.kt`, `ui/StyleCrossMenu.kt`, `ui/StyleIconBar.kt`, `ui/GameTitles.kt`, `ui/GameCard.kt`. New: `ui/WhoIsPlaying.kt`. **Files to delete:** none.
+
+**Spotlight** (Home layout › Spotlight)
+- The game tiles can sit at the top or at the bottom of the screen (`Features.spotTilesAt`); the other half swaps with them, so title and Play stay on the opposite side.
+- The name panel is movable: beside the tiles, under them, above them, or hidden (`Features.spotNameAt`).
+
+**Second RetroAchievements account**
+- RetroAchievements settings now has an Accounts card: add a second account, switch between them, remove one. Each keeps its own login, progress and unlocked list (`RaCredentialsStore`, scope AUTH, so it is never part of a settings backup).
+- Optional "Who is playing?" screen at start-up (`Features.whoPlays`, off by default): pick the account before the home screen opens (`ui/WhoIsPlaying.kt`).
+
+**Real discs and cartridges by default**
+- The scraped disc / cartridge pictures are used by default. Voltcap's own drawn cartridges and discs are used only if you switch on Settings › Look › "Use Voltcap's drawn cartridges / discs" (`Features.mediaShells`, now default off; migration `applyDefaultsV4` turns it off once for existing installs).
+- Cases still use Voltcap's 3D box shape with the scraped front scan on it; the scraped "Box (3D)" picture is not the case default yet.
+
+**New Game looks (Appearance › Game look, and the R1 Game look tile)**: Case + disc (jewel-case style, `Features.discCase`) and Case + its media (`Features.caseWithMedia`), next to Covers, Real cases, Cases · real sizes, Cartridges & discs and Discs only. The R1 tile steps through all of them.
+
+**Game shelf**
+- New boards: a lit top face, a front edge that catches the light, grain lines, a shadow thrown on the shelf below, and a recess shadow under the board above. Dark, Wood and Glass each have their own palette.
+- "Bookcase background" (Home layout › Game shelf, `Features.shelfBackdrop`, default on): the whole screen behind the shelves is the bookcase, with a back panel, side uprights and a top crown. Off: your wallpaper shows between the shelves.
+
+**Art loads faster on the style layouts** (Dashboard, Live tiles, Side menu, Cross menu, Spotlight, Icon bar, Shelf, the four newer layouts): they only loaded a picture when its card scrolled on screen. Now the games around the one you're on have their card art, wide art and backdrop fetched ahead (thumbnails for ±24 games, decoded copies for ±8; half that on small-memory devices), as the Game dock already did (`StyleHome` in `StyleHomes.kt`).
+
+**Voltcap row header** (Home › Next to the row › Game header › "Tight layout", `Features.homeHeaderTight`, default on)
+- The category you're in (e.g. SUPER NINTENDO) sits in small accent caps above the game's title; gaps between title, line, stat boxes and Play are cut down.
+- The score, save sync and game options sit small at the right of the title row (a score chip and two 22 dp round buttons); ★ and ⓘ stay beside Play. Off: the old roomier layout. Parts moved out in Edit Home are unchanged.
+
+**Cross menu** (Layout options › "Cut-out logos", `Features.crossLogoCut`): the console logos as clean one-colour cut-outs with no tile behind (white, or the accent colour with "Tiles in the accent colour" on). Only the logos; the Cross menu's background is unchanged.
+
+**Icon bar**
+- "Cut at the middle" (`Features.barArtCut`, default on, shows when "Game art behind" is on): the art fills the top half and fades out at the middle of the screen.
+- "Only the category you're in" (`Features.barTabsCurrent`, default on): the tab along the top is the current category with ◀ ▶ (tap, or A on the tab, steps to the next category; L2 / R2 as before). Your shortcuts aren't shown there then (they're still on L1); off brings the shortcut tabs back.
+
+**Tile as a Game look** (Settings › Game look › "Tile", also a step on the R1 Game look tile): the Voltcap row's covers as big squares, the one you're on a little bigger and kept square (it sets the focused card to Cover). It uses `Features.squareTiles` and `CardLook.squareTiles`. The Tile home layout itself is still there, untouched; once you are happy with the look, say so and I'll retire the layout (it also has the name-above-tile and the pill of round buttons, which the look doesn't have).
+
+**Checked:** type-check clean apart from the 3 `SvgDecoder` library errors. **Not tested** on a device or built with Gradle.
+
+---
+
+## Update — 7 Oct 2026 (97): Battery watcher, any R1 tile as an L1 shortcut, volume mixer reliability
+
+**Copy `src_copy`.** Changed: `data/Features.kt`, `data/SettingsScopes.kt`, `data/BuiltinShortcuts.kt`, `device/audio/AppMixer.kt`, `device/audio/MixerHelper.kt`, `device/audio/MixerEffects.kt`, `ui/QuickSettings.kt`, `ui/R1Extras.kt`, `ui/LauncherScreen.kt`, `ui/ShortcutsPanel.kt`, `ui/SettingsDialog.kt`. New: `data/BatteryWatch.kt`, `ui/BatteryWatchUi.kt`, `ui/R1Shortcuts.kt`. **Files to delete:** none.
+
+**Battery watcher** (Settings › Device › Battery watcher; R1 › Device page › "Battery watcher")
+- Once a minute, while Voltcap's process runs (a sleeping thread, no wake lock), it notes Voltcap's CPU time against the clock, split into: Voltcap in front, a game/another app in front, screen off. It also notes the battery's current draw (unplugged, screen on) and how many percent the battery fell per hour during screen-off periods of 10 minutes or more.
+- It says whether Voltcap is light, uses a fair amount, or uses a lot, with what it found and what could be changed (Lite effects, animated themes, blur, overlay/visualizer/lights while gaming, sync and Spotify in the background, Sleep mode). Android's own per-app estimate is added when Voltcap holds the DUMP permission and Android lets it read it.
+- Numbers restart every 7 days (prefs `battery_watch`, device-only). Switch: `Features.batteryWatch` (default on). It starts with the home screen (`LauncherScreen`).
+- The thresholds (35 % / 18 % of a core in front, 6 % / 2.5 % behind games, 0.8 % screen off, 3 %/h standby) are in `BatteryWatch.report`; adjust them once you see real numbers.
+
+**Any R1 tile as an L1 shortcut**
+- L1 › Add now lists "R1 · …" entries for the tiles in `BuiltinShortcuts.R1_TILES` (Wi-Fi, Bluetooth, Do not disturb, Lights, music, music player position, Edit home, dual screen, swap, games below, nav bar, overlay, sort, game look, layout, endless row, round shortcuts, progress bar place, game size, row position, RomM, carousel, theme, rescan, missing art, power profile, battery watcher, battery & charge limit, volume mixer, Android settings).
+- Tapping one opens the R1 panel and presses that tile once (`R1Shortcut.pending`, taken in `QuickSettingsCard`), so it behaves exactly like the tile. If the tile doesn't exist on this device (e.g. Sort with no sort list) it says so. The device-specific "dev_" tiles are not in the list.
+
+**Volume mixer** (could not be tested here: it needs the handheld's root service)
+- The helper process is no longer restarted when the volumes didn't change (every slider step used to restart it, leaving the app loud for the 1–2 s the new process takes).
+- If the helper process dies, Voltcap starts it again (checked every 5 s while Voltcap runs, not within 8 s of a start).
+- The helper re-applies the volumes four times a second instead of once a second, so a game's new player is loud for a quarter of a second at most, and apps that set their own volume are pushed back faster.
+- If it still fails: Settings › Device › Volume mixer › "Mixer check" shows which step breaks (root service, helper start, audio service, DUMP permission). Send me that list.
+
+**Checked:** type-check clean apart from the 3 `SvgDecoder` library errors. **Not tested** on a device or built with Gradle.
+
+---
+
+## Update — 7 Oct 2026 (96): R1 Edit Home and player-position tiles, Reset app, "Works on this device"
+
+**Copy `src_copy`.** Changed: `ui/QuickSettings.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`. New: `ui/ResetAndCompat.kt`. **Files to delete:** none.
+
+- **R1 › "Edit home" tile** (Quick page): opens Edit Home and the R1 panel steps aside (`LauncherScreen`: Edit Home now also closes the panel). There was no such tile in the code I was given, so this adds it; like every R1 tile it can be moved or hidden with Edit.
+- **R1 › "Player" tile** (shown with the home tiles): tap = next corner for the music player (top left → top right → bottom left → bottom right), hold = Edit Home to put it anywhere. If the player was moved by hand, the next tap puts it back in a corner. It reads "Player Free" while it floats.
+- **Settings › Backup › Reset app**: "Reset settings" (looks, layout, themes, R1 tiles, music player, sounds — library data, play time, favourites, saved art, ROM folders and sign-ins stay) and "Reset everything" (Android's clear-app-data, like a fresh install). Both ask first; settings reset restarts Voltcap. Which preference files count is decided by `SettingsScopes` plus the `KEEP_ON_RESET` / `DEVICE_LOOKS` lists at the top of `ResetAndCompat.kt` — edit those if something is reset that shouldn't be.
+- **Settings › Device › "Works on this device"**: shows whether this handheld can run full effects/animated themes (uses `DevicePerformance` and `MemoryBudget`), a second screen, controller lights, power tuning and the volume mixer, and says which settings travel with a backup and which stay on this device.
+
+**Not done:** the card only reports; it doesn't hide or grey out individual settings or themes yet (the theme list data wasn't in the files I had). **Checked:** type-check clean apart from the 3 `SvgDecoder` library errors; not built or run on a device.
+
+---
+
+## Update — 7 Oct 2026 (95): Save Vault sync, Dashboard/Live-tile players, four new layouts, endless row, Spotify speed-up
+
+**Copy `src_copy`.** Changed files: `LauncherViewModel.kt`, `data/AppearanceStore.kt`, `data/CloudSync.kt`, `data/SaveCapsules.kt`, `data/Collections.kt`, `data/MetadataCacheStore.kt`, `data/Features.kt`, `spotify/SpotifyRepository.kt`, `ui/AlbumArtBlur.kt`, `ui/BigMusicPlayer.kt`, `ui/DetailLayers.kt`, `ui/FullMusicScreen.kt`, `ui/GameDetailsOverlay.kt`, `ui/HomeChrome.kt`, `ui/LauncherScreen.kt`, `ui/PresetPreview.kt`, `ui/PresetsCard.kt`, `ui/QuickSettings.kt`, `ui/R1Extras.kt`, `ui/SaveExplorer.kt`, `ui/SettingsDialog.kt`, `ui/StyleDashboard.kt`, `ui/StyleHomeSettings.kt`, `ui/StyleHomes.kt`, `ui/StyleIconBar.kt`, `ui/StyleLiveTiles.kt`, `ui/TileHome.kt`. New files: `ui/ColorDrape.kt`, `ui/EdgeBump.kt`, `ui/StyleConsoleHomes.kt`, `ui/StyleMusicCard.kt`. **Files to delete:** none.
+
+**Done**
+- Save Vault: a Sync chip and section, and games with loose save files that were missing now show up (`CloudSync.looseSaveFiles`, `SaveCapsules`).
+- Game popup: the blurred hero is gone by default. Without a screenshot it drapes colours from the cover (`ColorDrape`); the "Blurred hero" backdrop choice is no longer offered.
+- Franchise names: the group is named by the longest shared prefix ("The Legend of Zelda", not "Legend"); applies to every group.
+- Moonlight: no metadata lookup for it any more, and entries already saved for it are purged (`skipScraping`).
+- Music-player cover blur defaults to 3% (migration `applyDefaultsV3`).
+- Lyrics button: it did nothing because LRCLIB lookup is opt-in and was off. The big player and the full screen now ask once, with a loading and a "no lyrics" state.
+- Spotify: picking a song in a playlist no longer waits on player-state calls, shuffle toggling or verification polling. Play goes out at once, now-playing refreshes after 250 ms, and the "right song? / shuffle back on" checks run in the background.
+- Dashboard: bigger games, menu width scales, labels shrink to fit instead of "...", integrated music player bottom right (setting `styleMusic`, default on). Live tiles and the other style homes get the same player card.
+- Four new layouts (neutral names): Console hub, Resume & discover, Channel grid, Dual-screen menu.
+- End of the row: loop wrap or edge bump animation (`EdgeBump`); R1 tile "Endless".
+- R1 tiles: Endless, rounded shortcuts, badge progress bar placement, Game size (tap cycles three sizes, hold opens a slider).
+- Tile layout: the hero is only cut above the row in the Classic layout. Shadowed dock band is on by default (colour #05070B, 62%).
+- Icon bar (PS5-style): scraped logo, then name, then Play/Continue with settings, sync and trophy buttons; smaller gap between category tabs.
+
+**Not done yet (still on the list):** real scraped discs/cartridges/cases/spines and the CD jewel-case look; shelf design and shelf background; Tile as a "Look"; slow art loading on some layouts; second RetroAchievements account and the "who is playing" screen; Cross menu "old maps" look and cut-out logos; Spotlight name panel movable/bottom games; Voltcap row bottom block (category above game info, small metascore/sync/settings at right); Icon bar "hero cut at the middle" and showing only the current category.
+
+**Checked:** type-check of all changed files against the compiled app classes (only 3 `SvgDecoder` errors from a library missing in the check environment). **Not tested:** nothing was run on a device or built with Gradle — please build once and tell me about anything that fails.
+
+---
+
+## Update — 7 Oct 2026 (94): RomM, browse your server and download games
+
+**Copy both folders.** `src_copy` has 11 files, 3 of them new: `data/Romm.kt`, `ui/RommBrowser.kt`, `ui/RommSettingsCard.kt`. `project_copy` has `app/src/main/AndroidManifest.xml`, which adds `android:usesCleartextTraffic="true"`. Without it, a RomM server at `http://` in your home network (the usual setup) is blocked by Android.
+
+**Setting up** (Settings › Accounts › RomM)
+- Enter the server address, then either a Client API token (`rmm_…`, from RomM › Administration › Client API Tokens) or a user name and password.
+- "Save & test" checks `/api/platforms` before saving. Sign-in details are kept encrypted like the other accounts, and backups and transfers carry them (SettingsScopes, Backup).
+- Requests send `Authorization: Bearer <token>`, or Basic with user name and password.
+
+**Browsing** (`RommBrowser`)
+- Open it with "Browse RomM" in that card, or the new R1 tile "RomM" (only shown once RomM is set up).
+- RomM's consoles appear as chips with their game counts, plus a search box.
+- Games show as covers in a grid: `/api/roms?platform_ids=&search_term=&limit=&offset=`, loading more as you scroll. Covers load with the auth header.
+- Games already on the handheld show "✓ On device".
+- Tapping a game asks to download it, showing the size and target folder. Tapping a game that is downloading asks to stop it.
+
+**Downloading** (`Romm.download` / `Romm.poll`)
+- The file comes from `/api/roms/{id}/content/{file}` through Android's DownloadManager, so it keeps going with the screen off or Voltcap closed, shows progress in the notifications and resumes after a dropped connection. It is saved first in Voltcap's own files folder.
+- When it finishes, the file moves into the console's folder: an existing ROM folder whose name Voltcap recognises (`RomScanner.platformForFolderName`, now public), otherwise a new folder named after RomM's console folder in your main ROM folder.
+- Games made of several files arrive as a zip and are unpacked into their own folder (entries that would land outside it are skipped).
+- Then the library is scanned again.
+- Downloads that finished while the browser was closed are picked up every 2 minutes, or every 5 seconds while something is downloading. This is paused while a game runs.
+- A move into the ROM folder needs "Access to all files".
+
+Type-checked against real jars: 0 errors. Not run on a device yet, and not tested against a real RomM server: the API paths and fields are from RomM's current source and docs.
+
+## Update — 7 Oct 2026 (93): game info on Hero carousel / Spotlight / Icon bar, case with its cartridge or disc
+
+**Game info on screen** (Hero carousel, Spotlight, Icon bar)
+- A new "Game info on screen" chip row in each of these layouts' options (`Features.overlayParts`, per layout).
+- Parts you can turn on: title, continue line, stat boxes, Play & buttons, console badge, category name, game info card, news card. They are the same parts as on the Voltcap row.
+- Each part floats on its own, on a soft dark backing, stacked on the right until you move it in Edit Home.
+- Positions are kept per layout (ids like `HERO:h_stats`), so the Voltcap row's positions aren't shared.
+- Which stat boxes and buttons show still follows Settings › Home › Next to the row › Game header.
+- Edit Home: L1 / R1 step through these parts too.
+- `MovableWidget` gained a default place (`defaultFrac`) for parts that haven't been moved yet.
+
+**Case with its cartridge / disc** (Game look › Covers, cases & discs, with Box art)
+- New switch, `case_with_media`, off by default.
+- The original case stands still, with its cartridge or disc leaning against its lower right.
+- Only the cartridge or disc moves (its Spin / Bounce settings).
+- It replaces "Disc in its case" when both are on.
+- Works for every console with a physical game. The disc or cartridge uses the game's cover as its label.
+- Code: `CaseArtBody` → `CaseArtFace` (RealMedia.kt).
+
+Type-checked against real jars: 0 errors. Not run on a device yet.
+
+## Update — 7 Oct 2026 (92): Game shelf uses each game's own scraped spine
+
+- **Spines are now scraped.** ScreenScraper's `box-2D-side` (the case spine) is now fetched with the other physical media, saved as "Spine" (ScreenScraper.kt).
+- **Older saved lists get the spine once.** `loadPhysicalMedia(game, needSpine)` re-fetches a game's list once if it was saved before spines were scraped. The flag `spine_checked:<key>` in `physical_media` stops it from repeating, and it only runs for ROM games when ScreenScraper is connected.
+- **The shelf asks for nearby spines.** It requests spines for about 30 games before and 60 after the one you're on (`StyleActions.needSpine`).
+- **Spine choice:** the game's own scraped spine first (stood upright if it was scanned lying down), then the console's spine from the template pack, then the plain spine with the console logo.
+- Files: data/ScreenScraper.kt, LauncherViewModel.kt, ui/StyleHomes.kt, ui/LauncherScreen.kt, ui/ShelfHome.kt.
+- Type-checked against real jars: 0 errors. Not run on a device yet.
+
+## Update — 7 Oct 2026 (91): your answers applied, full bug check of every file
+
+**Copy both folders:**
+- `src_copy`: 63 files.
+- `project_copy`: 12 new logos in `app/src/main/assets/system_logos/` (arcade, mame, naomi, atomiswave, dos, scummvm, msx, msx1, amiga, android, androidapps, steam).
+
+**Your answers**
+- **Disc consoles are untouched again.** PS3, PS4, Xbox, Xbox 360, Neo Geo CD and PC Engine CD are back to their own discs, the same as before update 90. The system disc templates are only used for games of consoles that never had CDs (cartridge games drawn as a CD with "Discs only" or "All CDs").
+- **Logos only come from your zip.** `SystemLogos.model` returns only bundled logos, with no download. The cross menu no longer falls back to RetroAchievements icons; a console without a bundled logo shows the category symbol.
+  - Added mappings for Arcade, NAOMI, Atomiswave, DOS, ScummVM, MSX, Amiga, Android and Steam.
+  - Fixed the PICO-8 key: the map said "Pico8", but the platform key is "PICO8".
+- **Cross menu "Tiles in the accent colour"** (`cross_logo_tint`, off) now colours the tile behind each logo, not the logo. Logos keep their own colours and always fit inside the tile.
+
+**Bug check**
+- 8 reviewers read all 419 Kotlin files (about 142,000 lines), including every line of ThemeShaders.kt, which was also checked with scripts: all 188 shaders' names, types, loops and uniforms match their Kotlin setters.
+- 62 confirmed issues fixed, each marked "(update 91)" in the code.
+
+Crashes:
+- Achievements hashing: a zipped NDS or N64 ROM could run out of memory and crash. Zip entries over 128 MB are now skipped, and the out-of-memory error is caught.
+- Foreground services (power service, performance overlay): if Android refused the notification, the app could be killed. A plain-notification fallback is now used (`GameNotification.foreground`, TuneService).
+- Guide: duplicate headings could produce the same section-list key and crash.
+- Save Vault: the crack animation could crash on an empty list (`entries.first()`).
+- Style homes: an early `return@Column` is a pattern this compiler mishandles. It is restructured as if/else in Side menu, Icon bar, Dashboard, Spotlight and Live tiles.
+
+Wrong behaviour:
+- **Failed game launch:** game mode stayed on, which stopped all background work (art, achievements, saving art) until the next real game. The game's power and volume profile also stayed applied. Fixed.
+- **Settings transfer:** "Stop" didn't stop it. The PIN or QR transfer stayed open for up to 3 minutes and could still hand out your settings and sign-ins. Stop now closes the socket. The multicast lock is always released.
+- **Cloud sync:**
+  - A dropped connection now stops the sync as offline, instead of failing file after file while blocking the pre-game sync.
+  - A stopped per-game sync no longer shows as an error.
+  - After a partial failure, the remaining conflicts are now the right ones.
+- **Charge limit:** with Voltcap's own limit off, it no longer resets other charge limits at every start.
+- **Settings import:** the Backup import, the first-run import and the custom sound import now run off the main thread.
+- **Art and library:**
+  - Art from a manual SteamGridDB ID or a Steam import is now saved, so it survives a restart.
+  - New games are now dated properly. Before, "first seen" stayed at "unknown" for the rest of the session after the first scan.
+  - Silent retries when no ROMs are found no longer stack up.
+  - Time-based categories (Rediscover, Not played lately, Smart Continue) refresh hourly.
+- **Achievements:**
+  - Old unlocks no longer pop up as new when the first check failed offline.
+  - Overlay unlock times are now in UTC.
+  - The RetroAchievements overlay job now ends with the game.
+  - The new-unlock stage now shows the badge titles; the slots were clipped to 0 height.
+- **Spotify:** a list can no longer get stuck on "Loading…" after you leave it mid-load.
+- **Screen mirror:** no longer goes black on Android 14+; the virtual display is reused.
+- **Themes:** switching between two painted themes now changes the painting.
+- **Hero carousel and carousel:** a fast swipe now moves several games; the idle timer no longer runs in the background.
+- **Edit Home:** the Reset chips now reset sizes too, and volume and media keys work while editing.
+- **Controls and settings:**
+  - Music seek no longer jumps to 0:00 when a track's length is unknown.
+  - The Quick Settings tile reads its setting in a cold process.
+  - Screen layouts: an invalid "keep Voltcap" on the second screen is no longer saved.
+  - The SteamGridDB key is trimmed.
+  - The colour sliders keep their hue.
+  - The R1 tile layout stays per device in backups.
+  - Background music fades in on a track change without crossfade.
+- **Other:**
+  - The visualizer retries after temporary errors.
+  - Controller lights are thread-safe.
+  - "Mega Man X" no longer matches "Mega Man 10".
+  - GameFAQs search includes the console.
+  - Animated art gives still pictures where one is needed (CRT TV, poster).
+  - Widgets get their real size.
+  - Manual viewer, Bluetooth proxies and the mixer notification no longer leak.
+  - The dock opacity slider starts at 10 %.
+  - "Add missing" playtime is counted correctly.
+  - Three shaders guard a divide by zero: BLUE_SKY, TAPE_DECK, and the old canvas scenes at 0 size.
+  - Smaller main-thread reads were moved off the main thread: stats, notifications at start, Tuner check, custom packs, ScreenScraper file checks.
+
+Type-checked against real jars: 0 errors. Not run on a device yet.
+
+## Update — 7 Oct 2026 (90): Edit Home moves everything, Game shelf layout, system discs & logos, Spotify picks, smoother rows
+
+**Copy both folders this time:** `src_copy` (33 files, 2 new: `ui/AnchoredStrip.kt`, `ui/ShelfHome.kt`) **and** `project_copy` → `robocopy project_copy . /E`. The new assets are needed:
+- `app/src/main/assets/system_logos/*.svg`: 53 colour console logos from ES-DE's system-logo-color set, about 0.5 MB.
+- `app/src/main/assets/system_discs/*.png`: 53 PS2-style system discs at 512 px, about 2.9 MB.
+- (`assets` is a new folder.)
+
+**Edit Home: every part of the Voltcap row can be moved**
+- What can be moved: the whole game header, each of its pieces (title, continue line, stat boxes, Play & buttons, console badge), the category name, the game info card and the news card, plus the music player and round shortcuts.
+- `FlowSlot(id)` (HomeEdit.kt): unmoved parts sit in the layout and remember their place and width. Moved parts are drawn by the float layer in HomeLayer.
+- While editing:
+  - Each part keeps an empty space of its size, and its frame sits exactly on top of it. The old floating header started at centre-left and covered "Continue playing", which caused the overlap in the photo.
+  - Moved parts keep their layout width (`widget_widths`).
+  - Tapping a part picks it, and only the picked one shows its name.
+- `ShowcaseHeader(slots, only)` (PlayHeader.kt) draws the parts. `RowInfoPanel(padStart, padEnd)` lets the info and news cards render separately.
+
+**New home layout: Game shelf** (`HomeLayout.SHELF`, ShelfHome.kt)
+- Spines on a bookcase. A spine is the console's real spine from the pack with the name running up it, or a plain spine with the bundled console logo.
+- One to three shelves depending on how many games fit; with more, the bookcase scrolls up and down.
+- ◀ ▶ move along a shelf; ▲ ▼ go to the nearest game on the shelf above or below (`ShelfHome.vertical`).
+- The game you're on slides up out of the shelf, turns from edge-on to its front, then bobs and turns gently.
+- Options: Real sizes (`shelf_real_sizes`), Pulled out shows Front / 3D box from the side (`shelf_pulled`), Bob and turn (`shelf_bob`), Shelves Dark / Wood / Glass (`shelf_look`).
+- Two presets, a preview drawing and a pictogram.
+
+**Discs**
+- `SystemDisc` (GenericDisc.kt) prints the game's art on the ring under the system disc overlay. Used for:
+  - every generic CD ("Discs only" / "All CDs" for cartridge games);
+  - disc consoles without a real disc in the pack: PS3, PS4, Xbox, Xbox 360, Neo Geo CD, PC Engine CD.
+- Consoles with their own real disc keep it: PS1, PS2, GameCube, Wii, Wii U, Saturn, Dreamcast, Sega CD, 3DO, and the PSP UMD.
+
+**Cross menu**
+- Console icons now use the bundled colour logos (`SystemLogos.bundled`) instead of RetroAchievements icons, fitted inside a rounded glass tile.
+- The logo fades in once decoded, so nothing flashes first.
+- New option: Logos in the accent colour (`cross_logo_tint`, off).
+- SystemLogos uses the bundled logos before trying a download.
+
+**Icon bar / Spotlight**
+- `AnchoredStrip` replaces LazyRow + `animateScrollToItem`. Before, the row scrolled while the tiles changed size, ran too far left, then settled back.
+- Now one glide position drives every tile's place and size. Spotlight keeps room for the name beside the selected tile.
+- Dashboard and Side menu rows don't resize tiles, so they were already fine.
+
+**Spotify**
+- `playPicked`: waits until shuffle is really off, checks the picked song is playing (it's asked again once if not; relinked tracks count), then turns shuffle back on. This fixes Liked Songs starting on a random song.
+- `wakeLocalSpotify`: with no active device, sends Spotify a media "play" key in the background and waits for this handheld to appear as a device. Toggle "Play without opening Spotify" (`spotify_quiet_wake`, on). The issue banner also gets a "Play here" chip.
+
+**Cover → wide capsule**
+- New Roll out (default; quick, soft-edged unroll from the left, 300 ms) and Slide (cover out left, wide art in from the right). The key is now `capsule_reveal_v2`.
+- Smooth easing on all of them.
+- The choice is now also under Home › Animations and Home › Layout options. Home › Animations also has "Moving discs, cartridges & cases".
+
+**Other changes**
+- **Games across the screen** (`row_games`, per layout): Voltcap row (card size follows; the wide game counts as one), Tile home, Grid (columns). Auto keeps the card size.
+- **R1 tile:** "Row" cycles Top / Middle / Bottom (Voltcap row, Tile home).
+- **Hero carousel details pane:**
+  - It used to appear in steps: blurred cover, then the dark box, then the screenshot. Now it shows one picture at a time and fades in only once that picture has loaded.
+  - The cover waits 0.8 s for screenshots, and changes cross-fade.
+
+Type-checked against the real jars: 0 errors. Not run on a device yet.
+
+## Update — 7 Oct 2026 (89): artwork no longer re-saved at every start
+
+Why "Saving art x/y" came back at every start:
+1. **Wrong image store after the activity restarted:** MainActivity replaced Coil's loader at every `onCreate` with a plain one whose disk cache is the wipeable cache folder. When the activity was recreated while the ViewModel lived on, art went there, so the permanent store looked "missing" and was saved again next start. Two loaders on one folder weren't safe either.
+2. **Dead links tried forever:** images the server refuses (404 / 403) stayed "missing" and were retried at every start.
+3. **Full store churn:** with more art than the size limit (1 GB default; heroes are big), saving pushed out older saved art, which then looked missing at the next start, and so on.
+
+Fixes:
+- `ArtStorage.install(context, maxBytes)`: one loader per process with the permanent store, used by MainActivity (before any image loads) and the ViewModel.
+- Refused images (`coil.network.HttpException`) are remembered (`art_failed` prefs) and left alone for 3 days; not counted as missing.
+- A run stops after 3 connection errors in a row ("no connection").
+- No saving once the store is 90 % full. Settings shows "full, N images not saved (raise the size below)".
+- "Save all now" retries everything, and "Clear saved art" forgets the refused list.
+- Files: data/ArtStorage.kt, MainActivity.kt, LauncherViewModel.kt (`saveAllArt`, `refreshArtStorageStats`, `clearSavedArt`), ui/SettingsDialog.kt.
+- Type-checked against real jars: 0 errors. Not run on a device yet.
+
+## Update — 7 Oct 2026 (88): cases can spin / bounce too
+
+- **Moving discs, cartridges & cases** (Settings › Game look › Covers, cases & discs): a third choice, Cases: Spin (turning slowly left and right) / Bounce (little hop) / Both / Still. Default Still. New key `case_motion`. Applied in `CaseArtBody` (RealMedia.kt) via `caseMotion`, so every box-art card (flat case, 3D box, disc in its case) gets it; same Lite / animations-off / idle rules. PhysicalMedia.kt motion refactored into `motionLayer(disc, motion, seed)`.
+- Type-checked against real jars: 0 errors. Not run on a device yet.
+
+## Update — 7 Oct 2026 (87): spin / bounce for discs & cartridges, box art in mixed lists
+
+- **Moving discs & cartridges** (Settings › Game look › Covers, cases & discs): two choices, Discs and Cartridges, each Spin / Bounce / Both / Still. Discs: spin = turning like it's playing, bounce = slow soft bob. Cartridges: spin = turning slowly left and right (±24°, 5.2 s), bounce = the little hop and squash. Defaults keep the old look (discs spin, cartridges hop). New keys `disc_motion`, `cart_motion`. Still with Lite effects / animations off / home idle, as before (PhysicalMedia.kt `mediaMotion`). Index entry added.
+- **Box art in mixed lists:** picking Box art showed plain covers in Continue playing / Favourites (unlike Discs only). Mixed "As picked" now keeps box art, each case fitted to its slot; notes updated.
+- Type-checked against real jars: 0 errors. Not run on a device yet.
+
+## Update — 7 Oct 2026 (86): PS5 icon bar redo, achievements crash, discs in lists, Edit Home page, Spotify picks, wraps & insets, new capsule reveal, theme colour follow
+
+- **Crash (RP Classic, achievements):** `TrophyRow` measured a FitText (SubcomposeLayout) under `IntrinsicSize.Min` → `IllegalStateException`. Intrinsic height removed; divider is a fixed 56 dp line (AchievementViews.kt).
+- **Icon bar (PS5):** the game you're on stays anchored at the left and pops out (animated, 170 ms) instead of pushing the next tile aside; 6 dp gaps; white outline, no glow. Its name overlays beside the big tile. Top shortcuts are plain text tabs (bold white vs dim, no icons/underline). Below: logo or name, "Last played", Play Game + ••• buttons, achievements card when there's room, playtime chip. New key `bar_grow_v3` (default 155 %).
+- **Discs only in mixed lists:** `MixedArt.BASIC` returned the disc art unprocessed, skipping per-game rules; now returns null so Discs only applies in Continue playing etc. (PhysicalMedia.kt).
+- **Edit Home findable again:** Settings › Home › first page "Move & resize (Edit Home)": Edit Home…, "Show the round shortcuts and move them…", "Put everything back". Index updated.
+- **Spotify:** picking a song in a playlist/Liked Songs with shuffle on played a random one. `SpotifyRepository.playPicked` turns shuffle off, plays the picked offset, turns shuffle back on.
+- **Side menu:** the console capsule is hidden when it wouldn't fit above the menu items (no overlap).
+- **Cross menu:** the category slide now also animates in Lite mode (RP Classic default).
+- **Platforms:** ◀▶ wraps from the last back to the first (and back); category tiles ◀▶ wrap too.
+- **Status bar:** platform/category screen ("Random game", game count) start below the status bar when it's shown.
+- **Corner player:** not drawn on style homes when the music widget isn't placed (no collision).
+- **Cover → wide capsule:** new `capsule_reveal` choice in Game look › card shape: Card flip (default), Light sweep, Wipe (old).
+- **Themes:** "Colours follow" chips in the Themes fold: Its own colours / The game you're on / The music playing, for this theme or every recolourable theme.
+- Type-checked against real jars: 0 errors. Not run on a device yet.
+
+## Update — 7 Oct 2026 (85): Shade on the game's art — console-style (PS5-like) by default, dark corners, light corners
+
+### ⚠️ Copy
+- `src_copy` (5 files, on top of update 84) → `app\src\main\java\com\shelf\launcher\`:
+  **New:** `ui/HeroShade.kt`. **Changed:** `data/Features.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`.
+- `project_copy`: nothing.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Settings › Theme › Background › Shade on the game's art** — drawn over the art whenever the game's art is the background (Game art, Blurred art, the art behind the Side menu / Spotlight / Icon bar, the main screen with games on the second screen):
+  - **Console style** (default): like a PS5-style home — a deep fade from the left edge (where the name and text sit), a band along the top under the status bar / icons, a heavier fade at the bottom under the row, and a soft vignette, so the middle of the picture stays bright and text reads on any art.
+  - **Dark corners**: only the vignette. **Light corners**: a soft white bloom in the corners (for very dark art). **Off**.
+  - **Strength** slider (default 60 %).
+  - A tip there: Motion & transitions › "Quick fade + slow zoom" gives the console's slow drift.
+
+### Not tested on a device
+- Compiles with 0 errors (cloud type-check).
+
+## Update — 7 Oct 2026 (84): Console logos on blank CDs, shimmer on drawn media, Side menu / Cross menu / Spotlight / Icon bar reworks, movable & resizable game header, shortcuts movable everywhere, Grid focus styles, Save Vault art, Spotify-made playlists, no "…" anywhere, new achievement views
+
+### ⚠️ Copy
+- `src_copy` (84 files, on top of update 83) → `app\src\main\java\com\shelf\launcher\`:
+  **New:** `data/SystemLogos.kt`, `spotify/SpotifyPins.kt`, `ui/AchievementViews.kt`, `ui/GenericDisc.kt`.
+  **Changed:** `LauncherViewModel.kt`, `data/Features.kt`, `ui/AchievementListDialog.kt`, `ui/AppDrawer.kt`, `ui/AppsLibraryDialog.kt`, `ui/ArtworkGallery.kt`, `ui/BadgeWall.kt`, `ui/BigMusicPlayer.kt`, `ui/Carousel.kt`, `ui/CategoryScreen.kt`, `ui/CompanionActivity.kt`, `ui/DialogChrome.kt`, `ui/DualScreenGrid.kt`, `ui/EmulatorPickerDialog.kt`, `ui/FirstRunDialog.kt`, `ui/FoldGroup.kt`, `ui/FullMusicScreen.kt`, `ui/GameCard.kt`, `ui/GameDetailsOverlay.kt`, `ui/GameJourneyUi.kt`, `ui/GameLookUi.kt`, `ui/GamePlayStats.kt`, `ui/GridHome.kt`, `ui/GuideScreen.kt`, `ui/GuideSecondScreen.kt`, `ui/HeroCarousel.kt`, `ui/HomeChrome.kt`, `ui/HomeEdit.kt`, `ui/HubScreens.kt`, `ui/LaunchAnimation.kt`, `ui/LauncherScreen.kt`, `ui/MediaVariants.kt`, `ui/MixerActivity.kt`, `ui/MusicPlayer.kt`, `ui/NewArrival.kt`, `ui/NotificationsPanel.kt`, `ui/NowPlayingPanel.kt`, `ui/PerfPage.kt`, `ui/PhysicalMedia.kt`, `ui/PlatformBrowser.kt`, `ui/PlayHeader.kt`, `ui/PlayerPages.kt`, `ui/PresetsCard.kt`, `ui/QsTilesCard.kt`, `ui/QuickMenuActivity.kt`, `ui/QuickSettings.kt`, `ui/RaSocialUi.kt`, `ui/RetroAchievementsDialog.kt`, `ui/RowInfoPanel.kt`, `ui/SaveExplorer.kt`, `ui/SaveSyncUi.kt`, `ui/ScreenSaver.kt`, `ui/ScrollingName.kt`, `ui/SecondScreen.kt`, `ui/SecondScreenDetails.kt`, `ui/SecondScreenHome.kt`, `ui/SecondScreenVolt.kt`, `ui/SessionSummary.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `ui/SettingsSlider.kt`, `ui/ShortcutsPanel.kt`, `ui/StatsContent.kt`, `ui/SteamImportDialog.kt`, `ui/StyleCrossMenu.kt`, `ui/StyleDashboard.kt`, `ui/StyleHomeSettings.kt`, `ui/StyleHomes.kt`, `ui/StyleIconBar.kt`, `ui/StyleLiveTiles.kt`, `ui/StyleSideMenu.kt`, `ui/StyleSpotlight.kt`, `ui/SyncPrompts.kt`, `ui/TileHome.kt`, `ui/TvRoomHome.kt`, `ui/VoltUi.kt`, `ui/WidgetBoard.kt`, `ui/YearRecapDialog.kt`, `ui/spotify/SpotifyPlayer.kt`, `ui/spotify/SpotifyScreen.kt`.
+- `project_copy`: **`app/build.gradle.kts`** — adds `implementation("io.coil-kt:coil-svg:2.7.0")` (Coil's SVG decoder, same version as Coil; Gradle downloads it on the next sync).
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Blank CDs carry their own console's branding.** A game without a disc of its own ("Discs only" + cartridge games as discs, or "All CDs") used the PS2 disc print. Now: a plain silver CD, the game's cover printed on it, a band across the top with **that console's logo from ES-DE's system-logos collection** (gitlab.com/es-de/themes/system-logos) and its name along the bottom (`ui/GenericDisc.kt`). Logos aren't bundled: the collection's file list is read once through GitLab's API on the device (kept 30 days, matched by ES-DE system names), each SVG downloaded the first time it's needed into the app's files; light logos get a dark band, dark ones a light band. Until a logo is there, the console's name is shown.
+- **Mastered shimmer on drawn media in every layout**: Carousel look, Grid, Hero, TV room and the style homes now give mastered / completed cartridges, discs and cases the sweep over their own shape (`AwardShine` + `Modifier.awardShine`). **The pool of light under free-standing media is gone** everywhere.
+- **Side menu**: the top-left picture is **your RetroAchievements / Steam picture** by default (new option "Your picture", Volt while there's none; new key `side_emblem_v2`); smaller text that shrinks to fit; the globe is replaced by **Voltcap's power capsule** (a glass cell charging with a wave, a bolt, two sparks) and the name under it always has two lines' room, so the capsule no longer jumps.
+- **Cross menu**: on ◀ ▶ the new category's games glide in from that side and fade up with the icon strip (360 ms).
+- **Game header (Continue playing block)**: Settings › Home › Next to the row › **Game header** — switch each part on or off (title, continue line, Played, Achievements, Last played, Time to beat, Score, Play, ★, ⓘ, ⚙, ☁, console badge), a size slider, and **Edit Home** moves it anywhere and resizes it (corner handle or L2 / R2). Every Edit Home widget (music player, round shortcuts, game header) can now be resized.
+- **Round shortcuts can be moved by hand in any mode**: in Edit Home they're picked up whether they sit by the tiles, float or are the corner ☰; moving them makes them float ("Anywhere").
+- **Presets**: lists with games from several consoles now show cartridges / discs as picked ("As picked" replaces "Basic"; only same-size box art becomes covers), and each media preset has an **"Also in mixed lists"** toggle (on = same look there, off = plain covers).
+- **Grid**: "The game you're on" — **Raise & gentle spin** (default: up a little, turning slowly left / right), Outline, or Glow.
+- **Spotlight**: tiles along the top as **Squares, Wide capsules or the game look's shape**.
+- **Icon bar** in the PS5 home's manner: small shortcut icons at the very top, small square tiles under them — the one you're on only rises a touch with a thin white outline and its name under it — and the console, name, Start and time played lower down at the left (new keys for the rise / names: `bar_grow_v2` 112 %, `bar_names_v2` off).
+- **Save Vault**: saves whose game isn't on the device (memory cards / synced) get their cover looked up by name (run-together card titles are spaced out first: "WWESmackDown!vs.RAW" → "WWE Smack Down vs RAW"), kept in prefs, retried after a week.
+- **Spotify**: Spotify's own playlists (Discover Weekly, Release Radar, Daily Mixes…) are hidden from apps in development mode since Spotify's Nov 2024 Web API change. They can now be added: **"+ Spotify playlist by link"** (Share › Copy link, paste) or **"Pin what's playing"**; name / picture from Spotify's public oEmbed; Play works (Spotify plays them), their song list can't be read (said on the page); "Remove from list".
+- **No "…" truncation**: every Text that used to end in "…" (296 places) now shrinks to fit first (down to 60 % of its size, `TextAutoSize.StepBased`) and only cuts off as a last resort; the Side menu, Icon bar and achievement views use FitText.
+- **Achievements, new views** (Settings › Achievements › Achievement views, and chips on each screen):
+  - A game's list: **Power cells** (Voltcap's own, default — the set as a 10-cell battery with %, unlocked / points / rare; each achievement a capsule cell, lit when unlocked, gold when rare, a charge ring round the badge, points with a bolt, a 5-bar rarity "voltage" meter, the date), **Trophy list** (console-style: big badge, tier from points Bronze / Silver / Gold, "Common | 84.2% of players earned", the date, the description beside it after a divider; header with Progress %, Earned, tier counts, a platinum mark when mastered), **Badges**, **List**.
+  - The Achievements screen: **Power cells** (each game a battery, gold when mastered), **Scorecards** (tiles with the game's picture, two rings — unlocked and hardcore — and the %, with summary cards: mastered, unlocked, this month + points), **List**.
+
+### Not tested on a device
+- Compiles with 0 errors (cloud type-check; coil-svg checked against a stub of SvgDecoder.Factory). The GitLab logo lookup and the Spotify oEmbed need the device's network. The 296 auto-size texts cost a few extra measurements; watch scrolling on the Retroid Pocket Classic.
+
+## Update — 7 Oct 2026 (83): Notifications of the power tuner (TDP), the overlays and the volume mixer can be switched off
+
+### ⚠️ Copy
+- `src_copy` (4 files, on top of update 82) → `app\src\main\java\com\shelf\launcher\`:
+  **New:** `ui/NotificationSettings.kt`. **Changed:** `device/tune/GameNotification.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`.
+- `project_copy`: nothing.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **New Settings › Device › Notifications** with three switches: **Power tuner (TDP) notification**, **Overlay notification**, **Volume mixer notification**. The power one is also at the bottom of Settings › Performance, the overlay one at the bottom of Settings › Overlay (the mixer card keeps its own).
+- **Volume mixer:** a plain Voltcap switch (it was only inside the mixer card before).
+- **Power tuner and overlays:** they run as foreground services, and Android insists on a notification for those (a channel the app lowers itself is raised back by Android), so only the person can hide them. The shared in-game notification is now on **two channels** — "While playing: power tuner (TDP)" and "While playing: overlays" — and each switch opens that channel in Android's settings and reads back what was picked there. Hidden, the tuner and overlays keep running.
+  - Only the parts whose channel is on are written into the notification (watts / °C / fan / Power button, or Size / Opacity buttons), and it goes on the channel of a part that's still shown; both hidden → out of sight.
+  - The old single channel "While playing (overlays & power)" is removed, so a choice made on it before doesn't carry over.
+- Settings search finds the three switches.
+
+### Not tested on a device
+- Compiles with 0 errors (cloud type-check). On Android 13+ hidden foreground services still appear in the pull-down's "active apps" list — that's Android's.
+
+## Update — 7 Oct 2026 (82): Settings reworked — Appearance split into Home / Game look / Theme, one game look for every layout, 2–3 presets per layout, one Achievements page
+
+### ⚠️ Copy
+- `src_copy` (18 files, on top of update 81) → `app\src\main\java\com\shelf\launcher\`:
+  **Changed:** `data/AppearanceStore.kt`, `data/LayoutPresets.kt`, `data/LayoutPresetStore.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `ui/PresetsCard.kt`, `ui/PresetPreview.kt`, `ui/GameLookPicker.kt`, `ui/LauncherScreen.kt`, `ui/R1Extras.kt`, `ui/QuickSettings.kt`, `ui/VoltSettings.kt`, `ui/StyleHomeSettings.kt`, `ui/ArtworkPickerDialog.kt`, `ui/DockBacking.kt`, `ui/DualScreenGrid.kt`, `ui/VoltHelp.kt`, `ui/WidgetBoard.kt`.
+- `project_copy`: nothing.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Appearance (19 sub-pages) is gone**, split by what each thing is about. Settings now starts on **Home**:
+  - **Home** — *Layout & presets*, *Layout options* (only the layout in use: where the row sits, the game you're on, carousel, the layout's own options, card size, spacing, tilt), *Name & logo*, *Next to the row* (+ game details per view), *Extras on the home screen* (status bar, capsule buttons, played-ago, play time, video previews), *Music player*, *Details window* (+ offer to add missing info), *Animations*.
+  - **Game look** — *Covers, cases & discs* (what every game is drawn as + its switches: discs for all, 3D boxes, spines, cover templates, disc in case, shown media, mixed consoles), *Cards* (corners, other games, effect, favourite star), *Frames & mastered games*, *Artwork* (animated, priority, sharpness).
+  - **Theme** — *Themes & colours*, *Interface style*, *Background*, *Size & text*, *Effects & battery* (Lite effects), *Screensaver*, *Controller lights*, *Mascot*.
+  - **Achievements** (new page) — *Achievements on cards & pop-ups*, *Achievement look & unlocks*, *Matching achievements* (moved out of Metadata).
+  - **Screens** gets the second screen's art & music, "Use the second screen" / home app and Second screen tools; **Library** gets Save Vault.
+- **The layout only decides where games show; the game look is one choice for every layout.** Switching layout no longer swaps covers / cases / discs, corners, effect or the media switches — only card size, spacing, tilt and tile size are still remembered per layout. One-time migration: the layout you were on hands its card artwork and shown media to all layouts (`one_game_look` flag; old `card_art_by_layout` / `hidden_media_by_layout` keys removed). The R1 Game look tile steps the global look.
+- **Presets reworked:** Home › Layout & presets shows every layout as a chip with a sentence on what it is, "Use <layout> as it is", and **2–3 presets made for that layout** (25 in all — e.g. Voltcap row: Standard / Cover shelf / Disc collection; Grid: Cover wall / Capsule grid / Box collection; TV room: TV room / with boxes…), each with a drawn preview that now shows discs, cartridges, cases and the corner roundness, its description, what it changes, and Apply. Built-in presets only set the layout, game look and placement fields (never theme, background, categories, second screen); "(modified)" only looks at those. The general looks (Compact, Console, Handheld, Dual Screen, Minimal, Artwork-focused) are removed. **Your presets** stay (save / rename / share / paste / undo), and now also save the game look and tile size.
+- Settings search and R1 hold-to-open point at the new places (index edited by hand); old "Appearance ›" hints in notes updated.
+
+### Not tested on a device
+- Compiles with 0 errors against the project's libraries (cloud type-check); not run on a handheld yet.
+
+## Update — 7 Oct 2026 (81): Categories reworked — one Settings page, one card-art setting for all four category-screen looks, no RetroAchievements icons on the category screen
+
+### ⚠️ Copy
+- `src_copy` (10 files, on top of update 80) → `app\src\main\java\com\shelf\launcher\`:
+  **New:** `ui/CategoryArt.kt`. **Changed:** `data/AppearanceStore.kt`, `data/Features.kt`, `ui/CategoryScreen.kt`, `ui/PlatformBrowser.kt`, `ui/PlatformBrowserSettings.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `ui/VoltSettings.kt`, `ui/LauncherScreen.kt`.
+- `project_copy`: nothing.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **"Category screen" and "Platform browser" were the same screen** (B / the Categories shortcut opens it): the classic Tiles was the first version, Slides / Wall / Grid were added later as a second screen with their own settings. They are now one **Category screen** with **four separate looks** (Tiles, Slides, Wall, Grid), one setting for what the cards show, and one settings page.
+- **New Settings › Categories** (right under Appearance), four groups:
+  - **Which categories** — order and hidden ones (was Library › Sorting & category order), where Voltcap starts (was Appearance › Startup categories), collections / franchises / genres / play status (was Library › Collections).
+  - **On the home screen** — the category name above the games and where it sits, console categories pinned / hidden, the change animation, "Games slide in" with L2 / R2 (was Interface style), console logos next to the name (was Name & category).
+  - **Category screen** — when it opens, the **Look** (Tiles / Slides / Wall / Grid, with a line on each), **Cards show**, then only the options of the look you picked (Tiles: card size; Slides: its parts and design reset; Wall: logo; Grid: tall cards, name, count, reorder, alphabetical reset) and the shared ones (animations, legend, action bar).
+  - **Per platform** — intro videos, music crossfade, platform media scraping, and how to reach Platform Options (Y).
+  The old spots point here; Appearance › Name & category keeps the game-name settings and the shared name / category style.
+- **Cards show** (all four looks, and the second screen's Wall): **Slow fade through its games** (default — each card cross-fades through its games' art every ~6.5 s, staggered, only cards on screen, paused while Voltcap is in the background, still with Lite effects), **Last played game** (the wide art of the most recently played game, its first game if none), **A few covers**, **Photo of the console**, **Just the name**. Your own picture (Y) still wins. The old "Category tiles show" (default was the console photo) is migrated once: Covers / Name only keep their choice, everything else starts on the slow fade.
+- **No RetroAchievements system icons on the category screen** any more: the slide's "Icon" part is gone (kept internally so saved slide designs load), logos are only the platform logos you scrape in Platform Options, otherwise the name. The Slides background, the Wall's slices and the Grid's cards now use the card art above instead of the console photo / fan art.
+- Settings search updated by hand for the moved settings (the generator in `tools/settings_index` misreads `${…}` titles; see update 77).
+
+### Checked / not tested
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose, all of `src_copy`): **0 errors**.
+- **Not run on a device**: the fades on many cards at once on weak devices, the Last played art per platform, the new Settings page on the Retroid Pocket Classic, the migration of an existing "Category tiles show".
+
+---
+
+## Update — 7 Oct 2026 (80): Presets for every home layout, each with a short explanation and a drawn preview
+
+### ⚠️ Copy
+- `src_copy` (4 files, on top of update 79) → `app\src\main\java\com\shelf\launcher\`:
+  **New:** `ui/PresetPreview.kt`. **Changed:** `data/LayoutPresets.kt`, `data/LayoutPresetStore.kt`, `ui/PresetsCard.kt`.
+- `project_copy`: nothing.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Settings › Appearance › Presets** is now in three groups: **Looks** (Standard, Compact, Console, Handheld, Dual Screen, Minimal, Artwork-focused — they keep the layout you're on; Standard goes back to the Voltcap row), **Layouts** (new: Tile home, Hero carousel, Grid, TV room, **Dashboard, Live tiles, Side menu, Cross menu, Spotlight, Icon bar**) and **Yours** (saved / pasted ones).
+- **Pick, then Apply.** Picking a preset no longer applies it at once: it shows a **drawn preview** of that screen (its layout, background, card size, focus effect and legend, in your theme's colours — e.g. the Dashboard's glass panels, the Cross menu's icons and list), its **one-line explanation**, and **what it would change** compared with now ("Layout: Spotlight · rounded corners · focus: soft glow · button legend off · keeps your theme"). Then **Apply** (or "✓ In use" / "Reset to preset" when it's the active one). The active preset has a ✓ on its chip.
+- Each layout preset switches the layout and sets a look made for it (corners, focus effect, legend, status bar, logos where they matter). The layout's own options (Dashboard panels, Live tile colour, …) stay as you set them; nothing is locked.
+- Layout presets apply in two steps (the layout first, so the layout you leave keeps its own card look; then the preset's values), and **Undo** goes back to the layout and look from before.
+- The home layout is now one of the preset fields, so **your own saved presets remember their layout**. Presets saved before this keep whatever layout you're on, and an active preset from before isn't shown as "(modified)" just because of the new field.
+
+### Checked / not tested
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose, all of `src_copy`): **0 errors**.
+- **Not run on a device**: the previews' look on the Retroid Pocket Classic / Thor, the two-step apply with Undo.
+
+---
+
+## Update — 7 Oct 2026 (79): "Discs only" draws cartridge games as discs, Hero carousel names no longer cut off, Cross menu icons closer together (Retroid Pocket Classic screenshots)
+
+### ⚠️ Copy
+- `src_copy` (11 files, on top of update 78) → `app\src\main\java\com\shelf\launcher\`, all changed:
+  `data/Features.kt`, `ui/PhysicalMedia.kt`, `ui/GameCard.kt`, `ui/GameDock.kt`, `ui/TileHome.kt`, `ui/GridHome.kt`, `ui/Carousel.kt`, `ui/HeroCarousel.kt`, `ui/StyleHomes.kt`, `ui/StyleCrossMenu.kt`, `ui/SettingsDialog.kt`.
+- `project_copy`: nothing.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Card artwork "Discs only" showed covers for a Game Boy Advance category.** That was the old rule (only disc / UMD consoles had a disc; everything else kept its cover). Now cartridge consoles are drawn as the **generic CD** (the PS2-size CD from update 75) with the game's label scan or cover printed on it, in every layout (row, tiles, grid, hero carousel, TV room / carousels, the style homes). Real disc consoles keep their own disc. New switch under Card artwork when "Discs only" is picked: **"Cartridge games as discs too"** (on by default; off = the old behaviour). Apps / PC games without a console keep their cover. `mediaFor(platform, mixed, asDisc)` gained `asDisc`; `GameCard` / `HomeTile` gained `asDisc` (default false).
+- **Hero carousel: game names cut off at the left edge** (the name box was half the column wide and started off-screen). Each name is now exactly as wide as the room between its cover and the column's edge: it wraps onto two lines, the selected one slides if it's still too long, and a cover with almost no room beside it (far down the arc) shows no name instead of a sliver. Same for the mirrored side.
+- **Cross menu: big gaps between the category icons, half an icon cut at each edge.** Spacing is now ~1.9× an icon (was a fixed 104 dp), and an icon fades out as it reaches the edge instead of being cut in half.
+
+### Checked / not tested
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose, all of `src_copy`): **0 errors**.
+- **Not run on a device**: the generic CD in each layout (a GBA cartridge label printed on a CD), the names in the Hero carousel on the Retroid Pocket Classic, the Cross menu icon row there.
+
+---
+
+## Update — 7 Oct 2026 (78): Style homes checked for overlaps and visual bugs — 14 fixes
+
+### ⚠️ Copy
+- `src_copy` (8 files, on top of update 77) → `app\src\main\java\com\shelf\launcher\`, all changed:
+  `ui/StyleHomes.kt`, `ui/StyleDashboard.kt`, `ui/StyleLiveTiles.kt`, `ui/StyleSideMenu.kt`, `ui/StyleCrossMenu.kt`, `ui/StyleSpotlight.kt`, `ui/StyleIconBar.kt`, `ui/LauncherScreen.kt`.
+- `project_copy`: nothing.
+
+### 🗑 Delete
+- Nothing.
+
+### What was wrong → fixed
+**Backgrounds stopping short of the edges (all of them were drawn inside the padded game area):**
+1. Spotlight's shade covered only the middle: an unshaded strip under the status bar and down both sides over the art. → drawn across the whole screen.
+2. Cross menu's colour wash and ribbons left a band of theme at the top and the sides. → whole screen.
+3. Live tiles' pale backdrop looked like a floating card with theme round it. → full width, from under the status bar to the legend (kept off those two so their white text stays readable).
+   All three now live in one full-screen layer, `StyleBackLayer` (with the game art behind Side menu / Spotlight / Icon bar).
+4. Side menu's panel floated 12 dp from the left edge. → against the edge.
+
+**Collisions:**
+5. Cross menu: the game before the one you're on slides up past the icons and ran into the status bar. → the list is clipped to its area.
+6. Cross menu: long names ran off the right edge with no "…" (worst on narrow / lower screens). → width limited to the room left.
+7. Dashboard: "LAST PLAYED" (bottom right of the Now playing card) could sit on the Play button on narrow cards. → both on one line, Play left, info right.
+8. The corner ☰ round shortcuts (Settings › Round shortcuts › corner) sat on the Dashboard title / Side menu emblem / Icon bar icons. → hidden on a style home that already shows the shortcuts in its own menu (Dashboard menu or Quick access, Live tiles shortcut tiles, Side menu, Icon bar icons); still shown on Cross menu and Spotlight.
+
+**Things cut off on small screens (Thor lower screen, 360 dp-tall phones):**
+9. Dashboard: with many buttons the menu ran out of the screen, and the D-pad could go to buttons you couldn't see. → it scrolls and keeps the one you're on in view.
+10. Dashboard: the Now playing card's name was cut off at the top on short cards. → smaller name (1 line) and button below 150 dp, name hidden below 96 dp.
+11. Dashboard: the system-status card ran past the bottom on wide-but-short screens. → tighter lines below 330 dp, hidden below 270 dp when the player card is shown too.
+12. Spotlight: tabs + tiles + title + Play + cards needed ~430 dp, so the cards ran over the legend on a 480 dp-tall handheld. → cards only from 440 dp up (title sizes in three steps), and the D-pad's ▼ buttons are exactly the ones on screen (it used to go to hidden cards).
+13. Icon bar: big tiles with a big "selected" size pushed the name / Start line off the bottom; with many shortcuts the top icons ran off both sides (invisible but still selectable). → tiles are capped to the room left; the icons shrink to fit across.
+
+**Look:**
+14. Focus frames: a cartridge / disc / box (free-standing media) got a rectangle drawn round its slot. → the pool of light under it instead, like the grid. Also: the Icon bar name strip covered the top of the white frame (now inside it, clipped to the corners); the Dashboard row no longer stays highlighted while you're in its menu; the glow round the first / last card was clipped (more room left and right in every row); Quick access shows icons only (plus the selected one's name) when the buttons are too narrow for names; Volt / the tour point at the thumbnail in the Cross menu, not the name; tapping Play or a game resets the menu selection; Live tiles' category words no longer wrap.
+
+### Checked, no change needed
+- Status bar: every style home starts under it and it's drawn above them (z-index), legend space is kept. Volt wandering stays behind the panels. Edit Home, the Volt tour, the category screen and dialogs take the keys before the style homes do; the left stick works like the D-pad; the mini music player is touch-only so ▲ never fights it.
+- Still possible by your own settings (same as on Grid / TV room): a music player moved to a corner other than the status bar, corner visualizers, the music-theme player and lyrics at the top / bottom can sit over a panel.
+
+### Checked / not tested
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose, all of `src_copy`): **0 errors**.
+- **Not run on a device**: the sizes above are worked out from the layout code for 480 / 410 / 360 dp-tall screens, not seen.
+
+---
+
+## Update — 7 Oct 2026 (77): Six new home layouts from your screenshots — Dashboard, Live tiles, Side menu, Cross menu, Spotlight, Icon bar — each with its own options section
+
+### ⚠️ Copy
+- `src_copy` (13 files, on top of update 76) → `app\src\main\java\com\shelf\launcher\`:
+  **New:** `ui/StyleHomes.kt` (shared: D-pad zones, keys, card art, panels), `ui/StyleDashboard.kt`, `ui/StyleLiveTiles.kt`, `ui/StyleSideMenu.kt`, `ui/StyleCrossMenu.kt`, `ui/StyleSpotlight.kt`, `ui/StyleIconBar.kt`, `ui/StyleHomeSettings.kt`.
+  **Changed:** `data/AppearanceStore.kt` (6 new `HomeLayout` values + `styleHome`), `data/Features.kt` (each layout's options), `ui/LauncherScreen.kt` (draws them, their keys, art behind), `ui/SettingsDialog.kt` (their options section), `ui/OptionIcons.kt` (a picture for each in the layout picker).
+- `project_copy`: nothing.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+Settings › Appearance › Game row › Home layout has six more choices (also on the R1 Layout tile, which cycles through all of them). Names are our own, no logos or trademarks. Each one gets its own **"<layout> options"** section right under the layout picker (like the TV room / Hero carousel), and keeps its own **Cards · <layout>** look (corners, card artwork, effect, templates). The menus in them are your **round shortcuts** (which ones and their order: Settings › Round shortcuts › Buttons). L2 / R2, A (details), R1 / L1, the status bar, the music player and the second screen work as on the other layouts.
+- **Dashboard** (1st screenshot): glass panels. Title + subtitle top left, a menu of round buttons down the left (the one you're on lit with an accent band), the game you're on big in a **Now playing** card (its art, name, **Play / Continue**, last played), the row under it, a **Quick access** strip, and on wide screens a **player card** (RetroAchievements picture/name/points, PWR = battery, LIB = games in this category) and **System status** (battery, library, total time played, Wi-Fi). Keys: ◀ ▶ row; ▲ (or ◀ on the first game) → menu (▲ ▼, ▶/B back); ▼ → Quick access (◀ ▶, ▲/B back). Options: title and line (text boxes), menu on/off, names, how many buttons (2–12), Now playing card, row title (empty = category), Quick access buttons (0–8), player card, system status, panels Light glass / Dark glass / Theme colour, strength, cut or rounded corners.
+- **Live tiles** (2nd): pale backdrop with faint rings, category words across the top (before / current / next ones — tap one to jump), a page of flat tiles (**1 big + 4**, 1 big + 2, or 6 even), coloured shortcut tiles under them (the first in the chosen colour), the game's name and last played / time at the bottom. ◀ ▶ ▲ ▼ move round the tiles and on to the next / previous page; ▼ from the bottom row → shortcut tiles. Options: tiles per page, shortcut tiles (0–6), colour (Green / Theme / the game's colour), tabs, pale backdrop, names on tiles.
+- **Side menu** (3rd): a dark menu panel on the left with an emblem (Volt / console logo / nothing) + category and game count, your shortcuts as a list (framed when selected), a slowly turning **glowing orb** with the game you're on under it; the game's art across the screen and the row along the bottom with the selected cover framed. ▲ (or ◀ on the first game) → menu. Options: emblem, width, orb, gold trim or theme colour, capitals, art behind, row title.
+- **Cross menu** (4th): a colour wash (Dusk purple / Ocean / Ember / Theme / none) with slow light ribbons, the categories as icons across the screen (console logos when there are some), the games as a list down from the one you're on (bigger, with time played, console, last played); the ones before it fade above the icons. ◀ ▶ change the category (the icons slide), ▲ ▼ the game. Options: wash, ribbons, size, category name, details.
+- **Spotlight** (5th): the game's art full screen with an adjustable shade, category + next one top left, small square tiles along the top (the one you're on bigger, framed, its name beside it), the big title (the game's logo when there is one, else large serif text), **Play / Continue**, **⋯** (details) and time played, then **activity cards** (Achievements x/y · %, Time played, Last played). ▼ → Play / ⋯ / cards (◀ ▶), ▲/B back; the Achievements card opens the game's achievements. Options: square tiles or the card art's shape, logo as title, cards, tabs, art behind, shade.
+- **Icon bar** (6th): your shortcuts as icons along the top (name under the selected one), a row of square tiles with the one you're on bigger and its name on it, its name, **Start** and time played under the row. ▲ → icons (◀ ▶, ▼/B back). Options: icons, tile size, how much bigger the selected one is, square tiles, names, the Start line, art behind.
+- All six: touch works (tap a game to select, again to open; tap Play / buttons / tabs), the focus effect (glow / electric) and Lite effects are respected, the Volt perch and tour target sit on the selected card, the status bar stays on top, and "No games match." shows in an empty category.
+
+### Checked / not tested
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose plugin, `tools/compile_check`, all of `src_copy` with these changes, against the project's jars and the last build's ThemeShaders classes): **0 errors**.
+- `SettingsIndex.kt` (Settings search) was **not** regenerated: `tools/settings_index/gen.py` misreads the `"${…} options"` / `"Cards · ${…}"` titles and would have broken existing entries, so the new options aren't in the search yet.
+- **Not run on a device.** Not tested: how each layout looks on the Thor's lower screen / small screens (they shrink below 360–380 dp tall and drop the side cards under 640 dp wide), the key flow in every zone, the Cross menu's icon slide, and performance with the orb / ribbons on weak devices (both still with Lite effects).
+
+---
+
+## Update — 7 Oct 2026 (76): Big music player (press the player; playlists on a swipe / arrow), volume mixer in the notification shade, Grid as square tiles, swipeable R1 quick settings
+
+### ⚠️ Copy
+- `src_copy` (12 files, on top of update 75) → `app\src\main\java\com\shelf\launcher\`:
+  **New:** `ui/BigMusicPlayer.kt`, `device/audio/MixerNotification.kt`.
+  **Changed:** `ui/PlayerPages.kt`, `ui/NowPlayingPanel.kt`, `ui/SecondScreenHome.kt`, `ui/LauncherScreen.kt`, `ui/QuickSettings.kt`, `ui/MixerActivity.kt`, `ui/GridHome.kt`, `ui/SettingsDialog.kt`, `data/Features.kt`, `device/audio/AppMixer.kt`.
+- `project_copy` (6 new files + the manifest) → `robocopy project_copy . /E`: `app/src/main/AndroidManifest.xml` (one new `<receiver>`, `MixerNotificationReceiver`), `app/src/main/res/layout/mixer_notification.xml`, `app/src/main/res/layout/mixer_notification_row.xml`, `app/src/main/res/drawable/ic_mix_minus.xml`, `ic_mix_plus.xml`, `ic_mix_refresh.xml`. **Without the layouts and the manifest line the build fails / the buttons do nothing.** (`res/layout` is a new folder.)
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Big music player.** Press (one tap) a small player and a big window opens: the cover as large as the window allows, a big title, a long timeline and big previous / play / next buttons, over the blurred cover. **Swipe left** or press the **"Playlists ›"** arrow in the bottom-right corner: your Spotify playlists as big covers (tap or press one to play it; it goes back to the player); **swipe right** or **"‹ Player"** (bottom-left) comes back. Chips at the top: Spotify, Lyrics, Close; the lyrics (Lyrics chip) show under the buttons. It works from the corner player and the home screen's own player (a tap on the player, not on a button; it was a double tap that opened a smaller popup with a playlist strip under it), and on the second screen from the player card (Art and Music pages). Same blur / lyrics settings as the second-screen player.
+- **Volume mixer in the Android pull-down.** A quiet notification "Volume mixer" (expand it): a row per app that's playing or has its own volume (up to 4) with **−**, a level bar, **+** (10 % a tap) and the percent; **↻** looks again, **Open** opens the mixer card. Android doesn't allow a slider in a notification, so it is steps; the sliders stay in the mixer card. It updates when Voltcap starts, when a game starts or ends, after every tap and with ↻ — it doesn't poll, so an app that starts playing later shows up on the next refresh. On by default; off with the new switch in the mixer card ("Mixer in the notification shade", shown only where the mixer can work) and then the notification goes away. The mixer's Quick Settings tile is unchanged (you add it in Android's tile editor).
+- **Grid as square tiles.** Settings › Appearance › Home layout = Grid: "Games as square tiles" — every game is its cover as a rounded square (like the Tile home, bigger corners), the focused one grows from its bottom edge with the usual ring / glow, names under them; the card artwork setting is ignored while it is on (off by default).
+- **R1 quick settings:** swipe the card sideways to flip Quick ↔ Device (not while editing the tiles; the sliders and tile dragging keep their own gestures). L1 / R1 and the tabs still work.
+
+### Checked / not tested
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose plugin): the 25 changed / new files of updates 75 and 76 against the project's libraries and the classes of the last Gradle build (update 74): **0 errors**; no public signature used by the other files was removed. Not a full Gradle build: the new layouts, drawables and the manifest line aren't covered by that check, so the real build is the final word on them.
+- **Not run on a device.** Not tested: the notification's look on light / dark shades and on your Android version (the − / + icons are tinted by night mode; the text colours come from the system's notification text style), the Spotify playlist page (needs a connected account), the swipe vs the sliders on the R1 card, and the tile grid with every artwork type.
+
+---
+
+## Update — 7 Oct 2026 (75): Shimmer follows the cartridge / CD shape, generic cartridge and CD, one card size in mixed lists, carousel tilt options, name no longer covered in the grid, volume mixer reworked, solid overlays at 100 %, grey pinned trophy, small-screen TV grid, music pause only by lid
+
+### ⚠️ Copy
+- `src_copy` (19 files, on top of update 74) → `app\src\main\java\com\shelf\launcher\`, all changed: `ui/GameCard.kt`, `ui/PhysicalMedia.kt`, `ui/MediaVariants.kt`, `ui/Carousel.kt`, `ui/GridHome.kt`, `ui/HeroCarousel.kt`, `ui/TileHome.kt`, `ui/GameDock.kt`, `ui/TvRoomHome.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `ui/MixerActivity.kt`, `ui/RaOverlayView.kt`, `ui/MusicOverlayView.kt`, `ui/PerfOverlayService.kt`, `data/Features.kt`, `device/audio/AppMixer.kt`, `device/audio/MixerEffects.kt`, `device/LidPause.kt`.
+- `project_copy` (1 new picture) → `robocopy project_copy . /E`: `app/src/main/res/drawable-nodpi/tpl_cart_generic.webp` (**without it the build fails**: `MediaVariants.kt` points at `R.drawable.tpl_cart_generic`).
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Mastered shimmer follows the shape.** On cartridges, CDs and boxes the shine is now clipped to the drawn object (an offscreen layer; the band only lands on the pixels the media drew), not a square over the whole tile. Covers / capsules keep the card shine.
+- **Games without a cartridge / CD.** A generic cartridge (the Game Boy shell, branding removed, as `tpl_cart_generic`) and a generic CD (the PS2 CD size) are templates for any console without its own. `mediaFor(platform, mixed)` picks the console's own or the generic one, and the game's disc / cartridge picture goes into it. `MediaVariants.kt` is the hook for adding other consoles' own versions.
+- **Mixed categories** (Recently played, Favourites, a category with several consoles): Settings › Appearance › Game row › "Categories with several consoles". **Basic (default)**: every game is the plain cover / wide capsule, so no card is bigger or smaller. The others: as chosen above (old behaviour), all covers, all wide capsules, all CDs, all cartridges. "Tiles" is not a separate choice (covers and capsules are the tile sizes).
+- **Carousel tilt:** "Tilt direction" (outward like pages / inward like a wall) and "Tilt which games" (both / left only / right only), shown under "Tilt the other games" in both carousel pages of Settings. One setting for every carousel (`Carousel.turn`).
+- **Grid / TV grid, name hidden when the card grows:** the focused card now grows from its bottom edge (up and sideways), so it no longer covers its own name.
+- **TV grid on small screens:** the games strip uses 2 columns under 240 dp wide and a shorter row; the info bar gets narrower padding, smaller text, the logo gives way under 230 dp, the five stars become one star plus the number, nothing wraps; the summary line is dropped when the bar is very short; the games width can't go negative.
+- **Overlays at 100 % opacity** are really opaque now (RetroAchievements and music boxes, the text overlays): the boxes' own backgrounds were translucent, the window alpha alone left them see-through.
+- **Pinned trophy colour:** the badge in the collapsed RetroAchievements overlay is coloured only if it is the last *unlocked* one; the pinned / next one still to get is shown grey, dimmed.
+- **Music keeps playing when the screen locks.** Pause now only when a dual-screen / clamshell device closes (hinge angle, else the last sleep reason from `dumpsys power`; unknown = don't pause). Settings › Device › "Also pause when locking" (off by default) brings back pausing on power button / timeout.
+- **Volume mixer (Spotify, RetroArch, …)** — fixes for the slow / ignored lowering; louder-than-100 % is not changed:
+  - In Effect mode (and Automatic when it falls back to it) the apps' audio sessions are found from Android's own audio report read inside Voltcap (about 100 ms) instead of starting a helper process on every look (a second or two each, which was the delay before Spotify got quieter).
+  - After the helper failed, Automatic doesn't try to start it again on every look (one slow start under load no longer drops it; a retry every 5 minutes).
+  - An app put back to 100 % gets its player volume back (the helper's lowered volume used to stay), and switching the method to Effect puts back what the helper had lowered, so the two don't stack.
+  - Under an app the mixer now says why it can't be turned down when it can't: no audio session it can reach, Android refused the sound effect on that stream (low-latency game audio often does), or "attaching…". RetroArch's own audio and other native AAudio / OpenSL players are in that group: nothing in Voltcap can reach them without Shizuku, so it says so instead of pretending.
+  - **Not changed:** making an app louder than its own 100 % (Spotify "louder" never worked, and still doesn't).
+
+### Checked / not tested
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose plugin): the 19 changed files against the project's libraries and the classes of the last Gradle build (update 74): **0 errors**. Not a full Gradle build: the other files weren't recompiled (checked that no public signature they use was removed; `GameCard` gained `mixed` with a default, `AudioApp` gained `note` with a default), resource files and the manifest aren't covered.
+- **Not tested on the device.** In particular the volume mixer can't be tested from here: it may still not hold for some apps (RetroArch's native audio is not reachable by any of the methods), and the lid detection is based on sensor / power log assumptions that differ per device (if it can't tell, it doesn't pause).
+
+---
+
+## Update — 7 Oct 2026 (74): Nine chill themes now use Toni's paintings, with motion added on top
+
+### ⚠️ Copy
+- `src_copy` (3 files, on top of update 73) → `app\src\main\java\com\shelf\launcher\`: `ui/ScenePainting.kt`, `ui/theme/ShelfColors.kt`, `ui/ThemeShaders.kt` (generated).
+- `project_copy` (9 new pictures) → `robocopy project_copy . /E`: `app/src/main/res/drawable-nodpi/scene_chill_peaks.webp`, `scene_chill_silk.webp`, `scene_chill_polar.webp`, `scene_chill_moon.webp`, `scene_chill_dunes.webp`, `scene_chill_glade.webp`, `scene_chill_clouds.webp`, `scene_chill_koi.webp`, `scene_chill_city.webp`.
+- `tools/themes` (edited in place): `preview.html` (regenerated), `scenes/_paint.agsl` (two new helpers), new `paintings/CHILL_*.webp` (9), the nine scenes `scenes/chill_{peaks,silk,polar,moon,dunes,glade,clouds,koi,city}.agsl` rewritten as painted scenes, and the earlier drawn versions kept as `scenes/chill_*_drawn.agsl` (not used).
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Winter peaks, Silk folds, Polar veil, Moon tide, Dune hour, Firefly glade, Above the clouds, Koi pond and Rooftop dusk** now show Toni's paintings (16:9, 1672 × 941), like Aurora / Meadow / Dojo, with motion added on top:
+  - **Winter peaks**: snow falls (three depths), the chimney smoke sways and flows up, the windows flicker like a fire and their glow on the snow breathes, the stars twinkle, the valley lights shimmer, the snow sparkles.
+  - **Silk folds**: the silk ripples as if a breeze ran under it (the edges stay put), a sheen slides along the folds, a glint travels along each edge, the middle glows faintly.
+  - **Polar veil**: the curtains sway and shimmer, with rays drifting and brightness rolling across them and a wave of light running along the hem; the stars twinkle; a shooting star every 13 s; the snow sparkles in the green light.
+  - **Moon tide**: the sea swells and the moon's path glitters, the lighthouse lamp pulses and its beam breathes with mist drifting through it, the halo glows, wisps drift past, the stars twinkle.
+  - **Dune hour**: heat shimmer at the horizon, the clouds drift, the sun breathes with soft rays, light ripples run over the sand, fine sand blows low over the dunes with glinting grains.
+  - **Firefly glade**: the painted fireflies blink, ten more drift between the trees, mist rolls through the clearing, the moonbeam shimmers with motes in it, the leaves and grass sway.
+  - **Above the clouds**: the cloud sea drifts slowly past (near clouds faster), the sky streaks glide by, the sun breathes, light glints along the cloud tops near it. The peaks stay still.
+  - **Koi pond**: the four koi swim in place (gliding, bodies rippling, tails swishing), the water shimmers with moving caustic light, rings spread now and then. The lily pads and flowers stay still.
+  - **Rooftop dusk**: windows dim and come back here and there, the near ones flicker gently and the far ones shimmer, the antenna's red light blinks, the pink clouds drift, the stars twinkle, a plane crosses every 70 s.
+- These nine keep their painting's own colours (not recolourable, like the other painted themes), use no vignette, and show the painting still below Android 13. Only the stars twinkle (a new `speckAt` helper picks real specks, not bright areas).
+- The other nine chill themes (Glass blades, Planet rise, Glass orbs, Mesh glow, Morning light, Leaf shade, Rainy window, Jellyfish drift, Hex lattice) are unchanged.
+
+### Checked / not tested
+- `gen.py` regenerated ThemeShaders.kt; `check_uniforms.py`: 192 checked, all clean.
+- Each painted scene rendered and compared between two moments (a difference image), to check that only the intended parts move and nothing smears or jumps.
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose plugin, all of `src_copy` including update 73): 0 errors.
+- Not run on a device. The nine pictures add about 1 MB to the app.
+
+---
+
+## Update — 7 Oct 2026 (73): Platform browser (Slides / Wall / Grid + slide designer), second-screen Widget Board / Mirror / Wall / virtual screen, intro videos, music overrides, per-view game facts, in-game Quick menu, Restart button
+
+### ⚠️ Copy
+- `src_copy` (36 files, on top of update 72) → `app\src\main\java\com\shelf\launcher\`:
+  **New:** `data/GameFacts.kt`, `data/MusicOverrides.kt`, `data/PlatformInfo.kt`, `device/tune/QuickMenuTileService.kt`, `ui/DetailLayers.kt`, `ui/PlatformBrowser.kt`, `ui/PlatformBrowserSettings.kt`, `ui/PlatformIntro.kt`, `ui/PlatformOptions.kt`, `ui/QuickMenuActivity.kt`, `ui/ScreenMirror.kt`, `ui/SecondScreenTools.kt`, `ui/WidgetBoard.kt`.
+  **Changed:** `LauncherViewModel.kt`, `data/AppearanceStore.kt`, `data/Features.kt`, `data/Hotkeys.kt`, `data/IgdbApi.kt`, `data/ScrapeOptionsStore.kt`, `data/ScreenScraper.kt`, `data/SettingsScopes.kt`, `ui/BackgroundMusic.kt`, `ui/CategoryScreen.kt`, `ui/GameDetailsOverlay.kt`, `ui/GameOptionsDialog.kt`, `ui/HeroCarousel.kt`, `ui/LauncherScreen.kt`, `ui/LauncherUiFlags.kt`, `ui/OverlayControlActivity.kt`, `ui/RowInfoPanel.kt`, `ui/ScreenLayoutsUi.kt`, `ui/SecondScreenDetails.kt`, `ui/SecondScreenHome.kt`, `ui/SecondScreenVolt.kt`, `ui/SettingsDialog.kt`, `ui/TvRoomHome.kt`.
+- `project_copy` (1 file) → `app\src\main\`: `AndroidManifest.xml` (permission `FOREGROUND_SERVICE_MEDIA_PROJECTION`, `QuickMenuActivity`, `QuickMenuTileService`, `MirrorService` with `foregroundServiceType="mediaProjection"`).
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Platform browser** (Settings › Appearance › Category screen › Platform browser): the platform screen can now be Tiles (as before), **Slides**, **Wall** or **Grid**. Every part of a slide (logo, icon, name, cover fan, last-played card, shadow, game count, maker/year, skewed bands, button legend) has its own switch. Slides animate when you switch (Wall slides in the direction you browse). Action bar: game count and a random-game button (X), animated between views. **Grid**: horizontal grid, optional tall 2:3 cards, drag-and-drop reorder (long-press and drag; controller: Start picks up, ◀ ▶ moves, A drops). Open it at start with the existing "Browse categories at start" setting, or from the category screen.
+- **Design your own slide**: Y on a platform › Platform Options › "Design this slide". D-pad moves a part, L1/R1 picks the part, X/Y resize, A shows/hides it, Select resets, B/Start done; touch: drag. Wall view has its own layout for platforms and for games.
+- **Platform Options** (Y on a platform): scrape platform media (logo, photo, fan art, maker, year, intro clip from ScreenScraper), your own picture, intro video (pick/remove/switch per platform), music.
+- **Platform intro videos**: plays after the launch animation and before the game starts (also when the launch animation is off); any key or tap skips it; error or 9 s without a picture goes straight to the game.
+- **Music overrides**: a platform or a game (Game options › Music…) can have its own track; they fade into each other (Settings switch "Fade between music overrides"); per platform/game switch "Restart on return" starts it from the beginning, off continues where it stopped.
+- **Game details per view**: developer, genre, release date, publisher, description can each be shown or hidden in the game row, hero carousel, TV room, details window and second screen (new `GameMetadata.publisher` from ScreenScraper).
+- **Richer detail pane**: cover art, screenshots, preview clip and game logo each have a switch and are layered behind the hero carousel's info pane (and cover/screenshots/logo behind the TV room's info strip; the TV already plays the clip).
+- **Second screen tools** (Settings › Second screen tools): new **Widgets** and **Wall** pages; **Widget Board** with built-in Now Playing, System Stats and Screen Mirror plus any Android app's widgets (pick from the provider list, bound through Android's own prompt); **Screen Mirror** with Zoom and Trackpad modes; **separate second-screen wallpaper**; **virtual second screen** (an edge tab "2" slides a panel with the second-screen content over a single-screen device).
+- **In-game Quick menu**: Quick Settings tile "Voltcap quick menu" and a button in the in-game overlay panel open a card over the game with your achievements (next, missables, still to get, unlocked) and your paired Bluetooth devices (connect / disconnect). Switch: Settings › Device › "In-game Quick menu".
+- **More control customization**: new hotkey actions (previous/next category, favourite, game options, details, music play/pause/next/previous, virtual second screen, second-screen page, restart app) in Settings › Controls.
+- **Restart Voltcap** button: Settings › Device.
+- Per-platform screen preference already existed (Screens layouts), unchanged.
+
+### Checked
+- `tools/compile_check/check.sh` against the real Gradle jars (Kotlin 2.2.10 + Compose plugin) on the whole `src_copy` with these 36 files: **0 errors**. Gradle on the PC is still the final word (resources, manifest).
+- **Not tested on a device**: widget host (binding and configuring app widgets), screen mirror (needs the MediaProjection prompt; Trackpad taps need the system shell/root), Bluetooth connect/disconnect (Android hides these calls; when refused it opens Android's Bluetooth settings), intro video playback, platform scraping against ScreenScraper, the drag-and-drop grid, the slide designer with a controller, music crossfade.
+
+---
+
+## Update — 7 Oct 2026 (72): 18 new chill themes — quiet backgrounds with their detail in the corners
+
+### ⚠️ Copy
+- `src_copy` (4 files, on top of update 71) → `app\src\main\java\com\shelf\launcher\`: `ui/theme/ShelfColors.kt`, `ui/ThemeShaders.kt` (generated), `ui/ThemeSceneLegacy.kt`, `ui/ThemeThumbs.kt`.
+- Nothing in `project_copy`.
+- `tools/themes` (edited in place): `gen.py`, `preview.html` (regenerated), 18 new scenes `scenes/chill_*.agsl`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **New theme group "Chill home screens"** (after "Still, calm & bold"). Every scene keeps the middle of the screen calm for the game row and puts its detail in the corners (like Orbit station). All are original designs, slow and quiet (theme kind: Calm), drawn in the theme's colours, so Custom / Current game colours work on them. Each gets the Home or Haze background music.
+  1. **Glass blades** — curved tinted-glass blades sweep in from two corners with a sheen gliding along their polished edges; glass orbs float beside them; a soft light breathes behind (the calm-dashboard feel).
+  2. **Polar veil** — northern-lights curtains hang from the top-left with shimmering rays; snowy mountains and snow-covered pines in the bottom-right catch their light.
+  3. **Planet rise** — a huge planet in the bottom-right corner, the sun just coming up behind its rim (bright crescent, atmosphere, a flare); cloud bands slide over its night side, city lights twinkle, a satellite glides over, a small moon sits far off.
+  4. **Moon tide** — a detailed moon with a halo top-right, thin clouds silvered as they pass it, a calm sea with a glittering moon path, and a lighthouse on a rock in the bottom-left with a sweeping beam.
+  5. **Glass orbs** — two clusters of big glass spheres in opposite corners, bending the coloured light behind them, with rims, highlights and caustics.
+  6. **Silk folds** — satin sheets draped across two corners; the light slides along each fold.
+  7. **Dune hour** — dusk over desert dunes in the corners with sharp crests, lit and shaded sides, wind ripples and blowing sand; a low sun; the first stars.
+  8. **Mesh glow** — soft blooms of colour drifting in the corners, seen through reeded glass.
+  9. **Morning light** — sun falls through a window onto the wall as a four-paned patch (a plant outside sways in it); a dusty beam crosses the room; light pools on the wooden floor.
+  10. **Leaf shade** — leaf shadows gather and sway in two corners of a warm sunlit wall, with sunspots dancing in them.
+  11. **Rainy window** — night city lights melted into bokeh round the edges of a window, raindrops beading on the glass (each a tiny lens), drops running down now and then.
+  12. **Rooftop dusk** — towers in the bottom corners with windows switching on and off, a water tank, a blinking antenna light, a hazy far skyline, pink-lit clouds and a plane gliding over.
+  13. **Jellyfish drift** — glowing jellyfish pulsing in the corners with trailing tentacles, light rays from the surface, sea snow.
+  14. **Firefly glade** — night forest: trunks frame the edges, mist and a moonbeam, leaves in the top corners, bushes and grass, blinking fireflies.
+  15. **Hex lattice** — bevelled hex tiles in two corners, pulses rolling across them, tiles glowing on their own, a slow sweep of light.
+  16. **Above the clouds** — dawn over a soft sea of clouds, rocky snowy peaks breaking through in the bottom-left, the sun rising at the right.
+  17. **Koi pond** — looking down into a pond: koi glide round the edges with swaying tails and shadows, lily pads and lotus flowers in two corners, caustic light and ripple rings.
+  18. **Winter peaks** — blue hour: snowy mountains with ridges in the bottom-left, a cabin with glowing windows and chimney smoke among pines in the bottom-right, gently falling snow.
+- Below Android 13 each one falls back to the nearest existing drawn scene. Each has its own icon in the theme browser.
+
+### Checked / not tested
+- `gen.py` regenerated ThemeShaders.kt (187 scenes). `check_uniforms.py`: 192 checked, all clean.
+- Every new scene rendered and checked in the preview at three different times (start, 30 s, 200 s), and polished until none looked flat.
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose plugin, all of `src_copy` including updates 70–71): 0 errors.
+- Not run on a device: look at speed on the Odin / Thor, especially Rainy window, Koi pond and Mesh glow (the busiest ones). Background quality Low / Lowest drops their finest detail.
+
+---
+
+## Update — 6 Oct 2026 (71): Games on the second screen in any layout (not only the grid), R1 "Games below" tile
+
+### ⚠️ Copy
+- `src_copy` (5 files; on top of update 70) → `app\src\main\java\com\shelf\launcher\`: `data/Features.kt`, `ui/DualScreenGrid.kt`, `ui/LauncherScreen.kt`, `ui/QuickSettings.kt`, `ui/R1Extras.kt`.
+- Nothing in `project_copy`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **New way to use the second screen: "Your home layout + the game big"** (Settings › Screens › Swapped, the screens show; `SwapStyle.HOME`). Your games go to the second screen in your home layout — Voltcap row, tiles, Hero, grid, TV room, with its card artwork and carousel look — and the main screen shows the game you're on big (art, logo, story, facts: the same showcase as the games grid). The second screen's own pages don't come up here (that's still "Whole screens"). The controller works as always.
+- **R1 › "Games below"** (only with a second screen): one press puts the games **grid** on the second screen, the next switches it to **your layout**, the next turns it off. The tile says which ("Games below · Grid" / "· Voltcap row"…). Hold for the Screens settings.
+- **R1 › "Swap screens"** now always means whole screens (it switches straight to that style and back).
+- "What shows where" and "Game art across the main screen" also apply to the new style.
+
+### Checked / not tested
+- **Compiled in the cloud** (all of `src_copy`): 0 new errors (only the 4 old `DiscordPresence.kt` ones).
+- Not run on the Thor. The layout's own status bar / legend go with it to the second screen; the main screen shows the showcase without a status bar.
+
+---
+
+## Update — 6 Oct 2026 (70): R1 panel — two pages, sliders on top, layout / carousel / theme / rescan / art / power / battery tiles, hold any tile for its settings
+
+### ⚠️ Copy
+- `src_copy` (6 files; on top of update 69) → `app\src\main\java\com\shelf\launcher\`:
+  - New: `ui/R1Extras.kt`.
+  - Changed: `ui/QuickSettings.kt`, `ui/NotificationsPanel.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`, `LauncherViewModel.kt`.
+- Nothing in `project_copy`.
+- Also puts back what update 69's copies of `SettingsDialog.kt` / `LauncherScreen.kt` had dropped from update 68: the **Game look** section in Settings and the R1 **Look** tile's wiring.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed (R1 panel)
+- **Brightness and volume sliders across the top**: tap or drag the bar, or ◀ ▶ while it has the focus (10 % steps). Volume = media volume. The old brightness row with − / + at the bottom is gone.
+- **Two pages, Quick and Device**: **L1 / R1** flip them anywhere in the panel (or tap the tabs); the page's first tile takes the focus. Device page: the handheld's own switches, Power, Battery, Volume mixer, Overlay, Hide nav bar, Android settings; everything else is on Quick. Each page keeps its own order in Edit.
+- **New tiles**:
+  - **Layout**: steps Voltcap row → Tile → Hero → Grid → TV room (each keeps its own look).
+  - **Carousel**: the carousel look on / off for the layout in use (TV room: Games beside the TV › Carousel ↔ Cases with spines).
+  - **Theme**: the next of your favourite themes (in the themes' order); hold for the theme list. No favourites: opens the list.
+  - **Rescan library**: every ROM folder and the apps; shows "Scanning…" while it runs.
+  - **Missing art**: scrapes art only for games without it; shows done / total while it runs.
+  - **Power** (game you're on, tuner handhelds): "Own / Console / Device · tier"; press for the game's whole performance profile in a popup (same card as its game settings: own / console profile, underclock, fan, buttons, refresh rate, charge limit, the full tuner).
+  - **Battery**: percent and time left (to empty; to full while charging, ⚡); press or hold for **Battery & charging**: 80 % charge limit, charge bypass (where the handheld has it), Android's battery page.
+- **Hold any tile** for its settings: Voltcap's own page (straight to the setting's section, sub-page and group, using the settings search's map) or Android's (Wi-Fi, Bluetooth, Do not disturb, Airplane, Display). Tiles that already had a hold action (Overlay layout, Theme list, Battery) keep it.
+- **Most used first** (Edit): the tiles you press most move to the front of their page; your own order breaks ties. Off by default.
+- Music over games was already in the Overlay tile (Music step), so no separate tile.
+
+### Checked / not tested
+- **Compiled in the cloud** (all of `src_copy`, update 69 included): 0 new errors (only the 4 old `DiscordPresence.kt` ones).
+- Not run on a device. Battery time left comes from Android (charging) or charge counter ÷ current (on battery); some gauges report nothing, then only the percent shows.
+
+---
+
+## Update — 6 Oct 2026 (69): Your paintings for Aurora, Meadow and Dojo, Badge bounce, scenes that move out of the row's way, games' own discs / covers in scenes, free round shortcuts
+
+### ⚠️ Copy
+- `src_copy` → `app\src\main\java\com\shelf\launcher\` (on top of update 68; the files also changed in updates 63–68 — `data/Features.kt`, `data/AppearanceStore.kt`, `ui/SettingsDialog.kt`, `ui/TileHome.kt`, `ui/LauncherScreen.kt` — already include those changes):
+  - **New:** `ui/SceneArt.kt`, `ui/BadgeBounce.kt`, `ui/ScenePainting.kt`.
+  - **Changed:** `ui/ThemeShaders.kt` (generated), `ui/ThemeScene.kt`, `ui/ShowcaseScene.kt`, `ui/SceneStyle.kt`, `ui/TrophyShelf.kt`, `ui/LauncherScreen.kt`, `ui/NowPlayingScene.kt`, `ui/ThemeLookSettings.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeThumbs.kt`, `ui/theme/ShelfColors.kt`, `ui/TileHome.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`, `data/Features.kt`, `data/AppearanceStore.kt`.
+- `project_copy` (new pictures) → `robocopy project_copy . /E`: `app/src/main/res/drawable-nodpi/scene_aurora.webp`, `scene_meadow.webp`, `scene_dojo.webp`.
+- `tools/themes` (edited in place): `gen.py`, `check_uniforms.py`, `preview_template.html`, `preview.html` (regenerated), new `paintings/AURORA.webp`, `MEADOW.webp`, `PX_DOJO.webp`; scenes: new `_paint.agsl`, `badge_bounce.agsl`, `aurora_drawn.agsl`, `meadow_drawn.agsl`, `px_dojo_drawn.agsl` (the drawn versions, kept but unused); changed `aurora`, `meadow`, `px_dojo`, `badge_stars`, `campfire`, `console_disc`, `specimen_lab`, `poster_wall`, `crt_room`, `mode7`, `pixel_world`, `trophy_vault`, `voltcap_intro`, `voltcap_beat`, `xmb_wave`; brought back in line with ThemeShaders.kt: `_prelude`, `_reactive`, `music`, `pulse_ring`, `spectrum`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Aurora, Meadow, Dojo (32-bit)** now use Toni's own paintings (16:9, `scene_*.webp`) with motion on top: Aurora — lake ripples, shimmering aurora, twinkling stars, a shooting star, flickering town lights. Meadow — the windmill's sails turn, grass sways in gusts, cloud shadows, drifting seeds and butterflies. Dojo — the banners ripple, the sandbag swings, lanterns glow, petals and dust drift. Painted themes keep their own colours (not recolourable). Below Android 13 they show the painting still.
+- **Scene position** (Theme › look, for scenes that have a subject): Higher / As designed / A bit lower / Lower / Much lower. On top of that, when the game row sits in the upper half these scenes move their subject down into the free space by themselves: Voltcap, Voltcap beat, Trophy vault, Specimen lab, Console disc, Arcade CRT (the 3D showcase too).
+- **Badge constellations**: real figures (trophy cup, crown, bolt, heart, star, game pad); with RetroAchievements / Steam every other figure is a frame holding one of your badges. The bottom is a proper landscape: moon, layered hills, mist, pines, town lights, fireflies, lit path and an observatory dome aiming at the newest figure.
+- **New theme "Badge bounce"** (Trophies): your mastered games and latest badges drift and bounce off the screen edges in their own quality, a little see-through, over a velvet backdrop with drifting lights. Drawn medals until you're signed in.
+- **Campfire**: fuller fire (five turbulent tongues, layered colours, heat glow).
+- **Console-era music scenes** (32-bit fire, 128-bit towers, 16-bit cartridge, handheld, pocket beat): can show the game's hero / cover instead of the album art — new "Picture in the scene": Game when no music plays (default) / Always the game / Only the album.
+- **16-bit mode 7** drives on the road (the camera follows the curve). **Pixel world**: the walker stays on the road, never over trees or houses.
+- **Specimen lab**: the game's own disc / cartridge (ScreenScraper "Disc / cartridge" picture, else its cover) floats in the tank, pixelated, with a glow. **Console disc**: the game's real disc picture on the spinning disc; for cartridge consoles the cartridge stands in the bay in a beam.
+- **Poster wall**: the posters are the covers of the games in your row.
+- **Wave menu**: the glow is the same top to bottom (no dark floor).
+- **Round shortcuts**: new spot "Anywhere (move in Edit Home)" — they float where you put them in any layout. Lift & dot stays inside its pill. "Their own colours" now really shows the apps' own colours (no theme tint).
+
+### Checked / not tested
+- `gen.py` regenerates ThemeShaders.kt; `check_uniforms.py`: 174 scenes clean. All changed scenes rendered and looked at in the preview.
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose plugin, the project's jars, all of `src_copy` including updates 63–68): 0 errors.
+- Not run on a device. The disc / cartridge pictures need ScreenScraper media; without them the cover is used.
+
+---
+
+## Update — 6 Oct 2026 (68): "Game look" — covers or the real thing, per home layout, easy to reach
+
+### ⚠️ Copy
+- `src_copy` (5 files; on top of update 67) → `app\src\main\java\com\shelf\launcher\`:
+  - New: `ui/GameLookPicker.kt`.
+  - Changed: `ui/SettingsDialog.kt`, `ui/QuickSettings.kt`, `ui/NotificationsPanel.kt`, `ui/LauncherScreen.kt`.
+- Nothing in `project_copy`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Settings › Appearance › Game look** (its own section, open, right above Game row): every home layout listed with its own row of choices — **Covers · Real cases · Cases · real sizes · Cartridges & discs · Discs only**. The layout in use is first and marked "in use". Picking for another layout doesn't switch to it; each keeps its own (same `cardArtByLayout` as Card artwork). The full list (wide capsule, hero, screenshot) is still under Game row › Cards › Card artwork.
+- **R1 panel › "Look" tile**: steps the layout in use through Covers → Real cases → real sizes → Cartridges & discs → Discs only (lit when it isn't Covers). Like every R1 tile it can be moved or hidden with Edit.
+
+### Checked / not tested
+- **Compiled in the cloud** (all of `src_copy`): 0 new errors (only the 4 old `DiscordPresence.kt` ones).
+- Not run on a device. The settings search doesn't list "Game look" yet (SettingsIndex.kt is generated; rerun tools/settings_index/gen.py).
+
+---
+
+## Update — 6 Oct 2026 (67): Carousel look in every layout, Tile home fetches box / label scans
+
+### ⚠️ Copy
+- `src_copy` (8 files; on top of update 66) → `app\src\main\java\com\shelf\launcher\`:
+  - New: `ui/Carousel.kt`.
+  - Changed: `ui/TvRoomHome.kt`, `ui/GameDock.kt`, `ui/TileHome.kt`, `ui/HeroCarousel.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`, `data/Features.kt`.
+- Nothing in `project_copy`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **"Carousel look"** (Appearance › Game row, under the layout's own options; each layout keeps its own switch, pref `carousel_layouts`):
+  - **Voltcap row:** the game you're on in the middle of the screen as a big cover (no wide capsule), the next ones each side smaller and tucked behind it. Its name is centred over / under it.
+  - **Tile home:** the same, built on the tiles (the selection is held in the middle, the name centred).
+  - **Grid:** the grid becomes one carousel strip, the game's name under the middle one. ◀ ▶ move.
+  - **Hero carousel:** it already is a wheel, so here the switch turns the covers above and below away from the selected one, like pages.
+  - **Games each side** (1–3) and **Tilt the other games** are shared by every carousel, TV room's included (prefs `tv_carousel_side`, `tv_carousel_tilt`, now general).
+- The carousel's geometry (size, offset, fade, turn per step) lives in one place (`Carousel` in Carousel.kt), with the shared `GameCarousel` strip (TV room, Grid) and `ShelfGameArt` (one game's art: object / cover template / plain cover, moved out of TvRoomHome.kt).
+- **Tile home fetches box / label scans** (and screenshots for Screenshot art) for the tiles around the one you're on, like the other layouts. Boxes without a template and discs / cartridges now get their real scans there too.
+
+### Checked / not tested
+- **Compiled in the cloud** (all of `src_copy`): 0 new errors (the 4 old `DiscordPresence.kt` ones only).
+- Not run on a device. In the row and tile carousels the cards still slide with the row's own motion; tell me if the turn or the overlap needs to be stronger or weaker.
+
+---
+
+## Update — 6 Oct 2026 (66): Real-size boxes, discs only, normal covers when consoles are mixed (every layout), TV room carousel
+
+### ⚠️ Copy
+- `src_copy` (14 files, all changed; on top of update 65) → `app\src\main\java\com\shelf\launcher\`: `data/AppearanceStore.kt`, `data/Features.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CoverCases.kt`, `ui/GameCard.kt`, `ui/GameDock.kt`, `ui/TileHome.kt`, `ui/GridHome.kt`, `ui/HeroCarousel.kt`, `ui/TvRoomHome.kt`, `ui/SecondScreenHome.kt`, `ui/SettingsDialog.kt`, `ui/OptionIcons.kt`.
+- Nothing in `project_copy`.
+- (This file also gets back the entries for updates 63 and 64, which a late write of mine had dropped.)
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Two new card artworks** (Appearance › Game row › Cards › Card artwork, per layout):
+  - **Box art · real sizes**: every case at its real size next to the others (a DS case smaller than a PS2 one, a Saturn case taller), standing on the slot's floor. The biggest case in the list fills its slot. Sizes are approximate, per console (`realCaseMm` in PhysicalMedia.kt). Also used in lists that mix consoles.
+  - **Discs only**: disc and UMD games show their disc; every other game shows its cover.
+- **Lists that mix consoles** (Recently played, Favourites…) with "Box art": every card is the **normal cover card** from before (wide capsule on the game you're on included), so they're all one size. A one-console category keeps the cases. This now works the same in the row, tiles, grid, Hero carousel and TV room (`artForGame(…, mixed)`).
+- **No bands round the art anywhere:**
+  - Tile home: cases, cartridges and discs stand free in the tile's place (no square behind them, no ring round the square), with the light pool under the one you're on.
+  - Second screen › Box / case: the console's real case instead of the box scan letterboxed in the panel.
+  - The coloured frame now hugs the case itself in the row, tiles, grid, Hero carousel and TV room (only with Coloured frame on).
+- **TV room › Games beside the TV › Carousel**: the game you're on big in the middle and lit up, the next ones each side smaller and set behind it. Options: **Games each side** (1–3, more = smaller) and **Tilt the other games** (turned away like pages; on by default). ◀ ▶ move, A opens. The TV room's grid and carousel share one drawing of the games (`TvGameArt`).
+
+### Checked / not tested
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose plugin, the project's jars, all of `src_copy`): 0 new errors. The only 4 errors are the old ones in `data/DiscordPresence.kt` (Discord SDK not on the check's classpath).
+- Not run on a device. The real sizes are approximate (one size per console, the usual US / EU case).
+- Tile home still doesn't fetch box / label scans (it never did); its boxes and discs use the cover.
+
+---
+
+## Update — 6 Oct 2026 (65): Covers fill their slot, no spine beside a front, one size when consoles are mixed, "Coloured frame" really turns off
+
+### ⚠️ Copy
+- `src_copy` (11 files, all changed; on top of update 64) → `app\src\main\java\com\shelf\launcher\`: `ui/CoverCases.kt`, `ui/RealMedia.kt`, `ui/TvRoomHome.kt`, `ui/GameCard.kt`, `ui/GameDock.kt`, `ui/GridHome.kt`, `ui/TileHome.kt`, `ui/HeroCarousel.kt`, `ui/SettingsDialog.kt` (texts only), `data/Features.kt`, `data/AppearanceStore.kt`.
+- Nothing in `project_copy`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **No more black bands round the cover you're on (TV room › Shelf of spines).** The pulled-out game used a fixed tall slot and the case sat in the middle of it. The slot now takes the cover's own shape (the console's cover frame, e.g. square for Game Boy), so the cover fills it edge to edge and the frame hugs it. The grid's box-scan fallback is cropped to fill too (it was letterboxed).
+- **No spine beside a flat front, for every console.** Seen from the front, a case is now just the console's cover frame with the game's cover in it. The spine strip on the left is gone from fronts. Spines are only used where a case is seen from the side: the shelf of spines, and the 3D box.
+  - "Spines on boxes" now means the template pack's 3D box, turned a little so its spine shows. New pref key `box_spine_side`, **off by default**, so everyone starts on the front alone. Layout looks parked before this update also start with it off (`LayoutLook` writes a `v63` marker; the name is just a version tag).
+  - TV room "Cases with spines" shows that 3D box (when the console has one in the pack), else the front alone.
+- **Games from several consoles together** (e.g. Recently played, Favourites): box art is the plain cover art, the same size for every game (fills the card, cropped, with the case sheen and shadow), in the row, tiles, grid, Hero carousel and TV room. A single-console row keeps each console's cover frame. (`mixedConsoles()` in CoverCases.kt, `uniform` on `CaseArt`, `uniformCase` on `GameCard` / `HomeTile`.)
+- **"Coloured frame" off now removes the accent frame everywhere.** Before, the switch only reached part of the classic row: the soft-glow rim, the TV room cases and shelf, the grid, the tile ring and the Hero cover kept their frame. The glow itself still follows Game row › Effect (set it to None for no glow at all).
+
+### Checked / not tested
+- **Compiled in the cloud** (Kotlin 2.2.10 + Compose plugin, the project's jars, all of `src_copy` as it is now, updates 63 and 64 included): 0 new errors. The only 4 errors are in `data/DiscordPresence.kt` and are there on the untouched sources too (the Discord SDK isn't on the check's classpath).
+- Not run on a device. "Mixed consoles" is my reading of "if there is a mix": tell me if you meant something else (e.g. plain covers in every row).
+
+---
+
+## Update — 6 Oct 2026 (64): DroidDeck games in the Steam category, art scraped before the "new game" card, Hide navigation bar on R1
+
+### ⚠️ Copy
+- `src_copy` (3 files, on top of update 63) → `app\src\main\java\com\shelf\launcher\`: `LauncherViewModel.kt`, `data/PinnedShortcuts.kt`, `ui/QuickSettings.kt`.
+- Nothing in `project_copy`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **DroidDeck shortcuts now sit in the Steam category** (platform "Steam", same as your other Steam games) instead of a "DroidDeck" one. Games you already added move over by themselves (the category is worked out when the library is built). Other apps' shortcuts keep their app's name.
+- **Art is scraped like for any Steam game:** by name through SteamGridDB (then the other sources you've set up, as for any game). ScreenScraper is skipped for shortcut games since it only knows real ROM files. Not scraped by AppID: a shortcut doesn't carry one.
+- **The "new game found" card waits for the art.** For the new games (the first four, the most the card shows) the art is fetched first, up to 15 seconds in all, and the cover goes into the image cache, then the card starts. With no artwork source connected, or nothing found in time, the card appears as before (this applies to every new game, not only shortcuts).
+- **R1 panel: "Hide nav bar" tile** (after Swap screens). It's the same switch as Settings › Device › Gesture hint › Hide navigation bar; lit when on. Like every R1 tile it can be moved or hidden with Edit.
+
+### Checked / not tested
+- **Not compiled** (no Kotlin / Android SDK in the cloud workspace), reviewed by hand. Not run on a device.
+- `mergeArt` and `usesOwnIcon` live in files I didn't open; I called them exactly as the existing scrape code does.
+- Whether SteamGridDB finds the right art depends on the shortcut's name matching the game's title. If one is wrong, Options › Artwork & details › manual ID still works.
+
+---
+
+## Update — 6 Oct 2026 (63): Home layouts as a list, each with its own options right under it
+
+### ⚠️ Copy
+- `src_copy` (1 file, on top of update 62) → `app\src\main\java\com\shelf\launcher\`: `ui/SettingsDialog.kt`.
+- Nothing in `project_copy`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Appearance › Game row:** "Home layout" is now a list (Voltcap row, Tile home, Hero carousel, Grid, TV room). The layout that's picked opens its own options directly under it: its layout-specific settings (TV: games beside the TV; Hero: carousel options; Tile home: where the tiles sit, tile size, shortcut buttons…) and the Cards group (size, corners, artwork, effect, spacing, templates). Pick another layout and that one's options open under it, with that layout's own saved values (update 62's `look_by_layout`). The Category screen group stays below the list (it isn't per layout).
+- The Cards group keeps the title "Cards" so the settings search still finds and opens it (update 62 had put the layout's name in the title, which broke that link).
+- **DroidDeck launching:** nothing to build for "Add to home screen": Voltcap already takes DroidDeck's pinned shortcut (`PinnedShortcuts.kt`, `PinShortcutActivity.kt`) and shows the game under "DroidDeck". "Copy launch link" is not supported (no field for a link yet).
+
+### Checked / not tested
+- **Not compiled** (no Kotlin / Android SDK in the cloud workspace), reviewed by hand: braces balance as before, `RadioLine` / `FoldGroup` / `MutedNote` signatures checked in `DialogChrome.kt` / `FoldGroup.kt`. Not run on a device.
+
+---
+
+## Update — 6 Oct 2026 (62): Each home layout keeps its own look, tiles at the screen edge, mixer fallback for Spotify, a snappier app
+
+### ⚠️ Copy
+- `src_copy` (13 files, all changed; on top of update 61) → `app\src\main\java\com\shelf\launcher\`: `data/AppearanceStore.kt`, `LauncherViewModel.kt`, `MainActivity.kt`, `ui/SettingsDialog.kt`, `ui/LauncherScreen.kt`, `ui/GridHome.kt`, `ui/TileHome.kt`, `ui/GameDock.kt`, `ui/HeroCarousel.kt`, `ui/TvRoomHome.kt`, `device/audio/AppMixer.kt`, `device/audio/MixerHelper.kt`, `device/audio/MixerEffects.kt`.
+- Nothing in `project_copy`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Per-layout look.** Card size, corners, "other games", focus effect, spacing, tilt, tile size and the media-template switches (cover templates, spines, 3D boxes, disc in case, media shells, big GC discs) now belong to the home layout you picked. Switching layout parks the one you leave and brings back the one you enter (a layout you've never used starts from what you had, then keeps its own). Card artwork and "media shown" were already per layout. The Cards group is titled with the layout's name and says so. New pref `look_by_layout` (`LayoutLook`, `swapLayoutLook` in AppearanceStore.kt; the swap happens in `LauncherViewModel.setAppearance`).
+- **Size controls.** Grid now follows "Card size" too (Small / Medium / Large = 0.82 / 1 / 1.3 × the cell width, so more or fewer fit across). Tile home keeps its Card size and Tile size slider (80–170%). The Card size row is hidden for Hero carousel and TV room, where it did nothing.
+- **Tile home, focus at the left or right edge:** the focused tile sits at the edge and the tiles on the far side are clipped away, so nothing of them shows.
+- **Sound mixer (Spotify):** every check passed but nothing changed, which points at Spotify playing through a native stream that has no player handle for the volume call. The helper now reports which players have a handle ("Native players" line in Mixer check). Players without one are controlled with the sound-effect method instead, running next to the helper. This is a guess at the cause, not a confirmed fix.
+- **Snappier:**
+  - Bigger in-memory image cache (35%), and art is no longer re-checked with the server on each load (`MainActivity.kt`).
+  - Box / cartridge / screenshot lookups around the selection start after 120–150 ms (was 350–400) and run ~90–100 ms apart (was 250–300) in the row, grid, Hero and TV room. TV room media waits 250 ms (was 450).
+  - Animated-scene crossfade is 400 ms (was 800).
+
+### Checked / not tested
+- **Not compiled** (no Kotlin / Android SDK in the cloud workspace), reviewed by hand. Not run on a device.
+- The image-cache change assumes Coil 2 (`coil.Coil.setImageLoader`, `memoryCache { }`, `respectCacheHeaders`); if the build complains there, delete that block in `MainActivity.kt`.
+- The mixer fix is unverified. Please run Mixer check (the "Native players" line should appear), then mute Spotify and tell me what happens.
+- The speed changes are timing and cache tweaks I could not measure. They are not a profile of where your device actually spends its time.
+
+---
+
+## Update — 6 Oct 2026 (61): Status bar fixed on top in the grid, a scene of its own for the second screen, faster blurred background
+
+### ⚠️ Copy
+- `src_copy` (4 files, all changed; on top of update 60) → `app\src\main\java\com\shelf\launcher\`: `ui/LauncherScreen.kt`, `ui/HomeChrome.kt`, `data/AppearanceStore.kt`, `ui/SettingsDialog.kt`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Grid home and TV room: the status bar is fixed at the top and drawn above the games**, never covered (it used to move to the bottom with "games at the top" and the grid was drawn over it).
+- **Second screen scene** (Settings › Appearance › Animated background, with a second screen up): pick which scene plays there; "Follow theme" = the same as the main screen. The colours are always the main screen's one scheme (`SecondScene.set(motif, sceneColors)`), so the two screens can't clash. New pref `second_scene_theme`.
+- **Blurred background loads faster:** it's decoded at an eighth of the size (was a quarter, so ~4× less to decode and blur), and the pictures of the games either side are fetched ahead into the disk cache (decoded tiny), so the next game's background doesn't wait for the download.
+
+### Checked / not tested
+- **Not compiled** (no Kotlin / Android SDK in the cloud workspace), reviewed by hand. Not run on a device.
+- Still open: the sound mixer (needs the Mixer check output from the handheld) and what "options separated per game row option" should cover.
+
+---
+
+## Update — 6 Oct 2026 (60): Official flat cases like Droid Deck, no electric arcs, long names slide, music screen and navigation bar fixes
+
+### ⚠️ Copy
+- `src_copy` (18 files) → `app\src\main\java\com\shelf\launcher\`:
+  - New: `ui/ScrollingName.kt`.
+  - Changed: `ui/FocusEffects.kt`, `ui/RealMedia.kt`, `ui/PhysicalMedia.kt`, `ui/CoverCases.kt`, `ui/GameCard.kt`, `ui/GridHome.kt`, `ui/TileHome.kt`, `ui/TvRoomHome.kt`, `ui/HeroCarousel.kt`, `ui/LauncherScreen.kt`, `ui/SecondScreenDetails.kt`, `ui/SecondScreenHome.kt`, `ui/FullMusicScreen.kt`, `ui/SystemBars.kt`, `MainActivity.kt`, `data/Features.kt`, `ui/SettingsDialog.kt` (texts only).
+- Nothing in `project_copy`.
+
+### 🗑 Delete
+- Nothing.
+
+### What changed
+- **Electric arcs around the game art are off** in every layout (the soft glow stays). `electricFrame` now does nothing (`ELECTRIC_BOLTS = false` in FocusEffects.kt).
+- **Box art = the official flat case**, like the Droid Deck screenshots: the console's printed cover frame (its banner and logo) with the game's cover in the window, the console's real spine beside it ("Spines on boxes"), a soft shadow, a sheen and a thin lit edge so it reads as plastic. Goes through `CaseArt`, so the row, tiles, grid, TV room, second screen and Hero carousel all match. The old 3D glass box is still there as "3D glass boxes (older look)", now off by default (`box_3d` default false; if you ever switched it, it keeps your choice).
+- **Hero carousel now supports the card artwork** (Appearance › Game row › Cards › Card artwork · Hero carousel): box art, cartridges and discs show as free-standing objects in the column.
+- **Cartridges / discs**: the console's own cartridge, card, UMD or disc from the template pack wherever there is one; the drawn ones only remain for consoles with nothing in the pack.
+- **Long names**: two lines everywhere (grid, TV room grid, Hero column); the game you're on slides along one line if two aren't enough (`ScrollingName`). The TV room's title bar slides too.
+- **Visualizer layout on the second screen**: the big player card is gone. The song's name sits top-left, the lyrics beside the scene (right side on a wide screen, a band along the bottom on a tall one), three small controls. It also stays up when you pause (it used to fall back to the classic player).
+- **Corner visualizers**: "Only while music plays" is off by default now (new pref key `corner_viz_only_music_v2`), so stopping the music no longer removes them.
+- **Hide navigation bar**: switching it back On after Off now re-asks for the hide three times (after 0.12 / 0.35 / 0.8 s) in the main window and in popups, because Android ignores a hide while the bar is still sliding in.
+
+### Checked / not tested
+- **Not compiled** (no Android SDK / Kotlin compiler in the cloud workspace this time); edits were reviewed by hand against the existing signatures. Please build and tell me about any error.
+- Not run on a device. The sound mixer was **not changed**: it needs the Mixer check output from the Thor/Odin to see which step fails.
+- Open question: "options separated for each game row option" (per-layout settings beyond the card artwork, which is already per layout).
+
+---
+
+## Update — 6 Oct 2026 (59): Every console's real spines and cover frames, correct case sizes, a disc in its case
+
+### ⚠️ Copy
+- `src_copy` (15 files) → `app\src\main\java\com\shelf\launcher\`:
+  - New: `ui/CoverCases.kt`, `ui/MediaCovers.kt` (generated).
+  - Changed: `data/Features.kt`, `ui/MediaVariants.kt`, `ui/RealMedia.kt`, `ui/PhysicalMedia.kt`, `ui/GameCard.kt`, `ui/TileHome.kt`, `ui/GridHome.kt`, `ui/TvRoomHome.kt`, `ui/SecondScreenDetails.kt`, `ui/SettingsDialog.kt`, `ui/SettingsIndex.kt`.
+- `project_copy\app\src\main\res\drawable-nodpi\`: 78 new images, `cov_front_<console>.webp` and `cov_spine_<console>.webp` for 39 consoles.
+- `tools\media_templates\`: `covers.py`, `covmap.py` (the build tool; rerun it if the template pack changes).
+
+### 🗑 Delete
+- Nothing. The old `tpl_front_*` / `tpl_spine_*` images are still used by the older 3D-box overlay, so they stay.
+
+### What was wrong
+- Boxes drawn straight from the front had no spine at all.
+- Only a few consoles had a cover frame; box scans skipped the frame; the box was squashed.
+- The TV room drew its own grey code spines and a generic "Nintendo GameCube" side strip.
+
+### What changed
+- **Every console now uses the pack's own front frame and spine** (the game's cover sits in the frame's art window), at the pictures' real proportions: nothing stretched or cropped to a made-up shape. Landscape spines (SNES, Game Boy…) are turned to stand up.
+- **TV room:** the grid of cases shows the real front + spine; the shelf of spines uses each console's real spine with the game's name running up it; the pulled-out game shows the full case.
+- **Cards, tiles, grid, details (also the second screen):** the case art goes through one place (`CaseArt`), so spines and frames are always applied.
+- **Disc in its case (new option):** the disc half out of its case, spinning.
+
+### Settings › Appearance › Game row › Cards
+- **Cover templates** (on): the pack's frames and spines for every console. Off = the older look.
+- **Spines on boxes** (on): the spine beside the box in the 3D box.
+- **Disc in its case** (off): the disc half out of the case, spinning (for the Case or Cartridge / disc art).
+
+### Checked / not tested
+- **Real compile of all of `src_copy`: 0 errors** (the check was confirmed to catch a planted error).
+- Not tested on the device or looked at on screen. The disc's size and how far it sticks out are my estimate, and a game's name on the shelf spine can overlap text already printed on a real spine. Tell me what looks off and I'll adjust.
+
+---
+
+## Update — 6 Oct 2026 (58): Steam key as a clear optional extra, Steam profile picture
+
+### ⚠️ Copy
+- `src_copy` (6 files) → `app\src\main\java\com\shelf\launcher\`, all changed: `ui/SteamAchievementsUi.kt`, `data/SteamAchievements.kt`, `data/Features.kt`, `LauncherViewModel.kt`, `ui/HomeChrome.kt`, `ui/SettingsDialog.kt`.
+
+### 🗑 Delete
+- Nothing.
+
+### Settings › Accounts › Steam achievements
+- **Connecting:** one line says no key is needed (set "My profile" and "Game details" to Public), then the profile field and Connect.
+- **Optional key:** a "Use a Web API key (optional)" chip shows the key field with a short explanation: new unlocks show up faster (the public pages can be a few minutes behind), the recently played games are read more reliably, and where to get one (free, any domain name). "Without a key" hides it again.
+- **Once connected:** "Add a Web API key (optional)" adds one later without disconnecting. With a key: "Remove the key" goes back to the public profile (it checks the profile is public first).
+- **Profile picture:** RetroAchievements or Steam, for the status bar and the Profile page.
+  - Steam's picture is saved when you connect and fetched again 20 s after each start (it may have changed).
+  - With Steam chosen it shows even without RetroAchievements; if Steam has no picture saved, the RetroAchievements one stays.
+
+### Checked / not tested
+- **Real compile of all of `src_copy`: 0 errors.** Not tested on the device; Steam couldn't be reached from the cloud.
+
+---
+
+## Update — 6 Oct 2026 (57): Your trophies in the Trophy vault, the cover and clip in the Gaming room, Steam achievements without a key
+
+### ⚠️ Copy
+- `src_copy` (9 files) → `app\src\main\java\com\shelf\launcher\`:
+  - New: `ui/TrophyShelf.kt`, `data/SteamTrophies.kt`.
+  - Changed: `LauncherViewModel.kt`, `ui/ThemeShaders.kt` (generated), `ui/ThemeScene.kt`, `ui/ShowcaseScene.kt`, `ui/LauncherScreen.kt`, `ui/SteamAchievementsUi.kt`, `data/SteamAchievements.kt`.
+- `tools\themes\` (already in place): `preview_template.html`, `preview.html`, `check_uniforms.py`, `check_uniforms.cjs`, `scenes\trophy_vault.agsl`, `scenes\gaming_room.agsl`.
+
+### 🗑 Delete
+- Nothing.
+
+### Trophy vault shows your own trophies
+- Signed in to RetroAchievements, the pedestals hold:
+  - the games you mastered (or completed) most recently, at most three, in gold frames — the newest one on the carpet under the beam;
+  - then your latest unlocked badges (the last 30 days) in silver frames.
+- Each one spins a full turn every few seconds, each on its own beat, showing a gold or silver back with the bolt, with a glint across the frame. In between it rests face-on.
+- **Steam too:** with a Steam account connected (key or not), Steam counts the same way:
+  - 100 %'d Steam games join the gold frames (their cover, middle square), newest mastery first, RetroAchievements and Steam together.
+  - Steam unlocks join the silver frames, sorted with the RetroAchievements ones by time.
+  - Steam has no "all my recent unlocks" call, so Voltcap reads the games played lately: the profile's recently played list (the Web API with a key, otherwise the public profile page) plus the Steam games started from Voltcap, at most 8, each re-read at most every 30 min while the vault is on.
+  - **While you play a Steam game** from Voltcap, its achievements are re-read every 90 s (screen on, at most 6 h), and once more when you come back, so a new unlock is on its pedestal straight away and blinks the controller lights like a RetroAchievements one. Steam's public pages can lag a few minutes behind; the Web API is quicker.
+- Pedestals left over (or everything, when you're not signed in) keep the drawn badges.
+- With the vault on, the last 30 days of unlocks and your mastered list are fetched once if there's nothing yet. The pictures are loaded once at 64 px and kept.
+- **New unlocks show up straight away:** the unlock watch that runs while you play (every 15–60 s) now also puts what it finds into the "recently unlocked" list, so a new badge is on its pedestal by the time you're back (and live on the second screen). When an unlock could have finished a game, the mastered list is asked again at once, so a fresh mastery takes the middle pedestal.
+
+### Gaming room
+- **Poster:** the framed poster above the monitor shows the game's cover, cropped to fill the frame, a little faded like printed paper.
+- **Monitor:** after you rest on a game for 2 s (Video previews on, ScreenScraper clip found), its gameplay clip plays on the monitor itself. A video view is laid exactly over the screen and follows it when the row moves. Until then, or without a clip, the hero and screenshots change every 9 s as before. Sound follows "Video sound".
+- With the Gaming room as the background, the clip no longer also plays across the whole screen.
+
+### Steam achievements without a key
+- Settings › Accounts › Steam achievements: the Web API key is now optional.
+- With just your profile name, link or SteamID64, Voltcap reads your achievements from your public Steam Community pages (`…/stats/<appid>/achievements/?xml=1`).
+- This needs "My profile" and "Game details" set to Public in Steam's privacy settings. If the profile isn't public, Connect says so.
+- The key path still works for anyone who prefers it. Unlock rates (%) come from Steam's public stats either way.
+
+### Open question removed
+- The cut-off "Make the hero be…" question is dropped (you said to ignore it).
+
+### Checked / not tested
+- The scenes compile in headless Chromium, and the uniform check (173 variants) finds none stripped or extra.
+- The vault was rendered with 7 test trophies (spinning frames and backs) and with 3. The room was rendered with a test cover on the poster, with the row at the top and the bottom.
+- **Real compile of all of `src_copy`: 0 errors.**
+- The Steam XML parsing was tested on a sample of the page's format. The live Steam pages couldn't be reached from the cloud, so connect once on the device to confirm.
+- Not tested on the device: the clip's position over the monitor, the trophies' pictures.
+
+---
+
+## Update — 6 Oct 2026 (56): The leftover brief themes, 32-bit creature types, your Gaming room and a pixel Trophy vault, "own colours" marks
+
+### ⚠️ Copy
+- `src_copy` (10 files) → `app\src\main\java\com\shelf\launcher\`, all changed:
+  - `ui/theme/ShelfColors.kt` (CRLF kept)
+  - `ui/ThemeShaders.kt` (generated by `tools\themes\gen.py` — don't hand-edit)
+  - `ui/ThemeScene.kt`
+  - `ui/ShowcaseScene.kt`
+  - `ui/ThemeSceneLegacy.kt`
+  - `ui/ThemeThumbs.kt`
+  - `ui/ThemeLookSettings.kt`
+  - `ui/SettingsDialog.kt`
+  - `ui/LauncherScreen.kt`
+- `project_copy\app\src\main\res\drawable-nodpi\gaming_room.webp` (new: your room picture, 1692 × 845, 72 KB) → `app\src\main\res\drawable-nodpi\gaming_room.webp`.
+- `tools\themes\` (edited in place, already there):
+  - Changed: `gen.py`, `preview_template.html`, `preview.html`, `check_uniforms.py`, `check_uniforms.cjs`.
+  - New: `color_check.py`.
+  - New in `scenes\`: `_pixel.agsl`, `_font.agsl`, `handheld_boot.agsl`, `pocket_beat.agsl`, `console_disc.agsl`, `arcade_attract.agsl`, `neon_cartridge.agsl`, `data_stream.agsl`, `portal_gallery.agsl`, `poster_wall.agsl`, `gaming_room.agsl`, `trophy_vault.agsl`, `badge_stars.agsl`, `pixel_world.agsl`, and the 18 `px_*.agsl` files (`px_spark`, `px_torrent`, `px_sprout`, `px_mind`, `px_blaze`, `px_phantom`, `px_frost`, `px_terra`, `px_venom`, `px_meadow`, `px_dojo`, `px_gale`, `px_thicket`, `px_bedrock`, `px_wyrm`, `px_umbra`, `px_alloy`, `px_glimmer`).
+
+### 🗑 Delete
+- Nothing.
+
+### New themes (the brief's list)
+- **Gaming eras:**
+  - **Handheld boot:** an original capsule console booting on a loop.
+  - **Console disc:** an original puck console with a dome lid and a spinning disc.
+  - **Arcade attract:** a cabinet whose shooter plays itself.
+  - **Neon cartridge:** a neon cartridge slides into a neon console.
+  - **Poster wall:** three depths of original posters drifting past.
+  - **Pixel world:** a 32-bit overworld scrolling by.
+- **Music (Gaming eras · music):** **Pocket beat** — a landscape handheld with the D-pad on the left and A/B on the right, presses on the beat, the album cover on its screen.
+- **Space & tech:** **Data stream** (a data highway) and **Portal gallery** (a hall of portals to other worlds).
+- **New group "Achievements & trophies":**
+  - **Trophy vault:** 32-bit, made like your picture — seven pedestals with badges, a red carpet with gold trim, a beam on the middle coin, spinning coins and sparkles.
+  - **Badge constellations:** stars join into badge shapes that light up like an unlock.
+- **New group "Creature types · 32-bit":** pixel versions of all 18 types (Spark, Torrent, Sprout, Mind, Blaze, Phantom, Frost, Terra, Venom, Meadow, Dojo, Gale, Thicket, Bedrock, Wyrm, Umbra, Alloy, Glimmer).
+- Every design is original (no real consoles, characters or logos).
+
+### Gaming room = your picture (game showcase)
+- The Gaming room is now your painted room, in the **Game showcase** group.
+- The monitor shows the game you're on: hero art first, then the screenshots, a new one every 9 s with a quick blink, like the CRT room.
+- The monitor's light falls on the wall and desk in the picture's colours. The PC fans turn, the LED strips breathe, the lamp flickers, stars twinkle and dust drifts in the moonlight.
+- **Monitor position:** it goes in the middle of the biggest open space — above the game row when the row is at the bottom, below it when the row is at the top (with the status bar and legend left out too). The picture zooms in as needed so it always fills the screen, and it eases over when the row moves. With nothing to avoid (second screen, Hero/Grid/TV layouts), it sits in the middle.
+- The painting is decoded once (half size on low-memory devices) and kept while memory allows.
+- Android 12 and older: the normal Hero parallax showcase.
+
+### Themes that keep their own colours are marked
+- **⊘** on the tile and in the preview: the colour source can't change it (music-reactive, showcase, picture themes).
+- **◐**: it reacts only a little (measured with `tools\themes\color_check.py`, under 4/255 average change). These are Bedrock, Blue sky, Dojo, Meadow, Mode 7, 64-bit plains, Pixel sky, Pixel world, Plaza, Bedrock/Meadow/Sprout 32-bit and Vector.
+- Theme look › Colours says why.
+
+### Checked / not tested
+- `gen.py` regenerated `ThemeShaders.kt`. Every scene compiles as GLSL in headless Chromium, and the uniform check (173 variants) finds none stripped or extra.
+- The Gaming room was rendered with a test screenshot at 16:9, 21:9 and 4:3, with the row at the top, the bottom and none.
+- **Real compile of all of `src_copy` (with ThemeShaders.kt): 0 errors.**
+- Not tested on the device: the room's frame rate on the Thor, the painting's sharpness when zoomed on a 1080p screen, and the thumbnails.
+
+---
+
+## Update — 6 Oct 2026 (55): Your own themes & visualizers (custom packs) and a how-to under the round "?"
+
+### ⚠️ Copy
+- `src_copy` (15 files) → `app\src\main\java\com\shelf\launcher\`:
+  - New: `ui/CustomPacks.kt`, `ui/CustomPacksUi.kt`, `ui/CustomPackRules.kt`, `ui/CustomPackShaders.kt`, `ui/CustomPackExamples.kt`.
+  - Changed: `ui/ThemeScene.kt`, `ui/NowPlayingScene.kt`, `ui/ThemeThumbs.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeShaders.kt` (generated: three `when`s got the two custom motifs), `ui/LauncherScreen.kt`, `ui/VoltHelp.kt`, `ui/SettingsDialog.kt`, `ui/theme/ShelfColors.kt`, `data/Features.kt`.
+- `tools\themes\`: `gen.py`, new `gen_pack_prelude.py`. `docs\claude\themes.md`.
+- Then run `python tools\settings_index\gen.py src_copy` (Settings got a new group).
+
+### 🗑 Delete
+- Nothing.
+
+### What it does
+- Settings › Theme › **Your own themes & visualizers**: Import files (several at once), Look in `Voltcap/Custom packs` (needs All files access, like the sync folder), Add the examples (a theme "Tide lines" and a visualizer "Soft bars"), How to make one. Tap a pack: budget meter, Use it / Turn back on / Copy its text / Delete (tap twice).
+- The round Volt "?" next to the title gives a short explanation and a "How to make one" button; the full tutorial (file layout, what you can use, the rules, both examples with Copy buttons, what the error messages mean) also opens from the chip, so it works with Volt help off.
+- In the theme list there is a new group **Your own** with "Your theme" and "Your visualizer"; they show the pack chosen in the card (theme: the theme's colours; visualizer: the cover's colours while a song plays). With no valid pack they fall back to the Voltcap theme / Now playing.
+- A pack is one text file: 4 comment lines + one function (`voltScene` or `voltViz`). It can't declare uniforms, pictures, `main`, `#` lines or `while`; no recursion.
+
+### Rules that keep the app light (all in `PackRules`)
+- At most 12 KB, 320 lines, 12 packs, names 32 letters. Loops only `for (int i = 0; i < N; i++) { }`, N ≤ 24, ≤ 4 loops, nested ≤ 64 turns in all. A cost estimate has to stay under 100 % (the meter).
+- Drawn at most at 60 % (themes) / 75 % (visualizers) of the screen resolution and ~30 fps, whatever the quality setting says. Test-built on the device before it is saved (error lines are the pack's own line numbers).
+- Watchdog: if Voltcap has to lower the background quality while a pack is on screen, the pack drops to 40 % / ~15 fps; the second time it is switched off (card says so; "Turn back on" in its page).
+- Android 13+ only (older: packs are kept, the normal theme shows). Only the uniforms a pack is allowed to have are ever set, and the wrapper keeps all of them alive, so the Android 13 "stripped uniform" abort can't happen.
+
+### Checked / not tested
+- Rules: 25 validator tests pass (kotlinc + java). Both examples pass the rules and compile as GLSL in headless Chromium with every uniform active and none extra.
+- Syntax-checked every changed Kotlin file with kotlinc (no parse errors; nothing of mine unresolved). **Not a real compile**: this cloud copy has no Android / Compose libraries, so run a build in Android Studio. Not tested on the device.
+- ShelfColors.kt keeps its CRLF line endings. Never hand-edit `ThemeShaders.kt` (gen.py emits the same lines).
+
+---
+
+## Update — 6 Oct 2026 (54): 3 games per row in the TV room, cartridges hop and discs spin
+
+### ⚠️ Copy
+- `src_copy` (2 files) → `app\src\main\java\com\shelf\launcher\`: `ui/PhysicalMedia.kt`, `ui/TvRoomHome.kt`.
+
+### 🗑 Delete
+- Nothing new.
+
+### TV room
+- Always 3 games per row in the column beside the TV (tighter gaps when the column is narrow).
+
+### Physical media (everywhere cartridges / discs show: row, tiles, grid, TV room, second screen)
+- Discs spin slowly, like they're playing (one turn in 6 s).
+- Cartridges give a small hop now and then and settle with a tiny squash.
+- Each one is on its own beat, so they don't move in step. Draw-only (nothing recomposes); still with Lite effects, animations off, while the home screen rests or is covered. A spinning disc is drawn flat into its own layer and then turned (keeps the Thor freeze from 48 away).
+
+### Checked / not tested
+- Real compile check of all of `src_copy`: 0 errors. Not tested on the device.
+
+---
+
+## Update — 6 Oct 2026 (53): TV room uses your own TV picture, the game plays on its screen, TV at the side
+
+(This also covers the TV-picture entry I wrote as "52": the other session's own 52 replaced it in this file.)
+
+### ⚠️ Copy
+- `src_copy` (1 file) → `app\src\main\java\com\shelf\launcher\`: `ui/TvRoomHome.kt`.
+- `project_copy` → project root (`robocopy project_copy . /E`): **new** `app\src\main\res\drawable-nodpi\tv_room.webp` (your picture, 1672×925) and `tv_room_front.png` (the plush figure's head, cut from the same picture).
+
+### 🗑 Delete
+- Nothing new (the pixel Volt files from 49 still, if not done yet).
+
+### TV room
+- The room is your picture, unchanged: only the screenshot's grey bar and rounded corners at the very top were cut off. Nothing in the painting was removed or redrawn.
+- The game you're on (clip, else screenshots in turn, else its art) plays inside the TV's screen, with scanlines, glass, the rolling bar and the channel number. The plush figure stays in front of the screen's corner (drawn again over the game).
+- The TV sits at the left edge (only a hint of the lamp's light shows); the picture fills the screen's height and the dark wall and floor carry on to the right edge. The games column gets the rest (about 40% of the screen on the Thor): 2 games per row there (3 when the column is wide enough), the console sticker on top, the game's name / facts under it.
+- The console sticker lost the little controller-shape icons that didn't fit; just its logo and name.
+- My drawn room / lamp / cabinet from 49 is gone; Volt doesn't sit in the TV room any more (the picture has its own figures).
+
+### Checked / not tested
+- Real compile check of all of `src_copy` (including the other session's 50–52): 0 errors.
+- Screen position checked by laying a test colour over the picture's screen; layout checked with a mock at the Thor's size. Not tested on the device.
+- Note: the picture shows well-known characters / logos (cap, plush, belt, ball). Fine for your own use; if you ever publish Voltcap, that's the one thing that breaks the "original art only" rule.
+
+---
+
+## Update — 6 Oct 2026 (52): a real screen swap, in every home layout
+
+### ⚠️ Copy
+- `src_copy` (5 files) → `app\src\main\java\com\shelf\launcher\`: `data/Features.kt`, `ui/DualScreenGrid.kt`, `ui/LauncherScreen.kt`, `ui/ScreenLayoutsUi.kt`, `ui/SettingsIndex.kt`.
+
+### Changed
+- **Swapping is now a whole-screen swap by default.** ⇅ (second screen), R1 › Swap screens or the hotkey moves your home screen as it is (classic row, tiles, hero, grid, TV room, with its status bar, legend, Volt, details window) to the second screen, and the second screen's pages (art, video, details, achievements, music, dock) to the main screen. ⇅ again puts them back.
+- The controller works exactly as before (the keys stay with the main window, which hands them to the home screen wherever it's drawn). Touch works on both.
+- Settings › Screens: **Swap the screens** (the switch; was "Games on the second screen") and **Swapped, the screens show**: *Whole screens* (new, default) or *Games grid + the game big* (update 50's view, with its "What shows where" options).
+- While swapped, the home screen's ⇅ sits under the status bar's right end; the pages' ⇅ stays top right.
+- Volt's tour waits while the home screen is on the second screen.
+
+### Under the hood
+- LauncherScreen: the second screen's content became a local `SecondScreenContent()`; the `SecondScreenHost` call moved under it and draws either that or the home screen (`homeOnSecond`, filled in just before the root box once `HomeLayer()` exists). The root box (focus + all key handling) stays in the main window and draws `SecondScreenContent()` instead of `HomeLayer()` while swapped. Volt's perch / sprite moved into `HomeCompanions()` so they follow the home screen.
+- New pref `swap_style` (Features.SwapStyle); `dual_grid` is now the "swapped" switch.
+- The home screen's remembered layout bits (row positions etc.) start fresh after each swap; your game, category and settings don't change.
+
+### Checked / not tested
+- Syntax check with Kotlin 2.2.10 and a check that every new local (`SecondScreenContent`, `HomeCompanions`, `homeOnSecond`, `HomeLayer` from the second screen) resolves in order. Not a real type-check (no Android / Compose libraries here).
+- Not tested on the Thor: the home screen's sizes on the lower screen (it measures its own window), the second-screen screensaver choice now shows on the main screen while swapped, popups inside the home screen (they open on the screen it's on).
+
+---
+
+## Update — 6 Oct 2026 (51): swap the screens (games up ⇄ down) from anywhere
+
+### ⚠️ Copy
+- `src_copy` (4 files) → `app\src\main\java\com\shelf\launcher\`: `data/Hotkeys.kt`, `ui/DualScreenGrid.kt`, `ui/LauncherScreen.kt`, `ui/QuickSettings.kt`.
+
+### New
+- **⇅ button on the second screen**, in every home layout (classic row, tiles, hero, grid, TV room): top right of the second screen's header. One tap moves the games down there as a grid and puts the game you're on big on the main screen; on the games grid the same button (after the clock) puts everything back.
+- **R1 panel › Swap screens** tile (lit while the games are on the second screen). Only shown while the second screen is in use. New tiles go at the end of your order.
+- **Hotkey action "Swap screens (games up / down)"** (Settings › Hotkeys). Without a second screen it only switches the setting and says so.
+- All three flip the same switch as Settings › Screens › Games on the second screen, so "what shows where" stays as you set it.
+
+### Checked / not tested
+- Syntax check of the changed files with Kotlin 2.2.10 (no Android / Compose libraries here, so not a real type-check). `HotkeyAction` has no other exhaustive `when` in the files checked (`HomeChrome`, `SettingsDialog`, `LauncherScreen`).
+- Not tested on the Thor: the button's spot next to each header style (Volt header, tabs, arrows).
+
+---
+
+## Update — 6 Oct 2026 (50): games on the second screen, the game big on the main screen
+
+### ⚠️ Copy
+- `src_copy` (6 files) → `app\src\main\java\com\shelf\launcher\`: `data/Features.kt`, **new** `ui/DualScreenGrid.kt`, `ui/GridHome.kt`, `ui/LauncherScreen.kt`, `ui/ScreenLayoutsUi.kt`, `ui/SettingsIndex.kt`.
+
+### New: Games on the second screen (Settings › Screens › While you're in Voltcap, off by default)
+- With Voltcap's second screen up (Thor's lower screen), the games sit there as a grid (small covers, 4 across on the Thor) and the main screen shows the game you're on big:
+  - its art across the whole screen (crossfades as you move), under the status bar and legend;
+  - its logo top left (the name in big letters when there's no logo);
+  - a glass card bottom left with the story and the facts (icons + text, two columns).
+- Only while the second screen is really up. Without one (or with an app holding it), the home screen is your normal layout.
+- **Controls stay the same**, all from the main screen: ◀ ▶ ▲ ▼ move through the grid, A opens the details window (on the main screen in this mode), L2 / R2 change category. Touch on the second screen: tap a game to select it, tap again to open it; the ‹ › arrows by the category's name change category. Tapping the main screen's showcase opens the details too.
+- **What shows where:** Logo / name, Description, Genre, Developer, Release year, Console, Score, Play time, Last played, Achievements — each on the **Main screen**, in a slim strip above the games on the **Second screen**, or **Hidden**. Default: logo, description, genre, developer, release year and console on the main screen.
+- More switches: game art across the main screen (off: the theme's background stays), names under the games, category / clock / battery along the top of the second screen.
+- The second screen keeps the theme's scene behind the grid when the scene runs there.
+- The details (IGDB / RAWG…) are looked up once you rest on a game for 0.4 s, only when something that needs them is shown.
+- Settings search finds the new switches.
+
+### Under the hood
+- `HomeGameGrid` (GridHome.kt) got `secondScreen` (smaller cards, no Volt perch / tour spots, which belong to the main window) and `showNames`.
+- LauncherScreen: `dualGridOn` (switch on + `SecondScreenShown`) turns the layout into the grid home for the keys and turns the other layouts' flags off; the art sits in the background layer, the logo / story in `GameRows()`; the second screen's `SecondScreenHome` is replaced by `DualGridBottom` while it's on.
+- New prefs in "voltcap_features" (`dual_grid`, `dual_grid_top`, `dual_grid_bottom`, `dual_grid_art`, `dual_grid_names`, `dual_grid_header`), so they're backed up like the other look settings.
+
+### Checked / not tested
+- Syntax check of every changed file with Kotlin 2.2.10 (no Android / Compose libraries here, so **not** a real type-check). Every app function the new code calls was checked against its current signature by hand.
+- Not tested on the Thor: the grid's size on the lower screen, the art / logo placement on the upper screen, touch on the lower grid.
+
+---
+
+## Update — 6 Oct 2026 (49): pixel Volt removed, TV room redone as a lamp-lit room with the TV as the star
+
+### ⚠️ Copy
+- `src_copy` (4 files) → `app\src\main\java\com\shelf\launcher\`: `data/Features.kt`, `ui/LauncherScreen.kt`, `ui/Mascot.kt`, `ui/TvRoomHome.kt`.
+
+### 🗑 Delete (pixel Volt)
+- The 17 pixel Volt pictures, in **both** places (otherwise `robocopy project_copy` puts them back):
+  - `C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\res\drawable-nodpi\volt_*.png`
+  - `C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy\app\src\main\res\drawable-nodpi\volt_*.png`
+  - (`volt_alert, volt_back, volt_groom, volt_happy, volt_hero, volt_look_up, volt_music, volt_play, volt_pod_hug, volt_pod_open, volt_pod_peek, volt_pod_sleep, volt_question, volt_sit, volt_sleep, volt_walk, volt_wave`)
+- Its generator: `C:\Users\User\AndroidStudioProjects\ShelfLauncher\tools\mascot\` (gen.py, poses.py).
+- Leave `mascot_*.png` (the drawn Volt) and `font\volt_pixel.ttf` (the 32-bit font) — still used.
+- Still from 42 / 44 if there: `...\ui\GameBrowser.kt`, `...\ui\GameClientsSettings.kt`, `...\ui\SwitchHome.kt`, `tools\themes\scenes\night_drive.agsl`. Optional: `verify-src-copy.bat`.
+
+### Volt
+- Only the drawn Volt now: the "Volt's look" choice and the pixel set are gone from the code (`MascotPose` has one picture per pose).
+
+### TV room
+- The whole screen is the room now (it runs under the status bar and legend too): a wall lit warm by a floor lamp on a pile of books on the left, fading to evening blue on the right, two dim framed dusk pictures, a wooden floor with the lamp's and the screen's light on it.
+- The set stands front-on (no turn any more) on a sixties cabinet with a speaker cloth, a drawer and splayed legs; walnut cabinet, wooden bezel, brass knobs, grille. Volt sits on the cabinet at its front corner.
+- Everything else is quieter: the games column is narrower on the right, the console sticker is small, and the game's story and facts are a slim strip under the set.
+- No characters or logos from the picture you sent (hat, plush, belt, ball): theme art stays original.
+
+### Checked / not tested
+- Real compile check (Kotlin 2.2.10 + Compose against the app's libraries): 0 errors.
+- Layout checked with a rough mock at the Thor's main screen size. Not tested on the device: how it looks with your games and themes.
+
+---
+
+## Update — 6 Oct 2026: whole-collection theme polish
+
+- Refined all 151 explicit AppTheme palettes: deeper background tones, more distinct raised surfaces, gentler accent saturation and clearer secondary text. Preserved OLED black and each theme's hue identity. Coverage: `tools/themes/palette-refresh-coverage.json`.
+- Shared shader finishing now rolls off bright highlights without washing colour out to white, uses a softer vignette, and keeps gradient dithering stationary. The three flat Bold designs keep their flat finish and receive the palette update.
+- Shared music backgrounds use less oversaturated album colours and more restrained lighting. Now playing has fewer sparks and gentler kick flashes; Spectrum has antialiased bar edges and less artificial jitter; Pulse ring samples sharp cover art.
+- Older-Android equalizer fallback gets a layered glow and two-colour outline. All five corner visualizers get a softer two-colour halo; orbit trails follow the moons' actual elliptical path, and pulsar/black-hole motion no longer jumps with instantaneous audio levels.
+- Fixed preview inventory accidentally including music-track names; fixed the Node uniform checker to handle shared motif branches.
+
+### Copy
+Copy these four files from `C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy\` to matching paths under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher\`:
+- `ui/theme/ShelfColors.kt`
+- `ui/ThemeShaders.kt` (regenerated)
+- `ui/NowPlayingScene.kt`
+- `ui/CornerVisualizer.kt`
+
+Theme tool edits are already in place: `tools/themes/scenes/{_prelude,_reactive,music,spectrum,pulse_ring}.agsl`, `gen.py`, `check_uniforms.cjs`, generated `preview.html`, `review_refresh.cjs`, coverage JSON and `refresh-review/` contact sheets.
+
+### Checked / limits
+- All 151 AppTheme entries have an updated explicit palette.
+- Generated all 138 scene sources; WebGL compile/uniform checks passed for all 143 motif variants.
+- Rendered 150 shader-backed theme previews and visually reviewed the contact sheets. Waterfall cliffs is an Android sprite animation and receives palette changes only; its sprite artwork was not replaced. Browser previews do not validate native lyric overlays, showcase artwork or Android fallback rendering.
+- Staged sources compiled successfully using `gradlew.bat -I verify-src-copy.gradle :app:compileDebugKotlin --offline` (existing warnings only).
+- Not installed or tested on a handheld; no APK produced. User's copy-first workflow preserved.
+
+### Delete
+None.
+
+---
+
+## Update — 6 Oct 2026 (48): fix for the Thor freeze (ANR), build fix for 47, real compile check
+
+### ⚠️ Copy
+- `src_copy` (9 files) → `app\src\main\java\com\shelf\launcher\`: `ui/GameDock.kt`, `ui/HeroCarousel.kt`, `ui/HomeChrome.kt`, `ui/HomeExtras.kt`, `ui/RealMedia.kt`, `ui/SaveExplorer.kt`, `ui/SecondScreenDetails.kt`, `ui/ShowcaseScene.kt`, `ui/TvRoomHome.kt`.
+- **new** `tools\compile_check\` (already in place; only used by Claude's cloud check).
+
+### 🗑 Delete
+- Nothing new. Still from 42 / 44 if there: `ShelfLauncher\app\src\main\java\com\shelf\launcher\ui\GameBrowser.kt`, `...\ui\GameClientsSettings.kt`, `...\ui\SwitchHome.kt`, `ShelfLauncher\tools\themes\scenes\night_drive.agsl`. Optional: `ShelfLauncher\verify-src-copy.bat`.
+
+### Build fix (your log)
+- `TvRoomHome.kt`: the switched-off music box on the TV is removed completely (the `if (false && …)` broke Kotlin's null check: 4 errors).
+
+### The Thor freeze (crash report 15:43, "Input dispatching timed out")
+- Cause: Android's renderer was stuck clearing its text cache. Text inside anything turned in 3D (the TV set is turned 5°, the tilted cards in the row, cover-flow, the case flip, the save vault icons, the showcase scene) can't be cached, so every frame added a copy; the clean-up got slower until one frame took 10 s and Android called it frozen.
+- Fix: every 3D-turned layer is now drawn flat into its own picture first and only that picture is turned (`flatTextFor3d()` in HomeExtras.kt, used in all 11 places). Same look.
+
+### Checked / not tested
+- **Real compile check now**: all of `src_copy` (except ThemeShaders.kt, taken from your last build) compiled with Kotlin 2.2.10 + the Compose compiler against the app's own libraries (from your Gradle cache, read only). 0 errors. The check catches the 47 error when put back.
+- Not covered by it: missing resource files, manifest, lint. Not tested on the device: run the TV room / tilted row for a while and see that it stays smooth.
+
+---
+
+## Update — 6 Oct 2026 (47): settings search, music inside the second screen, real case templates, name / category gap, Spotify volume, soft blur edges
+
+### ⚠️ Copy
+- `src_copy` (15 files) → `app\src\main\java\com\shelf\launcher\`:
+  - **new** `ui/SettingsIndex.kt`;
+  - `data/Features.kt`, `device/audio/AppMixer.kt`, `device/audio/MixerEffects.kt`;
+  - `ui/GameCard.kt`, `ui/GameDock.kt`, `ui/GridHome.kt`, `ui/HomeExtras.kt`, `ui/LauncherScreen.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/SecondScreenHome.kt`, `ui/SettingsDialog.kt`, `ui/TileHome.kt`, `ui/TvRoomHome.kt`.
+- **new** `tools\settings_index\gen.py` (already in place in `tools`). Re-run `python tools\settings_index\gen.py src_copy` after adding settings so search finds them.
+
+### 🗑 Delete
+- Nothing new. Still from 42 / 44 if there: `ShelfLauncher\app\src\main\java\com\shelf\launcher\ui\GameBrowser.kt`, `...\ui\GameClientsSettings.kt`, `...\ui\SwitchHome.kt`, `ShelfLauncher\tools\themes\scenes\night_drive.agsl`. Optional: `ShelfLauncher\verify-src-copy.bat`.
+
+### Settings
+- Search bar in the Settings header (under it on small screens). Type any words: matching options show with where they live (Section › Page › Group); pick one to jump there (opens the page and the group).
+- The search list comes from `ui/SettingsIndex.kt` (417 options), generated from the settings code by `tools/settings_index/gen.py`.
+
+### Second screen
+- The big music player opens inside the Music page now: tabs, header and swiping stay, so you can keep flipping pages. Closing it goes back to the page you came from.
+
+### TV room
+- No music box over the game screenshots on the TV any more.
+- Names under the cartridges / boxes, on by default (switch "Names under the games", next to "Games beside the TV").
+
+### Box art
+- The case view now draws the template pack's real case (from your folder) straight-on with the cover fitted into its front, everywhere cases show (row, grid, tiles, TV). It no longer needs the 3D box option on.
+
+### Name and category
+- The name under the row is only as tall as its text, so the category sits right under it.
+
+### Soft blur / shade (your extra message)
+- The blur and the black shade for "Game UI only" no longer stop at a hard line: they fade out softly, and reach the screen edge when the games are at the top as well as the bottom. Hero layout: they fade out to the right instead of a line down the middle. Grid: covers the whole screen (it was missing). Tiles: start from the art above the tiles.
+- The "Soft blur behind the games" uses the same soft edges.
+
+### Mixer (Spotify volume)
+- Likely cause found: Android lists player sessions as "session ID:", which the mixer didn't read, so it found no session to turn down. Fixed.
+- Mixer check now says so when apps play but no session is found, and shows whether the volume effect is attached.
+
+### Checked / not tested
+- Syntax-checked the 15 Kotlin files (parse only, not compiled — no Android SDK here). Nothing tested on the device.
+- Mixer: play something in Spotify, turn only Spotify down, then run Mixer check and send the report if it still doesn't change.
+
+---
+
+## Update — 6 Oct 2026 (46b): build fixes for 46
+
+### ⚠️ Copy
+- `src_copy` (3 files) → `app\src\main\java\com\shelf\launcher\`: `device/LidPause.kt`, `ui/DockBacking.kt`, `ui/TvRoomHome.kt`.
+
+### 🗑 Delete
+- Nothing.
+
+### Fixed (from your build log)
+- `LidPause.kt`: Voltcap's own music is silenced with `haltForOtherMusic()` (the player has no public `pause()`).
+- `DockBacking.kt`: missing `Icons.Filled.PlayArrow` import.
+- `TvRoomHome.kt`: missing `animateFloat` import (the CRT flicker / rolling bar).
+
+### Checked / not tested
+- Only those 7 errors were in the log; the three files are fixed. Not compiled here — build again and send anything new.
+
+---
+
+## Update — 6 Oct 2026 (46): TV room, free-standing cartridges / boxes, save vault, music never pausing, underclock with power, lid pause
+
+### ⚠️ Copy
+- `src_copy` (40 files) → `app\src\main\java\com\shelf\launcher\`:
+  - **new** `device/LidPause.kt`, `ui/MediaVariants.kt`;
+  - `LauncherViewModel.kt`, `data/CloudSync.kt`, `data/Features.kt`, `data/SaveCapsules.kt`, `device/DeviceControls.kt`, `device/tune/GameNotification.kt`, `device/tune/TuneModel.kt`, `device/tune/Tuner.kt`, `device/tune/UnderclockTileService.kt`;
+  - `ui/CompanionHub.kt`, `ui/CornerVisualizer.kt`, `ui/DockBacking.kt`, `ui/FullMusicScreen.kt`, `ui/GameCard.kt`, `ui/GameDock.kt`, `ui/GridHome.kt`, `ui/HomeChrome.kt`, `ui/LauncherScreen.kt`, `ui/LyricScatter.kt`, `ui/LyricThemes.kt`, `ui/MediaTemplates.kt`, `ui/NowPlayingPanel.kt`, `ui/NowPlayingScene.kt`, `ui/OverlayControlActivity.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/SaveExplorer.kt`, `ui/SaveVaultStyles.kt`, `ui/ScreenSaver.kt`, `ui/SecondScreen.kt`, `ui/SecondScreenHome.kt`, `ui/SettingsDialog.kt`, `ui/ThemeScene.kt`, `ui/TileHome.kt`, `ui/TunerContent.kt`, `ui/TvRoomHome.kt`, `ui/VoltSettings.kt`, `ui/VoltUi.kt`.
+- `project_copy` → project root (`robocopy project_copy . /E`): **new** `app\src\main\res\drawable-nodpi\tpl_cart_gbc_black.webp`, `tpl_cartl_gbc_black.webp` (plus update 45's tile icons and manifest, if not copied yet).
+- `tools\media_templates\gen_kt.py` changed in place (its `MediaTemplates.of()` now goes through `MediaVariants`, so a regenerate keeps the GBC choice).
+
+### 🗑 Delete
+- Nothing new. Still from 42 / 44 if there: `ShelfLauncher\app\src\main\java\com\shelf\launcher\ui\GameBrowser.kt`, `...\ui\GameClientsSettings.kt`, `...\ui\SwitchHome.kt`, `ShelfLauncher\tools\themes\scenes\night_drive.agsl`. Optional: `ShelfLauncher\verify-src-copy.bat`.
+
+### Menus
+- Every voltage line's spark runs on one shared clock: all the lines on screen fire together.
+
+### TV room
+- The set stands in a cozy room: papered wall with a wainscot, wooden floor, a rug, a low wooden stand with drawers, a lamp glowing in the corner. It no longer floats.
+- The screen lights the room: a cool CRT glow on the wall, the stand top and the floor, breathing with the tube.
+- CRT effect on the tube: faint RGB phosphor stripes, a slow rolling bar, a light flicker (all still with Lite effects / animations off).
+- The game grid keeps the row you're on in the middle; it scrolls up and down around it.
+
+### Cartridges, discs and boxes on the game grids
+- With Card art "Cartridge / disc" or "Box art" (and a template for that console), the game is the object itself: no card behind it, no frame, no wide capsule when you're on it (it just grows a little, with a soft light pool under it).
+- Boxes face you straight on (box scan, or the cover in the system's printed frame) — no more side view with the spine. The details page and second screen keep the 3D box.
+- Classic row, Grid home, TV room grid and Tile home (the box there).
+- **Game Boy Color cartridges:** Black (new default), Grey or Clear (Appearance › Cards, under "Draw the cartridge / disc").
+
+### Game name and category
+- The name line hugs the category label next to it (no big gap), wherever they sit.
+
+### Second screen › Art page
+- Shows the Hero or Screenshots (your own + scraped) only; older choices show the hero.
+- The game's name sits right in the bottom-left corner; no cover thumbnail and no achievements there (they have their own page).
+
+### Dock settings (Appearance › Behind the dock, above "Dock backing")
+- **Above the row:** the Game header (big title, stat boxes, long Play pill and round buttons) switch.
+- **Blur:** "Blur behind the games" (0 = off) and "Blur behind the names" (the shadow / glow round the name and category; 0 = crisp).
+
+### Save Vault
+- **Faster:** each save folder is listed once for the whole library (it was once per game), and the last list shows at once while the fresh look-up runs.
+- **Floating icons:** a steady stream rising from below at three depths, new ones always coming in; the loop no longer jumps back. The light specks loop seamlessly too.
+- **Capsule:** it cracks open where it sits, before the save opens — shivers, light leaks from the seam, the halves twist apart — then the save flies out. (The old burst in the middle of the screen is gone.)
+- **Memory card style:** redrawn after your photo — grey card, two little holes, the raised triangle, "MEMORY CARD" pressed in, the wide recessed label with the game's art, ridged sides. No logos.
+
+### Music
+- Visualizers and music scenes never stop while music plays: not when idle, with Lite effects, behind a window or with system animations off (only when the screen is off / Voltcap is in the background). Corner visualizers too.
+- Music scenes are always drawn sharp (at least 90 % resolution); a lower quality only lowers their frame rate. The second screen no longer drops a quality step below the main one.
+- Lyrics: only whole lines that fit are shown (previous, then next line drop first), never a line cut in half.
+- Full player over a cover theme: the song info and lyrics sit on a dark glass card instead of running over the theme's cover.
+- **Pause music when closed** (Settings › Device, on by default): closing the handheld (screens off; the power button too) pauses Spotify, any music app and Voltcap's own music.
+
+### Power
+- New underclock level **With power** (now the default; profiles that had "Off" were moved to it once): Stock / Max none, Balanced light, Power saving medium, Eco heavy — with AutoTDP on, Efficient medium, Balanced light, Smooth none. Picking a level by hand still overrides it. The tile cycles With power → Off → Light → Medium → Heavy.
+
+### Background art
+- Heroes no longer stick after locking / unlocking: a picture whose load failed (Wi-Fi still waking after Sleep mode) is retried, and coming back to the home screen gives the game you're on a fresh picture.
+
+### Checked
+- Kotlin parse of all 40 files: no syntax errors. Device copies matched before overwriting.
+- **Not compiled** (no Android SDK here). Build in Android Studio and send me any errors.
+
+### Not tested
+- On a device: all of the above — especially the TV room look, free-standing media in each layout, the capsule crack, Save Vault speed, lid pause on the Thor, and the underclock levels per tier.
+
+---
+
+## Update — 6 Oct 2026 (45): volume mixer rework, Quick Settings tiles help, visual collision sweep
+
+### ⚠️ Copy
+- `src_copy` (69 files) → `app\src\main\java\com\shelf\launcher\`:
+  - **new** `device/QsTiles.kt`, `device/audio/MixerEffects.kt`, `ui/QsTilesCard.kt`;
+  - mixer: `device/audio/AppMixer.kt`, `device/audio/MixerHelper.kt`, `ui/MixerActivity.kt`, `LauncherViewModel.kt`, `data/Hotkeys.kt`, `data/SettingsScopes.kt`;
+  - tiles: `device/audio/MixerTileService.kt`, `device/tune/OverlayTileService.kt`, `device/tune/TunerTileService.kt`, `device/tune/UnderclockTileService.kt`, `ui/SettingsDialog.kt`, `ui/FirstRunDialog.kt`, `ui/QuickSettings.kt`;
+  - visual sweep: `ui/BadgeWall.kt`, `ui/CategoryScreen.kt`, `ui/ColorTools.kt`, `ui/CompanionActivity.kt`, `ui/CompanionHub.kt`, `ui/CornerVisualizer.kt`, `ui/CrashReportsCard.kt`, `ui/DeviceInfoContent.kt`, `ui/DialogChrome.kt`, `ui/DockBacking.kt`, `ui/EmulatorPickerDialog.kt`, `ui/FullMusicScreen.kt`, `ui/GameCard.kt`, `ui/GameDetailsOverlay.kt`, `ui/GameDock.kt`, `ui/GameJourneyUi.kt`, `ui/GameLookUi.kt`, `ui/GamePlayStats.kt`, `ui/GridHome.kt`, `ui/HeroCarousel.kt`, `ui/HomeChrome.kt`, `ui/HomeEdit.kt`, `ui/HubScreens.kt`, `ui/ImportPreview.kt`, `ui/LaunchAnimation.kt`, `ui/LauncherScreen.kt`, `ui/LightsPopup.kt`, `ui/NewArrival.kt`, `ui/NotificationsPanel.kt`, `ui/NowPlayingPanel.kt`, `ui/OverlayControlActivity.kt`, `ui/PerfPage.kt`, `ui/PlayHeader.kt`, `ui/PresetsCard.kt`, `ui/RowInfoPanel.kt`, `ui/SaveExplorer.kt`, `ui/ScreenSaver.kt`, `ui/SecondScreenDetails.kt`, `ui/SecondScreenHome.kt`, `ui/SecondScreenVolt.kt`, `ui/SessionSummary.kt`, `ui/SettingsSlider.kt`, `ui/ShortcutsPanel.kt`, `ui/StatsContent.kt`, `ui/SyncPrompts.kt`, `ui/TileHome.kt`, `ui/TunerContent.kt`, `ui/TvRoomHome.kt`, `ui/VoltSettings.kt`, `ui/VoltUi.kt`, `ui/YearRecapDialog.kt`, `ui/spotify/SpotifyPlayer.kt`, `ui/spotify/SpotifyScreen.kt`.
+- `project_copy` → project root (`robocopy project_copy . /E`):
+  - `app\src\main\AndroidManifest.xml` (the 4 tiles use their own icons; still has update 43's `PinShortcutActivity` — **your real manifest doesn't have it yet, so update 43's project_copy wasn't copied either**);
+  - **new** `app\src\main\res\drawable\ic_tile_mixer.xml`, `ic_tile_overlay.xml`, `ic_tile_power.xml`, `ic_tile_underclock.xml`.
+
+### 🗑 Delete
+- Nothing from this update in `app\src`.
+- `ShelfLauncher\verify-src-copy.bat`: a build-check helper I put in the project root (double-click: compiles `src_copy` + `project_copy` without copying, log in `verification-build.log`). Delete it if you don't want it. `verification-build.log` now holds the stopped run instead of the old log.
+- From updates 42 / 44, if still there: `ShelfLauncher\app\src\main\java\com\shelf\launcher\ui\GameBrowser.kt`, `...\ui\GameClientsSettings.kt`, `...\ui\SwitchHome.kt`, `ShelfLauncher\tools\themes\scenes\night_drive.agsl`.
+
+### Volume mixer
+- **Finds apps more reliably:**
+  - the helper answers on one marked line (`VOLTCAP_MIX`) and tries three ways to start (`CLASSPATH`, `-Djava.class.path`, `app_process64`); the one that works is remembered;
+  - if the helper can't list players, Voltcap reads Android's audio report itself (DUMP permission, granted once through the root service, or with the adb command shown in Mixer check), else the root service's `dumpsys audio` joined into one line.
+- **Volume actually changes:**
+  - new second method: an Android "Dynamics processing" effect on the app's audio sessions with its gain turned down (how equalizer apps work). Only apps below 100 % get one;
+  - "How volumes are set": Automatic (helper, then effect) / Helper only / Sound effect only;
+  - the curve is now squared (50 % sounds like half, not barely quieter).
+- **New:**
+  - per-game volume: "Only for <game>" while a game runs, put back when it ends;
+  - pin apps so they always show; "Add an app"; "All back to 100 %";
+  - the other Android volumes (notifications, ring, alarms, system, calls) in a fold;
+  - **Mixer check:** what works (root service, helper, report, effects) with a "Copy the report" button — send me that if it still doesn't work;
+  - hotkey "Volume mixer".
+- **Looks:** a wider card (up to 520 dp) that scrolls with the D-pad, one focus stop per app (◀ ▶ volume, A mute), a playing indicator, a status line saying how volumes are being set and what's wrong if anything.
+
+### Quick Settings tiles (Android's pull-down menu)
+- New card in **Settings › Device › Quick Settings tiles** and in the last first-time-setup step:
+  - each tile (Volume mixer, Voltcap overlay, power / TDP, underclock) with "✓ In the menu" or **Add** (Android 13+ shows its own "Add tile?" prompt);
+  - **Add all to the menu** with the root service (AYN / Retroid), no prompts;
+  - "Add them by hand": 4 numbered steps (swipe down twice › pencil › find the lightning tiles › drag up).
+- The tiles tell Voltcap when they're added or removed, so the card knows. Each tile has its own icon now.
+
+### Visual sweep: nothing overlapping or cut off
+Went through every `ui/` file for overlaps, clipping, cut-off text, insets, small screens and the second screen.
+- **Home:**
+  - control legend: the middle entry moves or drops instead of running into the sides; full labels only from 720 dp;
+  - status bar height is measured: the corner visualizer, corner shortcuts, TV / grid top and New arrival keep below it;
+  - search bar goes to the bottom when the dock is at the top;
+  - game cards shrink title / logo / extras on small banners; tile names and row lines grow with the font size;
+  - hero carousel: compact page switcher under 440 dp, achievements strip fits;
+  - category tiles: the name keeps clear of the cover fan.
+- **Dialogs:** every dialog footer and chip row wraps instead of running off the edge (`ChipFlow`); slider values no longer show twice ("Size 60 % · 60 %").
+- **Second screen:** the in-game timer no longer sits on the page tabs / clock; the unlock card's pills wrap and the card scrolls on short screens; companion screen keeps the player and Back on screen.
+- **Music:** the full player's art and info start below the Spotify / Blur / Lyrics / Close chips.
+- **Other:** shortcut edit rows grow with the font size (no overlapping rows); the save explorer's Volt no longer sits on the "No saves" text; Edit Home bar fits narrow screens; long names in notifications, settings subpages and the dock picker are shortened with "…".
+- 76 single-line texts that could run under their neighbours now end in "…".
+
+### Backup
+- `mixer_games`, `mixer_meta` → this device's settings; `qs_tiles` → internal (not backed up).
+
+### Checked
+- Kotlin parse of all 69 files: no syntax errors.
+- Resources + manifest: the PC run got through `generateDebugRFile` (tile icons and manifest fine), then was stopped before compiling.
+- **Kotlin not compiled:** build it in Android Studio after copying (or double-click `verify-src-copy.bat` before copying); send me any errors.
+- Device copies matched the staged versions before overwriting.
+
+### Not tested
+- On a device: everything above — especially the mixer's effect method on the Thor with an emulator, the DUMP permission grant, "Add all to the menu" through the root service, Android's tile prompt, and the layouts on the Thor's lower screen.
+
+---
+
+## Update — 6 Oct 2026 (44): holo card text, record shelf, smooth cube, TV room, lyric themes
+
+### ⚠️ Copy
+- `src_copy` (14 files) → `app\src\main\java\com\shelf\launcher\`:
+  - **new** `ui/LyricThemes.kt`;
+  - `ui/FitText.kt` — **missing from update 43** (it holds `uiFontStyle()`; without it update 43 doesn't build);
+  - `ui/NowPlayingScene.kt`, `ui/ThemeShaders.kt`, `ui/ThemeScene.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeThumbs.kt`, `ui/theme/ShelfColors.kt`, `ui/LyricScatter.kt`, `ui/TvRoomHome.kt`, `ui/ScreenSaver.kt`, `ui/SettingsDialog.kt`, `ui/LauncherScreen.kt`, `data/Features.kt`.
+- `project_copy\tools\themes\` → `tools\themes\` (the scene sources; `ThemeShaders.kt` is made from them):
+  - `gen.py` (Night drive out, the shared Voltcap 32-bit / waterfall scene), `check_uniforms.py`, `preview_template.html`, `preview.html`, new `shoot_frame.py`;
+  - `scenes\`: 18 changed + new `lyric_karaoke.agsl`, `lyric_neon.agsl`.
+
+### 🗑 Delete
+- `ShelfLauncher\tools\themes\scenes\night_drive.agsl` (the theme was removed in 42; nothing uses it).
+- From update 42, if still there:
+  - `ShelfLauncher\app\src\main\java\com\shelf\launcher\ui\GameBrowser.kt`
+  - `ShelfLauncher\app\src\main\java\com\shelf\launcher\ui\GameClientsSettings.kt`
+  - `ShelfLauncher\app\src\main\java\com\shelf\launcher\ui\SwitchHome.kt`
+
+### Holo card
+- The song's name and the artist are printed in a strip under the art, in the same holographic foil: the rainbow sheen sweeps across them too.
+- The card turns slowly from side to side (about 20°) in real perspective, and nods a touch.
+
+### Record shelf, rebuilt
+- A corner of a record store: wood-panelled wall, two hanging lamps with light cones, a neon ring in the song's colours.
+- The album stands on a display stand, its record slid half out and spinning. The shine stays put while the label turns, like a real record. Grooves and track gaps no longer shimmer.
+- Two wooden crates full of your earlier songs' sleeves, tops peeking out front to back. More stand face-out on wall ledges.
+- A wooden floor in perspective with the neon and lamps reflected. Dust in the lamplight.
+
+### Cover cube: smooth again
+- **The cause:** the spin was "time × speed" with the speed following the music, so every change in the music made the angle jump (it looked like low fps).
+- **The fix:** spins now follow clocks that only run while music plays. This is fixed in every music theme that did this: Cover cube, Record shelf, Vinyl, CD spin, Disc & sleeve, Tape deck, Pulse ring, Beat tunnel, Bloom, Arena, Campfire beat, Aura clash, Specimen lab, Disco, Cover tunnel and Now playing. Pausing now eases them to a stop instead of a whirl.
+- The cube's edges and its equalizer ring are smoothed.
+
+### TV room
+- **Confetti on the console sticker:** it now matches the console's own controller.
+  - PlayStation: ✕ ○ △ □.
+  - Nintendo: D-pad, A/B and stars. Handhelds also get a little handheld.
+  - Sega: round D-pad and three buttons.
+  - Xbox: four buttons in a diamond, bumper and stick.
+  - Atari, arcade and computers: joystick, six buttons, floppy and keys.
+- **The TV is a real set now:**
+  - a wood cabinet seen a little from the left (top and side showing, turned slightly), with a dark front panel and a deep rounded bezel;
+  - a speaker grille, two knobs (the channel knob turns with the game you're on) and "CH 07" on screen;
+  - an aerial, feet, a shadow on the floor and the screen's glow around it;
+  - a curved reflection on the glass.
+
+### New theme group: Music · lyrics
+- **Lyric cloud** moved here from Music · with the album cover.
+- **Karaoke:**
+  - the line being sung fills with the cover's colour letter by letter;
+  - a ball hops from word to word (toggle);
+  - the next line shows under it (toggle).
+- **Lyric sheet:** all the song's lines, gliding up line by line. The sung one is bright and full size in the middle; the rest fade towards the edges.
+- **Neon lyrics:** each word lights up as a neon tube on a brick wall as it's sung. The next line waits with its tubes off.
+- Without lyrics, these themes show the song's name and artist, or say why there are none.
+- They keep clear of the status bar, game row, player and legend. They follow Big / Small and Lyrics alignment.
+- **Toggles:** Appearance › Theme, while one of them is picked: "Show the next line", "Bouncing ball".
+
+### Checked
+- **Type-check:** no new errors (895, the same environmental ones as 43).
+- **Shader check (`check_uniforms.py`):** every scene compiles in WebGL, and each scene's uniform list matches what the compiler keeps. This prevents the Android 13 crash.
+- **Rendered in the preview:** Holo card (3 moments of the turn), Record shelf, Cover cube, Karaoke and Neon stages.
+- **Device copies:** all matched the delivered versions before overwriting.
+
+### Not tested
+- On the Thor:
+  - the lyric themes' words (Compose, not in the browser preview): karaoke fill and ball timing, sheet scrolling, neon glow cost;
+  - the new TV;
+  - the Holo card's text with long titles.
+- Theme thumbnails are re-rendered once (the scenes changed).
+
+---
+
+## Update — 6 Oct 2026 (43): your template pack (real carts, discs, 3D boxes), case details page, 32-bit font, per-layout art, DroidDeck shortcuts
+
+### ⚠️ Copy
+- `src_copy` (35 files): `ui/PinShortcutActivity.kt`, `ui/PlayHeader.kt`, `ui/GridHome.kt`, `ui/HomeChrome.kt`, `ui/SecondScreenDetails.kt`, `ui/BadgeWall.kt`, `ui/SettingsDialog.kt`, `ui/DialogChrome.kt`, `ui/GamePresentationSettings.kt`, `ui/MediaTemplates.kt`, `ui/VoltSettings.kt`, `ui/SecondScreenHome.kt`, `ui/SecondScreenVolt.kt`, `ui/VoltHelp.kt`, `ui/theme/Theme.kt`, `ui/VoltUi.kt`, `ui/PhysicalMedia.kt`, `ui/GameDock.kt`, `ui/LyricScatter.kt`, `ui/GameDetailsOverlay.kt`, `ui/AchievementFx.kt`, `ui/TileHome.kt`, `ui/GameOptionsDialog.kt`, `ui/RealMedia.kt`, `ui/NowPlayingPanel.kt`, `ui/CompanionHub.kt`, `ui/LauncherScreen.kt`, `ui/QuickSettings.kt`, `ui/GameCard.kt`, `LauncherViewModel.kt`, `data/AppearanceStore.kt`, `data/Features.kt`, `data/PinnedShortcuts.kt`, `data/SettingsScopes.kt`, `data/GameLauncher.kt`.
+  - New among them: `ui/MediaTemplates.kt`, `ui/RealMedia.kt`, `ui/SecondScreenDetails.kt`, `ui/PinShortcutActivity.kt`, `data/PinnedShortcuts.kt`.
+- `project_copy`:
+  - `app/src/main/AndroidManifest.xml`: the "Add to Voltcap" card for other apps' home-screen shortcuts.
+  - `app/src/main/res/drawable-nodpi/tpl_*.webp`: **168 new pictures**, 1.8 MB, made from your template pack.
+  - `tools/media_templates/`: the scripts that made them, with a README.
+
+### 🗑 Delete
+- Nothing new to delete.
+- From update 42, if not done yet:
+  - `app\src\main\java\com\shelf\launcher\ui\GameBrowser.kt`
+  - `app\src\main\java\com\shelf\launcher\ui\GameClientsSettings.kt`
+  - `app\src\main\java\com\shelf\launcher\ui\SwitchHome.kt`
+
+### New: your templates for cartridges, discs and UMDs
+- 33 consoles use your empty shells. Each label window was found from the picture itself, including the UMD's round window and notched windows; the label is cut exactly to it.
+- **With a real label scan** (ScreenScraper): the plain shell with the scan behind its window.
+- **Without a scan:** the shell with the system's printed label frame (Nintendo rating corner, SEGA strip, PS Vita band…), with the cover in its art window.
+- **Discs** (PS1, PS2, Saturn, Dreamcast, Sega CD, 3DO, Wii, Wii U, GameCube): the art on the printable ring from your disc template, under each disc's own print.
+- Consoles without a template keep the old drawn ones (PS3/PS4/Xbox discs…).
+
+### New: 3D boxes that turn slightly
+- **Box art** card artwork now shows each console's 3D box from your pack (37 consoles):
+  - the front is the game's box scan, or the cover inside the system's printed border taken from your cover textures (Game Boy, Genesis, Wii, DS…);
+  - the system's spine strip;
+  - the glass overlay on top.
+- The game you're on turns gently (about ±7°). The others stand still. Lite effects: no turning.
+- Toggle: Appearance › Game row › Cards › "3D boxes" (on), shown when Box art is picked.
+
+### New: the second screen's Details page, like your photo
+- Over the game's blurred art: the real case on the left (3D box), and console, name, year · developer · genres and the story on the right. Stacked on a tall screen.
+- **Tap the case:** it flips open to the cartridge / disc inside. Tap again to close.
+- Toggle: Appearance › Second screen art & music › "Details page shows first": the case (tap opens it), or the cartridge / disc.
+
+### Changed: 32-bit font
+- **Font** is its own choice, in Appearance › Interface style › Font:
+  - **Normal:** with the 32-bit console style, only the headings (dialog titles, section labels) use the 32-bit type.
+  - **32-bit everywhere:** game names, categories, the status bar, the player… everything, one step smaller (84 %) so names fit instead of being cut or wrapping.
+- The 32-bit console style no longer leaves the pixel look on after you pick another style. It was switched off once for you if it had stuck.
+- The 32-bit settings (font, pixel corners, pixel artwork) moved from the top of Game row to **Appearance › Interface style**.
+
+### New: each home layout chooses what it shows
+- Appearance › Game row › Cards › "Card artwork · <layout>": every layout keeps its own (covers in the row, cartridges in the grid, boxes in tiles…).
+- With Cartridge / disc: **Cartridges & cards** and **Discs & UMDs** can be switched off per layout. Those games show their cover instead.
+
+### New: DroidDeck (and any app's) home-screen shortcuts
+- DroidDeck 0.3.1+ can add a game to the home screen. Android sends that to Voltcap, which now asks "Add to Voltcap?".
+- The game then appears under a **DroidDeck** category and opens that game directly.
+- Its options › Remove shortcut takes it out.
+- Works for other apps' "Add to home screen" too; those go under the app's name.
+
+### Checked
+- Type-check: no new errors. The extra lines are `R.drawable.tpl_*`, which the type-check can't see, and the usual `ComponentActivity` ones for the new card.
+- Every template was rendered in a contact sheet with a test cover: carts, label-frame carts and 3D boxes.
+- Device copies matched the delivered versions before overwriting.
+
+### Not tested
+- On the Thor:
+  - frame rate with many 3D boxes in Grid;
+  - the flip animation;
+  - the shortcut pin request from DroidDeck;
+  - the 32-bit font's size.
+- The template pictures include the consoles' logos. Fine for your own build; check before a public release.
+
+---
+
+## Update — 6 Oct 2026 (42): your big list, part 1 — fixes, removals, second screen
+
+### ⚠️ Copy
+- `src_copy` (37 files): `data/AppearanceStore.kt`, `data/Features.kt`, `data/Hotkeys.kt`, `data/ScreensaverStore.kt`, `device/VendorAdapter.kt`, `device/audio/AppMixer.kt`, `device/audio/MixerHelper.kt`, **new** `device/SystemLights.kt`, and in `ui/`: `CompanionHub.kt`, `FitText.kt`, `FullMusicScreen.kt`, `GameDock.kt`, `GamePresentationSettings.kt`, `GameProfileDialog.kt`, `GridHome.kt`, `HomeExtras.kt`, `LauncherScreen.kt`, `LightsPopup.kt`, `Mascot.kt`, `MusicPlayer.kt`, `OptionIcons.kt`, `ScreenLayoutsUi.kt`, `ScreenSaver.kt`, `SecondScreen.kt`, `SecondScreenHome.kt`, `SecondScreenVolt.kt`, `SettingsDialog.kt`, `ShowcaseScene.kt`, `ThemeScene.kt`, `ThemeSceneLegacy.kt`, `ThemeShaders.kt`, `ThemeThumbs.kt`, `VoltCompanion.kt`, `VoltSettings.kt`, `theme/ShelfColors.kt`.
+- **Delete from the real project:** `ui/GameBrowser.kt` and `ui/GameClientsSettings.kt`. Their `src_copy` versions are now empty, so the build still works if one is left behind.
+
+### Fixed
+- **Game row jumping right, then back:**
+  - The category slide used to replay whenever anything rewrote the category, e.g. a library refresh while art was saving.
+  - It now plays only on an L2 / R2 step.
+  - A looping row also no longer restarts its position when the list is refreshed.
+- **A on a game with the second screen up:**
+  - Before, nothing appeared when an app held the second display.
+  - Now the details window opens on the second screen as a **Game** page. The arrows, a swipe or B leave it, and the dock comes back.
+  - Toggle: Settings › Screens › "Game window on the second screen" (on). Off: the details open on the main screen.
+- **Stuck on the second screen:**
+  - Voltcap's second-screen window can no longer take the focus, so touching it doesn't steal the controller.
+  - If it ever gets a key, the key is passed to the main screen.
+- **Achievements on the second screen (narrow):** the fixed detail panel at the bottom is gone. Tap an achievement to open its details right under it; tap again to close.
+- **Music on the second screen:**
+  - The music card no longer blurs its own art over the already blurred page.
+  - The background blur is softer: at most 36 dp, was 64. The full player's maximum is 26 dp, was 40.
+- **Full player:**
+  - Lyrics no longer cut off on small screens: no previous line in compact mode, smaller cover while lyrics show.
+  - The title and lyrics now use the interface font. `FitText` used to fall back to the default font.
+- **Volt changing size on the games:**
+  - Every pose is now drawn at the same scale as sitting, so lying or grooming poses are smaller.
+  - The perch box is wider so wide poses aren't squeezed.
+- **Volt on the home screen is off by default.** Your install was switched off once too. Turn him back on in Appearance › Volt.
+- **Volume mixer said nothing was playing:**
+  - The helper now answers on one line. Some root services only return the first line, so the players were lost.
+  - It runs `/system/bin/app_process` by its full path.
+  - It reports how many players Android hid.
+  - If it still finds nobody, the apps are read from `dumpsys audio`.
+  - The card says which of these happened.
+- **R1 › RGB "Off" on the Thor:**
+  - All RGB LED devices are now driven, not only the ones with "left/right/stick" names, so the left stick turns off too.
+  - "Off" also switches the handheld's own RGB setting off (found by key name; numbers only).
+  - Those settings are put back exactly as they were when you pick a colour or "System setting".
+- **Lights in the theme colour were too bright:** they now run at 45 % of your brightness. The music pulse is softer too.
+
+### Removed
+- Library view (grid / list): the screen, its settings, the "Library" round shortcut and its hotkey action. A saved hotkey now does nothing.
+- Appearance › Game row › Game clients card. DroidDeck launch files still work through ROM folders.
+- The second screen's **Games** page. A saved choice shows Art.
+- **Night drive** theme. A saved pick falls back to Voltcap.
+- **Retro TV** is now the CRT room's 3D TV (the game showcase one) with the song's cover on it. It has static when the song changes and a little on the kicks. The old flat TV is only used below Android 13.
+
+### New / changed
+- **Second-screen screensaver:** "Black" by default (both screens showed different games). Changed once for you too.
+- **Screensaver › "Volt asleep":** a dark screen with Volt curled up, z's and the clock. Volt no longer shows over any other screensaver.
+- **Music effects on the second screen** (Settings › Screens, on by default):
+  - With the second screen up, a music theme's scene plays behind its pages; the main screen keeps a still frame.
+  - The corner visualizers move there too.
+- **Album cover on the visualizer** (Appearance › Second screen art & music, off by default). Themes that already draw the cover never get a second cover card. The song info sits low so their cover stays in view.
+- **Arrows between pages** on the second screen:
+  - On by default, on a new key, so you get it once.
+  - Also in Appearance › Second screen art & music, besides Settings › Screens.
+
+### Checked
+- Type-check: no new errors (553, all environment).
+- Read again: every changed file's diff.
+- The device copies matched the last delivered versions before overwriting.
+
+### Not tested
+- On the Thor:
+  - Keys and the lower screen's back gesture now that its window can't take the focus.
+  - The Game page.
+  - The mixer's one-line answer and `dumpsys` fallback.
+  - RGB Off: which system keys it finds, and both sticks.
+  - Retro TV with a cover.
+  - Volt's even sizes.
+
+---
+
+## Update — 6 Oct 2026 (41): second screen — only the current page, with arrows
+
+### ⚠️ Copy
+- `src_copy` only (6 files): `data/AppearanceStore.kt`, `ui/SecondScreenHome.kt`, `ui/SecondScreenVolt.kt`, `ui/LauncherScreen.kt`, `ui/CompanionHub.kt`, `ui/ScreenLayoutsUi.kt`.
+
+### New
+- **Settings › Screens › While you're in Voltcap › "Only the current page at the top"** (off by default).
+  - The second screen shows just the current page's name in the middle of its header, with a subtle arrow on each side (muted chevrons, no buttons around them), instead of every tab.
+  - Tap an arrow for the previous / next page (they wrap around). Swiping still flips pages, as does the back gesture.
+  - Only the pages that can show are counted (Walkthrough, Performance and Library appear when they have something), and with a single page the arrows hide.
+  - Volt look: the page name keeps its underline between the arrows, next to ⚡ VOLTCAP and the clock. Classic look: the name alone between the arrows.
+  - Works on the companion screen the same way.
+- Saved with the other second-screen settings (device-only, like them).
+
+### Checked
+- Type-check: no new errors. Device copies matched the last delivered versions.
+
+### Not tested
+- On the Thor's lower screen: the arrows' size and the swipe next to them.
+
+---
+
+## Update — 6 Oct 2026 (40): Voltcap follows Android's shade, volume mixer per app
+
+### ⚠️ Copy
+- `src_copy` (12 files): `LauncherViewModel.kt`, `data/SettingsScopes.kt`, `device/tune/Tuner.kt`, `device/tune/GameExtras.kt`, `ui/QuickSettings.kt`, `ui/TunerContent.kt`, `ui/OverlayControlActivity.kt`, and **new**: `device/SystemSync.kt`, `device/audio/MixerHelper.kt`, `device/audio/AppMixer.kt`, `device/audio/MixerTileService.kt`, `ui/MixerActivity.kt`.
+- `project_copy`: `app/src/main/AndroidManifest.xml` (mixer card + mixer tile).
+
+### Fixed: changes in Android's shade now show in Voltcap (both ways)
+- **Why it happened:** pulling the shade down over Voltcap doesn't pause it, so Voltcap's screens only read the device again when you left and came back.
+- **Now (`SystemSync`)** Voltcap watches what the shade changes and the open screen re-reads at once (R1 menu, Settings › Performance, a game's performance profile, the in-game panel, the mixer):
+  - refresh rate (setting and the screen itself), Wi-Fi, Bluetooth, Do not disturb, airplane mode, brightness, volume;
+  - the handheld's own fan / performance / button-layout / charge-bypass settings (AYN tiles);
+  - Voltcap's own tiles and notification (power, underclock, overlay, charge limit, mixer).
+- **The tuner no longer fights the shade:**
+  - **Fan:** a fan mode picked in the shade becomes the tuner's (device-wide profile, or the running game's until it ends) when the profile had its own fan mode; with "System" nothing changes and the choice is kept for later.
+  - **Refresh rate / buttons:** picked in the shade during a game whose profile sets them: kept, not put back when the game ends.
+- Voltcap's own Quick Settings tiles already re-read each time the shade opens.
+
+### New: volume mixer (volume per app)
+- **Where:** a new **Volume mixer** tile in Android's Quick Settings, an R1 tile, and "Volume mixer ›" in the in-game panel (the notification's panel). Opens as a small card over the game.
+- **What:** media volume, then each app playing sound (game, music, video…) with its own slider (0–100 %, on top of the media volume), Mute, 100 %, "All back to 100 %". Apps with a saved volume stay listed when quiet.
+- **How (AYN / Retroid):**
+  - Android has no public per-app volume, so Voltcap starts a small helper through the handheld's own root service (`app_process` from Voltcap's own APK, no Shizuku, nothing to install).
+  - It sets the volume of every player belonging to that app (the same method as MIUI and the open-source AppMixer) and checks every 1.5 s for new players.
+  - An app that changes its own volume (a fade) is brought back within a couple of seconds. At 100 % an app is left alone.
+- **Kept:** volumes are saved per app (device-only `mixer` prefs) and held again after a restart (at Voltcap's start and each game launch).
+- **Elsewhere:** the card shows the media volume and says per-app volume needs the root service. If Android's audio service won't answer the helper (very different firmware), the card says so instead of "nothing playing".
+
+### Checked
+- Read again: all new files, and every caller of the changed tuner / game-extras code. Fixed before shipping:
+  - the helper's "is it running" check would have found its own shell (pattern now `voltcap_mix[d]`);
+  - a helper that can't reach the audio service now stops instead of polling forever;
+  - Voltcap's own refresh-rate change is no longer mistaken for one from the shade (checked after the screen has switched).
+- Type-check: no new errors (the new card and tile have the same environment-only lines as the existing ones). Device copies matched before replacing.
+
+### Not tested
+- On a device: the mixer helper on the Thor's firmware (the root service has to start `app_process` in the background; if it can't, the card says "The mixer helper didn't start"), mixer with RetroArch / other emulators, the shade → Voltcap updates (Hz, fan, Wi-Fi) with the R1 menu open.
+
+---
+
+## Update — 6 Oct 2026 (39): console profiles, heat guard, copy to a console, per-game measurements
+
+### ⚠️ Copy
+- `src_copy` only (9 files): `LauncherViewModel.kt`, `device/tune/TuneModel.kt`, `device/tune/Tuner.kt`, `device/tune/TuneService.kt`, `device/tune/GameNotification.kt`, `device/tune/UnderclockTileService.kt`, `device/tune/TunerTileService.kt`, `ui/TunerContent.kt`, `ui/GameProfileDialog.kt`.
+
+### New (each one has its own switch in Settings › Performance › Automation)
+- **Profiles per console** (on by default; does nothing until a console has a profile).
+  - A game's settings › Performance now has **This game / All PS1 games** (for ROM games). "All … games" edits the console's profile: same quick picks (underclock, fan, buttons), screen rate, charge limit and the full tuner.
+  - Which profile a game uses: its own → its console's → the device-wide one. The card says which ("Uses the PS1 profile: Balanced · Underclock Heavy · Retro buttons").
+  - A console profile's buttons / screen rate / charge limit apply at launch and go back afterwards, like a game's own.
+- **Heat guard** (off by default), limit 75 / 80 / 85 / 90 °C.
+  - While a game runs: 8 s at or above the limit → the underclock goes one step lower (Light → Medium → Heavy on top of the profile). At most one step per 30 s, so the chip has time to cool.
+  - 45 s at 8 °C below the limit → one step back. Everything back when the game ends.
+  - Shown in the tuner's "Now" card and the in-game notification ("hot: 1 lower").
+- **Copy a profile** (in a game's own profile): **Copy to all PS1 games** (two taps; replaces their own profiles) and **Make it the PS1 profile**.
+- **Measure each game** (on by default).
+  - For every session of 3 minutes or more, per profile: battery % per hour (on battery only), watts, chip temperature, frame rate (when the overlay or AutoTDP reads it).
+  - Shown in the game's settings › **Measured**, one line per profile ("Balanced · Underclock Medium: 4 sessions, 2.3 h · −14 %/h · 6.2 W · 63 °C · 58 fps"), with Clear.
+  - Screen-off time is left out; a session that was mostly screen-off doesn't count its battery. Changing profile mid-game splits the session between the two.
+
+### Fixed (found in the check before shipping)
+- **Changing a game's or console's profile mid-game** (from its settings, or adding / removing one) now takes effect at once. Before, only edits to an existing profile of that exact game did, and removing it did nothing until the game ended.
+- **Turning the stick-light status off mid-game** stopped the tuner's loop even when the heat guard or measurements still needed it.
+- **Custom underclock:** stepping a cluster back up to its top speed left a "ceiling" at full speed, which kept the vendor's touch boosts switched off for nothing. Now it's removed.
+- **Quick Settings tiles (Power and Underclock):** the first read of the chip ran on the shade's thread (could stutter the shade); now in the background. The Power tile also refreshes the in-game notification.
+
+### Checked
+- **Read again, line by line:** everything changed since update 36 and the code it calls. That covers `Tuner`, `TuneService`, `TuneModel`, `TuneHardware`, `GameExtras`, `GameNotification`, both tile services, `DeviceControls`, `QuickSettings`, `OverlayControlActivity`, `TunerContent`, `GameProfileDialog`, `GestureHint` / `GestureHintCard`, and the launch / resume paths in `LauncherViewModel`.
+- Type-check: no new errors. Device copies matched the last delivered versions.
+
+### Not tested
+- On a device: the heat guard stepping (and back), console profiles at launch (buttons per console), the measurements after a few sessions, "Copy to all".
+
+---
+
+## Update — 6 Oct 2026 (38): per-game underclock, fan and buttons up front
+
+### ⚠️ Copy
+- `src_copy` only (4 files): `ui/TunerContent.kt`, `device/tune/GameExtras.kt`, `device/tune/Tuner.kt`, `data/SettingsScopes.kt`.
+
+### Changed
+- **Game settings › Performance › "For this game"** (new card, right under the profile switch): **Underclock** (Off / Light / Medium / Heavy, Custom once set), **Fan** (System / Quiet / Smart / Sport, plus Curve / Hold temp where Voltcap drives the fan) and **Buttons** (Unchanged / Xbox / Retro).
+  - One tap is enough: on a game still using the device-wide settings, picking anything gives it its own profile (a copy of the device-wide one with that change).
+  - All three were already in a game's own profile (update 37 added underclock there), but only after switching to "Own profile" and scrolling the full tuner. The full tuner below still has the details (custom speeds, fan curve).
+  - The button-layout row moved from "While this game runs" into this card (no duplicate).
+- The profile line now says everything a game changes: "Own profile: Balanced · Underclock Medium · Fan Quiet · Xbox buttons".
+
+### Fixed
+- **Buttons stayed on a game's layout (Xbox / Retro) after the game** when Android had closed Voltcap while the game ran. The same for a game's screen rate and charge limit. What to put back is now saved to disk (`game_extras`, internal, never exported) and restored when you come back to Voltcap.
+- Two games in a row with their own button layout / screen rate now put back the values from before the first game, not the first game's.
+
+### Checked
+- Type-check: no new errors. Device copies matched before replacing.
+
+### Not tested
+- On a device: per-game buttons switching at launch and back afterwards (also after Voltcap was closed mid-game), per-game fan and underclock.
+
+---
+
+## Update — 6 Oct 2026 (37): no more Shizuku, underclock (ClusterTune / PULSE style) with tiles
+
+### ⚠️ Copy
+- `src_copy` (10 files): `data/GestureHint.kt`, `ui/GestureHintCard.kt`, `device/tune/TuneModel.kt`, `device/tune/Tuner.kt`, `device/tune/GameNotification.kt`, `device/DeviceControls.kt`, `ui/QuickSettings.kt`, `ui/OverlayControlActivity.kt`, `ui/TunerContent.kt`, **new** `device/tune/UnderclockTileService.kt`.
+- `project_copy` (3 files): `app/src/main/AndroidManifest.xml` (Shizuku provider removed, new tile service), `app/build.gradle.kts` (Shizuku libraries removed: **Gradle sync** after copying), `app/src/main/keepRules/rules.keep` (Shizuku rules removed).
+
+### Shizuku removed
+- Shizuku is gone completely: no library, no provider, no "Allow in Shizuku" button. Nothing extra has to run.
+- **Force-hide gesture hint** now works through:
+  - **the handheld's own root service** (AYN / Retroid): no setup. Turning the switch on also gives Voltcap the permission for good, once (`pm grant … WRITE_SECURE_SETTINGS`).
+  - **elsewhere:** a one-time command from a computer (shown in the card with a **Copy command** button): `adb shell pm grant com.shelf.launcher android.permission.WRITE_SECURE_SETTINGS`. It stays after restarts and updates.
+
+### Underclock (new)
+- Like ClusterTune / PULSE: a hard top-speed ceiling per CPU cluster and for the GPU. It sits on top of the power tier, governor and AutoTDP: nothing goes faster than it.
+- **Levels:** Off · Light (prime core trimmed) · Medium (big + prime lower) · Heavy (everything lower) · Custom.
+  - Presets are % of each part's own top speed, snapped to speeds it really has. Little cores are trimmed least, the prime core most.
+  - **Custom:** − / + steps through the exact speeds each cluster (and the GPU) really has, plus "Full speed". Choosing Custom starts from the preset you were on.
+- **Settings › Performance:** new Underclock card with the real speeds per cluster ("Prime (cores 7) · 2.21 GHz of 3.19 GHz"). The tier breakdown shows the ceilings too. Games with their own profile get it as well.
+- **R1 menu:** new **Underclock** tile (Off → Light → Medium → Heavy → Custom once set → Off).
+- **Android Quick Settings:** new **Voltcap underclock** tile (add it from the shade's edit screen). The subtitle shows the real ceilings ("1.8 / 2.2 / 2.2 GHz · GPU 600 MHz"). Long press opens the in-game panel.
+- **In-game panel and notification:** an Underclock chip next to Power; the notification title shows it.
+- While an underclock is on, the vendor's touch / launch boosts are held off and the caps are written where the perf HAL looks too (same as the power tiers), so they stick.
+
+### Fixed along the way
+- **Changing power / AutoTDP / underclock from a tile or the notification mid-game did nothing until you left the game** (when the game uses the device-wide profile). It now applies at once. A game with its own profile keeps it; the tiles change the device-wide one.
+
+### Checked
+- Type-check: no new errors (the only new lines are the missing `androidx.annotation` jar on the new tile, same as the existing tiles).
+- Device copies matched the last delivered versions before replacing.
+
+### Not tested
+- On a device: the underclock levels on the Thor's chip (real speeds per cluster), the Quick Settings tile, the force-hide through the root service and the self-grant, and a mid-game tile change.
+
+---
+
+## Update — 6 Oct 2026 (36): full bug check, every file (nothing skipped)
+
+### ⚠️ Copy
+- `src_copy` only (88 files). Copy the whole `src_copy` folder over the real source (robocopy), it's simplest.
+  - Root: `LauncherViewModel.kt`.
+  - `data/`: `ArtCacheStore`, `ConsoleLogos`, `ConsolePhotos`, `ControllerLights`, `DiscordPresence`, `DriveClient`, `EmulatorCatalog`, `FrontendImport`, `IgdbApi`, `Manuals`, `PlayJournal`, `PlaytimeStore`, `RaHasher`, `RaOverlayData`, `RaSocial`, `RawgApi`, `RecapAchievements`, `RecapWorker`, `RomScanner`, `RunningGames`, `SaveWatchWorker`, `ScreenScraper`, `SettingsScopes`, `ShelfNotificationListener`, `SleepRadios`, `SteamAchievements`, `SteamGridDbRepository`, `SyncTrees`, `TheGamesDbApi`, `guide/GameFaqs`, `guide/GuideProviders`, `guide/OfflineGuides`.
+  - `device/`: `accessories/AccessoryMonitor`, `tune/Tuner`.
+  - `spotify/`: `LoopbackCatcher`, `SpotifyAuth`, `SpotifyRepository`.
+  - `ui/`: `AchievementFx`, `AchievementListDialog`, `AnimatedWallpaper`, `AppIcons`, `BackdropAchievements`, `BackgroundMusic`, `CloudSyncContent`, `ColorTools`, `CompanionHub`, `CornerVisualizer`, `EmulatorPickerDialog`, `GameDetailsOverlay`, `GameDock`, `GameLookUi`, `GuideScreen`, `GuideWebActivity`, `HeroCarousel`, `HomeChrome`, `HomeExtras`, `LauncherScreen`, `LibraryDialog`, `LightsPopup`, `LyricScatter`, `ManualViewer`, `MetadataPanel`, `MusicOverlayView`, `MusicPlayer`, `NowPlayingPanel`, `NowPlayingScene`, `PerfOverlayService`, `QuickSettings`, `RaOverlayView`, `RaSocialUi`, `RetroBounce`, `SaveExplorer`, `SaveVaultStyles`, `ScreenLayoutsUi`, `ScreenSaver`, `SecondScreenHome`, `SecondScreenVolt`, `SettingsDialog`, `ThemePreview`, `ThemeScene`, `TvRoomHome`, `UiSounds`, `VideoPreview`, `VoltCompanion`, `VoltUi`, `VoltcapIntro`, `YearRecapDialog`.
+
+### Fixed — saves and sync
+- **A Drive download could lose the save** if Voltcap was killed while swapping it in (the old file was deleted before the new one was renamed in). Now the rename replaces it in one step; the old one goes first only where the rename can't replace.
+- **Shared-folder saves (Dolphin etc.):** a new save file that didn't arrive whole is removed again. Before, the next sync saw it as a newer local save and could send the broken file to Drive.
+- **Two save folders with the same name** on one device would share one Drive folder and mix their saves: renaming a folder to a name already used is now blocked, with a note.
+- Drive uses one shared network client instead of a new one per sync run.
+- **Background sync notification id** no longer clashes with the sync summary notification.
+
+### Fixed — crashes
+- **Same category twice in the category row** (or a collection named like a console) crashed the row: keys are unique now.
+- **Second screen app grid:** an app with two launcher icons crashed it (same key twice).
+- **Play time:** a clock change during a game (time zone, network time) crashed the end of the session.
+- **RetroAchievements social / leaderboards and Steam achievements:** a null or unexpected field in the answer crashed or emptied the list. Now read safely.
+- **Dock slots, screen layouts:** reading a slot that doesn't exist yet crashed the picker.
+- Zero-size drawings (Volt UI line, intro, category mask) no longer divide by zero.
+
+### Fixed — wrong results
+- **Fake emulator package names:** apps that borrow an emulator's package name (vendor speed tweaks) were sorted as emulators. Now only when the installed app really has the emulator's activity.
+- **Manuals for apps and Steam games** were saved under one name and looked up under another, so they never showed. One file-name rule now.
+- **CUE / GDI track files** (`Track 2.bin`…) showed as separate games. Only the sheet is listed now.
+- **Play journal:** each new entry was counted twice until restart, and the trim rewrite is now atomic.
+- **Year / week recap:** an app as top game showed its package name ("com.example"); now its label.
+- **Achievement overlay:** achievements you marked "missed" were still suggested as the next one.
+- **Artwork:** a scrape that failed for every asset (offline) was cached as "this game has no art". Not any more.
+- **IGDB:** a revoked token was reused forever, and a new Client ID could reuse the old one's token.
+- **Console photos:** a network failure was remembered as "no picture".
+- **GameFAQs:** a failed lookup (offline) was remembered as "not found".
+- **Spotify sign-in:** a silent browser pre-connect ended the sign-in with a false timeout; and a sign-in nobody finished now ends with a message instead of "connecting" forever.
+- **Spotify now playing:** stopping it didn't stop its polling loop.
+- **Hex colour box:** typing a colour jumped to the short form mid-typing.
+- **Sleep mode (radios):** if the screen came on just as Wi-Fi/Bluetooth were being switched off, they stayed off.
+- **Tuner sleep profile** could wake twice (race).
+- **Running games:** "confirmed running" wasn't cleared when nothing was running.
+- **Frontend import:** a file with only last-played data counted as empty.
+- **Lights popup:** changing the colour while lights were "held off" did nothing.
+- **Discord status:** the timer jumped on the first update.
+- **Metadata panel:** "No match found on IGDB" even when another source was used; hours shown with many decimals.
+- **Guide reader:** saving the same page offline again piled up copies; the right stick didn't scroll the reader; the manual viewer didn't take the controller; guide videos kept playing in the background.
+- **Theme preview** closed straight away from the release of the A that opened it.
+- **Video clips:** a sound setting change applied only to the next clip.
+- **Volt companion** could end up off screen after rotation / split screen.
+
+### Fixed — touch callbacks (stale after a change)
+- Hero carousel, game details "tap to run", music player seek, Quick Settings popup, Save Explorer slots, game dock (card size): their touch handlers kept the first version of the screen's callbacks. They now always call the latest one. (Controller and second-screen paths unchanged.)
+
+### Fixed — battery / smoothness
+- **Animations that woke the app on every display frame** (60–120 times a second) now sleep between steps: themes, Now Playing scene, screensaver, corner visualizer, retro bounce, game look, backdrop achievements.
+- **Save Explorer / Save Vault, achievement list, status bar glow:** animated values were read while composing, so the whole screen recomposed every frame. Now read only while drawing.
+- **Art cache:** a scrape rewrote the whole art file once per game on the main thread; writes are now batched off the main thread.
+- **Settings:** backup export / import and copying a file (up to 30 MB) ran on the main thread.
+- **Stick scrolling** on the home screen no longer runs every frame while the stick rests.
+- **Second screen clock:** updates on the minute instead of every 20 s.
+- **Accessories:** a refresh could ask Android for the same Bluetooth profile twice and leak one.
+- **Notification listener:** reconnecting could start a second watcher.
+- **Overlay service** started only for the button didn't stop when idle.
+- Several closes added: network connections (console logos, ScreenScraper error bodies), disc image file on a read error (RA hashing), thread-safe caches for parallel scraping (RAWG, TheGamesDB, recap achievements).
+- Cached files (background music, UI sounds) are written to a temp file first, so a kill mid-write can't leave a broken loop.
+
+### Checked
+- **Read in full, line by line: all 180 Kotlin files** in `src_copy` (data, device, spotify, ui, ui/theme, ui/spotify, root files). Nothing skipped.
+- **Type-check:** no new errors over the baseline (544, all from missing Android/Play/WorkManager jars and `R`).
+- **Device copies:** every one of the 88 files on the PC matched the last delivered version before it was replaced.
+- Controller, touch and second-screen paths kept; MainMenu / GameDetailsOverlay unchanged in size class.
+
+### Noted, not changed (small)
+- Charge-limit service: a start/stop at the same moment could leave it running one extra cycle.
+- A PS-X EXE with a huge header size makes RetroAchievements hashing slow (still correct).
+- Two crash reports in the same second share one folder.
+
+### Not tested
+- On a device: Spotify sign-in with a browser that pre-connects, Drive download interrupted mid-swap, Dolphin shared-folder sync after a failed write, sleep mode at the exact screen-on moment, the touch fixes after changing settings.
+
+### Google Drive for everyone (answer from this update's chat)
+- Drive uses the `drive.file` scope. For other people to sign in, the Google Cloud OAuth consent screen has to leave "Testing" (Publish app), with an Android OAuth client for the release signing key's SHA-1. While in Testing, only the listed test users can sign in.
+
+---
+
+## Update — 6 Oct 2026 (35): second bug check (sync, remote, overlays, startup)
+
+### ⚠️ Copy
+- `src_copy` only (8 files): `LauncherViewModel.kt`, `data/CloudSync.kt`, `data/LastPlayedSync.kt`, `data/WebRemote.kt`, `data/LocalTransfer.kt`, `ui/PerfOverlayService.kt`, `ui/VideoPreview.kt`, `ui/AnimatedWallpaper.kt`.
+
+### Fixed
+- **Google Drive sync could wipe favourites, artwork picks and manual IDs.**
+  - When Drive's `launcher-data.json` couldn't be downloaded (a dropped connection, a damaged file), the merge treated it as "the other device removed everything". Favourites, your artwork picks and manual SteamGridDB / RetroAchievements IDs were then cleared here and on Drive.
+  - Same when the Drive file was missing but this device had synced before (Drive folder deleted or recreated).
+  - Now an unreadable file skips that round (counted as one failed item), and a missing file merges like a first sync (both sides together).
+- **"Last played on every device" could drop other devices' games**: an unreadable Drive file was replaced with only this device's list. Now that round is skipped.
+- **The selection jumped to the first game a few seconds after start.** The saved library showed and re-selected your last game, then the startup ROM scan finished and reset the selection to the first game. A finished scan now keeps the game you're on.
+- **Phone remote code could be guessed.** The 4-digit code allowed unlimited tries from anything on the Wi-Fi.
+  - After 8 wrong codes that address is locked out for 5 minutes, and each wrong code waits 0.3 s.
+  - At most 16 connections at once.
+  - The page says when it's locked.
+- **Nearby settings transfer (6-digit PIN)**: the offer now ends after 5 wrong PINs. The settings can carry your sign-ins.
+- **Overlay Quick Settings tile mid-game**: cycling through "Off" stopped the overlay service, and turning overlays back on from the tile then did nothing until the next game. Now it starts them again on the game's screen.
+  - Only while a game runs: the R1 menu in Voltcap never puts overlays over Voltcap.
+  - If Android refuses a start from the background, nothing changes, as before.
+- **Video clips and video wallpapers leaked a native surface** each time a clip stopped. Now released with the player.
+
+### Checked
+- **Read in full:** `LauncherViewModel` (the whole file), `LauncherUiState`'s filters and sorting, `CloudSync` (saves, conflicts, launcher data), `LastPlayedSync`, `WebRemote`, `LocalTransfer`, `QrTransfer`, `GameLauncher`, `ChargeLimiter`, the overlay service's start / stop paths, `VideoPreview`, `AnimatedWallpaper`, `AudioReactive`.
+- **Whole app:**
+  - every `startActivity` has error handling;
+  - every `!!` is guarded;
+  - `roundToInt` can't get NaN;
+  - media players / surfaces are released;
+  - `LaunchedEffect(Unit)` bodies use nothing that changes later.
+- **Type-check:** no new errors. Device copies matched the last delivered versions.
+
+### Not tested
+- On a device: the remote lockout, the overlay tile restart mid-game (Android may refuse a background start on some versions), a Drive sync with a flaky connection.
+
+---
+
+## Update — 6 Oct 2026 (34): bug check after update 33
+
+### ⚠️ Copy
+- `src_copy` only (6 files): `ui/LauncherScreen.kt`, `ui/GameBrowser.kt`, `ui/GridHome.kt`, `ui/TvRoomHome.kt`, `ui/SecondScreenVolt.kt`, `ui/Mascot.kt`.
+- New: `FEATURES.md` (everything Voltcap has, plus what's still open) next to this file.
+
+### Fixed
+- **Possible crash: the same game twice in a row.** The grid home, the library view (grid and list), the TV room (cases and spine shelf) and the second screen's Games page keyed each item by the game. Two entries with the same key crash a lazy list, so a row holding the same game twice (same ROM path, or two games with the same name and no path) would close Voltcap. Keys are now made unique (`gameKeys()` in `GameBrowser.kt`).
+- **Back gesture did nothing on Android 13+** for the library view, Volt's tour, the game details window and the category screen. Voltcap opts into the new back system, which sends no Back key, and only the B button / Back key closed these. A `BackHandler` now closes whichever is open (details: the More row first). Popups already handled it.
+- **Library view had no touch way out**: a **Close** button sits next to Grid / List.
+- **Volt could get stuck with his eyes shut**: if the home screen went idle, a dialog opened or his pose changed in the 150 ms of a blink, the blink frame stayed. It now always reopens his eyes.
+- **Second screen › Art › "Cartridge + details"**: the drop shadow under the box / disc picture was a rectangle, which showed as a grey box behind transparent disc and cartridge scans. Removed.
+- **Second screen › Games page**: when the game you're on isn't in that list, the first game was outlined as if selected. Now nothing is.
+- **Mascot settings** no longer call your Volt "prototype art".
+
+### Checked
+- Re-read every file from updates 24–33 line by line (Volt UI, companion, second screen, icons, library view, settings, grid home, tour, home extras, TV room, physical media, mascot, frames scene, system bars, gesture hint).
+- Whole app: greps for the usual Android crash causes — PendingIntent flags (all set), runtime receivers (system broadcasts only), foreground-service types (set on 14+), empty-list `first()` / `coerceIn(0, lastIndex)` (guarded), blocking calls on the main thread (none found), uncaught network errors in the new loaders (caught).
+- Type-check: no new errors. Device copies matched the last delivered versions.
+
+### Not tested
+- On a device: the back gesture on each screen, the Close button.
+
+---
+
+## Update — 6 Oct 2026 (33): hide the gesture pill properly
+
+### ⚠️ Copy
+- `src_copy` only (18 changed files + 1 new): `MainActivity.kt`, `data/GestureHint.kt`, `ui/GestureHintCard.kt`, **new** `ui/SystemBars.kt`, and one line in every popup: `ui/DialogChrome.kt`, `SettingsDialog.kt`, `GuideScreen.kt`, `ManualViewer.kt`, `YearRecapDialog.kt`, `SyncPrompts.kt`, `ArtworkGallery.kt`, `SaveExplorer.kt`, `AchievementFx.kt`, `TipsDialog.kt`, `NotificationsPanel.kt`, `LauncherScreen.kt`, `QuickSettings.kt`, `ThemePreview.kt`, `spotify/SpotifyScreen.kt`.
+- No manifest change: `WRITE_SECURE_SETTINGS` and the Shizuku provider were already there (update 17).
+
+### Settings › Device › Gesture hint
+Two switches:
+- **Hide navigation bar** (on by default, same as before): Android's immersive mode.
+  - A swipe from the edge shows the bar for a moment; it hides again by itself. Gesture navigation always works.
+  - **New: popups hide it too.** Android shows the bars for whichever window has focus, so before, opening Settings or any popup brought the pill back. Every Dialog now calls `ImmersiveDialogWindow()`.
+  - **New: after the keyboard closes** the bar is hidden again (Android 11+; some devices left it up).
+  - Off: the pill / navigation bar shows; the status bar stays hidden (Voltcap draws its own).
+  - Switching it applies at once (window and open popups).
+- **Force-hide gesture hint** (off by default): the fallback for devices that still draw the pill.
+  - Changes the device's own hidden hint setting while Voltcap is in front: `global navigation_bar_gesture_hint 0` (Samsung-style, some handheld ROMs) or `global hide_gesture_line 1` (MIUI / HyperOS). The first one the device has is used.
+  - Through Shizuku (or `WRITE_SECURE_SETTINGS` granted once with adb). "Allow in Shizuku" shows when Shizuku runs but hasn't allowed Voltcap; once allowed, it applies at once.
+  - **Restores** the device's own value when Voltcap leaves the front (game, other app, screen off; 0.7 s delay so Voltcap's own screens don't flash it) and when the switch is turned off. Gesture navigation itself is never touched.
+  - Self-heal: at start, if the switch is off but a value was left changed (crash, killed process), it's put back.
+  - Old setting (Off / While Voltcap is open / Everywhere) carries over: anything but Off → switch on (now always "while Voltcap is in front"). The old saved value is migrated, so it can still be restored.
+
+### Fixes in the force-hide over the old version
+- Android 12+ may refuse an app reading hidden settings: the old version then hid the option entirely. Now it also reads through Shizuku's shell, and the option is always shown with a status line.
+- Shizuku connects a moment after Voltcap starts: it retries a few times instead of giving up.
+- All work runs in order on one background thread (no race between a quick hide and restore). Writes are checked by reading back.
+
+### Checked
+- Type-check of the whole source: no new errors. Device copies matched the last delivered versions.
+
+### Not tested
+- On devices: whether the device keeps the pill with immersive mode, Shizuku permission flow, the keyboard re-hide.
+- Known limits: a global setting stays changed if Voltcap is uninstalled while hidden (note in the settings row: turn it off first). On a two-screen device where Voltcap stays open on the other screen during a game, Voltcap counts as "in front". The second-screen activity keeps its own always-hidden bars.
+
+---
+
+## Update — 6 Oct 2026 (32): the new Volt, a waterfall theme that moves, and a real UMD
+
+### ⚠️ Copy two things
+- `src_copy` (7 changed files + 1 new): `ui/Mascot.kt`, `ui/VoltCompanion.kt`, `ui/PhysicalMedia.kt`, `ui/ThemeScene.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeShaders.kt`, `ui/theme/ShelfColors.kt`, **new** `ui/FramesScene.kt`.
+- **`project_copy`** over the project root (`robocopy project_copy . /E`):
+  - `app/src/main/res/drawable-nodpi/`: 27 `mascot_*.png` from the new Volt sheet (they **replace** the older drawings with the same names; the pod pictures and `mascot_logo_capsule.png` stay), 6 `mascot_*_blink.png`, `scene_falls.png`, and all 22 `media_*.png` (re-rendered);
+  - `tools/media/` (the generator, with the new UMD).
+
+### The new Volt
+- Every pose is cut from the new sheet: hero, sit, happy, question, alert, walk, look up, groom, play, music, back, sleep, wave, plus new **stretch, loaf, prowl, idea, gaming** and nine faces (neutral, happy, wink, surprised, laugh, content, annoyed, question, stars).
+- Volt's look "Drawn" uses these; "Pixel" still uses the small `volt_*` set (the new poses show their drawn picture there).
+
+### Small animations for Volt
+- **Blinks**: sit, look up, question, walk, wave and alert have an eyes-closed frame; every few seconds he blinks, sometimes twice.
+- **Squash and bounce** whenever his pose changes.
+- Per pose: bobbing and swaying to music, a waving sway, little hops when happy (and the happy / laugh / stars faces), a bounce in his step walking and prowling, a jiggle while playing or gaming, a head tilt on question, a startled shake on alert / surprised, a gentle swell on idea and hero, a slow stretch, and deeper breathing asleep and as a loaf.
+- Breathing as before. All of it stops with Lite effects, behind dialogs and while the home screen rests.
+- The roaming Volt now sometimes **prowls** (slower, low), curls up as a **loaf**, plays on his **handheld**, gets an **idea**, and **stretches** after a nap. The perched Volt sometimes stretches or gets an idea while you linger.
+
+### Waterfall theme (animated)
+- New theme **"Waterfall cliffs"** under Nature: the pixel waterfall animates in 8 frames (100 ms each) as the backdrop, pixels kept sharp and the picture cropped to fill.
+- Colours: deep teal background, water-blue accent, moss-green second colour.
+- Still on Lite effects, behind dialogs and while the home screen rests (`FramesScene`, reusable for other frame-strip themes).
+- The waterfall GIF is the user's file; check its licence before distributing the app.
+
+### PSP UMD fixed
+- The UMD is now shaped like the real one: a white-grey shell like a guitar pick (flat top with round corners closing into a round bottom), "PSP" moulded along the top, the little grey tab at the lower left, and a **big round clear window with the disc behind it**.
+- The game's label is printed on the disc as a full circle, with a tinted clear rim round its edge.
+- All templates re-rendered: the drop shadow no longer darkens the label windows, so labels look brighter on every cartridge and disc.
+
+### Checked
+- Type-check of the whole source: no new errors.
+- UMD preview rendered with a sample label; the pose sheet checked (walk / prowl face right, so the roamer flips them correctly).
+- Device copies were checked against the last delivered versions before writing.
+
+### Not tested
+- On a device: animation feel and speed, the waterfall's frame rate on slower devices, and the UMD label with real ScreenScraper scans.
+
+---
+
+## Update — 6 Oct 2026 (31): cartridges and discs that look like the real thing
+
+### ⚠️ Copy two things
+- `src_copy` (1 changed file: `ui/PhysicalMedia.kt`).
+- **`project_copy`** over the project root (`robocopy project_copy . /E`):
+  - 22 new pictures `app/src/main/res/drawable-nodpi/media_*.png`;
+  - the generator in `tools/media/`.
+
+### Real-looking media
+The flat drawn shells are replaced by **rendered pictures**, each made like a real object:
+- plastic lit from the top left, with rounded bevels round every edge and a soft highlight;
+- a **recessed label pocket** with its inner shadow, and **grip grooves** cut into the plastic;
+- ambient occlusion in the corners, faint plastic grain and a soft drop shadow;
+- a light gloss over the label.
+
+The game's label (ScreenScraper's label scan, else the cover) shows through the window, so it sits *in* the cartridge.
+
+**Cartridges and cards:**
+
+| Console | Shape |
+| --- | --- |
+| N64 | wide, rounded shoulders, stepped lower corners, recessed label, grip band, side grooves |
+| SNES | rounded top shoulders, ridged lower half |
+| NES | tall, top lip, ridged lower half |
+| Game Boy, Color, Virtual Boy | notched corner, top grip lines; grey / dark / charcoal |
+| GBA | landscape, top bump |
+| DS | edge notch |
+| 3DS | side tab |
+| Switch / Vita | small cards with the cut corner on their own sides |
+| PC Engine | HuCard with gold contacts |
+| Mega Drive / Master System / 32X / Neo Geo / Jaguar | black, top notch, label pocket, grip grooves |
+| Game Gear | small landscape cart |
+| Atari 2600 | ribbed top grip, label below |
+| PSP | UMD, with its disc window |
+| Others | small card |
+
+**Discs:**
+- Silver data side with a rainbow sheen at the clear rim.
+- The label printed between the rim and a clear hub with its molded rings and the hole.
+- Light gloss streaks across it.
+- PlayStation / Saturn: dark disc. Wii / Wii U: white. PS2 and other CD / DVD consoles: silver.
+- Dreamcast: GD-ROM, with its high-density ring.
+- GameCube: mini disc, drawn at its real smaller size; "Bigger GameCube discs" makes it full size.
+
+To tweak a shape later: `tools/media/shells.py` / `discs.py` (Python with numpy, scipy, matplotlib, Pillow). They write the pictures and `out/meta.json` with the label windows; those numbers go into `MediaShell` in `PhysicalMedia.kt`.
+
+### Checked / not tested
+- Type-checked: no new errors, apart from the expected missing-`R` messages for the new pictures. Device file compared before committing.
+- All shells checked on a preview sheet with a sample label.
+- Not run on a device:
+  - real labels / covers inside the windows;
+  - small sizes on the row.
+
+### Files
+Changed: `ui/PhysicalMedia.kt`.
+project_copy: `app/src/main/res/drawable-nodpi/media_*.png` (22), `tools/media/gen_media.py`, `shells.py`, `discs.py`, `preview.py`.
+
+---
+
+## Update — 6 Oct 2026 (30): every console's own cartridge / disc, real-size GameCube discs
+
+### ⚠️ Copy
+- `src_copy` only (4 changed files).
+
+### Drawn cartridges and discs, per console
+Each console now gets its own media, with the game's label (or cover) printed on it.
+
+**Discs** (each with its own data side showing round the label):
+
+| Console | Look |
+| --- | --- |
+| PlayStation | black |
+| PS2 | blue |
+| Saturn | black |
+| Dreamcast | GD-ROM, with its gold high-density ring |
+| Wii / Wii U | white |
+| PS3 / PS4, Sega CD, PC Engine CD, Neo Geo CD, 3DO, Xbox | silver |
+| GameCube | 8 cm mini disc |
+
+**GameCube size**: drawn at its real size — about two-thirds of a 12 cm disc. New switch **Bigger GameCube discs** draws them as big as the others.
+
+**PSP**: UMD.
+
+**Cartridges and cards:**
+
+| Console | Look |
+| --- | --- |
+| N64 | wide grey cart, rounded shoulders, stepped lower corners, recessed label, grip lines and side grooves |
+| SNES | rounded shoulders, ridges |
+| NES / Atari 7800 / Coleco / Intellivision | tall grey, ridged lower half |
+| Game Boy | grey, notched corner, top grip lines |
+| Game Boy Color | dark |
+| Virtual Boy | charcoal |
+| GBA | landscape, with its top bump |
+| DS | notch |
+| 3DS | side tab |
+| Switch | small dark card, cut top-right corner |
+| Vita | small black card, cut top-left corner |
+| PC Engine | HuCard: light card with gold contacts |
+| Mega Drive / Master System / 32X / Neo Geo / Jaguar | black cart, top notch, label frame |
+| Game Gear | small black landscape cart |
+| Atari 2600 | black, ribbed grip across the top, label below |
+| Neo Geo Pocket / WonderSwan / Lynx / Pokémon mini | small card |
+
+**Where it shows**: row cards, tile home, the grid, the second screen's "Cartridge / disc" and "Cartridge + details".
+
+**Settings**: under Card artwork (Cartridge / disc) and the second screen's art: **Draw the cartridge / disc** and **Bigger GameCube discs**.
+
+### Checked / not tested
+- Type-checked: no new errors. Device files compared before committing.
+- Not run on a device:
+  - the proportions of each shell next to real covers;
+  - label crops on the small Switch / Vita cards.
+
+### Files
+Changed: `ui/PhysicalMedia.kt`, `ui/GameCard.kt`, `data/Features.kt`, `ui/VoltSettings.kt`.
+
+---
+
+## Update — 6 Oct 2026 (29): your Volt is back as default, four more looks, the TV room layout
+
+### ⚠️ Copy
+- `src_copy` only (8 changed files, 1 new).
+
+### Volt: your drawings again
+- **Original drawings** are the default again (Appearance › Mascot › Volt's look). The code-drawn "Pixel Volt" can't match your art, so it stays only as an option.
+- I tried a version shaded like a 32-bit sprite, based on Pero (cream flame-point, blue eyes, ringed tail). It didn't reach the quality of your set either, so it isn't shipped.
+
+### Four more interface looks (Appearance › Interface style)
+- **Memory card**: smoky translucent plastic tinted by the theme, a label strip in the accent along the top, grip ridges down the right edge, a diagonal sheen.
+- **CRT**: softly lit "screens" — light in the middle, darker corners, fine scanlines, a red / blue fringe on the edges. The focus outline splits into red / blue round the accent, like a tube's convergence.
+- **Neon sign**: nearly black panels edged with a glowing tube (wide soft glow, bright core) that **flickers on** when the panel appears. Lite effects: no flicker.
+- **Cartridge**: plastic shells with grip ridges down both sides. The content sits on a lighter "label" with an accent stripe at its top.
+- With Glass, Energy capsule, 32-bit console and Classic that makes eight, each with its own drawing in the picker. All of them use your theme's colours.
+
+### New home layout: TV room (Appearance › Game row › Home layout › TV room)
+After the screenshot you sent.
+- **An old TV** (bezel, brand dots, power light, rounded screen with scanlines, dark corners and glass reflection) plays the game you're on:
+  - its **video clip** (ScreenScraper; with sound if Video previews has sound on);
+  - else its **screenshots** in turn every 5 s;
+  - else its hero / capsule / cover.
+- **Music on the TV**: while something plays, a TV-style on-screen display shows the album art, ♪ title and artist.
+- Above the TV, the **console banner**: a sticker card in the theme's colours with confetti shapes, a peeled corner, the console's logo and name. **Volt sits on top of the TV** like a figure: sitting, listening while music plays, napping when idle.
+- Beside the TV, the games, in three styles (**Games beside the TV**):
+  - **Cases with spines**: 3 columns of covers, each with its console's spine down the left — the console name running up it, its logo, in the console's colour (PlayStation black, Nintendo grey, Sega blue…) — and a case gloss;
+  - **Covers only**;
+  - **Shelf of spines**: the games standing on a shelf as spines (game name running up, console logo at the top). The one you're on is **pulled out** to show its cover.
+- Under it all, the **info bar**:
+  - name and story;
+  - ★ score (Metacritic / critic score), developer, genres;
+  - System, Released, Played (your play time), Last played.
+- Controls: ◀ ▶ ▲ ▼ move (shelf: ◀ ▶), A opens, L2 / R2 change category with the slide. Touch: tap to pick, tap again to open.
+- The clip, screenshots and story are fetched once you rest on a game.
+
+### Checked / not tested
+- Type-checked: no new errors. Device files compared before committing.
+- Not run on a device:
+  - the TV room on the Thor's screen size;
+  - the clip playing inside the TV;
+  - the neon flicker with many panels opening at once.
+
+### Files
+New: `ui/TvRoomHome.kt`.
+Changed: `data/Features.kt`, `data/AppearanceStore.kt`, `ui/VoltUi.kt`, `ui/DialogChrome.kt`, `ui/OptionIcons.kt`, `ui/VoltSettings.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`.
+
+---
+
+## Update — 6 Oct 2026 (28): a pixel Volt drawn for Voltcap, soft blur behind the games
+
+### ⚠️ Copy two things
+- `src_copy` (4 changed files).
+- **`project_copy`** over the project root (`robocopy project_copy . /E`):
+  - 17 new pictures in `app/src/main/res/drawable-nodpi/` (`volt_*.png`);
+  - the generator in `tools/mascot/`.
+
+### Pixel Volt (new mascot set)
+- A complete set of **original pixel-art Volt** pictures drawn for Voltcap, built from code so every pose matches. Volt is an orange-and-cream cat with a **lightning blaze** on his forehead and a **red collar with a gold bolt tag**. The poses:
+  - sitting: sit, happy (♥), question (?), alert (!!), look up, wave, groom;
+  - music (♪), playing a handheld, walk (side view), from behind, curled up asleep (Zz);
+  - four capsule poses: hug, sleep, open lid, peek;
+  - hero, with an electric ring.
+- Clean cut-outs: transparent background, a 1 px outline, nothing from other sprites.
+- On by default: Appearance › Mascot › **Volt's look** › Pixel Volt / Original drawings. Your drawings are untouched, so you can switch back any time.
+- Each picture is ~40–64 px and drawn with no smoothing, so it stays crisp at any size.
+- To add or change poses later: `tools/mascot/poses.py` (Python with numpy, scipy, matplotlib, Pillow). Run it and it writes `out/volt_*.png` plus `out/sheet.png` to check them.
+
+### Soft blur behind the games (Appearance › Interface style)
+- **Soft blur behind the games**: a light blur of the background plus a soft shade, **only behind the games, their names and the categories**. It fades out above and below (no hard edge), so the row reads on busy pictures and scenes.
+- On at a light 35 %, with a strength slider. Off = as before.
+- Android 12+ blurs; older versions and Lite effects get just the soft shade.
+- Not used when the theme's own blur already covers the full background or the game area, nor on the hero carousel / grid (those have their own layout).
+
+### Checked / not tested
+- Type-checked: no new errors, apart from the expected missing-`R` messages for the new pictures. The check has no Android resources, same as for every existing picture.
+- Device files compared before committing. Pictures checked on a contact sheet.
+- Not run on a device:
+  - how Pixel Volt looks on each screen next to the UI;
+  - the blur's cost with heavy animated scenes. It draws the background a second time for the blurred strip, like the existing "Game UI area" blur. Lower the strength or turn it off if a scene stutters.
+
+### Files
+Changed: `data/Features.kt`, `ui/Mascot.kt`, `ui/HomeExtras.kt`, `ui/VoltSettings.kt`, `ui/LauncherScreen.kt`.
+project_copy: `app/src/main/res/drawable-nodpi/volt_*.png` (17), `tools/mascot/gen.py`, `tools/mascot/poses.py`.
+
+---
+
+## Update — 6 Oct 2026 (27): two new interface looks, pixel artwork that actually shows, category slide, cover light, charge gauge
+
+### ⚠️ Copy
+- `src_copy` only (13 changed files, 1 new).
+
+### Interface style: four looks (Appearance › Interface style)
+- **Glass** (update 24's Volt look).
+- **Energy capsule** (new), after the Voltcap capsule:
+  - every panel has a darker core with a faint **dot-matrix**;
+  - light rises from the bottom edge;
+  - a **glowing double rim** in the accent.
+- **32-bit console** (new):
+  - flat panels with a **2 px pixel bevel** (light top-left, dark bottom-right);
+  - an accent pixel line under the top edge and faint **scanlines**;
+  - a **hard pixel focus frame** with white corner blocks (no glow);
+  - **dashed pixel lines** with a block hopping along them, and square switches;
+  - picking it turns on **Pixel UI** too (pixel type, square corners).
+- **Classic**.
+- All three Volt looks use your theme's colours, the voltage line, the accent switches, the icons and the picture tiles. The style picker shows a little drawing of each.
+
+### Pixel artwork now actually pixelates
+- It was working, but its blocks were measured in screen pixels (2–4 px). On a 1080p handheld that's nearly invisible. Blocks are now in dp: Fine ≈ 6 px, Classic ≈ 9 px, Chunky ≈ 12 px on the Thor.
+- Colours are reduced to 16 shades per channel with a 2×2 ordered dither, for a real 32-bit look.
+- Now also on:
+  - the "Whole picture" background's sharp picture;
+  - the game popup's banner;
+  - the popup's hero backdrop.
+- Still Android 13+ (it's a GPU shader). Settings: Appearance › Game row › 32-bit style › Pixel artwork + Fine / Classic / Chunky.
+
+### From the ideas list (3, 4, 5)
+- **Slide between categories**: L2 / R2 (or the legend's arrows) slide the new category's games in from that side, a quick fade-slide. Only the drawing moves: no layout change, nothing on the rows touched. Works on the row, tile home and grid.
+- **Cover light**: a soft light in the colours of the game you're on (its cover's palette) sits behind its card and follows it as you move. It's drawn behind the games (not on the hero carousel).
+- **Charge gauge**: in the Volt looks, the status bar battery is a small gauge — five cells in the accent → second colour, red when low, a pulsing bolt while charging. Square in the 32-bit console look.
+- Each has a switch under Interface style.
+
+### Checked / not tested
+- Type-checked: no new errors. Device files compared before committing.
+- Not run on a device:
+  - how the dot-matrix / scanlines read at the Thor's density;
+  - pixel artwork block sizes;
+  - the slide feel.
+- `GameDetailsOverlay` gained two small modifier calls. Tell me if Gradle ever reports its method too large.
+
+### Files
+New: `ui/HomeExtras.kt`.
+Changed: `data/Features.kt`, `ui/PixelStyle.kt`, `ui/HomeChrome.kt`, `ui/GameDetailsOverlay.kt`, `ui/VoltUi.kt`, `ui/DialogChrome.kt`, `ui/OptionIcons.kt`, `ui/VoltSettings.kt`, `ui/VoltCompanion.kt`, `ui/GameDock.kt`, `ui/TileHome.kt`, `ui/GridHome.kt`, `ui/LauncherScreen.kt`.
+
+---
+
+## Update — 6 Oct 2026 (26): Volt shows you round the real home screen, clean mascot pictures
+
+### ⚠️ Copy two things
+- `src_copy` (5 changed files, 1 new).
+- **`project_copy`** over the project root (`robocopy project_copy . /E`): 10 cleaned mascot pictures in `app/src/main/res/drawable-nodpi/`.
+
+### Startup: a tour of the real screen, not just one window
+- After first-time setup (the dialog with your accounts and folders), **Volt walks you round the actual home screen**.
+- The rest of the screen dims, and the part he's talking about is **cut out and outlined in the accent**. He hops next to it with a speech bubble, and the cut-out glides to the next part.
+- The stops, in order:
+  1. welcome;
+  2. **the game you're on** (A details / A again plays / Start options / Y achievements);
+  3. **your games** (◀ ▶, hold to fly, L3 by letter);
+  4. **categories** (L2 / R2, B for all);
+  5. **the game header** (play time, last played, Play);
+  6. **status bar** (R1 quick settings + notifications);
+  7. **shortcuts** (L1);
+  8. **button legend** (R3 every control);
+  9. "Make it yours" (Select: themes, layouts, Volt).
+- A part your layout doesn't have is skipped by itself, so it works on the row, tile home and grid.
+- Controls: **A / ▶ / tap** next, **B / ◀** back, **Start** skip. It pauses while a popup is open.
+- Run it any time: Settings › Appearance › Mascot › **Show me around**. "Replay the Volt guide" still runs the setup again, and then the tour.
+
+### Mascot pictures: no more bits of the neighbouring sprites
+The prototype sprites were cut from the concept sheet and some kept slivers of the drawing next to them. Fixed:
+- **alert**: a tail piece on the right edge;
+- **music**: fur on the left edge;
+- **wave**: fur on the right edge;
+- **sleep**: a sparkle half cut off on the left;
+- **walk**: the far eye had lost its dark pixels (it showed the background through it), now filled;
+- **pods** (hug / open / peek / sleep): the dark smoke from the sheet's black background, at the edges and round the capsule, plus fragments on the sides;
+- **hero**: dark specks on the right edge.
+
+The drawings themselves weren't changed. Sparkles, notes, hearts and "!" / "?" / "Zz" stay.
+
+### Checked / not tested
+- Type-checked: no new errors. Device files were compared before committing. The pictures were checked side by side, before and after.
+- Not run on a device: the tour's cut-out positions on every layout / screen size.
+
+### Files
+New: `ui/VoltTour.kt`. Changed: `ui/LauncherScreen.kt`, `ui/GameDock.kt`, `ui/TileHome.kt`, `ui/GridHome.kt`, `ui/Mascot.kt`.
+project_copy: `app/src/main/res/drawable-nodpi/mascot_{alert,hero,music,pod_hug,pod_open,pod_peek,pod_sleep,sleep,walk,wave}.png`.
+
+---
+
+## Update — 5 Oct 2026 (25): theme colours everywhere, Grid home layout, real cartridges & discs, better glow / electric
+
+### ⚠️ Copy
+- `src_copy` only (15 changed files, 2 new). Nothing in `project_copy`.
+
+### Everything in your theme's colours
+- The Volt pieces now use the **theme's whole palette**: its accent flowing into its second colour. That covers:
+  - the pills / chips;
+  - the picked settings section;
+  - switches and progress bars;
+  - the achievements board's picked filter and award tag;
+  - the ⚡ capsule (now a drawn bolt — the emoji was always yellow);
+  - the voltage lines, which run from accent to second colour;
+  - the second screen's corner light.
+- The **Play pill** (home header) uses the same palette fill. The Play capsule in the game popup used to blend into gold; now it blends into the theme's second colour.
+- **Round shortcuts** in the Volt look take the theme's palette (accent, second colour, blends) instead of their fixed console colours. Classic keeps the old colours, and "theme colour" still makes them all the accent.
+- Gold stays only where it means "mastered" / "favourite".
+
+### Grid home layout (Appearance › Game row › Home layout › Grid)
+- Next to Voltcap row, Tile home and Hero carousel: the category as a **grid filling the screen**, with the categories bar on top.
+- The cards follow **Card artwork**, each with its own shape:
+  - covers / boxes: tall;
+  - capsules / heroes / screenshots: wide;
+  - cartridges / discs: square, drawn (see below).
+- The selection lifts and gets the same **Effect** as the row (soft glow / electric). Volt sits on it too.
+- Controls: ◀ ▶ ▲ ▼ move (▲ ▼ by row, holding repeats), A opens, L2 / R2 change category, everything else as usual. Touch: tap to pick, tap again to open.
+- The other layouts are untouched.
+
+### Real cartridges and discs
+- "Cartridge / disc" art used to show ScreenScraper's picture, or the cover when there was none, so it looked like plain artwork. Now it's **drawn as the real thing** with the game's **label** printed on it. The label is ScreenScraper's label texture (new: `support-texture`), else the cover.
+- **Discs**: PS1–PS4, Wii/U, Saturn, Dreamcast, Sega/PCE/Neo Geo CD, 3DO, Xbox, Jaguar. Silver with a rainbow sheen, clear hub and hole. The GameCube one is lilac.
+- **UMD**: PSP.
+- **Cartridges**:
+  - DS / 3DS: with the notch and the 3DS tab;
+  - Game Boy / Color: notched corner and grip lines;
+  - GBA, SNES, N64, NES / Atari;
+  - black carts: Mega Drive, Master System, Game Gear, Neo Geo, PC Engine;
+  - small cards: Switch, Vita, NGP, WonderSwan, Lynx.
+- Used on:
+  - the classic row's cards;
+  - tile home;
+  - the grid home;
+  - the second screen's "Cartridge / disc" art and "Cartridge + details" showcase.
+- Settings: **Draw the cartridge / disc** (on). Off = the scraped picture as before. It shows under Card artwork when Cartridge / disc is picked, and under the second screen's art type.
+- Games whose media was already fetched have no label scan saved, so they wear their cover until it's fetched again.
+
+### Soft glow and Electric, redone
+- **Soft glow** is now a real blurred halo of the accent spreading round the card (Android 9+; older versions get stacked soft strokes) plus a thin breathing rim. Before, it was just the card's shadow tint, and the rim only showed with "Focus border" on, so it barely showed.
+- **Electric**:
+  - two arcs of lightning run round the outline in opposite directions, tapered at the ends;
+  - they crackle every 50 ms and now and then throw a fork outwards;
+  - stray sparks jump elsewhere;
+  - all over a blurred halo and a thin rim;
+  - drawn with round joins (no jaggies), a bright core and a blurred glow;
+  - ~30 redraws a second (was 10, and random each tick); still while idle.
+- Works on the classic row, tile home and the grid.
+
+### Checked / not tested
+- Type-checked: no new errors. Device files were compared before committing (unchanged since update 24).
+- Not run on a device:
+  - the drawn shells' proportions next to your covers;
+  - the blur glow on the Thor's GPU;
+  - the grid's scrolling with very big libraries;
+  - whether ScreenScraper has label textures for most of your games.
+
+### Files
+New: `ui/PhysicalMedia.kt`, `ui/GridHome.kt`.
+Changed: `data/Features.kt`, `data/AppearanceStore.kt`, `data/ScreenScraper.kt`, `ui/VoltUi.kt`, `ui/DialogChrome.kt`, `ui/SettingsDialog.kt`, `ui/SecondScreenVolt.kt`, `ui/SecondScreenHome.kt`, `ui/GameBrowser.kt`, `ui/GameDetailsOverlay.kt`, `ui/PlayHeader.kt`, `ui/TileHome.kt`, `ui/FocusEffects.kt`, `ui/GameCard.kt`, `ui/OptionIcons.kt`, `ui/VoltSettings.kt`, `ui/LauncherScreen.kt`.
+
+---
+
+## Update — 5 Oct 2026 (24): the Volt look everywhere, a second screen with soul, Volt on your games, grid / list library
+
+### ⚠️ Copy
+- `src_copy` only (13 changed files, 6 new). Nothing in `project_copy` this time.
+- Your game rows were left alone: the classic row, tile home and hero carousel lay out exactly as before. The new things sit on top of them (Volt, the library view) or are opt-in.
+
+### The Volt look (Settings › Appearance › Interface style: Volt / Classic)
+Inspired by your mockup, built from your theme's own colours (gold on the default theme; every other theme brings its accent).
+- **Panels** are dark glass: the theme's surface with a faint top-lit gradient, a 1 px hairline and a bright sheen along the top edge. Every popup, settings card, switch row, menu row, fold group and the R1 sheet uses them.
+- **Focus** is the accent: a crisp outline with a soft glow inside (Focus glow can be switched off). Classic keeps the old white/dark ring.
+- **Voltage line**: a thin accent rule with a spark that runs along it every few seconds. It's under popup headers and the settings header, it's the settings sidebar divider, it's under a settings sub-page's title, under section headings, and on the second screen. The spark animates for 1.6 s and then the line rests with no frames drawn. It's still while idle, with Lite effects, or with system animations off. **Voltage line sparks** off = still lines.
+- **Switches** are accent pills with a glow. **Settings sidebar**: the picked section is a gold gradient with a halo. **Chips**: the accent ones get a slight gradient, the quiet ones a hairline.
+- **R1 quick settings**: glass tiles. A tile that's on keeps its glass, gets an accent outline and glows from inside (like the mockup), and the icons of tiles that are off go neutral. The tiles hang off a **vertical voltage rail** with a ⚡ capsule that rides it at the screen's brightness. The brightness bar is a thicker accent gradient.
+- **Notifications**: glass cards with a **coloured left edge**: accent = message, green = something finished (download / install / sync / unlock), red = error / low battery / warning, grey = the rest.
+
+### Icons for the options
+- **Every settings group and sub-page** gets an icon next to its name (Theme 🎨, Game row, Music, Achievements, Save Vault, Mascot, Lights, Screensaver, Hotkeys…). Fold groups inside pages get one too. They're picked by the group's name, so new groups get one automatically when the name matches.
+- **Visual choices are picture tiles** instead of plain chips. Each option has a small drawing in your theme's colours, and the picked one is outlined:
+  - Home layout (row / tiles / hero);
+  - Card artwork (cover / capsule / box / cartridge / hero / screenshot);
+  - Second screen art (hero / background / cover / screenshots / slideshow / box / disc / cartridge + details) and its music layout;
+  - Interface style, library view (grid / list), and Volt's options.
+
+### Second screen with more soul (in the Volt look)
+- **Header**: ⚡ VOLTCAP, **underlined page tabs** and the clock, over a voltage line that **Volt sits on**. He naps when the home screen rests, listens when music plays, and cheers on the Achievements page.
+- Soft accent light from two corners behind every page.
+- **Art page**: an accent-edged frame, and the game's facts sit on a dark glass strip with an **achievement progress bar** (got / total).
+- **New art type "Cartridge + details"** (Settings › Appearance › Second screen art & music › Art page shows), like your photo:
+  - left: the real cartridge / disc (else the box, else the cover) with a drop shadow;
+  - right: the console, the name, year · developer · genres · your play time, and the game's story (from IGDB);
+  - all over its blurred art.
+- **Achievements board** (when the list is loaded):
+  - progress on top;
+  - on wide screens, three columns: **filters with counts** (All / Unlocked / Locked / Missable / Rare under 10 %), the **list** (tap one and it's outlined in gold), and the **picked achievement large**: big badge, what it asks, points, missable tag, "Unlocked 2026-09-12 · hardcore" or Locked, and **"% of players have it"** with a bar;
+  - narrow screens stack the detail under the list.
+- **New "Games" page**: the row you're in as a **touch grid or list**. Tap a game and the main screen goes to it; the one you're on is outlined. It can be turned off (Library view › Games page on the second screen).
+- The dock is glass too.
+- Classic style: the second screen looks as before (plus the new Games page and the new art type).
+
+### Library view: grid or list (new, opt-in; your rows stay)
+- The row you're in, full screen, as a **grid of covers** (columns fit the screen) or a **list** (cover, name, console, play time).
+- Open it from the new **Library** round shortcut (also in L1 shortcuts) or a hotkey (**Controls › Hotkeys › Library grid / list**). There's also "Open it now" in Settings.
+- Controls:
+  - D-pad moves, and L1 / R1 jump a page;
+  - **A** opens the game (same as on the row);
+  - **Start** opens the game's options;
+  - **X** switches between grid and list;
+  - **B** goes back, to the game you picked.
+- Touch: tap to pick, and tap again to open.
+- It moves the same selection as the row, so nothing about the row changes. Settings: Appearance › **Library view (grid / list)**.
+
+### Volt is more involved (Appearance › Mascot › Volt on the home screen)
+- **Sits on your game** (default):
+  - Volt perches on the game you're on (classic row and tile home) and **hops** to the next game in an arc as you move;
+  - He **sits on top of the card**, **peeks over it from behind**, or **switches it up** (each game gets its own spot and side);
+  - **Reactions** (can be turned off):
+    - naps when the home screen rests;
+    - music pose when something plays;
+    - cheers (HAPPY) when you land on a mastered / completed game;
+    - grooms or looks up when you linger.
+- **Wanders the background**: he strolls along the bottom **behind the games**, sits, grooms, plays and naps, then wanders on. He doesn't move with Lite effects.
+- **Both**, or **Off**. Volt has a size slider (60–160 %).
+- The old corner nap is now "Napping in a corner" and only shows when the companion is Off, so there's never two of him. Hero carousel: he stays off the cards there.
+
+### Your question: launching on a specific screen per game / console
+- It's already there: **Screen layouts** rules go by **This game → Collection → Console → Emulator → Everything else** (the game's options show which rule applies and why). Nothing new needed for that.
+
+### Checked / not tested
+- Type-checked: no new errors (only the usual `SavedStateRegistryOwner` messages for activities).
+- Device files were staged and compared before this commit: identical to the last versions, so nothing of yours was overwritten.
+- Not run on a device:
+  - how the glass reads on bright themes;
+  - Volt's walk sprite direction: if he moonwalks, the WALK picture faces left and the flip needs swapping (VoltCompanion.kt);
+  - Volt's perch position on very small / very wide cards;
+  - the library view's scrolling feel;
+  - the "Cartridge + details" layout on the Thor's lower screen.
+- `LauncherScreen` grew by ~30 lines. If Gradle ever reports "method too large" there, tell me and I'll move the new key handling out.
+
+### Files
+New: `ui/VoltUi.kt`, `ui/VoltCompanion.kt`, `ui/SecondScreenVolt.kt`, `ui/OptionIcons.kt`, `ui/GameBrowser.kt`, `ui/VoltSettings.kt`.
+Changed: `data/Features.kt`, `data/AppearanceStore.kt`, `data/Hotkeys.kt`, `ui/DialogChrome.kt`, `ui/FoldGroup.kt`, `ui/SettingsDialog.kt`, `ui/QuickSettings.kt`, `ui/NotificationsPanel.kt`, `ui/SecondScreenHome.kt`, `ui/GameDock.kt`, `ui/TileHome.kt`, `ui/LauncherScreen.kt`, `ui/Mascot.kt`.
+
+---
+
+## Update — 5 Oct 2026 (23): in-game overlay panel, drag overlays anywhere, blurred cover on the music overlay, home clean-up
+
+### ⚠️ Copy two things
+- `src_copy` (7 changed files, 1 new).
+- **`project_copy`** over the project root (`robocopy project_copy . /E`): `AndroidManifest.xml` adds the in-game panel (`OverlayControlActivity`, opened by a long press on the Voltcap Quick Settings tiles).
+
+### Overlay controls without leaving the game
+- What was already there: the **Voltcap overlay** Quick Settings tile (tap = Off → Stats → Music → Trophies → All), and the in-game notification's **Size / Opacity / Power** buttons.
+- New **in-game panel**, opened by **holding either Voltcap Quick Settings tile** (overlay or power) or **tapping the in-game notification**. It's a small card over the game with:
+  - **Show**: Stats, Music and Trophies, each on its own (any mix, not only the tile's cycle).
+  - **Size** 50–200 % and **Opacity** 20–100 % sliders, applied live.
+  - **Drag to move** on / off and **Back to the corners**.
+  - **Power** tier / AutoTDP, one tap to step (where the tuner works).
+  - Tap outside, Done or B closes it.
+- The tile's subtitle now reads "100% · 100% · hold for more". The notification says "Tap for the overlay panel".
+
+### Drag overlays anywhere
+- Stats, music and trophies overlays follow your finger and **stay where you let go**. Let go near a corner and the overlay snaps into it (swapping with whatever was there, as before). Positions are kept (`Features.overlayPositions`, fractions of the screen) and work with every size.
+- The **music** overlay can be dragged now too, from its art / title (the ⏮ ⏯ ⏭ buttons still just work). With "tap to open" off, it's still touchable while moving is on, only for dragging.
+- While a finger is on an overlay, the live updates leave its position alone.
+
+### Blurred cover behind the music overlay
+- The overlay already used the shared album-art blur, but the cover sat at 60 % under a near-black shade, so you couldn't see it. Now the cover is at 95 % with only enough shade for the text, like the home screen's players. With no cover or the blur off, it's the plain dark chip. Settings › Appearance › Music player › Blurred album art / Blur strength apply to it.
+
+### Visual review (home screen)
+- **Game header**: the title stays on one line and shrinks for long names (down to about two-thirds), so the header keeps its height and the row never jumps between games. Very long names still take a second line.
+- **Name and play time said twice**: with the game header on, the row's own name / play-time line is hidden (the header already shows both).
+- **Corner visualizers** step past whatever is already in their corner: the round shortcuts' ☰, or a corner music player outside the status bar.
+- Checked every spot the "two lines instead of …" change from update 22 touched for fixed heights. None squeezes; the only fixed-height ones (status bar progress, small-player lyric strip) were already left on one line.
+
+### Checked / not tested
+- Type-checked: no new errors. The only new messages are the `SavedStateRegistryOwner` ones every activity gets here, because that library isn't loaded in the check, same as `MainActivity` and `CompanionActivity`. The manifest parses.
+- Not run on a device: long-press tile opening the panel (Android 7+, some skins hide tile settings), dragging feel, the panel over different games.
+
+### Files
+New: `ui/OverlayControlActivity.kt`. Changed: `data/Features.kt`, `device/tune/GameNotification.kt`, `device/tune/OverlayTileService.kt`, `ui/CornerVisualizer.kt`, `ui/LauncherScreen.kt`, `ui/MusicOverlayView.kt`, `ui/PerfOverlayService.kt`, `ui/PlayHeader.kt`. project_copy: `app/src/main/AndroidManifest.xml`.
+
+---
+
+## Update — 5 Oct 2026 (22): your new list + CURRENT_TASK (pixel UI, Volt) — covers, header, settings, lights, Spotify, sync
+
+### ⚠️ Copy
+- `src_copy` (the whole folder: 59 changed files, 2 new). Nothing in `project_copy` or `tools/themes` this time.
+
+### Fast scrolling / hero carousel: no more black covers
+- Every cover now has a tiny **thumbnail** (≈120 px, 2 bytes a pixel) that stands in while the sharp art decodes. Thumbnails are fetched for a wide window round the game you're on (±16, ±10 on small-memory devices), only every few steps and only the ones not already in memory — so holding the D-pad shows soft covers instead of dark cards.
+- **Hero carousel**: the covers in the arc are keyed per game and decode at one fixed size, so a cover keeps its picture while it grows / shrinks and shows on the first frame when you come back to the screen (that was the "everything goes black for a moment" flash). The hero behind starts with the picture already in memory too.
+
+### Home game header: smaller and tighter
+- The home screen's header (title, PLAYED / LAST PLAYED boxes, Play pill, round buttons, source badge) uses its own dense size set: title 20 sp (was 30), stat boxes and their text smaller, Play pill 28 dp high (was 40), round buttons 26 dp, less space between everything (also above / below the header). The game popup keeps its sizes. Long titles wrap to two lines instead of "…".
+
+### Last played on every device (Settings › Sync)
+- New switch **Last played on every device** (on). One small file on your Drive (`Voltcap/voltcap-last-played.json`, the newest 400 games). A game you played elsewhere moves to the front here.
+- Light on purpose: a round is 1 listing + 1 download (+1 upload only when this device has something newer); at most every 20 minutes while Voltcap is on screen, plus once ~6 s after you come back from a game; never during a game or in the background; only when Drive is connected.
+- Games match by console + ROM file name (folders may differ between devices), package for apps, AppID for Steam.
+
+### Settings regrouped (sub-pages with folding sub-groups)
+- **Colours & background is gone**: colours live with the theme (Theme › Colours & look). Its contents are now **Cards & frames** (Frame & shimmer, Mastered games), **Size & text**, **Artwork** (Animated artwork, Artwork priority, Sharpness) and **Background** (Behind the dock, Background picture, Motion & transitions, Animated scene, Scene style, Quality & battery).
+- **Theme**: Themes, Colours & look, Favourites & rotation, Music theme.
+- **Home screen**: On the home screen, Animations (launch, new games, details window, startup intro), Game details, Performance, Screens & home app.
+- **Library**: Your games, Collections, Duplicates & regions, Running games & quick resume, Import from other frontends, Screenshots, Sorting & category order.
+- **Accounts** (Discord / Spotify / Steam), **Emulators** (list / BIOS check), **Device** (this device / sleep mode / gesture hint), **Controls** (phone remote) fold too.
+
+### Save Vault: endless grid
+- **Endless scrolling** (Save Vault › Filters & look › Motion, on): the saves repeat, so scrolling or the D-pad never hits an end, in every style (Classic, Capsule, SD card, Memory card, Floppy). It starts in the middle; L1 / R1 still jump between consoles. Needs 12 saves or more (fewer would repeat side by side).
+
+### Round shortcuts
+- **Move them anywhere**: Edit Home now has a second widget, *Round shortcuts* (L1 / R1 switch between it and the music player; drag or D-pad; X resets). Once moved they float where you put them.
+- **Size** 60–160 % and **which buttons are on the bar** (tick each; Settings always stays): Appearance › Game row › Round shortcuts: size & buttons.
+- **App icons in theme colours**: every app in the L1 shortcuts drawn in the theme's accent, keeping its light and dark (works for every app, not only ones with Android 13 themed icons).
+
+### Colours from game art or album cover
+- Theme › Colours & look › **Artwork colours from**: *Automatic* (as before: album on music themes, game elsewhere), *Game art* (always the game you're on, music themes too) or *Album cover* (the song playing whenever music plays, also on "Current game" themes).
+
+### Music themes: pick the parts
+- Theme › Music theme › On the background: **Song name**, **Buttons & timeline**, **Lyrics** switch on their own. Fewer parts = each grows: one part alone is ~1.5× (a lone title is big and wraps to two lines; lone lyrics get the player's whole room); two parts ~1.2×.
+
+### Text: no more "…"
+- 91 single-line texts that were cut with "…" (names, titles, subtitles, list rows in Settings, hubs, details, Spotify, notifications, recap, Save Vault…) now wrap to a second line. Left alone on purpose: the status bar's progress line and the two-line lyric strip in the small player (fixed height).
+
+### Spotify: Liked Songs
+- **Liked Songs** (Spotify's own playlist, which the Web API doesn't list with playlists) is now the first playlist everywhere: the Spotify screen (opens the liked songs), the swipe-left playlists in the small players and the in-game music overlay. Playing it plays your whole collection (shuffle / next work); where Spotify refuses that, your newest 50 liked songs.
+
+### AYN Thor lights
+- R1 › Lights has three clear choices: **Voltcap colour**, **Off** and **System setting**. Off is held by Voltcap (the old switch handed the lights back to the system, which put its colour straight back, so they couldn't be switched off from Voltcap). System setting stops Voltcap writing at all.
+- Voltcap's choice is re-sent every 8 s on AYN (a one-way call to AYN's service, nearly free; 30 s elsewhere), so the Thor's firmware no longer overrides it while Voltcap is on screen. Picking a colour turns Off back to Voltcap colour. The R1 tile says RGB on / off / system.
+
+### Corner visualizers (Appearance › Music player)
+- Small space scenes in a corner that move with the music in the song's colours: **Ringed planet**, **Orbiting moons**, **Pulsar**, **Black hole**, **Nebula bloom**. Corner (or both top corners), size 70–220 dp, "Only while music plays". Real sound when a music theme listens, else a steady simulated beat. One small canvas, ~30 fps while playing (12 idle), stopped when covered / deep idle.
+
+### Music player and the D-pad
+- The D-pad no longer moves into the home music player (Start / Select did nothing while you were on it). It's touch-only; the music hotkeys still work.
+
+### Thor second screen: swipe flips pages
+- Swiping left / right on the second screen flips its pages (Art → Video → Details → Achievements → Music …). The back swipe there used to close Voltcap's second screen and show the stock launcher's drawer: now it goes to the previous page (or closes Voltcap's own drawer / menus).
+
+### From CURRENT_TASK
+- **Pixel UI** now reaches the shared pieces: cards, chips, rows, fold groups, settings pages, quick settings tiles, hubs, the game popup, notifications and the category screen get square panels with small chamfered corners (`uiRounded()` in `PixelStyle.kt`). The 32-bit intro and pixel artwork were already wired (Startup intro › 32-bit).
+- **Volt** also shows in the Save Vault's empty / scanning state and when no games match (Mascot › Guide tips).
+- **Cover cube**: already shows only the current cover (update 21). If you still see other covers, update 21 wasn't built yet.
+- **DroidDeck / PXPlay / Asobi**: already in (update 20); nothing new to inspect without the installed apps.
+
+### Checked / not tested
+- Type-checked all of `src_copy` against your Android 36 / Compose 1.10.4 / Material3 1.4 / Coil 2.7 / lifecycle 2.9.4 / activity 1.10.1 jars with Kotlin 2.2.10 + the Compose plugin: **0 new errors** compared with the untouched sources (the 389 baseline errors are the libraries not loaded here, e.g. WorkManager, Play services, `R`).
+- Not built with Gradle, not run on a device: thumbnail timing while holding the D-pad, the dense header on small screens, Drive last-played round, Thor lights re-send, second-screen swipe, endless Save Vault with D-pad, corner visualizers' look.
+
+### Files
+New: `data/LastPlayedSync.kt`, `ui/CornerVisualizer.kt`.
+Changed: `LauncherViewModel.kt`, `data/ControllerLights.kt`, `data/Features.kt`, `spotify/SpotifyRepository.kt`, `ui/AppIcons.kt`, `ui/ArtRequests.kt`, `ui/CloudSyncContent.kt`, `ui/DialogChrome.kt`, `ui/FoldGroup.kt`, `ui/GameDock.kt`, `ui/HeroCarousel.kt`, `ui/HomeEdit.kt`, `ui/LauncherScreen.kt`, `ui/LightsPopup.kt`, `ui/MusicOverlayView.kt`, `ui/MusicTheme.kt`, `ui/NowPlayingPanel.kt`, `ui/NowPlayingThemeCard.kt`, `ui/PixelStyle.kt`, `ui/PlayHeader.kt`, `ui/PlayerPages.kt`, `ui/QuickSettings.kt`, `ui/SaveExplorer.kt`, `ui/SaveVaultStyles.kt`, `ui/SecondScreen.kt`, `ui/SecondScreenHome.kt`, `ui/SettingsDialog.kt`, `ui/ShortcutsPanel.kt`, `ui/ThemeLookSettings.kt`, `ui/TileHome.kt`, `ui/spotify/SpotifyScreen.kt`, `ui/theme/Theme.kt`; text wrapping only: `ui/AppsLibraryDialog.kt`, `ArtworkGallery.kt`, `CategoryScreen.kt`, `CompanionActivity.kt`, `EmulatorPickerDialog.kt`, `FullMusicScreen.kt`, `GameDetailsOverlay.kt`, `GameJourneyUi.kt`, `GuideScreen.kt`, `GuideSecondScreen.kt`, `HomeChrome.kt`, `HubScreens.kt`, `LaunchAnimation.kt`, `MusicPlayer.kt`, `NewArrival.kt`, `NotificationsPanel.kt`, `RaSocialUi.kt`, `RetroAchievementsDialog.kt`, `RowInfoPanel.kt`, `SaveSyncUi.kt`, `ScreenSaver.kt`, `SessionSummary.kt`, `StatsContent.kt`, `SteamImportDialog.kt`, `SyncPrompts.kt`, `YearRecapDialog.kt`, `ui/spotify/SpotifyPlayer.kt`.
+
+---
+
+## Update — 5 Oct 2026 (21): theme fix list, Power Aura, deeper PlayStation themes, 9 new creature types, 5 new themes
+
+### ⚠️ Copy
+- `src_copy` (the whole folder). `ui/ThemeShaders.kt` is already regenerated.
+- `tools/themes` (the whole folder: `gen.py`, `preview_template.html`, `preview.html`, `scenes/`). **Delete** `scenes/orbital.agsl` and `scenes/stereo.agsl` (in both `tools/themes` and `project_copy/tools/themes`).
+- `project_copy`: only its `tools/themes` copy changed (it matches `tools/themes` again, so copying `project_copy` won't bring old scenes back).
+
+### Removed
+- **Orbital window** and **Stereo 3D**. If one was your theme, Voltcap starts on the Voltcap theme.
+
+### Power Aura
+- Now a spiky flame crown with rising flow, a heartbeat pulse, sparks with trails, lifting rocks and lightning.
+- Over about 2½ minutes it powers up from gold to blue. The blue grows from the core outward, the lightning gets more frequent, and power-up bursts flash. Theme colours still tint it.
+
+### PlayStation-style themes, more depth
+- **Wave menu**: ribbons in three depths (far ones hazy and slow, near ones crisp), shaded like sheets of light, a glossy floor reflecting them, bokeh.
+- **Motion plaza**: a room with a perspective floor grid, tilted rings casting shadows, glass bubbles at three depths with refraction and highlights.
+
+### Fix list
+- **Terra**: soft sand veils, smooth dunes and ripples, softer cracks (no harsh lines).
+- **Kaleido**: colours come only from the album cover.
+- **Cover cube**: every face shows the current cover, brighter and more colourful.
+- **Holo foil**: the flower shapes are gone; moving interference ripples, a sweeping sheen, faster sway.
+- **16-bit valley**: the waterfall pillar is gone; fireflies over the grass.
+- **Vector arcade**: a ship flies left → right every 9 s, weaving through three Voltcap vector logos that light up as it passes, with a beam trail, laser shots, warp streaks and rocks.
+- **Neon puddle** (redesign): a rain-soaked street at night. Buildings' neon rooftops are the equalizer, the cover hangs as a billboard, and everything is mirrored in the wet road with rain rings on the beat.
+- **Mountains forming** (sun redesign): a big setting sun, hot in the middle and red at the rim, with slow rays, a corona that breathes with the bass, cloud bars drifting across it, and heat shimmer. The range now stands solid in front of it, with a rim light along the ridges.
+- **Campfire beat**: a real fire instead of flat bars. Noise-torn tongues go from white-hot through yellow and orange to red, the height across follows the spectrum, embers glow under the logs, and tiered pines stand around it.
+- **Blue sky cruise**: proper palm trees with curved ringed trunks, drooping fronds with leaflets, coconuts, sway and shadows.
+- **Venom**: gnarled dead trees with twisting trunks, roots, crooked boughs and twigs, glowing moss and a toxic rim light.
+- **Paper layers**: a lit paper diorama. Offset soft shadows grow with each layer's distance, cut edges catch the lamp, there is paper fibre and aerial perspective, paper clouds hang on threads, and birds cast shadows.
+- **Arena entrance**: flame pots with real fire columns on every kick and a pilot flame between kicks. Fire light spills over the stage and the crowd. Spotlights come from the truss with lamp heads, the screen is reflected on the stage, and the crowd has heads and shoulders, rim-lit, bobbing to the beat.
+- **64-bit plains**: no more sky showing through gaps in the hills. Far terrain fades into the fog.
+- **Cover flow**: when the song changes, the row glides one place: the old cover turns away into the stack and the new one swings in. The cover's own colours light everything (blurred art behind, a tinted floor, coloured rims). This uses a new shader input, `uSwapAge` (seconds since the cover changed, set in `NowPlayingScene`).
+- **Filmstrip** (Game showcase): the strip now runs across the middle of the screen.
+- Checked and left alone: Record shelf, Arcade CRT (already has the vector shooter).
+
+### Creature types: all 18 now
+New, each its own place (not recolours):
+- **Meadow** (normal): windy grass, a windmill, dandelion seeds.
+- **Dojo** (fighting): a sunset training hall, with a strike every 5 s that sends a shockwave and dust.
+- **Gale** (flying): above a sea of clouds, with a flock in a V and feathers.
+- **Thicket** (bug): backlit leaves, a dewy web, fireflies, a beetle.
+- **Bedrock** (rock): a sandstone canyon, an arch, pebbles bouncing down.
+- **Wyrm** (dragon): a scaled sky serpent weaving through storm clouds.
+- **Umbra** (dark): an eclipse over the rooftops, shadow smoke, crows, eyes in the alleys.
+- **Alloy** (steel): brushed steel panels, chrome spheres, welding sparks.
+- **Glimmer** (fairy): a glowing mushroom ring, swirling lights with trails, petals.
+
+### New themes
+- **CRT tunnel** (Gaming eras): flying through stacked TV sets, each on its own channel (bars, static, test card, no signal, waveform).
+- **Memory card** (Gaming eras): a floating memory card and a grid of 15 save blocks with animated pixel icons, filling as data streams in.
+- **32-bit racing** (Gaming eras): a low-res dithered arcade racer at sunset.
+- **Energy core** (Space & tech): a plasma core inside turning containment rings, with arcs and a surge every 7 s.
+- **32-bit fire** (Music · console eras): pixel demo fire played by the equalizer, sparks on kicks, and the cover pixelated in a frame.
+
+### Checked
+- All 141 shader variants compile and pass `check_uniforms.py`. Every changed scene was rendered and looked at.
+- Kotlin type-check: no new errors (only the known `R.font.volt_pixel` references).
+
+### Files
+`ui/theme/ShelfColors.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeThumbs.kt`, `ui/ThemeShaders.kt` (generated), `ui/NowPlayingScene.kt`, `ui/ShowcaseScene.kt`. Outside src_copy: `tools/themes/gen.py`, `preview_template.html`, `preview.html` and the scenes `aura`, `xmb_wave`, `plaza`, `terra`, `cover_cube`, `holo`, `parallax16`, `vector`, `neon_puddle`, `mountains`, `campfire_beat`, `blue_sky`, `venom`, `papercut`, `arena`, `n64_plains`, `cover_flow`. New: `meadow`, `dojo`, `gale`, `thicket`, `bedrock`, `wyrm`, `umbra`, `alloy`, `glimmer`, `crt_tunnel`, `memory_card`, `racing32`, `energy_core`, `fire32`.
+
+---
+
+## Update — 5 Oct 2026 (20): Arena & adventure themes removed, artwork priority, Animated only, per-game look, transitions, game states — merged with a parallel session
+
+### ⚠️ Two sessions worked on this folder at the same time
+Another Claude session edited `src_copy` and `project_copy` while this update was being made (DroidDeck / PXPlay / Asobi, pixel UI pieces, a 32-bit intro, two new space themes, Power Aura and PlayStation scene edits). Writing this update back overwrote that session's changes in ~20 shared files (`Features.kt`, `ShelfColors.kt`, `HomeChrome.kt`…). Everything it left behind was then merged in and the missing pieces rebuilt (see "Merged from the parallel session" below). Its edits inside the overwritten files that nothing else referred to can't be recovered; if something it told you about is missing, say which and it'll be redone.
+
+### ⚠️ Copy three things
+- `src_copy` (the whole folder).
+- **`project_copy`** over the project root (`robocopy project_copy . /E`): new `res/font/volt_pixel.ttf` (Press Start 2P, OFL licence in `docs/licenses`), and `AndroidManifest.xml` now lists DroidDeck, PXPlay and Asobi in `<queries>`. Its `tools/themes` copy matches `tools/themes`.
+- `tools/themes`: `gen.py`, `check_uniforms.py` (+ `check_uniforms.cjs`), `preview.html`, scenes `aura`, `ps1_poly`, `ps2_haze`, `xmb_wave`, `prism_atrium`, `orbit_station`. **Delete** `scenes/quest.agsl`, `reef.agsl`, `jungle.agsl`, `sewer_city.agsl` (also in `project_copy/tools/themes/scenes`). `ui/ThemeShaders.kt` is already regenerated.
+- `src_copy/data/ArtworkPriority.kt` is now just a small wrapper around `ArtPick` (nothing uses it; safe to delete later).
+
+### Removed: the whole "Arena & adventure" group
+- Hero's quest, Coral reef, Jungle canopy and Sewer & skyline are gone, and the group with them. Arena entrance stays (it lives in Music · with the album cover).
+- If one of them was your theme, Voltcap starts on the Voltcap theme instead.
+
+### Artwork priority (Appearance › Background picture › Artwork priority)
+- **Smart** (default): animated hero → hero → screenshot → wide capsule → cover. **Hero first**, **Screenshot first**, **Cover first** too.
+- A background you picked yourself (Artwork & details) always wins. Each game can have its own priority (see Per-game look).
+- Used by the home background, the hero carousel (and its prefetch), the game popup banner, the scene colours and the second screen, so they all show the same picture (`data/ArtPick.kt`).
+- Scraping keeps SteamGridDB's first **animated hero** beside the still one (`GameArt.animatedHeroUrl`). Games scraped earlier get it with Re-scrape artwork. Animated heroes are skipped while Animated artwork is off.
+- A game whose background would be a screenshot gets its screenshots looked up when you rest on it (cached).
+
+### "Animated only" in the artwork picker
+- New **Show: All pictures / ▶ Animated only (count)**. Animated only lists just the moving covers, capsules and backgrounds. Logos hide, and an empty slot says so.
+- SteamGridDB's animated art is now also asked for on its own, so all of it is listed and the ▶ tag is exact (not just guessed from .gif/.webp).
+- The note explains where animated picks play (Animated artwork on, or per game).
+
+### Per-game look (Game settings › Look for this game)
+Every row has Inherit, and Reset all to inherited clears it.
+- **Background theme**: any theme, played as the animated background while this game is the one you're on (whatever "Behind the dock" is).
+- **Artwork priority** for this game.
+- **Animated artwork**: Inherit / Play / Still.
+- **CRT effect** on the background picture: scanlines, curved-tube edges, a glow in the art's colour.
+- **Theme intensity**: Low / Normal / High.
+- **Ambience**: Particles, Rain, Snow, Embers, CRT noise, Art lighting. Light canvas drawing, ~30 fps (15 when idle, stopped when covered or deeply idle), half with Lite effects. Never plays sound. There's a master switch in Settings › Library.
+- **State**: Automatic, or set it yourself.
+- Not done: a per-game *achievement* theme. Update 17 removed the separate achievement theme, so there is nothing to override.
+
+### Transitions (Appearance › Background art motion)
+- New: **Cover Flow**, **Pixel dissolve**, **CRT switch**, **Memory card**. Iris is now called **Portal**.
+- **Transition speed: Fast / Normal / Cinematic** applies to every style and to the hero carousel.
+
+### Game states (Settings › Library › Game states, off by default)
+- A small mark on covers, tiles and the selected hero-carousel cover:
+  - **NEW**: added in the last 2 weeks, never played.
+  - **PLAYING**: running, or played this week.
+  - **ON HOLD**: marked Playing but untouched for a month.
+  - **COMPLETED**: beaten or marked Finished.
+  - **MASTERED** / **100%**: from RetroAchievements.
+- It moves to a free corner and is left out when both corners are taken.
+
+### Merged from the parallel session
+- **DroidDeck**: export `.droiddeck` launch files from DroidDeck, add their folder to the library and scan; Play opens that exact game (`droiddeck://game/<id>`, `data/GameClients.kt`, `GameLauncher`, `RomScanner`). **PXPlay / Asobi**: open them (and pin in L1) from **Appearance › Game clients**; they can't launch single PS games from outside.
+- **32-bit style** (Appearance): **Pixel UI** (square panels, pixel console font), **Pixel artwork** (chunky pixels on covers, tiles, the hero carousel, the home background and the second screen; Android 13+), size Fine / Classic / Chunky.
+- **Startup intro › 32-bit**: a pixel capsule that charges up, with Volt waking inside it.
+- **Volt** naps on the home screen (Mascot settings), now pausing while idle; new Volt help topics (Game settings, 32-bit style, Game clients).
+- Second screen: the picture changes with the game's transition (and pixel artwork).
+- Themes: **Power Aura** reworked, more depth in **PS1 polygons**, **PS2 haze** and **XMB wave**, and two new themes in Space & tech: **Prism atrium** and **Orbit station** (their theme entries were rebuilt; Prism atrium had an integer `%` that doesn't compile in AGSL — fixed).
+- Its own versions of artwork priority, transitions and game states were folded into this update's (one setting each, one per-game section). Per-game **transition** is now in Look for this game too.
+
+### Checked
+- Type-checked the merged tree against your Android 36 / Compose 1.10 / Material3 1.4 / Coil 2.7 / lifecycle 2.9 jars: **0 new errors** compared with the untouched update-19 sources (the only extra ones are `R.font.volt_pixel`, generated by the build from `project_copy`).
+- `gen.py` + `check_uniforms.py` (headless Chromium): all 129 scene variants compile and every listed uniform is active.
+- Not built with Gradle, not run on a device: the four new transitions, ambience frame rate on weak handhelds, state marks next to the trophy pill, DroidDeck launch files, pixel UI on every screen.
+
+---
+
+## Update — 5 Oct 2026 (19): showcase header (popup + home)
+
+### Copy
+- `src_copy` (5 files, 1 new). Nothing in `project_copy` this time (update 18's is still needed if you haven't copied it).
+
+### Showcase layout (new default), like your Steam-style screenshot
+- **Game popup** (under the banner):
+  - An accent **"CONTINUE PLAYING · TODAY"** line ("NEW · NOT PLAYED YET" for new games).
+  - Small glass **stat boxes**: Played, Achievements (with a thin progress line), Last played, Time to beat, Score.
+  - A wide **Play pill** ("Continue" once played) with **round icon buttons** beside it: ★ favourite, ☁ save sync (coloured by status), ⋯ More, ⚙ game options.
+  - The game's **source** as a small badge at the right (Steam / Android / console).
+- **Controller:** ▲ from Play goes to the Played box; ◀ ▶ move along Play and the round buttons. Rows below are unchanged.
+- **Home screen (classic row layout):** the same block for the game you're on, above the row (under it when the row is at the top). It has the big title, continue line, stat boxes, Play pill and round buttons (★, ⓘ details, ⚙ options, ☁ sync when the game syncs).
+  - The controller stays on the row: A still opens the popup. The pill and buttons are for touch.
+  - It replaces the game part of "Next to the row"; news can still show.
+- **Settings:** Appearance › Game popup:
+  - **Layout:** Showcase / Classic. Classic is the earlier row, with its Play button styles.
+  - **Game header on the home screen:** on / off.
+
+### Files
+New: `ui/PlayHeader.kt`. Changed: `data/Features.kt`, `ui/GameDetailsOverlay.kt`, `ui/GameJourneyUi.kt`, `ui/LauncherScreen.kt`.
+
+### Checked / not tested
+- Type-checked: no new errors. Not built with Gradle, not run on a device.
+- Not tested: how the home header sits with every card size and dock position, and small (<700 dp) screens, which use the compact size.
+
+---
+
+## Update — 5 Oct 2026 (18): real permission states, smooth intro after reboot, QR transfer, one in-game notification, adaptive performance, recap/journey, Living Library
+
+### ⚠️ Copy two things
+- `src_copy` (46 files, 11 of them new).
+- **`project_copy`** over the project root (`robocopy project_copy . /E`). It is update 17's version plus:
+  - **New dependency:** `com.google.android.gms:play-services-code-scanner:16.1.0` (QR scanning; Play services' own scanner screen, no camera permission). Let Gradle sync.
+  - Manifest: a `voltcap://transfer` link on MainActivity (QR codes opened from a camera app) and the `GameNotificationReceiver`.
+
+### Permissions show the real Android state
+- Every status is read from Android each time (refreshed when you come back from Android's screens), nothing is assumed:
+  - **Show notifications:** the Android 13 permission *and* the app's notification switch (any Android version) *and*, for pop-ups, their channel. Granted-but-switched-off now shows as off and "Allow" opens the app's notification page.
+  - **Notification access:** checked for Voltcap's own listener component; if access is on but Android didn't bind the listener after a reboot/update, Voltcap asks it to rebind.
+  - **Display over other apps:** also checks the app-op (Android 8 reported a fresh grant late).
+  - New rows: **Usage access** (running games) and **Microphone** (optional, for music-reactive themes).
+  - "Every permission" list maps the special ones (notifications, listener, Bluetooth, mic, FPS) to their real checks.
+- The **Overlay Quick Settings tile** shows "Tap to allow" and opens the switch when the overlay permission is missing.
+
+### Start-up animation on weak devices
+- The intro is now driven frame by frame: it waits (max 0.7 s, dark stage) until frames arrive steadily, a long stall is never jumped over in one go, and if frames stay slow it drops only the extra glow passes (same look).
+- Art and RetroAchievements refreshes wait until the intro hands over (`StartupGate`, max 4 s).
+- The saved achievement data (a large file) is read off the main thread, and the encrypted credential stores (slow Keystore right after a reboot) open in the background at start (`StartupPrewarm`).
+
+### QR transfer (Settings › Backup › Share settings › QR code)
+- **Show QR code to send:** this device listens like the PIN transfer and shows a QR code with its address, port and PIN, plus the same as a short code.
+- **Scan a QR code** (devices with a camera), or type the short code + PIN (no camera). PIN, Google Drive and file transfer are unchanged.
+- A phone camera scanning the code opens Voltcap there and receives straight away. Everything still goes through the Import Preview.
+- QR codes are made by Voltcap itself (`data/QrCode.kt`, no library); checked by decoding test codes.
+
+### One in-game notification
+- Overlays and the power tuner now share **one** quiet notification (title: power tier / AutoTDP; text: live W / °C / fan and the overlays with size and opacity).
+- Buttons: **Size**, **Opacity**, **Power** (each cycles). The Quick Settings tiles stay the main controls; the old two notification channels are removed.
+
+### Performance
+- **Adaptive Automatic quality:** Voltcap watches the frames it really draws (no extra frames requested); if the home screen keeps missing frames, Automatic background quality steps down (and from two steps, lite effects). Settings › Performance says when it did. Hand-picked qualities are never changed.
+- Colours picked from artwork are cached for the session.
+- Theme **Intensity** (Appearance › Theme › Theme look): Low doubles as a performance mode.
+
+### Also in this update (since update 17)
+- **Year/period recap:** achievements, points, completion changes and milestones (RA "earned between" + a local play journal); L2/R2 to switch period; badge-wall / hero backdrop.
+- **Game Journey** timeline (game popup and hero History page) and one contextual milestone line.
+- **Game popup:** colours from the game's art, ⋯ More for secondary actions (B closes it), Play styles (Pill / Block / Ring / Capsule / Text) and "Continue" when played before.
+- **Smart Continue** and **Rediscover** special categories, **Living Library** marks on cards/tiles, Explore; L1 shortcuts for both.
+- **Spacing** (Compact) for settings cards; "Over other apps" card in Performance.
+- **Backup:** the Steam account travels; the import preview lists sign-ins the file doesn't carry.
+- **Full-screen theme preview** (▶ Full preview in the theme browser).
+
+### Files (src_copy)
+New: `data/PlayJournal.kt`, `data/RecapAchievements.kt`, `data/GameJourney.kt`, `data/QrCode.kt`, `data/QrTransfer.kt`, `data/StartupPrewarm.kt`, `device/FrameWatch.kt`, `device/tune/GameNotification.kt`, `ui/GameJourneyUi.kt`, `ui/LivingLibrary.kt`, `ui/ThemePreview.kt`.
+Changed: `LauncherUiState.kt`, `LauncherViewModel.kt`, `MainActivity.kt`, `data/Backup.kt`, `data/BuiltinShortcuts.kt`, `data/LocalTransfer.kt`, `data/Permissions.kt`, `data/RetroAchievementsApi.kt`, `data/RunningGames.kt`, `data/SettingsTransfer.kt`, `data/ShelfNotificationListener.kt`, `data/UnlockNotifier.kt`, `device/tune/OverlayTileService.kt`, `device/tune/TuneService.kt`, `ui/DiagnosticsContent.kt`, `ui/DialogChrome.kt`, `ui/FoldGroup.kt`, `ui/GameCard.kt`, `ui/GameDetailsOverlay.kt`, `ui/GameDock.kt`, `ui/HeroCarousel.kt`, `ui/ImportPreview.kt`, `ui/LauncherScreen.kt`, `ui/NowPlayingScene.kt`, `ui/PerfOverlayService.kt`, `ui/PerfSettingsCard.kt`, `ui/PermissionsSetup.kt`, `ui/SceneStyle.kt`, `ui/SettingsDialog.kt`, `ui/ShortcutsPanel.kt`, `ui/ThemeLookSettings.kt`, `ui/TileHome.kt`, `ui/VoltcapIntro.kt`, `ui/YearRecapDialog.kt`, `ui/theme/Ds.kt`.
+
+### Checked / not tested
+- Type-checked against the Android/Compose jars: no new errors (Play services classes checked against stubs of their API). Not built with Gradle, not run on a device.
+- QR encoder: test codes (short link, 2 bytes, 150 bytes / version 7+) decoded correctly with OpenCV.
+- Not tested: scanning on a real device, the notification buttons, FrameWatch thresholds on a slow handheld, intro after an actual reboot.
+
+---
+
+## Update — 5 Oct 2026 (17): theme looks, safe zones, Edit Home, settings sharing, Save Vault, RA pinning, gesture hint, overlay size, fixes
+
+### ⚠️ Copy three things
+- `src_copy` (56 files, 21 of them new).
+- **`project_copy`** over the project root (`robocopy project_copy . /E`). It changes `app/build.gradle.kts`, `AndroidManifest.xml` and `keepRules/rules.keep`.
+  - **New dependency:** Shizuku (`dev.rikka.shizuku:api` and `:provider` 13.1.5). Let Gradle sync.
+  - New manifest entries: `WRITE_SECURE_SETTINGS`, `CHANGE_WIFI_MULTICAST_STATE`, `ShizukuProvider`, the new Overlay Quick Settings tile. The power tile is now labelled "Voltcap power / TDP".
+- `tools/themes`: `gen.py` and 15 scenes. `ui/ThemeShaders.kt` is already regenerated.
+
+### Themes
+- **Per-theme look** (Appearance › Theme). Each theme keeps its own:
+  - **Colour source:** Theme original / Current game / Custom. Custom has an accent, a background, saturation and brightness.
+  - **Blur** with an area (whole background or only the strip behind the games) and a strength.
+  - **Dim.**
+  - Scene speed, hue and particles.
+- **Live preview** of the look, and **Reset This Theme** to put only that theme back.
+  - Music-reactive and showcase themes always use their own colours.
+- **Favourite themes** (★ in the browser) with **rotation**: every N minutes or every N game launches, filtered by kind.
+  - The theme browser has a favourites chip and filters.
+- New group **Still, calm & bold** (PS-like and console-like backgrounds):
+  - Still: Dusk, Horizon, Glow. These draw once, with no clock running.
+  - Calm: Ribbon, Drift, Halo. These are held to ~15 fps.
+  - Bold: Split, Dots, Bands.
+- New **Disc sleeve** theme: a square cover with the CD half out.
+- Spin slowed on Disc spin and Vinyl.
+- **Jukebox** and **Night drive** reworked.
+- **CRT showcase on every CRT theme.** Arcade CRT and Retro TV (when no music plays) show your game on the CRT.
+- **Retro bounce:** 9 more sprites; 14 by default (range 6–22).
+- **Shinobi:** the leaf tornado is removed.
+
+### Global safe zones
+- One safe-zone system (`ui/SafeZones.kt`) is used by Edit Home, the hero carousel and the overlays. It has an extra margin setting.
+
+### Edit Home (home Options menu › Edit Home, or Appearance › Music player › Position)
+- Move the **music player** anywhere:
+  - Touch: drag it.
+  - Controller: the D-pad moves it, L1 / R1 pick a widget, X = Reset Position, Y = Reset Layout, A / B = Done.
+  - It snaps to edges, thirds and the middle, and stays inside the safe zone.
+- It is never bound to R1.
+- Positions are saved in `widget_positions`. Any future widget can reuse the same system.
+
+### Hero carousel
+- **No black flash:** the old picture stays until the new one is ready. Nearby heroes are prefetched and the first ones are cached at start-up.
+- **Correct aspect ratio** for covers.
+- New position controls: covers on the right, info at the top.
+- **Card styles**, including Wide Capsule.
+- **Selectable transitions.**
+- Its options are folded into groups.
+
+### Category name
+- Appearance › **Console category name:** Centred above the games / Left / Hidden.
+- The name's style follows the category's scene accent, also when pinned.
+
+### Achievements
+- The separate achievement theme is removed. Achievements use the app theme with shared components.
+- Achievement settings are folded into groups, including the new **"In the backdrop"** (recent badges drifting behind the home).
+- Long names fit (shrink, then wrap) instead of being cut off.
+- Jump and unlock animations are no longer clipped.
+- Achievements refresh at most every 10 minutes, and the profile refresh is throttled.
+- **Games not on this device** open from the RA profile.
+
+### RetroAchievements overlay (in game)
+- **📍 Pin / 📌 unpin** an achievement, from its detail window or from the overlay's rows. The pinned one stays on the overlay and unpins itself on unlock.
+- Content toggles include "📌 Pinned achievement".
+- **Right-corner setting fixed:** an overlay on its own was always forced top-left.
+- The music overlay's corner is reserved only while music shows, so overlays no longer overlap.
+
+### Overlay size and transparency (new)
+- **Size 50–200 %** and **opacity 20–100 %**:
+  - Settings › Performance overlay.
+  - R1 › overlay layout.
+  - The Android notification's **Smaller / Bigger / Opacity** buttons.
+- Saved and applied live.
+
+### Overlay fixes
+- **Changing overlays mid-game in R1 no longer turns them off.**
+  - The overlay service now reconfigures in place.
+  - Coming back to Voltcap restores the overlays for the game that is still running.
+- **New Quick Settings tile "Overlay"** cycles the overlay modes without opening Voltcap.
+
+### Power
+- **AutoTDP stuck on Balanced fixed:** the tile only toggled it on and off.
+- The power tile and R1 now cycle Off → Efficient → Balanced → Smooth.
+- The tile label shows the AutoTDP mode.
+- Fewer notifications: power and overlays are on the QS tiles.
+
+### Save Vault
+- **PS1 / PS2 detection:**
+  - Memory cards are always read, even with no PS games in the library.
+  - Matching uses the card file name and the product code.
+  - More known card folders are checked.
+- Saves for games not in the library now show.
+- **Filter: All / On device / Not on device.**
+- **Filters & look** is a collapsible panel. The same settings are under Settings › Appearance › Save Vault.
+- **Styles:** Classic, Capsule, SD card, Memory card, Floppy.
+- Open animations.
+- Art fit.
+- **Sync badges with a legend.**
+- **Background:** theme, plain dark, or blurred game art.
+
+### Settings sharing (Settings › Backup)
+- **Import Preview:** before anything changes, the incoming settings are listed in groups. Untick any group to keep yours. Device-only settings (folders, emulators, screens, gesture hint) never travel.
+- **Share with another device:**
+  - **Google Drive:** `Voltcap/voltcap-settings.json`.
+  - **Nearby device:** same Wi-Fi, 6-digit PIN.
+  - **File:** export / import.
+- **Accounts now included:** RetroAchievements, SteamGridDB, IGDB, TheGamesDB, ScreenScraper, RAWG and the metadata source.
+  - This is the "Include accounts" chip, on by default, and on by default for the JSON export too.
+  - The receiver can untick "Accounts" in the preview.
+  - Google Drive, Spotify and Discord still sign in on each device.
+
+### Post-game
+- **No popup any more.** A short session line shows in the status bar for a moment.
+- The full summary is in the game's details window (Last session).
+
+### Other
+- **Startup Categories** moved to Appearance.
+- **L1 shortcuts restyled:** raised cards with an accent ring.
+- **Volt:**
+  - Home Options › **Volt** (and the mascot settings) is one access point: Replay the guide, plus help topics.
+  - Small **?** help on complex pages: Save Vault, achievements, theme colours, TDP. Can be switched off.
+- **Gesture hint** (Settings › Device):
+  - Hides only the white navigation pill. Voltcap's immersive mode comes first.
+  - Fallback: `settings put global navigation_bar_gesture_hint 0`, through `WRITE_SECURE_SETTINGS` or **Shizuku**.
+  - Choices: Off / While Voltcap is open / Everywhere.
+  - Only offered where the device has the setting. The previous value is saved and restored. It doesn't rerun when already applied. Gestures always keep working.
+- **Settings groups** are collapsible (`FoldGroup`).
+- **Tile focus "Middle" fixed:**
+  - The screen size left out the navigation bar, so the middle sat off centre.
+  - The row now centres on its measured width.
+- **Background music sometimes didn't play** (only the navigation sounds did):
+  - Cause: Voltcap's own navigation sounds made Android report "music active", so the loop thought another app was playing.
+  - Now only real media playback by other apps counts.
+
+### Checked
+- 0 errors type-checking against the real Android 36 / Compose jars.
+- All new and reworked scenes rendered in WebGL; the uniform check passed.
+- Not tested on a device yet:
+  - Shizuku flow.
+  - Nearby PIN transfer.
+  - Overlay scale on every corner.
+  - Edit Home dragging.
+  - Calm / still scene frame pacing.
+
+### Not done / partial
+- **QR transfer:** not done. PIN, Drive and file cover it.
+- Overlay and tuner **notifications are not merged** into one; they are reduced via the QS tiles.
+- **Performance:** only light work (still and calm scenes, throttling, caching).
+- **The 4 unwanted Arena / Adventure elements:** which ones? Not in this session.
+- **The JSON backup file you mentioned didn't arrive.**
+
+### Files touched
+New:
+- `data/GestureHint.kt`, `data/LocalTransfer.kt`, `data/RaPin.kt`, `data/SettingsTransfer.kt`, `data/ThemeRotator.kt`
+- `device/tune/OverlayTileService.kt`
+- `ui/BackdropAchievements.kt`, `ui/FoldGroup.kt`, `ui/GestureHintCard.kt`, `ui/HomeEdit.kt`, `ui/ImportPreview.kt`, `ui/SafeZones.kt`, `ui/SaveVaultStyles.kt`, `ui/ThemeLookSettings.kt`, `ui/VoltHelp.kt`
+
+Changed:
+- `LauncherUiState.kt`, `LauncherViewModel.kt`, `MainActivity.kt`
+- `data/Backup.kt`, `data/Features.kt`, `data/RaOverlayData.kt`, `data/SaveCapsules.kt`, `data/SettingsScopes.kt`, `data/perf/PerfSettings.kt`
+- `device/DeviceControls.kt`, `device/tune/Tuner.kt`, `device/tune/TunerTileService.kt`
+- `ui/AchievementDetailDialog.kt`, `ui/AchievementFx.kt`, `ui/AchievementListDialog.kt`, `ui/BackgroundMusic.kt`, `ui/BadgeWall.kt`, `ui/DialogChrome.kt`, `ui/GameDetailsOverlay.kt`, `ui/HeroCarousel.kt`, `ui/HubScreens.kt`, `ui/LauncherScreen.kt`, `ui/Mascot.kt`, `ui/PerfOverlayService.kt`, `ui/PerfSettingsCard.kt`, `ui/QuickSettings.kt`, `ui/RaOverlayView.kt`, `ui/RetroBounce.kt`, `ui/SaveExplorer.kt`, `ui/SessionSummary.kt`, `ui/SettingsDialog.kt`, `ui/SettingsSlider.kt`, `ui/ShortcutsPanel.kt`, `ui/ThemeScene.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeShaders.kt` (generated), `ui/ThemeThumbs.kt`, `ui/TileHome.kt`, `ui/UiSounds.kt`, `ui/theme/ShelfColors.kt`, `ui/theme/Theme.kt`
+
+project_copy:
+- `app/build.gradle.kts`, `app/src/main/AndroidManifest.xml`, `app/src/main/keepRules/rules.keep`
+
+tools/themes:
+- `gen.py`
+- Scenes: `bold_bands`, `bold_dots`, `bold_split`, `calm_drift`, `calm_halo`, `calm_ribbon`, `still_dusk`, `still_glow`, `still_horizon`, `disc_sleeve` (new); `cd_spin`, `jukebox`, `leaf_swirl`, `night_drive`, `vinyl` (changed)
+
+---
+
+## Update — 4 Oct 2026 (16): new theme music and navigation sounds
+
+### ⚠️ Copy two things
+- `src_copy` (6 files) and **`project_copy`** over the project root (`robocopy project_copy . /E`): it now holds `app/src/main/res/raw/` with the 4 new music loops (`bgm_home`, `bgm_haze`, `bgm_memory`, `bgm_hollow`) and the 15 new navigation sounds (`ui_chill_*`, `ui_retro32_*`, `ui_dark_*`). About 3.3 MB in total.
+- Also new: `tools/audio/instruments.py`, `music_more.py`, `ui_sounds.py`, `analyze.py` (how the files were made; nothing to run).
+
+### Four new music loops (all endless, seamless, no drums)
+- **Home · calm console menu** (~58 s, E major, 66 bpm): soft felt piano over wide, slow pads, a few far-away glass sparkles and a low hum. The really chill, PlayStation-home-screen kind of feel (an original piece).
+- **Haze · 128-bit dream** (~53 s, F# minor / D lydian, 72 bpm): misty "ooh" voices, crystal arpeggios bouncing in a ping-pong echo, water drops in a big room, a glassy lead with long notes.
+- **Memory card · 32-bit** (~46 s, D-flat major, 84 bpm): a late-90s console menu. Everything sounds "sampled" (held at a lower sample rate, nothing above ~11 kHz): warm e-piano, an "aah" choir, fretless bass, a vibraphone tune, a music-box run into each turnaround, a short slightly metallic room.
+- **Hollow · dark fantasy** (~66 s, D minor with a dark E-flat, 58 bpm): harp arpeggios, low strings over a D drone, a distant choir in the second half, a far bell at the top of each half, a lonely wooden flute, cold wind.
+- Loops are rendered twice through the effects and the second pass kept, so every echo and reverb tail runs over the loop point. Checked: the seam is no different from any other spot, the length is kept to the sample in the OGG, no clicks, loudness sits with the old loops.
+
+### Where they play (Follow the theme)
+- **Home:** Wave menu, Minimal console, Glass, Orbital window, Cover flow, Floating cover.
+- **Haze:** 128-bit haze, 128-bit towers, Mind, Nebula, Aurora.
+- **Memory card · 32-bit:** Voltcap 32-bit, 32-bit polygons, Pixel parade, Pixel sky, Pixel cover, Pixel flow, Retro bounce, Specimen lab (+ music), CRT room, Retro TV, Handheld.
+- **Hollow:** Phantom, Venom, Moon blade, Spirit forest.
+- Every other theme keeps its loop. Settings › Audio › Background music › **Track** now lists all 11 loops with the themes that use them. Old picks still work.
+
+### Three new navigation-sound sets
+- **Chill:** softer than Console, with a big airy room. A tiny rounded tick for moving, a felt-piano and glass "pling" for selecting, the same falling and darker for back, an airy swell for menus, a warm bloom with rising sparkles for starting a game.
+- **32-bit:** crunchy "sampled" blips with a short metallic room, a two-note vibraphone ding, a reverse-cymbal swish for menus, a little choir-and-chime jingle for starting a game.
+- **Dark fantasy:** a muted harp pluck for moving, harp and crystal for selecting, a low harp falling for back, a quick harp run and a small bell for menus, a deep bell, choir and boom for starting a game.
+- All three are matched in loudness to the Console set; the move sound is the softest since it plays on every step.
+- **Sounds match the music** (Settings › Audio › Sound style, on by default): the console-menu loops (Home, Haze) bring Chill, Memory card brings 32-bit, Hollow brings Dark fantasy. Every other theme uses your chosen style. It follows a picked Track too. Off = your style everywhere. The card says which set is in use right now.
+- Tapping a style chip plays it straight away, even while the theme's own set is active.
+
+### Under the hood
+- New `MusicLoop` (in `ui/theme/ShelfColors.kt`) and `AppTheme.musicLoop`; `musicBase` stays for the first seven. `musicLoopFor()` / `soundStyleFor()` in `ui/BackgroundMusic.kt` decide what plays.
+- `UiSounds`: sets already heard stay loaded (switching themes back and forth costs nothing the second time). The start-up and sync cues are shared by every set. Your own sounds still win over any set. New `preview(set, sound)`.
+- The in-code fallback (only used if a file can't be opened) has a matching mood for each new loop.
+- New setting `theme_sounds` in the appearance prefs (backed up with them).
+
+### Checked
+- Kotlin: compiled the changed files together with 150 of the project's sources (no Android jars here), and compared the errors with the untouched files: nothing new apart from the missing Android/Compose classes. Not built with Gradle.
+- Audio: lengths, seams, clicks, levels and spectrum checked by script (I can't listen here). Worth a listen on the device: the loops' mix on the handheld speakers, and whether the Chill move tick is too quiet for you.
+
+### Files touched
+`data/AppearanceStore.kt`, `ui/BackgroundMusic.kt`, `ui/UiSounds.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`, `ui/theme/ShelfColors.kt`; project_copy `app/src/main/res/raw/bgm_{home,haze,memory,hollow}.ogg`, `ui_{chill,retro32,dark}_{move,select,back,open,launch}.ogg`; tools `tools/audio/instruments.py`, `music_more.py`, `ui_sounds.py`, `analyze.py`.
+
+---
+
+## Update — 4 Oct 2026 (15, part 2): hero carousel, colours & dock backing, capsules, sync picture, trophy overlay, two new themes, lyric fixes
+
+Copy `src_copy` as always. No new res files this time (`project_copy` is unchanged since part 1). Also changed: `tools/themes/gen.py` and two new scenes in `tools/themes/scenes/` (`ui/ThemeShaders.kt` is already regenerated).
+
+### Vertical hero carousel (your Steam Deck-style reference)
+- New home layout: Appearance › Home layout › **Hero carousel**. Covers sit in a curved column on the left with names beside them; the selected one is bigger and glows. The game's hero fills the screen, and its info sits bottom right.
+- **Up / down** moves through the games. **Left / right** flips the info page: Overview, Achievements, History, Screenshots, Stats, Guide.
+- Idle focus mode fades the UI away after a while; any input brings it back. The carousel has its own settings under the layout choice.
+
+### Colours (Appearance › Colours & background)
+- **HEX box** for the accent, and a **separate background colour** with its own HEX box and hue picker.
+- **Saturation and Brightness** sliders for both colours. Moving the hue keeps your saturation and brightness.
+
+### Dock backing (what sits behind the row)
+- Choose Nothing, **Solid colour** (HEX, saturation, brightness, opacity) or **Animated picture** (your own WebP / GIF).
+- The band has soft top and bottom edges and follows the tiles or the row.
+- Animated pictures:
+  - Decoded once at the band's size, at half that on weaker or small-memory devices.
+  - Loop forever, but stop when the home screen is covered, in the background, off or long idle.
+  - Over 40 MB, Android 8, or a failed decode: a still frame is shown instead. A picture that can't be read at all falls back to the colour.
+
+### Tiles at the bottom: the hero ends at the tiles
+- With tiles at the bottom, the hero / whole picture now stops at the top of the tiles instead of running under them.
+
+### Save Capsules look like capsules
+- Each save is now an **upright pill**: the save icon sits in its clear top half, and the bottom half is tinted with the sync state and has a status light. A seam and a glass highlight finish the look.
+- **No more tilting or spinning.** Capsules bob and lift straight up. The icon also flies into the details window upright, with only a light sweep across it.
+
+### Status-bar sync picture
+- The spinning halo round a cloud is replaced by Voltcap's **charge capsule with a bolt**:
+  - While syncing, energy chevrons run through it: towards the tip when backing up, back from it when restoring.
+  - Synced: full and green with a check.
+  - Waiting: a small charge.
+  - Problem: empty with an amber "!".
+- It is still animated only during a transfer.
+
+### Trophy overlay over games (Settings › Performance overlay › Achievements over games)
+- **Voltcap look:** a glass panel in your accent colour with a **progress capsule** bar.
+- **Badges:** the next one to go for (or the last unlock) next to the summary, and greyed locked badges and coloured unlocked ones in the lists.
+- The open panel shows **how far you are into the set** at the top: "31 / 70 · 44 %", points, and how many are left to go.
+- New **Unlocked** tab (newest first, with date) next to Left and Missable.
+- **Every part is a switch:** Next achievement, Missable warnings, Badges, Progress bar, Points, Last unlock, Unlocked tab, Voltcap look (off = the old plain box).
+
+### New theme: Retro bounce (Gaming eras & retro)
+- 32-bit D-pads, A / B buttons and **console icons** hop and bounce round a pixel stage: blinking pixel stars and a scrolling checkerboard floor.
+- The console icons are **RetroAchievements' system icons** (the ones next to the category names; they need a linked RA account). Without them, pixel cartridges and discs stand in.
+- Appearance › Theme › Retro bounce:
+  - **This console** follows the category you're on (a mix on All games).
+  - **Mix of systems** takes the consoles from your library.
+- It is cheap to run: about a dozen sprites in one canvas, stepped at about 20 fps and snapped to the pixel grid. It stops when covered, idle, off screen or with Lite. The number of sprites follows the scene's particles setting.
+
+### New theme: Lyric cloud (Music · with the album cover)
+- The song's lyrics appear **at random free spots** in **colours taken from the cover** (its strongest hues, brightened to read on the dark stage). They **fade and rise in softly**, stay while sung and fade out as the next ones come.
+- **Lines**, **Word by word**, or **Both** (each line, with its strongest word landing big somewhere else; short lines come word by word).
+- Size follows the music theme's Big / Small setting; Off shows none. Words keep off the status bar, the game row, the player and the legend.
+- Works on the second screen and in the screensaver too. Only the fades animate.
+
+### Lyric positioning fixed
+- **Why moving the lyrics seemed to do nothing:**
+  - "Top" / "Bottom" were placed at the screen edge even when the game row sat there, so they were drawn **underneath the row**.
+  - With a music theme on, Settings › Audio › *Where the lyrics show* was ignored, because the theme used its own setting.
+- Now "Top" / "Bottom" go just below or above the row when it's at that edge, in the music themes and for the lone lyric line. That line is also drawn above the row and is readable size now.
+- Changing *Where the lyrics show* also moves the music themes' lyrics, so the change shows at once whichever background is on.
+- The music theme's own lyric and the Audio lyric line never both show at once.
+- The hero carousel no longer keeps lyrics clear of a row that isn't there.
+- **New: Lyrics alignment** (Left / Centre / Right) and **Lyrics movement** (Still / Gentle float). They are in Settings › Audio and in the music theme card (one setting). They apply right away to the home screen, the music themes, the full player on the **second screen** and the screensaver.
+
+### Checked
+- Type-checked against your real Android 36 / Compose 1.10 jars: no new errors. Both new scenes were rendered in the WebGL preview, and the uniform check passed.
+- Not tested on a device yet: carousel D-pad flow, dock animated pictures, the overlay's badges, the two new themes' feel and speed.
+
+### Files touched
+New: `ui/HeroCarousel.kt`, `ui/ColorTools.kt`, `ui/DockBacking.kt`, `ui/RetroBounce.kt`, `ui/LyricScatter.kt`, `tools/themes/scenes/retro_bounce.agsl`, `tools/themes/scenes/lyric_cloud.agsl`.
+Changed: `data/AppearanceStore.kt`, `data/ConsoleLogos.kt`, `data/Features.kt`, `data/RaOverlayData.kt`, `data/perf/PerfSettings.kt`, `ui/LauncherScreen.kt`, `ui/LauncherUiFlags.kt`, `ui/MusicPlayer.kt`, `ui/NowPlayingPanel.kt`, `ui/NowPlayingThemeCard.kt`, `ui/PerfOverlayService.kt`, `ui/PerfSettingsCard.kt`, `ui/PowerSaver.kt`, `ui/RaOverlayView.kt`, `ui/SaveExplorer.kt`, `ui/ScreenSaver.kt`, `ui/SettingsDialog.kt`, `ui/SyncAnimation.kt`, `ui/ThemeScene.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeShaders.kt` (generated), `ui/ThemeThumbs.kt`, `ui/TileHome.kt`, `ui/theme/ShelfColors.kt`, `tools/themes/gen.py`.
+
+### Still coming
+32-bit pixel UI mode and the 32-bit intro (with Volt), game popup redesign, overlay permission shortcut, density, Living Library / Smart Continue / Explore / Rediscover, recap controls and Game Journey, artwork priority and the Animated-only filter, theme work (Power Aura, PlayStation themes, the fix list), DroidDeck / PXPlay, per-game overrides and transitions.
+
+---
+
+## Update — 4 Oct 2026 (15, part 1): Save Capsules from real saves, achievements done properly, Volt the cat
+
+### ⚠️ Copy two things
+- `src_copy` (as always) and **`project_copy`** over the project root (`robocopy project_copy . /E`): it now holds `app/src/main/res/drawable-nodpi/mascot_*.png` (the mascot sprites).
+
+### Save Capsules: only real saves
+- **Cause of the false capsules:** resting on a game or opening its details fetches its saves from Drive early; that sync wrote a status entry for the game even when there was nothing to move — and PS1/PS2/PSP games share one memory-card folder, so *every* such game you looked at got a capsule.
+- Now a game only gets a capsule with real evidence: a save file named after the ROM (on this device, or recorded as synced from another one), a save **inside a PS1 / PS2 memory card** or **PSP SAVEDATA** that belongs to the game, or saves Drive really moved (other shared kinds, only for games played in Voltcap). The early sync no longer leaves an entry behind when nothing moved.
+- **Memory cards are read** (nothing written): PS1 raw/.gme/.vgs cards, the PS2 8 MB `.ps2` card (its FAT file system, with or without ECC) and PCSX2-family folder cards, PSP `PARAM.SFO`. Saves are matched by product code (the game's serial is read once from SYSTEM.CNF / PARAM.SFO and remembered) or by title. Tested on real PS2 cards. Console data (BEDATA-SYSTEM) is skipped. Synced card folders plus the usual public folders (RetroArch/saves, DuckStation, ePSXe, ARMSX2/NetherSX2/AetherSX2 memcards, PSP/SAVEDATA) are looked at — so saves of games never started from Voltcap show too.
+- **One capsule per game** holding all its saves (every card, every slot); its window lists them ("3 saves inside").
+- **Filters** chip: Memory cards / External-imported / Only played in Voltcap / Hidden. **Hide capsule** in a capsule's window (the save itself is never touched; Hidden shows them again).
+- Opening a popup still changes nothing else (last played, play count, playtime, recents are only written by a real launch).
+
+### Achievements
+- **NEW only once:** Voltcap remembers what it has already shown per game (`AchievementSeen`). Unlocks since the previous check are NEW (glow + NEW tag until the list is viewed) and get their **automatic unlock animation once**. The first time a game is checked, everything already unlocked counts as seen — old unlocks never replay. Live unlocks during a game count. The cover NEW pill now only shows for these.
+- **Unlock animation** (its own stage at the top of the game's achievements): each new badge's **capsule charges** (outline lights with embers → bolt charges in → full glow with a lightning flick and a floor reflection — the look from your concept, smooth rather than pixel), the badge flashes, **pops up out of it** with an arc of lightning, **hops on the air**, drops back and **locks** in with a second flare. Light haptic + retro sound at launch and lock. Several unlocks play one after another, then: "4 achievements unlocked · 31/70 · 44% complete".
+- **Manual pick:** pressing a badge makes it rise, hover and lock back (separate from NEW; never marks anything).
+- **100%:** the badges fly together into a wall, the bar fills to 100% and the game is stamped MASTERED (once).
+- **Count + percentage everywhere:** "31/70 · 44%" (details window, list header, banner progress, overlays, companion screen, row info, Steam list), plus "4 remaining" near the end. Cover pills now always show the count ("0/53", also for 100+ — they used to switch to % above 100).
+- List order: **Unlocked first** (locked greyed after them) by default, plus **Timeline** (unlock order) and the old orders.
+- The badge wall has its **own area** (the achievement theme's backdrop) with room for the animations.
+- **Status-bar trophy:** achievements earned in the game you just left → a gold trophy with the count in the status bar; tap opens that game's list (it goes once opened).
+- **Achievements, Stats and Profile are separate screens now.** Profile and Stats are no longer in Settings. The avatar opens **Profile**; the L1 *Play stats* shortcut opens **Stats**; new L1 *Profile* shortcut. **Achievements** (L1 / home shortcut with no linked game, or "All games" in a game's list) is its own screen: Games (count + % per game, NEW marks), Near completion, Timeline across games (with **Replay latest** for the unlock animation — manual, never marks anything). It never opens Profile or Settings any more.
+
+### Badge view & achievement themes (Appearance › Achievement look & unlocks)
+- **Badge view:** Name / Percentage / Count-points, each on its own. Hidden text = **bigger badges** (fewer, larger columns, tighter rows). Only the badge wall.
+- **Achievement themes** (or follow the app theme): Trophy Shelf, Achievement Vault, Capsule Pop, Poster Wall, Arcade Scoreboard, CRT Unlock, Constellation, Energy Grid, Treasure/Relic, Badge Parade — frames, plates, glow, type and backdrop. **Intensity** Low (also performance: no animated backdrop) / Normal / High. **Animate only new unlocks** (skips the wall fly-in), unlock animation and 100% celebration switches.
+
+### Post-session card
+- Back after a real session: game artwork running into a small corner card with **session time**, total, **achievements earned with their badges**, **count + %**, **completion change** (41% → 48%, gold part of the bar) and **one milestone** (Mastered / 1 remaining / Completion +8% / First session / Longest session yet). Not focusable, tap to close, hides itself. Switch: Appearance › Achievement look & unlocks › Show a summary after playing.
+
+### Volt, the mascot (prototype art from your sheet)
+- Your cat poses are cut out as sprites (`mascot_sit`, `happy`, `question`, `alert`, `sleep`, `walk`, `wave`, `groom`, `play`, `look_up`, `music`, `back`, `hero`, `pod_hug/sleep/open/peek`) — drop the final drawings in under the same names and the app uses them. Drawn without smoothing (crisp pixels); idle breathing and a blink.
+- **First-time setup:** Volt explains every step in a speech bubble that types in.
+- Appearance › **Mascot**: Show Volt / In setup / Guide tips / On the home screen / Cheers on unlocks.
+
+### Fixes from your photos
+- Wide capsule: the trophy pill sat under the ☆ / ••• buttons. On the capsule the count is already in its progress line, so the corner pill is left out there; a bottom-corner pill moves to the top when the round buttons are on.
+
+### New settings store
+- `data/Features.kt`: the newer switches as Compose states in their own prefs file ("voltcap_features", backed up like the look settings). `achievement_seen` and `disc_serials` are device bookkeeping (never exported).
+
+### Checked
+- Type-checked with the real Android 36 / Compose 1.10 / Material3 1.4 jars from your Gradle cache: no new errors against the untouched sources. Memory-card reader run on two real PS2 cards.
+- Not tested on a device yet: the unlock stage timing, the 100% celebration, memory-card matching on your own cards, the hub screens' D-pad flow.
+
+### Files touched
+New: `data/AchievementSeen.kt`, `data/Features.kt`, `data/MemoryCards.kt`, `data/SaveCapsules.kt`, `ui/AchievementFx.kt`, `ui/HubScreens.kt`, `ui/Mascot.kt`; project_copy `res/drawable-nodpi/mascot_*.png`.
+Changed: `LauncherUiState.kt`, `LauncherViewModel.kt`, `MainActivity.kt`, `data/BuiltinShortcuts.kt`, `data/CloudSync.kt`, `data/SettingsScopes.kt`, `data/SyncStatusStore.kt`, `ui/AchievementListDialog.kt`, `ui/BadgeWall.kt`, `ui/CompanionActivity.kt`, `ui/FirstRunDialog.kt`, `ui/GameCard.kt`, `ui/GameDetailsOverlay.kt`, `ui/HomeChrome.kt`, `ui/LauncherScreen.kt`, `ui/LauncherUiFlags.kt`, `ui/RaOverlayView.kt`, `ui/RowInfoPanel.kt`, `ui/SaveExplorer.kt`, `ui/SessionSummary.kt`, `ui/SettingsDialog.kt`, `ui/SteamAchievementsUi.kt`, `ui/TileHome.kt`.
+
+### Still coming (next parts)
+Vertical hero carousel (your Steam Deck-style reference), game popup redesign, overlay permission, density, Living Library / Smart Continue / Explore / Rediscover, recap controls, artwork priority, theme work (Power Aura, PlayStation themes, the fix list, new themes), 32-bit pixel UI + 32-bit intro, DroidDeck / PXPlay research, per-game overrides and transitions.
+
+---
+
+
+## Update — 4 Oct 2026 (14): 80 % limit overnight fix, CRT room in 3D, 11 themes reworked
+
+### ⚠️ Copy two things
+- `src_copy` (4 files) and `tools/themes` (scenes, `preview_template.html`, `preview.html`, `check_uniforms.py`).
+
+### 80 % charge limit reached 86 % overnight
+- **Cause:** when the battery rose 2 % past where it stopped, Voltcap judged the charge switch "not working", **let go of it** and tried the next one. Each weaker switch let another 2 % through: 80 → 82 → 84 → 86. Two things set that off on AYN: the driver keeps saying "charging" while held at 1 mA (the old 2-minute "still charging" test), and only `restrict_chg` was read back, so when the firmware put `restrict_cur` back to full current it charged on unseen. An old run could also leave the working switch on the saved "bad" list.
+- **Fix:** every node of a held switch (`restrict_chg` **and** `restrict_cur`) is read back every 15 s and put back if it came undone. The "says charging" test is gone. If the level really does rise while stopped, the next switch is **added** on top; a working one is never released. The set that works is remembered (`switch_stack`), and the old bad list is cleared once. A pause found already set after a restart measures any rise from the level at that moment, not from 80 %.
+- AYN's own 80 % setting is now kept **off** so its firmware never works the same switch at the same time. Switching it on in AYN's menu hands it over to Voltcap's limit.
+- Checked with a simulation of the battery and driver: the old code overshoots to 84–86 %, the new one holds at 80–81 % with the firmware resetting `restrict_cur` every 90 min.
+
+### CRT room: a real 3D render (Android 13+)
+- The whole room is now **one ray-traced shader** (`crt_room.agsl`) at the background quality's resolution and frame rate, like the other scenes. Picture: a dark den at night lit by the TV in **the colours of the game's picture**, an amber bias light behind the set (theme accent), cold moonlight through a rainy window (light shaft with dust), a walnut cabinet with a console (power light) and a VCR blinking 12:00 under a stack of game cases, a pad on the rug with its cable to the console, game boxes on two shelves, rabbit ears on the TV. The camera drifts slowly at three-quarter view, so everything moves in depth.
+- The game's hero art, then its screenshots, play **on the TV's curved glass**: scanlines (faded when finer than a pixel), colour fringes, a rolling picture and static between channels, a green **CH 02** channel number after each switch, a glass glint and bloom. Wide hero art pans across the screen during its channel. No art = a colour-bar test card.
+- `ShowcaseScene.CrtRoom3D` decodes each picture once (768 × 576, 512 on small-memory devices), decodes the next channel ahead, passes the average colour of each half for the room light, and adds a burst of static when the game changes. `SceneShader` can now carry the picture (`tvPicture`). Android 12 and a shader that won't compile keep the old flat version.
+- Shader uniforms: `uShot` (picture), `uShotSize`, `uHasShot`, `uTvL`, `uTvR`, `uTune`. `check_uniforms.py` knows `uShot` is a picture. All 119 previews match the GLSL compiler.
+
+### Reworked themes
+- **Volt / Spark:** thunderstorm over flooded plains. Billowing lit clouds, a forked bolt every 5 s mirrored in the water, rain curtains, a distant town glow.
+- **Mono / Minimal console:** three nested rings of light turning like a gyroscope over a black mirror floor with a dot grid and a sweeping beam. Still pure black where nothing is lit (OLED).
+- **Phantom:** haunted ruin under a veiled moon. Far castle, broken arches, dead trees, gravestones, fog banks lit by the wisps.
+- **Mind:** a swirling glass orb over a glossy pool with interfering ripples and an oily sheen. Floating stones lit by the orb, everything reflected in the water.
+- **Constellation:** galaxy band with a glowing core and dust lanes, slow sky rotation, bright stars with spikes, meteors, hills with a lone tree and an observatory.
+- **Arcade CRT:** a vector shooter attract mode. Formation of neon ships, perspective grid, wireframe mountains, the player picking them off (laser, sparks, score), INSERT COIN, tube curve and bezel.
+- **Campfire:** a bigger fire in a stone ring with glowing logs, embers and smoke, a lit tent and log bench, firelit pines.
+- **Gearworks:** bevelled brass, steel and copper gears with lamp light and brushed metal, shadows on a riveted plate, an out-of-focus flywheel, pipes, a pressure gauge, pistons, steam.
+- **Aurora:** layered curtains in depth over snowy mountains, mirrored in a frozen lake.
+- **Deep sea / Torrent:** surface ripples, swaying light shafts, caustics on the seabed, kelp, glass-like bubbles from vents, glowing jellyfish, marine snow.
+- **Sakura:** a blossoming branch lit by a big moon, a pagoda and stone lanterns by a pond that mirrors the moon, petals at three depths.
+
+### Shader safety fix (all scenes)
+- `pow(x, 2.0)` of a negative number is undefined on GPUs and can turn into NaN (black). 21 places in 18 scenes now use `sqf(x)` (new in `_prelude.agsl`). Renders of all other themes are unchanged.
+
+### Not tested on a device yet
+- The new scenes' frame time on weaker handhelds (CRT room and Aurora are the heaviest; Low quality skips march steps and haze samples).
+- The charge-limit change on real AYN hardware. If it still goes over, `ChargeLimiter.activeSwitch` / `lastError` say which switches are held and what was last put back.
+- The things you listed for the CRT room in an earlier chat weren't visible in this session. Anything missing from the room can be added.
+
+### Files touched
+`device/ChargeLimiter.kt`, `ui/ShowcaseScene.kt`, `ui/ThemeScene.kt`, `ui/ThemeShaders.kt` (generated); `tools/themes/check_uniforms.py`, `preview_template.html`, `preview.html`, scenes `_prelude`, `crt_room`, `sparks`, `minimal`, `wisps`, `psy_waves`, `stars`, `scanlines`, `campfire`, `gearworks`, `aurora`, `bubbles`, `petals`, and the `sqf` fix in `art_wall`, `glass`, `holo`, `mountains`, `neon_city`, `orbital`, `quest`, `retro_grid`, `shatter`, `speaker`, `voltcap_intro`
+
+---
+
+## Update — 4 Oct 2026 (13, part 3): cover subject detection, Pan & zoom, lyrics away from the subject
+
+### ⚠️ Copy two things
+- `src_copy` and `tools/themes` (scenes, `gen.py`, `preview_template.html`, `preview.html`).
+
+### What's new
+- **Cover subject detection:** each new cover is scanned on a small 48 × 48 map. Each spot is scored for how much it stands out in colour from its surroundings, its edges, how colourful it is and skin tones (faces count most), with a pull towards the middle. The strongest spots give where the subject is and how big it is. The scan also tells whether the top or bottom of the cover is calmer for text. On test covers it found a sun, a face in a corner and a small red dot within a few percent.
+- **New music theme, Pan & zoom** (Album art group): the cover fills the screen and the camera drifts over it, zooming slowly in on the subject (smaller subjects zoom deeper) and back out, never leaving the picture. Away from the subject the cover goes soft, like a shallow depth of field. Kicks punch the zoom a little and split the colours for a moment. A light leak in the cover's colours drifts across, and a thin spectrum glows along the bottom.
+- **Lyrics: "Away from the cover's subject"** (Audio › Where the lyrics show): the lyric line goes to the top or bottom of the screen, whichever half of the cover is calmer and doesn't hold the subject.
+- Shaders: a new `uSubject` uniform. It is set only for scenes that use it (only Pan & zoom). The uniform check against the GLSL compiler covers all 119 previews, and they match.
+
+### Files touched
+`data/AppearanceStore.kt`, `ui/LauncherScreen.kt`, `ui/MusicTheme.kt`, `ui/NowPlayingScene.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeShaders.kt` (generated), `ui/ThemeThumbs.kt`, `ui/theme/ShelfColors.kt`; `tools/themes/gen.py`, `preview_template.html`, `preview.html`, `scenes/_reactive.agsl`, `scenes/cover_focus.agsl` (new)
+
+---
+
+## Update — 4 Oct 2026 (13, part 2): recaps, badge wall, M1/M2, home alignment, new animations
+
+### ⚠️ Copy
+- `src_copy` only this time (no theme/shader changes). New files: `data/ConsoleLogos.kt`, `ui/BadgeWall.kt`, `ui/RetroFx.kt`, `ui/NewArrival.kt`.
+
+### Profile & recaps
+- Profile: every game row opens its achievements — *Currently playing*, *Recent awards*, and *Unlocked this week*, which now has one row per game with its unlocked badges.
+- **Recaps for a week, a month or a year**: a Recaps card in Settings › Stats and › Profile (This week / Last week / This month / Last month / This year). Inside a recap, ◀ ▶ go to earlier/later ones and L1 / R1 switch between week, month and year. Weeks and months get a day-by-day chart.
+- **Podium**: the top three on 1st / 2nd / 3rd blocks. The blocks rise, then the covers drop in and bounce (3rd, 2nd, 1st), with a retro thump and a star pop.
+- **X › Remove apps**: leave out apps that were recorded but aren't games (only apps, never games), across all recaps.
+- **Friends** load straight away (no "Show friends" button), with the game each one mastered most recently under their name. The list is cached for 10 minutes per account, and an offline load says so.
+- **Achievement of the Week** card on the Profile: badge, game, console, how many have it and whether you do. A opens the game. RetroAchievements has no public feed for Game of the Month, so a chip opens the site instead.
+
+### Achievements: badge wall
+- RetroAchievements and Steam lists can show **square "gym badges"**: a gold frame when unlocked, greyed with a lock when not, the name on two lines and the unlock %. Steam now gets global unlock % too.
+- **Fly-in**: badges swoop in from alternating sides and lock into place. Each one plays a synthesized retro swoop, then a star pop when unlocked or a soft glide when locked.
+- Switches in Appearance › Achievements: Badge wall / Badges fly in / Fly-in sounds. The Badges / List chips in a list switch only that list.
+
+### Controls & device
+- The back buttons are now called **M1 / M2** (AYN Odin 2 Portal: M1 = Z, M2 = C; saved settings keep working). New combos: Select + L2 / R2 / M1 / M2.
+- **Six hotkeys**, plus new actions: *Jump by letter (L3)*, *All controls (R3)*, *Quick menu (R1)* and *Settings*, for devices without stick presses.
+- Connected devices: **Hide the handheld's own controls** (on by default; AYN's appear as "Xbox Wireless Controller"). A hides or shows any device; hidden ones are listed under it.
+- Settings › Permissions: **Every permission** lists everything in the manifest, what it's for, and On / Off (special-access ones checked properly).
+- BIOS check: **Add a BIOS folder…**. Your folders and two levels of sub-folders are searched.
+
+### Home layout
+- Tile home: the category text lines up exactly with the game name, even with a styled backdrop. A one-line name no longer leaves a gap under the category; the spare line's room moves above it, so the tiles never jump.
+- Tile focus *Middle*: the selected tile now sits exactly at the screen centre, lined up with the name, category and round buttons.
+- **Wide for the first game only**: the first game is now a fixed wide capsule at the left. It never folds or slides, and the other games scroll as covers next to it. In a looping row it works as before.
+- **When the category changes** (Appearance › Name & category): Just swaps / Fades / Slides in / Drops in.
+- New name & category styles: **Outlined letters**, **Neon sign**, **Slanted tag**.
+- **Console logos** (RetroAchievements' system icons) next to console names in the category bar and label. Needs an RA account; fetched once a month.
+
+### Animations (Appearance › Home screen, all switchable)
+- **New game arrival**: when a scan finds new games, a capsule slides down, the cover drops into its round window with a spark burst and the name types in. Up to four in a row, then "+N more".
+- **Details window grows out of the game**: A springs the popup up from the card you're on.
+- Sync: the cloud popup has **What moved last sync**, and the newest "… downloaded" line opens it too. Games drop into glowing capsules, ↓ for what came down and ↑ for what went up.
+
+### Self-review fixes (before shipping)
+- The Jump-by-letter hotkey left Select / M1 counted as held. Fixed: it now resets the key state.
+- The All-controls hotkey closed its card on its own key-up. Fixed.
+- Two-line tile names were counted inside the short box and got stuck on one line. Fixed: they're now measured without a height limit.
+- The popup-zoom origin no longer makes the home recompose every frame while scrolling.
+- A real Xbox pad could merge into (and unhide) the AYN built-in entry. Fixed.
+- Special permissions showed Off. Fixed.
+- A ROMs/PS2 game could count as a BIOS. Fixed.
+- "What moved" now matches off the main thread.
+
+### Not done / to check
+- "Make the hero be…" was cut off in your message. What should it say?
+- Untested on device: fly-in sounds, console logos (need RA connected), the built-in controller detection on Thor, and the pinned first capsule with every card size.
+
+### Files touched
+`LauncherUiState.kt`, `LauncherViewModel.kt`, `data/AppearanceStore.kt`, `data/BiosCheck.kt`, `data/ConsoleLogos.kt` (new), `data/Hotkeys.kt`, `data/MusicControls.kt`, `data/RaSocial.kt`, `data/SteamAchievements.kt`, `data/YearRecap.kt`, `device/accessories/AccessoryMonitor.kt`, `ui/AccessoryStatus.kt`, `ui/AchievementListDialog.kt`, `ui/BadgeWall.kt` (new), `ui/GameCard.kt`, `ui/GameDock.kt`, `ui/HomeChrome.kt`, `ui/LauncherScreen.kt`, `ui/NewArrival.kt` (new), `ui/PermissionsSetup.kt`, `ui/RaSocialUi.kt`, `ui/RetroFx.kt` (new), `ui/SettingsDialog.kt`, `ui/SettingsExtras.kt`, `ui/SteamAchievementsUi.kt`, `ui/SyncPrompts.kt`, `ui/TileHome.kt`, `ui/YearRecapDialog.kt`
+
+---
+
+## Update — 4 Oct 2026 (13, part 1): bigger music players, 30+ new themes, theme reworks, screensaver themes, overlays, L1 shortcuts
+
+### ⚠️ Copy two things
+- `src_copy` → Kotlin sources. `tools/themes` → scenes, `gen.py`, `preview_template.html`, `preview.html`, `check_uniforms.py`.
+- You can delete `tools/themes/scenes/lucha.agsl` (Lucha night is gone; nothing uses the file any more).
+
+### Music players: bigger, smoother, side by side
+- New **Layout & size** (Appearance › Music player): *Side by side* puts the visualizer on the left with the whole free height and the player on the right (Automatic = side by side on wide screens). Size: Small / Normal / Big / Huge (default Big). Wide scenes (spectrum, ribbons, terrain…) stay stacked.
+- **60 fps**: new background quality *Full · 60 fps*; Automatic picks it on 90/120 Hz screens (Odin 2, Thor). Idle slow-down is gentler (30 / 15 fps instead of 15 / 8).
+- **Voltcap** (intro look) now loops endlessly with no restart: sparks chase round forever, the bolt surges every 4 s with arcs and a shock wave, glossy floor reflection, embers.
+- **Voltcap beat** rebuilt: much bigger, a ring of spectrum bars all round the capsule, everything follows the music (swell with bass, rim with loudness, sparks with busyness, arcs/shock wave only on real kicks; quiet parts calm down).
+- Simulated beat (when no real sound reaches Voltcap) is no longer a metronome: calmer/busier sections, breaks, accents. The music settings now say live whether the real music is being heard (and why not, e.g. Spotify hardware offload).
+- **Adapt to the cover** (Strength): colourful covers react more, muted ones calmer.
+- **Tape deck**: the song's title and artist handwritten on the cassette label.
+
+### Reworked
+- **Cover wall** runs a 32 s programme: slow turning, waves of tiles flipping round, breathing zoom, tiles popping forward, and the front cover growing to fill the screen.
+- **64-bit plains**: a flight over a flat-shaded low-poly world (fog, blurry checker textures, lake, snowy peaks, spinning coins).
+- **Hero's quest**: cliff-top hero with a streaming cape, castle with lit windows and pennants, floating islands with waterfalls, sun rays, birds, river, mist.
+- **Jungle canopy**: bright layered jungle, sunlit crowns with flowers, overgrown temple, waterfall with mist, big swaying leaves, butterflies, fireflies.
+- **Coral reef**: caustic light, brain/staghorn/tube/fan/anemone corals, a sea turtle, a wheeling school of fish, marine snow.
+- **Arena entrance** is now a music player: your cover on the giant screen, LED frame chasing with the spectrum, pyro on kicks, crowd flashes.
+- **Lucha night removed.**
+
+### New themes
+- Music: Aura clash · music, Mountains forming (each peak a band), Specimen lab · music (cover in the tank), Campfire beat, Manga beat, Pixel parade (32-bit capsules dancing), and a new group **Music · console eras**: 128-bit towers, 16-bit cartridge, Handheld.
+- Album art: Cover flow, Record shelf, Cover cube, Floating cover, Holo card, Cover halo, Big type, Pixel cover, Polaroids, Retro TV, Jukebox, Night drive, Neon frame, Magazine. Cover flow / shelf / cube / polaroids / magazine also show **covers of the songs you played before** (new history of the last 8 covers).
+- Ambient: Comic pages, Pixel sky (32-bit), **CRT room** (Game showcase: your game's hero and screenshots on an old CRT with real curvature/scanlines, channel-hopping with static).
+
+### Screensaver
+- *Without music*: Library art or an **animated theme** (pick any). *With music*: the song card or a **music theme** full screen with the song and lyrics.
+- **Stay on while music plays** (default on): no fade to black, screen stays on.
+
+### Settings
+- Theme browser: groups are pages like Appearance (badges, count, "in use"); coming back opens the group and theme you were on. Settings also reopen the sub-page you had open in each section.
+- Background music *Track*: the 7 loops only, each listing which themes use it.
+- Audio no longer has the empty "Music player & lyrics" section; the album-art blur moved to Appearance › Music player.
+- **Text size** (Small / Normal / Large / Larger) separate from UI size.
+- Category screen: new **Tiles** look (like the Tiles home).
+
+### Smaller things
+- Artwork picker: animated covers play right in the picker and carry an "▶ Animated" tag.
+- Guide reader: **X adds the page to the game's guides** ("Added by you" in the guide list).
+- Tapping the bell in the status bar opens the notifications.
+
+### Overlays (R1)
+- One Overlay tile: Off → Stats → Music → Trophies → All. One on its own sits top left; together they spread over the corners.
+- **Hold the tile**: choose which are on and each one's corner (taking a corner swaps).
+- In a game, **drag** the stats or trophies overlay to another corner.
+- **Trophies overlay is interactive**: tap it → Left / Missable tabs with points and %, tap an achievement for its RetroAchievements comments (scrollable); tap outside or ✕ to close.
+
+### L1 shortcuts
+- Add Voltcap's own screens next to apps: Achievements, Play stats, Play Spotify, Music, Save Capsules, Your recap, What should I play?, Categories, Screensaver, Settings.
+- "Explore saves" is now **Save Capsules**.
+
+### Not tested on a device yet
+- Side-by-side music layout, CRT room's render effect, the overlay drag/interactive panel, the screensaver themes, the 60 fps clock.
+
+---
+
+## Update — 3 Oct 2026 (12): Theme crash on Android 13, open-game ring, export to Voltcap settings sync
+
+### Crash when opening Themes (Android 13)
+- Cause: the theme previews set values (uniforms) a scene doesn't use; the shader compiler removes those, and on Android 13 setting a removed one aborts the whole app instead of throwing (same bug as the music-theme crash, which was about pictures).
+- Fix: `gen.py` now also works out which values each scene really reads (following main(), ignoring comments and unused local variables) → `ThemeShaders.uniforms(motif)`. Home scenes, music scenes and theme previews set only those.
+- Checked against the real GLSL compiler for all 93 scenes: identical. New `tools/themes/check_uniforms.py` re-runs that check (run it after `gen.py`).
+- Removed three leftover `uBeatAge * 0.0` bits (Cover tunnel, Disco floor, Pop art cover) that a compiler could optimise away.
+
+### Green ring on the first card
+- It's the "still open in the background" marker (Moonlight was still running). The ring was drawn outside the card, so with the card flush at the screen's edge (no focus frame, focus on the left) it was cut off.
+- Now: ring drawn just inside the card's edge (always fully visible), plus a small **● Open** tag so it explains itself.
+- Settings › Library › Running games › **Mark open games** turns ring and tag off.
+
+### Export default
+- Settings › Backup › **Export** saves straight to Internal storage › Voltcap › **Voltcap settings sync** › `voltcap-backup.json` (folder created; file replaced each time, written in one go so a sync app never sees half a file).
+- **Import from Voltcap settings sync** appears when that file exists. **Export to…** / **Import…** still let you pick another place.
+- Needs "All files access" (Android 11+); without it Export says so and offers the button.
+
+### Files touched
+- `data/Backup.kt`, `data/RunningGames.kt`, `ui/GameCard.kt`, `ui/NowPlayingScene.kt`, `ui/RunningGamesCard.kt`, `ui/RunningGlow.kt`, `ui/SettingsDialog.kt`, `ui/ThemeScene.kt`, `ui/ThemeShaders.kt` (generated), `ui/ThemeThumbs.kt`
+- Tools: `tools/themes/gen.py`, `preview.html`, `check_uniforms.py` (new), scenes `art_tunnel`, `disco`, `pop_art`
+
+---
+
+## Update — 3 Oct 2026 (11): Design system, Save Explorer sections, R1 panel, controls legend, year recap, theme browser with icons, new themes, RA overlay, guides offline, manuals, animated artwork
+
+### ⚠️ Copy two things this time
+- `src_copy` → Kotlin sources, as always.
+- `tools/themes` → scene sources, `gen.py`, `preview.html` (still delete the five old scenes from update 10 if they're there: `lofi_room`, `bar_city`, `neon_city`, `ferrofluid`, `oscilloscope`).
+- `project_copy`: nothing new this time.
+
+### Crash fix (already sent as a hotfix)
+- Android 13 crashed when switching themes: the shader compiler strips unused image inputs and setting one aborts. `gen.py` now works out which inputs each scene really uses (`ThemeShaders.children`) and only those are set.
+
+### Design system (consistency)
+- New `ui/theme/Ds.kt`: one set of spacings (4/8/12/16/24), radii (8/12/16/20), icon/tile/badge sizes, text sizes, status colours (success/warning/danger/gold), fill strengths.
+- Icons use the accent everywhere; red only for destructive actions (delete/remove/block). Score/status colours unified in game details, row info, metadata, settings, shortcuts.
+- R1 / Quick Settings: equal tiles (quiet plate when off, accent fill when on), labels in a fixed two-line box so rows line up, no doubled labels ("Perform. Performance").
+
+### Save Explorer
+- No big console cards: a slim header per console (small photo, name, count, thin underline, accent when current), saves right below. L1/R1 jump between consoles.
+
+### Controls
+- Xbox/Nintendo → **Xbox/Retro** everywhere.
+- Bottom legend: Select "Menu" + L2 "Previous category" on the left, R2 "Next category" + Start "Options" on the right, small "R3 All controls" hint in the middle. Short labels on narrow screens.
+
+### Profile & recap
+- **Year in Voltcap** recap: shows once after each full year of use and once every December (needs 30+ min of play); also in Stats › "Your year in Voltcap", plus a notification. Total, top 5 with covers, months, consoles, facts.
+- Profile › Currently playing: pressing a game opens its achievements with **missing** ones shown.
+
+### Music & themes
+- Lyrics no longer jump left/right (centred lines keep full width).
+- New lyric spots: above / below the visualizer.
+- **Animate only on the second screen** option (dual-screen devices).
+- Status bar stays in its corner without a theme.
+- Tape deck shows the cover on the cassette; Album lava shows the cover inside the blobs; **Vinyl** bigger with the sleeve and the record pulled out, cover on the label; **Cover shatter** rewritten; **Orbital window** rewritten (planet, city lights, aurora, moon).
+- New album-art themes: Cover wall, Cover tunnel, Pop art, Cover ripple. New: Blaze beat (music-reactive anime flames).
+- New anime / original moods: Sewer & skyline (rooftop ninjas, glowing sewer), Magical sparkle, Spirit forest, Festival night, Aura clash.
+- **Voltcap** themes: Voltcap (intro look), Voltcap beat (music), Voltcap pixels (little 32-bit capsules and bolts hopping).
+- **Specimen lab** (new, pixel art): a glowing glass tank in a dark-blue lab with the Voltcap capsule asleep inside, bubbles and a scan line, banks of green monitors (waveforms, bars, radar, readouts), blinking lights.
+- **Glass** uses your game's hero and screenshots behind frosted panes.
+
+### Theme browser
+- Every theme has a live thumbnail and its own **icon** (what it is) ringed in its colours; frame in the theme's colours; ✓ on the current one.
+- Live preview pinned above the grid; focusing a theme previews it.
+- New groups: Voltcap classics, Music · with the album cover, Music · visualizers, Game showcase, Gaming eras & retro, Anime, Arena & adventure, Nature & cozy, Space & tech, Creature types.
+- Hue sliders for accent and background.
+
+### Settings cleanup
+- Music player look moved into Appearance › Music player (Audio points there).
+- RetroAchievements pop-ups / rarity / tips moved into the Achievements section (out of controller lights).
+- "Use Voltcap as home app" (detects when it already is: "✓ Voltcap is your home app").
+- **Whole app in the game's colours**: background, panels, accent follow the focused game's cover.
+
+### Game UI
+- Popup hero art loads at full quality (up to 4K, no 565 colour) from the cache, with the small one shown first.
+- Hero transitions: Slide, Parallax, Zoom through, Iris, Ken Burns.
+- Name styles: Emboss, Glow, Accent rule, Edge fade.
+- D-pad Down into Achievements scrolls it into view (was scrolling to the top).
+
+### Performance
+- "What <mode> changes" card: per-cluster max/min MHz, prime boost, GPU max/min, governor, boosts, TDP / AutoTDP ceiling, fan.
+
+### Overlays
+- **Achievements over games** overlay: progress, last unlock, ⚠ missables still open, next achievement (missable first, then easiest) with the reason. Corner, "next" and "missables" toggles in Overlays. Own **Trophies** tile in the R1 panel.
+- Stats overlay: new **Clock** and **Heat & battery warnings** (⚠ Running hot at 80 °C+, ⚠ Battery low at 15 % and not charging; on by default, the number only when its own line is off).
+
+### Guides & manuals
+- GameFAQs opens the game's own guide list (looked up once per game, remembered).
+- **Save guides offline**: Y in the guide reader saves the page; saved guides listed per game, readable offline, removable. PDFs download to Downloads.
+- Manual button: opens the manual, or offers Pick a PDF…, Search online (archive.org) when none is found.
+
+### Animated artwork (new)
+- Appearance › **Animated artwork**: GIF / animated WebP / animated PNG covers, heroes and logos play (Android 9+, built-in decoder, no extra library). Off by default.
+- **Fetch animated art when scraping**: SteamGridDB's animated covers/heroes first, still ones where a game has none. The artwork picker lists animated ones too, and you can pick your own GIF/WebP.
+
+### Files touched
+- New: `data/AnimatedArt.kt`, `data/RaOverlayData.kt`, `data/YearRecap.kt`, `data/guide/GameFaqs.kt`, `data/guide/OfflineGuides.kt`, `ui/ThemeThumbs.kt`, `ui/YearRecapDialog.kt`, `ui/theme/Ds.kt`
+- Changed: `LauncherViewModel.kt`, `data/AppearanceStore.kt`, `data/ArtStorage.kt`, `data/Manuals.kt`, `data/MusicThemeSettings.kt`, `data/RecapWorker.kt`, `data/SteamGridDbApi.kt`, `data/SteamGridDbRepository.kt`, `data/guide/GuideModels.kt`, `data/guide/GuideProviders.kt`, `data/guide/GuideRepository.kt`, `data/perf/PerfSettings.kt`, `device/DeviceControls.kt`, `ui/DialogChrome.kt`, `ui/FirstRunDialog.kt`, `ui/FitText.kt`, `ui/GameDetailsOverlay.kt`, `ui/GameDock.kt`, `ui/GuideScreen.kt`, `ui/GuideWebActivity.kt`, `ui/HomeChrome.kt`, `ui/LauncherScreen.kt`, `ui/ManualViewer.kt`, `ui/MetadataPanel.kt`, `ui/MusicTheme.kt`, `ui/NowPlayingPanel.kt`, `ui/NowPlayingScene.kt`, `ui/NowPlayingThemeCard.kt`, `ui/PerfOverlayService.kt`, `ui/PerfSettingsCard.kt`, `ui/QuickSettings.kt`, `ui/RowInfoPanel.kt`, `ui/SaveExplorer.kt`, `ui/ScreenSaver.kt`, `ui/SecondScreenHome.kt`, `ui/SettingsDialog.kt`, `ui/SettingsExtras.kt`, `ui/ShortcutsPanel.kt`, `ui/ShowcaseScene.kt`, `ui/ThemeScene.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeShaders.kt`, `ui/TipsDialog.kt`, `ui/TunerContent.kt`, `ui/theme/ShelfColors.kt`, `ui/theme/Theme.kt`
+- Tools: `tools/themes/gen.py`, `preview.html`, scenes `_reactive`, `lava`, `orbital`, `shatter`, `tape_deck`, `vinyl` (changed); `_voltcap`, `art_tunnel`, `art_wall`, `aura_clash`, `blaze_beat`, `cover_ripple`, `festival`, `magical`, `pop_art`, `sewer_city`, `specimen_lab`, `spirit_forest`, `voltcap_beat`, `voltcap_intro`, `voltcap_pixels` (new)
+
+### Not yet tested on a device
+- Theme thumbnails (shader → picture path), GameFAQs lookup, saving guides offline, Iris/Parallax hero transitions, animated-art decoding, the RA overlay. Turning Animated artwork on/off clears the pictures in memory so covers reload playing / still.
+
+---
+
+## Update — 3 Oct 2026 (10): Running games, lyrics/small-screen fixes, brighter music themes, gaming eras, game showcase, battery sleep mode, scraper matching
+
+### ⚠️ Copy three things this time
+- `src_copy` → Kotlin sources, as always.
+- `project_copy` → over the project root (`robocopy project_copy . /E`): only `app/src/main/AndroidManifest.xml` changed (usage access + kill-background-processes permissions).
+- `tools/themes` → the scene sources, `gen.py`, `preview_template.html`, `preview.html`. **Delete** these old scenes there: `lofi_room.agsl`, `bar_city.agsl`, `neon_city.agsl`, `ferrofluid.agsl`, `oscilloscope.agsl`.
+
+### Lyrics & small screens
+- Lyrics never overlap the ⏮⏯⏭ controls any more: the music layout reserves the lyric strip (the bottom-screen bug from the screenshot). Lyric lines auto-fit (shrink a little, then wrap; "…" only as a last resort). New `ui/FitText.kt`.
+- Full music screen has a compact layout for small/second screens; screensaver lyrics fit too.
+- Game details: stats wrap (score and Time to Beat next to Last played), smaller star/gear buttons, tabs wrap with icons, the selected item scrolls into view. Guide list adapts its width. New `ui/Reveal.kt`.
+- Theme cards: even spacing (fixed tile width + gap), two-line labels.
+- Icons in rows aligned (centred line heights) and tinted with fitting accent colours (`iconAccent`).
+
+### Music & animated themes
+- Music themes brighter and more colourful: album art drives the colours (vivid), the sharp cover is available to shaders. New: **Vinyl spin, Disc spin, Album lava, Sound ribbons, Disco floor, Bass cones**.
+- New **Gaming eras** group: 8-bit quest, 16-bit mode 7, 32-bit polygons, 64-bit plains, 128-bit haze, Blue sky cruise, Wave menu, Motion plaza, Stereo 3D, Vector arcade; plus Warp drive (Tech).
+- New **Game showcase** group: Hero parallax, Cinematic, Filmstrip, Screenshot wall — the focused game's hero art with its screenshots animating around/behind it. New `ui/ShowcaseScene.kt`.
+- New **Arena & adventure** group (original moods, no names/logos/characters): Arena entrance, Lucha night, Hero's quest, Coral reef, Jungle canopy.
+- Removed: Lo-fi room, Bar city, Neon city, Ferrofluid, Oscilloscope.
+- **Your own animated background**: Behind the dock › Your wallpaper now takes a GIF, animated WebP or a video (MP4/WebM), muted and looping; pauses when not in front, screen off, covered or idle. New `ui/AnimatedWallpaper.kt`.
+
+### Screensavers on weaker devices
+- Low devices: smaller decodes (RGB_565), no live full-screen blur (a pre-blurred copy), 20 fps clock, no double full-screen layers during crossfades; broken slides are skipped instead of looping. Strong devices unchanged.
+
+### Home / overlays
+- Home music player has a fixed size; the sync text is gone — only the cloud icon animates (spinning halo while syncing, a glow when something new arrived), details on tap.
+- Rounded shortcuts: highlight no longer clipped; new choice Appearance › Shortcut highlight: Ring / Filled / Lift & dot.
+- Music overlay chip: ⏮⏯⏭ and a lyrics toggle right on the small chip (Overlay › "Song buttons on the chip", on by default); long lyrics wrap.
+
+### Saves
+- Explore saves opens reliably from R1. Saves grouped by console (console picture under its name, default on; X toggles), sorted by recently played (Y changes), consoles too; L1/R1 switch console.
+
+### Scraper
+- Exact matches first: known apps (Moonlight & other streaming apps, emulators, frontends, tools) are recognised by package and never matched to a game by name; other apps need an exact title; games need whole words ("Moonlight" ≠ "Moonlighter", "Bros." ≠ "Bros. 3"). One-time clean-up of wrong app art. New `data/TitleMatch.kt`.
+
+### Running games (Cocoon-style, single & dual screen)
+- Games still open in the background pulse green on the grid, the tile home and the second screen ("Still open · A resumes · X closes").
+- A resumes without relaunching; X closes; starting another game in the same emulator closes the old one first; starting a game while a different one is open asks "Quit it and play / Keep both / Cancel".
+- Play time counts only the minutes the game was really in front (with usage access); the session ends when the game is quit.
+- Settings › Library › Running games explains it and has a button for Android's usage access. AYN handhelds (enhanced access) check and close games directly.
+- New `data/RunningGames.kt`, `ui/RunningGlow.kt`, `ui/RunningGamesCard.kt`.
+
+### Battery
+- Drive save-watch no longer polls with the screen off. Everything UI-side already stops with the screen off.
+- New **Sleep mode** (Settings › Device): Wi-Fi/Bluetooth off a set time (1/5/15/30 min) after the screen goes off, back on when you wake it — only what it switched off. Skipped while charging, playing music, syncing, or (Bluetooth) with headphones connected. Needs AYN enhanced access; elsewhere the card points to SleepManager (github.com/Baggio94/SleepManager). New `data/SleepRadios.kt`, `ui/SleepModeCard.kt`.
+
+### Self-review fixes (before shipping)
+- A only resumes a game that's *known* to be open (process seen on AYN, or Android's usage record); a game only guessed open (no usage access, left < 20 min ago) starts normally, so A never drops you on the emulator's menu. The "quit it or keep both" question also only appears for games known to be open. `RunningGames.confirmed`.
+- Video wallpaper: start/pause only after the player is prepared (an early start() broke it) and the latest play/pause wish wins.
+- Sleep mode: when it holds off (music, charging, sync, headphones) it looks again later, at most 4 times per sleep.
+
+### Not verified here (check on a device)
+- Only type-checked with kotlinc (0 errors), not a full Gradle build; the new AGSL scenes were checked in WebGL, not on an Android GPU.
+- Sleep mode's `svc wifi/bluetooth` through AYN's service is untested on hardware.
+- Without root, X on Android 14+ opens the app's Force stop page (Android doesn't let other apps end it).
+- Sleep mode lives in Voltcap's process: if Android kills it while asleep, radios it switched off come back the next time Voltcap opens.
+
+### Dual screen
+- The second screen runs one quality step lighter when the main screen is below Full (Full stays Full), running-game glow and badge on the second screen, compact music/lyrics layouts there.
+
+### Files
+- New: `data/RunningGames.kt`, `data/SleepRadios.kt`, `data/TitleMatch.kt`, `ui/AnimatedWallpaper.kt`, `ui/FitText.kt`, `ui/Reveal.kt`, `ui/RunningGamesCard.kt`, `ui/RunningGlow.kt`, `ui/ShowcaseScene.kt`, `ui/SleepModeCard.kt`.
+- Changed: `LauncherViewModel.kt`, `MainActivity.kt`, `data/AppearanceStore.kt`, `data/ArtCacheStore.kt`, `data/CloudSync.kt`, `data/IgdbApi.kt`, `data/PlaytimeStore.kt`, `data/RawgApi.kt`, `data/SteamGridDbRepository.kt`, `data/TheGamesDbApi.kt`, `data/perf/PerfSettings.kt`, `ui/CloudSyncContent.kt`, `ui/DialogChrome.kt`, `ui/FullMusicScreen.kt`, `ui/GameCard.kt`, `ui/GameDetailsOverlay.kt`, `ui/GuideScreen.kt`, `ui/HomeChrome.kt`, `ui/LauncherScreen.kt`, `ui/MusicOverlayView.kt`, `ui/MusicPlayer.kt`, `ui/MusicTheme.kt`, `ui/NowPlayingPanel.kt`, `ui/NowPlayingScene.kt`, `ui/PerfOverlayService.kt`, `ui/PerfSettingsCard.kt`, `ui/QuickSettings.kt`, `ui/SaveExplorer.kt`, `ui/ScreenSaver.kt`, `ui/SecondScreen.kt`, `ui/SecondScreenHome.kt`, `ui/SettingsDialog.kt`, `ui/SyncAnimation.kt`, `ui/SyncPrompts.kt`, `ui/ThemeScene.kt`, `ui/ThemeSceneLegacy.kt`, `ui/ThemeShaders.kt` (generated), `ui/TileHome.kt`, `ui/theme/ShelfColors.kt`.
+- Tools: `tools/themes/gen.py`, `preview_template.html`, `preview.html`, `scenes/_reactive.agsl`, `scenes/music.agsl`, 24 new scenes.
+- project_copy: `app/src/main/AndroidManifest.xml`.
+
+---
+
+## Update — 3 Oct 2026 (9): build fixes
+
+- `LauncherViewModel.removeSteamGame`: removed a stray `if (romCacheLoad.isCompleted)` (that job is local to `init`); it calls `recombineGames()` again.
+- `CloudSyncContent`: `state.authProblem.orEmpty()` (no smart cast across modules).
+- `GameDetailsOverlay`: added imports for `Icons.Filled.Star`, `StarBorder`, `PlayArrow`.
+
+## Update — 2 Oct 2026 (8): Store-page details window, power saving, 17 new themes, theme features, SDK 36, Drive error, lyrics fix
+
+### ⚠️ Two folders to copy this time
+- `src_copy` → the Kotlin sources, as always.
+- **`project_copy` (new)** → copy it over the **project root** once (`robocopy project_copy . /E`). It holds the build files that live outside `src`: `build.gradle.kts`, `gradle.properties`, `gradle/wrapper/gradle-wrapper.properties`, `app/build.gradle.kts`, `app/src/main/AndroidManifest.xml`, `app/src/main/keepRules/rules.keep`, `.gitignore`.
+- Then let Android Studio sync: it downloads Gradle 9.5 and offers to install **Android 16 (API 36)** and **NDK 28** if missing.
+
+### Build: SDK 36, AGP 9.3.3, Kotlin 2.2.10, R8
+- compileSdk / targetSdk **36**, `versionCode 2` / `versionName 0.2.0`.
+- AGP **9.3.3** + Gradle **9.5.0** (the versions your Android Studio's template uses). AGP 9 compiles Kotlin itself: the `kotlin-android` plugin and `kotlinOptions` are gone; the Compose compiler is the Kotlin compose plugin (**strong skipping** on by default). Stability config moved to `composeCompiler { stabilityConfigurationFiles }`.
+- Compose BOM 2026.02.01, core-ktx 1.16, lifecycle 2.9 (+ `lifecycle-runtime-compose`), activity-compose 1.10.1, Coil 2.7, Retrofit 2.11, WorkManager 2.10.1, profileinstaller 1.4.1; Material icons pinned to 1.7.8.
+- `LocalLifecycleOwner` now from `androidx.lifecycle.compose` (11 files).
+- **R8 on for release** (+ resource shrinking): libraries shrunk/optimised, Voltcap's own classes kept whole (Gson reads field names). Rules in `app/src/main/keepRules/rules.keep`.
+- **Release signing**: `keystore.properties` next to `settings.gradle.kts` (see `tools/release/GITHUB_RELEASE.md`); without it release builds use the debug key as before.
+- 16 KB pages: Discord's library is already 16 KB aligned; NDK 28 builds the bridge aligned.
+- Manifest: Android 16 opt-out so the landscape lock still applies on ≥600 dp screens.
+
+### Google Drive: clear message when a build isn't registered
+- Play Services error 10 (APK signed with a key not added in Google Cloud) used to loop "connect again". Now Settings › Sync says **"This copy of Voltcap isn't registered with Google (error 10)…"**; cancelled/blocked sign-ins explain the "Testing" consent screen. `DriveErrors`, `DriveNotRegistered`, `CloudSyncState.authProblem`.
+- Files: `data/DriveClient.kt`, `data/CloudSync.kt`, `ui/CloudSyncContent.kt`, `ui/SaveSyncUi.kt`, `ui/SyncPrompts.kt`.
+- Steps for other accounts: `tools/release/GITHUB_RELEASE.md` (publish the consent screen, one Android OAuth client per signing key).
+
+### Lyrics on the music themes
+- Lyrics now always show something useful: "♪" in intros/gaps (lines that are blank used to make the lyric vanish), **untimed lyrics spread over the song** (used to show nothing), a short note when lyrics are off or the song has none, and the lookup **retries after a network failure** (it stayed blank for the whole song).
+- With "Player & timeline" off, "In the player" lyrics move onto the wave instead of disappearing.
+- Lyric updates are scheduled per line instead of polling 6×/s.
+- Files: `ui/NowPlayingPanel.kt`, `data/Lyrics.kt` (`LyricsRepository.lookup`), `ui/LauncherScreen.kt`.
+
+### Venom theme reworked
+- New upper half: thick glowing ooze dripping from the top (drips stretch, snap, fall and splash into the pool), a sick moon, slanted light, two layers of dead forest in the mist, glowing motes. File: `tools/themes/scenes/venom.agsl`.
+
+### Performance / battery
+- **Save power when idle** (Appearance › Behind the dock, on by default): after 30 s without input the background drops to ~15 fps (8 fps after 3 min), focus pulse, shimmer and electric bolts hold still; any press wakes it. Music visualizers keep full speed while music plays. `ui/PowerSaver.kt` (`HomeIdle`), input hooked in `MainActivity.dispatch*`.
+- The background **holds a still frame while covered** (settings, details window, screensaver, category page, save explorer…). `LocalSceneCovered`.
+- Focus pulse / mastered shimmer: one shared ~24 Hz clock (`EffectClock`) instead of an infinite animation per card at the display's 60-120 Hz; the pulse no longer recomposes the focused card every frame.
+- Low / Lowest background quality skip the finest noise octaves (`uLod`, brightness-normalised).
+- Discord's 14 MB library loads on its own thread (was on the main thread at start-up).
+- The saved ROM list is parsed in the background during the intro (`romScanApplied` guards a newer scan).
+- Scraping and RA matching update the screen in batches (≈2-4×/s) instead of once per game/file.
+- StrictMode logging in debug builds (Logcat filter "StrictMode").
+- Files: `ui/PowerSaver.kt` (new), `ui/ThemeScene.kt`, `ui/NowPlayingScene.kt`, `ui/GameCard.kt`, `ui/TileHome.kt`, `ui/FocusEffects.kt`, `ui/LauncherScreen.kt`, `MainActivity.kt`, `data/DiscordPresence.kt`, `LauncherViewModel.kt`, `data/AppearanceStore.kt` (`idleSaver`), `ui/SettingsDialog.kt`, `tools/themes/scenes/_prelude.agsl`.
+
+### 10 new music-reactive themes
+- **Tape deck**, **Sand patterns** (Chladni), **Ferrofluid**, **Laser stage**, **Kaleido cover**, **Cover shatter**, **Wire terrain**, **Fireworks**, **Neon puddle**, **Lo-fi room**. All size themselves to the equalizer room (player never covers them).
+
+### 7 new animated themes
+- **Sunlit shallows** (caustics), **Orbital window**, and a new group **Crafted & cozy**: **Ink wash**, **Paper layers**, **16-bit valley**, **Holo foil** (shimmers with the handheld's tilt — motion sensor only while it's on screen), **Campfire**.
+- Files: `ui/theme/ShelfColors.kt`, `ui/ThemeShaders.kt` (generated), `ui/ThemeSceneLegacy.kt`, `tools/themes/scenes/*` (17 new), `tools/themes/gen.py` (reactive list read from ShelfColors, digits in motif names), `preview_template.html`, `preview.html`.
+
+### Theme features (Appearance › Behind the dock)
+- **Scene per category**: "Only in <category>" when picking a scene; list of per-category scenes with ✕ to remove.
+- **Colours from the game you're on** (palette from its art), **Follow the time of day**, **Fade between scenes** (cross-fade).
+- **Scene style**: Speed, Particles, Darken, Colour shift.
+- **Lights pulse with the music** (Settings › Device lights): stick/controller RGB beats in the cover's colour (real sound when the music scene listens, else 112 bpm). Cheap path `ControllerLights.pulse()`.
+- **Second screen: "Visualizer" music layout** — the home's music scene (or Bloom) behind the full-screen player.
+- Files: `ui/SceneStyle.kt` (new), `data/AppearanceStore.kt` (+ `CategoryScenes`, `SecondMusicLayout.VISUALIZER`), `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`, `ui/ThemeScene.kt`, `ui/NowPlayingScene.kt`, `ui/MusicTheme.kt` (`paletteOf`), `data/ControllerLights.kt`, `ui/FullMusicScreen.kt`, `ui/SecondScreenHome.kt`, `ui/CompanionHub.kt`.
+
+### Game details window: store-page layout
+- Nearly full screen: wide banner with the logo (or name) on it, then **Play** + numbers (Last played, Play time, Last session, Achievements, Platform) + square **Favorite / Drive / Options** buttons, an info line, **tabs** across the middle (Add missing, Tips, Guide, Manual, Steam achievements, Leaderboards), then Achievements, Artwork, About, Scores & time to beat. Everything from before is still there.
+- D-pad grid follows the new layout (`DetailsRows`): row 1 Play → Play time → Favorite → Drive → Options, row 2 the tabs, then achievements, artwork, summary. (Manual / Steam achievements / Leaderboards weren't reachable with the D-pad before.)
+- Files: `ui/GameDetailsOverlay.kt`, `ui/LauncherScreen.kt`.
+
+### Game row: "Wide for the first game only"
+- Game row › It shows as: new choice (only offered with the game you're on at the **left end**): the row's first game opens as a wide capsule, the others stay covers. Files: `data/AppearanceStore.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`.
+
+### Notes
+- Not compiled here (no Android SDK in this workspace): every Kotlin file was parsed by the Kotlin 2 compiler (no syntax errors) and its errors compared with the untouched sources; all 57 scenes compiled and rendered in headless WebGL. First build after the toolchain update may surface a deprecation turned error somewhere — send me the message.
+- New: `tools/release/GITHUB_RELEASE.md` (release key, Drive for everyone, Android developer verification); checklist updated.
+
+---
+
+## Update — 2 Oct 2026 (7): Missables to get, smaller music overlay, background quality, screensaver on weak devices, storage size
+
+### Achievements: "Missables to get"
+- New filter everywhere achievements are listed (the full list, the inline list in the details window — ◀ ▶ now cycles 5 filters — and the second screen): only missables you can still get (flagged missable, not unlocked; in the full list also not marked "I missed this").
+- Files: `ui/AchievementListDialog.kt`, `ui/GameDetailsOverlay.kt`, `ui/LauncherScreen.kt`, `ui/SecondScreenHome.kt`.
+
+### Music overlay during games (was half the screen)
+- Cause: the blurred cover and scrim behind the chip were measured against the whole screen, so the chip grew to the cover's own size. The chip is now exactly as big as its contents; also slimmer (30 dp art, 150 dp text, one lyric line). File: `ui/MusicOverlayView.kt`.
+
+### Corner music player no longer pushes the profile off the screen
+- In the status bar the player now gives way: clock, icons, points and the profile picture keep their corner and the player shrinks into what's left. File: `ui/HomeChrome.kt`.
+
+### Lag with animated backgrounds (Retroid Pocket Classic, Konkr)
+- New **Background quality** (Appearance › Behind the dock): Automatic / Full / Balanced / Low / Lowest — the scene is drawn at 100 / 60 / 40 / 28 % of the screen resolution and 30 / ~28 / ~18 / ~12 frames a second, then smoothly stretched. Automatic = Low on slower handhelds, Balanced on small-memory ones.
+- Every scene now draws into its **own cached layer**: it's no longer re-drawn whenever something else on the home screen animates (the focused card's glow used to re-run the full-screen shader every frame, even for a still frame).
+- Konkr handhelds (`konkr`, `pocketfit`) count as slower devices (Lite + Low quality on Automatic).
+- Files: `data/AppearanceStore.kt` (`SceneQuality`, `sceneQuality`), `ui/ThemeScene.kt` (`LocalSceneQuality`, `sceneLayer`), `ui/NowPlayingScene.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`, `device/DevicePerformance.kt`.
+
+### Screensaver went black on weaker devices
+- The slideshow decoded the ~4K backgrounds at full size (plus an upscale pass) and ran out of memory. Now pictures are decoded at screen size (max 1920 px, 1280 on small devices), 2 bytes a pixel on small devices, no upscale pass on Lite, and a picture that fails to load skips to the next one. File: `ui/ScreenSaver.kt`.
+
+### Space for saved artwork
+- More sizes: 250 MB, 500 MB, 1, 2, 4, 8, 16, 32 GB and **Unlimited** (only the device's free space limits it). Files: `data/ArtStorage.kt`, `ui/SettingsDialog.kt`, `LauncherViewModel.kt`.
+
+---
+
+## Update — 2 Oct 2026 (6): Save explorer focus, player built into the music scenes, 11 new themes
+
+### Save explorer
+- Closing a save's details now puts the focus (and the highlight) back on the save you had picked, scrolled into view — the D-pad carries on from there. While the details window is open the grid behind it can't take focus any more (the D-pad used to wander into it and pick another save). Re-sorting with Y also refocuses the first slot.
+- File: `ui/SaveExplorer.kt`.
+
+### Music themes: player and lyrics part of the scene
+- No more box/bubble: song · artist, ⏮ ⏯ ⏭ (play as a ring in the song's colour) and a thin timeline are drawn straight onto the scene, centred under the equalizer, with a soft shadow. Lyrics in the player are centred too.
+- **The visualizer is never covered**: every music scene now gets told how much room it has (`uWaveH`) and sizes its wave / bars / ring / core to fit above the player. Each scene asks for the room it needs (a ring needs more than a wave: `ThemeMotif.reactiveHalf`).
+- Files: `ui/NowPlayingPanel.kt`, `ui/NowPlayingScene.kt`, `ui/ThemeScene.kt`, `ui/LauncherScreen.kt`, `ui/theme/ShelfColors.kt`; scenes `music`, `_reactive`, `spectrum`, `pulse_ring`.
+
+### New animated themes
+- New group **Tech & mech**: **Circuit board** (traces with racing pulses, chips with blinking LEDs, power waves), **Gearworks** (meshing gears, pistons, steam, sparks), **Neon city** (skyline, windows, beacons, searchlights, traffic).
+- New **creature types**: **Frost** (snowflakes, frost growing from the corners, aurora), **Terra** (dunes, sandstorm gusts, hopping pebbles, glowing cracks), **Venom** (glowing swamp, bubbles popping into rings, drips, toxic mist).
+
+### 5 new music-reactive themes
+- **Oscilloscope** (green-phosphor scope trace with afterglow), **Reactor core** (plasma core, orbiting rings, arcs on the beat, hex shield), **Thunderstorm** (lightning on big beats, the equalizer as a crackling electric arc), **Bar city** (a skyline whose towers are the equalizer bars), **Bloom** (a flower of light whose petals follow the bands).
+- Files: `ui/theme/ShelfColors.kt`, `ui/ThemeShaders.kt` (generated), `ui/ThemeSceneLegacy.kt`; `tools/themes/scenes/` (new `circuit`, `gearworks`, `neon_city`, `frost`, `terra`, `venom`, `oscilloscope`, `reactor`, `thunder`, `bar_city`, `bloom`), `tools/themes/gen.py`, `preview_template.html`, `preview.html`.
+
+### Notes
+- Not compiled here; brackets and a Kotlin syntax pass checked, every scene compiled and rendered in headless WebGL.
+
+---
+
+## Update — 2 Oct 2026 (5): Low power while a game runs, a real 80 % charge limit
+
+### Voltcap uses as little power as possible while a game runs (new `data/GameMode.kt`)
+- On game launch Voltcap goes into a low-power mode; back on the home screen it leaves it (plus a safety check in `MainActivity.onResume`: back in front with focus for 4 s = game over).
+- **Background work waits** and carries on afterwards: artwork / details / manuals scraping, saving art, RetroAchievements hashing (heavy on big disc images) and icon lookups.
+- Decoded pictures are dropped from memory at launch.
+- **Fewer wake-ups**: the performance tuner loop runs every 4 s for plain caps (1 s only for AutoTDP / hold-temp, 3 s for a fan curve) and reads the chip temperature only when the fan / temperature light needs it (else every 20 s); Discord status pumps every 5 s instead of every second; the RetroAchievements unlock watch polls once a minute.
+- The game itself is not slowed down by any of this.
+- Files: `data/GameMode.kt` (**new**), `LauncherViewModel.kt`, `MainActivity.kt`, `device/tune/TuneService.kt`, `data/DiscordPresence.kt`.
+
+### 80 % charge limit is its own thing (not charge bypass)
+- With the limit on, the battery **charges normally up to 80 % and stops** (charges again below 77 %).
+- It no longer does nothing when AYN's charge bypass is on: switching the limit on **switches bypass off** (and hands the battery switch back to normal charging); switching bypass on in the R1 menu switches the limit off. They never fight over the same switch.
+- The kernel's own charge limit (`charge_control_end_threshold`) is now tried first where it exists.
+- **Plugged in above 80 %** (e.g. 95 %): where the device can cut the charger input (`input_suspend`), the battery is brought down to 80 % and then held there ("Down to 80%" on the tile).
+- The "it's still charging" check now compares with the level it was stopped at, so being plugged in above 80 % no longer looks like a broken switch.
+- With the limit off, battery events no longer cost root calls.
+- Files: `device/ChargeLimiter.kt`, `device/DeviceControls.kt`.
+
+---
+
+## Update — 2 Oct 2026 (4): Charge limit, tuner, music themes, anime themes, manuals, save flight, RAM
+
+### 80 % charge limit (it did nothing)
+- **Cause on AYN**: `restrict_chg = 1` only *limits* the current to `restrict_cur`, which is ~1 A by default, so the battery kept charging. Now `restrict_cur` is dropped to ~1 mA first (the same pair AYN's own charge bypass writes) and put back on resume.
+- **Checks that it really stops**: if the battery still climbs to 82 % (or keeps saying "charging" for 2 min) while paused, that switch is released and the next one that works is tried; the one that works is remembered.
+- The switch is **re-read every 15 s and on every plug / unplug** — many drivers reset it on replug, and the old cached "paused" never wrote it again.
+- One more candidate switch (`battery_charging_enabled`). Files: `device/ChargeLimiter.kt`.
+
+### Power control / underclocking (lackluster)
+- Qualcomm's perf HAL lifts caps through **msm_performance `cpu_max_freq`/`cpu_min_freq`** and boosts on every touch (cpu_boost, sched_boost). Caps are now also written there, and the boosts are switched off while a limit is active (all put back afterwards).
+- GPU caps also go to **devfreq `max_freq`/`min_freq`** (thermal / perf HAL raise the GPU through it).
+- Caps are **re-checked every 4 s on every cluster** (governor too), not only the first cluster — and also for the **device-wide tier** (the service used to run only for games, so global tiers were quietly undone).
+- Stronger tiers: Balanced 75/65 %, Power saving 55/45 %, new **Eco** 40/30 % (also in the R1 tile cycle).
+- AutoTDP: ceilings 7 / 9 / 12 W (were 10 / 12 / 14, too high for a handheld); never pins cores with the "performance" governor while AutoTDP is on.
+- Files: `device/tune/Tuner.kt`, `TuneHardware.kt`, `TuneModel.kt`, `TuneService.kt`.
+
+### Game name ↔ category alignment
+- **Tile home**: the category label now sits exactly on the game name's line — it follows the selected tile (left edge / centre / right edge, like the name) instead of being pinned to the screen edge or centre (new `TileNameAnchor`).
+- **Category pills (full bar)**: the selected pill now slides onto the name's edge (row at the left), centre or right end — it always slid to the middle before.
+- Files: `ui/TileHome.kt`, `ui/LauncherScreen.kt`, `ui/HomeChrome.kt`.
+
+### Music-reactive themes
+- **Equalizer position** selectable: Beside the row / Top / Middle / Bottom (Appearance › Theme › Equalizer).
+- **Lyrics position** selectable: In the player / On the wave / Top / Bottom.
+- **Player always right under the equalizer**, centred, with the same controls everywhere (⏮ ⏯ ⏭ + timeline always shown; an empty bar when the player gives no length).
+- **Next song sometimes paused the music** — two causes fixed: (1) between songs the player reports "skipping/buffering", and the session lookup then fell back to another (paused) app, so a quick second "next" started that app, which took the audio; now in-between states count as playing and the last playing app is preferred. (2) Voltcap's own background loop jumped into the short silence between songs and took audio focus; now it waits ~12 s after next/previous, needs ~7.5 s of real quiet, and checks every player's state.
+- **New reactive themes** (cover colours, same settings/positions): **Spectrum** (LED bars with reflection), **Pulse ring** (the cover as a spinning record inside a ring of spectrum bars), **Beat tunnel** (neon tunnel lurching on kicks).
+- Files: `data/MusicThemeSettings.kt`, `ui/NowPlayingPanel.kt`, `ui/NowPlayingScene.kt`, `ui/NowPlayingThemeCard.kt`, `ui/ThemeScene.kt`, `ui/LauncherScreen.kt`, `ui/theme/Theme.kt`, `ui/SettingsDialog.kt`, `data/ShelfNotificationListener.kt`, `ui/BackgroundMusic.kt`, `spotify/SpotifyRepository.kt`, `LauncherViewModel.kt`.
+
+### Anime themes
+- **Shinobi**: big cel sun with turning rays, a leaf whirlwind spiralling up (with its wind funnel), and every 7 s a dash: speed lines, a streak, leaves blown sideways.
+- **Power aura**: spiky cel-shaded aura with a dark outline, crackling lightning, rocks lifting off, focus lines, and a power-up burst every 7 s (shockwave, flash, slight shake).
+- **Blaze** now has its own anime fire: flat hard-edged flame bands with outline, halftone, light burst, diamond sparks with glints, speed lines, surges (Ember keeps the soft fire). Punchier palette.
+- New: **Summer sky** (cel cumulus, lens flare, contrail, birds, power lines), **Mecha HUD** (hex grid, target rings, radar, warning chevrons), **Moon blade** (huge moon, petals, a sword slash flashing across every 5 s).
+- Files: `ui/theme/ShelfColors.kt` (motifs + themes), `ui/ThemeShaders.kt` (generated), `ui/ThemeSceneLegacy.kt`. Outside src_copy: `tools/themes/scenes/` (new `_anime`, `_reactive`, `anime_flames`, `cel_sky`, `mecha_hud`, `moon_blade`, `spectrum`, `pulse_ring`, `beat_tunnel`; rewritten `leaf_swirl`, `aura`), `tools/themes/gen.py`, `preview_template.html`, `preview.html`.
+
+### Manuals scraped automatically
+- Scraping › **Manuals** (on by default): scanned manuals from ScreenScraper are downloaded with the artwork, once per game on the automatic pass; Scrape missing / Re-scrape all look again. Switch it off to skip. Files: `data/ScrapeOptionsStore.kt`, `LauncherViewModel.kt`, `ui/SettingsDialog.kt`.
+
+### Save explorer animation
+- Picking a save: the icon lifts out of its slot and **flies in an arc into the details window**, turning once and growing, landing in its spot there — where it **keeps turning slowly** (a full circle every 8 s, the back shows the card's reverse side, not the cover mirrored). Back flies it home to its slot. File: `ui/SaveExplorer.kt`.
+
+### RAM on small devices
+- New `device/MemoryBudget.kt` (≤ 6 GB RAM, low-RAM flag or small heap = "small"):
+  - decoded-art cache 12 % of the app's memory (20 % elsewhere, was 25 %); covers/backgrounds decode at 2 bytes a pixel (RGB565) on small devices;
+  - backgrounds decoded at most 1920 px wide (1280 on small) — they were decoded at full 4K-ish size;
+  - when a game starts (Voltcap hidden) or Android asks, the decoded art is dropped (all of it on small devices) so the emulator gets the room;
+  - fewer neighbouring covers prefetched on small devices; the music theme no longer holds on to full-size covers.
+- Files: `device/MemoryBudget.kt` (**new**), `data/ArtStorage.kt`, `MainActivity.kt`, `ui/HomeChrome.kt`, `ui/GameDock.kt`, `ui/MusicTheme.kt`.
+
+### Notes
+- Not compiled here (no Android SDK): brackets checked, a Kotlin syntax pass run, and every scene compiled and rendered in headless WebGL. Re-running `python tools/themes/gen.py` gives the same `ThemeShaders.kt`.
+
+---
+
+## Fix — 2 Oct 2026 (3): build error in AudioReactive
+
+- `Variable 'EQ_BANDS' must be initialized`: the constant was declared below the arrays that use it, and the object's members are set up top to bottom. Moved `const val EQ_BANDS = 8` to the top of `AudioReactive`. File: `data/AudioReactive.kt`.
+
+---
+
+## Update — 2 Oct 2026 (2): Button legend follows the system layout
+
+- **Auto-detects the handheld's Xbox / Nintendo setting** (new `data/SystemButtonLayout.kt`): every real key press carries the hardware scan code (where the button physically is) and the key Android turned it into. Bottom button arriving as A = Xbox layout, as B = Nintendo layout (same for X/Y). Switch the layout in the system and the legend follows on your next press; the last result is remembered across restarts. Hooked in `MainActivity.dispatchKeyEvent`.
+- Two settings now (Settings › Controls › Button legend):
+  - **Printed on the buttons**: Xbox letters / Nintendo letters / PlayStation shapes.
+  - **System button layout**: Follow the system (default) / Xbox / Nintendo. The manual choice is for devices that swap buttons inside the driver, where an app can't see it. The card shows what's detected right now, plus a live A B X Y preview.
+- The legend shows **what's printed on the button that does the action**: the layout says which physical button sends A, the printed style says what that button is called.
+- **PlayStation shapes follow the Xbox positions**: ✕ bottom, ○ right, □ left, △ top, so they stay correct when the system layout changes.
+- Files: `data/SystemButtonLayout.kt` (**new**), `MainActivity.kt`, `ui/HomeChrome.kt`, `data/AppearanceStore.kt` (`buttonLayout`), `ui/SettingsDialog.kt`, `ui/LauncherScreen.kt`.
+
+---
+
+## Update — 2 Oct 2026: Now-playing background, save animation, legend buttons, Explore saves
+
+### Now-playing background (music theme)
+- **Player on the background**: new compact panel with cover, title/artist, ⏮ ⏯ ⏭ and a **timeline** you can tap or drag to scrub, plus the current lyric line (Big / Small / Off). No need to open the Spotify popup anymore.
+- **Stays clear of the game row**: it uses the row's measured top/bottom (`rowTopPx`, new `rowBottomPx`) and `dockPosition`:
+  - row at the bottom → panel above it, under the status bar
+  - row at the top → panel below it, above the legend / bottom status bar
+  - row in the middle → whichever side has more room
+  - The panel is measured into that free band only, and drops the lyric (then the timeline) when the band is too low, so it can never grow over the row.
+- **Smaller**: the old overlay (cover + 30 sp lyric at 62 % of the screen width) is gone; the panel is max 340 dp wide.
+- Buttons are wired to the same calls as the corner player (`viewModel.mediaPlayPause / mediaNext / mediaPrevious / mediaSeekTo`), touch-only (`tapOnly`), so they never take D-pad focus away from the games. The Select+… music buttons keep working.
+- The corner mini player (and its lyric line) hides while this panel is on, so there aren't two players.
+- **Equalizer wave** instead of the thin ribbons: a glowing band whose height follows 8 frequency bands (bass in the middle, highs toward the edges) with thin lines riding it, like a music visualizer. It runs through the same free band as the panel, and glides when the row moves.
+- **Reacts much more**:
+  - real audio (`AudioReactive`): 8 new EQ bands; peaks fall within a few seconds (instead of ~10) with a lower floor and a curve that makes small level changes visible.
+  - simulated mode (default when "React to the real beat" is off): kick, snare and hats now drive the bands, so it bounces like an equalizer instead of drifting.
+  - the bands are smoothed like a meter (fast up, quick fall).
+- **No more "squary" background**: the cover is now properly blurred (64 px + 3 box-blur passes) instead of a 16 px image stretched up, and zoomed further in. New toggle **Blurred cover** (off = only the cover's colours as a soft swirl).
+- Settings › Appearance › Theme (Now playing): new chips **Player & timeline** and **Blurred cover**; lyric descriptions updated.
+- Android 12 and older (canvas fallback) also gets a simple equalizer outline.
+
+### Save explorer animation
+- Opening a save: the icon **turns slowly left → right** while rising; the details window picks the turn up, shows a card back (SD-card mark, not the cover mirrored) while it's turned away, and finishes **facing front** as it comes up into place. After that it only sways a little and floats, no more endless spinning.
+
+### Explore saves shortcut
+- New **Explore saves** tile in the **R1 quick panel** (with the other tiles; can be moved/hidden in Edit).
+- New **Explore saves** round button in the **tile-look shortcuts** (row bar and the ☰ corner version).
+- Opening it from R1 now also closes the R1 panel.
+
+### Button legend
+- Letters/shapes sit **centred in their circles**: sizes in dp instead of sp (a large system font size pushed them out), font padding trimmed, centred line height.
+- New setting **Settings › Controls › Button legend › Button style**:
+  - **Xbox (A bottom)** — default, letters in Xbox colours
+  - **Nintendo (A right)** — swaps A/B and X/Y in the legend and the R3 controls card
+  - **PlayStation** — drawn ✕ ○ □ △ shapes in PS colours
+- Applies everywhere `GlyphPill` is used (legend, R3 controls card, "Select + A" style combos).
+
+### Files changed (src_copy)
+- `ui/NowPlayingPanel.kt` (**new**)
+- `ui/NowPlayingScene.kt`, `ui/ThemeScene.kt`, `ui/ThemeShaders.kt` (MUSIC scene), `ui/MusicTheme.kt`, `ui/NowPlayingThemeCard.kt`
+- `data/AudioReactive.kt`, `data/MusicThemeSettings.kt`
+- `ui/LauncherScreen.kt` (panel placement, row bottom, wave height, corner player hidden, Explore saves shortcut, glyph style)
+- `ui/SaveExplorer.kt`, `ui/QuickSettings.kt`
+- `ui/HomeChrome.kt` (GlyphPill, button styles), `data/AppearanceStore.kt` (`buttonGlyphs`), `ui/SettingsDialog.kt` (Button style chips)
+- Outside src_copy: `tools/themes/scenes/music.agsl` updated to match (so `gen.py` doesn't undo the new scene).
+
+### Notes
+- Not compiled here (no Android SDK); braces/parens checked against the originals, and the new shader was compiled and rendered as WebGL in a headless browser.
+- For the music to follow the real song, turn on **React to the real beat** (Microphone permission); otherwise the simulated beat drives it.
+
+---
+
+## Earlier work (collected from README.md and tools/release/PRE_RELEASE_CHECKLIST.md)
+
+Short index of what those two files describe. They have the full details.
+
+- **Library**: scanned ROMs (several ROM folders, deep search for console folders, multi-disc games merged), installed apps, Steam games via GameNative / Steam shortcut import, imports from ES-DE / Pegasus / Daijisho, region duplicates merged into one entry.
+- **Artwork and metadata**: SteamGridDB, IGDB (summary, score, time to beat), RAWG, TheGamesDB, ScreenScraper (video clips, manuals), artwork picker and gallery, your own emulator screenshots in the details window.
+- **Achievements**: RetroAchievements (progress, rarity, Easiest next, Almost mastered, tips, friends, leaderboards), Steam achievements.
+- **Home screen**: classic row and Tile home, row at the top / middle / bottom, categories, collections, franchises, play statuses (Playing / Finished / Dropped / Wishlist / Backlog), smart categories, "What should I play?", quick jump by letter, hotkeys, button legend, layout presets you can share.
+- **Themes**: palettes, animated GPU scenes (generated from `tools/themes`), the Now playing theme, electric focus effect, Lite effects, UI sounds, background music, intro and launch animations, screensaver.
+- **Music**: Spotify, lyrics (LRCLIB, opt-in), the corner player, the big player, a music overlay during games.
+- **Save sync**: Google Drive (only real saves, never save states; conflicts ask you), sync before / after playing, the memory-card save explorer.
+- **Screens**: layouts and rules for a built-in second screen or a TV, second-screen home (art, video, details, achievements, music, dock).
+- **Device**: performance tiers, AutoTDP, CPU tuner, fan curve, per-game profiles, 80 % charge limit, controller RGB lights, FPS overlay.
+- **Other**: quick resume (RetroArch), manuals, BIOS check, weekly recap, stats, Discord status, phone web remote, crash guard / safe mode, diagnostics report, backup and restore.
+- **Still open in the checklist**: delete `SwitchHome.kt` from the project sources (it's still in `app/src`), raise `versionCode`, release signing, the real-device test list, release notes.

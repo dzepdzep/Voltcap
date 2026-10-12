@@ -1,0 +1,84 @@
+// Hex lattice: a calm tech panel. Bevelled hexagon tiles fill the bottom-right and top-left corners and
+// fade out towards the middle; now and then a soft pulse runs across them, lighting tiles as it passes,
+// and a few tiles glow on their own. A thin sweep of light crosses slowly (original design).
+
+// Hex grid: returns (local x, local y, cell id x, cell id y).
+float4 hexCell(float2 p) {
+    float2 r = float2(1.0, 1.7320508);
+    float2 h = r * 0.5;
+    float2 a = mod(p, r) - h;
+    float2 b = mod(p - h, r) - h;
+    float2 gv = dot(a, a) < dot(b, b) ? a : b;
+    float2 id = p - gv;
+    return float4(gv, id);
+}
+
+float hexDist(float2 p) {
+    p = abs(p);
+    return max(dot(p, normalize(float2(1.0, 1.7320508))), p.x);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    float3 col = mix(BG * 1.4, BG * 0.8, sat(uv.y));
+    col += A * exp(-length((uv - float2(asp, 1.0)) * float2(0.9, 1.0)) * 2.2) * 0.12;
+    col += S * exp(-length(uv * float2(0.9, 1.0)) * 2.8) * 0.1;
+    col += mix(A, S, 0.5) * exp(-length(uv - float2(asp * 0.5, 0.5)) * 2.5) * 0.03;
+
+    // How much lattice shows here: the two corners.
+    float2 c1 = (uv - float2(asp, 1.0)) * float2(0.9, 1.0);
+    float2 c2 = (uv - float2(0.0, 0.0)) * float2(0.9, 1.0);
+    float zone = max(smoothstep(0.85, 0.25, length(c1)), smoothstep(0.62, 0.18, length(c2)) * 0.85);
+
+    float sc = 13.0;
+    float4 h = hexCell(uv * sc);
+    float2 gv = h.xy;
+    float2 id = h.zw;
+    float d = hexDist(gv);                       // 0 centre .. 0.5 edge
+    float2 cellC = id / sc;
+    float2 cc1 = (cellC - float2(asp, 1.0)) * float2(0.9, 1.0);
+    float2 cc2 = cellC * float2(0.9, 1.0);
+    float cellZone = max(smoothstep(0.85, 0.25, length(cc1)), smoothstep(0.62, 0.18, length(cc2)) * 0.85);
+    // Tiles thin out at the edge of the zone (some missing).
+    float present = step(hash12(id) * 0.9, cellZone);
+    // Each tile: a raised plate with a bevel lit from the top-left.
+    float plate = smoothstep(0.47, 0.44, d);
+    float bevel = smoothstep(0.36, 0.44, d) * plate;
+    float2 nrm = normalize(gv + 1e-4);
+    float lightSide = dot(nrm, normalize(float2(-0.6, -0.8)));
+    // Faces shade from the secondary colour near the corner to dark further out.
+    float3 tile = BG * 2.0 + mix(S, A, 0.3) * (0.06 + 0.12 * cellZone);
+    tile += mix(A, S, 0.5) * 0.05 * (1.0 - uv.y);
+    tile += float3(1.0) * bevel * lightSide * 0.08;
+    tile *= 0.9 + 0.2 * vnoise(id * 0.7 + t * 0.05);
+    // A pulse rolling across the lattice from the bottom-right corner.
+    float wave = fract(t * 0.05);
+    float rd = length(cc1);
+    float pulse = exp(-sqf((rd - wave * 1.6) / 0.08)) * (1.0 - wave) + exp(-sqf((length(cc2) - fract(t * 0.05 + 0.5) * 1.2) / 0.07)) * (1.0 - fract(t * 0.05 + 0.5));
+    // Tiles glowing on their own, fading in and out.
+    float own = hash12(id + 7.0);
+    float glowOwn = step(0.78, own) * sqf(sat(sin(t * (0.2 + 0.3 * hash12(id + 3.0)) + own * 20.0)));
+    float lit = max(pulse, glowOwn) * present;
+    float3 lc = mix(A, S, hash12(id + 1.0) * 0.6);
+    tile += lc * lit * (0.35 + 0.45 * smoothstep(0.44, 0.0, d));
+    // Edge line glows faintly.
+    float edgeLine = exp(-abs(d - 0.46) * 90.0);
+    tile += mix(A, S, 0.3) * edgeLine * (0.22 + 0.25 * cellZone + lit * 0.7);
+    // Inner ring detail on lit tiles.
+    tile += lc * exp(-abs(d - 0.22) * 120.0) * lit * 0.25;
+    col = mix(col, tile, plate * present * sat(cellZone * 1.4));
+    // Gaps between tiles stay dark; a soft halo round lit ones.
+    col += lc * lit * exp(-d * 4.0) * 0.06 * present;
+
+    // A thin sweep of light crossing slowly on a diagonal.
+    float sweep = uv.x * 0.6 + uv.y - fract(t * 0.03) * (asp * 0.6 + 1.6) + 0.3;
+    col += mix(A, float3(1.0), 0.5) * exp(-abs(sweep) * 120.0) * zone * 0.12;
+
+    return half4(finish(col, fc), 1.0);
+}

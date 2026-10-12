@@ -1,0 +1,74 @@
+// Pulse ring: the song's cover as a slowly spinning record in the middle of a ring of bars that
+// burst outwards with the spectrum all the way round (bass at the top, highs at the bottom,
+// mirrored left and right), a halo swelling with the bass, rings rolling away on every kick and
+// sparks flung outwards. Centred where the equalizer is set (uWaveY).
+//#include reactive
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.5) * play;
+
+    float3 col = coverField(uv, asp, t, bass, 0.7, BG, A, S);
+    float2 c = float2(waveX(asp), uWaveY);
+    float2 d = uv - c;
+    float r = length(d);
+    float ang = atan(d.x, -d.y);
+    // Sized to its room (0.26 of the height each side by default), so the player under it never covers it.
+    float sc = room(0.26) / 0.3;
+    float R0 = (0.12 + 0.012 * bass * k + 0.01 * kick * k) * sc;
+    float gain = 0.5 + 0.5 * k;
+
+    // Halo.
+    col += A * exp(-max(r - R0, 0.0) * 7.0) * (0.08 + 0.3 * bass * k);
+
+    // Ring of bars.
+    float N = 72.0;
+    float a01 = ang / TAU + 0.5;
+    float aid = floor(a01 * N);
+    float fa = fract(a01 * N);
+    float barAng = ((aid + 0.5) / N - 0.5) * TAU;
+    float m = abs(barAng) / PI;
+    float e = eqAt(m) * play;
+    float len = (0.008 + 0.16 * e * gain) * sc;
+    float inner = R0 + 0.014 * sc;
+    float bar = step(0.22, fa) * step(fa, 0.78) * step(inner, r) * step(r, inner + len);
+    float3 bc = mix(A, S, m);
+    col = mix(col, mix(bc, float3(1.0), sat((r - inner) / 0.16) * 0.5), bar);
+    col += bc * exp(-abs(r - inner - len) * 120.0) * 0.25 * step(inner, r);
+
+    // Rings rolling away on the kick.
+    float ringR = R0 + uBeatAge * 0.55;
+    col += mix(A, S, 0.5) * exp(-abs(r - ringR) * 70.0) * exp(-uBeatAge * 2.2) * 0.5 * k * play;
+
+    // Sparks flung outwards (polar cells streaming out).
+    float2 pp = float2(a01 * 48.0, log(max(r, 0.001)) * 9.0 - (1.2 * t + 2.0 * uBassT));
+    float2 pid = floor(pp);
+    float2 pf = fract(pp) - 0.5;
+    float2 ph = hash22(pid + 3.0);
+    float spark = step(ph.x, 0.12) * (1.0 - smoothstep(0.05, 0.12, length(pf - (ph - 0.5) * 0.4))) * step(R0 + 0.03, r);
+    col += mix(S, float3(1.0), 0.5) * spark * (0.25 + 0.6 * uHigh * play * k) * exp(-max(r - R0, 0.0) * 2.0);
+
+    // The record: the cover, spinning while playing, with grooves, a sheen and a label hole.
+    if (r < R0) {
+        float2 q = rot(0.6 * uPlayT) * d;
+        float2 auv = q / (R0 * 2.0) + 0.5;
+        float3 art = float3(uArt.eval(clamp(auv, 0.0, 1.0) * uArtSize).rgb);
+        float3 disc = mix(mix(BG * 1.4, mix(A, S, 0.5) * 0.6, auv.y), art * 1.1, uHasArt);
+        disc *= 0.9 + 0.1 * sin(r * 520.0);
+        float sheen = pow(abs(sin(atan(q.y, q.x) * 2.0)), 6.0) * 0.12;
+        disc += float3(sheen);
+        disc = mix(disc, BG * 0.4, 1.0 - smoothstep(0.012, 0.015, r));
+        float rim = 1.0 - smoothstep(0.0, 0.004, R0 - r);
+        col = mix(disc, mix(A, float3(1.0), 0.4), rim * 0.8);
+    }
+
+    return half4(finish(col, fc), 1.0);
+}

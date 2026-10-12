@@ -1,0 +1,103 @@
+// Comic pages: a comic-book page that keeps redrawing itself. Panels with thick ink borders slide
+// in and settle, each one a different moment - halftone skies, speed lines rushing past, a starburst
+// "impact" flash, radiating sun rays, a cityscape at dusk - in bold flat colours with Ben-Day dots.
+// Every few seconds a panel flips to a new picture. Generic comic drawing styles only.
+//#include anime
+
+float3 panelArt(float kind, float2 q, float t, float seed, float3 A, float3 S, float3 BG) {
+    // q: 0..1 inside the panel.
+    float3 c = float3(1.0);
+    if (kind < 1.0) {
+        // Halftone sky with a big sun.
+        c = mix(mix(S, float3(1.0), 0.5), A, q.y);
+        float sun = length(q - float2(0.7, 0.35)) - 0.18;
+        c = mix(c, float3(1.0, 0.85, 0.25), step(sun, 0.0));
+        c = mix(c, c * 0.65, halftone(q, 38.0, q.y * 0.9) * 0.6);
+    } else if (kind < 2.0) {
+        // Speed lines rushing past.
+        c = mix(float3(1.0), mix(A, float3(1.0), 0.6), q.x);
+        float l = step(0.7, hash11(floor(q.y * 40.0) + floor(t * 6.0) * 7.0 + seed));
+        float streak = l * step(fract(q.x * 0.6 + t * 2.0 + hash11(floor(q.y * 40.0))), 0.6);
+        c = mix(c, float3(0.08), streak);
+    } else if (kind < 3.0) {
+        // Impact starburst.
+        float2 d = q - 0.5;
+        float a = atan(d.y, d.x);
+        float r = length(d);
+        float spikes = 0.22 + 0.12 * step(0.5, fract(a / TAU * 14.0)) + 0.02 * sin(t * 6.0);
+        c = mix(S, A, step(0.5, fract(a / TAU * 24.0 + t * 0.2)));
+        c = mix(c, float3(1.0, 0.95, 0.3), step(r, spikes));
+        c = mix(c, float3(0.08), step(abs(r - spikes), 0.008));
+        c = mix(c, float3(1.0, 0.4, 0.2), step(r, spikes * 0.55));
+    } else if (kind < 4.0) {
+        // Sun rays.
+        float2 d = q - float2(0.5, 1.0);
+        float a = atan(d.y, d.x);
+        c = mix(A, mix(A, float3(1.0), 0.5), step(0.5, fract(a / TAU * 20.0 + t * 0.05)));
+        c = mix(c, c * 0.75, halftone(q, 30.0, 0.5) * 0.5);
+    } else {
+        // City at dusk: buildings with lit windows over a halftone gradient.
+        c = mix(mix(A, S, 0.5), float3(1.0, 0.75, 0.5), q.y);
+        c = mix(c, c * 0.7, halftone(q, 34.0, 1.0 - q.y) * 0.6);
+        float bx = floor(q.x * 9.0);
+        float bh = 0.35 + 0.4 * hash11(bx + seed);
+        float inB = step(1.0 - bh, q.y);
+        float win = step(0.6, hash12(floor(q * float2(45.0, 40.0)) + seed)) * step(0.3, fract(q.x * 45.0)) * step(0.35, fract(q.y * 40.0));
+        c = mix(c, float3(0.1, 0.1, 0.18), inB);
+        c = mix(c, float3(1.0, 0.9, 0.4), inB * win);
+    }
+    return c;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Paper.
+    float3 col = float3(0.96, 0.94, 0.88) * (0.95 + 0.05 * vnoise(uv * 300.0));
+    // A page layout: 3 columns x 2 rows with jittered gutters; the layout itself changes every 12 s.
+    float page = floor(t / 12.0);
+    float pt = fract(t / 12.0) * 12.0;
+    float2 m = float2(0.05);
+    float2 area = float2(asp, 1.0) - 2.0 * m;
+    float2 q = (uv - m) / area;
+    float split = 0.5 + (hash11(page + 1.0) - 0.5) * 0.2;
+    float row = step(split, q.y);
+    float c1 = 0.33 + (hash11(page * 3.0 + row) - 0.5) * 0.15;
+    float c2 = 0.66 + (hash11(page * 5.0 + row) - 0.5) * 0.15;
+    float colI = step(c1, q.x) + step(c2, q.x);
+    float x0 = colI < 0.5 ? 0.0 : (colI < 1.5 ? c1 : c2);
+    float x1 = colI < 0.5 ? c1 : (colI < 1.5 ? c2 : 1.0);
+    float y0 = row < 0.5 ? 0.0 : split;
+    float y1 = row < 0.5 ? split : 1.0;
+    float gut = 0.012;
+    float2 lo = float2(x0 + gut, y0 + gut * asp);
+    float2 hi = float2(x1 - gut, y1 - gut * asp);
+    float id = colI + row * 3.0;
+    // Slide in, staggered, at the start of each page.
+    float enter = smoothstep(0.0, 0.6, pt - id * 0.25);
+    float2 off = float2((hash11(id + page) - 0.5) * 0.4, 0.3) * (1.0 - enter);
+    float2 pq = (q - lo - off) / (hi - lo);
+    float inP = step(0.0, pq.x) * step(pq.x, 1.0) * step(0.0, pq.y) * step(pq.y, 1.0);
+    if (inP > 0.5) {
+        // A panel flips to new art every few seconds.
+        float flipT = floor((t + id * 1.7) / 4.0);
+        float kind = floor(hash11(id * 9.0 + flipT * 3.7 + page) * 5.0);
+        float3 art = panelArt(kind, pq, t, id + flipT, A, S, BG);
+        col = art;
+        // Ink border.
+        float2 e = min(pq, 1.0 - pq) * (hi - lo) * area;
+        float border = 1.0 - smoothstep(0.004, 0.006, min(e.x, e.y));
+        col = mix(col, float3(0.06), border);
+    }
+    // Drop shadow under panels (offset).
+    float2 sq = (q - lo - off - float2(0.006, 0.01)) / (hi - lo);
+    float inS = step(0.0, sq.x) * step(sq.x, 1.0) * step(0.0, sq.y) * step(sq.y, 1.0) * (1.0 - inP);
+    col = mix(col, col * 0.75, inS);
+    return half4(finish(col, fc), 1.0);
+}

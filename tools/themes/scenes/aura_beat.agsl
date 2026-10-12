@@ -1,0 +1,75 @@
+// Aura clash (music): two anime power auras - one in each of the song's colours - pushing against
+// each other with the album cover held in the middle of the clash. The auras flare with their half
+// of the spectrum (lows on the left, highs on the right), the one that's louder pushes the seam
+// across, lightning crackles down the seam with the mids, and a real kick slams a shockwave ring and
+// focus lines out from the cover. Generic battle-anime drawing style only.
+//#include reactive
+//#include anime
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 4.5) * play;
+    float lows = (uEqA.x + uEqA.y + uEqA.z + uEqA.w) * 0.25 * play;
+    float highs = (uEqB.x + uEqB.y + uEqB.z + uEqB.w) * 0.25 * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.26) * 0.62;
+    // Whoever is louder pushes the seam.
+    float push = (lows - highs) * 0.25 * (0.4 + 0.8 * k) + 0.02 * sin(t * 0.6);
+    float seamX = c.x + push + 0.015 * (fbm3(float2(uv.y * 6.0, t * 2.0)) - 0.5);
+    float side = uv.x - seamX;
+
+    float3 col = BG * 0.55;
+    col = mix(col, mix(BG, A, 0.3 + 0.3 * lows), smoothstep(0.0, -0.7, side) * 0.85);
+    col = mix(col, mix(BG, S, 0.3 + 0.3 * highs), smoothstep(0.0, 0.7, side) * 0.85);
+
+    // Auras: flame streams flowing towards the seam, cel-banded, taller when their half is loud.
+    float dist = abs(side);
+    float lv = side < 0.0 ? lows : highs;
+    float flow = fbm3(float2(dist * 6.0 - t * (2.0 + 3.0 * lv), uv.y * 4.0 + sign(side) * 3.0));
+    float f = flow - dist * (2.8 - 1.4 * lv * k) + 0.4 + 0.2 * kick;
+    float3 aura = side < 0.0 ? A : S;
+    col = mix(col, aura * 0.7, step(0.25, f) * 0.8);
+    col = mix(col, mix(aura, float3(1.0), 0.3), step(0.42, f));
+    col = mix(col, mix(aura, float3(1.0), 0.55), step(0.6, f));
+
+    // Lightning down the seam: more of it with the mids.
+    float bl = bolt(uv, float2(seamX, 0.0), float2(seamX, 1.0), floor(8.0 * t + 12.0 * uMidT), 0.05 + 0.04 * uMid * play);
+    col += float3(1.0) * glow(bl, 0.003) * (0.5 + 0.8 * uMid * play);
+    col += mix(A, S, 0.5) * glow(bl, 0.02) * 0.3;
+
+    // Kick: shockwave ring and focus lines from the cover.
+    float sr = length((uv - c) * float2(1.0, 1.5));
+    float age = uBeatAge;
+    col += float3(1.0) * exp(-abs(sr - R * 1.2 - age * 0.9) * 60.0) * kick * 0.7 * k;
+    col += float3(1.0) * focusLines(uv, c, t, 90.0, 1.0) * kick * 0.45 * k;
+
+    // The cover held in the clash: a square with a white-hot rim, shaking a little on the kick.
+    float2 sh = float2(hash11(floor(t * 30.0)) - 0.5, hash11(floor(t * 30.0) + 3.0) - 0.5) * 0.008 * kick * k;
+    float2 d = uv - c - sh;
+    float box = sdRoundBox(d, float2(R), R * 0.05);
+    col += mix(A, S, step(0.0, d.x)) * exp(-max(box, 0.0) * 18.0) * (0.4 + 0.8 * kick);
+    if (box < px) {
+        float3 cov = sharpCover(d / (2.0 * R) + 0.5, A, S);
+        col = mix(col, cov, 1.0 - smoothstep(-px, px, box));
+    }
+    col += float3(1.0) * (1.0 - smoothstep(0.0, px * 2.5, abs(box))) * (0.5 + 0.5 * kick);
+
+    // Rocks lifting off the ground with the bass.
+    float2 rp = uv * float2(6.0, 1.0) + float2(0.0, t * (0.05 + 0.2 * lows));
+    float2 ri = floor(rp);
+    float2 rf = fract(rp) - 0.5;
+    float2 rh = hash22(ri + 2.0);
+    float rock = sdRoundBox(rot(t * (rh.y - 0.5)) * ((rf - (rh - 0.5) * 0.5) * float2(1.0 / 6.0, 1.0)), float2(0.01 + 0.012 * rh.y), 0.003);
+    col = mix(col, BG * 0.25 + mix(A, S, step(0.0, side)) * 0.3, (1.0 - smoothstep(0.0, px, rock)) * step(rh.x, 0.2));
+
+    return half4(finish(col, fc), 1.0);
+}

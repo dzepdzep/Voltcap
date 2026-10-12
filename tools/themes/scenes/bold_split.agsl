@@ -1,0 +1,30 @@
+// Bold split: a crisp, flat console-style home backdrop — a clean light field with one big rounded
+// slab of the accent colour sweeping in from the side. Static, flat colours, sharp edges.
+
+float rbox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + r;
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(BG, float3(0.93), 0.08) * 1.15;
+    // The big slab, tilted a little.
+    float2 p = uv - float2(asp * 0.9, 0.35);
+    float ca = cos(-0.18); float sa = sin(-0.18);
+    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
+    float d = rbox(p, float2(asp * 0.42, 0.42), 0.12);
+    col = mix(col, A, 1.0 - smoothstep(-px, px, d));
+    // A second, smaller pill in the second colour, overlapping.
+    float d2 = rbox(uv - float2(asp * 0.08, 0.92), float2(0.32, 0.12), 0.12);
+    col = mix(col, S, 1.0 - smoothstep(-px, px, d2));
+    // A thin ring for balance.
+    float r = abs(length(uv - float2(asp * 0.24, 0.24)) - 0.11) - 0.012;
+    col = mix(col, mix(A, float3(1.0), 0.2), 1.0 - smoothstep(-px, px, r));
+    return half4(col, 1.0);
+}

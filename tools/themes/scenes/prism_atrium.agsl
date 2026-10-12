@@ -1,0 +1,32 @@
+// Glass archways recede through a reflective atrium. Perspective, occlusion and quiet camera drift.
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float2 p = uv - float2(asp * 0.5 + sin(uTime * 0.08) * 0.035, 0.45);
+    float3 col = uBg.rgb * (1.0 + uv.y * 0.4);
+    float horizon = 0.45;
+    float floorY = max(uv.y - horizon, 0.002);
+    float z = 0.18 / floorY;
+    float x = p.x * z;
+    float2 grid = abs(fract(float2(x, z + uTime * 0.12)) - 0.5);
+    float seam = 1.0 - smoothstep(0.005, 0.024, min(grid.x, grid.y));
+    col += uAcc.rgb * seam * exp(-z * 0.22) * step(horizon, uv.y) * 0.14;
+    // Back-to-front arches; fewer at low quality.
+    for (int i = 0; i < 7; i++) {
+        if (uLod > 1.5 && i < 3) continue;
+        float depth = 1.3 + float(6 - i) * 0.85 + fract(uTime * 0.045);
+        float scale = 1.0 / depth;
+        float2 q = p / scale;
+        float frame = abs(max(abs(q.x) - 0.66, abs(q.y + 0.1) - 0.54));
+        float outline = 1.0 - smoothstep(0.01, 0.04, frame);
+        float glow = exp(-frame * 18.0) * 0.11;
+        float3 tint = mix(uAcc.rgb, uSec.rgb, mod(float(i), 2.0));
+        col = mix(col, uSurf.rgb * 1.3, outline * 0.45);
+        col += tint * (outline * 0.62 + glow) * (0.35 + 0.65 * scale);
+        float2 reflected = float2(p.x, -abs(uv.y - horizon) - 0.1);
+        float2 rq = reflected / scale;
+        float reflection = exp(-abs(max(abs(rq.x) - 0.66, abs(rq.y + 0.1) - 0.54)) * 30.0);
+        col += tint * reflection * step(horizon, uv.y) * exp(-floorY * 4.0) * 0.15;
+    }
+    return half4(finish(col, fc), 1.0);
+}

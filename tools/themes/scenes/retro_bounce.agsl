@@ -1,0 +1,47 @@
+// Retro bounce: the 32-bit backdrop behind the bouncing controller parts and console icons (drawn by
+// the app, RetroBounceLayer). A dark sky in fat pixels with a slow dither, chunky stars twinkling in
+// steps, and a scrolling checkerboard floor in the theme's colours with a glowing horizon.
+half4 main(float2 fc) {
+    // Everything snapped to 4-pixel blocks (at full resolution) for the 32-bit look.
+    float blk = max(2.0, floor(uRes.y / 180.0));
+    float2 g = floor(fc / blk) * blk + blk * 0.5;
+    float2 uv = g / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = floor(uTime * 12.0) / 12.0; // stepped time: moves like an old console, not smoothly
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float horizon = 0.72;
+
+    // Sky: banded gradient (posterised) from the background to a hint of the secondary colour.
+    float sky = floor(sat(uv.y / horizon) * 8.0) / 8.0;
+    float3 col = mix(BG * 0.7 + S * 0.05, BG * 1.2 + S * 0.18, sky);
+    // Ordered dither between the bands.
+    float2 cell = floor(fc / blk);
+    float d = fract((cell.x + cell.y * 2.0) * 0.25);
+    col += (d - 0.4) * 0.012;
+
+    // Chunky stars (one fat pixel each) that blink on and off in steps.
+    float2 sc = floor(uv * 34.0);
+    float h = hash12(sc + 3.1);
+    float2 starAt = floor((sc + 0.2 + 0.6 * hash22(sc)) / 34.0 * uRes.y / blk);
+    float isStar = step(abs(cell.x - starAt.x) + abs(cell.y - starAt.y), 0.5);
+    float on = step(0.9, h) * step(0.35, fract(h * 13.0 + t * (0.3 + h)));
+    float3 starCol = mix(float3(1.0), mix(A, S, step(0.5, fract(h * 7.0))), 0.45);
+    col += starCol * isStar * on * (1.0 - step(horizon - 0.02, uv.y)) * 0.8;
+
+    // Floor: a scrolling checkerboard in perspective below the horizon.
+    if (uv.y > horizon) {
+        float z = (uv.y - horizon);
+        float depth = 0.6 / max(z, 0.003);
+        float2 fp = float2((uv.x - asp * 0.5) * depth * 1.6, depth + t * 1.5);
+        float chk = mod(floor(fp.x) + floor(fp.y), 2.0);
+        float3 fl = mix(BG * 0.8 + A * 0.32, BG * 0.7 + S * 0.22, chk);
+        // Further away: darker and hazier, like fog on the horizon.
+        fl = mix(fl, BG * 1.1 + A * 0.12, exp(-z * 14.0));
+        col = mix(col, fl, sat(z * 40.0));
+    }
+    // Horizon glow line.
+    col += A * exp(-abs(uv.y - horizon) * 90.0) * 0.45;
+    return half4(finish(col, fc), 1.0);
+}
