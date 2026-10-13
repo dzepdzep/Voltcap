@@ -219,6 +219,7 @@ internal fun HomeGameGrid(
                                     val s = 1f + (if (free) 0.1f else 0.05f) * lift
                                     scaleX = s; scaleY = s; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
                                 }
+                                flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
                             }
                             .then(if (on && !secondScreen) Modifier.focusedCard() else Modifier)
                             .then(if (free) Modifier.mediaFloorGlow(on, ShelfTheme.accent, pulse) else Modifier

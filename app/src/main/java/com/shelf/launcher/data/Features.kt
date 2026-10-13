@@ -1324,6 +1324,13 @@ object Features {
     val timelineDates = BoolPref("timeline_dates", true)
     /** Arcade cabinets: the marquee lit and glowing. */
     val arcadeGlow = BoolPref("arcade_glow", true)
+    /** Update 177: a multi-disc game without a .m3u playlist gets one written by the scan (off: listed under Library check). */
+    val autoM3u = BoolPref("auto_m3u", false)
+    /** Update 177: how the consoles look on the second screen's Games page (SecondGamesPage.kt). */
+    enum class FolderLook(val label: String) { FOLDERS("Folders"), TILES("Tiles"), CARDS("Wide cards"), LOGOS("Logos") }
+    val secondFolderLook = EnumPref("second_folder_look", FolderLook.FOLDERS, FolderLook.values())
+    /** Update 177: the console's logo over a folder picture (off: the picture alone — many packs have the name in it). */
+    val secondFolderLogo = BoolPref("second_folder_logo", true)
     /** Update 176: the custom layout shown by Custom layout (CustomLayouts.kt; "" = the built-in example). */
     val customLayout = StringPref("custom_layout", "")
     /** Arcade cabinets: scan lines over the screen. */

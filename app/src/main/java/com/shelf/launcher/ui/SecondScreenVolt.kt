@@ -175,7 +175,7 @@ internal fun VoltAchievementBoard(
                             val count = f.pick(list).size
                             val on = f == filter
                             Row(
-                                Modifier.fillMaxWidth().clip(uiRounded(10.dp))
+                                Modifier.fillMaxWidth().padTarget("board-" + f.name) { filter = f; pickedId = null }.clip(uiRounded(10.dp))
                                     .background(if (on) voltFill() else androidx.compose.ui.graphics.SolidColor(Color.Transparent))
                                     .clickable { filter = f; pickedId = null }
                                     .padding(horizontal = 10.dp, vertical = 8.dp),
@@ -241,6 +241,7 @@ private fun BoardList(shown: List<RaAchievementDetail>, pickedId: Int?, onPick: 
             Column(Modifier.fillMaxWidth()) {
             Row(
                 Modifier.fillMaxWidth()
+                    .padTarget("ach-" + a.id) { onPick(a.id) }
                     .voltSurface(shape, alpha = if (a.isUnlocked) 1f else 0.7f)
                     .border(if (on) 1.5.dp else 0.dp, if (on) ShelfTheme.accent else Color.Transparent, shape)
                     .clickable { onPick(a.id) }

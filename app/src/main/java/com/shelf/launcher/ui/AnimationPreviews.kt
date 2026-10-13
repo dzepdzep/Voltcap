@@ -125,6 +125,7 @@ internal fun HeroMotionPreview(motion: HeroMotion, caption: String? = motion.lab
                 HeroMotion.MEMORY_CARD -> { translationY = -q * size.height * 0.4f; alpha = 1f - q }
                 else -> Unit
             }
+            flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
         }) { Picture(from, Modifier) }
         // The one coming in.
         Box(Modifier.fillMaxSize().graphicsLayer {
@@ -139,6 +140,7 @@ internal fun HeroMotionPreview(motion: HeroMotion, caption: String? = motion.lab
                 HeroMotion.MEMORY_CARD -> translationY = (1f - q) * size.height
                 else -> Unit
             }
+            flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
         }.drawWithContent {
             when (motion) {
                 // A growing circle from the middle.
@@ -213,8 +215,8 @@ internal fun CapsuleRevealPreview(style: Features.CapsuleReveal, caption: String
                     wide(Modifier.graphicsLayer { translationX = (1f - q) * size.width; alpha = q })
                 }
                 Features.CapsuleReveal.FLIP -> {
-                    if (q < 0.5f) cover(Modifier.graphicsLayer { rotationY = q * 180f; cameraDistance = 10f * density })
-                    else wide(Modifier.graphicsLayer { rotationY = (q - 1f) * 180f; cameraDistance = 10f * density })
+                    if (q < 0.5f) cover(Modifier.graphicsLayer { rotationY = q * 180f; cameraDistance = 10f * density ; flatTextFor3d() })
+                    else wide(Modifier.graphicsLayer { rotationY = (q - 1f) * 180f; cameraDistance = 10f * density ; flatTextFor3d() })
                 }
                 Features.CapsuleReveal.SWEEP -> {
                     cover(Modifier.graphicsLayer { alpha = 1f - q })
@@ -281,6 +283,7 @@ internal fun CarouselViewPreview(view: CarouselView) {
                         // (Update 134: Spine wall's cards turn side-on — kept just short of it, so they show as slim spines.)
                         scaleX = p.scale; scaleY = p.scale; rotationY = p.turnY.coerceIn(-78f, 78f); rotationZ = p.turnZ
                         cameraDistance = 10f * density; alpha = p.alpha
+                        flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
                     }
                     .clip(RoundedCornerShape(4.dp))
                     .background(Brush.verticalGradient(if (n % 2 == 0) listOf(a, Color(0xFF1A1F2B)) else listOf(s, Color(0xFF221A26))))

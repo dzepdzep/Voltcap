@@ -152,6 +152,7 @@ private fun DrawerTile(app: Game, modifier: Modifier, onMenu: () -> Unit, onClic
     val sounds = LocalUiSounds.current
     Column(
         modifier
+            .padTarget("drawer-" + app.stableKey) { onClick() }
             .clip(shape)
             .focusRing(focused, shape)
             .onPreviewKeyEvent { e ->

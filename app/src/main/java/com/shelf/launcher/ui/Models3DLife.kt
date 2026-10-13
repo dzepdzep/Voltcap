@@ -122,7 +122,7 @@ internal fun Model3DLive(
     val rest = if (turning) 0f else Models3D.wrap(yaw - a0).coerceIn(-12f, 12f)
     val dens = androidx.compose.ui.platform.LocalDensity.current.density
     Spacer(
-        modifier.then(if (rest != 0f) Modifier.graphicsLayer { rotationY = rest; cameraDistance = 14f * dens } else Modifier).drawWithCache {
+        modifier.then(if (rest != 0f) Modifier.graphicsLayer { rotationY = rest; cameraDistance = 14f * dens ; flatTextFor3d() } else Modifier).drawWithCache {
             // The picture fitted in the middle (as ContentScale.Fit would), and the floor it stands on.
             val fw = minOf(size.width, size.height * aspect)
             val fh = fw / aspect

@@ -79,14 +79,23 @@ internal fun SecondGamesPage(
         if (folders.isEmpty()) {
             Text("No consoles yet.", color = ShelfTheme.textMuted, fontSize = 13.sp, modifier = Modifier.align(Alignment.Center))
         } else {
+            // Update 177: the look picked in Settings › Screens › Second screen Games page, with the folder pictures.
+            val look = com.shelf.launcher.data.Features.secondFolderLook.state.value
+            val (minSize, aspect) = when (look) {
+                com.shelf.launcher.data.Features.FolderLook.TILES -> 96.dp to 1f
+                com.shelf.launcher.data.Features.FolderLook.CARDS -> 150.dp to 1.78f
+                com.shelf.launcher.data.Features.FolderLook.LOGOS -> 120.dp to 1.6f
+                else -> 104.dp to 1.18f
+            }
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 104.dp),
+                columns = GridCells.Adaptive(minSize = minSize),
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(folders, key = { it.platform }) { f ->
-                    ConsoleFolder(f, Modifier.fillMaxWidth().aspectRatio(1.18f)) { open = f }
+                    if (look == com.shelf.launcher.data.Features.FolderLook.FOLDERS) ConsoleFolder(f, Modifier.fillMaxWidth().aspectRatio(aspect)) { open = f }
+                    else ConsoleTile(f, look, Modifier.fillMaxWidth().aspectRatio(aspect)) { open = f }
                 }
             }
         }
@@ -112,7 +121,7 @@ private fun ConsoleFolder(f: GamesFolder, modifier: Modifier, onClick: () -> Uni
     val back = lerp(accent, Color.Black, 0.28f)
     val frontTop = lerp(accent, Color.White, 0.12f)
     val frontBottom = accent
-    Box(modifier.clip(RoundedCornerShape(10.dp)).clickable { onClick() }, contentAlignment = Alignment.Center) {
+    Box(modifier.padTarget("folder-" + f.platform) { onClick() }.clip(RoundedCornerShape(10.dp)).clickable { onClick() }, contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
@@ -141,16 +150,72 @@ private fun ConsoleFolder(f: GamesFolder, modifier: Modifier, onClick: () -> Uni
             // A thin light line along the front's top edge, like the edge of a sheet.
             drawLine(Color.White.copy(alpha = 0.35f), Offset(left + r.x, frontY + 1f), Offset(right - r.x, frontY + 1f), strokeWidth = 2f)
         }
+        // Update 177: the folder's picture (FolderArt) on its front.
+        val pic = rememberFolderPicture(f.platform)
+        if (pic != null) {
+            Column(Modifier.fillMaxSize()) {
+                Spacer(Modifier.weight(0.26f))
+                AsyncImage(pic, null, contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().weight(0.68f).padding(horizontal = 6.dp).clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)))
+                Spacer(Modifier.weight(0.06f))
+            }
+        }
         // The logo on the front (it starts a quarter of the way down), never past it.
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (pic == null || com.shelf.launcher.data.Features.secondFolderLogo.state.value) Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.weight(0.34f))
-            PlatformLogo(f.platform, f.name, modifier = Modifier.fillMaxWidth(0.72f).weight(0.5f), textColor = onAccentColor())
+            PlatformLogo(f.platform, f.name, modifier = Modifier.fillMaxWidth(0.72f).weight(0.5f), textColor = if (pic != null) Color.White else onAccentColor())
             Spacer(Modifier.weight(0.16f))
         }
         // How many games, small in the corner of the tab.
         Text(
             "${f.count}", color = Color.White.copy(alpha = 0.85f), fontSize = 9.sp, fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 6.dp)
+        )
+    }
+}
+
+/** Update 177: the folder picture for [platform] (FolderArt), or null. */
+@Composable
+private fun rememberFolderPicture(platform: String): java.io.File? {
+    val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val v = com.shelf.launcher.data.FolderArt.version
+    return remember(platform, v) { runCatching { com.shelf.launcher.data.FolderArt.find(context, platform) }.getOrNull() }
+}
+
+/** Update 177: a console as a tile, a wide card or its logo alone: its picture (FolderArt) filling it, else the theme's colours. */
+@Composable
+private fun ConsoleTile(f: GamesFolder, look: com.shelf.launcher.data.Features.FolderLook, modifier: Modifier, onClick: () -> Unit) {
+    val accent = ShelfTheme.accent
+    val shape = RoundedCornerShape(if (look == com.shelf.launcher.data.Features.FolderLook.TILES) 14.dp else 12.dp)
+    val pic = if (look == com.shelf.launcher.data.Features.FolderLook.LOGOS) null else rememberFolderPicture(f.platform)
+    val logoOn = pic == null || com.shelf.launcher.data.Features.secondFolderLogo.state.value
+    Box(
+        modifier.padTarget("folder-" + f.platform) { onClick() }.clip(shape)
+            .background(
+                if (look == com.shelf.launcher.data.Features.FolderLook.LOGOS) Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.04f)))
+                else Brush.linearGradient(listOf(lerp(accent, Color.White, 0.12f), lerp(accent, Color.Black, 0.3f)))
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.12f), shape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        if (pic != null) {
+            AsyncImage(pic, f.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            if (logoOn) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
+        }
+        if (logoOn) {
+            val wide = look == com.shelf.launcher.data.Features.FolderLook.CARDS
+            Box(Modifier.fillMaxSize().padding(10.dp), contentAlignment = if (pic != null) (if (wide) Alignment.BottomStart else Alignment.BottomCenter) else Alignment.Center) {
+                PlatformLogo(
+                    f.platform, f.name,
+                    modifier = Modifier.fillMaxWidth(if (pic != null) (if (wide) 0.45f else 0.7f) else 0.72f).fillMaxHeight(if (pic != null) 0.3f else 0.5f),
+                    textColor = if (pic != null || look == com.shelf.launcher.data.Features.FolderLook.LOGOS) Color.White else onAccentColor()
+                )
+            }
+        }
+        Text(
+            "${f.count}", color = Color.White.copy(alpha = 0.9f), fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.45f)).padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
 }
@@ -187,7 +252,7 @@ private fun FolderPopup(
                     modifier = Modifier.weight(1f)
                 )
                 Box(
-                    Modifier.size(36.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.08f)).clickable { onClose() },
+                    Modifier.size(36.dp).padTarget("folder-close") { onClose() }.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.08f)).clickable { onClose() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Filled.Close, "Close", tint = ShelfTheme.colors.textPrimary, modifier = Modifier.size(20.dp))
@@ -201,7 +266,7 @@ private fun FolderPopup(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(games, key = { it.stableKey }) { g ->
-                    Column(Modifier.clip(RoundedCornerShape(8.dp)).clickable { onPick(g) }, horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.padTarget("game-" + g.stableKey) { onPick(g); SecondPad.leave() }.clip(RoundedCornerShape(8.dp)).clickable { onPick(g) }, horizontalAlignment = Alignment.CenterHorizontally) {
                         val cover = coverOf(g)
                         Box(
                             Modifier.fillMaxWidth().aspectRatio(0.72f).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.07f)),

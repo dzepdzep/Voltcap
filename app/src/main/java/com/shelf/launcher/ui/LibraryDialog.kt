@@ -46,6 +46,8 @@ fun LibraryDialog(
     /** The folders (main one first) and deep search; saves them and scans all. */
     onScan: (List<String>, Boolean) -> Unit,
     onUnhideApp: (String) -> Unit,
+    /** Update 177: Library check › Make the .m3u files. */
+    onMakeM3u: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     com.shelf.launcher.Breadcrumbs.mark("LibraryDialog")
@@ -173,6 +175,8 @@ fun LibraryDialog(
                 checked = deep,
                 onChange = { deep = it }
             )
+            Spacer(Modifier.height(10.dp))
+            LibraryCheckCard(onMakeM3u)
         }
 
         statusMessage?.let {
@@ -217,6 +221,80 @@ fun LibraryDialog(
                 showBrowser = false
             },
             onDismiss = { showBrowser = false }
+        )
+    }
+}
+
+/**
+ * Update 177: what the last scan found to tidy — multi-disc games without a .m3u playlist (each shown as one game, started
+ * from disc 1; an emulator needs the playlist to change discs) and games found twice.
+ */
+@Composable
+private fun LibraryCheckCard(onMakeM3u: () -> Unit) {
+    val check = com.shelf.launcher.data.LibraryCheck
+    val missing = check.missingM3u
+    val doubles = check.duplicates
+    var showAll by remember { mutableStateOf(false) }
+    ShelfCard {
+        SectionLabel("Library check")
+        if (!check.scanned) {
+            MutedNote("Scan to check for multi-disc games without a .m3u playlist and games found twice.")
+        } else if (missing.isEmpty() && doubles.isEmpty()) {
+            MutedNote("All good: every multi-disc game has its .m3u playlist and no game was found twice.")
+        }
+        if (missing.isNotEmpty()) {
+            Text(
+                "${missing.size} multi-disc ${if (missing.size == 1) "game has" else "games have"} no .m3u playlist",
+                color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold
+            )
+            MutedNote("Each shows as one game and starts from disc 1. To change discs in the emulator it needs a playlist (a small text file listing the discs) beside them.")
+            Spacer(Modifier.height(6.dp))
+            (if (showAll) missing else missing.take(6)).forEach { set ->
+                Text(
+                    "• ${set.title} · ${com.shelf.launcher.data.ConsoleNames.display(set.platform)} · ${set.discs.size} discs",
+                    color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, maxLines = 1
+                )
+                Text("   ${set.dir.path}", color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 1)
+            }
+            if (missing.size > 6 && !showAll) {
+                Spacer(Modifier.height(4.dp))
+                Chip("Show all ${missing.size}", accent = false) { showAll = true }
+            }
+            Spacer(Modifier.height(8.dp))
+            Chip("Make the .m3u files (${missing.size})") { onMakeM3u() }
+        }
+        if (doubles.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            val beside = doubles.filter { it.sameFolder }
+            val apart = doubles.filterNot { it.sameFolder }
+            if (beside.isNotEmpty()) {
+                Text("${beside.size} in two formats side by side", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                MutedNote("Listed once, in the best format (CHD first, archives last). The other copy is left out of your games:")
+                beside.take(if (showAll) beside.size else 5).forEach { d ->
+                    Text("• ${d.name}: ${java.io.File(d.kept).name}  (left out: ${java.io.File(d.skipped).name})", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, maxLines = 2)
+                }
+            }
+            if (apart.isNotEmpty()) {
+                Spacer(Modifier.height(6.dp))
+                Text("${apart.size} found in two folders", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                MutedNote("Both are listed — delete or move the one you don't need:")
+                apart.take(if (showAll) apart.size else 5).forEach { d ->
+                    Text("• ${d.name}", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, maxLines = 1)
+                    Text("   ${d.kept}\n   ${d.skipped}", color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2)
+                }
+            }
+            if (!showAll && (beside.size > 5 || apart.size > 5)) {
+                Spacer(Modifier.height(4.dp))
+                Chip("Show all", accent = false) { showAll = true }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        SwitchRow(
+            icon = Icons.Filled.FolderOpen,
+            title = "Make .m3u files by themselves",
+            subtitle = "Each scan writes the playlist for a new multi-disc game straight away. Off: they're listed here first.",
+            checked = com.shelf.launcher.data.Features.autoM3u.state.value,
+            onChange = { com.shelf.launcher.data.Features.autoM3u.value = it }
         )
     }
 }

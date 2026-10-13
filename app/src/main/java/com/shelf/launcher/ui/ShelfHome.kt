@@ -311,6 +311,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                             alpha = if (shelfFront(pv) > 0f) 0f else 1f
                                         }
                                     }
+                                    flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
                                 }
                                 .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
                         ) {
@@ -373,6 +374,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                             // A soft shadow grows under it as it comes off the shelf.
                             shadowElevation = 14f * density * turn
                             shape = RoundedCornerShape(3.dp)
+                            flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
                         }
                         .then(if (resting) Modifier.pointerInput(index) { detectTapGestures { open() } } else Modifier)
                 ) {
@@ -430,6 +432,7 @@ private fun AngledCase(c: StyleCtx, g: Game, modifier: Modifier) {
                 transformOrigin = TransformOrigin(1f, 0.5f)
                 rotationY = -35f
                 cameraDistance = 10f * density
+                flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
             }
         ) { Spine(c, g, Modifier.fillMaxSize()) }
         Box(
@@ -437,6 +440,7 @@ private fun AngledCase(c: StyleCtx, g: Game, modifier: Modifier) {
                 transformOrigin = TransformOrigin(0f, 0.5f)
                 rotationY = ANGLE_FRONT_DEG
                 cameraDistance = 10f * density
+                flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
             }
         ) { PulledCase(c, g, false, Modifier.fillMaxSize(), detail = 240) }
     }

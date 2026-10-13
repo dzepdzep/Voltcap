@@ -334,6 +334,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // What to draw: apps set to use their own icon have their scraped art
     // hidden here, so every screen falls back to the app-icon look.
     val state = remember(uiState) { uiState.forDisplay() }
+    // Update 177: the consoles there are, for Settings › Second screen Games page (FolderArt).
+    androidx.compose.runtime.SideEffect {
+        if (com.shelf.launcher.data.FolderArt.platforms != state.availablePlatforms) com.shelf.launcher.data.FolderArt.platforms = state.availablePlatforms
+    }
     val flagsContext = androidx.compose.ui.platform.LocalContext.current
     val flags = remember(viewModel) { LauncherUiFlags(viewModel, flagsContext, state.searchQuery.isNotBlank()) }
     with(flags) {
@@ -4799,6 +4803,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             hiddenApps = state.hiddenApps,
             onScan = { paths, deep -> viewModel.scanLibraryFolders(paths, deep) },
             onUnhideApp = { packageName -> viewModel.unhideApp(packageName) },
+            onMakeM3u = { viewModel.makeMissingM3u() },
             onDismiss = { showLibraryDialog = false; showMenu = true }
         )
     }
@@ -4885,6 +4890,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 }
             }
             .onKeyEvent { event ->
+                // Update 177: the controller on the second screen (▼ past the bottom of this one), SecondPad.kt.
+                if (SecondPad.active) {
+                    if (aDialogIsOpen) SecondPad.leave()
+                    else if (SecondPad.key(event) { sounds?.play(it) }) return@onKeyEvent true
+                }
                 // Select is a MODIFIER. Music buttons and hotkeys come first, on
                 // the home screen and details window. While Select is held,
                 // EVERY other key press (bound or not) belongs to the combo:
@@ -5022,7 +5032,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 fun reach(goingUp: Boolean): Boolean {
                     if (!reachFree || HomeEditState.active) return false
                     prepareReach()
-                    if (!HomeReach.enter(goingUp, event.nativeKeyEvent.eventTime)) return false
+                    if (!HomeReach.enter(goingUp, event.nativeKeyEvent.eventTime)) {
+                        // Update 177: past the bottom of the main screen, nothing more there: onto the second screen.
+                        if (!goingUp && SecondPad.enter()) {
+                            sounds?.play(UiSound.MOVE)
+                            return true
+                        }
+                        return false
+                    }
                     tileBarFocus = null
                     sounds?.play(UiSound.MOVE)
                     HomeReach.keysDown += event.nativeKeyEvent.keyCode

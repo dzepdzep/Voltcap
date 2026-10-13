@@ -256,6 +256,55 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 178
+- **CustomLayouts:**
+  - `PRESETS` (id → layout.json text, ids `preset-…`) are loaded and cached like the example.
+  - `list()` = example + presets + imported; `builtIn(id)`.
+  - `writeLayout(context, id, out)` zips the layout.json plus the imported layout's pictures. `writeExample` calls it.
+  - Settings chip "Save this layout" saves the picked layout.
+- **Layout Maker artifact** https://claude.ai/artifact/WT7meYarQghnr352DcxSZF:
+  - Source `scratchpad/maker/layout-maker.html` (this session); capability `downloads`; JSZip 3.10.1 from cdnjs.
+  - It mirrors the parse defaults and the motion / games maths of `StyleCustom.kt` — keep them in step if the format
+    changes.
+  - Its presets match `CustomLayouts.PRESETS` + `EXAMPLE_JSON`.
+- Open from the user (13 Oct): "not only size but to the side as well but not too huge" — meaning unclear, asked.
+
+## State after update 177
+- **ANR (Thor, 13 Oct):**
+  - Seen as: RenderThread in `GrTextBlobRedrawCoordinator` / `GrTextBlob::Key::operator==`, main thread blocked in
+    `TextureView.destroyHardwareLayer`.
+  - Fix: every `graphicsLayer` with rotationX/Y now ends with `flatTextFor3d()` (Offscreen).
+  - Keep doing this for any new 3D turn: grep `rotationY\s*=` without `flatTextFor3d`. The Carousel's text-free band
+    Canvas is left as it was.
+- **SecondPad (ui/SecondPad.kt):**
+  - `enter()` / `leave()` / `key()`; spatial nav over targets registered by `Modifier.padTarget(id) { … }`, which only
+    registers inside `LocalOnSecondScreen` (provided in SecondScreenHost).
+  - Entered from `reach(false)` in LauncherScreen when HomeReach has nothing below, and from `HomeReach.key` past the
+    last zone.
+  - Keys go through `SecondPad.key` at the top of the home `onKeyEvent`.
+  - `SecondPadHint` is drawn over the second screen.
+- **RomScanner:**
+  - Dedupe by canonical lowercase path.
+  - Same-folder same-name formats are reduced by `formatRank`.
+  - Disc groups are keyed by folder (the grandparent when the parent has a disc marker) + title, not by extension.
+  - Without `Features.autoM3u` (default off), a set is one game (first disc) and goes into `ScanResult.missingM3u`.
+  - `ScanResult.duplicates`; `writeM3u(set)`.
+  - `LibraryCheck` state is set in `scanAllFolders`; `LauncherViewModel.makeMissingM3u()`; `LibraryCheckCard` in
+    LibraryDialog.
+- **Looks:** `layoutOwnLook(layout)` (GameLookPicker.kt). The R1 `gamelook` tile gets `disabled` (new R1Tile field →
+  dimmed + toast). `GameLookPicker` chips use `enabled = lookOk`.
+- **FolderArt (data/FolderArt.kt):**
+  - Storage: `files/folder_art/pack` and `files/folder_art/mine`.
+  - `find` order: mine → pack index (names through `RomScanner.platformForFolderName`, iiSU suffixes ranked) →
+    `_default`.
+  - `importZip` / `importFolder` (`Voltcap/Folders`), `setMine` / `clearMine`; `version` state; `platforms` is set by
+    a LauncherScreen SideEffect.
+  - Features: `secondFolderLook` (FOLDERS / TILES / CARDS / LOGOS), `secondFolderLogo`.
+  - SecondGamesPage: `ConsoleTile` and the folder front picture. Settings: `SecondGamesSettings` (FoldGroup
+    "Second screen Games page").
+- Next (asked for): drag-and-drop layout maker (web) + more built-in presets; "not only size but to the side as
+  well, not too huge" — unclear, asked.
+
 ## State after update 176
 - **Custom layout:** `HomeLayout.CUSTOM` (style home, last in `pickable`). `Features.customLayout` (StringPref, "" =
   built-in example).

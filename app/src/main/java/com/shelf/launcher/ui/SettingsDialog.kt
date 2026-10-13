@@ -1819,6 +1819,10 @@ private fun SecondScreenExtras(appearance: AppearanceSettings, onChange: (Appear
         FoldGroup("Second screen art & music", key = "second_look") {
             SecondScreenLookCard(appearance, onChange)
         }
+        // Update 177: the Games page's console folders — their look, a folder pack, a picture per console.
+        FoldGroup("Second screen Games page", summary = "Folders, tiles, cards or logos; folder packs; the controller there", key = "second_games") {
+            SecondGamesSettings()
+        }
         FoldGroup("Second screen tools", summary = "Widget Board, Screen Mirror, Wall, wallpaper, virtual second screen", key = "second_tools") {
             SecondScreenToolsSettings(hasSecondScreen)
         }

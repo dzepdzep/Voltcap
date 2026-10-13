@@ -162,6 +162,7 @@ internal fun SwayingModel(card: String, icon: Any?, name: String, platform: Stri
         modifier.graphicsLayer {
             cameraDistance = 14f * density
             rotationY = (yaw() - frame).coerceIn(-10f, 10f)
+            flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
         }
     ) {
         Model3DArt(card, icon, frame.toFloat(), Modifier.fillMaxSize(), name = name, alwaysName = true, platform = platform)

@@ -401,6 +401,7 @@ private fun CaseScene(
                 rotationY = -angle
                 cameraDistance = 10f * density.density
                 alpha = (1f - ph(angle, 75f, 105f)) * (1f - ph(t, 600f, 760f))
+                flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
             }
         ) {
             if (p.doorPick != null) ThrownPiece(p, p.doorPick, p.cover, false, Modifier.fillMaxSize())

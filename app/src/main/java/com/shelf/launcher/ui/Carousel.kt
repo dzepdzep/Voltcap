@@ -1219,6 +1219,7 @@ private fun CaseWithMedia3D(
             cameraDistance = 12f * dens
             val sh = shadeOf()
             alpha = (1f - 0.35f * sh) * show
+            flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
         }) {
             // (Update 171: the real photo is the piece itself — it was once put on the drawn cartridge's label, a small
             // cartridge inside the cartridge. Update 173: beside a real case only.)

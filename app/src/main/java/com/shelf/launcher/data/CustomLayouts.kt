@@ -120,13 +120,19 @@ object CustomLayouts {
     fun list(context: Context): List<CustomScene> {
         val mine = root(context).listFiles()?.filter { it.isDirectory }?.mapNotNull { d -> runCatching { load(context, d.name) }.getOrNull() }
             ?.sortedBy { it.name.lowercase() }.orEmpty()
-        return listOf(example()) + mine
+        val presets = PRESETS.keys.mapNotNull { id -> runCatching { load(context, id) }.getOrNull() }
+        return listOf(example()) + presets + mine
     }
 
     /** The layout [id] (null / unknown: the example). */
     fun load(context: Context, id: String?): CustomScene {
         if (id.isNullOrBlank() || id == EXAMPLE_ID) return example()
         synchronized(cache) { cache[id]?.let { return it } }
+        PRESETS[id]?.let { text ->
+            val scene = parse(id, text, null)
+            synchronized(cache) { cache[id] = scene }
+            return scene
+        }
         val dir = File(root(context), id)
         val json = File(dir, "layout.json")
         if (!json.isFile) return example()
@@ -139,8 +145,11 @@ object CustomLayouts {
         cache.getOrPut(EXAMPLE_ID) { parse(EXAMPLE_ID, EXAMPLE_JSON, null) }
     }
 
+    /** Built in (the example and the presets): can't be deleted. */
+    fun builtIn(id: String): Boolean = id == EXAMPLE_ID || id in PRESETS
+
     fun delete(context: Context, id: String) {
-        if (id == EXAMPLE_ID) return
+        if (builtIn(id)) return
         File(root(context), File(id).name).deleteRecursively()
         synchronized(cache) { cache.remove(id) }
     }
@@ -255,11 +264,27 @@ object CustomLayouts {
     }
 
     /** Writes the example layout as a .vclayout (zip) to [out]. */
-    fun writeExample(out: java.io.OutputStream) {
+    fun writeExample(out: java.io.OutputStream) = writeLayout(null, EXAMPLE_ID, out)
+
+    /** Update 178: writes layout [id] (its layout.json and pictures) as a .vclayout (zip) to [out], to change or share. */
+    fun writeLayout(context: Context?, id: String, out: java.io.OutputStream) {
+        val text = when {
+            id == EXAMPLE_ID -> EXAMPLE_JSON
+            PRESETS.containsKey(id) -> PRESETS.getValue(id)
+            context != null -> File(File(root(context), id), "layout.json").readText()
+            else -> EXAMPLE_JSON
+        }
         ZipOutputStream(out).use { z ->
             z.putNextEntry(ZipEntry("layout.json"))
-            z.write(EXAMPLE_JSON.toByteArray(Charsets.UTF_8))
+            z.write(text.toByteArray(Charsets.UTF_8))
             z.closeEntry()
+            if (context != null && !builtIn(id)) {
+                File(root(context), id).listFiles()?.filter { it.isFile && it.name != "layout.json" }?.forEach { f ->
+                    z.putNextEntry(ZipEntry(f.name))
+                    f.inputStream().use { it.copyTo(z) }
+                    z.closeEntry()
+                }
+            }
         }
     }
 
@@ -376,6 +401,20 @@ object CustomLayouts {
         val a: JSONArray = optJSONArray(key) ?: return str(key)?.let { listOf(it) }.orEmpty()
         return (0 until a.length()).mapNotNull { a.optString(it).ifBlank { null } }
     }
+
+
+    /**
+     * Update 178: the other built-in layouts (the same presets as the Voltcap Layout Maker page): always there, like the
+     * example, and a starting point to change.
+     */
+    val PRESETS: Map<String, String> = linkedMapOf(
+        "preset-side-list" to """{"format":1,"name":"Side list","author":"Voltcap","background":{"color":"#101318","gameArt":true,"shade":0.35},"parts":[{"type":"shape","x":0,"y":0,"w":0.34,"h":1,"shape":"rect","gradient":["#E6101318","#B3101318"]},{"type":"category","x":0.03,"y":0.03,"w":0.28,"h":0.06,"size":0.04,"color":"accent","bold":true},{"type":"games","x":0.03,"y":0.1,"w":0.28,"h":0.88,"direction":"column","art":"wide","cardSize":0.82,"focusSize":0.98,"gap":0.02,"anchor":0.35,"fadeEdges":true},{"type":"art","x":0.42,"y":0.08,"w":0.5,"h":0.28,"art":"logo","fit":"fit","enter":{"kind":"pop","ms":420},"loop":{"kind":"float","amount":0.008,"seconds":6}},{"type":"info","x":0.42,"y":0.4,"w":0.5,"h":0.06,"size":0.035,"align":"center","show":["console","playtime","lastPlayed"],"enter":{"kind":"fade","ms":400,"delay":150}},{"type":"buttons","x":0.5,"y":0.5,"w":0.34,"h":0.09},{"type":"text","x":0.42,"y":0.92,"w":0.54,"h":0.05,"size":0.03,"align":"end","color":"#99FFFFFF","text":"{position}   {time}"}]}""",
+        "preset-big-picture" to """{"format":1,"name":"Big picture","author":"Voltcap","background":{"color":"#000000","gameArt":true,"shade":0.2},"parts":[{"type":"shape","x":0,"y":0.5,"w":1,"h":0.5,"shape":"rect","gradient":["#00000000","#E6000000"]},{"type":"art","x":0.05,"y":0.12,"w":0.2,"h":0.5,"art":"cover","corner":10,"enter":{"kind":"slide-up","ms":420},"loop":{"kind":"float","amount":0.008,"seconds":6}},{"type":"title","x":0.28,"y":0.36,"w":0.6,"h":0.16,"size":0.08,"enter":{"kind":"fade","ms":400,"delay":80}},{"type":"info","x":0.28,"y":0.52,"w":0.6,"h":0.06,"size":0.034,"color":"#CCFFFFFF","show":["console","playtime","achievements"]},{"type":"games","x":0.02,"y":0.72,"w":0.96,"h":0.24,"direction":"row","art":"wide","cardSize":0.62,"focusSize":0.8,"gap":0.012,"anchor":0.15,"fadeEdges":true},{"type":"clock","x":0.78,"y":0.04,"w":0.18,"h":0.07,"size":0.045,"align":"end"}]}""",
+        "preset-marquee" to """{"format":1,"name":"Marquee","author":"Voltcap","background":{"gradient":["#14051F","#030208"]},"parts":[{"type":"shape","x":0.1,"y":0.03,"w":0.8,"h":0.16,"shape":"round","corner":12,"gradient":["#FF2E6B","#B8135A"],"border":"#FFD0E1","borderWidth":2,"loop":{"kind":"blink","amount":0.75,"seconds":3}},{"type":"title","x":0.12,"y":0.055,"w":0.76,"h":0.12,"size":0.07,"align":"center","font":"mono","maxLines":1,"enter":{"kind":"flip","ms":420}},{"type":"shape","x":0.27,"y":0.22,"w":0.46,"h":0.44,"shape":"round","corner":14,"color":"#000000","border":"accent","borderWidth":3},{"type":"art","x":0.285,"y":0.235,"w":0.43,"h":0.41,"art":"screenshot","corner":8,"enter":{"kind":"zoom","ms":380}},{"type":"info","x":0.27,"y":0.67,"w":0.46,"h":0.05,"size":0.03,"align":"center","font":"mono","color":"#B3FFFFFF","show":["console","position"]},{"type":"games","x":0,"y":0.74,"w":1,"h":0.25,"direction":"row","art":"square","cardSize":0.7,"focusSize":0.92,"gap":0.02,"anchor":0.5,"glow":true}]}""",
+        "preset-quiet-clock" to """{"format":1,"name":"Quiet clock","author":"Voltcap","background":{"color":"#0E0F12","gameArt":true,"shade":0.75},"parts":[{"type":"clock","x":0.05,"y":0.06,"w":0.6,"h":0.22,"size":0.17,"bold":true,"shadow":false,"loop":{"kind":"pulse","amount":0.01,"seconds":8}},{"type":"text","x":0.05,"y":0.29,"w":0.6,"h":0.05,"size":0.032,"color":"#99FFFFFF","text":"{date}"},{"type":"title","x":0.05,"y":0.48,"w":0.9,"h":0.1,"size":0.05,"maxLines":1,"enter":{"kind":"slide-up","ms":320}},{"type":"games","x":0.05,"y":0.6,"w":0.9,"h":0.32,"direction":"row","art":"card","cardSize":0.75,"focusSize":0.9,"gap":0.025,"anchor":0,"names":false,"glow":false}]}""",
+        "preset-card-fan" to """{"format":1,"name":"Card fan","author":"Voltcap","background":{"gradient":["#0D2A22","#06110E"],"gameArt":true,"shade":0.65},"parts":[{"type":"category","x":0.05,"y":0.04,"w":0.9,"h":0.06,"size":0.04,"align":"center","color":"accent","bold":true},{"type":"games","x":0,"y":0.1,"w":1,"h":0.62,"direction":"arc","art":"card","cardSize":0.6,"focusSize":0.92,"gap":-0.0,"anchor":0.5,"curve":0.3,"glow":true},{"type":"title","x":0.15,"y":0.74,"w":0.7,"h":0.1,"size":0.06,"align":"center","maxLines":1,"enter":{"kind":"pop","ms":360}},{"type":"info","x":0.15,"y":0.85,"w":0.7,"h":0.06,"size":0.032,"align":"center","color":"#CCFFFFFF","show":["playtime","achievements"]}]}""",
+        "preset-stage-lights" to """{"format":1,"name":"Stage lights","author":"Voltcap","background":{"gradient":["#1A1033","#05030A"]},"parts":[{"type":"shape","x":0.25,"y":-0.2,"w":0.5,"h":1.1,"shape":"circle","gradient":["#33FFFFFF","#00FFFFFF"],"loop":{"kind":"sway","amount":0.06,"seconds":9}},{"type":"shape","x":0,"y":0.78,"w":1,"h":0.22,"shape":"rect","gradient":["#402A1B4D","#E6000000"]},{"type":"games","x":0,"y":0.3,"w":1,"h":0.5,"direction":"row","art":"card","cardSize":0.6,"focusSize":0.95,"gap":0.02,"anchor":0.5,"glow":true,"names":true},{"type":"title","x":0.1,"y":0.05,"w":0.8,"h":0.12,"size":0.07,"align":"center","maxLines":1,"enter":{"kind":"slide-down","ms":360}},{"type":"info","x":0.1,"y":0.17,"w":0.8,"h":0.06,"size":0.032,"align":"center","color":"#CCFFFFFF","show":["console","playtime"]},{"type":"buttons","x":0.36,"y":0.86,"w":0.28,"h":0.08}]}"""
+    )
 
     /** The built-in example: a neon row over the game's art (docs\CUSTOM_LAYOUTS.md walks through it). */
     val EXAMPLE_JSON = """

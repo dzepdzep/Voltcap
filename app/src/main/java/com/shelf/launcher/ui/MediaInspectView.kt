@@ -776,12 +776,14 @@ private fun InspectModel(p: InspectPiece, id: String, aspect: Float, yawOf: () -
             rotationY = d
             cameraDistance = 14f * dens
             alpha = if (img1 == null) 1f else (1f - ((d - 7f) / 6f)).coerceIn(0f, 1f)
+            flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
         })
         InspectFrame(img1, aspect, Modifier.fillMaxSize().graphicsLayer {
             val d = past()
             rotationY = d - 20f
             cameraDistance = 14f * dens
             alpha = if (img0 == null) 1f else ((d - 7f) / 6f).coerceIn(0f, 1f)
+            flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
         })
     }
 }

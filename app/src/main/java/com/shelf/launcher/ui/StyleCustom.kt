@@ -453,8 +453,11 @@ private fun SceneGames(c: StyleCtx, p: ScenePart, pw: Float, ph: Float) {
 
 /** The part's loop: float, sway, spin, rock, pulse, blink or drift. */
 @Composable
-private fun Modifier.sceneLoop(loop: SceneLoop?, w: Float, h: Float): Modifier {
-    if (loop == null) return this
+private fun Modifier.sceneLoop(loop: SceneLoop?, w: Float, h: Float): Modifier =
+    this.then(if (loop != null) Modifier.sceneLoopOn(loop, w, h) else Modifier)
+
+@Composable
+private fun Modifier.sceneLoopOn(loop: SceneLoop, w: Float, h: Float): Modifier {
     val t by rememberInfiniteTransition(label = "sceneLoop").animateFloat(
         0f, 1f, infiniteRepeatable(tween((loop.seconds * 1000).toInt(), easing = LinearEasing)), label = "sceneLoopT"
     )
@@ -472,13 +475,17 @@ private fun Modifier.sceneLoop(loop: SceneLoop?, w: Float, h: Float): Modifier {
             "blink" -> { val lo = (a ?: 0.3f).coerceIn(0f, 1f); alpha = lo + (1f - lo) * (0.5f + 0.5f * cos(ph)) }
             "turn" -> { rotationY = sin(ph) * (a ?: 18f); cameraDistance = 12f * density }
         }
+        flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
     }
 }
 
 /** The part's entrance: played when you move to another game ("move"), or once ("start"). */
 @Composable
-private fun Modifier.sceneEnter(enter: SceneEnter?, trigger: Any, w: Float, h: Float): Modifier {
-    if (enter == null || enter.kind == "none") return this
+private fun Modifier.sceneEnter(enter: SceneEnter?, trigger: Any, w: Float, h: Float): Modifier =
+    this.then(if (enter != null && enter.kind != "none") Modifier.sceneEnterOn(enter, trigger, w, h) else Modifier)
+
+@Composable
+private fun Modifier.sceneEnterOn(enter: SceneEnter, trigger: Any, w: Float, h: Float): Modifier {
     val e = remember { Animatable(0f) }
     LaunchedEffect(trigger) {
         e.snapTo(0f)
@@ -499,6 +506,7 @@ private fun Modifier.sceneEnter(enter: SceneEnter?, trigger: Any, w: Float, h: F
             "flip" -> { rotationY = r * 90f; cameraDistance = 12f * density }
             "spin" -> rotationZ = -r * 180f
         }
+        flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
     }
 }
 

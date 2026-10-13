@@ -510,6 +510,7 @@ private fun HandCard(
                 rotationX = CARD_TILT_X * t
                 cameraDistance = 14f * density
                 alpha = geo.alpha(r)
+                flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
             }
             .pointerInput(game) { detectTapGestures(onTap = { onTap(game) }, onLongPress = { onHold(game) }) }
     ) {

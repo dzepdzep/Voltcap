@@ -6,6 +6,37 @@ pack them into a `.vclayout` file that anyone can import.
 
 Nothing in a layout runs as code. It's a description that Voltcap draws, so a layout is safe to share.
 
+## The easy way: the Layout Maker
+
+You don't have to write any code. The **Voltcap Layout Maker** is a web page you open on your PC or phone:
+https://claude.ai/artifact/WT7meYarQghnr352DcxSZF (you can share it from its Share menu).
+
+1. Tap **Presets** and pick one to start from, or **Open a layout…** to open a `.vclayout` (or `.zip`, or `layout.json`)
+   you already have.
+2. Add parts from the left. Drag them on the screen to move them, and drag the yellow corner to resize.
+3. Change the selected part on the right: its look, plus a **Loop** (keeps moving) and an **Entrance** (plays when you
+   move to another game).
+4. ◀ ▶ (or the arrow keys) go through sample games, so you can see the entrances. **Preview** hides the handles.
+5. **Save for Voltcap** saves a `.zip`. Put it on the handheld and import it in Voltcap: Settings › Home › Layout ›
+   Custom layout › Layout options › **Import a file**.
+
+To change a layout that's already in Voltcap, pick it there and tap **Save this layout**, then open that file in the
+Layout Maker.
+
+**Built-in layouts** (in Voltcap and in the Layout Maker's Presets):
+
+- **Neon drift:** a curved row along the bottom, the name and buttons on the left, the logo floating.
+- **Side list:** wide pictures in a list down the left, the logo and info on the right.
+- **Big picture:** the game's art big, its cover in front, a small row at the bottom.
+- **Marquee:** a lit sign on top, the game in a frame below it, the games along the floor.
+- **Quiet clock:** a big clock, the name and a quiet row.
+- **Card fan:** cards fanned in an arc, like a hand of cards.
+- **Stage lights:** the games on a stage with a spotlight sweeping over them.
+
+The rest of this page explains the file itself, for anyone who wants to write it by hand.
+
+---
+
 Two finished examples are in this folder:
 
 - `docs/layouts/neon-drift/layout.json`: a curved row along the bottom, the name and buttons on the left, the logo

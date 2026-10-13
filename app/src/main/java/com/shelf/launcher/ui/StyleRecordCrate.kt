@@ -448,6 +448,7 @@ private fun CrateItem(
                 rotationX = geo.rotX(r)
                 cameraDistance = 10f * density
                 alpha = geo.alpha(r)
+                flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
             }
     ) {
         // The record first, so it sits inside the sleeve until it slides out to the right.

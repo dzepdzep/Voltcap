@@ -54,10 +54,11 @@ internal fun CustomLayoutSettings() {
     }
     val saveExample = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         if (uri != null) scope.launch {
+            val id = Features.customLayout.value.ifBlank { CustomLayouts.EXAMPLE_ID }
             val ok = withContext(Dispatchers.IO) {
-                runCatching { context.contentResolver.openOutputStream(uri, "w")?.use { CustomLayouts.writeExample(it) } != null }.getOrDefault(false)
+                runCatching { context.contentResolver.openOutputStream(uri, "w")?.use { CustomLayouts.writeLayout(context, id, it) } != null }.getOrDefault(false)
             }
-            status = if (ok) "Example saved. Open it as a zip, change layout.json, add your pictures and import it." else "Couldn't save the example."
+            status = if (ok) "Saved. Open it in the Voltcap Layout Maker (or as a zip), change it and import it." else "Couldn't save it."
         }
     }
 
@@ -75,7 +76,7 @@ internal fun CustomLayoutSettings() {
     layouts.firstOrNull { it.id == picked }?.let { l ->
         Spacer(Modifier.height(6.dp))
         MutedNote(listOfNotNull(l.author?.let { "By $it" }, "${l.parts.size} parts").joinToString(" · "))
-        if (l.id != CustomLayouts.EXAMPLE_ID) {
+        if (!CustomLayouts.builtIn(l.id)) {
             Spacer(Modifier.height(6.dp))
             ChipFlow {
                 Chip("Delete “${l.name}”", accent = false) {
@@ -96,7 +97,12 @@ internal fun CustomLayoutSettings() {
         Chip("Import from ${CustomLayouts.DROP_FOLDER}", accent = false) {
             scope.launch { done(withContext(Dispatchers.IO) { CustomLayouts.importFolder(context) }) }
         }
-        Chip("Save the example", accent = false) { runCatching { saveExample.launch("neon-drift.vclayout") }.onFailure { status = "No file picker on this device." } }
+        // Update 178: saves the layout picked (built in or yours), to change in the Layout Maker or share.
+        Chip("Save this layout", accent = false) {
+            val cur = layouts.firstOrNull { it.id == picked }?.name ?: "layout"
+            val file = cur.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "layout" } + ".vclayout"
+            runCatching { saveExample.launch(file) }.onFailure { status = "No file picker on this device." }
+        }
         Chip(if (guide) "Hide the guide" else "How to make one", accent = false) { guide = !guide }
     }
     status?.let {
@@ -104,6 +110,9 @@ internal fun CustomLayoutSettings() {
         Text(it, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp)
     }
     MutedNote("Importing from the folder again replaces layouts with the same name — the quick way to try your changes.")
+    // Update 178: the drag-and-drop maker.
+    Spacer(Modifier.height(6.dp))
+    MutedNote("Easier than writing layout.json: the Voltcap Layout Maker, a page on your PC or phone where you drag the parts into place, set how they move, preview it with sample games and save a .zip to import here. The link is in docs\\CUSTOM_LAYOUTS.md.")
     if (guide) {
         Spacer(Modifier.height(10.dp))
         CustomLayoutGuide()
@@ -115,9 +124,10 @@ internal fun CustomLayoutSettings() {
 private fun CustomLayoutGuide() {
     Column {
         step(
-            "1. Start from the example",
-            "Tap Save the example and save neon-drift.vclayout on the handheld (or your PC). A .vclayout is a zip: rename it to " +
-                ".zip to open it. Inside is layout.json — a text file you can edit with any text editor."
+            "1. Start from a layout",
+            "The easy way: open the Voltcap Layout Maker on your PC or phone, pick a preset, drag the parts where you want them and tap " +
+                "Save for Voltcap — then Import a file here. By hand: pick a layout above, tap Save this layout, rename the " +
+                ".vclayout to .zip and open it. Inside is layout.json — a text file you can edit with any text editor."
         )
         step(
             "2. Place the parts",

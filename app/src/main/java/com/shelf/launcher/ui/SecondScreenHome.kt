@@ -485,7 +485,8 @@ internal fun PageSwitcher(page: SecondPage, pageCount: Int, onStep: (Int) -> Uni
 @Composable
 private fun PageArrow(left: Boolean, visible: Boolean, onClick: () -> Unit) {
     Box(
-        Modifier.size(36.dp).clip(RoundedCornerShape(50)).then(if (visible) Modifier.clickable { onClick() } else Modifier),
+        Modifier.size(36.dp).then(if (visible) Modifier.padTarget(if (left) "page-prev" else "page-next") { onClick() } else Modifier)
+            .clip(RoundedCornerShape(50)).then(if (visible) Modifier.clickable { onClick() } else Modifier),
         contentAlignment = Alignment.Center
     ) {
         if (visible) {
@@ -523,6 +524,7 @@ private fun PageTabs(
             val selected = p == page
             Box(
                 Modifier
+                    .padTarget("tab-" + p.name) { onPage(p) }
                     .clip(RoundedCornerShape(50))
                     .background(if (selected) ShelfTheme.accent else Color.White.copy(alpha = 0.08f))
                     .clickable { onPage(p) }
@@ -802,6 +804,7 @@ private fun AchievementList(list: List<RaAchievementDetail>, modifier: Modifier 
                 val selected = f == filter
                 Box(
                     Modifier
+                        .padTarget("achfilter-" + f.name) { filter = f }
                         .clip(RoundedCornerShape(50))
                         .background(if (selected) ShelfTheme.accent else Color.White.copy(alpha = 0.08f))
                         .clickable { filter = f }
@@ -916,6 +919,7 @@ private fun DockSlot(app: Game?, onClick: () -> Unit, onLongClick: () -> Unit) {
     Box(
         Modifier
             .size(SLOT)
+            .padTarget(rememberPadId("dock")) { onClick() }
             .clip(RoundedCornerShape(14.dp))
             .background(if (app == null) Color.White.copy(alpha = 0.05f) else ShelfTheme.colors.surfaceRaised)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
@@ -968,7 +972,7 @@ private fun DockAppMenu(
 private fun MenuItem(text: String, onClick: () -> Unit) {
     Text(
         text, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp)
+        modifier = Modifier.fillMaxWidth().padTarget(rememberPadId("menu")) { onClick() }.clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp)
     )
 }
 
@@ -1016,6 +1020,7 @@ private fun SecondScreenAppPicker(apps: List<Game>, onPick: (Game) -> Unit, onCl
                         val app = sorted[i]
                         Column(
                             Modifier
+                                .padTarget("pick-" + app.stableKey) { onPick(app) }
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onPick(app) }
                                 .padding(4.dp),
@@ -1055,6 +1060,7 @@ private fun RoundIcon(icon: ImageVector, label: String, onClick: () -> Unit) {
     Box(
         Modifier
             .size(SLOT)
+            .padTarget(rememberPadId("round")) { onClick() }
             .clip(CircleShape)
             .background(ShelfTheme.accent.copy(alpha = 0.18f))
             .clickable(onClick = onClick),
@@ -1096,6 +1102,7 @@ private fun SecondScreenDrawer(apps: List<Game>, onLaunch: (Game) -> Unit, onClo
                     val app = sorted[i]
                     Column(
                         Modifier
+                            .padTarget("app-" + app.stableKey) { SecondPad.leave(); onLaunch(app) }
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { onLaunch(app) }
                             .padding(4.dp),

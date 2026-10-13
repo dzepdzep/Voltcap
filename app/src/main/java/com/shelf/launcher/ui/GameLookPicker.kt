@@ -147,6 +147,22 @@ private fun pickCartStep(st: LookStep, appearance: AppearanceSettings, onChange:
     onChange(appearance.copy(cardArtType = CardArtType.CARTRIDGE_DISC))
 }
 
+/**
+ * Update 177: what [layout] draws its games as when that's its own (the game looks change nothing there), else null.
+ * The R1 Look tile is greyed out there and Settings › Game look's chips can't be picked.
+ */
+internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? = when (layout) {
+    com.shelf.launcher.data.HomeLayout.HUB, com.shelf.launcher.data.HomeLayout.RESUME, com.shelf.launcher.data.HomeLayout.CHAN,
+    com.shelf.launcher.data.HomeLayout.HERO_TILES, com.shelf.launcher.data.HomeLayout.TWIN_ICONS -> "square and wide tiles"
+    com.shelf.launcher.data.HomeLayout.LIVE, com.shelf.launcher.data.HomeLayout.TWIN_DESK -> "wide tiles"
+    com.shelf.launcher.data.HomeLayout.SHELF -> "spines and cases on shelves (Layout options › Shelves)"
+    com.shelf.launcher.data.HomeLayout.DISCS -> "discs"
+    com.shelf.launcher.data.HomeLayout.CRATE -> "record sleeves"
+    com.shelf.launcher.data.HomeLayout.CARDS -> "collectible cards"
+    com.shelf.launcher.data.HomeLayout.ARCADE -> "arcade cabinets"
+    else -> null
+}
+
 /** Name of the look in use for the R1 tile (the case variants included). */
 internal fun currentLookName(a: AppearanceSettings): String = currentStep(a)?.label ?: gameLookLabel(a.cardArtFor())
 
@@ -189,6 +205,13 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
         "One look for every home layout: switching layout only changes where the games sit. " +
             "Also on the R1 panel: the Game look tile."
     )
+    // Update 177: a layout that draws its games its own way: the looks are greyed out (they'd change nothing there).
+    val ownLook = layoutOwnLook(appearance.homeLayout)
+    val lookOk = ownLook == null
+    if (ownLook != null) {
+        Spacer(Modifier.height(4.dp))
+        MutedNote("${appearance.homeLayout.label} draws its games as $ownLook, so the looks below can't be picked here — they're for the other layouts.")
+    }
     Spacer(Modifier.height(8.dp))
     val now = appearance.cardArtType
     // (Update 141: the 3D models are a look of their own: Cartridges & discs with your 3D shape library.)
@@ -200,7 +223,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
         ALL_LOOKS.forEach { (type, label, _) ->
             val on = now == type && !com.shelf.launcher.data.Features.squareTiles.state.value && !com.shelf.launcher.data.Features.spineLook.state.value
             val onNow = on && !(type == CardArtType.CARTRIDGE_DISC && (com.shelf.launcher.data.Features.cartsOnly.state.value || modelsNow))
-            Chip((if (onNow) "✓ " else "") + label, accent = onNow) {
+            Chip((if (onNow) "✓ " else "") + label, enabled = lookOk, accent = onNow) {
                 com.shelf.launcher.data.Features.squareTiles.value = false
                 com.shelf.launcher.data.Features.spineLook.value = false
                 com.shelf.launcher.data.Features.cartsOnly.value = false
@@ -209,7 +232,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
                 onChange(appearance.copy(cardArtType = type))
             }
         }
-        Chip((if (com.shelf.launcher.data.Features.squareTiles.state.value) "✓ " else "") + "Tile", accent = com.shelf.launcher.data.Features.squareTiles.state.value) {
+        Chip((if (com.shelf.launcher.data.Features.squareTiles.state.value) "✓ " else "") + "Tile", enabled = lookOk, accent = com.shelf.launcher.data.Features.squareTiles.state.value) {
             com.shelf.launcher.data.Features.cartsOnly.value = false
             com.shelf.launcher.data.Features.squareTiles.value = true
             com.shelf.launcher.data.Features.spineLook.value = false
@@ -217,7 +240,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
         }
         // Update 113: every game as its spine.
         val spines = com.shelf.launcher.data.Features.spineLook.state.value
-        Chip((if (spines) "✓ " else "") + "Spines", accent = spines) {
+        Chip((if (spines) "✓ " else "") + "Spines", enabled = lookOk, accent = spines) {
             com.shelf.launcher.data.Features.cartsOnly.value = false
             com.shelf.launcher.data.Features.spineLook.value = true
             com.shelf.launcher.data.Features.squareTiles.value = false
@@ -228,7 +251,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
     if (now == CardArtType.COVER && !com.shelf.launcher.data.Features.spineLook.state.value) {
         ChipFlow {
             val w = com.shelf.launcher.data.Features.carouselWide.state.value
-            Chip((if (w) "✓ " else "") + "Carousels: the one you're on as a wide capsule", accent = w) {
+            Chip((if (w) "✓ " else "") + "Carousels: the one you're on as a wide capsule", enabled = lookOk, accent = w) {
                 com.shelf.launcher.data.Features.carouselWide.value = !w
             }
         }
@@ -244,7 +267,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
         val cur = currentStep(appearance)
         LOOK_STEPS.filter { it.type == CardArtType.CARTRIDGE_DISC && (it.carts || it.models) }.forEach { st ->
             val on = cur === st
-            Chip((if (on) "✓ " else "") + st.label, accent = on) { pickCartStep(st, appearance, onChange) }
+            Chip((if (on) "✓ " else "") + st.label, enabled = lookOk, accent = on) { pickCartStep(st, appearance, onChange) }
         }
     }
     MutedNote("Cartridges: each console's own cartridge, disc games on your pack. Custom: every game on your cartridge pack. Clear: the pack in clear plastic. 3D: the same from your 3D shape library, turning in true 3D.")
@@ -253,7 +276,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
     ChipFlow {
         LOOK_STEPS.filter { it.discInCase || it.leaning }.forEach { st ->
             val on = currentStep(appearance) === st
-            Chip((if (on) "✓ " else "") + st.label, accent = on) {
+            Chip((if (on) "✓ " else "") + st.label, enabled = lookOk, accent = on) {
                 com.shelf.launcher.data.Features.cartsOnly.value = false
                 com.shelf.launcher.data.Features.discCase.value = st.discInCase
                 com.shelf.launcher.data.Features.caseWithMedia.value = st.leaning

@@ -405,6 +405,7 @@ fun GameCard(
                         rotationY = (r * 180f).coerceAtMost(90f)
                         alpha = if (r >= 0.5f) 0f else 1f
                         cameraDistance = 14f * density
+                        flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
                     } else if (revealStyle == com.shelf.launcher.data.Features.CapsuleReveal.SLIDE && wideLayer != null) Modifier.graphicsLayer {
                         // Slide: the cover moves out to the left as the wide art pushes in.
                         translationX = -size.width * reveal.value

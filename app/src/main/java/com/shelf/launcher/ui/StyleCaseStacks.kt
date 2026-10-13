@@ -434,6 +434,7 @@ private fun StacksItem(
                 rotationY = geo.tilt(r)
                 cameraDistance = 12f * density
                 alpha = geo.alpha(r)
+                flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
             }
             .stacksMirror(mirror)
     ) {
@@ -460,6 +461,7 @@ private fun StacksItem(
                     }
                     cameraDistance = 12f * density
                     alpha = if (th < 1f) 0f else 1f
+                    flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
                 }
                 .then(if (spineTaps) Modifier.pointerInput(game) { detectTapGestures { onTap(game) } } else Modifier)
         ) {
@@ -487,6 +489,7 @@ private fun StacksItem(
                     }
                     cameraDistance = 12f * density
                     alpha = if (th > 89f) 0f else 1f
+                    flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
                 }
                 .then(if (centre) Modifier.focusedCard() else Modifier)
                 .pointerInput(game) { detectTapGestures { onTap(game) } }

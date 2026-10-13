@@ -4,6 +4,126 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (178): the Voltcap Layout Maker (drag and drop) and 6 more built-in layouts
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (2): `src_copy\data\CustomLayouts.kt`,
+`src_copy\ui\CustomLayoutSettings.kt`.
+
+**Also changed:** `docs\CUSTOM_LAYOUTS.md` (the Layout Maker section at the top).
+
+**Files to delete:** none.
+
+### The Voltcap Layout Maker
+A web page for making custom layouts without code: https://claude.ai/artifact/WT7meYarQghnr352DcxSZF (private until
+you share it from its Share menu).
+- **Presets** to start from, or **Open a layout…** for a `.vclayout`, `.zip` or `layout.json`.
+- **Add a part:** the moving games, the game's picture, its name, info, your text, the clock, the category, your
+  picture, a shape, and Play & Details.
+- **On the screen:** drag a part to move it (it snaps to the edges and the middle; Shift moves freely) and drag the
+  yellow corner to resize. Shift + arrows nudge it.
+- **The selected part:** every setting of the format, with sliders. Colours can follow your theme's accent.
+- **Motion:** Loop and Entrance for each part. ◀ ▶ step through sample games, so the entrances play as they would on the
+  handheld.
+- **Screen shapes:** 16:9 (Thor), 1240×1080 (Pocket Classic), 4:3 and 3:2.
+- **Pictures:** add your own (animated GIF / WebP); they're packed into the file.
+- **Save for Voltcap** saves a `.zip`, and Voltcap imports it with Import a file. **Show layout.json** copies the text.
+- The games and art in the page are made-up samples drawn by the page.
+
+### Built-in layouts
+Settings › Home › Layout › Custom layout › Layout options now lists 7 built-in layouts, the same as the Maker's
+presets: Neon drift, Side list, Big picture, Marquee, Quiet clock, Card fan and Stage lights. They can't be deleted.
+
+**Save this layout** (was "Save the example") saves whichever layout is picked, with its pictures, so you can open it in
+the Maker, change it and import it again.
+
+### Check after installing
+- Layout options: the 7 built-in layouts. Each shows your games.
+- Make a layout in the Maker, save it, copy the `.zip` to the handheld, and import it.
+
+## Update — 13 Oct 2026 (177): the Thor freeze fixed, the controller on the second screen, multi-disc check and .m3u maker, console folder looks and packs, looks greyed out where they do nothing
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+
+- New (4): `src_copy\data\FolderArt.kt`, `src_copy\data\LibraryCheck.kt`, `src_copy\ui\SecondPad.kt`,
+  `src_copy\ui\SecondGamesSettings.kt`.
+- Changed (27): `src_copy\LauncherViewModel.kt`, `src_copy\data\Features.kt`, `src_copy\data\RomScanner.kt`, and in
+  `src_copy\ui\`: `AnimationPreviews.kt`, `AppDrawer.kt`, `Carousel.kt`, `GameCard.kt`, `GameLookPicker.kt`,
+  `GridHome.kt`, `HomeReach.kt`, `LaunchThrow.kt`, `LauncherScreen.kt`, `LibraryDialog.kt`, `MediaInspectView.kt`,
+  `Models3DLife.kt`, `QuickSettings.kt`, `SaveVaultStyles.kt`, `SecondGamesPage.kt`, `SecondScreen.kt`,
+  `SecondScreenHome.kt`, `SecondScreenVolt.kt`, `SettingsDialog.kt`, `ShelfHome.kt`, `StyleCardBinder.kt`,
+  `StyleCaseStacks.kt`, `StyleCustom.kt`, `StyleRecordCrate.kt`.
+
+**Files to delete:** none.
+
+### The freeze on the Thor ("Voltcap isn't responding", 13 Oct 21:16)
+- **What it was:** an ANR, not a crash. The app had been open for about 5 hours. In the last 2 minutes, every frame
+  took 5–9 seconds to draw, and Android stopped it.
+- **Cause:** Android 13's renderer was stuck in its text cache. Text on a part turned in 3D (a case or cartridge
+  turning, a spine on a shelf, a card tilting) is never reused: each new angle adds another copy. Over hours, finding
+  the right copy took longer than the frame.
+- **Fix:** every part that turns in 3D (25 places) is now drawn flat first and only that picture is turned
+  (`flatTextFor3d`). This includes the media beside a case in "Case + its media", the Game shelf's resting turn, Case
+  stacks' spines, Card binder, Record crate, Grid, inspect view, the launch throw, the custom layouts' turn and flip,
+  and more.
+- Earlier fixes had already done this for some places. These were the ones left.
+
+### The controller on the second screen
+- ▼ past the bottom of the main screen moves the controller onto the second screen: past the games, the round
+  buttons and the music player.
+- **On the second screen:**
+  - The lit control has an accent ring, and a note at the top says the controller is there.
+  - ◀ ▶ ▲ ▼ move to the nearest control that way: page arrows, page tabs, dock, round buttons, apps, console folders,
+    games in a folder, achievement filters, and the popup menus.
+  - A presses the lit control.
+  - B, or ▲ at the top, goes back up.
+- Picking a game or an app there sends the controller back to the main screen.
+
+### Multi-disc games and duplicates (Settings › Library › ROM folders › Library check)
+- **What other frontends do:** ES-DE treats a folder named `Game.m3u` that holds the discs and a `Game.m3u` playlist
+  as one game. Voltcap already reads that.
+- **Multi-disc games without a playlist:**
+  - Each is now one game, started from disc 1.
+  - Library check lists them (name · console · how many discs · folder).
+  - **Make the .m3u files** writes them all, then scans again.
+  - Before, the scan wrote them by itself without saying. That's now a switch, **Make .m3u files by themselves**, off by
+    default.
+- **Discs in their own folders** (`Game (Disc 1)/…`, `Game (Disc 2)/…`) are grouped in the folder above.
+- **Duplicates:**
+  - The same game in two formats side by side (`Game.cue` and `Game.chd`, `.iso` and `.zip`) is listed once, in the
+    best format (CHD first, archives last). The other copy is named in Library check.
+  - One file reached two ways counts once: `/sdcard` and `/storage/emulated/0`, `ROMs/psx` and `ROMs/PSX`, or one ROM
+    folder inside another.
+  - The same game in two different folders stays listed twice, and both paths are shown so you can tidy up.
+
+### Looks greyed out where they do nothing
+- These layouts draw their games their own way: Console hub, Resume, Channel grid, Hero tiles, Twin icons (tiles);
+  Live tiles and Twin desk (wide tiles); Game shelf; Disc station; Record crate; Card binder; Arcade cabinets.
+- In those layouts:
+  - **R1 › Look** is greyed out. Tapping it says why.
+  - In **Settings › Game look**, the look, cartridge and case chips are greyed out and can't be picked, with a note.
+
+### Second screen Games page (Settings › Screens › Second screen Games page)
+- **Consoles look like:** Folders (as before), Tiles, Wide cards or Logos.
+- **Folder pack:**
+  - Import a zip, or put the pictures in `Voltcap/Folders` on the handheld.
+  - The rule: pictures are named after the console, with the same names as ROM folders (`snes.png`, `psx.png`,
+    `gba.webp`, `megadrive.jpg`…).
+  - iiSU-style names work too (`snes_list.png`, `snes_title.png`), so packs made for iiSU or ES-DE can be dropped in.
+    The packs aren't bundled.
+  - `_default.png` is used for every console without its own picture.
+- **A picture for one console:** pick one from the handheld for any console. It comes before the pack.
+- **Console logo over pictures:** on or off.
+
+### Check after installing
+- On the Thor, leave Voltcap open on the Case stacks or Game shelf layout: it should stay smooth.
+- ▼▼▼ to the bottom: the ring appears on the lower screen. Move around, press A on a folder, then a game.
+- Library check after a scan.
+- R1 › Layout › Disc station: the Look tile is greyed out.
+
 ## Update — 13 Oct 2026 (176): Custom layouts — make your own animated home screens, import and share them
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

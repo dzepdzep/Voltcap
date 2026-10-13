@@ -4398,6 +4398,24 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         scanApps(silent = true)
     }
 
+    /**
+     * Update 177: Library check › Make the .m3u files: a playlist for every multi-disc game without one (in the folder
+     * with its discs, named after the game), then the folders are scanned again.
+     */
+    fun makeMissingM3u(only: List<com.shelf.launcher.data.RomScanner.MultiDiscSet>? = null) {
+        val sets = only ?: com.shelf.launcher.data.LibraryCheck.missingM3u
+        if (sets.isEmpty()) return
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { sets.count { com.shelf.launcher.data.RomScanner.writeM3u(it) } }
+            val failed = sets.size - ok
+            setStatusMessage(
+                (if (ok == 1) "1 playlist made." else "$ok playlists made.") +
+                    if (failed > 0) " $failed couldn't be written — the folder may be read-only (an SD card without write access)." else ""
+            )
+            scanAllFolders(silent = true, attempt = 99)
+        }
+    }
+
     /** Settings › Library › ROM folders: saves the folders and deep search, then scans them all. */
     fun scanLibraryFolders(paths: List<String>, deep: Boolean) {
         libraryStore.saveRootPaths(paths)
@@ -4454,6 +4472,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     val keyBefore = _uiState.value.let { it.visibleGames.getOrNull(it.focusedIndex)?.stableKey }
                     currentRomGames = result.games
                     romScanApplied = true
+                    // Update 177: multi-disc games without a playlist and doubles, for Library check.
+                    com.shelf.launcher.data.LibraryCheck.missingM3u = result.missingM3u
+                    com.shelf.launcher.data.LibraryCheck.duplicates = result.duplicates
+                    com.shelf.launcher.data.LibraryCheck.scanned = true
                     withContext(Dispatchers.IO) { saveRomCache(result.games) }
                     recombineGames()
                     val discNote = when {

@@ -191,8 +191,41 @@ object RomScanner {
         val multiDiscGroupsCreated: Int = 0,
         val multiDiscWriteFailures: Int = 0,
         /** Folders that don't exist or can't be read. */
-        val unreadable: List<String> = emptyList()
+        val unreadable: List<String> = emptyList(),
+        /** Update 177: multi-disc games without a .m3u playlist (listed as one game, started from disc 1). */
+        val missingM3u: List<MultiDiscSet> = emptyList(),
+        /** Update 177: the same game found more than once (left out: [Duplicate.skipped]; or in two places). */
+        val duplicates: List<Duplicate> = emptyList()
     )
+
+    /** Update 177: a game on several discs: [discs] relative to [dir], in order; its playlist would be [dir]/[title].m3u. */
+    data class MultiDiscSet(val title: String, val platform: String, val dir: File, val discs: List<String>) {
+        val m3u: File get() = File(dir, "$title.m3u")
+    }
+
+    /**
+     * Update 177: one game found twice. [kept] is listed; [skipped] is the other copy — left out when it's the same game in
+     * another format beside it ([sameFolder]), listed too when it's in another folder (then both show; tidy up by hand).
+     */
+    data class Duplicate(val name: String, val platform: String, val kept: String, val skipped: String, val sameFolder: Boolean)
+
+    /** Update 177: which format of a game is kept when there are several side by side (lower first). */
+    private fun formatRank(ext: String): Int = when (ext.lowercase()) {
+        "m3u" -> 0
+        "chd" -> 1
+        "rvz", "wbfs", "wua", "nsp", "xci" -> 2
+        "cue", "gdi", "ccd" -> 3
+        "iso" -> 4
+        "cso", "zso", "pbp", "gcz" -> 5
+        "zip" -> 80
+        "7z" -> 81
+        else -> 40
+    }
+
+    /** Update 177: the playlist for [set]: one disc per line, relative to its folder. True when written. */
+    fun writeM3u(set: MultiDiscSet): Boolean = try {
+        if (set.m3u.exists()) false else { set.m3u.writeText(set.discs.joinToString("\n") + "\n"); true }
+    } catch (e: Exception) { false }
 
     /**
      * Every ROM folder at once. A game found through two folders (one inside
@@ -200,13 +233,22 @@ object RomScanner {
      */
     fun scanAll(rootPaths: List<String>, deep: Boolean): ScanResult {
         val results = rootPaths.map { scan(it, deep) }
-        val games = results.flatMap { it.games }.distinctBy { it.romPath }.sortedBy { it.name }
+        // Update 177: one file reached two ways (/sdcard and /storage/emulated/0, "ROMs/psx" and "ROMs/PSX" — Android's
+        // shared storage and SD cards don't tell capitals apart — or one ROM folder inside another) counts once.
+        fun same(path: String?): String = path?.let { p -> (runCatching { File(p).canonicalPath }.getOrNull() ?: p).lowercase() } ?: ""
+        val games = results.flatMap { it.games }.distinctBy { same(it.romPath) }.sortedBy { it.name }
+        // The same game (console + name) in two folders: both stay listed, but it's reported.
+        val twice = games.groupBy { it.platform to it.name.lowercase() }.values.filter { it.size > 1 }.flatMap { list ->
+            list.drop(1).map { Duplicate(list[0].name, list[0].platform, list[0].romPath.orEmpty(), it.romPath.orEmpty(), sameFolder = false) }
+        }
         return ScanResult(
             games,
             results.flatMap { it.skippedExtensions }.toSet(),
             results.sumOf { it.multiDiscGroupsCreated },
             results.sumOf { it.multiDiscWriteFailures },
-            unreadable = rootPaths.filterIndexed { i, _ -> results[i].unreadable.isNotEmpty() }
+            unreadable = rootPaths.filterIndexed { i, _ -> results[i].unreadable.isNotEmpty() },
+            missingM3u = results.flatMap { it.missingM3u }.distinctBy { same(it.m3u.path) },
+            duplicates = (results.flatMap { it.duplicates } + twice).distinctBy { same(it.skipped) }
         )
     }
 
@@ -320,11 +362,27 @@ object RomScanner {
             }
         }
 
-        // Pass 2: group whatever's left by (folder, title with disc marker
-        // stripped, extension) to find undeclared multi-disc sets.
+        // Update 177: the same game in two formats side by side (Game.cue and Game.chd, Game.iso and Game.zip) is one
+        // game: the best format is kept (CHD, then the console's own image, then cue / iso, archives last), the other
+        // reported as a duplicate.
+        val duplicates = mutableListOf<Duplicate>()
         val remaining = knownFiles.filterNot { it.absolutePath in consumedPaths }
+            .groupBy { "${it.parent}|${it.nameWithoutExtension.lowercase()}" }.values.map { same ->
+                if (same.size == 1) same[0] else {
+                    val keep = same.minBy { formatRank(it.extension) }
+                    same.filter { it !== keep }.forEach { d ->
+                        duplicates += Duplicate(prettifyName(keep.nameWithoutExtension), platformFor(keep, rootPath, deep) ?: "", keep.absolutePath, d.absolutePath, sameFolder = true)
+                    }
+                    keep
+                }
+            }
+
+        // Pass 2: group whatever's left by (folder, title with disc marker
+        // stripped) to find undeclared multi-disc sets. (Update 177: discs each in their own folder —
+        // "Game (Disc 1)/Game (Disc 1).cue" — are grouped in the folder above; the extension no longer splits a set.)
         val discGroups = LinkedHashMap<String, MutableList<Pair<Int, File>>>()
         val discGroupTitles = mutableMapOf<String, String>()
+        val discGroupDirs = mutableMapOf<String, File>()
         val singleFiles = mutableListOf<File>()
 
         remaining.forEach { file ->
@@ -335,10 +393,14 @@ object RomScanner {
                 return@forEach
             }
             val title = cleanupTitle(file.nameWithoutExtension.removeRange(match.range))
-            val groupKey = "${file.parent}|${title.lowercase()}|${file.extension.lowercase()}"
+            val parent = file.parentFile
+            val groupDir = if (parent != null && discPattern.containsMatchIn(parent.name) && parent.parentFile != null) parent.parentFile else parent
+            val groupKey = "${groupDir?.path}|${title.lowercase()}"
             discGroups.getOrPut(groupKey) { mutableListOf() } += discNumber to file
             discGroupTitles.putIfAbsent(groupKey, title)
+            if (groupDir != null) discGroupDirs.putIfAbsent(groupKey, groupDir)
         }
+        val missingM3u = mutableListOf<MultiDiscSet>()
 
         var groupsCreated = 0
         var groupWriteFailures = 0
@@ -351,13 +413,14 @@ object RomScanner {
                 return@forEach
             }
 
-            val sortedDiscs = discs.sortedBy { it.first }
+            // (Update 177: the same disc number twice — two copies — keeps the first.)
+            val sortedDiscs = discs.sortedBy { it.first }.distinctBy { it.first }
             val firstFile = sortedDiscs.first().second
-            val parentDir = firstFile.parentFile
+            val parentDir = discGroupDirs[groupKey] ?: firstFile.parentFile
             val title = discGroupTitles[groupKey] ?: firstFile.nameWithoutExtension
             val platform = platformFor(firstFile, rootPath, deep)
 
-            if (parentDir == null || platform == null) {
+            if (parentDir == null || platform == null || sortedDiscs.size < 2) {
                 singleFiles += sortedDiscs.map { it.second }
                 return@forEach
             }
@@ -370,13 +433,22 @@ object RomScanner {
                 singleFiles += sortedDiscs.map { it.second }
                 return@forEach
             }
+            val set = MultiDiscSet(title, platform, parentDir, sortedDiscs.map { it.second.relativeTo(parentDir).path })
 
-            val written = try {
-                m3uFile.writeText(sortedDiscs.joinToString("\n") { it.second.name } + "\n")
-                true
-            } catch (e: Exception) {
-                false
+            // Update 177: the playlist is only written by itself with Settings › Library › Make .m3u files by itself on;
+            // otherwise the set is one game (started from disc 1) and listed under Library check, to make them in one go.
+            if (!com.shelf.launcher.data.Features.autoM3u.value) {
+                missingM3u += set
+                games += Game(
+                    name = prettifyName(title),
+                    platform = platform,
+                    hue = hueFor(title),
+                    sourceType = SourceType.ROM,
+                    romPath = firstFile.absolutePath
+                )
+                return@forEach
             }
+            val written = writeM3u(set)
 
             if (written) {
                 games += Game(
@@ -404,7 +476,7 @@ object RomScanner {
             )
         }
 
-        return ScanResult(games.sortedBy { it.name }, skipped, groupsCreated, groupWriteFailures)
+        return ScanResult(games.sortedBy { it.name }, skipped, groupsCreated, groupWriteFailures, missingM3u = missingM3u, duplicates = duplicates)
     }
 
     /** Files a CUE sheet (`FILE "Game (Track 1).bin" BINARY`) or a GDI list (`1 0 4 2352 track01.bin 0`) names. */

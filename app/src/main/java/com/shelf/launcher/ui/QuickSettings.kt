@@ -312,7 +312,15 @@ fun QuickSettingsCard(
         })
         if (sortLabel != null && onSort != null) add(R1Tile("sort", Icons.AutoMirrored.Filled.Sort, sortLabel, false) { onSort() })
         // What the games are drawn as in the layout in use: Covers → Real cases → real sizes → Cartridges & discs → Discs only.
-        if (gameLook != null && onCycleGameLook != null) add(R1Tile("gamelook", Icons.Filled.Album, "Look\n$gameLook", gameLook != "Covers") { onCycleGameLook() })
+        if (gameLook != null && onCycleGameLook != null) {
+            // Update 177: greyed out in a layout that draws its games its own way (the look would change nothing there).
+            val layoutNow = home?.appearance?.homeLayout
+            val own = layoutNow?.let { layoutOwnLook(it) }
+            if (own != null) add(R1Tile("gamelook", Icons.Filled.Album, "Look\n$gameLook", false, disabled = true) {
+                android.widget.Toast.makeText(context, "${layoutNow.label} draws its games as $own — the look is for the other layouts.", android.widget.Toast.LENGTH_SHORT).show()
+            })
+            else add(R1Tile("gamelook", Icons.Filled.Album, "Look\n$gameLook", gameLook != "Covers") { onCycleGameLook() })
+        }
         // The console badges: off, the small logo, the console's own big logo.
         if (home != null) {
             val F = com.shelf.launcher.data.Features
@@ -857,7 +865,7 @@ fun QuickSettingsCard(
             val latestEditing = androidx.compose.runtime.rememberUpdatedState(editing)
             QuickTile(
                 icon = t.icon, label = t.label, on = (t.on && !editing) || isPicked, dotColor = t.dot,
-                dimmed = editing && isHidden, editMark = if (editing) !isHidden else null,
+                dimmed = (editing && isHidden) || (!editing && t.disabled), editMark = if (editing) !isHidden else null,
                 // Hold: the tile's own second action, else its settings page (Voltcap's or Android's).
                 onLongClick = if (editing) null else t.longAction ?: r1HoldTarget(t.id)?.let { target ->
                     {
@@ -1032,6 +1040,8 @@ private class R1Tile(
     val dot: Color? = null, val focus: FocusRequester? = null,
     /** Hold (long press): a second action, e.g. the overlay layout. */
     val longAction: (() -> Unit)? = null,
+    /** Update 177: greyed out — it does nothing in the layout in use (its action only says why). */
+    val disabled: Boolean = false,
     val action: () -> Unit
 )
 

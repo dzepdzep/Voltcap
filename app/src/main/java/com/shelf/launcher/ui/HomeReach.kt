@@ -99,8 +99,13 @@ internal object HomeReach {
                     val here = list.indexOf(z)
                     if (outward) {
                         // Further out the same way, if there's more there.
-                        list.drop(here + 1).firstOrNull { count(it) > 0 }?.let { nz ->
-                            zone = nz; index = if (nz == Zone.MUSIC) MINI_PLAY.coerceAtMost(count(nz) - 1) else 0; sound(UiSound.MOVE)
+                        val further = list.drop(here + 1).firstOrNull { count(it) > 0 }
+                        if (further != null) {
+                            zone = further; index = if (further == Zone.MUSIC) MINI_PLAY.coerceAtMost(count(further) - 1) else 0; sound(UiSound.MOVE)
+                        } else if (k == Key.DirectionDown && SecondPad.enter()) {
+                            // Update 177: past the last thing under the games: onto the second screen.
+                            leave()
+                            sound(UiSound.MOVE)
                         }
                     } else {
                         // Back towards the games (and onto them past the nearest).

@@ -211,8 +211,12 @@ fun SecondScreenHost(
                                 val slow = SecondIdle.idle && com.shelf.launcher.data.Features.secondSlowWhenUnused.state.value
                                 androidx.compose.runtime.CompositionLocalProvider(
                                     LocalSceneQuality provides secondScreenQuality(LocalSceneQuality.current),
-                                    LocalSceneMinFrameMs provides (if (slow) 66 else 0)
-                                ) { currentContent() }
+                                    LocalSceneMinFrameMs provides (if (slow) 66 else 0),
+                                    LocalOnSecondScreen provides true // Update 177: the controller can come here (SecondPad.kt)
+                                ) {
+                                    currentContent()
+                                    SecondPadHint()
+                                }
                             }
                         }
                     })
