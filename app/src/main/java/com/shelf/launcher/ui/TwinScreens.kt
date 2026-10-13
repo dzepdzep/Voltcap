@@ -1,9 +1,16 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import com.shelf.launcher.ui.theme.ShelfTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,14 +50,60 @@ import com.shelf.launcher.data.HomeLayout
 /** Update 158: the twin layout's context as the main screen drew it last (null while no twin layout is on). */
 internal object TwinScreens {
     var ctx by mutableStateOf<StyleCtx?>(null)
+    /**
+     * Update 180: the top part fills the whole main screen with its own background, the theme's background off (two
+     * screens in use and Layout options › "Fill the top screen" on). Set by [TwinHost].
+     */
+    var fullTop by mutableStateOf(false)
+    /**
+     * Update 180: the second screen shows its usual dashboard (pages, dock, Games page…) instead of the layout's bottom
+     * part — the Second screen button in the layout, or ↩ on the dashboard to come back.
+     */
+    var dashboard by mutableStateOf(false)
+}
+
+/** Update 180: Layout options of both two-screen layouts: the top screen filled by the layout, the theme off. */
+@Composable
+internal fun TwinFullTopSwitch() {
+    androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+    SwitchRow(
+        androidx.compose.material.icons.Icons.Filled.OpenInFull, "Fill the top screen",
+        "With two screens: the layout's own background fills the whole top screen and the theme's background is off. One screen: as before.",
+        com.shelf.launcher.data.Features.twinFullTop.state.value, { com.shelf.launcher.data.Features.twinFullTop.value = it }
+    )
+}
+
+/** Update 180: the button on the second screen's dashboard (opened from a two-screen layout) that brings the layout back. */
+@Composable
+internal fun androidx.compose.foundation.layout.BoxScope.TwinBackPill(name: String) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+    androidx.compose.foundation.layout.Row(
+        Modifier.align(Alignment.BottomStart).padding(10.dp)
+            .padTarget("twin-back") { TwinScreens.dashboard = false }
+            .clip(shape)
+            .background(ShelfTheme.accent)
+            .tapOnly { TwinScreens.dashboard = false }
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack, null, tint = onAccentColor(), modifier = Modifier.size(16.dp))
+        androidx.compose.foundation.layout.Spacer(Modifier.size(6.dp))
+        androidx.compose.material3.Text(name, color = onAccentColor(), fontSize = 13.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+    }
 }
 
 /** Update 158: one of the two-screen layouts. */
-internal val HomeLayout.isTwin: Boolean get() = this == HomeLayout.TWIN_DESK || this == HomeLayout.TWIN_ICONS
+internal val HomeLayout.isTwin: Boolean get() = this == HomeLayout.TWIN_DESK || this == HomeLayout.TWIN_ICONS ||
+    this == HomeLayout.POCKET_CLASSIC || this == HomeLayout.POCKET_RIBBON // Update 181
+
+/** Update 181: the Pocket layouts (their own keys, sounds and pocket screens). */
+internal val HomeLayout.isPocket: Boolean get() = this == HomeLayout.POCKET_CLASSIC || this == HomeLayout.POCKET_RIBBON
 
 /** Update 158: the bottom part is on the second screen right now (Voltcap's own second screen is up and in use). */
 internal fun twinOnSecond(state: LauncherUiState): Boolean =
-    state.appearance.useSecondScreen && SecondScreenShown.value
+    state.appearance.useSecondScreen && SecondScreenShown.value &&
+        // Update 181: a Pocket layout set to show both screens on the main one (Layout options › Screens).
+        !(state.appearance.homeLayout.isPocket && com.shelf.launcher.data.Features.pocketArrange.value != com.shelf.launcher.data.Features.PocketArrange.AUTO)
 
 /**
  * Update 158: draws a twin layout on the main screen: only [top] while the second screen shows the bottom part,
@@ -62,29 +115,33 @@ internal fun TwinHost(
     c: StyleCtx,
     modifier: Modifier,
     top: @Composable (Modifier, Boolean) -> Unit,
-    bottom: @Composable (Modifier, Boolean) -> Unit
+    bottom: @Composable (Modifier, Boolean) -> Unit,
+    /** Update 181: the two parts' sizes when both are on one screen (scaled to fit), and the narrowest a part may be. */
+    topH: Dp = 250.dp,
+    bottomH: Dp = 300.dp,
+    minW: Dp = 360.dp,
+    /** Update 181: force one above the other (true) or side by side (false); null = whichever is bigger. */
+    stacked: Boolean? = null
 ) {
     // The second screen draws the bottom part from this.
     // (Cleared on leaving only while it is still this layout's, so switching to the other twin layout keeps it.)
     val mine = remember { arrayOfNulls<StyleCtx>(1) }
-    SideEffect { mine[0] = c; TwinScreens.ctx = c }
-    DisposableEffect(Unit) { onDispose { if (TwinScreens.ctx === mine[0]) TwinScreens.ctx = null } }
+    val fill = twinOnSecond(c.state) && com.shelf.launcher.data.Features.twinFullTop.state.value
+    SideEffect { mine[0] = c; TwinScreens.ctx = c; if (TwinScreens.fullTop != fill) TwinScreens.fullTop = fill }
+    DisposableEffect(Unit) { onDispose { if (TwinScreens.ctx === mine[0]) { TwinScreens.ctx = null; TwinScreens.fullTop = false } } }
     if (twinOnSecond(c.state)) {
         top(modifier.fillMaxSize(), false)
     } else {
         BoxWithConstraints(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             val gap = 10.dp
-            val topH = 250.dp
-            val bottomH = 300.dp
-            val minW = 360.dp
             // One above the other (the way the handheld holds its two screens), or side by side on a wide screen
             // when that is clearly bigger.
             val sStack = minOf(maxHeight / (topH + bottomH + gap), maxWidth / minW)
-            val sSide = minOf(maxWidth / (minW * 2 + gap), maxHeight / 280.dp)
-            val side = sSide > sStack * 1.15f
+            val sSide = minOf(maxWidth / (minW * 2 + gap), maxHeight / (maxOf(topH, bottomH) - 20.dp))
+            val side = stacked?.not() ?: (sSide > sStack * 1.15f)
             if (side) {
                 val s = sSide.coerceAtLeast(0.3f)
-                val h = minOf(maxHeight / s, 340.dp)
+                val h = minOf(maxHeight / s, maxOf(topH, bottomH) + 40.dp)
                 val w = minOf((maxWidth / s - gap) / 2, 560.dp)
                 Row(horizontalArrangement = Arrangement.spacedBy(gap * s), verticalAlignment = Alignment.CenterVertically) {
                     TwinScaled(w, h, s) { m -> top(m, true) }
@@ -113,8 +170,13 @@ private fun TwinScaled(w: Dp, h: Dp, s: Float, content: @Composable (Modifier) -
 /** Update 158: what the second screen shows while a twin layout is on: its bottom part, filling the screen. */
 @Composable
 internal fun TwinSecondScreen(c: StyleCtx) {
-    if (c.state.appearance.homeLayout == HomeLayout.TWIN_ICONS) TwinIconsBottom(c, Modifier.fillMaxSize(), framed = false)
-    else TwinDeskBottom(c, Modifier.fillMaxSize(), framed = false)
+    when (c.state.appearance.homeLayout) {
+        HomeLayout.TWIN_ICONS -> TwinIconsBottom(c, Modifier.fillMaxSize(), framed = false)
+        // Update 181.
+        HomeLayout.POCKET_CLASSIC -> PocketClassicBottom(c, Modifier.fillMaxSize(), framed = false)
+        HomeLayout.POCKET_RIBBON -> PocketRibbonBottom(c, Modifier.fillMaxSize(), framed = false)
+        else -> TwinDeskBottom(c, Modifier.fillMaxSize(), framed = false)
+    }
 }
 
 /**

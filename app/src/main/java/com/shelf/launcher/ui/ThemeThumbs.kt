@@ -279,6 +279,7 @@ internal fun themeIcon(theme: AppTheme): ImageVector = when (theme) {
     AppTheme.UMBRA_TYPE -> Icons.Filled.NightsStay
     AppTheme.ALLOY_TYPE -> Icons.Filled.Hardware
     AppTheme.GLIMMER_TYPE -> Icons.Filled.AutoAwesome
+    AppTheme.ALBUM_TIDE -> Icons.Filled.Album
     AppTheme.DISC_SLEEVE -> Icons.Filled.Album
     AppTheme.STILL_DUSK -> Icons.Filled.WbTwilight
     AppTheme.STILL_HORIZON -> Icons.Filled.Landscape

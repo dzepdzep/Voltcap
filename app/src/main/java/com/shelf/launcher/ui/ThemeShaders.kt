@@ -108,24 +108,6 @@ internal object ThemeShaders {
         ThemeMotif.MANGA_BEAT -> PRELUDE + MANGA_BEAT
         ThemeMotif.COMIC_PANELS -> PRELUDE + COMIC_PANELS
         ThemeMotif.PIXEL_SKY -> PRELUDE + PIXEL_SKY
-        ThemeMotif.CHILL_BLADES -> PRELUDE + CHILL_BLADES
-        ThemeMotif.CHILL_POLAR -> PRELUDE + CHILL_POLAR
-        ThemeMotif.CHILL_PLANET -> PRELUDE + CHILL_PLANET
-        ThemeMotif.CHILL_MOON -> PRELUDE + CHILL_MOON
-        ThemeMotif.CHILL_ORBS -> PRELUDE + CHILL_ORBS
-        ThemeMotif.CHILL_SILK -> PRELUDE + CHILL_SILK
-        ThemeMotif.CHILL_DUNES -> PRELUDE + CHILL_DUNES
-        ThemeMotif.CHILL_MESH -> PRELUDE + CHILL_MESH
-        ThemeMotif.CHILL_LIGHT -> PRELUDE + CHILL_LIGHT
-        ThemeMotif.CHILL_SHADE -> PRELUDE + CHILL_SHADE
-        ThemeMotif.CHILL_RAIN -> PRELUDE + CHILL_RAIN
-        ThemeMotif.CHILL_CITY -> PRELUDE + CHILL_CITY
-        ThemeMotif.CHILL_JELLY -> PRELUDE + CHILL_JELLY
-        ThemeMotif.CHILL_GLADE -> PRELUDE + CHILL_GLADE
-        ThemeMotif.CHILL_HEX -> PRELUDE + CHILL_HEX
-        ThemeMotif.CHILL_CLOUDS -> PRELUDE + CHILL_CLOUDS
-        ThemeMotif.CHILL_KOI -> PRELUDE + CHILL_KOI
-        ThemeMotif.CHILL_PEAKS -> PRELUDE + CHILL_PEAKS
         ThemeMotif.COVER_FLOW -> PRELUDE + COVER_FLOW
         ThemeMotif.RECORD_SHELF -> PRELUDE + RECORD_SHELF
         ThemeMotif.COVER_CUBE -> PRELUDE + COVER_CUBE
@@ -154,15 +136,25 @@ internal object ThemeShaders {
         ThemeMotif.LYRIC_SHEET -> PRELUDE + LYRIC_CLOUD
         ThemeMotif.LYRIC_NEON -> PRELUDE + LYRIC_NEON
         ThemeMotif.DISC_SLEEVE -> PRELUDE + DISC_SLEEVE
-        ThemeMotif.STILL_DUSK -> PRELUDE + STILL_DUSK
-        ThemeMotif.STILL_HORIZON -> PRELUDE + STILL_HORIZON
-        ThemeMotif.STILL_GLOW -> PRELUDE + STILL_GLOW
-        ThemeMotif.CALM_RIBBON -> PRELUDE + CALM_RIBBON
-        ThemeMotif.CALM_DRIFT -> PRELUDE + CALM_DRIFT
-        ThemeMotif.CALM_HALO -> PRELUDE + CALM_HALO
-        ThemeMotif.BOLD_SPLIT -> PRELUDE + BOLD_SPLIT
-        ThemeMotif.BOLD_DOTS -> PRELUDE + BOLD_DOTS
-        ThemeMotif.BOLD_BANDS -> PRELUDE + BOLD_BANDS
+        ThemeMotif.ALBUM_TIDE -> PRELUDE + ALBUM_TIDE
+        ThemeMotif.CHILL_BLADES -> PRELUDE + CHILL_BLADES
+        ThemeMotif.CHILL_POLAR -> PRELUDE + CHILL_POLAR
+        ThemeMotif.CHILL_PLANET -> PRELUDE + CHILL_PLANET
+        ThemeMotif.CHILL_MOON -> PRELUDE + CHILL_MOON
+        ThemeMotif.CHILL_ORBS -> PRELUDE + CHILL_ORBS
+        ThemeMotif.CHILL_SILK -> PRELUDE + CHILL_SILK
+        ThemeMotif.CHILL_DUNES -> PRELUDE + CHILL_DUNES
+        ThemeMotif.CHILL_MESH -> PRELUDE + CHILL_MESH
+        ThemeMotif.CHILL_LIGHT -> PRELUDE + CHILL_LIGHT
+        ThemeMotif.CHILL_SHADE -> PRELUDE + CHILL_SHADE
+        ThemeMotif.CHILL_RAIN -> PRELUDE + CHILL_RAIN
+        ThemeMotif.CHILL_CITY -> PRELUDE + CHILL_CITY
+        ThemeMotif.CHILL_JELLY -> PRELUDE + CHILL_JELLY
+        ThemeMotif.CHILL_GLADE -> PRELUDE + CHILL_GLADE
+        ThemeMotif.CHILL_HEX -> PRELUDE + CHILL_HEX
+        ThemeMotif.CHILL_CLOUDS -> PRELUDE + CHILL_CLOUDS
+        ThemeMotif.CHILL_KOI -> PRELUDE + CHILL_KOI
+        ThemeMotif.CHILL_PEAKS -> PRELUDE + CHILL_PEAKS
         ThemeMotif.HANDHELD_BOOT -> PRELUDE + HANDHELD_BOOT
         ThemeMotif.POCKET_BEAT -> PRELUDE + POCKET_BEAT
         ThemeMotif.CONSOLE_DISC -> PRELUDE + CONSOLE_DISC
@@ -193,14 +185,22 @@ internal object ThemeShaders {
         ThemeMotif.PX_UMBRA -> PRELUDE + PX_UMBRA
         ThemeMotif.PX_ALLOY -> PRELUDE + PX_ALLOY
         ThemeMotif.PX_GLIMMER -> PRELUDE + PX_GLIMMER
+        ThemeMotif.GAMING_ROOM -> PRELUDE + GAMING_ROOM
+        ThemeMotif.STILL_DUSK -> PRELUDE + STILL_DUSK
+        ThemeMotif.STILL_HORIZON -> PRELUDE + STILL_HORIZON
+        ThemeMotif.STILL_GLOW -> PRELUDE + STILL_GLOW
+        ThemeMotif.CALM_RIBBON -> PRELUDE + CALM_RIBBON
+        ThemeMotif.CALM_DRIFT -> PRELUDE + CALM_DRIFT
+        ThemeMotif.CALM_HALO -> PRELUDE + CALM_HALO
+        ThemeMotif.BOLD_SPLIT -> PRELUDE + BOLD_SPLIT
+        ThemeMotif.BOLD_DOTS -> PRELUDE + BOLD_DOTS
+        ThemeMotif.BOLD_BANDS -> PRELUDE + BOLD_BANDS
         ThemeMotif.SHOWCASE_PARALLAX -> PRELUDE + SHOWCASE_BG
         ThemeMotif.SHOWCASE_CINEMA -> PRELUDE + SHOWCASE_BG
         ThemeMotif.SHOWCASE_FILMSTRIP -> PRELUDE + SHOWCASE_BG
         ThemeMotif.SHOWCASE_MOSAIC -> PRELUDE + SHOWCASE_BG
         ThemeMotif.SHOWCASE_GLASS -> PRELUDE + GLASS
         ThemeMotif.SHOWCASE_CRT -> PRELUDE + CRT_ROOM
-        ThemeMotif.GAMING_ROOM -> PRELUDE + GAMING_ROOM
-        ThemeMotif.CUSTOM_SCENE, ThemeMotif.CUSTOM_VIZ -> ""  // custom packs: see SceneSource
     }
 
     /** Child shaders each scene really samples (only these may be set; see gen.py used_children). */
@@ -219,7 +219,7 @@ internal object ThemeShaders {
         ThemeMotif.LCD -> emptySet()
         ThemeMotif.LEAF_SWIRL -> emptySet()
         ThemeMotif.AURA -> emptySet()
-        ThemeMotif.AURORA -> setOf("uPaint")
+        ThemeMotif.AURORA -> emptySet()
         ThemeMotif.NEBULA -> emptySet()
         ThemeMotif.PIXELS -> emptySet()
         ThemeMotif.GLASS -> emptySet()
@@ -227,20 +227,20 @@ internal object ThemeShaders {
         ThemeMotif.STARS -> emptySet()
         ThemeMotif.PETALS -> emptySet()
         ThemeMotif.SCANLINES -> emptySet()
-        ThemeMotif.MUSIC -> setOf("uArt", "uCover")
+        ThemeMotif.MUSIC -> setOf("uArt")
         ThemeMotif.ANIME_FLAMES -> emptySet()
         ThemeMotif.CEL_SKY -> emptySet()
         ThemeMotif.MECHA_HUD -> emptySet()
         ThemeMotif.MOON_BLADE -> emptySet()
         ThemeMotif.SPECTRUM -> setOf("uArt")
-        ThemeMotif.PULSE_RING -> setOf("uArt", "uCover")
+        ThemeMotif.PULSE_RING -> setOf("uArt")
         ThemeMotif.BEAT_TUNNEL -> setOf("uArt")
         ThemeMotif.CIRCUIT -> emptySet()
         ThemeMotif.GEARWORKS -> emptySet()
         ThemeMotif.FROST -> emptySet()
         ThemeMotif.TERRA -> emptySet()
         ThemeMotif.VENOM -> emptySet()
-        ThemeMotif.MEADOW -> setOf("uPaint")
+        ThemeMotif.MEADOW -> emptySet()
         ThemeMotif.DOJO -> emptySet()
         ThemeMotif.GALE -> emptySet()
         ThemeMotif.THICKET -> emptySet()
@@ -290,7 +290,7 @@ internal object ThemeShaders {
         ThemeMotif.POP_ART -> setOf("uCover")
         ThemeMotif.COVER_RIPPLE -> setOf("uArt", "uCover")
         ThemeMotif.BLAZE_BEAT -> emptySet()
-        ThemeMotif.SPECIMEN_LAB -> setOf("uMedia")
+        ThemeMotif.SPECIMEN_LAB -> emptySet()
         ThemeMotif.MAGICAL -> emptySet()
         ThemeMotif.SPIRIT_FOREST -> emptySet()
         ThemeMotif.FESTIVAL -> emptySet()
@@ -306,24 +306,6 @@ internal object ThemeShaders {
         ThemeMotif.MANGA_BEAT -> setOf("uCover")
         ThemeMotif.COMIC_PANELS -> emptySet()
         ThemeMotif.PIXEL_SKY -> emptySet()
-        ThemeMotif.CHILL_BLADES -> emptySet()
-        ThemeMotif.CHILL_POLAR -> setOf("uPaint")
-        ThemeMotif.CHILL_PLANET -> emptySet()
-        ThemeMotif.CHILL_MOON -> setOf("uPaint")
-        ThemeMotif.CHILL_ORBS -> emptySet()
-        ThemeMotif.CHILL_SILK -> setOf("uPaint")
-        ThemeMotif.CHILL_DUNES -> setOf("uPaint")
-        ThemeMotif.CHILL_MESH -> emptySet()
-        ThemeMotif.CHILL_LIGHT -> emptySet()
-        ThemeMotif.CHILL_SHADE -> emptySet()
-        ThemeMotif.CHILL_RAIN -> emptySet()
-        ThemeMotif.CHILL_CITY -> setOf("uPaint")
-        ThemeMotif.CHILL_JELLY -> emptySet()
-        ThemeMotif.CHILL_GLADE -> setOf("uPaint")
-        ThemeMotif.CHILL_HEX -> emptySet()
-        ThemeMotif.CHILL_CLOUDS -> setOf("uPaint")
-        ThemeMotif.CHILL_KOI -> setOf("uPaint")
-        ThemeMotif.CHILL_PEAKS -> setOf("uPaint")
         ThemeMotif.COVER_FLOW -> setOf("uArt", "uCover", "uHistory")
         ThemeMotif.RECORD_SHELF -> setOf("uCover", "uHistory")
         ThemeMotif.COVER_CUBE -> setOf("uCover")
@@ -352,15 +334,25 @@ internal object ThemeShaders {
         ThemeMotif.LYRIC_SHEET -> setOf("uArt")
         ThemeMotif.LYRIC_NEON -> emptySet()
         ThemeMotif.DISC_SLEEVE -> setOf("uCover")
-        ThemeMotif.STILL_DUSK -> emptySet()
-        ThemeMotif.STILL_HORIZON -> emptySet()
-        ThemeMotif.STILL_GLOW -> emptySet()
-        ThemeMotif.CALM_RIBBON -> emptySet()
-        ThemeMotif.CALM_DRIFT -> emptySet()
-        ThemeMotif.CALM_HALO -> emptySet()
-        ThemeMotif.BOLD_SPLIT -> emptySet()
-        ThemeMotif.BOLD_DOTS -> emptySet()
-        ThemeMotif.BOLD_BANDS -> emptySet()
+        ThemeMotif.ALBUM_TIDE -> setOf("uArt", "uCover", "uLabel")
+        ThemeMotif.CHILL_BLADES -> emptySet()
+        ThemeMotif.CHILL_POLAR -> setOf("uPaint")
+        ThemeMotif.CHILL_PLANET -> emptySet()
+        ThemeMotif.CHILL_MOON -> setOf("uPaint")
+        ThemeMotif.CHILL_ORBS -> emptySet()
+        ThemeMotif.CHILL_SILK -> setOf("uPaint")
+        ThemeMotif.CHILL_DUNES -> setOf("uPaint")
+        ThemeMotif.CHILL_MESH -> emptySet()
+        ThemeMotif.CHILL_LIGHT -> emptySet()
+        ThemeMotif.CHILL_SHADE -> emptySet()
+        ThemeMotif.CHILL_RAIN -> emptySet()
+        ThemeMotif.CHILL_CITY -> setOf("uPaint")
+        ThemeMotif.CHILL_JELLY -> emptySet()
+        ThemeMotif.CHILL_GLADE -> setOf("uPaint")
+        ThemeMotif.CHILL_HEX -> emptySet()
+        ThemeMotif.CHILL_CLOUDS -> setOf("uPaint")
+        ThemeMotif.CHILL_KOI -> setOf("uPaint")
+        ThemeMotif.CHILL_PEAKS -> setOf("uPaint")
         ThemeMotif.HANDHELD_BOOT -> emptySet()
         ThemeMotif.POCKET_BEAT -> setOf("uArt", "uCover")
         ThemeMotif.CONSOLE_DISC -> setOf("uMedia")
@@ -391,14 +383,22 @@ internal object ThemeShaders {
         ThemeMotif.PX_UMBRA -> emptySet()
         ThemeMotif.PX_ALLOY -> emptySet()
         ThemeMotif.PX_GLIMMER -> emptySet()
+        ThemeMotif.GAMING_ROOM -> setOf("uPoster", "uRoom", "uShot")
+        ThemeMotif.STILL_DUSK -> emptySet()
+        ThemeMotif.STILL_HORIZON -> emptySet()
+        ThemeMotif.STILL_GLOW -> emptySet()
+        ThemeMotif.CALM_RIBBON -> emptySet()
+        ThemeMotif.CALM_DRIFT -> emptySet()
+        ThemeMotif.CALM_HALO -> emptySet()
+        ThemeMotif.BOLD_SPLIT -> emptySet()
+        ThemeMotif.BOLD_DOTS -> emptySet()
+        ThemeMotif.BOLD_BANDS -> emptySet()
         ThemeMotif.SHOWCASE_PARALLAX -> emptySet()
         ThemeMotif.SHOWCASE_CINEMA -> emptySet()
         ThemeMotif.SHOWCASE_FILMSTRIP -> emptySet()
         ThemeMotif.SHOWCASE_MOSAIC -> emptySet()
         ThemeMotif.SHOWCASE_GLASS -> emptySet()
         ThemeMotif.SHOWCASE_CRT -> setOf("uShot")
-        ThemeMotif.GAMING_ROOM -> setOf("uPoster", "uRoom", "uShot")
-        ThemeMotif.CUSTOM_SCENE, ThemeMotif.CUSTOM_VIZ -> emptySet()  // custom packs: see SceneSource
     }
 
     /**
@@ -420,7 +420,7 @@ internal object ThemeShaders {
         ThemeMotif.LCD -> setOf("uAcc", "uBg", "uRes", "uSec", "uSurf", "uTime")
         ThemeMotif.LEAF_SWIRL -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.AURA -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uSurf", "uTime")
-        ThemeMotif.AURORA -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uPaintSize", "uRes", "uTime")
+        ThemeMotif.AURORA -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.NEBULA -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.PIXELS -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.GLASS -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
@@ -428,20 +428,20 @@ internal object ThemeShaders {
         ThemeMotif.STARS -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.PETALS -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.SCANLINES -> setOf("uAcc", "uBg", "uDensity", "uRes", "uSec", "uTime")
-        ThemeMotif.MUSIC -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uCoverSize", "uEqA", "uEqB", "uHasArt", "uIntensity", "uLod", "uPlayT", "uPlaying", "uRes", "uSec", "uWaveH", "uWaveX", "uWaveY")
+        ThemeMotif.MUSIC -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uDensity", "uEqA", "uEqB", "uHasArt", "uHigh", "uIntensity", "uLod", "uMid", "uPlayT", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveY")
         ThemeMotif.ANIME_FLAMES -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.CEL_SKY -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.MECHA_HUD -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.MOON_BLADE -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.SPECTRUM -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uEqA", "uEqB", "uHasArt", "uIntensity", "uLod", "uPlayT", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveY")
-        ThemeMotif.PULSE_RING -> setOf("uAcc", "uArtSize", "uBass", "uBassT", "uBeatAge", "uBg", "uCoverSize", "uEqA", "uEqB", "uHasArt", "uHigh", "uIntensity", "uLod", "uPlayT", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
+        ThemeMotif.SPECTRUM -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uEqA", "uEqB", "uHasArt", "uIntensity", "uLod", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveY")
+        ThemeMotif.PULSE_RING -> setOf("uAcc", "uArtSize", "uBass", "uBassT", "uBeatAge", "uBg", "uEqA", "uEqB", "uHasArt", "uHigh", "uIntensity", "uLod", "uPlayT", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
         ThemeMotif.BEAT_TUNNEL -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uEqA", "uEqB", "uHasArt", "uHigh", "uIntensity", "uLod", "uPlayT", "uPlaying", "uRes", "uSec", "uTime", "uWaveY")
         ThemeMotif.CIRCUIT -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.GEARWORKS -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.FROST -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.TERRA -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.VENOM -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.MEADOW -> setOf("uHasPaint", "uLod", "uPaintSize", "uRes", "uTime")
+        ThemeMotif.MEADOW -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.DOJO -> setOf("uAcc", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.GALE -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.THICKET -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
@@ -491,7 +491,7 @@ internal object ThemeShaders {
         ThemeMotif.POP_ART -> setOf("uAcc", "uBass", "uBeatAge", "uBg", "uCoverSize", "uEqA", "uEqB", "uHasArt", "uIntensity", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
         ThemeMotif.COVER_RIPPLE -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uCoverSize", "uEqA", "uEqB", "uHasArt", "uIntensity", "uLod", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
         ThemeMotif.BLAZE_BEAT -> setOf("uAcc", "uBass", "uBeatAge", "uBg", "uEqA", "uEqB", "uHigh", "uIntensity", "uLod", "uPlaying", "uRes", "uSec", "uTime")
-        ThemeMotif.SPECIMEN_LAB -> setOf("uAcc", "uBg", "uFocusY", "uHasMedia", "uMediaKind", "uMediaSize", "uRes", "uSec", "uTime")
+        ThemeMotif.SPECIMEN_LAB -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.MAGICAL -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.SPIRIT_FOREST -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.FESTIVAL -> setOf("uAcc", "uBg", "uDensity", "uRes", "uSec", "uTime")
@@ -507,24 +507,6 @@ internal object ThemeShaders {
         ThemeMotif.MANGA_BEAT -> setOf("uAcc", "uBass", "uBeatAge", "uCoverSize", "uEqA", "uEqB", "uHasArt", "uIntensity", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
         ThemeMotif.COMIC_PANELS -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.PIXEL_SKY -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_BLADES -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_POLAR -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uPaintSize", "uRes", "uTime")
-        ThemeMotif.CHILL_PLANET -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_MOON -> setOf("uBg", "uHasPaint", "uLod", "uPaintSize", "uRes", "uTime")
-        ThemeMotif.CHILL_ORBS -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_SILK -> setOf("uAcc", "uBg", "uHasPaint", "uPaintSize", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_DUNES -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uLod", "uPaintSize", "uRes", "uTime")
-        ThemeMotif.CHILL_MESH -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_LIGHT -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uTime")
-        ThemeMotif.CHILL_SHADE -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_RAIN -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_CITY -> setOf("uAcc", "uBg", "uHasPaint", "uPaintSize", "uRes", "uTime")
-        ThemeMotif.CHILL_JELLY -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_GLADE -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uLod", "uPaintSize", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_HEX -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
-        ThemeMotif.CHILL_CLOUDS -> setOf("uAcc", "uBg", "uHasPaint", "uPaintSize", "uRes", "uTime")
-        ThemeMotif.CHILL_KOI -> setOf("uBg", "uHasPaint", "uPaintSize", "uRes", "uTime")
-        ThemeMotif.CHILL_PEAKS -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uLod", "uPaintSize", "uRes", "uTime")
         ThemeMotif.COVER_FLOW -> setOf("uAcc", "uArtSize", "uBass", "uBg", "uCoverSize", "uEqA", "uEqB", "uHasArt", "uHistCount", "uIntensity", "uLod", "uPlaying", "uRes", "uSec", "uSwapAge", "uTime", "uWaveH", "uWaveX", "uWaveY")
         ThemeMotif.RECORD_SHELF -> setOf("uAcc", "uBass", "uBeatAge", "uBg", "uCoverSize", "uDensity", "uHasArt", "uHistCount", "uIntensity", "uPlayT", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
         ThemeMotif.COVER_CUBE -> setOf("uAcc", "uBeatAge", "uBg", "uCoverSize", "uEqA", "uEqB", "uHasArt", "uHighT", "uIntensity", "uMidT", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
@@ -544,7 +526,7 @@ internal object ThemeShaders {
         ThemeMotif.ENERGY_CORE -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.RACING_32 -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.FIRE_32 -> setOf("uAcc", "uBass", "uBeatAge", "uBg", "uCoverSize", "uEqA", "uEqB", "uHasArt", "uIntensity", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
-        ThemeMotif.VOLT_INTRO -> setOf("uAcc", "uBg", "uDensity", "uFocusY", "uRes", "uSec", "uTime")
+        ThemeMotif.VOLT_INTRO -> setOf("uAcc", "uBg", "uDensity", "uRes", "uSec", "uTime")
         ThemeMotif.VOLT_BEAT -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uDensity", "uEqA", "uEqB", "uHasArt", "uHigh", "uIntensity", "uLod", "uMid", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
         ThemeMotif.VOLT_PIXELS, ThemeMotif.PIXEL_FALLS -> setOf("uAcc", "uBg", "uDensity", "uRes", "uSec", "uTime")
         ThemeMotif.RETRO_BOUNCE -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
@@ -553,15 +535,25 @@ internal object ThemeShaders {
         ThemeMotif.LYRIC_SHEET -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uDensity", "uHasArt", "uIntensity", "uLod", "uPlaying", "uRes", "uSec", "uTime")
         ThemeMotif.LYRIC_NEON -> setOf("uAcc", "uBass", "uBeatAge", "uBg", "uIntensity", "uPlaying", "uRes", "uSec", "uTime")
         ThemeMotif.DISC_SLEEVE -> setOf("uAcc", "uBass", "uBeatAge", "uBg", "uCoverSize", "uDensity", "uHasArt", "uHigh", "uIntensity", "uLod", "uMid", "uPlayT", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
-        ThemeMotif.STILL_DUSK -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec")
-        ThemeMotif.STILL_HORIZON -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec")
-        ThemeMotif.STILL_GLOW -> setOf("uAcc", "uBg", "uRes", "uSec")
-        ThemeMotif.CALM_RIBBON -> setOf("uAcc", "uBg", "uDensity", "uRes", "uSec", "uTime")
-        ThemeMotif.CALM_DRIFT -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.CALM_HALO -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
-        ThemeMotif.BOLD_SPLIT -> setOf("uAcc", "uBg", "uRes", "uSec")
-        ThemeMotif.BOLD_DOTS -> setOf("uAcc", "uBg", "uRes", "uSec")
-        ThemeMotif.BOLD_BANDS -> setOf("uAcc", "uBg", "uRes", "uSec")
+        ThemeMotif.ALBUM_TIDE -> setOf("uAcc", "uArtSize", "uBass", "uBg", "uCoverSize", "uDensity", "uHasArt", "uHigh", "uIntensity", "uLabelSize", "uLod", "uMid", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
+        ThemeMotif.CHILL_BLADES -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_POLAR -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uPaintSize", "uRes", "uTime")
+        ThemeMotif.CHILL_PLANET -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_MOON -> setOf("uBg", "uHasPaint", "uLod", "uPaintSize", "uRes", "uTime")
+        ThemeMotif.CHILL_ORBS -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_SILK -> setOf("uAcc", "uBg", "uHasPaint", "uPaintSize", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_DUNES -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uLod", "uPaintSize", "uRes", "uTime")
+        ThemeMotif.CHILL_MESH -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_LIGHT -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uTime")
+        ThemeMotif.CHILL_SHADE -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_RAIN -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_CITY -> setOf("uAcc", "uBg", "uHasPaint", "uPaintSize", "uRes", "uTime")
+        ThemeMotif.CHILL_JELLY -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_GLADE -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uLod", "uPaintSize", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_HEX -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
+        ThemeMotif.CHILL_CLOUDS -> setOf("uAcc", "uBg", "uHasPaint", "uPaintSize", "uRes", "uTime")
+        ThemeMotif.CHILL_KOI -> setOf("uBg", "uHasPaint", "uPaintSize", "uRes", "uTime")
+        ThemeMotif.CHILL_PEAKS -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uLod", "uPaintSize", "uRes", "uTime")
         ThemeMotif.HANDHELD_BOOT -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.POCKET_BEAT -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uCoverSize", "uEqA", "uEqB", "uHasArt", "uIntensity", "uLod", "uPlayT", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
         ThemeMotif.CONSOLE_DISC -> setOf("uAcc", "uBg", "uFocusY", "uHasMedia", "uMediaKind", "uMediaSize", "uRes", "uSec", "uTime")
@@ -592,14 +584,22 @@ internal object ThemeShaders {
         ThemeMotif.PX_UMBRA -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.PX_ALLOY -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.PX_GLIMMER -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
+        ThemeMotif.GAMING_ROOM -> setOf("uFocusY", "uHasPoster", "uHasShot", "uPosterSize", "uRes", "uRoomSize", "uShotSize", "uTime", "uTune", "uTvL", "uTvR")
+        ThemeMotif.STILL_DUSK -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.STILL_HORIZON -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.STILL_GLOW -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
+        ThemeMotif.CALM_RIBBON -> setOf("uAcc", "uBg", "uDensity", "uRes", "uSec", "uTime")
+        ThemeMotif.CALM_DRIFT -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.CALM_HALO -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
+        ThemeMotif.BOLD_SPLIT -> setOf("uAcc", "uBg", "uRes", "uSec")
+        ThemeMotif.BOLD_DOTS -> setOf("uAcc", "uBg", "uRes", "uSec")
+        ThemeMotif.BOLD_BANDS -> setOf("uAcc", "uBg", "uRes", "uSec")
         ThemeMotif.SHOWCASE_PARALLAX -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.SHOWCASE_CINEMA -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.SHOWCASE_FILMSTRIP -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.SHOWCASE_MOSAIC -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.SHOWCASE_GLASS -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
-        ThemeMotif.SHOWCASE_CRT -> setOf("uAcc", "uBg", "uDensity", "uFocusY", "uHasShot", "uLod", "uRes", "uSec", "uShotSize", "uTime", "uTune", "uTvL", "uTvR")
-        ThemeMotif.GAMING_ROOM -> setOf("uFocusY", "uHasPoster", "uHasShot", "uPosterSize", "uRes", "uRoomSize", "uShotSize", "uTime", "uTune", "uTvL", "uTvR")
-        ThemeMotif.CUSTOM_SCENE, ThemeMotif.CUSTOM_VIZ -> emptySet()  // custom packs: see SceneSource
+        ThemeMotif.SHOWCASE_CRT -> setOf("uAcc", "uBg", "uDensity", "uHasShot", "uLod", "uRes", "uSec", "uShotSize", "uTime", "uTune", "uTvL", "uTvR")
     }
 
     private const val PRELUDE = """
@@ -706,19 +706,12 @@ float dots(float2 uv, float scale, float2 drift, float density, float size, floa
 
 // Vignette, plus a little noise so dark gradients don't band on 8-bit panels.
 float3 finish(float3 col, float2 fc) {
-    // A soft highlight shoulder retains the colour of bright neon and fire instead
-    // of clipping all three channels to white. Midtones and OLED black stay intact.
-    col = max(col, 0.0);
-    float peak = max(col.r, max(col.g, col.b));
-    float shoulder = max(peak - 0.72, 0.0);
-    float mapped = min(peak, 0.72) + shoulder / (1.0 + shoulder / 0.28);
-    col *= mapped / max(peak, 0.0001);
     float2 q = fc / uRes;
     float v = 16.0 * q.x * q.y * (1.0 - q.x) * (1.0 - q.y);
-    col *= 0.76 + 0.24 * pow(max(v, 0.0), 0.42);
+    col *= 0.62 + 0.38 * pow(max(v, 0.0), 0.3);
     // Pure black stays pure black (OLED themes).
     float lit = sat(max(col.r, max(col.g, col.b)) * 80.0);
-    col += (hash12(fc) - 0.5) / 255.0 * lit;
+    col += (hash12(fc + fract(uTime) * 61.0) - 0.5) / 255.0 * lit;
     return max(col, 0.0);
 }
 """
@@ -2263,104 +2256,127 @@ half4 main(float2 fc) {
 """
 
     private const val AURORA = """
-// Aurora: the user's painting of the northern lights over a lake (res scene_aurora), brought to life.
-// The curtains shimmer - fine rays running along them, brightness rolling slowly from one end to the
-// other - stars twinkle, a shooting star crosses now and then, the lights of the little town on the
-// shore flicker, and the lake's reflection wavers with soft ripples.
-// Shared by the painted scenes (the user's own paintings with motion added on top: aurora, meadow,
-// px_dojo): the painting fills the screen like a cover (cropped, never stretched) round a chosen point.
-uniform shader uPaint;      // the painting (ScenePainting: res/drawable-nodpi/scene_*.webp)
-uniform float2 uPaintSize;  // its decoded size in pixels
-uniform float uHasPaint;    // 0 while it decodes (a plain gradient in the theme's colours shows)
+// Aurora: the northern lights over a frozen lake. Curtains of light hang in depth - stacked sheets
+// that fold and ripple slowly, bright along their lower hem with rays reaching up, green fading to
+// violet - above snowy mountains that catch their glow. Stars behind, a dark fringe of pines on the
+// far shore, and the whole sky mirrored, a little softened, in the ice and open water below.
 
-// The painting's pixel under screen point fc, filling the screen, the crop centred on (fx, fy) (0..1 across it).
-float2 paintPx(float2 fc, float fx, float fy) {
-    float2 sz = max(uPaintSize, float2(1.0));
-    float s = max(uRes.x / sz.x, uRes.y / sz.y);
-    float2 off = (sz * s - uRes) * float2(fx, fy);
-    return (fc + off) / s;
+// Curtain pattern on a sheet at height-layer i: thin folded bands drifting slowly. 0..1.
+float curtain(float2 p, float t) {
+    // p = (across, away) on the sheet. Bands run across the view and fold slowly.
+    float w = fbm3(float2(p.x * 0.15 + t * 0.01, p.y * 0.1)) * 5.0;
+    float b = sin(p.y * 1.15 + w + sin(p.x * 0.2 + t * 0.05) * 1.5 + t * 0.04);
+    float band = exp(-abs(b) * 10.0);
+    float b2 = sin(p.y * 1.9 - w * 0.8 + 1.7 + t * 0.03);
+    band += exp(-abs(b2) * 14.0) * 0.5;
+    // Rays: brightness varying finely along the band.
+    float rays = 0.4 + 0.6 * vnoise(float2(p.x * 6.0 + w * 2.0, t * 0.25));
+    return band * rays;
 }
 
-// The painting's colour at pixel p (clamped inside it).
-float3 paintAt(float2 p) { return float3(uPaint.eval(clamp(p, float2(0.5), max(uPaintSize, float2(1.0)) - 0.5)).rgb); }
-
-// Brightness, for picking out lit parts of the painting.
-float luma(float3 c) { return dot(c, float3(0.299, 0.587, 0.114)); }
-
-// How much pixel p is a small bright speck (a star) rather than part of a bright area: brighter than the
-// painting a few pixels away on both sides. lum is its own brightness.
-float speckAt(float2 p, float lum) {
-    float k = max(uPaintSize.y, 1.0) / 941.0 * 4.0;
-    float n = (luma(paintAt(p + float2(k, k * 0.5))) + luma(paintAt(p - float2(k * 0.5, k)))) * 0.5;
-    return smoothstep(0.06, 0.2, lum - n);
+// Light of the aurora seen along direction rd (rd.y > 0).
+float3 auroraCol(float3 rd, float t, float3 A, float3 S, float lod, float jit) {
+    float3 acc = float3(0.0);
+    float n = 22.0 - lod * 6.0;
+    for (int i = 0; i < 22; i++) {
+        float fi = float(i);
+        if (fi >= n) break;
+        float h = 0.8 + (fi + jit) * 0.06;       // height of this sheet above the eye (jittered: no banding)
+        float d = h / max(rd.y, 0.02);
+        float2 p = rd.xz * d + float2(0.0, 6.0);
+        float c = curtain(p * 0.35, t);
+        float k = fi / n;
+        float3 tint = mix(A, S, smoothstep(0.15, 0.9, k));
+        // The hem is brightest; higher sheets fade.
+        float fall = exp(-k * 3.2) * (1.0 + 2.5 * exp(-k * 25.0));
+        acc += tint * c * fall * smoothstep(40.0, 8.0, d);
+    }
+    return acc * (1.6 / n) * 4.2;
 }
 
-// The painted chill scenes' finish: the painting's own colours and framing (no vignette, no highlight
-// roll-off), only the fine noise that keeps dark gradients from banding.
-float3 finishPaint(float3 col, float2 fc) {
-    col = clamp(col, 0.0, 1.0);
-    return col + (hash12(fc) - 0.5) / 255.0;
+float3 skyCol(float3 rd, float t, float3 A, float3 S, float3 BG, float lod, float jit) {
+    float y = max(rd.y, 0.0);
+    float3 c = mix(BG * 1.6 + A * 0.03, BG * 0.6, sat(y * 2.2));
+    float2 sp = rd.xz / (rd.y + 0.15);
+    c += float3(0.9, 0.95, 1.0) * dots(sp * 0.5, 60.0, float2(0.0), 0.3, 0.07, 3.0) * 0.5 * sat(y * 6.0);
+    c += float3(1.0) * dots(sp * 0.5, 22.0, float2(0.0), 0.12, 0.06, 8.0) * 0.6 * sat(y * 6.0);
+    if (rd.y > 0.0) c += auroraCol(rd, t, A, S, lod, jit);
+    return c;
 }
 
 half4 main(float2 fc) {
     float t = uTime;
+    float2 sp = (fc - 0.5 * uRes) / uRes.y;
+    sp.y = -sp.y;
+    float px = 1.5 / uRes.y;
     float3 A = uAcc.rgb;
     float3 S = uSec.rgb;
     float3 BG = uBg.rgb;
-    if (uHasPaint < 0.5) {
-        float2 uv = fc / uRes;
-        return half4(finish(mix(BG * 0.6, mix(BG, A, 0.25), uv.y), fc), 1.0);
-    }
-    float2 sz = max(uPaintSize, float2(1.0));
-    float2 p = paintPx(fc, 0.5, 0.5);
-    float2 q = p / sz;
 
-    // The lake (below the far shore), except the snowbanks in the corners: the reflection wavers.
-    // (The snowbanks run diagonally into the corners: left from (0, 0.72) to (0.21, 1), right from (1, 0.66) to (0.77, 1).)
-    float leftBank = step(q.y, 0.72 + (q.x / 0.21) * 0.28) ;
-    float rightBank = step(q.y, 0.66 + ((1.0 - q.x) / 0.23) * 0.34);
-    float lake = smoothstep(0.65, 0.67, q.y) * leftBank * rightBank;
-    float depth = sat((q.y - 0.65) * 3.0);
-    float2 rip = float2(sin(q.y * 260.0 - t * 1.6 + sin(q.x * 9.0) * 2.0) * 0.0016 + sin(q.y * 90.0 + t * 0.7) * 0.0012, 0.0) * (0.3 + depth);
-    float3 col = paintAt(p + rip * sz * lake);
-    float lum = luma(col);
+    // Looking a little up over the lake; the horizon sits low.
+    float yaw = 0.06 * sin(t * 0.02);
+    float3 rd = normalize(float3(sp.x, sp.y + 0.10, -1.0));
+    rd.xz = rot(yaw) * rd.xz;
+    float horizonY = -0.10;   // in sp units, where rd.y = 0
 
-    // The aurora: its green and violet light (up in the sky) shimmers - fine rays drifting along the
-    // curtains, a slow wave of brightness rolling across them.
-    float sky = 1.0 - smoothstep(0.5, 0.56, q.y);
-    float green = sat((col.g - max(col.r, col.b * 0.85)) * 4.0);
-    float violet = sat((col.b - col.g) * 3.0) * sat((col.r - col.g * 0.6) * 3.0);
-    float aur = sat(green + violet * 0.8) * sat(lum * 2.5 - 0.15);
-    float rays = vnoise(float2(q.x * 140.0 + q.y * 25.0 + t * 0.5, q.y * 2.0 + t * 0.15));
-    float roll = 0.5 + 0.5 * sin(q.x * 5.0 - t * 0.35 + sin(t * 0.13) * 2.0);
-    float shimmer = (rays - 0.5) * 0.55 + (roll - 0.5) * 0.35;
-    col *= 1.0 + shimmer * aur * (sky + lake * 0.7);
-    // A soft glow breathing round the brightest curtains.
-    col += col * aur * sky * 0.12 * (0.5 + 0.5 * sin(t * 0.6 + q.x * 3.0));
+    float3 col;
+    float jit = fract(52.9829189 * fract(dot(fc, float2(0.06711056, 0.00583715))));
+    float3 sky = skyCol(rd, t, A, S, BG, uLod, jit);
+    // Average aurora light, for the snow and ice (cheap: it changes slowly).
+    float3 glowA = mix(A, S, 0.3) * (0.22 + 0.08 * sin(t * 0.13) + 0.05 * sin(sp.x * 3.0 + t * 0.05));
 
-    // Stars: the painting's bright specks twinkle, and a few more come and go.
-    float speck = step(0.5, lum) * (1.0 - aur) * sky * step(q.y, 0.45);
-    float2 cell = floor(p);
-    float tw = 0.55 + 0.45 * sin(t * (1.5 + 2.0 * hash12(cell)) + hash12(cell + 3.1) * 40.0);
-    col *= 1.0 + speck * (tw - 0.6) * 0.8;
-    col += float3(0.9, 0.95, 1.0) * dots(q * float2(sz.x / sz.y, 1.0), 70.0, float2(0.0), 0.06, 0.06, 4.0) * sky * step(q.y, 0.4) * (1.0 - aur) * 0.5;
-
-    // A shooting star every 11 s, high up.
-    float st = fract(t / 11.0) * 11.0;
-    if (st < 0.9) {
-        float2 a = float2(0.15 + 0.6 * hash11(floor(t / 11.0)), 0.06);
-        float2 b = a + float2(0.28, 0.09) * st;
-        float d = sdSegment(q * float2(sz.x / sz.y, 1.0), (b - float2(0.28, 0.09) * min(st, 0.2)) * float2(sz.x / sz.y, 1.0), b * float2(sz.x / sz.y, 1.0));
-        col += float3(1.0) * exp(-d * 900.0) * (1.0 - st / 0.9);
+    if (rd.y > 0.0) {
+        col = sky;
+    } else {
+        // The lake: ice with open water, mirroring the sky, rippled and darker.
+        float3 r = float3(rd.x, -rd.y, rd.z);
+        float dist = 1.0 / max(-rd.y, 0.01);
+        float2 wp = rd.xz * dist;
+        r.x += 0.004 * sin(wp.y * 3.0 + t * 0.8) * (1.0 + 0.5 * sin(wp.x));
+        float3 refl = skyCol(normalize(r), t, A, S, BG, max(uLod, 1.0), jit);
+        float ice = smoothstep(0.45, 0.6, fbm3(wp * float2(0.6, 1.5)));
+        float3 iceCol = mix(float3(0.12, 0.15, 0.2), glowA * 0.4 + float3(0.15), 0.4) * (0.6 + 0.4 * vnoise(wp * 4.0));
+        col = mix(refl * 0.75 + BG * 0.1, iceCol * 0.6 + refl * 0.25, ice);
+        // Cracks in the ice.
+        col *= 1.0 - 0.4 * ice * smoothstep(0.03, 0.0, abs(vnoise(wp * 3.0) - 0.5));
     }
 
-    // The town lights along the shore flicker (warm specks), and so do their reflections.
-    float warm = sat((col.r - col.b) * 3.0) * step(0.35, lum);
-    float shore = smoothstep(0.6, 0.615, q.y) * (1.0 - smoothstep(0.645, 0.66, q.y));
-    float fl = 0.75 + 0.25 * sin(t * (2.0 + 3.0 * hash12(floor(p / 3.0))) + hash12(floor(p / 3.0)) * 30.0);
-    col *= 1.0 + warm * (shore + lake * 0.6) * (fl - 0.8) * 1.2;
-    // The aurora's light dances on the water too.
-    col += col * green * lake * (roll - 0.5) * 0.25;
+    // Mountains on the far shore: snow on the slopes catching the aurora, two ridges; mirrored in the lake.
+    float mx = sp.x + yaw;
+    float hy = sp.y;
+    float under = step(hy, horizonY);
+    float my = under > 0.5 ? 2.0 * horizonY - hy : hy;
+    float m1 = horizonY + 0.05 + 0.07 * fbm(float2(mx * 1.6, 2.0)) + 0.035 * (1.0 - abs(2.0 * vnoise(float2(mx * 4.0, 1.0)) - 1.0));
+    float m1r = horizonY + 0.05 + 0.07 * fbm(float2((mx + 0.01) * 1.6, 2.0)) + 0.035 * (1.0 - abs(2.0 * vnoise(float2((mx + 0.01) * 4.0, 1.0)) - 1.0));
+    float3 snow = mix(float3(0.55, 0.6, 0.7), glowA * 1.3 + float3(0.1), 0.55);
+    float3 mcol = col;
+    float mcov = 0.0;
+    if (my < m1) {
+        // Lit on slopes facing left (towards the brightest aurora), snow higher up, rocky streaks.
+        float slope = (m1r - m1) / 0.01;
+        float shade = sat(0.55 + slope * 1.5);
+        float hgt = (my - horizonY) / max(m1 - horizonY, 0.01);
+        float streak = vnoise(float2(mx * 60.0, my * 6.0));
+        float snowy = smoothstep(0.35, 0.7, hgt + (streak - 0.5) * 0.6);
+        float3 mc = mix(BG * 0.45, snow * (0.3 + 0.6 * shade), snowy);
+        mcol = mix(mc, sky * 0.5, 0.2 * (1.0 - hgt));
+        mcov = smoothstep(m1, m1 - px, my);
+    }
+    // In the water the mountains are darker, and the ripples break them up.
+    if (under > 0.5) mcol = mcol * 0.45 + BG * 0.05;
+    col = mix(col, mcol, mcov * (1.0 - under * 0.15));
+
+    // Pines on the shore, and their reflection in the water.
+    float tx = mx * 30.0;
+    float th = 0.03 + 0.03 * hash11(floor(tx)) * step(0.3, hash11(floor(tx) + 7.0));
+    float tf = abs(fract(tx) - 0.5) / 30.0;
+    float tr = abs(hy - horizonY);
+    float pine = step(tf, (1.0 - tr / th) * 0.012 * (0.7 + 0.3 * step(0.5, fract(tr / th * 5.0)))) * step(tr, th);
+    float3 pineCol = hy > horizonY ? BG * 0.25 : BG * 0.3 + glowA * 0.03;
+    col = mix(col, pineCol, pine);
+
+    // A soft glow of the aurora low over everything.
+    col += glowA * 0.05;
     return half4(finish(col, fc), 1.0);
 }
 """
@@ -3070,42 +3086,24 @@ half4 main(float2 fc) {
 """
 
     private const val MUSIC = """
-// Now playing: a floating album stage with woven spectrum ribbons and a smoked-glass floor.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
+// Now playing: a soft field of the cover's colours (or the cover itself, heavily blurred), and across
+// it an equalizer wave: a glowing band whose height follows eight frequency bands (bass in the middle,
+// highs towards the edges), with thin lines riding it like an audio visualizer. A ring rolls out on
+// every kick and sparks are lifted by the highs. Without real audio the bands are simulated.
+uniform shader uArt;     // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize; // its size in pixels
+uniform float uHasArt;   // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;     // 0..1, smoothed
 uniform float uMid;
 uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+uniform float uBeatAge;  // seconds since the last kick (large = none)
+uniform float uPlaying;  // 0..1, fades when paused
+uniform float uPlayT;    // seconds spent playing (NowPlayingScene): motion that eases to a stop when paused
+uniform float uIntensity; // 0..1, Settings › strength
+uniform float4 uEqA;     // bands 0-3 (low), 0..1
+uniform float4 uEqB;     // bands 4-7 (high)
+uniform float uWaveY;    // 0..1 from the top: where the wave runs (clear of the game row)
+uniform float uWaveH;    // room for the wave above / below that line (share of the height; the player sits under it)
 
 float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
 
@@ -3120,7 +3118,7 @@ float eqBand(float i) {
     return uEqB.w;
 }
 
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+// The spectrum at m (0 = centre of the screen = bass, 1 = edge = highs), smoothly interpolated.
 float eqAt(float m) {
     float f = clamp(m, 0.0, 1.0) * 7.0;
     float i = floor(f);
@@ -3129,154 +3127,86 @@ float eqAt(float m) {
     return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
 }
 
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float mid = uMid * play;
+    float high = uHigh * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
 
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    // 1. Background: the cover, very soft and slowly drifting; or, without one, the palette swirling.
     float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    float zoom = 1.6 + 0.08 * sin(t * 0.045) - (0.05 * bass + 0.03 * kick) * k;
     p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 wq = p * 2.0;
+    p += (float2(vnoise(wq + float2(t * 0.1, 0.0)), vnoise(wq + float2(7.3, -t * 0.08))) - 0.5) * (0.08 + 0.08 * mid * k);
     float2 q = p / max(asp, 1.0) + 0.5;
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
+    float al = dot(art, float3(0.299, 0.587, 0.114));
+    art = max(mix(float3(al), art, 1.3), 0.0);
+    float3 col = mix(noArt, art * (0.56 + 0.12 * bass * k), uHasArt);
+    col = mix(col, BG, 0.16);
 
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
+    // 2. Coloured light that swells with the overall level.
+    float lvl = bass * 0.5 + mid * 0.3 + high * 0.2;
+    float2 g1 = float2(asp * (0.25 + 0.1 * sin(t * 0.07)), uWaveY - 0.15 + 0.08 * cos(t * 0.05));
+    float2 g2 = float2(asp * (0.78 + 0.08 * cos(t * 0.06)), uWaveY + 0.05 + 0.1 * sin(t * 0.04));
+    col += A * exp(-length(uv - g1) * 2.6) * (0.06 + 0.25 * lvl * k);
+    col += S * exp(-length(uv - g2) * 3.0) * (0.05 + 0.2 * lvl * k);
 
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
+    // 3. The equalizer wave. m: 0 in the middle (bass) to 1 at the edges (highs).
+    float x = uv.x / asp;
+    float m = abs(x - 0.5) * 2.0;
+    float e = eqAt(m) * play;
+    // A little travelling ripple so neighbouring bands never look like flat steps.
+    e *= 0.85 + 0.15 * sin(x * 38.0 - t * 4.0);
+    float gain = 0.45 + 0.55 * k;
+    // Tapers to nothing at the screen edges.
+    float edge = smoothstep(1.0, 0.82, m);
+    // Never taller than its room, so the player right under it doesn't cover it.
+    float room = uWaveH > 0.001 ? uWaveH : 0.2;
+    float h = (0.006 + (room - 0.012) * e * gain) * edge;
+    float dy = uv.y - uWaveY;
+    // The filled band: brightest along its rims, soft inside.
+    float inside = smoothstep(h + 0.004, h - 0.004, abs(dy));
+    float rim = exp(-abs(abs(dy) - h) / 0.0035);
+    float3 waveCol = mix(A, S, smoothstep(0.0, 1.0, m));
+    col += waveCol * inside * (0.1 + 0.25 * e) * (abs(dy) / max(h, 0.001) * 0.6 + 0.4);
+    col += mix(waveCol, float3(1.0), 0.35) * rim * (0.35 + 0.65 * e) * edge;
+    // Thin lines riding the band, each a different frequency and speed, scaled by the spectrum.
+    float l1 = uWaveY + h * 0.85 * sin(x * 9.0 + t * 1.6);
+    float l2 = uWaveY + h * 0.7 * sin(x * 14.0 - t * 2.3 + 1.7);
+    float l3 = uWaveY + h * 0.55 * sin(x * 23.0 + t * 3.1 + 4.0);
+    float lines = exp(-abs(uv.y - l1) / 0.0025) + 0.8 * exp(-abs(uv.y - l2) / 0.002) + 0.6 * exp(-abs(uv.y - l3) / 0.0018);
+    col += mix(S, A, 0.5) * lines * (0.15 + 0.6 * e) * edge * (0.4 + 0.6 * play);
+    // A wide glow around the band that pumps with the bass.
+    col += waveCol * exp(-abs(dy) / (0.04 + h)) * (0.04 + 0.18 * bass * k) * edge;
 
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+    // 4. A ring rolling out from the wave's centre on every kick.
+    float2 rc = float2(asp * 0.5, uWaveY);
+    float r = length((uv - rc) * float2(1.0, 1.25));
+    float ringR = uBeatAge * 0.8;
+    r += (vnoise(float2(atan(uv.y - rc.y, uv.x - rc.x) * 3.0, t * 0.5)) - 0.5) * 0.08 * min(ringR, 0.4);
+    float ring = exp(-abs(r - ringR) * 20.0) + 0.5 * exp(-abs(r - ringR * 0.7) * 30.0);
+    col += mix(A, S, 0.4) * ring * exp(-uBeatAge * 2.4) * smoothstep(0.02, 0.12, ringR) * 0.4 * k * play;
 
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
+    // 5. Sparks lifted by the highs.
+    float rise = 0.15 * t + 0.25 * uPlayT;
+    float sp = dots(uv + float2(sin(uv.y * 5.0 + t) * 0.02, 0.0), 22.0, float2(0.0, rise * 22.0 / 6.0), 0.3, 0.1, 3.0);
+    float sp2 = dots(uv, 12.0, float2(t * 0.05, rise * 2.0), 0.2, 0.08, 9.0);
+    col += mix(S, float3(1.0), 0.4) * sp * (0.12 + 0.6 * high * k) + A * sp2 * (0.1 + 0.4 * high * k);
 
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-// Rounded sleeve, in local units. The procedural label also works with cover art disabled.
-float3 stageSleeve(float2 q, float3 A, float3 S, float t) {
-    float3 art = sharpCover(q, A, S);
-    float disc = length(q - 0.5);
-    float grooves = (0.5 + 0.5 * sin(disc * 180.0)) * 0.025;
-    float3 fallback = mix(A, S, q.y) * 0.24;
-    fallback += mix(A, S, q.x) * (1.0 - smoothstep(0.29, 0.30, disc)) * 0.35;
-    fallback += float3(grooves) * (1.0 - smoothstep(0.29, 0.31, disc));
-    fallback += float3(0.6) * (1.0 - smoothstep(0.013, 0.018, disc));
-    art = mix(fallback, art, uHasArt);
-    float sheen = exp(-sqf((q.x + q.y * 0.4 - 0.6 - 0.45 * sin(t * 0.22)) * 12.0));
-    return art * 0.96 + float3(sheen * 0.075);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uPlayT;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float bass = uBass * uPlaying;
-    float kick = exp(-uBeatAge * 4.0) * uPlaying;
-    float k = clamp(uIntensity, 0.0, 1.3);
-    float px = 1.25 / uRes.y;
-    // Entire composition stays inside the allocated player-free band.
-    float rm = max(0.025, min(room(0.26), 0.38));
-    float R = min(rm * 0.58, asp * 0.19);
-    float2 centre = float2(waveX(asp), uWaveY - rm * 0.14);
-    float floorY = uWaveY + rm * 0.53;
-    float3 col = coverField(uv, asp, t, bass, 0.22, BG, A, S);
-    float2 light = (uv - centre) / max(R, 0.01);
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 0.20) * (0.08 + 0.035 * bass * k);
-
-    // Pools of light on the smoked-glass floor, with a quiet horizon.
-    float fy = max(uv.y - floorY, 0.0);
-    float floorMask = smoothstep(floorY - px, floorY + px, uv.y);
-    col = mix(col, col * 0.48, floorMask);
-    float pool = exp(-sqf((uv.x - centre.x) / max(R * 2.3, 0.01)) - fy / max(rm * 0.20, 0.005));
-    col += mix(S, A, 0.6) * pool * floorMask * (0.10 + 0.06 * kick * k);
-    col += S * exp(-abs(uv.y - floorY) / max(px, 0.001)) * exp(-sqf((uv.x - centre.x) / max(R * 3.5, 0.01))) * 0.09;
-
-    // Three woven, translucent ribbons: each responds to a different part of the spectrum.
-    float x = (uv.x - centre.x) / max(asp * 0.48, 0.01);
-    float envelope = 1.0 - smoothstep(0.72, 1.0, abs(x));
-    for (int i = 0; i < 3; i++) {
-        float layer = float(i);
-        float e = eqAt(clamp(abs(x) * 0.8 + layer * 0.09, 0.0, 1.0)) * uPlaying;
-        float y = centre.y + rm * (0.08 + layer * 0.12)
-            + sin(x * (5.0 + layer * 1.7) + t * (0.45 + layer * 0.16) + layer * 2.1)
-            * rm * (0.12 + 0.38 * e * k) * envelope;
-        float width = rm * (0.025 + 0.035 * e);
-        float d = abs(uv.y - y);
-        float3 ribbon = mix(A, S, sat(0.5 + x * 0.45 + layer * 0.12));
-        float body = 1.0 - smoothstep(width, width + px, d);
-        float edge = exp(-abs(d - width) / max(px, 0.001));
-        col += ribbon * (body * 0.12 + edge * 0.38 + exp(-d / max(width * 3.0, 0.001)) * 0.08) * envelope;
-    }
-
-    // A gently yawing sleeve, with a short, fading mirror image below it.
-    float yaw = 0.13 * sin(t * 0.31);
-    float bob = R * 0.035 * sin(t * 0.8) - R * 0.025 * bass * k;
-    float2 cardCentre = centre + float2(0.0, bob);
-    for (int pass = 0; pass < 2; pass++) {
-        float2 p = uv;
-        if (pass == 1) {
-            if (uv.y < floorY) continue;
-            p.y = floorY - (uv.y - floorY) * 1.65;
-        }
-        float2 q = (p - cardCentre) / max(R, 0.001);
-        q.x /= cos(yaw);
-        q.y += q.x * sin(yaw) * 0.12;
-        float d = sdRoundBox(q, float2(1.0), 0.045);
-        float aa = px / max(R, 0.001);
-        float mask = 1.0 - smoothstep(-aa, aa, d);
-        float3 sleeve = stageSleeve(q * 0.5 + 0.5, A, S, t);
-        float rim = 1.0 - smoothstep(0.0, aa * 2.0 + 0.012, abs(d));
-        sleeve = mix(sleeve, mix(A, float3(1.0), 0.65), rim * 0.48);
-        if (pass == 0) {
-            col *= 1.0 - exp(-max(d, 0.0) * 10.0) * 0.30;
-            col = mix(col, sleeve, mask);
-        } else {
-            float fade = exp(-fy / max(R * 0.24, 0.001)) * (1.0 - smoothstep(rm * 0.28, rm * 0.46, fy));
-            col = mix(col, sleeve * mix(A, float3(1.0), 0.8), mask * fade * 0.32);
-        }
-    }
+    // 6. The whole picture pumps a little on the kick.
+    col *= 1.0 + 0.12 * kick * k;
     return half4(finish(col, fc), 1.0);
 }
 """
@@ -3855,11 +3785,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -3868,10 +3795,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -3925,17 +3852,16 @@ half4 main(float2 fc) {
     float m = (id + 0.5) / N;
     float inRange = step(0.0, x) * step(x, 1.0);
     float e = eqAt(m) * play;
-    e *= 0.96 + 0.04 * sin(id * 1.7 + uPlayT * 2.0);
+    e *= 0.82 + 0.18 * sin(id * 1.7 + t * 5.0 + hash11(id) * 6.0);
     float gain = 0.5 + 0.5 * k;
     float hgt = (0.012 + (rm * 1.7 - 0.012) * pow(e, 0.7) * gain);
     float up = base - uv.y;
-    float aa = min(0.12, N / max(uRes.x * 0.88, 1.0));
-    float bar = smoothstep(0.16 - aa, 0.16 + aa, fx) * (1.0 - smoothstep(0.84 - aa, 0.84 + aa, fx)) * inRange;
+    float bar = step(0.14, fx) * step(fx, 0.86) * inRange;
     float seg = step(0.3, fract(up * 85.0));
     float3 barCol = mix(A, S, m);
     float hot = sat(up / (rm * 1.7));
     float lit = bar * step(0.0, up) * step(up, hgt) * seg;
-    col = mix(col, mix(barCol, float3(1.0), hot * 0.28), lit * (0.75 + 0.25 * play));
+    col = mix(col, mix(barCol, float3(1.0), hot * 0.55), lit * (0.75 + 0.25 * play));
     // Cap just above each bar.
     float cap = bar * (1.0 - smoothstep(0.0, 0.003, abs(up - hgt - 0.012)));
     col += mix(barCol, float3(1.0), 0.6) * cap * 0.8;
@@ -4033,11 +3959,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -4046,10 +3969,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -4135,7 +4058,7 @@ half4 main(float2 fc) {
     if (r < R0) {
         float2 q = rot(0.6 * uPlayT) * d;
         float2 auv = q / (R0 * 2.0) + 0.5;
-        float3 art = sharpCover(auv, A, S);
+        float3 art = float3(uArt.eval(clamp(auv, 0.0, 1.0) * uArtSize).rgb);
         float3 disc = mix(mix(BG * 1.4, mix(A, S, 0.5) * 0.6, auv.y), art * 1.1, uHasArt);
         disc *= 0.9 + 0.1 * sin(r * 520.0);
         float sheen = pow(abs(sin(atan(q.y, q.x) * 2.0)), 6.0) * 0.12;
@@ -4228,11 +4151,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -4241,10 +4161,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -5019,147 +4939,94 @@ half4 main(float2 fc) {
 """
 
     private const val MEADOW = """
-// Meadow: the user's painting of a summer countryside (res scene_meadow), brought to life. The windmill
-// turns, the wind runs through the meadow in front - the grass sways and bright sheens roll across it
-// in gusts - cloud shadows drift over the patchwork fields, sunlight breathes from the upper right, and
-// dandelion seeds and a couple of butterflies float past.
-// Shared by the painted scenes (the user's own paintings with motion added on top: aurora, meadow,
-// px_dojo): the painting fills the screen like a cover (cropped, never stretched) round a chosen point.
-uniform shader uPaint;      // the painting (ScenePainting: res/drawable-nodpi/scene_*.webp)
-uniform float2 uPaintSize;  // its decoded size in pixels
-uniform float uHasPaint;    // 0 while it decodes (a plain gradient in the theme's colours shows)
-
-// The painting's pixel under screen point fc, filling the screen, the crop centred on (fx, fy) (0..1 across it).
-float2 paintPx(float2 fc, float fx, float fy) {
-    float2 sz = max(uPaintSize, float2(1.0));
-    float s = max(uRes.x / sz.x, uRes.y / sz.y);
-    float2 off = (sz * s - uRes) * float2(fx, fy);
-    return (fc + off) / s;
-}
-
-// The painting's colour at pixel p (clamped inside it).
-float3 paintAt(float2 p) { return float3(uPaint.eval(clamp(p, float2(0.5), max(uPaintSize, float2(1.0)) - 0.5)).rgb); }
-
-// Brightness, for picking out lit parts of the painting.
-float luma(float3 c) { return dot(c, float3(0.299, 0.587, 0.114)); }
-
-// How much pixel p is a small bright speck (a star) rather than part of a bright area: brighter than the
-// painting a few pixels away on both sides. lum is its own brightness.
-float speckAt(float2 p, float lum) {
-    float k = max(uPaintSize.y, 1.0) / 941.0 * 4.0;
-    float n = (luma(paintAt(p + float2(k, k * 0.5))) + luma(paintAt(p - float2(k * 0.5, k)))) * 0.5;
-    return smoothstep(0.06, 0.2, lum - n);
-}
-
-// The painted chill scenes' finish: the painting's own colours and framing (no vignette, no highlight
-// roll-off), only the fine noise that keeps dark gradients from banding.
-float3 finishPaint(float3 col, float2 fc) {
-    col = clamp(col, 0.0, 1.0);
-    return col + (hash12(fc) - 0.5) / 255.0;
-}
-
-const float2 PAINT_REF = float2(1672.0, 941.0);
-const float2 HUB = float2(459.0, 418.0);           // the windmill's hub (painting pixels)
-
-// The painted sails' white (to be painted out and redrawn turning).
-float sailWhite(float3 c) {
-    float mn = min(c.r, min(c.g, c.b));
-    float mx = max(c.r, max(c.g, c.b));
-    return step(0.7, mn) * step(mx - mn, 0.16);
-}
+// Meadow (normal type): a gentle, everyday afternoon. Soft clouds drift over two rows of hazy hills,
+// a windmill turns slowly on the far rise, tall grass fills the front and the wind runs through it in
+// visible gusts - bright sheens rolling across the blades - while dandelion seeds float past.
 
 half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
     float t = uTime;
+    float px = 1.5 / uRes.y;
     float3 A = uAcc.rgb;
     float3 S = uSec.rgb;
     float3 BG = uBg.rgb;
-    if (uHasPaint < 0.5) {
-        float2 uv = fc / uRes;
-        return half4(finish(mix(float3(0.45, 0.65, 0.9), float3(0.35, 0.6, 0.3), smoothstep(0.4, 0.6, uv.y)), fc), 1.0);
+
+    // Sky: warm pale near the horizon, soft blue above, a sun glow at the upper right.
+    float3 skyTop = mix(float3(0.42, 0.62, 0.86), BG * 2.0, 0.25);
+    float3 skyLow = mix(float3(0.98, 0.92, 0.78), S, 0.15);
+    float3 col = mix(skyTop, skyLow, smoothstep(0.0, 0.6, uv.y));
+    float2 sunP = float2(asp * 0.78, 0.12);
+    col += float3(1.0, 0.95, 0.8) * (exp(-length(uv - sunP) * 9.0) * 0.6 + exp(-length(uv - sunP) * 2.5) * 0.15);
+    // Clouds: soft, lit from the top, drifting.
+    float2 cp = float2(uv.x * 1.4 + t * 0.012, uv.y * 3.2);
+    float cl = fbm(cp);
+    float cm = smoothstep(0.5, 0.72, cl) * smoothstep(0.55, 0.15, uv.y);
+    float clTop = fbm(cp + float2(0.0, 0.08));
+    col = mix(col, mix(float3(0.82, 0.84, 0.9), float3(1.0, 0.99, 0.96), smoothstep(0.45, 0.7, clTop)), cm * 0.9);
+
+    // Far hills, then nearer hills; each hazier with distance.
+    float h1 = 0.5 - 0.05 * sin(uv.x * 2.2 + 0.5) - 0.03 * sin(uv.x * 5.1 + 2.0);
+    float h2 = 0.6 - 0.06 * sin(uv.x * 1.6 + 2.4) - 0.025 * sin(uv.x * 4.3 + t * 0.0);
+    float3 hill1 = mix(mix(float3(0.45, 0.62, 0.45), A, 0.12), col, 0.45);
+    float3 hill2 = mix(float3(0.36, 0.56, 0.3), A, 0.1);
+    col = mix(col, hill1, smoothstep(h1 - px, h1 + px, uv.y));
+    // The windmill on the far rise: a tapered tower with a cap and four slowly turning sails.
+    float2 wm = float2(asp * 0.3, 0.5 - 0.05 * sin(asp * 0.3 * 2.2 + 0.5) - 0.03 * sin(asp * 0.3 * 5.1 + 2.0));
+    float2 wq = uv - wm;
+    float tower = max(abs(wq.x) - (0.012 + 0.008 * sat(wq.y / -0.09 + 1.0) * 0.0) - 0.006 * sat(1.0 + wq.y / 0.09), max(wq.y, -wq.y - 0.09));
+    float cap = length((wq - float2(0.0, -0.092)) * float2(1.0, 1.4)) - 0.014;
+    float2 hub = wm + float2(0.0, -0.094);
+    float2 hq = rot(t * 0.35) * (uv - hub);
+    float sails = 1e5;
+    for (int i = 0; i < 4; i++) {
+        float2 r = rot(float(i) * PI * 0.5) * hq;
+        sails = min(sails, sdRoundBox(r - float2(0.0, 0.034), float2(0.007, 0.03), 0.002));
+        sails = min(sails, sdSegment(r, float2(0.0), float2(0.0, 0.066)) - 0.0012);
     }
-    float2 sz = max(uPaintSize, float2(1.0));
-    float2 p = paintPx(fc, 0.5, 0.5);
-    float2 q = p / sz;
-    float asp = sz.x / sz.y;
+    float3 wmCol = mix(float3(0.92, 0.9, 0.86), col, 0.35);
+    col = mix(col, wmCol * 0.9, 1.0 - smoothstep(-px, px, min(tower, cap)));
+    col = mix(col, mix(float3(0.95, 0.94, 0.9), col, 0.3), 1.0 - smoothstep(-px, px, sails));
+    col = mix(col, hill2 * (0.85 + 0.15 * vnoise(uv * float2(20.0, 60.0))), smoothstep(h2 - px, h2 + px, uv.y));
 
-    // Wind: gusts travelling across from left to right.
-    float gustF = sin(q.x * 7.0 - t * 1.3 + 0.8 * sin(q.y * 9.0 + t * 0.4)) * 0.5 + 0.5;
-    float gust = smoothstep(0.5, 1.0, gustF) * (0.6 + 0.4 * vnoise(float2(q.x * 3.0 - t * 0.5, 3.0)));
-    // The meadow in front sways: stronger lower down (the blades are taller and nearer), with the gusts.
-    float grass = smoothstep(0.76, 0.82, q.y);
-    float sway = (sin(q.x * 90.0 + q.y * 30.0 - t * 2.2) * 0.25 + 0.75 * (gust - 0.3)) * 0.0045 * grass * (0.4 + 0.6 * sat((q.y - 0.78) * 4.0));
-    float3 col = paintAt(p + float2(sway, 0.0) * sz);
-
-    // The windmill: the painted sails are painted out (what's behind them taken from either side, the sky
-    // and hills run across in bands) and four sails drawn turning slowly round the hub.
-    float2 k = sz / PAINT_REF;
-    float2 r = q * PAINT_REF;
-    float2 hr = r - HUB;
-    float hd = length(hr);
-    if (hd < 84.0) {
-        bool tower = abs(hr.x) < 10.0 && hr.y > 8.0;
-        bool hub = hd < 11.0;
-        if (!tower && !hub) {
-            // The painted sails: four arms from the hub to these tips, and anything sail-white next to them.
-            float arm = min(min(sdSegment(r, HUB, float2(488.0, 348.0)), sdSegment(r, HUB, float2(389.0, 394.0))),
-                            min(sdSegment(r, HUB, float2(431.0, 483.0)), sdSegment(r, HUB, float2(517.0, 453.0))));
-            float white = step(arm, 7.5);
-            white = max(white, sailWhite(col) * step(arm, 14.0));
-            if (white > 0.5) {
-                float3 lc = paintAt(float2(HUB.x - 86.0, r.y) * k);
-                float3 rc = paintAt(float2(HUB.x + 86.0, r.y) * k);
-                col = mix(lc, rc, sat((hr.x + 86.0) / 172.0));
-            }
-            // Four sails, tapering, lit on one edge.
-            float a = t * 0.45;
-            for (int i = 0; i < 4; i++) {
-                float2 d = rot(a + float(i) * PI * 0.5) * hr;   // along the sail = +y
-                float along = -d.y;
-                float w = mix(6.0, 2.5, sat(along / 76.0));
-                float in2 = step(9.0, along) * step(along, 76.0) * step(abs(d.x), w);
-                float3 sc = mix(float3(0.98, 0.97, 0.93), float3(0.84, 0.85, 0.88), step(0.0, d.x));
-                sc = mix(sc, float3(0.55, 0.57, 0.62), step(w - 1.3, abs(d.x)));   // a darker edge, so it reads on the pale sky
-                col = mix(col, sc, in2);
-            }
-        }
+    // Front grass: blades in two rows; the wind runs through as travelling gusts.
+    float gustF = sin(uv.x * 3.0 - t * 1.4) * 0.5 + 0.5;
+    float gust = smoothstep(0.55, 1.0, gustF) * (0.6 + 0.4 * vnoise(float2(uv.x * 2.0 - t * 0.5, 3.0)));
+    for (int r = 0; r < 2; r++) {
+        float fr = float(r);
+        float base = 0.82 + fr * 0.12;
+        float bw = 0.006 + 0.004 * fr;
+        float x = uv.x / bw + fr * 0.37;
+        float id = floor(x);
+        float lx = fract(x) - 0.5;
+        float hgt = (0.16 + 0.12 * hash11(id + fr * 11.0)) * (1.0 + 0.4 * fr);
+        float yy = (base - uv.y) / hgt;                // 0 at the foot, 1 at the tip
+        float g = sin(id * 0.05 * bw * 100.0 - t * 1.4) * 0.5 + 0.5;
+        float bend = (0.35 + 1.4 * smoothstep(0.55, 1.0, g)) * yy * yy + 0.15 * sin(t * 2.0 + id) * yy * yy;
+        float w = 0.45 * (1.0 - yy);
+        float blade = step(0.0, yy) * step(yy, 1.0) * step(abs(lx - bend), w);
+        float3 gc = mix(float3(0.22, 0.45, 0.16), float3(0.6, 0.78, 0.32), yy * 0.8 + 0.2 * hash11(id));
+        gc = mix(gc, A * 0.5 + gc * 0.6, 0.1);
+        gc += float3(1.0, 0.98, 0.8) * 0.18 * gust * yy;             // the gust's sheen
+        col = mix(col, gc * (0.75 + 0.25 * fr), blade);
+        col = mix(col, gc * 0.55 * (0.75 + 0.25 * fr), step(base, uv.y) * step(fr, 0.5) * step(uv.y, 1.0));
     }
-    // The gust's sheen on the grass and fields.
-    col += float3(1.0, 0.97, 0.8) * 0.08 * gust * smoothstep(0.5, 0.75, q.y);
-
-    // Cloud shadows drifting over the land.
-    float land = smoothstep(0.5, 0.55, q.y);
-    float cs = fbm3(float2(q.x * 3.0 - t * 0.025, q.y * 6.0 + 4.0));
-    col *= 1.0 - 0.16 * smoothstep(0.5, 0.68, cs) * land;
-
-    // Sunlight from the upper right, breathing softly.
-    float2 sunQ = float2(0.95, 0.05);
-    float sd = length((q - sunQ) * float2(asp, 1.0));
-    col += float3(1.0, 0.96, 0.82) * exp(-sd * 2.2) * (0.05 + 0.025 * sin(t * 0.5));
+    col = mix(col, float3(0.18, 0.34, 0.12), step(0.94, uv.y) * 0.8);
 
     // Dandelion seeds: a dot with a fuzzy crown, drifting with the wind.
-    float2 uv = q * float2(asp, 1.0);
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 9; i++) {
         float fi = float(i);
-        float life = fract(t * (0.03 + 0.01 * hash11(fi)) + hash11(fi * 7.0));
-        float2 c = float2(fract(hash11(fi * 3.0) + life * 1.3) * (asp + 0.2) - 0.1,
-                          0.3 + 0.45 * hash11(fi * 5.0) + 0.04 * sin(life * 12.0 + fi) - 0.1 * life);
-        float2 d = uv - c;
-        float r = length(d);
-        float sz2 = 0.006 + 0.003 * hash11(fi * 13.0);
-        float crown = exp(-abs(r - sz2) * 700.0) * (0.5 + 0.5 * sin(atan(d.y, d.x) * 9.0 + life * 3.0)) * step(d.y, 0.002);
-        col += float3(1.0) * (crown * 0.45 + exp(-r * 1000.0) * 0.3);
+        float life = fract(t * (0.035 + 0.01 * hash11(fi)) + hash11(fi * 7.0));
+        float2 p = float2(fract(hash11(fi * 3.0) + life * 1.4) * (asp + 0.2) - 0.1,
+                          0.25 + 0.5 * hash11(fi * 5.0) + 0.05 * sin(life * 12.0 + fi) - 0.1 * life);
+        float2 q = uv - p;
+        float d = length(q);
+        float sz = 0.006 + 0.004 * hash11(fi * 13.0);
+        float a = atan(q.y, q.x);
+        float crown = exp(-abs(d - sz) * 600.0) * (0.5 + 0.5 * sin(a * 9.0 + life * 3.0)) * step(q.y, 0.002);
+        col += float3(1.0) * (crown * 0.5 + exp(-d * 900.0) * 0.3);
     }
-    // Two butterflies fluttering over the flowers.
-    for (int i = 0; i < 2; i++) {
-        float fi = float(i);
-        float2 c = float2(asp * (0.3 + 0.45 * fi) + 0.12 * sin(t * 0.21 + fi * 3.0) + 0.04 * sin(t * 0.9 + fi),
-                          0.84 + 0.04 * sin(t * 0.37 + fi * 2.0) + 0.012 * sin(t * 3.0 + fi));
-        float flap = abs(sin(t * 9.0 + fi * 2.0));
-        float2 d = (uv - c) / float2(0.012 * (0.3 + 0.7 * flap), 0.01);
-        float wing = step(length(float2(abs(d.x) - 0.7, d.y)), 0.8) * step(0.08, abs(d.x));
-        col = mix(col, fi < 0.5 ? float3(1.0, 0.85, 0.35) : float3(0.98, 0.98, 1.0), wing * 0.95);
-    }
-    return half4(finish(col, fc), 1.0);
+    return half4(finish(col * 0.92, fc), 1.0);
 }
 """
 
@@ -6021,11 +5888,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -6034,10 +5898,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -6258,11 +6122,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -6271,10 +6132,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -6487,11 +6348,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -6500,10 +6358,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -6663,11 +6521,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -6676,10 +6531,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -6855,7 +6710,6 @@ half4 main(float2 fc) {
     float highL = (uEqB.y + uEqB.z + uEqB.w) / 3.0 * play;
     float gx = 0.47 * s;
     float ms = s * min(1.0, (min(waveX(asp), asp - waveX(asp)) - 0.02) / (gx + 0.17 * s));
-    ms = max(ms, 0.05 * s);
     col = vuMeter(col, p - float2(-gx, 0.0) * ms / s, ms, sat(0.08 + lowL * (0.6 + 0.5 * k) + kick * 0.15), A, S, px);
     col = vuMeter(col, p - float2(gx, 0.0) * ms / s, ms, sat(0.05 + highL * (0.7 + 0.5 * k)), A, S, px);
 
@@ -6944,11 +6798,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -6957,10 +6808,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -7138,11 +6989,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -7151,10 +6999,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -7353,11 +7201,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -7366,10 +7211,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -7554,11 +7399,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -7567,10 +7409,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -7766,11 +7608,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -7779,10 +7618,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -7968,11 +7807,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -7981,10 +7817,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -8186,11 +8022,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -8199,10 +8032,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -8413,11 +8246,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -8426,10 +8256,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -8661,11 +8491,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -8674,10 +8501,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -8863,11 +8690,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -8876,10 +8700,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -9079,11 +8903,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -9092,10 +8913,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -9252,11 +9073,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -9265,10 +9083,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -9465,11 +9283,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -9478,10 +9293,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -9698,14 +9513,7 @@ half4 main(float2 fc) {
     private const val MODE7 = """
 // 16-bit mode 7: a racetrack sweeping under you on a rotating, scaled floor - checkered grass, a road
 // with red-and-white kerbs and a dashed line - under a sky with two parallax mountain ranges and
-// stepped clouds. The camera drives along the road: it follows the track's curves (weaving a little
-// inside the lane) and the view turns with it, so the mountains slide past in the bends. Drawn at a
-// 16-bit-ish resolution with a horizon haze.
-
-// The road's centre across the world at distance z along it, and its slope there.
-float roadAt(float z) { return 1.2 * sin(z * 0.08) + 0.6 * sin(z * 0.031 + 2.0); }
-float roadSlope(float z) { return 0.096 * cos(z * 0.08) + 0.0186 * cos(z * 0.031 + 2.0); }
-
+// stepped clouds. Drawn at a 16-bit-ish resolution with a horizon haze.
 half4 main(float2 fc) {
     float asp = uRes.x / uRes.y;
     float t = uTime;
@@ -9716,11 +9524,7 @@ half4 main(float2 fc) {
     float2 g = floor(fc / uRes.y * P) + 0.5;
     float2 uv = g / P;
     float hz = 0.46;
-    // The car: on the road at camZ, heading along it (looking a little into the coming bend).
-    float camZ = t * 2.2;
-    float heading = atan(roadSlope(camZ + 2.5));
-    float2 cam = float2(roadAt(camZ) + 0.18 * sin(t * 0.37), camZ);
-    float turn = heading * 3.0 + roadAt(camZ) * 0.15;
+    float turn = 0.35 * sin(t * 0.11);
     float3 col;
     if (uv.y < hz) {
         float k = uv.y / hz;
@@ -9740,12 +9544,13 @@ half4 main(float2 fc) {
         // The mode-7 plane: rotate and scale by distance.
         float dy = uv.y - hz;
         float z = 0.18 / dy;
-        float lx = (uv.x - asp * 0.5) * z;
-        float c = cos(heading);
-        float s = sin(heading);
-        float2 p = cam + float2(lx * c + z * s, -lx * s + z * c);
+        float2 p = float2((uv.x - asp * 0.5) * z, z);
+        float c = cos(turn);
+        float s = sin(turn);
+        p = float2(p.x * c - p.y * s, p.x * s + p.y * c);
+        p.y += t * 2.2;
         // The road curves through the world.
-        float roadX = roadAt(p.y);
+        float roadX = 1.2 * sin(p.y * 0.08) + 0.6 * sin(p.y * 0.031 + 2.0);
         float dx = p.x - roadX;
         float roadW = 0.55;
         float checker = step(0.5, fract(floor(p.x * 1.5) * 0.5 + floor(p.y * 1.5) * 0.5));
@@ -10046,11 +9851,10 @@ half4 main(float2 fc) {
 """
 
     private const val XMB_WAVE = """
-// Wave menu: the flowing light waves of a 2000s console menu, given real depth. One even, glowing
-// gradient from top to bottom (the lower half as bright as the upper, nothing dark under the waves);
-// layers of ribbons - far ones thin, hazy and slow, near ones wide and crisp - each shaded like a sheet
-// of light (bright front face, darker underside, a highlight sliding along the crest), a soft glow
-// round the band they travel in, and bokeh motes at different depths.
+// Wave menu: the flowing light waves of a 2000s console menu, given real depth. A deep gradient sky
+// with a soft horizon glow; three layers of ribbons - far ones thin, hazy and slow, near ones wide and
+// crisp - each shaded like a sheet of light (bright front face, darker underside, a highlight sliding
+// along the crest); a glossy floor below reflecting them; and soft bokeh motes at different depths.
 half4 main(float2 fc) {
     float2 uv = fc / uRes.y;
     float asp = uRes.x / uRes.y;
@@ -10059,17 +9863,18 @@ half4 main(float2 fc) {
     float3 S = uSec.rgb;
     float3 BG = uBg.rgb;
     float x = uv.x / asp;
-    // Background: the same glow all the way down - deepest at the very top and bottom edges, brightest
-    // round the band the waves travel in - and a slow, soft light shaft.
-    float band = 0.58;
-    float3 edge = mix(BG * 1.3, A * 0.35, 0.35);
-    float3 mid = mix(BG * 1.8, A * 0.6, 0.55);
-    float3 col = mix(mid, edge, smoothstep(0.0, 0.62, abs(uv.y - band)) * (uv.y < band ? 1.0 : 0.75));
-    col += A * 0.1 * exp(-abs(uv.y - band) * 6.0);
+    float horizon = 0.7;
+
+    // Sky: deep at the top, glowing towards the horizon, a slow light shaft.
+    float3 top = mix(BG * 1.3, A * 0.35, 0.35);
+    float3 low = mix(BG * 1.8, A * 0.6, 0.55);
+    float3 col = mix(top, low, smoothstep(0.0, horizon, uv.y));
+    col += A * 0.12 * exp(-abs(uv.y - horizon) * 9.0);
     col += mix(A, float3(1.0), 0.5) * 0.035 * smoothstep(0.6, 1.0, sin(x * 3.0 - uv.y * 1.5 + t * 0.03));
 
-    // The ribbons, far to near.
+    // The ribbons, far to near. Reflection pass uses the mirrored height.
     float3 light = float3(0.0);
+    float3 refl = float3(0.0);
     for (int i = 0; i < 6; i++) {
         if (uLod > 1.5 && i > 3) break;
         float fi = float(i);
@@ -10094,8 +9899,16 @@ half4 main(float2 fc) {
         float haze = mix(0.45, 1.0, near);          // atmospheric fade
         float3 rc = mix(mix(A, S, 0.25 * fi / 5.0), float3(1.0), 0.25 + 0.35 * near);
         light += rc * haze * (sheet * 0.16 * face + crest * (0.32 + 0.6 * run)) * (0.7 + 0.3 * near);
+        // Reflection on the floor (mirrored about the horizon, squashed and faded).
+        float ry = horizon + (horizon - uv.y) * 2.2;
+        float rd = ry - y;
+        refl += rc * haze * exp(-abs(rd) * mix(40.0, 90.0, near)) * 0.22;
     }
-    col += light;
+    // Floor: below the horizon, darker and glossy, with the reflections and a fresnel lift at the back.
+    float floorM = smoothstep(horizon - 0.002, horizon + 0.004, uv.y);
+    float3 floorC = mix(BG * 0.8, BG * 0.5, sat((uv.y - horizon) * 3.0)) + A * 0.08 * exp(-(uv.y - horizon) * 10.0);
+    col = mix(col + light, floorC + refl * exp(-(uv.y - horizon) * 4.0), floorM);
+    col += A * 0.25 * exp(-abs(uv.y - horizon) * 160.0);    // the horizon line glints
 
     // Bokeh motes at three depths, drifting slowly.
     for (int k = 0; k < 3; k++) {
@@ -10107,7 +9920,7 @@ half4 main(float2 fc) {
         float2 h = hash22(id + fk * 11.0);
         float2 f = fract(bp) - 0.5 - (h - 0.5) * 0.5;
         float rad = 0.12 + 0.18 * h.y;
-        float on = step(0.72, h.x);
+        float on = step(0.72, h.x) * (1.0 - floorM * 0.7);
         float disc = 1.0 - smoothstep(rad * 0.7, rad, length(f));
         col += mix(A, float3(1.0), 0.6) * disc * on * mix(0.05, 0.02, fk / 2.0);
     }
@@ -10367,7 +10180,7 @@ half4 main(float2 fc) {
         }
     } else {
         float dy = uv.y - hz;
-        float z = 0.12 / max(dy, 0.002);
+        float z = 0.12 / dy;
         float x = (uv.x - asp * 0.5) * z;
         // Sea with glitter.
         float3 sea = mix(float3(0.0, 0.35, 0.75), float3(0.0, 0.18, 0.45), sat(dy * 3.0));
@@ -11029,45 +10842,23 @@ half4 main(float2 fc) {
     float bed = length((lp - float2(0.0, 0.005)) * float2(1.0, 3.5)) - 0.07;
     col += FIRE * smoothstep(0.02, -0.02, bed) * (0.25 + 0.6 * smoothstep(0.5, 0.8, vnoise(lp * 200.0 + t * 0.7))) * flick * step(px, logs);
 
-    // Flames: five tongues, each with its own height, sway and flicker, wrapped in rising turbulence;
-    // the heat is cut into layers - dark red at the edges, orange, yellow, a white-hot heart - and
-    // drawn as light.
-    float2 fp = uv - fire;
-    fp.y = -fp.y;                                     // y up from the fire's base
-    float2 warp = float2(fbm3(float2(fp.x * 14.0, fp.y * 9.0 - t * 3.2)), fbm3(float2(fp.x * 11.0 + 7.0, fp.y * 7.0 - t * 2.4))) - 0.5;
-    float2 wq = fp + warp * float2(0.07, 0.035) * sat(fp.y * 5.0 + 0.2);
-    float heat = 0.0;
-    for (int i = 0; i < 5; i++) {
-        float fi = float(i);
-        float off = (fi - 2.0) * 0.028 + (hash11(fi * 3.7) - 0.5) * 0.014;
-        float hgt = (0.1 + 0.2 * hash11(fi * 5.1 + 1.0) * (1.0 - abs(fi - 2.0) * 0.22)) * (0.7 + 0.45 * vnoise(float2(t * 2.2 + fi * 9.0, fi)));
-        float yy = wq.y / hgt;                       // 0 at the base, 1 at the tip
-        if (yy < -0.2 || yy > 1.3) continue;
-        float sway = sin(t * (2.1 + fi * 0.37) + fi * 2.0) * 0.012 + sin(t * 5.3 + fi) * 0.004;
-        float cx = off * (1.0 - yy * 0.6) + sway * yy * yy;
-        float w = (0.03 - abs(fi - 2.0) * 0.004) * sqrt(sat(1.0 - yy)) * (0.75 + 0.5 * sat(yy * 4.0));
-        float d = abs(wq.x - cx) / max(w, 0.0005);
-        float tongue = smoothstep(1.0, 0.15, d) * smoothstep(-0.2, 0.08, yy) * (1.3 - yy * 0.75);
-        heat = heat + tongue - heat * tongue * 0.55;     // tongues merge softly where they meet
-    }
-    // One body of fire low down, where the tongues rise from.
-    heat = max(heat, smoothstep(1.0, 0.2, length((wq - float2(0.0, 0.035)) / float2(0.075, 0.06))) * 1.2);
-    // Ragged tips and holes: the turbulence eats the flame from the top.
-    float eat = vnoise(float2(wq.x * 30.0, wq.y * 18.0 - t * 6.0));
-    heat -= max(eat - 0.3, 0.0) * 0.75 * sat(fp.y * 5.0);
-    heat *= flick * (0.9 + 0.2 * vnoise(float2(t * 9.0, 2.0)));
+    // Flames: one turbulent heat field, cut into layers - deep orange, yellow, a pale core.
+    float2 fq = (uv - fire - float2(0.0, 0.0)) / 0.36;
+    float fy = -fq.y;
+    float n = fbm3(float2(fq.x * 3.0, fy * 2.4 - t * 2.6));
+    float n2 = vnoise(float2(fq.x * 8.0, fy * 7.0 - t * 4.8));
+    float heat = 1.0 - fy * 1.05 - abs(fq.x + (n - 0.5) * 0.3 * fy) * (3.6 + fy * 4.0) + (n - 0.5) * (0.35 + 1.25 * fy) + (n2 - 0.5) * 0.4 * fy;
+    heat *= step(-0.06, fy) * flick;
+    // A smooth black-body ramp, drawn as light: soft tongues, a hot white heart.
+    float3 deep = mix(float3(0.95, 0.24, 0.04), A, 0.35);
+    float3 yel = mix(float3(1.0, 0.70, 0.2), S, 0.25);
     float hh = max(heat, 0.0);
-    float3 deep = mix(float3(0.85, 0.16, 0.03), A, 0.3);
-    float3 ora = mix(float3(1.0, 0.45, 0.08), A, 0.25);
-    float3 yel = mix(float3(1.0, 0.8, 0.32), S, 0.2);
-    float3 flame = deep * 0.9;
-    flame = mix(flame, ora * 1.25, smoothstep(0.15, 0.4, hh));
-    flame = mix(flame, yel * 1.45, smoothstep(0.38, 0.68, hh));
-    flame = mix(flame, float3(1.6, 1.45, 1.2), smoothstep(0.7, 1.0, hh));
-    float alpha = smoothstep(0.0, 0.3, hh);
-    col = col * (1.0 - alpha * 0.75) + flame * alpha;
-    // The heart of the fire, where the logs meet: a hot glow.
-    col += yel * glow(length((fp - float2(0.0, 0.03)) * float2(1.0, 1.6)), 0.02) * 0.35 * flick;
+    float3 flame = deep * smoothstep(0.0, 0.25, hh) * 1.1 + (yel - deep * 0.5) * smoothstep(0.2, 0.55, hh) + float3(0.6, 0.5, 0.35) * smoothstep(0.5, 0.9, hh);
+    float alpha = smoothstep(0.0, 0.12, hh);
+    col = col * (1.0 - alpha * 0.85) + flame;
+    // Licks of flame breaking off at the tips.
+    float tip = smoothstep(0.55, 0.75, vnoise(float2(fq.x * 10.0, fy * 5.0 - t * 5.0))) * smoothstep(0.1, -0.05, heat) * smoothstep(-0.25, -0.05, heat) * step(0.2, fy) * step(fy, 1.2) * exp(-abs(fq.x) * 6.0);
+    col += deep * tip * 0.7 * flick;
     // Glow round the flames and the light they throw up into the air.
     col += FIRE * glow(length((uv - fire + float2(0.0, 0.09)) * float2(1.0, 0.8)), 0.06) * 0.3 * flick;
     col += FIRE * 0.06 * exp(-length(uv - fire + float2(0.0, 0.15)) * 3.0) * flick;
@@ -11090,7 +10881,7 @@ half4 main(float2 fc) {
     float sm = fbm3(float2(uv.x * 4.0 - t * 0.05, uv.y * 3.0 + t * 0.25));
     float rise = fire.y - 0.25 - uv.y;
     float smoke = smoothstep(0.45, 0.75, sm) * exp(-abs(uv.x - fire.x - max(rise, 0.0) * 0.35) * (8.0 - rise * 4.0)) * smoothstep(0.0, 0.15, rise) * (1.0 - smoothstep(0.3, 0.6, rise));
-    col = mix(col, BG * 0.6 + FIRE * 0.04, smoke * 0.18);
+    col = mix(col, BG * 0.8 + FIRE * 0.05, smoke * 0.3);
 
     return half4(finish(col, fc), 1.0);
 }
@@ -11176,11 +10967,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -11189,10 +10977,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -11528,11 +11316,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -11541,10 +11326,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -11750,11 +11535,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -11763,10 +11545,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -11923,11 +11705,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -11936,10 +11715,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -12116,11 +11895,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -12129,10 +11905,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -12343,11 +12119,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -12356,10 +12129,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -12481,10 +12254,7 @@ half4 main(float2 fc) {
 // Specimen lab: a pixel-art laboratory at night - a tall glass tank glowing in the middle, something
 // sleeping inside it (the Voltcap capsule, bolt pulsing), bubbles rising through the green fluid, a
 // scan line sweeping it, banks of green monitors on both sides ticking away (waveforms, bar graphs, a
-// radar, scrolling readouts), blinking lights, pipes and big tanks in the dark behind. With a game
-// picked, its own cartridge or disc floats in the tank instead (the real one - ScreenScraper's picture
-// of it - turned into the lab's chunky pixels, a disc turning slowly; just the cover in a drawn
-// cartridge shell when there's no picture of it). With the game row at the top, the lab moves down.
+// radar, scrolling readouts), blinking lights, pipes and big tanks in the dark behind.
 // The Voltcap mark, shared by the Voltcap scenes: the capsule (half width 1, half height VR in its own
 // units) and the bolt inside it - the same shapes as the start-up animation (VoltcapIntro).
 const float VR = 0.44;
@@ -12528,54 +12298,6 @@ float2 capsulePoint(float a) {
     return float2(clamp(1.35 * cos(a), -1.0, 1.0) * (1.0 - VR), 0.0) + VR * float2(cos(a), sin(a));
 }
 
-uniform shader uMedia;      // the game's cartridge / disc picture (SceneArt), any size
-uniform float2 uMediaSize;
-uniform float uHasMedia;    // 0 = none: the capsule sleeps in the tank
-uniform float uMediaKind;   // 0 = a disc (round), 1 = a cartridge / card (as photographed), 2 = only the cover: a drawn shell with it as the label
-uniform float uFocusY;      // 0.5 + how far to move the lab down (share of the height; 0 = not set)
-
-// The game's media at grid pixel c, floating round m (grid pixels): colour, coverage in .a.
-float4 mediaAt(float2 c, float2 m, float t) {
-    float2 sz = max(uMediaSize, float2(1.0));
-    float aspect = sz.x / sz.y;
-    if (uMediaKind < 0.5) {
-        // A disc: round, turning slowly, the hub hole clear.
-        float2 q = (c - m) / 44.0;
-        float r = length(q);
-        if (r > 0.5) return float4(0.0);
-        float2 rq = rot(t * 0.8) * q;
-        float2 tq = rq + 0.5;
-        float4 pc = float4(uMedia.eval(tq * sz));
-        float hole = step(0.07, r);
-        float3 silver = float3(0.72, 0.75, 0.8);
-        return float4(mix(silver, pc.rgb, pc.a), hole);
-    }
-    if (uMediaKind < 1.5) {
-        // A cartridge / card as photographed (its own outline from the picture's transparency).
-        float2 box = float2(50.0, 64.0);
-        float2 dim = aspect > box.x / box.y ? float2(box.x, box.x / aspect) : float2(box.y * aspect, box.y);
-        float2 q = (c - m) / dim + 0.5;
-        if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return float4(0.0);
-        float4 pc = float4(uMedia.eval(q * sz));
-        return float4(pc.rgb, step(0.5, pc.a));
-    }
-    // Only the cover: a drawn cartridge shell (grip ridges on top) with the cover as its label.
-    float2 d = c - m;
-    float body = step(abs(d.x), 25.0) * step(-32.0, d.y) * step(d.y, 30.0);
-    body *= 1.0 - step(25.0 - 3.0, abs(d.x)) * step(d.y, -29.0);             // rounded top corners
-    if (body < 0.5) return float4(0.0);
-    float3 shell = float3(0.36, 0.37, 0.42) * (0.85 + 0.15 * step(0.0, -d.x));
-    shell = mix(shell, shell * 0.7, step(-31.0, d.y) * step(d.y, -24.0) * step(mod(c.x, 3.0), 0.9));
-    float2 lq = (d - float2(-21.0, -21.0)) / float2(42.0, 46.0);
-    if (lq.x > 0.0 && lq.x < 1.0 && lq.y > 0.0 && lq.y < 1.0) {
-        // Fill the label: the cover cropped to the label's shape.
-        float la = 42.0 / 46.0;
-        float2 uvc = aspect > la ? float2(0.5 + (lq.x - 0.5) * la / aspect, lq.y) : float2(lq.x, 0.5 + (lq.y - 0.5) * aspect / la);
-        shell = float3(uMedia.eval(uvc * sz).rgb);
-    }
-    return float4(shell, 1.0);
-}
-
 float inRect(float2 p, float2 a, float2 b) {
     return step(a.x, p.x) * step(p.x, b.x) * step(a.y, p.y) * step(p.y, b.y);
 }
@@ -12584,8 +12306,6 @@ half4 main(float2 fc) {
     // Everything is drawn on a 180-pixel-tall grid, so it stays chunky pixel art at any size.
     float P = uRes.y / 180.0;
     float2 c = floor(fc / P) + 0.5;
-    // Moved down (the game row at the top, or Theme look › Scene position): whole pixels, the wall goes on above.
-    c.y -= floor((uFocusY > 0.001 ? clamp(uFocusY - 0.5, -0.15, 0.3) : 0.0) * 180.0);
     float W = floor(uRes.x / P);
     float cx = floor(W * 0.5);
     float t = uTime;
@@ -12673,33 +12393,17 @@ half4 main(float2 fc) {
         fluid *= 0.8 + 0.25 * (1.0 - lx * lx);
         // Slow currents.
         fluid += A * 0.08 * step(0.7, vnoise(float2(c.x * 0.12, c.y * 0.05 + t * 0.4)));
+        // Something asleep inside: the capsule, drifting gently, held by two cables.
+        float2 q = (c - float2(cx, 78.0 + floor(2.5 * sin(t * 0.7)))) / 20.0;
+        float dCap = sdCapsuleMark(q);
+        float dBolt = sdBoltMark(q);
+        float cable = step(abs(abs(c.x - cx) - 9.0), 0.6) * step(c.y, 78.0 - 6.0);
+        fluid = mix(fluid, mix(BG, A, 0.18), cable * 0.8);
         float pulse = 0.6 + 0.4 * sin(t * 2.2);
-        float2 mc = float2(cx, 78.0 + floor(2.5 * sin(t * 0.7)));
-        if (uHasMedia > 0.5) {
-            // The game's cartridge / disc, hanging in the fluid: pixel colours, the fluid's tint over it,
-            // a glow round its edge.
-            float4 md = mediaAt(c, mc, t);
-            float3 mcol = floor(md.rgb * 7.0 + 0.5) / 7.0;
-            mcol = mix(mcol, fluid, 0.22) + A * 0.06 * pulse;
-            float ring = 0.0;
-            for (int k = 0; k < 4; k++) {
-                float2 o = float2(k == 0 ? 1.0 : (k == 1 ? -1.0 : 0.0), k == 2 ? 1.0 : (k == 3 ? -1.0 : 0.0));
-                ring = max(ring, mediaAt(c + o, mc, t).a);
-            }
-            fluid = mix(fluid, mix(A, white, 0.4 + 0.3 * pulse), (ring - md.a) * step(md.a, 0.5) * 0.9);
-            fluid = mix(fluid, mcol, md.a);
-        } else {
-            // Something asleep inside: the capsule, drifting gently, held by two cables.
-            float2 q = (c - mc) / 20.0;
-            float dCap = sdCapsuleMark(q);
-            float dBolt = sdBoltMark(q);
-            float cable = step(abs(abs(c.x - cx) - 9.0), 0.6) * step(c.y, 78.0 - 6.0);
-            fluid = mix(fluid, mix(BG, A, 0.18), cable * 0.8);
-            fluid = mix(fluid, mix(mix(BG, S, 0.3), A, 0.25 + 0.15 * pulse), step(dCap, 0.0));
-            fluid = mix(fluid, mix(A, white, 0.35), step(abs(dCap), 0.05));
-            fluid = mix(fluid, mix(A, white, 0.45 + 0.4 * pulse), step(dBolt, 0.0));
-            fluid += A * 0.3 * pulse * exp(-max(dBolt, 0.0) * 10.0) * step(0.0, dCap);
-        }
+        fluid = mix(fluid, mix(mix(BG, S, 0.3), A, 0.25 + 0.15 * pulse), step(dCap, 0.0));
+        fluid = mix(fluid, mix(A, white, 0.35), step(abs(dCap), 0.05));
+        fluid = mix(fluid, mix(A, white, 0.45 + 0.4 * pulse), step(dBolt, 0.0));
+        fluid += A * 0.3 * pulse * exp(-max(dBolt, 0.0) * 10.0) * step(0.0, dCap);
         // Bubbles rising in a few columns.
         float colId = floor(c.x / 3.0);
         float h = hash11(colId * 3.7);
@@ -13305,11 +13009,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -13318,10 +13019,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -13545,11 +13246,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -13558,10 +13256,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -13783,11 +13481,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -13796,10 +13491,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -14128,11 +13823,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -14141,10 +13833,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -14336,11 +14028,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -14349,10 +14038,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -14540,11 +14229,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -14553,10 +14239,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -14755,11 +14441,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -14768,10 +14451,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -15028,11 +14711,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -15041,10 +14721,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -15273,11 +14953,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -15286,10 +14963,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -15706,6 +15383,4939 @@ half4 main(float2 fc) {
         float up = step(0.5, fract(t * 4.0 + fi));
         float v = step(abs(q.y + abs(q.x) * (up > 0.5 ? 0.8 : -0.3)), 0.004) * step(abs(q.x), 0.016);
         col = mix(col, float3(0.15, 0.15, 0.25), v);
+    }
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val COVER_FLOW = """
+// Cover flow (music): the classic carousel. The song's cover stands big in the middle, facing you,
+// on a glossy floor that mirrors it; the covers of the songs you played before stand angled away to
+// the left, and when the song changes the whole row glides one place: the old cover turns away into
+// the left stack while the new one swings in from the right to face you. Everything is lit in the
+// cover's own colours - a soft blur of the artwork behind, a tinted floor and a coloured rim on each
+// sleeve. The row sways gently, the middle cover lifts with the bass, a light sweeps across its glass,
+// and thin equalizer lines glow along the floor.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+uniform float uSwapAge;   // seconds since the cover changed (large = long ago)
+
+// A cover drawn as a quad turned about its vertical axis: returns uv inside it (or -1).
+float2 cardUv(float2 p, float2 c, float hw, float hh, float ang) {
+    // Perspective: the far edge gets shorter.
+    float2 d = p - c;
+    float ca = cos(ang);
+    float sa = sin(ang);
+    float x = d.x / (hw * max(ca, 0.05));
+    float persp = 1.0 + x * sa * 0.35;
+    float y = d.y / (hh * persp);
+    if (abs(x) > 1.0 || abs(y) > 1.0) return float2(-1.0);
+    return float2(x, y) * 0.5 + 0.5;
+}
+
+// Where a card in slot f sits (0 = middle, negative = left stack, positive = right), continuously,
+// so the row can glide between slots: x offset, size, turn.
+float3 slot(float f, float R) {
+    float a = min(abs(f), 1.0);
+    float x = sign(f) * (a * R * 1.35 + max(abs(f) - 1.0, 0.0) * R * 0.42);
+    return float3(x, mix(1.0, 0.62, a), -clamp(f, -1.0, 1.0) * 1.05);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = vivid(uAcc.rgb, 1.2);
+    float3 S = vivid(uSec.rgb, 1.2);
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.78;
+    float floorY = c.y + R;
+    // Behind: the artwork itself, blurred and dark, with a glow of its colours around the middle.
+    float3 col = coverField(uv, asp, t, bass, 0.55, BG, A, S);
+    col = mix(col, BG * 0.15, smoothstep(c.y - R * 2.5, floorY + 0.3, uv.y) * 0.6);
+    col += mix(A, S, 0.5) * exp(-length((uv - c) * float2(0.5, 1.0)) / R * 0.9) * 0.18;
+    float sway = 0.015 * sin(t * 0.3);
+
+    // The glide after a song change: o runs 1 -> 0 (eased), shifting every card by o slots.
+    float sw = sat(uSwapAge / 1.2);
+    float o = 1.0 - sw * sw * (3.0 - 2.0 * sw);
+
+    // Floor reflection: mirror y about the floor line.
+    float refl = 0.0;
+    float2 pu = uv;
+    if (uv.y > floorY) { pu.y = 2.0 * floorY - uv.y; refl = 1.0; }
+
+    float3 layer = float3(0.0);
+    float cover = 0.0;
+    float3 rimC = mix(A, float3(1.0), 0.35);
+    // Side cards, back to front: the left stack (earlier songs; the one just played is slot -1)
+    // and the right one (older covers repeated), all shifted by the glide.
+    for (int s = 0; s < 2; s++) {
+        float side = s == 0 ? -1.0 : 1.0;
+        for (int j = 3; j >= 0; j--) {
+            float fj = float(j);
+            if (s == 0 && j == 0) continue;            // slot -1 is drawn with the middle pair below
+            float f = side * (fj + 1.0) + o;
+            float3 sl = slot(f, R);
+            float2 cc = float2(c.x + sl.x + sway, c.y + R * 0.08 * (1.0 - sl.y) / 0.38);
+            float2 q = cardUv(pu, cc, R * sl.y, R * sl.y * 0.95, sl.z);
+            if (q.x >= 0.0) {
+                float3 cv = pastCover(side < 0.0 ? fj : fj + 4.0, q, A, S);
+                float shade = mix(0.8, 0.45, q.x * step(0.0, side) + (1.0 - q.x) * step(side, 0.0)) * (1.0 - min(abs(f), 4.0) * 0.12);
+                float edge = 1.0 - smoothstep(0.0, 0.04, min(min(q.x, 1.0 - q.x), min(q.y, 1.0 - q.y)));
+                layer = cv * shade + rimC * edge * 0.25;
+                cover = 1.0;
+            }
+        }
+    }
+    // The middle pair: the cover just played (slot -1 + o) and the current one (slot o); the one
+    // nearer the middle is drawn last.
+    float lift = bass * k * R * 0.05;
+    for (int m = 0; m < 2; m++) {
+        bool cur = (m == 1) == (o < 0.5);
+        float f = cur ? o : -1.0 + o;
+        float af = min(abs(f), 1.0);
+        float3 sl = slot(f, R);
+        float2 mc = float2(c.x + sl.x + sway, c.y + R * 0.08 * (1.0 - sl.y) / 0.38 - lift * (1.0 - af));
+        float2 mq = cardUv(pu, mc, R * sl.y, R * sl.y * mix(1.0, 0.95, af), sl.z + 0.12 * sin(t * 0.25) * (1.0 - af));
+        if (mq.x >= 0.0) {
+            float3 cv = cur ? sharpCover(mq, A, S) : pastCover(0.0, mq, A, S);
+            cv *= mix(1.0, 0.7, af);
+            cv += float3(1.0) * 0.12 * pow(sat(1.0 - abs(mq.x + mq.y - fract(t * 0.07) * 3.0 + 0.5) * 4.0), 3.0) * (1.0 - af);
+            float edge = 1.0 - smoothstep(0.0, 0.025, min(min(mq.x, 1.0 - mq.x), min(mq.y, 1.0 - mq.y)));
+            layer = cv + rimC * edge * 0.2;
+            cover = 1.0;
+        }
+    }
+    if (refl > 0.5) {
+        // The floor: dark glass tinted by the cover's colours, the row mirrored in it.
+        col = mix(col, mix(BG * 0.2, mix(A, S, 0.5) * 0.25, 0.4) + col * 0.3, 0.6);
+        col = mix(col, layer, cover * exp(-(uv.y - floorY) / (R * 0.45)) * 0.4);
+    } else {
+        col = mix(col, layer, cover);
+    }
+    // Equalizer lines glowing along the floor.
+    float fx = (uv.x - c.x) / (asp * 0.5);
+    float e = eqAt(sat(abs(fx))) * play;
+    float line = exp(-abs(uv.y - floorY - 0.004) * 400.0) * (0.25 + 1.2 * e);
+    col += mix(A, S, sat(abs(fx))) * line * 0.6;
+    // A flash of the new cover's colours as it lands.
+    col += mix(A, S, 0.5) * 0.08 * exp(-uSwapAge * 3.0) * exp(-length(uv - c) / R);
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val RECORD_SHELF = """
+// Record shelf (music): a corner of a record store. The current album stands on a little display
+// stand in front of a neon ring in the song's colours, its record slid half out of the sleeve and
+// spinning while it plays (the shine on the vinyl stays put while the label turns, like a real
+// record). Two wooden crates either side are packed with the sleeves of the songs you played before,
+// their tops peeking out front to back; more of them stand face-out on the wall ledges under two
+// warm lamps. Dust drifts in the lamplight; the crate sleeves nudge on the kick as if someone were
+// flicking through them.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+// One past song's sleeve standing face-out on a wall ledge: cover i, centre p, half-size h, lean a.
+float3 wallSleeve(float3 col, float2 uv, float2 p, float h, float a, float i, float px, float3 A, float3 S) {
+    float2 d = rot(a) * (uv - p);
+    // Shadow on the wall, down-right.
+    col *= 1.0 - 0.45 * (1.0 - smoothstep(-h * 0.02, h * 0.18, sdRoundBox(d - float2(h * 0.08, h * 0.1), float2(h), h * 0.03)));
+    float box = sdRoundBox(d, float2(h), h * 0.03);
+    if (box < px) {
+        float2 q = d / (2.0 * h) + 0.5;
+        float3 cv = pastCover(i, q, A, S);
+        // Cardboard: a little grain, worn lighter edges, a soft gloss across the top corner.
+        cv *= 0.9 + 0.1 * vnoise(d * 180.0 / h);
+        cv = mix(cv, float3(0.92, 0.88, 0.8), smoothstep(-h * 0.06, 0.0, box) * 0.35);
+        cv += float3(1.0) * 0.08 * smoothstep(0.35, 0.0, abs(q.x + q.y - 0.55));
+        col = mix(col, cv * 0.88, 1.0 - smoothstep(-px, px, box));
+    }
+    return col;
+}
+
+// A wooden crate packed with sleeves seen from the front: x from x0 to x1, front wall from top to bot.
+// Sleeves stand front to back, each one's top a little higher than the one in front of it.
+float3 crate(float3 col, float2 uv, float x0, float x1, float top, float bot, float R, float px, float seed, float nudge, float3 A, float3 S) {
+    float w = x1 - x0;
+    float inX = smoothstep(x0 - px, x0 + px, uv.x) * (1.0 - smoothstep(x1 - px, x1 + px, uv.x));
+    // Its shadow on the floor.
+    float2 sd = float2((uv.x - (x0 + x1) * 0.5) / (w * 0.56), (uv.y - bot) / (R * 0.09));
+    col *= 1.0 - 0.5 * (1.0 - smoothstep(0.5, 1.1, length(sd)));
+    if (inX <= 0.0) return col;
+    // The sleeves (front first: the first one that covers the pixel wins).
+    float step0 = R * 0.085;
+    float prevTop = top;
+    float done = 0.0;
+    for (int j = 0; j < 7; j++) {
+        if (done > 0.5) break;
+        float fj = float(j);
+        float r = hash11(fj * 7.3 + seed);
+        float r2 = hash11(fj * 3.1 + seed + 1.7);
+        // Height above the crate's front edge, a little uneven; the front ones flick on the kick.
+        float lift = R * 0.2 + fj * step0 + (r - 0.5) * R * 0.05 + nudge * R * 0.05 * (1.0 - fj / 7.0);
+        float sTop = top - lift;
+        // Each sleeve is a touch narrower further back (perspective) and sits a little off-centre.
+        float inset = w * (0.02 + 0.012 * fj) + (r2 - 0.5) * w * 0.02;
+        float sx0 = x0 + inset;
+        float sx1 = x1 - inset + (r - 0.5) * w * 0.02;
+        if (uv.y >= sTop - px && uv.y < prevTop && uv.x > sx0 && uv.x < sx1) {
+            float2 q = float2((uv.x - sx0) / (sx1 - sx0), (uv.y - sTop) / ((sx1 - sx0)));
+            float3 sl = pastCover(4.0 + fj, q, A, S);
+            // Further back = darker; deeper into the gap = in the shadow of the sleeve in front.
+            float depthShade = 0.82 - 0.07 * fj;
+            float gap = sat((uv.y - sTop) / max(prevTop - sTop, 1e-4));
+            sl *= depthShade * (1.0 - 0.45 * gap * gap);
+            // The paper edge catches the light.
+            sl = mix(sl, float3(0.95, 0.9, 0.82), (1.0 - smoothstep(0.0, px * 2.0, uv.y - sTop)) * 0.6);
+            float aa = smoothstep(sTop - px, sTop + px, uv.y) * smoothstep(sx0, sx0 + px * 2.0, uv.x) * (1.0 - smoothstep(sx1 - px * 2.0, sx1, uv.x));
+            col = mix(col, sl, aa);
+            done = aa > 0.99 ? 1.0 : 0.0;
+        }
+        prevTop = min(prevTop, sTop);
+    }
+    // The front wall: two planks with a gap, a handle cut-out, darker corner posts, warm grain.
+    if (uv.y > top - px) {
+        float2 p = float2(uv.x - x0, uv.y - top);
+        float hh = bot - top;
+        float grain = vnoise(float2(p.x * 9.0 / R, p.y * 60.0 / R + seed)) * 0.5 + vnoise(float2(p.x * 2.0 / R, p.y * 160.0 / R)) * 0.5;
+        float3 wood = mix(float3(0.36, 0.22, 0.12), float3(0.55, 0.36, 0.2), grain);
+        wood *= 0.95 + 0.1 * hash11(floor(p.y / (hh * 0.5)) + seed);
+        float plankGap = 1.0 - smoothstep(px * 0.5, px * 1.5, abs(p.y - hh * 0.5));
+        wood *= 1.0 - 0.6 * plankGap;
+        // Handle: a rounded slot in the top plank.
+        float handle = sdRoundBox(float2(uv.x - (x0 + x1) * 0.5, p.y - hh * 0.24), float2(R * 0.16, hh * 0.08), hh * 0.08);
+        wood = mix(wood, float3(0.06, 0.04, 0.03), 1.0 - smoothstep(-px, px, handle));
+        // Corner posts.
+        float post = step(p.x, w * 0.05) + step(w * 0.95, p.x);
+        wood *= 1.0 - 0.25 * post;
+        // Top edge highlight, bottom shade.
+        wood += float3(1.0, 0.85, 0.6) * 0.12 * (1.0 - smoothstep(0.0, px * 3.0, p.y));
+        wood *= 1.0 - 0.3 * smoothstep(hh * 0.6, hh, p.y);
+        float inY = smoothstep(top - px, top + px, uv.y) * (1.0 - smoothstep(bot - px, bot + px, uv.y));
+        col = mix(col, wood, inY * inX);
+    }
+    return col;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.0 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.62;
+    float floorY = c.y + R * 1.25;
+
+    // The shop wall: warm vertical boards with a soft grain, a little lighter where the lamps hit.
+    float bx = uv.x / (R * 0.36);
+    float board = floor(bx);
+    float3 wall = mix(float3(0.17, 0.1, 0.07), float3(0.24, 0.15, 0.1), hash11(board * 1.7));
+    wall *= 0.9 + 0.1 * vnoise(float2(bx * 3.0, uv.y * 40.0 / R));
+    wall *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.06, fract(bx)) * smoothstep(1.0, 0.94, fract(bx)));
+    wall = mix(wall, BG * 0.8, 0.25);
+    float3 col = wall;
+    // The two lamps: warm pools of light on the wall.
+    float lampL = c.x - R * 2.35;
+    float lampR = c.x + R * 2.35;
+    float3 warm = float3(1.0, 0.72, 0.42);
+    float pool = exp(-length((uv - float2(lampL, c.y - R * 0.9)) * float2(1.0, 0.7)) / (R * 1.2))
+               + exp(-length((uv - float2(lampR, c.y - R * 0.9)) * float2(1.0, 0.7)) / (R * 1.2));
+    col += warm * pool * 0.22 * (0.9 + 0.2 * bass);
+    // Light cones down from the lamps.
+    for (int i = 0; i < 2; i++) {
+        float lx = i == 0 ? lampL : lampR;
+        float2 lp = uv - float2(lx, c.y - R * 2.1);
+        float cone = (1.0 - smoothstep(0.0, R * 0.08 + lp.y * 0.42, abs(lp.x))) * step(0.0, lp.y) * (1.0 - smoothstep(R * 1.6, R * 3.4, lp.y));
+        col += warm * cone * 0.07;
+        // The shade itself, a dark dome with a glowing rim.
+        float shade = sdRoundBox(lp + float2(0.0, R * 0.05), float2(R * 0.22, R * 0.07), R * 0.06);
+        col = mix(col, float3(0.08, 0.06, 0.05), 1.0 - smoothstep(-px, px, shade));
+        col += warm * 0.8 * (1.0 - smoothstep(0.0, px * 3.0, abs(lp.y - R * 0.02))) * step(abs(lp.x), R * 0.2);
+        float cord = (1.0 - smoothstep(0.0, px, abs(lp.x))) * step(lp.y, -R * 0.12);
+        col = mix(col, float3(0.05), cord * 0.8);
+    }
+    // The neon ring behind the display, in the song's colours, breathing with the bass.
+    float2 nd = uv - float2(c.x + R * 0.18, c.y - R * 0.05);
+    float ring = abs(sdRoundBox(nd, float2(R * 1.45, R * 1.15), R * 0.5));
+    float3 neon = mix(A, S, 0.5 + 0.5 * sin(atan(nd.y, nd.x) + t * 0.2));
+    float nPow = 0.75 + 0.35 * bass * k + 0.25 * kick * k;
+    col += neon * (exp(-ring / (R * 0.08)) * 0.45 + (1.0 - smoothstep(0.0, px * 2.5, ring - R * 0.012)) * 0.9) * nPow;
+
+    // Wall ledges with past sleeves face-out.
+    float ledgeY = c.y - R * 0.38;
+    float hs = R * 0.42;
+    col = wallSleeve(col, uv, float2(c.x - R * 2.05, ledgeY - hs), hs, 0.04, 0.0, px, A, S);
+    col = wallSleeve(col, uv, float2(c.x - R * 3.1, ledgeY - hs), hs, -0.03, 1.0, px, A, S);
+    col = wallSleeve(col, uv, float2(c.x + R * 2.35, ledgeY - hs), hs, -0.04, 2.0, px, A, S);
+    col = wallSleeve(col, uv, float2(c.x + R * 3.4, ledgeY - hs), hs, 0.03, 3.0, px, A, S);
+    for (int i = 0; i < 2; i++) {
+        float lx0 = i == 0 ? c.x - R * 3.7 : c.x + R * 1.75;
+        float lx1 = i == 0 ? c.x - R * 1.45 : c.x + R * 4.0;
+        float ledge = sdRoundBox(uv - float2((lx0 + lx1) * 0.5, ledgeY + R * 0.03), float2((lx1 - lx0) * 0.5, R * 0.03), R * 0.01);
+        col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, R * 0.1, ledge - R * 0.02)) * step(ledgeY, uv.y);
+        col = mix(col, float3(0.42, 0.27, 0.15) * (0.9 + 0.2 * step(uv.y, ledgeY + R * 0.01)), 1.0 - smoothstep(-px, px, ledge));
+    }
+
+    // The floor: boards running away from you in perspective, the neon and the lamps reflected in the varnish.
+    if (uv.y > floorY) {
+        float fy = (uv.y - floorY) / R;
+        float persp = 1.0 / (0.35 + fy);
+        float plank = (uv.x - c.x) / (R * 0.55) / (1.0 + fy * 1.6);
+        float pid = floor(plank);
+        float3 fl = mix(float3(0.11, 0.07, 0.05), float3(0.17, 0.11, 0.07), hash11(pid * 3.7));
+        fl *= 0.9 + 0.1 * vnoise(float2(plank * 6.0, persp * 8.0 + pid * 13.0));
+        fl *= 1.0 - 0.45 * (1.0 - smoothstep(0.0, 0.05, fract(plank)) * smoothstep(1.0, 0.95, fract(plank)));
+        // Reflections: the neon ring and the lamps' light, smeared down the boards.
+        float fade = exp(-fy * 2.2);
+        float nx = 1.0 - smoothstep(R * 1.2, R * 1.9, abs(uv.x - c.x - R * 0.18));
+        fl += neon * nx * fade * 0.12 * nPow;
+        fl += warm * fade * 0.05 * (exp(-abs(uv.x - lampL) / R) + exp(-abs(uv.x - lampR) / R));
+        fl *= 0.55 + 0.45 * exp(-fy * 0.8);
+        col = mix(col, fl, smoothstep(floorY - px, floorY + px, uv.y));
+    }
+    // A skirting board where wall meets floor.
+    col = mix(col, float3(0.07, 0.045, 0.03), (1.0 - smoothstep(R * 0.035 - px, R * 0.035 + px, abs(uv.y - floorY + R * 0.035))));
+
+    // The crates either side.
+    float crTop = c.y + R * 0.42;
+    float crBot = floorY - R * 0.02;
+    col = crate(col, uv, c.x - R * 3.85, c.x - R * 1.3, crTop, crBot, R, px, 3.0, kick * k, A, S);
+    col = crate(col, uv, c.x + R * 1.75, c.x + R * 4.3, crTop, crBot, R, px, 11.0, kick * k, A, S);
+
+    // The display: a small wooden stand on the floor, the sleeve on it, the record half out.
+    float2 standP = uv - float2(c.x, floorY - R * 0.11);
+    float stand = sdRoundBox(standP, float2(R * 0.75, R * 0.11), R * 0.02);
+    col *= 1.0 - 0.45 * (1.0 - smoothstep(-px, R * 0.12, sdRoundBox(standP - float2(R * 0.05, R * 0.12), float2(R * 0.78, R * 0.04), R * 0.04)));
+    col = mix(col, mix(float3(0.3, 0.18, 0.1), float3(0.45, 0.29, 0.16), smoothstep(R * 0.11, -R * 0.11, standP.y)), 1.0 - smoothstep(-px, px, stand));
+
+    float hsz = R * 0.95;
+    float sway = -0.035 + 0.012 * sin(t * 0.5);
+    float2 sc = float2(c.x - R * 0.2, floorY - R * 0.22 - hsz - bass * k * R * 0.02);
+    float2 d = rot(sway) * (uv - sc);
+    // The record, slid out to the right (further while it plays).
+    float2 rc = float2(hsz * (0.32 + 0.3 * play), -hsz * 0.02);
+    float Rv = hsz * 0.93;
+    float2 rv = d - rc;
+    float rr = length(rv);
+    float spin = 3.5 * uPlayT;
+    if (rr < Rv + px * 2.0) {
+        float rn = rr / Rv;
+        // Grooves: fine rings (faded out when they'd be finer than a pixel) with the track gaps between songs.
+        float gF = 40.0 / Rv;
+        float gC = sat(1.0 - gF * px * 1.5);
+        float groove = 0.5 + 0.5 * sin(rr * gF * TAU);
+        float tracks = 0.0;
+        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.52));
+        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.64));
+        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.77));
+        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.9));
+        float3 vinyl = float3(0.035, 0.035, 0.04) * (0.85 + 0.3 * groove * gC) + float3(0.05) * tracks;
+        // The shine stays where the light is (a bow tie across the record), tinted by the neon.
+        float ang = atan(rv.y, rv.x);
+        float bow = pow(abs(cos(ang - 0.7)), 24.0) * smoothstep(0.36, 0.5, rn) * (1.0 - smoothstep(0.96, 1.0, rn));
+        vinyl += (float3(0.35) + neon * 0.25) * bow * (0.6 + 0.4 * groove * gC);
+        vinyl += float3(0.06) * pow(abs(cos(ang + 0.9)), 6.0) * smoothstep(0.4, 1.0, rn);
+        // Rim.
+        vinyl += float3(0.15) * (1.0 - smoothstep(0.0, px * 2.0, abs(rr - Rv + px)));
+        // The label: the cover, turning; a ring round it and the spindle hole.
+        float lr = Rv * 0.34;
+        if (rr < lr + px) {
+            float2 lq = rot(spin) * rv;
+            float3 lab = sharpCover(lq / (2.0 * lr) * 0.92 + 0.5, A, S);
+            lab = mix(lab, lab * 0.7, smoothstep(lr * 0.9, lr, rr));
+            lab = mix(lab, float3(0.02), 1.0 - smoothstep(Rv * 0.022 - px, Rv * 0.022 + px, rr));
+            vinyl = mix(vinyl, lab, 1.0 - smoothstep(lr - px, lr + px, rr));
+        }
+        col = mix(col, vinyl, 1.0 - smoothstep(Rv - px, Rv + px, rr));
+    }
+    // The sleeve in front of the record: the cover, with a shadow, worn edges and a gloss.
+    col *= 1.0 - 0.5 * (1.0 - smoothstep(-px, hsz * 0.12, sdRoundBox(d - float2(hsz * 0.05, hsz * 0.04), float2(hsz), hsz * 0.02)));
+    float sleeve = sdRoundBox(d, float2(hsz), hsz * 0.02);
+    if (sleeve < px) {
+        float2 q = d / (2.0 * hsz) + 0.5;
+        float3 cv = sharpCover(q, A, S);
+        cv *= 0.93 + 0.07 * vnoise(d * 160.0 / hsz);
+        cv = mix(cv, float3(0.93, 0.9, 0.84), smoothstep(-hsz * 0.035, 0.0, sleeve) * 0.4);
+        // The record's round bulge pressing through the sleeve on the right.
+        float bulge = abs(length(d - rc) - Rv);
+        cv *= 1.0 - 0.06 * (1.0 - smoothstep(0.0, hsz * 0.03, bulge)) * step(0.0, d.x - rc.x + Rv * 0.2);
+        // A soft gloss across the top-left.
+        cv += float3(1.0) * 0.1 * smoothstep(0.3, 0.0, abs(q.x + q.y - 0.6)) * (0.8 + 0.2 * sin(t * 0.3));
+        // The lamp's warmth on it.
+        cv *= float3(1.0, 0.96, 0.9);
+        col = mix(col, cv, 1.0 - smoothstep(-px, px, sleeve));
+    }
+
+    // Dust drifting in the lamplight.
+    float motes = dots(uv, 26.0, float2(t * 0.01, -t * 0.015), 0.06, 0.06, 2.0) + dots(uv * 1.7, 22.0, float2(-t * 0.008, -t * 0.011), 0.05, 0.07, 5.0);
+    col += float3(1.0, 0.9, 0.7) * motes * 0.2 * (0.3 + pool * 2.0);
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val COVER_CUBE = """
+// Cover cube (music): a big cube floating and slowly turning in a soft void, the current cover on
+// the face turned towards you and earlier songs' covers on the other faces. It turns faster when the
+// song gets busy, bounces a little on the kick, casts a soft shadow on the floor and is ringed by a
+// glowing equalizer halo.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.6;
+    // A bright, colourful backdrop in the cover's colours.
+    float3 col = mix(mix(A, S, 0.35) * 0.45 + BG * 0.6, BG * 0.55, sat(length((uv - c) / (R * 4.0))));
+    // Halo: an equalizer ring behind the cube.
+    float2 hd = (uv - c) * float2(1.0, 1.0);
+    float ang = atan(hd.y, hd.x);
+    float m = abs(ang) / PI;
+    float e = eqAt(m) * play;
+    float rr = length(hd);
+    float ringR = R * 1.75;
+    // Soft-edged bars (a pixel of fade on every side) so the ring doesn't shimmer as it pulses.
+    float barW = px / max(rr * TAU / 64.0, px);
+    float bar = smoothstep(ringR - px, ringR + px, rr) * (1.0 - smoothstep(ringR + R * (0.05 + 0.5 * e * k) - px, ringR + R * (0.05 + 0.5 * e * k) + px, rr))
+        * (1.0 - smoothstep(0.3 - barW, 0.3 + barW, abs(fract(ang / TAU * 64.0) - 0.5)));
+    col = mix(col, mix(A, S, m) * (0.7 + 0.6 * e), bar);
+    // Shadow on the floor.
+    float2 sh = (uv - float2(c.x, c.y + R * 1.6)) / float2(R * 1.2, R * 0.18);
+    col *= 1.0 - 0.4 * (1.0 - smoothstep(0.6, 1.0, length(sh))) * (1.0 - 0.3 * kick);
+
+    // Ray-cast the cube (rotation about y, slight tilt about x).
+    float spin = 0.2 * t + 0.45 * (uMidT + uHighT);
+    float bob = kick * k * 0.06;
+    float3 ro = float3(0.0, 0.0, -4.0);
+    float3 rd = normalize(float3((uv - c - float2(0.0, -bob * R)) / R, 3.4));
+    float ca = cos(spin);
+    float sa = sin(spin);
+    float cb = cos(0.35);
+    float sb = sin(0.35);
+    // Rotate the ray into the cube's space.
+    float3 o = ro;
+    float3 dvec = rd;
+    o = float3(ca * o.x + sa * o.z, o.y, -sa * o.x + ca * o.z);
+    dvec = float3(ca * dvec.x + sa * dvec.z, dvec.y, -sa * dvec.x + ca * dvec.z);
+    o = float3(o.x, cb * o.y - sb * o.z, sb * o.y + cb * o.z);
+    dvec = float3(dvec.x, cb * dvec.y - sb * dvec.z, sb * dvec.y + cb * dvec.z);
+    float3 inv = 1.0 / dvec;
+    float3 t0 = (-1.0 - o) * inv;
+    float3 t1 = (1.0 - o) * inv;
+    float3 tmin = min(t0, t1);
+    float3 tmax = max(t0, t1);
+    float tn = max(max(tmin.x, tmin.y), tmin.z);
+    float tf = min(min(tmax.x, tmax.y), tmax.z);
+    // How far inside the silhouette the ray is (the ray's path through the cube shrinks to 0 at the edge):
+    // a soft, anti-aliased outline instead of a stair-stepped one that crawls as the cube turns.
+    float edgePx = 4.0 / (3.4 * R * uRes.y);
+    float cover = sat((tf - tn) / (edgePx * 2.5));
+    if (cover > 0.0 && tf > 0.0) {
+        float3 p = o + dvec * tn;
+        float3 ap = abs(p);
+        float2 fq = float2(0.0);
+        float face = 0.0;
+        float3 nrm = float3(0.0);
+        if (ap.x > ap.y && ap.x > ap.z) { fq = p.zy * float2(sign(p.x), 1.0); face = p.x > 0.0 ? 1.0 : 3.0; nrm = float3(sign(p.x), 0.0, 0.0); }
+        else if (ap.y > ap.z) { fq = p.xz; face = 4.0; nrm = float3(0.0, sign(p.y), 0.0); }
+        else { fq = p.xy * float2(-sign(p.z), 1.0); face = p.z < 0.0 ? 0.0 : 2.0; nrm = float3(0.0, 0.0, sign(p.z)); }
+        float2 q = fq * 0.5 + 0.5;
+        // Every face shows the song playing now (the cube is about this cover, not the history).
+        float3 cv = sharpCover(q, A, S);
+        // A little more colour: lift saturation round the face's own grey.
+        float lum = dot(cv, float3(0.299, 0.587, 0.114));
+        cv = mix(float3(lum), cv, 1.25) * 1.08;
+        // Lighting: a key light from the top left.
+        float3 L = normalize(float3(-0.5, -0.6, -0.6));
+        float3 Ln = float3(ca * L.x + sa * L.z, L.y, -sa * L.x + ca * L.z);
+        float dif = 0.8 + 0.35 * sat(dot(nrm, -Ln));
+        cv *= dif;
+        // Edges.
+        float2 eq = abs(fq);
+        cv = mix(cv, float3(1.0), smoothstep(0.96, 1.0, max(eq.x, eq.y)) * 0.25);
+        col = mix(col, cv, cover);
+    }
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val COVER_FLOAT = """
+// Cover float (music): the album cover floating in a soft studio light, tilting in 3D as if hung on
+// a thread - it leans with the bass, turns back and forth slowly, bobs up and down - with a glossy
+// mirrored reflection beneath it, a band of light gliding across its glass, a glow in its own
+// colours behind it and a few slow particles in the cover's colours drifting through the light.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.72;
+    float3 col = coverField(uv, asp, t, bass, 0.5, BG, A, S);
+    col += mix(A, S, 0.5) * exp(-length(uv - c) / R * 1.2) * (0.18 + 0.25 * bass);
+    float floorY = c.y + R * 1.18;
+
+    // Tilt angles: slow sway plus a lean on the bass.
+    float ay = 0.35 * sin(t * 0.33) + 0.12 * bass * k;
+    float ax = 0.12 * sin(t * 0.21 + 1.0) - 0.06 * kick * k;
+    float bob = 0.02 * sin(t * 0.7) * R / 0.2;
+
+    // Ray-plane intersection for a tilted square card.
+    for (int pass = 0; pass < 2; pass++) {
+        float2 p = uv;
+        float refl = float(pass);
+        if (pass == 1) {
+            if (uv.y < floorY) continue;
+            p.y = 2.0 * floorY - uv.y;
+        }
+        float3 ro = float3(0.0, 0.0, -3.0);
+        float3 rd = normalize(float3((p - c - float2(0.0, bob)) / R, 2.4));
+        float3 n = float3(sin(ay) * cos(ax), -sin(ax), -cos(ay) * cos(ax));
+        float3 ux = normalize(float3(cos(ay), 0.0, sin(ay)));
+        float3 uy = normalize(cross(n, ux));
+        float dn = dot(rd, n);
+        if (abs(dn) < 1e-3) continue;
+        float tt = dot(-ro, n) / dn;
+        float3 hit = ro + rd * tt;
+        float2 q = float2(dot(hit, ux), dot(hit, uy));
+        float box = max(abs(q.x), abs(q.y)) - 1.0;
+        if (box < 0.0) {
+            float2 cq = float2(q.x, -q.y) * 0.5 + 0.5;
+            float3 cv = sharpCover(cq, A, S);
+            // Light band gliding across the glass, brighter facing the light.
+            cv += float3(1.0) * 0.18 * pow(sat(1.0 - abs(cq.x + cq.y - fract(t * 0.08) * 3.0 + 0.5) * 3.5), 3.0);
+            cv *= 0.8 + 0.25 * sat(dot(n, normalize(float3(-0.4, -0.5, -1.0))));
+            float edge = smoothstep(-0.03, 0.0, box);
+            cv = mix(cv, float3(1.0), edge * 0.35);
+            if (pass == 0) col = cv;
+            else col = mix(col, cv, exp(-(uv.y - floorY) / (R * 0.5)) * 0.3);
+        } else if (pass == 0) {
+            // Soft shadow of the card on the background (offset down-right).
+            col *= 1.0 - 0.18 * (1.0 - smoothstep(0.0, 0.25, box));
+        }
+    }
+    // Floor line glow.
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - floorY) * 300.0) * 0.25;
+    // Particles in the cover's colours.
+    col += mix(A, S, fract(uv.x * 3.0)) * dots(uv, 18.0, float2(t * 0.012, -t * 0.02), 0.08, 0.07, 6.0) * (0.3 + 0.5 * bass);
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val HOLO_COVER = """
+// Holo cover (music): the album cover as a holographic foil trading card, turning slowly from side to
+// side in perspective. The song's name and the artist are printed in the strip under the art in the
+// same foil (uLabel: NowPlayingScene.songLabel, clean style), so the rainbow sheen sweeps across them
+// too as the card turns. The foil pattern (fine diagonal lines and stars) catches the light on the
+// kick, the border glints, sparkles twinkle with the highs, and the background is a soft iridescent
+// wash in the cover's colours.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+float3 rainbow(float x) { return 0.5 + 0.5 * cos(TAU * (x + float3(0.0, 0.33, 0.67))); }
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.8;
+    // Iridescent background.
+    float3 col = mix(BG * 0.7, mix(A, S, 0.5) * 0.35, 0.5 + 0.5 * sin(uv.x * 2.0 + uv.y * 3.0 + t * 0.2));
+    col += rainbow(uv.x * 0.4 + uv.y * 0.3 + t * 0.03) * 0.05;
+
+    // The card turns a little from side to side (about 20 degrees) and nods a touch, seen in
+    // perspective: the near edge grows, the far one shrinks. Each pixel's ray is followed back to the
+    // card's plane to find where on the card it lands.
+    float yaw = 0.34 * sin(t * 0.33) + 0.04 * bass * k;
+    float pitch = 0.06 * sin(t * 0.21 + 1.3);
+    float cy = cos(yaw);
+    float sy = sin(yaw);
+    float cp = cos(pitch);
+    float sp = sin(pitch);
+    float3 eu = float3(cy, sy * sp, -sy * cp);
+    float3 ev = float3(0.0, cp, sp);
+    float3 nrm = float3(sy, -cy * sp, cy * cp);
+    float D = R * 6.0;
+    float3 eye = float3(0.0, 0.0, -D);
+    float3 dir = float3(uv - c, D);
+    float lam = D * nrm.z / dot(dir, nrm);
+    float3 P = eye + dir * lam;
+    float2 d = float2(dot(P, eu), dot(P, ev));
+    float2 hw = float2(R * 0.76, R);
+    // Soft shadow under the card (flat, a little behind it).
+    float2 dsh = uv - c - float2(R * 0.04, R * 0.06);
+    col *= 1.0 - 0.35 * (1.0 - smoothstep(-0.01, 0.06, sdRoundBox(dsh, hw * float2(abs(cy), 1.0), R * 0.06)));
+    float card = sdRoundBox(d, hw, R * 0.06);
+    // The card's pixels are stretched where it turns away: keep the edge one screen pixel soft.
+    float pxc = px / max(abs(cy), 0.4);
+    if (card < pxc) {
+        float2 q = d / (2.0 * hw) + 0.5;
+        // Border with the art window inside it, and the name strip under the art.
+        float side = R * 0.66;
+        float2 wc = float2(0.0, -R * 0.12);
+        float win = sdRoundBox(d - wc, float2(side), R * 0.02);
+        float stripTop = wc.y + side + R * 0.04;
+        float stripBot = hw.y - R * 0.07;
+        float strip = sdRoundBox(d - float2(0.0, (stripTop + stripBot) * 0.5), float2(side, (stripBot - stripTop) * 0.5), R * 0.02);
+        float3 base = mix(A, S, q.y) * 0.8 + 0.15;
+        // The foil's light: a rainbow band that slides across as the card turns.
+        float band = q.x * 0.8 + q.y * 0.6 + yaw * 2.4 + pitch * 1.5 - t * 0.05;
+        float sheen = pow(0.5 + 0.5 * sin(band * 6.0), 4.0);
+        float3 foil = rainbow(band * 1.3);
+        if (win < 0.0) base = sharpCover((d - wc) / (2.0 * side) + 0.5, A, S);
+        if (strip < 0.0) {
+            // The name strip: a dark foil panel; the title and artist in bright holographic ink.
+            float3 panel = mix(BG, mix(A, S, q.x), 0.35) * 0.55;
+            float2 lq = float2((d.x + side) / (2.0 * side), (d.y - stripTop) / (stripBot - stripTop));
+            // Four taps a pixel apart: the label is drawn larger than the strip, this keeps it smooth.
+            float2 lpx = float2(0.5 / uLabelSize.x, 0.5 / uLabelSize.y);
+            float ink = 0.25 * (labelInk(lq + lpx * float2(-1.0, -1.0)) + labelInk(lq + lpx * float2(1.0, -1.0))
+                + labelInk(lq + lpx * float2(-1.0, 1.0)) + labelInk(lq + lpx * float2(1.0, 1.0)));
+            // An embossed edge: the ink's shadow a touch down-right.
+            float shade = labelInk(lq + float2(0.006, 0.03));
+            panel *= 1.0 - 0.45 * shade * (1.0 - ink);
+            float3 inkCol = mix(float3(0.93, 0.94, 0.98), rainbow(band * 1.6 + lq.x * 0.5), 0.55);
+            inkCol *= 0.8 + 0.45 * sheen + 0.25 * kick * k;
+            base = mix(panel, inkCol, ink);
+        }
+        // Foil pattern: fine diagonal lines + little stars.
+        float lines = step(0.5, fract((d.x + d.y) * 220.0));
+        float2 sg = fract(q * float2(9.0, 12.0)) - 0.5;
+        float star = step(abs(sg.x) + abs(sg.y), 0.12);
+        float pattern = max(lines * 0.4, star);
+        float shine = sheen * (0.35 + 0.6 * kick * k) + pattern * 0.12 * (0.5 + kick);
+        base = mix(base, base * 0.55 + foil * 0.8, shine * 0.8);
+        // Sparkles on the highs.
+        float sp2 = dots(q * 3.0, 14.0, float2(0.0), 0.15 * (0.3 + uHigh * play), 0.08, 9.0);
+        base += float3(1.0) * sp2 * 0.8;
+        // The side turned towards the light is a little brighter.
+        base *= 0.92 + 0.16 * sat(0.5 + yaw * 1.4 * (q.x - 0.5) * 2.0);
+        col = mix(col, base, 1.0 - smoothstep(-pxc, pxc, card));
+        // Glinting border.
+        col += rainbow(band + 0.3) * (1.0 - smoothstep(0.0, pxc * 3.0, abs(card))) * (0.4 + 0.6 * sheen);
+    }
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val COVER_HALO = """
+// Cover halo (music): the cover as a round disc in the middle, framed by three rings that all move
+// with the song - an inner waveform that ripples round the edge like a frame, a circular spectrum of
+// bars around it (bass at the top), and an outer ring of dots that flash on the kick. The border
+// pulses with the bass and the background glows in the cover's colours.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.52;
+    float3 col = coverField(uv, asp, t, bass, 0.45, BG, A, S);
+    float2 d = uv - c;
+    float r = length(d);
+    float ang = atan(d.x, -d.y);                 // 0 at the top, clockwise
+    float m = abs(ang) / PI;                      // 0 top .. 1 bottom (mirrored left / right)
+    col += mix(A, S, 0.5) * exp(-max(r - R, 0.0) / R * 3.0) * (0.15 + 0.3 * bass);
+
+    // Circular spectrum.
+    float e = eqAt(m) * play;
+    float n = 96.0;
+    float lane = abs(fract((ang / TAU + 0.5) * n) - 0.5);
+    float r0 = R * 1.22;
+    float h = R * (0.04 + 0.6 * e * (0.5 + 0.7 * k));
+    float bar = step(lane, 0.32) * step(r0, r) * step(r, r0 + h);
+    col = mix(col, mix(mix(A, S, m), float3(1.0), sat((r - r0) / max(h, 0.001)) * 0.4), bar);
+    // Outer dot ring flashing on the kick.
+    float dr = R * 1.22 + R * 0.75;
+    float dots_ = step(length(float2(fract((ang / TAU + 0.5) * 48.0) - 0.5, (r - dr) / (R * 0.035))), 0.35);
+    col += mix(S, float3(1.0), 0.5) * dots_ * (0.2 + 0.9 * kick);
+    // Waveform frame: a ring that ripples with the mids and highs.
+    float wav = R * (1.08 + 0.04 * sin(ang * 12.0 + t * 6.0) * (0.2 + uMid * play) + 0.025 * sin(ang * 31.0 - t * 9.0) * uHigh * play);
+    col += mix(A, S, 0.3) * glow(abs(r - wav), 0.0018) * (0.6 + 0.8 * bass);
+    // The cover disc, its border pulsing.
+    float edge = R * (1.0 + 0.02 * bass * k);
+    if (r < edge) {
+        float3 cv = sharpCover(rot(0.05 * sin(t * 0.3)) * d / (2.0 * R) + 0.5, A, S);
+        col = mix(col, cv, 1.0 - smoothstep(edge - px, edge, r));
+    }
+    col += float3(1.0) * (1.0 - smoothstep(0.0, px * 2.5, abs(r - edge))) * (0.5 + 0.5 * kick);
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val BIG_TYPE = """
+// Big type (music): the song's title written huge across the background in the cover's colours,
+// sliding slowly past in several rows at different speeds (the artist in smaller rows between),
+// the cover in front with a hard shadow like a poster. The letters swell with the bass and flash
+// on the kick; the rows run faster when the song gets busy.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float busy = (uMid + uHigh) * 0.5 * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.66;
+    float3 col = mix(BG * 0.8, mix(BG, A, 0.25), uv.y);
+
+    // Rows of giant type: each row samples the label picture (title on top half, artist below).
+    float rowH = 0.2;
+    float row = floor(uv.y / rowH);
+    float ry = fract(uv.y / rowH);
+    float isTitle = step(0.5, fract(row * 0.5 + 0.25));
+    float speed = (0.03 + 0.06 * hash11(row)) * (1.0 + 2.0 * busy) * (mod(row, 2.0) < 0.5 ? 1.0 : -1.0);
+    float scale = 1.0 + 0.04 * bass * k;
+    float lx = fract((uv.x / (rowH * 2.29) + t * speed + hash11(row * 3.0)) / scale);
+    // Title is in the upper ~55 % of the label picture, the artist below it.
+    float ly = isTitle > 0.5 ? mix(0.08, 0.55, (ry - 0.1) / 0.8) : mix(0.62, 0.95, (ry - 0.2) / 0.6);
+    float ink = labelInk(float2(lx, ly)) * step(0.05, ry) * step(ry, 0.95);
+    float3 tc = mix(A, S, isTitle) * (0.55 + 0.35 * isTitle) + float3(1.0) * kick * 0.25 * k;
+    col = mix(col, tc, ink * (0.55 + 0.25 * isTitle));
+
+    // The cover in front, with a hard offset shadow like a poster.
+    float2 d = uv - c;
+    float sh = sdRoundBox(d - float2(R * 0.07, R * 0.07), float2(R), 0.0);
+    col = mix(col, BG * 0.25, step(sh, 0.0) * 0.8);
+    float box = sdRoundBox(d, float2(R), 0.0);
+    if (box < px) col = mix(col, sharpCover(d / (2.0 * R) + 0.5, A, S), 1.0 - smoothstep(-px, px, box));
+    col = mix(col, float3(0.05), step(abs(box), 0.004));
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val PIXEL_COVER = """
+// Pixel cover (music): the album cover turned into chunky pixel art - fewer, bigger pixels and a
+// small retro palette - on a dark pixel grid. Pixels shake loose and fall away on the kick and click
+// back into place, the pixel size breathes with the bass, a pixel equalizer runs along the bottom
+// of the picture and pixel stars twinkle around it.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.74;
+    float3 col = BG * 0.5;
+    float2 g = floor(uv * 160.0);
+    col *= 0.9 + 0.1 * mod(g.x + g.y, 2.0);
+    // Pixel stars.
+    float st = step(0.994, hash12(g)) * step(0.5, fract(t * 0.7 + hash12(g + 3.0)));
+    col = mix(col, mix(S, float3(1.0), 0.5), st);
+
+    // The pixel grid of the cover: 24 cells across (fewer when the bass is big).
+    float n = floor(28.0 - 8.0 * bass * k);
+    float2 d = uv - c;
+    float2 q = d / (2.0 * R) + 0.5;
+    float2 cell = floor(q * n);
+    // Falling pixels on the kick: some cells drop and drift down, then come back.
+    float h = hash12(cell + 7.0);
+    float fall = step(0.82, h) * kick * k;
+    float2 qq = q - float2(0.0, fall * 0.25 * (1.0 + h));
+    float2 cell2 = floor(qq * n);
+    float2 cf = fract(qq * n);
+    float inP = step(0.0, qq.x) * step(qq.x, 1.0) * step(0.0, qq.y) * step(qq.y, 1.0);
+    float3 pc = sharpCover((cell2 + 0.5) / n, A, S);
+    pc = floor(pc * 4.0 + 0.5) / 4.0;            // 4 levels per channel: a small retro palette
+    pc *= 0.88 + 0.12 * step(0.12, min(cf.x, cf.y));
+    col = mix(col, pc, inP);
+    // Pixel equalizer under the picture.
+    float ey = (uv.y - (c.y + R * 1.06)) / (R * 0.3);
+    float ex = floor(q.x * 16.0);
+    float e = eqAt(abs(ex / 15.0 - 0.5) * 2.0) * play;
+    float lvl = floor((1.0 - ey) * 6.0);
+    float onBar = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, ey) * step(ey, 1.0) * step(lvl, e * 6.0) * step(0.18, fract(q.x * 16.0)) * step(0.2, fract((1.0 - ey) * 6.0));
+    col = mix(col, mix(A, S, lvl / 6.0), onBar);
+    // Frame.
+    float box = max(abs(d.x), abs(d.y)) - R;
+    col = mix(col, mix(A, float3(1.0), 0.5), step(abs(box - 0.008), 0.006));
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val POLAROID = """
+// Polaroid (music): instant photos pinned to a cork board. The current cover is a polaroid in the
+// middle with the song's title handwritten on its white strip, slightly crooked and swinging on its
+// pin with the beat; photos of the songs you played before are pinned around it at angles. A warm
+// desk lamp lights the board, the photos flutter a little on the kick.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+// A polaroid at centre pc, half width w, rotated by a: returns (uv in the photo window (or -1), on frame).
+float3 polaroidAt(float2 p, float2 pc, float w, float a) {
+    float2 q = rot(a) * (p - pc);
+    float2 hw = float2(w, w * 1.18);
+    float frame = step(abs(q.x), hw.x) * step(abs(q.y), hw.y);
+    float2 wq = (q - float2(0.0, -w * 0.15)) / (w * 0.86 * 2.0) + 0.5;
+    float inW = step(0.0, wq.x) * step(wq.x, 1.0) * step(0.0, wq.y) * step(wq.y, 1.0);
+    return float3(inW > 0.5 ? wq : float2(-1.0), frame);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.62;
+    // Cork board.
+    float3 cork = mix(float3(0.62, 0.45, 0.28), float3(0.72, 0.55, 0.36), vnoise(uv * 160.0));
+    cork *= 0.85 + 0.15 * vnoise(uv * 30.0);
+    float3 col = cork;
+    // Lamp light from the top left.
+    col *= 0.55 + 0.6 * exp(-length(uv - float2(c.x - R * 1.5, c.y - R * 2.0)) * 1.4);
+
+    // Earlier photos around.
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float ang = fi * 1.05 + 0.4;
+        float2 pc = c + float2(cos(ang) * R * 2.3, sin(ang) * R * 1.35);
+        float a = (hash11(fi * 3.3) - 0.5) * 0.5 + kick * k * 0.03 * sin(fi * 5.0);
+        float w = R * 0.55;
+        // Shadow.
+        float3 sp = polaroidAt(uv - float2(0.006, 0.01), pc, w, a);
+        col *= 1.0 - 0.3 * sp.z;
+        float3 pp = polaroidAt(uv, pc, w, a);
+        if (pp.z > 0.5) {
+            col = float3(0.96, 0.95, 0.92);
+            if (pp.x >= 0.0) col = pastCover(fi, pp.xy, A, S) * 0.95;
+        }
+        // Pin.
+        float pin = length(uv - pc - rot(-a) * float2(0.0, -w * 1.1)) - 0.008;
+        col = mix(col, mix(A, S, hash11(fi)) * 0.9, step(pin, 0.0));
+    }
+    // The current photo, swinging on its pin.
+    float swing = 0.06 * sin(t * 1.2) * (0.3 + 0.7 * play) + 0.05 * kick * k * sin(t * 9.0);
+    float2 pin = c + float2(0.0, -R * 1.18);
+    float2 p = pin + rot(swing) * (uv - pin);
+    float3 sp = polaroidAt(p - float2(0.01, 0.016), c, R, -0.03);
+    col *= 1.0 - 0.35 * sp.z;
+    float3 pp = polaroidAt(p, c, R, -0.03);
+    if (pp.z > 0.5) {
+        col = float3(0.97, 0.96, 0.93);
+        if (pp.x >= 0.0) col = sharpCover(pp.xy, A, S);
+        // Handwritten title on the strip.
+        float2 q = rot(-0.03) * (p - c);
+        float2 lq = float2(q.x / (R * 1.7) + 0.5, (q.y - R * 0.86) / (R * 0.5) + 0.5);
+        col = mix(col, float3(0.12, 0.12, 0.3), labelInk(lq) * 0.9);
+    }
+    col = mix(col, mix(A, float3(1.0), 0.2), step(length(uv - pin), 0.012));
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val RETRO_TV = """
+// Retro TV (music): the album cover playing on an old CRT television in a dark room - curved glass,
+// scanlines, colour fringes and a soft bloom - the picture rolling and glitching for a moment on the
+// kick, the TV's light flickering over the walls with the music, a VU-style volume bar on screen
+// that follows the level, and the static hiss between songs.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 6.0) * play;
+    float loud = sat((uEqA.x + uEqA.y + uEqB.x) / 3.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3) * 0.72;
+    float2 sh = float2(R * 1.25, R);
+    // Room: dark, lit by the TV.
+    float3 col = BG * 0.35;
+    col += mix(float3(0.6, 0.7, 1.0), mix(A, S, 0.5), 0.5) * exp(-length((uv - c) * float2(0.5, 0.9)) / R * 0.9) * (0.15 + 0.3 * loud);
+    // Cabinet.
+    float cab = sdRoundBox(uv - c - float2(R * 0.18, 0.0), sh + float2(R * 0.45, R * 0.18), R * 0.12);
+    col = mix(col, mix(float3(0.22, 0.15, 0.1), BG * 0.6, 0.3), step(cab, 0.0));
+    float bez = sdRoundBox(uv - c, sh + R * 0.06, R * 0.12);
+    col = mix(col, float3(0.08), step(bez, 0.0));
+    // Knobs.
+    for (int i = 0; i < 2; i++) {
+        float kd = length(uv - c - float2(sh.x + R * 0.32, -R * 0.35 + float(i) * R * 0.45)) - R * 0.1;
+        col = mix(col, float3(0.7, 0.68, 0.6), step(kd, 0.0));
+    }
+    // The screen: curved glass.
+    float2 q = (uv - c) / sh;
+    float2 dq = q * (1.0 + 0.08 * dot(q, q));
+    float inS = step(abs(dq.x), 1.0) * step(abs(dq.y), 1.0) * step(sdRoundBox(uv - c, sh, R * 0.1), 0.0);
+    if (inS > 0.5) {
+        // Rolling on the kick: the picture jumps up and tears a little.
+        float roll = kick * k * 0.15;
+        float tear = step(0.92, hash11(floor(dq.y * 30.0) + floor(t * 20.0))) * kick * k * 0.08;
+        float2 sq = float2(dq.x + tear, dq.y + roll);
+        sq.y = sq.y - 2.0 * floor((sq.y + 1.0) / 2.0);
+        float2 cq = float2(sq.x * 0.5 / 1.25 * 1.25, sq.y) * 0.5 + 0.5;
+        cq = float2(sq.x * 0.5 + 0.5, sq.y * 0.5 + 0.5);
+        cq.x = (cq.x - 0.5) * 1.25 + 0.5;              // keep the cover square on the 5:4 screen
+        float inside = step(0.0, cq.x) * step(cq.x, 1.0);
+        float3 pic = float3(sharpCover(cq + float2(0.004, 0.0), A, S).r, sharpCover(cq, A, S).g, sharpCover(cq - float2(0.004, 0.0), A, S).b);
+        pic = mix(BG * 0.2, pic, inside);
+        // Volume bar at the bottom of the screen.
+        float vb = step(0.82, sq.y) * step(sq.y, 0.88) * step(-0.8, sq.x) * step(sq.x, -0.8 + 1.6 * loud);
+        float vbSeg = step(0.25, fract((sq.x + 0.8) * 10.0));
+        pic = mix(pic, mix(float3(0.3, 1.0, 0.4), float3(1.0, 0.3, 0.2), step(0.6, (sq.x + 0.8) / 1.6)), vb * vbSeg);
+        // Scanlines, mask, bloom, vignette, static.
+        pic *= 0.78 + 0.22 * step(0.5, fract(fc.y / 3.0));
+        pic += pic * pic * 0.25;
+        pic *= 1.0 - 0.3 * dot(dq, dq) * 0.5;
+        float n = hash12(floor(fc / 2.0) + floor(t * 50.0));
+        pic = mix(pic, float3(n), (1.0 - play) * 0.6 + kick * k * 0.08);
+        col = pic;
+        // Glass reflection.
+        col += float3(1.0) * 0.06 * smoothstep(0.3, 0.0, length(dq - float2(-0.5, -0.5)));
+    }
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val JUKEBOX = """
+// Jukebox (music): a lacquered retro jukebox in a dark room. Neon tubes trace its arched outline and
+// chase round in the cover's colours on the beat, the album cover sits behind curved glass in a
+// chrome frame, bubble tubes glow and bubble faster with the music, the chrome grille is backlit and
+// pulses with the bass, and the polished floor reflects it all.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float high = uHigh * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3);
+    float aa = px / R;
+    float2 p = (uv - c) / R;                 // jukebox units: about -1..1 tall
+    float fy = c.y + R * 0.98;              // the floor line
+
+    // Room: a dark wall with a warm pool of light behind the jukebox, a polished floor.
+    float3 col = mix(BG * 0.35, BG * 0.18, smoothstep(0.0, 1.0, uv.y));
+    col += mix(A, S, 0.5) * exp(-length((uv - c) * float2(0.55, 0.9)) / R * 1.1) * (0.22 + 0.25 * bass * k);
+    if (uv.y > fy) {
+        float fl = uv.y - fy;
+        col = mix(BG * 0.22, BG * 0.12, smoothstep(0.0, 0.3, fl));
+        // Reflection: the glow and a blurred copy of the body's colours, fading with distance.
+        col += mix(A, S, 0.5) * exp(-abs(uv.x - c.x) / R * 1.8) * exp(-fl * 9.0) * (0.25 + 0.3 * bass * k);
+        col += float3(1.0) * exp(-abs(uv.x - c.x) / R * 4.0) * exp(-fl * 40.0) * 0.05;
+    }
+
+    // Cabinet: a rounded box with an elliptical arch on top.
+    float box = sdRoundBox(p - float2(0.0, 0.2), float2(0.62, 0.78), 0.06);
+    float arch = (length((p - float2(0.0, -0.55)) / float2(0.62, 0.5)) - 1.0) * 0.5;
+    float shape = min(box, arch);
+    // Contact shadow on the floor.
+    col *= 1.0 - 0.5 * exp(-abs(uv.y - fy) * 60.0) * (1.0 - smoothstep(0.0, R * 0.7, abs(uv.x - c.x)));
+    float inBody = 1.0 - smoothstep(-aa, aa, shape);
+    float3 lacq = mix(float3(0.10, 0.03, 0.03), mix(float3(0.42, 0.12, 0.07), A * 0.5, 0.25), smoothstep(-0.7, 0.7, -p.x * 0.5 - p.y * 0.4));
+    lacq += float3(1.0, 0.9, 0.8) * exp(-abs(p.x + 0.36) * 22.0) * 0.08;      // a long vertical sheen
+    lacq *= 0.85 + 0.15 * smoothstep(-1.0, 1.0, -p.y);
+    col = mix(col, lacq, inBody);
+    // Rim light along the outline.
+    col += mix(A, float3(1.0), 0.3) * exp(-abs(shape) / (aa * 3.0)) * 0.25;
+
+    // Neon tubes following the outline (inside it), colour flowing along the arch, chasing on the beat.
+    float a = atan(p.x, -(p.y + 0.2));
+    float along = a / PI * 0.5 + 0.5;
+    float seg = floor(along * 24.0);
+    float chase = 0.55 + 0.45 * step(0.5, fract(seg * 0.25 - (t - uBeatAge) * 2.0 * play - t * 0.15));
+    float3 lightC = mix(A, S, 0.5 + 0.5 * sin(along * 6.0 + t * 0.4));
+    for (int i = 0; i < 2; i++) {
+        float off = i == 0 ? 0.07 : 0.15;
+        float w = i == 0 ? 0.02 : 0.013;
+        float dn = abs(shape + off);
+        float lim = step(p.y, 0.48);
+        float core = (1.0 - smoothstep(w - aa, w + aa, dn)) * lim;
+        float3 nc = i == 0 ? lightC : mix(lightC.bgr, float3(1.0), 0.15);
+        col = mix(col, mix(nc, float3(1.0), 0.45) * (0.7 + 0.5 * chase + 0.4 * kick * k), core);
+        col += nc * exp(-dn * 34.0) * lim * (0.18 + 0.2 * chase + 0.25 * kick * k);
+    }
+
+    // The selection window: the cover behind curved glass in a chrome frame.
+    float2 wp = p - float2(0.0, -0.42);
+    float win = sdRoundBox(wp, float2(0.36, 0.36), 0.04);
+    float frameW = 0.04;
+    float inFrame = (1.0 - smoothstep(frameW - aa, frameW + aa, win)) * smoothstep(-aa, aa, win);
+    float chrome = 0.55 + 0.45 * sin((wp.x - wp.y) * 7.0 + 1.0);
+    float3 chromeC = mix(float3(0.35, 0.37, 0.42), float3(0.95), chrome) * (0.8 + 0.2 * (1.0 - win / frameW));
+    col = mix(col, chromeC + lightC * 0.08, inFrame);
+    if (win < 0.0) {
+        float2 q = wp / 0.72 + 0.5;
+        float3 pic = sharpCover(q, A, S);
+        pic *= 0.9 + 0.1 * (1.0 - q.y);
+        float glare = 1.0 - smoothstep(0.0, 0.08, abs(q.x + q.y * 0.5 - 0.42));
+        pic += float3(1.0) * glare * 0.1 + float3(1.0) * pow(1.0 - q.y, 6.0) * 0.12;
+        pic *= 1.0 - 0.35 * pow(length(q - 0.5) * 1.3, 3.0);                     // curved glass falloff
+        col = mix(col, pic, 1.0 - smoothstep(-aa, aa, win));
+    }
+
+    // Bubble tubes up both sides.
+    for (int s = 0; s < 2; s++) {
+        float side = s == 0 ? -1.0 : 1.0;
+        float2 tq = p - float2(side * 0.5, 0.25);
+        float tube = sdRoundBox(tq, float2(0.045, 0.5), 0.045);
+        float3 tc = mix(A, S, float(s)) ;
+        float inT = 1.0 - smoothstep(-aa, aa, tube);
+        float3 liquid = tc * (0.55 + 0.35 * bass * k) * (0.75 + 0.25 * cos(tq.x / 0.045 * 1.5));
+        float spd = 0.25 + 1.2 * bass * k;
+        float bub = 0.0;
+        for (int b = 0; b < 6; b++) {
+            float fb = float(b);
+            float h = hash11(fb * 7.3 + side * 3.0);
+            float by = 0.5 - fract(h + t * spd * (0.6 + 0.6 * h)) * 1.0;
+            float2 bp = tq - float2(sin(t * 2.0 + fb) * 0.012, by);
+            float br = 0.012 + 0.012 * h;
+            bub = max(bub, 1.0 - smoothstep(br - aa, br + aa, length(bp)));
+        }
+        liquid = mix(liquid, mix(tc, float3(1.0), 0.7), bub * 0.8);
+        liquid += float3(1.0) * exp(-abs(tq.x + 0.02) * 120.0) * 0.15;           // glass highlight
+        col = mix(col, liquid, inT);
+        col += tc * exp(-max(tube, 0.0) * 30.0) * (1.0 - inT) * 0.12 * inBody;
+    }
+
+    // Backlit chrome grille, pulsing with the bass.
+    float2 gq = p - float2(0.0, 0.43);
+    float grille = sdRoundBox(gq, float2(0.36, 0.2), 0.05);
+    if (grille < aa) {
+        float inG = 1.0 - smoothstep(-aa, aa, grille);
+        float3 back = lightC * (0.25 + 0.6 * bass * k + 0.3 * kick * k);
+        float f = fract(gq.x * 10.0);
+        float bar = smoothstep(0.2, 0.25, f) * (1.0 - smoothstep(0.75, 0.8, f));
+        float3 barC = mix(float3(0.25, 0.26, 0.3), float3(0.95), pow(sin(PI * sat((f - 0.2) / 0.6)), 2.0)) * 0.9;
+        col = mix(col, mix(back, barC, bar), inG);
+    }
+    // Chrome trim along the base.
+    float trim = sdRoundBox(p - float2(0.0, 0.93), float2(0.6, 0.025), 0.02);
+    col = mix(col, mix(float3(0.4), float3(1.0), 0.5 + 0.5 * sin(p.x * 9.0)), 1.0 - smoothstep(-aa, aa, trim));
+
+    col += float3(1.0) * dots(uv, 30.0, float2(0.0, -t * 0.02), 0.06, 0.06, 4.0) * (0.06 + 0.3 * high * k);
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val NEON_FRAME = """
+// Neon frame (music): the album cover on a dark brick wall, framed by neon tubes bent round it in the
+// cover's two strongest colours. The tubes buzz and flicker, burn brighter with the bass, a second
+// outer tube lights up on the kick, the glow spills over the bricks and reflects in a wet floor below.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.28) * 0.66;
+    // Brick wall.
+    float2 bq = uv * float2(9.0, 18.0);
+    bq.x += step(0.5, fract(bq.y * 0.5)) * 0.5;
+    float2 bf = fract(bq);
+    float mortar = step(min(bf.x, bf.y), 0.06);
+    float3 brick = mix(float3(0.16, 0.08, 0.07), float3(0.22, 0.11, 0.09), hash12(floor(bq)));
+    float3 col = mix(brick, float3(0.06), mortar) * (0.6 + 0.2 * BG.r);
+    float floorY = c.y + R * 1.55;
+    // Flicker: mostly on, little dropouts.
+    float flick = 0.85 + 0.15 * step(0.08, hash11(floor(t * 12.0))) ;
+    float2 d = uv - c;
+    float inner = sdRoundBox(d, float2(R * 1.12), R * 0.12);
+    float outer = sdRoundBox(d, float2(R * 1.32), R * 0.18);
+    float br = (0.5 + 0.8 * bass * k) * flick;
+    // Glow spilling on the wall.
+    col += A * exp(-abs(inner) / R * 4.0) * 0.35 * br;
+    col += S * exp(-abs(outer) / R * 4.0) * 0.3 * kick * k;
+    // The tubes.
+    col += mix(A, float3(1.0), 0.6) * glow(abs(inner), 0.0016) * br;
+    col += mix(S, float3(1.0), 0.6) * glow(abs(outer), 0.0016) * (0.15 + 0.9 * kick * k);
+    // Cover.
+    float box = sdRoundBox(d, float2(R), R * 0.03);
+    if (box < 0.0) col = sharpCover(d / (2.0 * R) + 0.5, A, S) * (0.9 + 0.15 * bass);
+    // Wet floor with reflections.
+    if (uv.y > floorY) {
+        float3 fl = float3(0.04, 0.04, 0.05);
+        float2 m = float2(uv.x, 2.0 * floorY - uv.y) - c;
+        float rIn = sdRoundBox(m, float2(R * 1.12), R * 0.12);
+        float ripple = 0.003 * sin(uv.y * 300.0 + t * 3.0);
+        fl += A * glow(abs(rIn + ripple), 0.003) * br * 0.35 * exp(-(uv.y - floorY) * 6.0);
+        fl += mix(A, S, 0.5) * 0.06 * exp(-abs(uv.x - c.x) * 4.0);
+        col = fl;
+    }
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val MAGAZINE = """
+// Magazine (music): the album cover laid out as a music magazine's front page - a bold masthead bar
+// in the cover's colours, the song's title in big type across the bottom, cover-line stripes and a
+// price sticker - lying on a table, slightly turned, with the pages of other issues (earlier songs)
+// fanned out underneath. The page lifts a little on the kick; a light sweeps across the glossy paper.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    float2 c = float2(waveX(asp), uWaveY);
+    float R = room(0.3) * 0.86;
+    // Table.
+    float3 col = mix(BG * 0.6 + float3(0.05, 0.03, 0.02), BG * 0.3, length(uv - c) / (R * 4.0));
+    col *= 0.9 + 0.1 * vnoise(uv * float2(4.0, 60.0));
+    float2 hw = float2(R * 0.78, R);
+    // Older issues fanned underneath.
+    for (int i = 2; i >= 0; i--) {
+        float fi = float(i);
+        float2 d = rot(-0.18 - fi * 0.14) * (uv - c - float2(-R * (0.25 + fi * 0.2), R * 0.05));
+        float pg = max(abs(d.x) - hw.x, abs(d.y) - hw.y);
+        col *= 1.0 - 0.25 * (1.0 - smoothstep(-0.01, 0.03, pg));
+        if (pg < 0.0) col = pastCover(fi, d / (2.0 * hw) + 0.5, A, S) * 0.75;
+    }
+    // The current issue, lifting on the kick.
+    float lift = kick * k * 0.012;
+    float2 d = rot(0.06 + 0.01 * sin(t * 0.3)) * (uv - c - float2(0.0, -lift));
+    float pg = max(abs(d.x) - hw.x, abs(d.y) - hw.y);
+    col *= 1.0 - 0.35 * (1.0 - smoothstep(-0.01, 0.04 + lift * 2.0, max(abs(d.x - 0.012) - hw.x, abs(d.y - 0.02 - lift) - hw.y)));
+    if (pg < 0.0) {
+        float2 q = d / (2.0 * hw) + 0.5;
+        // The cover fills the page (cropped to the page's shape).
+        float3 page = sharpCover(float2((q.x - 0.5) * 0.78 + 0.5, q.y), A, S);
+        // Masthead bar.
+        float mast = step(q.y, 0.15);
+        page = mix(page, mix(A, S, 0.2), mast);
+        // Masthead "letters": chunky blocks.
+        float2 lq = float2(q.x * 7.0, (q.y - 0.03) / 0.1);
+        float letter = step(0.15, fract(lq.x)) * step(0.0, lq.y) * step(lq.y, 1.0) * step(0.3, hash11(floor(lq.x) + 3.0));
+        letter *= step(0.2, abs(fract(lq.x) - 0.55) + step(0.5, lq.y) * 0.4);
+        page = mix(page, float3(1.0), letter * mast);
+        // The song's title in big type at the bottom.
+        float2 tq = float2(q.x * 1.0, (q.y - 0.72) / 0.3);
+        float ink = labelInk(float2(tq.x, mix(0.1, 0.95, tq.y)));
+        float plate = step(0.72, q.y) * 0.45;
+        page = mix(page, page * 0.4, plate);
+        page = mix(page, float3(1.0), ink * step(0.72, q.y));
+        // Cover lines on the left.
+        float lines = step(0.22, q.y) * step(q.y, 0.6) * step(q.x, 0.32) * step(0.55, fract(q.y * 22.0)) * step(0.05, q.x);
+        page = mix(page, float3(1.0), lines * 0.85);
+        // Price sticker.
+        float st = length(q - float2(0.85, 0.26)) - 0.08;
+        page = mix(page, mix(S, float3(1.0), 0.3), step(st, 0.0));
+        // Gloss sweep.
+        page += float3(1.0) * 0.12 * pow(sat(1.0 - abs(q.x + q.y - fract(t * 0.07) * 3.0 + 0.5) * 3.0), 3.0);
+        col = page;
+    }
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val COVER_FOCUS = """
+// Pan & zoom (music): the album cover fills the screen and the camera drifts over it like a
+// documentary - slowly zooming in on the cover's subject (found by MusicTheme: faces, the brightest,
+// busiest, most colourful part) and easing back out, never straying off the picture. Away from the
+// subject the cover goes soft like a shallow depth of field. Every kick punches the zoom a touch
+// and splits the colours for an instant; a thin spectrum glows along the bottom.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 6.0) * play;
+
+    float3 sub = subjectOf();
+    float2 sp = sub.xy;
+    float sz = clamp(sub.z, 0.12, 0.6);
+    // Slow in and out (about 50 s a cycle); smaller subjects get a deeper zoom.
+    float slow = 0.5 - 0.5 * cos(t * 0.125);
+    float z = 1.0 + (0.18 + 0.55 * (0.6 - sz)) * slow + kick * 0.04 * (0.4 + k);
+    float w = 1.0 / z;          // how much of the cover's width is on screen
+    float hgt = w / asp;        // ... and of its height
+    // The camera: from the middle towards the subject as it zooms in, with a gentle wander.
+    float2 drift = float2(sin(t * 0.047), cos(t * 0.039)) * 0.05 * (1.0 - 0.5 * slow);
+    float2 cam = mix(float2(0.5, 0.5), sp, 0.35 + 0.6 * slow) + drift;
+    cam.x = clamp(cam.x, w * 0.5, 1.0 - w * 0.5);
+    cam.y = clamp(cam.y, hgt * 0.5, 1.0 - hgt * 0.5);
+    float2 q = cam + (uv - float2(asp * 0.5, 0.5)) * (w / asp);
+
+    // The kick splits the colours for a moment.
+    float split = kick * 0.004 * (0.3 + k);
+    float3 sharp = float3(sharpCover(q + float2(split, 0.0), A, S).r,
+                          sharpCover(q, A, S).g,
+                          sharpCover(q - float2(split, 0.0), A, S).b);
+    float3 soft = mix(mix(A, S, q.y), float3(uArt.eval(clamp(q, 0.0, 1.0) * uArtSize).rgb), uHasArt);
+    // Shallow depth of field round the subject (stronger when zoomed in).
+    float dof = smoothstep(sz * 0.55, sz * 1.5, length((q - sp) * float2(1.0, 1.1)));
+    float3 col = mix(sharp, soft, dof * (0.25 + 0.4 * slow));
+
+    // A warm light leak drifting across, in the cover's colours, brighter on the beat.
+    float2 lp = float2(asp * (0.5 + 0.6 * sin(t * 0.09)), 0.2 + 0.15 * cos(t * 0.07));
+    col += mix(A, S, 0.5 + 0.5 * sin(t * 0.05)) * exp(-length(uv - lp) * 2.4) * (0.1 + 0.25 * kick * k);
+    // Calmer at the bottom, where the player and lyrics sit.
+    col *= 1.0 - 0.38 * smoothstep(0.5, 1.0, uv.y);
+    // A thin spectrum along the bottom edge.
+    float m = sat(uv.x / asp);
+    float e = eqAt(m) * play;
+    float bar = smoothstep(1.0 - 0.06 * e - 0.004, 1.0 - 0.06 * e, uv.y);
+    col = mix(col, mix(A, float3(1.0), 0.35), bar * (0.35 + 0.4 * k));
+    // Vignette.
+    float2 vv = fc / uRes - 0.5;
+    col *= 1.0 - 0.55 * dot(vv, vv);
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val CRT_TUNNEL = """
+// CRT tunnel: a slow flight down a tunnel built from stacked old television sets. Each set has a
+// curved, glowing screen showing its own channel - colour bars, static, a rolling test card, a
+// blue "no signal" - with scanlines and RGB fringes; screens flicker, switch channel now and then,
+// and the far end of the tunnel glows like a warm-up dot.
+
+float3 channel(float2 q, float id, float t, float3 A, float3 S) {
+    float ch = floor(hash11(id * 3.7 + floor(t * 0.25 + hash11(id) * 4.0)) * 5.0);
+    float3 c;
+    if (ch < 1.0) {
+        // Colour bars.
+        float b = floor(q.x * 7.0);
+        c = float3(step(0.5, mod(b, 2.0)), step(0.5, mod(floor(b / 2.0), 2.0)), step(0.5, mod(floor(b / 4.0), 2.0)));
+        c = mix(float3(1.0) - c, float3(0.9), 0.15);
+        c = mix(c, float3(0.1), step(0.75, q.y));
+    } else if (ch < 2.0) {
+        // Static.
+        float n = hash12(floor(q * float2(60.0, 45.0)) + floor(t * 24.0));
+        c = float3(n * 0.9);
+    } else if (ch < 3.0) {
+        // A rolling test card: rings and a cross in the theme colours.
+        float2 p = q - 0.5;
+        p.y = fract(p.y + 0.5 + t * 0.05) - 0.5;
+        float r = length(p * float2(1.3, 1.0));
+        c = mix(A, S, step(0.5, fract(r * 6.0))) * 0.8;
+        c = mix(c, float3(1.0), step(abs(p.x), 0.01) + step(abs(p.y), 0.012));
+    } else if (ch < 4.0) {
+        // No signal: flat blue with a bright bar.
+        c = float3(0.1, 0.2, 0.75);
+        c = mix(c, float3(0.9), step(abs(q.y - 0.5), 0.06) * step(abs(q.x - 0.5), 0.3) * 0.7);
+    } else {
+        // A glowing waveform on black.
+        c = float3(0.02);
+        float w = 0.5 + 0.25 * sin(q.x * 18.0 + t * 4.0 + id) * sin(q.x * 5.0 - t);
+        c += mix(A, float3(1.0), 0.3) * exp(-abs(q.y - w) * 80.0);
+    }
+    return c;
+}
+
+half4 main(float2 fc) {
+    float2 uv = (fc - 0.5 * uRes) / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Square tunnel: depth from the larger of |x| and |y| (a box seen from inside).
+    float2 p = uv;
+    p = rot(0.04 * sin(t * 0.13)) * p;
+    float m = max(abs(p.x) * 0.85, abs(p.y));
+    float z = 0.18 / max(m, 0.001);
+    float zz = z + t * 0.6;
+    // Which wall, and the coordinate along it.
+    float horiz = step(abs(p.y), abs(p.x) * 0.85);
+    float u = horiz > 0.5 ? p.y / max(abs(p.x) * 0.85, 0.001) : p.x * 0.85 / max(abs(p.y), 0.001);
+    float side = horiz > 0.5 ? sign(p.x) : 2.0 + sign(p.y);
+    // A grid of TV sets on each wall: 4 across, one set per unit of depth.
+    float2 g = float2(u * 2.0 + 2.0, zz);
+    float2 cell = floor(g);
+    float2 f = fract(g);
+    float id = cell.x + cell.y * 7.0 + side * 31.0;
+    // The set: a plastic case with a rounded screen inset.
+    float3 caseC = mix(float3(0.2, 0.19, 0.18), BG * 2.0, 0.3) * (0.7 + 0.3 * hash11(id));
+    float2 sq = (f - float2(0.45, 0.5)) / float2(0.36, 0.38);
+    float scr = length(max(abs(sq) - 0.75, 0.0)) - 0.25;
+    float3 col = caseC * (0.85 + 0.15 * f.y);
+    if (scr < 0.0) {
+        // Curved screen: bulge the picture a little.
+        float2 q = sq * (1.0 + 0.08 * dot(sq, sq)) * 0.5 + 0.5;
+        // RGB fringe: sample the channel shifted per colour.
+        float3 c;
+        c.r = channel(q + float2(0.006, 0.0), id, t, A, S).r;
+        c.g = channel(q, id, t, A, S).g;
+        c.b = channel(q - float2(0.006, 0.0), id, t, A, S).b;
+        c *= 0.8 + 0.2 * sin(q.y * 220.0);                                     // scanlines
+        c *= 0.85 + 0.15 * hash11(floor(t * 15.0) + id);                       // flicker
+        c *= 1.0 - 0.4 * dot(sq, sq) * 0.5;                                     // darker corners
+        col = c;
+    }
+    // A knob or two on the right of each set.
+    col = mix(col, caseC * 0.4, 1.0 - smoothstep(0.02, 0.03, length(f - float2(0.88, 0.35))));
+    col = mix(col, caseC * 0.4, 1.0 - smoothstep(0.02, 0.03, length(f - float2(0.88, 0.6))));
+    // Seams between sets.
+    col *= smoothstep(0.0, 0.03, min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y)));
+    // Depth: fade to the warm glow at the far end.
+    float fog = 1.0 - exp(-z * 0.12);
+    float3 far = mix(A, float3(1.0, 0.9, 0.75), 0.4) * 0.35;
+    col = mix(col, far * 0.4 + BG * 0.3, fog);
+    col += far * exp(-length(uv) * 9.0) * 1.2;
+    col += float3(1.0) * exp(-length(uv) * 60.0) * 0.6;
+    // Glow cast between the screens.
+    col += mix(A, S, 0.5) * 0.04;
+    col *= 0.7;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val MEMORY_CARD = """
+// Memory card: the save screen of a late-90s console, reimagined. A big translucent memory card
+// floats at an angle over a dark, glossy surface; through its shell you see the board and chips;
+// beside it a grid of 15 save blocks, each with its own little animated pixel icon (gem, heart,
+// sword, star, coin...), slowly filling up as data streams in; the access light blinks while it saves.
+
+// A 8x8 pixel icon, picked by k, at cell coordinate c (0..7); returns 0/1 and a frame flip.
+float icon(float2 c, float k, float frame) {
+    float2 p = c - 3.5;
+    float v = 0.0;
+    if (k < 1.0) v = step(abs(p.x) + abs(p.y), 3.0 + frame);                               // gem
+    else if (k < 2.0) v = step(length(float2(abs(p.x) - 1.5, p.y + 1.0)), 2.0) + step(abs(p.x) + p.y, 2.8 + frame * 0.5) * step(-1.0, p.y);   // heart
+    else if (k < 3.0) v = step(abs(p.x - p.y), 0.8) * step(abs(p.x), 3.0 - frame) + step(abs(p.x + p.y), 0.8) * step(abs(p.x - 1.5), 0.6); // sword
+    else if (k < 4.0) v = step(length(p), 3.3 - frame * 0.6) * (1.0 - step(length(p), 1.5));   // ring / coin
+    else v = step(abs(p.x) * 0.6 + abs(p.y), 2.0 + frame) + step(abs(p.y) * 0.6 + abs(p.x), 2.0 + frame); // star
+    return sat(v);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Background: deep gradient with slow diagonal light bands (a menu backdrop).
+    float3 col = mix(BG * 1.6, BG * 0.6, uv.y);
+    col += mix(A, S, 0.5) * 0.05 * smoothstep(0.6, 1.0, sin((uv.x + uv.y) * 4.0 - t * 0.2));
+    float horizon = 0.78;
+    col = mix(col, BG * 0.4, step(horizon, uv.y));
+
+    // The card: a tilted rounded slab with a notch, translucent smoky shell.
+    float2 cc = float2(asp * 0.3, 0.46 + 0.012 * sin(t * 0.6));
+    float tilt = -0.18 + 0.03 * sin(t * 0.4);
+    float2 cq = rot(tilt) * (uv - cc);
+    cq.x *= 1.0 + cq.y * 0.4;                                // a touch of perspective
+    float2 half_ = float2(0.15, 0.2);
+    float card = sdRoundBox(cq, half_, 0.012);
+    card = max(card, -sdRoundBox(cq - float2(half_.x, -half_.y), float2(0.04, 0.04), 0.004));   // corner notch
+    float inCard = 1.0 - smoothstep(-px, px, card);
+    float3 shell = mix(float3(0.25, 0.26, 0.3), A * 0.4, 0.25);
+    // Inside: a board with a chip and traces, seen through the shell.
+    float3 inside = mix(float3(0.06, 0.18, 0.1), BG, 0.3);
+    float chip = sdRoundBox(cq - float2(-0.02, 0.0), float2(0.06, 0.05), 0.004);
+    inside = mix(inside, float3(0.08), 1.0 - smoothstep(0.0, px, chip));
+    float pins = step(abs(fract(cq.x * 70.0) - 0.5), 0.2) * step(abs(abs(cq.y) - 0.056), 0.006) * step(abs(cq.x + 0.02), 0.06);
+    inside = mix(inside, float3(0.75, 0.65, 0.35), pins);
+    float trace = step(abs(fract(cq.y * 30.0) - 0.5), 0.06) * step(0.045, cq.x) * step(cq.x, 0.11);
+    inside += float3(0.7, 0.6, 0.3) * trace * 0.5;
+    // Gold contacts at the bottom.
+    float contacts = step(half_.y - 0.03, cq.y) * step(abs(fract(cq.x * 40.0) - 0.5), 0.3) * step(abs(cq.x), half_.x - 0.02);
+    float3 cardC = mix(inside, shell, 0.55) + float3(1.0) * 0.12 * smoothstep(0.1, -0.1, cq.x + cq.y);
+    cardC = mix(cardC, float3(0.85, 0.7, 0.3), contacts);
+    // A label area at the top with stripes in the theme colours.
+    float label = step(cq.y, -0.06) * step(abs(cq.x), half_.x - 0.02) * step(-half_.y + 0.02, cq.y);
+    cardC = mix(cardC, mix(A, S, step(0.5, fract(cq.y * 25.0))) * 0.75 + 0.1, label);
+    // Access light: blinks quickly while saving.
+    float save = step(0.5, fract(t / 9.0)) ;
+    float led = length(cq - float2(half_.x - 0.03, -half_.y + 0.03 + 0.0)) - 0.007;
+    float ledOn = save * step(0.5, fract(t * 6.0)) + (1.0 - save) * 0.15;
+    cardC = mix(cardC, mix(float3(0.2, 0.05, 0.05), float3(1.0, 0.3, 0.2), ledOn), 1.0 - smoothstep(0.0, px, led));
+    col = mix(col, cardC, inCard);
+    col += float3(1.0, 0.3, 0.2) * exp(-length(cq - float2(half_.x - 0.03, -half_.y + 0.03)) * 60.0) * ledOn * 0.4;
+    col += mix(A, float3(1.0), 0.5) * exp(-abs(card) * 300.0) * 0.25;
+    // Its reflection on the glossy floor.
+    if (uv.y > horizon) {
+        float2 ruv = float2(uv.x, 2.0 * horizon - uv.y);
+        float2 rq = rot(tilt) * (ruv - cc);
+        float rc = sdRoundBox(rq, half_, 0.012);
+        col = mix(col, cardC * 0.3, (1.0 - smoothstep(-px, px, rc)) * exp(-(uv.y - horizon) * 10.0));
+    }
+
+    // The save grid: 5 x 3 blocks; filled ones show their animated icon, the next one fills with
+    // a progress sweep while saving.
+    float2 g0 = float2(asp * 0.52, 0.26);
+    float bs = 0.085;
+    float filled = 4.0 + mod(floor(t / 9.0), 11.0);
+    float progress = fract(t / 9.0) * 2.0 - 1.0;                 // the second half of each 9 s saves
+    for (int i = 0; i < 15; i++) {
+        float fi = float(i);
+        float2 o = g0 + float2(mod(fi, 5.0), floor(fi / 5.0)) * (bs + 0.018);
+        float2 q = uv - o;
+        float box = sdRoundBox(q - bs * 0.5, float2(bs * 0.5), 0.008);
+        float inB = 1.0 - smoothstep(-px, px, box);
+        float3 bc = BG * 1.8 + 0.03;
+        float isFull = step(fi, filled - 1.0);
+        float isSaving = step(abs(fi - filled), 0.5) * step(0.0, progress);
+        float2 cell = floor(q / bs * 10.0) - 1.0;                 // 8x8 icon in the middle
+        float inIcon = step(0.0, cell.x) * step(cell.x, 7.0) * step(0.0, cell.y) * step(cell.y, 7.0);
+        float k = mod(fi * 3.0 + 1.0, 5.0);
+        float frame = step(0.5, fract(t * 1.5 + fi * 0.37));
+        float ic = icon(cell, k, frame) * inIcon;
+        float3 icC = mix(mix(A, S, hash11(fi)), float3(1.0), 0.2);
+        bc = mix(bc, mix(bc * 1.3, icC, ic), isFull);
+        // Saving: a sweep filling the block from the bottom.
+        float fillY = 1.0 - progress;
+        bc = mix(bc, mix(A, float3(1.0), 0.3) * 0.6, isSaving * step(fillY, q.y / bs) * 0.6);
+        col = mix(col, bc, inB);
+        col += mix(A, float3(1.0), 0.4) * exp(-abs(box) * 400.0) * (0.15 + 0.5 * isSaving);
+    }
+    // Data streaming from the card to the slot being saved.
+    float2 a = cc + float2(0.14, -0.05);
+    float2 b = g0 + float2(mod(filled, 5.0), floor(filled / 5.0)) * (bs + 0.018) + bs * 0.5;
+    float2 ab = b - a;
+    float h = sat(dot(uv - a, ab) / dot(ab, ab));
+    float dline = length(uv - a - ab * h);
+    float bits = step(0.6, fract(h * 20.0 - t * 4.0));
+    col += mix(A, S, h) * exp(-dline * 600.0) * bits * step(0.0, progress) * 0.8;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val ENERGY_CORE = """
+// Energy core: the heart of a reactor. A sphere of churning plasma hangs inside three containment
+// rings that turn on different axes; arcs of energy jump between the core and the ring emitters,
+// a hexagonal chamber wall glows faintly behind, and every few seconds the core surges - a bright
+// pulse, a shockwave across the walls, and the rings speeding up for a moment.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float2 c = float2(asp * 0.5, 0.5);
+    float2 p = uv - c;
+    float r = length(p);
+    float cyc = mod(t, 7.0);
+    float surge = exp(-cyc * 2.5);
+    float spin = t + (1.0 - exp(-cyc * 1.5)) * 1.2 + floor(t / 7.0) * 1.2;
+
+    // Hex chamber wall: a honeycomb of panels with faint glowing seams, lit by the core.
+    float2 h = p * 9.0;
+    float2 hr = float2(1.0, 1.7320508);
+    float2 ha = mod(h, hr) - hr * 0.5;
+    float2 hb = mod(h - hr * 0.5, hr) - hr * 0.5;
+    float2 hg = dot(ha, ha) < dot(hb, hb) ? ha : hb;
+    float hexD = 0.5 - max(abs(hg.x) * 0.866 + abs(hg.y) * 0.5, abs(hg.y));
+    float3 col = BG * (0.9 + 0.3 * hash12(floor((h - hg) * 10.0)));
+    float light = exp(-r * 2.2) * (0.6 + 0.8 * surge);
+    col += mix(A, S, 0.5) * (1.0 - smoothstep(0.0, 0.05, hexD)) * (0.08 + 0.4 * light);
+    col *= 0.7 + 0.6 * light;
+    // The surge's shockwave across the wall.
+    col += mix(A, float3(1.0), 0.5) * exp(-abs(r - cyc * 0.45) * 40.0) * exp(-cyc * 0.8) * 0.4;
+
+    // Containment rings: ellipses (circles seen at an angle) turning about different axes. The back
+    // half is drawn before the core, the front half after.
+    float R = 0.24;
+    float3 ringC = mix(float3(0.75, 0.8, 0.9), A, 0.3);
+    float back = 0.0;
+    float front = 0.0;
+    float emit = 0.0;
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float ang = fi * 1.05 + 0.3;
+        float tiltA = 0.25 + 0.25 * fi + 0.1 * sin(spin * 0.3 + fi);
+        float2 q = rot(ang) * p;
+        float sy = sin(tiltA);
+        float2 e = float2(q.x, q.y / max(sy, 0.08));
+        float er = length(e);
+        float rr = R * (1.12 + 0.14 * fi);
+        float band = exp(-abs(er - rr) * 260.0 * max(sy, 0.25));
+        // Segments rotating round the ring.
+        float a = atan(e.y, e.x) + spin * (0.6 + 0.3 * fi) * (fi == 1.0 ? -1.0 : 1.0);
+        float seg = step(0.25, fract(a / TAU * 12.0));
+        float isFront = step(0.0, e.y);
+        back += band * (1.0 - isFront) * (0.4 + 0.6 * seg);
+        front += band * isFront * (0.4 + 0.6 * seg);
+        // Emitters: bright nodes on the ring.
+        float node = exp(-length(e - rr * float2(cos(-spin * (0.6 + 0.3 * fi) * (fi == 1.0 ? -1.0 : 1.0)), sin(-spin * (0.6 + 0.3 * fi) * (fi == 1.0 ? -1.0 : 1.0)))) * 90.0);
+        emit += node;
+    }
+    col += ringC * back * 0.5;
+
+    // The core: a sphere of plasma - swirling noise mapped on a ball, hot centre, darker limb.
+    float cr = 0.15 * (1.0 + 0.06 * surge + 0.015 * sin(t * 3.0));
+    if (r < cr * 1.6) {
+        float2 n = p / cr;
+        float z = sqrt(max(1.0 - dot(n, n), 0.0));
+        float2 sp = n / (1.0 + z) * 2.0;
+        float pl = fbm(rot(t * 0.2) * sp * 2.0 + float2(t * 0.3, -t * 0.2));
+        pl = 0.6 * pl + 0.4 * fbm(sp * 4.0 - float2(t * 0.5, t * 0.1));
+        float3 hot = mix(mix(A, S, pl), float3(1.0), smoothstep(0.55, 0.9, pl) * 0.7 + z * 0.3);
+        float inside = 1.0 - smoothstep(cr - px, cr + px, r);
+        col = mix(col, hot * (0.6 + 0.6 * z) * (1.0 + 0.6 * surge), inside);
+    }
+    col += mix(A, S, 0.5) * exp(-max(r - cr, 0.0) * 14.0) * (0.35 + 0.6 * surge);
+    col += float3(1.0) * exp(-r * 30.0) * surge * 0.6;
+
+    // Arcs: jagged bolts from the core towards the rings, flickering.
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float seed = floor(t * 8.0 + fi * 13.0);
+        float ang = hash11(seed) * TAU;
+        float2 dir = float2(cos(ang), sin(ang));
+        float along = dot(p, dir);
+        float across = dot(p, float2(-dir.y, dir.x));
+        float jag = (vnoise(float2(along * 40.0, seed)) - 0.5) * 0.03 * sat(along / 0.1);
+        float bolt = exp(-abs(across - jag) * 600.0) * step(cr * 0.9, along) * step(along, R * 1.2);
+        col += mix(float3(1.0), S, 0.3) * bolt * step(0.4, hash11(seed + 3.0)) * (0.6 + surge);
+    }
+    // Front halves of the rings, and their emitter nodes.
+    col += ringC * front * 0.75;
+    col += float3(1.0) * emit * 0.7;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val RACING32 = """
+// 32-bit racing: the late-90s arcade racer look at the resolution it was drawn at. A low-res,
+// dithered evening: a big sun setting behind jagged polygon mountains, a winding road of flat-shaded
+// segments with red-and-white kerbs, roadside poles and signs flicking past, a rival car's tail
+// lights ahead, and the speed lines of going too fast. Everything snaps to a 240-line pixel grid.
+
+float bayer4(float2 c) {
+    float2 a = mod(c, 4.0);
+    float2 b = floor(a / 2.0);
+    float2 s = mod(a, 2.0);
+    float v = (mod(b.x * 2.0 + b.y * 3.0, 4.0)) / 4.0;
+    return (mod(s.x * 2.0 + s.y * 3.0, 4.0) + v) / 4.0;
+}
+
+half4 main(float2 fc) {
+    float res = 240.0;
+    float2 cell = floor(fc / uRes.y * res);
+    float2 uv = (cell + 0.5) / res;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float d = bayer4(cell);
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float hz = 0.5;
+
+    float3 col;
+    // Road curve: the horizon point drifts left and right.
+    float curve = 0.35 * sin(t * 0.2) + 0.15 * sin(t * 0.47);
+    if (uv.y < hz) {
+        // Sky in dithered bands: deep at the top, burning orange low down.
+        float g = uv.y / hz;
+        float band = floor(g * 8.0 + d) / 8.0;
+        col = mix(mix(BG * 1.5, A * 0.5, 0.4), mix(float3(1.0, 0.55, 0.25), S, 0.25), band);
+        // The sun, striped by the dither towards its base.
+        float2 sp = float2(asp * 0.5 - curve * 0.25, hz - 0.05);
+        float sd = length(uv - sp);
+        float sun = step(sd, 0.12) * step(d * 0.6, 1.0 - smoothstep(hz - 0.12, hz, uv.y));
+        col = mix(col, mix(float3(1.0, 0.9, 0.5), S, 0.2), sun);
+        col += float3(1.0, 0.6, 0.3) * step(sd, 0.18 + d * 0.02) * 0.12;
+        // Polygon mountains: straight-edged peaks, flat-shaded (lit and shadow sides).
+        float mx = uv.x + curve * 0.3;
+        float seg = floor(mx * 6.0);
+        float fx = fract(mx * 6.0);
+        float h0 = 0.08 + 0.1 * hash11(seg);
+        float h1 = 0.08 + 0.1 * hash11(seg + 1.0);
+        float peakX = 0.3 + 0.4 * hash11(seg * 7.0);
+        float pk = 0.14 + 0.12 * hash11(seg * 3.0);
+        float mh = fx < peakX ? mix(h0, pk, fx / peakX) : mix(pk, h1, (fx - peakX) / (1.0 - peakX));
+        float mTop = hz - mh;
+        float3 mc = mix(BG * 1.2, A * 0.3, 0.3) * (fx < peakX ? 1.25 : 0.75);
+        col = mix(col, mc, step(mTop, uv.y));
+    } else {
+        // Road: perspective with alternating segment shading, kerbs and a centre line.
+        float dy = uv.y - hz;
+        float z = 0.1 / dy;
+        float x = (uv.x - asp * 0.5) * z + curve * z * z * 0.12 - curve * 0.2;
+        float segP = fract(z * 0.5 - t * 3.0);
+        float alt = step(0.5, segP);
+        float3 grass = mix(mix(float3(0.15, 0.32, 0.12), float3(0.2, 0.4, 0.15), alt), BG, 0.25);
+        float3 road = mix(float3(0.32, 0.32, 0.36), float3(0.36, 0.36, 0.4), alt);
+        float w = 0.18;
+        col = grass;
+        col = mix(col, road, step(abs(x), w));
+        col = mix(col, mix(float3(0.9, 0.12, 0.1), float3(0.95), alt), step(w, abs(x)) * step(abs(x), w + 0.025));
+        col = mix(col, float3(0.95), step(abs(x), 0.006) * alt);
+        // Lane lines.
+        col = mix(col, float3(0.85), step(abs(abs(x) - 0.09), 0.003) * alt);
+        // Haze near the horizon.
+        col = mix(col, mix(float3(1.0, 0.6, 0.35), S, 0.25) * 0.8, exp(-dy * 25.0) * 0.7);
+        // The rival's car ahead: a blocky shape with tail lights.
+        float carZ = 6.0 + 1.5 * sin(t * 0.3);
+        float carY = hz + 0.1 / carZ;
+        float carX = asp * 0.5 + (0.07 * sin(t * 0.25) + curve * 0.2 - curve * carZ * carZ * 0.12) / carZ;
+        float2 cq = (uv - float2(carX, carY - 0.012 / carZ * 6.0)) * carZ * 4.0;
+        float body = step(abs(cq.x), 0.4) * step(abs(cq.y + 0.05), 0.12);
+        float roof = step(abs(cq.x), 0.25) * step(abs(cq.y + 0.2), 0.06);
+        col = mix(col, mix(A * 0.6, float3(0.2), 0.3), max(body, roof));
+        float tail = step(abs(abs(cq.x) - 0.3), 0.07) * step(abs(cq.y + 0.08), 0.03);
+        col = mix(col, float3(1.0, 0.2, 0.15), tail);
+    }
+    // Roadside poles flicking past on both sides.
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float ph = fract(fi / 6.0 + t * 0.5);
+        float z = 8.0 * (1.0 - ph) + 0.4;
+        float side = mod(fi, 2.0) * 2.0 - 1.0;
+        float xx = asp * 0.5 + (side * 0.26 - curve * z * z * 0.12 + curve * 0.2) / z;
+        float base = hz + 0.1 / z;
+        float hh = 0.14 / z;
+        float pole = step(abs(uv.x - xx), max(0.003 / z, 0.5 / 240.0)) * step(base - hh, uv.y) * step(uv.y, base);
+        float sign_ = step(abs(uv.x - xx - side * 0.02 / z), 0.03 / z) * step(abs(uv.y - (base - hh)), 0.018 / z);
+        col = mix(col, float3(0.85, 0.85, 0.8), pole);
+        col = mix(col, mix(A, S, mod(fi, 3.0) / 2.0), sign_ * step(0.5, mod(fi, 2.0) + 0.5));
+    }
+    // Speed lines at the edges.
+    float sl = step(0.93, hash12(float2(floor(atan(uv.y - hz, uv.x - asp * 0.5) * 40.0), floor(t * 12.0))));
+    col = mix(col, float3(1.0), sl * smoothstep(0.35, 0.8, length((uv - float2(asp * 0.5, hz)) / float2(asp * 0.5, 0.5))) * 0.2 * step(hz, uv.y));
+    // Quantize the colours like a 15-bit frame buffer.
+    col = floor(col * 31.0 + d) / 31.0;
+    return half4(finish(col * 0.9, fc), 1.0);
+}
+"""
+
+    private const val FIRE32 = """
+// 32-bit fire (music): the old demo-scene fire effect at a chunky 32-bit resolution, played by the
+// song. A wall of pixel fire burns along the visualizer line, each column's height following its
+// band of the equalizer; the kick flares the whole wall and throws pixel sparks; the cover hangs above
+// as a pixelated picture in a bevelled frame, glowing in the firelight. Colours run from the cover's
+// own through the classic fire ramp.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float res = 160.0;
+    float2 cell = floor(fc / uRes.y * res);
+    float2 uv = (cell + 0.5) / res;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = vivid(uAcc.rgb, 1.25);
+    float3 S = vivid(uSec.rgb, 1.25);
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float kick = exp(-uBeatAge * 4.0) * play;
+    float R = room(0.3);
+    float2 c = float2(waveX(asp), uWaveY);
+    float base = min(c.y + R, 0.98);
+
+    // Backdrop: dark, warming towards the fire.
+    float3 col = mix(BG * 0.5, mix(BG, A * 0.4, 0.4), smoothstep(base - 0.6, base, uv.y));
+
+    // The fire: each pixel column a band of the spectrum (mirrored from the middle), rising with
+    // noise that scrolls up at the fire's speed; the heat falls off with height.
+    float xn = (uv.x - c.x) / (asp * 0.5);
+    float e = eqAt(sat(abs(xn) * 1.1)) * play;
+    float H = (0.12 + 0.38 * e * (0.5 + 0.7 * k) + 0.1 * kick) * R / 0.3 + 0.04 * (1.0 - play);
+    float up = base - uv.y;
+    float n = vnoise(float2(cell.x * 0.35, cell.y * 0.25 + t * 9.0)) * 0.6 + vnoise(float2(cell.x * 0.9, cell.y * 0.7 + t * 14.0)) * 0.4;
+    float heat = sat(1.0 - up / max(H, 0.01)) * (0.55 + 0.6 * n);
+    heat = up < 0.0 ? (0.25 + 0.6 * exp(up * 14.0)) * (0.6 + 0.5 * n) : heat;   // a glowing ember bed below
+    heat *= smoothstep(1.05, 0.85, abs(xn));
+    // Classic ramp: black, deep red, the cover's colour, orange, yellow, white.
+    float3 fire = mix(float3(0.0), float3(0.5, 0.04, 0.02), smoothstep(0.08, 0.25, heat));
+    fire = mix(fire, mix(float3(1.0, 0.35, 0.05), A, 0.45), smoothstep(0.25, 0.45, heat));
+    fire = mix(fire, mix(float3(1.0, 0.75, 0.15), S, 0.25), smoothstep(0.45, 0.7, heat));
+    fire = mix(fire, float3(1.0, 0.98, 0.85), smoothstep(0.75, 0.95, heat));
+    // Posterize into a small palette, the way the old effect looked.
+    fire = floor(fire * 6.0 + 0.5) / 6.0;
+    col = mix(col, fire, smoothstep(0.06, 0.12, heat));
+
+    // The cover above the fire: pixelated, in a bevelled frame, lit warm from below.
+    float cs = R * 0.8;
+    float2 cc = float2(c.x, base - R * 1.25 - cs * 0.2);
+    float2 q = (uv - cc) / cs + 0.5;
+    if (q.x > -0.06 && q.x < 1.06 && q.y > -0.06 && q.y < 1.06) {
+        float inArt = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, q.y) * step(q.y, 1.0);
+        float3 frame = mix(float3(0.55, 0.5, 0.45), A, 0.25) * (q.x + q.y < 1.0 ? 1.2 : 0.6);
+        float3 art = sharpCover((floor(q * 32.0) + 0.5) / 32.0, A, S);
+        art *= 0.75 + 0.35 * q.y + 0.25 * kick;
+        col = mix(frame, art, inArt);
+    }
+    // Warm light from the fire on the frame's surroundings.
+    col += mix(float3(1.0, 0.45, 0.1), A, 0.3) * exp(-max(up, 0.0) * 6.0) * 0.12 * (0.6 + 0.6 * uBass * play);
+
+    // Pixel sparks thrown up on the kick.
+    for (int i = 0; i < 12; i++) {
+        float fi = float(i);
+        float life = fract(uBeatAge * 0.7 + hash11(fi) * 0.4);
+        float2 p = float2(c.x + (hash11(fi * 3.3) - 0.5) * asp * 0.8, base - life * (0.3 + 0.3 * hash11(fi * 5.1)) * R / 0.3 * 1.5);
+        p.x += sin(life * 8.0 + fi) * 0.02;
+        float2 pc = floor(p * res);
+        float on = step(abs(cell.x - pc.x), 0.5) * step(abs(cell.y - pc.y), 0.5) * (1.0 - life) * play;
+        col = mix(col, mix(float3(1.0, 0.85, 0.3), S, 0.3), on * (0.5 + kick));
+    }
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val VOLTCAP_INTRO = """
+// Voltcap: the start-up mark as a living background that never stops - two sparks chase each other
+// round the capsule's outline forever, the glass glows warm and a light sweeps across it, the bolt
+// breathes and every few seconds surges: a flash, small arcs jumping to the outline and a shock wave
+// rolling out. The capsule is mirrored on a glossy floor; embers drift up through the warm dark.
+// Every motion is periodic, so it loops seamlessly with no restart.
+// The Voltcap mark, shared by the Voltcap scenes: the capsule (half width 1, half height VR in its own
+// units) and the bolt inside it - the same shapes as the start-up animation (VoltcapIntro).
+const float VR = 0.44;
+
+float sdCapsuleMark(float2 q) { return sdRoundBox(q, float2(1.0, VR), VR); }
+
+// One edge of a polygon for its signed distance (squared distance, and 1 when it flips the inside test).
+float2 polyEdge(float2 p, float2 vi, float2 vj) {
+    float2 e = vj - vi;
+    float2 w = p - vi;
+    float2 b = w - e * sat(dot(w, e) / dot(e, e));
+    float c1 = step(vi.y, p.y);
+    float c2 = 1.0 - step(vj.y, p.y);
+    float c3 = step(e.y * w.x, e.x * w.y);
+    return float2(dot(b, b), c1 * c2 * c3 + (1.0 - c1) * (1.0 - c2) * (1.0 - c3));
+}
+
+// The bolt (capsule units; y down), signed distance.
+float sdBoltMark(float2 p) {
+    float2 v0 = float2(0.13, -0.33);
+    float2 v1 = float2(-0.17, 0.045);
+    float2 v2 = float2(-0.015, 0.045);
+    float2 v3 = float2(-0.11, 0.33);
+    float2 v4 = float2(0.19, -0.055);
+    float2 v5 = float2(0.035, -0.055);
+    float d = dot(p - v0, p - v0);
+    float flips = 0.0;
+    float2 r;
+    r = polyEdge(p, v0, v5); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v1, v0); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v2, v1); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v3, v2); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v4, v3); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v5, v4); d = min(d, r.x); flips += r.y;
+    float s = mod(flips, 2.0) > 0.5 ? -1.0 : 1.0;
+    return s * sqrt(d);
+}
+
+// A point on the capsule's outline at angle a (close enough to the real outline for sparks).
+float2 capsulePoint(float a) {
+    return float2(clamp(1.35 * cos(a), -1.0, 1.0) * (1.0 - VR), 0.0) + VR * float2(cos(a), sin(a));
+}
+
+// The lit mark at q (capsule units), returns its colour (added light) and coverage in .a.
+float4 markAt(float2 q, float K, float px, float t, float surge, float3 A, float3 S, float3 CREAM) {
+    float d = sdCapsuleMark(q);
+    float inside = 1.0 - smoothstep(-px / K, px / K, d);
+    float3 col = float3(0.0);
+    // Glass: warm gradient, darker at the rims, a soft inner glow behind the bolt.
+    float3 fill = mix(A, S, sat(0.55 - q.y * 0.9)) * (0.28 + 0.22 * sat(1.0 - length(q * float2(0.8, 1.6))));
+    fill += A * 0.25 * exp(-length(q) * 2.2) * (0.7 + 0.6 * surge);
+    // A slow band of light sweeping across, and a fixed highlight along the top.
+    float sweep = exp(-sqf((q.x + q.y * 0.5 - (fract(t / 6.0) * 4.4 - 2.2)) * 2.4));
+    fill += CREAM * sweep * 0.16;
+    fill += CREAM * 0.18 * smoothstep(0.1, 0.0, abs(q.y + VR * 0.62)) * smoothstep(0.85, 0.3, abs(q.x));
+    col += fill * inside;
+    // The outline: a bright rim with a glow.
+    col += mix(A, S, 0.3) * glow(abs(d) * K, 0.0022) * (0.9 + 0.5 * surge);
+    col += mix(S, CREAM, 0.4) * (1.0 - smoothstep(0.0, px / K * 2.2, abs(d))) * 0.6;
+    // The bolt: always on, breathing, white-hot on a surge.
+    float db = sdBoltMark(q * (1.0 - 0.05 * surge));
+    float boltIn = 1.0 - smoothstep(0.0, px / K * 2.0, db);
+    float3 boltCol = mix(mix(S, CREAM, 0.35), CREAM, surge);
+    col = mix(col, boltCol, boltIn);
+    col += S * glow(max(db, 0.0) * K, 0.005 + 0.008 * surge) * (0.45 + 0.9 * surge);
+    return float4(col, max(inside, boltIn));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;      // orange
+    float3 S = uSec.rgb;      // yellow
+    float3 BG = uBg.rgb;
+    float3 CREAM = float3(1.0, 0.965, 0.84);
+
+    float2 c = float2(asp * 0.5, 0.42);
+    float K = 0.27;                       // capsule half width, in screen heights
+    // A slow float up and down.
+    c.y += 0.008 * sin(t * TAU / 8.0);
+    float2 q = (uv - c) / K;
+
+    // A surge every 4 seconds: quick rise, slower fall.
+    float ph = fract(t / 4.0);
+    float surge = smoothstep(0.0, 0.03, ph) * exp(-ph * 9.0);
+
+    // Stage: warm black, a glow behind the mark, a glossy floor under it.
+    float floorY = c.y + K * VR + 0.11;
+    float3 col = BG * 0.55 + float3(0.012, 0.01, 0.014);
+    col += A * exp(-length((uv - c) * float2(0.55, 1.0)) * 2.6) * (0.12 + 0.12 * surge);
+    col += A * 0.05 * smoothstep(floorY - 0.01, floorY + 0.3, uv.y) * exp(-abs(uv.x - c.x) * 1.5);
+    col += mix(A, CREAM, 0.5) * exp(-abs(uv.y - floorY) * 160.0) * exp(-abs(uv.x - c.x) * 2.5) * 0.15;
+
+    // Reflection on the floor: the mark mirrored, fading and a little blurred by distance.
+    if (uv.y > floorY) {
+        float2 mq = (float2(uv.x, 2.0 * floorY - uv.y) - c) / K;
+        float fade = exp(-(uv.y - floorY) * 9.0) * 0.32;
+        float4 m = markAt(mq + float2(sin(uv.y * 90.0 + t) * 0.004, 0.0), K, px * 3.0, t, surge, A, S, CREAM);
+        col += m.rgb * fade;
+    }
+
+    // The mark.
+    float4 m = markAt(q, K, px, t, surge, A, S, CREAM);
+    col = mix(col, col * 0.25, m.a * 0.8);
+    col += m.rgb;
+
+    // Two sparks chasing round the outline, forever (a full lap every 3 s), with long tails.
+    for (int i = 0; i < 2; i++) {
+        float a = t * TAU / 3.0 + float(i) * PI;
+        float2 sp = capsulePoint(a);
+        col += mix(S, CREAM, 0.6) * glow(length(q - sp) * K, 0.0045);
+        for (int j = 1; j < 9; j++) {
+            float aj = a - float(j) * 0.06;
+            col += mix(A, S, 0.4) * glow(length(q - capsulePoint(aj)) * K, 0.0026) * (0.42 - float(j) * 0.045);
+        }
+    }
+
+    // Surge: arcs jumping from the bolt to the outline, and a shock wave.
+    if (surge > 0.02) {
+        for (int i = 0; i < 4; i++) {
+            float fi = float(i);
+            float a = fi * 1.57 + floor(t / 4.0) * 2.1 + 0.4;
+            float2 to = capsulePoint(a) * 0.98;
+            float2 from = to * 0.25;
+            float2 ab = to - from;
+            float h = sat(dot(q - from, ab) / dot(ab, ab));
+            float2 nrm = float2(-ab.y, ab.x) / length(ab);
+            float jag = (vnoise(float2(h * 9.0, t * 30.0 + fi * 7.0)) - 0.5) * 0.18 * sin(h * PI);
+            float dd = length(q - (from + ab * h + nrm * jag));
+            col += mix(S, CREAM, 0.6) * glow(dd * K, 0.0016) * surge * 1.2;
+        }
+    }
+    float age = ph * 4.0;
+    float ring = exp(-abs(length((uv - c) * float2(0.85, 1.5)) - K * 0.9 - age * 0.32) * 55.0) * exp(-age * 1.6);
+    col += mix(S, CREAM, 0.4) * ring * 0.55;
+    col += CREAM * surge * exp(-length(uv - c) * 5.0) * 0.35;
+
+    // Embers drifting up through the warm air.
+    float2 ep = uv + float2(sin(uv.y * 7.0 + t * 0.8) * 0.012, t * 0.045);
+    col += mix(A, S, 0.5) * dots(ep, 30.0, float2(0.0), 0.08, 0.07, 7.0) * 0.55 * smoothstep(0.05, 0.9, uv.y);
+    col += mix(S, CREAM, 0.5) * dots(ep * 1.7 + 3.0, 26.0, float2(0.0), 0.05, 0.05, 11.0) * 0.3;
+
+    // Vignette.
+    float2 vv = fc / uRes - 0.5;
+    col *= 1.0 - 0.45 * dot(vv, vv);
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val VOLTCAP_BEAT = """
+// Voltcap beat: the Voltcap capsule as a big music visualizer in the song's colours over its blurred
+// cover. Everything follows the music, not a clock: the capsule swells with the bass, its outline
+// burns brighter the louder it gets, a ring of spectrum bars stands out all round it (bass at the top
+// and bottom, highs towards the ends), sparks race round faster when the song gets busy, and only a
+// real kick flashes the bolt, throws arcs to the outline and rolls a shock wave out. Quiet parts
+// calm right down.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+// The Voltcap mark, shared by the Voltcap scenes: the capsule (half width 1, half height VR in its own
+// units) and the bolt inside it - the same shapes as the start-up animation (VoltcapIntro).
+const float VR = 0.44;
+
+float sdCapsuleMark(float2 q) { return sdRoundBox(q, float2(1.0, VR), VR); }
+
+// One edge of a polygon for its signed distance (squared distance, and 1 when it flips the inside test).
+float2 polyEdge(float2 p, float2 vi, float2 vj) {
+    float2 e = vj - vi;
+    float2 w = p - vi;
+    float2 b = w - e * sat(dot(w, e) / dot(e, e));
+    float c1 = step(vi.y, p.y);
+    float c2 = 1.0 - step(vj.y, p.y);
+    float c3 = step(e.y * w.x, e.x * w.y);
+    return float2(dot(b, b), c1 * c2 * c3 + (1.0 - c1) * (1.0 - c2) * (1.0 - c3));
+}
+
+// The bolt (capsule units; y down), signed distance.
+float sdBoltMark(float2 p) {
+    float2 v0 = float2(0.13, -0.33);
+    float2 v1 = float2(-0.17, 0.045);
+    float2 v2 = float2(-0.015, 0.045);
+    float2 v3 = float2(-0.11, 0.33);
+    float2 v4 = float2(0.19, -0.055);
+    float2 v5 = float2(0.035, -0.055);
+    float d = dot(p - v0, p - v0);
+    float flips = 0.0;
+    float2 r;
+    r = polyEdge(p, v0, v5); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v1, v0); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v2, v1); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v3, v2); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v4, v3); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v5, v4); d = min(d, r.x); flips += r.y;
+    float s = mod(flips, 2.0) > 0.5 ? -1.0 : 1.0;
+    return s * sqrt(d);
+}
+
+// A point on the capsule's outline at angle a (close enough to the real outline for sparks).
+float2 capsulePoint(float a) {
+    return float2(clamp(1.35 * cos(a), -1.0, 1.0) * (1.0 - VR), 0.0) + VR * float2(cos(a), sin(a));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 CREAM = float3(1.0, 0.965, 0.84);
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float busy = (uMid + uHigh) * 0.5 * play;
+    float kick = exp(-uBeatAge * 4.5) * play;
+    float loud = sat((uEqA.x + uEqA.y + uEqA.z + uEqA.w + uEqB.x + uEqB.y) / 6.0) * play;
+
+    float3 col = coverField(uv, asp, t, bass, 0.42, BG, A, S);
+    float2 c = float2(waveX(asp), uWaveY);
+    // Size: the room it was given (the bars need ~45 % of it outside the capsule).
+    float K0 = room(0.24) * 0.78;
+    float K = K0 * (1.0 + (0.05 * bass + 0.06 * kick) * (0.4 + 0.8 * k));
+    float2 q = (uv - c) / K;
+    float d = sdCapsuleMark(q);
+
+    // Glow of the whole mark on the background, breathing with the level.
+    col += mix(A, S, 0.4) * exp(-max(d, 0.0) * 1.6) * (0.06 + 0.22 * loud * k);
+
+    // Ring of spectrum bars standing out from the outline.
+    float ang = atan(q.y, q.x * 0.5);
+    float n = 72.0;
+    float fid = floor((ang + PI) / TAU * n);
+    float ca = (fid + 0.5) / n * TAU - PI;
+    float m = 1.0 - abs(sin(ca));                         // 0 = top / bottom middle (bass), 1 = the ends (highs)
+    float e = eqAt(m) * play;
+    float h = (0.05 + 0.75 * e * (0.45 + 0.7 * k)) * (0.35 + 0.65 * play);
+    float gap = 0.09;
+    float lane = abs(fract((ang + PI) / TAU * n) - 0.5);
+    float inBar = step(lane, 0.3) * step(gap, d) * step(d, gap + h);
+    float3 bc = mix(mix(A, S, m), CREAM, sat((d - gap) / max(h, 0.01)) * 0.35);
+    col = mix(col, bc * (0.75 + 0.7 * e), inBar);
+    // Soft bloom above each bar's tip.
+    col += bc * step(lane, 0.3) * step(gap, d) * glow(max(d - gap - h, 0.0) * K, 0.003) * 0.35 * e;
+
+    // The capsule: dark glass with the song's colours deep inside, the outline burning with the level.
+    float inside = 1.0 - smoothstep(-px / K, px / K, d);
+    float3 glass = BG * 0.3 + mix(A, S, sat(0.5 - q.y)) * (0.08 + 0.18 * bass * k);
+    glass += CREAM * 0.12 * smoothstep(0.1, 0.0, abs(q.y + VR * 0.62)) * smoothstep(0.85, 0.3, abs(q.x));
+    col = mix(col, glass, inside * 0.9);
+    float rim = 0.35 + 1.5 * loud * k + 0.8 * kick * k;
+    col += mix(A, S, 0.3) * glow(abs(d) * K, 0.0018 + 0.004 * bass * k) * rim;
+    col += mix(S, CREAM, 0.5) * (1.0 - smoothstep(0.0, px / K * 2.2, abs(d))) * (0.3 + 0.5 * loud);
+
+    // Sparks orbiting the outline: speed follows how busy the song is (they nearly stop when it's quiet).
+    float spd = 0.15 + 2.4 * busy * (0.5 + 0.7 * k);
+    float base = t * spd;
+    for (int i = 0; i < 3; i++) {
+        float a = base + float(i) * TAU / 3.0;
+        col += mix(S, CREAM, 0.5) * glow(length(q - capsulePoint(a)) * K, 0.0035) * (0.4 + 0.8 * busy);
+        for (int j = 1; j < 6; j++) {
+            col += A * glow(length(q - capsulePoint(a - float(j) * 0.07 * (0.4 + spd))) * K, 0.002) * (0.32 - float(j) * 0.05) * (0.4 + busy);
+        }
+    }
+
+    // The bolt: steady, flashing white-hot and growing on a real kick only.
+    float db = sdBoltMark(q / (1.0 + 0.16 * kick * k));
+    float3 boltCol = mix(mix(A, S, 0.6), CREAM, kick);
+    col = mix(col, boltCol, 1.0 - smoothstep(0.0, px / K * 2.0, db));
+    col += S * glow(max(db, 0.0) * K, 0.004 + 0.012 * kick) * (0.25 + 1.1 * kick * k);
+
+    // Strong kicks throw little arcs from the bolt to the outline.
+    if (kick * k > 0.25) {
+        for (int i = 0; i < 3; i++) {
+            float fi = float(i);
+            float a = fi * 2.1 + floor(t * 3.0) * 1.7;
+            float2 to = capsulePoint(a) * 0.97;
+            float2 from = to * 0.22;
+            float2 ab = to - from;
+            float hh = sat(dot(q - from, ab) / dot(ab, ab));
+            float2 nrm = float2(-ab.y, ab.x) / length(ab);
+            float jag = (vnoise(float2(hh * 9.0, t * 30.0 + fi * 5.0)) - 0.5) * 0.16 * sin(hh * PI);
+            col += mix(S, CREAM, 0.6) * glow(length(q - (from + ab * hh + nrm * jag)) * K, 0.0014) * (kick * k - 0.25) * 1.8;
+        }
+    }
+
+    // Shock wave on the kick, sized to the capsule.
+    float ring = exp(-abs(length((uv - c) * float2(0.85, 1.55)) - K * (0.95 + 1.6 * (1.0 - kick))) * 45.0) * kick;
+    col += mix(S, CREAM, 0.4) * ring * 0.55 * k;
+
+    // Sparks flung out on kicks, drifting off.
+    float2 fp = (uv - c) / K;
+    float fl = dots(fp * 0.6 + float2(t * 0.05, -t * 0.08), 14.0, float2(0.0), 0.12, 0.07, 5.0);
+    col += mix(A, CREAM, 0.4) * fl * smoothstep(1.2, 2.2, length(fp * float2(0.5, 1.0))) * (0.1 + 0.6 * kick) * play;
+
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val VOLTCAP_PIXELS = """
+// Voltcap 32-bit: little pixel-art Voltcap capsules and bolts - 32-pixel sprites with a dark outline
+// and a highlight - hopping about over a dark checkered floor, each with its own bounce (squashing a
+// little when it lands) and a shadow, now and then a sparkle when two pass each other.
+// The Voltcap mark, shared by the Voltcap scenes: the capsule (half width 1, half height VR in its own
+// units) and the bolt inside it - the same shapes as the start-up animation (VoltcapIntro).
+const float VR = 0.44;
+
+float sdCapsuleMark(float2 q) { return sdRoundBox(q, float2(1.0, VR), VR); }
+
+// One edge of a polygon for its signed distance (squared distance, and 1 when it flips the inside test).
+float2 polyEdge(float2 p, float2 vi, float2 vj) {
+    float2 e = vj - vi;
+    float2 w = p - vi;
+    float2 b = w - e * sat(dot(w, e) / dot(e, e));
+    float c1 = step(vi.y, p.y);
+    float c2 = 1.0 - step(vj.y, p.y);
+    float c3 = step(e.y * w.x, e.x * w.y);
+    return float2(dot(b, b), c1 * c2 * c3 + (1.0 - c1) * (1.0 - c2) * (1.0 - c3));
+}
+
+// The bolt (capsule units; y down), signed distance.
+float sdBoltMark(float2 p) {
+    float2 v0 = float2(0.13, -0.33);
+    float2 v1 = float2(-0.17, 0.045);
+    float2 v2 = float2(-0.015, 0.045);
+    float2 v3 = float2(-0.11, 0.33);
+    float2 v4 = float2(0.19, -0.055);
+    float2 v5 = float2(0.035, -0.055);
+    float d = dot(p - v0, p - v0);
+    float flips = 0.0;
+    float2 r;
+    r = polyEdge(p, v0, v5); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v1, v0); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v2, v1); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v3, v2); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v4, v3); d = min(d, r.x); flips += r.y;
+    r = polyEdge(p, v5, v4); d = min(d, r.x); flips += r.y;
+    float s = mod(flips, 2.0) > 0.5 ? -1.0 : 1.0;
+    return s * sqrt(d);
+}
+
+// A point on the capsule's outline at angle a (close enough to the real outline for sparks).
+float2 capsulePoint(float a) {
+    return float2(clamp(1.35 * cos(a), -1.0, 1.0) * (1.0 - VR), 0.0) + VR * float2(cos(a), sin(a));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+
+    // Background: dark gradient with a faint pixel checker.
+    float3 col = mix(BG * 0.7, BG * 1.3 + A * 0.04, uv.y);
+    float2 ck = floor(uv * 24.0);
+    col *= 0.94 + 0.06 * mod(ck.x + ck.y, 2.0);
+
+    // Sprites: one per cell of a loose grid, wandering a little, hopping.
+    float cell = 0.38;
+    float2 g = uv / cell;
+    float2 gid0 = floor(g);
+    for (int jy = -1; jy <= 1; jy++) {
+        for (int jx = -1; jx <= 1; jx++) {
+            float2 id = gid0 + float2(float(jx), float(jy));
+            float h = hash12(id + 3.0);
+            if (h < 0.18) continue;
+            float kind = step(0.55, hash12(id + 9.0));       // 0 capsule, 1 bolt
+            float sp = 1.6 + 1.6 * hash12(id + 1.0);
+            float ph = hash12(id + 5.0) * 6.28;
+            float hop = abs(sin(t * sp + ph));
+            float land = 1.0 - smoothstep(0.0, 0.25, hop);
+            // Base position in the cell, drifting slowly sideways.
+            float2 base = (id + 0.5 + (hash22(id + 2.0) - 0.5) * 0.4) * cell;
+            base.x += sin(t * 0.3 * sp + ph) * cell * 0.25;
+            float size = 0.17;                              // sprite height in screen heights
+            float2 pos = base - float2(0.0, hop * 0.07);
+            // Shadow on the "floor".
+            float2 sd = (uv - base - float2(0.0, size * 0.55)) / float2(size * 0.5 * (1.1 - hop * 0.4), size * 0.1);
+            col *= 1.0 - 0.35 * (1.0 - smoothstep(0.7, 1.0, length(sd)));
+            // The sprite in its own 32x32 pixel grid (squash on landing).
+            float2 sq = float2(1.0 + 0.18 * land, 1.0 - 0.18 * land);
+            float2 local = (uv - pos) / (size * sq);       // -0.5..0.5 across the sprite
+            if (abs(local.x) > 0.6 || abs(local.y) > 0.6) continue;
+            float2 pix = (floor((local + 0.5) * 32.0) + 0.5) / 32.0 - 0.5;
+            float2 pq = pix * 2.2;                           // into capsule units
+            float dShape = kind < 0.5 ? sdCapsuleMark(float2(pq.x, pq.y * 1.0)) : sdBoltMark(pq * 0.42);
+            float pxSize = 2.2 / 32.0 * (kind < 0.5 ? 1.0 : 0.42);
+            float inside = step(dShape, 0.0);
+            float outline = step(dShape, pxSize * 1.1) * (1.0 - inside);
+            if (inside + outline < 0.5) continue;
+            float3 body;
+            if (kind < 0.5) {
+                // Capsule: the theme's colour, a bolt drawn on it in the second colour.
+                body = mix(A * 0.8, A * 1.15, step(pq.y, 0.0));
+                float b = sdBoltMark(pq * 0.85);
+                body = mix(body, mix(S, float3(1.0), 0.3), step(b, 0.0));
+            } else {
+                body = mix(S * 0.85, mix(S, float3(1.0), 0.45), step(pq.x + pq.y * 0.5, 0.0));
+            }
+            // Highlight pixels at the top-left.
+            body += float3(1.0) * 0.25 * step(pix.y, -0.28) * step(pix.x, -0.1) * inside;
+            float3 sprite = mix(float3(0.05, 0.04, 0.06), body, inside);
+            col = sprite;
+        }
+    }
+    // Sparkles here and there.
+    col += mix(S, float3(1.0), 0.5) * dots(uv, 18.0, float2(0.0), 0.06, 0.05, 11.0) * 0.5;
+
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val RETRO_BOUNCE = """
+// Retro bounce: the 32-bit backdrop behind the bouncing controller parts and console icons (drawn by
+// the app, RetroBounceLayer). A dark sky in fat pixels with a slow dither, chunky stars twinkling in
+// steps, and a scrolling checkerboard floor in the theme's colours with a glowing horizon.
+half4 main(float2 fc) {
+    // Everything snapped to 4-pixel blocks (at full resolution) for the 32-bit look.
+    float blk = max(2.0, floor(uRes.y / 180.0));
+    float2 g = floor(fc / blk) * blk + blk * 0.5;
+    float2 uv = g / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = floor(uTime * 12.0) / 12.0; // stepped time: moves like an old console, not smoothly
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float horizon = 0.72;
+
+    // Sky: banded gradient (posterised) from the background to a hint of the secondary colour.
+    float sky = floor(sat(uv.y / horizon) * 8.0) / 8.0;
+    float3 col = mix(BG * 0.7 + S * 0.05, BG * 1.2 + S * 0.18, sky);
+    // Ordered dither between the bands.
+    float2 cell = floor(fc / blk);
+    float d = fract((cell.x + cell.y * 2.0) * 0.25);
+    col += (d - 0.4) * 0.012;
+
+    // Chunky stars (one fat pixel each) that blink on and off in steps.
+    float2 sc = floor(uv * 34.0);
+    float h = hash12(sc + 3.1);
+    float2 starAt = floor((sc + 0.2 + 0.6 * hash22(sc)) / 34.0 * uRes.y / blk);
+    float isStar = step(abs(cell.x - starAt.x) + abs(cell.y - starAt.y), 0.5);
+    float on = step(0.9, h) * step(0.35, fract(h * 13.0 + t * (0.3 + h)));
+    float3 starCol = mix(float3(1.0), mix(A, S, step(0.5, fract(h * 7.0))), 0.45);
+    col += starCol * isStar * on * (1.0 - step(horizon - 0.02, uv.y)) * 0.8;
+
+    // Floor: a scrolling checkerboard in perspective below the horizon.
+    if (uv.y > horizon) {
+        float z = (uv.y - horizon);
+        float depth = 0.6 / max(z, 0.003);
+        float2 fp = float2((uv.x - asp * 0.5) * depth * 1.6, depth + t * 1.5);
+        float chk = mod(floor(fp.x) + floor(fp.y), 2.0);
+        float3 fl = mix(BG * 0.8 + A * 0.32, BG * 0.7 + S * 0.22, chk);
+        // Further away: darker and hazier, like fog on the horizon.
+        fl = mix(fl, BG * 1.1 + A * 0.12, exp(-z * 14.0));
+        col = mix(col, fl, sat(z * 40.0));
+    }
+    // Horizon glow line.
+    col += A * exp(-abs(uv.y - horizon) * 90.0) * 0.45;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val LYRIC_CLOUD = """
+// Lyric cloud (music): a calm stage for the song's words. The cover, very soft and slowly drifting,
+// sinks into a deep vignette so the lyrics scattered over it (drawn by the app in the cover's colours,
+// LyricScatterLayer) always read; a few big bokeh lights in the cover's colours float through, the
+// whole picture breathing a little brighter on the bass.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float play = uPlaying;
+    float bass = uBass * play * uIntensity;
+    float kick = exp(-uBeatAge * 3.0) * play * uIntensity;
+
+    float3 col = coverField(uv, asp, t * 0.6, bass, 0.42, BG, A, S);
+    col = mix(col, paletteField(uv, asp, t * 0.5, 0.0, BG, A, S) * 0.35, 0.35);
+    // Deep vignette: the middle stays open, the edges fall to near black.
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float v = length(p * float2(0.8 / max(asp, 1.0), 1.0));
+    col *= mix(1.0, 0.35, smoothstep(0.25, 0.85, v));
+    // Big soft bokeh lights drifting upwards, in the cover's colours.
+    float b1 = dots(uv, 4.0, float2(t * 0.006, -t * 0.012), 0.22, 0.32, 11.0);
+    float b2 = dots(uv, 7.0, float2(-t * 0.008, -t * 0.018), 0.18, 0.26, 23.0);
+    col += A * b1 * (0.10 + 0.10 * bass) + S * b2 * (0.08 + 0.08 * bass);
+    // A breath of light on the kick, centred.
+    col += mix(A, S, 0.5) * exp(-v * 2.4) * kick * 0.08;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val LYRIC_KARAOKE = """
+// Karaoke (music, lyrics): the stage of a karaoke video for the song's words. The cover, soft and
+// slowly panning, in the cover's colours; long beams of light sweep across it, little stars twinkle
+// with the highs and the whole picture lifts on the kick. The words themselves (the line being sung
+// filling with colour, a bouncing ball, the next line) are drawn by the app on top (LyricThemes.kt).
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float play = uPlaying;
+    float k = uIntensity;
+    float bass = uBass * play * k;
+    float kick = exp(-uBeatAge * 3.5) * play * k;
+
+    // The cover, panning slowly from side to side (a video's slow camera move).
+    float2 pan = float2(0.06 * sin(t * 0.05), 0.03 * sin(t * 0.037 + 1.0));
+    float3 col = coverField(uv + pan, asp, t * 0.5, bass, 0.5, BG, A, S);
+    col = mix(col, paletteField(uv, asp, t * 0.4, bass, BG, A, S) * 0.6, 0.35);
+    col = vivid(col, 1.3);
+    // Beams of light sweeping across, slanted, in the cover's two colours.
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float x = uv.x - uv.y * 0.35 - (fract(t * (0.018 + 0.006 * fi) + fi * 0.37) * (asp + 1.0) - 0.5);
+        float beam = exp(-x * x / (0.004 + 0.003 * fi));
+        col += mix(A, S, fi * 0.5) * beam * (0.16 + 0.1 * bass);
+    }
+    // Twinkling stars, a few more with the highs.
+    col += float3(1.0) * dots(uv, 30.0, float2(t * 0.004, 0.0), 0.05 + 0.08 * uHigh * play, 0.06, 4.0) * 0.5;
+    // Video letterbox: the top and bottom fall darker, the middle (where the words go) stays open.
+    float mid = abs(uv.y - 0.5);
+    col *= mix(1.0, 0.45, smoothstep(0.28, 0.5, mid));
+    col += mix(A, S, 0.5) * exp(-length((uv - float2(asp * 0.5, 0.5)) * float2(0.6, 1.6)) * 2.0) * kick * 0.1;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val LYRIC_NEON = """
+// Neon lyrics (music, lyrics): a dark brick wall at night where the song's words light up as neon
+// tubes, word by word as they're sung (drawn by the app on top, LyricThemes.kt). The wall here takes
+// the tubes' glow in the cover's colours, brightest in the middle, breathing with the bass and
+// buzzing now and then; a wet pavement at the bottom catches the light in long streaks.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float kick = exp(-uBeatAge * 4.0) * play;
+
+    // Bricks, each a slightly different shade, soft mortar lines.
+    float2 bq = uv * float2(7.0, 14.0);
+    bq.x += step(0.5, fract(bq.y * 0.5)) * 0.5;
+    float2 bf = fract(bq);
+    float mortar = 1.0 - smoothstep(0.04, 0.08, min(min(bf.x, 1.0 - bf.x) * 2.0, min(bf.y, 1.0 - bf.y)));
+    float3 brick = mix(float3(0.13, 0.065, 0.06), float3(0.2, 0.1, 0.085), hash12(floor(bq)));
+    brick *= 0.85 + 0.15 * vnoise(uv * 60.0);
+    float3 col = mix(brick, float3(0.035), mortar) * (0.7 + 0.3 * BG.r);
+    // The tubes' light on the wall: a wide pool in the middle, in the cover's colours.
+    float buzz = 0.9 + 0.1 * step(0.06, hash11(floor(t * 9.0)));
+    float2 c = float2(asp * 0.5, 0.45);
+    float2 d = (uv - c) * float2(0.55, 1.2);
+    float pool = exp(-length(d) * 2.6);
+    float3 neon = mix(A, S, 0.5 + 0.5 * sin(t * 0.15));
+    float br = (0.55 + 0.45 * bass * k + 0.2 * kick * k) * buzz;
+    // Light grazes the bricks: their top edges catch it.
+    float edge = (1.0 - smoothstep(0.0, 0.12, bf.y)) * (1.0 - mortar);
+    col += neon * pool * br * (0.5 + 0.35 * edge);
+    // A little stray glow from a second colour on one side.
+    col += S * exp(-length((uv - float2(asp * 0.15, 0.2)) * float2(0.8, 1.4)) * 3.0) * 0.12 * br;
+    // Wet pavement: darker, with the glow smeared down in streaks.
+    float floorY = 0.84;
+    if (uv.y > floorY) {
+        float fy = (uv.y - floorY) / (1.0 - floorY);
+        float3 wet = float3(0.03, 0.03, 0.035) * (0.8 + 0.4 * vnoise(float2(uv.x * 40.0, fy * 6.0)));
+        float streak = exp(-abs(uv.x - c.x) * 1.6) * (0.6 + 0.4 * vnoise(float2(uv.x * 90.0, fy * 2.0 + t * 0.2)));
+        wet += neon * streak * br * 0.35 * (1.0 - fy * 0.7);
+        col = mix(col, wet, smoothstep(floorY - px, floorY + px, uv.y));
+    }
+    col *= 1.0 - 0.35 * smoothstep(0.3, 0.75, length((uv - c) * float2(0.6 / max(asp, 1.0), 1.0)));
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val DISC_SLEEVE = """
+// Disc & sleeve: a square album cover with its disc slid halfway out from behind it, spinning slowly
+// under a soft spotlight. The art is on the sleeve and printed on the disc; the rainbow and the
+// highlights stay fixed to the light while the print turns. Rings roll off the disc on every kick.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+float3 hue3(float h) {
+    return clamp(abs(fract(h + float3(0.0, 0.6667, 0.3333)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
+}
+
+float rbox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + r;
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float k = uIntensity;
+    float play = uPlaying;
+    float bass = uBass * play;
+    float high = uHigh * play;
+    float kick = exp(-uBeatAge * 5.0) * play;
+    float lvl = bass * 0.5 + uMid * play * 0.3 + high * 0.2;
+
+    float3 col = paletteField(uv, asp, t, lvl * k, BG, A, S) * 0.85;
+    float2 c = float2(waveX(asp), uWaveY);
+    float H = room(0.28) * 0.9 * (1.0 + 0.012 * kick * k); // half the sleeve's side
+    float2 cc = c - float2(H * 0.5, 0.0);                  // sleeve centre
+    float R = H * 0.93;
+    float2 dc = cc + float2(H * 1.0, 0.0);                 // disc centre: half of it out of the sleeve
+
+    // A soft spotlight from above and a faint floor glow under the pair.
+    float2 sp = (uv - c) * float2(0.5, 1.0);
+    col += mix(A, float3(1.0), 0.45) * exp(-length(sp) * 2.4) * (0.10 + 0.14 * lvl * k);
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - (c.y + H * 1.12)) * 30.0) * 0.06 * (1.0 - smoothstep(0.0, H * 2.2, abs(uv.x - c.x)));
+
+    // The disc (behind the sleeve).
+    float2 d = uv - dc;
+    float r = length(d);
+    float ang = atan(d.y, d.x);
+    col += mix(A, S, 0.5) * exp(-max(r - R, 0.0) * 9.0) * (0.06 + 0.35 * bass * k);
+    float rr = R + uBeatAge * 0.45;
+    col += mix(S, float3(1.0), 0.3) * exp(-abs(r - rr) * 90.0) * exp(-uBeatAge * 2.5) * 0.45 * k * play;
+    col *= 1.0 - 0.35 * exp(-max(length(d - float2(0.01, 0.018)) - R, 0.0) * 40.0) * step(R, r);
+    if (r < R) {
+        float rn = r / R;
+        float spin = 2.6 * uPlayT + t * 0.12; // slower than before: calm, still clearly spinning
+        float la = ang - spin;
+        float2 q = float2(cos(la), sin(la)) * rn;
+        float3 print = mix(mix(A, S, q.y * 0.5 + 0.5), float3(1.0), 0.1);
+        float3 art = float3(uCover.eval(clamp(q * 0.5 + 0.5, 0.0, 1.0) * uCoverSize).rgb);
+        print = mix(print, art, uHasArt);
+        float band = pow(abs(cos(ang - 0.7 + 0.08 * sin(t * 0.4))), 6.0);
+        float3 rainbow = hue3(rn * 1.2 + 0.1 * sin(t * 0.2) + 0.15 * cos(ang - 0.7));
+        float3 disc = mix(print, rainbow, 0.06 + 0.3 * band);
+        disc += float3(1.0) * pow(band, 8.0) * 0.32;
+        disc = mix(disc, mix(float3(0.85), rainbow, 0.4), smoothstep(0.96, 0.975, rn));
+        float hub = smoothstep(0.30, 0.31, rn);
+        float3 clear = mix(col * 0.75 + float3(0.12), rainbow * 0.4 + 0.4, 0.3 * smoothstep(0.18, 0.3, rn));
+        disc = mix(clear, disc, hub);
+        disc = mix(disc, float3(0.9), (1.0 - smoothstep(0.0, 0.006, abs(rn - 0.305))) * 0.6);
+        disc = mix(col * 0.6, disc, smoothstep(0.12, 0.13, rn));
+        disc = mix(disc, float3(0.95), (1.0 - smoothstep(0.0, 0.004, abs(rn - 0.995))) * 0.7);
+        col = disc;
+    }
+
+    // The sleeve on top: its shadow on the disc and the floor, then the cover.
+    float2 q = uv - cc;
+    float sh = rbox(q - float2(H * 0.05, H * 0.06), float2(H), H * 0.03);
+    col *= 1.0 - 0.5 * (1.0 - smoothstep(0.0, H * 0.16, sh)) * step(0.0, sh);
+    float bd = rbox(q, float2(H), H * 0.03);
+    if (bd < 0.0) {
+        float2 st = q / (2.0 * H) + 0.5;
+        float3 art = float3(uCover.eval(clamp(st, 0.0, 1.0) * uCoverSize).rgb);
+        float3 fallback = mix(mix(A, S, st.y), BG * 1.4 + 0.05, 0.35 * st.x);
+        float3 cv = mix(fallback, art, uHasArt);
+        // Glossy sleeve: a slow diagonal sheen, light from the top, a bevelled edge.
+        float sheen = 1.0 - smoothstep(0.0, 0.22, abs(st.x * 0.8 + st.y * 0.6 - 0.45 - 0.15 * sin(t * 0.12)));
+        cv += float3(1.0) * sheen * 0.07;
+        cv *= 1.04 - 0.1 * st.y;
+        float edge = 1.0 - smoothstep(0.0, H * 0.025, -bd);
+        cv = mix(cv, cv * 0.55 + float3(0.28), edge * 0.45);
+        col = cv;
+    }
+
+    col += float3(1.0) * dots(uv, 34.0, float2(-t * 0.05, t * 0.025), 0.1, 0.07, 9.0) * (0.1 + 0.5 * high * k);
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val ALBUM_TIDE = """
+// Album tide: an original paper-white album card over a softly drifting cover field.
+// The wave joins the artwork to the label; the launcher's existing player stays below it.
+// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
+// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
+// where on screen the visualizer goes - plus the soft cover background.
+uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
+uniform float2 uArtSize;  // its size in pixels
+uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
+uniform float uBass;      // 0..1, smoothed
+uniform float uMid;
+uniform float uHigh;
+uniform float uBeatAge;   // seconds since the last kick (large = none)
+uniform float uPlaying;   // 0..1, fades when paused
+uniform float uIntensity; // 0..1, Settings > strength
+uniform float4 uEqA;      // bands 0-3 (low), 0..1
+uniform float4 uEqB;      // bands 4-7 (high)
+uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
+uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
+uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
+uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
+uniform float2 uCoverSize;
+uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
+uniform float2 uLabelSize;
+uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
+uniform float uHistCount; // how many of the 8 are filled
+uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
+// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
+// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
+uniform float uPlayT;     // time spent playing (integral of uPlaying)
+uniform float uBassT;     // integral of uBass x uPlaying
+uniform float uMidT;      // integral of uMid x uPlaying
+uniform float uHighT;     // integral of uHigh x uPlaying
+
+// The visualizer's room, with a sensible size when it isn't set (previews).
+float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
+// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
+float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
+
+float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
+
+float eqBand(float i) {
+    if (i < 0.5) return uEqA.x;
+    if (i < 1.5) return uEqA.y;
+    if (i < 2.5) return uEqA.z;
+    if (i < 3.5) return uEqA.w;
+    if (i < 4.5) return uEqB.x;
+    if (i < 5.5) return uEqB.y;
+    if (i < 6.5) return uEqB.z;
+    return uEqB.w;
+}
+
+// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
+float eqAt(float m) {
+    float f = clamp(m, 0.0, 1.0) * 7.0;
+    float i = floor(f);
+    float u = f - i;
+    u = u * u * (3.0 - 2.0 * u);
+    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
+}
+
+// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
+float3 vivid(float3 c, float s) {
+    float l = dot(c, float3(0.299, 0.587, 0.114));
+    return max(mix(float3(l), c, s), 0.0);
+}
+
+// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
+float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
+    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
+    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
+    float2 q = p / max(asp, 1.0) + 0.5;
+    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
+    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
+    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
+}
+
+// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
+// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
+float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
+    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
+    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
+    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
+    col = mix(BG, col, 0.42 + 0.18 * lift);
+    return col;
+}
+
+// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
+float3 sharpCover(float2 q, float3 A, float3 S) {
+    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
+    return mix(mix(A, S, q.y), art, uHasArt);
+}
+
+// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
+float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
+
+// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
+float labelInk(float2 q) {
+    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
+    return float(uLabel.eval(q * uLabelSize).a);
+}
+
+// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
+// ones there are; with none yet, the current cover in the song's colours instead).
+float3 pastCover(float i, float2 q, float3 A, float3 S) {
+    q = clamp(q, 0.0, 1.0);
+    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
+    float n = mod(floor(i), uHistCount);
+    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
+    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
+    return float3(uHistory.eval(p).rgb);
+}
+
+float tideBox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + r;
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float level = (uBass * 0.55 + uMid * 0.3 + uHigh * 0.15) * uPlaying * uIntensity;
+    float2 bgq = float2(uv.x / asp, uv.y);
+    bgq = (bgq - 0.5) * 0.8 + 0.5 + float2(sin(t * 0.035), cos(t * 0.027)) * 0.025;
+    float3 art = float3(uArt.eval(clamp(bgq, 0.0, 1.0) * uArtSize).rgb);
+    float3 col = mix(paletteField(uv, asp, t * 0.3, level, uBg.rgb, uAcc.rgb, uSec.rgb), art, uHasArt * 0.9);
+    col *= 0.3 + 0.08 * level;
+    float2 centre = float2(waveX(asp), uWaveY);
+    float vignette = length((uv - float2(asp * 0.5, 0.5)) * float2(1.0 / asp, 0.8));
+    col *= 1.0 - 0.4 * smoothstep(0.2, 0.8, vignette);
+    // A sparse, slow layer of luminous dust; deliberately calmer than falling code.
+    col += mix(uAcc.rgb, float3(1.0), 0.7) * dots(uv, 26.0, float2(t * 0.004, -t * 0.007), 0.018, 0.09, 21.0) * 0.15;
+    // DESKTOP_CARD_OVERLAY
+    float H = room(0.32) * 0.91;
+    float W = H * 0.79;
+    float2 p = uv - centre;
+    float mask = 1.0 - smoothstep(-0.0015, 0.0015, tideBox(p, float2(W, H), H * 0.04));
+    float shadow = exp(-max(tideBox(p - float2(0.0, H * 0.055), float2(W, H), H * 0.04), 0.0) * 65.0);
+    col *= 1.0 - shadow * 0.38;
+    if (mask > 0.0) {
+        float2 q = (p + float2(W, H)) / float2(W * 2.0, H * 2.0);
+        float3 card = float3(0.97, 0.97, 0.98);
+        float artBottom = 0.79;
+        float2 coverQ = float2(q.x, q.y / artBottom);
+        float3 picture = sharpCover(coverQ, uAcc.rgb, uSec.rgb);
+        float wave = 0.76 - (0.01 + level * 0.055) * (0.65 + 0.35 * sin(q.x * 18.0 - t * 1.6))
+            - uBass * uPlaying * uIntensity * 0.06 * exp(-sqf((q.x - 0.67) * 9.0));
+        float backWave = wave - 0.015 - level * 0.025 * sin(q.x * 24.0 + t * 1.2);
+        card = mix(picture, mix(uAcc.rgb, uSec.rgb, q.x) * 0.8, smoothstep(backWave - 0.003, backWave + 0.003, q.y));
+        card = mix(card, float3(0.97, 0.97, 0.98), smoothstep(wave - 0.002, wave + 0.002, q.y));
+        if (q.y > 0.81) {
+            float2 labelQ = float2((q.x - 0.08) / 0.84, (q.y - 0.81) / 0.16);
+            float4 ink = uLabel.eval(clamp(labelQ, 0.0, 1.0) * uLabelSize);
+            card = mix(card, ink.rgb, ink.a);
+        }
+        col = mix(col, card, mask);
     }
     return half4(finish(col, fc), 1.0);
 }
@@ -17383,5084 +21993,6 @@ half4 main(float2 fc) {
 }
 """
 
-    private const val COVER_FLOW = """
-// Cover flow (music): the classic carousel. The song's cover stands big in the middle, facing you,
-// on a glossy floor that mirrors it; the covers of the songs you played before stand angled away to
-// the left, and when the song changes the whole row glides one place: the old cover turns away into
-// the left stack while the new one swings in from the right to face you. Everything is lit in the
-// cover's own colours - a soft blur of the artwork behind, a tinted floor and a coloured rim on each
-// sleeve. The row sways gently, the middle cover lifts with the bass, a light sweeps across its glass,
-// and thin equalizer lines glow along the floor.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-uniform float uSwapAge;   // seconds since the cover changed (large = long ago)
-
-// A cover drawn as a quad turned about its vertical axis: returns uv inside it (or -1).
-float2 cardUv(float2 p, float2 c, float hw, float hh, float ang) {
-    // Perspective: the far edge gets shorter.
-    float2 d = p - c;
-    float ca = cos(ang);
-    float sa = sin(ang);
-    float x = d.x / (hw * max(ca, 0.05));
-    float persp = 1.0 + x * sa * 0.35;
-    float y = d.y / (hh * persp);
-    if (abs(x) > 1.0 || abs(y) > 1.0) return float2(-1.0);
-    return float2(x, y) * 0.5 + 0.5;
-}
-
-// Where a card in slot f sits (0 = middle, negative = left stack, positive = right), continuously,
-// so the row can glide between slots: x offset, size, turn.
-float3 slot(float f, float R) {
-    float a = min(abs(f), 1.0);
-    float x = sign(f) * (a * R * 1.35 + max(abs(f) - 1.0, 0.0) * R * 0.42);
-    return float3(x, mix(1.0, 0.62, a), -clamp(f, -1.0, 1.0) * 1.05);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float3 A = vivid(uAcc.rgb, 1.2);
-    float3 S = vivid(uSec.rgb, 1.2);
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.78;
-    float floorY = c.y + R;
-    // Behind: the artwork itself, blurred and dark, with a glow of its colours around the middle.
-    float3 col = coverField(uv, asp, t, bass, 0.55, BG, A, S);
-    col = mix(col, BG * 0.15, smoothstep(c.y - R * 2.5, floorY + 0.3, uv.y) * 0.6);
-    col += mix(A, S, 0.5) * exp(-length((uv - c) * float2(0.5, 1.0)) / R * 0.9) * 0.18;
-    float sway = 0.015 * sin(t * 0.3);
-
-    // The glide after a song change: o runs 1 -> 0 (eased), shifting every card by o slots.
-    float sw = sat(uSwapAge / 1.2);
-    float o = 1.0 - sw * sw * (3.0 - 2.0 * sw);
-
-    // Floor reflection: mirror y about the floor line.
-    float refl = 0.0;
-    float2 pu = uv;
-    if (uv.y > floorY) { pu.y = 2.0 * floorY - uv.y; refl = 1.0; }
-
-    float3 layer = float3(0.0);
-    float cover = 0.0;
-    float3 rimC = mix(A, float3(1.0), 0.35);
-    // Side cards, back to front: the left stack (earlier songs; the one just played is slot -1)
-    // and the right one (older covers repeated), all shifted by the glide.
-    for (int s = 0; s < 2; s++) {
-        float side = s == 0 ? -1.0 : 1.0;
-        for (int j = 3; j >= 0; j--) {
-            float fj = float(j);
-            if (s == 0 && j == 0) continue;            // slot -1 is drawn with the middle pair below
-            float f = side * (fj + 1.0) + o;
-            float3 sl = slot(f, R);
-            float2 cc = float2(c.x + sl.x + sway, c.y + R * 0.08 * (1.0 - sl.y) / 0.38);
-            float2 q = cardUv(pu, cc, R * sl.y, R * sl.y * 0.95, sl.z);
-            if (q.x >= 0.0) {
-                float3 cv = pastCover(side < 0.0 ? fj : fj + 4.0, q, A, S);
-                float shade = mix(0.8, 0.45, q.x * step(0.0, side) + (1.0 - q.x) * step(side, 0.0)) * (1.0 - min(abs(f), 4.0) * 0.12);
-                float edge = 1.0 - smoothstep(0.0, 0.04, min(min(q.x, 1.0 - q.x), min(q.y, 1.0 - q.y)));
-                layer = cv * shade + rimC * edge * 0.25;
-                cover = 1.0;
-            }
-        }
-    }
-    // The middle pair: the cover just played (slot -1 + o) and the current one (slot o); the one
-    // nearer the middle is drawn last.
-    float lift = bass * k * R * 0.05;
-    for (int m = 0; m < 2; m++) {
-        bool cur = (m == 1) == (o < 0.5);
-        float f = cur ? o : -1.0 + o;
-        float af = min(abs(f), 1.0);
-        float3 sl = slot(f, R);
-        float2 mc = float2(c.x + sl.x + sway, c.y + R * 0.08 * (1.0 - sl.y) / 0.38 - lift * (1.0 - af));
-        float2 mq = cardUv(pu, mc, R * sl.y, R * sl.y * mix(1.0, 0.95, af), sl.z + 0.12 * sin(t * 0.25) * (1.0 - af));
-        if (mq.x >= 0.0) {
-            float3 cv = cur ? sharpCover(mq, A, S) : pastCover(0.0, mq, A, S);
-            cv *= mix(1.0, 0.7, af);
-            cv += float3(1.0) * 0.12 * pow(sat(1.0 - abs(mq.x + mq.y - fract(t * 0.07) * 3.0 + 0.5) * 4.0), 3.0) * (1.0 - af);
-            float edge = 1.0 - smoothstep(0.0, 0.025, min(min(mq.x, 1.0 - mq.x), min(mq.y, 1.0 - mq.y)));
-            layer = cv + rimC * edge * 0.2;
-            cover = 1.0;
-        }
-    }
-    if (refl > 0.5) {
-        // The floor: dark glass tinted by the cover's colours, the row mirrored in it.
-        col = mix(col, mix(BG * 0.2, mix(A, S, 0.5) * 0.25, 0.4) + col * 0.3, 0.6);
-        col = mix(col, layer, cover * exp(-(uv.y - floorY) / (R * 0.45)) * 0.4);
-    } else {
-        col = mix(col, layer, cover);
-    }
-    // Equalizer lines glowing along the floor.
-    float fx = (uv.x - c.x) / (asp * 0.5);
-    float e = eqAt(sat(abs(fx))) * play;
-    float line = exp(-abs(uv.y - floorY - 0.004) * 400.0) * (0.25 + 1.2 * e);
-    col += mix(A, S, sat(abs(fx))) * line * 0.6;
-    // A flash of the new cover's colours as it lands.
-    col += mix(A, S, 0.5) * 0.08 * exp(-uSwapAge * 3.0) * exp(-length(uv - c) / R);
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val RECORD_SHELF = """
-// Record shelf (music): a corner of a record store. The current album stands on a little display
-// stand in front of a neon ring in the song's colours, its record slid half out of the sleeve and
-// spinning while it plays (the shine on the vinyl stays put while the label turns, like a real
-// record). Two wooden crates either side are packed with the sleeves of the songs you played before,
-// their tops peeking out front to back; more of them stand face-out on the wall ledges under two
-// warm lamps. Dust drifts in the lamplight; the crate sleeves nudge on the kick as if someone were
-// flicking through them.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-// One past song's sleeve standing face-out on a wall ledge: cover i, centre p, half-size h, lean a.
-float3 wallSleeve(float3 col, float2 uv, float2 p, float h, float a, float i, float px, float3 A, float3 S) {
-    float2 d = rot(a) * (uv - p);
-    // Shadow on the wall, down-right.
-    col *= 1.0 - 0.45 * (1.0 - smoothstep(-h * 0.02, h * 0.18, sdRoundBox(d - float2(h * 0.08, h * 0.1), float2(h), h * 0.03)));
-    float box = sdRoundBox(d, float2(h), h * 0.03);
-    if (box < px) {
-        float2 q = d / (2.0 * h) + 0.5;
-        float3 cv = pastCover(i, q, A, S);
-        // Cardboard: a little grain, worn lighter edges, a soft gloss across the top corner.
-        cv *= 0.9 + 0.1 * vnoise(d * 180.0 / h);
-        cv = mix(cv, float3(0.92, 0.88, 0.8), smoothstep(-h * 0.06, 0.0, box) * 0.35);
-        cv += float3(1.0) * 0.08 * smoothstep(0.35, 0.0, abs(q.x + q.y - 0.55));
-        col = mix(col, cv * 0.88, 1.0 - smoothstep(-px, px, box));
-    }
-    return col;
-}
-
-// A wooden crate packed with sleeves seen from the front: x from x0 to x1, front wall from top to bot.
-// Sleeves stand front to back, each one's top a little higher than the one in front of it.
-float3 crate(float3 col, float2 uv, float x0, float x1, float top, float bot, float R, float px, float seed, float nudge, float3 A, float3 S) {
-    float w = x1 - x0;
-    float inX = smoothstep(x0 - px, x0 + px, uv.x) * (1.0 - smoothstep(x1 - px, x1 + px, uv.x));
-    // Its shadow on the floor.
-    float2 sd = float2((uv.x - (x0 + x1) * 0.5) / (w * 0.56), (uv.y - bot) / (R * 0.09));
-    col *= 1.0 - 0.5 * (1.0 - smoothstep(0.5, 1.1, length(sd)));
-    if (inX <= 0.0) return col;
-    // The sleeves (front first: the first one that covers the pixel wins).
-    float step0 = R * 0.085;
-    float prevTop = top;
-    float done = 0.0;
-    for (int j = 0; j < 7; j++) {
-        if (done > 0.5) break;
-        float fj = float(j);
-        float r = hash11(fj * 7.3 + seed);
-        float r2 = hash11(fj * 3.1 + seed + 1.7);
-        // Height above the crate's front edge, a little uneven; the front ones flick on the kick.
-        float lift = R * 0.2 + fj * step0 + (r - 0.5) * R * 0.05 + nudge * R * 0.05 * (1.0 - fj / 7.0);
-        float sTop = top - lift;
-        // Each sleeve is a touch narrower further back (perspective) and sits a little off-centre.
-        float inset = w * (0.02 + 0.012 * fj) + (r2 - 0.5) * w * 0.02;
-        float sx0 = x0 + inset;
-        float sx1 = x1 - inset + (r - 0.5) * w * 0.02;
-        if (uv.y >= sTop - px && uv.y < prevTop && uv.x > sx0 && uv.x < sx1) {
-            float2 q = float2((uv.x - sx0) / (sx1 - sx0), (uv.y - sTop) / ((sx1 - sx0)));
-            float3 sl = pastCover(4.0 + fj, q, A, S);
-            // Further back = darker; deeper into the gap = in the shadow of the sleeve in front.
-            float depthShade = 0.82 - 0.07 * fj;
-            float gap = sat((uv.y - sTop) / max(prevTop - sTop, 1e-4));
-            sl *= depthShade * (1.0 - 0.45 * gap * gap);
-            // The paper edge catches the light.
-            sl = mix(sl, float3(0.95, 0.9, 0.82), (1.0 - smoothstep(0.0, px * 2.0, uv.y - sTop)) * 0.6);
-            float aa = smoothstep(sTop - px, sTop + px, uv.y) * smoothstep(sx0, sx0 + px * 2.0, uv.x) * (1.0 - smoothstep(sx1 - px * 2.0, sx1, uv.x));
-            col = mix(col, sl, aa);
-            done = aa > 0.99 ? 1.0 : 0.0;
-        }
-        prevTop = min(prevTop, sTop);
-    }
-    // The front wall: two planks with a gap, a handle cut-out, darker corner posts, warm grain.
-    if (uv.y > top - px) {
-        float2 p = float2(uv.x - x0, uv.y - top);
-        float hh = bot - top;
-        float grain = vnoise(float2(p.x * 9.0 / R, p.y * 60.0 / R + seed)) * 0.5 + vnoise(float2(p.x * 2.0 / R, p.y * 160.0 / R)) * 0.5;
-        float3 wood = mix(float3(0.36, 0.22, 0.12), float3(0.55, 0.36, 0.2), grain);
-        wood *= 0.95 + 0.1 * hash11(floor(p.y / (hh * 0.5)) + seed);
-        float plankGap = 1.0 - smoothstep(px * 0.5, px * 1.5, abs(p.y - hh * 0.5));
-        wood *= 1.0 - 0.6 * plankGap;
-        // Handle: a rounded slot in the top plank.
-        float handle = sdRoundBox(float2(uv.x - (x0 + x1) * 0.5, p.y - hh * 0.24), float2(R * 0.16, hh * 0.08), hh * 0.08);
-        wood = mix(wood, float3(0.06, 0.04, 0.03), 1.0 - smoothstep(-px, px, handle));
-        // Corner posts.
-        float post = step(p.x, w * 0.05) + step(w * 0.95, p.x);
-        wood *= 1.0 - 0.25 * post;
-        // Top edge highlight, bottom shade.
-        wood += float3(1.0, 0.85, 0.6) * 0.12 * (1.0 - smoothstep(0.0, px * 3.0, p.y));
-        wood *= 1.0 - 0.3 * smoothstep(hh * 0.6, hh, p.y);
-        float inY = smoothstep(top - px, top + px, uv.y) * (1.0 - smoothstep(bot - px, bot + px, uv.y));
-        col = mix(col, wood, inY * inX);
-    }
-    return col;
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.0 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 5.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.62;
-    float floorY = c.y + R * 1.25;
-
-    // The shop wall: warm vertical boards with a soft grain, a little lighter where the lamps hit.
-    float bx = uv.x / (R * 0.36);
-    float board = floor(bx);
-    float3 wall = mix(float3(0.17, 0.1, 0.07), float3(0.24, 0.15, 0.1), hash11(board * 1.7));
-    wall *= 0.9 + 0.1 * vnoise(float2(bx * 3.0, uv.y * 40.0 / R));
-    wall *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.06, fract(bx)) * smoothstep(1.0, 0.94, fract(bx)));
-    wall = mix(wall, BG * 0.8, 0.25);
-    float3 col = wall;
-    // The two lamps: warm pools of light on the wall.
-    float lampL = c.x - R * 2.35;
-    float lampR = c.x + R * 2.35;
-    float3 warm = float3(1.0, 0.72, 0.42);
-    float pool = exp(-length((uv - float2(lampL, c.y - R * 0.9)) * float2(1.0, 0.7)) / (R * 1.2))
-               + exp(-length((uv - float2(lampR, c.y - R * 0.9)) * float2(1.0, 0.7)) / (R * 1.2));
-    col += warm * pool * 0.22 * (0.9 + 0.2 * bass);
-    // Light cones down from the lamps.
-    for (int i = 0; i < 2; i++) {
-        float lx = i == 0 ? lampL : lampR;
-        float2 lp = uv - float2(lx, c.y - R * 2.1);
-        float cone = (1.0 - smoothstep(0.0, R * 0.08 + lp.y * 0.42, abs(lp.x))) * step(0.0, lp.y) * (1.0 - smoothstep(R * 1.6, R * 3.4, lp.y));
-        col += warm * cone * 0.07;
-        // The shade itself, a dark dome with a glowing rim.
-        float shade = sdRoundBox(lp + float2(0.0, R * 0.05), float2(R * 0.22, R * 0.07), R * 0.06);
-        col = mix(col, float3(0.08, 0.06, 0.05), 1.0 - smoothstep(-px, px, shade));
-        col += warm * 0.8 * (1.0 - smoothstep(0.0, px * 3.0, abs(lp.y - R * 0.02))) * step(abs(lp.x), R * 0.2);
-        float cord = (1.0 - smoothstep(0.0, px, abs(lp.x))) * step(lp.y, -R * 0.12);
-        col = mix(col, float3(0.05), cord * 0.8);
-    }
-    // The neon ring behind the display, in the song's colours, breathing with the bass.
-    float2 nd = uv - float2(c.x + R * 0.18, c.y - R * 0.05);
-    float ring = abs(sdRoundBox(nd, float2(R * 1.45, R * 1.15), R * 0.5));
-    float3 neon = mix(A, S, 0.5 + 0.5 * sin(atan(nd.y, nd.x) + t * 0.2));
-    float nPow = 0.75 + 0.35 * bass * k + 0.25 * kick * k;
-    col += neon * (exp(-ring / (R * 0.08)) * 0.45 + (1.0 - smoothstep(0.0, px * 2.5, ring - R * 0.012)) * 0.9) * nPow;
-
-    // Wall ledges with past sleeves face-out.
-    float ledgeY = c.y - R * 0.38;
-    float hs = R * 0.42;
-    col = wallSleeve(col, uv, float2(c.x - R * 2.05, ledgeY - hs), hs, 0.04, 0.0, px, A, S);
-    col = wallSleeve(col, uv, float2(c.x - R * 3.1, ledgeY - hs), hs, -0.03, 1.0, px, A, S);
-    col = wallSleeve(col, uv, float2(c.x + R * 2.35, ledgeY - hs), hs, -0.04, 2.0, px, A, S);
-    col = wallSleeve(col, uv, float2(c.x + R * 3.4, ledgeY - hs), hs, 0.03, 3.0, px, A, S);
-    for (int i = 0; i < 2; i++) {
-        float lx0 = i == 0 ? c.x - R * 3.7 : c.x + R * 1.75;
-        float lx1 = i == 0 ? c.x - R * 1.45 : c.x + R * 4.0;
-        float ledge = sdRoundBox(uv - float2((lx0 + lx1) * 0.5, ledgeY + R * 0.03), float2((lx1 - lx0) * 0.5, R * 0.03), R * 0.01);
-        col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, R * 0.1, ledge - R * 0.02)) * step(ledgeY, uv.y);
-        col = mix(col, float3(0.42, 0.27, 0.15) * (0.9 + 0.2 * step(uv.y, ledgeY + R * 0.01)), 1.0 - smoothstep(-px, px, ledge));
-    }
-
-    // The floor: boards running away from you in perspective, the neon and the lamps reflected in the varnish.
-    if (uv.y > floorY) {
-        float fy = (uv.y - floorY) / R;
-        float persp = 1.0 / (0.35 + fy);
-        float plank = (uv.x - c.x) / (R * 0.55) / (1.0 + fy * 1.6);
-        float pid = floor(plank);
-        float3 fl = mix(float3(0.11, 0.07, 0.05), float3(0.17, 0.11, 0.07), hash11(pid * 3.7));
-        fl *= 0.9 + 0.1 * vnoise(float2(plank * 6.0, persp * 8.0 + pid * 13.0));
-        fl *= 1.0 - 0.45 * (1.0 - smoothstep(0.0, 0.05, fract(plank)) * smoothstep(1.0, 0.95, fract(plank)));
-        // Reflections: the neon ring and the lamps' light, smeared down the boards.
-        float fade = exp(-fy * 2.2);
-        float nx = 1.0 - smoothstep(R * 1.2, R * 1.9, abs(uv.x - c.x - R * 0.18));
-        fl += neon * nx * fade * 0.12 * nPow;
-        fl += warm * fade * 0.05 * (exp(-abs(uv.x - lampL) / R) + exp(-abs(uv.x - lampR) / R));
-        fl *= 0.55 + 0.45 * exp(-fy * 0.8);
-        col = mix(col, fl, smoothstep(floorY - px, floorY + px, uv.y));
-    }
-    // A skirting board where wall meets floor.
-    col = mix(col, float3(0.07, 0.045, 0.03), (1.0 - smoothstep(R * 0.035 - px, R * 0.035 + px, abs(uv.y - floorY + R * 0.035))));
-
-    // The crates either side.
-    float crTop = c.y + R * 0.42;
-    float crBot = floorY - R * 0.02;
-    col = crate(col, uv, c.x - R * 3.85, c.x - R * 1.3, crTop, crBot, R, px, 3.0, kick * k, A, S);
-    col = crate(col, uv, c.x + R * 1.75, c.x + R * 4.3, crTop, crBot, R, px, 11.0, kick * k, A, S);
-
-    // The display: a small wooden stand on the floor, the sleeve on it, the record half out.
-    float2 standP = uv - float2(c.x, floorY - R * 0.11);
-    float stand = sdRoundBox(standP, float2(R * 0.75, R * 0.11), R * 0.02);
-    col *= 1.0 - 0.45 * (1.0 - smoothstep(-px, R * 0.12, sdRoundBox(standP - float2(R * 0.05, R * 0.12), float2(R * 0.78, R * 0.04), R * 0.04)));
-    col = mix(col, mix(float3(0.3, 0.18, 0.1), float3(0.45, 0.29, 0.16), smoothstep(R * 0.11, -R * 0.11, standP.y)), 1.0 - smoothstep(-px, px, stand));
-
-    float hsz = R * 0.95;
-    float sway = -0.035 + 0.012 * sin(t * 0.5);
-    float2 sc = float2(c.x - R * 0.2, floorY - R * 0.22 - hsz - bass * k * R * 0.02);
-    float2 d = rot(sway) * (uv - sc);
-    // The record, slid out to the right (further while it plays).
-    float2 rc = float2(hsz * (0.32 + 0.3 * play), -hsz * 0.02);
-    float Rv = hsz * 0.93;
-    float2 rv = d - rc;
-    float rr = length(rv);
-    float spin = 3.5 * uPlayT;
-    if (rr < Rv + px * 2.0) {
-        float rn = rr / Rv;
-        // Grooves: fine rings (faded out when they'd be finer than a pixel) with the track gaps between songs.
-        float gF = 40.0 / Rv;
-        float gC = sat(1.0 - gF * px * 1.5);
-        float groove = 0.5 + 0.5 * sin(rr * gF * TAU);
-        float tracks = 0.0;
-        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.52));
-        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.64));
-        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.77));
-        tracks += 1.0 - smoothstep(0.0, 0.006, abs(rn - 0.9));
-        float3 vinyl = float3(0.035, 0.035, 0.04) * (0.85 + 0.3 * groove * gC) + float3(0.05) * tracks;
-        // The shine stays where the light is (a bow tie across the record), tinted by the neon.
-        float ang = atan(rv.y, rv.x);
-        float bow = pow(abs(cos(ang - 0.7)), 24.0) * smoothstep(0.36, 0.5, rn) * (1.0 - smoothstep(0.96, 1.0, rn));
-        vinyl += (float3(0.35) + neon * 0.25) * bow * (0.6 + 0.4 * groove * gC);
-        vinyl += float3(0.06) * pow(abs(cos(ang + 0.9)), 6.0) * smoothstep(0.4, 1.0, rn);
-        // Rim.
-        vinyl += float3(0.15) * (1.0 - smoothstep(0.0, px * 2.0, abs(rr - Rv + px)));
-        // The label: the cover, turning; a ring round it and the spindle hole.
-        float lr = Rv * 0.34;
-        if (rr < lr + px) {
-            float2 lq = rot(spin) * rv;
-            float3 lab = sharpCover(lq / (2.0 * lr) * 0.92 + 0.5, A, S);
-            lab = mix(lab, lab * 0.7, smoothstep(lr * 0.9, lr, rr));
-            lab = mix(lab, float3(0.02), 1.0 - smoothstep(Rv * 0.022 - px, Rv * 0.022 + px, rr));
-            vinyl = mix(vinyl, lab, 1.0 - smoothstep(lr - px, lr + px, rr));
-        }
-        col = mix(col, vinyl, 1.0 - smoothstep(Rv - px, Rv + px, rr));
-    }
-    // The sleeve in front of the record: the cover, with a shadow, worn edges and a gloss.
-    col *= 1.0 - 0.5 * (1.0 - smoothstep(-px, hsz * 0.12, sdRoundBox(d - float2(hsz * 0.05, hsz * 0.04), float2(hsz), hsz * 0.02)));
-    float sleeve = sdRoundBox(d, float2(hsz), hsz * 0.02);
-    if (sleeve < px) {
-        float2 q = d / (2.0 * hsz) + 0.5;
-        float3 cv = sharpCover(q, A, S);
-        cv *= 0.93 + 0.07 * vnoise(d * 160.0 / hsz);
-        cv = mix(cv, float3(0.93, 0.9, 0.84), smoothstep(-hsz * 0.035, 0.0, sleeve) * 0.4);
-        // The record's round bulge pressing through the sleeve on the right.
-        float bulge = abs(length(d - rc) - Rv);
-        cv *= 1.0 - 0.06 * (1.0 - smoothstep(0.0, hsz * 0.03, bulge)) * step(0.0, d.x - rc.x + Rv * 0.2);
-        // A soft gloss across the top-left.
-        cv += float3(1.0) * 0.1 * smoothstep(0.3, 0.0, abs(q.x + q.y - 0.6)) * (0.8 + 0.2 * sin(t * 0.3));
-        // The lamp's warmth on it.
-        cv *= float3(1.0, 0.96, 0.9);
-        col = mix(col, cv, 1.0 - smoothstep(-px, px, sleeve));
-    }
-
-    // Dust drifting in the lamplight.
-    float motes = dots(uv, 26.0, float2(t * 0.01, -t * 0.015), 0.06, 0.06, 2.0) + dots(uv * 1.7, 22.0, float2(-t * 0.008, -t * 0.011), 0.05, 0.07, 5.0);
-    col += float3(1.0, 0.9, 0.7) * motes * 0.2 * (0.3 + pool * 2.0);
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val COVER_CUBE = """
-// Cover cube (music): a big cube floating and slowly turning in a soft void, the current cover on
-// the face turned towards you and earlier songs' covers on the other faces. It turns faster when the
-// song gets busy, bounces a little on the kick, casts a soft shadow on the floor and is ringed by a
-// glowing equalizer halo.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 5.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.6;
-    // A bright, colourful backdrop in the cover's colours.
-    float3 col = mix(mix(A, S, 0.35) * 0.45 + BG * 0.6, BG * 0.55, sat(length((uv - c) / (R * 4.0))));
-    // Halo: an equalizer ring behind the cube.
-    float2 hd = (uv - c) * float2(1.0, 1.0);
-    float ang = atan(hd.y, hd.x);
-    float m = abs(ang) / PI;
-    float e = eqAt(m) * play;
-    float rr = length(hd);
-    float ringR = R * 1.75;
-    // Soft-edged bars (a pixel of fade on every side) so the ring doesn't shimmer as it pulses.
-    float barW = px / max(rr * TAU / 64.0, px);
-    float bar = smoothstep(ringR - px, ringR + px, rr) * (1.0 - smoothstep(ringR + R * (0.05 + 0.5 * e * k) - px, ringR + R * (0.05 + 0.5 * e * k) + px, rr))
-        * (1.0 - smoothstep(0.3 - barW, 0.3 + barW, abs(fract(ang / TAU * 64.0) - 0.5)));
-    col = mix(col, mix(A, S, m) * (0.7 + 0.6 * e), bar);
-    // Shadow on the floor.
-    float2 sh = (uv - float2(c.x, c.y + R * 1.6)) / float2(R * 1.2, R * 0.18);
-    col *= 1.0 - 0.4 * (1.0 - smoothstep(0.6, 1.0, length(sh))) * (1.0 - 0.3 * kick);
-
-    // Ray-cast the cube (rotation about y, slight tilt about x).
-    float spin = 0.2 * t + 0.45 * (uMidT + uHighT);
-    float bob = kick * k * 0.06;
-    float3 ro = float3(0.0, 0.0, -4.0);
-    float3 rd = normalize(float3((uv - c - float2(0.0, -bob * R)) / R, 3.4));
-    float ca = cos(spin);
-    float sa = sin(spin);
-    float cb = cos(0.35);
-    float sb = sin(0.35);
-    // Rotate the ray into the cube's space.
-    float3 o = ro;
-    float3 dvec = rd;
-    o = float3(ca * o.x + sa * o.z, o.y, -sa * o.x + ca * o.z);
-    dvec = float3(ca * dvec.x + sa * dvec.z, dvec.y, -sa * dvec.x + ca * dvec.z);
-    o = float3(o.x, cb * o.y - sb * o.z, sb * o.y + cb * o.z);
-    dvec = float3(dvec.x, cb * dvec.y - sb * dvec.z, sb * dvec.y + cb * dvec.z);
-    float3 inv = 1.0 / dvec;
-    float3 t0 = (-1.0 - o) * inv;
-    float3 t1 = (1.0 - o) * inv;
-    float3 tmin = min(t0, t1);
-    float3 tmax = max(t0, t1);
-    float tn = max(max(tmin.x, tmin.y), tmin.z);
-    float tf = min(min(tmax.x, tmax.y), tmax.z);
-    // How far inside the silhouette the ray is (the ray's path through the cube shrinks to 0 at the edge):
-    // a soft, anti-aliased outline instead of a stair-stepped one that crawls as the cube turns.
-    float edgePx = 4.0 / (3.4 * R * uRes.y);
-    float cover = sat((tf - tn) / (edgePx * 2.5));
-    if (cover > 0.0 && tf > 0.0) {
-        float3 p = o + dvec * tn;
-        float3 ap = abs(p);
-        float2 fq = float2(0.0);
-        float face = 0.0;
-        float3 nrm = float3(0.0);
-        if (ap.x > ap.y && ap.x > ap.z) { fq = p.zy * float2(sign(p.x), 1.0); face = p.x > 0.0 ? 1.0 : 3.0; nrm = float3(sign(p.x), 0.0, 0.0); }
-        else if (ap.y > ap.z) { fq = p.xz; face = 4.0; nrm = float3(0.0, sign(p.y), 0.0); }
-        else { fq = p.xy * float2(-sign(p.z), 1.0); face = p.z < 0.0 ? 0.0 : 2.0; nrm = float3(0.0, 0.0, sign(p.z)); }
-        float2 q = fq * 0.5 + 0.5;
-        // Every face shows the song playing now (the cube is about this cover, not the history).
-        float3 cv = sharpCover(q, A, S);
-        // A little more colour: lift saturation round the face's own grey.
-        float lum = dot(cv, float3(0.299, 0.587, 0.114));
-        cv = mix(float3(lum), cv, 1.25) * 1.08;
-        // Lighting: a key light from the top left.
-        float3 L = normalize(float3(-0.5, -0.6, -0.6));
-        float3 Ln = float3(ca * L.x + sa * L.z, L.y, -sa * L.x + ca * L.z);
-        float dif = 0.8 + 0.35 * sat(dot(nrm, -Ln));
-        cv *= dif;
-        // Edges.
-        float2 eq = abs(fq);
-        cv = mix(cv, float3(1.0), smoothstep(0.96, 1.0, max(eq.x, eq.y)) * 0.25);
-        col = mix(col, cv, cover);
-    }
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val COVER_FLOAT = """
-// Cover float (music): the album cover floating in a soft studio light, tilting in 3D as if hung on
-// a thread - it leans with the bass, turns back and forth slowly, bobs up and down - with a glossy
-// mirrored reflection beneath it, a band of light gliding across its glass, a glow in its own
-// colours behind it and a few slow particles in the cover's colours drifting through the light.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 4.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.72;
-    float3 col = coverField(uv, asp, t, bass, 0.5, BG, A, S);
-    col += mix(A, S, 0.5) * exp(-length(uv - c) / R * 1.2) * (0.18 + 0.25 * bass);
-    float floorY = c.y + R * 1.18;
-
-    // Tilt angles: slow sway plus a lean on the bass.
-    float ay = 0.35 * sin(t * 0.33) + 0.12 * bass * k;
-    float ax = 0.12 * sin(t * 0.21 + 1.0) - 0.06 * kick * k;
-    float bob = 0.02 * sin(t * 0.7) * R / 0.2;
-
-    // Ray-plane intersection for a tilted square card.
-    for (int pass = 0; pass < 2; pass++) {
-        float2 p = uv;
-        float refl = float(pass);
-        if (pass == 1) {
-            if (uv.y < floorY) continue;
-            p.y = 2.0 * floorY - uv.y;
-        }
-        float3 ro = float3(0.0, 0.0, -3.0);
-        float3 rd = normalize(float3((p - c - float2(0.0, bob)) / R, 2.4));
-        float3 n = float3(sin(ay) * cos(ax), -sin(ax), -cos(ay) * cos(ax));
-        float3 ux = normalize(float3(cos(ay), 0.0, sin(ay)));
-        float3 uy = normalize(cross(n, ux));
-        float dn = dot(rd, n);
-        if (abs(dn) < 1e-3) continue;
-        float tt = dot(-ro, n) / dn;
-        float3 hit = ro + rd * tt;
-        float2 q = float2(dot(hit, ux), dot(hit, uy));
-        float box = max(abs(q.x), abs(q.y)) - 1.0;
-        if (box < 0.0) {
-            float2 cq = float2(q.x, -q.y) * 0.5 + 0.5;
-            float3 cv = sharpCover(cq, A, S);
-            // Light band gliding across the glass, brighter facing the light.
-            cv += float3(1.0) * 0.18 * pow(sat(1.0 - abs(cq.x + cq.y - fract(t * 0.08) * 3.0 + 0.5) * 3.5), 3.0);
-            cv *= 0.8 + 0.25 * sat(dot(n, normalize(float3(-0.4, -0.5, -1.0))));
-            float edge = smoothstep(-0.03, 0.0, box);
-            cv = mix(cv, float3(1.0), edge * 0.35);
-            if (pass == 0) col = cv;
-            else col = mix(col, cv, exp(-(uv.y - floorY) / (R * 0.5)) * 0.3);
-        } else if (pass == 0) {
-            // Soft shadow of the card on the background (offset down-right).
-            col *= 1.0 - 0.18 * (1.0 - smoothstep(0.0, 0.25, box));
-        }
-    }
-    // Floor line glow.
-    col += mix(A, S, 0.5) * exp(-abs(uv.y - floorY) * 300.0) * 0.25;
-    // Particles in the cover's colours.
-    col += mix(A, S, fract(uv.x * 3.0)) * dots(uv, 18.0, float2(t * 0.012, -t * 0.02), 0.08, 0.07, 6.0) * (0.3 + 0.5 * bass);
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val HOLO_COVER = """
-// Holo cover (music): the album cover as a holographic foil trading card, turning slowly from side to
-// side in perspective. The song's name and the artist are printed in the strip under the art in the
-// same foil (uLabel: NowPlayingScene.songLabel, clean style), so the rainbow sheen sweeps across them
-// too as the card turns. The foil pattern (fine diagonal lines and stars) catches the light on the
-// kick, the border glints, sparkles twinkle with the highs, and the background is a soft iridescent
-// wash in the cover's colours.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-float3 rainbow(float x) { return 0.5 + 0.5 * cos(TAU * (x + float3(0.0, 0.33, 0.67))); }
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 4.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.8;
-    // Iridescent background.
-    float3 col = mix(BG * 0.7, mix(A, S, 0.5) * 0.35, 0.5 + 0.5 * sin(uv.x * 2.0 + uv.y * 3.0 + t * 0.2));
-    col += rainbow(uv.x * 0.4 + uv.y * 0.3 + t * 0.03) * 0.05;
-
-    // The card turns a little from side to side (about 20 degrees) and nods a touch, seen in
-    // perspective: the near edge grows, the far one shrinks. Each pixel's ray is followed back to the
-    // card's plane to find where on the card it lands.
-    float yaw = 0.34 * sin(t * 0.33) + 0.04 * bass * k;
-    float pitch = 0.06 * sin(t * 0.21 + 1.3);
-    float cy = cos(yaw);
-    float sy = sin(yaw);
-    float cp = cos(pitch);
-    float sp = sin(pitch);
-    float3 eu = float3(cy, sy * sp, -sy * cp);
-    float3 ev = float3(0.0, cp, sp);
-    float3 nrm = float3(sy, -cy * sp, cy * cp);
-    float D = R * 6.0;
-    float3 eye = float3(0.0, 0.0, -D);
-    float3 dir = float3(uv - c, D);
-    float lam = D * nrm.z / dot(dir, nrm);
-    float3 P = eye + dir * lam;
-    float2 d = float2(dot(P, eu), dot(P, ev));
-    float2 hw = float2(R * 0.76, R);
-    // Soft shadow under the card (flat, a little behind it).
-    float2 dsh = uv - c - float2(R * 0.04, R * 0.06);
-    col *= 1.0 - 0.35 * (1.0 - smoothstep(-0.01, 0.06, sdRoundBox(dsh, hw * float2(abs(cy), 1.0), R * 0.06)));
-    float card = sdRoundBox(d, hw, R * 0.06);
-    // The card's pixels are stretched where it turns away: keep the edge one screen pixel soft.
-    float pxc = px / max(abs(cy), 0.4);
-    if (card < pxc) {
-        float2 q = d / (2.0 * hw) + 0.5;
-        // Border with the art window inside it, and the name strip under the art.
-        float side = R * 0.66;
-        float2 wc = float2(0.0, -R * 0.12);
-        float win = sdRoundBox(d - wc, float2(side), R * 0.02);
-        float stripTop = wc.y + side + R * 0.04;
-        float stripBot = hw.y - R * 0.07;
-        float strip = sdRoundBox(d - float2(0.0, (stripTop + stripBot) * 0.5), float2(side, (stripBot - stripTop) * 0.5), R * 0.02);
-        float3 base = mix(A, S, q.y) * 0.8 + 0.15;
-        // The foil's light: a rainbow band that slides across as the card turns.
-        float band = q.x * 0.8 + q.y * 0.6 + yaw * 2.4 + pitch * 1.5 - t * 0.05;
-        float sheen = pow(0.5 + 0.5 * sin(band * 6.0), 4.0);
-        float3 foil = rainbow(band * 1.3);
-        if (win < 0.0) base = sharpCover((d - wc) / (2.0 * side) + 0.5, A, S);
-        if (strip < 0.0) {
-            // The name strip: a dark foil panel; the title and artist in bright holographic ink.
-            float3 panel = mix(BG, mix(A, S, q.x), 0.35) * 0.55;
-            float2 lq = float2((d.x + side) / (2.0 * side), (d.y - stripTop) / (stripBot - stripTop));
-            // Four taps a pixel apart: the label is drawn larger than the strip, this keeps it smooth.
-            float2 lpx = float2(0.5 / uLabelSize.x, 0.5 / uLabelSize.y);
-            float ink = 0.25 * (labelInk(lq + lpx * float2(-1.0, -1.0)) + labelInk(lq + lpx * float2(1.0, -1.0))
-                + labelInk(lq + lpx * float2(-1.0, 1.0)) + labelInk(lq + lpx * float2(1.0, 1.0)));
-            // An embossed edge: the ink's shadow a touch down-right.
-            float shade = labelInk(lq + float2(0.006, 0.03));
-            panel *= 1.0 - 0.45 * shade * (1.0 - ink);
-            float3 inkCol = mix(float3(0.93, 0.94, 0.98), rainbow(band * 1.6 + lq.x * 0.5), 0.55);
-            inkCol *= 0.8 + 0.45 * sheen + 0.25 * kick * k;
-            base = mix(panel, inkCol, ink);
-        }
-        // Foil pattern: fine diagonal lines + little stars.
-        float lines = step(0.5, fract((d.x + d.y) * 220.0));
-        float2 sg = fract(q * float2(9.0, 12.0)) - 0.5;
-        float star = step(abs(sg.x) + abs(sg.y), 0.12);
-        float pattern = max(lines * 0.4, star);
-        float shine = sheen * (0.35 + 0.6 * kick * k) + pattern * 0.12 * (0.5 + kick);
-        base = mix(base, base * 0.55 + foil * 0.8, shine * 0.8);
-        // Sparkles on the highs.
-        float sp2 = dots(q * 3.0, 14.0, float2(0.0), 0.15 * (0.3 + uHigh * play), 0.08, 9.0);
-        base += float3(1.0) * sp2 * 0.8;
-        // The side turned towards the light is a little brighter.
-        base *= 0.92 + 0.16 * sat(0.5 + yaw * 1.4 * (q.x - 0.5) * 2.0);
-        col = mix(col, base, 1.0 - smoothstep(-pxc, pxc, card));
-        // Glinting border.
-        col += rainbow(band + 0.3) * (1.0 - smoothstep(0.0, pxc * 3.0, abs(card))) * (0.4 + 0.6 * sheen);
-    }
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val COVER_HALO = """
-// Cover halo (music): the cover as a round disc in the middle, framed by three rings that all move
-// with the song - an inner waveform that ripples round the edge like a frame, a circular spectrum of
-// bars around it (bass at the top), and an outer ring of dots that flash on the kick. The border
-// pulses with the bass and the background glows in the cover's colours.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 4.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.52;
-    float3 col = coverField(uv, asp, t, bass, 0.45, BG, A, S);
-    float2 d = uv - c;
-    float r = length(d);
-    float ang = atan(d.x, -d.y);                 // 0 at the top, clockwise
-    float m = abs(ang) / PI;                      // 0 top .. 1 bottom (mirrored left / right)
-    col += mix(A, S, 0.5) * exp(-max(r - R, 0.0) / R * 3.0) * (0.15 + 0.3 * bass);
-
-    // Circular spectrum.
-    float e = eqAt(m) * play;
-    float n = 96.0;
-    float lane = abs(fract((ang / TAU + 0.5) * n) - 0.5);
-    float r0 = R * 1.22;
-    float h = R * (0.04 + 0.6 * e * (0.5 + 0.7 * k));
-    float bar = step(lane, 0.32) * step(r0, r) * step(r, r0 + h);
-    col = mix(col, mix(mix(A, S, m), float3(1.0), sat((r - r0) / max(h, 0.001)) * 0.4), bar);
-    // Outer dot ring flashing on the kick.
-    float dr = R * 1.22 + R * 0.75;
-    float dots_ = step(length(float2(fract((ang / TAU + 0.5) * 48.0) - 0.5, (r - dr) / (R * 0.035))), 0.35);
-    col += mix(S, float3(1.0), 0.5) * dots_ * (0.2 + 0.9 * kick);
-    // Waveform frame: a ring that ripples with the mids and highs.
-    float wav = R * (1.08 + 0.04 * sin(ang * 12.0 + t * 6.0) * (0.2 + uMid * play) + 0.025 * sin(ang * 31.0 - t * 9.0) * uHigh * play);
-    col += mix(A, S, 0.3) * glow(abs(r - wav), 0.0018) * (0.6 + 0.8 * bass);
-    // The cover disc, its border pulsing.
-    float edge = R * (1.0 + 0.02 * bass * k);
-    if (r < edge) {
-        float3 cv = sharpCover(rot(0.05 * sin(t * 0.3)) * d / (2.0 * R) + 0.5, A, S);
-        col = mix(col, cv, 1.0 - smoothstep(edge - px, edge, r));
-    }
-    col += float3(1.0) * (1.0 - smoothstep(0.0, px * 2.5, abs(r - edge))) * (0.5 + 0.5 * kick);
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val BIG_TYPE = """
-// Big type (music): the song's title written huge across the background in the cover's colours,
-// sliding slowly past in several rows at different speeds (the artist in smaller rows between),
-// the cover in front with a hard shadow like a poster. The letters swell with the bass and flash
-// on the kick; the rows run faster when the song gets busy.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 5.0) * play;
-    float busy = (uMid + uHigh) * 0.5 * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.66;
-    float3 col = mix(BG * 0.8, mix(BG, A, 0.25), uv.y);
-
-    // Rows of giant type: each row samples the label picture (title on top half, artist below).
-    float rowH = 0.2;
-    float row = floor(uv.y / rowH);
-    float ry = fract(uv.y / rowH);
-    float isTitle = step(0.5, fract(row * 0.5 + 0.25));
-    float speed = (0.03 + 0.06 * hash11(row)) * (1.0 + 2.0 * busy) * (mod(row, 2.0) < 0.5 ? 1.0 : -1.0);
-    float scale = 1.0 + 0.04 * bass * k;
-    float lx = fract((uv.x / (rowH * 2.29) + t * speed + hash11(row * 3.0)) / scale);
-    // Title is in the upper ~55 % of the label picture, the artist below it.
-    float ly = isTitle > 0.5 ? mix(0.08, 0.55, (ry - 0.1) / 0.8) : mix(0.62, 0.95, (ry - 0.2) / 0.6);
-    float ink = labelInk(float2(lx, ly)) * step(0.05, ry) * step(ry, 0.95);
-    float3 tc = mix(A, S, isTitle) * (0.55 + 0.35 * isTitle) + float3(1.0) * kick * 0.25 * k;
-    col = mix(col, tc, ink * (0.55 + 0.25 * isTitle));
-
-    // The cover in front, with a hard offset shadow like a poster.
-    float2 d = uv - c;
-    float sh = sdRoundBox(d - float2(R * 0.07, R * 0.07), float2(R), 0.0);
-    col = mix(col, BG * 0.25, step(sh, 0.0) * 0.8);
-    float box = sdRoundBox(d, float2(R), 0.0);
-    if (box < px) col = mix(col, sharpCover(d / (2.0 * R) + 0.5, A, S), 1.0 - smoothstep(-px, px, box));
-    col = mix(col, float3(0.05), step(abs(box), 0.004));
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val PIXEL_COVER = """
-// Pixel cover (music): the album cover turned into chunky pixel art - fewer, bigger pixels and a
-// small retro palette - on a dark pixel grid. Pixels shake loose and fall away on the kick and click
-// back into place, the pixel size breathes with the bass, a pixel equalizer runs along the bottom
-// of the picture and pixel stars twinkle around it.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 4.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.74;
-    float3 col = BG * 0.5;
-    float2 g = floor(uv * 160.0);
-    col *= 0.9 + 0.1 * mod(g.x + g.y, 2.0);
-    // Pixel stars.
-    float st = step(0.994, hash12(g)) * step(0.5, fract(t * 0.7 + hash12(g + 3.0)));
-    col = mix(col, mix(S, float3(1.0), 0.5), st);
-
-    // The pixel grid of the cover: 24 cells across (fewer when the bass is big).
-    float n = floor(28.0 - 8.0 * bass * k);
-    float2 d = uv - c;
-    float2 q = d / (2.0 * R) + 0.5;
-    float2 cell = floor(q * n);
-    // Falling pixels on the kick: some cells drop and drift down, then come back.
-    float h = hash12(cell + 7.0);
-    float fall = step(0.82, h) * kick * k;
-    float2 qq = q - float2(0.0, fall * 0.25 * (1.0 + h));
-    float2 cell2 = floor(qq * n);
-    float2 cf = fract(qq * n);
-    float inP = step(0.0, qq.x) * step(qq.x, 1.0) * step(0.0, qq.y) * step(qq.y, 1.0);
-    float3 pc = sharpCover((cell2 + 0.5) / n, A, S);
-    pc = floor(pc * 4.0 + 0.5) / 4.0;            // 4 levels per channel: a small retro palette
-    pc *= 0.88 + 0.12 * step(0.12, min(cf.x, cf.y));
-    col = mix(col, pc, inP);
-    // Pixel equalizer under the picture.
-    float ey = (uv.y - (c.y + R * 1.06)) / (R * 0.3);
-    float ex = floor(q.x * 16.0);
-    float e = eqAt(abs(ex / 15.0 - 0.5) * 2.0) * play;
-    float lvl = floor((1.0 - ey) * 6.0);
-    float onBar = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, ey) * step(ey, 1.0) * step(lvl, e * 6.0) * step(0.18, fract(q.x * 16.0)) * step(0.2, fract((1.0 - ey) * 6.0));
-    col = mix(col, mix(A, S, lvl / 6.0), onBar);
-    // Frame.
-    float box = max(abs(d.x), abs(d.y)) - R;
-    col = mix(col, mix(A, float3(1.0), 0.5), step(abs(box - 0.008), 0.006));
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val POLAROID = """
-// Polaroid (music): instant photos pinned to a cork board. The current cover is a polaroid in the
-// middle with the song's title handwritten on its white strip, slightly crooked and swinging on its
-// pin with the beat; photos of the songs you played before are pinned around it at angles. A warm
-// desk lamp lights the board, the photos flutter a little on the kick.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-// A polaroid at centre pc, half width w, rotated by a: returns (uv in the photo window (or -1), on frame).
-float3 polaroidAt(float2 p, float2 pc, float w, float a) {
-    float2 q = rot(a) * (p - pc);
-    float2 hw = float2(w, w * 1.18);
-    float frame = step(abs(q.x), hw.x) * step(abs(q.y), hw.y);
-    float2 wq = (q - float2(0.0, -w * 0.15)) / (w * 0.86 * 2.0) + 0.5;
-    float inW = step(0.0, wq.x) * step(wq.x, 1.0) * step(0.0, wq.y) * step(wq.y, 1.0);
-    return float3(inW > 0.5 ? wq : float2(-1.0), frame);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float kick = exp(-uBeatAge * 4.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.62;
-    // Cork board.
-    float3 cork = mix(float3(0.62, 0.45, 0.28), float3(0.72, 0.55, 0.36), vnoise(uv * 160.0));
-    cork *= 0.85 + 0.15 * vnoise(uv * 30.0);
-    float3 col = cork;
-    // Lamp light from the top left.
-    col *= 0.55 + 0.6 * exp(-length(uv - float2(c.x - R * 1.5, c.y - R * 2.0)) * 1.4);
-
-    // Earlier photos around.
-    for (int i = 0; i < 6; i++) {
-        float fi = float(i);
-        float ang = fi * 1.05 + 0.4;
-        float2 pc = c + float2(cos(ang) * R * 2.3, sin(ang) * R * 1.35);
-        float a = (hash11(fi * 3.3) - 0.5) * 0.5 + kick * k * 0.03 * sin(fi * 5.0);
-        float w = R * 0.55;
-        // Shadow.
-        float3 sp = polaroidAt(uv - float2(0.006, 0.01), pc, w, a);
-        col *= 1.0 - 0.3 * sp.z;
-        float3 pp = polaroidAt(uv, pc, w, a);
-        if (pp.z > 0.5) {
-            col = float3(0.96, 0.95, 0.92);
-            if (pp.x >= 0.0) col = pastCover(fi, pp.xy, A, S) * 0.95;
-        }
-        // Pin.
-        float pin = length(uv - pc - rot(-a) * float2(0.0, -w * 1.1)) - 0.008;
-        col = mix(col, mix(A, S, hash11(fi)) * 0.9, step(pin, 0.0));
-    }
-    // The current photo, swinging on its pin.
-    float swing = 0.06 * sin(t * 1.2) * (0.3 + 0.7 * play) + 0.05 * kick * k * sin(t * 9.0);
-    float2 pin = c + float2(0.0, -R * 1.18);
-    float2 p = pin + rot(swing) * (uv - pin);
-    float3 sp = polaroidAt(p - float2(0.01, 0.016), c, R, -0.03);
-    col *= 1.0 - 0.35 * sp.z;
-    float3 pp = polaroidAt(p, c, R, -0.03);
-    if (pp.z > 0.5) {
-        col = float3(0.97, 0.96, 0.93);
-        if (pp.x >= 0.0) col = sharpCover(pp.xy, A, S);
-        // Handwritten title on the strip.
-        float2 q = rot(-0.03) * (p - c);
-        float2 lq = float2(q.x / (R * 1.7) + 0.5, (q.y - R * 0.86) / (R * 0.5) + 0.5);
-        col = mix(col, float3(0.12, 0.12, 0.3), labelInk(lq) * 0.9);
-    }
-    col = mix(col, mix(A, float3(1.0), 0.2), step(length(uv - pin), 0.012));
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val RETRO_TV = """
-// Retro TV (music): the album cover playing on an old CRT television in a dark room - curved glass,
-// scanlines, colour fringes and a soft bloom - the picture rolling and glitching for a moment on the
-// kick, the TV's light flickering over the walls with the music, a VU-style volume bar on screen
-// that follows the level, and the static hiss between songs.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 6.0) * play;
-    float loud = sat((uEqA.x + uEqA.y + uEqB.x) / 3.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.3) * 0.72;
-    float2 sh = float2(R * 1.25, R);
-    // Room: dark, lit by the TV.
-    float3 col = BG * 0.35;
-    col += mix(float3(0.6, 0.7, 1.0), mix(A, S, 0.5), 0.5) * exp(-length((uv - c) * float2(0.5, 0.9)) / R * 0.9) * (0.15 + 0.3 * loud);
-    // Cabinet.
-    float cab = sdRoundBox(uv - c - float2(R * 0.18, 0.0), sh + float2(R * 0.45, R * 0.18), R * 0.12);
-    col = mix(col, mix(float3(0.22, 0.15, 0.1), BG * 0.6, 0.3), step(cab, 0.0));
-    float bez = sdRoundBox(uv - c, sh + R * 0.06, R * 0.12);
-    col = mix(col, float3(0.08), step(bez, 0.0));
-    // Knobs.
-    for (int i = 0; i < 2; i++) {
-        float kd = length(uv - c - float2(sh.x + R * 0.32, -R * 0.35 + float(i) * R * 0.45)) - R * 0.1;
-        col = mix(col, float3(0.7, 0.68, 0.6), step(kd, 0.0));
-    }
-    // The screen: curved glass.
-    float2 q = (uv - c) / sh;
-    float2 dq = q * (1.0 + 0.08 * dot(q, q));
-    float inS = step(abs(dq.x), 1.0) * step(abs(dq.y), 1.0) * step(sdRoundBox(uv - c, sh, R * 0.1), 0.0);
-    if (inS > 0.5) {
-        // Rolling on the kick: the picture jumps up and tears a little.
-        float roll = kick * k * 0.15;
-        float tear = step(0.92, hash11(floor(dq.y * 30.0) + floor(t * 20.0))) * kick * k * 0.08;
-        float2 sq = float2(dq.x + tear, dq.y + roll);
-        sq.y = sq.y - 2.0 * floor((sq.y + 1.0) / 2.0);
-        float2 cq = float2(sq.x * 0.5 / 1.25 * 1.25, sq.y) * 0.5 + 0.5;
-        cq = float2(sq.x * 0.5 + 0.5, sq.y * 0.5 + 0.5);
-        cq.x = (cq.x - 0.5) * 1.25 + 0.5;              // keep the cover square on the 5:4 screen
-        float inside = step(0.0, cq.x) * step(cq.x, 1.0);
-        float3 pic = float3(sharpCover(cq + float2(0.004, 0.0), A, S).r, sharpCover(cq, A, S).g, sharpCover(cq - float2(0.004, 0.0), A, S).b);
-        pic = mix(BG * 0.2, pic, inside);
-        // Volume bar at the bottom of the screen.
-        float vb = step(0.82, sq.y) * step(sq.y, 0.88) * step(-0.8, sq.x) * step(sq.x, -0.8 + 1.6 * loud);
-        float vbSeg = step(0.25, fract((sq.x + 0.8) * 10.0));
-        pic = mix(pic, mix(float3(0.3, 1.0, 0.4), float3(1.0, 0.3, 0.2), step(0.6, (sq.x + 0.8) / 1.6)), vb * vbSeg);
-        // Scanlines, mask, bloom, vignette, static.
-        pic *= 0.78 + 0.22 * step(0.5, fract(fc.y / 3.0));
-        pic += pic * pic * 0.25;
-        pic *= 1.0 - 0.3 * dot(dq, dq) * 0.5;
-        float n = hash12(floor(fc / 2.0) + floor(t * 50.0));
-        pic = mix(pic, float3(n), (1.0 - play) * 0.6 + kick * k * 0.08);
-        col = pic;
-        // Glass reflection.
-        col += float3(1.0) * 0.06 * smoothstep(0.3, 0.0, length(dq - float2(-0.5, -0.5)));
-    }
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val JUKEBOX = """
-// Jukebox (music): a lacquered retro jukebox in a dark room. Neon tubes trace its arched outline and
-// chase round in the cover's colours on the beat, the album cover sits behind curved glass in a
-// chrome frame, bubble tubes glow and bubble faster with the music, the chrome grille is backlit and
-// pulses with the bass, and the polished floor reflects it all.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float high = uHigh * play;
-    float kick = exp(-uBeatAge * 4.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.3);
-    float aa = px / R;
-    float2 p = (uv - c) / R;                 // jukebox units: about -1..1 tall
-    float fy = c.y + R * 0.98;              // the floor line
-
-    // Room: a dark wall with a warm pool of light behind the jukebox, a polished floor.
-    float3 col = mix(BG * 0.35, BG * 0.18, smoothstep(0.0, 1.0, uv.y));
-    col += mix(A, S, 0.5) * exp(-length((uv - c) * float2(0.55, 0.9)) / R * 1.1) * (0.22 + 0.25 * bass * k);
-    if (uv.y > fy) {
-        float fl = uv.y - fy;
-        col = mix(BG * 0.22, BG * 0.12, smoothstep(0.0, 0.3, fl));
-        // Reflection: the glow and a blurred copy of the body's colours, fading with distance.
-        col += mix(A, S, 0.5) * exp(-abs(uv.x - c.x) / R * 1.8) * exp(-fl * 9.0) * (0.25 + 0.3 * bass * k);
-        col += float3(1.0) * exp(-abs(uv.x - c.x) / R * 4.0) * exp(-fl * 40.0) * 0.05;
-    }
-
-    // Cabinet: a rounded box with an elliptical arch on top.
-    float box = sdRoundBox(p - float2(0.0, 0.2), float2(0.62, 0.78), 0.06);
-    float arch = (length((p - float2(0.0, -0.55)) / float2(0.62, 0.5)) - 1.0) * 0.5;
-    float shape = min(box, arch);
-    // Contact shadow on the floor.
-    col *= 1.0 - 0.5 * exp(-abs(uv.y - fy) * 60.0) * (1.0 - smoothstep(0.0, R * 0.7, abs(uv.x - c.x)));
-    float inBody = 1.0 - smoothstep(-aa, aa, shape);
-    float3 lacq = mix(float3(0.10, 0.03, 0.03), mix(float3(0.42, 0.12, 0.07), A * 0.5, 0.25), smoothstep(-0.7, 0.7, -p.x * 0.5 - p.y * 0.4));
-    lacq += float3(1.0, 0.9, 0.8) * exp(-abs(p.x + 0.36) * 22.0) * 0.08;      // a long vertical sheen
-    lacq *= 0.85 + 0.15 * smoothstep(-1.0, 1.0, -p.y);
-    col = mix(col, lacq, inBody);
-    // Rim light along the outline.
-    col += mix(A, float3(1.0), 0.3) * exp(-abs(shape) / (aa * 3.0)) * 0.25;
-
-    // Neon tubes following the outline (inside it), colour flowing along the arch, chasing on the beat.
-    float a = atan(p.x, -(p.y + 0.2));
-    float along = a / PI * 0.5 + 0.5;
-    float seg = floor(along * 24.0);
-    float chase = 0.55 + 0.45 * step(0.5, fract(seg * 0.25 - (t - uBeatAge) * 2.0 * play - t * 0.15));
-    float3 lightC = mix(A, S, 0.5 + 0.5 * sin(along * 6.0 + t * 0.4));
-    for (int i = 0; i < 2; i++) {
-        float off = i == 0 ? 0.07 : 0.15;
-        float w = i == 0 ? 0.02 : 0.013;
-        float dn = abs(shape + off);
-        float lim = step(p.y, 0.48);
-        float core = (1.0 - smoothstep(w - aa, w + aa, dn)) * lim;
-        float3 nc = i == 0 ? lightC : mix(lightC.bgr, float3(1.0), 0.15);
-        col = mix(col, mix(nc, float3(1.0), 0.45) * (0.7 + 0.5 * chase + 0.4 * kick * k), core);
-        col += nc * exp(-dn * 34.0) * lim * (0.18 + 0.2 * chase + 0.25 * kick * k);
-    }
-
-    // The selection window: the cover behind curved glass in a chrome frame.
-    float2 wp = p - float2(0.0, -0.42);
-    float win = sdRoundBox(wp, float2(0.36, 0.36), 0.04);
-    float frameW = 0.04;
-    float inFrame = (1.0 - smoothstep(frameW - aa, frameW + aa, win)) * smoothstep(-aa, aa, win);
-    float chrome = 0.55 + 0.45 * sin((wp.x - wp.y) * 7.0 + 1.0);
-    float3 chromeC = mix(float3(0.35, 0.37, 0.42), float3(0.95), chrome) * (0.8 + 0.2 * (1.0 - win / frameW));
-    col = mix(col, chromeC + lightC * 0.08, inFrame);
-    if (win < 0.0) {
-        float2 q = wp / 0.72 + 0.5;
-        float3 pic = sharpCover(q, A, S);
-        pic *= 0.9 + 0.1 * (1.0 - q.y);
-        float glare = 1.0 - smoothstep(0.0, 0.08, abs(q.x + q.y * 0.5 - 0.42));
-        pic += float3(1.0) * glare * 0.1 + float3(1.0) * pow(1.0 - q.y, 6.0) * 0.12;
-        pic *= 1.0 - 0.35 * pow(length(q - 0.5) * 1.3, 3.0);                     // curved glass falloff
-        col = mix(col, pic, 1.0 - smoothstep(-aa, aa, win));
-    }
-
-    // Bubble tubes up both sides.
-    for (int s = 0; s < 2; s++) {
-        float side = s == 0 ? -1.0 : 1.0;
-        float2 tq = p - float2(side * 0.5, 0.25);
-        float tube = sdRoundBox(tq, float2(0.045, 0.5), 0.045);
-        float3 tc = mix(A, S, float(s)) ;
-        float inT = 1.0 - smoothstep(-aa, aa, tube);
-        float3 liquid = tc * (0.55 + 0.35 * bass * k) * (0.75 + 0.25 * cos(tq.x / 0.045 * 1.5));
-        float spd = 0.25 + 1.2 * bass * k;
-        float bub = 0.0;
-        for (int b = 0; b < 6; b++) {
-            float fb = float(b);
-            float h = hash11(fb * 7.3 + side * 3.0);
-            float by = 0.5 - fract(h + t * spd * (0.6 + 0.6 * h)) * 1.0;
-            float2 bp = tq - float2(sin(t * 2.0 + fb) * 0.012, by);
-            float br = 0.012 + 0.012 * h;
-            bub = max(bub, 1.0 - smoothstep(br - aa, br + aa, length(bp)));
-        }
-        liquid = mix(liquid, mix(tc, float3(1.0), 0.7), bub * 0.8);
-        liquid += float3(1.0) * exp(-abs(tq.x + 0.02) * 120.0) * 0.15;           // glass highlight
-        col = mix(col, liquid, inT);
-        col += tc * exp(-max(tube, 0.0) * 30.0) * (1.0 - inT) * 0.12 * inBody;
-    }
-
-    // Backlit chrome grille, pulsing with the bass.
-    float2 gq = p - float2(0.0, 0.43);
-    float grille = sdRoundBox(gq, float2(0.36, 0.2), 0.05);
-    if (grille < aa) {
-        float inG = 1.0 - smoothstep(-aa, aa, grille);
-        float3 back = lightC * (0.25 + 0.6 * bass * k + 0.3 * kick * k);
-        float f = fract(gq.x * 10.0);
-        float bar = smoothstep(0.2, 0.25, f) * (1.0 - smoothstep(0.75, 0.8, f));
-        float3 barC = mix(float3(0.25, 0.26, 0.3), float3(0.95), pow(sin(PI * sat((f - 0.2) / 0.6)), 2.0)) * 0.9;
-        col = mix(col, mix(back, barC, bar), inG);
-    }
-    // Chrome trim along the base.
-    float trim = sdRoundBox(p - float2(0.0, 0.93), float2(0.6, 0.025), 0.02);
-    col = mix(col, mix(float3(0.4), float3(1.0), 0.5 + 0.5 * sin(p.x * 9.0)), 1.0 - smoothstep(-aa, aa, trim));
-
-    col += float3(1.0) * dots(uv, 30.0, float2(0.0, -t * 0.02), 0.06, 0.06, 4.0) * (0.06 + 0.3 * high * k);
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val NEON_FRAME = """
-// Neon frame (music): the album cover on a dark brick wall, framed by neon tubes bent round it in the
-// cover's two strongest colours. The tubes buzz and flicker, burn brighter with the bass, a second
-// outer tube lights up on the kick, the glow spills over the bricks and reflects in a wet floor below.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 4.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.28) * 0.66;
-    // Brick wall.
-    float2 bq = uv * float2(9.0, 18.0);
-    bq.x += step(0.5, fract(bq.y * 0.5)) * 0.5;
-    float2 bf = fract(bq);
-    float mortar = step(min(bf.x, bf.y), 0.06);
-    float3 brick = mix(float3(0.16, 0.08, 0.07), float3(0.22, 0.11, 0.09), hash12(floor(bq)));
-    float3 col = mix(brick, float3(0.06), mortar) * (0.6 + 0.2 * BG.r);
-    float floorY = c.y + R * 1.55;
-    // Flicker: mostly on, little dropouts.
-    float flick = 0.85 + 0.15 * step(0.08, hash11(floor(t * 12.0))) ;
-    float2 d = uv - c;
-    float inner = sdRoundBox(d, float2(R * 1.12), R * 0.12);
-    float outer = sdRoundBox(d, float2(R * 1.32), R * 0.18);
-    float br = (0.5 + 0.8 * bass * k) * flick;
-    // Glow spilling on the wall.
-    col += A * exp(-abs(inner) / R * 4.0) * 0.35 * br;
-    col += S * exp(-abs(outer) / R * 4.0) * 0.3 * kick * k;
-    // The tubes.
-    col += mix(A, float3(1.0), 0.6) * glow(abs(inner), 0.0016) * br;
-    col += mix(S, float3(1.0), 0.6) * glow(abs(outer), 0.0016) * (0.15 + 0.9 * kick * k);
-    // Cover.
-    float box = sdRoundBox(d, float2(R), R * 0.03);
-    if (box < 0.0) col = sharpCover(d / (2.0 * R) + 0.5, A, S) * (0.9 + 0.15 * bass);
-    // Wet floor with reflections.
-    if (uv.y > floorY) {
-        float3 fl = float3(0.04, 0.04, 0.05);
-        float2 m = float2(uv.x, 2.0 * floorY - uv.y) - c;
-        float rIn = sdRoundBox(m, float2(R * 1.12), R * 0.12);
-        float ripple = 0.003 * sin(uv.y * 300.0 + t * 3.0);
-        fl += A * glow(abs(rIn + ripple), 0.003) * br * 0.35 * exp(-(uv.y - floorY) * 6.0);
-        fl += mix(A, S, 0.5) * 0.06 * exp(-abs(uv.x - c.x) * 4.0);
-        col = fl;
-    }
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val MAGAZINE = """
-// Magazine (music): the album cover laid out as a music magazine's front page - a bold masthead bar
-// in the cover's colours, the song's title in big type across the bottom, cover-line stripes and a
-// price sticker - lying on a table, slightly turned, with the pages of other issues (earlier songs)
-// fanned out underneath. The page lifts a little on the kick; a light sweeps across the glossy paper.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float kick = exp(-uBeatAge * 4.0) * play;
-
-    float2 c = float2(waveX(asp), uWaveY);
-    float R = room(0.3) * 0.86;
-    // Table.
-    float3 col = mix(BG * 0.6 + float3(0.05, 0.03, 0.02), BG * 0.3, length(uv - c) / (R * 4.0));
-    col *= 0.9 + 0.1 * vnoise(uv * float2(4.0, 60.0));
-    float2 hw = float2(R * 0.78, R);
-    // Older issues fanned underneath.
-    for (int i = 2; i >= 0; i--) {
-        float fi = float(i);
-        float2 d = rot(-0.18 - fi * 0.14) * (uv - c - float2(-R * (0.25 + fi * 0.2), R * 0.05));
-        float pg = max(abs(d.x) - hw.x, abs(d.y) - hw.y);
-        col *= 1.0 - 0.25 * (1.0 - smoothstep(-0.01, 0.03, pg));
-        if (pg < 0.0) col = pastCover(fi, d / (2.0 * hw) + 0.5, A, S) * 0.75;
-    }
-    // The current issue, lifting on the kick.
-    float lift = kick * k * 0.012;
-    float2 d = rot(0.06 + 0.01 * sin(t * 0.3)) * (uv - c - float2(0.0, -lift));
-    float pg = max(abs(d.x) - hw.x, abs(d.y) - hw.y);
-    col *= 1.0 - 0.35 * (1.0 - smoothstep(-0.01, 0.04 + lift * 2.0, max(abs(d.x - 0.012) - hw.x, abs(d.y - 0.02 - lift) - hw.y)));
-    if (pg < 0.0) {
-        float2 q = d / (2.0 * hw) + 0.5;
-        // The cover fills the page (cropped to the page's shape).
-        float3 page = sharpCover(float2((q.x - 0.5) * 0.78 + 0.5, q.y), A, S);
-        // Masthead bar.
-        float mast = step(q.y, 0.15);
-        page = mix(page, mix(A, S, 0.2), mast);
-        // Masthead "letters": chunky blocks.
-        float2 lq = float2(q.x * 7.0, (q.y - 0.03) / 0.1);
-        float letter = step(0.15, fract(lq.x)) * step(0.0, lq.y) * step(lq.y, 1.0) * step(0.3, hash11(floor(lq.x) + 3.0));
-        letter *= step(0.2, abs(fract(lq.x) - 0.55) + step(0.5, lq.y) * 0.4);
-        page = mix(page, float3(1.0), letter * mast);
-        // The song's title in big type at the bottom.
-        float2 tq = float2(q.x * 1.0, (q.y - 0.72) / 0.3);
-        float ink = labelInk(float2(tq.x, mix(0.1, 0.95, tq.y)));
-        float plate = step(0.72, q.y) * 0.45;
-        page = mix(page, page * 0.4, plate);
-        page = mix(page, float3(1.0), ink * step(0.72, q.y));
-        // Cover lines on the left.
-        float lines = step(0.22, q.y) * step(q.y, 0.6) * step(q.x, 0.32) * step(0.55, fract(q.y * 22.0)) * step(0.05, q.x);
-        page = mix(page, float3(1.0), lines * 0.85);
-        // Price sticker.
-        float st = length(q - float2(0.85, 0.26)) - 0.08;
-        page = mix(page, mix(S, float3(1.0), 0.3), step(st, 0.0));
-        // Gloss sweep.
-        page += float3(1.0) * 0.12 * pow(sat(1.0 - abs(q.x + q.y - fract(t * 0.07) * 3.0 + 0.5) * 3.0), 3.0);
-        col = page;
-    }
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val COVER_FOCUS = """
-// Pan & zoom (music): the album cover fills the screen and the camera drifts over it like a
-// documentary - slowly zooming in on the cover's subject (found by MusicTheme: faces, the brightest,
-// busiest, most colourful part) and easing back out, never straying off the picture. Away from the
-// subject the cover goes soft like a shallow depth of field. Every kick punches the zoom a touch
-// and splits the colours for an instant; a thin spectrum glows along the bottom.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float kick = exp(-uBeatAge * 6.0) * play;
-
-    float3 sub = subjectOf();
-    float2 sp = sub.xy;
-    float sz = clamp(sub.z, 0.12, 0.6);
-    // Slow in and out (about 50 s a cycle); smaller subjects get a deeper zoom.
-    float slow = 0.5 - 0.5 * cos(t * 0.125);
-    float z = 1.0 + (0.18 + 0.55 * (0.6 - sz)) * slow + kick * 0.04 * (0.4 + k);
-    float w = 1.0 / z;          // how much of the cover's width is on screen
-    float hgt = w / asp;        // ... and of its height
-    // The camera: from the middle towards the subject as it zooms in, with a gentle wander.
-    float2 drift = float2(sin(t * 0.047), cos(t * 0.039)) * 0.05 * (1.0 - 0.5 * slow);
-    float2 cam = mix(float2(0.5, 0.5), sp, 0.35 + 0.6 * slow) + drift;
-    cam.x = clamp(cam.x, w * 0.5, 1.0 - w * 0.5);
-    cam.y = clamp(cam.y, hgt * 0.5, 1.0 - hgt * 0.5);
-    float2 q = cam + (uv - float2(asp * 0.5, 0.5)) * (w / asp);
-
-    // The kick splits the colours for a moment.
-    float split = kick * 0.004 * (0.3 + k);
-    float3 sharp = float3(sharpCover(q + float2(split, 0.0), A, S).r,
-                          sharpCover(q, A, S).g,
-                          sharpCover(q - float2(split, 0.0), A, S).b);
-    float3 soft = mix(mix(A, S, q.y), float3(uArt.eval(clamp(q, 0.0, 1.0) * uArtSize).rgb), uHasArt);
-    // Shallow depth of field round the subject (stronger when zoomed in).
-    float dof = smoothstep(sz * 0.55, sz * 1.5, length((q - sp) * float2(1.0, 1.1)));
-    float3 col = mix(sharp, soft, dof * (0.25 + 0.4 * slow));
-
-    // A warm light leak drifting across, in the cover's colours, brighter on the beat.
-    float2 lp = float2(asp * (0.5 + 0.6 * sin(t * 0.09)), 0.2 + 0.15 * cos(t * 0.07));
-    col += mix(A, S, 0.5 + 0.5 * sin(t * 0.05)) * exp(-length(uv - lp) * 2.4) * (0.1 + 0.25 * kick * k);
-    // Calmer at the bottom, where the player and lyrics sit.
-    col *= 1.0 - 0.38 * smoothstep(0.5, 1.0, uv.y);
-    // A thin spectrum along the bottom edge.
-    float m = sat(uv.x / asp);
-    float e = eqAt(m) * play;
-    float bar = smoothstep(1.0 - 0.06 * e - 0.004, 1.0 - 0.06 * e, uv.y);
-    col = mix(col, mix(A, float3(1.0), 0.35), bar * (0.35 + 0.4 * k));
-    // Vignette.
-    float2 vv = fc / uRes - 0.5;
-    col *= 1.0 - 0.55 * dot(vv, vv);
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val CRT_TUNNEL = """
-// CRT tunnel: a slow flight down a tunnel built from stacked old television sets. Each set has a
-// curved, glowing screen showing its own channel - colour bars, static, a rolling test card, a
-// blue "no signal" - with scanlines and RGB fringes; screens flicker, switch channel now and then,
-// and the far end of the tunnel glows like a warm-up dot.
-
-float3 channel(float2 q, float id, float t, float3 A, float3 S) {
-    float ch = floor(hash11(id * 3.7 + floor(t * 0.25 + hash11(id) * 4.0)) * 5.0);
-    float3 c;
-    if (ch < 1.0) {
-        // Colour bars.
-        float b = floor(q.x * 7.0);
-        c = float3(step(0.5, mod(b, 2.0)), step(0.5, mod(floor(b / 2.0), 2.0)), step(0.5, mod(floor(b / 4.0), 2.0)));
-        c = mix(float3(1.0) - c, float3(0.9), 0.15);
-        c = mix(c, float3(0.1), step(0.75, q.y));
-    } else if (ch < 2.0) {
-        // Static.
-        float n = hash12(floor(q * float2(60.0, 45.0)) + floor(t * 24.0));
-        c = float3(n * 0.9);
-    } else if (ch < 3.0) {
-        // A rolling test card: rings and a cross in the theme colours.
-        float2 p = q - 0.5;
-        p.y = fract(p.y + 0.5 + t * 0.05) - 0.5;
-        float r = length(p * float2(1.3, 1.0));
-        c = mix(A, S, step(0.5, fract(r * 6.0))) * 0.8;
-        c = mix(c, float3(1.0), step(abs(p.x), 0.01) + step(abs(p.y), 0.012));
-    } else if (ch < 4.0) {
-        // No signal: flat blue with a bright bar.
-        c = float3(0.1, 0.2, 0.75);
-        c = mix(c, float3(0.9), step(abs(q.y - 0.5), 0.06) * step(abs(q.x - 0.5), 0.3) * 0.7);
-    } else {
-        // A glowing waveform on black.
-        c = float3(0.02);
-        float w = 0.5 + 0.25 * sin(q.x * 18.0 + t * 4.0 + id) * sin(q.x * 5.0 - t);
-        c += mix(A, float3(1.0), 0.3) * exp(-abs(q.y - w) * 80.0);
-    }
-    return c;
-}
-
-half4 main(float2 fc) {
-    float2 uv = (fc - 0.5 * uRes) / uRes.y;
-    float t = uTime;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-
-    // Square tunnel: depth from the larger of |x| and |y| (a box seen from inside).
-    float2 p = uv;
-    p = rot(0.04 * sin(t * 0.13)) * p;
-    float m = max(abs(p.x) * 0.85, abs(p.y));
-    float z = 0.18 / max(m, 0.001);
-    float zz = z + t * 0.6;
-    // Which wall, and the coordinate along it.
-    float horiz = step(abs(p.y), abs(p.x) * 0.85);
-    float u = horiz > 0.5 ? p.y / max(abs(p.x) * 0.85, 0.001) : p.x * 0.85 / max(abs(p.y), 0.001);
-    float side = horiz > 0.5 ? sign(p.x) : 2.0 + sign(p.y);
-    // A grid of TV sets on each wall: 4 across, one set per unit of depth.
-    float2 g = float2(u * 2.0 + 2.0, zz);
-    float2 cell = floor(g);
-    float2 f = fract(g);
-    float id = cell.x + cell.y * 7.0 + side * 31.0;
-    // The set: a plastic case with a rounded screen inset.
-    float3 caseC = mix(float3(0.2, 0.19, 0.18), BG * 2.0, 0.3) * (0.7 + 0.3 * hash11(id));
-    float2 sq = (f - float2(0.45, 0.5)) / float2(0.36, 0.38);
-    float scr = length(max(abs(sq) - 0.75, 0.0)) - 0.25;
-    float3 col = caseC * (0.85 + 0.15 * f.y);
-    if (scr < 0.0) {
-        // Curved screen: bulge the picture a little.
-        float2 q = sq * (1.0 + 0.08 * dot(sq, sq)) * 0.5 + 0.5;
-        // RGB fringe: sample the channel shifted per colour.
-        float3 c;
-        c.r = channel(q + float2(0.006, 0.0), id, t, A, S).r;
-        c.g = channel(q, id, t, A, S).g;
-        c.b = channel(q - float2(0.006, 0.0), id, t, A, S).b;
-        c *= 0.8 + 0.2 * sin(q.y * 220.0);                                     // scanlines
-        c *= 0.85 + 0.15 * hash11(floor(t * 15.0) + id);                       // flicker
-        c *= 1.0 - 0.4 * dot(sq, sq) * 0.5;                                     // darker corners
-        col = c;
-    }
-    // A knob or two on the right of each set.
-    col = mix(col, caseC * 0.4, 1.0 - smoothstep(0.02, 0.03, length(f - float2(0.88, 0.35))));
-    col = mix(col, caseC * 0.4, 1.0 - smoothstep(0.02, 0.03, length(f - float2(0.88, 0.6))));
-    // Seams between sets.
-    col *= smoothstep(0.0, 0.03, min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y)));
-    // Depth: fade to the warm glow at the far end.
-    float fog = 1.0 - exp(-z * 0.12);
-    float3 far = mix(A, float3(1.0, 0.9, 0.75), 0.4) * 0.35;
-    col = mix(col, far * 0.4 + BG * 0.3, fog);
-    col += far * exp(-length(uv) * 9.0) * 1.2;
-    col += float3(1.0) * exp(-length(uv) * 60.0) * 0.6;
-    // Glow cast between the screens.
-    col += mix(A, S, 0.5) * 0.04;
-    col *= 0.7;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val MEMORY_CARD = """
-// Memory card: the save screen of a late-90s console, reimagined. A big translucent memory card
-// floats at an angle over a dark, glossy surface; through its shell you see the board and chips;
-// beside it a grid of 15 save blocks, each with its own little animated pixel icon (gem, heart,
-// sword, star, coin...), slowly filling up as data streams in; the access light blinks while it saves.
-
-// A 8x8 pixel icon, picked by k, at cell coordinate c (0..7); returns 0/1 and a frame flip.
-float icon(float2 c, float k, float frame) {
-    float2 p = c - 3.5;
-    float v = 0.0;
-    if (k < 1.0) v = step(abs(p.x) + abs(p.y), 3.0 + frame);                               // gem
-    else if (k < 2.0) v = step(length(float2(abs(p.x) - 1.5, p.y + 1.0)), 2.0) + step(abs(p.x) + p.y, 2.8 + frame * 0.5) * step(-1.0, p.y);   // heart
-    else if (k < 3.0) v = step(abs(p.x - p.y), 0.8) * step(abs(p.x), 3.0 - frame) + step(abs(p.x + p.y), 0.8) * step(abs(p.x - 1.5), 0.6); // sword
-    else if (k < 4.0) v = step(length(p), 3.3 - frame * 0.6) * (1.0 - step(length(p), 1.5));   // ring / coin
-    else v = step(abs(p.x) * 0.6 + abs(p.y), 2.0 + frame) + step(abs(p.y) * 0.6 + abs(p.x), 2.0 + frame); // star
-    return sat(v);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-
-    // Background: deep gradient with slow diagonal light bands (a menu backdrop).
-    float3 col = mix(BG * 1.6, BG * 0.6, uv.y);
-    col += mix(A, S, 0.5) * 0.05 * smoothstep(0.6, 1.0, sin((uv.x + uv.y) * 4.0 - t * 0.2));
-    float horizon = 0.78;
-    col = mix(col, BG * 0.4, step(horizon, uv.y));
-
-    // The card: a tilted rounded slab with a notch, translucent smoky shell.
-    float2 cc = float2(asp * 0.3, 0.46 + 0.012 * sin(t * 0.6));
-    float tilt = -0.18 + 0.03 * sin(t * 0.4);
-    float2 cq = rot(tilt) * (uv - cc);
-    cq.x *= 1.0 + cq.y * 0.4;                                // a touch of perspective
-    float2 half_ = float2(0.15, 0.2);
-    float card = sdRoundBox(cq, half_, 0.012);
-    card = max(card, -sdRoundBox(cq - float2(half_.x, -half_.y), float2(0.04, 0.04), 0.004));   // corner notch
-    float inCard = 1.0 - smoothstep(-px, px, card);
-    float3 shell = mix(float3(0.25, 0.26, 0.3), A * 0.4, 0.25);
-    // Inside: a board with a chip and traces, seen through the shell.
-    float3 inside = mix(float3(0.06, 0.18, 0.1), BG, 0.3);
-    float chip = sdRoundBox(cq - float2(-0.02, 0.0), float2(0.06, 0.05), 0.004);
-    inside = mix(inside, float3(0.08), 1.0 - smoothstep(0.0, px, chip));
-    float pins = step(abs(fract(cq.x * 70.0) - 0.5), 0.2) * step(abs(abs(cq.y) - 0.056), 0.006) * step(abs(cq.x + 0.02), 0.06);
-    inside = mix(inside, float3(0.75, 0.65, 0.35), pins);
-    float trace = step(abs(fract(cq.y * 30.0) - 0.5), 0.06) * step(0.045, cq.x) * step(cq.x, 0.11);
-    inside += float3(0.7, 0.6, 0.3) * trace * 0.5;
-    // Gold contacts at the bottom.
-    float contacts = step(half_.y - 0.03, cq.y) * step(abs(fract(cq.x * 40.0) - 0.5), 0.3) * step(abs(cq.x), half_.x - 0.02);
-    float3 cardC = mix(inside, shell, 0.55) + float3(1.0) * 0.12 * smoothstep(0.1, -0.1, cq.x + cq.y);
-    cardC = mix(cardC, float3(0.85, 0.7, 0.3), contacts);
-    // A label area at the top with stripes in the theme colours.
-    float label = step(cq.y, -0.06) * step(abs(cq.x), half_.x - 0.02) * step(-half_.y + 0.02, cq.y);
-    cardC = mix(cardC, mix(A, S, step(0.5, fract(cq.y * 25.0))) * 0.75 + 0.1, label);
-    // Access light: blinks quickly while saving.
-    float save = step(0.5, fract(t / 9.0)) ;
-    float led = length(cq - float2(half_.x - 0.03, -half_.y + 0.03 + 0.0)) - 0.007;
-    float ledOn = save * step(0.5, fract(t * 6.0)) + (1.0 - save) * 0.15;
-    cardC = mix(cardC, mix(float3(0.2, 0.05, 0.05), float3(1.0, 0.3, 0.2), ledOn), 1.0 - smoothstep(0.0, px, led));
-    col = mix(col, cardC, inCard);
-    col += float3(1.0, 0.3, 0.2) * exp(-length(cq - float2(half_.x - 0.03, -half_.y + 0.03)) * 60.0) * ledOn * 0.4;
-    col += mix(A, float3(1.0), 0.5) * exp(-abs(card) * 300.0) * 0.25;
-    // Its reflection on the glossy floor.
-    if (uv.y > horizon) {
-        float2 ruv = float2(uv.x, 2.0 * horizon - uv.y);
-        float2 rq = rot(tilt) * (ruv - cc);
-        float rc = sdRoundBox(rq, half_, 0.012);
-        col = mix(col, cardC * 0.3, (1.0 - smoothstep(-px, px, rc)) * exp(-(uv.y - horizon) * 10.0));
-    }
-
-    // The save grid: 5 x 3 blocks; filled ones show their animated icon, the next one fills with
-    // a progress sweep while saving.
-    float2 g0 = float2(asp * 0.52, 0.26);
-    float bs = 0.085;
-    float filled = 4.0 + mod(floor(t / 9.0), 11.0);
-    float progress = fract(t / 9.0) * 2.0 - 1.0;                 // the second half of each 9 s saves
-    for (int i = 0; i < 15; i++) {
-        float fi = float(i);
-        float2 o = g0 + float2(mod(fi, 5.0), floor(fi / 5.0)) * (bs + 0.018);
-        float2 q = uv - o;
-        float box = sdRoundBox(q - bs * 0.5, float2(bs * 0.5), 0.008);
-        float inB = 1.0 - smoothstep(-px, px, box);
-        float3 bc = BG * 1.8 + 0.03;
-        float isFull = step(fi, filled - 1.0);
-        float isSaving = step(abs(fi - filled), 0.5) * step(0.0, progress);
-        float2 cell = floor(q / bs * 10.0) - 1.0;                 // 8x8 icon in the middle
-        float inIcon = step(0.0, cell.x) * step(cell.x, 7.0) * step(0.0, cell.y) * step(cell.y, 7.0);
-        float k = mod(fi * 3.0 + 1.0, 5.0);
-        float frame = step(0.5, fract(t * 1.5 + fi * 0.37));
-        float ic = icon(cell, k, frame) * inIcon;
-        float3 icC = mix(mix(A, S, hash11(fi)), float3(1.0), 0.2);
-        bc = mix(bc, mix(bc * 1.3, icC, ic), isFull);
-        // Saving: a sweep filling the block from the bottom.
-        float fillY = 1.0 - progress;
-        bc = mix(bc, mix(A, float3(1.0), 0.3) * 0.6, isSaving * step(fillY, q.y / bs) * 0.6);
-        col = mix(col, bc, inB);
-        col += mix(A, float3(1.0), 0.4) * exp(-abs(box) * 400.0) * (0.15 + 0.5 * isSaving);
-    }
-    // Data streaming from the card to the slot being saved.
-    float2 a = cc + float2(0.14, -0.05);
-    float2 b = g0 + float2(mod(filled, 5.0), floor(filled / 5.0)) * (bs + 0.018) + bs * 0.5;
-    float2 ab = b - a;
-    float h = sat(dot(uv - a, ab) / dot(ab, ab));
-    float dline = length(uv - a - ab * h);
-    float bits = step(0.6, fract(h * 20.0 - t * 4.0));
-    col += mix(A, S, h) * exp(-dline * 600.0) * bits * step(0.0, progress) * 0.8;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val ENERGY_CORE = """
-// Energy core: the heart of a reactor. A sphere of churning plasma hangs inside three containment
-// rings that turn on different axes; arcs of energy jump between the core and the ring emitters,
-// a hexagonal chamber wall glows faintly behind, and every few seconds the core surges - a bright
-// pulse, a shockwave across the walls, and the rings speeding up for a moment.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float2 c = float2(asp * 0.5, 0.5);
-    float2 p = uv - c;
-    float r = length(p);
-    float cyc = mod(t, 7.0);
-    float surge = exp(-cyc * 2.5);
-    float spin = t + (1.0 - exp(-cyc * 1.5)) * 1.2 + floor(t / 7.0) * 1.2;
-
-    // Hex chamber wall: a honeycomb of panels with faint glowing seams, lit by the core.
-    float2 h = p * 9.0;
-    float2 hr = float2(1.0, 1.7320508);
-    float2 ha = mod(h, hr) - hr * 0.5;
-    float2 hb = mod(h - hr * 0.5, hr) - hr * 0.5;
-    float2 hg = dot(ha, ha) < dot(hb, hb) ? ha : hb;
-    float hexD = 0.5 - max(abs(hg.x) * 0.866 + abs(hg.y) * 0.5, abs(hg.y));
-    float3 col = BG * (0.9 + 0.3 * hash12(floor((h - hg) * 10.0)));
-    float light = exp(-r * 2.2) * (0.6 + 0.8 * surge);
-    col += mix(A, S, 0.5) * (1.0 - smoothstep(0.0, 0.05, hexD)) * (0.08 + 0.4 * light);
-    col *= 0.7 + 0.6 * light;
-    // The surge's shockwave across the wall.
-    col += mix(A, float3(1.0), 0.5) * exp(-abs(r - cyc * 0.45) * 40.0) * exp(-cyc * 0.8) * 0.4;
-
-    // Containment rings: ellipses (circles seen at an angle) turning about different axes. The back
-    // half is drawn before the core, the front half after.
-    float R = 0.24;
-    float3 ringC = mix(float3(0.75, 0.8, 0.9), A, 0.3);
-    float back = 0.0;
-    float front = 0.0;
-    float emit = 0.0;
-    for (int i = 0; i < 3; i++) {
-        float fi = float(i);
-        float ang = fi * 1.05 + 0.3;
-        float tiltA = 0.25 + 0.25 * fi + 0.1 * sin(spin * 0.3 + fi);
-        float2 q = rot(ang) * p;
-        float sy = sin(tiltA);
-        float2 e = float2(q.x, q.y / max(sy, 0.08));
-        float er = length(e);
-        float rr = R * (1.12 + 0.14 * fi);
-        float band = exp(-abs(er - rr) * 260.0 * max(sy, 0.25));
-        // Segments rotating round the ring.
-        float a = atan(e.y, e.x) + spin * (0.6 + 0.3 * fi) * (fi == 1.0 ? -1.0 : 1.0);
-        float seg = step(0.25, fract(a / TAU * 12.0));
-        float isFront = step(0.0, e.y);
-        back += band * (1.0 - isFront) * (0.4 + 0.6 * seg);
-        front += band * isFront * (0.4 + 0.6 * seg);
-        // Emitters: bright nodes on the ring.
-        float node = exp(-length(e - rr * float2(cos(-spin * (0.6 + 0.3 * fi) * (fi == 1.0 ? -1.0 : 1.0)), sin(-spin * (0.6 + 0.3 * fi) * (fi == 1.0 ? -1.0 : 1.0)))) * 90.0);
-        emit += node;
-    }
-    col += ringC * back * 0.5;
-
-    // The core: a sphere of plasma - swirling noise mapped on a ball, hot centre, darker limb.
-    float cr = 0.15 * (1.0 + 0.06 * surge + 0.015 * sin(t * 3.0));
-    if (r < cr * 1.6) {
-        float2 n = p / cr;
-        float z = sqrt(max(1.0 - dot(n, n), 0.0));
-        float2 sp = n / (1.0 + z) * 2.0;
-        float pl = fbm(rot(t * 0.2) * sp * 2.0 + float2(t * 0.3, -t * 0.2));
-        pl = 0.6 * pl + 0.4 * fbm(sp * 4.0 - float2(t * 0.5, t * 0.1));
-        float3 hot = mix(mix(A, S, pl), float3(1.0), smoothstep(0.55, 0.9, pl) * 0.7 + z * 0.3);
-        float inside = 1.0 - smoothstep(cr - px, cr + px, r);
-        col = mix(col, hot * (0.6 + 0.6 * z) * (1.0 + 0.6 * surge), inside);
-    }
-    col += mix(A, S, 0.5) * exp(-max(r - cr, 0.0) * 14.0) * (0.35 + 0.6 * surge);
-    col += float3(1.0) * exp(-r * 30.0) * surge * 0.6;
-
-    // Arcs: jagged bolts from the core towards the rings, flickering.
-    for (int i = 0; i < 4; i++) {
-        float fi = float(i);
-        float seed = floor(t * 8.0 + fi * 13.0);
-        float ang = hash11(seed) * TAU;
-        float2 dir = float2(cos(ang), sin(ang));
-        float along = dot(p, dir);
-        float across = dot(p, float2(-dir.y, dir.x));
-        float jag = (vnoise(float2(along * 40.0, seed)) - 0.5) * 0.03 * sat(along / 0.1);
-        float bolt = exp(-abs(across - jag) * 600.0) * step(cr * 0.9, along) * step(along, R * 1.2);
-        col += mix(float3(1.0), S, 0.3) * bolt * step(0.4, hash11(seed + 3.0)) * (0.6 + surge);
-    }
-    // Front halves of the rings, and their emitter nodes.
-    col += ringC * front * 0.75;
-    col += float3(1.0) * emit * 0.7;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val RACING32 = """
-// 32-bit racing: the late-90s arcade racer look at the resolution it was drawn at. A low-res,
-// dithered evening: a big sun setting behind jagged polygon mountains, a winding road of flat-shaded
-// segments with red-and-white kerbs, roadside poles and signs flicking past, a rival car's tail
-// lights ahead, and the speed lines of going too fast. Everything snaps to a 240-line pixel grid.
-
-float bayer4(float2 c) {
-    float2 a = mod(c, 4.0);
-    float2 b = floor(a / 2.0);
-    float2 s = mod(a, 2.0);
-    float v = (mod(b.x * 2.0 + b.y * 3.0, 4.0)) / 4.0;
-    return (mod(s.x * 2.0 + s.y * 3.0, 4.0) + v) / 4.0;
-}
-
-half4 main(float2 fc) {
-    float res = 240.0;
-    float2 cell = floor(fc / uRes.y * res);
-    float2 uv = (cell + 0.5) / res;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float d = bayer4(cell);
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float hz = 0.5;
-
-    float3 col;
-    // Road curve: the horizon point drifts left and right.
-    float curve = 0.35 * sin(t * 0.2) + 0.15 * sin(t * 0.47);
-    if (uv.y < hz) {
-        // Sky in dithered bands: deep at the top, burning orange low down.
-        float g = uv.y / hz;
-        float band = floor(g * 8.0 + d) / 8.0;
-        col = mix(mix(BG * 1.5, A * 0.5, 0.4), mix(float3(1.0, 0.55, 0.25), S, 0.25), band);
-        // The sun, striped by the dither towards its base.
-        float2 sp = float2(asp * 0.5 - curve * 0.25, hz - 0.05);
-        float sd = length(uv - sp);
-        float sun = step(sd, 0.12) * step(d * 0.6, 1.0 - smoothstep(hz - 0.12, hz, uv.y));
-        col = mix(col, mix(float3(1.0, 0.9, 0.5), S, 0.2), sun);
-        col += float3(1.0, 0.6, 0.3) * step(sd, 0.18 + d * 0.02) * 0.12;
-        // Polygon mountains: straight-edged peaks, flat-shaded (lit and shadow sides).
-        float mx = uv.x + curve * 0.3;
-        float seg = floor(mx * 6.0);
-        float fx = fract(mx * 6.0);
-        float h0 = 0.08 + 0.1 * hash11(seg);
-        float h1 = 0.08 + 0.1 * hash11(seg + 1.0);
-        float peakX = 0.3 + 0.4 * hash11(seg * 7.0);
-        float pk = 0.14 + 0.12 * hash11(seg * 3.0);
-        float mh = fx < peakX ? mix(h0, pk, fx / peakX) : mix(pk, h1, (fx - peakX) / (1.0 - peakX));
-        float mTop = hz - mh;
-        float3 mc = mix(BG * 1.2, A * 0.3, 0.3) * (fx < peakX ? 1.25 : 0.75);
-        col = mix(col, mc, step(mTop, uv.y));
-    } else {
-        // Road: perspective with alternating segment shading, kerbs and a centre line.
-        float dy = uv.y - hz;
-        float z = 0.1 / dy;
-        float x = (uv.x - asp * 0.5) * z + curve * z * z * 0.12 - curve * 0.2;
-        float segP = fract(z * 0.5 - t * 3.0);
-        float alt = step(0.5, segP);
-        float3 grass = mix(mix(float3(0.15, 0.32, 0.12), float3(0.2, 0.4, 0.15), alt), BG, 0.25);
-        float3 road = mix(float3(0.32, 0.32, 0.36), float3(0.36, 0.36, 0.4), alt);
-        float w = 0.18;
-        col = grass;
-        col = mix(col, road, step(abs(x), w));
-        col = mix(col, mix(float3(0.9, 0.12, 0.1), float3(0.95), alt), step(w, abs(x)) * step(abs(x), w + 0.025));
-        col = mix(col, float3(0.95), step(abs(x), 0.006) * alt);
-        // Lane lines.
-        col = mix(col, float3(0.85), step(abs(abs(x) - 0.09), 0.003) * alt);
-        // Haze near the horizon.
-        col = mix(col, mix(float3(1.0, 0.6, 0.35), S, 0.25) * 0.8, exp(-dy * 25.0) * 0.7);
-        // The rival's car ahead: a blocky shape with tail lights.
-        float carZ = 6.0 + 1.5 * sin(t * 0.3);
-        float carY = hz + 0.1 / carZ;
-        float carX = asp * 0.5 + (0.07 * sin(t * 0.25) + curve * 0.2 - curve * carZ * carZ * 0.12) / carZ;
-        float2 cq = (uv - float2(carX, carY - 0.012 / carZ * 6.0)) * carZ * 4.0;
-        float body = step(abs(cq.x), 0.4) * step(abs(cq.y + 0.05), 0.12);
-        float roof = step(abs(cq.x), 0.25) * step(abs(cq.y + 0.2), 0.06);
-        col = mix(col, mix(A * 0.6, float3(0.2), 0.3), max(body, roof));
-        float tail = step(abs(abs(cq.x) - 0.3), 0.07) * step(abs(cq.y + 0.08), 0.03);
-        col = mix(col, float3(1.0, 0.2, 0.15), tail);
-    }
-    // Roadside poles flicking past on both sides.
-    for (int i = 0; i < 6; i++) {
-        float fi = float(i);
-        float ph = fract(fi / 6.0 + t * 0.5);
-        float z = 8.0 * (1.0 - ph) + 0.4;
-        float side = mod(fi, 2.0) * 2.0 - 1.0;
-        float xx = asp * 0.5 + (side * 0.26 - curve * z * z * 0.12 + curve * 0.2) / z;
-        float base = hz + 0.1 / z;
-        float hh = 0.14 / z;
-        float pole = step(abs(uv.x - xx), max(0.003 / z, 0.5 / 240.0)) * step(base - hh, uv.y) * step(uv.y, base);
-        float sign_ = step(abs(uv.x - xx - side * 0.02 / z), 0.03 / z) * step(abs(uv.y - (base - hh)), 0.018 / z);
-        col = mix(col, float3(0.85, 0.85, 0.8), pole);
-        col = mix(col, mix(A, S, mod(fi, 3.0) / 2.0), sign_ * step(0.5, mod(fi, 2.0) + 0.5));
-    }
-    // Speed lines at the edges.
-    float sl = step(0.93, hash12(float2(floor(atan(uv.y - hz, uv.x - asp * 0.5) * 40.0), floor(t * 12.0))));
-    col = mix(col, float3(1.0), sl * smoothstep(0.35, 0.8, length((uv - float2(asp * 0.5, hz)) / float2(asp * 0.5, 0.5))) * 0.2 * step(hz, uv.y));
-    // Quantize the colours like a 15-bit frame buffer.
-    col = floor(col * 31.0 + d) / 31.0;
-    return half4(finish(col * 0.9, fc), 1.0);
-}
-"""
-
-    private const val FIRE32 = """
-// 32-bit fire (music): the old demo-scene fire effect at a chunky 32-bit resolution, played by the
-// song. A wall of pixel fire burns along the visualizer line, each column's height following its
-// band of the equalizer; the kick flares the whole wall and throws pixel sparks; the cover hangs above
-// as a pixelated picture in a bevelled frame, glowing in the firelight. Colours run from the cover's
-// own through the classic fire ramp.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float res = 160.0;
-    float2 cell = floor(fc / uRes.y * res);
-    float2 uv = (cell + 0.5) / res;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float3 A = vivid(uAcc.rgb, 1.25);
-    float3 S = vivid(uSec.rgb, 1.25);
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float kick = exp(-uBeatAge * 4.0) * play;
-    float R = room(0.3);
-    float2 c = float2(waveX(asp), uWaveY);
-    float base = min(c.y + R, 0.98);
-
-    // Backdrop: dark, warming towards the fire.
-    float3 col = mix(BG * 0.5, mix(BG, A * 0.4, 0.4), smoothstep(base - 0.6, base, uv.y));
-
-    // The fire: each pixel column a band of the spectrum (mirrored from the middle), rising with
-    // noise that scrolls up at the fire's speed; the heat falls off with height.
-    float xn = (uv.x - c.x) / (asp * 0.5);
-    float e = eqAt(sat(abs(xn) * 1.1)) * play;
-    float H = (0.12 + 0.38 * e * (0.5 + 0.7 * k) + 0.1 * kick) * R / 0.3 + 0.04 * (1.0 - play);
-    float up = base - uv.y;
-    float n = vnoise(float2(cell.x * 0.35, cell.y * 0.25 + t * 9.0)) * 0.6 + vnoise(float2(cell.x * 0.9, cell.y * 0.7 + t * 14.0)) * 0.4;
-    float heat = sat(1.0 - up / max(H, 0.01)) * (0.55 + 0.6 * n);
-    heat = up < 0.0 ? (0.25 + 0.6 * exp(up * 14.0)) * (0.6 + 0.5 * n) : heat;   // a glowing ember bed below
-    heat *= smoothstep(1.05, 0.85, abs(xn));
-    // Classic ramp: black, deep red, the cover's colour, orange, yellow, white.
-    float3 fire = mix(float3(0.0), float3(0.5, 0.04, 0.02), smoothstep(0.08, 0.25, heat));
-    fire = mix(fire, mix(float3(1.0, 0.35, 0.05), A, 0.45), smoothstep(0.25, 0.45, heat));
-    fire = mix(fire, mix(float3(1.0, 0.75, 0.15), S, 0.25), smoothstep(0.45, 0.7, heat));
-    fire = mix(fire, float3(1.0, 0.98, 0.85), smoothstep(0.75, 0.95, heat));
-    // Posterize into a small palette, the way the old effect looked.
-    fire = floor(fire * 6.0 + 0.5) / 6.0;
-    col = mix(col, fire, smoothstep(0.06, 0.12, heat));
-
-    // The cover above the fire: pixelated, in a bevelled frame, lit warm from below.
-    float cs = R * 0.8;
-    float2 cc = float2(c.x, base - R * 1.25 - cs * 0.2);
-    float2 q = (uv - cc) / cs + 0.5;
-    if (q.x > -0.06 && q.x < 1.06 && q.y > -0.06 && q.y < 1.06) {
-        float inArt = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, q.y) * step(q.y, 1.0);
-        float3 frame = mix(float3(0.55, 0.5, 0.45), A, 0.25) * (q.x + q.y < 1.0 ? 1.2 : 0.6);
-        float3 art = sharpCover((floor(q * 32.0) + 0.5) / 32.0, A, S);
-        art *= 0.75 + 0.35 * q.y + 0.25 * kick;
-        col = mix(frame, art, inArt);
-    }
-    // Warm light from the fire on the frame's surroundings.
-    col += mix(float3(1.0, 0.45, 0.1), A, 0.3) * exp(-max(up, 0.0) * 6.0) * 0.12 * (0.6 + 0.6 * uBass * play);
-
-    // Pixel sparks thrown up on the kick.
-    for (int i = 0; i < 12; i++) {
-        float fi = float(i);
-        float life = fract(uBeatAge * 0.7 + hash11(fi) * 0.4);
-        float2 p = float2(c.x + (hash11(fi * 3.3) - 0.5) * asp * 0.8, base - life * (0.3 + 0.3 * hash11(fi * 5.1)) * R / 0.3 * 1.5);
-        p.x += sin(life * 8.0 + fi) * 0.02;
-        float2 pc = floor(p * res);
-        float on = step(abs(cell.x - pc.x), 0.5) * step(abs(cell.y - pc.y), 0.5) * (1.0 - life) * play;
-        col = mix(col, mix(float3(1.0, 0.85, 0.3), S, 0.3), on * (0.5 + kick));
-    }
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val VOLTCAP_INTRO = """
-// Voltcap: the start-up mark as a living background that never stops - two sparks chase each other
-// round the capsule's outline forever, the glass glows warm and a light sweeps across it, the bolt
-// breathes and every few seconds surges: a flash, small arcs jumping to the outline and a shock wave
-// rolling out. The capsule is mirrored on a glossy floor; embers drift up through the warm dark.
-// Every motion is periodic, so it loops seamlessly with no restart.
-// The Voltcap mark, shared by the Voltcap scenes: the capsule (half width 1, half height VR in its own
-// units) and the bolt inside it - the same shapes as the start-up animation (VoltcapIntro).
-const float VR = 0.44;
-
-float sdCapsuleMark(float2 q) { return sdRoundBox(q, float2(1.0, VR), VR); }
-
-// One edge of a polygon for its signed distance (squared distance, and 1 when it flips the inside test).
-float2 polyEdge(float2 p, float2 vi, float2 vj) {
-    float2 e = vj - vi;
-    float2 w = p - vi;
-    float2 b = w - e * sat(dot(w, e) / dot(e, e));
-    float c1 = step(vi.y, p.y);
-    float c2 = 1.0 - step(vj.y, p.y);
-    float c3 = step(e.y * w.x, e.x * w.y);
-    return float2(dot(b, b), c1 * c2 * c3 + (1.0 - c1) * (1.0 - c2) * (1.0 - c3));
-}
-
-// The bolt (capsule units; y down), signed distance.
-float sdBoltMark(float2 p) {
-    float2 v0 = float2(0.13, -0.33);
-    float2 v1 = float2(-0.17, 0.045);
-    float2 v2 = float2(-0.015, 0.045);
-    float2 v3 = float2(-0.11, 0.33);
-    float2 v4 = float2(0.19, -0.055);
-    float2 v5 = float2(0.035, -0.055);
-    float d = dot(p - v0, p - v0);
-    float flips = 0.0;
-    float2 r;
-    r = polyEdge(p, v0, v5); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v1, v0); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v2, v1); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v3, v2); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v4, v3); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v5, v4); d = min(d, r.x); flips += r.y;
-    float s = mod(flips, 2.0) > 0.5 ? -1.0 : 1.0;
-    return s * sqrt(d);
-}
-
-// A point on the capsule's outline at angle a (close enough to the real outline for sparks).
-float2 capsulePoint(float a) {
-    return float2(clamp(1.35 * cos(a), -1.0, 1.0) * (1.0 - VR), 0.0) + VR * float2(cos(a), sin(a));
-}
-
-uniform float uFocusY;   // 0.5 + how far to move the mark down (share of the height; 0 = not set): clear of a game row at the top
-
-// The lit mark at q (capsule units), returns its colour (added light) and coverage in .a.
-float4 markAt(float2 q, float K, float px, float t, float surge, float3 A, float3 S, float3 CREAM) {
-    float d = sdCapsuleMark(q);
-    float inside = 1.0 - smoothstep(-px / K, px / K, d);
-    float3 col = float3(0.0);
-    // Glass: warm gradient, darker at the rims, a soft inner glow behind the bolt.
-    float3 fill = mix(A, S, sat(0.55 - q.y * 0.9)) * (0.28 + 0.22 * sat(1.0 - length(q * float2(0.8, 1.6))));
-    fill += A * 0.25 * exp(-length(q) * 2.2) * (0.7 + 0.6 * surge);
-    // A slow band of light sweeping across, and a fixed highlight along the top.
-    float sweep = exp(-sqf((q.x + q.y * 0.5 - (fract(t / 6.0) * 4.4 - 2.2)) * 2.4));
-    fill += CREAM * sweep * 0.16;
-    fill += CREAM * 0.18 * smoothstep(0.1, 0.0, abs(q.y + VR * 0.62)) * smoothstep(0.85, 0.3, abs(q.x));
-    col += fill * inside;
-    // The outline: a bright rim with a glow.
-    col += mix(A, S, 0.3) * glow(abs(d) * K, 0.0022) * (0.9 + 0.5 * surge);
-    col += mix(S, CREAM, 0.4) * (1.0 - smoothstep(0.0, px / K * 2.2, abs(d))) * 0.6;
-    // The bolt: always on, breathing, white-hot on a surge.
-    float db = sdBoltMark(q * (1.0 - 0.05 * surge));
-    float boltIn = 1.0 - smoothstep(0.0, px / K * 2.0, db);
-    float3 boltCol = mix(mix(S, CREAM, 0.35), CREAM, surge);
-    col = mix(col, boltCol, boltIn);
-    col += S * glow(max(db, 0.0) * K, 0.005 + 0.008 * surge) * (0.45 + 0.9 * surge);
-    return float4(col, max(inside, boltIn));
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;      // orange
-    float3 S = uSec.rgb;      // yellow
-    float3 BG = uBg.rgb;
-    float3 CREAM = float3(1.0, 0.965, 0.84);
-
-    float2 c = float2(asp * 0.5, 0.42 + (uFocusY > 0.001 ? clamp(uFocusY - 0.5, -0.15, 0.3) : 0.0));
-    float K = 0.27;                       // capsule half width, in screen heights
-    // A slow float up and down.
-    c.y += 0.008 * sin(t * TAU / 8.0);
-    float2 q = (uv - c) / K;
-
-    // A surge every 4 seconds: quick rise, slower fall.
-    float ph = fract(t / 4.0);
-    float surge = smoothstep(0.0, 0.03, ph) * exp(-ph * 9.0);
-
-    // Stage: warm black, a glow behind the mark, a glossy floor under it.
-    float floorY = c.y + K * VR + 0.11;
-    float3 col = BG * 0.55 + float3(0.012, 0.01, 0.014);
-    col += A * exp(-length((uv - c) * float2(0.55, 1.0)) * 2.6) * (0.12 + 0.12 * surge);
-    col += A * 0.05 * smoothstep(floorY - 0.01, floorY + 0.3, uv.y) * exp(-abs(uv.x - c.x) * 1.5);
-    col += mix(A, CREAM, 0.5) * exp(-abs(uv.y - floorY) * 160.0) * exp(-abs(uv.x - c.x) * 2.5) * 0.15;
-
-    // Reflection on the floor: the mark mirrored, fading and a little blurred by distance.
-    if (uv.y > floorY) {
-        float2 mq = (float2(uv.x, 2.0 * floorY - uv.y) - c) / K;
-        float fade = exp(-(uv.y - floorY) * 9.0) * 0.32;
-        float4 m = markAt(mq + float2(sin(uv.y * 90.0 + t) * 0.004, 0.0), K, px * 3.0, t, surge, A, S, CREAM);
-        col += m.rgb * fade;
-    }
-
-    // The mark.
-    float4 m = markAt(q, K, px, t, surge, A, S, CREAM);
-    col = mix(col, col * 0.25, m.a * 0.8);
-    col += m.rgb;
-
-    // Two sparks chasing round the outline, forever (a full lap every 3 s), with long tails.
-    for (int i = 0; i < 2; i++) {
-        float a = t * TAU / 3.0 + float(i) * PI;
-        float2 sp = capsulePoint(a);
-        col += mix(S, CREAM, 0.6) * glow(length(q - sp) * K, 0.0045);
-        for (int j = 1; j < 9; j++) {
-            float aj = a - float(j) * 0.06;
-            col += mix(A, S, 0.4) * glow(length(q - capsulePoint(aj)) * K, 0.0026) * (0.42 - float(j) * 0.045);
-        }
-    }
-
-    // Surge: arcs jumping from the bolt to the outline, and a shock wave.
-    if (surge > 0.02) {
-        for (int i = 0; i < 4; i++) {
-            float fi = float(i);
-            float a = fi * 1.57 + floor(t / 4.0) * 2.1 + 0.4;
-            float2 to = capsulePoint(a) * 0.98;
-            float2 from = to * 0.25;
-            float2 ab = to - from;
-            float h = sat(dot(q - from, ab) / dot(ab, ab));
-            float2 nrm = float2(-ab.y, ab.x) / length(ab);
-            float jag = (vnoise(float2(h * 9.0, t * 30.0 + fi * 7.0)) - 0.5) * 0.18 * sin(h * PI);
-            float dd = length(q - (from + ab * h + nrm * jag));
-            col += mix(S, CREAM, 0.6) * glow(dd * K, 0.0016) * surge * 1.2;
-        }
-    }
-    float age = ph * 4.0;
-    float ring = exp(-abs(length((uv - c) * float2(0.85, 1.5)) - K * 0.9 - age * 0.32) * 55.0) * exp(-age * 1.6);
-    col += mix(S, CREAM, 0.4) * ring * 0.55;
-    col += CREAM * surge * exp(-length(uv - c) * 5.0) * 0.35;
-
-    // Embers drifting up through the warm air.
-    float2 ep = uv + float2(sin(uv.y * 7.0 + t * 0.8) * 0.012, t * 0.045);
-    col += mix(A, S, 0.5) * dots(ep, 30.0, float2(0.0), 0.08, 0.07, 7.0) * 0.55 * smoothstep(0.05, 0.9, uv.y);
-    col += mix(S, CREAM, 0.5) * dots(ep * 1.7 + 3.0, 26.0, float2(0.0), 0.05, 0.05, 11.0) * 0.3;
-
-    // Vignette.
-    float2 vv = fc / uRes - 0.5;
-    col *= 1.0 - 0.45 * dot(vv, vv);
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val VOLTCAP_BEAT = """
-// Voltcap beat: the Voltcap capsule as a big music visualizer in the song's colours over its blurred
-// cover. Everything follows the music, not a clock: the capsule swells with the bass, its outline
-// burns brighter the louder it gets, a ring of spectrum bars stands out all round it (bass at the top
-// and bottom, highs towards the ends), sparks race round faster when the song gets busy, and only a
-// real kick flashes the bolt, throws arcs to the outline and rolls a shock wave out. Quiet parts
-// calm right down.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-// The Voltcap mark, shared by the Voltcap scenes: the capsule (half width 1, half height VR in its own
-// units) and the bolt inside it - the same shapes as the start-up animation (VoltcapIntro).
-const float VR = 0.44;
-
-float sdCapsuleMark(float2 q) { return sdRoundBox(q, float2(1.0, VR), VR); }
-
-// One edge of a polygon for its signed distance (squared distance, and 1 when it flips the inside test).
-float2 polyEdge(float2 p, float2 vi, float2 vj) {
-    float2 e = vj - vi;
-    float2 w = p - vi;
-    float2 b = w - e * sat(dot(w, e) / dot(e, e));
-    float c1 = step(vi.y, p.y);
-    float c2 = 1.0 - step(vj.y, p.y);
-    float c3 = step(e.y * w.x, e.x * w.y);
-    return float2(dot(b, b), c1 * c2 * c3 + (1.0 - c1) * (1.0 - c2) * (1.0 - c3));
-}
-
-// The bolt (capsule units; y down), signed distance.
-float sdBoltMark(float2 p) {
-    float2 v0 = float2(0.13, -0.33);
-    float2 v1 = float2(-0.17, 0.045);
-    float2 v2 = float2(-0.015, 0.045);
-    float2 v3 = float2(-0.11, 0.33);
-    float2 v4 = float2(0.19, -0.055);
-    float2 v5 = float2(0.035, -0.055);
-    float d = dot(p - v0, p - v0);
-    float flips = 0.0;
-    float2 r;
-    r = polyEdge(p, v0, v5); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v1, v0); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v2, v1); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v3, v2); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v4, v3); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v5, v4); d = min(d, r.x); flips += r.y;
-    float s = mod(flips, 2.0) > 0.5 ? -1.0 : 1.0;
-    return s * sqrt(d);
-}
-
-// A point on the capsule's outline at angle a (close enough to the real outline for sparks).
-float2 capsulePoint(float a) {
-    return float2(clamp(1.35 * cos(a), -1.0, 1.0) * (1.0 - VR), 0.0) + VR * float2(cos(a), sin(a));
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 CREAM = float3(1.0, 0.965, 0.84);
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float busy = (uMid + uHigh) * 0.5 * play;
-    float kick = exp(-uBeatAge * 4.5) * play;
-    float loud = sat((uEqA.x + uEqA.y + uEqA.z + uEqA.w + uEqB.x + uEqB.y) / 6.0) * play;
-
-    float3 col = coverField(uv, asp, t, bass, 0.42, BG, A, S);
-    float2 c = float2(waveX(asp), uWaveY);
-    // Size: the room it was given, bars included (the capsule is VR tall, the bars reach ~0.93 beyond it),
-    // so with the game row right above or below nothing reaches into it.
-    float K0 = room(0.24) * 0.66;
-    float K = K0 * (1.0 + (0.05 * bass + 0.06 * kick) * (0.4 + 0.8 * k));
-    float2 q = (uv - c) / K;
-    float d = sdCapsuleMark(q);
-
-    // Glow of the whole mark on the background, breathing with the level.
-    col += mix(A, S, 0.4) * exp(-max(d, 0.0) * 1.6) * (0.06 + 0.22 * loud * k);
-
-    // Ring of spectrum bars standing out from the outline.
-    float ang = atan(q.y, q.x * 0.5);
-    float n = 72.0;
-    float fid = floor((ang + PI) / TAU * n);
-    float ca = (fid + 0.5) / n * TAU - PI;
-    float m = 1.0 - abs(sin(ca));                         // 0 = top / bottom middle (bass), 1 = the ends (highs)
-    float e = eqAt(m) * play;
-    float h = (0.05 + 0.75 * e * (0.45 + 0.7 * k)) * (0.35 + 0.65 * play);
-    float gap = 0.09;
-    float lane = abs(fract((ang + PI) / TAU * n) - 0.5);
-    float inBar = step(lane, 0.3) * step(gap, d) * step(d, gap + h);
-    float3 bc = mix(mix(A, S, m), CREAM, sat((d - gap) / max(h, 0.01)) * 0.35);
-    col = mix(col, bc * (0.75 + 0.7 * e), inBar);
-    // Soft bloom above each bar's tip.
-    col += bc * step(lane, 0.3) * step(gap, d) * glow(max(d - gap - h, 0.0) * K, 0.003) * 0.35 * e;
-
-    // The capsule: dark glass with the song's colours deep inside, the outline burning with the level.
-    float inside = 1.0 - smoothstep(-px / K, px / K, d);
-    float3 glass = BG * 0.3 + mix(A, S, sat(0.5 - q.y)) * (0.08 + 0.18 * bass * k);
-    glass += CREAM * 0.12 * smoothstep(0.1, 0.0, abs(q.y + VR * 0.62)) * smoothstep(0.85, 0.3, abs(q.x));
-    col = mix(col, glass, inside * 0.9);
-    float rim = 0.35 + 1.5 * loud * k + 0.8 * kick * k;
-    col += mix(A, S, 0.3) * glow(abs(d) * K, 0.0018 + 0.004 * bass * k) * rim;
-    col += mix(S, CREAM, 0.5) * (1.0 - smoothstep(0.0, px / K * 2.2, abs(d))) * (0.3 + 0.5 * loud);
-
-    // Sparks orbiting the outline: speed follows how busy the song is (they nearly stop when it's quiet).
-    float spd = 0.15 + 2.4 * busy * (0.5 + 0.7 * k);
-    float base = t * spd;
-    for (int i = 0; i < 3; i++) {
-        float a = base + float(i) * TAU / 3.0;
-        col += mix(S, CREAM, 0.5) * glow(length(q - capsulePoint(a)) * K, 0.0035) * (0.4 + 0.8 * busy);
-        for (int j = 1; j < 6; j++) {
-            col += A * glow(length(q - capsulePoint(a - float(j) * 0.07 * (0.4 + spd))) * K, 0.002) * (0.32 - float(j) * 0.05) * (0.4 + busy);
-        }
-    }
-
-    // The bolt: steady, flashing white-hot and growing on a real kick only.
-    float db = sdBoltMark(q / (1.0 + 0.16 * kick * k));
-    float3 boltCol = mix(mix(A, S, 0.6), CREAM, kick);
-    col = mix(col, boltCol, 1.0 - smoothstep(0.0, px / K * 2.0, db));
-    col += S * glow(max(db, 0.0) * K, 0.004 + 0.012 * kick) * (0.25 + 1.1 * kick * k);
-
-    // Strong kicks throw little arcs from the bolt to the outline.
-    if (kick * k > 0.25) {
-        for (int i = 0; i < 3; i++) {
-            float fi = float(i);
-            float a = fi * 2.1 + floor(t * 3.0) * 1.7;
-            float2 to = capsulePoint(a) * 0.97;
-            float2 from = to * 0.22;
-            float2 ab = to - from;
-            float hh = sat(dot(q - from, ab) / dot(ab, ab));
-            float2 nrm = float2(-ab.y, ab.x) / length(ab);
-            float jag = (vnoise(float2(hh * 9.0, t * 30.0 + fi * 5.0)) - 0.5) * 0.16 * sin(hh * PI);
-            col += mix(S, CREAM, 0.6) * glow(length(q - (from + ab * hh + nrm * jag)) * K, 0.0014) * (kick * k - 0.25) * 1.8;
-        }
-    }
-
-    // Shock wave on the kick, sized to the capsule.
-    float ring = exp(-abs(length((uv - c) * float2(0.85, 1.55)) - K * (0.95 + 1.6 * (1.0 - kick))) * 45.0) * kick;
-    col += mix(S, CREAM, 0.4) * ring * 0.55 * k;
-
-    // Sparks flung out on kicks, drifting off.
-    float2 fp = (uv - c) / K;
-    float fl = dots(fp * 0.6 + float2(t * 0.05, -t * 0.08), 14.0, float2(0.0), 0.12, 0.07, 5.0);
-    col += mix(A, CREAM, 0.4) * fl * smoothstep(1.2, 2.2, length(fp * float2(0.5, 1.0))) * (0.1 + 0.6 * kick) * play;
-
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val VOLTCAP_PIXELS = """
-// Voltcap 32-bit: little pixel-art Voltcap capsules and bolts - 32-pixel sprites with a dark outline
-// and a highlight - hopping about over a dark checkered floor, each with its own bounce (squashing a
-// little when it lands) and a shadow, now and then a sparkle when two pass each other.
-// The Voltcap mark, shared by the Voltcap scenes: the capsule (half width 1, half height VR in its own
-// units) and the bolt inside it - the same shapes as the start-up animation (VoltcapIntro).
-const float VR = 0.44;
-
-float sdCapsuleMark(float2 q) { return sdRoundBox(q, float2(1.0, VR), VR); }
-
-// One edge of a polygon for its signed distance (squared distance, and 1 when it flips the inside test).
-float2 polyEdge(float2 p, float2 vi, float2 vj) {
-    float2 e = vj - vi;
-    float2 w = p - vi;
-    float2 b = w - e * sat(dot(w, e) / dot(e, e));
-    float c1 = step(vi.y, p.y);
-    float c2 = 1.0 - step(vj.y, p.y);
-    float c3 = step(e.y * w.x, e.x * w.y);
-    return float2(dot(b, b), c1 * c2 * c3 + (1.0 - c1) * (1.0 - c2) * (1.0 - c3));
-}
-
-// The bolt (capsule units; y down), signed distance.
-float sdBoltMark(float2 p) {
-    float2 v0 = float2(0.13, -0.33);
-    float2 v1 = float2(-0.17, 0.045);
-    float2 v2 = float2(-0.015, 0.045);
-    float2 v3 = float2(-0.11, 0.33);
-    float2 v4 = float2(0.19, -0.055);
-    float2 v5 = float2(0.035, -0.055);
-    float d = dot(p - v0, p - v0);
-    float flips = 0.0;
-    float2 r;
-    r = polyEdge(p, v0, v5); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v1, v0); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v2, v1); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v3, v2); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v4, v3); d = min(d, r.x); flips += r.y;
-    r = polyEdge(p, v5, v4); d = min(d, r.x); flips += r.y;
-    float s = mod(flips, 2.0) > 0.5 ? -1.0 : 1.0;
-    return s * sqrt(d);
-}
-
-// A point on the capsule's outline at angle a (close enough to the real outline for sparks).
-float2 capsulePoint(float a) {
-    return float2(clamp(1.35 * cos(a), -1.0, 1.0) * (1.0 - VR), 0.0) + VR * float2(cos(a), sin(a));
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-
-    // Background: dark gradient with a faint pixel checker.
-    float3 col = mix(BG * 0.7, BG * 1.3 + A * 0.04, uv.y);
-    float2 ck = floor(uv * 24.0);
-    col *= 0.94 + 0.06 * mod(ck.x + ck.y, 2.0);
-
-    // Sprites: one per cell of a loose grid, wandering a little, hopping.
-    float cell = 0.38;
-    float2 g = uv / cell;
-    float2 gid0 = floor(g);
-    for (int jy = -1; jy <= 1; jy++) {
-        for (int jx = -1; jx <= 1; jx++) {
-            float2 id = gid0 + float2(float(jx), float(jy));
-            float h = hash12(id + 3.0);
-            if (h < 0.18) continue;
-            float kind = step(0.55, hash12(id + 9.0));       // 0 capsule, 1 bolt
-            float sp = 1.6 + 1.6 * hash12(id + 1.0);
-            float ph = hash12(id + 5.0) * 6.28;
-            float hop = abs(sin(t * sp + ph));
-            float land = 1.0 - smoothstep(0.0, 0.25, hop);
-            // Base position in the cell, drifting slowly sideways.
-            float2 base = (id + 0.5 + (hash22(id + 2.0) - 0.5) * 0.4) * cell;
-            base.x += sin(t * 0.3 * sp + ph) * cell * 0.25;
-            float size = 0.17;                              // sprite height in screen heights
-            float2 pos = base - float2(0.0, hop * 0.07);
-            // Shadow on the "floor".
-            float2 sd = (uv - base - float2(0.0, size * 0.55)) / float2(size * 0.5 * (1.1 - hop * 0.4), size * 0.1);
-            col *= 1.0 - 0.35 * (1.0 - smoothstep(0.7, 1.0, length(sd)));
-            // The sprite in its own 32x32 pixel grid (squash on landing).
-            float2 sq = float2(1.0 + 0.18 * land, 1.0 - 0.18 * land);
-            float2 local = (uv - pos) / (size * sq);       // -0.5..0.5 across the sprite
-            if (abs(local.x) > 0.6 || abs(local.y) > 0.6) continue;
-            float2 pix = (floor((local + 0.5) * 32.0) + 0.5) / 32.0 - 0.5;
-            float2 pq = pix * 2.2;                           // into capsule units
-            float dShape = kind < 0.5 ? sdCapsuleMark(float2(pq.x, pq.y * 1.0)) : sdBoltMark(pq * 0.42);
-            float pxSize = 2.2 / 32.0 * (kind < 0.5 ? 1.0 : 0.42);
-            float inside = step(dShape, 0.0);
-            float outline = step(dShape, pxSize * 1.1) * (1.0 - inside);
-            if (inside + outline < 0.5) continue;
-            float3 body;
-            if (kind < 0.5) {
-                // Capsule: the theme's colour, a bolt drawn on it in the second colour.
-                body = mix(A * 0.8, A * 1.15, step(pq.y, 0.0));
-                float b = sdBoltMark(pq * 0.85);
-                body = mix(body, mix(S, float3(1.0), 0.3), step(b, 0.0));
-            } else {
-                body = mix(S * 0.85, mix(S, float3(1.0), 0.45), step(pq.x + pq.y * 0.5, 0.0));
-            }
-            // Highlight pixels at the top-left.
-            body += float3(1.0) * 0.25 * step(pix.y, -0.28) * step(pix.x, -0.1) * inside;
-            float3 sprite = mix(float3(0.05, 0.04, 0.06), body, inside);
-            col = sprite;
-        }
-    }
-    // Sparkles here and there.
-    col += mix(S, float3(1.0), 0.5) * dots(uv, 18.0, float2(0.0), 0.06, 0.05, 11.0) * 0.5;
-
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val RETRO_BOUNCE = """
-// Retro bounce: the 32-bit backdrop behind the bouncing controller parts and console icons (drawn by
-// the app, RetroBounceLayer). A dark sky in fat pixels with a slow dither, chunky stars twinkling in
-// steps, and a scrolling checkerboard floor in the theme's colours with a glowing horizon.
-half4 main(float2 fc) {
-    // Everything snapped to 4-pixel blocks (at full resolution) for the 32-bit look.
-    float blk = max(2.0, floor(uRes.y / 180.0));
-    float2 g = floor(fc / blk) * blk + blk * 0.5;
-    float2 uv = g / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = floor(uTime * 12.0) / 12.0; // stepped time: moves like an old console, not smoothly
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float horizon = 0.72;
-
-    // Sky: banded gradient (posterised) from the background to a hint of the secondary colour.
-    float sky = floor(sat(uv.y / horizon) * 8.0) / 8.0;
-    float3 col = mix(BG * 0.7 + S * 0.05, BG * 1.2 + S * 0.18, sky);
-    // Ordered dither between the bands.
-    float2 cell = floor(fc / blk);
-    float d = fract((cell.x + cell.y * 2.0) * 0.25);
-    col += (d - 0.4) * 0.012;
-
-    // Chunky stars (one fat pixel each) that blink on and off in steps.
-    float2 sc = floor(uv * 34.0);
-    float h = hash12(sc + 3.1);
-    float2 starAt = floor((sc + 0.2 + 0.6 * hash22(sc)) / 34.0 * uRes.y / blk);
-    float isStar = step(abs(cell.x - starAt.x) + abs(cell.y - starAt.y), 0.5);
-    float on = step(0.9, h) * step(0.35, fract(h * 13.0 + t * (0.3 + h)));
-    float3 starCol = mix(float3(1.0), mix(A, S, step(0.5, fract(h * 7.0))), 0.45);
-    col += starCol * isStar * on * (1.0 - step(horizon - 0.02, uv.y)) * 0.8;
-
-    // Floor: a scrolling checkerboard in perspective below the horizon.
-    if (uv.y > horizon) {
-        float z = (uv.y - horizon);
-        float depth = 0.6 / max(z, 0.003);
-        float2 fp = float2((uv.x - asp * 0.5) * depth * 1.6, depth + t * 1.5);
-        float chk = mod(floor(fp.x) + floor(fp.y), 2.0);
-        float3 fl = mix(BG * 0.8 + A * 0.32, BG * 0.7 + S * 0.22, chk);
-        // Further away: darker and hazier, like fog on the horizon.
-        fl = mix(fl, BG * 1.1 + A * 0.12, exp(-z * 14.0));
-        col = mix(col, fl, sat(z * 40.0));
-    }
-    // Horizon glow line.
-    col += A * exp(-abs(uv.y - horizon) * 90.0) * 0.45;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val LYRIC_CLOUD = """
-// Lyric cloud (music): a calm stage for the song's words. The cover, very soft and slowly drifting,
-// sinks into a deep vignette so the lyrics scattered over it (drawn by the app in the cover's colours,
-// LyricScatterLayer) always read; a few big bokeh lights in the cover's colours float through, the
-// whole picture breathing a little brighter on the bass.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float play = uPlaying;
-    float bass = uBass * play * uIntensity;
-    float kick = exp(-uBeatAge * 3.0) * play * uIntensity;
-
-    float3 col = coverField(uv, asp, t * 0.6, bass, 0.42, BG, A, S);
-    col = mix(col, paletteField(uv, asp, t * 0.5, 0.0, BG, A, S) * 0.35, 0.35);
-    // Deep vignette: the middle stays open, the edges fall to near black.
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float v = length(p * float2(0.8 / max(asp, 1.0), 1.0));
-    col *= mix(1.0, 0.35, smoothstep(0.25, 0.85, v));
-    // Big soft bokeh lights drifting upwards, in the cover's colours.
-    float b1 = dots(uv, 4.0, float2(t * 0.006, -t * 0.012), 0.22, 0.32, 11.0);
-    float b2 = dots(uv, 7.0, float2(-t * 0.008, -t * 0.018), 0.18, 0.26, 23.0);
-    col += A * b1 * (0.10 + 0.10 * bass) + S * b2 * (0.08 + 0.08 * bass);
-    // A breath of light on the kick, centred.
-    col += mix(A, S, 0.5) * exp(-v * 2.4) * kick * 0.08;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val LYRIC_KARAOKE = """
-// Karaoke (music, lyrics): the stage of a karaoke video for the song's words. The cover, soft and
-// slowly panning, in the cover's colours; long beams of light sweep across it, little stars twinkle
-// with the highs and the whole picture lifts on the kick. The words themselves (the line being sung
-// filling with colour, a bouncing ball, the next line) are drawn by the app on top (LyricThemes.kt).
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float play = uPlaying;
-    float k = uIntensity;
-    float bass = uBass * play * k;
-    float kick = exp(-uBeatAge * 3.5) * play * k;
-
-    // The cover, panning slowly from side to side (a video's slow camera move).
-    float2 pan = float2(0.06 * sin(t * 0.05), 0.03 * sin(t * 0.037 + 1.0));
-    float3 col = coverField(uv + pan, asp, t * 0.5, bass, 0.5, BG, A, S);
-    col = mix(col, paletteField(uv, asp, t * 0.4, bass, BG, A, S) * 0.6, 0.35);
-    col = vivid(col, 1.3);
-    // Beams of light sweeping across, slanted, in the cover's two colours.
-    for (int i = 0; i < 3; i++) {
-        float fi = float(i);
-        float x = uv.x - uv.y * 0.35 - (fract(t * (0.018 + 0.006 * fi) + fi * 0.37) * (asp + 1.0) - 0.5);
-        float beam = exp(-x * x / (0.004 + 0.003 * fi));
-        col += mix(A, S, fi * 0.5) * beam * (0.16 + 0.1 * bass);
-    }
-    // Twinkling stars, a few more with the highs.
-    col += float3(1.0) * dots(uv, 30.0, float2(t * 0.004, 0.0), 0.05 + 0.08 * uHigh * play, 0.06, 4.0) * 0.5;
-    // Video letterbox: the top and bottom fall darker, the middle (where the words go) stays open.
-    float mid = abs(uv.y - 0.5);
-    col *= mix(1.0, 0.45, smoothstep(0.28, 0.5, mid));
-    col += mix(A, S, 0.5) * exp(-length((uv - float2(asp * 0.5, 0.5)) * float2(0.6, 1.6)) * 2.0) * kick * 0.1;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val LYRIC_NEON = """
-// Neon lyrics (music, lyrics): a dark brick wall at night where the song's words light up as neon
-// tubes, word by word as they're sung (drawn by the app on top, LyricThemes.kt). The wall here takes
-// the tubes' glow in the cover's colours, brightest in the middle, breathing with the bass and
-// buzzing now and then; a wet pavement at the bottom catches the light in long streaks.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float kick = exp(-uBeatAge * 4.0) * play;
-
-    // Bricks, each a slightly different shade, soft mortar lines.
-    float2 bq = uv * float2(7.0, 14.0);
-    bq.x += step(0.5, fract(bq.y * 0.5)) * 0.5;
-    float2 bf = fract(bq);
-    float mortar = 1.0 - smoothstep(0.04, 0.08, min(min(bf.x, 1.0 - bf.x) * 2.0, min(bf.y, 1.0 - bf.y)));
-    float3 brick = mix(float3(0.13, 0.065, 0.06), float3(0.2, 0.1, 0.085), hash12(floor(bq)));
-    brick *= 0.85 + 0.15 * vnoise(uv * 60.0);
-    float3 col = mix(brick, float3(0.035), mortar) * (0.7 + 0.3 * BG.r);
-    // The tubes' light on the wall: a wide pool in the middle, in the cover's colours.
-    float buzz = 0.9 + 0.1 * step(0.06, hash11(floor(t * 9.0)));
-    float2 c = float2(asp * 0.5, 0.45);
-    float2 d = (uv - c) * float2(0.55, 1.2);
-    float pool = exp(-length(d) * 2.6);
-    float3 neon = mix(A, S, 0.5 + 0.5 * sin(t * 0.15));
-    float br = (0.55 + 0.45 * bass * k + 0.2 * kick * k) * buzz;
-    // Light grazes the bricks: their top edges catch it.
-    float edge = (1.0 - smoothstep(0.0, 0.12, bf.y)) * (1.0 - mortar);
-    col += neon * pool * br * (0.5 + 0.35 * edge);
-    // A little stray glow from a second colour on one side.
-    col += S * exp(-length((uv - float2(asp * 0.15, 0.2)) * float2(0.8, 1.4)) * 3.0) * 0.12 * br;
-    // Wet pavement: darker, with the glow smeared down in streaks.
-    float floorY = 0.84;
-    if (uv.y > floorY) {
-        float fy = (uv.y - floorY) / (1.0 - floorY);
-        float3 wet = float3(0.03, 0.03, 0.035) * (0.8 + 0.4 * vnoise(float2(uv.x * 40.0, fy * 6.0)));
-        float streak = exp(-abs(uv.x - c.x) * 1.6) * (0.6 + 0.4 * vnoise(float2(uv.x * 90.0, fy * 2.0 + t * 0.2)));
-        wet += neon * streak * br * 0.35 * (1.0 - fy * 0.7);
-        col = mix(col, wet, smoothstep(floorY - px, floorY + px, uv.y));
-    }
-    col *= 1.0 - 0.35 * smoothstep(0.3, 0.75, length((uv - c) * float2(0.6 / max(asp, 1.0), 1.0)));
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val DISC_SLEEVE = """
-// Disc & sleeve: a square album cover with its disc slid halfway out from behind it, spinning slowly
-// under a soft spotlight. The art is on the sleeve and printed on the disc; the rainbow and the
-// highlights stay fixed to the light while the print turns. Rings roll off the disc on every kick.
-// Shared by the music-reactive scenes (besides "Now playing", which has its own copy): the same
-// uniforms NowPlayingScene feeds the music scene - cover, levels, kicks, eight equalizer bands and
-// where on screen the visualizer goes - plus the soft cover background.
-uniform shader uArt;      // the cover, square and blurred smooth (MusicTheme.softArt)
-uniform float2 uArtSize;  // its size in pixels
-uniform float uHasArt;    // 0 = no cover yet (or the cover is switched off)
-uniform float uBass;      // 0..1, smoothed
-uniform float uMid;
-uniform float uHigh;
-uniform float uBeatAge;   // seconds since the last kick (large = none)
-uniform float uPlaying;   // 0..1, fades when paused
-uniform float uIntensity; // 0..1, Settings > strength
-uniform float4 uEqA;      // bands 0-3 (low), 0..1
-uniform float4 uEqB;      // bands 4-7 (high)
-uniform float uWaveY;     // 0..1 from the top: where the visualizer sits (Appearance > Equalizer)
-uniform float uWaveH;     // room above / below that line (share of the height); the player sits under it
-uniform float uWaveX;     // 0..1 from the left: where the visualizer sits across (0 = the middle; the player beside it)
-uniform shader uCover;    // the cover, sharp (256 px square) - for the record / disc labels
-uniform float2 uCoverSize;
-uniform shader uLabel;    // the song's title and artist in dark ink on a clear picture (NowPlayingScene.songLabel)
-uniform float2 uLabelSize;
-uniform shader uHistory;  // covers of the last songs: a 4 x 2 grid (newest first), MusicTheme.historyAtlas
-uniform float uHistCount; // how many of the 8 are filled
-uniform float3 uSubject;   // where the cover's subject is: x, y (0..1 across the square) and its size; z = 0 until known (MusicTheme.subject)
-// Clocks that only run while the music plays, so spins and scrolls slow down and stop smoothly instead of
-// jumping (t * (a + b * level) jumps whenever the level moves). Kept by NowPlayingScene, in seconds:
-uniform float uPlayT;     // time spent playing (integral of uPlaying)
-uniform float uBassT;     // integral of uBass x uPlaying
-uniform float uMidT;      // integral of uMid x uPlaying
-uniform float uHighT;     // integral of uHigh x uPlaying
-
-// The visualizer's room, with a sensible size when it isn't set (previews).
-float room(float fallback) { return uWaveH > 0.001 ? uWaveH : fallback; }
-// Across: the middle, or the left part when the player sits beside the visualizer (MusicPlayerLayout.SIDE).
-float waveX(float asp) { return uWaveX > 0.001 ? uWaveX * asp : asp * 0.5; }
-
-float2 mirrorUv(float2 q) { return 1.0 - abs(1.0 - mod(q, 2.0)); }
-
-float eqBand(float i) {
-    if (i < 0.5) return uEqA.x;
-    if (i < 1.5) return uEqA.y;
-    if (i < 2.5) return uEqA.z;
-    if (i < 3.5) return uEqA.w;
-    if (i < 4.5) return uEqB.x;
-    if (i < 5.5) return uEqB.y;
-    if (i < 6.5) return uEqB.z;
-    return uEqB.w;
-}
-
-// The spectrum at m (0 = lowest band, 1 = highest), smoothly interpolated.
-float eqAt(float m) {
-    float f = clamp(m, 0.0, 1.0) * 7.0;
-    float i = floor(f);
-    float u = f - i;
-    u = u * u * (3.0 - 2.0 * u);
-    return mix(eqBand(i), eqBand(min(i + 1.0, 7.0)), u);
-}
-
-// Pushes a colour's saturation by s (1 = unchanged) around its own brightness.
-float3 vivid(float3 c, float s) {
-    float l = dot(c, float3(0.299, 0.587, 0.114));
-    return max(mix(float3(l), c, s), 0.0);
-}
-
-// The cover, very soft and slowly drifting (or, without one, the palette swirling), dimmed by dim.
-float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float zoom = 1.7 + 0.08 * sin(t * 0.045) - 0.05 * bass * uIntensity;
-    p = rot(0.05 * sin(t * 0.031)) * p / zoom;
-    p += (float2(vnoise(p * 2.0 + float2(t * 0.1, 0.0)), vnoise(p * 2.0 + float2(7.3, -t * 0.08))) - 0.5) * 0.1;
-    float2 q = p / max(asp, 1.0) + 0.5;
-    float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
-    float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
-    float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
-}
-
-// The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
-// third, hue-shifted colour, brighter on the beat. A colourful base instead of a near-black one.
-float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3 A, float3 S) {
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
-    float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
-    float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
-    col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
-    return col;
-}
-
-// The sharp cover at q (0..1 across the square), or the palette when there's no cover yet.
-float3 sharpCover(float2 q, float3 A, float3 S) {
-    float3 art = float3(uCover.eval(clamp(q, 0.0, 1.0) * uCoverSize).rgb);
-    return mix(mix(A, S, q.y), art, uHasArt);
-}
-
-// Where the cover's subject sits (x, y, size), with a sensible guess before it's known.
-float3 subjectOf() { return uSubject.z > 0.001 ? uSubject : float3(0.5, 0.45, 0.3); }
-
-// Ink of the song label at q (0..1 across the writing area): 0 = paper, 1 = ink.
-float labelInk(float2 q) {
-    if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return 0.0;
-    return float(uLabel.eval(q * uLabelSize).a);
-}
-
-// Cover of an earlier song: i = 0 the one before this, 1 the one before that... (wraps round the
-// ones there are; with none yet, the current cover in the song's colours instead).
-float3 pastCover(float i, float2 q, float3 A, float3 S) {
-    q = clamp(q, 0.0, 1.0);
-    if (uHistCount < 0.5) return mix(sharpCover(q, A, S), mix(A, S, q.y), 0.35);
-    float n = mod(floor(i), uHistCount);
-    float2 tile = float2(mod(n, 4.0), floor(n / 4.0));
-    float2 p = (tile + 0.01 + q * 0.98) * 192.0;
-    return float3(uHistory.eval(p).rgb);
-}
-
-float3 hue3(float h) {
-    return clamp(abs(fract(h + float3(0.0, 0.6667, 0.3333)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
-}
-
-float rbox(float2 p, float2 b, float r) {
-    float2 q = abs(p) - b + r;
-    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float k = uIntensity;
-    float play = uPlaying;
-    float bass = uBass * play;
-    float high = uHigh * play;
-    float kick = exp(-uBeatAge * 5.0) * play;
-    float lvl = bass * 0.5 + uMid * play * 0.3 + high * 0.2;
-
-    float3 col = paletteField(uv, asp, t, lvl * k, BG, A, S) * 0.85;
-    float2 c = float2(waveX(asp), uWaveY);
-    float H = room(0.28) * 0.9 * (1.0 + 0.012 * kick * k); // half the sleeve's side
-    float2 cc = c - float2(H * 0.5, 0.0);                  // sleeve centre
-    float R = H * 0.93;
-    float2 dc = cc + float2(H * 1.0, 0.0);                 // disc centre: half of it out of the sleeve
-
-    // A soft spotlight from above and a faint floor glow under the pair.
-    float2 sp = (uv - c) * float2(0.5, 1.0);
-    col += mix(A, float3(1.0), 0.45) * exp(-length(sp) * 2.4) * (0.10 + 0.14 * lvl * k);
-    col += mix(A, S, 0.5) * exp(-abs(uv.y - (c.y + H * 1.12)) * 30.0) * 0.06 * (1.0 - smoothstep(0.0, H * 2.2, abs(uv.x - c.x)));
-
-    // The disc (behind the sleeve).
-    float2 d = uv - dc;
-    float r = length(d);
-    float ang = atan(d.y, d.x);
-    col += mix(A, S, 0.5) * exp(-max(r - R, 0.0) * 9.0) * (0.06 + 0.35 * bass * k);
-    float rr = R + uBeatAge * 0.45;
-    col += mix(S, float3(1.0), 0.3) * exp(-abs(r - rr) * 90.0) * exp(-uBeatAge * 2.5) * 0.45 * k * play;
-    col *= 1.0 - 0.35 * exp(-max(length(d - float2(0.01, 0.018)) - R, 0.0) * 40.0) * step(R, r);
-    if (r < R) {
-        float rn = r / R;
-        float spin = 2.6 * uPlayT + t * 0.12; // slower than before: calm, still clearly spinning
-        float la = ang - spin;
-        float2 q = float2(cos(la), sin(la)) * rn;
-        float3 print = mix(mix(A, S, q.y * 0.5 + 0.5), float3(1.0), 0.1);
-        float3 art = float3(uCover.eval(clamp(q * 0.5 + 0.5, 0.0, 1.0) * uCoverSize).rgb);
-        print = mix(print, art, uHasArt);
-        float band = pow(abs(cos(ang - 0.7 + 0.08 * sin(t * 0.4))), 6.0);
-        float3 rainbow = hue3(rn * 1.2 + 0.1 * sin(t * 0.2) + 0.15 * cos(ang - 0.7));
-        float3 disc = mix(print, rainbow, 0.06 + 0.3 * band);
-        disc += float3(1.0) * pow(band, 8.0) * 0.32;
-        disc = mix(disc, mix(float3(0.85), rainbow, 0.4), smoothstep(0.96, 0.975, rn));
-        float hub = smoothstep(0.30, 0.31, rn);
-        float3 clear = mix(col * 0.75 + float3(0.12), rainbow * 0.4 + 0.4, 0.3 * smoothstep(0.18, 0.3, rn));
-        disc = mix(clear, disc, hub);
-        disc = mix(disc, float3(0.9), (1.0 - smoothstep(0.0, 0.006, abs(rn - 0.305))) * 0.6);
-        disc = mix(col * 0.6, disc, smoothstep(0.12, 0.13, rn));
-        disc = mix(disc, float3(0.95), (1.0 - smoothstep(0.0, 0.004, abs(rn - 0.995))) * 0.7);
-        col = disc;
-    }
-
-    // The sleeve on top: its shadow on the disc and the floor, then the cover.
-    float2 q = uv - cc;
-    float sh = rbox(q - float2(H * 0.05, H * 0.06), float2(H), H * 0.03);
-    col *= 1.0 - 0.5 * (1.0 - smoothstep(0.0, H * 0.16, sh)) * step(0.0, sh);
-    float bd = rbox(q, float2(H), H * 0.03);
-    if (bd < 0.0) {
-        float2 st = q / (2.0 * H) + 0.5;
-        float3 art = float3(uCover.eval(clamp(st, 0.0, 1.0) * uCoverSize).rgb);
-        float3 fallback = mix(mix(A, S, st.y), BG * 1.4 + 0.05, 0.35 * st.x);
-        float3 cv = mix(fallback, art, uHasArt);
-        // Glossy sleeve: a slow diagonal sheen, light from the top, a bevelled edge.
-        float sheen = 1.0 - smoothstep(0.0, 0.22, abs(st.x * 0.8 + st.y * 0.6 - 0.45 - 0.15 * sin(t * 0.12)));
-        cv += float3(1.0) * sheen * 0.07;
-        cv *= 1.04 - 0.1 * st.y;
-        float edge = 1.0 - smoothstep(0.0, H * 0.025, -bd);
-        cv = mix(cv, cv * 0.55 + float3(0.28), edge * 0.45);
-        col = cv;
-    }
-
-    col += float3(1.0) * dots(uv, 34.0, float2(-t * 0.05, t * 0.025), 0.1, 0.07, 9.0) * (0.1 + 0.5 * high * k);
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val STILL_DUSK = """
-// Still dusk: a calm, unmoving picture — a deep gradient sky warming towards a low glow, a soft halo
-// and fine grain. Drawn once; costs nothing while you rest on it. Theme colours throughout.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float y = uv.y;
-    float3 col = mix(BG * 0.8, mix(BG, A, 0.35), smoothstep(0.0, 1.0, y));
-    col = mix(col, mix(A, S, 0.4) * 0.7 + BG * 0.3, smoothstep(0.55, 1.0, y) * 0.6);
-    float2 g = uv - float2(asp * 0.7, 0.78);
-    col += mix(A, float3(1.0), 0.3) * exp(-length(g * float2(0.6, 1.4)) * 3.0) * 0.35;
-    col += S * exp(-length(uv - float2(asp * 0.2, 0.2)) * 2.5) * 0.08;
-    // Soft cloud bands, very low contrast.
-    float cl = fbm(float2(uv.x * 1.3, y * 5.0));
-    col = mix(col, col * 1.12 + A * 0.03, smoothstep(0.55, 0.8, cl) * 0.35 * smoothstep(0.2, 0.7, y));
-    col += (hash12(fc) - 0.5) * 0.018;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val STILL_HORIZON = """
-// Still horizon: layered soft hills fading into haze under a pale sky, like a quiet wallpaper. A still
-// picture (drawn once). Theme colours: sky from the background, hills from the accent and second colour.
-
-float hill(float x, float base, float amp, float seed) {
-    return base - amp * (0.55 * fbm(float2(x * 1.1 + seed, seed)) + 0.45 * sin(x * 1.7 + seed));
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 sky = mix(mix(BG, S, 0.25) * 1.1, mix(BG, A, 0.3), smoothstep(0.0, 0.7, uv.y));
-    float3 col = sky;
-    col += mix(A, float3(1.0), 0.5) * exp(-length((uv - float2(asp * 0.32, 0.5)) * float2(0.5, 1.5)) * 3.5) * 0.3;
-    float3 haze = mix(sky, mix(A, S, 0.5), 0.25);
-    float h1 = hill(uv.x, 0.62, 0.08, 2.0);
-    float h2 = hill(uv.x + 3.0, 0.74, 0.09, 5.0);
-    float h3 = hill(uv.x + 7.0, 0.88, 0.1, 9.0);
-    col = mix(col, mix(haze, A * 0.5 + BG * 0.5, 0.35), smoothstep(h1, h1 + 0.004, uv.y));
-    col = mix(col, mix(haze, S * 0.35 + BG * 0.65, 0.55), smoothstep(h2, h2 + 0.004, uv.y));
-    col = mix(col, BG * 0.55 + A * 0.08, smoothstep(h3, h3 + 0.004, uv.y));
-    col += (hash12(fc) - 0.5) * 0.016;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val STILL_GLOW = """
-// Still glow: a minimal, unmoving field — two large soft light pools in the theme colours over a dark
-// gradient, a faint diagonal sheen and grain. Drawn once.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = mix(BG * 1.15, BG * 0.7, uv.y);
-    col += A * exp(-length((uv - float2(asp * 0.15, 0.1)) * float2(0.7, 1.0)) * 2.2) * 0.32;
-    col += S * exp(-length((uv - float2(asp * 0.9, 0.95)) * float2(0.7, 1.0)) * 2.4) * 0.22;
-    float sheen = 1.0 - smoothstep(0.0, 0.25, abs(uv.x / asp - uv.y * 0.5 - 0.35));
-    col += float3(1.0) * sheen * 0.025;
-    col += (hash12(fc) - 0.5) * 0.02;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val CALM_RIBBON = """
-// Calm ribbon: a slow, quiet console-menu mood — a few thin bands of light rolling gently across a deep
-// gradient, with a soft glow where they bunch together. Very slow, very soft (original design).
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime * 0.18;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = mix(BG * 1.25, BG * 0.65, smoothstep(0.0, 1.0, uv.y));
-    col += mix(A, S, 0.5) * exp(-abs(uv.y - 0.55) * 4.0) * 0.06;
-    float x = uv.x / asp;
-    for (int i = 0; i < 6; i++) {
-        float fi = float(i);
-        float y = 0.55 + 0.07 * sin(x * (2.2 + fi * 0.35) + t * (0.7 + fi * 0.13) + fi * 1.7)
-                       + 0.035 * sin(x * 5.1 - t * 0.9 + fi * 2.3);
-        float w = 0.0018 + 0.0012 * fi;
-        float line = exp(-abs(uv.y - y) / w);
-        float glow = exp(-abs(uv.y - y) * 22.0);
-        float3 lc = mix(float3(1.0), mix(A, S, fi / 5.0), 0.45);
-        col += lc * (line * 0.22 + glow * 0.035);
-    }
-    // A few slow motes of light.
-    col += float3(1.0) * dots(uv, 18.0, float2(t * 0.05, -t * 0.03), 0.12, 0.05, 3.0) * 0.12;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val CALM_DRIFT = """
-// Calm drift: soft out-of-focus lights rising very slowly through a misty gradient, like a quiet
-// console menu at night. Gentle and low-contrast so the games stay in front.
-
-float bokeh(float2 uv, float scale, float speed, float seed, float t) {
-    float2 p = uv * scale + float2(seed * 3.1, t * speed);
-    float2 id = floor(p);
-    float2 f = fract(p);
-    float2 r = hash22(id + seed);
-    if (r.x > 0.35) return 0.0;
-    float2 o = 0.5 + (r - 0.5) * 0.6;
-    float d = length(f - o);
-    float size = 0.18 + 0.2 * r.y;
-    return smoothstep(size, size * 0.55, d) * (0.6 + 0.4 * sin(t * 0.7 + r.y * 30.0));
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float t = uTime * 0.25;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = mix(mix(BG, A, 0.12) * 1.1, BG * 0.6, uv.y);
-    float mist = fbm(float2(uv.x * 1.5 + t * 0.1, uv.y * 2.0 - t * 0.05));
-    col += mix(A, S, 0.5) * mist * 0.1;
-    col += mix(A, float3(1.0), 0.4) * bokeh(uv, 4.0, -0.25, 1.0, t) * 0.12;
-    col += mix(S, float3(1.0), 0.4) * bokeh(uv, 7.0, -0.4, 5.0, t) * 0.06;
-    col += float3(1.0) * bokeh(uv, 12.0, -0.6, 9.0, t) * 0.05;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val CALM_HALO = """
-// Calm halo: one big soft halo of light breathing very slowly, faint concentric rings and a hint of
-// colour drifting round it. Minimal, quiet, original.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime * 0.2;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float2 c = float2(asp * 0.62, 0.42);
-    float2 d = uv - c;
-    float r = length(d);
-    float a = atan(d.y, d.x);
-    float breathe = 0.5 + 0.5 * sin(t * 0.8);
-    float3 col = mix(BG * 1.1, BG * 0.7, uv.y);
-    float3 tint = mix(A, S, 0.5 + 0.5 * sin(a + t * 0.6));
-    col += tint * exp(-r * (2.2 - 0.4 * breathe)) * 0.38;
-    col += float3(1.0) * exp(-abs(r - 0.28 - 0.02 * breathe) * 60.0) * 0.08;
-    col += float3(1.0) * exp(-abs(r - 0.46 - 0.03 * breathe) * 50.0) * 0.03;
-    col += A * exp(-abs(r - 0.7) * 30.0) * 0.025;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val BOLD_SPLIT = """
-// Bold split: a crisp, flat console-style home backdrop — a clean light field with one big rounded
-// slab of the accent colour sweeping in from the side. Static, flat colours, sharp edges.
-
-float rbox(float2 p, float2 b, float r) {
-    float2 q = abs(p) - b + r;
-    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = mix(BG, float3(0.93), 0.08) * 1.15;
-    // The big slab, tilted a little.
-    float2 p = uv - float2(asp * 0.9, 0.35);
-    float ca = cos(-0.18); float sa = sin(-0.18);
-    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
-    float d = rbox(p, float2(asp * 0.42, 0.42), 0.12);
-    col = mix(col, A, 1.0 - smoothstep(-px, px, d));
-    // A second, smaller pill in the second colour, overlapping.
-    float d2 = rbox(uv - float2(asp * 0.08, 0.92), float2(0.32, 0.12), 0.12);
-    col = mix(col, S, 1.0 - smoothstep(-px, px, d2));
-    // A thin ring for balance.
-    float r = abs(length(uv - float2(asp * 0.24, 0.24)) - 0.11) - 0.012;
-    col = mix(col, mix(A, float3(1.0), 0.2), 1.0 - smoothstep(-px, px, r));
-    return half4(col, 1.0);
-}
-"""
-
-    private const val BOLD_DOTS = """
-// Bold dots: a flat console-style backdrop — a solid colour field with a tidy grid of big round dots
-// in a slightly lighter tone, a few picked out in the accent. Static, crisp and clean.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 base = mix(BG, A, 0.18) * 1.1;
-    float3 col = base;
-    float n = 7.0;
-    float2 g = uv * n;
-    float2 id = floor(g);
-    float2 f = fract(g) - 0.5;
-    float h = hash12(id + 3.0);
-    float rad = 0.28 + 0.06 * step(0.7, h);
-    float d = length(f) - rad;
-    float3 dotc = mix(base * 1.25 + 0.03, h > 0.88 ? A : (h > 0.8 ? S : base * 1.25 + 0.03), 1.0);
-    col = mix(col, dotc, 1.0 - smoothstep(-px * n, px * n, d));
-    return half4(col, 1.0);
-}
-"""
-
-    private const val BOLD_BANDS = """
-// Bold bands: thick rounded colour bands laid diagonally across a flat field, like a clean, modern
-// console home screen. Static, flat colours, sharp antialiased edges.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = BG * 1.1;
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float ca = cos(0.45); float sa = sin(0.45);
-    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
-    for (int i = 0; i < 4; i++) {
-        float fi = float(i);
-        float y = -0.45 + fi * 0.3;
-        float len = 0.5 + 0.35 * hash11(fi + 2.0);
-        float x0 = -0.9 + 0.5 * hash11(fi + 7.0);
-        float2 q = p - float2(x0 + len, y);
-        float2 b = float2(len, 0.085);
-        float2 qq = abs(q) - b + 0.085;
-        float d = length(max(qq, 0.0)) + min(max(qq.x, qq.y), 0.0) - 0.085;
-        float3 bc = i == 1 ? A : (i == 3 ? S : mix(BG, A, 0.35) * 1.2);
-        col = mix(col, bc, 1.0 - smoothstep(-px, px, d));
-    }
-    return half4(col, 1.0);
-}
-"""
-
     private const val HANDHELD_BOOT = """
 // Handheld boot: an original pocket console standing front-on, booting up over and over. The power
 // light comes on, a bolt capsule logo drops down the four-shade LCD, a shine sweeps across it with a
@@ -22717,11 +22249,8 @@ float3 coverField(float2 uv, float asp, float t, float bass, float dim, float3 B
     float3 art = float3(uArt.eval(mirrorUv(q) * uArtSize).rgb);
     float sw = fbm3(uv * 1.4 + float2(t * 0.03, -t * 0.02));
     float3 noArt = mix(BG * 1.4 + A * 0.08, mix(A, S, sw) * 0.5, smoothstep(0.25, 0.8, sw));
-    float3 col = mix(noArt, vivid(art, 1.12) * 0.58, uHasArt);
-    // Broad, quiet lighting leaves the foreground spectrum and sleeve in focus.
-    float2 light = (uv / float2(asp, 1.0) - float2(0.35, 0.28));
-    col += mix(A, S, 0.35) * exp(-dot(light, light) * 7.0) * 0.035;
-    return mix(col, BG, 0.20) * dim;
+    float3 col = mix(noArt, vivid(art, 1.35) * 0.62, uHasArt);
+    return mix(col, BG, 0.14) * dim;
 }
 
 // The palette as a living gradient: A and S (the cover's colours) flowing round each other with a
@@ -22730,10 +22259,10 @@ float3 paletteField(float2 uv, float asp, float t, float lift, float3 BG, float3
     float2 p = uv - float2(asp * 0.5, 0.5);
     float n1 = fbm3(p * 1.3 + float2(t * 0.05, -t * 0.04));
     float n2 = fbm3(p * 1.7 + float2(-t * 0.035, t * 0.05) + 4.7);
-    float3 C = mix(A, S, 0.5); // keep the third light in the album's own palette
+    float3 C = float3(S.z, A.x, (A.y + S.y) * 0.5); // a third colour from the two
     float3 col = mix(A, S, smoothstep(0.25, 0.75, n1));
     col = mix(col, C, smoothstep(0.45, 0.85, n2) * 0.55);
-    col = mix(BG, col, 0.34 + 0.14 * sat(lift));
+    col = mix(BG, col, 0.42 + 0.18 * lift);
     return col;
 }
 
@@ -26937,6 +26466,374 @@ half4 main(float2 fc) {
 }
 """
 
+    private const val GAMING_ROOM = """
+// Gaming room (game showcase): the user's painting of a cosy gaming room at night
+// (res/drawable-nodpi/gaming_room.webp, 1692 x 845), with the game you're on playing on the monitor: its hero
+// art, then its screenshots, a new one every 9 s (ShowcaseScene feeds uShot like the CRT room's TV). The picture
+// is cropped and zoomed a little so the monitor always sits in the middle of the screen, clear of the game
+// row whether that is at the top or the bottom. The monitor's light spills onto the wall and desk in the
+// colours of what it shows; the PC's fans turn, the LED strips breathe, the lamp flickers softly, stars
+// twinkle through the window and dust drifts in the moonlight.
+
+uniform shader uRoom;     // the room picture
+uniform float2 uRoomSize; // its decoded size in pixels (it may be decoded smaller than 1692 x 845)
+uniform shader uShot;     // the game's picture for the monitor
+uniform float2 uShotSize;
+uniform float uHasShot;   // 0 = no art yet: the painting's own screen shows
+uniform float3 uTvL;      // average colour of the picture's left half
+uniform float3 uTvR;      // and right half (the light it throws)
+uniform float uTune;      // 1 -> 0 just after the picture changed (a quick blink)
+uniform shader uPoster;   // the game's cover, for the framed poster above the monitor
+uniform float2 uPosterSize;
+uniform float uHasPoster;
+uniform float uFocusY;    // 0..1 down the screen: where the monitor goes (the middle of the open space, clear of the row)
+
+const float2 ROOM = float2(1692.0, 845.0);
+const float2 SCR0 = float2(811.0, 324.0);        // the monitor's screen in the painting
+const float2 SCR1 = float2(1134.0, 492.0);
+const float2 POS0 = float2(920.0, 77.0);         // the framed poster's picture
+const float2 POS1 = float2(1086.0, 271.0);
+const float2 FAN1 = float2(1508.0, 396.0);
+const float2 FAN2 = float2(1508.0, 471.0);
+
+float3 room(float2 ip) { return float3(uRoom.eval(clamp(ip, float2(0.5), ROOM - 0.5) * uRoomSize / ROOM).rgb); }
+
+half4 main(float2 fc) {
+    float t = uTime;
+    // Cover the screen, zoomed in a touch, with the monitor where the open space is (uFocusY: above the game
+    // row when it's at the bottom, below it when it's at the top), zooming in further when needed so the
+    // picture still fills the screen.
+    float2 M = (SCR0 + SCR1) * 0.5;
+    float fy = clamp(uFocusY, 0.25, 0.75);
+    float k = max(1.12 * max(uRes.x / ROOM.x, uRes.y / ROOM.y),  // screen pixels per picture pixel
+                  max(fy * uRes.y / M.y, (1.0 - fy) * uRes.y / (ROOM.y - M.y)));
+    float2 P = float2(clamp(uRes.x * 0.55, uRes.x - (ROOM.x - M.x) * k, M.x * k),
+                      clamp(uRes.y * fy, uRes.y - (ROOM.y - M.y) * k, M.y * k));
+    float2 ip = M + (fc - P) / k;                               // the picture pixel under this screen pixel
+    float3 col = room(ip);
+
+    // The poster above it: the game's cover, cropped to fill the frame, a little faded like printed paper.
+    float2 pq = (ip - POS0) / (POS1 - POS0);
+    if (uHasPoster > 0.5 && pq.x >= 0.0 && pq.x <= 1.0 && pq.y >= 0.0 && pq.y <= 1.0) {
+        float fa = (POS1.x - POS0.x) / (POS1.y - POS0.y);
+        float ca = uPosterSize.x / max(uPosterSize.y, 1.0);
+        float2 aq = pq;
+        if (ca > fa) aq.x = 0.5 + (pq.x - 0.5) * fa / ca; else aq.y = 0.5 + (pq.y - 0.5) * ca / fa;
+        float3 pc = float3(uPoster.eval(aq * uPosterSize).rgb);
+        pc = mix(pc, float3(dot(pc, float3(0.33))), 0.08) * 0.82 + 0.02;           // printed, in a dim room
+        pc *= 0.85 + 0.15 * (1.0 - pq.y);                                           // the lamp-less top is lighter
+        pc *= 1.0 - 0.18 * smoothstep(0.35, 0.75, length(pq - 0.5));                // and its corners darker
+        pc += 0.05 * smoothstep(0.1, 0.0, abs(pq.x - pq.y * 0.5 - 0.2));            // glass glare
+        col = pc;
+    }
+    // The monitor: the game's picture fitted to the screen (cropped to fill), a soft LCD look and a glass sheen.
+    float2 q = (ip - SCR0) / (SCR1 - SCR0);
+    float inScr = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, q.y) * step(q.y, 1.0);
+    if (inScr > 0.5 && uHasShot > 0.5) {
+        float sa = (SCR1.x - SCR0.x) / (SCR1.y - SCR0.y);
+        float pa = uShotSize.x / max(uShotSize.y, 1.0);
+        float2 aq = q;
+        if (pa > sa) aq.x = 0.5 + (q.x - 0.5) * sa / pa; else aq.y = 0.5 + (q.y - 0.5) * pa / sa;
+        float3 g = float3(uShot.eval(aq * uShotSize).rgb);
+        g *= 1.05 - 0.25 * sqf(length(q - 0.5) * 1.2);
+        g = mix(g, float3(0.02), uTune);                        // the blink as the picture changes
+        // Rounded corners of the panel.
+        float2 e = min(q, 1.0 - q) * (SCR1 - SCR0);
+        float corner = step(length(max(3.0 - e, 0.0)), 3.0);
+        col = mix(col, g, corner);
+    }
+    if (inScr > 0.5) col += 0.05 * smoothstep(0.12, 0.0, abs(q.x - q.y * 0.6 - 0.15)) * (1.0 - q.y);
+    // Its light on the wall, the desk and the lamp side, in the picture's colours.
+    float3 tv = uHasShot > 0.5 ? mix(uTvL, uTvR, sat((ip.x - SCR0.x) / (SCR1.x - SCR0.x))) : float3(0.35, 0.6, 0.95);
+    float2 d = max(abs(ip - M) - (SCR1 - SCR0) * 0.5, 0.0);
+    float spill = exp(-length(d) / 90.0) * (1.0 - inScr);
+    float flick = 0.9 + 0.1 * sin(t * 2.3) * sin(t * 0.7);
+    col += tv * spill * 0.22 * flick;
+    // On the desk top just under it, stronger.
+    col += tv * 0.18 * exp(-abs(ip.y - 560.0) / 12.0) * exp(-abs(ip.x - M.x) / 220.0) * flick;
+
+    // PC fans: a turning highlight round each ring.
+    for (int i = 0; i < 2; i++) {
+        float2 f = (i == 0 ? FAN1 : FAN2);
+        float2 fq = ip - f;
+        float r = length(fq);
+        float a = atan(fq.y, fq.x);
+        float blades = 0.5 + 0.5 * cos(a * 5.0 - t * 7.0 - float(i));
+        col *= 1.0 + 0.35 * blades * (1.0 - smoothstep(24.0, 30.0, r)) * smoothstep(5.0, 9.0, r);
+        col *= 1.0 + 0.25 * (0.5 + 0.5 * sin(t * 1.4)) * exp(-abs(r - 31.0) / 3.0);
+    }
+    // LED strips under the shelf and the desk breathe.
+    float breathe = 0.5 + 0.5 * sin(t * 1.1);
+    col *= 1.0 + 0.3 * breathe * exp(-abs(ip.y - 280.0) / 10.0) * step(1210.0, ip.x) * step(ip.x, 1585.0);
+    col *= 1.0 + 0.25 * breathe * exp(-abs(ip.y - 566.0) / 8.0) * step(660.0, ip.x) * step(ip.x, 1620.0);
+    // The lamp's warm pool flickers a little.
+    col *= 1.0 + 0.05 * (vnoise(float2(t * 6.0, 1.0)) - 0.5) * exp(-length(ip - float2(760.0, 470.0)) / 160.0);
+    // Stars twinkling and the moon glowing in the window.
+    float2 w = ip - float2(83.0, 73.0);
+    if (w.x > 0.0 && w.x < 393.0 && w.y > 0.0 && w.y < 230.0) {
+        float2 sc = floor(ip / 6.0);
+        float tw = step(0.985, hash12(sc)) * (0.5 + 0.5 * sin(t * 2.5 + hash12(sc + 3.0) * 30.0));
+        col += float3(0.8, 0.85, 1.0) * tw * 0.5 * (1.0 - smoothstep(1.5, 2.5, length(fract(ip / 6.0) * 6.0 - 3.0)));
+    }
+    col += float3(0.7, 0.75, 1.0) * 0.06 * (0.5 + 0.5 * sin(t * 0.8)) * exp(-length(ip - float2(287.0, 149.0)) / 45.0);
+    // Dust drifting in the moonlight below the window.
+    float beam = step(60.0, ip.x) * step(ip.x, 560.0) * step(380.0, ip.y) * step(abs(ip.x - 280.0 + (ip.y - 460.0) * 0.55), 190.0);
+    float2 dg = floor((ip + float2(t * 6.0, -t * 9.0)) / 5.0);
+    col += float3(0.6, 0.7, 1.0) * 0.35 * beam * step(0.993, hash12(dg));
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val STILL_DUSK = """
+// Still dusk: a calm, unmoving picture — a deep gradient sky warming towards a low glow, a soft halo
+// and fine grain. Drawn once; costs nothing while you rest on it. Theme colours throughout.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float y = uv.y;
+    float3 col = mix(BG * 0.8, mix(BG, A, 0.35), smoothstep(0.0, 1.0, y));
+    col = mix(col, mix(A, S, 0.4) * 0.7 + BG * 0.3, smoothstep(0.55, 1.0, y) * 0.6);
+    float2 g = uv - float2(asp * 0.7, 0.78);
+    col += mix(A, float3(1.0), 0.3) * exp(-length(g * float2(0.6, 1.4)) * 3.0) * 0.35;
+    col += S * exp(-length(uv - float2(asp * 0.2, 0.2)) * 2.5) * 0.08;
+    // Soft cloud bands, very low contrast.
+    float cl = fbm(float2(uv.x * 1.3, y * 5.0));
+    col = mix(col, col * 1.12 + A * 0.03, smoothstep(0.55, 0.8, cl) * 0.35 * smoothstep(0.2, 0.7, y));
+    col += (hash12(fc) - 0.5) * 0.018;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val STILL_HORIZON = """
+// Still horizon: layered soft hills fading into haze under a pale sky, like a quiet wallpaper. A still
+// picture (drawn once). Theme colours: sky from the background, hills from the accent and second colour.
+
+float hill(float x, float base, float amp, float seed) {
+    return base - amp * (0.55 * fbm(float2(x * 1.1 + seed, seed)) + 0.45 * sin(x * 1.7 + seed));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 sky = mix(mix(BG, S, 0.25) * 1.1, mix(BG, A, 0.3), smoothstep(0.0, 0.7, uv.y));
+    float3 col = sky;
+    col += mix(A, float3(1.0), 0.5) * exp(-length((uv - float2(asp * 0.32, 0.5)) * float2(0.5, 1.5)) * 3.5) * 0.3;
+    float3 haze = mix(sky, mix(A, S, 0.5), 0.25);
+    float h1 = hill(uv.x, 0.62, 0.08, 2.0);
+    float h2 = hill(uv.x + 3.0, 0.74, 0.09, 5.0);
+    float h3 = hill(uv.x + 7.0, 0.88, 0.1, 9.0);
+    col = mix(col, mix(haze, A * 0.5 + BG * 0.5, 0.35), smoothstep(h1, h1 + 0.004, uv.y));
+    col = mix(col, mix(haze, S * 0.35 + BG * 0.65, 0.55), smoothstep(h2, h2 + 0.004, uv.y));
+    col = mix(col, BG * 0.55 + A * 0.08, smoothstep(h3, h3 + 0.004, uv.y));
+    col += (hash12(fc) - 0.5) * 0.016;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val STILL_GLOW = """
+// Still glow: a minimal, unmoving field — two large soft light pools in the theme colours over a dark
+// gradient, a faint diagonal sheen and grain. Drawn once.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(BG * 1.15, BG * 0.7, uv.y);
+    col += A * exp(-length((uv - float2(asp * 0.15, 0.1)) * float2(0.7, 1.0)) * 2.2) * 0.32;
+    col += S * exp(-length((uv - float2(asp * 0.9, 0.95)) * float2(0.7, 1.0)) * 2.4) * 0.22;
+    float sheen = 1.0 - smoothstep(0.0, 0.25, abs(uv.x / asp - uv.y * 0.5 - 0.35));
+    col += float3(1.0) * sheen * 0.025;
+    col += (hash12(fc) - 0.5) * 0.02;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val CALM_RIBBON = """
+// Calm ribbon: a slow, quiet console-menu mood — a few thin bands of light rolling gently across a deep
+// gradient, with a soft glow where they bunch together. Very slow, very soft (original design).
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime * 0.18;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(BG * 1.25, BG * 0.65, smoothstep(0.0, 1.0, uv.y));
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - 0.55) * 4.0) * 0.06;
+    float x = uv.x / asp;
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float y = 0.55 + 0.07 * sin(x * (2.2 + fi * 0.35) + t * (0.7 + fi * 0.13) + fi * 1.7)
+                       + 0.035 * sin(x * 5.1 - t * 0.9 + fi * 2.3);
+        float w = 0.0018 + 0.0012 * fi;
+        float line = exp(-abs(uv.y - y) / w);
+        float glow = exp(-abs(uv.y - y) * 22.0);
+        float3 lc = mix(float3(1.0), mix(A, S, fi / 5.0), 0.45);
+        col += lc * (line * 0.22 + glow * 0.035);
+    }
+    // A few slow motes of light.
+    col += float3(1.0) * dots(uv, 18.0, float2(t * 0.05, -t * 0.03), 0.12, 0.05, 3.0) * 0.12;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val CALM_DRIFT = """
+// Calm drift: soft out-of-focus lights rising very slowly through a misty gradient, like a quiet
+// console menu at night. Gentle and low-contrast so the games stay in front.
+
+float bokeh(float2 uv, float scale, float speed, float seed, float t) {
+    float2 p = uv * scale + float2(seed * 3.1, t * speed);
+    float2 id = floor(p);
+    float2 f = fract(p);
+    float2 r = hash22(id + seed);
+    if (r.x > 0.35) return 0.0;
+    float2 o = 0.5 + (r - 0.5) * 0.6;
+    float d = length(f - o);
+    float size = 0.18 + 0.2 * r.y;
+    return smoothstep(size, size * 0.55, d) * (0.6 + 0.4 * sin(t * 0.7 + r.y * 30.0));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float t = uTime * 0.25;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(mix(BG, A, 0.12) * 1.1, BG * 0.6, uv.y);
+    float mist = fbm(float2(uv.x * 1.5 + t * 0.1, uv.y * 2.0 - t * 0.05));
+    col += mix(A, S, 0.5) * mist * 0.1;
+    col += mix(A, float3(1.0), 0.4) * bokeh(uv, 4.0, -0.25, 1.0, t) * 0.12;
+    col += mix(S, float3(1.0), 0.4) * bokeh(uv, 7.0, -0.4, 5.0, t) * 0.06;
+    col += float3(1.0) * bokeh(uv, 12.0, -0.6, 9.0, t) * 0.05;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val CALM_HALO = """
+// Calm halo: one big soft halo of light breathing very slowly, faint concentric rings and a hint of
+// colour drifting round it. Minimal, quiet, original.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime * 0.2;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float2 c = float2(asp * 0.62, 0.42);
+    float2 d = uv - c;
+    float r = length(d);
+    float a = atan(d.y, d.x);
+    float breathe = 0.5 + 0.5 * sin(t * 0.8);
+    float3 col = mix(BG * 1.1, BG * 0.7, uv.y);
+    float3 tint = mix(A, S, 0.5 + 0.5 * sin(a + t * 0.6));
+    col += tint * exp(-r * (2.2 - 0.4 * breathe)) * 0.38;
+    col += float3(1.0) * exp(-abs(r - 0.28 - 0.02 * breathe) * 60.0) * 0.08;
+    col += float3(1.0) * exp(-abs(r - 0.46 - 0.03 * breathe) * 50.0) * 0.03;
+    col += A * exp(-abs(r - 0.7) * 30.0) * 0.025;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val BOLD_SPLIT = """
+// Bold split: a crisp, flat console-style home backdrop — a clean light field with one big rounded
+// slab of the accent colour sweeping in from the side. Static, flat colours, sharp edges.
+
+float rbox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + r;
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(BG, float3(0.93), 0.08) * 1.15;
+    // The big slab, tilted a little.
+    float2 p = uv - float2(asp * 0.9, 0.35);
+    float ca = cos(-0.18); float sa = sin(-0.18);
+    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
+    float d = rbox(p, float2(asp * 0.42, 0.42), 0.12);
+    col = mix(col, A, 1.0 - smoothstep(-px, px, d));
+    // A second, smaller pill in the second colour, overlapping.
+    float d2 = rbox(uv - float2(asp * 0.08, 0.92), float2(0.32, 0.12), 0.12);
+    col = mix(col, S, 1.0 - smoothstep(-px, px, d2));
+    // A thin ring for balance.
+    float r = abs(length(uv - float2(asp * 0.24, 0.24)) - 0.11) - 0.012;
+    col = mix(col, mix(A, float3(1.0), 0.2), 1.0 - smoothstep(-px, px, r));
+    return half4(col, 1.0);
+}
+"""
+
+    private const val BOLD_DOTS = """
+// Bold dots: a flat console-style backdrop — a solid colour field with a tidy grid of big round dots
+// in a slightly lighter tone, a few picked out in the accent. Static, crisp and clean.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 base = mix(BG, A, 0.18) * 1.1;
+    float3 col = base;
+    float n = 7.0;
+    float2 g = uv * n;
+    float2 id = floor(g);
+    float2 f = fract(g) - 0.5;
+    float h = hash12(id + 3.0);
+    float rad = 0.28 + 0.06 * step(0.7, h);
+    float d = length(f) - rad;
+    float3 dotc = mix(base * 1.25 + 0.03, h > 0.88 ? A : (h > 0.8 ? S : base * 1.25 + 0.03), 1.0);
+    col = mix(col, dotc, 1.0 - smoothstep(-px * n, px * n, d));
+    return half4(col, 1.0);
+}
+"""
+
+    private const val BOLD_BANDS = """
+// Bold bands: thick rounded colour bands laid diagonally across a flat field, like a clean, modern
+// console home screen. Static, flat colours, sharp antialiased edges.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = BG * 1.1;
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float ca = cos(0.45); float sa = sin(0.45);
+    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float y = -0.45 + fi * 0.3;
+        float len = 0.5 + 0.35 * hash11(fi + 2.0);
+        float x0 = -0.9 + 0.5 * hash11(fi + 7.0);
+        float2 q = p - float2(x0 + len, y);
+        float2 b = float2(len, 0.085);
+        float2 qq = abs(q) - b + 0.085;
+        float d = length(max(qq, 0.0)) + min(max(qq.x, qq.y), 0.0) - 0.085;
+        float3 bc = i == 1 ? A : (i == 3 ? S : mix(BG, A, 0.35) * 1.2);
+        col = mix(col, bc, 1.0 - smoothstep(-px, px, d));
+    }
+    return half4(col, 1.0);
+}
+"""
+
     private const val SHOWCASE_BG = """
 // Game showcase backdrop: what the showcase themes show until the game's hero art and screenshots
 // have loaded (and behind them, through their soft edges) - a slow, deep gradient in the game's own
@@ -26977,7 +26874,6 @@ uniform float uHasShot;    // 1 = a picture is set, 0 = test card
 uniform float3 uTvL;       // average colour of the picture's left half (the room's light)
 uniform float3 uTvR;       // ... and of its right half
 uniform float uTune;       // 0..1 extra static (a new game was picked)
-uniform float uFocusY;     // 0.5 + how far to move the view down (share of the height; 0 = not set): clear of a game row at the top
 
 const float CH_LEN = 9.0;
 const float3 TV_C = float3(0.0, 0.98, -1.30);    // front bezel
@@ -27313,8 +27209,6 @@ half4 main(float2 fc) {
     float2 res = uRes;
     float2 sp = (fc - 0.5 * res) / res.y;
     sp.y = -sp.y;
-    // A lens shift: the room slides down the screen (more of the wall shows above the TV).
-    sp.y += uFocusY > 0.001 ? clamp(uFocusY - 0.5, -0.15, 0.3) : 0.0;
     float3 A = uAcc.rgb;
     float3 S = uSec.rgb;
     float3 BG = uBg.rgb;
@@ -27678,124 +27572,6 @@ half4 main(float2 fc) {
     float mx = max(col.r, max(col.g, col.b));
     col = mix(col, col / (1.0 + mx) * (1.0 + mx * 0.5), smoothstep(0.55, 1.6, mx));
     col += float3(0.0, 0.002, 0.006) * (1.0 - sat(mx * 8.0));
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val GAMING_ROOM = """
-// Gaming room (game showcase): the user's painting of a cosy gaming room at night
-// (res/drawable-nodpi/gaming_room.webp, 1692 x 845), with the game you're on playing on the monitor: its hero
-// art, then its screenshots, a new one every 9 s (ShowcaseScene feeds uShot like the CRT room's TV). The picture
-// is cropped and zoomed a little so the monitor always sits in the middle of the screen, clear of the game
-// row whether that is at the top or the bottom. The monitor's light spills onto the wall and desk in the
-// colours of what it shows; the PC's fans turn, the LED strips breathe, the lamp flickers softly, stars
-// twinkle through the window and dust drifts in the moonlight.
-
-uniform shader uRoom;     // the room picture
-uniform float2 uRoomSize; // its decoded size in pixels (it may be decoded smaller than 1692 x 845)
-uniform shader uShot;     // the game's picture for the monitor
-uniform float2 uShotSize;
-uniform float uHasShot;   // 0 = no art yet: the painting's own screen shows
-uniform float3 uTvL;      // average colour of the picture's left half
-uniform float3 uTvR;      // and right half (the light it throws)
-uniform float uTune;      // 1 -> 0 just after the picture changed (a quick blink)
-uniform shader uPoster;   // the game's cover, for the framed poster above the monitor
-uniform float2 uPosterSize;
-uniform float uHasPoster;
-uniform float uFocusY;    // 0..1 down the screen: where the monitor goes (the middle of the open space, clear of the row)
-
-const float2 ROOM = float2(1692.0, 845.0);
-const float2 SCR0 = float2(811.0, 324.0);        // the monitor's screen in the painting
-const float2 SCR1 = float2(1134.0, 492.0);
-const float2 POS0 = float2(920.0, 77.0);         // the framed poster's picture
-const float2 POS1 = float2(1086.0, 271.0);
-const float2 FAN1 = float2(1508.0, 396.0);
-const float2 FAN2 = float2(1508.0, 471.0);
-
-float3 room(float2 ip) { return float3(uRoom.eval(clamp(ip, float2(0.5), ROOM - 0.5) * uRoomSize / ROOM).rgb); }
-
-half4 main(float2 fc) {
-    float t = uTime;
-    // Cover the screen, zoomed in a touch, with the monitor where the open space is (uFocusY: above the game
-    // row when it's at the bottom, below it when it's at the top), zooming in further when needed so the
-    // picture still fills the screen.
-    float2 M = (SCR0 + SCR1) * 0.5;
-    float fy = clamp(uFocusY, 0.25, 0.75);
-    float k = max(1.12 * max(uRes.x / ROOM.x, uRes.y / ROOM.y),  // screen pixels per picture pixel
-                  max(fy * uRes.y / M.y, (1.0 - fy) * uRes.y / (ROOM.y - M.y)));
-    float2 P = float2(clamp(uRes.x * 0.55, uRes.x - (ROOM.x - M.x) * k, M.x * k),
-                      clamp(uRes.y * fy, uRes.y - (ROOM.y - M.y) * k, M.y * k));
-    float2 ip = M + (fc - P) / k;                               // the picture pixel under this screen pixel
-    float3 col = room(ip);
-
-    // The poster above it: the game's cover, cropped to fill the frame, a little faded like printed paper.
-    float2 pq = (ip - POS0) / (POS1 - POS0);
-    if (uHasPoster > 0.5 && pq.x >= 0.0 && pq.x <= 1.0 && pq.y >= 0.0 && pq.y <= 1.0) {
-        float fa = (POS1.x - POS0.x) / (POS1.y - POS0.y);
-        float ca = uPosterSize.x / max(uPosterSize.y, 1.0);
-        float2 aq = pq;
-        if (ca > fa) aq.x = 0.5 + (pq.x - 0.5) * fa / ca; else aq.y = 0.5 + (pq.y - 0.5) * ca / fa;
-        float3 pc = float3(uPoster.eval(aq * uPosterSize).rgb);
-        pc = mix(pc, float3(dot(pc, float3(0.33))), 0.08) * 0.82 + 0.02;           // printed, in a dim room
-        pc *= 0.85 + 0.15 * (1.0 - pq.y);                                           // the lamp-less top is lighter
-        pc *= 1.0 - 0.18 * smoothstep(0.35, 0.75, length(pq - 0.5));                // and its corners darker
-        pc += 0.05 * smoothstep(0.1, 0.0, abs(pq.x - pq.y * 0.5 - 0.2));            // glass glare
-        col = pc;
-    }
-    // The monitor: the game's picture fitted to the screen (cropped to fill), a soft LCD look and a glass sheen.
-    float2 q = (ip - SCR0) / (SCR1 - SCR0);
-    float inScr = step(0.0, q.x) * step(q.x, 1.0) * step(0.0, q.y) * step(q.y, 1.0);
-    if (inScr > 0.5 && uHasShot > 0.5) {
-        float sa = (SCR1.x - SCR0.x) / (SCR1.y - SCR0.y);
-        float pa = uShotSize.x / max(uShotSize.y, 1.0);
-        float2 aq = q;
-        if (pa > sa) aq.x = 0.5 + (q.x - 0.5) * sa / pa; else aq.y = 0.5 + (q.y - 0.5) * pa / sa;
-        float3 g = float3(uShot.eval(aq * uShotSize).rgb);
-        g *= 1.05 - 0.25 * sqf(length(q - 0.5) * 1.2);
-        g = mix(g, float3(0.02), uTune);                        // the blink as the picture changes
-        // Rounded corners of the panel.
-        float2 e = min(q, 1.0 - q) * (SCR1 - SCR0);
-        float corner = step(length(max(3.0 - e, 0.0)), 3.0);
-        col = mix(col, g, corner);
-    }
-    if (inScr > 0.5) col += 0.05 * smoothstep(0.12, 0.0, abs(q.x - q.y * 0.6 - 0.15)) * (1.0 - q.y);
-    // Its light on the wall, the desk and the lamp side, in the picture's colours.
-    float3 tv = uHasShot > 0.5 ? mix(uTvL, uTvR, sat((ip.x - SCR0.x) / (SCR1.x - SCR0.x))) : float3(0.35, 0.6, 0.95);
-    float2 d = max(abs(ip - M) - (SCR1 - SCR0) * 0.5, 0.0);
-    float spill = exp(-length(d) / 90.0) * (1.0 - inScr);
-    float flick = 0.9 + 0.1 * sin(t * 2.3) * sin(t * 0.7);
-    col += tv * spill * 0.22 * flick;
-    // On the desk top just under it, stronger.
-    col += tv * 0.18 * exp(-abs(ip.y - 560.0) / 12.0) * exp(-abs(ip.x - M.x) / 220.0) * flick;
-
-    // PC fans: a turning highlight round each ring.
-    for (int i = 0; i < 2; i++) {
-        float2 f = (i == 0 ? FAN1 : FAN2);
-        float2 fq = ip - f;
-        float r = length(fq);
-        float a = atan(fq.y, fq.x);
-        float blades = 0.5 + 0.5 * cos(a * 5.0 - t * 7.0 - float(i));
-        col *= 1.0 + 0.35 * blades * (1.0 - smoothstep(24.0, 30.0, r)) * smoothstep(5.0, 9.0, r);
-        col *= 1.0 + 0.25 * (0.5 + 0.5 * sin(t * 1.4)) * exp(-abs(r - 31.0) / 3.0);
-    }
-    // LED strips under the shelf and the desk breathe.
-    float breathe = 0.5 + 0.5 * sin(t * 1.1);
-    col *= 1.0 + 0.3 * breathe * exp(-abs(ip.y - 280.0) / 10.0) * step(1210.0, ip.x) * step(ip.x, 1585.0);
-    col *= 1.0 + 0.25 * breathe * exp(-abs(ip.y - 566.0) / 8.0) * step(660.0, ip.x) * step(ip.x, 1620.0);
-    // The lamp's warm pool flickers a little.
-    col *= 1.0 + 0.05 * (vnoise(float2(t * 6.0, 1.0)) - 0.5) * exp(-length(ip - float2(760.0, 470.0)) / 160.0);
-    // Stars twinkling and the moon glowing in the window.
-    float2 w = ip - float2(83.0, 73.0);
-    if (w.x > 0.0 && w.x < 393.0 && w.y > 0.0 && w.y < 230.0) {
-        float2 sc = floor(ip / 6.0);
-        float tw = step(0.985, hash12(sc)) * (0.5 + 0.5 * sin(t * 2.5 + hash12(sc + 3.0) * 30.0));
-        col += float3(0.8, 0.85, 1.0) * tw * 0.5 * (1.0 - smoothstep(1.5, 2.5, length(fract(ip / 6.0) * 6.0 - 3.0)));
-    }
-    col += float3(0.7, 0.75, 1.0) * 0.06 * (0.5 + 0.5 * sin(t * 0.8)) * exp(-length(ip - float2(287.0, 149.0)) / 45.0);
-    // Dust drifting in the moonlight below the window.
-    float beam = step(60.0, ip.x) * step(ip.x, 560.0) * step(380.0, ip.y) * step(abs(ip.x - 280.0 + (ip.y - 460.0) * 0.55), 190.0);
-    float2 dg = floor((ip + float2(t * 6.0, -t * 9.0)) / 5.0);
-    col += float3(0.6, 0.7, 1.0) * 0.35 * beam * step(0.993, hash12(dg));
     return half4(finish(col, fc), 1.0);
 }
 """

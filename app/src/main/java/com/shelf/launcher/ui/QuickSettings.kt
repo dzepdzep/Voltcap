@@ -416,6 +416,16 @@ fun QuickSettingsCard(
                 val all = com.shelf.launcher.data.HomeLayout.pickable
                 home.setAppearance(a.copy(homeLayout = all[(all.indexOf(a.homeLayout) + 1) % all.size]))
             })
+            // Update 179: the two-screen layouts — the gap between their tiles (tap: the next, hold: the list).
+            if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TWIN_ICONS || a.homeLayout == com.shelf.launcher.data.HomeLayout.TWIN_DESK) {
+                val pref = if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TWIN_ICONS) com.shelf.launcher.data.Features.twinGap else com.shelf.launcher.data.Features.twinDeskGap
+                val gaps = TWIN_GAPS.filter { it <= (if (pref === com.shelf.launcher.data.Features.twinGap) 32 else 24) }
+                val now = pref.state.value
+                add(R1Tile("twingap", Icons.Filled.ViewModule, "Gaps\n" + gapLabel(now), false,
+                    longAction = { choiceSheet = "Gap between tiles" to gaps.map { g -> R1Choice(gapLabel(g), now == g) { pref.value = g } } }) {
+                    pref.value = gaps[(gaps.indexOf(now).coerceAtLeast(0) + 1) % gaps.size]
+                })
+            }
             // Options of the layout in use (they only show while that layout is the one on screen).
             run {
                 val f = com.shelf.launcher.data.Features

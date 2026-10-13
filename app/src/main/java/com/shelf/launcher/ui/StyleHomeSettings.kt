@@ -74,6 +74,9 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.CARDS -> "Fan angle, shiny sheen, frame colour, A starts the game"
     // Update 176.
     HomeLayout.CUSTOM -> "Pick, import and make your own layouts"
+    // Update 181.
+    HomeLayout.POCKET_CLASSIC -> "Colour, name, clock, calendar, toolbar, screens, sounds, scaling"
+    HomeLayout.POCKET_RIBBON -> "Colour, top picture, status line, icons, screens, sounds, scaling"
     else -> ""
 }
 
@@ -110,6 +113,9 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.CARDS -> CardBinderSettings()
         // Update 176: Custom layout (StyleCustom.kt / CustomLayoutSettings.kt).
         HomeLayout.CUSTOM -> CustomLayoutSettings()
+        // Update 181 (PocketSettings.kt).
+        HomeLayout.POCKET_CLASSIC -> PocketClassicSettings()
+        HomeLayout.POCKET_RIBBON -> PocketRibbonSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).

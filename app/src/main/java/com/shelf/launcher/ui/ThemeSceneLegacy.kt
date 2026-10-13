@@ -141,7 +141,7 @@ internal fun LegacyThemeScene(motif: ThemeMotif, colors: ShelfColors, time: Stat
                 ThemeMotif.COVER_FOCUS -> stars(t, colors)
                 ThemeMotif.SHOWCASE_PARALLAX, ThemeMotif.SHOWCASE_CINEMA, ThemeMotif.SHOWCASE_FILMSTRIP,
                 ThemeMotif.SHOWCASE_MOSAIC, ThemeMotif.SHOWCASE_GLASS, ThemeMotif.SHOWCASE_CRT -> minimal(t, colors)
-                ThemeMotif.DISC_SLEEVE -> stars(t, colors)
+                ThemeMotif.DISC_SLEEVE, ThemeMotif.ALBUM_TIDE -> stars(t, colors)
                 ThemeMotif.HANDHELD_BOOT, ThemeMotif.PIXEL_WORLD, ThemeMotif.PX_BEDROCK -> pixels(t, colors)
                 ThemeMotif.POCKET_BEAT -> minimal(t, colors) // drawn by NowPlayingScene instead
                 ThemeMotif.CONSOLE_DISC, ThemeMotif.PX_ALLOY -> orbit(t, colors)

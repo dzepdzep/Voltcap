@@ -135,7 +135,10 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
         com.shelf.launcher.data.AnimatedArt.preferAnimatedScraping = appearance.animatedArt && appearance.preferAnimatedArt
         sounds.volume = appearance.soundVolume / 100f
         // The console-menu, 32-bit and dark-fantasy music bring their own navigation sounds (if switched on).
-        sounds.style = appearance.soundStyleFor(rootTheme)
+        sounds.style = appearance.soundStyleFor(rootTheme).let { st ->
+            // Update 181: the Pocket layouts bring their own small chirps (Layout options › Pocket sounds).
+            if (appearance.homeLayout.isPocket && com.shelf.launcher.data.Features.pocketSounds.value) com.shelf.launcher.data.SoundStyle.POCKET else st
+        }
         sounds.haptics = appearance.haptics
         sounds.hapticStrength = appearance.hapticStrength
         sounds.hapticView = view
@@ -408,6 +411,20 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
     val visibleGames = state.visibleGames
     val focusedGame = visibleGames.getOrNull(state.focusedIndex)
+    // Update 181: only the game you're on moves (Settings › Artwork › Only the game you're on moves; on by default).
+    val animFocusOnly = com.shelf.launcher.data.Features.animatedFocusOnly.state.value
+    SideEffect { com.shelf.launcher.data.AnimatedArt.focusOnly = animFocusOnly }
+    val focusArtKey = focusedGame?.stableKey
+    val focusArt = focusArtKey?.let { state.art[it] }
+    val focusOverride = focusArtKey?.let { state.artOverrides[it] }
+    LaunchedEffect(focusArtKey, focusArt, focusOverride) {
+        com.shelf.launcher.data.AnimatedArt.setFocus(
+            listOfNotNull(
+                focusArt?.gridUrl, focusArt?.wideGridUrl, focusArt?.heroUrl, focusArt?.logoUrl, focusArt?.animatedHeroUrl,
+                focusOverride?.cover, focusOverride?.wide, focusOverride?.hero, focusOverride?.logo
+            ).toSet()
+        )
+    }
     // Update 156: the next and previous categories got ready in the background (their covers in memory).
     CategoryWarmup(state)
     // A or a tap on the game you're on (update 113): the layout's own game window (GameWindow.kt; its Details button
@@ -1512,6 +1529,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 albumBlurPercent = state.appearance.secondMusicBlur
             )
         } else if (TwinScreens.ctx != null && state.appearance.homeLayout.isTwin && SecondScreenShown.value &&
+            !TwinScreens.dashboard && // Update 180: the dashboard asked for from the layout
             !(showDetails && state.appearance.secondDetails)) {
             // Update 158: Twin desk / Twin icons put their bottom half here (TwinScreens.kt); the game window still
             // comes here when it's set to.
@@ -1703,7 +1721,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             lastInputAt = now
         }
     ) {
-        SecondScreenContent()
+        Box(Modifier.fillMaxSize()) {
+            SecondScreenContent()
+            // Update 180: the dashboard opened from a two-screen layout: the way back to the layout's bottom part.
+            if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard) TwinBackPill(state.appearance.homeLayout.label)
+        }
     }
     // The companion shows music, so keep it fresh while a second screen is up.
     // The Presentation shares this activity's lifecycle, so this stops when Voltcap is stopped
@@ -1725,7 +1747,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Update 159: Discs only on → cartridge games print their cover on their CD (typedArtFor).
     val discLookNow = state.appearance.cardArtType == com.shelf.launcher.data.CardArtType.DISC
     androidx.compose.runtime.SideEffect { if (DiscLook.on != discLookNow) DiscLook.on = discLookNow }
-    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null }
+    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false }
+    // Update 181: the Pocket layouts play their sounds through the home screen's.
+    SideEffect { PocketSounds.play = { s -> sounds?.play(s) } }
     val tileBarLast = remember { intArrayOf(0) }
     LaunchedEffect(tileLayout) { if (!tileLayout) tileBarFocus = null }
     val tileShortcuts = listOf(
@@ -2100,7 +2124,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // Update 121: only when nothing of it can be seen. A popup that leaves it showing round its edges
         // (Settings, the details window, the app drawer…) lets it move on, at a calmer ~15 fps.
         val sceneCovered = screensaverOn || categoryScreenOpen || guideForGame != null ||
-            manualFor != null || artViewer != null || viewingShots != null
+            manualFor != null || artViewer != null || viewingShots != null ||
+            // Update 180: a two-screen layout filling the top screen: the theme's animated background rests under it.
+            (state.appearance.homeLayout.isTwin && TwinScreens.fullTop) ||
+            // Update 181: the Pocket layouts always draw their own (paper or the handheld's body).
+            state.appearance.homeLayout.isPocket
         // Update 154: Disc station keeps what's behind it still (Disc station › Calm background, on by default): the
         // animated background holds a frame, game ambience and backdrop touches rest, no video clip plays.
         val discCalm = state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.DISCS &&
@@ -2975,7 +3003,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         cloud = { StyleNav.reset(); sounds?.play(UiSound.OPEN); showSyncStatus = true },
                         // Update 158: Twin desk's round buttons (the R1 quick settings panel, the screensaver).
                         quickMenu = { StyleNav.reset(); sounds?.play(UiSound.OPEN); viewModel.refreshNotifications(); notificationsOnly = false; showNotifications = true },
-                        screensaver = { StyleNav.reset(); screensaverOn = true }
+                        screensaver = { StyleNav.reset(); screensaverOn = true },
+                        // Update 181: the Pocket layouts' statistics and achievements panels.
+                        stats = { StyleNav.reset(); sounds?.play(UiSound.OPEN); hubScreen = HubScreen.STATS },
+                        achievementsHub = { StyleNav.reset(); sounds?.play(UiSound.OPEN); hubScreen = HubScreen.ACHIEVEMENTS }
                     )
                 },
                 modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
@@ -4894,6 +4925,25 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 if (SecondPad.active) {
                     if (aDialogIsOpen) SecondPad.leave()
                     else if (SecondPad.key(event) { sounds?.play(it) }) return@onKeyEvent true
+                }
+                // Update 179: ▼ that changes nothing on this screen — the bottom of any layout, whatever the layout does
+                // with ▼ — moves the controller onto the second screen (some layouts never asked for what lies below).
+                if (!SecondPad.active && SecondScreenShown.value && !aDialogIsOpen && !HomeEditState.active &&
+                    event.key == Key.DirectionDown && event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount == 0
+                ) {
+                    fun padSnapshot(): List<Any?> {
+                        val st = viewModel.uiState.value
+                        return listOf(
+                            st.focusedIndex, st.platformFilter, st.specialFilter, StyleNav.zone, StyleNav.index,
+                            HomeReach.zone, HomeReach.index, tileBarFocus, miniFocus, quickJump, showDetails,
+                            categoryScreenOpen, GamePopup.game?.stableKey, PocketNav.signature()
+                        )
+                    }
+                    val before = padSnapshot()
+                    detailsScope.launch {
+                        kotlinx.coroutines.delay(160)
+                        if (!SecondPad.active && !HomeEditState.active && padSnapshot() == before && SecondPad.enter()) sounds?.play(UiSound.MOVE)
+                    }
                 }
                 // Select is a MODIFIER. Music buttons and hotkeys come first, on
                 // the home screen and details window. While Select is held,

@@ -87,6 +87,9 @@ internal fun PresetPreview(
             HomeLayout.CARDS -> p.binder()
             // Update 176.
             HomeLayout.CUSTOM -> p.custom()
+            // Update 181.
+            HomeLayout.POCKET_CLASSIC -> p.pocketClassic()
+            HomeLayout.POCKET_RIBBON -> p.pocketRibbon()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()
@@ -619,6 +622,34 @@ private class PreviewPainter(
 
     /** Arcade cabinets: a big cabinet with its lit marquee and the game on its screen, small cabinets along the bottom. */
     /** Update 176: Custom layout — the example's look: a name and buttons on the left, a curved row along the bottom. */
+    /** Update 181: Pocket classic — clock and calendar above, four flat panels and three tiny icons below. */
+    fun pocketClassic() {
+        rect(0.3f, 0.04f, 0.4f, 0.44f, Color.White, 2f)
+        rect(0.3f, 0.04f, 0.4f, 0.04f, accent, 0f)
+        dot(0.38f, 0.28f, 9f, Color(0xFFE6E8EB)); frame(0.335f, 0.155f, 0.09f, 0.25f, Color(0xFFA9AFB7), 9f, 1f)
+        for (r in 0..4) for (cc in 0..6) rect(0.46f + cc * 0.031f, 0.14f + r * 0.055f, 0.022f, 0.04f, if (r == 2 && cc == 3) accent else Color(0xFFDDE1E6), 0f)
+        rect(0.3f, 0.52f, 0.4f, 0.44f, Color.White, 2f)
+        rect(0.35f, 0.56f, 0.3f, 0.08f, Color(0xFFF4F5F7), 1f); frame(0.35f, 0.56f, 0.3f, 0.08f, accent, 1f, 1.4f)
+        rect(0.35f, 0.67f, 0.145f, 0.09f, Color(0xFFF4F5F7), 1f); rect(0.505f, 0.67f, 0.145f, 0.09f, Color(0xFFF4F5F7), 1f)
+        rect(0.35f, 0.79f, 0.3f, 0.08f, Color(0xFFF4F5F7), 1f)
+        for (x in listOf(0.31f, 0.495f, 0.68f)) rect(x, 0.91f, 0.012f, 0.025f, Color(0xFF6A7682), 0f)
+    }
+
+    /** Update 181: Pocket ribbon — a framed picture above, a speech bubble and a row of square icons below. */
+    fun pocketRibbon() {
+        rect(0.3f, 0.04f, 0.4f, 0.44f, Color.White, 2f)
+        card(0.33f, 0.09f, 0.34f, 0.35f, 2, r0 = 1f, plainCover = true)
+        rect(0.3f, 0.52f, 0.4f, 0.44f, Color(0xFFE9EBEE), 2f)
+        rect(0.33f, 0.55f, 0.34f, 0.09f, Color.White, 3f)
+        for (i in -2..2) {
+            val big = i == 0
+            val w0 = if (big) 0.06f else 0.05f
+            card(0.5f - w0 / 2f + i * 0.068f, if (big) 0.68f else 0.69f, w0, w0 * w / h, i + 3, on = big, r0 = 1f)
+        }
+        rect(0.48f, 0.82f, 0.04f, 0.025f, accent, 2f)
+        rect(0.32f, 0.9f, 0.36f, 0.03f, Color.White, 2f)
+    }
+
     fun custom() {
         rect(0.04f, 0.08f, 0.006f, 0.28f, accent, 0f)
         line(0.07f, 0.1f, 0.18f, accent, 0.03f)

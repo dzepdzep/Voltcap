@@ -269,7 +269,7 @@ private class MusicShader private constructor(val shader: RuntimeShader, private
     private var labelFor: Bitmap? = null
 
     /** The holo card prints the song in a clean type; the others (Tape deck…) handwrite it. */
-    val cleanLabel get() = motif == ThemeMotif.HOLO_COVER
+    val cleanLabel get() = motif == ThemeMotif.HOLO_COVER || motif == ThemeMotif.ALBUM_TIDE
 
     /**
      * Clocks that only run while the music plays (uPlayT and the levels' uBassT / uMidT / uHighT): a

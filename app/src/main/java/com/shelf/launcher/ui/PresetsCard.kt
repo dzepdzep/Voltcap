@@ -350,6 +350,9 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     // Update 158: Card binder.
     com.shelf.launcher.data.HomeLayout.CARDS -> "Card binder: your games as collectible cards — the cover in a framed window, the console as its type, time played, achievements and rarity stars at the bottom. The one you're on stands big in the middle, the others fan out like a hand; Y turns it over."
     // Update 176.
+    // Update 181.
+    com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC -> "Pocket classic: a 2004-style two-screen pocket menu — a clock and this month's calendar on top; the game you're on, Achievements, your category and All categories as flat panels below, three tiny icons for Settings, Statistics and Sleep."
+    com.shelf.launcher.data.HomeLayout.POCKET_RIBBON -> "Pocket ribbon: a 2008-style two-screen pocket menu — a framed picture on top; a row of square icons below with the one you're on in the middle, its name in a speech bubble and a START tab, your categories first and their games inside."
     com.shelf.launcher.data.HomeLayout.CUSTOM -> "Custom layout: a home screen made by anyone — import a .vclayout file, or make your own (Layout options › How to make one). Starts with the Neon drift example."
     com.shelf.launcher.data.HomeLayout.SHELF -> "Game shelf: your games as spines on a bookcase, the one you're on pulled out to show its front. ◀ ▶ along, ▲ ▼ to the shelf above / below."
 }

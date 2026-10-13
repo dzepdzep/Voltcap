@@ -63,6 +63,11 @@ internal class OverlayShell(
         set(v) { if (field != v) { field = v; arrange() } }
     /** The overlay's own size, times the Overlay size setting (the service keeps it). */
     var ownSize = 1f
+    /**
+     * Update 179: a corner drag starts — which corner ([right], [bottom]). The service keeps the opposite corner where it
+     * is, so the overlay and what's in it follow the finger (it used to grow from its top left whichever corner you took).
+     */
+    var onResizeStart: ((right: Boolean, bottom: Boolean) -> Unit)? = null
     /** The scale everything is drawn at (Overlay size × own size). */
     var scale = 1f
         set(v) {
@@ -203,6 +208,7 @@ internal class OverlayShell(
     }
 
     private fun startResize() {
+        onResizeStart?.invoke(pressRight, pressBottom)
         resizing = true
         startOwn = ownSize; startW = width.coerceAtLeast(1); startH = height.coerceAtLeast(1)
         performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)

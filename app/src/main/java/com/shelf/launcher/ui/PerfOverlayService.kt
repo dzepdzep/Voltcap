@@ -539,14 +539,39 @@ class PerfOverlayService : Service() {
             onResize = { own, done ->
                 shells[content]?.ownSize = own
                 applyCorner(content, cornerOf(which))
-                if (done) OverlayPositions.setSize(which.key, own)
+                if (done) {
+                    OverlayPositions.setSize(which.key, own)
+                    // Update 179: where it ended up (the corner held still) becomes its place.
+                    resizeAnchors.remove(content)?.let { saveFreePlace(content, which) }
+                }
             }
         )
+        // Update 179: a corner drag keeps the opposite corner still (only for an overlay moved to a spot of its own; one in a
+        // screen corner already grows out of that corner).
+        sh.onResizeStart = { right, bottom ->
+            val lp = sh.layoutParams as? WindowManager.LayoutParams
+            if (lp != null && OverlayPositions.get(which.key) != null && sh.width > 0)
+                resizeAnchors[content] = ResizeAnchor(right, bottom, lp.x, lp.y, sh.width, sh.height)
+        }
         sh.ownSize = OverlayPositions.size(which.key)
         sh.arrowsOn = com.shelf.launcher.data.Features.overlayArrows.value
         sh.setFolded(which.key in com.shelf.launcher.data.Features.overlayFolded.value, animate = false, tell = false)
         shells[content] = sh
         return sh
+    }
+
+    /** Update 179: the overlay's window when a corner drag began, and which corner. */
+    private class ResizeAnchor(val right: Boolean, val bottom: Boolean, val x: Int, val y: Int, val w: Int, val h: Int)
+    private val resizeAnchors = HashMap<View, ResizeAnchor>()
+
+    /** Update 179: saves where [v]'s window is now as its free place (fractions of the room left on screen). */
+    private fun saveFreePlace(v: View, which: Which) {
+        val w = shells[v] ?: v
+        val lp = w.layoutParams as? WindowManager.LayoutParams ?: return
+        val (sw, sh2) = screenSize(w)
+        val fx = lp.x.toFloat() / (sw - w.width).coerceAtLeast(1)
+        val fy = lp.y.toFloat() / (sh2 - w.height).coerceAtLeast(1)
+        OverlayPositions.set(which.key, fx, fy)
     }
 
     private fun applyCorner(v: View, corner: PerfCorner) {
@@ -595,8 +620,12 @@ class PerfOverlayService : Service() {
                 View.MeasureSpec.makeMeasureSpec(sw, View.MeasureSpec.AT_MOST),
                 View.MeasureSpec.makeMeasureSpec(sh2, View.MeasureSpec.AT_MOST)
             )
-            val x = (free.first * (sw - w.measuredWidth).coerceAtLeast(0)).toInt()
-            val y = (free.second * (sh2 - w.measuredHeight).coerceAtLeast(0)).toInt()
+            // Update 179: while a corner is dragged, the opposite corner stays where it was.
+            val anchor = resizeAnchors[v]
+            val x = if (anchor != null) (if (anchor.right) anchor.x else anchor.x + anchor.w - w.measuredWidth).coerceIn(0, (sw - w.measuredWidth).coerceAtLeast(0))
+                else (free.first * (sw - w.measuredWidth).coerceAtLeast(0)).toInt()
+            val y = if (anchor != null) (if (anchor.bottom) anchor.y else anchor.y + anchor.h - w.measuredHeight).coerceIn(0, (sh2 - w.measuredHeight).coerceAtLeast(0))
+                else (free.second * (sh2 - w.measuredHeight).coerceAtLeast(0)).toInt()
             if (lp.x != x || lp.y != y) { lp.x = x; lp.y = y; changed = true }
         }
         if (changed) runCatching { windowManager?.updateViewLayout(w, lp) }

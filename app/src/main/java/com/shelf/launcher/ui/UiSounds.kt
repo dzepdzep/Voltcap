@@ -297,6 +297,7 @@ class UiSounds(context: Context) {
             sound == UiSound.INTRO -> classic(sound)
             set == com.shelf.launcher.data.SoundStyle.ELECTRIC -> electric(sound)
             set == com.shelf.launcher.data.SoundStyle.CLASSIC -> classic(sound)
+            set == com.shelf.launcher.data.SoundStyle.POCKET -> pocket(sound)
             // Console, and the produced sets' stand-in if their file can't be opened.
             else -> console(sound)
         }
@@ -358,6 +359,35 @@ class UiSounds(context: Context) {
             UiSound.INTRO, UiSound.SYNC_DONE, UiSound.SYNC_ALERT -> DoubleArray(1)
         }
     )
+
+    /**
+     * Update 181: the Pocket set — tiny, soft square-wave chirps (a pocket handheld's menu, made from scratch): a short
+     * high tick to move, two rising notes to pick, two falling to go back, a quick arpeggio to open, a bright run to start.
+     */
+    private fun pocket(sound: UiSound): ShortArray = normalize(
+        when (sound) {
+            UiSound.MOVE -> square(1568.0, 0.025, level = 0.5)
+            UiSound.SELECT -> layer(0.12, 0.0 to square(1046.0, 0.05, level = 0.6), 0.05 to square(1568.0, 0.06, level = 0.6))
+            UiSound.BACK -> layer(0.12, 0.0 to square(1318.0, 0.05, level = 0.55), 0.05 to square(880.0, 0.06, level = 0.55))
+            UiSound.OPEN -> layer(0.16, 0.0 to square(784.0, 0.04, level = 0.5), 0.04 to square(1046.0, 0.04, level = 0.5), 0.08 to square(1318.0, 0.07, level = 0.5))
+            UiSound.LAUNCH -> layer(0.42, 0.0 to square(523.0, 0.06, level = 0.5), 0.06 to square(784.0, 0.06, level = 0.5),
+                0.12 to square(1046.0, 0.06, level = 0.5), 0.18 to square(1568.0, 0.2, level = 0.45))
+            UiSound.INTRO, UiSound.SYNC_DONE, UiSound.SYNC_ALERT -> DoubleArray(1)
+        }
+    )
+
+    /** A soft square wave (rounded edges by a gentle low-pass), with a short decay. */
+    private fun square(freq: Double, seconds: Double, level: Double = 1.0): DoubleArray {
+        val n = (RATE * seconds).toInt()
+        var y = 0.0
+        return DoubleArray(n) { i ->
+            val t = i / RATE.toDouble()
+            val raw = if (sin(2 * PI * freq * t) >= 0) 1.0 else -1.0
+            y += (raw - y) * 0.35
+            val env = minOf(1.0, t / 0.002) * exp(-t / (seconds * 0.6))
+            y * env * level * 0.6
+        }
+    }
 
     /** A rounded sine pluck (a touch of 2nd harmonic), soft attack, optional glide. */
     private fun pluck(

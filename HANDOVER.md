@@ -256,6 +256,58 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 181
+- **Pocket layouts:** `HomeLayout.POCKET_CLASSIC` / `POCKET_RIBBON` (`isTwin`, new `isPocket`).
+  - `PocketShared.kt`: `PocketScope` (256 × 192 dots, `u` dp per dot, `cx` = centring offset; `at` is
+    design-relative, `atScreen` is screen-relative), `PocketScreen`, pixel icons as string grids (`PocketIcons`),
+    `pocketBrackets` / `pocketOutline` / `pocketPinstripes`, `PocketAccent`, `PocketBackdrop`.
+  - `PocketClassic.kt`: `PocketNav` (page / spot / cursor / ribbon state; `signature()` goes into the ▼ snapshot),
+    `PocketClassicTop` / `PocketClassicBottom`, `pocketClassicKey`. Panel content uses `at(x - cx, …)`.
+  - `PocketRibbon.kt`: `PocketRibbonTop` (`PocketPhoto` file), `PocketRibbonBottom`, `ribbonMove` / `ribbonOpen` /
+    `ribbonStart`, `pocketRibbonKey`. Gesture lambdas read `rememberUpdatedState(c)` (`live`), never a stale ctx.
+  - `PocketSettings.kt`: the Layout options of both.
+  - TwinHost takes `topH` / `bottomH` / `minW` / `stacked`. `twinOnSecond` is false for Pocket layouts when
+    `pocketArrange != AUTO`. `styleHomeKey` gives them the keys first.
+  - Sounds: `SoundStyle.POCKET` (synth `pocket()` / `square()`), used while `isPocket && pocketSounds`.
+  - Not tested on a device yet: check the geometry on the Retroid (one screen) and the Thor (two screens).
+- **Animated art:**
+  - `AnimatedArt.SourceTag` (interceptor, after `SharedArtInterceptor`, before `SavedArtInterceptor`) writes
+    `PARAM_SRC`.
+  - The decoder wraps every AnimatedImageDrawable in `AnimatedArt.Gate` (DrawableWrapper + Animatable). It plays only
+    when started, not moving, not sleeping, and (`focusOnly`) its src is in `setFocus(urls)`.
+  - LauncherScreen feeds the focused game's art and override URLs. `Features.animatedFocusOnly` has a new key,
+    `animated_focus_only2`, default true.
+
+## State after update 180
+- **TwinScreens:**
+  - `fullTop` is set by TwinHost (`twinOnSecond && Features.twinFullTop`, default true). With it, StyleBackLayer draws
+    `TwinDeskBackdrop` / `TwinIconsBackdrop` full screen, `styleOwnsBackground` is true, LauncherScreen's
+    `sceneCovered` is true, and the tops skip their own rounded sheet.
+  - `dashboard`: SecondScreenContent skips the twin bottom while it's true. `TwinBackPill` is on the second screen
+    (padTarget "twin-back"). It's reset on layout change.
+- **TwinDesk top:** `twinDeskClock` / `twinCalendar` / `twinDeskArt` / `twinDeskGame` (count ≤ 1 → centred, bigger).
+  `DeskPicture` (`c.wide` in a white photo frame). The bar has a 4th round "Second screen" only while `twinOnSecond`.
+- **TwinIcons:** `twinTools` adds a "Second screen" HomeShortcut while `twinOnSecond`.
+- Next (asked 13 Oct): two new layouts in the style of the 2004 two-screen handheld menu (clock + calendar top;
+  card / two buttons / pak / toolbar bottom) and of the 2008 one (photo top; ribbon of square icons, speech-bubble
+  title, START tab, scroll bar). Original names and art only.
+
+## State after update 179
+- **HomeEdit:**
+  - `editablePart` (layout parts, `liveShift` dp): the size handle compensates `liveShift` so the top right stays put;
+    the stretch handles compensate so the left / top stays put (centre-origin `graphicsLayer` scale kept, so saved
+    layouts don't jump).
+  - `MovableWidget`: `keepCorner(rx, ry, keepRight)` rewrites the `live` fraction via `SafeZone.place` /
+    `fractionOf`. `StretchHandle` has a new `onStretch` callback.
+- **PerfOverlayService / OverlayShell:** `onResizeStart(right, bottom)` → `ResizeAnchor` (window rect at the start).
+  `applyCorner` places the window with the opposite corner fixed while anchored. On release, `saveFreePlace` stores the
+  fraction. Only for free-placed overlays.
+- **LauncherScreen:** at the top of `onKeyEvent`, a fresh ▼ snapshots focus / StyleNav / HomeReach / tileBarFocus /
+  miniFocus / quickJump / showDetails / category / GamePopup. If nothing changed 160 ms later, `SecondPad.enter()`.
+- **Features:** `twinGap` (0–32, default 8) and `twinDeskGap` (0–24, default 7). `TWIN_GAPS` / `gapLabel` live in
+  TwinIcons.kt. R1 tile `twingap`.
+- **Layout Maker v3:** side handles, sizes capped at the area, and text size follows the box height (Words follow the box).
+
 ## State after update 178
 - **CustomLayouts:**
   - `PRESETS` (id → layout.json text, ids `preset-…`) are loaded and cached like the example.

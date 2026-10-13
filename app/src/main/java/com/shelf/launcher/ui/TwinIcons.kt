@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.material.icons.filled.Dashboard
 import com.shelf.launcher.data.statusOn
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -91,7 +92,9 @@ internal object TwinNav {
 private val TwinToolOrder = listOf("Settings", "Search", "Achievements", "Notifications", "Music", "Categories")
 
 private fun twinTools(c: StyleCtx): List<HomeShortcut> =
-    TwinToolOrder.mapNotNull { l -> c.shortcuts.firstOrNull { it.label == l } }.ifEmpty { c.shortcuts.take(6) }
+    TwinToolOrder.mapNotNull { l -> c.shortcuts.firstOrNull { it.label == l } }.ifEmpty { c.shortcuts.take(6) } +
+        // Update 180: the second screen's own dashboard (its pages, dock, Games page); ↩ there comes back.
+        if (twinOnSecond(c.state)) listOf(HomeShortcut("Second screen", androidx.compose.material.icons.Icons.Filled.Dashboard, Color(0xFF7C5CFF)) { TwinScreens.dashboard = true }) else emptyList()
 
 @Composable
 internal fun StyleTwinIcons(c: StyleCtx, modifier: Modifier = Modifier) {
@@ -152,11 +155,18 @@ internal fun twinIconsKey(ctx: StyleKeyCtx): Boolean {
     }
 }
 
+/** Update 179: the gaps offered for the two-screen layouts (dp), and how they read. */
+internal val TWIN_GAPS = arrayOf(0, 2, 4, 8, 12, 16, 24)
+internal fun gapLabel(dp: Int): String = if (dp == 0) "None" else "$dp dp"
+
 @Composable
 internal fun TwinIconsSettings() {
     MutedNote("Made for handhelds with two screens. The top screen shows the game you're on as a big icon in a frame, its name and console on a card under it. The bottom screen is a grid of square game icons, round tool buttons above it and an Open bar under it. ◀ ▶ ▲ ▼ move round the icons, ▲ from the top row reaches the tool buttons, ▼ from the bottom row the Open bar. With one screen, both halves show together.")
     Spacer(Modifier.height(10.dp))
     StyleChoice("Icons per row", arrayOf(4, 5, 6, 7), Features.twinCols.state.value, { "$it" }) { Features.twinCols.value = it }
+    // Update 179.
+    StyleChoice("Gap between icons", TWIN_GAPS, Features.twinGap.state.value, { gapLabel(it) }) { Features.twinGap.value = it }
+    TwinFullTopSwitch()
     MutedNote("The tool buttons are your round shortcuts (Settings, Search, Achievements, Notifications, Music, Categories: the ones you keep in Settings › Home › Round shortcuts). The bottom half goes to the second screen when Settings › Screens › Use the second screen is on.")
 }
 
@@ -170,8 +180,10 @@ private fun TwinIconsTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     // (one screen) or no status bar: its own strip.
     // (Update 158: only without the status bar — stacked on one screen it drew the clock twice.)
     val strip = !c.state.appearance.statusOn
+    // (Update 180: filling the top screen, its background is drawn behind everything — TwinIconsBackdrop.)
+    val full = !framed && TwinScreens.fullTop
     BoxWithConstraints(
-        modifier.clip(shape).background(back).iconsPattern()
+        if (full) modifier else modifier.clip(shape).background(back).iconsPattern()
             .then(if (framed) Modifier.border(1.dp, Color.White.copy(alpha = 0.12f), shape) else Modifier)
     ) {
         val compact = maxHeight < 230.dp
@@ -196,6 +208,12 @@ private fun TwinIconsTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             IconsCard(c, compact, Modifier.fillMaxWidth(if (framed) 1f else 0.72f).height(cardH).editablePart(LayoutParts.id(HomeLayout.TWIN_ICONS, "card"), "Name card"))
         }
     }
+}
+
+/** Update 180: Twin icons' dark patterned background across the whole top screen (behind the status bar too). */
+@Composable
+internal fun TwinIconsBackdrop(modifier: Modifier) {
+    Box(modifier.background(themeDark(IconsBack)).iconsPattern())
 }
 
 /** Small diamonds over the dark background, and a soft shade (drawn once per size). */
@@ -388,7 +406,8 @@ private fun TrayGrid(c: StyleCtx, keys: List<String>, tap: LoopTap, loop: Boolea
     val n = c.games.size
     val density = LocalDensity.current
     BoxWithConstraints(modifier.clipToBounds()) {
-        val gap = 8.dp
+        // (Update 179: Layout options › Gap between icons, and the R1 Gaps tile.)
+        val gap = Features.twinGap.state.value.dp
         // Room round the grid for the ring of the one you're on.
         val inset = 5.dp
         val cellW = (maxWidth - inset * 2 - gap * (cols - 1)) / cols

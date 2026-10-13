@@ -147,7 +147,11 @@ enum class HomeLayout(val label: String) {
      *  bottom; the one you're on big in the middle, the others fanned out like a hand; Y turns it over (StyleCardBinder.kt). */
     CARDS("Card binder"),
     /** Update 176: a layout made by anyone — imported from a .vclayout file (CustomLayouts.kt, StyleCustom.kt). */
-    CUSTOM("Custom layout");
+    CUSTOM("Custom layout"),
+    /** Update 181: Voltcap's take on the 2004 two-screen pocket menu: clock and calendar on top, four panels below (PocketClassic.kt). */
+    POCKET_CLASSIC("Pocket classic"),
+    /** Update 181: Voltcap's take on the 2008 two-screen pocket menu: a picture on top, a ribbon of icons below (PocketRibbon.kt). */
+    POCKET_RIBBON("Pocket ribbon");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
@@ -156,7 +160,8 @@ enum class HomeLayout(val label: String) {
         this == TWIN_DESK || this == TWIN_ICONS || // Update 158: the two-screen layouts
         this == CRATE || // Update 158: Record crate
         this == CARDS || // Update 158: Card binder
-        this == CUSTOM // Update 176: Custom layout
+        this == CUSTOM || // Update 176: Custom layout
+        this == POCKET_CLASSIC || this == POCKET_RIBBON // Update 181
 
     companion object {
         /**
@@ -409,7 +414,9 @@ enum class SoundStyle(val label: String) {
     /** Late-90s console blips, 'sampled' and crunchy, a short metallic room (res/raw/ui_retro32_*). */
     RETRO32("32-bit"),
     /** Harp, crystal and a distant bell (res/raw/ui_dark_*). */
-    DARK("Dark fantasy")
+    DARK("Dark fantasy"),
+    /** Update 181: tiny square-wave chirps, like a pocket handheld's menu (made from scratch; the Pocket layouts use them). */
+    POCKET("Pocket chirps")
 }
 
 /** Where a game's name shows on its card. */

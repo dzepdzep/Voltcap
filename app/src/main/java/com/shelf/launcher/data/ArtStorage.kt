@@ -119,6 +119,8 @@ object ArtStorage {
             .components {
                 // Update 157: card-sized pictures share one decode with their warm-up (StyleArtRequests.kt).
                 add(com.shelf.launcher.ui.SharedArtInterceptor(com.shelf.launcher.ui.styleArtPx(context)))
+                // Update 181: the picture's address goes along, so only the game you're on moves (AnimatedArt.Gate).
+                add(AnimatedArt.SourceTag())
                 add(AnimatedArt.Factory())
                 // "voltcrop:" models: the spine / front cut out of a game's full box scan (BoxTexture.kt).
                 add(com.shelf.launcher.ui.BoxCropInterceptor())

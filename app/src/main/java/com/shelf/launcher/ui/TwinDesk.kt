@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -98,7 +99,9 @@ internal fun StyleTwinDesk(c: StyleCtx, modifier: Modifier = Modifier) {
         StyleNav.side = emptyList()
         StyleNav.top = emptyList()
         // The round buttons along the bottom of the lower screen.
-        StyleNav.bar = listOf(c.actions.quickMenu, c.actions.settings, c.actions.screensaver)
+        // (Update 180: and the second screen's dashboard, while the bottom part is on the second screen.)
+        StyleNav.bar = listOf(c.actions.quickMenu, c.actions.settings, c.actions.screensaver) +
+            if (twinOnSecond(c.state)) listOf({ TwinScreens.dashboard = true }) else emptyList()
     }
     TwinHost(
         c, modifier,
@@ -148,11 +151,23 @@ internal fun twinDeskKey(ctx: StyleKeyCtx): Boolean {
 internal fun TwinDeskSettings() {
     MutedNote("Made for handhelds with two screens. The top screen is a desk: a clock and this month's calendar on squared paper, with the game you're on under them. The bottom screen lists your games as wide panels, the next two under them, and round buttons for quick settings, Settings and the screensaver. ▲ ▼ move through the games, ▶ goes to the round buttons. With one screen, both halves show together.")
     Spacer(Modifier.height(10.dp))
+    // Update 180: what the top screen shows (one thing alone sits in the middle, bigger).
+    SectionLabel("Top screen shows")
+    ChipFlow {
+        listOf(
+            "Clock" to Features.twinDeskClock, "Calendar" to Features.twinCalendar,
+            "Game's picture" to Features.twinDeskArt, "Game's name" to Features.twinDeskGame
+        ).forEach { (label, pref) ->
+            val on = pref.state.value
+            Chip((if (on) "✓ " else "") + label, accent = on) { pref.value = !on }
+        }
+    }
+    MutedNote("Pick any of them. Only one: it sits in the middle of the top screen, as big as fits. None: the clock.")
+    Spacer(Modifier.height(8.dp))
     StyleChoice("Clock", Features.TwinClock.values(), Features.twinClock.state.value, { it.label }) { Features.twinClock.value = it }
-    SwitchRow(
-        Icons.Filled.CalendarMonth, "Calendar", "This month beside the clock, weekends tinted and today ringed. Off: the clock gets the room.",
-        Features.twinCalendar.state.value, { Features.twinCalendar.value = it }
-    )
+    // Update 179.
+    StyleChoice("Gap between panels", TWIN_GAPS.filter { it <= 24 }.toTypedArray(), Features.twinDeskGap.state.value, { gapLabel(it) }) { Features.twinDeskGap.value = it }
+    TwinFullTopSwitch()
     Spacer(Modifier.height(8.dp))
     MutedNote("The bottom half goes to the second screen when Settings › Screens › Use the second screen is on.")
 }
@@ -163,40 +178,94 @@ internal fun TwinDeskSettings() {
 private fun TwinDeskTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     val accent = ShelfTheme.accent
     val shape = RoundedCornerShape(if (framed) 14.dp else 18.dp)
+    // Update 180: on two screens the desk can fill the whole top screen (its paper drawn behind everything, the theme's
+    // background off — TwinScreens.fullTop): then no rounded sheet of its own.
+    val full = !framed && TwinScreens.fullTop
     // The second hand moves once a second, only while the home screen isn't idle.
     val ticking = !HomeIdle.idle
     val analogue = Features.twinClock.state.value == Features.TwinClock.ANALOGUE
+    // Update 180: what the top shows is your choice (Layout options › Top screen shows): clock, calendar, the game's
+    // picture, the game's name. One thing alone sits in the middle, bigger.
+    val clockOn = Features.twinDeskClock.state.value
     val calendarOn = Features.twinCalendar.state.value
+    val artOn = Features.twinDeskArt.state.value
+    val gameOn = Features.twinDeskGame.state.value
+    val count = listOf(clockOn, calendarOn, artOn, gameOn).count { it }
     val time = rememberTwinTime(seconds = ticking)
     val tz = remember { java.util.TimeZone.getDefault() }
-    BoxWithConstraints(modifier.clip(shape).deskPaper().border(1.dp, DeskEdge, shape)) {
+    BoxWithConstraints(if (full) modifier else modifier.clip(shape).deskPaper().border(1.dp, DeskEdge, shape)) {
         val compact = maxHeight < 230.dp
         val pad = if (compact) 10.dp else 16.dp
         val stripH = if (compact) 42.dp else 56.dp
-        val rowH = (maxHeight - pad * 2 - stripH - pad).coerceAtLeast(40.dp)
-        val clockSide = if (calendarOn) minOf(rowH, (maxWidth - pad * 3) * 0.42f) else rowH
-        Column(Modifier.fillMaxSize().padding(pad)) {
-            Row(
-                Modifier.fillMaxWidth().height(rowH),
-                horizontalArrangement = Arrangement.spacedBy(pad, if (calendarOn) Alignment.Start else Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    Modifier.size(clockSide).editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "clock"), "Clock"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (analogue) DeskAnalogue(time, tz, ticking, accent, Modifier.fillMaxSize())
-                    else DeskDigital(time, tz, ticking, accent, clockSide)
+        val mw = maxWidth
+        val mh = maxHeight
+        if (count <= 1) {
+            // One thing (or none: the clock): in the middle, as big as fits.
+            val side = minOf(mw, mh) * 0.78f
+            Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) {
+                when {
+                    calendarOn -> DeskCalendar(time, tz, accent,
+                        Modifier.width(minOf(mw * 0.8f, mh * 1.3f)).height(mh * 0.82f).editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "calendar"), "Calendar"))
+                    artOn -> DeskPicture(c, Modifier.width(minOf(mw * 0.8f, mh * 1.5f)).height(minOf(mh * 0.8f, mw * 0.45f))
+                        .editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "picture"), "Game's picture"))
+                    gameOn -> DeskNameStrip(c, compact, Modifier.fillMaxWidth(0.82f).height(stripH * 1.4f).editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "game"), "Game name"))
+                    else -> Box(Modifier.size(side).editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "clock"), "Clock"), contentAlignment = Alignment.Center) {
+                        if (analogue) DeskAnalogue(time, tz, ticking, accent, Modifier.fillMaxSize())
+                        else DeskDigital(time, tz, ticking, accent, side)
+                    }
                 }
-                if (calendarOn) DeskCalendar(
-                    time, tz, accent,
-                    Modifier.weight(1f).fillMaxHeight().editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "calendar"), "Calendar")
-                )
             }
-            Spacer(Modifier.height(pad))
-            DeskNameStrip(c, compact, Modifier.fillMaxWidth().height(stripH).editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "game"), "Game name"))
+        } else {
+            val rowOn = clockOn || calendarOn || artOn
+            val rowH = if (gameOn) (maxHeight - pad * 2 - stripH - pad).coerceAtLeast(40.dp) else (maxHeight - pad * 2).coerceAtLeast(40.dp)
+            val wide = calendarOn || artOn
+            val clockSide = if (wide) minOf(rowH, (maxWidth - pad * 3) * 0.42f) else rowH
+            Column(Modifier.fillMaxSize().padding(pad), verticalArrangement = Arrangement.Center) {
+                if (rowOn) Row(
+                    Modifier.fillMaxWidth().height(rowH),
+                    horizontalArrangement = Arrangement.spacedBy(pad, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (clockOn) Box(
+                        Modifier.size(clockSide).editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "clock"), "Clock"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (analogue) DeskAnalogue(time, tz, ticking, accent, Modifier.fillMaxSize())
+                        else DeskDigital(time, tz, ticking, accent, clockSide)
+                    }
+                    if (calendarOn) DeskCalendar(
+                        time, tz, accent,
+                        Modifier.weight(1f).fillMaxHeight().editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "calendar"), "Calendar")
+                    )
+                    if (artOn) DeskPicture(c, Modifier.weight(1f).fillMaxHeight().editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "picture"), "Game's picture"))
+                }
+                if (rowOn && gameOn) Spacer(Modifier.height(pad))
+                if (gameOn) DeskNameStrip(c, compact, Modifier.fillMaxWidth().height(stripH).editablePart(LayoutParts.id(HomeLayout.TWIN_DESK, "game"), "Game name"))
+            }
         }
     }
+}
+
+/** Update 180: the game's picture on the desk, like a photo pinned to it (white border, a soft shadow). */
+@Composable
+private fun DeskPicture(c: StyleCtx, modifier: Modifier) {
+    val g = c.game
+    val open by rememberUpdatedState(c.actions.open)
+    val shape = RoundedCornerShape(8.dp)
+    Box(
+        modifier.clip(shape).background(Color.White).border(1.dp, DeskEdge, shape).padding(6.dp)
+            .tapOnly { if (c.game != null) open() }
+    ) {
+        val url = g?.let { c.wide(it) }
+        if (g != null && url != null) HeldImage(url, Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)), imageModifier = Modifier.pixelArtwork())
+        else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(g?.let { placeholderBrush(it.hue) } ?: androidx.compose.ui.graphics.SolidColor(DeskGrid)))
+    }
+}
+
+/** Update 180: the desk's paper across the whole top screen (behind the status bar too), when the top fills it. */
+@Composable
+internal fun TwinDeskBackdrop(modifier: Modifier) {
+    Box(modifier.deskPaper())
 }
 
 /** Squared paper (drawn once per size). */
@@ -440,7 +509,8 @@ internal fun TwinDeskBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     ) {
         val compact = maxHeight < 260.dp
         val pad = if (compact) 6.dp else 10.dp
-        val gap = if (compact) 5.dp else 7.dp
+        // (Update 179: Layout options › Gap between panels, and the R1 Gaps tile; smaller on a small screen.)
+        val gap = (Features.twinDeskGap.state.value * if (compact) 0.7f else 1f).dp
         val smallH = if (compact) 34.dp else 46.dp
         val barH = if (compact) 34.dp else 42.dp
         // The list keeps 4 dp round its panels for the corner brackets.
@@ -621,7 +691,7 @@ private fun DeskSmall(c: StyleCtx, i: Int, compact: Boolean, modifier: Modifier,
 private fun DeskBar(c: StyleCtx, h: Dp, modifier: Modifier) {
     val shape = RoundedCornerShape(50)
     val inBar = StyleNav.zone == StyleNav.Zone.BAR
-    val names = remember { listOf("Quick settings", "Settings", "Screensaver") }
+    val names = remember { listOf("Quick settings", "Settings", "Screensaver", "Second screen") }
     val round = h - 8.dp
     Row(
         modifier.clip(shape).background(Color.White.copy(alpha = 0.72f)).border(1.dp, DeskEdge, shape).padding(horizontal = 4.dp),
@@ -636,6 +706,11 @@ private fun DeskBar(c: StyleCtx, h: Dp, modifier: Modifier) {
             maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
         )
         DeskRound(Icons.Filled.Bedtime, names[2], StyleNav.on(StyleNav.Zone.BAR, 2), round) { c.actions.screensaver() }
+        // Update 180: the second screen's own dashboard (its pages, dock, Games page); ↩ there comes back.
+        if (twinOnSecond(c.state)) {
+            Spacer(Modifier.width(6.dp))
+            DeskRound(Icons.Filled.Dashboard, "Second screen", StyleNav.on(StyleNav.Zone.BAR, 3), round) { TwinScreens.dashboard = true }
+        }
     }
 }
 

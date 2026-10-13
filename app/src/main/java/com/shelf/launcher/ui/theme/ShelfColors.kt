@@ -265,6 +265,8 @@ enum class ThemeMotif(
     SHOWCASE_CRT(showcase = true),
     /** Square album cover with its disc slid halfway out, spinning slowly. */
     DISC_SLEEVE(true, 0.3f),
+    /** Paper album card with an audio-driven wave edge and soft cover backdrop. */
+    ALBUM_TIDE(true, 0.32f),
     STILL_DUSK(still = true),
     STILL_HORIZON(still = true),
     STILL_GLOW(still = true),
@@ -541,6 +543,7 @@ enum class AppTheme(
     MAGAZINE("Magazine", ThemeMotif.MAGAZINE, ThemeGroup.ALBUM_ART),
     COVER_FOCUS("Pan & zoom", ThemeMotif.COVER_FOCUS, ThemeGroup.ALBUM_ART),
     DISC_SLEEVE("Disc & sleeve", ThemeMotif.DISC_SLEEVE, ThemeGroup.ALBUM_ART),
+    ALBUM_TIDE("Album tide", ThemeMotif.ALBUM_TIDE, ThemeGroup.ALBUM_ART),
     // Still & calm: a quiet picture (drawn once) or a slow ambient scene.
     STILL_DUSK("Still dusk", ThemeMotif.STILL_DUSK, ThemeGroup.CALM),
     STILL_HORIZON("Still horizon", ThemeMotif.STILL_HORIZON, ThemeGroup.CALM),
@@ -732,7 +735,7 @@ enum class AppTheme(
             SPIRIT_FOREST -> TIDE
             AURA_CLASH, BLAZE_BEAT -> EMBER
             COVER_WALL, COVER_TUNNEL, POP_ART, COVER_RIPPLE -> SYNTHWAVE
-            DISC_SLEEVE -> SYNTHWAVE
+            DISC_SLEEVE, ALBUM_TIDE -> SYNTHWAVE
             STILL_DUSK, CALM_HALO -> COBALT
             STILL_HORIZON, STILL_GLOW, CALM_DRIFT -> TIDE
             CALM_RIBBON -> COBALT
@@ -819,6 +822,7 @@ enum class AppTheme(
             UMBRA_PX -> pal(0xFF070608, 0xFF141216, 0xFF221F25, 0xFFE24B5F, 0xFF9C8E78, 0xFFF4F0F2, 0xFFB0AAAE)
             ALLOY_PX -> pal(0xFF0B0D10, 0xFF191D22, 0xFF282E36, 0xFFA9BCD3, 0xFFF4A23A, 0xFFF2F5F9, 0xFFB4BAC3)
             GLIMMER_PX -> pal(0xFF120B16, 0xFF24172B, 0xFF372340, 0xFFF7A1D8, 0xFFB8F0E6, 0xFFFFF2FB, 0xFFCBB7C6)
+            ALBUM_TIDE -> pal(0xFF100D1B, 0xFF21192F, 0xFF332741, 0xFFC58EED, 0xFF72D6DB, 0xFFFAF8FE, 0xFFC4B8D0)
             DISC_SLEEVE -> pal(0xFF0B0A10, 0xFF1A1823, 0xFF292636, 0xFFBA8FFC, 0xFF64D2FA, 0xFFF6F3FF, 0xFFB7B3C5)
             STILL_DUSK -> pal(0xFF0C0D1A, 0xFF1B1D30, 0xFF2A2D47, 0xFFFBA17E, 0xFF8F7FFB, 0xFFF7F4FF, 0xFFB9B8CB)
             STILL_HORIZON -> pal(0xFF0F151C, 0xFF1D2730, 0xFF2C3947, 0xFF81C6B7, 0xFFB9D3EE, 0xFFF2F8FA, 0xFFB0BCC4)

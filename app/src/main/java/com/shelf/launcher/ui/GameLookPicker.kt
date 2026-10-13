@@ -160,6 +160,9 @@ internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? 
     com.shelf.launcher.data.HomeLayout.CRATE -> "record sleeves"
     com.shelf.launcher.data.HomeLayout.CARDS -> "collectible cards"
     com.shelf.launcher.data.HomeLayout.ARCADE -> "arcade cabinets"
+    // Update 181.
+    com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC -> "small square icons in flat panels"
+    com.shelf.launcher.data.HomeLayout.POCKET_RIBBON -> "square icons in white frames"
     else -> null
 }
 

@@ -985,8 +985,9 @@ private fun GameLookContent(appearance: AppearanceSettings, onChange: (Appearanc
                 SwitchRow(
                     icon = Icons.Filled.Gif,
                     title = "Only the game you're on moves",
-                    subtitle = "On: the other games show their animation's first frame — lighter on memory and battery with " +
-                        "big animated covers. Off (default): every animated cover plays.",
+                    subtitle = "On (default): a game's animated cover, banner or background plays only while you're on it — " +
+                        "the other games show their plain cover (the animation's first frame), in every layout and on both " +
+                        "screens. Off: every animated picture plays.",
                     checked = com.shelf.launcher.data.Features.animatedFocusOnly.state.value,
                     onChange = { com.shelf.launcher.data.Features.animatedFocusOnly.value = it },
                     modifier = m

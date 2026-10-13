@@ -1,0 +1,50 @@
+// Album tide: an original paper-white album card over a softly drifting cover field.
+// The wave joins the artwork to the label; the launcher's existing player stays below it.
+//#include reactive
+
+float tideBox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + r;
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime;
+    float level = (uBass * 0.55 + uMid * 0.3 + uHigh * 0.15) * uPlaying * uIntensity;
+    float2 bgq = float2(uv.x / asp, uv.y);
+    bgq = (bgq - 0.5) * 0.8 + 0.5 + float2(sin(t * 0.035), cos(t * 0.027)) * 0.025;
+    float3 art = float3(uArt.eval(clamp(bgq, 0.0, 1.0) * uArtSize).rgb);
+    float3 col = mix(paletteField(uv, asp, t * 0.3, level, uBg.rgb, uAcc.rgb, uSec.rgb), art, uHasArt * 0.9);
+    col *= 0.3 + 0.08 * level;
+    float2 centre = float2(waveX(asp), uWaveY);
+    float vignette = length((uv - float2(asp * 0.5, 0.5)) * float2(1.0 / asp, 0.8));
+    col *= 1.0 - 0.4 * smoothstep(0.2, 0.8, vignette);
+    // A sparse, slow layer of luminous dust; deliberately calmer than falling code.
+    col += mix(uAcc.rgb, float3(1.0), 0.7) * dots(uv, 26.0, float2(t * 0.004, -t * 0.007), 0.018, 0.09, 21.0) * 0.15;
+    // DESKTOP_CARD_OVERLAY
+    float H = room(0.32) * 0.91;
+    float W = H * 0.79;
+    float2 p = uv - centre;
+    float mask = 1.0 - smoothstep(-0.0015, 0.0015, tideBox(p, float2(W, H), H * 0.04));
+    float shadow = exp(-max(tideBox(p - float2(0.0, H * 0.055), float2(W, H), H * 0.04), 0.0) * 65.0);
+    col *= 1.0 - shadow * 0.38;
+    if (mask > 0.0) {
+        float2 q = (p + float2(W, H)) / float2(W * 2.0, H * 2.0);
+        float3 card = float3(0.97, 0.97, 0.98);
+        float artBottom = 0.79;
+        float2 coverQ = float2(q.x, q.y / artBottom);
+        float3 picture = sharpCover(coverQ, uAcc.rgb, uSec.rgb);
+        float wave = 0.76 - (0.01 + level * 0.055) * (0.65 + 0.35 * sin(q.x * 18.0 - t * 1.6))
+            - uBass * uPlaying * uIntensity * 0.06 * exp(-sqf((q.x - 0.67) * 9.0));
+        float backWave = wave - 0.015 - level * 0.025 * sin(q.x * 24.0 + t * 1.2);
+        card = mix(picture, mix(uAcc.rgb, uSec.rgb, q.x) * 0.8, smoothstep(backWave - 0.003, backWave + 0.003, q.y));
+        card = mix(card, float3(0.97, 0.97, 0.98), smoothstep(wave - 0.002, wave + 0.002, q.y));
+        if (q.y > 0.81) {
+            float2 labelQ = float2((q.x - 0.08) / 0.84, (q.y - 0.81) / 0.16);
+            float4 ink = uLabel.eval(clamp(labelQ, 0.0, 1.0) * uLabelSize);
+            card = mix(card, ink.rgb, ink.a);
+        }
+        col = mix(col, card, mask);
+    }
+    return half4(finish(col, fc), 1.0);
+}

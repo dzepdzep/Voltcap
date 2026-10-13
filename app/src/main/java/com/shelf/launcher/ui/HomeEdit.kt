@@ -437,6 +437,19 @@ internal fun BoxScope.MovableWidget(
     val selected = editing && HomeEditState.selected == id
     val shape = RoundedCornerShape(16.dp)
     val guideColor = ShelfTheme.accent
+    /**
+     * Update 179: after its size changed by [rx] across and [ry] down, moves it so one corner stays where it was: the top
+     * right ([keepRight], the size handle) or the top left (the stretch handles) — it grows towards the handle.
+     */
+    fun keepCorner(rx: Float, ry: Float, keepRight: Boolean) {
+        val z = zoneNow
+        val f0 = HomeEditState.live[id] ?: fNow
+        val o = z.place(f0.first, f0.second, wNow, hNow)
+        val w2 = wNow * rx
+        val h2 = hNow * ry
+        val x2 = if (keepRight) o.x + wNow - w2 else o.x
+        HomeEditState.live[id] = z.fractionOf(x2, o.y, w2, h2)
+    }
     Box(
         Modifier
             .zIndex(if (PartsLayer.z > 0f && selected) PartsLayer.z + 2f else PartsLayer.z)
@@ -515,7 +528,10 @@ internal fun BoxScope.MovableWidget(
                                 val diag = kotlin.math.max(1f, (sizeNow.width + sizeNow.height).toFloat())
                                 val now = HomeEditState.liveScale[id] ?: 1f
                                 // Out from the bottom left corner (left and down) makes it bigger.
-                                HomeEditState.liveScale[id] = (now * (1f + (-drag.x + drag.y) / diag)).coerceIn(HomeWidgets.SCALE_MIN, HomeWidgets.SCALE_MAX)
+                                val next = (now * (1f + (-drag.x + drag.y) / diag)).coerceIn(HomeWidgets.SCALE_MIN, HomeWidgets.SCALE_MAX)
+                                HomeEditState.liveScale[id] = next
+                                // Update 179: its top right corner stays still: it grows towards the handle, what's in it with it.
+                                keepCorner(next / now, 1f, keepRight = true)
                             }
                         )
                     },
@@ -524,8 +540,9 @@ internal fun BoxScope.MovableWidget(
                 Icon(Icons.Filled.OpenInFull, null, tint = if (selected) onAccentColor() else ShelfTheme.colors.textPrimary, modifier = Modifier.size(15.dp))
             }
             // Update 133: stretch it wider (right edge) or taller (bottom edge) on its own.
-            StretchHandle(id, across = true, selected = selected) { sizeNow }
-            StretchHandle(id, across = false, selected = selected) { sizeNow }
+            // (Update 179: the left / top edge stays still while it's stretched.)
+            StretchHandle(id, across = true, selected = selected, onStretch = { rx, ry -> keepCorner(rx, ry, keepRight = false) }) { sizeNow }
+            StretchHandle(id, across = false, selected = selected, onStretch = { rx, ry -> keepCorner(rx, ry, keepRight = false) }) { sizeNow }
             // The red ✕ (update 104): takes the part off the screen (+ Add brings it back). (Inside the part too.)
             Box(
                 Modifier.align(Alignment.TopEnd).size(26.dp).clip(RoundedCornerShape(50))
@@ -574,7 +591,12 @@ internal fun Modifier.stretched(sx: Float, sy: Float): Modifier =
  * squeeze it. [sizeNow]: the part's size on screen.
  */
 @Composable
-internal fun BoxScope.StretchHandle(id: String, across: Boolean, selected: Boolean, sizeNow: () -> IntSize) {
+internal fun BoxScope.StretchHandle(
+    id: String, across: Boolean, selected: Boolean,
+    /** Update 179: called with how much wider / taller it got (ratios), to keep an edge still. */
+    onStretch: ((Float, Float) -> Unit)? = null,
+    sizeNow: () -> IntSize
+) {
     Box(
         Modifier.align(if (across) Alignment.CenterEnd else Alignment.BottomCenter)
             .size(if (across) 18.dp else 34.dp, if (across) 34.dp else 18.dp)
@@ -587,8 +609,11 @@ internal fun BoxScope.StretchHandle(id: String, across: Boolean, selected: Boole
                     onDrag = { change, drag ->
                         change.consume()
                         val s = sizeNow()
+                        val before = HomeWidgets.stretch(id)
                         if (across) HomeEditState.stretchBy(id, drag.x, 0f, s.width, s.height)
                         else HomeEditState.stretchBy(id, 0f, drag.y, s.width, s.height)
+                        val after = HomeWidgets.stretch(id)
+                        onStretch?.invoke(after.first / before.first, after.second / before.second)
                     }
                 )
             },
@@ -886,7 +911,14 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                             ch.consume()
                             val diag = kotlin.math.max(1f, (size.width + size.height).toFloat())
                             val now = HomeEditState.liveScale[id] ?: 1f
-                            HomeEditState.liveScale[id] = (now * (1f + (-d.x + d.y) / diag)).coerceIn(HomeWidgets.SCALE_MIN, HomeWidgets.SCALE_MAX)
+                            val next = (now * (1f + (-d.x + d.y) / diag)).coerceIn(HomeWidgets.SCALE_MIN, HomeWidgets.SCALE_MAX)
+                            HomeEditState.liveScale[id] = next
+                            // Update 179: the opposite (top right) corner stays still, so the part and what's in it
+                            // follow the handle (it used to grow from its middle).
+                            val (stx, sty) = HomeWidgets.stretch(id)
+                            val ds = next - now
+                            val sh = HomeEditState.liveShift[id] ?: (0f to 0f)
+                            HomeEditState.liveShift[id] = (sh.first - ds * stx * size.width / 2f / density) to (sh.second + ds * sty * size.height / 2f / density)
                         }
                         if (moved < 8.dp.toPx()) HomeEditState.styling = id
                         continue
@@ -901,7 +933,14 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                             if (!ch.pressed) { ch.consume(); break }
                             val d = ch.position - ch.previousPosition
                             ch.consume()
+                            val before = HomeWidgets.stretch(id)
                             HomeEditState.stretchBy(id, if (acrossHit) d.x else 0f, if (downHit) d.y else 0f, size.width, size.height)
+                            // Update 179: the left (or top) edge stays still: it grows towards the handle.
+                            val after = HomeWidgets.stretch(id)
+                            val sc = HomeWidgets.scale(id)
+                            val sh = HomeEditState.liveShift[id] ?: (0f to 0f)
+                            HomeEditState.liveShift[id] = (sh.first + sc * (after.first - before.first) * size.width / 2f / density) to
+                                (sh.second + sc * (after.second - before.second) * size.height / 2f / density)
                         }
                         continue
                     }

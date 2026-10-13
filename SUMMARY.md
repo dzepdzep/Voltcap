@@ -4,6 +4,145 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (181): two new pocket two-screen layouts (Pocket classic, Pocket ribbon); animated covers only on the game you're on
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (4): `src_copy\ui\PocketShared.kt`, `src_copy\ui\PocketClassic.kt`, `src_copy\ui\PocketRibbon.kt`,
+  `src_copy\ui\PocketSettings.kt`.
+- Changed (14): `src_copy\data\AnimatedArt.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\ArtStorage.kt`,
+  `src_copy\data\Features.kt`, `src_copy\ui\GameLookPicker.kt`, `src_copy\ui\LauncherScreen.kt`,
+  `src_copy\ui\OptionIcons.kt`, `src_copy\ui\PresetPreview.kt`, `src_copy\ui\PresetsCard.kt`,
+  `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\StyleHomes.kt`,
+  `src_copy\ui\TwinScreens.kt`, `src_copy\ui\UiSounds.kt`.
+
+**Files to delete:** none.
+
+Both layouts are in Settings › Home › Layout (and in Presets). Original names, art and sounds, no console branding. They
+are drawn on a 256 × 192-dot screen in a small pixel font. Pixel-perfect (default) uses whole pixels per dot; off, it
+fills the room and gets wider up to 16:9.
+
+### Pocket classic (the 2004-style two-screen menu)
+- **Top screen:** white pinstripes. A thin bar in your colour with your name on the left and the time and battery on
+  the right. A clock (with hands, or big digits) and this month's calendar: today highlighted, Sundays red, Saturdays
+  blue.
+- **Bottom screen:**
+  - The game panel (the game you're on): ◀ ▶ or a swipe changes the game; A or a tap starts it.
+  - Achievements (trophy). Your current category's logo and name (A: its games). All Categories (A: every category).
+  - Settings ⚙, Statistics 📈 and Sleep 🌙 along the bottom edge.
+- **Selection** shows blue corner brackets. The game and category pages have 5 × 3 tiles, L1 / R1 page by 15, and B
+  goes back to where you were.
+
+### Pocket ribbon (the 2008-style menu)
+- **Top screen:** pinstripes, a status line (volume, your name, date / time, battery) and a big framed picture.
+  - The picture can be the game's art, the album playing, your own photo (Pick a photo) or the game's screenshots as a
+    slideshow (every 5 s).
+- **Bottom screen:**
+  - A speech bubble with the name, and a row of square framed icons. The one you're on sits in the middle, bigger,
+    with an accent frame.
+  - A START tab under it, and a scroll bar with ◀ ▶ and a position marker.
+  - The row starts on your categories: A opens one and its games fill the row, B goes back. START starts the game, A
+    opens its game window.
+  - The row glides; swipe it or tap the scroll bar. At an end it bounces (with Endless on, it wraps round).
+  - Starting a game: the other icons fade and the chosen one grows a little.
+
+### Screens
+- Two displays: the top part on the main screen and the menu on the second screen.
+- One display: one above the other (or side by side on a wide screen). Layout options › **Screens** picks Automatic /
+  One above the other / Side by side.
+
+### Layout options
+- **Pocket classic:** Colour, Your name, Clock with hands, Calendar, Small icons along the bottom, Game picture
+  (cover / logo / screenshot).
+- **Pocket ribbon:** Colour (Sky blue by default, like your picture; Pink is there too), Your name, Top screen picture,
+  Slideshow, Status line, Console under the name, Open on the categories, Icon size, Space between icons, Top screen's
+  share.
+- **Both:** Screens, Pixel-perfect, Pocket sounds (tiny square-wave chirps, made from scratch, while a Pocket layout is
+  on), Animation speed (Normal / Fast / Off), Opens on (a category, or where you were).
+
+### Animated covers: only the game you're on moves (now the default)
+- Settings › Game look › Artwork › Animated artwork › **Only the game you're on moves** is now **on by default**.
+- It also works everywhere now, not only in the card row: every layout, both screens, covers, banners, heroes and
+  logos.
+- Other games show their plain cover (the still frame). Off: every animated picture plays.
+- A game set to always move (Game settings › Look) and the artwork picker still play.
+
+**Not included:** rearranging the ribbon's icons, a start-up sequence, and background music for these layouts.
+
+---
+
+## Update — 13 Oct 2026 (180): Twin desk's top screen your way, the two-screen layouts fill the top screen, the second screen's dashboard from them
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (6): `src_copy\data\Features.kt`,
+`src_copy\ui\LauncherScreen.kt`, `src_copy\ui\StyleHomes.kt`, `src_copy\ui\TwinDesk.kt`, `src_copy\ui\TwinIcons.kt`,
+`src_copy\ui\TwinScreens.kt`.
+
+**Files to delete:** none.
+
+### Twin desk: what the top screen shows
+- Layout options › **Top screen shows**: Clock, Calendar, Game's picture (new, like a photo on the desk) and Game's
+  name. Pick any of them.
+- Only one picked: it sits in the middle of the top screen, as big as it fits. None picked: the clock.
+- With a few picked, the clock, calendar and picture sit side by side, centred, and the name strip goes under them.
+
+### The top screen filled, theme off (two screens only)
+- With two screens in use, Twin desk's squared paper and Twin icons' dark patterned background now fill the whole top
+  screen, behind the status bar too.
+- The theme's animated background rests under it (it doesn't run).
+- Layout options › **Fill the top screen** turns this off. On one screen, both halves show together as before.
+
+### The second screen's dashboard from the two-screen layouts
+- **Twin desk:** a 4th round button, **Second screen**, in its bottom bar (▶ from the games, then ▶▶▶).
+- **Twin icons:** a **Second screen** tool button at the end of the top row.
+- Either one swaps the lower screen to the usual dashboard: pages, dock, Games page, Achievements board and the rest,
+  reachable with the controller too.
+- The **↩ Twin desk / Twin icons** button (bottom left of the dashboard) brings the layout's bottom part back. So does
+  switching layout.
+
+## Update — 13 Oct 2026 (179): resizing follows your finger everywhere, the second screen from every layout, gaps in the two-screen layouts
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (8): `src_copy\data\Features.kt`,
+`src_copy\ui\HomeEdit.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\OverlayShell.kt`,
+`src_copy\ui\PerfOverlayService.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\TwinDesk.kt`, `src_copy\ui\TwinIcons.kt`.
+
+**Files to delete:** none.
+
+### Resizing: the contents come along
+- **Edit Home, the layouts' own parts:**
+  - The size handle (bottom left) now keeps the part's top right corner still, so the part and everything in it grow
+    towards your finger.
+  - The stretch handles (right edge, bottom edge) keep the left / top edge still.
+  - Before, all of them grew the part from its middle, so the contents seemed to move away from the handle.
+- **Edit Home, the parts you added** (game header, info, news…): the same. The size handle keeps the top right still
+  and the stretch handles keep the top left still.
+- **In-game overlays** (stats, music, trophies) moved to a spot of their own: dragging a corner keeps the opposite
+  corner where it is. The overlay and what's in it follow the corner you hold, and where it ends up is saved. Overlays in
+  a screen corner still grow out of that corner.
+- **Layout Maker** (the web page): resizing a text part (name, info, clock, category, your text) makes its letters grow
+  and shrink with the box. **Words follow the box** turns it off.
+
+### The second screen from every layout
+- ▼ that does nothing on the main screen now moves the controller to the second screen, in every layout. Before, only
+  layouts that asked for "what lies below" did this; others, like the Tile home's buttons or the Hero carousel, never
+  got there.
+- "Nothing" means the game, the menu zone, the buttons and the category all stayed as they were.
+
+### Gaps in the two-screen layouts (Twin icons, Twin desk)
+- **Layout options › Gap between icons** (Twin icons) and **Gap between panels** (Twin desk): None, 2, 4, 8, 12, 16 or
+  24 dp. Twin icons also has 32.
+- **R1 › Gaps** tile while one of them is on: tap for the next gap, hold for the list.
+
+### Check after installing
+- Edit Home: drag a part's size handle and its stretch handles. The opposite corner / edge should stay put.
+- In a game, with Overlays › Drag to move on, drag an overlay somewhere, then resize it from a corner.
+- Every layout: press ▼ until nothing more happens, then once more. The ring appears on the lower screen.
+- Twin icons: R1 › Gaps.
+
 ## Update — 13 Oct 2026 (178): the Voltcap Layout Maker (drag and drop) and 6 more built-in layouts
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

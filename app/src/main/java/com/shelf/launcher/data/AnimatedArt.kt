@@ -19,8 +19,13 @@ import okio.ByteString.Companion.encodeUtf8
  * instead of showing their first frame.
  *
  * Done with Android's own decoder (ImageDecoder → AnimatedImageDrawable, Android 9+), plugged into the
- * image loader, so no extra library is needed. Off by default: many moving covers at once cost
- * battery. Small requests (colour picking, tiny thumbnails) always get a still picture.
+ * image loader, so no extra library is needed. Small requests (colour picking, tiny thumbnails) always get a
+ * still picture.
+ *
+ * Update 181: by default only the game you're on moves ([focusOnly], Features.animatedFocusOnly): every animated
+ * picture is wrapped in a [Gate] that knows the address it came from ([SourceTag] writes it into the request), and it
+ * plays only while that address belongs to the game you're on ([setFocus]); the rest show their first frame — the
+ * plain cover. Works for every layout and both screens, whatever way they ask for the picture.
  */
 object AnimatedArt {
     /** Play animated pictures (otherwise their first frame shows, as before). */
@@ -32,6 +37,26 @@ object AnimatedArt {
     const val PARAM_ANIMATE = "voltcap.animate"
     /** Request parameter: keep this picture still even with Animated artwork on (a game set to "Still"). */
     const val PARAM_STILL = "voltcap.still"
+    /** Update 181: request parameter: the address the picture was asked for by (written by [SourceTag]). */
+    const val PARAM_SRC = "voltcap.src"
+
+    /** Update 181: only the game you're on moves (the others hold their first frame). */
+    @Volatile var focusOnly = true
+        set(v) { if (field != v) { field = v; reapply() } }
+    /** The addresses of the game you're on (its cover, banner, hero, logo — scraped and your own). */
+    @Volatile private var focusUrls: Set<String> = emptySet()
+
+    /** The game you're on changed: its pictures play, everyone else's hold still. Any thread. */
+    fun setFocus(urls: Set<String>) {
+        if (urls == focusUrls) return
+        focusUrls = urls
+        reapply()
+    }
+
+    private fun reapply() {
+        if (Build.VERSION.SDK_INT < 28) return
+        main.post { gates().forEach { it.apply() } }
+    }
 
     // ---- Update 152: moving pictures rest while you move, and after a few minutes without input ----
     // Measured on the Retroid Pocket Classic: every playing cover is decoded and uploaded to the GPU frame by frame, on
@@ -40,15 +65,14 @@ object AnimatedArt {
     // after three minutes without input (HomeIdle.deep) they stop until the next press.
 
     /** Every animated picture decoded (weak: gone with its card). */
-    private val live = java.util.Collections.newSetFromMap(java.util.WeakHashMap<AnimatedImageDrawable, Boolean>())
-    /** The ones this paused (only these start again). */
-    private val held = ArrayList<java.lang.ref.WeakReference<AnimatedImageDrawable>>()
+    private val live = java.util.Collections.newSetFromMap(java.util.WeakHashMap<Gate, Boolean>())
     private val main by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
-    private var moving = false
-    private var sleeping = false
+    @Volatile private var moving = false
+    @Volatile private var sleeping = false
     private val resume = Runnable { moving = false; if (!sleeping) restartHeld() }
 
-    private fun register(d: AnimatedImageDrawable) { synchronized(live) { live += d } }
+    private fun register(g: Gate) { synchronized(live) { live += g } }
+    private fun gates(): List<Gate> = synchronized(live) { live.toList() }
 
     /** A step on the D-pad (or a swipe): animated pictures hold still until you've stopped for a moment. Main thread. */
     fun onMove() {
@@ -69,15 +93,49 @@ object AnimatedArt {
     }
 
     @androidx.annotation.RequiresApi(28)
-    private fun pauseAll() {
-        val now = synchronized(live) { live.toList() }
-        now.forEach { d -> if (d.isRunning) { runCatching { d.stop() }; held += java.lang.ref.WeakReference(d) } }
-    }
+    private fun pauseAll() { gates().forEach { it.apply() } }
 
     @androidx.annotation.RequiresApi(28)
-    private fun restartHeld() {
-        held.forEach { r -> r.get()?.let { runCatching { it.start() } } }
-        held.clear()
+    private fun restartHeld() { gates().forEach { it.apply() } }
+
+    /**
+     * Update 181: an animated picture that plays only when it may: its painter asked it to ([start]), you're not
+     * moving, the screen isn't resting, and — with [focusOnly] — it's a picture of the game you're on (or forced on:
+     * the artwork picker, a game set to always move). Otherwise it shows its first frame.
+     */
+    @androidx.annotation.RequiresApi(28)
+    class Gate internal constructor(
+        private val inner: AnimatedImageDrawable,
+        private val src: String?,
+        private val forced: Boolean
+    ) : android.graphics.drawable.DrawableWrapper(inner), android.graphics.drawable.Animatable {
+        private var wanted = false
+
+        private fun may(): Boolean = wanted && !moving && !sleeping &&
+            (forced || !focusOnly || src == null || src in focusUrls)
+
+        /** Start or stop the picture to match [may]. Main thread. */
+        fun apply() {
+            runCatching { if (may()) { if (!inner.isRunning) inner.start() } else if (inner.isRunning) inner.stop() }
+        }
+
+        override fun start() { wanted = true; apply() }
+        override fun stop() { wanted = false; runCatching { inner.stop() } }
+        override fun isRunning(): Boolean = inner.isRunning
+    }
+
+    /**
+     * Update 181: writes the address a picture is asked for by into its request ([PARAM_SRC], not part of its memory
+     * key), so the decoder's [Gate] knows which game it belongs to. Placed after the shared-size interceptor (which
+     * only shares requests without parameters) and before the saved-art one (which swaps the address for a file).
+     */
+    class SourceTag : coil.intercept.Interceptor {
+        override suspend fun intercept(chain: coil.intercept.Interceptor.Chain): coil.request.ImageResult {
+            val r = chain.request
+            val url = r.data as? String
+            if (url == null || !enabled || r.parameters.value<String>(PARAM_SRC) != null) return chain.proceed(r)
+            return chain.proceed(r.newBuilder().setParameter(PARAM_SRC, url, memoryCacheKey = null).build())
+        }
     }
 
     /** A picture that's most likely animated, from its address (SteamGridDB's animated art is GIF / WebP). */
@@ -97,7 +155,7 @@ object AnimatedArt {
             val h = (options.size.height as? Dimension.Pixels)?.px ?: Int.MAX_VALUE
             if (w <= 160 && h <= 160) return null
             if (!isAnimated(result.source)) return null
-            return AnimatedDecoder(result.source, options)
+            return AnimatedDecoder(result.source, options, options.parameters.value<String>(PARAM_SRC), forced)
         }
 
         private fun isAnimated(source: ImageSource): Boolean = runCatching {
@@ -121,7 +179,12 @@ object AnimatedArt {
     }
 
     @androidx.annotation.RequiresApi(28)
-    private class AnimatedDecoder(private val source: ImageSource, private val options: Options) : Decoder {
+    private class AnimatedDecoder(
+        private val source: ImageSource,
+        private val options: Options,
+        private val src: String?,
+        private val forced: Boolean
+    ) : Decoder {
         override suspend fun decode(): DecodeResult {
             var sampled = false
             val file = source.file().toFile()
@@ -139,8 +202,11 @@ object AnimatedArt {
                     }
                 }
             }
-            (drawable as? AnimatedImageDrawable)?.let { it.repeatCount = AnimatedImageDrawable.REPEAT_INFINITE; register(it) }
-            return DecodeResult(drawable, sampled)
+            val out = (drawable as? AnimatedImageDrawable)?.let {
+                it.repeatCount = AnimatedImageDrawable.REPEAT_INFINITE
+                Gate(it, src, forced).also { g -> register(g) }
+            } ?: drawable
+            return DecodeResult(out, sampled)
         }
     }
 }

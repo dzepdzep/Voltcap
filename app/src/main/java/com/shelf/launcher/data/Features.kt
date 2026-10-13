@@ -914,8 +914,9 @@ object Features {
     val carouselReflect = BoolPref("carousel_reflect", false)
     /** Update 147: the carousel on a dark floor fading into black (on with the 3D case views). */
     val carouselStage = BoolPref("carousel_stage", false)
-    /** Update 148: animated covers move only on the game you're on (the others show their first frame). Off: every game. */
-    val animatedFocusOnly = BoolPref("animated_focus_only", false)
+    /** Update 148: animated covers move only on the game you're on (the others show their first frame). Off: every game.
+     *  Update 181: on by default (a new key, so it starts on for everyone once), and followed by every layout (AnimatedArt.Gate). */
+    val animatedFocusOnly = BoolPref("animated_focus_only2", true)
     /** Update 148: the preview clips saved on the device (ClipStore), up to [clipsMaxMb]. */
     val clipsOffline = BoolPref("clips_offline", false)
     val clipsMaxMb = IntPref("clips_max_mb", 1024, 100..8000)
@@ -1005,7 +1006,49 @@ object Features {
     enum class TwinClock(val label: String) { ANALOGUE("Analogue"), DIGITAL("Digital") }
     val twinClock = EnumPref("twin_clock", TwinClock.ANALOGUE, TwinClock.values())
     val twinCalendar = BoolPref("twin_calendar", true)
+    /** Update 180: what Twin desk's top shows besides the calendar: the clock, the game's picture, the game's name. */
+    val twinDeskClock = BoolPref("twin_desk_clock", true)
+    val twinDeskArt = BoolPref("twin_desk_art", false)
+    val twinDeskGame = BoolPref("twin_desk_game", true)
+    /** Update 180: on two screens, the two-screen layouts fill the whole top screen with their own background (theme off). */
+    val twinFullTop = BoolPref("twin_full_top", true)
+    // ---- Update 181: the two Pocket layouts (PocketClassic.kt, PocketRibbon.kt) ----
+    enum class PocketAnim(val label: String) { NORMAL("Normal"), FAST("Fast"), OFF("Off") }
+    enum class PocketArrange(val label: String) { AUTO("Two screens when there are"), STACKED("One above the other"), SIDE("Side by side") }
+    enum class PocketArt(val label: String) { COVER("Cover"), LOGO("Logo"), SHOT("Screenshot") }
+    enum class RibbonTop(val label: String) { GAME("Game art"), ALBUM("Album art"), PHOTO("Your photo"), SLIDES("Screenshots slideshow") }
+    /** The user name on the top screens ("" = the RetroAchievements name, else "Player"). */
+    val pocketName = StringPref("pocket_name", "")
+    val pocketAnim = EnumPref("pocket_anim", PocketAnim.NORMAL, PocketAnim.values())
+    val pocketArrange = EnumPref("pocket_arrange", PocketArrange.AUTO, PocketArrange.values())
+    /** Pixel-perfect (whole pixels per dot, 4:3) or fit the screen (as big as fits, wider when there's room). */
+    val pocketPixel = BoolPref("pocket_pixel", true)
+    val pocketSounds = BoolPref("pocket_sounds", true)
+    /** The category a Pocket layout opens on ("" = where you were). */
+    val pocketStartCategory = StringPref("pocket_start_category", "")
+    // Pocket classic.
+    val classicAccent = StringPref("classic_accent", "BLUE")
+    val classicAnalogue = BoolPref("classic_analogue", true)
+    val classicCalendar = BoolPref("classic_calendar", true)
+    val classicToolbar = BoolPref("classic_toolbar", true)
+    val classicArt = EnumPref("classic_art", PocketArt.COVER, PocketArt.values())
+    // Pocket ribbon.
+    val ribbonAccent = StringPref("ribbon_accent", "SKY")
+    val ribbonTop = EnumPref("ribbon_top", RibbonTop.GAME, RibbonTop.values())
+    val ribbonStatus = BoolPref("ribbon_status", true)
+    val ribbonSlides = BoolPref("ribbon_slides", true)
+    val ribbonNames = BoolPref("ribbon_names", true)
+    /** Icon size (dots, 24–40) and the gap between icons (dots). */
+    val ribbonIcon = IntPref("ribbon_icon", 32, 24..40)
+    val ribbonGap = IntPref("ribbon_gap", 10, 2..24)
+    /** The top screen's share when both screens are on one display, % (30–70). */
+    val ribbonSplit = IntPref("ribbon_split", 50, 30..70)
+    /** Open on the categories (true) or on the games of the category you're in. */
+    val ribbonStartOnCategories = BoolPref("ribbon_start_categories", false)
     val twinCols = IntPref("twin_cols", 5, 4..7)
+    /** Update 179: the space between the tiles of the two-screen layouts, dp (Twin icons' grid, Twin desk's panels). */
+    val twinGap = IntPref("twin_gap", 8, 0..32)
+    val twinDeskGap = IntPref("twin_desk_gap", 7, 0..24)
     /** Update 154: Disc station keeps the screen behind it still: no video clip, the animated background holds a frame. */
     val discCalm = BoolPref("disc_calm_bg", true)
     /**

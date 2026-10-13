@@ -180,6 +180,9 @@ internal fun styleHomeKey(
     /** Past the layout's last menu / bar at the top ([Boolean] true) or the bottom: what lies there (HomeReach). */
     reach: (Boolean) -> Boolean = { false }
 ): Boolean {
+    // Update 181: the Pocket layouts take every key themselves (their panels, pages and ribbon).
+    if (layout == HomeLayout.POCKET_CLASSIC) return pocketClassicKey(event, reach)
+    if (layout == HomeLayout.POCKET_RIBBON) return pocketRibbonKey(event, reach)
     val code = event.nativeKeyEvent.keyCode
     val down = event.type == KeyEventType.KeyDown
     val up = event.type == KeyEventType.KeyUp
@@ -689,7 +692,10 @@ internal class StyleActions(
     val needAchievements: (Game) -> Unit = {},
     /** Update 158: the R1 quick settings panel and the screensaver (Twin desk's round buttons). */
     val quickMenu: () -> Unit = {},
-    val screensaver: () -> Unit = {}
+    val screensaver: () -> Unit = {},
+    /** Update 181: the statistics page (play time, activity) and the achievements page (Pocket layouts). */
+    val stats: () -> Unit = {},
+    val achievementsHub: () -> Unit = {}
 )
 
 /** One stop of the category cycle (as L2 / R2 go through them). */
@@ -1148,6 +1154,9 @@ internal fun StyleHome(
         HomeLayout.CARDS -> StyleCardBinder(c, modifier)
         // Update 176: a layout made by anyone (StyleCustom.kt).
         HomeLayout.CUSTOM -> StyleCustom(c, modifier)
+        // Update 181: the Pocket layouts (PocketClassic.kt, PocketRibbon.kt).
+        HomeLayout.POCKET_CLASSIC -> StylePocketClassic(c, modifier)
+        HomeLayout.POCKET_RIBBON -> StylePocketRibbon(c, modifier)
         else -> Unit
     }
 }
@@ -1202,6 +1211,11 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.LIVE -> if (Features.liveLight.state.value) LiveBackdrop(Modifier.fillMaxSize().padding(top = topInset, bottom = bottomInset))
         // Update 176: the custom layout's colour, the game's art and its picture (StyleCustom.kt).
         HomeLayout.CUSTOM -> CustomBackLayer(gameKey, artUrl)
+        // Update 180: the two-screen layouts filling the top screen (two screens in use): their own background.
+        HomeLayout.TWIN_DESK -> if (TwinScreens.fullTop) TwinDeskBackdrop(Modifier.fillMaxSize())
+        HomeLayout.TWIN_ICONS -> if (TwinScreens.fullTop) TwinIconsBackdrop(Modifier.fillMaxSize())
+        // Update 181: the Pocket layouts: paper filling the top screen (two screens), else the handheld's light body.
+        HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON -> PocketBackdrop(Modifier.fillMaxSize(), paper = TwinScreens.fullTop)
         else -> Unit
     }
 }
@@ -1232,6 +1246,10 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.CIRCUIT -> Features.circuitBackdrop.state.value
     // Update 176: a custom layout with its own colour / picture.
     HomeLayout.CUSTOM -> customOwnsBackground(CustomSceneNow.scene)
+    // Update 180.
+    HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS -> TwinScreens.fullTop
+    // Update 181: always their own (the theme's background stays off).
+    HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON -> true
     else -> false
 }
 
