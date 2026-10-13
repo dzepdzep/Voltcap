@@ -162,10 +162,10 @@ async function loadScene(url) {
         const nor = p.attributes.NORMAL !== undefined ? readAccessor(j, bin, p.attributes.NORMAL) : null;
         const uv = p.attributes.TEXCOORD_0 !== undefined ? readAccessor(j, bin, p.attributes.TEXCOORD_0) : null;
         const idx = p.indices !== undefined ? readAccessor(j, bin, p.indices) : null;
-        let cx = 0, cy = 0, cz = 0; const cnt = pos.length / 3;
+        let cx = 0, cy = 0, cz = 0; const cnt = pos.length / 3; const plo = [1e9, 1e9, 1e9], phi = [-1e9, -1e9, -1e9];
         for (let i = 0; i < cnt; i++) {
           const w = M4.apply(world, [pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]]);
-          for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], w[k]); hi[k] = Math.max(hi[k], w[k]); }
+          for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], w[k]); hi[k] = Math.max(hi[k], w[k]); plo[k] = Math.min(plo[k], w[k]); phi[k] = Math.max(phi[k], w[k]); }
           cx += w[0]; cy += w[1]; cz += w[2];
         }
         const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
@@ -183,7 +183,7 @@ async function loadScene(url) {
         prims.push({ vao, count, type, world, name: mesh.name || n.name || '', nodeName: n.name || '', mat: mat.name || '', mode,
           base: pbr.baseColorFactor || [1, 1, 1, 1], tex: pbr.baseColorTexture ? textures[pbr.baseColorTexture.index] : null,
           metal: pbr.metallicFactor === undefined ? 1 : pbr.metallicFactor, rough: pbr.roughnessFactor === undefined ? 1 : pbr.roughnessFactor,
-          cut: mat.alphaCutoff === undefined ? 0.5 : mat.alphaCutoff, trans, centroid: [cx / cnt, cy / cnt, cz / cnt] });
+          cut: mat.alphaCutoff === undefined ? 0.5 : mat.alphaCutoff, trans, centroid: [cx / cnt, cy / cnt, cz / cnt], lo: plo, hi: phi });
       }
     }
     for (const c of (n.children || [])) visit(c, world);
@@ -222,7 +222,7 @@ function draw(sc, mv0, P, art, artPrefix, expo, size, ov) {
       if (p.mat === 'molded_polymer' || p.mat === 'translucent_tinted_polycarbonate') return [c[0], c[1], c[2], p.base[3]];
       if (p.mat === 'recess_polymer') return [0.48 * c[0], 0.48 * c[1], 0.48 * c[2], p.base[3]];
     }
-    if (ov.badge !== undefined && ov.badge !== null && p.mat === 'console_badge_polymer') { const c = Array.isArray(ov.badge) ? ov.badge : [ov.badge, ov.badge, ov.badge]; return [c[0], c[1], c[2], 1]; }
+    if (ov.badge !== undefined && ov.badge !== null && (p.mat === 'console_badge_polymer' || p.mat === 'blank_branding_label')) { const c = Array.isArray(ov.badge) ? ov.badge : [ov.badge, ov.badge, ov.badge]; return [c[0], c[1], c[2], 1]; }
     return p.base;
   };
   const one = (p) => {
@@ -274,11 +274,16 @@ window.renderAngle = async function (url, opts) {
   const quadOf = (b) => { if (!b) return null; const [lo, hi] = b; const z = (lo[2] + hi[2]) / 2;
     const pts = [[lo[0], hi[1], z], [hi[0], hi[1], z], [hi[0], lo[1], z], [lo[0], lo[1], z]];
     const q = []; for (const p of pts) { const n = M4.apply(mvp, p); q.push((n[0] * 0.5 + 0.5) * size, (1 - (n[1] * 0.5 + 0.5)) * size); } return q; };
+  // Update 166: a node's own bounds (the blank-branding pieces' logo plate), when the slots don't give it.
+  const nodeBox = (name) => { const ps = sc.prims.filter(p => p.nodeName === name || p.nodeName.startsWith(name + '.')); if (!ps.length) return null;
+    const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9]; for (const p of ps) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], p.lo[k]); hi[k] = Math.max(hi[k], p.hi[k]); } return [lo, hi]; };
+  if (opts.logoNode && !opts.logo) opts.logo = nodeBox(opts.logoNode);
+  if (opts.artNode && !opts.art) opts.art = nodeBox(opts.artNode);
   const passes = opts.passes || [{ art: 0 }, { art: opts.white || 0.9 }];
   const out = passes.map(ps => b64(draw(sc, mv0, P, ps.art, pre, opts.expo, size, ps)));
   // art corners TL TR BR BL (image's top = +Y), in pixels (y down)
   const tp = sc.prims.find(p => p.mat === 'translucent_tinted_polycarbonate');
   const mats = {}; for (const p of sc.prims) if (p.mat) mats[p.mat] = Array.from(p.base);
-  return { px: out, p0: out[0], p1: out[1], quad: quadOf(opts.art), logo: quadOf(opts.logo), size, trans: tp ? tp.trans : 0, tbase: tp ? tp.base : null, mats };
+  return { px: out, p0: out[0], p1: out[1], quad: quadOf(opts.art), logo: quadOf(opts.logo), logoBox: opts.logo, artBox: opts.art, size, trans: tp ? tp.trans : 0, tbase: tp ? tp.base : null, mats };
 };
 window.ready = true;

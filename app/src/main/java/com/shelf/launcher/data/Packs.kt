@@ -100,8 +100,9 @@ object Packs {
         Pack.CARTS -> File(dir(c, Pack.CARTS), "${item.name}.ok")
         Pack.SPINES -> File(dir(c, Pack.SPINES), "${item.name}.webp")
         Pack.DISCS -> File(dir(c, Pack.DISCS), "${item.name}.webp")
-        // (Update 137: ".v68" — the pieces from before your library's v6.8 count as missing, so they're fetched again.)
-        Pack.MODELS -> File(dir(c, Pack.MODELS), "${item.name}.v68")
+        // (Update 137: ".v68" — the pieces from before your library's v6.8 count as missing, so they're fetched again.
+        // Update 166: ".v611" — v6.11 all the way round.)
+        Pack.MODELS -> File(dir(c, Pack.MODELS), "${item.name}.v611")
     }
 
     fun has(item: Item): Boolean = item.file in have

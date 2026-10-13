@@ -22,3 +22,19 @@ and writes the pack Voltcap downloads (`model_<id>.zip` and `model_logos.zip`, s
 
 Then zip each `pack68/<id>` folder as `model_<id>.zip` (the folder inside the zip) and `logos68/logos` as
 `model_logos.zip`, into `packs/v1/`.
+
+## Update 166: all the way round (`batch3.js`)
+
+`batch3.js` renders the library's v6.11 (`all/VoltCap_v6_Refined/v6`) and, where there is one, its blank-branding
+variant (`all/VoltCap_Blank_Branding_Variants`, no native lettering; `glbplan.json` says which file each id is made from)
+from 18 angles, −160 … 180 every 20° (180 = the back), same files and crop as `batch2.js`:
+- `<yaw>_g` / `<yaw>_gw` and the art window's corners (`angles` in `meta.json`) only where the front faces you (±80°);
+  the logo plate's corners and light (`tint.logo` / `tint.ls`) likewise;
+- `meta.json` v3 adds `yaws` (the angles);
+- every piece with a card slot is paintable: the custom ones as before; the real ones and the Save Vault cards keep their
+  own colours (`tint.own`), only the blank badge gets the console's logo;
+- the logo plate's corners come from the `console_logo` node's own bounds (`render.js` `logoNode`); the blank badge
+  (`blank_branding_label`) takes the badge colour like `console_badge_polymer`.
+Run two at once: `PORT=8771 node batch3.js <ids…>` and `PORT=8772 …` (≈ 3–6 min a piece in software GL). Output in
+`pack611/<id>`; zip each as `model_<id>.zip` (folder inside) and `logos68/logos` as `model_logos.zip` into `packs/v1/`.
+The app reads them with the marker `<id>.v611` (data/Packs.kt).

@@ -4,6 +4,82 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (166): 3D pieces all the way round, cartridges in the 3D cartridge looks, real-sized opened cases, no grey side blocks
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (10): `src_copy\data\Packs.kt`,
+`src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\GameLookPicker.kt`,
+`src_copy\ui\GameWindow.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\Models3D.kt`, `src_copy\ui\PlatformLogos.kt`,
+`src_copy\ui\StyleCrossMenu.kt`.
+
+**Copy `project_copy`** (over the project root; the block first unpacks it from `Claude outputs\v166\pc166_packs1.zip`,
+`pc166_packs2.zip` and `pc166_rest.zip` into `project_copy`): `project_copy\packs\v1\model_*.zip` (all 81 pieces made
+again, 51 MB; `model_logos.zip` stays as it is), `project_copy\app\src\main\assets\platform_logos_png\` (44, new),
+`project_copy\app\src\main\assets\system_logos_png\` (65, new), `project_copy\app\src\main\res\drawable-nodpi\media_umd.png`
+(changed), `project_copy\tools\render3d\` (`batch3.js`,
+`backs.py`, `rasterlogos.js`, `glbplan.json` new; `render.js`, `drive.js`, `README.md` updated).
+
+**Files to delete:** none.
+
+### What changed
+- **Grey / black blocks beside the games** (scrolling through cartridges, cases and other media in the carousels): the
+  side band from 162 — the piece's outline drawn again behind it and shifted out by its thickness — is gone. On boxes and
+  cases it never matched the real shape, so a dark see-through panel stood behind every turned game, its top and bottom
+  edges stretching into long lines. The real thickness comes from the 3D looks now.
+- **3D cartridges look showed a PS2 case:** the three 3D looks (3D cartridges, 3D custom cartridges, 3D clear
+  cartridges) are cartridge looks for every console now. The PlayStation, PS2, PSP, GameCube and Dreamcast stand as their
+  custom cartridge (solid with 3D cartridges); the 3D cases are only the case looks' (R1 › 3D in a case look). Settings ›
+  Game look › 3D models › "Disc consoles as" is gone with it.
+- **The 3D pieces all the way round** (opening a game and turning it): your v6.11 library, with its blank-branding
+  variants where there is one (no native Nintendo / SEGA lettering), pre-rendered every 20° all the way round (18 angles,
+  was 7 from −60° to 60°). Turning shows the piece's real sides and back instead of the front squeezed and mirrored, and
+  the custom / clear pieces keep your colour on every side (it was only on the front). The real cartridges and cards keep
+  their own colours, with the console's logo printed on their plain badge.
+- **The 3D box you're on faces you again** while you scroll (your picture: Dr. Mario stood turned in the middle). It was
+  on "Turned like the others"; once, with this update, it's back on Faces you. The others keep the turn of the carousel
+  view you're in. The turned stand stays a choice: Settings › Game look › 3D models › The one you're on, or the same
+  under the carousel's options and Case stacks' options.
+- **Opening a game in a case look showed a DVD-shaped box** (a GBA game, and anything else that isn't DVD-case sized):
+  the opened case now has its console's real case shape and thickness (Game Boy boxes, DS / 3DS, PS1 jewel cases,
+  Saturn, Mega Drive, SNES…) also with the cover templates off, and comes out at its real size against a DVD case (a Game
+  Boy box smaller than a GameCube case). The carousels' turned 3D cases get the real shape too.
+- **The game's logo on the back** of the 3D cartridges and cards (custom, clear and real): turning an opened game round,
+  its empty back label carries the game's logo (SteamGridDB's, or the one you picked in its artwork). The cases have no
+  back label in your library, so they stay plain at the back.
+- **Cross menu folder logos baked in:** the console logos on the folders (and on the tiles with folders off) were SVGs
+  decoded through the image loader each time — slow, and they popped in again whenever the image cache let them go. They
+  ship as ready PNGs now (`assets/platform_logos_png`, `assets/system_logos_png`), read once and kept while the app runs,
+  so every folder has its logo on its first frame.
+- **No native branding on the cartridges:** the 3D pieces come from the blank-branding models with the console's logo
+  on the badge; the drawn UMD loses its moulded "PSP" (`res\drawable-nodpi\media_umd.png`). The drawn shells of the
+  Cartridges look had none; the custom cartridge pack prints the consoles' logos. **Still to do (167):** the cartridge
+  cover templates (`tpl_cart_*`, `tpl_cartl_*`, with cover templates on) still carry "Nintendo DS", "3DS", "SEGA",
+  "GENESIS", "PS VITA", "UMD", "Nintendo Switch" and the Game Boy embossing.
+
+### After installing
+- **Download the 3D models again:** Settings › Game look › Extra art packs › 3D models (the pack's marker changed, so the
+  old pieces count as missing). Until then the 3D looks show the flat looks.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Renders:** contact sheets of every angle checked here (the custom N64 painted all the way round, the back and sides
+  real).
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+foreach ($z in "pc166_packs1", "pc166_packs2", "pc166_rest") { Expand-Archive -Force "$P\Claude outputs\v166\$z.zip" $P }
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 166: 3D pieces all the way round, cartridges in the 3D looks, real-sized cases, baked Cross menu logos" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (165): no dark blocks beside the games in the carousel
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

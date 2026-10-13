@@ -1053,7 +1053,8 @@ private fun CarouselItem(
             .then(if (interactive) Modifier.pointerInput(real) { detectTapGestures { tapNow.value(real) } } else Modifier)
             .then(if (on) Modifier.focusedCard() else Modifier)
     ) {
-        if (band != null) MediaBandLayer(band, c.dens, turnOf, shadeOf)
+        // (Update 166: the side band is off — not even its empty layer per piece. See MediaBandLayer.)
+        // (Was: MediaBandLayer(band, c.dens, turnOf, shadeOf).)
         Box(
             Modifier.fillMaxSize().graphicsLayer {
                 rotationY = turnOf()
@@ -1136,7 +1137,9 @@ private fun MediaBandLayer(band: MediaBand, dens: Float, turnOf: () -> Float, sh
         val a = kotlin.math.abs(t)
         // (Update 165: only while the front still shows well — past 60° the piece is mostly its side and the band only
         // added a dark block.)
-        if (a >= 3f && a <= 60f) {
+        // (Update 166: off — the side was a rectangle shifted behind the piece, which never matched a cartridge's or a
+        // card's own outline: a grey block peeked out beside the games aside. The real thickness comes from the 3D looks.)
+        if (false && a >= 3f && a <= 60f) {
             // (ShelfGameArt draws a piece 4 dp in from its slot.)
             val inset = 4f * dens
             val w = (size.width - inset * 2f).coerceAtLeast(1f)

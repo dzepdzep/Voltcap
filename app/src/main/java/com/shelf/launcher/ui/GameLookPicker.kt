@@ -259,7 +259,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
         else if (com.shelf.launcher.data.Features.squareTiles.state.value)
             "Tile: the Tile home's big square tiles in the Voltcap row, the game you're on a little bigger and kept a square (no wide capsule). Size and shape are in Home › Layout options."
         else if (modelsNow)
-            "3D models: every game as its console's piece from your 3D shape library — real cartridges, cards and cases, or your custom cartridges (plain or clear) — with its cover in the window. Real / Custom / Clear and how they stand are under 3D models below. Also on the R1 panel: the Game look tile."
+            "3D models: every game as its console's piece from your 3D shape library — real cartridges and cards, or your custom cartridges (plain or clear) — with its cover in the window. Real / Custom / Clear and how they stand are under 3D models below. Also on the R1 panel: the Game look tile."
         else if (now == CardArtType.CARTRIDGE_DISC && com.shelf.launcher.data.Features.cartsOnly.state.value)
             "Cartridges: every game as a cartridge. Original: cartridge games keep their own (the real scan, or the drawn one); disc, UMD, Steam, Android, PC and arcade games get a cartridge from your pack with their cover in its window. Custom: every game on your pack. Also on the R1 panel: the Cartridges tile."
         else ALL_LOOKS.firstOrNull { it.first == now }?.third ?: now.label
@@ -387,21 +387,13 @@ private fun ModelOptions() {
             val nm = F.modelName.state.value
             Chip((if (nm) "✓ " else "") + "Name on the label", accent = nm) { F.modelName.value = !nm }
         }
-        // Update 151: disc consoles stand as their 3D case; with Custom / Clear your custom cartridge instead, if you like.
-        if (F.modelFinish.state.value != ModelFinish.REAL) {
-            SectionLabel("Disc consoles as")
-            ChipFlow {
-                val cart = F.modelDiscAsCart.state.value
-                Chip((if (!cart) "✓ " else "") + "Their 3D case", accent = !cart) { F.modelDiscAsCart.value = false }
-                Chip((if (cart) "✓ " else "") + "Your custom cartridge", accent = cart) { F.modelDiscAsCart.value = true }
-            }
-        }
+        // (Update 166: "Disc consoles as" is gone — the 3D looks are cartridges for every console; cases are the case looks' 3D.)
         ArtPositionSliders(model = true)
         MutedNote("Art position: where the cover sits in the window (also R1 › Art position, by dragging).")
         val have = com.shelf.launcher.data.Packs.count(com.shelf.launcher.data.Packs.Pack.MODELS).first
         if (have == 0) MutedNote("The 3D models aren't on this device yet: Settings › Game look › Extra art packs › 3D models downloads them.")
     }
-    MutedNote("Your 3D shape library: with the 3D models look (or Cartridges & discs) every game is its console's piece with its cover in the window: cartridge consoles their 3D cartridge, the disc consoles, DS, 3DS and Switch their 3D case, and the carousels' 3D cases become these cases, turned to the side they face. Real cases stay flat for every console. Real: each console's own cartridge, card or case. Custom: your custom cartridges. Clear: the custom ones in tinted clear plastic. Consoles without a piece keep their usual look; the SD and memory cards are for the Save Vault (its Style › 3D card).")
+    MutedNote("Your 3D shape library: with the 3D models look (or Cartridges & discs) every game is its console's piece with its cover in the window: every console its 3D cartridge or card (the disc consoles their custom cartridge). The 3D cases are the case looks' own: R1 › 3D in a case look. Real: each console's own cartridge or card. Custom: your custom cartridges. Clear: the custom ones in tinted clear plastic. Consoles without a piece keep their usual look; the SD and memory cards are for the Save Vault (its Style › 3D card).")
 }
 
 /** Width / height of a game drawn as its spine (Spines look, update 113): a little wider than a real one, so the name reads. */

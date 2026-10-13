@@ -106,6 +106,7 @@ object Features {
         }
         migrate42(p)
         migrate158(p) // Update 158
+        migrate166(p) // Update 166
         // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
         // default; it now starts on the games' own art (still pickable).
         if (!p.contains("category_art")) {
@@ -142,6 +143,16 @@ object Features {
         p.edit().putBoolean("m158_face_done", true).apply()
         if (modelTurn.value) modelTurn.value = false
         if (modelAngle.value == com.shelf.launcher.ui.ModelAngle.TURNED && !p.contains("picked_faces")) pickedFaces.value = false
+    }
+
+    /**
+     * Update 166, once (asked for): the 3D box or piece you're on faces you again while you scroll ("The one you're on" ›
+     * Faces you); "Turned like the others" stays a choice (Game look › 3D models, Carousel options, Case stacks options).
+     */
+    private fun migrate166(p: android.content.SharedPreferences) {
+        if (p.getBoolean("m166_face_done", false)) return
+        p.edit().putBoolean("m166_face_done", true).apply()
+        if (!pickedFaces.value) com.shelf.launcher.ui.PickedFacing.set(true)
     }
 
     // ---- Look & feel ----

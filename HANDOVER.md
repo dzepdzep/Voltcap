@@ -164,7 +164,7 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 
 ## State after update 136 (not tested on a device yet)
 - **3D models look:** `ui/Models3D.kt` — `ModelFinish` (OFF / REAL / CUSTOM / CLEAR), `ModelSpare`, `ModelAngle`, `Models3D` (console key → model id tables `REAL` / `CUSTOM`, `idFor`, `available`, `on`, `meta`, `compose`, two LRU caches) and the `Model3DArt` composable. Prefs `Features.modelFinish / modelSpare / modelAngle`; UI `ModelOptions` in `GameLookPicker.kt` (Settings › Game look › Covers, cases & discs › 3D models). `mediaFor` hands out `MediaPick(…, MODEL_3D + id, aspect)` first thing; `PhysicalMedia` draws it; the carousel's `cases3d` path draws `Model3DArt(yaw = p.turnY)` when the console has a model.
-- **The pack:** `Packs.Pack.MODELS`, `model_<id>.zip` (81, 11 MB) → `files/packs/models/<id>/` with `<yaw>.webp` (model, window dark), `<yaw>_g.webp` (window light, alpha = where the window shows) for yaw −60…60 step 20, and `meta.json` (w, h, `art` = window aspect, `angles` = the window's 4 corners per yaw, normalised, TL TR BR BL). App side: cover cut to `art`, `setPolyToPoly` to the corners on a black layer, × gain (PorterDuff MULTIPLY), + model (ADD). Made by `tools/render3d` (WebGL2 renderer in headless Chromium, Playwright + sharp). The zips are in `project_copy/packs/v1/`; I upload them to the repo's `packs/v1` on github.com (see Extra art packs).
+- **The pack:** `Packs.Pack.MODELS`, `model_<id>.zip` (81, 11 MB) → `files/packs/models/<id>/` with `<yaw>.webp` (model, window dark), `<yaw>_g.webp` (window light, alpha = where the window shows) for yaw −60…60 step 20 (since 166: −160…180, see State after 166), and `meta.json` (w, h, `art` = window aspect, `angles` = the window's 4 corners per yaw, normalised, TL TR BR BL). App side: cover cut to `art`, `setPolyToPoly` to the corners on a black layer, × gain (PorterDuff MULTIPLY), + model (ADD). Made by `tools/render3d` (WebGL2 renderer in headless Chromium, Playwright + sharp). The zips are in `project_copy/packs/v1/`; I upload them to the repo's `packs/v1` on github.com (see Extra art packs).
 - **Mixer:** `AppMixer.fxGlobal` (meta "fx_global"): when the firmware moves the effect to session 0 (AYN: "createEffect sessionId 0" in logcat), `checkRemap` notices (no "effects for session X" in `dumpsys media.audio_flinger`), Automatic uses the helper instead. The helper is started on the single-thread `starter` with `setsid … &`, so `apply()` never waits on it (it hung forever before).
 - **Gesture hint:** `HintKey("global","hide_nav_bar")` (AYN) is the first candidate; `hintKey()` re-detects once (`keys_v` = 2).
 - **Art drop:** `Features.artDropCase` (used in `CoverFace`, `CoverCases.kt`) and `artDropModel` (`Models3D.labelPicture`), R1 tile `artdrop` + `ArtDropPopup` in `QuickSettings.kt` (bottom slider, no dim). **Name strip:** `Features.modelName`, `PhysicalMedia(title)`.
@@ -255,6 +255,28 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 166
+- **3D pack v6.11, all the way round:** `tools/render3d/batch3.js` (18 angles −160…180, from `glbplan.json`: the
+  blank-branding GLB where there is one, else v6.11), then `backs.py --write` (adds `backs` / `backAspect` — the back
+  label's corners where the back faces you — and fixes a logo plate without geometry, 3ds_card_real), zipped as
+  `model_<id>.zip` into `packs/v1`. Marker `<id>.v611` (data/Packs.kt). `model_logos.zip` is unchanged (same systems.json).
+  The Save Vault's clear cards have only −60…60 (`SPARE_ANGLES`; SwayingModel never goes past 60).
+- **Models3D:** `ANGLES` −160…180, `wrap()`, `nearest()` round the circle; `Meta.backs/backAspect`; `compose(…, backLogo)`
+  prints the game's logo on the back label (`composeFront` is the old compose); keys carry the logo only at back angles.
+  `idFor()` never returns a case (the 3D looks are cartridge looks; disc consoles → their custom cartridge, solid with
+  REAL); "Disc consoles as" (`modelDiscAsCart`) has no chip any more. Real pieces carry `tint.own` (own colours, console
+  logo on the blank badge).
+- **MediaInspectView:** `InspectModel` crossfades the two nearest real angles (no squeeze / mirror); `InspectPiece.logo`
+  (set in `inspectPieceFor`); BOX pieces sized by `realCaseScale` (Case3D.kt) — `case3dAspect` uses `realCaseMm`'s shape
+  also with cover templates off, `realCaseDepth` the thickness when there's no spine picture.
+- **Carousel:** `MediaBandLayer` no longer called (the grey / dark panel behind turned games).
+- **Features.migrate166** (`m166_face_done`): "The one you're on" back to Faces you once.
+- **Baked logos:** `assets/platform_logos_png` (44) and `assets/system_logos_png` (65), from the SVGs by
+  `tools/render3d/rasterlogos.js`; `PlatformLogos.baked()` / `bakedForUrl()` (kept for the app's life), used by
+  `PlatformLogo` and `CrossIconTile`. `res/drawable-nodpi/media_umd.png`: "PSP" lettering removed.
+- **Open for 167:** the cartridge cover templates (`tpl_cart_*`, `tpl_cartl_*`) still show native branding; volume mixer
+  without Shizuku (the user found github.com/yume-chan/VolumeManager, which needs Shizuku).
 
 ## State after update 165
 - Carousel `MediaBandLayer`: shift capped at tan ≤ 1.5, drawn only for turns 3–60°, lighter shade.

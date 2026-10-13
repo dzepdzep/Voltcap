@@ -481,8 +481,7 @@ internal fun GameWindow(
     if (pieceNow != null) lastPiece[0] = pieceNow
     val piece = if (inspect) pieceNow ?: lastPiece[0] else null
     val motion = remember(g.stableKey) { InspectMotion().also { it.from = origin } }
-    // (Update 162: a 3D model turns all the way round too — past its pictures' ±60° it squeezes to its edge and shows its
-    // back, InspectModel.)
+    // (Update 162: a 3D model turns all the way round too. Update 166: on its own pictures, every 20° round — InspectModel.)
     motion.limited = false
     val inspectScope = rememberCoroutineScope()
     // The flight and the turn with the window's animation on (Home › Animations), the system's animations on and no

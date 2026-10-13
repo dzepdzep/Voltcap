@@ -32,6 +32,10 @@ import com.shelf.launcher.data.Packs
  * colours (or yours: R1 › Cartridge colour, one game or all of them) and prints that console's logo on the badge (the
  * "logos" piece of the pack: the ES-DE colour logos and each console's shell / badge colours). A solid shell is exact (the
  * pre-render's tone curve is undone, the colour applied, the curve put back); a clear one blends the nearest greys.
+ *
+ * Update 166: your library's v6.11 with its blank-branding variants (no native lettering), from 18 angles all the way
+ * round (tools/render3d/batch3.js): the art window and logo only where the front faces you, the custom pieces painted on
+ * every side. The real cartridges and cards keep their own colours, their blank badge printed with the console's logo.
  */
 
 /** Which of the library's pieces a game is drawn as (Settings › Game look › 3D models; Off = the drawn / scanned media). */
@@ -66,8 +70,14 @@ enum class ModelAngle(val label: String) {
 internal const val MODEL_3D = "~m3d:"
 
 internal object Models3D {
-    /** The angles in the pack, in degrees (positive: turned so its left side shows, like the 3D cases). */
-    val ANGLES = intArrayOf(-60, -40, -20, 0, 20, 40, 60)
+    /**
+     * The angles in the pack, in degrees (positive: turned so its left side shows, like the 3D cases). Update 166: all
+     * the way round, every 20° (180 is its back) — the pieces used to stop at ±60°.
+     */
+    val ANGLES = IntArray(18) { -160 + it * 20 }
+
+    /** Update 166: [yaw] brought into −180…180. */
+    fun wrap(yaw: Float): Float = ((yaw % 360f) + 540f) % 360f - 180f
 
     /** Real pieces: Voltcap console keys → model ids. */
     private val REAL: Map<String, String> = mapOf(
@@ -177,22 +187,22 @@ internal object Models3D {
     fun on(): Boolean = Features.modelFinish.state.value != ModelFinish.OFF && Packs.anyModels()
 
     /**
-     * The model [platform]'s games are drawn as with the current choice (downloaded or not), or null. [noCase]: never its
-     * 3D case (the piece it falls back to while the case isn't downloaded).
+     * The model [platform]'s games are drawn as with the current choice (downloaded or not), or null.
      */
-    fun idFor(platform: String, noCase: Boolean = false): String? {
+    fun idFor(platform: String): String? {
         val finish = Features.modelFinish.state.value
         if (finish == ModelFinish.OFF) return null
-        // Update 151: disc consoles (and the DS, 3DS and Switch) stand as their 3D case from your shape library, the game's
-        // cover in it; with Custom / Clear only if you didn't pick your custom cartridge for them (Settings › Game look ›
-        // 3D models › Disc consoles as). Cartridge consoles keep their 3D cartridge.
-        if (!noCase && (finish == ModelFinish.REAL || !Features.modelDiscAsCart.state.value)) CASES[platform]?.let { return it }
+        // Update 166: the 3D looks are cartridge looks (3D cartridges, 3D custom cartridges, 3D clear cartridges): a disc
+        // console is never its 3D case here — that's the case looks' own (R1 › 3D in a case look, [caseModel]). It stands
+        // as its custom cartridge (the PlayStation, GameCube, Dreamcast and PSP ones), solid with 3D cartridges.
         val clear = finish == ModelFinish.CLEAR
         // Update 137: consoles without a custom piece get the generic one in their colours with their logo (once the logos are here).
         val shape = CUSTOM[platform] ?: GENERIC.takeIf { CustomCarts.idFor(platform) != null && Packs.hasModel(LOGOS) }
-        val custom = if (finish == ModelFinish.REAL) null else shape?.let { if (clear && (it + "_translucent") in ALL_SET) it + "_translucent" else it }
+        val real = REAL[platform]?.takeUnless { it.startsWith("case_") }
+        if (finish == ModelFinish.REAL) return real ?: shape
+        val custom = shape?.let { if (clear && (it + "_translucent") in ALL_SET) it + "_translucent" else it }
         // (Consoles without a piece of their own keep their usual look; the SD / memory cards are the Save Vault's.)
-        return custom ?: REAL[platform]
+        return custom ?: real
     }
 
     /** The Save Vault's 3D card (Save Vault › Style › 3D card), when it's on the device. */
@@ -203,13 +213,13 @@ internal object Models3D {
     }
 
     /** [idFor], only when that model is on the device. */
-    // (Update 151: a disc console whose 3D case isn't downloaded falls back to the piece it had before.)
-    fun available(platform: String): String? =
-        idFor(platform)?.takeIf { Packs.hasModel(it) } ?: idFor(platform, noCase = true)?.takeIf { Packs.hasModel(it) }
+    fun available(platform: String): String? = idFor(platform)?.takeIf { Packs.hasModel(it) }
 
     // ---- The pack's pictures ----
 
-    class Meta(val w: Int, val h: Int, val artAspect: Float, val quads: Map<Int, FloatArray>, val tint: TintMeta? = null) {
+    class Meta(val w: Int, val h: Int, val artAspect: Float, val quads: Map<Int, FloatArray>, val tint: TintMeta? = null,
+               /** Update 166: the back label's corners where the back faces you (the game's logo goes there), and its shape. */
+               val backs: Map<Int, FloatArray> = emptyMap(), val backAspect: Float = 2f) {
         val aspect: Float get() = w.toFloat() / h.coerceAtLeast(1)
     }
 
@@ -244,7 +254,9 @@ internal object Models3D {
                 TintMeta(t.getString("sys"), t.optBoolean("clear"), t.optDouble("trans", 0.0).toFloat(), IntArray(lv.length()) { lv.getInt(it) },
                     t.optDouble("logoAspect", 4.0).toFloat(), lq, ls, own)
             }
-            Meta(j.getInt("w"), j.getInt("h"), j.optDouble("art", 1.0).toFloat(), q, t)
+            val bq = HashMap<Int, FloatArray>()
+            j.optJSONObject("backs")?.let { b -> for (k in b.keys()) { val arr = b.getJSONArray(k); bq[k.toInt()] = FloatArray(8) { arr.getDouble(it).toFloat() } } }
+            Meta(j.getInt("w"), j.getInt("h"), j.optDouble("art", 1.0).toFloat(), q, t, bq, j.optDouble("backAspect", 2.0).toFloat())
         }.getOrNull()
         // (Not kept while it's missing: it may arrive with the next download.)
         if (m != null) metas[id] = m
@@ -258,8 +270,11 @@ internal object Models3D {
     /** Width / height of [id]'s pictures (0.75 while unknown). */
     fun aspect(id: String): Float = meta(id)?.aspect ?: 0.75f
 
-    /** The pack's angle nearest to [yaw]. */
-    fun nearest(yaw: Float): Int = ANGLES.minByOrNull { kotlin.math.abs(it - yaw) } ?: 0
+    /** The pack's angle nearest to [yaw] (update 166: round the circle, so −175° is its back, 180). */
+    fun nearest(yaw: Float): Int {
+        val y = wrap(yaw)
+        return ANGLES.minByOrNull { val d = kotlin.math.abs(it - y); minOf(d, 360f - d) } ?: 0
+    }
 
     private val pictures = object : android.util.LruCache<String, android.graphics.Bitmap>(24 * 1024 * 1024) {
         override fun sizeOf(key: String, value: android.graphics.Bitmap) = value.byteCount
@@ -292,19 +307,25 @@ internal object Models3D {
     private fun coverTag(cover: android.graphics.Bitmap?): String =
         cover?.let { sources[it] ?: ("#" + System.identityHashCode(it)) } ?: "0"
 
-    private fun keyFor(id: String, yaw: Int, coverTag: String, name: String?, pos: ArtPos, tint: Tint?) =
-        "$id|$yaw|$coverTag|${name.orEmpty()}|${pos.key}|${tint?.key.orEmpty()}"
+    // (Update 166: [backLogo] — the game's logo on its back label — only counts at the angles that show the back.)
+    private fun keyFor(id: String, yaw: Int, coverTag: String, name: String?, pos: ArtPos, tint: Tint?, backTag: String = "") =
+        "$id|$yaw|$coverTag|${name.orEmpty()}|${pos.key}|${tint?.key.orEmpty()}|$backTag"
 
-    private fun key(id: String, yaw: Int, cover: android.graphics.Bitmap?, name: String?, pos: ArtPos, tint: Tint?) =
-        keyFor(id, yaw, coverTag(cover), name, pos, tint)
+    private fun backTagOf(id: String, yaw: Int, backLogo: android.graphics.Bitmap?): String =
+        if (backLogo == null || meta(id)?.backs?.containsKey(yaw) != true) "" else coverTag(backLogo)
+
+    private fun key(id: String, yaw: Int, cover: android.graphics.Bitmap?, name: String?, pos: ArtPos, tint: Tint?, backLogo: android.graphics.Bitmap? = null) =
+        keyFor(id, yaw, coverTag(cover), name, pos, tint, backTagOf(id, yaw, backLogo))
 
     /** The picture already made for these, if any (drawn at once, no waiting). */
-    fun cached(id: String, yaw: Int, cover: android.graphics.Bitmap?, name: String? = null, pos: ArtPos = ArtPos.NONE, tint: Tint? = null): android.graphics.Bitmap? =
-        composed.get(key(id, yaw, cover, name, pos, tint))
+    fun cached(id: String, yaw: Int, cover: android.graphics.Bitmap?, name: String? = null, pos: ArtPos = ArtPos.NONE, tint: Tint? = null,
+               backLogo: android.graphics.Bitmap? = null): android.graphics.Bitmap? =
+        composed.get(key(id, yaw, cover, name, pos, tint, backLogo))
 
     /** Update 151: the same, found by the cover's address while its picture is still loading. */
-    fun cachedFor(id: String, yaw: Int, coverSource: String, name: String? = null, pos: ArtPos = ArtPos.NONE, tint: Tint? = null): android.graphics.Bitmap? =
-        composed.get(keyFor(id, yaw, coverSource, name, pos, tint))
+    fun cachedFor(id: String, yaw: Int, coverSource: String, name: String? = null, pos: ArtPos = ArtPos.NONE, tint: Tint? = null,
+                  backLogo: android.graphics.Bitmap? = null): android.graphics.Bitmap? =
+        composed.get(keyFor(id, yaw, coverSource, name, pos, tint, backTagOf(id, yaw, backLogo)))
 
     // ---- Update 137: painting the custom pieces ----
 
@@ -588,7 +609,41 @@ internal object Models3D {
      * The model at angle [yaw] with [cover] in its window (a plain light card while there's none). Off the main
      * thread: two pictures read once, then a few draws.
      */
-    fun compose(id: String, yaw: Int, cover: android.graphics.Bitmap?, name: String? = null, pos: ArtPos = ArtPos.NONE, tint: Tint? = null): android.graphics.Bitmap? {
+    fun compose(
+        id: String, yaw: Int, cover: android.graphics.Bitmap?, name: String? = null, pos: ArtPos = ArtPos.NONE, tint: Tint? = null,
+        /** Update 166: the game's logo, printed on the back label where the back faces you. */
+        backLogo: android.graphics.Bitmap? = null
+    ): android.graphics.Bitmap? {
+        val m = meta(id) ?: return null
+        val bq = backLogo?.let { m.backs[yaw] }
+        if (backLogo == null || bq == null) return composeFront(id, yaw, cover, name, pos, tint)
+        val k = key(id, yaw, cover, name, pos, tint, backLogo)
+        composed.get(k)?.let { return it }
+        val front = composeFront(id, yaw, cover, name, pos, tint) ?: return null
+        return runCatching {
+            val out = front.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+            val w = out.width; val h = out.height
+            // Fitted (no stretching) in the label's middle, 88 % × 78 % of it, a little dimmer than paper under the light.
+            val pw = 1000f; val ph = pw / m.backAspect.coerceIn(0.3f, 8f)
+            val sc = minOf(pw * 0.88f / backLogo.width, ph * 0.78f / backLogo.height)
+            val src = floatArrayOf(0f, 0f, pw, 0f, pw, ph, 0f, ph)
+            val dst = FloatArray(8) { i -> bq[i] * (if (i % 2 == 0) w else h) }
+            val mx = android.graphics.Matrix()
+            if (mx.setPolyToPoly(src, 0, dst, 0, 4)) {
+                mx.preTranslate((pw - backLogo.width * sc) / 2f, (ph - backLogo.height * sc) / 2f)
+                mx.preScale(sc, sc)
+                val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                    colorFilter = android.graphics.ColorMatrixColorFilter(android.graphics.ColorMatrix().apply { setScale(0.92f, 0.92f, 0.92f, 1f) })
+                }
+                android.graphics.Canvas(out).drawBitmap(backLogo, mx, paint)
+            }
+            composed.put(k, out)
+            out
+        }.getOrNull() ?: front
+    }
+
+    /** [compose] without the back's logo: the piece (painted) with [cover] in its window. */
+    private fun composeFront(id: String, yaw: Int, cover: android.graphics.Bitmap?, name: String?, pos: ArtPos, tint: Tint?): android.graphics.Bitmap? {
         val k = key(id, yaw, cover, name, pos, tint)
         composed.get(k)?.let { return it }
         val m = meta(id) ?: return null

@@ -428,7 +428,15 @@ internal fun CrossIconTile(stop: StyleStop, size: Dp) {
         // A logo that doesn't load falls back to the icon (it used to stay blank).
         var failed by androidx.compose.runtime.remember(stop.logo) { androidx.compose.runtime.mutableStateOf(false) }
         val logo = stop.logo.takeIf { !failed }
-        if (logo != null) {
+        // Update 166: the console logos baked into the app, drawn at once (no SVG decoding, no popping in).
+        val baked = androidx.compose.runtime.remember(logo) { logo?.let { PlatformLogos.bakedForUrl(context, it) } }
+        if (baked != null) {
+            androidx.compose.foundation.Image(
+                baked, stop.label, contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                colorFilter = if (cut) androidx.compose.ui.graphics.ColorFilter.tint(tileTint ?: Color.White) else null,
+                modifier = Modifier.fillMaxSize(0.7f)
+            )
+        } else if (logo != null) {
             val request = androidx.compose.runtime.remember(logo) {
                 coil.request.ImageRequest.Builder(context).data(logo)
                     .apply { if (logo.endsWith(".svg")) decoderFactory(coil.decode.SvgDecoder.Factory()) }

@@ -120,7 +120,10 @@ internal class InspectPiece(
     val tone: Color,
     /** DISC: a mini disc drawn at its real size (70 %). */
     val smallDisc: Boolean
-)
+) {
+    /** Update 166: MODEL: the game's logo (SteamGridDB's, or yours), printed on the piece's back label. */
+    var logo: Any? = null
+}
 
 private val PLAIN_SHELL = Color(0xFF2C2E34)
 private val CUSTOM_SHELL = Color(0xFF55585F)
@@ -154,7 +157,10 @@ private fun slabAspect(pick: MediaPick, labelIsScan: Boolean): Float {
  * Update 162: the piece [g] is drawn as on the home screen, or null when its card isn't a physical piece (covers, wide
  * capsules…: the game window opens as before). Read in composition (it follows the look's switches).
  */
-internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? {
+internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? =
+    inspectPieceOf(g, state)?.also { it.logo = state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl }
+
+private fun inspectPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
     val a = state.appearance
     val k = g.stableKey
     val p = g.platform
@@ -447,8 +453,10 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
     Box(Modifier.fillMaxSize().onGloballyPositioned { c -> val o = c.positionInWindow(); win[0] = o.x; win[1] = o.y }) {
         if (slot != null) {
             val aspect = piece.aspect.coerceIn(0.25f, 4f)
-            // As big as fits its side of the window (some room kept for its turn and its shadow).
-            val w = minOf(slot.width * 0.9f, slot.height * 0.8f * aspect).coerceAtLeast(8f)
+            // As big as fits its side of the window (some room kept for its turn and its shadow). Update 166: a case at its
+            // real size against a DVD case's (a Game Boy box smaller than a GameCube case).
+            val real = if (piece.kind == InspectKind.BOX) realCaseScale(piece.game.platform) else 1f
+            val w = (minOf(slot.width * 0.9f, slot.height * 0.8f * aspect) * real).coerceAtLeast(8f)
             val h = w / aspect
             val left = slot.left + (slot.width - w) / 2f
             val top = slot.top + (slot.height - h) / 2f
@@ -674,25 +682,29 @@ private fun DiscDataSide(modifier: Modifier) {
     )
 }
 
-/** The pack's angle at or just below [yaw] (it and the next one up hold [yaw] between them). */
 /** Update 162: [yaw] brought into −180…180. */
-private fun inspectNorm(yaw: Float): Float { val y = ((yaw % 360f) + 540f) % 360f - 180f; return y }
+private fun inspectNorm(yaw: Float): Float = Models3D.wrap(yaw)
 
-/** Update 162: the angle of the side facing you: the front's own, or past 90° the back's (seen mirrored), −90…90. */
-private fun inspectEff(yaw: Float): Float { val y = inspectNorm(yaw); return if (abs(y) <= 90f) y else kotlin.math.sign(y) * (180f - abs(y)) }
-
+/**
+ * Update 166: the pack's angle at or just below [yaw] (−180…160, every 20°: it and the next one up hold [yaw] between
+ * them; −180 is the pack's 180, its back).
+ */
 private fun inspectLowAngle(yaw: Float): Int =
-    (kotlin.math.floor((yaw + 60f) / 20f).toInt() * 20 - 60).coerceIn(-60, 40)
+    (kotlin.math.floor((inspectNorm(yaw) + 180f) / 20f).toInt() * 20 - 180).coerceIn(-180, 160)
+
+/** Update 166: the pack's picture for [a] (−180 is its 180). */
+private fun inspectPackAngle(a: Int): Int = if (a <= -180) 180 else a
 
 /** [id] at [angle] with its cover: at once when it's already made, else made away from the screen's thread. */
 @Composable
 private fun rememberInspectPicture(
-    id: String, angle: Int, cover: android.graphics.Bitmap?, title: String?, pos: ArtPos, tint: Models3D.Tint?, version: Int, source: Any?
+    id: String, angle: Int, cover: android.graphics.Bitmap?, title: String?, pos: ArtPos, tint: Models3D.Tint?, version: Int, source: Any?,
+    backLogo: android.graphics.Bitmap? = null
 ): android.graphics.Bitmap? {
     val waiting = source != null && cover == null
-    val now = if (waiting && source is String) Models3D.cachedFor(id, angle, source, title, pos, tint) else Models3D.cached(id, angle, cover, title, pos, tint)
-    val made by produceState(now, id, angle, cover, version, title, pos.key, tint?.key) {
-        if (now == null && !waiting) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Models3D.compose(id, angle, cover, title, pos, tint) }
+    val now = if (waiting && source is String) Models3D.cachedFor(id, angle, source, title, pos, tint, backLogo) else Models3D.cached(id, angle, cover, title, pos, tint, backLogo)
+    val made by produceState(now, id, angle, cover, version, title, pos.key, tint?.key, backLogo) {
+        if (now == null && !waiting) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Models3D.compose(id, angle, cover, title, pos, tint, backLogo) }
     }
     return now ?: made
 }
@@ -710,24 +722,26 @@ private fun InspectModel(p: InspectPiece, id: String, aspect: Float, yawOf: () -
     val pos = ArtPlace.of(model = true)
     ModelColors.version.intValue
     val tint = Models3D.tintFor(id, p.game.platform, name)
-    LaunchedEffect(id, coverBmp, version, title, pos.key, tint?.key) {
+    // Update 166: the game's logo on its back label (the custom and real cartridges and cards; the cases have none).
+    val logoBmp = rememberSoftBitmap(p.logo, 480)
+    LaunchedEffect(id, coverBmp, version, title, pos.key, tint?.key, logoBmp) {
         if (p.front != null && coverBmp == null) return@LaunchedEffect
+        // (Update 166: the front first, then outward both ways round — the sides and the back last.)
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-            for (a in Models3D.ANGLES) Models3D.compose(id, a, coverBmp, title, pos, tint)
+            for (a in Models3D.ANGLES.sortedBy { kotlin.math.abs(it) }) Models3D.compose(id, a, coverBmp, title, pos, tint, logoBmp)
         }
     }
-    // Update 162: all the way round. Within ±60° the model's own pictures; on to 90° the nearest one squeezes to its edge;
-    // past 90° its back — the same piece without its label, seen mirrored — turning on round to face you again.
-    val back by remember(id) { derivedStateOf { abs(inspectNorm(yawOf())) > 90f } }
-    val low by remember(id) { derivedStateOf { inspectLowAngle(inspectEff(yawOf()).coerceIn(-60f, 60f)) } }
-    val pic0 = rememberInspectPicture(id, low, if (back) null else coverBmp, if (back) null else title, pos, tint, version, if (back) null else p.front)
-    val pic1 = rememberInspectPicture(id, low + 20, if (back) null else coverBmp, if (back) null else title, pos, tint, version, if (back) null else p.front)
+    // Update 166: all the way round on the model's own pictures — its real sides and back, in its own colours (the pack
+    // is pre-rendered every 20° round). The two nearest are crossfaded. (Update 162 squeezed the ±60° picture to its
+    // edge and showed it mirrored as the back: the sides looked flat and a painted piece kept its colour only in front.)
+    val low by remember(id) { derivedStateOf { inspectLowAngle(yawOf()) } }
+    val pic0 = rememberInspectPicture(id, inspectPackAngle(low), coverBmp, title, pos, tint, version, p.front, logoBmp)
+    val pic1 = rememberInspectPicture(id, inspectPackAngle(low + 20), coverBmp, title, pos, tint, version, p.front, logoBmp)
     val img0 = remember(pic0) { pic0?.asImageBitmap() }
     val img1 = remember(pic1) { pic1?.asImageBitmap() }
     // The last picture shown stays until the next pair is there (never an empty frame).
     val last = remember { arrayOfNulls<ImageBitmap>(1) }
     SideEffect { if (img0 != null) last[0] = img0 }
-    val backShade = remember { ColorFilter.tint(Color(0xFF000000).copy(alpha = 0.18f), androidx.compose.ui.graphics.BlendMode.SrcAtop) }
     Spacer(
         Modifier.fillMaxSize().drawWithCache {
             val fw = minOf(size.width, size.height * aspect)
@@ -736,19 +750,15 @@ private fun InspectModel(p: InspectPiece, id: String, aspect: Float, yawOf: () -
             val dstSize = IntSize(fw.roundToInt().coerceAtLeast(1), fh.roundToInt().coerceAtLeast(1))
             onDrawBehind {
                 val y = inspectNorm(yawOf())
-                val eff = inspectEff(y)
-                val onBack = abs(y) > 90f
-                // Past ±60°: squeezed toward its edge (cos), to nothing at 90°.
-                val squeeze = if (abs(eff) <= 60f) 1f else (kotlin.math.cos(Math.toRadians(abs(eff).toDouble())) / 0.5).toFloat().coerceIn(0.02f, 1f)
-                val f = ((eff.coerceIn(-60f, 60f) - low) / 20f).coerceIn(0f, 1f)
+                // How far past the lower picture (0…1); across −180 the angle runs on from 160.
+                var d = y - low
+                if (d < 0f) d += 360f
+                val f = (d / 20f).coerceIn(0f, 1f)
                 val a0 = if (img1 == null || f < 0.5f) 1f else (1f - f) * 2f
                 val a1 = if (f > 0.5f) 1f else f * 2f
-                val cf = if (onBack) backShade else null
-                scale(if (onBack) -squeeze else squeeze, 1f, pivot = center) {
-                    if (img0 != null) drawImage(img0, dstOffset = dstOff, dstSize = dstSize, alpha = a0, colorFilter = cf)
-                    if (img1 != null) drawImage(img1, dstOffset = dstOff, dstSize = dstSize, alpha = if (img0 == null) 1f else a1, colorFilter = cf)
-                    if (img0 == null && img1 == null) last[0]?.let { drawImage(it, dstOffset = dstOff, dstSize = dstSize, colorFilter = cf) }
-                }
+                if (img0 != null) drawImage(img0, dstOffset = dstOff, dstSize = dstSize, alpha = a0)
+                if (img1 != null) drawImage(img1, dstOffset = dstOff, dstSize = dstSize, alpha = if (img0 == null) 1f else a1)
+                if (img0 == null && img1 == null) last[0]?.let { drawImage(it, dstOffset = dstOff, dstSize = dstSize) }
             }
         }
     )

@@ -65,7 +65,9 @@ internal fun Case3D(
     // How thick the case is (its spine's width against its height): the spine picture's own shape, kept to real cases'.
     val depth = remember(spine, tpl, ownBmp) {
         val own = spine.width.toFloat() / spine.height.coerceAtLeast(1)
-        (if (ownBmp != null) own else tpl?.aspect ?: 0.085f).coerceIn(0.05f, 0.16f)
+        // (Update 166: without a spine picture, the console's real case thickness — a Game Boy box is far thicker for its
+        // size than a DVD case — not always a DVD case's.)
+        (if (ownBmp != null) own else tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
     }
     val face = remember(front, aspect) { front?.let { cropTo(it, aspect) } }
     val backBmp = rememberSoftBitmap(back, 480)
@@ -89,9 +91,45 @@ internal fun Case3D(
     }
 }
 
-/** Width / height of a game's 3D case: its console's cover shape (the cover templates), else a game case's. */
-internal fun case3dAspect(g: Game, mixed: Boolean): Float =
-    (if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null)?.coerceIn(0.55f, 1.45f) ?: 0.71f
+/**
+ * Width / height of a game's 3D case: its console's real case shape (update 166: also with the cover templates off — a
+ * Game Boy Advance game opened as a DVD-shaped box), else a game case's.
+ */
+internal fun case3dAspect(g: Game, mixed: Boolean): Float {
+    if (!mixed) realCaseMm(g.platform)?.let { (w, h) -> if (w > 0f && h > 0f) return (w / h).coerceIn(0.55f, 1.45f) }
+    return (if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null)?.coerceIn(0.55f, 1.45f) ?: 0.71f
+}
+
+/**
+ * Update 166: a console's case thickness against its height (approximate, the usual US / EU release), for a case without
+ * a spine picture; null: a DVD case's.
+ */
+internal fun realCaseDepth(platform0: String?): Float? {
+    val platform = LookStyles.casePlatform(platform0)
+    val mm = realCaseMm(platform) ?: return null
+    val d = when (platform) {
+        "GB", "GBC", "GBA", "NeoGeoPocket", "WonderSwan", "PokemonMini" -> 24f
+        "GameGear", "Lynx" -> 24f
+        "NES", "SNES", "N64", "Atari2600", "Atari7800", "ColecoVision", "VirtualBoy", "Jaguar" -> 38f
+        "Genesis", "MasterSystem", "32X", "NeoGeo" -> 30f
+        "NDS", "3DS", "PSVita" -> 14f
+        "Switch" -> 11f
+        "PS1", "Dreamcast", "NeoGeoCD", "PCEngineCD" -> 10.4f
+        "Saturn", "SegaCD", "3DO" -> 18f
+        "PCEngine" -> 20f
+        "PSP" -> 14f
+        else -> 14f
+    }
+    // (Case3D draws the thickness against the case's height.)
+    return d / mm.second.coerceAtLeast(1f)
+}
+
+/**
+ * Update 166: how big a console's case shows when it's opened (a game turned in the game window), against a DVD case
+ * (190 mm): a Game Boy box comes out smaller than a GameCube case, as they are. Bigger cases fill the room as before.
+ */
+internal fun realCaseScale(platform: String?): Float =
+    realCaseMm(platform)?.let { (w, h) -> (maxOf(w, h) / 190f).coerceIn(0.62f, 1f) } ?: 1f
 
 /** [src] cut in the middle to [aspect] (width / height), no stretching. */
 private fun cropTo(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {

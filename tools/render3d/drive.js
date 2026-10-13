@@ -1,7 +1,7 @@
 const { chromium } = require('/opt/npm-tools/node_modules/playwright');
 const sharp = require('/opt/npm-tools/node_modules/sharp');
 const http = require('http'), fs = require('fs'), path = require('path');
-const ROOT = { '/r/': '/tmp/claude-0/r3d/', '/v6/': '/mnt/user-data/uploads/v6/', '/v68/': '/mnt/user-data/uploads/VoltCap_3D_Shape_Library_v6_8_Complete--VoltCap_v6_Refined--v6/' };
+const ROOT = { '/r/': '/tmp/claude-0/r3d166/', '/all/': '/mnt/user-data/uploads/all/', '/v6/': '/mnt/user-data/uploads/v6/', '/v68/': '/mnt/user-data/uploads/VoltCap_3D_Shape_Library_v6_8_Complete--VoltCap_v6_Refined--v6/' };
 const srv = http.createServer((q, s) => {
   for (const [k, v] of Object.entries(ROOT)) if (q.url.startsWith(k)) {
     const f = path.join(v, decodeURIComponent(q.url.slice(k.length)));
