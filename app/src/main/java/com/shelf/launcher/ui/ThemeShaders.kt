@@ -201,6 +201,7 @@ internal object ThemeShaders {
         ThemeMotif.SHOWCASE_MOSAIC -> PRELUDE + SHOWCASE_BG
         ThemeMotif.SHOWCASE_GLASS -> PRELUDE + GLASS
         ThemeMotif.SHOWCASE_CRT -> PRELUDE + CRT_ROOM
+        ThemeMotif.CUSTOM_SCENE, ThemeMotif.CUSTOM_VIZ -> ""  // your own packs: CustomPacks gives their source
     }
 
     /** Child shaders each scene really samples (only these may be set; see gen.py used_children). */
@@ -399,6 +400,7 @@ internal object ThemeShaders {
         ThemeMotif.SHOWCASE_MOSAIC -> emptySet()
         ThemeMotif.SHOWCASE_GLASS -> emptySet()
         ThemeMotif.SHOWCASE_CRT -> setOf("uShot")
+        ThemeMotif.CUSTOM_SCENE, ThemeMotif.CUSTOM_VIZ -> emptySet()  // your own packs (CustomPacks)
     }
 
     /**
@@ -600,6 +602,7 @@ internal object ThemeShaders {
         ThemeMotif.SHOWCASE_MOSAIC -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.SHOWCASE_GLASS -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.SHOWCASE_CRT -> setOf("uAcc", "uBg", "uDensity", "uHasShot", "uLod", "uRes", "uSec", "uShotSize", "uTime", "uTune", "uTvL", "uTvR")
+        ThemeMotif.CUSTOM_SCENE, ThemeMotif.CUSTOM_VIZ -> emptySet()  // your own packs (CustomPackRules)
     }
 
     private const val PRELUDE = """

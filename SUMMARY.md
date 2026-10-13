@@ -16,6 +16,9 @@ All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfL
   `src_copy\ui\OptionIcons.kt`, `src_copy\ui\PresetPreview.kt`, `src_copy\ui\PresetsCard.kt`,
   `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\StyleHomes.kt`,
   `src_copy\ui\TwinScreens.kt`, `src_copy\ui\UiSounds.kt`.
+- Build fix (1): `src_copy\ui\ThemeShaders.kt`. Its three lists didn't have your own theme / visualizer kinds
+  (CUSTOM_SCENE, CUSTOM_VIZ), so the release build stopped. They're answered with nothing there, because CustomPacks
+  supplies them. If you ever re-run `tools\themes\gen.py`, those two lines need adding again.
 
 **Files to delete:** none.
 
