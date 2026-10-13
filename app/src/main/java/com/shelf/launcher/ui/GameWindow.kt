@@ -481,13 +481,16 @@ internal fun GameWindow(
     if (pieceNow != null) lastPiece[0] = pieceNow
     val piece = if (inspect) pieceNow ?: lastPiece[0] else null
     val motion = remember(g.stableKey) { InspectMotion().also { it.from = origin } }
-    motion.limited = piece?.kind == InspectKind.MODEL
+    // (Update 162: a 3D model turns all the way round too — past its pictures' ±60° it squeezes to its edge and shows its
+    // back, InspectModel.)
+    motion.limited = false
     val inspectScope = rememberCoroutineScope()
     // The flight and the turn with the window's animation on (Home › Animations), the system's animations on and no
     // Lite effects; otherwise a short fade.
     val sysAnims = rememberAnimationsEnabled()
     val lite = LocalLiteEffects.current
-    val fullInspect = MotionPrefs.info() != Features.InfoAnim.NONE && sysAnims && !lite
+    // (Update 162: Lite keeps it too with Effects & battery › Full animations on Lite, on by default.)
+    val fullInspect = MotionPrefs.info() != Features.InfoAnim.NONE && sysAnims && (!lite || Features.motionOnLite.state.value)
     // The grow: 0 = drawn over the game it came from, 1 = in its place. Starts once the window's place is known.
     // (Update 162: kept out here, so closing can fade the window out while the piece flies back.)
     val grow = remember { Animatable(0f) }

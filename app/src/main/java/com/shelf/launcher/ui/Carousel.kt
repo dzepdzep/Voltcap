@@ -626,7 +626,7 @@ internal fun GameCarousel(
     // in, CarouselSwap) instead of the whole box sliding (categorySlide round it stays still while a carousel is here).
     MotionPrefs.observe()
     val pageKind = MotionPrefs.page()
-    val pathSlide = Features.categorySlide.state.value && !LocalLiteEffects.current && pageKind != Features.PageAnim.NONE && animOn
+    val pathSlide = Features.categorySlide.state.value && (!LocalLiteEffects.current || Features.motionOnLite.state.value) && pageKind != Features.PageAnim.NONE && animOn // (Update 162: Full animations on Lite)
     swap.check(games, looping, vFocus, CategorySlide.tick, CategorySlide.dir, pathSlide, glide)
     androidx.compose.runtime.DisposableEffect(Unit) {
         CategorySlide.pathOwners++

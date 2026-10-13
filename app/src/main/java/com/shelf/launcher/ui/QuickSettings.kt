@@ -378,7 +378,15 @@ fun QuickSettingsCard(
                 // Case looks: their own switch (the cases in 3D); Cartridges & discs / Cartridges: the 3D models.
                 val on3d = if (caseLookNow) F.caseModels3d.state.value else F.modelFinish.state.value != com.shelf.launcher.ui.ModelFinish.OFF
                 add(R1Tile("look3d", Icons.Filled.ViewInAr, if (on3d) "3D\non" else "3D\noff", on3d) {
-                    if (caseLookNow) F.caseModels3d.value = !on3d else setModelsLook(!on3d)
+                    // Update 162: 3D for the cartridges you see — each console's real cartridge, or your custom ones only
+                    // when the Cartridges look is on your pack (clear when you picked clear).
+                    if (caseLookNow) F.caseModels3d.value = !on3d
+                    else if (on3d) setModelsLook(false)
+                    else {
+                        val custom = F.cartsOnly.value && F.cartSource.value == CartSource.CUSTOM
+                        F.modelFinish.value = if (!custom) com.shelf.launcher.ui.ModelFinish.REAL
+                            else if (F.cartClear.value) com.shelf.launcher.ui.ModelFinish.CLEAR else com.shelf.launcher.ui.ModelFinish.CUSTOM
+                    }
                     // No 3D models downloaded yet: where to get them.
                     if (!on3d && !com.shelf.launcher.data.Packs.anyModels()) home.openSettingsAt("Game look", "3D models")
                 })

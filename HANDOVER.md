@@ -1,6 +1,6 @@
 # Voltcap — handover to a new Claude
 
-Written 12 Oct 2026, after update **(145)** (kept up to date to 162). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+Written 12 Oct 2026, after update **(145)** (kept up to date to 163). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is
 **Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
@@ -255,6 +255,12 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 163
+- `Features.motionOnLite` (default on): GameWindow `fullInspect` and Carousel `pathSlide` ignore Lite with it.
+- MediaInspectView `InspectModel`: `inspectNorm` / `inspectEff`; past ±60° squeeze, past 90° the unlabelled model mirrored
+  (back); `motion.limited` is always false now.
+- R1 "look3d" tile: cartridge looks set `modelFinish` REAL, or CUSTOM / CLEAR when `cartsOnly` + `CartSource.CUSTOM`.
 
 ## State after update 162
 - **Carousel.kt:** one moving position `CarouselGlide` (spring, rowGlide stiffness), items placed in graphicsLayer via

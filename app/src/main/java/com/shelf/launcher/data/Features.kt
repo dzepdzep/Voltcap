@@ -1279,6 +1279,11 @@ object Features {
      * (only when Android is really short), so every picture is read from storage once (MemoryBudget).
      */
     val keepArt = BoolPref("keep_art", true)
+    /**
+     * Update 162: the carousel's motion, its category slide and the open / inspect animation (the piece flying out and
+     * turning) run in full even with Lite effects on (on by default).
+     */
+    val motionOnLite = BoolPref("motion_on_lite", true)
     /** Timeline: what puts the games in order along the line. */
     enum class TimelineBy(val label: String) { LAST_PLAYED("Last played"), RELEASED("Release year"), ADDED("Added to Voltcap") }
     val timelineBy = EnumPref("timeline_by", TimelineBy.LAST_PLAYED, TimelineBy.values())

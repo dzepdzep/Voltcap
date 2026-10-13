@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -674,6 +675,12 @@ private fun DiscDataSide(modifier: Modifier) {
 }
 
 /** The pack's angle at or just below [yaw] (it and the next one up hold [yaw] between them). */
+/** Update 162: [yaw] brought into −180…180. */
+private fun inspectNorm(yaw: Float): Float { val y = ((yaw % 360f) + 540f) % 360f - 180f; return y }
+
+/** Update 162: the angle of the side facing you: the front's own, or past 90° the back's (seen mirrored), −90…90. */
+private fun inspectEff(yaw: Float): Float { val y = inspectNorm(yaw); return if (abs(y) <= 90f) y else kotlin.math.sign(y) * (180f - abs(y)) }
+
 private fun inspectLowAngle(yaw: Float): Int =
     (kotlin.math.floor((yaw + 60f) / 20f).toInt() * 20 - 60).coerceIn(-60, 40)
 
@@ -709,14 +716,18 @@ private fun InspectModel(p: InspectPiece, id: String, aspect: Float, yawOf: () -
             for (a in Models3D.ANGLES) Models3D.compose(id, a, coverBmp, title, pos, tint)
         }
     }
-    val low by remember(id) { derivedStateOf { inspectLowAngle(yawOf()) } }
-    val pic0 = rememberInspectPicture(id, low, coverBmp, title, pos, tint, version, p.front)
-    val pic1 = rememberInspectPicture(id, low + 20, coverBmp, title, pos, tint, version, p.front)
+    // Update 162: all the way round. Within ±60° the model's own pictures; on to 90° the nearest one squeezes to its edge;
+    // past 90° its back — the same piece without its label, seen mirrored — turning on round to face you again.
+    val back by remember(id) { derivedStateOf { abs(inspectNorm(yawOf())) > 90f } }
+    val low by remember(id) { derivedStateOf { inspectLowAngle(inspectEff(yawOf()).coerceIn(-60f, 60f)) } }
+    val pic0 = rememberInspectPicture(id, low, if (back) null else coverBmp, if (back) null else title, pos, tint, version, if (back) null else p.front)
+    val pic1 = rememberInspectPicture(id, low + 20, if (back) null else coverBmp, if (back) null else title, pos, tint, version, if (back) null else p.front)
     val img0 = remember(pic0) { pic0?.asImageBitmap() }
     val img1 = remember(pic1) { pic1?.asImageBitmap() }
     // The last picture shown stays until the next pair is there (never an empty frame).
     val last = remember { arrayOfNulls<ImageBitmap>(1) }
     SideEffect { if (img0 != null) last[0] = img0 }
+    val backShade = remember { ColorFilter.tint(Color(0xFF000000).copy(alpha = 0.18f), androidx.compose.ui.graphics.BlendMode.SrcAtop) }
     Spacer(
         Modifier.fillMaxSize().drawWithCache {
             val fw = minOf(size.width, size.height * aspect)
@@ -724,12 +735,20 @@ private fun InspectModel(p: InspectPiece, id: String, aspect: Float, yawOf: () -
             val dstOff = IntOffset(((size.width - fw) / 2f).roundToInt(), ((size.height - fh) / 2f).roundToInt())
             val dstSize = IntSize(fw.roundToInt().coerceAtLeast(1), fh.roundToInt().coerceAtLeast(1))
             onDrawBehind {
-                val f = ((yawOf().coerceIn(-60f, 60f) - low) / 20f).coerceIn(0f, 1f)
+                val y = inspectNorm(yawOf())
+                val eff = inspectEff(y)
+                val onBack = abs(y) > 90f
+                // Past ±60°: squeezed toward its edge (cos), to nothing at 90°.
+                val squeeze = if (abs(eff) <= 60f) 1f else (kotlin.math.cos(Math.toRadians(abs(eff).toDouble())) / 0.5).toFloat().coerceIn(0.02f, 1f)
+                val f = ((eff.coerceIn(-60f, 60f) - low) / 20f).coerceIn(0f, 1f)
                 val a0 = if (img1 == null || f < 0.5f) 1f else (1f - f) * 2f
                 val a1 = if (f > 0.5f) 1f else f * 2f
-                if (img0 != null) drawImage(img0, dstOffset = dstOff, dstSize = dstSize, alpha = a0)
-                if (img1 != null) drawImage(img1, dstOffset = dstOff, dstSize = dstSize, alpha = if (img0 == null) 1f else a1)
-                if (img0 == null && img1 == null) last[0]?.let { drawImage(it, dstOffset = dstOff, dstSize = dstSize) }
+                val cf = if (onBack) backShade else null
+                scale(if (onBack) -squeeze else squeeze, 1f, pivot = center) {
+                    if (img0 != null) drawImage(img0, dstOffset = dstOff, dstSize = dstSize, alpha = a0, colorFilter = cf)
+                    if (img1 != null) drawImage(img1, dstOffset = dstOff, dstSize = dstSize, alpha = if (img0 == null) 1f else a1, colorFilter = cf)
+                    if (img0 == null && img1 == null) last[0]?.let { drawImage(it, dstOffset = dstOff, dstSize = dstSize, colorFilter = cf) }
+                }
             }
         }
     )

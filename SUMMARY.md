@@ -4,6 +4,48 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (163): full animations on Lite, 3D models turn all the way round, R1 › 3D shows your cartridge
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (6): `src_copy\data\Features.kt`, and
+`src_copy\ui\` Carousel, GameWindow, MediaInspectView, QuickSettings, SettingsDialog (all `.kt`).
+
+**Files to delete:** none.
+
+### Found on the Retroid Pocket Classic (162 installed 09:16)
+- Opening a game only faded the piece in, with no flight and no turn: the Pocket Classic runs with Lite effects
+  (Automatic), and Lite swapped the inspect animation and the carousel's category slide for a quick fade. Not low fps.
+- A 3D model (the GBA cartridge) stopped at ±60° — its pictures only go that far — so it never showed its back.
+- R1 › 3D always turned your custom cartridges on, not the cartridge on screen.
+
+### What changed
+- **Full animations on Lite** (new, on by default): Settings › Theme › Effects & battery › Performance. The carousel's
+  category slide and opening a game (the piece flying out and turning) stay in full with Lite effects. Off: the quick fade.
+- **3D models turn all the way round:** within ±60° their own pictures; on to 90° the nearest one squeezes to its edge;
+  past that its back (the same piece without its label, mirrored and a little darker), on round to the front. The
+  showcase turn and the right stick / drag go the full 360°.
+- **R1 › 3D:** turns on each console's real cartridge (Real); your custom ones only when the Cartridges look is on your
+  pack (Custom, or Clear if you picked clear). Tapping again turns 3D off.
+- **Charge limit on the Thor at 79 %:** not a fault — the limit stops charging at 80 % and starts again below 77 %, so
+  overnight the handheld's own use takes it down a little before it tops up again.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 163: full animations on Lite, 3D models turn all the way round, R1 3D shows the real cartridge" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (162): the carousel as a physical collection, inspecting a game's piece, presets brought up to date
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

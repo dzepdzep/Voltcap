@@ -1468,6 +1468,18 @@ private fun ThemeContent(
                     )
                 }
             }
+            // Update 162: the carousel and the open / inspect animation in full on Lite too.
+            item { m ->
+                Box(m) {
+                    SwitchRow(
+                        icon = Icons.Filled.AutoAwesome,
+                        title = "Full animations on Lite",
+                        subtitle = "The carousel's category slide and opening a game (its box, cartridge or disc flying out and turning) stay in full even with Lite effects. Off: Lite shows a quick fade instead.",
+                        checked = com.shelf.launcher.data.Features.motionOnLite.state.value,
+                        onChange = { com.shelf.launcher.data.Features.motionOnLite.value = it }
+                    )
+                }
+            }
             }
         }
     }
