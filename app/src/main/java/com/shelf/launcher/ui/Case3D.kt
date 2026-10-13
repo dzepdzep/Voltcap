@@ -91,7 +91,10 @@ internal fun Case3D(
     val face = remember(front, aspect, band) {
         front?.let { f -> if (band != null && tplFront != null) framed(f, band, fit?.win ?: tplFront.win) else cropTo(f, aspect) }
     }
-    val backBmp = rememberSoftBitmap(back, 480)
+    // (Update 170: a printed back is made from its parts; a scanned one is a picture.)
+    val printedBmp = rememberPrintedBack(back as? PrintedBack)
+    val scannedBmp = rememberSoftBitmap(back.takeIf { it !is PrintedBack }, 480)
+    val backBmp = printedBmp ?: scannedBmp
     val backFace = remember(backBmp, aspect) { backBmp?.let { cropTo(it, aspect) } }
     val noCover = remember(title, g.hue, cover == null && ownFront == null) { if (cover == null && ownFront == null) plainFront(title, g.hue) else null }
     // Update 166: while its cover is still loading, the front in the game's own colour (not near-black: scrolling a

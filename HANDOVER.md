@@ -256,6 +256,18 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 170
+- **Printed backs:** `tools/media_templates/backs_build.py` (pack → `tpl_back_<id>.webp` + `backs.json`: the
+  see-through screenshot windows not touching the edge, overlapping ones dropped; the biggest plain band of rows, also
+  with a side strip left out; over art or printed, ink) and `gen_backs_kt.py` → `ui/MediaBacks.kt` (`BackTpl`,
+  `MediaBacks.of`). `backs_plan.json`: which pack file each console uses (paths under the pack's root).
+- `PrintedBacks.kt`: `PrintedBack` spec (platform, art, shots, text, aspect), `PrintedBacks.compose` (480 wide in the
+  case's shape: art small→big darkened, template stretched, windows filled, band: 2 shots + StaticLayout text, dark
+  panel over art; LruCache 6), `rememberPrintedBack`. `inspectPieceFor` sets `InspectPiece.back` (now `var`) to
+  `printedBackFor(g, state, aspect)` for BOX pieces without a back scan when `Features.printedBacks` (true). `Case3D`
+  takes a `PrintedBack` or a picture as `back`.
+- Not yet: the 3D-model cases (shape library) keep their own backs; the flat looks have no back.
+
 ## State after update 169
 - **Cartridge templates:** `tpl_cart_{gb,gbc,gbc_black,gba,gamegear,neogeopocket,pokemonmini,psp,psvita,wonderswan}`
   re-made by `tools/media_templates/tplfix.py` (cv2 Telea inpaint of the marks, ES-DE logo composited). `RealMedia

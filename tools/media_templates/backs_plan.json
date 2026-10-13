@@ -1,0 +1,298 @@
+{
+ "NES": {
+  "back": [
+   "Nintendo/NES/cover/NES cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/NES/NES cover texture.png"
+  ]
+ },
+ "SNES": {
+  "back": [
+   "Nintendo/SNES/cover/SNES US cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/SNES/SNES cover texture.png"
+  ]
+ },
+ "N64": {
+  "back": [
+   "Nintendo/N64/cover/N64 cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/N64/N64 cover texture.png"
+  ]
+ },
+ "GB": {
+  "back": [
+   "Nintendo/GB/cover/GB cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/GB/GB cover texture.png"
+  ]
+ },
+ "GBC": {
+  "back": [
+   "Nintendo/GBC/cover/GBC cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/GBC/GBC cover texture.png"
+  ]
+ },
+ "GBA": {
+  "back": [],
+  "tex": [
+   "Nintendo/GBA/GBA cover texture.png"
+  ]
+ },
+ "VirtualBoy": {
+  "back": [
+   "Nintendo/Virtual Boy/cover/Virtual Boy cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/Virtual Boy/Virtual Boy cover texture.png"
+  ]
+ },
+ "NDS": {
+  "back": [
+   "Nintendo/DS/cover/DS cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/DS/DS cover texture.png"
+  ]
+ },
+ "3DS": {
+  "back": [
+   "Nintendo/3DS/cover/3DS cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/3DS/3DS cover texture.png"
+  ]
+ },
+ "Switch": {
+  "back": [
+   "Nintendo/Switch/cover/Switch cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/Switch/Switch cover texture.png"
+  ]
+ },
+ "PokemonMini": {
+  "back": [],
+  "tex": [
+   "Nintendo/Pokemon Mini/Pokemon Mini cover texture.png"
+  ]
+ },
+ "GameCube": {
+  "back": [
+   "Nintendo/Gamecube/cover/Gamecube cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/Gamecube/Gamecube cover texture.png"
+  ]
+ },
+ "Wii": {
+  "back": [
+   "Nintendo/Wii/cover/Wii cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/Wii/Wii cover texture.png"
+  ]
+ },
+ "WiiU": {
+  "back": [
+   "Nintendo/WII U/cover/Wii U cover - back.png"
+  ],
+  "tex": [
+   "Nintendo/WII U/Wii U cover texture.png"
+  ]
+ },
+ "Genesis": {
+  "back": [
+   "Sega/Genesis _ Megadrive/cover/Genesis cover - back.png"
+  ],
+  "tex": [
+   "Sega/Genesis _ Megadrive/Genesis cover texture.png"
+  ]
+ },
+ "MasterSystem": {
+  "back": [
+   "Sega/Master System/cover/Master System cover - back.png"
+  ],
+  "tex": [
+   "Sega/Master System/Master System cover texture.png"
+  ]
+ },
+ "GameGear": {
+  "back": [
+   "Sega/Game Gear/cover/Game Gear cover - back.png"
+  ],
+  "tex": [
+   "Sega/Game Gear/Game Gear cover texture.png"
+  ]
+ },
+ "32X": {
+  "back": [
+   "Sega/Sega 32X/cover/Sega 32X cover - back.png"
+  ],
+  "tex": [
+   "Sega/Sega 32X/Sega 32X cover texture.png"
+  ]
+ },
+ "SegaCD": {
+  "back": [
+   "Sega/Sega CD _ Mega CD/cover/Sega CD cover - back.png"
+  ],
+  "tex": [
+   "Sega/Sega CD _ Mega CD/Mega CD cover texture.png"
+  ]
+ },
+ "Saturn": {
+  "back": [
+   "Sega/Saturn/cover/Sega Saturn cover - back.png"
+  ],
+  "tex": [
+   "Sega/Saturn/Sega Saturn cover texture.png"
+  ]
+ },
+ "Dreamcast": {
+  "back": [
+   "Sega/Dreamcast/cover/Dreamcast cover - back.png"
+  ],
+  "tex": [
+   "Sega/Dreamcast/Dreamcast cover texture.png"
+  ]
+ },
+ "PS1": {
+  "back": [
+   "Sony/Playstation 1/cover/Playstation 1 cover - back.png"
+  ],
+  "tex": [
+   "Sony/Playstation 1/Playstation 1 cover texture.png"
+  ]
+ },
+ "PS2": {
+  "back": [
+   "Sony/Playstation 2/cover/Playstation 2 cover - back.png"
+  ],
+  "tex": [
+   "Sony/Playstation 2/Playstation 2 cover texture.png"
+  ]
+ },
+ "PSP": {
+  "back": [
+   "Sony/Playstation Portable/cover/Playstation Portable cover - back.png"
+  ],
+  "tex": [
+   "Sony/Playstation Portable/Playstation Portable cover texture.png"
+  ]
+ },
+ "PSVita": {
+  "back": [
+   "Sony/Playstation Vita/cover/Playstation Vita cover - back.png"
+  ],
+  "tex": [
+   "Sony/Playstation Vita/Playstation Vita cover texture.png"
+  ]
+ },
+ "Atari2600": {
+  "back": [
+   "Atari/Atari 2600/cover/Atari 2600 cover - back.png"
+  ],
+  "tex": [
+   "Atari/Atari 2600/Atari 2600 cover texture.png"
+  ]
+ },
+ "Atari7800": {
+  "back": [
+   "Atari/Atari 7800/cover/Atari 7800 cover - back.png"
+  ],
+  "tex": [
+   "Atari/Atari 7800/Atari 7800 cover texture.png"
+  ]
+ },
+ "Jaguar": {
+  "back": [
+   "Atari/Atari Jaguar_CD/cover/Atari Jaguar cover - back.png"
+  ],
+  "tex": [
+   "Atari/Atari Jaguar_CD/Atari Jaguar cover texture.png"
+  ]
+ },
+ "Lynx": {
+  "back": [
+   "Atari/Atari Lynx/cover/Atari Lynx cover - back.png"
+  ],
+  "tex": [
+   "Atari/Atari Lynx/Atari Lynx cover texture.png"
+  ]
+ },
+ "3DO": {
+  "back": [
+   "Other/3DO/cover/3DO cover - back.png"
+  ],
+  "tex": [
+   "Other/3DO/3DO cover texture.png"
+  ]
+ },
+ "ColecoVision": {
+  "back": [
+   "Other/Colecovision/cover/Colecovision cover - back.png"
+  ],
+  "tex": [
+   "Other/Colecovision/Colecovision cover texture.png"
+  ]
+ },
+ "Intellivision": {
+  "back": [
+   "Other/Intellivision/cover/Intellivision cover - back.png"
+  ],
+  "tex": [
+   "Other/Intellivision/Intellivision cover texture.png"
+  ]
+ },
+ "NeoGeo": {
+  "back": [],
+  "tex": [
+   "Other/Neo Geo/Neo Geo cover texture.png"
+  ]
+ },
+ "NeoGeoPocket": {
+  "back": [],
+  "tex": [
+   "Other/Neo Geo Pocket _ Color/Neo Geo Pocket Color/Neo Geo Pocket Color cover texture.png"
+  ]
+ },
+ "PCEngine": {
+  "back": [
+   "Other/PC Engine_TurboGrafx-16/cover/TG16 cover - back 1.png"
+  ],
+  "tex": [
+   "Other/PC Engine_TurboGrafx-16/PC Engine cover texture.png"
+  ]
+ },
+ "Vectrex": {
+  "back": [
+   "Other/Vectrex/cover/Vectrex cover - back.png"
+  ],
+  "tex": [
+   "Other/Vectrex/Vectrex cover texture.png"
+  ]
+ },
+ "WonderSwan": {
+  "back": [
+   "Other/Wonderswan _ Color/cover/Wonderswan Color cover - back.png"
+  ],
+  "tex": [
+   "Other/Wonderswan _ Color/Wonderswan cover texture.png"
+  ]
+ },
+ "C64": {
+  "back": [],
+  "tex": []
+ },
+ "PICO8": {
+  "back": [],
+  "tex": []
+ }
+}

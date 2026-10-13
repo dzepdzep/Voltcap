@@ -111,8 +111,8 @@ internal class InspectPiece(
     val cover: Any?,
     /** BOX: the case's front; MODEL: the picture in its window. */
     val front: Any?,
-    /** BOX: the back cut out of the full box scan (null: plain plastic). */
-    val back: Any?,
+    /** BOX: the back cut out of the full box scan (update 170: else its printed back, [PrintedBack]; null: plain plastic). */
+    var back: Any?,
     val physical: List<Pair<String, String>>?,
     /** MODEL: the shape library's piece. */
     val model: String?,
@@ -159,7 +159,27 @@ private fun slabAspect(pick: MediaPick, labelIsScan: Boolean): Float {
  * capsules…: the game window opens as before). Read in composition (it follows the look's switches).
  */
 internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? =
-    inspectPieceOf(g, state)?.also { it.logo = state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl }
+    inspectPieceOf(g, state)?.also {
+        it.logo = state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
+        // Update 170: a case without its back scanned gets a printed one (Settings › Game look › Printed case backs).
+        if (it.kind == InspectKind.BOX && it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)
+    }
+
+/**
+ * Update 170: what [g]'s printed back is made of: its console's back cover (the case's console — R1 › Case picks one for
+ * all), the hero art behind (else the cover), its screenshots and its description, in the case's shape [aspect].
+ */
+internal fun printedBackFor(g: Game, state: LauncherUiState, aspect: Float): PrintedBack {
+    val k = g.stableKey
+    val o = state.artOverrides[k]; val a = state.art[k]
+    return PrintedBack(
+        LookStyles.casePlatform(g.platform),
+        o?.hero ?: a?.heroUrl ?: o?.cover ?: a?.gridUrl,
+        state.screenshots[k].orEmpty().take(4),
+        state.metadata[k]?.summary,
+        aspect
+    )
+}
 
 private fun inspectPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
     val a = state.appearance

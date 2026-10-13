@@ -3661,6 +3661,14 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.allCaseFit.state.value,
             onChange = { com.shelf.launcher.data.Features.allCaseFit.value = it }
         )
+        // Update 170.
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Printed case backs",
+            subtitle = "On (default): turning an opened game's 3D case round shows a back printed like a real one — its console's back cover (barcode, seals, rating box) over the game's art, with its screenshots and description. A game with its back scanned shows the scan. Off: plain plastic.",
+            checked = com.shelf.launcher.data.Features.printedBacks.state.value,
+            onChange = { com.shelf.launcher.data.Features.printedBacks.value = it }
+        )
         when (artNow) {
             com.shelf.launcher.data.CardArtType.CASE -> MutedNote("Every case the same size, in lists mixing consoles too (Continue playing, Favourites…).")
             com.shelf.launcher.data.CardArtType.CASE_REAL -> MutedNote("Every case at its real size next to the others: a DS case smaller than a PS2 one, a Saturn case taller. Also in lists that mix consoles.")

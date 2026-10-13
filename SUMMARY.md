@@ -4,6 +4,47 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (170): printed backs on the 3D cases, from your template pack
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (5): `src_copy\data\Features.kt`,
+`src_copy\ui\Case3D.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`;
+new (2): `src_copy\ui\MediaBacks.kt`, `src_copy\ui\PrintedBacks.kt`.
+
+**Copy `project_copy`** (robocopy into the project root), new: `project_copy\app\src\main\res\drawable-nodpi\tpl_back_*.webp`
+(35 console backs, 0.5 MB); `project_copy\tools\media_templates\backs_build.py`, `gen_backs_kt.py`, `backs_plan.json`.
+
+**Files to delete:** none.
+
+### What changed
+- **Printed case backs:** turning an opened game's 3D case round showed plain plastic unless the game had a full box
+  scan. Now the back is printed like a real one, from your template pack's back covers (35 consoles: the barcode,
+  seals and rating box of each console's back): the game's art soft and dark behind, its screenshots in the back's
+  windows (Atari, Lynx, Master System, Intellivision, Vectrex, N64…) or as a row of two in its plain part, and its
+  description under them. Game Boy Advance's comes from the back of its cover texture. Steam, Android and consoles
+  without a back in the pack (Pokémon mini, Neo Geo, C64, PICO-8…) get a plain printed back: art, screenshots,
+  description. A game with its back scanned still shows the scan.
+- Settings › Game look › Covers, cases & discs › **Printed case backs** (on).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Backs:** every console's back laid out here with a test game (screenshots, description) and checked on a contact
+  sheet; the windows inside windows (Virtual Boy) and the side stripes (Saturn, Sega CD) handled.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 170: printed backs on the 3D cases from the template pack" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (169): cartridge templates without their makers' marks, Steam / Android cases in the cover's shape, case templates on the 3D cases, the art packs' download shown everywhere
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

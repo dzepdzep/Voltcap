@@ -987,6 +987,11 @@ object Features {
     val ownCaseFit = BoolPref("own_case_fit", true)
     /** Update 169: the consoles' cover templates take the cover's shape too (off: they keep the real case's shape). */
     val allCaseFit = BoolPref("all_case_fit", false)
+    /**
+     * Update 170: the 3D cases' backs printed like real ones when the game has no back scan: the console's back cover from
+     * the template pack (barcode, seals, rating box) over the game's art, with its screenshots and description.
+     */
+    val printedBacks = BoolPref("printed_backs", true)
     /** Update 147, Disc station: the loaded disc turns slowly. */
     val discSpin = BoolPref("disc_spin", true)
     /** Update 147, Disc station: a few lines about the game under its name. */

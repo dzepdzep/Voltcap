@@ -237,6 +237,7 @@ internal object SettingsIndex {
         E("Matching spines", "Game look", "Covers, cases & discs", null, null),
         E("Steam / Android cases fit the cover", "Game look", "Covers, cases & discs", null, null),
         E("Console cases fit the cover too", "Game look", "Covers, cases & discs", null, null),
+        E("Printed case backs", "Game look", "Covers, cases & discs", null, null),
         // Update 151: the "Everything at once" card is at the top of Metadata › Scraping now.
         E("Everything at once", "Metadata", "Scraping", null, null),
         E("Fetch everything that's missing", "Metadata", "Scraping", null, null),
