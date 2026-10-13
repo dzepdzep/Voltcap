@@ -40,6 +40,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,6 +78,7 @@ import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.data.GameArt
 import com.shelf.launcher.data.HomeLayout
+import kotlinx.coroutines.launch
 
 /*
  * Update 113: the game window on every layout (it was the Channel grid's only). A or a tap on the game you're on opens
@@ -464,8 +469,52 @@ internal fun GameWindow(
             if (GameOrigin.displayId == here || GameOrigin.displayId < 0) GameOrigin.rect else Rect(0f, Float.MAX_VALUE, 0f, Float.MAX_VALUE)
         } else null
     }
+    // Update 162: a game the look draws as its physical piece (case, cartridge, card, disc, 3D model) opens by inspecting
+    // it (MediaInspectView.kt): the piece comes out of its card, forward and bigger on one side of the window, and turns
+    // to show every side; the window's parts sit beside it; closing flies it back to its place. Not on the TV room's
+    // set, nor picked on the other screen (no card here to come out of); the other looks open as before.
+    val fromOtherScreen = origin != null && origin.top == Float.MAX_VALUE
+    val pieceNow = if (tvRect == null && !fromOtherScreen) inspectPieceFor(g, state) else null
+    val inspect = remember(g.stableKey) { pieceNow != null }
+    // (Decided once as it opens; its details follow the game's scans as they come in.)
+    val lastPiece = remember(g.stableKey) { arrayOfNulls<InspectPiece>(1) }
+    if (pieceNow != null) lastPiece[0] = pieceNow
+    val piece = if (inspect) pieceNow ?: lastPiece[0] else null
+    val motion = remember(g.stableKey) { InspectMotion().also { it.from = origin } }
+    motion.limited = piece?.kind == InspectKind.MODEL
+    val inspectScope = rememberCoroutineScope()
+    // The flight and the turn with the window's animation on (Home › Animations), the system's animations on and no
+    // Lite effects; otherwise a short fade.
+    val sysAnims = rememberAnimationsEnabled()
+    val lite = LocalLiteEffects.current
+    val fullInspect = MotionPrefs.info() != Features.InfoAnim.NONE && sysAnims && !lite
+    // The grow: 0 = drawn over the game it came from, 1 = in its place. Starts once the window's place is known.
+    // (Update 162: kept out here, so closing can fade the window out while the piece flies back.)
+    val grow = remember { Animatable(0f) }
+    val closeNow by rememberUpdatedState(onClose)
+    // Update 162: closing turns the piece back and flies it to its place first, then the window goes.
+    val close: () -> Unit = {
+        if (piece == null || !motion.started) closeNow()
+        else if (!motion.closing) {
+            motion.closing = true
+            inspectScope.launch {
+                if (fullInspect) launch { grow.animateTo(0f, tween(420, delayMillis = 80, easing = FastOutSlowInEasing)) }
+                motion.close(fullInspect)
+                if (MediaInspect.key == g.stableKey) MediaInspect.key = null
+                closeNow()
+            }
+        }
+    }
+    // (However it closes — Play, Details, the options… — the carousel gets its games back.)
+    DisposableEffect(g.stableKey) {
+        val k = g.stableKey
+        onDispose {
+            if (motion.started) MediaInspect.amount.floatValue = 0f
+            if (MediaInspect.key == k) MediaInspect.key = null
+        }
+    }
     androidx.compose.ui.window.Dialog(
-        onDismissRequest = onClose,
+        onDismissRequest = close,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         ImmersiveDialogWindow()
@@ -519,13 +568,23 @@ internal fun GameWindow(
                 if (runCatching { listFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
             } else runCatching { playFocus.requestFocus() }
         }
-        // The grow: 0 = drawn over the game it came from, 1 = in its place. Starts once the window's place is known.
-        val grow = remember { Animatable(0f) }
         var target by remember { mutableStateOf<Rect?>(null) }
         val anim = MotionPrefs.info() != Features.InfoAnim.NONE
         LaunchedEffect(target != null) {
             if (target == null) return@LaunchedEffect
             if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing))
+        }
+        // Update 162: the piece's place beside the window's parts (window px), known after the first layout; it comes
+        // out once that's known, and the right stick turns it.
+        var slot by remember { mutableStateOf<Rect?>(null) }
+        if (piece != null) {
+            InspectStick(motion)
+            // (Update 162 (review): keyed on the motion too — another game shown in the open window gets its own.)
+            LaunchedEffect(slot != null, motion) {
+                if (slot == null) return@LaunchedEffect
+                MediaInspect.key = g.stableKey
+                motion.open(inspectScope, fullInspect, spin = !lite)
+            }
         }
         if (tvRect != null) {
             // On the TV: the room stays lit round it, the window fills the set's screen, switching on like an old TV.
@@ -559,17 +618,28 @@ internal fun GameWindow(
                     }
                 }
             }
-        } else Box(
+        } else Box(Modifier.fillMaxSize()) {
+          Box(
             Modifier.fillMaxSize()
                 .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) }
                 .background(look.veil)
-                .pointerInput(Unit) { detectTapGestures { onClose() } },
+                .pointerInput(Unit) { detectTapGestures { close() } },
             contentAlignment = Alignment.Center
         ) {
             BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 14.dp), contentAlignment = Alignment.Center) {
                 val maxW = maxWidth
                 val maxH = maxHeight
-                Box(
+                if (piece != null) {
+                    // Update 162: the piece's side, and the window's parts beside it (InspectLayout).
+                    InspectLayout(
+                        maxW, maxH, motion,
+                        onSlot = { r -> if (r != slot) slot = r },
+                        onPlaced = { r -> if (target == null) target = r },
+                        onFocusIn = { focusInside = true }
+                    ) { w, h ->
+                        WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
+                    }
+                } else Box(
                     Modifier
                         .onGloballyPositioned { if (target == null) target = it.boundsInWindow() }
                         .graphicsLayer {
@@ -599,8 +669,57 @@ internal fun GameWindow(
                         .pointerInput(Unit) { detectTapGestures { } }
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
-                    WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options)
+                    WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                 }
+            }
+          }
+            // Update 162: the piece itself, over the window (it flies from its card to its side and back).
+            if (piece != null) MediaInspectPiece(piece, motion, slot, hereDisplay)
+        }
+    }
+}
+
+/** Update 162: the window's parts are beside the inspected piece — no second disc / cartridge drawn among them. */
+private val LocalWinInspect = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+/**
+ * Update 162: the game window while its piece is out (MediaInspectView.kt): the piece's side ([onSlot]: its place, window
+ * px) and the window's parts ([body], given their room) beside it, never over it — side by side, or the piece above on
+ * a tall screen. The parts slide in as the piece comes out ([InspectMotion.lift]).
+ */
+@Composable
+private fun InspectLayout(
+    maxW: Dp, maxH: Dp, motion: InspectMotion, onSlot: (Rect) -> Unit, onPlaced: (Rect) -> Unit, onFocusIn: () -> Unit,
+    body: @Composable (Dp, Dp) -> Unit
+) {
+    val gap = 14.dp
+    val slotMod = Modifier.onGloballyPositioned { c -> onSlot(c.boundsInWindow()) }
+    val bodyMod = Modifier
+        .onGloballyPositioned { onPlaced(it.boundsInWindow()) }
+        .graphicsLayer {
+            val b = ((motion.lift.floatValue - 0.3f) / 0.7f).coerceIn(0f, 1f)
+            alpha = b
+            translationX = (1f - b) * 36.dp.toPx()
+        }
+        // Taps inside the window never close it.
+        .pointerInput(Unit) { detectTapGestures { } }
+        .onFocusChanged { if (it.hasFocus) onFocusIn() }
+    if (maxW >= maxH * 0.95f) {
+        val slotW = maxW * 0.4f
+        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            Box(slotMod.width(slotW).fillMaxHeight())
+            Spacer(Modifier.width(gap))
+            Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                Box(bodyMod) { CompositionLocalProvider(LocalWinInspect provides true) { body(maxW - slotW - gap, maxH) } }
+            }
+        }
+    } else {
+        val slotH = maxH * 0.38f
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(slotMod.fillMaxWidth().height(slotH))
+            Spacer(Modifier.height(gap))
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Box(bodyMod) { CompositionLocalProvider(LocalWinInspect provides true) { body(maxW, maxH - slotH - gap) } }
             }
         }
     }
@@ -838,7 +957,8 @@ private fun TvControls(
 @Composable
 private fun WinPicturePart(look: WinLook, g: Game, state: LauncherUiState, cover: String?, extras: WinExtras, modifier: Modifier, nameShown: Boolean, showcase: Boolean = false) {
     Box(modifier) {
-        if (!showcase && extras.at(WinPart.MEDIA, WinSlot.PICTURE) && mediaFor(g.platform) != null) WinGameMedia(
+        // (Update 162: not while the piece itself is out beside the window.)
+        if (!showcase && !LocalWinInspect.current && extras.at(WinPart.MEDIA, WinSlot.PICTURE) && mediaFor(g.platform) != null) WinGameMedia(
             g, state, cover, Modifier.align(Alignment.BottomEnd).padding(10.dp).fillMaxHeight(0.46f)
                 .aspectRatio(if (Features.gameWindowCase.state.value && discCaseFits(g.platform)) 1.35f else 1f)
         )
@@ -857,7 +977,8 @@ private fun WinPicturePart(look: WinLook, g: Game, state: LauncherUiState, cover
 /** Update 125: the parts placed "Under the buttons". */
 @Composable
 private fun WinBottomPart(look: WinLook, g: Game, state: LauncherUiState, cover: String?, extras: WinExtras, width: Dp?, center: Boolean = false) {
-    val media = extras.at(WinPart.MEDIA, WinSlot.BOTTOM) && mediaFor(g.platform) != null
+    // (Update 162: not while the piece itself is out beside the window.)
+    val media = !LocalWinInspect.current && extras.at(WinPart.MEDIA, WinSlot.BOTTOM) && mediaFor(g.platform) != null
     val text = extras.textAt(WinSlot.BOTTOM)
     val icons = extras.at(WinPart.ICONS, WinSlot.BOTTOM)
     if (!media && !text && !icons) return
@@ -974,7 +1095,8 @@ private fun WindowBody(
             val h = minOf(maxH, w * 1.05f)
             Column(panelMod.width(w).heightIn(max = h), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (!details) {
-                    if (extras.at(WinPart.MEDIA, WinSlot.PICTURE) || extras.at(WinPart.MEDIA, WinSlot.INFO)) {
+                    // (Update 162: the picture instead while the piece itself is out beside the window.)
+                    if (!LocalWinInspect.current && (extras.at(WinPart.MEDIA, WinSlot.PICTURE) || extras.at(WinPart.MEDIA, WinSlot.INFO))) {
                         WinGameMedia(g, state, cover, Modifier.fillMaxWidth().height((h * 0.36f).coerceIn(90.dp, 220.dp)))
                         Spacer(Modifier.height(10.dp))
                     } else {
@@ -1014,10 +1136,13 @@ private fun WindowBody(
         Arrange.SPLIT -> {
             val h = minOf(maxH, maxW * 0.56f).coerceAtLeast(160.dp)
             Row(panelMod.width(minOf(maxW, h * 1.9f)).height(h), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(look.mediaCorner)).background(placeholderBrush(g.hue))) {
-                    if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                // (Update 162: no cover beside the info while the piece itself is out beside the window.)
+                if (!LocalWinInspect.current) {
+                    Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(look.mediaCorner)).background(placeholderBrush(g.hue))) {
+                        if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                    }
+                    Spacer(Modifier.width(16.dp))
                 }
-                Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f).fillMaxHeight()) {
                     WinText(look, name, look.ink, 22, FontWeight.Bold)
                     if (sub.isNotBlank()) WinText(look, sub, look.muted, 13, FontWeight.Normal)

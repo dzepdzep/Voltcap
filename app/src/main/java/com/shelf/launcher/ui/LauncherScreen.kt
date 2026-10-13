@@ -673,11 +673,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     LaunchedEffect(Unit) { com.shelf.launcher.data.BatteryWatch.start(batteryWatchContext) }
     // Update 112: the animations follow the layout on screen (its own choices, Home › Animations › per layout).
     SideEffect { MotionPrefs.layout = state.appearance.homeLayout }
+    // Update 159: each game's key by its cover (a 3D case finds the game's scanned case front from it, Model3DArt).
+    val coverKeys = remember(state.art, state.artOverrides) {
+        val m = HashMap<String, String>(state.art.size * 2)
+        for ((k, a) in state.art) a.gridUrl?.let { m[it] = k }
+        for ((k, o) in state.artOverrides) o.cover?.let { m[it] = k }
+        m
+    }
     // Update 113: the games' scans, for the Spines look's own spines (read only where a spine is drawn).
     SideEffect {
         if (HomeScans.map !== state.physicalMedia) HomeScans.map = state.physicalMedia
         HomeScans.need = { g -> viewModel.loadPhysicalMedia(g, needSpine = true) }
         HomeScans.cover = { k -> state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl }
+        HomeScans.keyOfCover = coverKeys
     }
     // Update 112: Tile home is no longer a layout — a saved one becomes the Voltcap row with the tile look (same tiles,
     // same row), and a preset that still names it lands there too.
@@ -1708,6 +1716,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // The style homes (Dashboard, Live tiles, Side menu, Cross menu, Spotlight, Icon bar — StyleHomes.kt): whole-screen
     // layouts with their own menus, laid out and lit like the grid / TV room.
     val styleLayout = state.appearance.homeLayout.styleHome
+    // Update 159: Discs only on → cartridge games print their cover on their CD (typedArtFor).
+    val discLookNow = state.appearance.cardArtType == com.shelf.launcher.data.CardArtType.DISC
+    androidx.compose.runtime.SideEffect { if (DiscLook.on != discLookNow) DiscLook.on = discLookNow }
     LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null }
     val tileBarLast = remember { intArrayOf(0) }
     LaunchedEffect(tileLayout) { if (!tileLayout) tileBarFocus = null }

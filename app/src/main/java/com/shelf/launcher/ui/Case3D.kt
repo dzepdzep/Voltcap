@@ -23,12 +23,28 @@ internal fun Case3D(
     g: Game, cover: Any?, physical: List<Pair<String, String>>?, yaw: Float, aspect: Float,
     modifier: Modifier, shade: Float = 0f, reflect: Boolean = false,
     frame: Boolean = false, frameColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.White,
-    pitch: Float = 4f
+    pitch: Float = 4f,
+    /**
+     * Update 162: the turn and shade read while drawing (the carousel's moving place), so a moving case only redraws —
+     * nothing rebuilt each frame. Null: [yaw] / [shade].
+     */
+    yawOf: (() -> Float)? = null,
+    shadeOf: (() -> Float)? = null,
+    /**
+     * Update 162: the box art looks (Box art, Real cases): the game's own scanned case front on the case when there is
+     * one (Original cases), as the flat case and the 3D model cases show it — not only its cover.
+     */
+    realFront: Boolean = false,
+    /** Update 162: a picture for the case's back (the game window's inspect turns it round); null: plain plastic. */
+    back: Any? = null
 ) {
     val title = gameDisplayName(g.name)
-    val front = rememberSoftBitmap(cover, 480)
     // The spine, in the same order as the Spines look (GameSpine): the real scan first, then your console spine.
     val scans = physical ?: HomeScans.map[g.stableKey]
+    val ownFront = if (realFront && Features.originalCases.state.value && !LookStyles.caseForAll()) {
+        remember(scans, g.platform) { BoxTexture.front(scans, g.platform) }
+    } else null
+    val front = rememberSoftBitmap(ownFront ?: cover, 480)
     // Not looked up yet (far along the Spine wall): ask once it has stayed on screen a moment, as the Spines look does.
     if (physical == null && !HomeScans.map.containsKey(g.stableKey)) {
         androidx.compose.runtime.LaunchedEffect(g.stableKey) { kotlinx.coroutines.delay(400); HomeScans.need?.invoke(g) }
@@ -52,18 +68,22 @@ internal fun Case3D(
         (if (ownBmp != null) own else tpl?.aspect ?: 0.085f).coerceIn(0.05f, 0.16f)
     }
     val face = remember(front, aspect) { front?.let { cropTo(it, aspect) } }
-    val noCover = remember(title, g.hue, cover == null) { if (cover == null) plainFront(title, g.hue) else null }
+    val backBmp = rememberSoftBitmap(back, 480)
+    val backFace = remember(backBmp, aspect) { backBmp?.let { cropTo(it, aspect) } }
+    val noCover = remember(title, g.hue, cover == null && ownFront == null) { if (cover == null && ownFront == null) plainFront(title, g.hue) else null }
     val frameArgb = frameColor.toArgb()
     Canvas(modifier) {
+        val yawNow = yawOf?.invoke() ?: yaw
+        val shadeNow = shadeOf?.invoke() ?: shade
         val fit = minOf(size.height, size.width / aspect) * 0.94f
         val h = fit
         val w = h * aspect
         val d = h * depth
         drawIntoCanvas { canvas ->
             CaseDraw.draw(
-                canvas.nativeCanvas, size.width / 2f, size.height / 2f, w, h, d, yaw, pitch,
-                face ?: noCover, spine, (1f - shade).coerceIn(0f, 1f), reflect,
-                if (frame) frameArgb else 0, 2.5f * density
+                canvas.nativeCanvas, size.width / 2f, size.height / 2f, w, h, d, yawNow, pitch,
+                face ?: noCover, spine, (1f - shadeNow).coerceIn(0f, 1f), reflect,
+                if (frame) frameArgb else 0, 2.5f * density, backFace
             )
         }
     }
@@ -132,6 +152,17 @@ private object CaseDraw {
     private val fade = android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN) }
     private val matrix = android.graphics.Matrix()
     private val path = android.graphics.Path()
+    // Update 162: made once, not per drawing (a moving carousel redraws every case each frame): the corners, the
+    // picture's corners, the light filters (one per brightness step) and the gloss / fade shaders, placed by a matrix.
+    private val out = FloatArray(8)
+    private val src = FloatArray(8)
+    private val filters = arrayOfNulls<android.graphics.ColorFilter>(256)
+    private val shaderMatrix = android.graphics.Matrix()
+    private val m9 = FloatArray(9)
+    private val gloss = android.graphics.LinearGradient(0f, 0f, 1f, 0f,
+        intArrayOf(0x33FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x14FFFFFF), floatArrayOf(0f, 0.45f, 0.8f, 1f), android.graphics.Shader.TileMode.CLAMP)
+    private val fadeDown = android.graphics.LinearGradient(0f, 0f, 0f, 1f,
+        intArrayOf(0xFF000000.toInt(), 0x00000000), null, android.graphics.Shader.TileMode.CLAMP)
 
     // The faces' corners (TL, TR, BR, BL as seen from outside, upright), in half sizes: x, y, z of each.
     private val FRONT = floatArrayOf(-1f, -1f, 1f, 1f, -1f, 1f, 1f, 1f, 1f, -1f, 1f, 1f)
@@ -147,14 +178,15 @@ private object CaseDraw {
     fun draw(
         c: android.graphics.Canvas, cx: Float, cy: Float, w: Float, h: Float, d: Float, yaw: Float, pitch: Float,
         front: android.graphics.Bitmap?, spine: android.graphics.Bitmap, light: Float, reflect: Boolean,
-        frameArgb: Int, frameWidth: Float
+        frameArgb: Int, frameWidth: Float,
+        /** Update 162: the back's picture (null: plain plastic). */
+        back: android.graphics.Bitmap? = null
     ) {
         val ty = Math.toRadians(yaw.toDouble()); val tp = Math.toRadians(pitch.toDouble())
         val cy0 = kotlin.math.cos(ty).toFloat(); val sy0 = kotlin.math.sin(ty).toFloat()
         val cp = kotlin.math.cos(tp).toFloat(); val sp = kotlin.math.sin(tp).toFloat()
         val focal = h * 3.4f
         val hw = w / 2f; val hh = h / 2f; val hd = d / 2f
-        val out = FloatArray(8)
         // Projects corner [i] of [face] (mirrored under the floor when [mirror]) into [out] at [i]; false when behind the eye.
         fun project(face: FloatArray, i: Int, mirror: Boolean): Boolean {
             val x = face[i * 3] * hw
@@ -188,7 +220,7 @@ private object CaseDraw {
         fun filterOf(l: Float): android.graphics.ColorFilter? {
             if (l >= 0.995f) return null
             val v = (l.coerceIn(0f, 1f) * 255f).toInt()
-            return android.graphics.LightingColorFilter(android.graphics.Color.rgb(v, v, v), 0)
+            return filters[v] ?: android.graphics.LightingColorFilter(android.graphics.Color.rgb(v, v, v), 0).also { filters[v] = it }
         }
         fun pathOf(): android.graphics.Path {
             path.reset()
@@ -196,7 +228,8 @@ private object CaseDraw {
             return path
         }
         fun warp(bmp: android.graphics.Bitmap, filter: android.graphics.ColorFilter?) {
-            val src = floatArrayOf(0f, 0f, bmp.width.toFloat(), 0f, bmp.width.toFloat(), bmp.height.toFloat(), 0f, bmp.height.toFloat())
+            src[0] = 0f; src[1] = 0f; src[2] = bmp.width.toFloat(); src[3] = 0f
+            src[4] = bmp.width.toFloat(); src[5] = bmp.height.toFloat(); src[6] = 0f; src[7] = bmp.height.toFloat()
             matrix.reset()
             if (matrix.setPolyToPoly(src, 0, out, 0, 4)) {
                 paint.colorFilter = filter
@@ -221,8 +254,13 @@ private object CaseDraw {
                         }
                         if (!mirror) {
                             // The case's glossy plastic over the cover, and its thin rim.
-                            fill.shader = android.graphics.LinearGradient(out[0], out[1], out[4], out[5],
-                                intArrayOf(0x33FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x14FFFFFF), floatArrayOf(0f, 0.45f, 0.8f, 1f), android.graphics.Shader.TileMode.CLAMP)
+                            // (The unit gloss laid from the top-left corner to the bottom-right one.)
+                            val gx = out[4] - out[0]; val gy = out[5] - out[1]
+                            m9[0] = gx; m9[1] = -gy; m9[2] = out[0]; m9[3] = gy; m9[4] = gx; m9[5] = out[1]
+                            m9[6] = 0f; m9[7] = 0f; m9[8] = 1f
+                            shaderMatrix.setValues(m9)
+                            gloss.setLocalMatrix(shaderMatrix)
+                            fill.shader = gloss
                             c.drawPath(pathOf(), fill)
                             fill.shader = null
                             line.strokeWidth = 1f; line.color = scaled(0x55FFFFFF, light)
@@ -231,6 +269,12 @@ private object CaseDraw {
                         }
                     }
                     1 -> warp(spine, filterOf(l))
+                    // (Update 162: the back's own picture when there is one.)
+                    4 -> if (back != null) warp(back, filterOf(l)) else {
+                        fill.shader = null
+                        fill.color = scaled(0xFF22242C.toInt(), l)
+                        c.drawPath(pathOf(), fill)
+                    }
                     else -> {
                         // The plastic: the open edge, the top and the back.
                         fill.shader = null
@@ -246,8 +290,11 @@ private object CaseDraw {
             val floorY = maxOf(out[5], out[7])
             val l = c.saveLayerAlpha(cx - w * 2f, floorY - d, cx + w * 2f, floorY + h * 1.2f, 80)
             drawFaces(true)
-            fade.shader = android.graphics.LinearGradient(0f, floorY, 0f, floorY + h * 0.55f,
-                intArrayOf(0xFF000000.toInt(), 0x00000000), null, android.graphics.Shader.TileMode.CLAMP)
+            shaderMatrix.reset()
+            shaderMatrix.setScale(1f, h * 0.55f)
+            shaderMatrix.postTranslate(0f, floorY)
+            fadeDown.setLocalMatrix(shaderMatrix)
+            fade.shader = fadeDown
             c.drawRect(cx - w * 2f, floorY - d, cx + w * 2f, floorY + h * 1.2f, fade)
             fade.shader = null
             c.restoreToCount(l)

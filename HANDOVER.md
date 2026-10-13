@@ -1,6 +1,6 @@
 # Voltcap — handover to a new Claude
 
-Written 12 Oct 2026, after update **(145)** (kept up to date to 159). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+Written 12 Oct 2026, after update **(145)** (kept up to date to 162). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is
 **Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
@@ -255,6 +255,41 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 162
+- **Carousel.kt:** one moving position `CarouselGlide` (spring, rowGlide stiffness), items placed in graphicsLayer via
+  `Carousel.placeInto` (Place fields are var), `CarouselCtx` remembered; `cases3d = caseLook && (carousel3d || view.cases)`;
+  `MediaBandLayer` / `mediaBandFor` (edge thickness by MediaShell — flip the sign there if the edge shows on the wrong
+  side); `carouselSlotH` (mixed lists); `stackEase` / `stackZ` (Box flow, Spine wall); `CarouselSwap` (category slide
+  along the path, `CategorySlide.pathOwners` turns `categorySlide()` off while a carousel is composed).
+- **Case3D:** `back`, `yawOf`, `shadeOf`, `realFront` parameters; face 4 = back.
+- **Inspect:** MediaInspect.kt (`amount`, `key`, `drawnAsCase` set by the carousel), MediaInspectView.kt
+  (`inspectPieceFor`, `InspectMotion`, `InspectStick` on AXIS_Z), GameWindow `InspectLayout`, `LocalWinInspect`.
+  Not in the banner window style or the TV room's set; other layouts (grids, rows) don't make room.
+- **Presets:** `LayoutPreset.look` (`PresetLook`), `features` map, `carousel`; `applyPresetExtras()` in PresetsCard.kt.
+  "(modified)" still checks only the look settings.
+
+## State after update 161
+- **CarouselView.ARCH / BOX_FLOW** (Carousel.place; BOX_FLOW `cases = true`, `reach` ×3 like the Spine wall, flatView →
+  FLIP). The arch stage is gone from Case stacks (`Features.stacksArch` removed); StacksArch.kt keeps the tool strip and
+  the bottom panel.
+- **Keep art in memory:** `Features.keepArt` (default on) → `MemoryBudget.keepArt` (read once): `imageCacheShare` 0.3,
+  `KeepingCache` wraps Coil's memory cache and ignores trims below TRIM_MEMORY_COMPLETE / RUNNING_CRITICAL; `release()`
+  returns early likewise. Manifest `android:largeHeap="true"` (RP Classic: heap 256 → 512 MB).
+
+## State after update 160
+- **Case stacks:** StacksArch.kt (`StacksToolbar` = `c.shortcuts` in StyleNav.top, `StacksArchStage`, `StacksPanel`
+  with StyleNav.bar Options / Favourite / Details / Play); `Features.stacksArch` (default on), `stacksToolbar`;
+  `StacksFront` / `stacksCaseLook` internal. Old `StacksBar` and `StacksRoom` gone.
+- **DiscLook.on** (PhysicalMedia.kt, set from LauncherScreen): `typedArtFor(CARTRIDGE_DISC)` gives null for cartridge
+  games in Discs only.
+- **R1 "look3d" tile:** case looks → `Features.caseModels3d` (CaseArt's `models3d` default, `Models3D.caseModel`, carousel
+  3D cases); cartridge looks → `setModelsLook`.
+- **Model3DArt:** a case model (`Models3D.isCase`) takes `BoxTexture.front` via `HomeScans.keyOfCover` (cover → key).
+- **CustomCarts:** shells through `rememberShellRequest` (560 px, key `shell|path|mtime`), labels through `mediaArtModel`.
+- **Still open:** Grid default size, ▲ ▼ round on Grid / TV room / Cross menu, Timeline one-group repeat, TV room grid
+  ignores the look, Tile look row off the bottom, Game shelf front late, Cross menu icons, custom case templates in the
+  SteamGridDB cover's shape, Thor second screen.
 
 ## State after update 159
 - **Carousel.kt cover**, PhysicalMedia / DiscCase3D real disc scan, RealMedia box front: their `contentScale` /

@@ -104,9 +104,12 @@ object ArtStorage {
             // a fifth of the app's budget, much less on small handhelds (MemoryBudget), where the
             // emulator needs the room.
             .memoryCache {
-                coil.memory.MemoryCache.Builder(context)
-                    .maxSizePercent(com.shelf.launcher.device.MemoryBudget.imageCacheShare(context))
-                    .build()
+                // (Update 159: kept through Android's ordinary trims, MemoryBudget.KeepingCache.)
+                com.shelf.launcher.device.MemoryBudget.KeepingCache(
+                    coil.memory.MemoryCache.Builder(context)
+                        .maxSizePercent(com.shelf.launcher.device.MemoryBudget.imageCacheShare(context))
+                        .build()
+                )
             }
             // Small handhelds: pictures without transparency (covers, backgrounds) decode at
             // 2 bytes a pixel instead of 4 — half the memory, hardly visible on these screens.

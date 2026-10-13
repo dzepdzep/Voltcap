@@ -125,12 +125,15 @@ internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
     val g0 = c.game
     // A button bar hidden in Edit Home (or switched off) drops out of the D-pad's way: ▼ then reaches what lies below.
     val barOn = Features.stacksBar.state.value && !LayoutParts.off(HomeLayout.STACKS, "bar")
+    val toolsOn = Features.stacksToolbar.state.value && !LayoutParts.off(HomeLayout.STACKS, "tools") && c.shortcuts.isNotEmpty()
     SideEffect {
         StyleNav.side = emptyList()
-        StyleNav.top = emptyList()
-        // ▼: Favourite, Options, Details and Play, in the order they're drawn.
+        // Update 159: ▲ reaches the tool strip along the top (your round shortcuts).
+        StyleNav.top = if (toolsOn) c.shortcuts.map { it.onClick } else emptyList()
+        StyleNav.topStart = -1
+        // ▼: the bottom panel's buttons (update 159: Options, Favourite, Details, Play, left to right as drawn).
         StyleNav.bar = if (g0 == null || !barOn) emptyList() else listOf(
-            { c.actions.favorite(g0) }, { c.actions.options(g0) }, { c.actions.open() }, { c.actions.play(g0) }
+            { c.actions.options(g0) }, { c.actions.favorite(g0) }, { c.actions.open() }, { c.actions.play(g0) }
         )
     }
     // The spines of the games round the one you're on (StyleHome only asks for them on the Game shelf): the nearest
@@ -154,18 +157,25 @@ internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
         }
     }
     // Plain if / else, never an early return out of the layout (it unbalances Compose's groups).
-    if (g0 == null) StyleEmpty(modifier) else StacksBody(c, g0, barOn, modifier)
+    if (g0 == null) StyleEmpty(modifier) else StacksBody(c, g0, barOn, toolsOn, modifier)
 }
 
 @Composable
-private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, modifier: Modifier) {
+private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, modifier: Modifier) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val compact = maxHeight < 380.dp
-        val nameH = if (compact) 42.dp else 56.dp
-        val barH = if (barOn) (if (compact) 62.dp else 76.dp) else 0.dp
-        val stageH = (maxHeight - nameH - barH).coerceAtLeast(110.dp)
+        // Update 159 (the loader look): the tool strip on top, the bottom panel with the name, clock and buttons.
+        val toolsH = if (toolsOn) 42.dp else 0.dp
+        val nameH = if (barOn) 0.dp else (if (compact) 42.dp else 56.dp)
+        val barH = if (barOn) (if (compact) 92.dp else 118.dp) else 0.dp
+        val stageH = (maxHeight - toolsH - nameH - barH).coerceAtLeast(110.dp)
         Column(Modifier.fillMaxSize()) {
-            Box(
+            if (toolsOn) Box(
+                Modifier.fillMaxWidth().height(toolsH).editablePart(LayoutParts.id(HomeLayout.STACKS, "tools"), "Tool strip"),
+                contentAlignment = Alignment.Center
+            ) { StacksToolbar(c, Modifier) }
+            // Without the panel the name stays above the games, as before.
+            if (!barOn) Box(
                 Modifier.fillMaxWidth().height(nameH).padding(horizontal = 16.dp)
                     .editablePart(LayoutParts.id(HomeLayout.STACKS, "name"), "Name"),
                 contentAlignment = Alignment.BottomCenter
@@ -174,19 +184,19 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, modifier: Modifier)
                     targetState = g, label = "stacksName", transitionSpec = { gameSwap() }, contentAlignment = Alignment.BottomCenter
                 ) { shown -> StacksName(c, shown, compact) }
             }
-            // Update 159: Carousel (R1 › Carousel, hold for its views) works here too: the games as the carousel in the
-            // stage, in any game look (cartridges, discs, 3D cases, covers…); the name above and the button bar stay.
+            // Update 159: Carousel (R1 › Carousel, hold for its views — Arch and Box flow among them) works here too: the
+            // games as the carousel in the stage, in any game look; else the stacks of spines.
+            val stage = Modifier.fillMaxWidth().height(stageH)
             if (HomeLayout.STACKS.name in Features.carouselLayouts.state.value) GameCarousel(
                 games = c.games, focus = c.focus, art = c.art, overrides = c.state.artOverrides,
                 onSelect = c.actions.select, onOpen = c.actions.open, cardArtType = c.type,
                 physicalMedia = c.state.physicalMedia, screenshots = c.state.screenshots, onNeedPhysical = c.actions.needPhysical,
                 loop = loopRowOn(c), loopTick = c.state.loopTick, loopStep = c.state.loopStep,
-                modifier = Modifier.fillMaxWidth().height(stageH)
-            ) else StacksStage(c, Modifier.fillMaxWidth().height(stageH))
+                modifier = stage
+            ) else StacksStage(c, stage)
             if (barOn) Box(
-                Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Button bar"),
-                contentAlignment = Alignment.Center
-            ) { StacksBar(c, g, compact) }
+                Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Bottom panel")
+            ) { StacksPanel(c, g, compact, Modifier.fillMaxSize()) }
         }
     }
 }
@@ -393,7 +403,7 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
 }
 
 /** The layout's card artwork is a case look (box art, or the plain cover / spines, which stand as a case here). */
-private fun stacksCaseLook(type: CardArtType): Boolean =
+internal fun stacksCaseLook(type: CardArtType): Boolean =
     type == CardArtType.CASE || type == CardArtType.CASE_REAL || type == CardArtType.COVER
 
 /**
@@ -491,7 +501,7 @@ private fun StacksItem(
  * own artwork for the others. The focus ring in the accent colour while the D-pad is on the games.
  */
 @Composable
-private fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modifier) {
+internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modifier) {
     val k = g.stableKey
     val on = k == c.game?.stableKey
     val accent = ShelfTheme.accent
@@ -594,63 +604,6 @@ private fun Modifier.stacksMirror(on: Boolean): Modifier = if (!on) this else th
     }
 }
 
-/** The round buttons along the bottom: Favourite, Options, Details and Play (▼ reaches them). */
-@Composable
-private fun StacksBar(c: StyleCtx, g: Game, compact: Boolean) {
-    val fav = g.stableKey in c.state.favorites
-    val played = c.lastPlayed(g) != null
-    val favorite by rememberUpdatedState(c.actions.favorite)
-    val options by rememberUpdatedState(c.actions.options)
-    val open by rememberUpdatedState(c.actions.open)
-    val play by rememberUpdatedState(c.actions.play)
-    val game by rememberUpdatedState(g)
-    Row(
-        Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.3f)).padding(horizontal = 18.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(if (compact) 14.dp else 22.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        StacksButton(if (fav) Icons.Filled.Star else Icons.Filled.StarBorder, "Favourite", 0, compact, tint = if (fav) Color(0xFFE8BE48) else Color.White) { favorite(game) }
-        StacksButton(Icons.Filled.Tune, "Options", 1, compact) { options(game) }
-        StacksButton(Icons.Filled.Info, "Details", 2, compact) { open() }
-        StacksButton(Icons.Filled.PlayArrow, if (played) "Continue" else "Play", 3, compact, main = true) { play(game) }
-    }
-}
-
-@Composable
-private fun StacksButton(
-    icon: ImageVector, label: String, index: Int, compact: Boolean, tint: Color = Color.White, main: Boolean = false, onClick: () -> Unit
-) {
-    val click by rememberUpdatedState(onClick)
-    val on = StyleNav.on(StyleNav.Zone.BAR, index)
-    val accent = ShelfTheme.accent
-    val grow by animateFloatAsState(if (on) 1.12f else 1f, spring(stiffness = Features.rowGlide.state.value.stiffness), label = "stacksButton")
-    val d = (if (compact) 34.dp else 42.dp) * (if (main) 1.12f else 1f)
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.pointerInput(index) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.BAR, index); click() } }
-    ) {
-        Box(
-            Modifier.size(d)
-                .graphicsLayer { scaleX = grow; scaleY = grow }
-                .clip(CircleShape)
-                .background(
-                    when {
-                        main -> accent.copy(alpha = if (on) 1f else 0.7f)
-                        on -> accent.copy(alpha = 0.38f)
-                        else -> Color.White.copy(alpha = 0.14f)
-                    }
-                )
-                .border(if (on) 2.dp else 1.dp, if (on) Color.White else Color.White.copy(alpha = 0.25f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) { Icon(icon, null, tint = tint, modifier = Modifier.size(d * 0.5f)) }
-        Spacer(Modifier.height(3.dp))
-        Text(
-            label, color = Color.White.copy(alpha = if (on) 1f else 0.7f), fontSize = if (compact) 10.sp else 11.sp,
-            fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, softWrap = false
-        )
-    }
-}
-
 /**
  * The keys on the games: ◀ ▶ are the home screen's own (previous / next game); ▼ goes to the button bar (landing on Play)
  * or, without one, to what lies below; ▲ to what lies above.
@@ -663,13 +616,13 @@ internal fun caseStacksKey(ctx: StyleKeyCtx): Boolean = when (ctx.key) {
         if (!wasThere && StyleNav.zone == StyleNav.Zone.BAR) StyleNav.index = StyleNav.bar.lastIndex
         handled
     } else ctx.reach(false)
-    Key.DirectionUp -> ctx.reach(true)
+    Key.DirectionUp -> if (StyleNav.top.isNotEmpty()) ctx.enterZone(StyleNav.Zone.TOP) else ctx.reach(true)
     else -> false
 }
 
 @Composable
 internal fun CaseStacksSettings() {
-    MutedNote("The game you're on stands big in the middle as its case, the others as stacks of spines: the ones before it on the left, the next ones on the right. Moving slides the next spine out of its stack, turns it to face you and puts the old one back. ◀ ▶ move, ▼ the button bar (Favourite, Options, Details, Play). Tap a spine to pick it, tap the case to open it, or swipe along.")
+    MutedNote("Your games as stacks of spines either side of the case you're on (or the carousel: R1 › Carousel, its Arch and Box flow views), your round shortcuts as a tool strip along the top, and a panel along the bottom with the game's name, a big clock, free storage and the number of games. Everything takes your theme's colours. ◀ ▶ move, ▲ the tool strip, ▼ the panel's buttons (Options, Favourite, Details, Play). Tap a game to pick it, tap it again to open it, or swipe along.")
     Spacer(Modifier.height(10.dp))
     SwitchRow(
         Icons.Filled.ViewInAr, "Stacks in perspective",
@@ -677,9 +630,16 @@ internal fun CaseStacksSettings() {
         Features.stacksDepth.state.value, { Features.stacksDepth.value = it }
     )
     Spacer(Modifier.height(8.dp))
+    // Update 159: the loader look's parts.
     SwitchRow(
-        Icons.Filled.PlayArrow, "Button bar",
-        "Round buttons along the bottom: Favourite, Options, Details and Play (▼ reaches them).",
+        Icons.Filled.Tune, "Tool strip",
+        "Your round shortcuts as small square buttons along the top (▲ reaches them).",
+        Features.stacksToolbar.state.value, { Features.stacksToolbar.value = it }
+    )
+    Spacer(Modifier.height(8.dp))
+    SwitchRow(
+        Icons.Filled.PlayArrow, "Bottom panel",
+        "The game's name, a big clock, free storage and the number of games, with Options, Favourite, Details and Play (▼ reaches them).",
         Features.stacksBar.state.value, { Features.stacksBar.value = it }
     )
     Spacer(Modifier.height(8.dp))

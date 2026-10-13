@@ -376,7 +376,8 @@ internal fun CaseArt(
      * cases and Cases · real sizes are flat for every console (a PS2 game stood as a 3D case among flat ones); the 3D
      * cases belong to the 3D models look (mediaFor); 3D case + disc draws the template's 3D box for every console.
      */
-    models3d: Boolean = false
+    // (Update 159: on with R1 › 3D in a case look, Features.caseModels3d.)
+    models3d: Boolean = com.shelf.launcher.data.Features.caseModels3d.state.value
 ): Boolean {
     // Update 129: one console's case picked for all (R1 › Case): every game's cover in that case, never its own scan.
     val casePlatform = LookStyles.casePlatform(platform)

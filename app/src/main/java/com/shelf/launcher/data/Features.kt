@@ -1270,6 +1270,15 @@ object Features {
     val stacksMirror = BoolPref("stacks_mirror", true)
     /** Update 151: Case stacks: the game in the middle as a real 3D case, turned a little so its spine shows (off: flat). */
     val stacks3d = BoolPref("stacks_3d", true)
+    /** Update 159: the case looks (Real cases, Cases · real sizes) in your 3D shape library's cases (R1 › 3D). */
+    val caseModels3d = BoolPref("case_models_3d", false)
+    /** Update 159: Case stacks: the tool strip along the top (your round shortcuts as small square buttons). */
+    val stacksToolbar = BoolPref("stacks_toolbar", true)
+    /**
+     * Update 159: the decoded art stays in memory — a bigger share of a larger heap, not dropped when a game starts
+     * (only when Android is really short), so every picture is read from storage once (MemoryBudget).
+     */
+    val keepArt = BoolPref("keep_art", true)
     /** Timeline: what puts the games in order along the line. */
     enum class TimelineBy(val label: String) { LAST_PLAYED("Last played"), RELEASED("Release year"), ADDED("Added to Voltcap") }
     val timelineBy = EnumPref("timeline_by", TimelineBy.LAST_PLAYED, TimelineBy.values())

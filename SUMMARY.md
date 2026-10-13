@@ -4,6 +4,166 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (162): the carousel as a physical collection, inspecting a game's piece, presets brought up to date
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (2): `src_copy\ui\MediaInspect.kt`, `src_copy\ui\MediaInspectView.kt`.
+- Changed (9): `src_copy\data\LayoutPresets.kt`, and `src_copy\ui\` Carousel, Case3D, GameWindow, HomeExtras, PresetPreview,
+  PresetsCard, SettingsDialog, StyleHomeSettings (all `.kt`).
+
+**Files to delete:** none. (161 and 160 come with this block if they aren't installed yet.)
+
+### The carousel (every view; Box flow tuned to the loader videos)
+- **Each game as its own piece:** the 3D views box only the case looks; with Cartridges & discs, Cartridges, Discs only
+  or 3D models every game stays its real cartridge, card, disc, UMD or model, in its own shape. Turned pieces show
+  their thickness (an edge in the shell's colour; discs a thin rim), so a cartridge seen from the side doesn't vanish.
+  In mixed-console lists every piece gets about a cover's area, so nothing jumps in size.
+- **Box flow:** the middle one facing you a touch higher, a gap the width of its piece, then the stacks a step behind
+  on a gentle curve, turned more toward the edges (spines showing more), standing on one floor line; the right stack
+  draws each one over the one inside it, so the spines show. Spine wall and Turned row got the same floor and easing.
+- **Motion:** the whole carousel runs from one moving position — a smooth spring at your "Moving between games" speed
+  that keeps its speed between steps, so holding the D-pad flows instead of stopping at every game; the game leaving
+  the middle eases into its stack. No snapping when the list changes. The carousel no longer rebuilds every frame while
+  it moves, and the focus pulse runs on the game you're on only.
+- **Category change:** the old collection slides on along the carousel and fades while the new one comes in from the
+  side you went (off with Lite effects or page animations off).
+- **Real case fronts** in the Box art / Real cases looks' 3D cases (Original cases on).
+- Settings › Carousel › 3D cases: now says it's for the case looks.
+
+### Opening a game: inspecting its piece
+- With a look that draws real things (cases, cartridges, cards, discs, 3D models, or covers drawn as 3D cases), opening
+  a game lifts its piece out of the carousel: the others step back and fade, the piece flies forward and grows on one
+  side of the window, then turns once — front, side, back — and settles facing you. The game's buttons and info sit
+  beside it, never over it.
+  - Boxes: the front scan (or cover), the spine, the back cut from the full box scan (else plain plastic, never the
+    cover mirrored). Cartridges and cards: the label, a shell-coloured side, a plain rear shell. Discs: the label, a thin
+    edge, the silver data side. 3D models: through their own angles.
+  - The right stick, or dragging the piece, turns it yourself; let go and it eases back.
+- Closing turns it back, shrinks it and flies it back exactly into its place; the same game stays selected.
+- Animations off / Lite effects: a short fade instead. Covers and wide capsules open as before.
+
+### Presets (Settings › Home › Layout & presets)
+- 69 presets now, every layout with at least two, each with its own small preview picture. New: Disc collection, Cartridge
+  wall, Loader (Case stacks + Box flow), Record shop, Card collector, and carousel ones (Arch row, Receding row, Box flow,
+  TV room spine wall, 3D models, Side menu turned row), plus presets for every layout from 146–158.
+- Old ones brought up to date: the Tile home presets (unreachable since 112) are Voltcap row presets with the Tile look;
+  carousel on / off and the layout's own options are set by every preset; the theme is never touched. Presets also set
+  the look's switches (Tile, Spines, Cartridges, 3D models, case + disc), and Undo puts them back too.
+- Layout options summaries for Case stacks and Disc station updated.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`. Built by three agents in parallel, each reviewed (fixes: a frozen
+  category slide, the stick loop that could hang on closing and blocked the left stick, a disc flicker when turning, the
+  preview's 3D case order). Not tried on a device yet.
+- To check on the device: the side of the turned pieces' edge, the right stack's spines in Box flow, smoothness with
+  cartridge looks and "To the edge" on the Pocket Classic.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 162: carousel as a physical collection, inspect animation, presets up to date" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
+## Update — 13 Oct 2026 (161): Arch and Box flow carousel views, art kept in memory
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (7): `src_copy\data\ArtStorage.kt`,
+`src_copy\data\Features.kt`, `src_copy\device\MemoryBudget.kt`, and `src_copy\ui\` Carousel, SettingsDialog, StacksArch,
+StyleCaseStacks (all `.kt`).
+
+**Copy `project_copy`** (over the project root): `project_copy\app\src\main\AndroidManifest.xml` (`largeHeap`).
+
+**Files to delete:** none. (If 160 isn't installed yet, this block brings it too.)
+
+### What changed
+- **Arch** (new carousel view): the curved row from 160 is a carousel view now, not part of Case stacks — the one
+  you're on raised and bigger in front, each step out a little lower, smaller and leaning outward. Any game look, every
+  layout with the carousel.
+- **Box flow** (new carousel view, from the loader video): the one you're on facing you a little apart in the middle,
+  the others as 3D boxes packed tight either side, turned to their spines, the stacks growing slightly toward the
+  screen's edges; moving, the next box slides out of its stack and turns to face you. Always 3D boxes.
+- Pick them: hold R1 › Carousel, or Settings › Home › Layout options › Carousel › View.
+- **Case stacks:** keeps the tool strip and the bottom panel from 160; the games in between are the stacks of spines,
+  or the carousel (R1 › Carousel) — Arch or Box flow give the loader look.
+- **Art read from storage once:** Settings › Theme › Effects & battery › Performance › Keep art in memory (on by
+  default). The decoded pictures get a bigger share of a bigger heap (the manifest asks Android for the large heap) and
+  are no longer dropped when Voltcap goes to the background or a game starts — only when Android is really short of
+  memory. Switching layouts, looks and categories, or coming back from a game, shows the art at once. Off: as before.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`. Not tried on a device yet.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 161: Arch and Box flow carousel views, art kept in memory (large heap)" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
+## Update — 13 Oct 2026 (160): Case stacks in the loader look, Discs only CDs, 3D on R1, real case fronts on the 3D cases
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (1): `src_copy\ui\StacksArch.kt`.
+- Changed (10): `src_copy\data\Features.kt`, and `src_copy\ui\` Carousel, CustomCarts, GameCard, LauncherScreen, Models3D,
+  PhysicalMedia, QuickSettings, RealMedia, StyleCaseStacks (all `.kt`).
+
+**Files to delete:** none.
+
+### What changed
+- **Case stacks, restyled after the disc loader picture you sent** (Voltcap's own drawing, in your theme's colours —
+  a light panel on a light theme, a dark one on a dark theme, the accent on the edges and the Play button):
+  - **Top:** a tool strip of small square buttons (your round shortcuts); ▲ from the games reaches it.
+  - **Middle:** the games as an arch of cases fanned across the screen, the one you're on raised, bigger and in front,
+    the others turned outward and a little lower. Every game look works (cases, cartridges, discs, covers). With Endless
+    on and few games each game shows once. R1 › Carousel still turns the middle into the carousel.
+  - **Bottom panel:** the game's name, a big LCD clock, the free storage ("x GB of y GB free") and the number of games;
+    big round Options (left) and Play (right), small Favourite and Details. ▼ lands on Play.
+  - Settings › Home › Layout options › Case stacks options: The games (Arch of cases / Stacks of spines), Tool strip,
+    Bottom panel. Edit Home can move or hide the tool strip and the panel.
+- **Discs only showed cartridges:** a cartridge game's own scan is its cartridge; on its CD the cover is printed now
+  (every layout).
+- **R1 › 3D** (new tile, with Real cases, Cases · real sizes, Cartridges & discs and Cartridges): one tap for 3D — the
+  case looks stand in your 3D shape library's cases, the cartridge looks become the 3D models. With no 3D models
+  downloaded yet it opens Settings › Game look › 3D models.
+- **3D cases wear the real case:** a game's 3D case (the PS2 DVD case and the others) shows the game's own scanned case
+  front when there is one (with its banner), else the cover. Follows Original cases (on by default).
+- **Pictures blinking out while scrolling in the cartridge looks** (the PS2 game on your cartridge pack): the pack's
+  shell and the cover in its window were read from storage again at every size; now each is decoded once.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`. Not tried on a device yet.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 160: Case stacks loader look, Discs only CDs, R1 3D tile, real case fronts on 3D cases, cartridge shells decoded once" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (159): bug check of 158 on the Pocket Classic — carousel art, Disc station, Case stacks, new layouts
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

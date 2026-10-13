@@ -97,9 +97,13 @@ internal object Models3D {
         "NDS" to "case_ds", "3DS" to "case_3ds", "Switch" to "case_switch"
     )
 
+    /** Update 159: [id] is one of the 3D cases (its front takes the game's own scanned case front, see [Model3DArt]). */
+    fun isCase(id: String): Boolean = id in CASES.values
+
     /** Update 141: the 3D case [platform]'s games are drawn in with a case look, when 3D models are on and it's downloaded. */
     fun caseModel(platform: String?): String? =
-        if (platform == null || Features.modelFinish.state.value == ModelFinish.OFF) null else CASES[platform]?.takeIf { Packs.hasModel(it) }
+        if (platform == null || (Features.modelFinish.state.value == ModelFinish.OFF && !Features.caseModels3d.state.value)) null
+        else CASES[platform]?.takeIf { Packs.hasModel(it) }
 
     /** Update 141: how a piece stands (Settings › Game look › 3D models › Stand); [focused]: it's the game you're on. */
     fun standYaw(focused: Boolean): Float = when (Features.modelAngle.state.value) {
@@ -642,6 +646,12 @@ internal fun Model3DArt(
     life: Boolean = false,
     focused: Boolean = false
 ) {
+    // Update 159: a 3D case wears the game's own scanned case front when there is one (Original cases, on by default) —
+    // the PS2 case showed only the cover, never the real case's printed front with its banner.
+    @Suppress("NAME_SHADOWING")
+    val cover = if (cover is String && Models3D.isCase(id) && Features.originalCases.state.value) {
+        HomeScans.keyOfCover[cover]?.let { k -> BoxTexture.front(HomeScans.map[k], platform) } ?: cover
+    } else cover
     if (life) {
         Model3DLive(id, cover, yaw, modifier, shade, name, alwaysName, platform, focused)
         return

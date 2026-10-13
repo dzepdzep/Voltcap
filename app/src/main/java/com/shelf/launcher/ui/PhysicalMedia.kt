@@ -121,6 +121,13 @@ internal object HomeScans {
     var need: ((com.shelf.launcher.data.Game) -> Unit)? = null
     /** Update 119: a game's cover (by its key), for a game without any real spine; set by the home screen. */
     var cover: ((String) -> String?)? = null
+    /** Update 159: each game's key by its cover's address (set by the home screen), so a 3D case finds the game's scans. */
+    var keyOfCover: Map<String, String> = emptyMap()
+}
+
+/** Update 159: the Discs only look is on (set by the home screen), so cartridge games print their cover on their CD. */
+internal object DiscLook {
+    var on by androidx.compose.runtime.mutableStateOf(false)
 }
 
 /** "disc" for discs and UMDs, "cartridge" for everything else (cards, HuCards, carts). */

@@ -25,8 +25,28 @@ object MemoryBudget {
         (gb > 0.1 && gb < 6.5) || am.memoryClass <= 256
     }.getOrDefault(false)
 
-    /** Share of the app's memory for decoded art: small devices keep much less. */
-    fun imageCacheShare(context: Context): Double = if (small(context)) 0.12 else 0.2
+    /**
+     * Update 159: Settings › Effects & battery › Keep art in memory (on by default): read once when the image loader is
+     * made. Off: the old behaviour (small handhelds keep much less and drop it all when a game starts).
+     */
+    val keepArt: Boolean by lazy { runCatching { com.shelf.launcher.data.Features.keepArt.value }.getOrDefault(true) }
+
+    /** Share of the app's memory for decoded art: small devices keep much less (unless the art is kept, [keepArt]). */
+    fun imageCacheShare(context: Context): Double = if (keepArt) 0.3 else if (small(context)) 0.12 else 0.2
+
+    /** Android is really short of memory (not just Voltcap going to the background). */
+    private fun critical(level: Int): Boolean =
+        level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE || level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL
+
+    /**
+     * Update 159: the image loader's memory cache, kept through Android's ordinary trims ([keepArt]): Coil empties its
+     * cache itself whenever the app goes to the background, so every picture was read from storage again on return.
+     */
+    class KeepingCache(private val inner: coil.memory.MemoryCache) : coil.memory.MemoryCache by inner {
+        override fun trimMemory(level: Int) {
+            if (!keepArt || critical(level)) inner.trimMemory(level)
+        }
+    }
 
     /** Widest a full-screen background is decoded (px). Full 4K heroes cost ~30 MB each. */
     fun heroMaxWidth(context: Context): Int = if (small(context)) 1280 else 1920
@@ -37,6 +57,8 @@ object MemoryBudget {
      */
     fun release(context: Context, level: Int) {
         val app = context.applicationContext
+        // Update 159: with the art kept, only when Android is really short.
+        if (keepArt && !critical(level)) return
         val full = level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND ||
             (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN && small(app)) ||
             level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL

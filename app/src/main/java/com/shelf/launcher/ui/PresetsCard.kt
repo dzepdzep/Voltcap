@@ -73,7 +73,12 @@ internal fun PresetsCard(
             pending = p
             pendingBefore = appearance
             onAppearanceChange(appearance.copy(homeLayout = target))
-        } else push(store.apply(p, appearance, theme))
+        } else {
+            // Update 162: the game look's switches, the layout's options and its carousel, after the undo point is taken.
+            val r = store.apply(p, appearance, theme)
+            applyPresetExtras(p, r.first)
+            push(r)
+        }
     }
     androidx.compose.runtime.LaunchedEffect(appearance.homeLayout, pending) {
         val p = pending ?: return@LaunchedEffect
@@ -81,7 +86,10 @@ internal fun PresetsCard(
         val before = pendingBefore ?: appearance
         pending = null
         pendingBefore = null
-        push(store.apply(p, appearance, theme, before))
+        // Update 162: as above, the preset's game look switches, layout options and carousel too.
+        val r = store.apply(p, appearance, theme, before)
+        applyPresetExtras(p, r.first)
+        push(r)
     }
 
     // The layout whose presets are shown (starts on the one in use; picking another doesn't switch to it yet).
@@ -239,6 +247,8 @@ private fun PresetDetails(
         // Side by side when there's room, else the preview on top.
         val wide = maxWidth > 460.dp
         val preview: @Composable (Modifier) -> Unit = { m ->
+            // Update 162: the preset's own game look switches, carousel and layout options (else as they are now).
+            val f = com.shelf.launcher.data.Features
             PresetPreview(
                 layout = after.homeLayout,
                 background = after.backgroundStyle,
@@ -251,7 +261,13 @@ private fun PresetDetails(
                 showLegend = after.showLegend,
                 modifier = m,
                 art = after.cardArtType,
-                corners = after.cardCorners
+                corners = after.cardCorners,
+                tiles = p.look?.tiles ?: f.squareTiles.state.value,
+                spines = p.look?.spines ?: f.spineLook.state.value,
+                carts = p.look?.carts ?: f.cartsOnly.state.value,
+                models = p.look?.models ?: (f.modelFinish.state.value != ModelFinish.OFF),
+                carousel = presetCarousel(p, after.homeLayout),
+                options = p.features
             )
         }
         // Lists with games from several consoles (Recently played, Favourites…): the same look, or plain covers.
@@ -317,7 +333,8 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     com.shelf.launcher.data.HomeLayout.CIRCUIT -> "Circuit board: Voltcap's own — your games as chips zig-zagging along a glowing power line, the one you're on powered up, a readout and a power switch to play."
     // Update 146.
     com.shelf.launcher.data.HomeLayout.LIBRARY -> "Library panel: the game you're on in a panel on the left — cover, play time, achievements, Details and Play — and a grid of the category's games on the right, tabs on top."
-    com.shelf.launcher.data.HomeLayout.STACKS -> "Case stacks: the game you're on as a big case in the middle, the others as stacks of spines left and right, a button bar along the bottom."
+    // (Update 162: the tool strip, the bottom panel and the carousel views it has now.)
+    com.shelf.launcher.data.HomeLayout.STACKS -> "Case stacks: the game you're on as a big case in the middle, the others as stacks of spines left and right (or the carousel, like its Box flow), a tool strip on top and a panel along the bottom."
     // Update 151: the history look.
     com.shelf.launcher.data.HomeLayout.TIMELINE -> "Timeline: your games as a history, a row for each month or year by when you last played them (or release year, or when added)."
     com.shelf.launcher.data.HomeLayout.ARCADE -> "Arcade cabinets: the game you're on on an arcade cabinet's screen with its marquee lit on top, the others as a row of small cabinets."
@@ -332,7 +349,65 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     com.shelf.launcher.data.HomeLayout.CRATE -> "Record crate: your games as record sleeves in a wooden crate. Flip through them; the one you're on lifts out and its record slides out and turns. Its name, play time, achievements and Play beside it."
     // Update 158: Card binder.
     com.shelf.launcher.data.HomeLayout.CARDS -> "Card binder: your games as collectible cards — the cover in a framed window, the console as its type, time played, achievements and rarity stars at the bottom. The one you're on stands big in the middle, the others fan out like a hand; Y turns it over."
-    com.shelf.launcher.data.HomeLayout.SHELF -> "Game shelf:your games as spines on a bookcase, the one you're on pulled out to show its front. ◀ ▶ along, ▲ ▼ to the shelf above / below."
+    com.shelf.launcher.data.HomeLayout.SHELF -> "Game shelf: your games as spines on a bookcase, the one you're on pulled out to show its front. ◀ ▶ along, ▲ ▼ to the shelf above / below."
+}
+
+/**
+ * Update 162: what a built-in preset sets besides the look settings — the game look's switches (as Settings › Game look
+ * sets them), the layout's own options and its carousel. Called right after the store took its undo point, so Undo
+ * puts all of it back too.
+ */
+private fun applyPresetExtras(p: com.shelf.launcher.data.LayoutPreset, after: AppearanceSettings) {
+    val f = com.shelf.launcher.data.Features
+    p.look?.let { l ->
+        val type = after.cardArtType
+        f.squareTiles.value = l.tiles
+        f.spineLook.value = l.spines
+        f.cartsOnly.value = l.carts
+        // (As the Game look picker does: the 3D models are switched only with the cartridges & discs — the finish also
+        // dresses the carousels' 3D cases — and the case switches only with a case look.)
+        if (type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) setModelsLook(l.models)
+        if (type == com.shelf.launcher.data.CardArtType.CASE || type == com.shelf.launcher.data.CardArtType.CASE_REAL) {
+            f.discCase.value = l.discInCase
+            f.discCase3d.value = l.disc3d
+            f.caseWithMedia.value = l.leaning
+        }
+        // (The Grid's square tiles would hide every look but the covers.)
+        if (type != com.shelf.launcher.data.CardArtType.COVER) f.gridTiles.value = false
+    }
+    if (p.features.isNotEmpty()) f.restore(p.features)
+    val layout = p.layout
+    val on = p.carousel
+    if (layout != null && on != null) {
+        val set = f.carouselLayouts.value
+        if (on != (layout.name in set)) f.carouselLayouts.value = if (on) set + layout.name else set - layout.name
+    }
+}
+
+/** Update 162: the game look's switches already as [l] says, for the card artwork [type]. */
+private fun lookIsNow(type: com.shelf.launcher.data.CardArtType, l: com.shelf.launcher.data.PresetLook): Boolean {
+    val f = com.shelf.launcher.data.Features
+    return when (type) {
+        com.shelf.launcher.data.CardArtType.COVER -> f.squareTiles.state.value == l.tiles && f.spineLook.state.value == l.spines
+        com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> f.cartsOnly.state.value == l.carts && (f.modelFinish.state.value != ModelFinish.OFF) == l.models
+        com.shelf.launcher.data.CardArtType.CASE, com.shelf.launcher.data.CardArtType.CASE_REAL ->
+            f.discCase.state.value == l.discInCase && f.discCase3d.state.value == l.disc3d && f.caseWithMedia.state.value == l.leaning
+        else -> true
+    }
+}
+
+/**
+ * Update 162: the carousel view [p] leaves [layout] showing its games in, or null when it shows its own row / grid
+ * (the preset's own carousel switch and view, else as they are now; the TV room's carousel is its Games choice).
+ */
+private fun presetCarousel(p: com.shelf.launcher.data.LayoutPreset, layout: com.shelf.launcher.data.HomeLayout): CarouselView? {
+    val f = com.shelf.launcher.data.Features
+    val on = if (layout == com.shelf.launcher.data.HomeLayout.TV)
+        (p.features[f.tvRoomGames.key] ?: f.tvRoomGames.state.value.name) == TvRoom.Games.CAROUSEL.name
+    else p.carousel ?: (layout.name in f.carouselLayouts.state.value)
+    if (!on) return null
+    val name = p.features[f.carouselView.key] ?: f.carouselView.state.value.name
+    return CarouselView.values().firstOrNull { it.name == name }
 }
 
 /** One line saying what applying [p] changes, compared with your settings now. */
@@ -341,7 +416,17 @@ private fun presetChanges(
 ): String {
     val parts = mutableListOf<String>()
     parts += if (after.homeLayout != now.homeLayout) "Layout: ${after.homeLayout.label}" else "Keeps your layout (${now.homeLayout.label})"
-    if (after.cardArtType != now.cardArtType) parts += "games as ${gameLookLabel(after.cardArtType).lowercase()}"
+    // Update 162: the game look by its full name (Tile, Cartridges, 3D models…), or that it stays as it is.
+    val look = p.look
+    when {
+        look != null -> {
+            if (after.cardArtType != now.cardArtType || !lookIsNow(after.cardArtType, look))
+                // (Update 162 (review): "games as tiles", not "games as tile".)
+                parts += "games as ${(look.label()?.let { if (it == "Tile") "Tiles" else it } ?: gameLookLabel(after.cardArtType)).replaceFirstChar { it.lowercase() }}"
+        }
+        after.cardArtType != now.cardArtType -> { parts += "games as ${gameLookLabel(after.cardArtType).lowercase()}" }
+        p.builtIn -> { parts += "keeps your game look" }
+    }
     if (after.cardSize != now.cardSize) parts += "${after.cardSize.label} cards"
     if (after.cardCorners != now.cardCorners) parts += "${after.cardCorners.label.lowercase()} corners"
     if (after.focusEffect != now.focusEffect) parts += "focus: ${after.focusEffect.label.lowercase()}"
@@ -352,6 +437,20 @@ private fun presetChanges(
     if (after.showLegend != now.showLegend) parts += if (after.showLegend) "button legend on" else "button legend off"
     if (after.showStatusBar != now.showStatusBar) parts += if (after.showStatusBar) "status bar on" else "status bar off"
     if (after.useSecondScreen != now.useSecondScreen) parts += if (after.useSecondScreen) "second screen on" else "second screen off"
+    // Update 162: the carousel and the layout's own options.
+    val f = com.shelf.launcher.data.Features
+    val view = presetCarousel(p, after.homeLayout)
+    if (view != null && (p.carousel == true || p.features.containsKey(f.tvRoomGames.key))) {
+        parts += "carousel: ${view.label.lowercase()}"
+    } else if (p.carousel == false && after.homeLayout.name in f.carouselLayouts.state.value) {
+        parts += "carousel off"
+    }
+    val carouselKeys = setOf(f.carouselView.key, f.carouselEdge.key, f.carouselReflect.key, f.carouselStage.key)
+    val opts = p.features.filterKeys { it !in carouselKeys }
+    if (opts.isNotEmpty()) {
+        val cur = f.snapshot { it !in opts }
+        if (opts.any { (k, v) -> cur[k] != null && cur[k] != v }) parts += "${after.homeLayout.label} options"
+    }
     parts += p.theme?.let { if (it != theme) "theme: ${it.label}" else null } ?: "keeps your theme"
     return parts.joinToString(" · ")
 }

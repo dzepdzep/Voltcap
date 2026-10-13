@@ -58,11 +58,11 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.SHELF -> "Spines, fronts or turned, real sizes, front or side view, bob & turn, wood / dark / glass"
     // Update 146.
     HomeLayout.LIBRARY -> "Games per row, the game panel, tabs"
-    HomeLayout.STACKS -> "Stacks in perspective, button bar, mirror floor"
+    HomeLayout.STACKS -> "Stacks in perspective, tool strip, bottom panel, mirror floor, 3D case" // (Update 162)
     HomeLayout.TIMELINE -> "Order by last played, release year or added, dates"
     HomeLayout.ARCADE -> "Marquee glow, screen lines, cabinet colour"
     HomeLayout.CONSOLES -> "Console pictures, how many games slide out"
-    HomeLayout.DISCS -> "Spinning disc, about the game"
+    HomeLayout.DISCS -> "Spinning disc, CD player or the game's art, calm background, about the game" // (Update 162)
     // Update 158.
     HomeLayout.HERO_TILES -> "Rows of tiles, tile size, app dock, pale background, status bar"
     // Update 158: the two-screen layouts.

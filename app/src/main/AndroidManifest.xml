@@ -94,7 +94,8 @@
         android:theme="@style/Theme.ShelfLauncher"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
-        android:enableOnBackInvokedCallback="true">
+        android:enableOnBackInvokedCallback="true"
+        android:largeHeap="true">
 
         <!-- Android 16 (targetSdk 36) ignores the landscape lock on screens 600 dp and wider, which
              some handheld second screens and TV boxes report. Voltcap's layouts are landscape-only,

@@ -66,6 +66,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.drawscope.translate
 import com.shelf.launcher.data.ArtOverride
 import com.shelf.launcher.data.ConsoleNames
 import com.shelf.launcher.data.Features
@@ -246,7 +248,18 @@ enum class CarouselView(val label: String, /** Update 134: always drawn as 3D ca
      * Update 146: like a dashboard: the game you're on big near the left edge, the next ones to its right getting
      * smaller and turned a little away, stepping back into the distance; the ones before slide off to the left.
      */
-    RECEDE("Receding row")
+    RECEDE("Receding row"),
+    /**
+     * Update 159: an arch fanned across the screen (from the loader picture): the one you're on raised and bigger in
+     * front, each step out a little lower, smaller and leaning outward. Any game look.
+     */
+    ARCH("Arch"),
+    /**
+     * Update 159: box flow, like a disc loader's 3D box browser: the one you're on facing you a little apart in the
+     * middle, the others as 3D boxes packed tight either side and turned to their spines, the stacks growing slightly
+     * toward the screen's edges; moving, the next box slides out of its stack and turns to face you.
+     */
+    BOX_FLOW("Box flow", true)
 }
 
 internal object Carousel {
@@ -309,7 +322,8 @@ internal object Carousel {
     /** Update 134: the games drawn as real 3D cases (the "3D cases" switch, and always in Arc, Spine wall and Turned row). */
     val cases3d: Boolean get() = Features.carousel3d.state.value || view.cases
     /** How many games show each side for the [shown] view: the Spine wall packs three times as many (its spines are slim). */
-    fun reach(side: Int, shown: CarouselView = view): Int = if (shown == CarouselView.SPINE_WALL && side < EDGE_SIDE) side * 3 else side
+    fun reach(side: Int, shown: CarouselView = view): Int =
+        if ((shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) && side < EDGE_SIDE) side * 3 else side
     /** Spacing between the games (Settings, 60–160 %). */
     val gap: Float get() = Features.carouselGap.state.value / 100f
 
@@ -325,7 +339,16 @@ internal object Carousel {
      * Where a game at signed distance [rel] sits for the [view]: x offset and y offset (in middle-game widths /
      * heights), size, turn round its upright (Y), lean (Z), how much shows and darkening.
      */
-    class Place(val x: Float, val y: Float, val scale: Float, val turnY: Float, val turnZ: Float, val alpha: Float, val shade: Float, val z: Float)
+    class Place(
+        var x: Float, var y: Float, var scale: Float, var turnY: Float, var turnZ: Float, var alpha: Float, var shade: Float, var z: Float
+    ) {
+        /** Update 162: filled in place (the carousel reuses one per game while it moves: nothing made per frame). */
+        fun set(x: Float, y: Float, scale: Float, turnY: Float, turnZ: Float, alpha: Float, shade: Float, z: Float): Place {
+            this.x = x; this.y = y; this.scale = scale; this.turnY = turnY; this.turnZ = turnZ
+            this.alpha = alpha; this.shade = shade; this.z = z
+            return this
+        }
+    }
 
     /**
      * Update 137: [place] for the carousels of flat covers (the Voltcap row, Tiles): the 3D-case views, which need real
@@ -353,18 +376,49 @@ internal object Carousel {
         CarouselView.ARC -> CarouselView.WHEEL
         CarouselView.SPINE_WALL -> CarouselView.FLIP
         CarouselView.TURNED -> CarouselView.FLAT
+        CarouselView.BOX_FLOW -> CarouselView.FLIP
         else -> view
     }
 
-    fun place(rel: Float, side: Int, shown: CarouselView = view): Place {
+    fun place(rel: Float, side: Int, shown: CarouselView = view): Place =
+        placeInto(Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f), rel, side, shown)
+
+    /**
+     * Update 162: 0…1 across the step out of the middle, eased so a game leaving the middle slows into its stack's own
+     * step ([endSlope]: the stack's step against the whole way out) — no jolt where it joins the stack, and the same
+     * speed through the middle from either side.
+     */
+    private fun stackEase(t: Float, endSlope: Float): Float {
+        val t2 = t * t
+        val t3 = t2 * t
+        return (t3 - 2f * t2 + t) * 1.2f + (3f * t2 - 2f * t3) + (t3 - t2) * endSlope
+    }
+
+    /**
+     * Update 162: drawing order of the packed stacks (Box flow, Spine wall), whose games all show their spine (left
+     * side): the middle one on top, then the ones crossing; in the right stack each one further out over the one inside
+     * it (else its front would cover the next one's spine), in the left stack the inner one on top.
+     */
+    private fun stackZ(rel: Float): Float {
+        val d = kotlin.math.abs(rel)
+        if (d < 1f) return 100f - 30f * d
+        val far = (d - 1f).coerceAtMost(19f)
+        return if (rel > 0f) 50f + far else 50f - far
+    }
+
+    /**
+     * Update 162: [place] into [out] (no new object). [midW]: the middle game's width against a cover's, so the packed
+     * views leave the same gap beside a wide cartridge as beside a case.
+     */
+    fun placeInto(out: Place, rel: Float, side: Int, shown: CarouselView = view, midW: Float = 1f): Place {
         val d = kotlin.math.abs(rel)
         val sign = if (rel < 0f) -1f else 1f
         val near = d.coerceAtMost(1f)
         val far = (d - 1f).coerceAtLeast(0f)
         val g = gap
         return when (shown) {
-            CarouselView.TUCKED -> Place(offset(d, side) * sign * g, 0f, scale(d, side), turn(rel), 0f, alpha(d, side), shade(d), z(d))
-            CarouselView.FLIP -> Place(
+            CarouselView.TUCKED -> out.set(offset(d, side) * sign * g, 0f, scale(d, side), turn(rel), 0f, alpha(d, side), shade(d), z(d))
+            CarouselView.FLIP -> out.set(
                 sign * ((0.7f * near + 0.22f * far) * g), 0f, 1f - 0.16f * near - 0.04f * far,
                 // Turned steeply towards the middle (or away with the tilt set outward).
                 (if (Features.tvCarouselTiltDir.state.value == TiltDir.OUT) -1f else 1f) * sign * 62f * near, 0f,
@@ -372,24 +426,24 @@ internal object Carousel {
             )
             CarouselView.WHEEL -> {
                 val a = (rel * 0.45f * g).coerceIn(-1.5f, 1.5f)
-                Place(
+                out.set(
                     kotlin.math.sin(a) * 1.9f, (1f - kotlin.math.cos(a)) * 0.9f, 1f - 0.12f * d.coerceAtMost(3f),
                     0f, a * 57.3f * 0.55f, alpha(d, side), shade(d) * 0.7f, z(d)
                 )
             }
-            CarouselView.DECK -> if (rel >= 0f) Place(
+            CarouselView.DECK -> if (rel >= 0f) out.set(
                 0.09f * rel * g, -0.045f * rel, 1f - 0.07f * rel, 0f, 0f,
                 alpha(d, side), shade(d), z(d)
-            ) else Place(
+            ) else out.set(
                 // Past ones slide off to the left and fade.
                 -1.15f * d * g, 0f, 1f - 0.05f * d, -18f * near, 0f,
                 (1f - d * 1.4f).coerceIn(0f, 1f), 0f, 101f
             )
-            CarouselView.FLAT -> Place(
+            CarouselView.FLAT -> out.set(
                 sign * (near * 0.97f + far * 0.86f) * g, 0f, if (d < 1f) 1f - 0.22f * d else 0.78f,
                 0f, 0f, alpha(d, side), shade(d) * 0.6f, z(d)
             )
-            CarouselView.POP -> Place(
+            CarouselView.POP -> out.set(
                 // Side by side with a small gap: the middle one a quarter bigger, the rest all the same size, unshaded.
                 sign * (0.95f * near + 0.85f * far) * g, 0f, 1f - 0.2f * near,
                 0f, 0f, if (d <= side) 1f else alpha(d, side), shade(d) * 0.25f, z(d)
@@ -398,38 +452,70 @@ internal object Carousel {
                 // Round a wide arc: each turned to face its middle (the left ones show their spines).
                 val a = (rel * 0.38f * g).coerceIn(-1.4f, 1.4f)
                 val back = 1f - kotlin.math.cos(a)
-                Place(
+                out.set(
                     kotlin.math.sin(a) * 2.4f, -back * 0.25f, (1f - 0.1f * near) / (1f + 1.1f * back),
                     -a * 57.3f * 0.85f, 0f, alpha(d, side), shade(d) * 0.6f, z(d)
                 )
             }
-            CarouselView.SPINE_WALL -> Place(
+            CarouselView.SPINE_WALL -> {
                 // Turned almost to their spines (Update 147: 72°, a sliver of each front showing, as on a disc loader's
                 // case wall), packed close in a stack each side.
-                sign * (0.62f * near + 0.125f * far) * g, 0f, if (d < 1f) 1f - 0.1f * d else 0.9f,
-                72f * near, 0f, alpha(d, reach(side, shown)), shade(d) * 0.5f, z(d)
-            )
-            CarouselView.TURNED -> Place(
+                // Update 162: out of the middle eased into the stack's step, a little more to the spine further out,
+                // standing on the same floor as the one you're on, the stacks drawn so every spine shows.
+                val a = 0.5f * midW + 0.12f
+                val e = stackEase(near, 0.125f / a)
+                val sc = 1f - 0.1f * e
+                out.set(
+                    sign * (a * e + 0.125f * far) * g, (1f - sc) * 0.5f,
+                    sc, 72f * e + (far * 1.2f).coerceAtMost(8f), 0f, alpha(d, reach(side, shown)), shade(d) * 0.5f, stackZ(rel)
+                )
+            }
+            CarouselView.TURNED -> {
                 // Update 147: the ones aside close to the middle one, a little smaller and turned to face it (the left
                 // ones turned right, the right ones left), like a disc loader's cover row; the one you're on straight on.
-                sign * (near * 0.8f + far * 0.62f) * g, 0f, if (d < 1f) 1f - 0.2f * d else 0.8f,
-                -sign * 26f * near, 0f, alpha(d, side), shade(d) * 0.5f, z(d)
-            )
+                // (Update 162: the gap beside the middle one follows its width; all standing on one floor.)
+                val sc = if (d < 1f) 1f - 0.2f * d else 0.8f
+                out.set(
+                    sign * (near * (0.5f * midW + 0.3f) + far * 0.62f) * g, (1f - sc) * 0.5f, sc,
+                    -sign * 26f * near, 0f, alpha(d, side), shade(d) * 0.5f, z(d)
+                )
+            }
             CarouselView.RECEDE -> if (rel >= 0f) {
                 // Update 146: each next game a step further back: smaller by the same share each step, its left edge just
                 // under the one before (a little overlap), centred a bit higher so the row runs off to a point above the
                 // middle, and turned a little away like a wall seen from its left end.
                 val sc = if (d <= 1f) 1f - (1f - RECEDE_NEXT) * d else RECEDE_NEXT * Math.pow(RECEDE_SHRINK.toDouble(), far.toDouble()).toFloat()
                 val back = RECEDE_NEXT * 0.82f * (1f - Math.pow(RECEDE_SHRINK.toDouble(), far.toDouble()).toFloat()) / (1f - RECEDE_SHRINK)
-                Place(
+                out.set(
                     (0.76f * near + back) * g, -(1f - sc) * 0.3f, sc,
                     24f * near, 0f, alpha(d, side), shade(d) * 0.8f, z(d)
                 )
-            } else Place(
+            } else out.set(
                 // The ones before slide off past the left edge and fade (drawn over the one coming in, like the Deck).
                 -1.1f * d * g, 0f, 1f - 0.08f * near, 0f, 0f,
                 (1f - d * 1.25f).coerceIn(0f, 1f), 0f, z(d) + 0.5f
             )
+            // Update 159: the arch — overlapping a quarter, each step a little lower, leaning outward, the middle lifted.
+            CarouselView.ARCH -> out.set(
+                rel * 0.74f * g, (d * d * 0.035f).coerceAtMost(0.5f) - (1f - near) * 0.05f,
+                (1f - 0.12f * near - 0.05f * far).coerceAtLeast(0.6f),
+                0f, (rel * 4.5f).coerceIn(-20f, 20f), alpha(d, side), shade(d) * 0.35f, z(d)
+            )
+            // Update 159: box flow — a gap round the middle box, then the boxes packed tight and turned to their spines.
+            // Update 162, tuned to the box browser videos: the one you're on facing you, lifted a touch, a clear gap (it
+            // follows the middle piece's width), then the others packed tight on a gentle curve a step behind it (0.84),
+            // coming slowly forward toward the screen's edges and turning further to their spines there; feet on one
+            // floor; eased out of the middle so the one leaving slides into its stack without a jolt.
+            CarouselView.BOX_FLOW -> {
+                val a = 0.5f * midW + 0.32f
+                val e = stackEase(near, 0.15f / a)
+                val sc = (1f - 0.16f * e) * (1f + (far * 0.022f).coerceAtMost(0.16f))
+                out.set(
+                    sign * (a * e + 0.15f * far) * g, (1f - sc) * 0.5f * e - 0.04f * (1f - e),
+                    sc, 66f * e + (far * 2.2f).coerceAtMost(16f), 0f,
+                    alpha(d, reach(side, shown)), shade(d) * 0.45f, stackZ(rel)
+                )
+            }
         }
     }
 
@@ -481,10 +567,12 @@ internal fun GameCarousel(
     val view = Carousel.view
     // Update 141: every carousel view works with every look. The views made for 3D cases (Arc, Spine wall, Turned row)
     // draw the 3D cases only for the case looks (covers, real cases); with cartridges, discs, wide capsules, pictures or
-    // spines they lay out that look itself, turned the same way. The "3D cases" switch still turns every look into cases.
+    // spines they lay out that look itself, turned the same way.
     val caseLook = !spines && (cardArtType == com.shelf.launcher.data.CardArtType.COVER || cardArtType == com.shelf.launcher.data.CardArtType.CASE ||
         cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL)
-    val cases3d = Features.carousel3d.state.value || (view.cases && caseLook)
+    // Update 162: the "3D cases" switch too turns only the case looks into 3D cases (it boxed cartridges, cards and discs
+    // into cases); every other look shows each game as its own piece in every view, a turned flat piece with its edge.
+    val cases3d = caseLook && (Features.carousel3d.state.value || view.cases)
     // Update 141: with 3D models on, the cartridges & discs look draws each game as its 3D model in every view, at its turn.
     val modelLook = Models3D.on() && cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
     // Update 135: the games aside drawn as slim spines in a row (Spines look, or Record flip turning covers to their
@@ -513,18 +601,80 @@ internal fun GameCarousel(
     GridHome.focus = focus
     val select by rememberUpdatedState(onSelect)
     val open by rememberUpdatedState(onOpen)
+    val tap: (Int) -> Unit = remember { { r: Int -> if (r == GridHome.focus) open() else select(r) } }
     val look = LocalCardLook.current
-    val pulse = rememberFocusPulse(animate = look.focusEffect != com.shelf.launcher.data.FocusEffect.NONE && !LocalLiteEffects.current)
+    // Update 162: the focus pulse is read by the game you're on only (CarouselArt) — read here, it redrew the whole
+    // carousel twenty times a second.
+    val pulseOn = look.focusEffect != com.shelf.launcher.data.FocusEffect.NONE && !LocalLiteEffects.current
     val hidden = LocalHiddenMedia.current
     val mixed = androidx.compose.runtime.remember(games) { mixedConsoles(games) }
     val realRef = androidx.compose.runtime.remember(games, cardArtType) { realCaseRef(cardArtType, games) }
-    // Where the carousel is (in games): slides smoothly between them.
-    // (Update 141: as quick as Settings › Home › Animations › Moving between games says.)
-    val glideMs = Features.rowGlide.state.value.carouselMs
-    val pos by animateFloatAsState(vFocus.toFloat(), tween(glideMs, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "carousel")
     val dens = androidx.compose.ui.platform.LocalDensity.current.density
     val latestFocus by rememberUpdatedState(focus)
     val latestLoop by rememberUpdatedState(looping)
+    // Update 162: one moving place for the whole carousel (in games), read only while placing and drawing (graphicsLayer,
+    // the draw lambdas), so moving doesn't rebuild the carousel each frame. It glides on a critically damped spring as
+    // quick as Settings › Home › Animations › Moving between games: a new step carries on at the speed it already has
+    // (holding the D-pad flows instead of stopping and starting at each game), and it never overshoots.
+    val reachNow = Carousel.reach(side, view)
+    val animOn = rememberAnimationsEnabled()
+    val glideSpeed = Features.rowGlide.state.value
+    val glide = remember { CarouselGlide(vFocus.toFloat()) }
+    val swap = remember { CarouselSwap() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    // Update 162: a category change slides the collection along the carousel's own path (the old one out, the new one
+    // in, CarouselSwap) instead of the whole box sliding (categorySlide round it stays still while a carousel is here).
+    MotionPrefs.observe()
+    val pageKind = MotionPrefs.page()
+    val pathSlide = Features.categorySlide.state.value && !LocalLiteEffects.current && pageKind != Features.PageAnim.NONE && animOn
+    swap.check(games, looping, vFocus, CategorySlide.tick, CategorySlide.dir, pathSlide, glide)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        CategorySlide.pathOwners++
+        onDispose {
+            CategorySlide.pathOwners--
+            // (Update 162 (review): no carousel, no game drawn as a 3D case.)
+            MediaInspect.drawnAsCase = null
+        }
+    }
+    // Update 162 (review): tells the game window's inspect (MediaInspect.drawnAsCase) when the game you're on is drawn as a
+    // 3D case although its look is a plain cover, so opening it lifts out the box the carousel shows.
+    val caseKey = if (cases3d) games.getOrNull(focus)?.stableKey else null
+    androidx.compose.runtime.SideEffect { MediaInspect.drawnAsCase = caseKey }
+    LaunchedEffect(vFocus, swap.token) {
+        val t = vFocus.toFloat()
+        val key = if (n > 0) games.getOrNull(if (looping) vFocus.mod(n) else vFocus)?.stableKey else null
+        val from = glide.target
+        glide.target = vFocus
+        val same = key != null && key == glide.key
+        glide.key = key
+        if (swap.snapPending || !animOn) {
+            // A new category (its collection slides in along the path) or animations off: straight to the place.
+            swap.snapPending = false
+            glide.pos.snapTo(t)
+        } else {
+            // The same game at a new number (Endless renumbered, the list re-sorted or grown): it stays where it is.
+            if (vFocus != from && same) glide.pos.snapTo(glide.pos.value + (vFocus - from))
+            // A long jump (a letter, a tap far off): only the last step glides, not dozens of games racing past.
+            else if (kotlin.math.abs(vFocus - from) > reachNow + 2) glide.pos.snapTo(t - kotlin.math.sign((vFocus - from).toFloat()))
+            if (glide.pos.value != t || glide.pos.targetValue != t) scope.launch {
+                glide.pos.animateTo(t, androidx.compose.animation.core.spring(1f, glideSpeed.stiffness, 0.0005f))
+            }
+        }
+    }
+    LaunchedEffect(swap.token) {
+        if (swap.token == 0) return@LaunchedEffect
+        val tk = swap.token
+        swap.k.snapTo(0f)
+        swap.kPending = false
+        swap.k.animateTo(1f, tween(glideSpeed.carouselMs + 200, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        swap.doneToken.intValue = tk
+    }
+    // (Update 162 (review): the moving values always read first — while a slide was pending they weren't read at all, so
+    // the games' layers and posFloor never subscribed to them and stayed frozen through the slide and after it.)
+    val curPos: () -> Float = remember { { val v = glide.pos.value; if (swap.snapPending) swap.snapTo else v } }
+    val kNow: () -> Float = remember { { val v = swap.k.value; if (swap.kPending) 0f else v } }
+    // Which games are near enough to draw changes only once per game passed (not every frame).
+    val posFloor by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.floor(curPos()).toInt() } }
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     // Update 134: Turned row has the name above the games.
     val nameAbove = view == CarouselView.TURNED
@@ -551,7 +701,6 @@ internal fun GameCarousel(
         val sizeK = Features.carouselSize.state.value / 100f
         val bigW = minOf(maxHeight * 0.84f * 0.72f * sizeK, maxHeight * 0.97f * 0.72f, maxWidth * 0.5f * sizeK)
         val bigH = bigW / 0.72f
-        val reach = Carousel.reach(side, view)
         // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the
         // games stand on, a faint gloss line along it, and stays dark below (drawn past the bottom of the carousel).
         if (Features.carouselStage.state.value) {
@@ -587,100 +736,66 @@ internal fun GameCarousel(
         }
         // Update 146: the Receding row spaces its games by the big one's real width: a wide capsule or a round disc is
         // wider than a cover, and spaced as covers they piled up. Glides to the next game's width with the carousel.
-        val widen = recede
+        // (Update 162: the packed views — Box flow, Spine wall, Turned row — keep their gap beside it by its width too.)
         // (No room yet — a 0-high box while the screen opens: 1, not 0 / 0 = NaN, which crashes the offset.)
         val unitTarget = games.getOrNull(focus)?.takeIf { bigW > 0.dp }?.let { fg ->
             val a = if (cases3d) case3dAspect(fg, mixed) else shelfArtAspect(fg, cardArtType, hidden, mixed)
-            val sh = minOf(bigH, if (a > 1f) bigW / a * 1.25f else bigH)
+            val sh = carouselSlotH(a, bigW, bigH, mixed)
             ((sh * a) / bigW).coerceIn(0.6f, 1.8f)
         } ?: 1f
-        val unitAnim by animateFloatAsState(unitTarget, tween(glideMs, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "carouselUnit")
-        val unitK = if (widen) unitAnim else 1f
+        // (Update 162: on the same spring as the carousel, and read only while placing.)
+        val unitState = animateFloatAsState(unitTarget, androidx.compose.animation.core.spring(1f, glideSpeed.stiffness, 0.001f), label = "carouselUnit")
         // Update 146: the Receding row's big game sits near the left edge (its left side ~7 % in), not in the middle.
         val recedeLeft = (maxWidth * 0.07f).coerceAtLeast(12.dp)
-        val anchorX = if (recede) -maxWidth / 2 + recedeLeft + bigW * unitK / 2 else 0.dp
-        val first = kotlin.math.floor(pos).toInt() - reach - 1
-        val last = kotlin.math.ceil(pos).toInt() + reach + 1
-        for (i in first..last) {
-            // (Update 135: on an endless row item i is a place on the endless row; its game is i mod the count.)
-            val real = if (looping) i.mod(n) else i
-            val g = games.getOrNull(real) ?: continue
-            val rel = i - pos
-            val d = kotlin.math.abs(rel)
-            val p = Carousel.place(rel, side)
-            if (p.alpha <= 0f) continue
-            val sign = if (rel < 0f) -1f else 1f
-            // Update 113, Spines look: the games aside as their spines (closer together), the middle one its cover.
-            // Update 117: a game turned almost side-on (Record flip) shows its real spine, facing you, instead of a squashed cover.
-            val sideways = !cases3d && !spines && i != vFocus && kotlin.math.abs(p.turnY) > 50f &&
-                (cardArtType == com.shelf.launcher.data.CardArtType.COVER || cardArtType == com.shelf.launcher.data.CardArtType.CASE || cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL)
-            val spineHere = !cases3d && ((spines && i != vFocus) || sideways)
-            // Update 136: with 3D models on, the 3D cases are your 3D shape library's pieces, at the angle nearest their turn.
-            // (Update 146: worked out first — a 3D model is drawn instead of a spine, so it isn't packed as one.)
-            // (Update 149: with 3D cases — Arc, Spine wall, Turned row — only your library's real 3D *cases*; a console
-            // without one gets the drawn case with its cover, not its cartridge: cartridges can't turn far enough to their
-            // side and stood wide over the middle game.)
-            // (Update 151: your library's 3D cases only with the 3D models look; the case looks' 3D cases are all drawn ones.)
-            val model = if (cases3d) (if (modelLook) Models3D.caseModel(g.platform) else null)
-                else if (modelLook && isFreeMedia(artForGame(cardArtType, g.platform, hidden, mixed), g.platform)) Models3D.available(g.platform) else null
-            val near = d.coerceAtMost(1f)
-            val far = (d - 1f).coerceAtLeast(0f)
-            // Update 146: Receding row, Spines look: the next games as spines one after another to its right, stepping back.
-            val recedeSpine = spinesRight && spineHere && model == null && rel > 0f
-            // Update 135: spines aside sit lower than the game you're on (they were nearly as tall as it), all the same
-            // height like books on a shelf, packed close one after another from just beside its cover.
-            val scale = if (recedeSpine || (spineHere && spinesAside)) Carousel.spineScale(d) else p.scale
-            val x = if (recedeSpine || (spineHere && spinesAside)) {
-                val spineW = bigH * Carousel.SPINE_SIZE * SPINE_ASPECT
-                val firstX = bigW * unitK * (0.5f + 0.07f * Carousel.gap) + spineW / 2
-                val stepX = spineW + bigW * 0.03f * Carousel.gap
-                anchorX + (firstX * near + stepX * far) * sign
-            } else anchorX + bigW * unitK * p.x * (if (spines && !cases3d && !recede) 0.62f else 1f)
-            // (Update 146: the Receding row's spines step up towards its vanishing point like its covers do.)
-            val yK = if (recedeSpine) -(1f - scale) * 0.3f else p.y
-            val reflect = Features.carouselReflect.state.value
-            val aspect = if (model != null) Models3D.aspect(model) else if (cases3d) case3dAspect(g, mixed) else if (spineHere) SPINE_ASPECT else shelfArtAspect(g, cardArtType, hidden, mixed, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl)
-            // Slot in the item's own shape (no empty bands round it), as tall as the middle one × its scale.
-            val h0 = minOf(bigH, if (aspect > 1f) bigW / aspect * 1.25f else bigH)
-            val w0 = h0 * aspect
-            val on = i == vFocus
-            androidx.compose.runtime.key(if (looping) i else g.stableKey) {
-                Box(
-                    Modifier
-                        .align(Alignment.Center)
-                        // (Update 135: a spine never covers the game you're on while the carousel slides.)
-                        .zIndex(if (spineHere) p.z - 50f else p.z)
-                        .offset(x = x, y = bigH * yK - (if (reflect) bigH * 0.08f else 0.dp))
-                        .size(w0, h0)
-                        .graphicsLayer {
-                            scaleX = scale; scaleY = scale
-                            // (Update 134: a 3D case turns itself, in its own drawing.)
-                            // Update 144: the Spine wall turns the games aside a full 90°, which draws flat art edge-on
-                            // (gone). A spine already faces you there; any other flat look turns at most 78°, like the preview.
-                            rotationY = if (sideways || cases3d || model != null || (spineHere && view == CarouselView.SPINE_WALL)) 0f
-                                else p.turnY.coerceIn(-78f, 78f)
-                            rotationZ = p.turnZ
-                            cameraDistance = 12f * dens
-                            this.alpha = p.alpha
-                            // (Its reflection is drawn outside its slot: faded op by op, not through a slot-sized layer.)
-                            if (cases3d || model != null) compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha
-                            if (rotationY != 0f) flatTextFor3d()
-                        }
-                        .pointerInput(real) { detectTapGestures { if (real == GridHome.focus) open() else select(real) } }
-                        .then(if (on) Modifier.focusedCard() else Modifier)
-                ) {
-                    // Update 158: the one you're on faces you in every view (its turn there is 0); with "Turned like the
-                    // others" (PickedFacing.kt) it gets a turn of its own, fading in as it reaches the middle.
-                    val yaw3d = p.turnY + PickedFacing.carouselTurn(d)
-                    if (model != null) Model3DArt(
-                        model, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, yaw3d, Modifier.fillMaxSize(), shade = p.shade, name = g.name, platform = g.platform,
-                        // Update 151: its shadow, sheen and slow turn (Models3DLife.kt).
-                        life = true, focused = on
-                    ) else if (cases3d) Case3D(
-                        g, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, physicalMedia[g.stableKey], yaw3d, aspect,
-                        Modifier.fillMaxSize(), shade = p.shade, reflect = reflect,
-                        frame = on && look.focusBorder, frameColor = ShelfTheme.accent
-                    ) else CarouselArt(g, on, spineHere, reflect, h0, p.shade, cardArtType, art, overrides, physicalMedia, screenshots, mixed, realRef, pulse)
+        // (Update 162 (review): kept while nothing in it changes, so the games skip recomposing when the carousel passes
+        // a game — a new one each time made every game in it rebuild.)
+        val reflectOn = Features.carouselReflect.state.value
+        val accentNow = ShelfTheme.accent
+        val ctx = remember(
+            view, side, bigW, bigH, recede, recedeLeft, maxWidth, unitState, cases3d, modelLook, spines, spinesAside, spinesRight,
+            reflectOn, dens, cardArtType, art, overrides, physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, accentNow, pulseOn
+        ) {
+            CarouselCtx(
+                view, side, bigW, bigH, if (recede) -maxWidth / 2 + recedeLeft else null, unitState, recede, cases3d, modelLook,
+                spines, spinesAside, spinesRight, recede, reflectOn, dens, cardArtType, art, overrides,
+                physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, accentNow, pulseOn
+            )
+        }
+        // Update 162: while a category change slides, the collection that was here goes on along the path (layer 1)
+        // and the new one comes in after it from the side the change came from (layer 0), each fading as it goes.
+        val showOld = swap.token != 0 && swap.doneToken.intValue != swap.token && swap.oldGames.isNotEmpty()
+        val shiftK = if (pageKind == Features.PageAnim.SLIDE) CarouselSwap.SHIFT else 0f
+        val shiftN = shiftK.toInt()
+        val dirS = swap.dir
+        // (Update 162 (review): posFloor read every time, so the carousel stays subscribed to it.)
+        val pf = posFloor
+        val base = if (swap.snapPending) vFocus else pf
+        val oldPos = swap.oldPos
+        for (layer in 0..(if (showOld) 1 else 0)) {
+            val old = layer == 1
+            val list = if (old) swap.oldGames else games
+            val ln = list.size
+            val lLoop = if (old) swap.oldLoop else looping
+            val lBase = if (old) kotlin.math.floor(oldPos).toInt() else base
+            // (The leaving collection only as far as 8 each side: a long stack's far end just goes, rather than
+            // building dozens of games for a moment.)
+            val lReach = if (old) minOf(reachNow, 8) else reachNow
+            val lo = lBase - lReach - 1 - (if (showOld && ((!old && dirS > 0) || (old && dirS < 0))) shiftN else 0)
+            val hi = lBase + lReach + 2 + (if (showOld && ((!old && dirS < 0) || (old && dirS > 0))) shiftN else 0)
+            val focusIdx = if (old) kotlin.math.round(oldPos).toInt() else vFocus
+            for (i in lo..hi) {
+                // (Update 135: on an endless row item i is a place on the endless row; its game is i mod the count.)
+                val real = if (lLoop) i.mod(ln) else i
+                val g = list.getOrNull(real) ?: continue
+                val relOf: () -> Float = if (old) ({ i - oldPos - dirS * shiftK * kNow() })
+                    else if (showOld) ({ i - curPos() + dirS * shiftK * (1f - kNow()) })
+                    else ({ i - curPos() })
+                val fadeOf: () -> Float = if (old) ({ 1f - kNow() }) else if (showOld) kNow else CarouselSwap.FULL
+                androidx.compose.runtime.key(old, if (lLoop) i else g.stableKey) {
+                    CarouselItem(
+                        ctx, g, real, i, focusIdx, on = !old && i == vFocus, interactive = !old,
+                        relOf = relOf, fadeOf = fadeOf, onTap = tap, modifier = Modifier.align(Alignment.Center)
+                    )
                 }
             }
         }
@@ -689,6 +804,361 @@ internal fun GameCarousel(
     if (showName && recede) games.getOrNull(focus)?.let { g ->
         RecedeName(g, playtime[g.stableKey]?.takeIf { it > 0L && look.playtimeOnHome }, Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp))
     } else if (showName && !nameAbove) games.getOrNull(focus)?.let { g -> CarouselName(g, Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp)) }
+    }
+}
+
+/** Update 162: the carousel's one moving place (in games), and the place and game it last went to. */
+private class CarouselGlide(start: Float) {
+    val pos = androidx.compose.animation.core.Animatable(start, 0.0005f)
+    var target = kotlin.math.round(start).toInt()
+    var key: String? = null
+}
+
+/**
+ * Update 162: a category change in the carousel: the collection that was on screen slides on along the carousel's path
+ * and fades while the new one comes in along it ([k] 0 → 1). Started when the list changes with an L2 / R2 step
+ * ([CategorySlide.tick]) — the step and the new list arrive together or one just after the other; any other new list
+ * (art loaded, a re-sort) changes in place.
+ */
+private class CarouselSwap {
+    private var seenTick = Int.MIN_VALUE
+    private var armedAt = 0L
+    private var lastGames: List<Game>? = null
+    private var lastLoop = false
+    private var changedAt = 0L
+    private var beforeChange: List<Game>? = null
+    private var beforeLoop = false
+    /** +1: the new collection comes in from the right (next category), -1 from the left. */
+    var dir = 1
+        private set
+    var oldGames: List<Game> = emptyList()
+        private set
+    var oldPos = 0f
+        private set
+    var oldLoop = false
+        private set
+    /** Counts the slides started; [doneToken] is the last one finished (written by its coroutine, never while composing). */
+    var token = 0
+        private set
+    val doneToken = androidx.compose.runtime.mutableIntStateOf(0)
+    val k = androidx.compose.animation.core.Animatable(1f)
+    /** Until the glide has jumped to the new list's place / the slide has started, they're drawn as if they had. */
+    var snapPending = false
+    var snapTo = 0f
+    var kPending = false
+
+    fun check(games: List<Game>, looping: Boolean, vFocus: Int, tick: Int, tickDir: Int, on: Boolean, glide: CarouselGlide) {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (seenTick == Int.MIN_VALUE) seenTick = tick
+        val prev = lastGames
+        if (tick != seenTick) { seenTick = tick; dir = if (tickDir < 0) -1 else 1; armedAt = now }
+        if (prev != null && prev !== games && !sameShape(prev, games)) { beforeChange = prev; beforeLoop = lastLoop; changedAt = now }
+        lastGames = games
+        lastLoop = looping
+        val b = beforeChange
+        // The new list with the step or within a moment after it (or a frame before it).
+        if (b != null && armedAt != 0L && changedAt >= armedAt - 120L && changedAt - armedAt < 1200L) {
+            if (on && b.isNotEmpty() && games.isNotEmpty()) {
+                oldGames = b
+                oldLoop = beforeLoop && b.size >= 2
+                oldPos = androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { glide.pos.value }
+                token++
+                snapPending = true
+                snapTo = vFocus.toFloat()
+                kPending = true
+            }
+            beforeChange = null
+            armedAt = 0L
+        }
+        if (armedAt != 0L && now - armedAt > 1200L) armedAt = 0L
+        if (beforeChange != null && now - changedAt > 1200L) beforeChange = null
+    }
+
+    /** The same list made again (a caller filtering anew): same size and the same games at its ends and middle. */
+    private fun sameShape(a: List<Game>, b: List<Game>): Boolean {
+        if (a.size != b.size) return false
+        if (a.isEmpty()) return true
+        val m = a.size / 2
+        return a[0].stableKey == b[0].stableKey && a[m].stableKey == b[m].stableKey && a[a.size - 1].stableKey == b[b.size - 1].stableKey
+    }
+
+    companion object {
+        /** How many places along the path the collections slide (Slide; Fade only fades). */
+        const val SHIFT = 3f
+        val FULL: () -> Float = { 1f }
+    }
+}
+
+/** Update 162: what every game in the carousel shares (made once per composition, read while placing and drawing). */
+private class CarouselCtx(
+    val view: CarouselView, val side: Int, val bigW: androidx.compose.ui.unit.Dp, val bigH: androidx.compose.ui.unit.Dp,
+    /** Receding row: the big game's left edge from the middle (its centre follows its width); null in the other views. */
+    val recedeLeft: androidx.compose.ui.unit.Dp?,
+    val unit: androidx.compose.runtime.State<Float>, val widen: Boolean, val cases3d: Boolean, val modelLook: Boolean,
+    val spines: Boolean, val spinesAside: Boolean, val spinesRight: Boolean, val recede: Boolean, val reflect: Boolean,
+    val dens: Float, val cardArtType: com.shelf.launcher.data.CardArtType, val art: Map<String, GameArt>,
+    val overrides: Map<String, ArtOverride>, val physicalMedia: Map<String, List<Pair<String, String>>>,
+    val screenshots: Map<String, List<String>>, val mixed: Boolean, val realRef: RealCaseRef?, val hidden: Set<String>,
+    val focusBorder: Boolean, val accent: Color, val pulseOn: Boolean
+) {
+    /** [Carousel.placeInto] for this carousel's view. */
+    fun place(p: Carousel.Place, rel: Float): Carousel.Place = Carousel.placeInto(p, rel, side, view, unit.value)
+
+    /** Where the game at [rel] is drawn: [p] gets its offset from the middle in pixels (x, y) and its final size. */
+    fun locate(p: Carousel.Place, rel: Float, spineHere: Boolean, noModel: Boolean, px: androidx.compose.ui.unit.Density) {
+        val u = unit.value
+        place(p, rel)
+        val d = kotlin.math.abs(rel)
+        val sign = if (rel < 0f) -1f else 1f
+        val near = d.coerceAtMost(1f)
+        val far = (d - 1f).coerceAtLeast(0f)
+        // Update 146: Receding row, Spines look: the next games as spines one after another to its right, stepping back.
+        val recedeSpine = spinesRight && spineHere && noModel && rel > 0f
+        // Update 135: spines aside sit lower than the game you're on, all the same height like books on a shelf, packed
+        // close one after another from just beside its cover.
+        val packed = recedeSpine || (spineHere && spinesAside)
+        val scale = if (packed) Carousel.spineScale(d) else p.scale
+        val unitK = if (widen) u else 1f
+        val bw = with(px) { bigW.toPx() }
+        val bh = with(px) { bigH.toPx() }
+        val anchor = if (recedeLeft != null) with(px) { recedeLeft.toPx() } + bw * unitK / 2f else 0f
+        val x = if (packed) {
+            val spineW = bh * Carousel.SPINE_SIZE * SPINE_ASPECT
+            val firstX = bw * unitK * (0.5f + 0.07f * Carousel.gap) + spineW / 2
+            val stepX = spineW + bw * 0.03f * Carousel.gap
+            anchor + (firstX * near + stepX * far) * sign
+        } else anchor + bw * unitK * p.x * (if (spines && !cases3d && !recede && view != CarouselView.SPINE_WALL && view != CarouselView.BOX_FLOW) 0.62f else 1f)
+        // (Update 146: the Receding row's spines step up towards its vanishing point like its covers do.)
+        val yK = if (recedeSpine) -(1f - scale) * 0.3f else p.y
+        p.x = x
+        p.y = bh * yK - (if (reflect) bh * 0.08f else 0f)
+        p.scale = scale
+    }
+}
+
+/**
+ * Update 162: a game's slot height for its shape ([aspect]: width / height) against the middle game's box. In a list
+ * mixing consoles every piece gets about a cover's area (a wide cartridge no smaller, a tall card or a round disc no
+ * bigger than its neighbours — they jumped in size from one console to the next); otherwise as tall as fits.
+ */
+private fun carouselSlotH(
+    aspect: Float, bigW: androidx.compose.ui.unit.Dp, bigH: androidx.compose.ui.unit.Dp, mixed: Boolean
+): androidx.compose.ui.unit.Dp =
+    if (mixed) minOf(bigH * kotlin.math.sqrt(0.72f / aspect.coerceAtLeast(0.05f)), bigH, bigW * 1.5f / aspect.coerceAtLeast(0.05f))
+    else minOf(bigH, if (aspect > 1f) bigW / aspect * 1.25f else bigH)
+
+/** Update 162: one carousel game's own scratch places (filled while placing / drawing on the main thread, never made per frame). */
+private class CarouselScratch {
+    val p = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
+    val z = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
+    val r = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
+    val s = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
+    val q = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
+}
+
+/**
+ * Update 162: one game in the carousel at its place [relOf] (games from the middle, read while placing and drawing only:
+ * moving never rebuilds it). Its look decides what it is: a 3D case (case looks in the 3D views), a 3D model, a spine,
+ * or its own flat piece (cartridge, card, disc, case, cover) — turned like the others, a piece with its edge showing
+ * (MediaBandLayer). While a game is inspected (MediaInspect) the others step back and its own place stays empty.
+ */
+@Composable
+private fun CarouselItem(
+    c: CarouselCtx, g: Game, real: Int, i: Int, focusIdx: Int, on: Boolean, interactive: Boolean,
+    relOf: () -> Float, fadeOf: () -> Float, onTap: (Int) -> Unit, modifier: Modifier
+) {
+    val relNow = rememberUpdatedState(relOf)
+    val fadeNow = rememberUpdatedState(fadeOf)
+    val tapNow = rememberUpdatedState(onTap)
+    val ctxNow = rememberUpdatedState(c)
+    val ps = remember { CarouselScratch() }
+    val cover = c.overrides[g.stableKey]?.cover ?: c.art[g.stableKey]?.gridUrl
+    val caseType = c.cardArtType == com.shelf.launcher.data.CardArtType.COVER || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE ||
+        c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
+    // Update 117: a game turned almost side-on (Record flip) shows its real spine, facing you, instead of a squashed cover.
+    // (Update 162: worked out from the moving place, so only this game redraws when it flips to its spine.)
+    val sidewaysCan = !c.cases3d && !c.spines && i != focusIdx && caseType
+    val turnedFar = remember(sidewaysCan) {
+        androidx.compose.runtime.derivedStateOf { sidewaysCan && kotlin.math.abs(ctxNow.value.place(ps.q, relNow.value()).turnY) > 50f }
+    }
+    val sideways = turnedFar.value
+    // Update 113, Spines look: the games aside as their spines (closer together), the middle one its cover.
+    val spineHere = !c.cases3d && ((c.spines && i != focusIdx) || sideways)
+    val gArt = artForGame(c.cardArtType, g.platform, c.hidden, c.mixed)
+    val freeArt = isFreeMedia(gArt, g.platform)
+    // Update 136: with 3D models on, the 3D cases are your 3D shape library's pieces, at the angle nearest their turn.
+    // (Update 149 / 151: with 3D cases only your library's real 3D *cases*, with the 3D models look or R1 › 3D.)
+    val model = if (c.cases3d) (if (c.modelLook || Features.caseModels3d.state.value) Models3D.caseModel(g.platform) else null)
+        else if (c.modelLook && freeArt) Models3D.available(g.platform) else null
+    // Slot in the item's own shape (no empty bands round it), as tall as the middle one × its scale.
+    val aspect = if (model != null) Models3D.aspect(model) else if (c.cases3d) case3dAspect(g, c.mixed) else if (spineHere) SPINE_ASPECT
+        else shelfArtAspect(g, c.cardArtType, c.hidden, c.mixed, cover)
+    val h0 = if (model != null || spineHere) minOf(c.bigH, if (aspect > 1f) c.bigW / aspect * 1.25f else c.bigH)
+        else carouselSlotH(aspect, c.bigW, c.bigH, c.mixed)
+    val w0 = h0 * aspect
+    // A 3D case or model turns in its own drawing, a spine faces you: only the other flat art turns its slot.
+    // (Update 144: at most 78°, never edge-on.)
+    val turns = !(sideways || c.cases3d || model != null || (spineHere && (c.view == CarouselView.SPINE_WALL || c.view == CarouselView.BOX_FLOW)))
+    val piece = turns && !spineHere && freeArt
+    val band = if (piece) remember(gArt, g.platform, c.mixed, c.cardArtType) { mediaBandFor(gArt, g.platform, c.mixed, c.cardArtType) } else null
+    val turnOf: () -> Float = {
+        if (!turns) 0f else {
+            val rel = relNow.value()
+            // Update 158: a piece you're on turned like the others with "Turned like the others" (PickedFacing).
+            (c.place(ps.r, rel).turnY + (if (piece) PickedFacing.carouselTurn(kotlin.math.abs(rel)) else 0f)).coerceIn(-78f, 78f)
+        }
+    }
+    // Update 158: the one you're on faces you in every view (its turn there is 0); with "Turned like the others"
+    // (PickedFacing.kt) it gets a turn of its own, fading in as it reaches the middle.
+    val yawOf: () -> Float = { val rel = relNow.value(); c.place(ps.r, rel).turnY + PickedFacing.carouselTurn(kotlin.math.abs(rel)) }
+    val shadeOf: () -> Float = { c.place(ps.s, relNow.value()).shade }
+    Box(
+        modifier
+            // The drawing order, read while placing (zIndex is otherwise fixed at composition).
+            .layout { m, cons ->
+                val pl = m.measure(cons)
+                layout(pl.width, pl.height) {
+                    val z = c.place(ps.z, relNow.value()).z
+                    // (Update 135: a spine never covers the game you're on while the carousel slides.)
+                    pl.place(0, 0, zIndex = if (spineHere) z - 50f else z)
+                }
+            }
+            .size(w0, h0)
+            .graphicsLayer {
+                val rel = relNow.value()
+                c.locate(ps.p, rel, spineHere, model == null, this)
+                var a = ps.p.alpha * fadeNow.value()
+                var s = ps.p.scale
+                var tx = ps.p.x
+                // Update 162: a game opened to inspect (MediaInspect): the others step back, fade and part a little; its
+                // own place stays empty while the game window draws it flying out.
+                val ins = MediaInspect.amount.floatValue
+                if (ins > 0f) {
+                    // (Update 162 (review): only the one you're on — on a short endless row the same game shows more than once.)
+                    if (on && g.stableKey == MediaInspect.key) a = 0f
+                    else {
+                        s *= 1f - 0.1f * ins
+                        a *= 1f - 0.65f * ins
+                        tx += (if (rel < 0f) -1f else 1f) * ins * 0.16f * c.bigW.toPx()
+                    }
+                }
+                translationX = tx
+                translationY = ps.p.y
+                scaleX = s; scaleY = s
+                rotationZ = ps.p.turnZ
+                alpha = a
+                // (Faded op by op: a 3D case's reflection is drawn outside its slot, and no slot-sized buffer per game.)
+                compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha
+            }
+            .then(if (interactive) Modifier.pointerInput(real) { detectTapGestures { tapNow.value(real) } } else Modifier)
+            .then(if (on) Modifier.focusedCard() else Modifier)
+    ) {
+        if (band != null) MediaBandLayer(band, c.dens, turnOf, shadeOf)
+        Box(
+            Modifier.fillMaxSize().graphicsLayer {
+                rotationY = turnOf()
+                cameraDistance = 12f * c.dens
+                if (rotationY != 0f) flatTextFor3d()
+            }
+        ) {
+            if (model != null) CarouselModel(model, cover, g, on, yawOf, shadeOf)
+            else if (c.cases3d) Case3D(
+                g, cover, c.physicalMedia[g.stableKey], 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
+                frame = on && c.focusBorder, frameColor = c.accent, yawOf = yawOf, shadeOf = shadeOf,
+                realFront = c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
+            ) else CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, c.cardArtType, c.art, c.overrides, c.physicalMedia, c.screenshots, c.mixed, c.realRef, c.pulseOn)
+        }
+    }
+}
+
+/**
+ * Update 162: a carousel game as its 3D model (Update 151: its shadow, sheen and slow turn, Models3DLife.kt). Its turn
+ * and shade are read here only, in whole degrees (it shows the nearest pre-rendered angle), so the game round it stays put.
+ */
+@Composable
+private fun CarouselModel(model: String, cover: Any?, g: Game, on: Boolean, yawOf: () -> Float, shadeOf: () -> Float) {
+    val yawNow = rememberUpdatedState(yawOf)
+    val shadeNow = rememberUpdatedState(shadeOf)
+    val yaw by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.round(yawNow.value()) } }
+    val shade by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.round(shadeNow.value() * 50f) / 50f } }
+    Model3DArt(model, cover, yaw, Modifier.fillMaxSize(), shade = shade, name = g.name, platform = g.platform, life = true, focused = on)
+}
+
+/** Update 162: a flat piece's edge: how thick it is (a share of its width), its colour, and whether it's round (a disc). */
+private class MediaBand(val thick: Float, val color: Color, val round: Boolean)
+
+/** Update 162: the edge of [platform]'s piece in the [gArt] look (real proportions, a disc a little thicker to read); null: none. */
+private fun mediaBandFor(
+    gArt: com.shelf.launcher.data.CardArtType, platform: String, mixed: Boolean, type: com.shelf.launcher.data.CardArtType
+): MediaBand? {
+    // A game case's plastic (box art drawn flat).
+    if (gArt == com.shelf.launcher.data.CardArtType.CASE) return MediaBand(0.1f, Color(0xFF23252C), false)
+    if (gArt != com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return null
+    val pick = mediaFor(platform, mixed, type == com.shelf.launcher.data.CardArtType.DISC) ?: return null
+    if (pick.platform.startsWith(MODEL_3D)) return null
+    if (pick.platform.startsWith(CUSTOM_CART)) return MediaBand(0.13f, Color(0xFF46484F), false)
+    val grey = Color(0xFF7C7E85)
+    val dark = Color(0xFF34363C)
+    return when (pick.shell) {
+        MediaShell.DISC, MediaShell.DISC_DARK, MediaShell.DISC_WII, MediaShell.DISC_GD, MediaShell.MINI_DISC -> MediaBand(0.022f, Color(0xFFB4B8C0), true)
+        MediaShell.UMD -> MediaBand(0.07f, dark, false)
+        MediaShell.N64 -> MediaBand(0.16f, dark, false)
+        MediaShell.SNES -> MediaBand(0.17f, grey, false)
+        MediaShell.NES -> MediaBand(0.14f, grey, false)
+        MediaShell.GB, MediaShell.GBC, MediaShell.VIRTUAL_BOY -> MediaBand(0.14f, grey, false)
+        MediaShell.GBA -> MediaBand(0.14f, dark, false)
+        MediaShell.DS, MediaShell.DS3, MediaShell.VITA, MediaShell.CARD -> MediaBand(0.11f, dark, false)
+        MediaShell.SWITCH -> MediaBand(0.15f, dark, false)
+        MediaShell.HUCARD -> MediaBand(0.02f, Color(0xFFD4D4D8), false)
+        MediaShell.BLACK_CART -> MediaBand(0.15f, Color(0xFF1E1F23), false)
+        MediaShell.GAME_GEAR -> MediaBand(0.12f, dark, false)
+        MediaShell.ATARI -> MediaBand(0.22f, Color(0xFF26272B), false)
+        else -> MediaBand(0.13f, dark, false)
+    }
+}
+
+/**
+ * Update 162: the side of a flat piece turned in the carousel, so a turned cartridge, card or disc has its thickness
+ * and never thins to a line: its outline drawn again behind it, moved out on the side turned toward you by its
+ * thickness (as far as that side shows at this turn), and lit by the turn — only the strip past the piece shows. Drawn
+ * in its own turned layer (the piece's own layer is cut to its slot), read while drawing only, nothing made per frame.
+ */
+@Composable
+private fun MediaBandLayer(band: MediaBand, dens: Float, turnOf: () -> Float, shadeOf: () -> Float) {
+    val turnNow = rememberUpdatedState(turnOf)
+    val shadeNow = rememberUpdatedState(shadeOf)
+    // (Update 162 (review): made again for a new band — a disc's circle stayed a rectangle's outline, or the other way.)
+    val path = remember(band) { androidx.compose.ui.graphics.Path() }
+    val made = remember(band) { FloatArray(2) }
+    val rim = remember(dens) { Stroke(width = 1.2f * dens) }
+    Canvas(Modifier.fillMaxSize().graphicsLayer { rotationY = turnNow.value(); cameraDistance = 12f * dens }) {
+        val t = turnNow.value()
+        val a = kotlin.math.abs(t)
+        if (a >= 3f) {
+            // (ShelfGameArt draws a piece 4 dp in from its slot.)
+            val inset = 4f * dens
+            val w = (size.width - inset * 2f).coerceAtLeast(1f)
+            val h = (size.height - inset * 2f).coerceAtLeast(1f)
+            if (made[0] != size.width || made[1] != size.height) {
+                made[0] = size.width; made[1] = size.height
+                path.reset()
+                if (band.round) path.addOval(androidx.compose.ui.geometry.Rect(center, minOf(w, h) / 2f))
+                else path.addRoundRect(androidx.compose.ui.geometry.RoundRect(inset, inset, inset + w, inset + h, androidx.compose.ui.geometry.CornerRadius(w * 0.04f)))
+            }
+            val rad = Math.toRadians(a.toDouble())
+            val across = if (band.round) minOf(w, h) else w
+            // Seen at turn a, a side t deep shows t·sin a wide; in the turned layer that's t·tan a.
+            val shift = band.thick * across * kotlin.math.tan(rad).toFloat() * (if (t > 0f) -1f else 1f)
+            val l = ((0.45f + 0.4f * kotlin.math.sin(rad).toFloat()) * (1f - shadeNow.value())).coerceIn(0f, 1f)
+            val col = Color(band.color.red * l, band.color.green * l, band.color.blue * l)
+            val edge = Color((band.color.red * l + 0.12f).coerceAtMost(1f), (band.color.green * l + 0.12f).coerceAtMost(1f), (band.color.blue * l + 0.12f).coerceAtMost(1f))
+            clipPath(path, androidx.compose.ui.graphics.ClipOp.Difference) {
+                translate(left = shift, top = 0f) {
+                    drawPath(path, col)
+                    drawPath(path, edge, style = rim)
+                }
+            }
+        }
     }
 }
 
@@ -729,22 +1199,27 @@ private fun CarouselName(g: Game, modifier: Modifier) {
 /** One carousel game drawn flat (its art or spine, its shade and its reflection), in its slot. */
 @Composable
 private fun CarouselArt(
-    g: Game, on: Boolean, spineHere: Boolean, reflect: Boolean, h0: androidx.compose.ui.unit.Dp, shadeK: Float,
+    g: Game, on: Boolean, spineHere: Boolean, reflect: Boolean, h0: androidx.compose.ui.unit.Dp, shadeOf: () -> Float,
     cardArtType: com.shelf.launcher.data.CardArtType, art: Map<String, GameArt>, overrides: Map<String, ArtOverride>,
     physicalMedia: Map<String, List<Pair<String, String>>>, screenshots: Map<String, List<String>>,
-    mixed: Boolean, realRef: RealCaseRef?, pulse: Float
+    mixed: Boolean, realRef: RealCaseRef?, pulseOn: Boolean
 ) {
+    // Update 162: the focus pulse only for the game you're on (it used to recompose the whole carousel).
+    val pulse = if (on) rememberFocusPulse(animate = pulseOn) else 0f
+    // Update 162: the shade follows the moving place while drawing; only whether there is one is decided here.
+    val shadeNow = rememberUpdatedState(shadeOf)
+    val shaded by remember { androidx.compose.runtime.derivedStateOf { shadeNow.value() > 0.01f } }
     Box(Modifier.fillMaxSize()) {
         // Update 143: the games aside darkened only where they're drawn — the shade used to be a dark box over the whole
         // slot, showing round a case, cartridge or disc smaller than it.
-        val shade = shadeK
         Box(
             Modifier.fillMaxSize().then(
-                if (shade > 0.01f) Modifier
+                if (shaded) Modifier
                     .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
                     .drawWithContent {
                         drawContent()
-                        drawRect(Color.Black.copy(alpha = shade), blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop)
+                        val shade = shadeNow.value()
+                        if (shade > 0.01f) drawRect(Color.Black.copy(alpha = shade.coerceAtMost(1f)), blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop)
                     }
                 else Modifier
             )

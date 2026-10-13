@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.ViewModule
+import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material.icons.filled.Palette
@@ -370,6 +371,18 @@ fun QuickSettingsCard(
             if (lookNow == com.shelf.launcher.data.CardArtType.DISC) styleTile("discstyle", "Disc", F.discStyle, LookStyles.DISCS) { F.mediaShells.value = true }
             if (lookNow == com.shelf.launcher.data.CardArtType.CASE || lookNow == com.shelf.launcher.data.CardArtType.CASE_REAL) styleTile("casestyle", "Case", F.caseStyle, LookStyles.cases())
             if (lookNow == com.shelf.launcher.data.CardArtType.COVER && F.spineLook.state.value) styleTile("spinestyle", "Spine", F.spineStyle, LookStyles.spines())
+            // Update 159: 3D on / off for the looks with real things (cases, cartridges, discs): your 3D shape library's
+            // pieces and cases instead of the flat drawings — one tap, without leaving the look you're on.
+            val caseLookNow = lookNow == com.shelf.launcher.data.CardArtType.CASE || lookNow == com.shelf.launcher.data.CardArtType.CASE_REAL
+            if (caseLookNow || lookNow == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) {
+                // Case looks: their own switch (the cases in 3D); Cartridges & discs / Cartridges: the 3D models.
+                val on3d = if (caseLookNow) F.caseModels3d.state.value else F.modelFinish.state.value != com.shelf.launcher.ui.ModelFinish.OFF
+                add(R1Tile("look3d", Icons.Filled.ViewInAr, if (on3d) "3D\non" else "3D\noff", on3d) {
+                    if (caseLookNow) F.caseModels3d.value = !on3d else setModelsLook(!on3d)
+                    // No 3D models downloaded yet: where to get them.
+                    if (!on3d && !com.shelf.launcher.data.Packs.anyModels()) home.openSettingsAt("Game look", "3D models")
+                })
+            }
         }
         if (home != null) {
             val a = home.appearance

@@ -1456,6 +1456,18 @@ private fun ThemeContent(
                     )
                 } }
             }
+            // Update 159: the decoded art stays in memory (a bigger share, kept while a game runs).
+            item { m ->
+                Box(m) {
+                    SwitchRow(
+                        icon = Icons.Filled.Memory,
+                        title = "Keep art in memory",
+                        subtitle = "Every picture is read from storage once and kept: switching layouts, looks and categories, or coming back from a game, shows the art at once. It uses more memory; Android can still take it back when a game really needs it. Takes effect after Voltcap restarts.",
+                        checked = com.shelf.launcher.data.Features.keepArt.state.value,
+                        onChange = { com.shelf.launcher.data.Features.keepArt.value = it }
+                    )
+                }
+            }
             }
         }
     }
@@ -5252,7 +5264,8 @@ private fun CarouselTiltChoices() {
     SwitchRow(
         Icons.Filled.ViewInAr, "3D cases",
         if (f.carouselView.state.value.cases) "Always on in ${f.carouselView.state.value.label}: each game a real case, cover on the front, its spine on the side."
-        else "Each game a real case: cover on the front, its spine on the side, turned in true 3D. (TV room, Grid and Side menu carousels.)",
+        // (Update 162: the case looks only — cartridges, cards and discs show as themselves.)
+        else "Each game a real case: cover on the front, its spine on the side, turned in true 3D. Cartridges, cards and discs show as themselves.",
         f.carousel3d.state.value || f.carouselView.state.value.cases, { f.carousel3d.value = it }
     )
     // Update 158: the 3D case you're on faces you (default) or stands turned like the others.

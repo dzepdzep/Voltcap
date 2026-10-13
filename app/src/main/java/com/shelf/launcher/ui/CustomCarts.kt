@@ -157,12 +157,12 @@ private fun PackCart(platform: String, art: Any?, modifier: Modifier) {
                 Modifier.offset(x = k * win[0], y = k * win[1]).size(k * win[2], k * win[3])
                     .clip(RoundedCornerShape(k * win[4])).background(CartPaper)
             ) {
-                if (art != null) AsyncImage(art, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
             val file = id?.let { CustomCarts.asset(look, clear, it) }
             // (Update 141: the clear shell a little more see-through.)
             if (file != null) AsyncImage(
-                file, null, contentScale = ContentScale.FillBounds, alpha = if (clear) 0.82f else 1f, modifier = Modifier.fillMaxSize()
+                rememberShellRequest(file), null, contentScale = ContentScale.FillBounds, alpha = if (clear) 0.82f else 1f, modifier = Modifier.fillMaxSize()
             )
         }
     }
@@ -236,9 +236,25 @@ private fun DiscShellArt(shell: DiscShells.Shell, art: Any?, modifier: Modifier)
                 Modifier.offset(x = w * win[0], y = h * win[1]).size(w * win[2], h * win[3])
                     .clip(RoundedCornerShape(w * shell.corner)).background(CartPaper)
             ) {
-                if (art != null) AsyncImage(art, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
-            if (file != null) AsyncImage(file, null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+            if (file != null) AsyncImage(rememberShellRequest(file), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
         }
+    }
+}
+
+
+/**
+ * Update 159: a pack's cartridge / disc shell picture, decoded once at one size (560 px, the pack's own width) under one
+ * key, whatever size it is drawn at. Each slot size (the middle game, the ones aside, another layout) decoded it again
+ * from storage, so a game on your pack (the PS2 game in the Cartridges look) went blank for a second while scrolling.
+ */
+@androidx.compose.runtime.Composable
+private fun rememberShellRequest(file: java.io.File): coil.request.ImageRequest {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return androidx.compose.runtime.remember(file.path) {
+        coil.request.ImageRequest.Builder(context).data(file).size(560, 560)
+            .scale(coil.size.Scale.FIT).precision(coil.size.Precision.INEXACT)
+            .memoryCacheKey("shell|${file.path}|${file.lastModified()}").build()
     }
 }

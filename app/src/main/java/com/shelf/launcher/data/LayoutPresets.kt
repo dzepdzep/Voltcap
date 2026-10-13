@@ -22,8 +22,44 @@ data class LayoutPreset(
     /** The fields this preset sets (what "(modified)" is measured on); null = every preset field (your own presets). */
     val keys: Set<String>? = null,
     /** Update 125: your own preset with everything on the home screen saved: puts it all back and returns the settings. */
-    val restoreAll: (() -> AppearanceSettings?)? = null
+    val restoreAll: (() -> AppearanceSettings?)? = null,
+    /**
+     * Update 162: the game look's own switches (Tile, Spines, Cartridges, 3D models, Case + disc…) a built-in preset sets
+     * with its card artwork, so the look is exactly the one it names; null = left as they are (your own presets, and the
+     * layouts that draw the games their own way).
+     */
+    val look: PresetLook? = null,
+    /** Update 162: the layout's own options and the carousel's view, as Features key -> value text (Features.restore). */
+    val features: Map<String, String> = emptyMap(),
+    /** Update 162: the carousel on (true) or off (false) for [layout]; null = left as it is. */
+    val carousel: Boolean? = null
 )
+
+/**
+ * Update 162: the switches that make one game look out of a card artwork (as Settings › Game look and the R1 Game look
+ * tile set them, GameLookPicker.kt). All off = the plain look of the artwork (Covers, Real cases, Cartridges & discs…).
+ */
+data class PresetLook(
+    val tiles: Boolean = false,
+    val spines: Boolean = false,
+    val carts: Boolean = false,
+    val models: Boolean = false,
+    val discInCase: Boolean = false,
+    val disc3d: Boolean = false,
+    val leaning: Boolean = false
+) {
+    /** The look's short name, as the R1 Game look tile says it; null = the card artwork's own name (Covers, Real cases…). */
+    fun label(): String? = when {
+        tiles -> "Tile"
+        spines -> "Spines"
+        models -> "3D models"
+        carts -> "Cartridges"
+        leaning -> "Case + its media"
+        disc3d -> "3D case + disc"
+        discInCase -> "Case + disc"
+        else -> null
+    }
+}
 
 /** The fields presets control, as name -> string so snapshots survive enum renames. */
 object PresetFields {
@@ -108,83 +144,190 @@ object LayoutPresets {
     /**
      * What a built-in preset sets: the home layout, the game look and where things sit — never the theme, the
      * background, the categories, the second screen or anything else. Each starts from Voltcap's standard values for
-     * these (so every preset is the same whatever you had), then its own changes on top.
+     * these (so every preset is the same whatever you had), then its own changes on top. Update 162: with the game
+     * look's own switches ([LayoutPreset.look]), the layout's own options and its carousel ([LayoutPreset.features],
+     * [LayoutPreset.carousel]) — the same set for every preset of one layout, so going from one to another always
+     * lands on exactly what it says.
      */
     val BUILT_IN_KEYS: Set<String> = setOf(
         "homeLayout", "cardArtType", "dockPosition", "focusPosition", "focusedCardStyle", "cardSize", "tileScale",
         "cardCorners", "otherGamesLook", "focusEffect", "tiltOthers", "infoSpacing", "titlePlacement", "showGameLogos", "rowInfo"
     )
 
+    /** Update 162: what a preset sets on a layout that draws its games its own way (it keeps your game look). */
+    private val KEEP_LOOK_KEYS: Set<String> = BUILT_IN_KEYS - "cardArtType"
+
     private fun preset(
         id: String, layout: HomeLayout, name: String, description: String,
+        /** Update 162: the game look's switches (all off: the artwork's plain look); null keeps your game look as it is. */
+        look: PresetLook? = PresetLook(),
+        /** Update 162: the layout's own options (and the carousel's view). */
+        options: List<Pair<String, String>> = emptyList(),
+        /** Update 162: the carousel for this layout on / off (null: left as it is). */
+        carousel: Boolean? = null,
         tweak: (AppearanceSettings) -> AppearanceSettings = { it }
-    ) = LayoutPreset(id, name, description, true, null, { cur ->
-        val std = PresetFields.read(AppearanceSettings()).filterKeys { it in BUILT_IN_KEYS }
-        tweak(PresetFields.write(cur, std).copy(homeLayout = layout))
-    }, layout, BUILT_IN_KEYS)
+    ): LayoutPreset {
+        val keys = if (look == null) KEEP_LOOK_KEYS else BUILT_IN_KEYS
+        return LayoutPreset(id, name, description, true, null, { cur ->
+            val std = PresetFields.read(AppearanceSettings()).filterKeys { it in keys }
+            tweak(PresetFields.write(cur, std).copy(homeLayout = layout))
+        }, layout, keys, look = look, features = options.toMap(), carousel = carousel)
+    }
 
-    /** Two or three presets for each home layout, made for it (Settings › Home › Layout & presets). */
+    // ---- Update 162: each layout's own options as its presets set them (the defaults are Voltcap's own) ----
+
+    /** One setting as a preset sets it: its key and its value as text (as Features.snapshot writes it). */
+    private fun <T> o(p: Features.Pref<T>, v: T = p.default): Pair<String, String> = p.key to when (v) {
+        is Enum<*> -> v.name
+        is Set<*> -> v.joinToString(",")
+        else -> v.toString()
+    }
+
+    /**
+     * The carousel's view (shared by every carousel), with its games all the way to the screen's edges; the 3D-case
+     * views come with their glossy floor and dark stage (as picking them in Settings does) and the case you're on facing you.
+     */
+    private fun view(v: com.shelf.launcher.ui.CarouselView): List<Pair<String, String>> = buildList {
+        add(o(Features.carouselView, v))
+        add(o(Features.carouselEdge, true))
+        if (v.cases) {
+            add(o(Features.carouselReflect, true))
+            add(o(Features.carouselStage, true))
+            add(o(Features.pickedFaces, true))
+        }
+    }
+
+    private fun gridOpts(tiles: Boolean = false) = listOf(o(Features.gridTiles, tiles))
+    private fun heroOpts(side: Features.HeroSideCovers = Features.HeroSideCovers.ALL) = listOf(o(Features.heroSideCovers, side))
+    private fun tvOpts(games: com.shelf.launcher.ui.TvRoom.Games = com.shelf.launcher.ui.TvRoom.Games.SPINES) = listOf(o(Features.tvRoomGames, games))
+    private fun shelfOpts(stand: Features.ShelfStand = Features.ShelfStand.SPINES, wood: Features.ShelfLook = Features.ShelfLook.DARK) =
+        listOf(o(Features.shelfStand, stand), o(Features.shelfLook, wood))
+    private fun hubOpts(art: Boolean = true) = listOf(o(Features.hubArt, art), o(Features.resNextAch))
+    private fun resumeOpts(art: Boolean = true) = listOf(o(Features.resArt, art), o(Features.resNextAch))
+    private fun chanOpts(cols: Int = Features.chanCols.default, pale: Boolean = true, art: Boolean = false) =
+        listOf(o(Features.chanCols, cols), o(Features.chanLight, pale), o(Features.chanArt, art))
+    private fun circuitOpts(colors: Features.CircuitColors = Features.CircuitColors.THEME) =
+        listOf(o(Features.circuitColors, colors), o(Features.circuitCurrent), o(Features.circuitLabels), o(Features.circuitBackdrop))
+    private fun libOpts(cols: Int = Features.libCols.default, panel: Boolean = true) =
+        listOf(o(Features.libCols, cols), o(Features.libPanel, panel), o(Features.libTabs, true))
+    private fun stacksOpts(depth: Boolean = true, toolbar: Boolean = true, mirror: Boolean = true, cases3d: Boolean = true) = listOf(
+        o(Features.stacksDepth, depth), o(Features.stacksToolbar, toolbar), o(Features.stacksBar, true),
+        o(Features.stacksMirror, mirror), o(Features.stacks3d, cases3d), o(Features.pickedFaces, true)
+    )
+    private fun timelineOpts(by: Features.TimelineBy) = listOf(o(Features.timelineBy, by), o(Features.timelineDates, true))
+    private fun arcadeOpts(clean: Boolean = false) =
+        listOf(o(Features.arcadeGlow, true), o(Features.arcadeLines, !clean), o(Features.arcadeGameColors, !clean))
+    private fun consoleOpts(photos: Boolean = true, games: Int = Features.consoleStackGames.default) =
+        listOf(o(Features.consolePhotos, photos), o(Features.consoleStackGames, games))
+    private fun discOpts(player: Features.DiscPlayerLook = Features.DiscPlayerLook.PLAYER, calm: Boolean = true, spin: Boolean = true, blur: Int = Features.discBlur.default) =
+        listOf(o(Features.discPlayer, player), o(Features.discCalm, calm), o(Features.discSpin, spin), o(Features.discAbout, true), o(Features.discBlur, blur))
+    private fun heroTilesOpts(rows: Int = Features.heroTilesRows.default, size: Int = Features.heroTilesSize.default, pale: Boolean = true) =
+        listOf(o(Features.heroTilesRows, rows), o(Features.heroTilesSize, size), o(Features.heroTilesDock, true), o(Features.heroTilesPale, pale))
+    private fun twinDeskOpts(clock: Features.TwinClock = Features.TwinClock.ANALOGUE) = listOf(o(Features.twinClock, clock), o(Features.twinCalendar, true))
+    private fun twinIconsOpts(cols: Int = Features.twinCols.default) = listOf(o(Features.twinCols, cols))
+    private fun crateOpts(wood: Features.CrateWood = Features.CrateWood.LIGHT) = listOf(o(Features.crateSpin, true), o(Features.crateWood, wood))
+    private fun cardsOpts(fan: Int = Features.cardsFan.default, frame: Features.CardFrame = Features.CardFrame.CONSOLE) =
+        listOf(o(Features.cardsFan, fan), o(Features.cardsSheen, true), o(Features.cardsFrame, frame))
+
+    private val CASES = PresetLook()
+
+    /** A few presets for each home layout, made for it (Settings › Home › Layout & presets; update 162: every layout has its own). */
     val builtIns: List<LayoutPreset> = listOf(
-        // Voltcap row
+        // Voltcap row (update 162: the carousel off in the row presets, on in the carousel ones).
         preset("row_std", HomeLayout.CLASSIC, "Voltcap standard",
-            "The row along the bottom, the game you're on unfolded into a wide capsule at the left, covers after it."),
+            "The row along the bottom, the game you're on unfolded into a wide capsule at the left, covers after it.", carousel = false),
         preset("row_shelf", HomeLayout.CLASSIC, "Cover shelf",
-            "Big covers with the one you're on in the middle; the others dimmed and tilting away as you scroll.") { s ->
+            "Big covers with the one you're on in the middle; the others dimmed and tilting away as you scroll.", carousel = false) { s ->
             s.copy(focusedCardStyle = FocusedCardStyle.COVER, focusPosition = FocusPosition.CENTER, cardSize = CardSize.LARGE,
                 otherGamesLook = OtherGamesLook.DIMMED, tiltOthers = true, focusEffect = FocusEffect.GLOW)
         },
-        preset("row_discs", HomeLayout.CLASSIC, "Disc collection",
-            "Every game as its disc in a centred row (cartridge games on a plain CD with their label), a soft glow on the one you're on.") { s ->
+        // (Update 162: "Disc collection" is the Disc station's own preset now; this one is the row of discs.)
+        preset("row_discs", HomeLayout.CLASSIC, "Disc row",
+            "Every game as its disc in a centred row (cartridge games on a plain CD with their label), a soft glow on the one you're on.", carousel = false) { s ->
             s.copy(cardArtType = CardArtType.DISC, focusedCardStyle = FocusedCardStyle.COVER, focusPosition = FocusPosition.CENTER,
                 focusEffect = FocusEffect.GLOW)
         },
-        // Tile home
-        preset("l_tiles", HomeLayout.TILES, "Tile home",
-            "Big rounded square covers in one row, the name above the one you're on, round buttons under them.") { s ->
+        // Update 162: Tile home is no longer a layout (update 112): its presets are the Voltcap row with the Tile look.
+        preset("l_tiles", HomeLayout.CLASSIC, "Tile row",
+            "Big rounded square covers in one row, the name above the one you're on.", look = PresetLook(tiles = true), carousel = false) { s ->
             s.copy(cardCorners = CardCorners.ROUND, focusEffect = FocusEffect.GLOW)
         },
-        preset("tiles_big", HomeLayout.TILES, "Big tiles",
-            "The same tiles a good deal bigger, in the middle of the screen — easy to read on a small handheld.") { s ->
-            s.copy(cardCorners = CardCorners.ROUND, focusEffect = FocusEffect.GLOW, tileScale = 130, dockPosition = DockPosition.MIDDLE)
+        preset("tiles_big", HomeLayout.CLASSIC, "Big tiles",
+            "The same tiles a good deal bigger, in the middle of the screen — easy to read on a small handheld.", look = PresetLook(tiles = true), carousel = false) { s ->
+            s.copy(cardCorners = CardCorners.ROUND, focusEffect = FocusEffect.GLOW, cardSize = CardSize.LARGE, dockPosition = DockPosition.MIDDLE)
         },
-        preset("tiles_media", HomeLayout.TILES, "Cartridges & discs",
-            "Each game as the real thing — its cartridge, card or disc — standing in the tile row.") { s ->
-            s.copy(cardArtType = CardArtType.CARTRIDGE_DISC, focusEffect = FocusEffect.GLOW)
+        preset("tiles_media", HomeLayout.CLASSIC, "Cartridges & discs",
+            "Each game as the real thing — its cartridge, card or disc — standing in the row, the one you're on in the middle.", carousel = false) { s ->
+            s.copy(cardArtType = CardArtType.CARTRIDGE_DISC, focusedCardStyle = FocusedCardStyle.COVER, focusPosition = FocusPosition.CENTER,
+                focusEffect = FocusEffect.GLOW)
         },
-        // Hero carousel
+        // Update 162: the carousel views on the row.
+        preset("row_arch", HomeLayout.CLASSIC, "Arch row",
+            "The games fanned in an arch across the screen: the one you're on raised and bigger in front, each step out lower, smaller and leaning outward.",
+            options = view(com.shelf.launcher.ui.CarouselView.ARCH), carousel = true) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("row_recede", HomeLayout.CLASSIC, "Receding row",
+            "The game you're on big near the left edge, the next ones smaller and turned a little away, stepping back into the distance.",
+            options = view(com.shelf.launcher.ui.CarouselView.RECEDE), carousel = true) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // Hero carousel (update 162: the whole column of covers, the column standing still).
         preset("l_hero", HomeLayout.HERO, "Hero carousel",
-            "The game's art full screen with its logo, a curved column of covers beside it.") { s ->
+            "The game's art full screen with its logo, a curved column of covers beside it.", options = heroOpts(), carousel = false) { s ->
             s.copy(showGameLogos = true, focusEffect = FocusEffect.GLOW)
         },
         preset("hero_boxes", HomeLayout.HERO, "Hero with boxes",
-            "The same, with the console's real cases in the column instead of plain covers.") { s ->
+            "The same, with the console's real cases in the column instead of plain covers.", options = heroOpts(), carousel = false) { s ->
             s.copy(cardArtType = CardArtType.CASE, showGameLogos = true, focusEffect = FocusEffect.GLOW)
         },
         preset("hero_discs", HomeLayout.HERO, "Hero with discs",
-            "Discs spinning down the column beside the full-screen art.") { s ->
+            "Discs down the column beside the full-screen art.", options = heroOpts(), carousel = false) { s ->
             s.copy(cardArtType = CardArtType.DISC, showGameLogos = true, focusEffect = FocusEffect.GLOW)
         },
-        // Grid
+        // Grid (update 162: the game look's own shapes, not square tiles; the carousel off but in Box flow).
         preset("l_grid", HomeLayout.GRID, "Cover wall",
-            "The whole category as covers filling the screen, a glow on the one you're on.") { s ->
+            "The whole category as covers filling the screen, a glow on the one you're on.", options = gridOpts(), carousel = false) { s ->
             s.copy(cardSize = CardSize.MEDIUM, focusEffect = FocusEffect.GLOW)
         },
         preset("grid_capsules", HomeLayout.GRID, "Capsule grid",
-            "Fewer, bigger cards: every game as its wide capsule art.") { s ->
+            "Fewer, bigger cards: every game as its wide capsule art.", options = gridOpts(), carousel = false) { s ->
             s.copy(cardArtType = CardArtType.CAPSULE, cardSize = CardSize.LARGE, focusEffect = FocusEffect.GLOW)
         },
         preset("grid_boxes", HomeLayout.GRID, "Box collection",
-            "Lots of small cases at their real sizes side by side, like a shelf seen from the front.") { s ->
+            "Lots of small cases at their real sizes side by side, like a shelf seen from the front.", options = gridOpts(), carousel = false) { s ->
             s.copy(cardArtType = CardArtType.CASE_REAL, cardSize = CardSize.SMALL, cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
         },
-        // TV room
+        // Update 162.
+        preset("grid_carts", HomeLayout.GRID, "Cartridge wall",
+            "Every game as a cartridge on the wall: its own for cartridge consoles, your cartridge pack for discs and the rest.",
+            look = PresetLook(carts = true), options = gridOpts(), carousel = false) { s ->
+            s.copy(cardArtType = CardArtType.CARTRIDGE_DISC, cardSize = CardSize.MEDIUM, focusEffect = FocusEffect.GLOW)
+        },
+        preset("grid_boxflow", HomeLayout.GRID, "Box flow",
+            "Real 3D cases packed tight either side of the one you're on, turned to their spines; moving, the next one slides out and turns to face you.",
+            look = CASES, options = gridOpts() + view(com.shelf.launcher.ui.CarouselView.BOX_FLOW), carousel = true) { s ->
+            s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
+        },
+        // TV room (update 162: the games beside the TV as a grid in the game look, or the carousel).
         preset("l_tv", HomeLayout.TV, "TV room",
-            "The game plays on an old TV, its cartridges and discs beside it, the story underneath.") { s ->
+            "The game plays on an old TV, its cartridges and discs beside it, the story underneath.", options = tvOpts()) { s ->
             s.copy(cardArtType = CardArtType.CARTRIDGE_DISC, focusEffect = FocusEffect.GLOW)
         },
         preset("tv_boxes", HomeLayout.TV, "TV room with boxes",
-            "The same room with the games' cases beside the TV.") { s ->
+            "The same room with the games' cases beside the TV.", options = tvOpts()) { s ->
             s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162.
+        preset("tv_spines", HomeLayout.TV, "TV room · spine wall",
+            "Beside the TV a carousel of 3D cases: the one you're on facing you, the others turned to their spines and packed tight.",
+            look = CASES, options = tvOpts(com.shelf.launcher.ui.TvRoom.Games.CAROUSEL) + view(com.shelf.launcher.ui.CarouselView.SPINE_WALL)) { s ->
+            s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
+        },
+        preset("tv_models", HomeLayout.TV, "TV room · 3D models",
+            "Your 3D cartridges, cards and cases beside the TV, the one you're on facing you.",
+            look = PresetLook(models = true), options = tvOpts() + o(Features.pickedFaces, true)) { s ->
+            s.copy(cardArtType = CardArtType.CARTRIDGE_DISC, focusEffect = FocusEffect.GLOW)
         },
         // Dashboard
         preset("l_dash", HomeLayout.DASH, "Dashboard",
@@ -204,13 +347,18 @@ object LayoutPresets {
             "The same tiles with rounded corners and a soft glow on the one you're on.") { s ->
             s.copy(cardCorners = CardCorners.ROUNDED, focusEffect = FocusEffect.GLOW)
         },
-        // Side menu
+        // Side menu (update 162: the row along the bottom, or the turned row of cases).
         preset("l_side", HomeLayout.SIDE, "Side menu",
-            "A dark menu with an emblem, the game's art behind it, square covers along the bottom.") { s ->
+            "A dark menu with an emblem, the game's art behind it, square covers along the bottom.", carousel = false) { s ->
             s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
         },
         preset("side_boxes", HomeLayout.SIDE, "Side menu with boxes",
-            "The same with the games' real cases along the bottom.") { s ->
+            "The same with the games' real cases along the bottom.", carousel = false) { s ->
+            s.copy(cardArtType = CardArtType.CASE, cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
+        },
+        preset("side_turned", HomeLayout.SIDE, "Side menu · turned row",
+            "The same menu with the games as a row of 3D cases along the bottom, each turned a little so its spine shows.",
+            look = CASES, options = view(com.shelf.launcher.ui.CarouselView.TURNED), carousel = true) { s ->
             s.copy(cardArtType = CardArtType.CASE, cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
         },
         // Cross menu
@@ -240,19 +388,186 @@ object LayoutPresets {
             "The same with rounded tiles and a soft glow.") { s ->
             s.copy(cardCorners = CardCorners.ROUND, focusEffect = FocusEffect.GLOW)
         },
-        // Game shelf (update 90)
+        // Game shelf (update 90; update 162: it draws its own spines and cases, so it keeps your game look).
         preset("l_shelf", HomeLayout.SHELF, "Game shelf",
-            "Your games as spines on a bookcase; the one you're on pulled out to show its front.") { s ->
+            "Your games as spines on a bookcase; the one you're on pulled out to show its front.", look = null, options = shelfOpts()) { s ->
             s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.NONE)
         },
-        preset("shelf_glow", HomeLayout.SHELF, "Game shelf · glow",
-            "The same with a soft glow round the game you pulled out.") { s ->
+        preset("shelf_glow", HomeLayout.SHELF, "Turned cases",
+            "Every case turned a little on wooden shelves, so its spine and its front both show; a soft glow round the one you pulled out.",
+            look = null, options = shelfOpts(Features.ShelfStand.ANGLED, Features.ShelfLook.WOOD)) { s ->
             s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Console hub, Resume & discover, Channel grid.
+        preset("hub_std", HomeLayout.HUB, "Console hub",
+            "The game's art full screen, a row of tiles with the one you're on big, Play, Achievements and Details cards under them.", options = hubOpts()) { s ->
+            s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
+        },
+        preset("hub_boxes", HomeLayout.HUB, "Hub with boxes",
+            "The same hub with the games' real cases in the row.", options = hubOpts()) { s ->
+            s.copy(cardArtType = CardArtType.CASE, cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
+        },
+        preset("res_std", HomeLayout.RESUME, "Resume & discover",
+            "The game you're on as a big square with shortcut tiles under it, the next games in a row, Discover cards.", options = resumeOpts()) { s ->
+            s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
+        },
+        preset("res_theme", HomeLayout.RESUME, "Resume on your theme",
+            "The same, on your theme's background instead of the game's art — calmer as you move.", options = resumeOpts(art = false)) { s ->
+            s.copy(cardCorners = CardCorners.ROUNDED, focusEffect = FocusEffect.GLOW)
+        },
+        preset("chan_std", HomeLayout.CHAN, "Channel grid",
+            "Pages of wide tiles on a pale backdrop, the name on the one you're on, a curved bar with the clock.", options = chanOpts()) { s ->
+            s.copy(cardCorners = CardCorners.ROUNDED, focusEffect = FocusEffect.GLOW)
+        },
+        preset("chan_wide", HomeLayout.CHAN, "Wide channels",
+            "Three big channels to a row, every game as its wide capsule art, the game's art behind.",
+            options = chanOpts(cols = 3, pale = false, art = true)) { s ->
+            s.copy(cardArtType = CardArtType.CAPSULE, cardCorners = CardCorners.ROUNDED, focusEffect = FocusEffect.GLOW)
         },
         // Circuit board (update 106)
         preset("l_circuit", HomeLayout.CIRCUIT, "Circuit board",
-            "Voltcap's own: your games as chips along a glowing power line, the one you're on powered up.") { s ->
+            "Voltcap's own: your games as chips along a glowing power line, the one you're on powered up.", options = circuitOpts()) { s ->
             s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162.
+        preset("circuit_green", HomeLayout.CIRCUIT, "Green board",
+            "The same chips on a classic green board with its labels printed beside them, current flowing along the line.",
+            options = circuitOpts(Features.CircuitColors.GREEN)) { s ->
+            s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Library panel.
+        preset("lib_std", HomeLayout.LIBRARY, "Library panel",
+            "The game you're on in a panel on the left with Play and Details, the category's covers as a grid on the right, tabs on top.", options = libOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("lib_boxes", HomeLayout.LIBRARY, "Box library",
+            "The same panel with the games' real cases in the grid, six to a row.", options = libOpts(cols = 6)) { s ->
+            s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
+        },
+        preset("lib_wall", HomeLayout.LIBRARY, "Full library",
+            "No panel: the grid fills the width, seven covers to a row, the tabs on top.", options = libOpts(cols = 7, panel = false)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Case stacks.
+        preset("stacks_std", HomeLayout.STACKS, "Case stacks",
+            "The game you're on as a big 3D case facing you, stacks of spines left and right, the tool strip on top and the panel along the bottom.",
+            look = CASES, options = stacksOpts(), carousel = false) { s ->
+            s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
+        },
+        preset("stacks_loader", HomeLayout.STACKS, "Loader",
+            "Like a disc loader: the cases in a Box flow, packed tight and turned to their spines either side of the one facing you, the tool strip and the panel round them.",
+            look = CASES, options = stacksOpts() + view(com.shelf.launcher.ui.CarouselView.BOX_FLOW), carousel = true) { s ->
+            s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
+        },
+        preset("stacks_flat", HomeLayout.STACKS, "Flat stacks",
+            "The stacks straight on, no mirror floor or tool strip, the case in the middle flat — plain and light.",
+            look = CASES, options = stacksOpts(depth = false, toolbar = false, mirror = false, cases3d = false), carousel = false) { s ->
+            s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Timeline.
+        preset("tl_played", HomeLayout.TIMELINE, "Timeline",
+            "Your games as a history by when you last played them, a row for each month, the dates under them.",
+            options = timelineOpts(Features.TimelineBy.LAST_PLAYED)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("tl_released", HomeLayout.TIMELINE, "Release history",
+            "From the oldest game to the newest, a row of cases for each year it came out.",
+            options = timelineOpts(Features.TimelineBy.RELEASED)) { s ->
+            s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
+        },
+        preset("tl_added", HomeLayout.TIMELINE, "New arrivals",
+            "The games you added last at the top, a row for each month they came in.",
+            options = timelineOpts(Features.TimelineBy.ADDED)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Arcade cabinets (drawn its own way: your game look stays).
+        preset("arc_std", HomeLayout.ARCADE, "Arcade cabinets",
+            "The game on a big cabinet's screen with scan lines, its marquee lit, each cabinet in its game's colours.", look = null, options = arcadeOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("arc_clean", HomeLayout.ARCADE, "Clean cabinets",
+            "The same cabinets in your theme's colours, a clean picture without scan lines.", look = null, options = arcadeOpts(clean = true)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Console stack.
+        preset("con_std", HomeLayout.CONSOLES, "Console stack",
+            "Your consoles piled on a shelf, the one you're in pulled out and lit, six of its games fanned out of it.", options = consoleOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("con_drawn", HomeLayout.CONSOLES, "Drawn consoles",
+            "Each console drawn as a box in its colour with its logo, more games sliding out — no pictures to look up.",
+            options = consoleOpts(photos = false, games = 8)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Disc station (always discs: your game look stays).
+        preset("disc_collection", HomeLayout.DISCS, "Disc collection",
+            "One portable CD player: the game you're on is the disc turning in the tray, its story beside it, the screen behind kept calm.",
+            look = null, options = discOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("disc_art", HomeLayout.DISCS, "Disc on its art",
+            "The disc sits on the game's own art, softly blurred, with the home screen's background behind as everywhere else.",
+            look = null, options = discOpts(player = Features.DiscPlayerLook.ART, calm = false, blur = 8)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("disc_still", HomeLayout.DISCS, "Still player",
+            "The CD player with the disc standing still and a calm screen — the lightest on the battery.",
+            look = null, options = discOpts(spin = false)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Hero tiles (square tiles of their own: your game look stays).
+        preset("ht_std", HomeLayout.HERO_TILES, "Hero tiles",
+            "The game's big picture across the top, two rows of square tiles on a pale backdrop, the app dock at the bottom.",
+            look = null, options = heroTilesOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("ht_big", HomeLayout.HERO_TILES, "One big row",
+            "One row of big tiles under the picture, on your theme's background.",
+            look = null, options = heroTilesOpts(rows = 1, size = 100, pale = false)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: the two-screen layouts.
+        preset("twin_desk", HomeLayout.TWIN_DESK, "Twin desk",
+            "A round clock and this month's calendar on squared paper on top, your games as wide panels on the second screen.",
+            look = null, options = twinDeskOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("twin_desk_digital", HomeLayout.TWIN_DESK, "Digital desk",
+            "The same desk with a big digital clock beside the calendar.",
+            look = null, options = twinDeskOpts(Features.TwinClock.DIGITAL)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("twin_icons", HomeLayout.TWIN_ICONS, "Twin icons",
+            "The game you're on as a big framed icon on top, five square icons to a row on the second screen.",
+            look = null, options = twinIconsOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("twin_icons_big", HomeLayout.TWIN_ICONS, "Big icons",
+            "The same with four bigger icons to a row — easier to hit with a thumb.",
+            look = null, options = twinIconsOpts(4)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Record crate.
+        preset("crate_std", HomeLayout.CRATE, "Record crate",
+            "Your games as sleeves in a light wooden crate; the one you're on lifts out and its record slides out, turning.",
+            look = null, options = crateOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("crate_shop", HomeLayout.CRATE, "Record shop",
+            "A dark wooden crate like a shop's back room, the record turning as you flip through.",
+            look = null, options = crateOpts(Features.CrateWood.DARK)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // Update 162: Card binder.
+        preset("cards_std", HomeLayout.CARDS, "Card binder",
+            "Your games as collectible cards framed in their console's colour, fanned out like a hand, a shine on the one you land on.",
+            look = null, options = cardsOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("cards_collector", HomeLayout.CARDS, "Card collector",
+            "A wider fan of cards framed in each game's own colours, mastered games in gold.",
+            look = null, options = cardsOpts(fan = 10, frame = Features.CardFrame.ART)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
         }
     )
 

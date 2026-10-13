@@ -49,6 +49,11 @@ internal object CategorySlide {
      */
     var tick by mutableIntStateOf(0)
     fun step(direction: Int) { dir = direction; tick++ }
+    /**
+     * Update 162: carousels on screen (GameCarousel) that slide their own collection along their path on a category
+     * change — the slide round them ([categorySlide]) then stays still, so the two never move at once.
+     */
+    var pathOwners = 0
 }
 
 /**
@@ -67,7 +72,8 @@ internal fun Modifier.categorySlide(): Modifier {
     val slide = kind == Features.PageAnim.SLIDE
     LaunchedEffect(tick) {
         if (first) { first = false; return@LaunchedEffect }
-        if (!on) return@LaunchedEffect
+        // (Update 162: not round a carousel that slides its games along its own path, CategorySlide.pathOwners.)
+        if (!on || CategorySlide.pathOwners > 0) return@LaunchedEffect
         anim.snapTo(CategorySlide.dir.toFloat())
         anim.animateTo(0f, tween(280, easing = FastOutSlowInEasing))
     }

@@ -1217,6 +1217,8 @@ internal fun typedArtFor(
     CardArtType.CARTRIDGE_DISC ->
         // (Update 125, Cartridges only: a disc game's own disc picture doesn't fit on a cartridge; its cover is the label.)
         if (platform != null && cartsOnlyFor(platform)) null
+        // Update 159, Discs only: a cartridge game's own scan / label is its cartridge — on its CD its cover is printed.
+        else if (platform != null && DiscLook.on && mediaKind(platform) != "disc") null
         else if (com.shelf.launcher.data.Features.mediaShells.value) physical?.firstOrNull { it.first == "Disc label" }?.second
         else physical?.firstOrNull { it.first == "Disc / cartridge" }?.second
     CardArtType.SCREENSHOT -> screenshots?.firstOrNull()
