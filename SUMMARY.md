@@ -4,6 +4,38 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (166.1): the 3D pieces turn smoothly
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. Run 166's block first if you
+haven't yet.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (2): `src_copy\ui\MediaInspectView.kt`,
+`src_copy\ui\Models3DLife.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **Turning an opened game is fluent:** the pictures are 20° apart; each one is now also turned in 3D the last few
+  degrees to where the piece really is, and the two are crossfaded only round the middle between them — so it turns
+  smoothly by itself, with the right stick, or dragged, instead of stepping (let go and it still eases back to face you).
+- **The same in the carousels:** a 3D cartridge sliding round a carousel (Box flow's stacks, Turned row, Arc…) turns
+  smoothly between its pictures instead of jumping 20° at a time.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 166.1: the 3D pieces turn smoothly" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (166): 3D pieces all the way round, cartridges in the 3D cartridge looks, real-sized opened cases, no grey side blocks
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

@@ -12,6 +12,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -116,8 +117,12 @@ internal fun Model3DLive(
     }
     val aspect = (meta?.aspect ?: 0.75f).coerceAtLeast(0.05f)
     val glow = if (focused) 1f else 0.8f
+    // Update 166 (fluent): a piece standing between two of the pack's angles (a carousel sliding it round, Box flow's
+    // stacks) is its nearest picture turned the last few degrees in 3D, so it turns smoothly instead of in 20° steps.
+    val rest = if (turning) 0f else Models3D.wrap(yaw - a0).coerceIn(-12f, 12f)
+    val dens = androidx.compose.ui.platform.LocalDensity.current.density
     Spacer(
-        modifier.drawWithCache {
+        modifier.then(if (rest != 0f) Modifier.graphicsLayer { rotationY = rest; cameraDistance = 14f * dens } else Modifier).drawWithCache {
             // The picture fitted in the middle (as ContentScale.Fit would), and the floor it stands on.
             val fw = minOf(size.width, size.height * aspect)
             val fh = fw / aspect

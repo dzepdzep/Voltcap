@@ -742,24 +742,39 @@ private fun InspectModel(p: InspectPiece, id: String, aspect: Float, yawOf: () -
     // The last picture shown stays until the next pair is there (never an empty frame).
     val last = remember { arrayOfNulls<ImageBitmap>(1) }
     SideEffect { if (img0 != null) last[0] = img0 }
+    // Update 166 (fluent): each of the two pictures is also turned the last few degrees to where the piece is right now
+    // (a 3D turn of its layer, as the Save Vault's card does), so it moves smoothly between the pictures 20° apart instead
+    // of stepping; they're crossfaded only round the middle between them, where both are turned 10° toward each other.
+    val dens = androidx.compose.ui.platform.LocalDensity.current.density
+    // How far past the lower picture the piece is (0…20°; across −180 the angle runs on from 160).
+    fun past(): Float { var d = inspectNorm(yawOf()) - low; if (d < 0f) d += 360f; return d.coerceIn(0f, 20f) }
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+        InspectFrame(img0 ?: (if (img1 == null) last[0] else null), aspect, Modifier.fillMaxSize().graphicsLayer {
+            val d = past()
+            rotationY = d
+            cameraDistance = 14f * dens
+            alpha = if (img1 == null) 1f else (1f - ((d - 7f) / 6f)).coerceIn(0f, 1f)
+        })
+        InspectFrame(img1, aspect, Modifier.fillMaxSize().graphicsLayer {
+            val d = past()
+            rotationY = d - 20f
+            cameraDistance = 14f * dens
+            alpha = if (img0 == null) 1f else ((d - 7f) / 6f).coerceIn(0f, 1f)
+        })
+    }
+}
+
+/** Update 166: one of the model's pictures, fitted in the middle (its turn and fade set by [modifier]'s layer). */
+@Composable
+private fun InspectFrame(img: ImageBitmap?, aspect: Float, modifier: Modifier) {
+    if (img == null) return
     Spacer(
-        Modifier.fillMaxSize().drawWithCache {
+        modifier.drawWithCache {
             val fw = minOf(size.width, size.height * aspect)
             val fh = fw / aspect
             val dstOff = IntOffset(((size.width - fw) / 2f).roundToInt(), ((size.height - fh) / 2f).roundToInt())
             val dstSize = IntSize(fw.roundToInt().coerceAtLeast(1), fh.roundToInt().coerceAtLeast(1))
-            onDrawBehind {
-                val y = inspectNorm(yawOf())
-                // How far past the lower picture (0…1); across −180 the angle runs on from 160.
-                var d = y - low
-                if (d < 0f) d += 360f
-                val f = (d / 20f).coerceIn(0f, 1f)
-                val a0 = if (img1 == null || f < 0.5f) 1f else (1f - f) * 2f
-                val a1 = if (f > 0.5f) 1f else f * 2f
-                if (img0 != null) drawImage(img0, dstOffset = dstOff, dstSize = dstSize, alpha = a0)
-                if (img1 != null) drawImage(img1, dstOffset = dstOff, dstSize = dstSize, alpha = if (img0 == null) 1f else a1)
-                if (img0 == null && img1 == null) last[0]?.let { drawImage(it, dstOffset = dstOff, dstSize = dstSize) }
-            }
+            onDrawBehind { drawImage(img, dstOffset = dstOff, dstSize = dstSize) }
         }
     )
 }

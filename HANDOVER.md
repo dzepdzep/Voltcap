@@ -256,6 +256,11 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 166.1
+- **Fluent turns:** `InspectModel` draws the two nearest pictures as `InspectFrame`s, each in its own layer turned
+  `d` / `d − 20` degrees (d = past the lower picture), crossfaded over d 7…13. `Model3DLive` turns its layer by
+  `wrap(yaw − a0)` (±12°) when it isn't on its own slow turn.
+
 ## State after update 166
 - **3D pack v6.11, all the way round:** `tools/render3d/batch3.js` (18 angles −160…180, from `glbplan.json`: the
   blank-branding GLB where there is one, else v6.11), then `backs.py --write` (adds `backs` / `backAspect` — the back
