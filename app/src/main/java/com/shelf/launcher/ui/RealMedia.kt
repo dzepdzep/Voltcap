@@ -156,6 +156,25 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720): android.graphi
 }
 
 /**
+ * Update 166: decodes [urls] ahead as the plain bitmaps [rememberSoftBitmap] reads (same size, same memory key), so a 3D
+ * case or 3D piece sliding into a carousel has its cover at once — the carousel warmed only the flat covers, and the 3D
+ * ones came in dark for a moment while scrolling.
+ */
+internal fun warmSoft(context: android.content.Context, urls: List<String>, maxSide: Int) {
+    val loader = coil.Coil.imageLoader(context)
+    for (u in urls) {
+        val key = coil.memory.MemoryCache.Key("soft|$maxSide|$u")
+        if (loader.memoryCache?.get(key) != null) continue
+        loader.enqueue(
+            coil.request.ImageRequest.Builder(context).data(u).size(maxSide, maxSide)
+                .precision(coil.size.Precision.INEXACT).allowHardware(false)
+                .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
+                .memoryCacheKey(key).build()
+        )
+    }
+}
+
+/**
  * The game's box in 3D from the template pack: [front] (a real box scan when [frontIsBox], else the cover inside
  * the system's printed border), the system's spine (or a plain one with [title]) and the glass overlay, turning
  * gently when [spin] is on. Returns false when the pack has no box for this console.
@@ -439,7 +458,7 @@ private fun CaseArtBody(
     // leaning against its lower right; only the cartridge / disc moves (spin / bounce as set).
     val shell = platform?.let { MediaShell.of(it) }
     if (com.shelf.launcher.data.Features.caseWithMedia.state.value && shell != null) {
-        val cov0 = if (com.shelf.launcher.data.Features.coverTemplates.state.value) MediaCovers.of(platform) else null
+        val cov0 = MediaCovers.used(platform)
         val box0 = MediaTemplates.of(platform)?.box
         if (cov0 == null && box0 == null) return false
         val aspect = cov0?.frontAspect ?: box0?.let { if (it.frameRes != null) it.frameAspect else it.aspect } ?: 0.7f
@@ -485,7 +504,7 @@ private fun CaseArtFace(
     allowDiscCase: Boolean, spine: Any? = null
 ): Boolean {
     val tpl = MediaTemplates.of(platform)
-    val cov = if (com.shelf.launcher.data.Features.coverTemplates.state.value) MediaCovers.of(platform) else null
+    val cov = MediaCovers.used(platform)
     val use3d = com.shelf.launcher.data.Features.box3d.state.value
     // Update 143: a PlayStation case never shows its black PlayStation band — neither turned to its side nor printed down
     // the left of its cover scan (it's cut off): just the cover.

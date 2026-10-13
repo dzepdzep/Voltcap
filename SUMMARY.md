@@ -4,6 +4,115 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (168): the volume mixer works on the Pocket Classic, lists in the Cross menu, cases with their media in the 3D carousel views
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (7): `src_copy\LauncherUiState.kt`,
+`src_copy\data\Features.kt`, `src_copy\device\audio\AppMixer.kt`, `src_copy\device\audio\MixerHelper.kt`,
+`src_copy\ui\Carousel.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\StyleHomeSettings.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **Volume mixer on the Pocket Classic** (Spotify playing at 0 %): checked on the Classic with a game and Spotify
+  playing. The Classic has the vendor's root service (PServerBinder, like the AYN Thor), the mixer helper starts through
+  it and sees every player (Spotify's two with volume handles), and setting a volume works — run once over USB it muted
+  Spotify at once. But the background helper that keeps the volumes (the "Volume keeper" in Mixer check) is ended by the
+  firmware right after its start, so nothing stayed turned down. Now, once the keeper is seen gone twice, Voltcap
+  remembers it and uses the one-shot way instead — the same as the VolumeManager app you found, without Shizuku: each
+  time Android reports a player starting or changing (a game starting, Spotify's next track), the helper runs once, puts
+  the volumes on every player of the apps you turned down, and ends. A player keeps that volume. Mixer check shows
+  "Volume keeper ✓ This firmware ends it, so the volumes are put on each player as it starts". (No pairing or Wireless
+  debugging needed after all.)
+- **Lists in the Cross menu:** Cross menu options › Lists in the strip — Continue playing, Favourites, Most played, In
+  progress, Almost mastered, Mastered, Never played, Not played lately, Emulators, Collections, All games: the ones you
+  tick show as icons beside the consoles on the Cross menu only, even when they're hidden in Settings › Categories (their
+  order is set there).
+- **Cases with their media in the 3D carousel views:** Case + disc, 3D case + disc and Case + its media showed only the
+  bare 3D case in Box flow, Arc, Spine wall, Turned row (and with the 3D cases switch): now the disc stands half out of
+  the case behind it (spinning), or the cartridge / disc leans against its lower right, turning with the case.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **On the Pocket Classic (166.1):** Mixer check with Pokémon Silver (RetroArch) and Spotify playing — every step ✓
+  except Volume keeper ("Not running"); `dumpsys audio`: Spotify AAudio / RetroArch OpenSL ES, no volume held; the helper's
+  one-shot `apply` from USB set Spotify to muted (mutedState:clientVolume), put back to 100 % after.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 168: volume mixer on the Pocket Classic, lists in the Cross menu, cases with their media in the 3D carousel views" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
+## Update — 13 Oct 2026 (167): real case sizes everywhere, Steam / Android cases, tiles and wide capsules in the carousels, Cross menu without flashes
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (14): `src_copy\data\Features.kt`,
+`src_copy\data\Packs.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\GameLookPicker.kt`,
+`src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaCovers.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\RealMedia.kt`,
+`src_copy\ui\ShelfHome.kt`, `src_copy\ui\StyleCrossMenu.kt`, `src_copy\ui\StyleHomes.kt`, `src_copy\ui\StyleTimelineHistory.kt`,
+`src_copy\ui\TvRoomHome.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **Opened games in a mixed category were DVD-sized:** every 3D case (opened, and in the carousels) has its console's
+  real shape in lists mixing consoles too, as the flat box art does.
+- **Small cases bigger:** opened, a Game Boy box is about 80 % of a DVD case (was 62 %).
+- **Box flow at real sizes:** Box flow's 3D cases (and the Cases · real sizes look in every view) stand at their real
+  size against the biggest case in the list — a Game Boy box shorter than a PS2 case — all on the same floor (softened so
+  the small ones stay easy to see).
+- **Steam and Android cases:** your own Steam / Android cases (the band across the top, their spine) are used always —
+  in the flat case looks, the 3D cases, the shelves and the TV room. They showed only with Settings › Cover templates on,
+  so Steam and Android games stood as plain covers.
+- **Tile look in the carousels:** every cover a square tile there too (it was the Voltcap row's only).
+- **The one you're on as a wide capsule in the carousels:** the look "Covers · wide capsule" (R1 › Game look) now also
+  unfolds the game you're on into its wide capsule as you scroll a carousel, and folds it back as you move on. Settings ›
+  Game look › "Carousels: the one you're on as a wide capsule" switches it on its own. Plain "Covers" stays covers.
+- **Grid / TV room grid with Endless:** ▲ ▼ go on round (past the last row to the first, and back) — they did nothing
+  there, only ◀ ▶ moved. Without Endless, ▼ onto a shorter last row lands on its last game.
+- **Timeline with Endless:** ▼ from the last year / month goes on round to the first.
+- **Cross menu:**
+  - no flashing icons: pressing ◀ ▶ drew one frame of the next category's folders and logos in the old places before
+    the strip slid; the strip is drawn shifted from that very frame now.
+  - no games above the icons: the game you leave going down fades out on its way up (it stayed over the menu, half seen).
+  - ▼ from the last game goes round to the first.
+- **Dark artworks while scrolling:** a 3D case or 3D piece whose cover was still loading drew its front near-black, and
+  the carousel decoded ahead only the flat covers. The 3D cases' and pieces' covers are decoded ahead too now (a few more
+  games out, for Box flow), and a front still loading shows in the game's own colour.
+- **3D pieces after 166:** the pieces you had are fetched again in their new version by themselves at start (in the
+  background), so the 3D looks come back without downloading the pack by hand.
+
+### About the 3D custom cartridges look
+It draws your 3D shape library's custom cartridges (one shape per console, painted in that console's colours with its
+logo — R1 › Cartridge colour for your own colour). After 166 they needed the pack again; until it's here the flat look
+shows. Your flat cartridge pack's designs are the "Custom cartridges" look (not 3D).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **On the Pocket Classic (166.1 installed):** recorded the Cross menu flash (the next category's logos in the old places
+  for one frame) and the game peeking above the icons.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 167: real case sizes everywhere, Steam / Android cases, tiles and wide capsules in the carousels, Cross menu fixes" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (166.1): the 3D pieces turn smoothly
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. Run 166's block first if you

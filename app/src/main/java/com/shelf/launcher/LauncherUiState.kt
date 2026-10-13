@@ -354,7 +354,10 @@ data class LauncherUiState(
     val categoryOrder: List<String>
         get() {
             val known = CategorySettings.known(SpecialFilter.values().map { it.name })
-            val shown = categories.normalized(known).filter { it !in categories.hidden }
+            // (Update 168: on the Cross menu, the lists you picked for it show too — Cross menu options › Lists.)
+            val crossExtra = if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CROSS)
+                com.shelf.launcher.data.Features.crossCats.state.value else emptySet()
+            val shown = categories.normalized(known).filter { it !in categories.hidden || it in crossExtra }
                 // Rediscover only opens by hand; Smart Continue only while it's switched on.
                 .filter { it != SpecialFilter.REDISCOVER.name }
                 .filter { it != SpecialFilter.SMART_CONTINUE.name || com.shelf.launcher.data.Features.smartContinue.state.value }

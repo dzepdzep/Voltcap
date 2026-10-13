@@ -53,7 +53,9 @@ internal fun Case3D(
     val realSpine = if (forAll) null else scans?.firstOrNull { it.first == "Spine" }?.second
     val own = realSpine ?: if (Features.originalCases.state.value && !forAll) BoxTexture.spine(scans, g.platform) else null
     val ownBmp = rememberSoftBitmap(own, 600)
-    val tpl = if (Features.coverTemplates.state.value || forAll) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
+    // (Update 166: Voltcap's own Steam / Android case always — its spine and its front band, see below.)
+    val ownCase = MediaCovers.own(g.platform).takeIf { !forAll }
+    val tpl = if (Features.coverTemplates.state.value || forAll || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     // (Made once per game, away from the screen's thread: SpineCache.)
     val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false)
     val spine: android.graphics.Bitmap = remember(ownBmp, tplSpine, title) {
@@ -69,10 +71,16 @@ internal fun Case3D(
         // size than a DVD case — not always a DVD case's.)
         (if (ownBmp != null) own else tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
     }
-    val face = remember(front, aspect) { front?.let { cropTo(it, aspect) } }
+    // Update 166: a Steam / Android game's case front is Voltcap's own: the game's art in its window, the band on top.
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val band = remember(ownCase?.frontRes) { ownCase?.let { runCatching { android.graphics.BitmapFactory.decodeResource(ctx.resources, it.frontRes) }.getOrNull() } }
+    val face = remember(front, aspect, band) { front?.let { f -> if (band != null && ownCase != null) framed(f, band, ownCase.win) else cropTo(f, aspect) } }
     val backBmp = rememberSoftBitmap(back, 480)
     val backFace = remember(backBmp, aspect) { backBmp?.let { cropTo(it, aspect) } }
     val noCover = remember(title, g.hue, cover == null && ownFront == null) { if (cover == null && ownFront == null) plainFront(title, g.hue) else null }
+    // Update 166: while its cover is still loading, the front in the game's own colour (not near-black: scrolling a
+    // carousel of 3D cases showed dark fronts for a moment).
+    val loading = remember(g.hue) { hueFront(g.hue) }
     val frameArgb = frameColor.toArgb()
     Canvas(modifier) {
         val yawNow = yawOf?.invoke() ?: yaw
@@ -84,7 +92,7 @@ internal fun Case3D(
         drawIntoCanvas { canvas ->
             CaseDraw.draw(
                 canvas.nativeCanvas, size.width / 2f, size.height / 2f, w, h, d, yawNow, pitch,
-                face ?: noCover, spine, (1f - shadeNow).coerceIn(0f, 1f), reflect,
+                face ?: noCover ?: loading, spine, (1f - shadeNow).coerceIn(0f, 1f), reflect,
                 if (frame) frameArgb else 0, 2.5f * density, backFace
             )
         }
@@ -96,7 +104,8 @@ internal fun Case3D(
  * Game Boy Advance game opened as a DVD-shaped box), else a game case's.
  */
 internal fun case3dAspect(g: Game, mixed: Boolean): Float {
-    if (!mixed) realCaseMm(g.platform)?.let { (w, h) -> if (w > 0f && h > 0f) return (w / h).coerceIn(0.55f, 1.45f) }
+    // (Update 166: in lists mixing consoles too — each case keeps its own shape there, as the flat box art does.)
+    realCaseMm(g.platform)?.let { (w, h) -> if (w > 0f && h > 0f) return (w / h).coerceIn(0.55f, 1.45f) }
     return (if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null)?.coerceIn(0.55f, 1.45f) ?: 0.71f
 }
 
@@ -129,7 +138,21 @@ internal fun realCaseDepth(platform0: String?): Float? {
  * (190 mm): a Game Boy box comes out smaller than a GameCube case, as they are. Bigger cases fill the room as before.
  */
 internal fun realCaseScale(platform: String?): Float =
-    realCaseMm(platform)?.let { (w, h) -> (maxOf(w, h) / 190f).coerceIn(0.62f, 1f) } ?: 1f
+    // (Update 166: softened — the small ones were hard to see; a Game Boy box about 80 % of a DVD case.)
+    realCaseMm(platform)?.let { (w, h) -> Math.pow((maxOf(w, h) / 190f).toDouble(), 0.6).toFloat().coerceIn(0.8f, 1f) } ?: 1f
+
+/** Update 166: [art] cut to the template's window [win] (l, t, r, b fractions) and drawn under [frame] (its band on top). */
+private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap, win: FloatArray): android.graphics.Bitmap = runCatching {
+    val w = frame.width.coerceAtMost(600); val h = (w * frame.height / frame.width.toFloat()).toInt().coerceAtLeast(1)
+    val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(out)
+    val dst = android.graphics.RectF(win[0] * w, win[1] * h, win[2] * w, win[3] * h)
+    val cut = cropTo(art, dst.width() / dst.height().coerceAtLeast(1f))
+    val p = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
+    c.drawBitmap(cut, null, dst, p)
+    c.drawBitmap(frame, null, android.graphics.RectF(0f, 0f, w.toFloat(), h.toFloat()), p)
+    out
+}.getOrDefault(art)
 
 /** [src] cut in the middle to [aspect] (width / height), no stretching. */
 private fun cropTo(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
@@ -161,6 +184,19 @@ private fun plainSpine(title: String): android.graphics.Bitmap {
 }
 
 /** A front for a game without a cover: its colour with the name across it. */
+/** Update 166: a plain front in [hue] (a soft top-to-bottom shade), for the moment a cover is loading. */
+private fun hueFront(hue: Int): android.graphics.Bitmap {
+    val b = android.graphics.Bitmap.createBitmap(36, 50, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(b)
+    val h = ((hue % 360) + 360f) % 360f
+    val p = android.graphics.Paint().apply {
+        shader = android.graphics.LinearGradient(0f, 0f, 0f, 50f, android.graphics.Color.HSVToColor(floatArrayOf(h, 0.42f, 0.5f)),
+            android.graphics.Color.HSVToColor(floatArrayOf(h, 0.5f, 0.3f)), android.graphics.Shader.TileMode.CLAMP)
+    }
+    c.drawRect(0f, 0f, 36f, 50f, p)
+    return b
+}
+
 private fun plainFront(title: String, hue: Int): android.graphics.Bitmap {
     val b = android.graphics.Bitmap.createBitmap(360, 500, android.graphics.Bitmap.Config.ARGB_8888)
     val c = android.graphics.Canvas(b)

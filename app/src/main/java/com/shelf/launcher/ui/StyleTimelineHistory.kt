@@ -454,7 +454,11 @@ internal fun timelineHistoryKey(ctx: StyleKeyCtx): Boolean {
         Key.DirectionLeft -> if (p > 0) go(p - 1) else if (loop) go(order.size - 1, -1) else ctx.take()
         Key.DirectionRight -> if (p < order.size - 1) go(p + 1) else if (loop) go(0, 1) else ctx.take()
         Key.DirectionUp -> if (r > 0) go((starts[r - 1] + col).coerceAtMost(rowEnd(r - 1) - 1)) else up()
-        Key.DirectionDown -> if (r < starts.size - 1) go((starts[r + 1] + col).coerceAtMost(rowEnd(r + 1) - 1)) else ctx.reach(false)
+        Key.DirectionDown -> if (r < starts.size - 1) go((starts[r + 1] + col).coerceAtMost(rowEnd(r + 1) - 1))
+            // Update 166: Endless on: ▼ from the last year / month goes on round to the first (it stopped there, only ◀ ▶
+            // moved on), counted forward so the history carries on instead of racing back.
+            else if (loop && starts.size > 1) { val t = (starts[0] + col).coerceAtMost(rowEnd(0) - 1); go(t, order.size - p + t) }
+            else ctx.reach(false)
         else -> false
     }
 }

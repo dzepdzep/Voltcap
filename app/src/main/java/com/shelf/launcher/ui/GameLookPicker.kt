@@ -159,6 +159,9 @@ internal fun stepGameLook(a: AppearanceSettings): AppearanceSettings {
     com.shelf.launcher.data.Features.discCase3d.value = next.disc3d // Update 151
     com.shelf.launcher.data.Features.squareTiles.value = next.tile
     com.shelf.launcher.data.Features.spineLook.value = next.spine
+    // Update 166: "Covers · wide capsule" also in the carousels (only that look; plain Covers stays covers there).
+    com.shelf.launcher.data.Features.carouselWide.value = next.type == CardArtType.COVER && !next.tile && !next.spine &&
+        next.focus == com.shelf.launcher.data.FocusedCardStyle.WIDE
     applyCartStep(next)
     // (Update 119: the Grid's "Games as square tiles" drew covers whatever the look was, so the cartridges, discs and
     // cases never showed there: picking one of those turns it off.)
@@ -220,6 +223,16 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
             com.shelf.launcher.data.Features.squareTiles.value = false
             onChange(appearance.copy(cardArtType = CardArtType.COVER))
         }
+    }
+    // Update 166: covers in the carousels: the one you're on as its wide capsule while you scroll.
+    if (now == CardArtType.COVER && !com.shelf.launcher.data.Features.spineLook.state.value) {
+        ChipFlow {
+            val w = com.shelf.launcher.data.Features.carouselWide.state.value
+            Chip((if (w) "✓ " else "") + "Carousels: the one you're on as a wide capsule", accent = w) {
+                com.shelf.launcher.data.Features.carouselWide.value = !w
+            }
+        }
+        MutedNote("As you scroll a carousel, the game you're on unfolds into its wide capsule (SteamGridDB's wide art) and folds back into a cover as you move on. Tile shows square tiles in the carousels too.")
     }
     // Update 164: every kind of cartridge, flat and 3D, as a look of its own.
     Spacer(Modifier.height(8.dp))

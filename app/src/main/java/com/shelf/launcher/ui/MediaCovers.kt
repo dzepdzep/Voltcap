@@ -24,6 +24,20 @@ internal class CoverTpl(
 internal object MediaCovers {
     fun of(platform: String?): CoverTpl? = platform?.let { all[it] ?: byHand[it] }
 
+    /** Update 166: Voltcap's own cases (Steam, Android): no real case to show instead, so they're always used. */
+    private val OWN = setOf("Steam", "App", "Android")
+
+    /** Update 166: [platform]'s case when it's one of Voltcap's own (Steam, Android), whatever the cover templates switch says. */
+    fun own(platform: String?): CoverTpl? = platform?.takeIf { it in OWN }?.let { of(it) }
+
+    /**
+     * Update 166: the cover template to draw [platform]'s case with: Voltcap's own (Steam, Android) always — they were
+     * plain covers with the cover templates off — the others with Settings › Cover templates on ([mixed]: not in a list
+     * mixing consoles, as before).
+     */
+    fun used(platform: String?, mixed: Boolean = false): CoverTpl? =
+        own(platform) ?: if (!mixed && com.shelf.launcher.data.Features.coverTemplates.state.value) of(platform) else null
+
     /** Update 129 (by hand): every console with a case here (R1 › Case tile). */
     fun keys(): List<String> = (all.keys + byHand.keys).toList()
 

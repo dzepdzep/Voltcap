@@ -101,7 +101,11 @@ internal fun StyleCrossMenu(c: StyleCtx, modifier: Modifier) {
                 slide.snapTo(CategorySlide.dir.toFloat())
                 slide.animateTo(0f, tween(360, easing = FastOutSlowInEasing))
             }
-            CrossIcons(c, baseX, iconTop, spacing, iconBig, iconSmall, slide.value, labels, k, maxWidth)
+            // Update 166: in the very frame the category changes (before the effect above has snapped the slide), the
+            // strip is drawn already shifted the way you went — it used to draw one frame with the new category in the
+            // old places, so the next console's logos flashed on the folders before the strip slid ("random icons").
+            val slideNow = if (CategorySlide.tick != seenTick) CategorySlide.dir.toFloat() else slide.value
+            CrossIcons(c, baseX, iconTop, spacing, iconBig, iconSmall, slideNow, labels, k, maxWidth)
             if (c.game == null) {
                 Text(
                     "No games match.", color = Color.White.copy(alpha = 0.75f), fontSize = 14.sp,
@@ -109,7 +113,7 @@ internal fun StyleCrossMenu(c: StyleCtx, modifier: Modifier) {
                 )
             } else {
                 // The new category's games glide in from the side you went to and fade up (the icons move with them).
-                val s = slide.value
+                val s = slideNow
                 // Update 112: by default the Cross menu's games fade in (Home › Animations › this layout: Slide brings back
                 // the glide from the side, Just change neither).
                 MotionPrefs.observe()
@@ -334,7 +338,8 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
         }
         // (Update 127: drawn only when on screen. A "return@key" out of the inline key { } broke the Android build:
         // D8 "Method name '<anonymous>' in class '$$$$$NON_LOCAL_RETURN$$$$$' cannot be represented in dex format".)
-        if (y <= height && y >= -itemH) {
+        // (Update 166: no games above the icons any more — the one you leave going down fades out on its way up.)
+        if (y <= height && y >= -itemH && rel > -0.7f) {
             val near = (1f - kotlin.math.abs(rel)).coerceIn(0f, 1f)
             val w = lerp(thumbSmall, thumbBig, near)
             val on = v == vf
@@ -345,7 +350,7 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
             Row(
                 Modifier
                     .offset(x = x, y = y)
-                    .alpha(if (rel < -0.3f) 0.5f else 1f)
+                    .alpha(if (rel < 0f) (1f + rel * 1.45f).coerceIn(0f, 1f) else 1f)
                     .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } },
                 verticalAlignment = Alignment.CenterVertically
             ) {

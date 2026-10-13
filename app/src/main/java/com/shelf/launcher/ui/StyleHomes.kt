@@ -481,6 +481,10 @@ internal fun styleHomeKey(
                     if (next != focus) {
                         setFocus(next)
                         sound(UiSound.MOVE)
+                    } else if (k == Key.DirectionDown && first && count > 1) {
+                        // Update 166: ▼ from the last game goes round to the first.
+                        setFocus(0)
+                        sound(UiSound.MOVE)
                     } else if (first) reach(k == Key.DirectionUp)
                 }
             }

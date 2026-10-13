@@ -104,11 +104,11 @@ private class ShelfPlan(val slots: List<ShelfSlot>, val rows: Int, val rowH: Dp,
  */
 private fun spineAspect(platform: String): Float =
     // (Update 126: your own console spine's shape first, so its picture fills the slot as it is.)
-    (if (Features.coverTemplates.state.value) CustomSpines.of(platform)?.aspect ?: MediaCovers.of(platform)?.shelfSpineAspect() else null)?.coerceIn(0.05f, SPINE_MAX_ASPECT) ?: 0.085f
+    (if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect ?: MediaCovers.of(platform)?.shelfSpineAspect() else null)?.coerceIn(0.05f, SPINE_MAX_ASPECT) ?: 0.085f
 
 /** Update 126: the shape of [platform]'s own console spine (null: none), for the same-height shelves too. */
 private fun customSpineAspect(platform: String): Float? =
-    if (Features.coverTemplates.state.value) CustomSpines.of(platform)?.aspect?.coerceIn(0.05f, SPINE_MAX_ASPECT) else null
+    if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect?.coerceIn(0.05f, SPINE_MAX_ASPECT) else null
 
 /**
  * Lays the games out on shelves [width] wide: tries one shelf, then two, then three (each shorter, so more spines fit),
@@ -460,7 +460,7 @@ private fun Arrangement_Center() = androidx.compose.foundation.layout.Arrangemen
 private fun pulledAspect(platform: String, side: Boolean): Float {
     val box = MediaTemplates.of(platform)?.box
     if (side && box != null) return box.aspect * 1.12f
-    val cov = if (Features.coverTemplates.state.value) MediaCovers.of(platform) else null
+    val cov = MediaCovers.used(platform)
     return (cov?.frontAspect ?: 0.7f).coerceIn(0.55f, 1.45f)
 }
 
@@ -508,7 +508,7 @@ internal fun PulledOutCase(
     val waiting = waitForCase && physical == null && ((side && box != null) || mode == Features.ShelfPulled.FRONT)
     if (waiting) {
         val aspect = if (side && box != null) box.aspect * 1.12f
-            else (if (Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null) ?: realCaseMm(g.platform)?.let { it.first / it.second } ?: 0.7f
+            else MediaCovers.used(g.platform)?.frontAspect ?: realCaseMm(g.platform)?.let { it.first / it.second } ?: 0.7f
         BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
             val w = minOf(maxWidth, maxHeight * aspect)
             Box(Modifier.size(w, w / aspect).clip(RoundedCornerShape(3.dp)).background(CaseArtPlaceholder).border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(3.dp)))
@@ -520,7 +520,7 @@ internal fun PulledOutCase(
         Box3D(box, front, isBox, gameDisplayName(g.name), modifier, spin = false, detail = detail, realSpine = ownSpine)
         return
     }
-    val cov = if (Features.coverTemplates.state.value && mode != Features.ShelfPulled.COVER) MediaCovers.of(g.platform) else null
+    val cov = if (mode != Features.ShelfPulled.COVER) MediaCovers.used(g.platform) else null
     var scanFailed by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
     if (mode == Features.ShelfPulled.FRONT && scan != null && !scanFailed) {
         // (Update 151: on the shelf the scan fades in over the plain case, not over the cover.)
@@ -596,7 +596,7 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     }
     // Update 125: no real spine: your own console spine (CustomSpines; Steam's and Android's too), the name fitted in the
     // box left for it.
-    val tpl = if (Features.coverTemplates.state.value || forAll || matching) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
+    val tpl = if (Features.coverTemplates.state.value || forAll || matching || MediaCovers.own(g.platform) != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     val name = gameDisplayName(g.name)
     if (tpl != null) {
         // (Update 147: at the console spine's own shape, not stretched to a wider slot.)

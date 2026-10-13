@@ -350,7 +350,7 @@ internal fun isFreeMedia(type: com.shelf.launcher.data.CardArtType, platform: St
     // Box art always uses the template pack's case when there's one for the console.
     // (Update 129: the case picked for all on R1 › Case, when there is one.)
     com.shelf.launcher.data.CardArtType.CASE -> LookStyles.casePlatform(platform).let { p ->
-        MediaTemplates.of(p)?.box != null || (Features.coverTemplates.state.value && MediaCovers.of(p) != null)
+        MediaTemplates.of(p)?.box != null || MediaCovers.used(p) != null
     }
     else -> false
 }
@@ -417,7 +417,9 @@ internal fun PhysicalMedia(
     /** The game's cover, for the front of its case when "Disc in its case" is on. */
     caseCover: Any? = null,
     /** Update 136: the game's name, for the 3D models' name strip (Settings › Game look › 3D models › Name on the label). */
-    title: String? = null
+    title: String? = null,
+    /** Update 168: the disc alone even with "Disc in its case" on (the carousels' 3D case draws the case itself). */
+    noCase: Boolean = false
 ) {
     // Update 136: a piece of your 3D shape library, the cover in its window; turned a little, the game you're on facing
     // you (Settings › Game look › 3D models › Stand).
@@ -444,7 +446,7 @@ internal fun PhysicalMedia(
     }
     val tpl = MediaTemplates.of(platform)
     // "Disc in its case": the case with the disc half out of it, spinning (disc games only).
-    if (tpl != null && discCaseOn(tpl)) {
+    if (tpl != null && discCaseOn(tpl) && !noCase) {
         val front = caseCover ?: label.takeIf { !labelIsScan }
         DiscInCase(tpl, boxFront(tpl.box!!, front, null).first, false, label ?: caseCover, modifier, platform = platform)
         return
@@ -598,7 +600,7 @@ internal fun casePeek(type: Art, platform: String?): Float {
     val tpl = MediaTemplates.of(p) ?: return 0f
     val box = tpl.box ?: return 0f
     if (!discCaseOn(tpl)) return 0f
-    val cov = if (Features.coverTemplates.state.value) MediaCovers.of(p) else null
+    val cov = MediaCovers.used(p)
     val scan = Features.originalCases.state.value
     val aspect = if (scan) cov?.frontAspect ?: box.aspect else if (p == "PS1") cov?.frontAspect ?: box.aspect else box.aspect
     return discFrac(p, aspect, box, scan) * DISC_OUT

@@ -256,6 +256,41 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 168
+- **Mixer one-shot way:** the Classic's PServer (`/system/bin/pservice`, popen) runs the helper fine but the `daemon`
+  never stays. `AppMixer.keeperDied` (≥ 2 → `oneShot`, persisted as meta `keeper_dies`): `apply()` HELPER runs
+  `holdOnce()` (helper mode `hold uid:amp …` = apply + list in one process) instead of starting the daemon; the
+  EffectLoop (AudioPlaybackCallback pokes it) runs `holdOnce` per change, waits up to 30 s otherwise, and uses its list
+  for the effect on handle-less players. Mixer check's Volume keeper line says so. The adb shell user can call the
+  helper directly (`CLASSPATH=$(pm path …) app_process /system/bin … MixerHelper list|apply|hold`); shell can't reach
+  PServerBinder (`service call` → "does not exist").
+- **Cross menu lists:** `Features.crossCats` (category keys); `LauncherUiState.categoryOrder` keeps them on the Cross
+  even when hidden; chips in `StyleHomeSettings.CrossSettings`.
+- **Carousel case media:** `caseMediaFor()` / `CaseMedia` / `CaseWithMedia3D` (Carousel.kt) for CASE / CASE_REAL with
+  `discCase` or `caseWithMedia` when `cases3d`; slot widened 2 × `room` (case centred); `PhysicalMedia(noCase = true)`.
+- **Next:** 169 the cartridge cover templates (`tpl_cart_*`, `tpl_cartl_*`, 51) without native branding, the console logo
+  instead. Still open from before: custom case templates in the SteamGridDB cover's shape, Grid default size, TV room
+  grid ignores the look, Tile look row off the bottom, Game shelf front cover late, Thor second screen, Asobi shortcuts.
+
+## State after update 167
+- **Case shapes / sizes:** `case3dAspect` ignores `mixed` (real shape always); `realCaseScale` = (longest/190)^0.6,
+  0.8…1; Carousel `caseRefMm` (Box flow or CASE_REAL: the biggest case's longest side among the games) → `realK`
+  (^0.6, 0.74…1) on the 3D case's slot height, `floorDrop` keeps it on the floor.
+- **MediaCovers.own / used:** Steam / App / Android cases always (`OWN`); `used(p, mixed)` replaces every
+  `coverTemplates ? MediaCovers.of(p)`. Case3D: `framed()` puts the art in the own case's window under its band; spine
+  template used for them too.
+- **Carousel:** `carouselTiles()` (Tile look → aspect 1); `carouselWideOn()` + `Features.carouselWide` (set by the look
+  step "Covers · wide capsule", chip in Game look) — the focused item's aspect animates to CAPSULE_ASPECT and it draws as
+  CAPSULE; the middle-width unit follows.
+- **Keys:** Grid / TV ▲ ▼ with `loopRow` go through `viewModel.moveFocus(±cols)`; Timeline ▼ wraps with Endless; Cross
+  ▼ from the last game → 0.
+- **Cross menu:** `slideNow` (the pending CategorySlide.dir in the frame the category changes); CrossList hides rel ≤ −0.7.
+- **Warm-up:** `warmSoft()` (RealMedia.kt) decodes the 480 / 640 px soft bitmaps ahead for 3D cases / pieces; Case3D
+  `hueFront` while loading.
+- **Packs.refreshOld():** at init, MODELS items with an old marker (`.v68`) and no new one are fetched again.
+- **Next:** 168 the volume mixer without Shizuku (built-in Wireless debugging pairing → helper as shell); 169 the
+  cartridge cover templates without native branding.
+
 ## State after update 166.1
 - **Fluent turns:** `InspectModel` draws the two nearest pictures as `InspectFrame`s, each in its own layer turned
   `d` / `d − 20` degrees (d = past the lower picture), crossfaded over d 7…13. `Model3DLive` turns its layer by

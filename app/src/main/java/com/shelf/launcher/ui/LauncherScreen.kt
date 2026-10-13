@@ -5123,8 +5123,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     (event.key == Key.DirectionUp || event.key == Key.DirectionDown)
                 ) {
                     if (event.type == KeyEventType.KeyDown && event.nativeKeyEvent.downTime > dialogClosedAt) {
-                        val next = state.focusedIndex + (if (event.key == Key.DirectionDown) GridHome.columns else -GridHome.columns)
-                        if (next in visibleGames.indices) { viewModel.setFocus(next); sounds?.play(UiSound.MOVE) }
+                        val cols = GridHome.columns.coerceAtLeast(1)
+                        val down = event.key == Key.DirectionDown
+                        val n = visibleGames.size
+                        val next = state.focusedIndex + (if (down) cols else -cols)
+                        // Update 166: Endless on: ▲ ▼ go by the view model's step — past the last row ▼ carries on round to
+                        // the first (and ▲ from the first row to the last); it used to do nothing there, so only ◀ ▶ moved,
+                        // and a plain jump left the endless grid's place behind.
+                        if (state.appearance.loopRow && n >= 2) { viewModel.moveFocus(if (down) cols else -cols); sounds?.play(UiSound.MOVE) }
+                        else if (next in visibleGames.indices) { viewModel.setFocus(next); sounds?.play(UiSound.MOVE) }
+                        // (Update 166: the last row shorter than the others: ▼ from above its end lands on the last game.)
+                        else if (down && state.focusedIndex / cols < (n - 1) / cols) { viewModel.setFocus(n - 1); sounds?.play(UiSound.MOVE) }
                     }
                     return@onKeyEvent true
                 }

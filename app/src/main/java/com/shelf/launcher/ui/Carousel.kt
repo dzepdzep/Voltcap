@@ -103,7 +103,7 @@ internal fun ShelfGameArt(
     val frame = Modifier
         .then(if (glowOn) Modifier.softGlow(ShelfTheme.accent, 2.dp, 0.5f + 0.5f * pulse) else Modifier)
         .then(if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier)
-    val cov = if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform) else null
+    val cov = MediaCovers.used(g.platform, mixed)
     if (isFreeMedia(gArt, g.platform)) {
         val typed = typedArtFor(gArt, physicalMedia[g.stableKey], screenshots[g.stableKey], g.platform)
         Box(modifier.awardShine(g.stableKey, on)) {
@@ -189,17 +189,26 @@ internal fun ShelfGameArt(
 internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardArtType, hidden: Set<String>, mixed: Boolean, cover: String? = null): Float {
     // Update 115: the wide looks at their own shape (they used to be cropped into a cover's).
     if (cardArtType == com.shelf.launcher.data.CardArtType.CAPSULE) return CAPSULE_ASPECT
+    // Update 166: the Tile look in the carousels too: every cover a square tile (it was the Voltcap row's only).
+    if (cardArtType == com.shelf.launcher.data.CardArtType.COVER && carouselTiles()) return 1f
     if (cardArtType == com.shelf.launcher.data.CardArtType.HERO || cardArtType == com.shelf.launcher.data.CardArtType.SCREENSHOT) return 16f / 9f
     val gArt = artForGame(cardArtType, g.platform, hidden, mixed)
     if (isFreeMedia(gArt, g.platform)) {
         if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC)?.aspect ?: 0.7f
         return MediaCovers.of(g.platform)?.frontAspect ?: 0.7f
     }
-    if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.let { return it.frontAspect }
+    MediaCovers.used(g.platform, mixed)?.let { return it.frontAspect }
     // Update 154: a plain cover at its own shape once it has loaded (it was cut to 0.7 — tops, bottoms and sides of
     // square GBA boxes, wide PC covers and tall posters were cut off).
     return CoverAspects.of(cover) ?: 0.7f
 }
+
+/** Update 166: the Tile look (square tiles), not under Spines. */
+internal fun carouselTiles(): Boolean = Features.squareTiles.state.value && !Features.spineLook.state.value
+
+/** Update 166: the game you're on as its wide capsule in the carousels ("Covers · wide capsule"). */
+internal fun carouselWideOn(cardArtType: com.shelf.launcher.data.CardArtType): Boolean =
+    Features.carouselWide.state.value && cardArtType == com.shelf.launcher.data.CardArtType.COVER && !carouselTiles() && !Features.spineLook.state.value
 
 /** Update 154: the shape (width / height) of each plain cover the carousel has loaded, so its slot fits it whole. */
 internal object CoverAspects {
@@ -562,6 +571,20 @@ internal fun GameCarousel(
         }.distinct()
         prefetchThumbs(warmCtx, urls)
         warmStyleArt(warmCtx, urls)
+        // Update 166: the 3D cases' and 3D pieces' covers too (they read their own plain bitmaps: Case3D 480 px, the 3D
+        // pieces 640 px), a little further out — Box flow shows many at once.
+        val f = Features
+        val box3d = f.carousel3d.value || Carousel.view.cases
+        val models = Models3D.on() && cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+        if (box3d || models) {
+            val far = reach + 3
+            val more = ((focus - far)..(focus + far)).mapNotNull { i ->
+                val g = games.getOrNull(if (loop) i.mod(n) else i) ?: return@mapNotNull null
+                overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
+            }.distinct()
+            if (box3d) warmSoft(warmCtx, more, 480)
+            if (models) warmSoft(warmCtx, more, 640)
+        }
     }
     val spines = spinesOn(cardArtType)
     val view = Carousel.view
@@ -609,6 +632,11 @@ internal fun GameCarousel(
     val hidden = LocalHiddenMedia.current
     val mixed = androidx.compose.runtime.remember(games) { mixedConsoles(games) }
     val realRef = androidx.compose.runtime.remember(games, cardArtType) { realCaseRef(cardArtType, games) }
+    // Update 166: Box flow's cases (and Cases · real sizes) at their real sizes against the biggest one here.
+    val caseRefMm = androidx.compose.runtime.remember(games, cardArtType, Carousel.view) {
+        if (Carousel.view != CarouselView.BOX_FLOW && cardArtType != com.shelf.launcher.data.CardArtType.CASE_REAL) 0f
+        else games.asSequence().map { it.platform }.distinct().mapNotNull { realCaseMm(it) }.maxOfOrNull { maxOf(it.first, it.second) } ?: 0f
+    }
     val dens = androidx.compose.ui.platform.LocalDensity.current.density
     val latestFocus by rememberUpdatedState(focus)
     val latestLoop by rememberUpdatedState(looping)
@@ -739,7 +767,7 @@ internal fun GameCarousel(
         // (Update 162: the packed views — Box flow, Spine wall, Turned row — keep their gap beside it by its width too.)
         // (No room yet — a 0-high box while the screen opens: 1, not 0 / 0 = NaN, which crashes the offset.)
         val unitTarget = games.getOrNull(focus)?.takeIf { bigW > 0.dp }?.let { fg ->
-            val a = if (cases3d) case3dAspect(fg, mixed) else shelfArtAspect(fg, cardArtType, hidden, mixed)
+            val a = if (cases3d) case3dAspect(fg, mixed) else if (carouselWideOn(cardArtType)) CAPSULE_ASPECT else shelfArtAspect(fg, cardArtType, hidden, mixed)
             val sh = carouselSlotH(a, bigW, bigH, mixed)
             ((sh * a) / bigW).coerceIn(0.6f, 1.8f)
         } ?: 1f
@@ -761,6 +789,7 @@ internal fun GameCarousel(
                 physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, accentNow, pulseOn
             )
         }
+        ctx.caseRefMm = caseRefMm
         // Update 162: while a category change slides, the collection that was here goes on along the path (layer 1)
         // and the new one comes in after it from the side the change came from (layer 0), each fading as it goes.
         val showOld = swap.token != 0 && swap.doneToken.intValue != swap.token && swap.oldGames.isNotEmpty()
@@ -901,6 +930,12 @@ private class CarouselCtx(
     val screenshots: Map<String, List<String>>, val mixed: Boolean, val realRef: RealCaseRef?, val hidden: Set<String>,
     val focusBorder: Boolean, val accent: Color, val pulseOn: Boolean
 ) {
+    /**
+     * Update 166: the biggest case among the games (its longest side, mm) when the 3D cases stand at their real sizes
+     * (Box flow, and the Cases · real sizes look in any view); 0: every case fills its slot. Set each composition.
+     */
+    var caseRefMm = 0f
+
     /** [Carousel.placeInto] for this carousel's view. */
     fun place(p: Carousel.Place, rel: Float): Carousel.Place = Carousel.placeInto(p, rel, side, view, unit.value)
 
@@ -991,11 +1026,27 @@ private fun CarouselItem(
     val model = if (c.cases3d) (if (c.modelLook || Features.caseModels3d.state.value) Models3D.caseModel(g.platform) else null)
         else if (c.modelLook && freeArt) Models3D.available(g.platform) else null
     // Slot in the item's own shape (no empty bands round it), as tall as the middle one × its scale.
-    val aspect = if (model != null) Models3D.aspect(model) else if (c.cases3d) case3dAspect(g, c.mixed) else if (spineHere) SPINE_ASPECT
-        else shelfArtAspect(g, c.cardArtType, c.hidden, c.mixed, cover)
-    val h0 = if (model != null || spineHere) minOf(c.bigH, if (aspect > 1f) c.bigW / aspect * 1.25f else c.bigH)
+    // Update 166: "Covers · wide capsule": the one you're on unfolds into its wide capsule (and folds back as you move on).
+    val wideHere = on && !spineHere && model == null && !c.cases3d && carouselWideOn(c.cardArtType)
+    val aspect0 = if (model != null) Models3D.aspect(model) else if (c.cases3d) case3dAspect(g, c.mixed) else if (spineHere) SPINE_ASPECT
+        else if (wideHere) CAPSULE_ASPECT else shelfArtAspect(g, c.cardArtType, c.hidden, c.mixed, cover)
+    val aspect by androidx.compose.animation.core.animateFloatAsState(aspect0, androidx.compose.animation.core.tween(220), label = "carouselWide")
+    val hFull = if (model != null || spineHere) minOf(c.bigH, if (aspect > 1f) c.bigW / aspect * 1.25f else c.bigH)
         else carouselSlotH(aspect, c.bigW, c.bigH, c.mixed)
-    val w0 = h0 * aspect
+    // Update 166: a 3D case at its real size against the biggest case here (Box flow, Cases · real sizes) — a Game Boy box
+    // shorter than a DVD case — standing on the same floor (moved down by what it lost). Softened so the small ones
+    // stay easy to see.
+    val realK = if (c.cases3d && c.caseRefMm > 0f) realCaseMm(g.platform)?.let { (w, h) ->
+        Math.pow((maxOf(w, h) / c.caseRefMm).toDouble(), 0.6).toFloat().coerceIn(0.74f, 1f)
+    } ?: 1f else 1f
+    val h0 = hFull * realK
+    val floorDrop = (hFull - h0) / 2f
+    // Update 168: the case looks with their media (Case + disc, 3D case + disc, Case + its media) in the 3D-case views
+    // too: the disc half out of the case behind it, or the cartridge / disc leaning against it — the views drew the case
+    // alone. The slot widens the same both sides, so the case stays in the middle.
+    val withMedia = if (c.cases3d && model == null) caseMediaFor(g, c.cardArtType, c.mixed) else null
+    val mediaRoom = withMedia?.let { it.room(realCaseMm(g.platform)) } ?: 0f
+    val w0 = h0 * aspect + h0 * mediaRoom * 2f
     // A 3D case or model turns in its own drawing, a spine faces you: only the other flat art turns its slot.
     // (Update 144: at most 78°, never edge-on.)
     val turns = !(sideways || c.cases3d || model != null || (spineHere && (c.view == CarouselView.SPINE_WALL || c.view == CarouselView.BOX_FLOW)))
@@ -1043,7 +1094,7 @@ private fun CarouselItem(
                     }
                 }
                 translationX = tx
-                translationY = ps.p.y
+                translationY = ps.p.y + floorDrop.toPx() * s
                 scaleX = s; scaleY = s
                 rotationZ = ps.p.turnZ
                 alpha = a
@@ -1063,12 +1114,84 @@ private fun CarouselItem(
             }
         ) {
             if (model != null) CarouselModel(model, cover, g, on, yawOf, shadeOf)
+            else if (c.cases3d && withMedia != null) CaseWithMedia3D(
+                g, cover, c.physicalMedia[g.stableKey], aspect, h0, withMedia, c, on, yawOf, shadeOf
+            )
             else if (c.cases3d) Case3D(
                 g, cover, c.physicalMedia[g.stableKey], 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
                 frame = on && c.focusBorder, frameColor = c.accent, yawOf = yawOf, shadeOf = shadeOf,
                 realFront = c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
-            ) else CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, c.cardArtType, c.art, c.overrides, c.physicalMedia, c.screenshots, c.mixed, c.realRef, c.pulseOn)
+            ) else CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, c.physicalMedia, c.screenshots, c.mixed, c.realRef, c.pulseOn)
         }
+    }
+}
+
+/** Update 168: how a 3D case in a carousel shows its media: the disc half out of it, or the piece leaning against it. */
+private class CaseMedia(val pick: MediaPick, val discOut: Boolean) {
+    private val round get() = pick.shell.disc || pick.shell == MediaShell.UMD
+    /** The media's height against the case's. */
+    fun size(caseMm: Pair<Float, Float>?): Float =
+        if (discOut) ((caseMm?.let { 120f / it.second } ?: 0.63f) * 0.92f).coerceIn(0.45f, 0.95f) else if (round) 0.6f else 0.5f
+    /** Its width against its height. */
+    val aspect: Float get() = if (round) 1f else pick.aspect
+    /** How far it reaches past the case's right edge, against the case's height. */
+    fun room(caseMm: Pair<Float, Float>?): Float = size(caseMm) * aspect * (if (discOut) 0.5f else 0.65f)
+}
+
+/** Update 168: [g]'s media beside its 3D case in the look [type] (Case + disc / 3D case + disc / Case + its media), or null. */
+private fun caseMediaFor(g: Game, type: com.shelf.launcher.data.CardArtType, mixed: Boolean): CaseMedia? {
+    if (type != com.shelf.launcher.data.CardArtType.CASE && type != com.shelf.launcher.data.CardArtType.CASE_REAL) return null
+    val disc = Features.discCase.state.value
+    val lean = Features.caseWithMedia.state.value
+    if (!disc && !lean) return null
+    val pick = mediaFor(g.platform, mixed) ?: return null
+    if (pick.platform.startsWith(MODEL_3D)) return null
+    val round = pick.shell.disc || pick.shell == MediaShell.UMD
+    return when {
+        lean -> CaseMedia(pick, discOut = false)
+        disc && round -> CaseMedia(pick, discOut = true)
+        else -> null
+    }
+}
+
+/**
+ * Update 168: the 3D case with its media, turning together: the disc behind it, half out at its right (spinning), or the
+ * cartridge / disc leaning against its lower right in front.
+ */
+@Composable
+private fun CaseWithMedia3D(
+    g: Game, cover: String?, physical: List<Pair<String, String>>?, caseAspect: Float, h: androidx.compose.ui.unit.Dp,
+    m: CaseMedia, c: CarouselCtx, on: Boolean, yawOf: () -> Float, shadeOf: () -> Float
+) {
+    val mm = realCaseMm(g.platform)
+    val mh = h * m.size(mm)
+    val mw = mh * m.aspect
+    val caseW = h * caseAspect
+    val label = typedArtFor(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, physical, null, g.platform)
+    val dens = c.dens
+    @Composable
+    fun MediaPiece(mod: Modifier) {
+        Box(mod.graphicsLayer {
+            // Turned with the case, round the case's own middle.
+            rotationY = yawOf()
+            cameraDistance = 12f * dens
+            val sh = shadeOf()
+            alpha = 1f - 0.35f * sh
+        }) {
+            PhysicalMedia(m.pick.shell, label ?: cover, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover, title = g.name, noCase = true)
+        }
+    }
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        // The disc behind the case, its middle at the case's right edge.
+        if (m.discOut) MediaPiece(Modifier.size(mw, mh).offset(x = caseW / 2f))
+        Box(Modifier.size(caseW, h)) {
+            Case3D(
+                g, cover, physical, 0f, caseAspect, Modifier.fillMaxSize(), reflect = c.reflect,
+                frame = on && c.focusBorder, frameColor = c.accent, yawOf = yawOf, shadeOf = shadeOf, realFront = true
+            )
+        }
+        // The cartridge / disc leaning against the case's lower right, in front.
+        if (!m.discOut) MediaPiece(Modifier.size(mw, mh).offset(x = caseW / 2f + mw * 0.15f, y = (h - mh) / 2f).graphicsLayer { rotationZ = 8f })
     }
 }
 

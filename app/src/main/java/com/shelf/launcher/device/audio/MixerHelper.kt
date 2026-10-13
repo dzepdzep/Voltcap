@@ -24,6 +24,9 @@ package com.shelf.launcher.device.audio
  *  - `daemon uid:volume …`: keeps those volumes on every player of those apps, new ones included (games and
  *    players re-create theirs), checking four times a second. A volume of 1.0 is applied once and dropped (that
  *    app goes back to normal). Runs until Voltcap stops it (pkill) or the device restarts.
+ *  - `hold uid:volume …`, update 168: sets those volumes once on every player now (as `apply`) and answers with the
+ *    list (as `list`) — one process for both. Used where the firmware ends the background `daemon` right after its
+ *    start (the Retroid Pocket Classic's root service): Voltcap runs it each time Android reports a player starting.
  *  - `--duck` before the volumes (`apply` / `daemon`), update 121: the second way, the one Android itself
  *    uses to duck an app under a notification — a constant VolumeShaper (fixed id [SHAPER_ID]) on each
  *    player, which the app's own volume calls can't undo; the player's own volume goes back to 1.0 (the two
@@ -56,6 +59,15 @@ object MixerHelper {
                 var failed = 0
                 players().forEach { p -> wanted[p.uid]?.let { v -> if (hold(p, v, duck)) ok++ else failed++ } }
                 say("SET;$ok;$failed")
+            }.onFailure { say("ERR:" + why(it)) }
+            "hold" -> runCatching {
+                val duck = "--duck" in args
+                val wanted = parse(args.drop(1))
+                val all = configs()
+                val list = players(all)
+                list.forEach { p -> wanted[p.uid]?.let { v -> hold(p, v, duck) } }
+                val hidden = all.size - list.size
+                say((listOf("OK", "${all.size}", "$hidden") + list.map { p -> "${p.uid},${p.usage},${p.state},${p.session},${if (p.proxy) 1 else 0}" }).joinToString(";"))
             }.onFailure { say("ERR:" + why(it)) }
             "daemon" -> daemon(args.drop(1), duck = "--duck" in args)
             else -> System.err.println("mixer: ping | list | apply uid:vol … | daemon uid:vol …")

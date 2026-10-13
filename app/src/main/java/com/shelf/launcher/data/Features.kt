@@ -310,6 +310,11 @@ object Features {
     /** Game look "Tile": the Voltcap row's covers as big squares (the Tile home's tiles), the one you're on a bit bigger. */
     val squareTiles = BoolPref("look_square_tiles", false)
     /**
+     * Update 166: in the carousels, the game you're on unfolds into its wide capsule as you scroll (the look "Covers ·
+     * wide capsule"; the Voltcap row has it from the row's own "It shows as"). Off: it stays a cover.
+     */
+    val carouselWide = BoolPref("carousel_wide", false)
+    /**
      * Update 113: game look "Spines": every game as its spine (its own spine scan, else the console's spine with the
      * name on it) — in the Voltcap row, the grid, the carousels and the style layouts (not the Hero carousel's
      * column or the Tile look); in the row and the carousels the game you're on shows its cover, like a game taken
@@ -1114,6 +1119,11 @@ object Features {
      * last played first, each with how far you are; A opens its achievements. Only on the Cross menu.
      */
     val crossTrophyCat = BoolPref("cross_trophy_cat", true)
+    /**
+     * Update 168: the lists the Cross menu shows beside the consoles even when they're hidden in Settings › Categories
+     * (Continue playing, Favourites, Most played, the collections…): category keys, as in the category order.
+     */
+    val crossCats = SetPref("cross_cats")
     /** Cross menu: size of the category icons and the list (%). */
     val crossScale = IntPref("cross_scale", 100, 70..140)
     /** Game size of the layouts without a size of their own (update 104): "LAYOUT=pct;…" (70–140, 100 = normal), set by the R1 Size tile. */

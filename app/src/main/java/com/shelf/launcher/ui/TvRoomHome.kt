@@ -645,9 +645,9 @@ private fun SpineShelf(
                 val g = games[i]
                 val on = vi == focusItem
                 val pull by animateFloatAsState(if (on) 1f else 0f, tween(200), label = "spinePull")
-                val cov = if (Features.coverTemplates.state.value) MediaCovers.of(g.platform) else null
+                val cov = MediaCovers.used(g.platform)
                 // (Update 129: or the spine picked for all on R1 › Spine.)
-                val spineTpl = if (Features.coverTemplates.state.value || LookStyles.spineForAll()) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
+                val spineTpl = if (Features.coverTemplates.state.value || LookStyles.spineForAll() || MediaCovers.own(g.platform) != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
                 // A real spine keeps its own proportions (the pack's spines run from slim to chunky; update 124: never wider
                 // than a tenth of its height).
                 // (Update 126: your own console spine at its own shape, so nothing of it is cut off.)

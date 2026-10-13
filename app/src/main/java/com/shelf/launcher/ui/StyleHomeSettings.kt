@@ -238,6 +238,22 @@ private fun CrossSettings() {
     Toggle(Icons.Filled.EmojiEvents, "Achievements in the menu's style", "Y (or Achievements in the game window) opens the game's achievements as a column beside it, like a console's trophy list: ▲ ▼ move, X all / still to get / earned, A the full list, B back. Off: the achievement list popup.", Features.crossTrophies)
     // Update 132.
     Toggle(Icons.Filled.EmojiEvents, "Trophies category", "A Trophies icon in the strip: every game with achievements, last played first, with how far you are under the one you're on; A opens its achievements. Only on this layout (move it in Settings › Categories › Category order).", Features.crossTrophyCat)
+    // Update 168: lists beside the consoles, for this layout only.
+    Spacer(Modifier.height(8.dp))
+    SectionLabel("Lists in the strip")
+    val picked = Features.crossCats.state.value
+    ChipFlow {
+        val lists = listOf(
+            com.shelf.launcher.SpecialFilter.RECENT, com.shelf.launcher.SpecialFilter.FAVORITES, com.shelf.launcher.SpecialFilter.MOST_PLAYED,
+            com.shelf.launcher.SpecialFilter.IN_PROGRESS, com.shelf.launcher.SpecialFilter.ALMOST_MASTERED, com.shelf.launcher.SpecialFilter.MASTERED,
+            com.shelf.launcher.SpecialFilter.NEVER_PLAYED, com.shelf.launcher.SpecialFilter.FORGOTTEN, com.shelf.launcher.SpecialFilter.EMULATORS
+        ).map { it.name to it.label } + listOf(com.shelf.launcher.data.CategorySettings.COLLECTIONS to "Collections", com.shelf.launcher.data.CategorySettings.ALL to "All games")
+        lists.forEach { (key, label) ->
+            val on = key in picked
+            Chip((if (on) "✓ " else "") + label, accent = on) { Features.crossCats.value = if (on) picked - key else picked + key }
+        }
+    }
+    MutedNote("These show as icons in the strip beside the consoles, on the Cross menu only, even when they're hidden in Settings › Categories (where their order is set too). The others follow Settings › Categories.")
 }
 
 @Composable

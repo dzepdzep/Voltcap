@@ -85,6 +85,8 @@ object Packs {
         com.shelf.launcher.ui.ModelColors.init(c.applicationContext)
         PhysicalOverrides.init(c.applicationContext)
         rescan(c.applicationContext)
+        // (Update 166: what you had of the 3D pack, in its new version.)
+        refreshOld(c.applicationContext)
     }
 
     private fun rescan(c: Context) {
@@ -178,8 +180,25 @@ object Packs {
 
     /** Downloads what [ch] wants and isn't here yet ([consoles]: the library's consoles). Runs in the background. */
     fun download(c: Context, ch: Choice, consoles: Set<String>) {
+        fetchAll(c.applicationContext, wanted(ch, consoles).filter { !has(it) })
+    }
+
+    /**
+     * Update 166: the 3D pieces you had from before (their old marker, e.g. "<id>.v68") fetched again in their new
+     * version by themselves, in the background, at start — after 166 the 3D looks showed the flat looks until you
+     * downloaded the pack again by hand.
+     */
+    fun refreshOld(c: Context) {
         val app = c.applicationContext
-        val todo = wanted(ch, consoles).filter { !has(it) }
+        val d = dir(app, Pack.MODELS)
+        val old = itemsOf(Pack.MODELS).filter { !has(it) && OLD_MODEL_MARKERS.any { m -> File(d, "${it.name}$m").exists() } }
+        fetchAll(app, old)
+    }
+
+    /** Update 166: the markers of the 3D pack's earlier versions. */
+    private val OLD_MODEL_MARKERS = listOf(".v68")
+
+    private fun fetchAll(app: Context, todo: List<Item>) {
         if (todo.isEmpty() || progress.value != null) return
         stop = false
         progress.value = Progress(0, todo.size, todo.first().pack.label, 0)

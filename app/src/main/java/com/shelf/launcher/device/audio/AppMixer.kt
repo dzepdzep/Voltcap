@@ -277,12 +277,14 @@ object AppMixer {
                 releasePlayers(c, effective(c).keys)
             }
         }
+        // (Update 168: a firmware seen ending the volume keeper before: the one-shot way from the start.)
+        if (keeperDied < 2 && meta(c).getBoolean("keeper_dies", false)) keeperDied = 2
         // First time this run: find out whether the helper really answers (Automatic falls back to the effect).
         if (helperOk == null && RootShell.available) helperOk = helper(c, "list")?.let { parseList(it) } != null
         when (resolved(c)) {
             Method.HELPER -> {
                 // Already running: leave it (a fresh one would only repeat the same volumes).
-                if (!daemonRunning()) apply(c) else EffectLoop.start(c)
+                if (oneShot) apply(c) else if (!daemonRunning()) apply(c) else EffectLoop.start(c)
             }
             Method.EFFECT -> EffectLoop.start(c)
             else -> Unit
@@ -460,7 +462,8 @@ object AppMixer {
         if (m == Method.HELPER) out += if (turnedDown.isEmpty()) Check("Volume keeper", null, "Nothing turned down right now (turn an app down, then check again)")
         else {
             val alive = daemonRunning()
-            Check("Volume keeper", alive, if (alive) "Running, holding ${turnedDown.size} app${if (turnedDown.size == 1) "" else "s"}" else "Not running: the firmware ended it after the start (Voltcap starts it again every few seconds)")
+            if (!alive && oneShot) Check("Volume keeper", true, "This firmware ends it, so the volumes are put on each player as it starts (one short helper run each time)")
+            else Check("Volume keeper", alive, if (alive) "Running, holding ${turnedDown.size} app${if (turnedDown.size == 1) "" else "s"}" else "Not running: the firmware ended it after the start (Voltcap switches to setting each new player)")
         }
         // Which of the turned-down apps are playing, and whether their players can be reached at all.
         if (root && turnedDown.isNotEmpty()) {
@@ -551,6 +554,30 @@ object AppMixer {
             val uid = f.getOrNull(0)?.toIntOrNull() ?: return@mapNotNull null
             MixerPlayer(uid, f.getOrNull(1)?.toIntOrNull() ?: 0, f.getOrNull(2)?.toIntOrNull() == 2 /* STARTED */, f.getOrNull(3)?.toIntOrNull() ?: 0, f.getOrNull(4) != "0")
         }
+    }
+
+    /**
+     * Update 168: how often the background helper was found gone right after its start. Twice: this firmware ends it
+     * (the Retroid Pocket Classic's root service did, every time), so Voltcap stops restarting it and uses the one-shot
+     * way instead ([oneShot]): the helper's `hold` (set the volumes on every player now, once) each time Android
+     * reports a player starting or changing — as the open-source VolumeManager does. A player keeps that volume.
+     */
+    @Volatile private var keeperDied = 0
+    private val oneShot: Boolean get() = keeperDied >= 2
+
+    /** Update 168: the volumes as the helper takes them ("uid:amp" …, with the resets at 1.0), or empty. */
+    private fun holdSpecs(c: Context, resets: Collection<String> = emptyList()): List<String> {
+        val vols = effective(c)
+        return (vols.mapNotNull { (pkg, v) -> uidOf(c, pkg)?.let { "$it:${"%.4f".format(java.util.Locale.US, amplitude(v))}" } } +
+            resets.distinct().filter { it !in vols }.mapNotNull { pkg -> uidOf(c, pkg)?.let { "$it:1.0000" } }).distinct()
+    }
+
+    /** Update 168: one `hold` through the root service: the volumes put on every player now, and who's playing. Blocking. */
+    private fun holdOnce(c: Context, resets: Collection<String> = emptyList()): List<MixerPlayer>? {
+        val specs = holdSpecs(c, resets)
+        if (specs.isEmpty()) return null
+        val duck = if (duckWay(c)) "--duck " else ""
+        return helper(c, "hold $duck${specs.joinToString(" ")}")?.let { parseList(it) }
     }
 
     /** The volumes the helper process was last started with, and when (so an unchanged set isn't restarted, and a dead one is). */
@@ -701,6 +728,12 @@ object AppMixer {
                 // The helper turns down players that have a handle; native streams (Spotify's AAudio / OpenSL) get the
                 // sound effect instead (EffectLoop only touches the players the helper reports as not controllable).
                 if (vols.isEmpty()) EffectLoop.stop() else EffectLoop.start(app, now = true)
+                // Update 168: where the firmware ends the background helper, the volumes go on at once with one `hold`
+                // (and again on every new player, from the loop) — no process left running.
+                if (oneShot) {
+                    if (resets.isNotEmpty() || vols.isNotEmpty()) starter.execute { runCatching { holdOnce(app, resets) } }
+                    return
+                }
                 val specs = vols.mapNotNull { (pkg, v) -> uidOf(app, pkg)?.let { "$it:${"%.4f".format(java.util.Locale.US, amplitude(v))}" } } +
                     resets.distinct().filter { it !in vols }.mapNotNull { pkg -> uidOf(app, pkg)?.let { "$it:1.0000" } }
                 val duck = if (duckWay(app)) "--duck " else ""
@@ -835,7 +868,11 @@ object AppMixer {
                     val amp = HashMap<Int, Float>()
                     vols.forEach { (pkg, v) -> uidOf(c, pkg)?.let { amp[it] = amplitude(v) } }
                     // With the helper holding the volumes only the players it has no handle on need the effect.
-                    val found = discover(c, fast = how == Method.EFFECT)
+                    // Update 168: the one-shot way: the volumes on every player now (a new one just started, most likely —
+                    // this runs when Android reports a change), the same process telling who plays.
+                    val held = if (how == Method.HELPER && oneShot) holdOnce(c) else null
+                    val found = held?.let { Found(it, "helper", null) }
+                        ?: if (how == Method.HELPER && oneShot) Found(emptyList(), null, null) else discover(c, fast = how == Method.EFFECT)
                     // A look that failed (a timeout, a helper hiccup) is not "nobody is playing": the effects stay as they were.
                     if (found.source != null) {
                         val players = found.players.let { all -> if (how == Method.HELPER) all.filter { !it.controllable } else all }
@@ -846,12 +883,21 @@ object AppMixer {
                     }
                     // The helper process can die (the firmware cleans up its shell, a memory squeeze): bring it back
                     // instead of leaving the volumes unheld until the next slider move. Not within seconds of a start.
-                    if (how == Method.HELPER && android.os.SystemClock.uptimeMillis() - daemonStartedAt > 8_000L && !daemonRunning()) {
-                        daemonSig = ""
-                        apply(c)
+                    if (how == Method.HELPER && !oneShot && android.os.SystemClock.uptimeMillis() - daemonStartedAt > 8_000L && !daemonRunning()) {
+                        // (Update 168: counted — twice gone right after its start, and the one-shot way takes over.)
+                        keeperDied++
+                        if (oneShot) {
+                            android.util.Log.w("AppMixer", "the firmware ends the volume keeper: volumes are set on each new player instead")
+                            meta(c).edit().putBoolean("keeper_dies", true).apply()
+                            holdOnce(c)
+                        } else {
+                            daemonSig = ""
+                            apply(c)
+                        }
                     }
                     synchronized(lock) {
-                        if (!wake) lock.wait(if (how == Method.HELPER) 5_000L else 4_000L)
+                        // (Update 168: one-shot, a new process only when a player changes, or every 30 s at most.)
+                        if (!wake) lock.wait(if (how == Method.HELPER) (if (oneShot) 30_000L else 5_000L) else 4_000L)
                         wake = false
                     }
                     // Let a burst of player changes settle into one look.
