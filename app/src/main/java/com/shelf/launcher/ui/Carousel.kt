@@ -197,7 +197,8 @@ internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardAr
         if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC)?.aspect ?: 0.7f
         return MediaCovers.of(g.platform)?.frontAspect ?: 0.7f
     }
-    MediaCovers.used(g.platform, mixed)?.let { return it.frontAspect }
+    // (Update 169: a Steam / Android case reshaped to its cover — CoverCase.)
+    MediaCovers.used(g.platform, mixed)?.let { return it.frontAspectFor(cover) }
     // Update 154: a plain cover at its own shape once it has loaded (it was cut to 0.7 — tops, bottoms and sides of
     // square GBA boxes, wide PC covers and tall posters were cut off).
     return CoverAspects.of(cover) ?: 0.7f

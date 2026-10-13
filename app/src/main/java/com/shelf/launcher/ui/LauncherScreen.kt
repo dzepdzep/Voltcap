@@ -294,6 +294,8 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
                 suppress = nowPlayingActive,
                 ownTrack = if (showIntro || com.shelf.launcher.CrashGuard.safeMode) null else ownMusicTrack
             )
+            // Update 169: the extra art packs' download, wherever you are (it showed only in its Settings card).
+            if (!showIntro) PacksProgressPill(Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 14.dp))
             if (showIntro) {
                 VoltcapIntro(
                     style = appearance.introStyle,

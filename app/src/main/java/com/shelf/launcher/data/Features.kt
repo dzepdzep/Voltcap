@@ -980,6 +980,13 @@ object Features {
      * they all match — the real spine scans (each in its own style and size) are left out.
      */
     val spinesOwn = BoolPref("spines_own", false)
+    /**
+     * Update 169: Voltcap's own Steam / Android cases take the shape of the game's cover (SteamGridDB's tall 2:3 grid, a
+     * square icon-like cover…): the band stays as it is, the window grows to the cover, so it fills it — no bars beside it.
+     */
+    val ownCaseFit = BoolPref("own_case_fit", true)
+    /** Update 169: the consoles' cover templates take the cover's shape too (off: they keep the real case's shape). */
+    val allCaseFit = BoolPref("all_case_fit", false)
     /** Update 147, Disc station: the loaded disc turns slowly. */
     val discSpin = BoolPref("disc_spin", true)
     /** Update 147, Disc station: a few lines about the game under its name. */

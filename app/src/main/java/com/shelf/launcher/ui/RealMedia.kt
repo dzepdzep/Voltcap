@@ -77,7 +77,10 @@ private class DiscRing(private val inner: Float, private val outer: Float) : Sha
 @Composable
 internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier: Modifier = Modifier, smallDisc: Boolean = false): Boolean {
     val disc = tpl.disc
-    val useLabelFrame = labelScan == null && tpl.label != null
+    // Update 169: never the label versions (tpl_cartl_*): they carry each system's printed brand art (the 3DS / Switch
+    // headers, SEGA / GENESIS bars, ratings, seals). The cover goes into the plain shell's window, which has the console's
+    // logo where its moulded brand was (res tpl_cart_*, cleaned).
+    val useLabelFrame = false
     val cart = if (useLabelFrame) tpl.label else tpl.cart
     if (disc == null && cart == null) return false
     val art = labelScan ?: cover
@@ -461,7 +464,7 @@ private fun CaseArtBody(
         val cov0 = MediaCovers.used(platform)
         val box0 = MediaTemplates.of(platform)?.box
         if (cov0 == null && box0 == null) return false
-        val aspect = cov0?.frontAspect ?: box0?.let { if (it.frameRes != null) it.frameAspect else it.aspect } ?: 0.7f
+        val aspect = cov0?.frontAspectFor(cover ?: scan) ?: box0?.let { if (it.frameRes != null) it.frameAspect else it.aspect } ?: 0.7f
         val round = shell.disc || shell == MediaShell.UMD
         // The cartridge / disc's height as a share of the case's, and its own width / height.
         val mFrac = if (round) 0.6f else 0.5f

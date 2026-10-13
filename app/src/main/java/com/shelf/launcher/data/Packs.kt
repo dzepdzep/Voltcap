@@ -71,7 +71,17 @@ object Packs {
     val version = mutableIntStateOf(0)
 
     /** The download in progress, or null. */
-    data class Progress(val done: Int, val total: Int, val current: String, val failed: Int)
+    data class Progress(
+        val done: Int, val total: Int, val current: String, val failed: Int,
+        /** Update 169: how far into the piece it's on (bytes so far, its size; -1 = size not known yet). */
+        val bytes: Long = 0L, val size: Long = -1L
+    ) {
+        /** The whole download's share done (0…1), the piece it's on counted in by its bytes. */
+        val fraction: Float get() {
+            val part = if (size > 0L) (bytes.toFloat() / size).coerceIn(0f, 1f) else 0f
+            return if (total <= 0) 0f else ((done + part) / total).coerceIn(0f, 1f)
+        }
+    }
     val progress = mutableStateOf<Progress?>(null)
 
     /** The pieces on this device, by release file name. */
@@ -180,8 +190,14 @@ object Packs {
 
     /** Downloads what [ch] wants and isn't here yet ([consoles]: the library's consoles). Runs in the background. */
     fun download(c: Context, ch: Choice, consoles: Set<String>) {
-        fetchAll(c.applicationContext, wanted(ch, consoles).filter { !has(it) })
+        val todo = wanted(ch, consoles).filter { !has(it) }
+        // Update 169: pressing Download with everything already here did nothing you could see.
+        if (todo.isEmpty() && progress.value == null) { lastFailed.value = 0; upToDate.value = true; return }
+        fetchAll(c.applicationContext, todo)
     }
+
+    /** Update 169: the last Download found everything already on the device (cleared when a download starts). */
+    val upToDate = mutableStateOf(false)
 
     /**
      * Update 166: the 3D pieces you had from before (their old marker, e.g. "<id>.v68") fetched again in their new
@@ -201,6 +217,7 @@ object Packs {
     private fun fetchAll(app: Context, todo: List<Item>) {
         if (todo.isEmpty() || progress.value != null) return
         stop = false
+        upToDate.value = false
         progress.value = Progress(0, todo.size, todo.first().pack.label, 0)
         worker.execute {
             var failed = 0
@@ -211,7 +228,10 @@ object Packs {
             todo.forEachIndexed { i, item ->
                 if (stop) return@forEachIndexed
                 progress.value = Progress(i, todo.size, item.pack.label, failed)
-                if (!runCatching { fetch(app, client, item) }.getOrDefault(false)) failed++
+                val f0 = failed
+                if (!runCatching {
+                        fetch(app, client, item) { got, size -> progress.value = Progress(i, todo.size, item.pack.label, f0, got, size) }
+                    }.getOrDefault(false) && !stop) failed++
                 // Each piece shows as soon as it's here.
                 have = have + (if (marker(app, item).exists()) setOf(item.file) else emptySet())
                 version.intValue++
@@ -228,14 +248,31 @@ object Packs {
     /** Stops the running download after the piece it's on. */
     fun cancel() { stop = true }
 
-    private fun fetch(c: Context, client: okhttp3.OkHttpClient, item: Item): Boolean {
+    private fun fetch(c: Context, client: okhttp3.OkHttpClient, item: Item, onBytes: (Long, Long) -> Unit = { _, _ -> }): Boolean {
         val req = okhttp3.Request.Builder().url(RELEASE + item.file).build()
         client.newCall(req).execute().use { res ->
             if (!res.isSuccessful) return false
             val body = res.body ?: return false
             val dir = dir(c, item.pack).apply { mkdirs() }
             val tmp = File(dir, "${item.file}.part")
-            tmp.outputStream().use { out -> body.byteStream().use { it.copyTo(out) } }
+            // (Update 169: counted as it comes, so the progress moves inside a big piece too — a 3D model is several MB.)
+            val size = body.contentLength()
+            tmp.outputStream().use { out ->
+                body.byteStream().use { inp ->
+                    val buf = ByteArray(64 * 1024)
+                    var got = 0L; var told = 0L
+                    onBytes(0L, size)
+                    while (!stop) {
+                        val n = inp.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n); got += n
+                        if (got - told >= 256 * 1024) { told = got; onBytes(got, size) }
+                    }
+                    onBytes(got, size)
+                }
+            }
+            // (Stopped part-way: the half piece goes, and it counts as not done.)
+            if (stop) { tmp.delete(); return false }
             return when (item.pack) {
                 Pack.CARTS, Pack.MODELS -> {
                     // Unpacked where the pictures live; entries that would land outside the folder are skipped.

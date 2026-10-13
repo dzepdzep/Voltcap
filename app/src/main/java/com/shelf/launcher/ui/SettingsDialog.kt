@@ -3645,6 +3645,22 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.spinesOwn.state.value,
             onChange = { com.shelf.launcher.data.Features.spinesOwn.value = it }
         )
+        // Update 169: the cases take the cover's shape.
+        Spacer(Modifier.height(10.dp))
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Steam / Android cases fit the cover",
+            subtitle = "On (default): Voltcap's Steam and Android cases take the shape of the game's cover — the band on top stays, the window grows or shrinks to the cover, so it fills it with no bars beside it. Off: one case shape for all, the cover fitted into it.",
+            checked = com.shelf.launcher.data.Features.ownCaseFit.state.value,
+            onChange = { com.shelf.launcher.data.Features.ownCaseFit.value = it }
+        )
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Console cases fit the cover too",
+            subtitle = "On: the consoles' case templates (Settings › Cover templates) take the cover's shape as well. Off (default): they keep the real case's shape and size.",
+            checked = com.shelf.launcher.data.Features.allCaseFit.state.value,
+            onChange = { com.shelf.launcher.data.Features.allCaseFit.value = it }
+        )
         when (artNow) {
             com.shelf.launcher.data.CardArtType.CASE -> MutedNote("Every case the same size, in lists mixing consoles too (Continue playing, Favourites…).")
             com.shelf.launcher.data.CardArtType.CASE_REAL -> MutedNote("Every case at its real size next to the others: a DS case smaller than a PS2 one, a Saturn case taller. Also in lists that mix consoles.")

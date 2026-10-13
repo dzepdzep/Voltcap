@@ -1,6 +1,13 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
@@ -82,15 +89,21 @@ internal fun PacksCard() {
         if (sizeMb > 0) Text("On this device: about $sizeMb MB", color = ShelfTheme.textMuted, fontSize = 11.sp)
         Spacer(Modifier.height(8.dp))
         if (progress != null) {
-            Text(
-                "Downloading ${progress.current}… ${progress.done} of ${progress.total}" + (if (progress.failed > 0) " (${progress.failed} failed)" else ""),
-                color = ShelfTheme.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold
-            )
+            Text(packsProgressText(progress), color = ShelfTheme.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(4.dp))
+            PacksBar(progress.fraction, Modifier.fillMaxWidth())
             Spacer(Modifier.height(6.dp))
             ChipFlow { Chip("Stop") { Packs.cancel() } }
         } else {
             if (failed != null && failed > 0) {
                 MutedNote("$failed couldn't be downloaded (no connection?). Try again below.")
+                Spacer(Modifier.height(4.dp))
+            } else if (Packs.upToDate.value) {
+                // (Update 169: Download with everything here already used to do nothing you could see.)
+                MutedNote("Everything is on this device already ✓")
+                Spacer(Modifier.height(4.dp))
+            } else if (failed == 0) {
+                MutedNote("Last download finished ✓")
                 Spacer(Modifier.height(4.dp))
             }
             ChipFlow {
@@ -135,13 +148,69 @@ internal fun PacksSetupStep() {
         if (progress != null) {
             Spacer(Modifier.height(8.dp))
             Text(
-                "Downloading ${progress.current}… ${progress.done} of ${progress.total}" + (if (progress.failed > 0) " (${progress.failed} failed)" else "") +
-                    " · it carries on in the background",
+                packsProgressText(progress) + " · it carries on in the background",
                 color = ShelfTheme.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold
             )
+            Spacer(Modifier.height(4.dp))
+            PacksBar(progress.fraction, Modifier.fillMaxWidth())
         } else if (choice == Packs.Choice.MINE && Packs.libraryConsoles.isEmpty()) {
             Spacer(Modifier.height(8.dp))
             MutedNote("They download as soon as your games are found.")
+        }
+    }
+}
+
+/** Update 169: "Downloading 3D models… 12 of 82 · 34 %" (with the piece's MB when its size is known). */
+internal fun packsProgressText(p: Packs.Progress): String {
+    val pct = (p.fraction * 100f).toInt()
+    val mb = if (p.size > 0L) " · ${"%.1f".format(p.bytes / 1_000_000f)} of ${"%.1f".format(p.size / 1_000_000f)} MB" else ""
+    return "Downloading ${p.current}… ${p.done + 1} of ${p.total} · $pct %" + mb + (if (p.failed > 0) " (${p.failed} failed)" else "")
+}
+
+/** Update 169: a thin progress bar in the accent colour. */
+@Composable
+internal fun PacksBar(fraction: Float, modifier: Modifier = Modifier) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(3.dp)
+    androidx.compose.foundation.layout.Box(modifier.height(5.dp).clip(shape).background(ShelfTheme.colors.textPrimary.copy(alpha = 0.14f))) {
+        androidx.compose.foundation.layout.Box(
+            Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).fillMaxHeight().background(ShelfTheme.accent)
+        )
+    }
+}
+
+/**
+ * Update 169: the extra art packs' download, seen from anywhere — a small pill in the corner of the home screen with what
+ * it's fetching and how far it is, while it runs (it only showed inside Settings › Game look › Extra art packs, so you
+ * couldn't tell whether anything was downloading). It reads the progress itself, so the home screen never redraws for it.
+ */
+@Composable
+internal fun PacksProgressPill(modifier: Modifier = Modifier) {
+    val p = Packs.progress.value
+    androidx.compose.animation.AnimatedVisibility(
+        visible = p != null, modifier = modifier,
+        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it / 2 },
+        exit = androidx.compose.animation.fadeOut()
+    ) {
+        // (The last progress kept, not as state, so the pill fades out showing it rather than going blank.)
+        val last = remember { arrayOfNulls<Packs.Progress>(1) }
+        if (p != null) last[0] = p
+        val q = last[0] ?: return@AnimatedVisibility
+        androidx.compose.foundation.layout.Column(
+            Modifier.width(230.dp)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                .background(androidx.compose.ui.graphics.Color(0xE0121418))
+                .padding(horizontal = 10.dp, vertical = 7.dp)
+        ) {
+            androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                androidx.compose.material3.Icon(Icons.Filled.CloudDownload, null, tint = ShelfTheme.accent, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    "${q.current} ${q.done + 1} / ${q.total} · ${(q.fraction * 100f).toInt()} %",
+                    color = androidx.compose.ui.graphics.Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1
+                )
+            }
+            Spacer(Modifier.height(5.dp))
+            PacksBar(q.fraction, Modifier.fillMaxWidth())
         }
     }
 }

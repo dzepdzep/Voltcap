@@ -4,6 +4,62 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (169): cartridge templates without their makers' marks, Steam / Android cases in the cover's shape, case templates on the 3D cases, the art packs' download shown everywhere
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (12): `src_copy\data\Features.kt`,
+`src_copy\data\Packs.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\CoverCases.kt`,
+`src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaCovers.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PacksUi.kt`,
+`src_copy\ui\RealMedia.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`.
+
+**Copy `project_copy`** (robocopy into the project root), changed (10): `project_copy\app\src\main\res\drawable-nodpi\`
+`tpl_cart_gb.webp`, `tpl_cart_gbc.webp`, `tpl_cart_gbc_black.webp`, `tpl_cart_gba.webp`, `tpl_cart_gamegear.webp`,
+`tpl_cart_neogeopocket.webp`, `tpl_cart_pokemonmini.webp`, `tpl_cart_psp.webp`, `tpl_cart_psvita.webp`,
+`tpl_cart_wonderswan.webp`; new: `project_copy\tools\media_templates\tplfix.py` (how they were made).
+
+**Files to delete:** none.
+
+### What changed
+- **Cartridge cover templates without the makers' marks** (Cartridges look with Settings › Cover templates on): the 10
+  shells that carried them (Game Boy, Game Boy Color and its black one, Game Boy Advance, Game Gear, Neo Geo Pocket,
+  Pokémon mini, PSP UMD, PS Vita, WonderSwan) have their moulded / printed lettering and seals taken off and the
+  console's logo put in its place instead. The other 22 shells had no marks. The "label" versions (with each console's
+  printed label art) are no longer used at all — the plain shell with the game's art in the label window is.
+- **Steam / Android cases in the cover's shape** (the custom cases you kept asking to resize): your Steam and Android
+  cases now take the shape of the game's cover — the band on top stays as it is and the window under it grows or shrinks
+  to the cover, so a SteamGridDB cover fills it with no bars beside it. Flat cases, the carousels' slots, Case + its
+  media, and the 3D cases (at SteamGridDB's 2:3). Settings › Game look › Covers, cases & discs:
+  - **Steam / Android cases fit the cover** (on).
+  - **Console cases fit the cover too** (off): the consoles' case templates take the cover's shape as well; off they keep
+    the real case's shape and size.
+- **Case templates on the 3D cases:** with Settings › Cover templates on, the 3D cases (carousel 3D views, Box flow, the
+  opened game, Case stacks) now wear their console's case template on the front — the band and printed border, the cover
+  in its window — as the flat cases do. They had the bare cover. A game's own scanned front still wins.
+- **The art packs' download shows everywhere:** while Extra art packs download, a small pill in the bottom right of the
+  home screen shows what's coming, "12 / 82 · 34 %", with a bar. In Settings › Game look › Extra art packs (and the
+  first-time setup) there's a bar, the percentage and the MB of the piece it's on; it moves inside a big 3D model now
+  too. Pressing Download with everything already here says "Everything is on this device already ✓" (it did nothing you
+  could see), and a finished download says so. Stop now stops in the middle of a piece.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+- **Templates:** contact sheets of all 32 cartridge shells checked; the reshaped Steam case drawn at 0.5, 2:3, 0.85, 1
+  and 1.25 covers (band unchanged, window filled).
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 169: cartridge templates without makers' marks, Steam / Android cases in the cover's shape, case templates on 3D cases, art pack download progress" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (168): the volume mixer works on the Pocket Classic, lists in the Cross menu, cases with their media in the 3D carousel views
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

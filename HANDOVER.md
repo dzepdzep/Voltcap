@@ -256,6 +256,32 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 169
+- **Cartridge templates:** `tpl_cart_{gb,gbc,gbc_black,gba,gamegear,neogeopocket,pokemonmini,psp,psvita,wonderswan}`
+  re-made by `tools/media_templates/tplfix.py` (cv2 Telea inpaint of the marks, ES-DE logo composited). `RealMedia
+  .TemplateMedia` `useLabelFrame = false` (the `tpl_cartl_*` files stay but are unused there); `MediaInspectView
+  .slabAspect` uses `tpl.cart ?: tpl.label`.
+- **Case fit:** `CaseFit` / `CoverTpl.fitTo(coverAspect)` / `caseFitFor(cov, art)` / `frontAspectFor(art)` /
+  `FittedFrame` / `fittedFrameBitmap` (CoverCases.kt): the frame cut in three along one axis, only the window's slice
+  stretched (a window reaching both sides changes height, one reaching top and bottom width). Shape from
+  `CoverAspects` (noted in `CoverFace` onSuccess too); unknown → 2:3 for own cases, none for consoles. Prefs
+  `Features.ownCaseFit` (true), `allCaseFit` (false). `CoverTpl.isOwn()` in MediaCovers.kt. Used in `CoverCase`,
+  `shelfArtAspect`, `CaseArtBody` (case + media), `Case3D` + `case3dAspect` (own cases at 2:3).
+- **3D case fronts:** `Case3D` `caseTpl` = own case, or `MediaCovers.of(platform)` with `coverTemplates` (not with
+  spine/case-for-all, not over a scanned front) → `framed(front, band, win)`.
+- **Pack progress:** `Packs.Progress` has `bytes` / `size` / `fraction`; `fetch(onBytes)` counts while copying (stop
+  mid-piece deletes the part); `Packs.upToDate`. `PacksProgressPill` (PacksUi.kt) at the bottom right of
+  `LauncherScreen`'s root Box; `PacksBar`, `packsProgressText`.
+- **Template pack (C:\Users\User\Downloads\Templates (1)\Templates, same as `Templates`):** used: cover/ front + spine
+  (cov_*), cartridge + with label, disc, 3dbox `3D box.png` shapes (tpl_box_*), cover texture spine + front (tpl_spine_*,
+  tpl_front_*). Not used yet: `cover - back.png` (most consoles) and the back third of the cover textures, the
+  finished `<console> 3dbox.png`, `label/` frames, cartridge colour variants, `_Assets` logos, `_examples` (reference
+  renders only).
+- **Next / asked:** printed backs for the 3D cases from the back templates (user to confirm), the facing / angled
+  examples as a toggle (we have Settings › Box turned to show its spine). Still open from before: Grid default size, TV
+  room grid ignores the look, Tile look row off the bottom, Game shelf front cover late, Thor second screen, Asobi
+  shortcuts. Mixer one-shot way still untested on the Classic.
+
 ## State after update 168
 - **Mixer one-shot way:** the Classic's PServer (`/system/bin/pservice`, popen) runs the helper fine but the `daemon`
   never stays. `AppMixer.keeperDied` (≥ 2 → `oneShot`, persisted as meta `keeper_dies`): `apply()` HELPER runs

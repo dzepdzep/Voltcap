@@ -21,6 +21,9 @@ internal class CoverTpl(
     val spineRes: Int?, val spineAspect: Float
 )
 
+/** Update 169: one of Voltcap's own cases (Steam, Android), not a console's. */
+internal fun CoverTpl.isOwn(): Boolean = frontRes == R.drawable.cov_front_steam || frontRes == R.drawable.cov_front_android
+
 internal object MediaCovers {
     fun of(platform: String?): CoverTpl? = platform?.let { all[it] ?: byHand[it] }
 

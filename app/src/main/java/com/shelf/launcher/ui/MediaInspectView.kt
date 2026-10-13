@@ -149,7 +149,8 @@ private fun slabAspect(pick: MediaPick, labelIsScan: Boolean): Float {
     val own = pick.platform.startsWith(MODEL_3D) || pick.platform.startsWith(CUSTOM_CART)
     if (own) return pick.aspect.coerceIn(0.3f, 3f)
     val tpl = MediaTemplates.of(pick.platform)
-    val c = if (!labelIsScan && tpl?.label != null) tpl.label else tpl?.cart
+    // (Update 169: the plain shell always, as TemplateMedia draws it.)
+    val c = tpl?.cart ?: tpl?.label
     return (c?.aspect ?: pick.aspect).coerceIn(0.3f, 3f)
 }
 

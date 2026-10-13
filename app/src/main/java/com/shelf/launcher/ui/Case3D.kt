@@ -72,9 +72,25 @@ internal fun Case3D(
         (if (ownBmp != null) own else tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
     }
     // Update 166: a Steam / Android game's case front is Voltcap's own: the game's art in its window, the band on top.
+    // Update 169: and with Settings › Cover templates on, every console's case front is its template too (the band, the
+    // printed border) with the cover in its window — as the flat case shows it; the 3D cases had the bare cover. Not on
+    // the game's own scanned front (that is the real thing), nor with R1 › Case (another console's shape for all).
+    val caseTpl = ownCase ?: if (Features.coverTemplates.state.value && !forAll && !LookStyles.caseForAll()) MediaCovers.of(g.platform) else null
+    val tplFront = caseTpl.takeIf { ownFront == null }
+    // (Update 169: Steam / Android cases at a SteamGridDB cover's shape — case3dAspect — so the cover fills the window.)
+    val fit = tplFront?.takeIf { it.isOwn() && Features.ownCaseFit.state.value }?.fitTo(SGDB_COVER_ASPECT)
     val ctx = androidx.compose.ui.platform.LocalContext.current
-    val band = remember(ownCase?.frontRes) { ownCase?.let { runCatching { android.graphics.BitmapFactory.decodeResource(ctx.resources, it.frontRes) }.getOrNull() } }
-    val face = remember(front, aspect, band) { front?.let { f -> if (band != null && ownCase != null) framed(f, band, ownCase.win) else cropTo(f, aspect) } }
+    val band = remember(tplFront?.frontRes, fit?.aspect) {
+        tplFront?.let { t ->
+            runCatching {
+                val b = android.graphics.BitmapFactory.decodeResource(ctx.resources, t.frontRes)
+                if (fit != null && b != null) fittedFrameBitmap(b, t, fit, b.width.coerceAtMost(600)) else b
+            }.getOrNull()
+        }
+    }
+    val face = remember(front, aspect, band) {
+        front?.let { f -> if (band != null && tplFront != null) framed(f, band, fit?.win ?: tplFront.win) else cropTo(f, aspect) }
+    }
     val backBmp = rememberSoftBitmap(back, 480)
     val backFace = remember(backBmp, aspect) { backBmp?.let { cropTo(it, aspect) } }
     val noCover = remember(title, g.hue, cover == null && ownFront == null) { if (cover == null && ownFront == null) plainFront(title, g.hue) else null }
@@ -104,6 +120,8 @@ internal fun Case3D(
  * Game Boy Advance game opened as a DVD-shaped box), else a game case's.
  */
 internal fun case3dAspect(g: Game, mixed: Boolean): Float {
+    // (Update 169: a Steam / Android case at a SteamGridDB cover's shape, its band on top — Case3D.)
+    if (Features.ownCaseFit.state.value && !LookStyles.spineForAll()) MediaCovers.own(g.platform)?.let { o -> return (o.fitTo(SGDB_COVER_ASPECT)?.aspect ?: o.frontAspect).coerceIn(0.55f, 1.45f) }
     // (Update 166: in lists mixing consoles too — each case keeps its own shape there, as the flat box art does.)
     realCaseMm(g.platform)?.let { (w, h) -> if (w > 0f && h > 0f) return (w / h).coerceIn(0.55f, 1.45f) }
     return (if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null)?.coerceIn(0.55f, 1.45f) ?: 0.71f

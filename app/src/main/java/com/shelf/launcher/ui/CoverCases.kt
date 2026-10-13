@@ -226,15 +226,131 @@ internal object PackSpines {
 internal fun spineImage(res: Int): ImageBitmap =
     if (res >= 0) ImageBitmap.imageResource(res) else remember(res, com.shelf.launcher.data.Packs.version.intValue) { PackSpines.load(res) }
 
+/**
+ * Update 169: a case's front drawn to its cover's shape: the frame cut in three along one axis — the band before the
+ * window, the window, the band after it — and only the window's part stretched, so the bands keep their look and size
+ * and the window takes the cover's width / height. [aspect]: the whole front's new width / height; [win]: the window's
+ * new bounds (l, t, r, b); [vertical]: stretched up / down (else sideways).
+ */
+internal class CaseFit(val aspect: Float, val win: FloatArray, val vertical: Boolean)
+
+/** The front reshaped so its window has [coverAspect] (width / height); null when it already has (within 3 %). */
+internal fun CoverTpl.fitTo(coverAspect: Float): CaseFit? {
+    val a = frontAspect.coerceAtLeast(0.05f); val w = win
+    val ww = (w[2] - w[0]).coerceAtLeast(0.01f); val wh = (w[3] - w[1]).coerceAtLeast(0.01f)
+    val winAspect = a * ww / wh
+    if (kotlin.math.abs(coverAspect / winAspect - 1f) < 0.03f) return null
+    // The window reaches both sides (Steam / Android: a band only on top): it changes height either way, so the band is
+    // never stretched; one reaching top and bottom changes width. Else: taller covers grow it down, wider ones sideways.
+    val fullWidth = w[0] <= 0.01f && w[2] >= 0.99f
+    val fullHeight = w[1] <= 0.01f && w[3] >= 0.99f
+    val vertical = if (fullWidth != fullHeight) fullWidth else coverAspect < winAspect
+    return if (vertical) {
+        // The window's height set by the cover (heights in widths of the front).
+        val top = w[1] / a; val bottom = (1f - w[3]) / a; val h = ww / coverAspect
+        val t = top + h + bottom
+        CaseFit(1f / t, floatArrayOf(w[0], top / t, w[2], (top + h) / t), true)
+    } else {
+        // The window's width set by the cover (widths in heights of the front).
+        val left = w[0] * a; val right = (1f - w[2]) * a; val wd = wh * coverAspect
+        val t = left + wd + right
+        CaseFit(t, floatArrayOf(left / t, w[1], (left + wd) / t, w[3]), false)
+    }
+}
+
+/** SteamGridDB's covers (the "grid" art): 600 × 900. */
+private const val SGDB_COVER = 2f / 3f
+
+/**
+ * Update 169: how [cov] is reshaped for [art] (Settings › Game look › Covers, cases & discs): Voltcap's own Steam /
+ * Android cases always fit their cover (a cover not loaded yet counts as SteamGridDB's 2:3, so it rarely moves), the
+ * consoles' only with "Console cases too" and once the cover's shape is known. Null: drawn as it is.
+ */
+internal fun caseFitFor(cov: CoverTpl, art: Any?): CaseFit? {
+    val own = cov.isOwn()
+    if (own) { if (!com.shelf.launcher.data.Features.ownCaseFit.state.value) return null }
+    else if (!com.shelf.launcher.data.Features.allCaseFit.state.value) return null
+    val url = art as? String ?: return null
+    val ca = CoverAspects.of(url) ?: if (own) SGDB_COVER else return null
+    return cov.fitTo(ca)
+}
+
+/** The front's width / height for [art]: reshaped to its cover ([caseFitFor]) or as drawn. */
+internal fun CoverTpl.frontAspectFor(art: Any?): Float = caseFitFor(this, art)?.aspect ?: frontAspect
+
+/** SteamGridDB's cover shape, for the 3D cases (they don't know the cover's own when their shape is set). */
+internal const val SGDB_COVER_ASPECT = SGDB_COVER
+
+/**
+ * Update 169: [frame] (the template's front picture) redrawn reshaped by [fit] onto a bitmap [w] wide — for the 3D
+ * cases, which draw their front from one picture.
+ */
+internal fun fittedFrameBitmap(frame: android.graphics.Bitmap, cov: CoverTpl, fit: CaseFit, w: Int): android.graphics.Bitmap {
+    val h = (w / fit.aspect).toInt().coerceAtLeast(1)
+    val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(out)
+    val p = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
+    val src = cov.win; val dst = fit.win
+    val s0 = if (fit.vertical) src[1] else src[0]; val s1 = if (fit.vertical) src[3] else src[2]
+    val d0 = if (fit.vertical) dst[1] else dst[0]; val d1 = if (fit.vertical) dst[3] else dst[2]
+    val iw = frame.width; val ih = frame.height
+    for (cut in listOf(floatArrayOf(0f, s0, 0f, d0), floatArrayOf(s0, s1, d0, d1), floatArrayOf(s1, 1f, d1, 1f))) {
+        if (cut[1] - cut[0] <= 0f || cut[3] - cut[2] <= 0f) continue
+        if (fit.vertical) c.drawBitmap(
+            frame, android.graphics.Rect(0, (cut[0] * ih).toInt(), iw, (cut[1] * ih).toInt().coerceAtLeast((cut[0] * ih).toInt() + 1)),
+            android.graphics.RectF(0f, cut[2] * h, w.toFloat(), cut[3] * h), p
+        ) else c.drawBitmap(
+            frame, android.graphics.Rect((cut[0] * iw).toInt(), 0, (cut[1] * iw).toInt().coerceAtLeast((cut[0] * iw).toInt() + 1), ih),
+            android.graphics.RectF(cut[2] * w, 0f, cut[3] * w, h.toFloat()), p
+        )
+    }
+    return out
+}
+
+/** Update 169: the frame drawn reshaped ([CaseFit]): its bands as they are, its window's part stretched. */
+@Composable
+private fun FittedFrame(cov: CoverTpl, fit: CaseFit) {
+    val img = ImageBitmap.imageResource(cov.frontRes)
+    val src = cov.win; val dst = fit.win
+    val s0 = if (fit.vertical) src[1] else src[0]; val s1 = if (fit.vertical) src[3] else src[2]
+    val d0 = if (fit.vertical) dst[1] else dst[0]; val d1 = if (fit.vertical) dst[3] else dst[2]
+    val cuts = listOf(floatArrayOf(0f, s0, 0f, d0), floatArrayOf(s0, s1, d0, d1), floatArrayOf(s1, 1f, d1, 1f))
+    androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+        val iw = img.width; val ih = img.height
+        val ow = size.width.toInt().coerceAtLeast(1); val oh = size.height.toInt().coerceAtLeast(1)
+        for (c in cuts) {
+            if (c[1] - c[0] <= 0f || c[3] - c[2] <= 0f) continue
+            if (fit.vertical) {
+                val sy = (c[0] * ih).toInt(); val sh = ((c[1] * ih).toInt() - sy).coerceAtLeast(1)
+                val dy = (c[2] * oh).toInt(); val dh = ((c[3] * oh).toInt() - dy).coerceAtLeast(1)
+                drawImage(
+                    img, androidx.compose.ui.unit.IntOffset(0, sy), androidx.compose.ui.unit.IntSize(iw, sh),
+                    androidx.compose.ui.unit.IntOffset(0, dy), androidx.compose.ui.unit.IntSize(ow, dh),
+                    filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium
+                )
+            } else {
+                val sx = (c[0] * iw).toInt(); val sw = ((c[1] * iw).toInt() - sx).coerceAtLeast(1)
+                val dx = (c[2] * ow).toInt(); val dw = ((c[3] * ow).toInt() - dx).coerceAtLeast(1)
+                drawImage(
+                    img, androidx.compose.ui.unit.IntOffset(sx, 0), androidx.compose.ui.unit.IntSize(sw, ih),
+                    androidx.compose.ui.unit.IntOffset(dx, 0), androidx.compose.ui.unit.IntSize(dw, oh),
+                    filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium
+                )
+            }
+        }
+    }
+}
+
 /** The cover template's front: the game's art behind the frame, cropped to the frame's window, never stretched. */
 @Composable
-private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Modifier) {
+private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Modifier, fit: CaseFit? = null) {
     // Update 141: another console's case picked for every game (R1 › Case): only its shape — its frame in one plain
     // colour, nothing printed on it — with the game's own console's logo in the frame's biggest band.
     val owner = LocalCaseOwner.current
     BoxWithConstraints(modifier) {
         val w = maxWidth; val h = maxHeight
-        val win = cov.win
+        // (Update 169: the window where the reshaped front has it.)
+        val win = fit?.win ?: cov.win
         // Update 136, Art drop / update 137, Art position (R1 › Art position): the cover moved in the window (down under
         // the frame's top band, up, sideways) and sized, the window cutting it off.
         val pos = ArtPlace.of(model = false)
@@ -252,13 +368,16 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
                 // (Update 147: the card's own request — a set size, so a cover already in memory shows in the first frame,
                 // and its small copy while it loads; the case used to go blank for a moment every time it came back on screen.)
                 cardArtModel(art), null, contentScale = FillUnlessMuchCut, alignment = Alignment.Center,
+                // (Update 169: its shape noted, so the case can take it — caseFitFor.)
+                onSuccess = { r -> if (art is String) r.painter.intrinsicSize.let { sz -> CoverAspects.note(art, sz.width, sz.height) } },
                 modifier = Modifier.fillMaxSize().graphicsLayer {
                     scaleX = pos.zoom; scaleY = pos.zoom
                     translationX = pos.x * size.width * ArtPlace.REACH; translationY = pos.y * size.height * ArtPlace.REACH
                 }
             )
         }
-        if (owner == null) Image(painterResource(cov.frontRes), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        if (owner == null && fit != null) FittedFrame(cov, fit)
+        else if (owner == null) Image(painterResource(cov.frontRes), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
         else PlainFrame(cov, owner, w, h)
     }
 }
@@ -372,12 +491,15 @@ internal fun CoverCase(
     cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Modifier = Modifier,
     caseModifier: Modifier = Modifier
 ) {
-    val aspect = cov.frontAspect
+    // Update 169: reshaped to the cover (Steam / Android cases; the consoles' with "Console cases too"), not when it's
+    // drawn as another console's plain shape (R1 › Case).
+    val fit = if (LocalCaseOwner.current == null) caseFitFor(cov, art) else null
+    val aspect = fit?.aspect ?: cov.frontAspect
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * aspect)
         val h = w / aspect
         Box(Modifier.size(w, h).caseShadow().then(caseModifier)) {
-            CoverFace(cov, art, placeholder, Modifier.fillMaxSize())
+            CoverFace(cov, art, placeholder, Modifier.fillMaxSize(), fit)
             CaseSheen(Modifier.fillMaxSize())
         }
     }
