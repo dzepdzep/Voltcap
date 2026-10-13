@@ -65,8 +65,10 @@ internal fun Case3D(
             ?: if (!tplSpine.done) SpineCache.WAITING else plainSpine(title)
     }
     // How thick the case is (its spine's width against its height): the spine picture's own shape, kept to real cases'.
-    val depth = remember(spine, tpl, ownBmp) {
+    val depth = remember(spine, tpl, ownBmp, ownCase) {
         val own = spine.width.toFloat() / spine.height.coerceAtLeast(1)
+        // Update 171: Voltcap's own Steam / Android cases slim, like a game card's case (they were as thick as a DVD case).
+        if (ownCase != null && ownBmp == null) return@remember OWN_CASE_DEPTH
         // (Update 166: without a spine picture, the console's real case thickness — a Game Boy box is far thicker for its
         // size than a DVD case — not always a DVD case's.)
         (if (ownBmp != null) own else tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
@@ -89,7 +91,11 @@ internal fun Case3D(
         }
     }
     val face = remember(front, aspect, band) {
-        front?.let { f -> if (band != null && tplFront != null) framed(f, band, fit?.win ?: tplFront.win) else cropTo(f, aspect) }
+        front?.let { f ->
+            // (Update 171: not over a box scan used as the cover — it has its own band and logo, they showed twice.)
+            val whole = tplFront != null && isBoxFront(tplFront, f.width.toFloat() / f.height.coerceAtLeast(1))
+            if (band != null && tplFront != null && !whole) framed(f, band, fit?.win ?: tplFront.win) else cropTo(f, aspect)
+        }
     }
     // (Update 170: a printed back is made from its parts; a scanned one is a picture.)
     val printedBmp = rememberPrintedBack(back as? PrintedBack)
@@ -117,6 +123,9 @@ internal fun Case3D(
         }
     }
 }
+
+/** Update 171: Steam / Android 3D cases' thickness against their height. */
+internal const val OWN_CASE_DEPTH = 0.05f
 
 /**
  * Width / height of a game's 3D case: its console's real case shape (update 166: also with the cover templates off — a

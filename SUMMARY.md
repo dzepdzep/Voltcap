@@ -4,6 +4,45 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (171): no double console band on box-scan covers, Tile look in the Library panel, the case's media only on the game you're on, slimmer Steam / Android cases
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (4): `src_copy\ui\Carousel.kt`,
+`src_copy\ui\Case3D.kt`, `src_copy\ui\CoverCases.kt`, `src_copy\ui\StyleHomes.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **The console's band twice** (your Pokémon Silver: "GAME BOY COLOR" down the side, then again on the cover): a game
+  whose cover is a box scan (its own band, logo and seals) was put in the case template's window, so the template's band
+  showed beside the box's own. A cover with the case front's own shape (and not SteamGridDB's 2:3) is now taken as the
+  whole printed front: it fills the case with no frame over it — in the flat cases (Library grid and every case look)
+  and the 3D cases (opened game, carousels). SteamGridDB covers still go in the template.
+- **Tile look in the Library panel** (and the other style layouts that size their games the same way):
+  with Tile on, every cover is a square tile there too; they kept the cover shape.
+- **Case + its media in the 3D carousels** (your Donkey Kong Land III screen): every game's cartridge leaned out over its
+  neighbours' spines (Spine wall, Turned row). Only the game you're on shows its cartridge / disc now, coming in as you
+  stop on it, and the games beside it move aside to make room for it.
+- **Steam / Android cases slimmer:** the 3D Steam and Android cases are now thin like a game-card case (they were as thick
+  as a DVD case). Their fronts already take the cover's shape (169).
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 171: no double band on box-scan covers, Tile look in the Library panel, media only on the game you're on, slimmer Steam / Android cases" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (170): printed backs on the 3D cases, from your template pack
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

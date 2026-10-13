@@ -771,7 +771,10 @@ internal fun stylePlaytime(ms: Long?, played: Boolean = false): String {
 }
 
 /** Width / height of a card for an artwork type (style homes). */
-internal fun styleAspect(type: CardArtType): Float = if (type == CardArtType.COVER && Features.spineLook.state.value) SPINE_ASPECT else when (type) {
+internal fun styleAspect(type: CardArtType): Float = if (type == CardArtType.COVER && Features.spineLook.state.value) SPINE_ASPECT
+    // Update 171: the Tile look in the other layouts too (Library panel and the rest): every cover a square tile.
+    else if (type == CardArtType.COVER && carouselTiles()) 1f
+    else when (type) {
     CardArtType.COVER, CardArtType.CASE, CardArtType.CASE_REAL, CardArtType.DISC -> 0.72f
     CardArtType.CAPSULE, CardArtType.HERO, CardArtType.SCREENSHOT -> 1.78f
     CardArtType.CARTRIDGE_DISC -> 1f

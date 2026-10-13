@@ -262,12 +262,27 @@ internal fun CoverTpl.fitTo(coverAspect: Float): CaseFit? {
 private const val SGDB_COVER = 2f / 3f
 
 /**
+ * Update 171: whether a cover of shape [artAspect] is already the whole printed front of [cov]'s case — a box scan used
+ * as the cover (its own band, logo and seals), so putting it in the template's window printed the console's band twice
+ * (a Game Boy Color box inside the Game Boy Color frame). Told by its shape: the case front's own (within 4.5 %), and
+ * not SteamGridDB's 2:3 (a Saturn case is nearly that shape). Never for Voltcap's own Steam / Android cases.
+ */
+internal fun isBoxFront(cov: CoverTpl, artAspect: Float?): Boolean {
+    val a = artAspect ?: return false
+    if (cov.isOwn() || a <= 0f) return false
+    if (kotlin.math.abs(a / SGDB_COVER - 1f) < 0.02f) return false
+    return kotlin.math.abs(a / cov.frontAspect - 1f) < 0.045f
+}
+
+/**
  * Update 169: how [cov] is reshaped for [art] (Settings › Game look › Covers, cases & discs): Voltcap's own Steam /
  * Android cases always fit their cover (a cover not loaded yet counts as SteamGridDB's 2:3, so it rarely moves), the
  * consoles' only with "Console cases too" and once the cover's shape is known. Null: drawn as it is.
  */
 internal fun caseFitFor(cov: CoverTpl, art: Any?): CaseFit? {
     val own = cov.isOwn()
+    // (Update 171: a box scan as the cover is the whole front already.)
+    if (isBoxFront(cov, CoverAspects.rawOf(art as? String))) return null
     if (own) { if (!com.shelf.launcher.data.Features.ownCaseFit.state.value) return null }
     else if (!com.shelf.launcher.data.Features.allCaseFit.state.value) return null
     val url = art as? String ?: return null
@@ -349,8 +364,10 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
     val owner = LocalCaseOwner.current
     BoxWithConstraints(modifier) {
         val w = maxWidth; val h = maxHeight
+        // Update 171: a box scan used as the cover is the whole front (its own band and logo): it fills the case, unframed.
+        val boxFront = owner == null && isBoxFront(cov, CoverAspects.rawOf(art as? String))
         // (Update 169: the window where the reshaped front has it.)
-        val win = fit?.win ?: cov.win
+        val win = if (boxFront) floatArrayOf(0f, 0f, 1f, 1f) else fit?.win ?: cov.win
         // Update 136, Art drop / update 137, Art position (R1 › Art position): the cover moved in the window (down under
         // the frame's top band, up, sideways) and sized, the window cutting it off.
         val pos = ArtPlace.of(model = false)
@@ -376,7 +393,8 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
                 }
             )
         }
-        if (owner == null && fit != null) FittedFrame(cov, fit)
+        if (owner == null && boxFront) { /* (Update 171: the cover is the printed front itself — no frame over it.) */ }
+        else if (owner == null && fit != null) FittedFrame(cov, fit)
         else if (owner == null) Image(painterResource(cov.frontRes), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
         else PlainFrame(cov, owner, w, h)
     }

@@ -256,6 +256,15 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 171
+- **Box-scan covers:** `isBoxFront(cov, artAspect)` (CoverCases.kt): within 4.5 % of `frontAspect`, not within 2 % of 2:3,
+  never own cases → no frame (`CoverFace` window = whole front, `caseFitFor` null; `Case3D` face `cropTo`). Shape from
+  `CoverAspects.rawOf(url)` (unclamped, noted with `note`).
+- **Tile look:** `styleAspect(COVER)` = 1 when `carouselTiles()` (all style layouts' grids and panels).
+- **Carousel case media:** `mediaRoom` animated, full only for `i == focusIdx`; `CaseWithMedia3D(show)`; the carousel
+  unit adds `2 × room` for the focused game.
+- **Own 3D cases:** `OWN_CASE_DEPTH` 0.05 (Case3D) when no spine scan.
+
 ## State after update 170
 - **Printed backs:** `tools/media_templates/backs_build.py` (pack → `tpl_back_<id>.webp` + `backs.json`: the
   see-through screenshot windows not touching the edge, overlapping ones dropped; the biggest plain band of rows, also

@@ -215,8 +215,13 @@ internal fun carouselWideOn(cardArtType: com.shelf.launcher.data.CardArtType): B
 internal object CoverAspects {
     private val map = androidx.compose.runtime.mutableStateMapOf<String, Float>()
     fun of(url: String?): Float? = url?.let { map[it] }
+    /** Update 171: the picture's own shape, not kept to the slot's range (a wide SNES box scan is 1.37). */
+    private val raw = androidx.compose.runtime.mutableStateMapOf<String, Float>()
+    fun rawOf(url: String?): Float? = url?.let { raw[it] }
     fun note(url: String, w: Float, h: Float) {
         if (w <= 0f || h <= 0f || w.isInfinite() || h.isInfinite()) return
+        val r = w / h
+        if (raw[url]?.let { kotlin.math.abs(it - r) > 0.005f } != false) raw[url] = r
         val a = (w / h).coerceIn(0.5f, 1.25f)
         val old = map[url]
         if (old == null || kotlin.math.abs(old - a) > 0.01f) map[url] = a
@@ -768,9 +773,11 @@ internal fun GameCarousel(
         // (Update 162: the packed views — Box flow, Spine wall, Turned row — keep their gap beside it by its width too.)
         // (No room yet — a 0-high box while the screen opens: 1, not 0 / 0 = NaN, which crashes the offset.)
         val unitTarget = games.getOrNull(focus)?.takeIf { bigW > 0.dp }?.let { fg ->
+            // (Update 171: with the room for its cartridge / disc beside it, so the neighbours stand clear of it.)
+            val media = if (cases3d) caseMediaFor(fg, cardArtType, mixed)?.room(realCaseMm(fg.platform))?.times(2f) ?: 0f else 0f
             val a = if (cases3d) case3dAspect(fg, mixed) else if (carouselWideOn(cardArtType)) CAPSULE_ASPECT else shelfArtAspect(fg, cardArtType, hidden, mixed)
             val sh = carouselSlotH(a, bigW, bigH, mixed)
-            ((sh * a) / bigW).coerceIn(0.6f, 1.8f)
+            ((sh * (a + media)) / bigW).coerceIn(0.6f, 2.4f)
         } ?: 1f
         // (Update 162: on the same spring as the carousel, and read only while placing.)
         val unitState = animateFloatAsState(unitTarget, androidx.compose.animation.core.spring(1f, glideSpeed.stiffness, 0.001f), label = "carouselUnit")
@@ -1046,7 +1053,13 @@ private fun CarouselItem(
     // too: the disc half out of the case behind it, or the cartridge / disc leaning against it — the views drew the case
     // alone. The slot widens the same both sides, so the case stays in the middle.
     val withMedia = if (c.cases3d && model == null) caseMediaFor(g, c.cardArtType, c.mixed) else null
-    val mediaRoom = withMedia?.let { it.room(realCaseMm(g.platform)) } ?: 0f
+    // Update 171: only the game you're on shows its media (and gets the room for it): on every game of a packed view (Spine
+    // wall, Turned row) the cartridges lay over the neighbours' spines. It comes in and goes as you move.
+    val mediaFull = withMedia?.room(realCaseMm(g.platform)) ?: 0f
+    val mediaRoom by androidx.compose.animation.core.animateFloatAsState(
+        if (i == focusIdx) mediaFull else 0f, androidx.compose.animation.core.tween(240), label = "caseMediaRoom"
+    )
+    val mediaShow = if (mediaFull > 0f) (mediaRoom / mediaFull).coerceIn(0f, 1f) else 0f
     val w0 = h0 * aspect + h0 * mediaRoom * 2f
     // A 3D case or model turns in its own drawing, a spine faces you: only the other flat art turns its slot.
     // (Update 144: at most 78°, never edge-on.)
@@ -1116,7 +1129,7 @@ private fun CarouselItem(
         ) {
             if (model != null) CarouselModel(model, cover, g, on, yawOf, shadeOf)
             else if (c.cases3d && withMedia != null) CaseWithMedia3D(
-                g, cover, c.physicalMedia[g.stableKey], aspect, h0, withMedia, c, on, yawOf, shadeOf
+                g, cover, c.physicalMedia[g.stableKey], aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow
             )
             else if (c.cases3d) Case3D(
                 g, cover, c.physicalMedia[g.stableKey], 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
@@ -1162,7 +1175,9 @@ private fun caseMediaFor(g: Game, type: com.shelf.launcher.data.CardArtType, mix
 @Composable
 private fun CaseWithMedia3D(
     g: Game, cover: String?, physical: List<Pair<String, String>>?, caseAspect: Float, h: androidx.compose.ui.unit.Dp,
-    m: CaseMedia, c: CarouselCtx, on: Boolean, yawOf: () -> Float, shadeOf: () -> Float
+    m: CaseMedia, c: CarouselCtx, on: Boolean, yawOf: () -> Float, shadeOf: () -> Float,
+    /** Update 171: how far the media is in (0: not shown — only the game you're on has it). */
+    show: Float = 1f
 ) {
     val mm = realCaseMm(g.platform)
     val mh = h * m.size(mm)
@@ -1172,12 +1187,13 @@ private fun CaseWithMedia3D(
     val dens = c.dens
     @Composable
     fun MediaPiece(mod: Modifier) {
+        if (show <= 0.01f) return
         Box(mod.graphicsLayer {
             // Turned with the case, round the case's own middle.
             rotationY = yawOf()
             cameraDistance = 12f * dens
             val sh = shadeOf()
-            alpha = 1f - 0.35f * sh
+            alpha = (1f - 0.35f * sh) * show
         }) {
             PhysicalMedia(m.pick.shell, label ?: cover, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover, title = g.name, noCase = true)
         }
