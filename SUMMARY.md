@@ -4,6 +4,35 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (172): the real cartridge beside the 3D case, not inside a drawn one
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (1): `src_copy\ui\Carousel.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **A cartridge inside the cartridge** (your Donkey Kong Land III in the 3D carousel): the game's own cartridge photo was
+  printed on the label of Voltcap's drawn Game Boy cartridge, so a small real cartridge sat inside the drawn one. With
+  Voltcap's drawn cartridges off (the real ones, as in your other looks) the real photo is now the piece leaning
+  against the case; with them on, the drawn cartridge carries only the game's label scan or its cover.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 172: the real cartridge beside the 3D case, not inside a drawn one" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (171): no double console band on box-scan covers, Tile look in the Library panel, the case's media only on the game you're on, slimmer Steam / Android cases
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

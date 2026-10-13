@@ -1195,7 +1195,11 @@ private fun CaseWithMedia3D(
             val sh = shadeOf()
             alpha = (1f - 0.35f * sh) * show
         }) {
-            PhysicalMedia(m.pick.shell, label ?: cover, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover, title = g.name, noCase = true)
+            // Update 171: with Voltcap's drawn cartridges off ("Real discs"), the game's own cartridge / disc photo is the
+            // piece itself — it was put on the drawn cartridge's label, a small cartridge inside the cartridge.
+            val real = realScanOf(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, label)
+            if (real != null) RealMediaPicture(real, m.pick.shell.disc || m.pick.shell == MediaShell.UMD, Modifier.fillMaxSize())
+            else PhysicalMedia(m.pick.shell, label ?: cover, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover, title = g.name, noCase = true)
         }
     }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

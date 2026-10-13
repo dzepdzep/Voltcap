@@ -256,6 +256,10 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 172
+- `CaseWithMedia3D` (Carousel.kt): `realScanOf(CARTRIDGE_DISC, label)` → `RealMediaPicture` (drawn shells off), else
+  `PhysicalMedia` — as the flat cards do.
+
 ## State after update 171
 - **Box-scan covers:** `isBoxFront(cov, artAspect)` (CoverCases.kt): within 4.5 % of `frontAspect`, not within 2 % of 2:3,
   never own cases → no frame (`CoverFace` window = whole front, `caseFitFor` null; `Case3D` face `cropTo`). Shape from
