@@ -385,7 +385,11 @@ fun QuickSettingsCard(
             if (caseLookNow || lookNow == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) {
                 // Case looks: their own switch (the cases in 3D); Cartridges & discs / Cartridges: the 3D models.
                 val on3d = if (caseLookNow) F.caseModels3d.state.value else F.modelFinish.state.value != com.shelf.launcher.ui.ModelFinish.OFF
-                add(R1Tile("look3d", Icons.Filled.ViewInAr, if (on3d) "3D\non" else "3D\noff", on3d) {
+                // Update 182: greyed out in the case looks — the 3D cases cut the covers and looked worse than your real
+                // case scans; the cases and their inspect view stay as the flat (real) ones.
+                if (caseLookNow) add(R1Tile("look3d", Icons.Filled.ViewInAr, "3D\noff", false, disabled = true) {
+                    android.widget.Toast.makeText(context, "The case looks show your real cases — 3D is for cartridges & discs.", android.widget.Toast.LENGTH_SHORT).show()
+                }) else add(R1Tile("look3d", Icons.Filled.ViewInAr, if (on3d) "3D\non" else "3D\noff", on3d) {
                     // Update 162: 3D for the cartridges you see — each console's real cartridge, or your custom ones only
                     // when the Cartridges look is on your pack (clear when you picked clear).
                     // (Update 164: and back to the same kind flat — 3D custom → Custom cartridges, 3D clear → Clear, 3D → as before.)
@@ -760,6 +764,16 @@ fun QuickSettingsCard(
             runCatching { context.startActivity(com.shelf.launcher.device.audio.AppMixer.openIntent(context)) }
         })
         add(R1Tile("settings", Icons.Filled.Settings, "Android settings", false) { QuickControls.openAndroidSettings(context) })
+    }.let { list ->
+        // Update 182: in a layout that draws its games its own way, the Look tile's own options (case, disc, spine,
+        // cartridge styles, 3D) are greyed out as well — they changed nothing there.
+        val layoutNow = home?.appearance?.homeLayout
+        val own = layoutNow?.let { layoutOwnLook(it) }
+        if (own == null) list else list.map { t ->
+            if (t.id in LOOK_SUB_TILES && !t.disabled) R1Tile(t.id, t.icon, t.label, false, disabled = true) {
+                android.widget.Toast.makeText(context, "${layoutNow.label} draws its games as $own — this is for the other layouts.", android.widget.Toast.LENGTH_SHORT).show()
+            } else t
+        }
     }
     val byId = allTiles.associateBy { it.id }
     val ordered = order.mapNotNull { byId[it] } + allTiles.filter { it.id !in order }
@@ -1447,7 +1461,9 @@ private fun LayoutListPopup(home: R1Home, onDismiss: () -> Unit) {
             val current = remember { FocusRequester() }
             LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { current.requestFocus() } }
             androidx.compose.foundation.layout.Column(
-                Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState())
+                // (Update 182: as tall as the screen leaves room for — Done was cut off at the bottom on the Thor.)
+                Modifier.heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp - 200).coerceIn(120, 300).dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 ChipFlow {
                     com.shelf.launcher.data.HomeLayout.pickable.forEach { l ->
@@ -1619,3 +1635,6 @@ private fun VoltRail(level: Float, content: @Composable () -> Unit) {
 internal fun carouselApplies(layout: com.shelf.launcher.data.HomeLayout): Boolean =
     layout == com.shelf.launcher.data.HomeLayout.TV || !layout.styleHome ||
         layout == com.shelf.launcher.data.HomeLayout.SIDE || layout == com.shelf.launcher.data.HomeLayout.STACKS
+
+/** Update 182: the tiles that only tune the game look (greyed out with it in a layout with its own look). */
+private val LOOK_SUB_TILES = setOf("casestyle", "discstyle", "spinestyle", "cartlook", "look3d")

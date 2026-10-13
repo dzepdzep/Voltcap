@@ -256,6 +256,24 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 183
+- **Art vs details:** `scrapeMissingMetadata` lanes wait (`silent` only) while `scrapeJob` is active. Both use
+  ScreenScraper's single slot; the art waited behind details ("Getting art 1/215", seen on the Thor).
+- **Carousel:**
+  - `Carousel.spread` multiplies `gap`. It's set from GameCarousel: packed views `16 / n` (1–2.2), others `8 / n`
+    (1–1.5).
+  - `bigW` keeps room only for the lifted top (`/(1 + lift)`); the first term is `0.9`.
+  - Stage: tinted (accent → black), spotlight, floor pool, perspective lines, horizon glow and edge vignette.
+- **Endless:** `loopRow` pref key is `loop_row3` (default true, on again once).
+- **3D cases:** `caseModels3d` has a new key (`case_models_3d2`); R1 look3d is disabled in case looks.
+- **R1:** `LOOK_SUB_TILES` are disabled where `layoutOwnLook != null`; `LayoutListPopup` height follows the screen.
+- **Pocket:**
+  - `statusOn` is false for the Pocket layouts.
+  - Calendar cell 17, digits 6.5; Achievements 5.3 on one line.
+  - Responsive width up to `POCKET_H × 2.25`.
+- **Thor test method (release build):** layout via R1 › hold Layout. `screencap -d 4630946482288158084` for the second
+  screen, then pull and stage.
+
 ## State after update 182
 - **LaunchThrow (cart / disc):**
   - Phases: lift (0–150), glide upright (150–500), push into the slot (560–inEnd), click.

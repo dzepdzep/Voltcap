@@ -348,8 +348,13 @@ internal object Carousel {
     fun reach(side: Int, shown: CarouselView = view): Int =
         // (Update 182: with To the edge too — slim spines and boxes need three times as many to reach the edges.)
         if (shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) side * 3 else side
-    /** Spacing between the games (Settings, 60–160 %). */
-    val gap: Float get() = Features.carouselGap.state.value / 100f
+    /** Spacing between the games (Settings, 60–160 %), times [spread]. */
+    val gap: Float get() = Features.carouselGap.state.value / 100f * spread
+    /**
+     * Update 182: with only a few games the carousel spreads them out (set by GameCarousel from how many there are), so
+     * the sides aren't a small huddle in the middle with empty stage round it.
+     */
+    @Volatile var spread = 1f
 
     /** Update 135: how tall a spine aside is against the game you're on (they used to be nearly as tall as it). */
     const val SPINE_SIZE = 0.66f
@@ -756,38 +761,99 @@ internal fun GameCarousel(
         // (Update 173: the reflection and Box flow lift the one you're on; with a big Game size its top went over what's
         // above the carousel — Case stacks' tool strip. Its height is kept so the lifted top still fits.)
         val lift = (if (Features.carouselReflect.state.value) 0.08f else 0f) + (if (view == CarouselView.BOX_FLOW) 0.04f else 0f)
-        val bigW = minOf(maxHeight * 0.84f * 0.72f * sizeK, maxHeight * 0.97f * 0.72f / (1f + 2f * lift), maxWidth * 0.5f * sizeK)
+        // (Update 182: room kept only for the lifted top — the reflection may run on under what's below the carousel —
+        // so the games are bigger; they were small on the Thor's wide screen.)
+        val bigW = minOf(maxHeight * 0.9f * 0.72f * sizeK, maxHeight * 0.97f * 0.72f / (1f + lift), maxWidth * 0.5f * sizeK)
+        // Update 182: few games, spread out (the packed views most, their boxes are slim).
+        val packed = view == CarouselView.BOX_FLOW || view == CarouselView.SPINE_WALL
+        val spreadNow = if (packed) (16f / games.size.coerceAtLeast(2)).coerceIn(1f, 2.2f) else (8f / games.size.coerceAtLeast(2)).coerceIn(1f, 1.5f)
+        androidx.compose.runtime.SideEffect { Carousel.spread = spreadNow }
         val bigH = bigW / 0.72f
         // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the
         // games stand on, a faint gloss line along it, and stays dark below (drawn past the bottom of the carousel).
         if (Features.carouselStage.state.value) {
             val floorK = 0.5f + (bigH / maxHeight) / 2f - (if (Features.carouselReflect.state.value) (bigH * 0.08f) / maxHeight else 0f)
+            // Update 182: the stage with more life — tinted by your colour, a soft spotlight behind the game you're on,
+            // a pool of light on the glossy floor under it, a horizon line that glows in the middle and fades to the
+            // sides, faint lines running into the distance, and the edges dimmed (it was plain black).
+            val accent = com.shelf.launcher.ui.theme.ShelfTheme.accent
+            val deep = androidx.compose.ui.graphics.lerp(accent, Color.Black, 0.86f)
+            val bigHpx = with(androidx.compose.ui.platform.LocalDensity.current) { bigH.toPx() }
             androidx.compose.foundation.Canvas(Modifier.matchParentSize().zIndex(-1000f)) {
                 val floorY = size.height * floorK
                 val below = size.height * 1.5f
+                val cx = size.width / 2f
                 drawRect(
                     androidx.compose.ui.graphics.Brush.verticalGradient(
-                        0f to Color.Black.copy(alpha = 0f), 0.35f to Color.Black.copy(alpha = 0.55f), 1f to Color.Black.copy(alpha = 0.9f),
+                        0f to Color.Black.copy(alpha = 0f), 0.35f to deep.copy(alpha = 0.6f), 1f to deep.copy(alpha = 0.93f),
                         startY = -size.height * 0.25f, endY = floorY
                     ),
                     topLeft = androidx.compose.ui.geometry.Offset(0f, -size.height * 0.25f),
                     size = androidx.compose.ui.geometry.Size(size.width, floorY + size.height * 0.25f)
                 )
-                drawRect(
-                    Color.Black.copy(alpha = 0.92f), topLeft = androidx.compose.ui.geometry.Offset(0f, floorY),
-                    size = androidx.compose.ui.geometry.Size(size.width, below)
+                // The spotlight behind the game you're on.
+                val spotC = androidx.compose.ui.geometry.Offset(cx, floorY - bigHpx * 0.5f)
+                drawCircle(
+                    androidx.compose.ui.graphics.Brush.radialGradient(
+                        listOf(accent.copy(alpha = 0.22f), accent.copy(alpha = 0.06f), Color.Transparent), center = spotC, radius = bigHpx * 1.25f
+                    ),
+                    radius = bigHpx * 1.25f, center = spotC
                 )
-                // The glossy floor: a soft sheen just under the line the games stand on.
+                // The floor.
                 drawRect(
                     androidx.compose.ui.graphics.Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.07f), Color.Transparent), startY = floorY, endY = floorY + size.height * 0.22f
+                        listOf(androidx.compose.ui.graphics.lerp(deep, Color.Black, 0.2f).copy(alpha = 0.95f), Color.Black.copy(alpha = 0.97f)),
+                        startY = floorY, endY = floorY + size.height * 0.5f
+                    ),
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, floorY),
+                    size = androidx.compose.ui.geometry.Size(size.width, below)
+                )
+                // Lines running into the distance (towards a point far behind the game you're on).
+                val vanish = androidx.compose.ui.geometry.Offset(cx, floorY - size.height * 0.6f)
+                val bottom = floorY + size.height * 0.6f
+                for (k in -7..7) {
+                    if (k == 0) continue
+                    val xb = cx + k * size.width * 0.16f
+                    val t = (floorY - vanish.y) / (bottom - vanish.y)
+                    val xf = vanish.x + (xb - vanish.x) * t
+                    drawLine(
+                        Color.White.copy(alpha = 0.035f), androidx.compose.ui.geometry.Offset(xf, floorY),
+                        androidx.compose.ui.geometry.Offset(xb, bottom), strokeWidth = 1.2f
+                    )
+                }
+                // A pool of light on the floor under the game you're on.
+                drawOval(
+                    androidx.compose.ui.graphics.Brush.radialGradient(
+                        listOf(Color.White.copy(alpha = 0.10f), accent.copy(alpha = 0.05f), Color.Transparent),
+                        center = androidx.compose.ui.geometry.Offset(cx, floorY + bigHpx * 0.05f), radius = size.width * 0.32f
+                    ),
+                    topLeft = androidx.compose.ui.geometry.Offset(cx - size.width * 0.32f, floorY - bigHpx * 0.06f),
+                    size = androidx.compose.ui.geometry.Size(size.width * 0.64f, bigHpx * 0.32f)
+                )
+                // The glossy floor's sheen just under the line the games stand on.
+                drawRect(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.06f), Color.Transparent), startY = floorY, endY = floorY + size.height * 0.22f
                     ),
                     topLeft = androidx.compose.ui.geometry.Offset(0f, floorY),
                     size = androidx.compose.ui.geometry.Size(size.width, size.height * 0.22f)
                 )
-                drawLine(
-                    Color.White.copy(alpha = 0.12f), androidx.compose.ui.geometry.Offset(0f, floorY),
-                    androidx.compose.ui.geometry.Offset(size.width, floorY), strokeWidth = 1.5f
+                // The horizon: brightest in the middle, in your colour, fading to the sides.
+                drawRect(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        0f to Color.Transparent, 0.3f to accent.copy(alpha = 0.25f), 0.5f to Color.White.copy(alpha = 0.32f),
+                        0.7f to accent.copy(alpha = 0.25f), 1f to Color.Transparent
+                    ),
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, floorY - 0.75f),
+                    size = androidx.compose.ui.geometry.Size(size.width, 1.5f)
+                )
+                // The edges dimmed.
+                drawRect(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        0f to Color.Black.copy(alpha = 0.45f), 0.18f to Color.Transparent, 0.82f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.45f)
+                    ),
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, -size.height * 0.25f),
+                    size = androidx.compose.ui.geometry.Size(size.width, size.height * 1.75f + below)
                 )
             }
         }

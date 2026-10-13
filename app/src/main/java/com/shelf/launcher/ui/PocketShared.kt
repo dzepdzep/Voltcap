@@ -83,7 +83,7 @@ internal fun PocketScreen(
         val uPx = if (responsive) fit else floor(fit).coerceAtLeast(1f).let { if (fit < 1f) fit else it }
         // Update 182: the background fills the whole screen (wider up to 16:9, taller as there's room); the design sits
         // in its middle — it used to be a small 4:3 picture letterboxed on the Thor's screens.
-        val width = (wPx / uPx).coerceIn(POCKET_W, if (responsive) POCKET_H * 16f / 9f else wPx / uPx)
+        val width = (wPx / uPx).coerceIn(POCKET_W, if (responsive) POCKET_H * 2.25f else wPx / uPx) // (182: to the edges of a wide screen)
         val fullH = (hPx / uPx).coerceAtLeast(designH)
         val scope = PocketScope((uPx / density).dp, width, density, fullH, ((fullH - designH) / 2f).coerceAtLeast(0f))
         Box(Modifier.size(scope.d(scope.width), scope.d(fullH))) {

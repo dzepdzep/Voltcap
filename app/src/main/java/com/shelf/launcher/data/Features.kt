@@ -1351,7 +1351,8 @@ object Features {
     /** Update 151: Case stacks: the game in the middle as a real 3D case, turned a little so its spine shows (off: flat). */
     val stacks3d = BoolPref("stacks_3d", true)
     /** Update 159: the case looks (Real cases, Cases · real sizes) in your 3D shape library's cases (R1 › 3D). */
-    val caseModels3d = BoolPref("case_models_3d", false)
+    /** (Update 182: off for good — the R1 3D tile is greyed out in the case looks; your real case scans look better.) */
+    val caseModels3d = BoolPref("case_models_3d2", false)
     /** Update 159: Case stacks: the tool strip along the top (your round shortcuts as small square buttons). */
     val stacksToolbar = BoolPref("stacks_toolbar", true)
     /**

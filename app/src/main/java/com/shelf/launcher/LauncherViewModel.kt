@@ -2386,6 +2386,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 if (!isActive) { lanes.release(); break }
                 launch { try {
                 com.shelf.launcher.data.GameMode.awaitNotPlaying()
+                // Update 182: the automatic details give way to the artwork while it's being looked up. Both ask
+                // ScreenScraper, which answers one request at a time, so "Getting art" stood at 1 until every game's
+                // details were done ("Getting art 1/215 · Details 134/182" on the Thor).
+                if (silent) while (scrapeJob?.isActive == true) kotlinx.coroutines.delay(1_500L)
                 val fresh = runCatching {
                     if (rawgOnly) {
                         rawgKeyStore.load()?.let { rawgRepository.fetchMetadata(it, game.name, game.platform) }

@@ -273,7 +273,8 @@ private fun PocketCalendar(s: PocketScope, time: LongState, tz: java.util.TimeZo
         first to cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
     }
     val (first, days) = month
-    val cell = 16f
+    // (Update 182: wider cells and smaller digits — two-digit days ran into each other.)
+    val cell = 17f
     val rowH = 20f
     with(s) {
         // The month, small and centred over the grid.
@@ -289,7 +290,7 @@ private fun PocketCalendar(s: PocketScope, time: LongState, tz: java.util.TimeZo
             val cy0 = y + 28f + row * rowH
             val today = d == day.dayOfMonth
             if (today) Box(Modifier.at(cx0 + 1f, cy0 + 2f, cell - 2f, rowH - 4f).background(accent))
-            PocketText(s, "$d", cx0, cy0, cell, rowH, 8f, if (today) Color.White else if (col == 0) SundayC else if (col == 6) SaturdayC else InkC, font, TextAlign.Center)
+            PocketText(s, "$d", cx0, cy0, cell, rowH, 6.5f, if (today) Color.White else if (col == 0) SundayC else if (col == 6) SaturdayC else InkC, font, TextAlign.Center)
         }
         // Thin lines between the weeks.
         val rows = (first + days + 6) / 7
@@ -354,8 +355,9 @@ private fun PocketHome(s: PocketScope, c: StyleCtx, accent: Color, font: android
         }
         // Achievements and the category you're in.
         PocketPanel(s, ACH, 42f, 66f, 88f, 38f, accent, spot, thick = true, onTap = { pocketActivate(c, ACH) }) {
-            Canvas(Modifier.at(5f - cx, 11f, 16f, 16f)) { pocketIcon(PocketIcons.TROPHY, InkC, accent) }
-            PocketText(s, "Achievements", 22f - cx, 5f, 64f, 28f, 7f, InkC, font, TextAlign.Center, maxLines = 2)
+            Canvas(Modifier.at(4f - cx, 11f, 16f, 16f)) { pocketIcon(PocketIcons.TROPHY, InkC, accent) }
+            // (Update 182: one line, a size that fits — it broke as "Achieveme / nts".)
+            PocketText(s, "Achievements", 21f - cx, 5f, 66f, 28f, 5.3f, InkC, font, TextAlign.Center)
             Box(Modifier.at(80f - cx, 30f, 6f, 6f).background(accent))
         }
         val stop = c.stopAt(0)

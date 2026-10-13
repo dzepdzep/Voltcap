@@ -4,6 +4,62 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (183): art no longer waits for details, a livelier carousel stage, bigger and spread-out games, Endless on, 3D off for cases, Pocket fixes from the Thor
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (7): `src_copy\LauncherViewModel.kt`,
+`src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\PocketClassic.kt`,
+`src_copy\ui\PocketShared.kt`, `src_copy\ui\QuickSettings.kt`.
+
+**Files to delete:** none.
+
+### "Getting art 1/215": found on the Thor
+- **The cause:** the automatic **Details** download and the artwork both ask ScreenScraper, which answers one request
+  at a time, so the art waited until every game's details were done. On the Thor it stood at 1/215 while Details went
+  134/182; once Details finished, it ran to 211/215 in about two minutes.
+- **The fix:** the automatic details now wait while the artwork is being looked up, so the art comes first.
+
+### The carousel stage (the dark area the games stand on)
+- **Look:** still dark, with more life in it:
+  - tinted with your theme's colour;
+  - a soft spotlight behind the game you're on, and a pool of light on the floor under it;
+  - a horizon line glowing in the middle and fading to the sides;
+  - faint floor lines running into the distance;
+  - darker edges.
+- **Bigger games:** the room the reflection kept under the games now goes to the games themselves (the reflection can
+  run under the panel below). Settings › Home › Layout › Carousel › Game size can grow them further.
+- **Spread out:** with only a few games they're spaced wider, Box flow and Spine wall most, so the sides aren't empty.
+- **Endless** is on again by default (switched on once for everyone), so a carousel with few games has games on both
+  sides; each game still shows once. R1 › Endless turns it off.
+
+### 3D cases greyed out
+- R1 › **3D** is greyed out in the case looks.
+- The 3D case models cropped the covers (the PS1 Donald Duck case showed only part of its cover with a name strip), and
+  your real case scans look better.
+- Cases are drawn as your real (flat) cases in the carousel and when you open a game. 3D stays for cartridges & discs.
+
+### R1 quick settings
+- In a layout that draws its games its own way (the Pocket layouts, Twin desk…), the Look tile's own options (Case,
+  Disc, Spine, Cartridge, 3D) are greyed out with it.
+- Holding **Layout**: the list fits the screen, so **Done** isn't cut off at the bottom on the Thor any more.
+
+### Pocket layouts (checked on the Thor)
+- **Status bar:** Voltcap's own status bar is hidden there; it sat over the layout's bar with your name, the date,
+  the time and the battery.
+- **Calendar:** two-digit days no longer run into each other ("1213" → "12 13").
+- **Achievements:** fits on one line; it broke as "Achieveme / nts".
+- **Width:** the top screen reaches further toward the edges of a wide screen.
+
+### Checked on the Thor, working
+- **Real cases:** your real case scans in Box flow (PS1, GameCube, GB…).
+- **Pocket classic:** the panels, the redrawn icons, the toolbar with Second screen, and the home strip.
+- **Pocket ribbon:** the bigger icons, the tools, the strip, and the controller going ▼ row → tools → strip.
+- **Second screen:** the Games page as Tiles with its look chips.
+- **Thor afterwards:** set back to Case stacks with 3D off.
+
+---
+
 ## Update — 14 Oct 2026 (182): calmer game start, Achievements column with comments, Pocket layouts bigger with a home strip, second screen reachable, playtime sync, art scraping
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

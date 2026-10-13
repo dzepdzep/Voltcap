@@ -1078,7 +1078,7 @@ class AppearanceStore(context: Context) {
             .let { if (it == DetailsBackdrop.BLURRED_HERO) DetailsBackdrop.COLORS else it },
         logoPlacement = enumPref("logo_placement", LogoPlacement.LEFT),
         // "Endless" (R1 tile): on by default. A new key, so an old saved "off" from before it was forced on is ignored.
-        loopRow = prefs.getBoolean("loop_row2", true),
+        loopRow = prefs.getBoolean("loop_row3", true), // (Update 182: on again for everyone once — the sides of a carousel with few games stood empty)
         categoryScreen = enumPref("category_screen", CategoryScreenMode.ON_B),
         fullConsoleNames = prefs.getBoolean("full_console_names", true),
         hotkeys = decodeHotkeys(prefs.getString("hotkeys_v2", null)),
@@ -1268,7 +1268,7 @@ class AppearanceStore(context: Context) {
             putBoolean("focus_border", s.focusBorder)
             putString("details_backdrop", s.detailsBackdrop.name)
             putString("logo_placement", s.logoPlacement.name)
-            putBoolean("loop_row2", s.loopRow)
+            putBoolean("loop_row3", s.loopRow)
             putString("category_screen", s.categoryScreen.name)
             putBoolean("full_console_names", s.fullConsoleNames)
             putString("hotkeys_v2", encodeHotkeys(s.hotkeys))
@@ -1481,7 +1481,9 @@ fun AppearanceSettings.cardArtFor(layout: HomeLayout = homeLayout): CardArtType 
 val AppearanceSettings.statusOn: Boolean
     get() = showStatusBar && (homeLayout != HomeLayout.CHAN || Features.chanStatusBar.state.value) && !spotOwnTop &&
         // Update 158: Hero tiles has its own status pill on the picture (unless its Status bar is turned on).
-        (homeLayout != HomeLayout.HERO_TILES || Features.heroTilesStatusBar.state.value)
+        (homeLayout != HomeLayout.HERO_TILES || Features.heroTilesStatusBar.state.value) &&
+        // Update 182: the Pocket layouts have their own bar on top (name, date, time, battery); Voltcap's sat over it.
+        homeLayout != HomeLayout.POCKET_CLASSIC && homeLayout != HomeLayout.POCKET_RIBBON
 
 /** Update 132: Spotlight's Home menu draws its own top row (and its own button hints), so the status bar steps aside. */
 val AppearanceSettings.spotOwnTop: Boolean
