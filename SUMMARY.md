@@ -4,6 +4,39 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (165): no dark blocks beside the games in the carousel
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (1): `src_copy\ui\Carousel.kt`.
+
+**Files to delete:** none.
+
+### What changed
+- **Dark blocks next to the games beside the middle one** (cartridges, discs, other media while scrolling): the side
+  drawn for a turned piece's thickness (162) grew without limit as a piece turned toward side-on, so in Box flow and
+  the other turned views a wide dark slab stood next to it. The side is now at most about one and a half thicknesses
+  wide, only drawn while the front still shows (up to 60°), and lighter — the shell's plastic, not a black strip.
+
+### Checked on the Pocket Classic (164 installed)
+- Opening a game: the piece flies out and turns all the way round (front, side, back, side, front) on Lite.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 165: no dark blocks beside the turned games in the carousel" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (164): every kind of cartridge a look of its own, the inspect turn on Lite
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

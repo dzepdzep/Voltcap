@@ -1134,7 +1134,9 @@ private fun MediaBandLayer(band: MediaBand, dens: Float, turnOf: () -> Float, sh
     Canvas(Modifier.fillMaxSize().graphicsLayer { rotationY = turnNow.value(); cameraDistance = 12f * dens }) {
         val t = turnNow.value()
         val a = kotlin.math.abs(t)
-        if (a >= 3f) {
+        // (Update 165: only while the front still shows well — past 60° the piece is mostly its side and the band only
+        // added a dark block.)
+        if (a >= 3f && a <= 60f) {
             // (ShelfGameArt draws a piece 4 dp in from its slot.)
             val inset = 4f * dens
             val w = (size.width - inset * 2f).coerceAtLeast(1f)
@@ -1148,8 +1150,11 @@ private fun MediaBandLayer(band: MediaBand, dens: Float, turnOf: () -> Float, sh
             val rad = Math.toRadians(a.toDouble())
             val across = if (band.round) minOf(w, h) else w
             // Seen at turn a, a side t deep shows t·sin a wide; in the turned layer that's t·tan a.
-            val shift = band.thick * across * kotlin.math.tan(rad).toFloat() * (if (t > 0f) -1f else 1f)
-            val l = ((0.45f + 0.4f * kotlin.math.sin(rad).toFloat()) * (1f - shadeNow.value())).coerceIn(0f, 1f)
+            // (Update 165: capped — near side-on tan grows without end, and turned 70–80° in Box flow the side stood out as a
+            // wide dark slab next to the games aside. Now at most about one and a half thicknesses.)
+            val shift = band.thick * across * kotlin.math.tan(rad).toFloat().coerceAtMost(1.5f) * (if (t > 0f) -1f else 1f)
+            // (Update 165: lighter, so the side reads as the shell's plastic, not a black strip.)
+            val l = ((0.7f + 0.3f * kotlin.math.sin(rad).toFloat()) * (1f - 0.6f * shadeNow.value())).coerceIn(0f, 1f)
             val col = Color(band.color.red * l, band.color.green * l, band.color.blue * l)
             val edge = Color((band.color.red * l + 0.12f).coerceAtMost(1f), (band.color.green * l + 0.12f).coerceAtMost(1f), (band.color.blue * l + 0.12f).coerceAtMost(1f))
             clipPath(path, androidx.compose.ui.graphics.ClipOp.Difference) {
