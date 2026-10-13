@@ -61,6 +61,10 @@ private class LookStep(
     val carts: Boolean = false,
     /** Update 141: the 3D models (your 3D shape library) with the Cartridges & discs type. */
     val models: Boolean = false,
+    /** Update 164: which 3D finish this look is (Real / Custom / Clear), and the Cartridges looks' source and shell. */
+    val finish: ModelFinish? = null,
+    val source: CartSource? = null,
+    val clear: Boolean = false,
     /** Update 151: 3D case + disc (the 3D box with the disc half out of it). */
     val disc3d: Boolean = false
 )
@@ -81,9 +85,14 @@ private val LOOK_STEPS = listOf(
     LookStep(CardArtType.CASE, false, true, "Case + its media"),
     LookStep(CardArtType.CARTRIDGE_DISC, false, false, "Cartridges & discs"),
     // (Update 128: "Cartridges" — with your own cartridge pack, R1 › Cartridges.)
-    LookStep(CardArtType.CARTRIDGE_DISC, false, false, "Cartridges", carts = true),
-    // (Update 141: the 3D models as a look of their own, so they're easy to find — R1 › Game look too.)
-    LookStep(CardArtType.CARTRIDGE_DISC, false, false, "3D models", models = true),
+    // (Update 164: each kind of cartridge a look of its own — it was one "Cartridges" and one "3D models" look whose real /
+    // custom / clear came from hidden switches, which was confusing.)
+    LookStep(CardArtType.CARTRIDGE_DISC, false, false, "Cartridges", carts = true, source = CartSource.ORIGINAL),
+    LookStep(CardArtType.CARTRIDGE_DISC, false, false, "Custom cartridges", carts = true, source = CartSource.CUSTOM),
+    LookStep(CardArtType.CARTRIDGE_DISC, false, false, "Clear cartridges", carts = true, source = CartSource.CUSTOM, clear = true),
+    LookStep(CardArtType.CARTRIDGE_DISC, false, false, "3D cartridges", models = true, finish = ModelFinish.REAL),
+    LookStep(CardArtType.CARTRIDGE_DISC, false, false, "3D custom cartridges", models = true, finish = ModelFinish.CUSTOM),
+    LookStep(CardArtType.CARTRIDGE_DISC, false, false, "3D clear cartridges", models = true, finish = ModelFinish.CLEAR),
     LookStep(CardArtType.DISC, false, false, "Discs only")
 )
 
@@ -100,9 +109,42 @@ private fun currentStep(a: AppearanceSettings): LookStep? {
     val d3 = com.shelf.launcher.data.Features.discCase3d.value
     return LOOK_STEPS.firstOrNull {
         it.type == t && (!isCase || (it.leaning == lean && (lean || (it.discInCase == disc && (!disc || it.disc3d == d3))))) &&
-            (t != CardArtType.CARTRIDGE_DISC || (if (models) it.models else (!it.models && it.carts == carts))) &&
+            (t != CardArtType.CARTRIDGE_DISC || (if (models) it.finish == com.shelf.launcher.data.Features.modelFinish.value
+                else (!it.models && it.carts == carts && (!carts || cartStepMatches(it))))) &&
             (t != CardArtType.COVER || (it.spine == spine && (spine || (it.tile == tile && (tile || it.focus == null || it.focus == a.focusedCardStyle)))))
     }
+}
+
+/** Update 164: a Cartridges look matches the source / shell in use (Original ignores clear: it keeps each console's own). */
+private fun cartStepMatches(st: LookStep): Boolean {
+    val F = com.shelf.launcher.data.Features
+    if (st.source != F.cartSource.value) return false
+    return st.source == CartSource.ORIGINAL || st.clear == F.cartClear.value
+}
+
+/** Update 164: switches a step's cartridge / 3D settings on (and the others off). */
+private fun applyCartStep(st: LookStep) {
+    val F = com.shelf.launcher.data.Features
+    F.cartsOnly.value = st.carts
+    if (st.carts && st.source != null) {
+        F.cartSource.value = st.source
+        if (st.source == CartSource.CUSTOM) F.cartClear.value = st.clear
+    }
+    val fin = st.finish
+    if (fin != null) {
+        if (F.modelFinish.value == ModelFinish.OFF) F.modelFinishLast.value = fin
+        F.modelFinish.value = fin
+    } else setModelsLook(false)
+}
+
+/** Update 164: picks a cartridge look by its place in the list (Settings chips). */
+private fun pickCartStep(st: LookStep, appearance: AppearanceSettings, onChange: (AppearanceSettings) -> Unit) {
+    val F = com.shelf.launcher.data.Features
+    F.squareTiles.value = false
+    F.spineLook.value = false
+    F.gridTiles.value = false
+    applyCartStep(st)
+    onChange(appearance.copy(cardArtType = CardArtType.CARTRIDGE_DISC))
 }
 
 /** Name of the look in use for the R1 tile (the case variants included). */
@@ -117,8 +159,7 @@ internal fun stepGameLook(a: AppearanceSettings): AppearanceSettings {
     com.shelf.launcher.data.Features.discCase3d.value = next.disc3d // Update 151
     com.shelf.launcher.data.Features.squareTiles.value = next.tile
     com.shelf.launcher.data.Features.spineLook.value = next.spine
-    com.shelf.launcher.data.Features.cartsOnly.value = next.carts
-    setModelsLook(next.models)
+    applyCartStep(next)
     // (Update 119: the Grid's "Games as square tiles" drew covers whatever the look was, so the cartridges, discs and
     // cases never showed there: picking one of those turns it off.)
     if (next.type != CardArtType.COVER) com.shelf.launcher.data.Features.gridTiles.value = false
@@ -165,29 +206,11 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
                 onChange(appearance.copy(cardArtType = type))
             }
         }
-        // Update 141: every game as its piece from your 3D shape library (3D cartridges, cards and cases).
-        Chip((if (modelsNow) "✓ " else "") + "3D models", accent = modelsNow) {
-            com.shelf.launcher.data.Features.squareTiles.value = false
-            com.shelf.launcher.data.Features.spineLook.value = false
-            com.shelf.launcher.data.Features.cartsOnly.value = false
-            com.shelf.launcher.data.Features.gridTiles.value = false
-            setModelsLook(true)
-            onChange(appearance.copy(cardArtType = CardArtType.CARTRIDGE_DISC))
-        }
         Chip((if (com.shelf.launcher.data.Features.squareTiles.state.value) "✓ " else "") + "Tile", accent = com.shelf.launcher.data.Features.squareTiles.state.value) {
             com.shelf.launcher.data.Features.cartsOnly.value = false
             com.shelf.launcher.data.Features.squareTiles.value = true
             com.shelf.launcher.data.Features.spineLook.value = false
             onChange(appearance.copy(cardArtType = CardArtType.COVER))
-        }
-        // Update 125: every game as a cartridge (update 128: on your cartridge pack where it has to be, or for all).
-        Chip((if (cartsNow) "✓ " else "") + "Cartridges", accent = cartsNow) {
-            com.shelf.launcher.data.Features.squareTiles.value = false
-            com.shelf.launcher.data.Features.spineLook.value = false
-            setModelsLook(false)
-            com.shelf.launcher.data.Features.cartsOnly.value = true
-            com.shelf.launcher.data.Features.gridTiles.value = false
-            onChange(appearance.copy(cardArtType = CardArtType.CARTRIDGE_DISC))
         }
         // Update 113: every game as its spine.
         val spines = com.shelf.launcher.data.Features.spineLook.state.value
@@ -198,6 +221,20 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
             onChange(appearance.copy(cardArtType = CardArtType.COVER))
         }
     }
+    // Update 164: every kind of cartridge, flat and 3D, as a look of its own.
+    Spacer(Modifier.height(8.dp))
+    SectionLabel("Cartridges")
+    ChipFlow {
+        // (Read as state, so the ticks follow a change at once.)
+        val F0 = com.shelf.launcher.data.Features
+        F0.cartsOnly.state.value; F0.cartSource.state.value; F0.cartClear.state.value; F0.modelFinish.state.value
+        val cur = currentStep(appearance)
+        LOOK_STEPS.filter { it.type == CardArtType.CARTRIDGE_DISC && (it.carts || it.models) }.forEach { st ->
+            val on = cur === st
+            Chip((if (on) "✓ " else "") + st.label, accent = on) { pickCartStep(st, appearance, onChange) }
+        }
+    }
+    MutedNote("Cartridges: each console's own cartridge, disc games on your pack. Custom: every game on your cartridge pack. Clear: the pack in clear plastic. 3D: the same from your 3D shape library, turning in true 3D.")
     Spacer(Modifier.height(8.dp))
     SectionLabel("Cases with a disc")
     ChipFlow {
@@ -300,19 +337,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
 private fun CartridgeOptions() {
     val F = com.shelf.launcher.data.Features
     Spacer(Modifier.height(8.dp))
-    SectionLabel("Cartridges")
-    ChipFlow {
-        CartSource.values().forEach { src ->
-            val on = F.cartSource.state.value == src
-            Chip((if (on) "✓ " else "") + src.label, accent = on) { F.cartSource.value = src }
-        }
-    }
-    ChipFlow {
-        val clear = F.cartClear.state.value
-        Chip((if (!clear) "✓ " else "") + "Opaque", accent = !clear) { F.cartClear.value = false }
-        Chip((if (clear) "✓ " else "") + "Clear", accent = clear) { F.cartClear.value = true }
-    }
-    Spacer(Modifier.height(4.dp))
+    // (Update 164: Original / Custom and Opaque / Clear are looks of their own now, Cartridges above.)
     SectionLabel("Cartridge shape")
     ChipFlow {
         CartLook.values().forEach { look ->

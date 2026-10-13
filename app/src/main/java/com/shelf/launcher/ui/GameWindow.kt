@@ -586,7 +586,7 @@ internal fun GameWindow(
             LaunchedEffect(slot != null, motion) {
                 if (slot == null) return@LaunchedEffect
                 MediaInspect.key = g.stableKey
-                motion.open(inspectScope, fullInspect, spin = !lite)
+                motion.open(inspectScope, fullInspect, spin = fullInspect) // (Update 164: the turn too on Lite, with Full animations on Lite)
             }
         }
         if (tvRect != null) {

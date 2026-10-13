@@ -4,6 +4,43 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (164): every kind of cartridge a look of its own, the inspect turn on Lite
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (3): `src_copy\ui\` GameLookPicker,
+GameWindow, QuickSettings (all `.kt`).
+
+**Files to delete:** none.
+
+### What changed
+- **Six cartridge looks instead of two looks plus hidden switches** — Settings › Game look › Cartridges, and each one a
+  step of R1 › Look:
+  - **Cartridges** — each console's own cartridge (disc games on your pack).
+  - **Custom cartridges** — every game on your cartridge pack.
+  - **Clear cartridges** — your pack in clear plastic.
+  - **3D cartridges** / **3D custom cartridges** / **3D clear cartridges** — the same from your 3D shape library.
+  The old Original / Custom and Opaque / Clear switches are gone from the Cartridges options (the shape stays).
+- **R1 › 3D** keeps the kind: Custom ⇄ 3D custom, Clear ⇄ 3D clear, Cartridges ⇄ 3D cartridges.
+- **The turn when opening a game now runs on Lite too** (with Full animations on Lite on): the piece flew out in 163,
+  but the slow turn was still left out on the Pocket Classic.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`. Checked on the Pocket Classic (163): the piece flies out and back.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 164: each cartridge kind a look of its own, the inspect turn on Lite" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (163): full animations on Lite, 3D models turn all the way round, R1 › 3D shows your cartridge
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

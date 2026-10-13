@@ -380,9 +380,17 @@ fun QuickSettingsCard(
                 add(R1Tile("look3d", Icons.Filled.ViewInAr, if (on3d) "3D\non" else "3D\noff", on3d) {
                     // Update 162: 3D for the cartridges you see — each console's real cartridge, or your custom ones only
                     // when the Cartridges look is on your pack (clear when you picked clear).
+                    // (Update 164: and back to the same kind flat — 3D custom → Custom cartridges, 3D clear → Clear, 3D → as before.)
                     if (caseLookNow) F.caseModels3d.value = !on3d
-                    else if (on3d) setModelsLook(false)
-                    else {
+                    else if (on3d) {
+                        val was = F.modelFinish.value
+                        setModelsLook(false)
+                        if (was == com.shelf.launcher.ui.ModelFinish.CUSTOM || was == com.shelf.launcher.ui.ModelFinish.CLEAR) {
+                            F.cartsOnly.value = true
+                            F.cartSource.value = CartSource.CUSTOM
+                            F.cartClear.value = was == com.shelf.launcher.ui.ModelFinish.CLEAR
+                        }
+                    } else {
                         val custom = F.cartsOnly.value && F.cartSource.value == CartSource.CUSTOM
                         F.modelFinish.value = if (!custom) com.shelf.launcher.ui.ModelFinish.REAL
                             else if (F.cartClear.value) com.shelf.launcher.ui.ModelFinish.CLEAR else com.shelf.launcher.ui.ModelFinish.CUSTOM
