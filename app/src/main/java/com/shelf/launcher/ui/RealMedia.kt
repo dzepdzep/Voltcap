@@ -485,7 +485,10 @@ private fun CaseArtBody(
                     CaseArtFace(platform, cover, scan, Modifier.fillMaxSize(), title, detail, caseModifier, allowDiscCase = false, spine = spine)
                 }
                 // The game's own cartridge / disc picture when it has one (update 104), else Voltcap's drawn one.
-                val ownMedia = BoxTexture.mediaFor(scan)
+                // Update 173: matched to the case — the real cartridge / disc beside the game's real (scanned) case, Voltcap's
+                // own beside its template case — whatever the drawn-media setting says.
+                val caseReal = com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !LookStyles.caseForAll()
+                val ownMedia = if (caseReal) BoxTexture.mediaOfFront(scan) else null
                 if (ownMedia != null) RealMediaPicture(ownMedia, round, Modifier.align(Alignment.BottomEnd).offset(y = -h * 0.03f).size(mW, mH))
                 else PhysicalMedia(
                     shell, cover ?: scan, Modifier.align(Alignment.BottomEnd).offset(y = -h * 0.03f).size(mW, mH),

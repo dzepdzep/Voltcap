@@ -6,6 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toArgb
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.Game
@@ -90,8 +91,13 @@ internal fun Case3D(
             }.getOrNull()
         }
     }
-    val face = remember(front, aspect, band) {
-        front?.let { f ->
+    // Update 173: a game without a cover (an app) gets its plain front — its icon and name — in its case template too
+    // (an Android game's case had no Android band then), and the app's icon on it.
+    val noArt = cover == null && ownFront == null
+    val appIcon = if (noArt && g.sourceType == com.shelf.launcher.data.SourceType.APP) rememberAppIcon(g.packageName) else null
+    val noCover = remember(title, g.hue, noArt, appIcon) { if (noArt) plainFront(title, g.hue, appIcon?.asAndroidBitmap()) else null }
+    val face = remember(front, noCover, aspect, band) {
+        (front ?: noCover)?.let { f ->
             // (Update 171: not over a box scan used as the cover — it has its own band and logo, they showed twice.)
             val whole = tplFront != null && isBoxFront(tplFront, f.width.toFloat() / f.height.coerceAtLeast(1))
             if (band != null && tplFront != null && !whole) framed(f, band, fit?.win ?: tplFront.win) else cropTo(f, aspect)
@@ -102,7 +108,6 @@ internal fun Case3D(
     val scannedBmp = rememberSoftBitmap(back.takeIf { it !is PrintedBack }, 480)
     val backBmp = printedBmp ?: scannedBmp
     val backFace = remember(backBmp, aspect) { backBmp?.let { cropTo(it, aspect) } }
-    val noCover = remember(title, g.hue, cover == null && ownFront == null) { if (cover == null && ownFront == null) plainFront(title, g.hue) else null }
     // Update 166: while its cover is still loading, the front in the game's own colour (not near-black: scrolling a
     // carousel of 3D cases showed dark fronts for a moment).
     val loading = remember(g.hue) { hueFront(g.hue) }
@@ -227,10 +232,16 @@ private fun hueFront(hue: Int): android.graphics.Bitmap {
     return b
 }
 
-private fun plainFront(title: String, hue: Int): android.graphics.Bitmap {
+private fun plainFront(title: String, hue: Int, icon: android.graphics.Bitmap? = null): android.graphics.Bitmap {
     val b = android.graphics.Bitmap.createBitmap(360, 500, android.graphics.Bitmap.Config.ARGB_8888)
     val c = android.graphics.Canvas(b)
     c.drawColor(android.graphics.Color.HSVToColor(floatArrayOf(((hue % 360) + 360f) % 360f, 0.45f, 0.32f)))
+    // (Update 173: an app's icon above its name.)
+    if (icon != null) {
+        val side = 170f
+        c.drawBitmap(icon, null, android.graphics.RectF(180f - side / 2f, 110f, 180f + side / 2f, 110f + side), android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+        c.translate(0f, 110f)
+    }
     val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xFFF2F2F6.toInt(); textSize = 40f; isFakeBoldText = true; textAlign = android.graphics.Paint.Align.CENTER
     }

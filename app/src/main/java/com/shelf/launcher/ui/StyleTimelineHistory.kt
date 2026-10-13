@@ -169,7 +169,8 @@ internal fun TimelineHistory(c: StyleCtx, data: TimelineData, mode: Features.Tim
     // Update 156: Endless on: the history repeats below its end (and above its start), the place you're on counted
     // on round, so ▶ on the last game glides on down to the first period like any step into the next one.
     val n = data.order.size
-    val loop = loopRowOn(c) && n == c.games.size
+    // (Update 173: not with a single period — the same heading and games stood three times down the screen.)
+    val loop = loopRowOn(c) && n == c.games.size && rows.size >= 2
     SideEffect { StyleLoop.on = loopRowOn(c) }
     val tap = remember { LoopTap() }
     val v = rememberWalkedPlace(place, n, loop, StyleLoop.walked, data, tap)

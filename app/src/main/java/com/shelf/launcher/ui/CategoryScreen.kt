@@ -69,7 +69,9 @@ data class CategoryTile(
     /** Wide art (capsule / hero) of the game played most recently in it, else of its first game ("Last played game"). */
     val lastPlayedArt: String? = null,
     /** Covers of its games for the slow fade on tall / square cards (up to 12). */
-    val coverSlides: List<String> = emptyList()
+    val coverSlides: List<String> = emptyList(),
+    /** Update 173: an app in it whose icon stands in on a tile without covers (Android games: the tile was blank). */
+    val appIcon: String? = null
 )
 
 /** Columns on the category screen — the D-pad moves by this much up / down.
@@ -180,6 +182,10 @@ private fun CompactTile(
                 .pointerInput(Unit) { detectTapGestures(onLongPress = { latestLong() }) { latest() } }
         ) {
             CategoryArt(tile, CardShape.SQUARE, Modifier.matchParentSize(), art)
+            // (Update 173: no covers in it — its app's icon, not a blank tile.)
+            if (tile.covers.isEmpty() && tile.customImage == null && tile.appIcon != null) {
+                AppIconArt(tile.appIcon, wide = false, modifier = Modifier.matchParentSize())
+            }
         }
         Spacer(Modifier.height(5.dp))
         Text(
@@ -319,7 +325,9 @@ fun buildCategoryTiles(
                             slides = slidesOf(inIt), customImage = categoryImages["p:$p"],
                             count = inIt.size, favorites = favsOf(inIt), platform = p,
                             lastPlayedCover = coverOf(lastOf(inIt)), lastPlayedTitle = lastOf(inIt)?.name,
-                            lastPlayedArt = wideOf(lastOf(inIt) ?: inIt.firstOrNull()), coverSlides = coverSlidesOf(inIt)
+                            lastPlayedArt = wideOf(lastOf(inIt) ?: inIt.firstOrNull()), coverSlides = coverSlidesOf(inIt),
+                            appIcon = (lastOf(inIt) ?: inIt.firstOrNull())?.takeIf { it.sourceType == com.shelf.launcher.data.SourceType.APP }?.packageName
+                                ?: inIt.firstOrNull { it.sourceType == com.shelf.launcher.data.SourceType.APP }?.packageName
                         )
                     )
                 }

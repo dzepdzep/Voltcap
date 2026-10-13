@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.graphics.asAndroidBitmap
+
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -874,14 +876,18 @@ internal fun StyleArt(
     val free = isFreeMedia(gArt, g.platform) || (drawnMediaWanted(gArt, typed) && MediaShell.of(g.platform) != null)
     val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, c.mixed, c.type == CardArtType.DISC) else null
     val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null
+    // Update 173: an app without art wears its icon on its cartridge's label / case front (the window stayed black).
+    val appIcon = if (url == null && cover == null && g.sourceType == com.shelf.launcher.data.SourceType.APP && (pick != null || box3d != null)) {
+        rememberAppIcon(g.packageName)?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
+    } else null
     // Free-standing media get the pool of light under them, never a frame round their slot.
     val fxMod = if (!lit) Modifier else if (free) Modifier.mediaFloorGlow(true, ring, fx ?: 0f) else Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline)
     val here = modifier.gameOrigin(k, k == c.game?.stableKey)
     Box(if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))) {
         when {
-            pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, url, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = typed != null && url == typed, caseCover = cover, title = g.name) }
+            pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, url ?: appIcon, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = typed != null && url == typed, caseCover = cover ?: appIcon, title = g.name) }
             box3d != null -> MediaFocus(g.stableKey == c.game?.stableKey) { CaseArt(
-                g.platform, cover, typed, Modifier.fillMaxSize().padding(2.dp).awardShine(k, focused), title = gameDisplayName(g.name),
+                g.platform, cover ?: appIcon, typed, Modifier.fillMaxSize().padding(2.dp).awardShine(k, focused), title = gameDisplayName(g.name),
                 caseModifier = if (focused) Modifier.border(2.dp, ring, RoundedCornerShape(2.dp)) else Modifier
             ) }
             // Update 129: "Real discs": the game's own scan, standing free.

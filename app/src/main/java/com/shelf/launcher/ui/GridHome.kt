@@ -140,15 +140,17 @@ internal fun HomeGameGrid(
         val cols = if (fixedCols > 0) fixedCols.coerceIn(2, if (spines) 40 else 12)
             else ((maxWidth + gap) / (gridCellWidth(cardArtType, secondScreen, tiles, spines) * sizeScale + gap)).toInt().coerceIn(2, if (spines) 40 else 10)
         GridHome.columns = cols
+        // (Update 173: the games repeat only when there are more than fit in a row — two Android games stood fifteen times.)
+        val drawLoop = looping && games.size > cols
         // Update 156: going round, the games repeat as copies and the grid starts in the middle copy; the selection is
         // on its endless virtual place, so last -> first is one more step (the grid scrolls on a row at most).
         val n = games.size
-        val vFocus = rememberLoopPlace(focus, n, looping, loopTick, loopStep, games, loopTap, rowStep = cols)
-        val count = if (looping) n * LOOP_COPIES else n
-        val focusItem = if (looping) ((LOOP_COPIES / 2) * n + vFocus).coerceIn(0, count - 1) else focus
+        val vFocus = rememberLoopPlace(focus, n, drawLoop, loopTick, loopStep, games, loopTap, rowStep = cols)
+        val count = if (drawLoop) n * LOOP_COPIES else n
+        val focusItem = if (drawLoop) ((LOOP_COPIES / 2) * n + vFocus).coerceIn(0, count - 1) else focus
         val plainState = rememberLazyGridState()
-        val loopState = androidx.compose.runtime.remember(looping) {
-            if (looping) androidx.compose.foundation.lazy.grid.LazyGridState(((focusItem / cols) - 1).coerceAtLeast(0) * cols) else null
+        val loopState = androidx.compose.runtime.remember(drawLoop) {
+            if (drawLoop) androidx.compose.foundation.lazy.grid.LazyGridState(((focusItem / cols) - 1).coerceAtLeast(0) * cols) else null
         }
         val state = loopState ?: plainState
         // Keep the selection in view, a row of context above it.
@@ -158,7 +160,7 @@ internal fun HomeGameGrid(
             val target = ((focusItem / cols) - 1).coerceAtLeast(0) * cols
             // Update 156: going round, a long way (a new category) jumps instead of racing over the copies.
             if (!inView) runCatching {
-                if (looping && kotlin.math.abs(state.firstVisibleItemIndex - target) > cols * 8) state.scrollToItem(target)
+                if (drawLoop && kotlin.math.abs(state.firstVisibleItemIndex - target) > cols * 8) state.scrollToItem(target)
                 else state.animateScrollToItem(target)
             }
         }
@@ -171,8 +173,8 @@ internal fun HomeGameGrid(
             contentPadding = PaddingValues(12.dp)
         ) {
             // Update 156: going round, item [vi] is game vi mod n (each copy with its own key).
-            items(count, key = { if (looping) "${keys[it.mod(n)]}#${it / n}" else keys[it] }) { vi ->
-                val i = if (looping) vi.mod(n) else vi
+            items(count, key = { if (drawLoop) "${keys[it.mod(n)]}#${it / n}" else keys[it] }) { vi ->
+                val i = if (drawLoop) vi.mod(n) else vi
                 val g = games[i]
                 val on = vi == focusItem
                 val k = g.stableKey
@@ -231,18 +233,20 @@ internal fun HomeGameGrid(
                             .background(placeholderBrush(g.hue)))
                             // Update 156: a tapped copy is where the selection goes (going round; its place counted from the
                             // middle copy, as rememberLoopPlace counts).
-                            .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (looping) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } }
+                            .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (drawLoop) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } }
                     ) {
                         val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC) else null
                         val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null
+                        // (Update 173: an app without art: its icon on the label / in the case.)
+                        val artOrIcon = if (pick != null || box3d != null) coverOrAppIcon(g, url ?: cover) else null
                         when {
                             spines -> GameSpine(g, physicalMedia[g.stableKey], Modifier.fillMaxSize(), fit = true)
                             pick != null -> Box(Modifier.fillMaxSize().awardShine(g.stableKey, on)) {
-                                MediaFocus(on) { PhysicalMedia(pick.shell, url, Modifier.fillMaxSize().padding(8.dp), platform = pick.platform, labelIsScan = typed != null && url == typed, caseCover = cover, title = g.name) }
+                                MediaFocus(on) { PhysicalMedia(pick.shell, url ?: artOrIcon, Modifier.fillMaxSize().padding(8.dp), platform = pick.platform, labelIsScan = typed != null && url == typed, caseCover = cover ?: artOrIcon, title = g.name) }
                             }
                             // Box art as the real box, straight from the front.
                             box3d != null -> MediaFocus(on) { CaseArt(
-                                g.platform, cover, typed, Modifier.fillMaxSize().padding(4.dp).awardShine(g.stableKey, on), title = gameDisplayName(g.name), real = realRef,
+                                g.platform, cover ?: artOrIcon, typed, Modifier.fillMaxSize().padding(4.dp).awardShine(g.stableKey, on), title = gameDisplayName(g.name), real = realRef,
                                 caseModifier = if (on && look.focusBorder) Modifier.border(2.dp, ShelfTheme.accent, androidx.compose.foundation.shape.RoundedCornerShape(2.dp)) else Modifier
                             ) }
                             // Filled edge to edge (cropped, never letterboxed): no empty bands round the picture.

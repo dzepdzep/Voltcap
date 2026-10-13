@@ -525,7 +525,8 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
         Box(modifier.gameOrigin(k, on)) {
             MediaFocus(on) {
                 CaseArt(
-                    g.platform, c.cover(g), scan, Modifier.fillMaxSize().awardShine(k, focused), title = gameDisplayName(g.name),
+                    // (Update 173: an app without art: its icon in the case.)
+                    g.platform, coverOrAppIcon(g, c.cover(g)), scan, Modifier.fillMaxSize().awardShine(k, focused), title = gameDisplayName(g.name),
                     caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier
                 )
             }

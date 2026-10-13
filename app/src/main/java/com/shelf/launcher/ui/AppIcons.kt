@@ -184,3 +184,15 @@ internal fun themedIconFilter(): androidx.compose.ui.graphics.ColorFilter? {
         )
     }
 }
+
+/**
+ * Update 173: [cover], or for an app without art of its own its icon (as the bitmap the drawn cartridges, discs and cases
+ * print on their label / in their window) — they stayed blank in the grid, Hero carousel, tile home and case stacks.
+ */
+@Composable
+internal fun coverOrAppIcon(g: com.shelf.launcher.data.Game, cover: Any?): Any? {
+    val want = cover == null && g.sourceType == com.shelf.launcher.data.SourceType.APP
+    val icon = if (want) rememberAppIcon(g.packageName) else null
+    val bmp = icon?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
+    return cover ?: bmp
+}

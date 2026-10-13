@@ -177,7 +177,8 @@ internal fun printedBackFor(g: Game, state: LauncherUiState, aspect: Float): Pri
         o?.hero ?: a?.heroUrl ?: o?.cover ?: a?.gridUrl,
         state.screenshots[k].orEmpty().take(4),
         state.metadata[k]?.summary,
-        aspect
+        aspect,
+        gameDisplayName(g.name)
     )
 }
 

@@ -471,10 +471,12 @@ private fun CoverWheel(
                     Box(Modifier.fillMaxSize().awardShine(g.stableKey, sel > 0.6f)) {
                         // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
                         val real = realScanOf(gArt, typed)
+                        // (Update 173: an app without art: its icon on the label / in the case.)
+                        val art = coverOrAppIcon(g, cover)
                         if (real != null) MediaFocus(v == loopFocus) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(2.dp)) }
-                        else if (pick != null) MediaFocus(v == loopFocus) { PhysicalMedia(pick.shell, typed ?: cover, Modifier.fillMaxSize().padding(2.dp), platform = pick.platform, labelIsScan = typed != null, caseCover = cover, title = g.name) }
+                        else if (pick != null) MediaFocus(v == loopFocus) { PhysicalMedia(pick.shell, typed ?: art, Modifier.fillMaxSize().padding(2.dp), platform = pick.platform, labelIsScan = typed != null, caseCover = art, title = g.name) }
                         else MediaFocus(v == loopFocus) { CaseArt(
-                            g.platform, cover, typed, Modifier.fillMaxSize().padding(2.dp), title = gameDisplayName(g.name), detail = 240, real = realRef,
+                            g.platform, art, typed, Modifier.fillMaxSize().padding(2.dp), title = gameDisplayName(g.name), detail = 240, real = realRef,
                             caseModifier = if (sel > 0.6f && frameOn) Modifier.border(2.dp, ShelfTheme.accent.copy(alpha = 0.85f * sel), RoundedCornerShape(2.dp)) else Modifier
                         ) }
                     }

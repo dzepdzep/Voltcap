@@ -80,7 +80,10 @@ internal object BoxTexture {
      * drawn media chosen, Settings › Game look).
      */
     fun mediaFor(front: Any?): String? =
-        if (com.shelf.launcher.data.Features.mediaShells.value) null else (front as? String)?.let { medias[it] }
+        if (com.shelf.launcher.data.Features.mediaShells.value) null else mediaOfFront(front)
+
+    /** Update 173: the game's own cartridge / disc for a scanned front [front], whatever the drawn-media setting says. */
+    fun mediaOfFront(front: Any?): String? = (front as? String)?.let { medias[it] }
 
     /** The game's own spine for a front picked by [front] (null when it has none, or for any other picture). */
     fun spineFor(front: Any?): String? = (front as? String)?.let { spines[it] }

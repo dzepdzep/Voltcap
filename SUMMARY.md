@@ -4,6 +4,59 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (173): bug check on the Pocket Classic (166–172) — media matched to the case, app icons everywhere, nothing over the tool strip
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (15): `src_copy\ui\AppIcons.kt`,
+`src_copy\ui\BoxTexture.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\CategoryScreen.kt`,
+`src_copy\ui\GridHome.kt`, `src_copy\ui\HeroCarousel.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PrintedBacks.kt`,
+`src_copy\ui\RealMedia.kt`, `src_copy\ui\ShelfHome.kt`, `src_copy\ui\StyleCaseStacks.kt`, `src_copy\ui\StyleHomes.kt`,
+`src_copy\ui\StyleTimelineHistory.kt`, `src_copy\ui\TileHome.kt`.
+
+**Files to delete:** none.
+
+### Checked on the Pocket Classic (172 installed)
+Case stacks with Case + its media (Continue playing, Game Boy, Android), the opened game turning round (Yu-Gi-Oh!: real
+front, spine and scanned back), and every home layout (27) with the Android category; your layout, category and game
+were put back after.
+
+### What changed
+- **Real media beside real cases, Voltcap's own beside its cases:** in Case + its media (flat and in the 3D carousels) the
+  cartridge / disc now follows the case: the game's real cartridge / disc photo beside its real scanned case, Voltcap's
+  drawn (or your custom) cartridge with the label beside a template case — whatever "drawn / real media" is set to.
+- **Android games without art (JoiPlay and its plugin):** their cases' windows and cartridge labels were blank (black
+  window, empty grey / green cartridge) in Case stacks, the Library panel, Timeline, Grid, Hero carousel, Dashboard, Side
+  menu, Circuit board, Game shelf, TV room and the opened game: the app's icon is on them now, and the 3D case has the
+  Android band again. Their category tile in "Choose a category" (a plain green square) shows the app's icon.
+- **The case over the tool strip:** in Case stacks with a big game size, the game you're on (lifted for its reflection)
+  covered the icon strip at the top; it's kept below it now.
+- **Timeline with Endless and one period:** the same heading and games stood three times down the screen; Endless only
+  repeats when there are two periods or more.
+- **Grid with Endless and few games:** two games filled the whole grid fifteen times; they repeat only when there are more
+  than fit in a row.
+- **Printed back of an app with nothing scraped:** its name is printed on it (it was a bare dark back).
+
+### Seen and left as they are (tell me if you want them changed)
+- With Endless on, lists and carousels with only a few games still repeat them (TV room's side list, Widget board's list,
+  the Cross menu's list, Circuit board): that is Endless going round.
+- In Case + its media the games each side of the one you're on keep a gap for its cartridge on both sides.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 173: bug check fixes - media matched to the case, app icons on cases and cartridges, nothing over the tool strip" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (172): the real cartridge beside the 3D case, not inside a drawn one
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

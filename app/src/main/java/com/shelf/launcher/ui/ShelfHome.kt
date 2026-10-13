@@ -527,7 +527,8 @@ internal fun PulledOutCase(
         ScanCase(scan, cov?.frontAspect ?: realCaseMm(g.platform)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = if (waitForCase) null else cover)
         return
     }
-    if (cov != null) CoverCase(cov, cover, placeholderBrush(g.hue), modifier)
+    // (Update 173: an app without art: its icon in the case's window.)
+    if (cov != null) CoverCase(cov, coverOrAppIcon(g, cover), placeholderBrush(g.hue), modifier)
     else Box(modifier.clip(RoundedCornerShape(4.dp)).background(placeholderBrush(g.hue))) {
         if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
     }

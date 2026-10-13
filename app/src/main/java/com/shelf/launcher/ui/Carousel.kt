@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.graphics.asAndroidBitmap
+
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -110,10 +112,16 @@ internal fun ShelfGameArt(
             val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC) else null
             // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
             val real = realScanOf(gArt, typed)
+            // (Update 173: an app without art: its icon on the label / case front — they stayed blank.)
+            val appIcon = if (cover == null && typed == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
+                rememberAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
+            } else null
             if (real != null) MediaFocus(on) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp)) }
-            else if (pick != null) MediaFocus(on) { PhysicalMedia(pick.shell, typed ?: cover, Modifier.fillMaxSize().padding(4.dp), platform = pick.platform, labelIsScan = typed != null, caseCover = cover, title = g.name) }
+            else if (pick != null) {
+                MediaFocus(on) { PhysicalMedia(pick.shell, typed ?: cover ?: appIcon, Modifier.fillMaxSize().padding(4.dp), platform = pick.platform, labelIsScan = typed != null, caseCover = cover ?: appIcon, title = g.name) }
+            }
             else MediaFocus(on) { CaseArt(
-                g.platform, cover, typed, Modifier.fillMaxSize().padding(4.dp), title = gameDisplayName(g.name),
+                g.platform, cover ?: appIcon, typed, Modifier.fillMaxSize().padding(4.dp), title = gameDisplayName(g.name),
                 real = realRef, caseModifier = if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier
             ) }
             // Update 141: the console's badge on cartridges, discs, cases and 3D models too.
@@ -733,7 +741,10 @@ internal fun GameCarousel(
         // The one in the middle: as tall as fits, never wider than ~half the width so the others still show.
         // (Update 129: times the carousel's Game size, never taller than the space.)
         val sizeK = Features.carouselSize.state.value / 100f
-        val bigW = minOf(maxHeight * 0.84f * 0.72f * sizeK, maxHeight * 0.97f * 0.72f, maxWidth * 0.5f * sizeK)
+        // (Update 173: the reflection and Box flow lift the one you're on; with a big Game size its top went over what's
+        // above the carousel — Case stacks' tool strip. Its height is kept so the lifted top still fits.)
+        val lift = (if (Features.carouselReflect.state.value) 0.08f else 0f) + (if (view == CarouselView.BOX_FLOW) 0.04f else 0f)
+        val bigW = minOf(maxHeight * 0.84f * 0.72f * sizeK, maxHeight * 0.97f * 0.72f / (1f + 2f * lift), maxWidth * 0.5f * sizeK)
         val bigH = bigW / 0.72f
         // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the
         // games stand on, a faint gloss line along it, and stays dark below (drawn past the bottom of the carousel).
@@ -1183,7 +1194,16 @@ private fun CaseWithMedia3D(
     val mh = h * m.size(mm)
     val mw = mh * m.aspect
     val caseW = h * caseAspect
-    val label = typedArtFor(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, physical, null, g.platform)
+    // Update 173: the media matched to the case: the real cartridge / disc beside the game's real (scanned) case, Voltcap's
+    // own drawn one (with the game's label scan, else its cover) beside a template case — whatever the drawn-media setting.
+    val scans = physical ?: HomeScans.map[g.stableKey]
+    val caseReal = Features.originalCases.state.value && !LookStyles.caseForAll() && BoxTexture.front(scans, g.platform) != null
+    val realMedia = if (caseReal) BoxTexture.media(scans) else null
+    val label = scans?.firstOrNull { it.first == "Disc label" }?.second
+    // (Update 173: an app without art wears its icon on its cartridge's label, as the cards do — it was blank.)
+    val appIcon = if (cover == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
+        rememberAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
+    } else null
     val dens = c.dens
     @Composable
     fun MediaPiece(mod: Modifier) {
@@ -1195,11 +1215,10 @@ private fun CaseWithMedia3D(
             val sh = shadeOf()
             alpha = (1f - 0.35f * sh) * show
         }) {
-            // Update 171: with Voltcap's drawn cartridges off ("Real discs"), the game's own cartridge / disc photo is the
-            // piece itself — it was put on the drawn cartridge's label, a small cartridge inside the cartridge.
-            val real = realScanOf(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, label)
-            if (real != null) RealMediaPicture(real, m.pick.shell.disc || m.pick.shell == MediaShell.UMD, Modifier.fillMaxSize())
-            else PhysicalMedia(m.pick.shell, label ?: cover, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover, title = g.name, noCase = true)
+            // (Update 171: the real photo is the piece itself — it was once put on the drawn cartridge's label, a small
+            // cartridge inside the cartridge. Update 173: beside a real case only.)
+            if (realMedia != null) RealMediaPicture(realMedia, m.pick.shell.disc || m.pick.shell == MediaShell.UMD, Modifier.fillMaxSize())
+            else PhysicalMedia(m.pick.shell, label ?: cover ?: appIcon, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover ?: appIcon, title = g.name, noCase = true)
         }
     }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

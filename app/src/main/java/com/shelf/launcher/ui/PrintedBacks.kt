@@ -28,7 +28,9 @@ internal data class PrintedBack(
     val shots: List<String>,
     val text: String?,
     /** The case's width / height (the back is made in its shape). */
-    val aspect: Float
+    val aspect: Float,
+    /** Update 173: the game's name, printed when there's no description (an app with nothing scraped had a bare back). */
+    val title: String? = null
 )
 
 internal object PrintedBacks {
@@ -89,7 +91,7 @@ internal object PrintedBacks {
                 }
                 y += sh + 0.035f * h
             }
-            val text = spec.text?.trim()?.takeIf { it.isNotEmpty() }
+            val text = spec.text?.trim()?.takeIf { it.isNotEmpty() } ?: spec.title?.takeIf { shots.isEmpty() }
             if (text != null && by1 - y > 0.06f * h) {
                 val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                     textSize = 0.032f * w

@@ -256,6 +256,19 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 173
+- **Media matched to the case:** `CaseWithMedia3D` (Carousel.kt): `caseReal` (originalCases, not case-for-all, a front
+  scan) → `BoxTexture.media(scans)` as `RealMediaPicture`, else `PhysicalMedia` with the "Disc label" scan / cover / app
+  icon. `CaseArtBody` (RealMedia.kt) uses `BoxTexture.mediaOfFront(scan)` (new, ignores `mediaShells`) when the case is real.
+- **App icons:** `coverOrAppIcon(g, cover)` (AppIcons.kt) used in GridHome, HeroCarousel, TileHome, StyleCaseStacks,
+  ShelfHome (CoverCase), StyleArt, CarouselArt, CaseWithMedia3D; `Case3D` `plainFront(title, hue, icon)` framed in the
+  template when there's no cover. `CategoryTile.appIcon` → `AppIconArt` on coverless tiles.
+- **Carousel height:** `bigW` capped by `0.97 / (1 + 2 × lift)` (lift: reflection 0.08, Box flow 0.04).
+- **Endless:** Timeline needs ≥ 2 rows (`rows.size >= 2`); GridHome `drawLoop = looping && games.size > cols` for the
+  drawing (key wrap unchanged).
+- `PrintedBack.title` printed when there's no description and no screenshots.
+- Layout picker: hold R1 › Layout for the list (tapping the tile cycles).
+
 ## State after update 172
 - `CaseWithMedia3D` (Carousel.kt): `realScanOf(CARTRIDGE_DISC, label)` → `RealMediaPicture` (drawn shells off), else
   `PhysicalMedia` — as the flat cards do.

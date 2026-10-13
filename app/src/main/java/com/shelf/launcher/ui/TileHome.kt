@@ -664,17 +664,19 @@ private fun HomeTile(
     ) {
         val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc) else null
         val box3d = if (cardArtType == CardArtType.CASE) caseMarker(game.platform) else null
+        // (Update 173: an app without art: its icon on the label / in the case.)
+        val artOrIcon = if (pick != null || box3d != null) coverOrAppIcon(game, coverUrl) else null
         val shineOn = titles.masteredShimmer && (award == com.shelf.launcher.data.RaAward.MASTERED || award == com.shelf.launcher.data.RaAward.COMPLETED)
         if (pick != null) {
             // Cartridge / disc art, drawn (PhysicalMedia), the label being the scraped label or the cover.
             Box(Modifier.fillMaxSize().then(if (shineOn) Modifier.masteredShineOverShape(if (focused) 0.55f else 0.32f) else Modifier)) {
-                MediaFocus(focused) { PhysicalMedia(pick.shell, url, Modifier.fillMaxSize().padding(8.dp), platform = pick.platform, labelIsScan = typedArtUrl != null && url == typedArtUrl, caseCover = coverUrl, title = game.name) }
+                MediaFocus(focused) { PhysicalMedia(pick.shell, url ?: artOrIcon, Modifier.fillMaxSize().padding(8.dp), platform = pick.platform, labelIsScan = typedArtUrl != null && url == typedArtUrl, caseCover = artOrIcon, title = game.name) }
             }
         } else if (box3d != null) {
             // Box art as the real box (template pack), straight from the front.
             Box(Modifier.fillMaxSize().then(if (shineOn) Modifier.masteredShineOverShape(if (focused) 0.55f else 0.32f) else Modifier)) {
                 MediaFocus(focused) { CaseArt(
-                    game.platform, coverUrl, typedArtUrl, Modifier.fillMaxSize().padding(6.dp), title = gameDisplayName(game.name), real = realCase,
+                    game.platform, artOrIcon, typedArtUrl, Modifier.fillMaxSize().padding(6.dp), title = gameDisplayName(game.name), real = realCase,
                     // The coloured frame hugs the case itself.
                     caseModifier = if (focused && !dimmed && look.focusBorder) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier
                 ) }
