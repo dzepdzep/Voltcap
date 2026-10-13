@@ -4,6 +4,68 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (176): Custom layouts — make your own animated home screens, import and share them
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+
+- New (3): `src_copy\data\CustomLayouts.kt`, `src_copy\ui\StyleCustom.kt`, `src_copy\ui\CustomLayoutSettings.kt`.
+- Changed (7): `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\OptionIcons.kt`,
+  `src_copy\ui\PresetPreview.kt`, `src_copy\ui\PresetsCard.kt`, `src_copy\ui\StyleHomeSettings.kt`,
+  `src_copy\ui\StyleHomes.kt`.
+
+**New in the project (not app code):**
+
+- `docs\CUSTOM_LAYOUTS.md`: the tutorial.
+- `docs\layouts\neon-drift\layout.json` and `docs\layouts\side-list\layout.json`: two examples.
+- `docs\layouts\neon-drift.vclayout` and `docs\layouts\side-list.vclayout`: the same examples, ready to import.
+
+**Files to delete:** none.
+
+### Custom layout (Settings › Home › Layout › Custom layout)
+- A new layout that draws a layout file anyone can make. A `.vclayout` is a zip with a `layout.json` and its pictures.
+- **Parts:**
+  - `games`: the moving games, as a row, a column or an arc, in the card look, covers, square or wide.
+  - `art`: the game you're on, as its backdrop, cover, wide art, logo, screenshot or card.
+  - Text parts: `title`, `info`, `text` (with `{name}`, `{playtime}`, `{time}`… filled in), `clock` and `category`.
+  - `image`: your own picture. **Animated GIF and WebP pictures play.**
+  - `shape`: a panel, line or dot, with a colour or gradient and a border.
+  - `buttons`: Play / Continue and Details.
+- Positions are shares of the screen (0–1), so a layout fits the Classic's 4:3 screen and the Thor's 16:9 screen alike.
+- **Motion:**
+  - Every part can have a `loop` that keeps going: float, sway, drift, spin, rock, pulse, blink or turn.
+  - Every part can also have an `enter` motion, played each time you move to another game: fade, four slides, zoom,
+    pop, flip or spin. Delays let parts arrive one after another.
+- **Background:** a colour or gradient, the game's art with a shade, and your picture on top (it can have its own
+  loop).
+- **D-pad:**
+  - Row / arc: ◀ ▶ through the games, ▼ to the buttons, ▲ to what lies above.
+  - Column: ▲ ▼ through the games, ▶ to the buttons, ◀ back.
+  - Tap a game to pick it, and again to open it.
+- It starts with the built-in example, **Neon drift**: a curved row along the bottom, the name and buttons on the
+  left, the logo floating at the top right.
+
+### Layout options (while Custom layout is picked)
+- **Layouts:** pick one, see who made it, and delete the imported ones.
+- **Import a file:** a `.vclayout`, a `.zip` or a bare `layout.json`.
+- **Import from Voltcap/Layouts:** everything in that folder on the handheld (`.vclayout` files, or folders with a
+  `layout.json`). The folder is made if it's missing. Importing again replaces layouts with the same name, so this is
+  the quick way to try your edits.
+- **Save the example:** saves Neon drift as a `.vclayout` to start from.
+- **How to make one:** the step-by-step guide in the app. The full tutorial is `docs\CUSTOM_LAYOUTS.md`.
+- A mistake in `layout.json` is reported with what's wrong (for example "part 3: unknown type…"), and the layout isn't
+  imported. Missing pictures are named.
+- **Safety:** a layout is only a description, nothing in it runs. Only `layout.json` and pictures are taken from the
+  zip, flattened into the layout's own folder (nothing is written outside it). The limits are 80 files and 48 MB.
+
+### Check after installing
+- R1 › hold Layout › Custom layout: Neon drift with your games.
+  - ◀ ▶ slide the arc, and the name, info and logo come in each time.
+  - ▼ goes to Play / Details.
+- Layout options › Import a file › `side-list.vclayout` (copy it over from `docs\layouts\`): a column of wide pictures
+  down the left. ▲ ▼ move, ▶ goes to the buttons.
+
 ## Update — 13 Oct 2026 (175): R1 Carousel tile steps through the views, PS3 game folders as one game, faster scraping
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

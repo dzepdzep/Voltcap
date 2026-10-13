@@ -1324,6 +1324,8 @@ object Features {
     val timelineDates = BoolPref("timeline_dates", true)
     /** Arcade cabinets: the marquee lit and glowing. */
     val arcadeGlow = BoolPref("arcade_glow", true)
+    /** Update 176: the custom layout shown by Custom layout (CustomLayouts.kt; "" = the built-in example). */
+    val customLayout = StringPref("custom_layout", "")
     /** Arcade cabinets: scan lines over the screen. */
     val arcadeLines = BoolPref("arcade_lines", true)
     /** Arcade cabinets: the cabinets in the game's own colours (off: the theme's). */

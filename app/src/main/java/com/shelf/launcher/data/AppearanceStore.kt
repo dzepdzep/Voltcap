@@ -145,7 +145,9 @@ enum class HomeLayout(val label: String) {
     CRATE("Record crate"),
     /** Update 158: your games as collectible cards — cover in a framed window, console as its type, stats at the
      *  bottom; the one you're on big in the middle, the others fanned out like a hand; Y turns it over (StyleCardBinder.kt). */
-    CARDS("Card binder");
+    CARDS("Card binder"),
+    /** Update 176: a layout made by anyone — imported from a .vclayout file (CustomLayouts.kt, StyleCustom.kt). */
+    CUSTOM("Custom layout");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
@@ -153,7 +155,8 @@ enum class HomeLayout(val label: String) {
         this == HERO_TILES || // Update 158
         this == TWIN_DESK || this == TWIN_ICONS || // Update 158: the two-screen layouts
         this == CRATE || // Update 158: Record crate
-        this == CARDS // Update 158: Card binder
+        this == CARDS || // Update 158: Card binder
+        this == CUSTOM // Update 176: Custom layout
 
     companion object {
         /**

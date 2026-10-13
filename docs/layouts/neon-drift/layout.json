@@ -1,0 +1,31 @@
+{
+  "format": 1,
+  "name": "Neon drift (example)",
+  "author": "Voltcap",
+  "background": {
+    "gradient": ["#0B0F1A", "#26123F"],
+    "gameArt": true,
+    "shade": 0.55
+  },
+  "parts": [
+    { "type": "shape", "x": 0.0, "y": 0.6, "w": 1.0, "h": 0.4, "shape": "rect",
+      "gradient": ["#00000000", "#CC05060C"] },
+    { "type": "shape", "x": 0.04, "y": 0.06, "w": 0.006, "h": 0.3, "shape": "rect", "color": "accent",
+      "loop": { "kind": "blink", "seconds": 2.4 } },
+    { "type": "category", "x": 0.06, "y": 0.06, "w": 0.5, "h": 0.06, "size": 0.04, "color": "accent", "bold": true },
+    { "type": "title", "x": 0.06, "y": 0.12, "w": 0.55, "h": 0.2, "size": 0.085,
+      "enter": { "kind": "slide-right", "ms": 380 } },
+    { "type": "info", "x": 0.06, "y": 0.32, "w": 0.55, "h": 0.06, "size": 0.035, "color": "#CCFFFFFF",
+      "show": ["console", "playtime", "achievements"],
+      "enter": { "kind": "fade", "ms": 420, "delay": 120 } },
+    { "type": "art", "x": 0.64, "y": 0.05, "w": 0.32, "h": 0.32, "art": "logo", "fit": "fit",
+      "enter": { "kind": "zoom", "ms": 450 },
+      "loop": { "kind": "float", "amount": 0.012, "seconds": 5 } },
+    { "type": "buttons", "x": 0.06, "y": 0.41, "w": 0.4, "h": 0.09, "labels": ["Play", "Details"],
+      "color": "accent", "textColor": "#FFFFFF" },
+    { "type": "games", "x": 0.0, "y": 0.56, "w": 1.0, "h": 0.4, "direction": "arc", "art": "card",
+      "cardSize": 0.62, "focusSize": 0.95, "gap": 0.018, "anchor": 0.22, "curve": 0.12,
+      "glow": true, "fadeEdges": true },
+    { "type": "clock", "x": 0.75, "y": 0.42, "w": 0.21, "h": 0.07, "size": 0.05, "align": "end", "bold": true }
+  ]
+}

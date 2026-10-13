@@ -256,6 +256,10 @@ internal fun styleHomeKey(
                     // Resume (update 119): ◀ from the first Discover card back to the shortcuts.
                     StyleNav.leave()
                     if (StyleNav.enter(StyleNav.Zone.SIDE, event.nativeKeyEvent.eventTime)) sound(UiSound.MOVE)
+                } else if (first && layout == HomeLayout.CUSTOM && zone == StyleNav.Zone.BAR && d < 0 && CustomSceneNow.direction == "column") {
+                    // Update 176: a custom layout's column — ◀ from its first button back to the games (▶ went there).
+                    StyleNav.leave()
+                    sound(UiSound.MOVE)
                 } else if (first && layout == HomeLayout.DASH && zone == StyleNav.Zone.TOP && d < 0 && StyleNav.side.isNotEmpty()) {
                     // Dashboard: ◀ from Play goes on to the menu on the left.
                     StyleNav.leave()
@@ -527,6 +531,13 @@ internal fun styleHomeKey(
             )
         )
         // Update 158: Record crate handles its own keys (StyleRecordCrate.kt).
+        // Update 176: Custom layout (StyleCustom.kt).
+        HomeLayout.CUSTOM -> return customLayoutKey(
+            StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+        )
         HomeLayout.CRATE -> return recordCrateKey(
             StyleKeyCtx(
                 key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
@@ -1135,6 +1146,8 @@ internal fun StyleHome(
         HomeLayout.CRATE -> StyleRecordCrate(c, modifier)
         // Update 158: Card binder (StyleCardBinder.kt).
         HomeLayout.CARDS -> StyleCardBinder(c, modifier)
+        // Update 176: a layout made by anyone (StyleCustom.kt).
+        HomeLayout.CUSTOM -> StyleCustom(c, modifier)
         else -> Unit
     }
 }
@@ -1187,6 +1200,8 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         // Update 158: Hero tiles' pale backdrop (its option; off: the theme's background).
         HomeLayout.HERO_TILES -> if (Features.heroTilesPale.state.value) HeroTilesBackdrop(Modifier.fillMaxSize())
         HomeLayout.LIVE -> if (Features.liveLight.state.value) LiveBackdrop(Modifier.fillMaxSize().padding(top = topInset, bottom = bottomInset))
+        // Update 176: the custom layout's colour, the game's art and its picture (StyleCustom.kt).
+        HomeLayout.CUSTOM -> CustomBackLayer(gameKey, artUrl)
         else -> Unit
     }
 }
@@ -1215,6 +1230,8 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.HERO_TILES -> Features.heroTilesPale.state.value
     HomeLayout.SHELF -> Features.shelfBackdrop.state.value
     HomeLayout.CIRCUIT -> Features.circuitBackdrop.state.value
+    // Update 176: a custom layout with its own colour / picture.
+    HomeLayout.CUSTOM -> customOwnsBackground(CustomSceneNow.scene)
     else -> false
 }
 

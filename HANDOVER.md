@@ -256,6 +256,33 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 176
+- **Custom layout:** `HomeLayout.CUSTOM` (style home, last in `pickable`). `Features.customLayout` (StringPref, "" =
+  built-in example).
+- **data/CustomLayouts.kt:**
+  - Model: `CustomScene` / `SceneBackground` / `ScenePart` / `SceneLoop` / `SceneEnter`.
+  - `parse` uses org.json and throws readable messages; `format` 1.
+  - Storage: `files/layouts/<slug>/`.
+  - Import: `import(uri)` (zip or bare json), `importFolder()` (`Voltcap/Layouts`, mkdirs) and `importDir`. Zips are
+    flattened to base names, only `layout.json` and png/jpg/jpeg/webp/gif, 80 files / 48 MB.
+  - `writeExample` and `EXAMPLE_JSON` (Neon drift); `cache` per id.
+- **ui/StyleCustom.kt:**
+  - `StyleCustom(c)`: parts placed in a BoxWithConstraints by share; `CustomBackLayer` from `StyleBackLayer`;
+    `customOwnsBackground` in `styleOwnsBackground`.
+  - `customLayoutKey` (column: ▲ ▼ step, ▶ bar; row / arc: ▼ bar, ▲ reach).
+  - `CustomSceneNow` (direction, buttons, version, scene).
+  - Motion: `sceneLoop` (infinite transition), `sceneEnter` (Animatable keyed on the game for `on: move`).
+  - `SceneGames`: spring on focus; anchored focused card grows `focusSize / cardSize`; arc offset and tilt;
+    fadeEdges; only ±visible cards composed.
+  - Colours: `sceneColor` takes `#hex`, accent, text, white, black, transparent.
+- **StyleHomes.kt zone keys:** ◀ from the first button leaves the BAR zone in a column custom layout.
+- **ui/CustomLayoutSettings.kt:** list / pick / delete, import file / folder, save the example, the in-app guide.
+  Wired in `StyleHomeSettings`.
+- Previews: `PresetPreview.custom()`, `Pictogram.HERO`, `layoutBlurb`.
+- Docs: `docs\CUSTOM_LAYOUTS.md` and `docs\layouts\` (neon-drift, side-list, with .vclayout zips).
+- Not yet checked on a device (no build here). Possible next steps: an Edit Home drag editor that writes
+  layout.json, and per-layout fonts from the zip.
+
 ## State after update 175
 - **R1 Carousel tile (QuickSettings.kt):** tap = on if off, else `Features.carouselView` next ordinal (wraps); a `cases` view
   also sets `carouselReflect` + `carouselStage`. Hold list ends with `R1Choice("Carousel off")`.

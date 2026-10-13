@@ -85,6 +85,8 @@ internal fun PresetPreview(
             HomeLayout.TWIN_ICONS -> p.twinIcons()
             HomeLayout.CRATE -> p.crate()
             HomeLayout.CARDS -> p.binder()
+            // Update 176.
+            HomeLayout.CUSTOM -> p.custom()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()
@@ -616,6 +618,24 @@ private class PreviewPainter(
     }
 
     /** Arcade cabinets: a big cabinet with its lit marquee and the game on its screen, small cabinets along the bottom. */
+    /** Update 176: Custom layout — the example's look: a name and buttons on the left, a curved row along the bottom. */
+    fun custom() {
+        rect(0.04f, 0.08f, 0.006f, 0.28f, accent, 0f)
+        line(0.07f, 0.1f, 0.18f, accent, 0.03f)
+        line(0.07f, 0.18f, 0.4f, Color.White, 0.06f)
+        line(0.07f, 0.3f, 0.3f, Color.White.copy(alpha = 0.6f))
+        rect(0.07f, 0.4f, 0.17f, 0.08f, accent, 8f)
+        rect(0.26f, 0.4f, 0.17f, 0.08f, accent.copy(alpha = 0.35f), 8f)
+        rect(0.66f, 0.08f, 0.28f, 0.2f, Color.White.copy(alpha = 0.18f), 4f)
+        for (i in 0..6) {
+            val x = 0.05f + i * 0.135f + (if (i > 0) 0.04f else 0f)
+            val big = i == 1
+            val cw = if (big) 0.15f else 0.1f
+            val y = 0.6f + kotlin.math.abs(i - 1) * 0.02f - (if (big) 0.05f else 0f)
+            card(x, y, cw, cw * w / h * 1.3f, i, on = big, r0 = 2f)
+        }
+    }
+
     fun arcade() {
         val glow = ob(Features.arcadeGlow)
         val gameColors = ob(Features.arcadeGameColors)

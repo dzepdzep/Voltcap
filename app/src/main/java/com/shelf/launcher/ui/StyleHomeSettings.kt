@@ -72,6 +72,8 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.CRATE -> "Record turning, wood colour"
     // Update 158: Card binder.
     HomeLayout.CARDS -> "Fan angle, shiny sheen, frame colour, A starts the game"
+    // Update 176.
+    HomeLayout.CUSTOM -> "Pick, import and make your own layouts"
     else -> ""
 }
 
@@ -106,6 +108,8 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.CRATE -> RecordCrateSettings()
         // Update 158: Card binder (StyleCardBinder.kt).
         HomeLayout.CARDS -> CardBinderSettings()
+        // Update 176: Custom layout (StyleCustom.kt / CustomLayoutSettings.kt).
+        HomeLayout.CUSTOM -> CustomLayoutSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).

@@ -349,6 +349,8 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     com.shelf.launcher.data.HomeLayout.CRATE -> "Record crate: your games as record sleeves in a wooden crate. Flip through them; the one you're on lifts out and its record slides out and turns. Its name, play time, achievements and Play beside it."
     // Update 158: Card binder.
     com.shelf.launcher.data.HomeLayout.CARDS -> "Card binder: your games as collectible cards — the cover in a framed window, the console as its type, time played, achievements and rarity stars at the bottom. The one you're on stands big in the middle, the others fan out like a hand; Y turns it over."
+    // Update 176.
+    com.shelf.launcher.data.HomeLayout.CUSTOM -> "Custom layout: a home screen made by anyone — import a .vclayout file, or make your own (Layout options › How to make one). Starts with the Neon drift example."
     com.shelf.launcher.data.HomeLayout.SHELF -> "Game shelf: your games as spines on a bookcase, the one you're on pulled out to show its front. ◀ ▶ along, ▲ ▼ to the shelf above / below."
 }
 
