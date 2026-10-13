@@ -68,7 +68,7 @@ internal fun PocketRibbonSettings() {
     SwitchRow(Icons.Filled.Info, "Status line", "Volume, your name, the date, time and battery along the top.", Features.ribbonStatus.state.value, { Features.ribbonStatus.value = it })
     SwitchRow(Icons.Filled.Label, "Console under the name", "The speech bubble shows the console (or the number of games) under the name.", Features.ribbonNames.state.value, { Features.ribbonNames.value = it })
     SwitchRow(Icons.Filled.GridView, "Open on the categories", "Off: on the games of the category you're in.", Features.ribbonStartOnCategories.state.value, { Features.ribbonStartOnCategories.value = it })
-    StyleChoice("Icon size", arrayOf(24, 28, 32, 36, 40), Features.ribbonIcon.state.value, { "$it" }) { Features.ribbonIcon.value = it }
+    StyleChoice("Icon size", arrayOf(32, 38, 44, 50, 56), Features.ribbonIcon.state.value, { "$it" }) { Features.ribbonIcon.value = it }
     StyleChoice("Space between icons", arrayOf(4, 6, 10, 14, 18), Features.ribbonGap.state.value, { "$it" }) { Features.ribbonGap.value = it }
     StyleChoice("Top screen's share (one display)", arrayOf(40, 45, 50, 55, 60), Features.ribbonSplit.state.value, { "$it %" }) { Features.ribbonSplit.value = it }
     PocketCommonSettings()
@@ -98,11 +98,14 @@ private fun PocketCommonSettings() {
     Spacer(Modifier.height(10.dp))
     SectionLabel("Both Pocket layouts")
     StyleChoice("Screens", Features.PocketArrange.values(), Features.pocketArrange.state.value, { it.label }) { Features.pocketArrange.value = it }
-    SwitchRow(Icons.Filled.GridView, "Pixel-perfect", "Whole pixels per dot, the 4:3 screen exactly (sharp). Off: as big as fits, wider when there's room (nothing stretched).",
+    SwitchRow(Icons.Filled.GridView, "Pixel-perfect", "Whole pixels per dot (sharp, but smaller with a border on some screens). Off (default): as big as fits, the background filling the screen.",
         Features.pocketPixel.state.value, { Features.pocketPixel.value = it })
     SwitchRow(Icons.Filled.MusicNote, "Pocket sounds", "Tiny chirps for moving, picking and going back while a Pocket layout is on. Off: your usual sound set.",
         Features.pocketSounds.state.value, { Features.pocketSounds.value = it })
     StyleChoice("Animation speed", Features.PocketAnim.values(), Features.pocketAnim.state.value, { it.label }) { Features.pocketAnim.value = it }
+    // Update 182.
+    SwitchRow(Icons.Filled.Info, "Home strip", "Along the bottom: your first round shortcuts, the music playing (◀ ⏯ ▶), the time and the battery.",
+        Features.pocketStrip.state.value, { Features.pocketStrip.value = it })
     // Which category it opens on.
     val titles = LocalTitleOptions.current
     val keys = listOf("" to "Where you were", "ALL" to "All", "FAVORITES" to "Favorites", "RECENT" to "Recent") +

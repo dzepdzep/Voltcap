@@ -93,6 +93,8 @@ internal object PocketNav {
     /** Pocket ribbon: showing the games (else the categories), and the cursor among the categories. */
     var ribbonGames by mutableStateOf(true)
     var ribbonCat by mutableIntStateOf(0)
+    /** Update 182: Pocket ribbon's controller below the row: a tool or a strip control (PocketSpot), −1 = the row. */
+    var ribbonSpot by mutableIntStateOf(-1)
     /** Pocket ribbon: a tile starting (its launch moment, 0–1 while it plays). */
     var launching by mutableStateOf(false)
     /** The ribbon nudged at an end (−1 / +1), for its little bounce. */
@@ -101,7 +103,7 @@ internal object PocketNav {
     @Volatile var ctx: StyleCtx? = null
     internal val keysDown = HashSet<Int>()
     /** Everything the controller moves here, for the "▼ changed nothing" check (LauncherScreen). */
-    fun signature(): Any = listOf(page, spot, cursor, ribbonGames, ribbonCat)
+    fun signature(): Any = listOf(page, spot, cursor, ribbonGames, ribbonCat, ribbonSpot)
 }
 
 /** Panels of the bottom screen: 0 game, 1 achievements, 2 category, 3 all categories, 4 settings, 5 statistics, 6 sleep. */
@@ -109,9 +111,9 @@ private const val CARD = 0
 private const val ACH = 1
 private const val CAT = 2
 private const val ALL = 3
-private const val SET = 4
-private const val STATS = 5
-private const val MOON = 6
+private const val SET = PocketSpot.SET
+private const val STATS = PocketSpot.STATS
+private const val MOON = PocketSpot.MOON
 
 @Composable
 internal fun StylePocketClassic(c: StyleCtx, modifier: Modifier = Modifier) {
@@ -169,9 +171,9 @@ private fun PocketClassicTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     PocketFrame(modifier, framed) {
         PocketScreen(Modifier.fillMaxSize(), responsive = !Features.pocketPixel.state.value, outside = PaperC) {
             val uPx = d(1f).value * density
-            Canvas(Modifier.atScreen(0f, 0f, width, POCKET_H)) { pocketPinstripes(uPx, PaperC, StripeC) }
-            // The thin bar in your colour: your name; the date, time and battery.
-            Box(Modifier.atScreen(0f, 0f, width, 13f).background(accent))
+            Canvas(Modifier.atFull(0f, 0f, width, fullH)) { pocketPinstripes(uPx, PaperC, StripeC) }
+            // The thin bar in your colour: your name; the date, time and battery (from the screen's very top).
+            Box(Modifier.atFull(0f, 0f, width, 13f + cy).background(accent))
             PocketText(this, user, 4f, 2.5f, 120f, 10f, 8f, Color.White, font, TextAlign.Start)
             val day = pocketDay(time.longValue, tz)
             val clock = "%d/%d  %d:%02d".format(day.month, day.dayOfMonth, day.hour, day.minute)
@@ -305,17 +307,22 @@ internal fun PocketClassicBottom(c: StyleCtx, modifier: Modifier, framed: Boolea
     val accent = pocketAccent(runCatching { PocketAccent.valueOf(Features.classicAccent.state.value) }.getOrDefault(PocketAccent.BLUE))
     val font = pocketFont()
     PocketFrame(modifier, framed) {
-        PocketScreen(Modifier.fillMaxSize(), responsive = !Features.pocketPixel.state.value, outside = PaperC) {
+        val strip = pocketStripOn()
+        PocketScreen(Modifier.fillMaxSize(), responsive = !Features.pocketPixel.state.value, outside = PaperC,
+            designH = POCKET_H + if (strip) POCKET_STRIP_H else 0f) {
             val uPx = d(1f).value * density
-            Canvas(Modifier.atScreen(0f, 0f, width, POCKET_H)) {
+            Canvas(Modifier.atFull(0f, 0f, width, fullH)) {
                 pocketPinstripes(uPx, PaperC, StripeC)
-                pocketGrid(uPx, GridC, 44f, cx - 2f, -22f)
+                pocketGrid(uPx, GridC, 44f, cx - 2f, cy - 22f) // (from the screen's top: the design's grid lines)
             }
             when (PocketNav.page) {
                 PocketNav.Page.HOME -> PocketHome(this, c, accent, font)
                 PocketNav.Page.GAMES -> PocketBrowser(this, c, accent, font, games = true)
                 PocketNav.Page.CATEGORIES -> PocketBrowser(this, c, accent, font, games = false)
             }
+            // Update 182: the home strip under the menu.
+            if (strip) PocketHomeStrip(this, c, POCKET_H, accent, font, InkC, MutedC, EdgeC, Color(0xFFF4F5F7),
+                PocketNav.spot.takeIf { PocketNav.page == PocketNav.Page.HOME })
         }
     }
 }
@@ -347,7 +354,7 @@ private fun PocketHome(s: PocketScope, c: StyleCtx, accent: Color, font: android
         }
         // Achievements and the category you're in.
         PocketPanel(s, ACH, 42f, 66f, 88f, 38f, accent, spot, thick = true, onTap = { pocketActivate(c, ACH) }) {
-            Canvas(Modifier.at(6f - cx, 12f, 14f, 14f)) { pocketIcon(PocketIcons.TROPHY, InkC, accent) }
+            Canvas(Modifier.at(5f - cx, 11f, 16f, 16f)) { pocketIcon(PocketIcons.TROPHY, InkC, accent) }
             PocketText(s, "Achievements", 22f - cx, 5f, 64f, 28f, 7f, InkC, font, TextAlign.Center, maxLines = 2)
             Box(Modifier.at(80f - cx, 30f, 6f, 6f).background(accent))
         }
@@ -364,16 +371,19 @@ private fun PocketHome(s: PocketScope, c: StyleCtx, accent: Color, font: android
         // All categories.
         PocketPanel(s, ALL, 42f, 112f, 180f, 36f, accent, spot, onTap = { pocketActivate(c, ALL) }) {
             Box(Modifier.at(4f - cx, 2f, 32f, 32f).background(Color(0xFFF4F5F7))) {
-                Canvas(Modifier.at(10f - cx, 10f, 12f, 12f)) { pocketIcon(PocketIcons.ALL, InkC, accent) }
+                Canvas(Modifier.at(8f - cx, 8f, 16f, 16f)) { pocketIcon(PocketIcons.ALL, InkC, accent) }
             }
             PocketText(s, "All Categories", 40f - cx, 4f, 136f, 18f, 8.5f, InkC, font, TextAlign.Center)
             PocketText(s, "${c.stops.size} to choose from", 40f - cx, 22f, 136f, 10f, 6.5f, MutedC, font, TextAlign.Center)
         }
-        // The three small icons along the bottom edge.
+        // The small icons along the bottom edge (update 182: redrawn, and Second screen with two screens).
         if (toolbar) {
-            PocketTool(s, SET, 6f, 168f, PocketIcons.GEAR, accent, spot) { pocketActivate(c, SET) }
-            PocketTool(s, STATS, 122f, 168f, PocketIcons.GRAPH, accent, spot) { pocketActivate(c, STATS) }
-            PocketTool(s, MOON, 238f, 168f, PocketIcons.MOON, accent, spot) { pocketActivate(c, MOON) }
+            val tools = pocketTools(c, ribbon = false)
+            tools.forEachIndexed { i, (id, icon) ->
+                PocketToolButton(s, pocketToolX(i, tools.size), 168f, icon, InkC, accent, spot == id, PocketNav.pressed == id) {
+                    PocketNav.spot = id; pocketActivate(live, id)
+                }
+            }
         }
     }
 }
@@ -546,9 +556,7 @@ internal fun pocketActivate(c: StyleCtx, spot: Int) {
         ACH -> { val g = c.game; if (g != null) c.actions.achievements(g) else c.actions.achievementsHub() }
         CAT -> { pocketPlaySound(UiSound.OPEN); PocketNav.gamesFromAll = false; PocketNav.cursor = c.focus; PocketNav.page = PocketNav.Page.GAMES }
         ALL -> { pocketPlaySound(UiSound.OPEN); PocketNav.cursor = c.stop.coerceAtLeast(0); PocketNav.page = PocketNav.Page.CATEGORIES }
-        SET -> c.actions.settings()
-        STATS -> c.actions.stats()
-        MOON -> c.actions.screensaver()
+        else -> pocketShared(c, spot)
     }
 }
 
@@ -617,31 +625,27 @@ internal fun pocketClassicKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boo
     val toolbar = Features.classicToolbar.value
     val spot = PocketNav.spot
     fun go(s: Int): Boolean { if (s != spot) { PocketNav.spot = s; pocketPlaySound(UiSound.MOVE) }; return take() }
+    // Update 182: the places as rows (the panels, the small tools, the home strip): ▲ ▼ to the nearest one.
+    val tools = if (toolbar) pocketTools(c, ribbon = false) else emptyList()
+    val rows = listOf(
+        listOf(CARD to 132f), listOf(ACH to 86f, CAT to 178f), listOf(ALL to 132f),
+        tools.mapIndexed { i, (id, _) -> id to pocketToolX(i, tools.size) + 9f },
+        if (pocketStripOn()) pocketStripSpots(c) else emptyList()
+    ).filter { it.isNotEmpty() }
+    fun dirKey(d: Int): Boolean {
+        val next = pocketRowStep(rows, spot, d)
+        return when {
+            next != null -> go(next)
+            d == 2 -> { if (first) reach(true); take() }
+            d == 3 -> { if (first) reach(false); take() }
+            else -> take()
+        }
+    }
     return when (k) {
-        Key.DirectionLeft -> when (spot) {
-            CARD -> { pocketStepGame(c, -1); take() }
-            CAT -> go(ACH)
-            STATS -> go(SET); MOON -> go(STATS)
-            else -> take()
-        }
-        Key.DirectionRight -> when (spot) {
-            CARD -> { pocketStepGame(c, 1); take() }
-            ACH -> go(CAT)
-            SET -> go(STATS); STATS -> go(MOON)
-            else -> take()
-        }
-        Key.DirectionUp -> when (spot) {
-            CARD -> { if (first) reach(true); take() }
-            ACH, CAT -> go(CARD)
-            ALL -> go(ACH)
-            else -> go(ALL)
-        }
-        Key.DirectionDown -> when (spot) {
-            CARD -> go(ACH)
-            ACH, CAT -> go(ALL)
-            ALL -> if (toolbar) go(STATS) else { if (first) reach(false); take() }
-            else -> { if (first) reach(false); take() }
-        }
+        Key.DirectionLeft -> if (spot == CARD) { pocketStepGame(c, -1); take() } else dirKey(0)
+        Key.DirectionRight -> if (spot == CARD) { pocketStepGame(c, 1); take() } else dirKey(1)
+        Key.DirectionUp -> dirKey(2)
+        Key.DirectionDown -> dirKey(3)
         Key.ButtonA, Key.Enter, Key.DirectionCenter -> { if (first) pocketActivate(c, spot); take() }
         // B: back to the game panel (on it: the home screen's own B).
         Key.ButtonB, Key.Back -> if (spot != CARD) go(CARD) else false

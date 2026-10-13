@@ -259,37 +259,37 @@ private fun ThrowScene(p: ThrowPlan, clock: Animatable<Float, AnimationVector1D>
             val endScale = (endH / pieceH).coerceIn(0.5f, 2.6f)
             val slotW = pieceH * endScale * p.pieceAspect * 1.25f + 24f * px
             val slotH = (if (disc) 16f else 14f) * px
-            // Lift-off, flight, into the slot / tray (ms).
-            val liftEnd = if (disc) 120f else 140f
-            val flyEnd = 560f
-            val inEnd = if (disc) 700f else 650f
+            // Update 182: plugged in, not thrown — it lifts off the shelf, glides upright to just above the slot / tray,
+            // rests a moment, then is pushed in (a cartridge about half way, a disc all the way) with a soft click.
+            val liftEnd = 150f
+            val flyEnd = 500f
+            val pushAt = 560f
+            val inEnd = if (disc) 730f else 690f
             Box(
                 Modifier.size(wDp, hDp).graphicsLayer {
                     val t = clock.value
                     val cx0 = p.from.left - win[0] + w / 2f
                     val cy0 = p.from.top - win[1] + h / 2f
                     val lift = eOut3(ph(t, 0f, liftEnd))
-                    val u = ph(t, liftEnd, flyEnd)
-                    val v = ph(t, flyEnd, inEnd)
-                    // The piece's height at the end.
+                    val u = eInOut2(ph(t, liftEnd, flyEnd))
+                    val v = ph(t, pushAt, inEnd)
+                    // The piece's height at the end, the slot's top edge, just above it, and in.
                     val shown = pieceH * endScale
-                    val restY = if (disc) sh - shown * 0.5f + shown * 0.12f else sh - shown * 0.42f + shown * 0.5f
-                    val goneY = if (disc) sh + shown * 0.62f else restY + shown * 0.16f
-                    val x = lerp(cx0, sw / 2f, eInOut2(u))
-                    // Up a little as it's picked up, then down — a throw, gravity pulling it faster.
-                    var y = lerp(cy0 - h * 0.06f * lift, restY, eIn2(u)) - h * 0.12f * sin(PI.toFloat() * u) * (1f - u)
-                    if (disc) y = lerp(y, goneY, eIn2(v))
-                    else {
-                        y = lerp(y, goneY, eOut3(v))
-                        // The bump as it clicks in.
-                        y += 5f * px * sin(PI.toFloat() * ph(t, flyEnd, flyEnd + 90f))
-                    }
-                    val k = lerp(1f + (if (disc) 0.08f else 0.1f) * lift, endScale, eOut3(u))
+                    val slotTop = sh - slotH
+                    val restY = slotTop - shown / 2f - 3f * px
+                    val inY = if (disc) slotTop + shown / 2f + 4f * px else restY + shown * 0.5f
+                    val x = lerp(cx0, sw / 2f, u)
+                    var y = lerp(cy0 - h * 0.04f * lift, restY, u)
+                    y = lerp(y, inY, eInOut2(v))
+                    // The click as it seats.
+                    if (!disc) y += 2.5f * px * sin(PI.toFloat() * ph(t, inEnd, inEnd + 80f))
+                    val k = lerp(1f + 0.05f * lift, endScale, u)
                     translationX = x - w / 2f
                     translationY = y - h / 2f
                     scaleX = k
-                    scaleY = k * (if (disc) 1f else 1f - 0.05f * sin(PI.toFloat() * ph(t, flyEnd, flyEnd + 90f)))
-                    rotationZ = if (disc) 1080f * ph(t, 0f, inEnd).pow(1.4f) else 720f * eOut3(u)
+                    scaleY = k
+                    // Only a slight lean while it travels, straight again before it goes in.
+                    rotationZ = (if (cx0 < sw / 2f) 6f else -6f) * sin(PI.toFloat() * u)
                 }
             ) {
                 ThrownPiece(p, p.pick, p.label, p.labelIsScan, Modifier.fillMaxSize().padding(with(density) { pad.toDp() }))
@@ -304,8 +304,8 @@ private fun ThrowScene(p: ThrowPlan, clock: Animatable<Float, AnimationVector1D>
                 val t = clock.value
                 val appear = eOut3(ph(t, 160f, 380f))
                 if (appear > 0f) {
-                    val bump = if (disc) 0f else 3f * px * sin(PI.toFloat() * ph(t, flyEnd, flyEnd + 120f))
-                    val flash = if (t >= flyEnd) 1f - ph(t, flyEnd, flyEnd + 240f) else 0f
+                    val bump = if (disc) 0f else 1.5f * px * sin(PI.toFloat() * ph(t, inEnd, inEnd + 80f))
+                    val flash = if (t >= inEnd) 1f - ph(t, inEnd, inEnd + 200f) else 0f
                     val top = sh - slotH * appear + bump
                     val left = (sw - slotW) / 2f
                     // Light from the slot.
@@ -379,15 +379,14 @@ private fun CaseScene(
                 val caseTop = p.from.top - win[1] + pad + (if (bottomStand) innerH - ch else (innerH - ch) / 2f)
                 val cy0 = caseTop + ch / 2f
                 val cx0 = p.from.left - win[0] + pad + innerW / 2f
+                // Update 182: lifted out of its case, then carried down and pushed into the bottom edge, upright.
                 val rise = eOut3(ph(t, 330f, 440f))
-                val u = ph(t, 440f, 800f)
-                val k = 1f + 0.08f * rise + 0.3f * eOut3(u)
-                // Well past the bottom edge (turned, a cartridge reaches further than half its height).
-                val endY = sh + maxOf(dw, dh) * k * 0.75f + ch * 0.03f
-                translationY = -ch * 0.04f * rise + (endY - cy0) * eIn2(u)
-                translationX = (sw / 2f - cx0) * 0.35f * eInOut2(u)
+                val u = eInOut2(ph(t, 440f, 800f))
+                val k = 1f + 0.06f * rise + 0.25f * u
+                val endY = sh + dh * k * 0.5f + 4f * px
+                translationY = -ch * 0.04f * rise + (endY - cy0) * u
+                translationX = (sw / 2f - cx0) * u
                 scaleX = k; scaleY = k
-                rotationZ = (if (p.round) 900f else 540f) * ph(t, 330f, 800f).pow(1.3f)
             }
         ) {
             ThrownPiece(p, p.pick, p.label, p.labelIsScan, Modifier.fillMaxSize())

@@ -53,6 +53,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.compose.foundation.gestures.animateScrollBy
+import kotlinx.coroutines.launch
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.ui.theme.ShelfTheme
 
@@ -81,14 +83,26 @@ internal fun SecondGamesPage(
         } else {
             // Update 177: the look picked in Settings › Screens › Second screen Games page, with the folder pictures.
             val look = com.shelf.launcher.data.Features.secondFolderLook.state.value
+            // Update 182: the look switched right here too (Tiles by default), and the controller scrolls the grid.
+            val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+            PadScroller(gridState, open == null)
             val (minSize, aspect) = when (look) {
                 com.shelf.launcher.data.Features.FolderLook.TILES -> 96.dp to 1f
                 com.shelf.launcher.data.Features.FolderLook.CARDS -> 150.dp to 1.78f
                 com.shelf.launcher.data.Features.FolderLook.LOGOS -> 120.dp to 1.6f
                 else -> 104.dp to 1.18f
             }
+            Column(Modifier.fillMaxSize()) {
+            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                com.shelf.launcher.data.Features.FolderLook.values().forEach { l ->
+                    val pick = { com.shelf.launcher.data.Features.secondFolderLook.value = l }
+                    Chip(l.label, accent = l == look, modifier = Modifier.padTarget("gameslook-" + l.name) { pick() }) { pick() }
+                    Spacer(Modifier.width(6.dp))
+                }
+            }
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = minSize),
+                state = gridState,
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -97,6 +111,7 @@ internal fun SecondGamesPage(
                     if (look == com.shelf.launcher.data.Features.FolderLook.FOLDERS) ConsoleFolder(f, Modifier.fillMaxWidth().aspectRatio(aspect)) { open = f }
                     else ConsoleTile(f, look, Modifier.fillMaxWidth().aspectRatio(aspect)) { open = f }
                 }
+            }
             }
         }
         AnimatedVisibility(
@@ -259,8 +274,11 @@ private fun FolderPopup(
                 }
             }
             Spacer(Modifier.height(10.dp))
+            val gamesGrid = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+            PadScroller(gamesGrid, true)
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 78.dp),
+                state = gamesGrid,
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -287,5 +305,27 @@ private fun FolderPopup(
                 }
             }
         }
+    }
+}
+
+/**
+ * Update 182: while [on], the controller on the second screen scrolls [state] a row when ▲ ▼ find nothing further on
+ * screen (the grid's next rows aren't made until they scroll in), so every console and game can be reached.
+ */
+@Composable
+internal fun PadScroller(state: androidx.compose.foundation.lazy.grid.LazyGridState, on: Boolean) {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val here = LocalOnSecondScreen.current
+    androidx.compose.runtime.DisposableEffect(state, on, here) {
+        val hook: ((Int) -> Boolean)? = if (!on || !here) null else { dir ->
+            val can = if (dir == 3) state.canScrollForward else state.canScrollBackward
+            if (can) {
+                val step = (state.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 200).toFloat() + 30f
+                scope.launch { state.animateScrollBy(if (dir == 3) step else -step) }
+            }
+            can
+        }
+        if (hook != null) SecondPad.scroller = hook
+        onDispose { if (hook != null && SecondPad.scroller === hook) SecondPad.scroller = null }
     }
 }

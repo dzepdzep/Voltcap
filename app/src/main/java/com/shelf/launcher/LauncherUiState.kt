@@ -137,7 +137,7 @@ enum class SpecialFilter(val label: String) {
     SMART_CONTINUE("Smart Continue"),
     /** Update 132: the Cross menu's Trophies category — every game with achievements, last played first. Only in the
      *  Cross menu's category cycle (Settings › Home › Layout options › Cross menu options › Trophies category). */
-    TROPHIES("Trophies"),
+    TROPHIES("Achievements"),
     /** Rediscover: games not played in 6+ months. Only opened by hand (L1 › Rediscover); never in the
      * category cycle and never mixed into the normal order. */
     REDISCOVER("Rediscover")

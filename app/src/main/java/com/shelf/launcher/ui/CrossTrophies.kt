@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.animateScrollBy
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -71,7 +74,8 @@ import com.shelf.launcher.data.RaBadges
  * The game you're on sits on the left (the ones before and after it faded beside it, the category's icon above it),
  * the achievements run down a column next to it, the one you're on bigger with what it asks and when you earned it,
  * and a box top right holds earned / total and the time.
- * ▲ ▼ move · L1 / R1 (L2 / R2) a page · X all / still to get / earned · A the full list · B or ◀ back.
+ * ▲ ▼ move · L1 / R1 (L2 / R2) a page · X all / missable / still to get / earned · ▶ comments · A the full list · B or ◀ back.
+ * (Update 182: the Missable filter and the comments panel.)
  * Settings › Home › Layout options › Cross menu options › "Achievements in the menu's style" turns it off (the list popup then).
  */
 
@@ -83,7 +87,7 @@ internal object CrossTrophyView {
     var full by mutableStateOf(false)
 }
 
-private enum class TrophyFilter(val label: String) { ALL("All"), LOCKED("Still to get"), EARNED("Earned") }
+private enum class TrophyFilter(val label: String) { ALL("All"), MISSABLE("Missable"), LOCKED("Still to get"), EARNED("Earned") }
 
 @Composable
 internal fun CrossTrophies(
@@ -94,7 +98,8 @@ internal fun CrossTrophies(
     loading: Boolean,
     startLocked: Boolean,
     onFull: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onLoadComments: (Int) -> Unit = {}
 ) {
     val sounds = LocalUiSounds.current
     val details = state.raAchievementDetails[game.stableKey]
@@ -103,6 +108,7 @@ internal fun CrossTrophies(
     val list = remember(all, filter) {
         when (filter) {
             TrophyFilter.ALL -> all
+            TrophyFilter.MISSABLE -> all.filter { it.isMissable }
             TrophyFilter.LOCKED -> all.filter { !it.isUnlocked }
             TrophyFilter.EARNED -> all.filter { it.isUnlocked }
         }
@@ -115,6 +121,18 @@ internal fun CrossTrophies(
     val full by rememberUpdatedState(onFull)
     // Keys pressed before the column opened (the Y that opened it, let go in here) do nothing.
     val openedAt = remember { android.os.SystemClock.uptimeMillis() }
+    // Update 182: ▶ opens the comments people left on the achievement you're on; ▲ ▼ read on, ◀ / B close them.
+    var commentsFor by remember(game.stableKey) { mutableStateOf<RaAchievementDetail?>(null) }
+    val commentScroll = androidx.compose.foundation.rememberScrollState()
+    val loadComments by rememberUpdatedState(onLoadComments)
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    fun openComments() {
+        val a = listNow.getOrNull(index.coerceIn(0, (listNow.size - 1).coerceAtLeast(0))) ?: return
+        commentsFor = a
+        loadComments(a.id)
+        scope.launch { commentScroll.scrollTo(0) }
+        sounds?.play(UiSound.OPEN)
+    }
     fun move(d: Int) {
         val l = listNow
         if (l.isEmpty()) return
@@ -158,7 +176,15 @@ internal fun CrossTrophies(
                     if (e.nativeKeyEvent.downTime < openedAt) return@onKeyEvent true
                     val down = e.type == KeyEventType.KeyDown
                     val up = e.type == KeyEventType.KeyUp
-                    when (e.key) {
+                    if (commentsFor != null) when (e.key) {
+                        Key.DirectionUp -> { if (down) scope.launch { commentScroll.animateScrollBy(-180f) }; true }
+                        Key.DirectionDown -> { if (down) scope.launch { commentScroll.animateScrollBy(180f) }; true }
+                        Key.DirectionLeft, Key.ButtonB, Key.Back, Key.Escape, Key.DirectionRight, Key.ButtonA, Key.Enter, Key.DirectionCenter -> {
+                            if (up) { commentsFor = null; sounds?.play(UiSound.BACK) }
+                            true
+                        }
+                        else -> true
+                    } else when (e.key) {
                         Key.DirectionUp -> { if (down) move(-1); true }
                         Key.DirectionDown -> { if (down) move(1); true }
                         Key.ButtonL1, Key.ButtonL2, Key.PageUp -> { if (down) move(-8); true }
@@ -176,7 +202,7 @@ internal fun CrossTrophies(
                             if (up) { sounds?.play(UiSound.OPEN); full() }
                             true
                         }
-                        Key.DirectionRight -> true
+                        Key.DirectionRight -> { if (up) openComments(); true }
                         else -> false
                     }
                 }
@@ -257,10 +283,19 @@ internal fun CrossTrophies(
 
                 CrossTrophyBox(all, filter, now, k, Modifier.align(Alignment.TopEnd).padding(top = 14.dp * k))
                 Text(
-                    "▲▼ Move   X " + TrophyFilter.values()[(filter.ordinal + 1) % TrophyFilter.values().size].label + "   A Full list   B Back",
+                    if (commentsFor != null) "▲▼ Read   B Close" else
+                        "▲▼ Move   X " + TrophyFilter.values()[(filter.ordinal + 1) % TrophyFilter.values().size].label + "   ▶ Comments   A Full list   B Back",
                     color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp * k, maxLines = 1,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 10.dp)
                 )
+                commentsFor?.let { a ->
+                    CrossComments(
+                        a, state.raComments[a.id], a.id in state.raCommentsLoading, commentScroll, k,
+                        Modifier.align(Alignment.CenterEnd).padding(end = 16.dp)
+                            .width((w * 0.46f).coerceIn(220.dp, 420.dp)).height(h * 0.78f)
+                            .pointerInput(a.id) { detectTapGestures { commentsFor = null } }
+                    )
+                }
                 }
             }
         }
@@ -430,4 +465,47 @@ private fun trophyMeta(a: RaAchievementDetail): String {
         earned,
         a.unlockPercent?.let { "${it.toInt().coerceAtLeast(if (it > 0f) 1 else 0)} % of players" }
     ).joinToString("  ·  ")
+}
+
+/** Update 182: the comments people left on an achievement's page, in a dark panel over the right of the column. */
+@Composable
+private fun CrossComments(
+    a: RaAchievementDetail, comments: List<com.shelf.launcher.data.RaComment>?, loading: Boolean,
+    scroll: androidx.compose.foundation.ScrollState, k: Float, modifier: Modifier
+) {
+    val shape = RoundedCornerShape(6.dp)
+    Column(
+        modifier.clip(shape).background(Color.Black.copy(alpha = 0.78f)).border(1.dp, Color.White.copy(alpha = 0.45f), shape)
+            .padding(horizontal = 14.dp * k, vertical = 10.dp * k)
+    ) {
+        Text(
+            a.title ?: "Achievement", color = Color.White, fontSize = 14.sp * k, fontWeight = FontWeight.Medium,
+            maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            if (a.isMissable) "Comments  ·  Missable" else "Comments", color = Color.White.copy(alpha = 0.6f),
+            fontSize = 11.sp * k, modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
+        )
+        Column(Modifier.weight(1f).verticalScroll(scroll)) {
+            when {
+                comments == null && loading -> Text("Loading comments…", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp * k)
+                comments == null -> Text(
+                    "Couldn't load the comments (no connection, or no RetroAchievements sign-in). Close and open them again to retry.",
+                    color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp * k
+                )
+                comments.isEmpty() -> Text("No comments yet.", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp * k)
+                else -> comments.forEach { cm ->
+                    Text(
+                        (cm.User ?: "Player") + (cm.Submitted?.let { "  ·  " + it.take(10) } ?: ""),
+                        color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp * k, fontWeight = FontWeight.Medium, maxLines = 1,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                    Text(
+                        cm.CommentText.orEmpty().trim(), color = Color.White.copy(alpha = 0.92f),
+                        fontSize = 12.sp * k, lineHeight = 16.sp * k
+                    )
+                }
+            }
+        }
+    }
 }

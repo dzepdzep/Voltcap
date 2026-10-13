@@ -7,6 +7,8 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.sp
@@ -73,22 +75,64 @@ internal fun TwinFullTopSwitch() {
     )
 }
 
-/** Update 180: the button on the second screen's dashboard (opened from a two-screen layout) that brings the layout back. */
+/**
+ * Update 180: the button on the second screen's dashboard (opened from a two-screen layout) that brings the layout back.
+ * Update 182: drawn in the layout's own style — Twin desk's and Twin icons' white bar with a round button (as their
+ * Second screen button), the Pocket layouts' flat white panel with the pixel font and the corner brackets.
+ */
 @Composable
-internal fun androidx.compose.foundation.layout.BoxScope.TwinBackPill(name: String) {
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
-    androidx.compose.foundation.layout.Row(
-        Modifier.align(Alignment.BottomStart).padding(10.dp)
-            .padTarget("twin-back") { TwinScreens.dashboard = false }
-            .clip(shape)
-            .background(ShelfTheme.accent)
-            .tapOnly { TwinScreens.dashboard = false }
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack, null, tint = onAccentColor(), modifier = Modifier.size(16.dp))
-        androidx.compose.foundation.layout.Spacer(Modifier.size(6.dp))
-        androidx.compose.material3.Text(name, color = onAccentColor(), fontSize = 13.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+internal fun androidx.compose.foundation.layout.BoxScope.TwinBackPill(name: String, layout: HomeLayout = HomeLayout.TWIN_DESK) {
+    val back = { TwinScreens.dashboard = false }
+    val lit = SecondPad.active && SecondPad.focused == "twin-back"
+    val accent = ShelfTheme.accent
+    val ink = Color(0xFF26313C)
+    val edge = Color(0xFFC6CFD7)
+    if (layout.isPocket) {
+        val font = pocketFont()
+        val pAccent = if (layout == HomeLayout.POCKET_RIBBON)
+            pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.ribbonAccent.state.value) }.getOrDefault(PocketAccent.SKY))
+        else pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.classicAccent.state.value) }.getOrDefault(PocketAccent.BLUE))
+        androidx.compose.foundation.layout.Box(
+            Modifier.align(Alignment.BottomStart).padding(10.dp)
+                .padTargetPlain("twin-back") { back() }
+                .tapOnly { back() }
+        ) {
+            androidx.compose.foundation.layout.Row(
+                Modifier.background(Color.White).border(1.dp, if (lit) Color(0xFF6B7380) else Color(0xFFB9BEC6))
+                    .padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                androidx.compose.foundation.Canvas(Modifier.size(18.dp)) { pocketIcon(PocketIcons.BACK, Color(0xFF3A3F47), pAccent) }
+                androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+                androidx.compose.material3.Text(name, color = Color(0xFF3A3F47), fontSize = 14.sp, fontFamily = font, maxLines = 1)
+            }
+            if (lit) androidx.compose.foundation.Canvas(Modifier.matchParentSize()) { pocketBrackets(2.dp.toPx(), pAccent) }
+        }
+    } else {
+        val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+        androidx.compose.foundation.layout.Row(
+            Modifier.align(Alignment.BottomStart).padding(10.dp)
+                .padTargetPlain("twin-back") { back() }
+                .clip(shape).background(Color.White.copy(alpha = 0.86f)).border(1.dp, edge, shape)
+                .tapOnly { back() }
+                .padding(start = 4.dp, end = 14.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            androidx.compose.foundation.layout.Box(
+                Modifier.graphicsLayer { val k = if (lit) 1.1f else 1f; scaleX = k; scaleY = k }
+                    .size(34.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(if (lit) accent.copy(alpha = 0.18f) else Color.White)
+                    .border(if (lit) 2.dp else 1.dp, if (lit) accent else edge, androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack, null,
+                    tint = if (lit) ink else Color(0xFF4A5562), modifier = Modifier.size(19.dp)
+                )
+            }
+            androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+            androidx.compose.material3.Text(name, color = ink, fontSize = 13.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, maxLines = 1)
+        }
     }
 }
 

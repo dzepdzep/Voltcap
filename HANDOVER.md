@@ -256,6 +256,50 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 182
+- **LaunchThrow (cart / disc):**
+  - Phases: lift (0–150), glide upright (150–500), push into the slot (560–inEnd), click.
+  - `rotationZ` is only a small lean. A cartridge stops half way in; a disc goes all the way in.
+  - Case scene: the disc is carried down, no spin.
+- **CrossTrophies:**
+  - `TrophyFilter.MISSABLE` uses `RaAchievementDetail.isMissable`.
+  - `commentsFor` with `CrossComments` (`state.raComments`); `onLoadComments` is `viewModel.loadAchievementComments`.
+  - `SpecialFilter.TROPHIES` label is "Achievements".
+- **QuickSettings:**
+  - `carouselApplies(layout)` greys out the Carousel tile; Carousel off is first in its hold list.
+  - `R1ChoicePopup` scrolls (`heightIn` 86 % of the screen).
+  - Endless tile is greyed out where `!endlessApplies` (Hero tiles); `loopRowOn` respects it.
+- **Carousel:**
+  - Edge `side` = `ceil(12 × screenWidthDp / 600)` (× 3 for spines aside).
+  - `reach` is × 3 for Spine wall and Box flow always.
+  - Box flow `sc` is constant in the stacks.
+- **Pocket:**
+  - `PocketScope` has `fullH` / `cy`; the design is offset by `cy` in `PocketScreen`, and `atFull` reaches the whole
+    screen.
+  - `PocketScreen(designH)` adds `POCKET_STRIP_H` (28) when `Features.pocketStrip`.
+  - `pocketPixel` has a new key (`pocket_pixel2`, default false); `ribbonIcon` too (`ribbon_icon2`, 44, 24..56).
+  - `PocketSpot` holds the ids (tools 4–8, dock 10+, music 20–22).
+  - New helpers: `pocketTools`, `pocketToolX`, `PocketToolButton`, `PocketHomeStrip`, `pocketStripSpots`,
+    `pocketShared`, `pocketRowStep`.
+  - Classic keys use rows; the ribbon uses `PocketNav.ribbonSpot` (−1 = the row).
+  - Icons are 16 × 16 grids (`tools/…`: generated in the session from `icons182/gen.py`).
+- **SecondPad:**
+  - Targets can have `move` (`padTarget(id, onMove)`).
+  - `SecondPad.scroller` (`PadScroller` for LazyGrids) scrolls a row when ▲ ▼ find nothing.
+  - `padTargetPlain` draws no ring.
+- **Second screen:** the Wall page's chips and `wall-view` are pad targets; `secondFolderLook` has a new key
+  (`second_folder_look2`, TILES); the look chips are on the Games page.
+- **TwinBackPill(name, layout):** styled per layout.
+- **GameMode:** `enteredAt`, and `userIsHere()` is called from `MainActivity.dispatchKeyEvent` / `dispatchTouchEvent`
+  and on focus after 4 s.
+- **HTTP:** `callTimeout` on the SGDB (60), ScreenScraper (90), ArtFiles (120) and IGDB / RAWG / TGDB (60) clients.
+- **CloudSync launcher data:**
+  - playtime / recent go through `normalized()` (`fileKey`: `romf:<console>/<file>`, console from
+    `RomScanner.platformForFolderName` up the path; old path keys are summed / maxed, and a new key beats old ones);
+  - `localized()` maps them back to this device's keys (`CloudSync.libraryKeys` from the view model).
+- **Open:** Real cases on the Thor (scans not showing; 3D case models crop the cover; the user wants real case shapes).
+  Diagnose on the Thor when it's free.
+
 ## State after update 181
 - **Pocket layouts:** `HomeLayout.POCKET_CLASSIC` / `POCKET_RIBBON` (`isTwin`, new `isPocket`).
   - `PocketShared.kt`: `PocketScope` (256 × 192 dots, `u` dp per dot, `cx` = centring offset; `at` is

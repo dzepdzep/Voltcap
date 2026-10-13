@@ -107,6 +107,8 @@ fun createIgdbApi(): IgdbApi = Retrofit.Builder()
     // Every call uses an absolute @Url/@POST, so this base is only a
     // placeholder Retrofit requires at build time.
     .baseUrl("https://api.igdb.com/")
+    // Update 182: an overall limit per request (the default client has none).
+    .client(okhttp3.OkHttpClient.Builder().callTimeout(60, java.util.concurrent.TimeUnit.SECONDS).build())
     .addConverterFactory(GsonConverterFactory.create())
     .build()
     .create(IgdbApi::class.java)

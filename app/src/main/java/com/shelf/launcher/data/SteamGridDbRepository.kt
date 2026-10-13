@@ -4,6 +4,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.async
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 import okhttp3.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -32,6 +33,10 @@ private class AuthInterceptor : Interceptor {
 fun createSteamGridDbApi(): SteamGridDbApi {
     val client = OkHttpClient.Builder()
         .addInterceptor(AuthInterceptor())
+        // Update 182: firm limits (the defaults have no overall limit per request).
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .callTimeout(60, TimeUnit.SECONDS)
         .build()
 
     val retrofit = Retrofit.Builder()

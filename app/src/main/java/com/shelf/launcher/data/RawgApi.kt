@@ -75,6 +75,8 @@ data class RawgNamed(val id: Int? = null, val name: String? = null)
 
 fun createRawgApi(): RawgApi = Retrofit.Builder()
     .baseUrl("https://api.rawg.io/")
+    // Update 182: an overall limit per request (the default client has none).
+    .client(okhttp3.OkHttpClient.Builder().callTimeout(60, java.util.concurrent.TimeUnit.SECONDS).build())
     .addConverterFactory(GsonConverterFactory.create())
     .build()
     .create(RawgApi::class.java)

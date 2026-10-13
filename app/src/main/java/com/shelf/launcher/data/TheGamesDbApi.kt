@@ -52,6 +52,8 @@ data class TgdbImage(
 
 fun createTheGamesDbApi(): TheGamesDbApi = Retrofit.Builder()
     .baseUrl("https://api.thegamesdb.net/")
+    // Update 182: an overall limit per request (the default client has none).
+    .client(okhttp3.OkHttpClient.Builder().callTimeout(60, java.util.concurrent.TimeUnit.SECONDS).build())
     .addConverterFactory(GsonConverterFactory.create())
     .build()
     .create(TheGamesDbApi::class.java)

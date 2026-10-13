@@ -1724,7 +1724,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         Box(Modifier.fillMaxSize()) {
             SecondScreenContent()
             // Update 180: the dashboard opened from a two-screen layout: the way back to the layout's bottom part.
-            if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard) TwinBackPill(state.appearance.homeLayout.label)
+            if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard) TwinBackPill(state.appearance.homeLayout.label, state.appearance.homeLayout)
         }
     }
     // The companion shows music, so keep it fresh while a second screen is up.
@@ -4668,7 +4668,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             game, state, visibleGames, displayArt,
             loading = game.stableKey in state.raAchievementDetailsLoading, startLocked = achievementsShowMissing,
             onFull = { CrossTrophyView.full = true },
-            onDismiss = { viewingAchievementsForGame = null; achievementsShowMissing = false }
+            onDismiss = { viewingAchievementsForGame = null; achievementsShowMissing = false },
+            onLoadComments = { viewModel.loadAchievementComments(it) }
         ) else AchievementListDialog(
             game = game,
             achievements = state.raAchievementDetails[game.stableKey] ?: emptyList(),

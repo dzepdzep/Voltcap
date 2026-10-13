@@ -5642,6 +5642,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         com.shelf.launcher.data.SpineScrape.runMissingReal = { scrapeMissingRealArt() }
         // Update 117: the names and consoles that go up with this device's play sessions (for the other devices' recaps).
         var infoCache: Pair<List<Game>, Map<String, Game>>? = null
+        // Update 182: the games here, so playtime synced from another handheld lands on the right one.
+        com.shelf.launcher.data.CloudSync.libraryKeys = { _uiState.value.games.map { it.stableKey } }
         com.shelf.launcher.data.CloudSync.gameInfo = { key ->
             val gs = _uiState.value.games
             val c = infoCache?.takeIf { it.first === gs } ?: (gs to gs.associateBy { it.stableKey }).also { infoCache = it }

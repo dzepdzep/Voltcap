@@ -53,6 +53,7 @@ object ArtFiles {
         okhttp3.OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(120, TimeUnit.SECONDS) // (Update 182)
             .followRedirects(true)
             .build()
     }

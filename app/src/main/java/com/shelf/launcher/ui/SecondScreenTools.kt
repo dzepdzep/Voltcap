@@ -200,11 +200,12 @@ internal fun SecondWallPage(
     }
     Column(modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Chip("Platforms", accent = ofPlatforms) { Features.wallOfPlatforms.value = true }
+            // (Update 182: every chip and the Wall itself reachable with the controller on the second screen.)
+            Chip("Platforms", accent = ofPlatforms, modifier = Modifier.padTarget("wall-platforms") { Features.wallOfPlatforms.value = true }) { Features.wallOfPlatforms.value = true }
             Spacer(Modifier.width(6.dp))
-            Chip("Games", accent = !ofPlatforms) { Features.wallOfPlatforms.value = false }
+            Chip("Games", accent = !ofPlatforms, modifier = Modifier.padTarget("wall-games") { Features.wallOfPlatforms.value = false }) { Features.wallOfPlatforms.value = false }
             Spacer(Modifier.weight(1f))
-            if (!editing) Chip("Edit layout", accent = false) { editing = true }
+            if (!editing) Chip("Edit layout", accent = false, modifier = Modifier.padTarget("wall-edit") { editing = true }) { editing = true }
         }
         // Update 144: the edit chips wrap onto their own line(s), so Reset and Done always fit on the narrow second screen.
         if (editing) {
@@ -215,14 +216,25 @@ internal fun SecondWallPage(
                 Chip("–", accent = false) { scale(0.94f) }
                 Chip("+", accent = false) { scale(1.06f) }
                 Chip("Reset", accent = false) { layout = SlideLayout.wallDefaults; save() }
-                Chip("Done") { save(); editing = false }
+                Chip("Done", modifier = Modifier.padTarget("wall-done") { save(); editing = false }) { save(); editing = false }
             }
         }
         WallView(
             tiles = tiles, selected = selected, direction = holder.dir, animate = Features.pbAnimate.state.value,
             onFocus = { i -> tiles.getOrNull(i)?.let { if (ofPlatforms) onPickCategory(it) else onFocusGame(i) } },
             onPick = { i -> tiles.getOrNull(i)?.let { if (ofPlatforms) onPickCategory(it) else onFocusGame(i) } },
-            modifier = Modifier.fillMaxSize(),
+            // Update 182: the controller on the Wall: ◀ ▶ go along its slices (the main screen follows), A picks.
+            modifier = Modifier.fillMaxSize().padTarget(
+                "wall-view",
+                onMove = { d ->
+                    val step = when (d) { 0 -> -1; 1 -> 1; else -> 0 }
+                    val to = selected + step
+                    if (step != 0 && to in tiles.indices) {
+                        tiles.getOrNull(to)?.let { if (ofPlatforms) onPickCategory(it) else onFocusGame(to) }
+                        true
+                    } else step != 0
+                }
+            ) { tiles.getOrNull(selected)?.let { if (ofPlatforms) onPickCategory(it) else onFocusGame(selected) }; SecondPad.leave() },
             layout = layout, editing = editing, editKey = editKey,
             onEditKey = { editKey = it }, onLayoutChange = { layout = it }
         )

@@ -116,7 +116,7 @@ internal object SettingsIndex {
         // Update 132.
         E("Spotlight: Home menu look (icons on top, button hints)", "Home", "Layout options", null, null),
         E("Spotlight: button hints along the bottom", "Home", "Layout options", null, null),
-        E("Cross menu: Trophies category", "Home", "Layout options", null, null),
+        E("Cross menu: Achievements category", "Home", "Layout options", null, null),
         E("Games as square tiles", "Home", "Layout options", null, null),
         E("Extras on the home screen", "Home", "Extras on the home screen", null, null),
         E("Game look", "Game look", "Covers, cases & discs", null, null),

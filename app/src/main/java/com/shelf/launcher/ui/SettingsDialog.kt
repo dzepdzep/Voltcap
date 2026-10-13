@@ -4948,7 +4948,7 @@ private fun categoryLabel(key: String): String = when (key) {
     CategorySettings.CONSOLES -> "Consoles (each console)"
     CategorySettings.COLLECTIONS -> "Collections, franchises & status"
     // Update 132: only shown on the Cross menu.
-    SpecialFilter.TROPHIES.name -> "Trophies (Cross menu only)"
+    SpecialFilter.TROPHIES.name -> "Achievements (Cross menu only)"
     else -> runCatching { SpecialFilter.valueOf(key).label }.getOrDefault(key)
 }
 

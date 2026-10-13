@@ -1022,7 +1022,10 @@ object Features {
     val pocketAnim = EnumPref("pocket_anim", PocketAnim.NORMAL, PocketAnim.values())
     val pocketArrange = EnumPref("pocket_arrange", PocketArrange.AUTO, PocketArrange.values())
     /** Pixel-perfect (whole pixels per dot, 4:3) or fit the screen (as big as fits, wider when there's room). */
-    val pocketPixel = BoolPref("pocket_pixel", true)
+    /** (Update 182: off by default — as big as fits; whole pixels per dot left the Thor's screens half empty.) */
+    val pocketPixel = BoolPref("pocket_pixel2", false)
+    /** Update 182: the home strip under both Pocket menus (your shortcuts, the music, the time and battery). */
+    val pocketStrip = BoolPref("pocket_strip", true)
     val pocketSounds = BoolPref("pocket_sounds", true)
     /** The category a Pocket layout opens on ("" = where you were). */
     val pocketStartCategory = StringPref("pocket_start_category", "")
@@ -1039,7 +1042,8 @@ object Features {
     val ribbonSlides = BoolPref("ribbon_slides", true)
     val ribbonNames = BoolPref("ribbon_names", true)
     /** Icon size (dots, 24–40) and the gap between icons (dots). */
-    val ribbonIcon = IntPref("ribbon_icon", 32, 24..40)
+    /** (Update 182: bigger by default, up to 56.) */
+    val ribbonIcon = IntPref("ribbon_icon2", 44, 24..56)
     val ribbonGap = IntPref("ribbon_gap", 10, 2..24)
     /** The top screen's share when both screens are on one display, % (30–70). */
     val ribbonSplit = IntPref("ribbon_split", 50, 30..70)
@@ -1371,7 +1375,8 @@ object Features {
     val autoM3u = BoolPref("auto_m3u", false)
     /** Update 177: how the consoles look on the second screen's Games page (SecondGamesPage.kt). */
     enum class FolderLook(val label: String) { FOLDERS("Folders"), TILES("Tiles"), CARDS("Wide cards"), LOGOS("Logos") }
-    val secondFolderLook = EnumPref("second_folder_look", FolderLook.FOLDERS, FolderLook.values())
+    /** (Update 182: Tiles by default — a new key, so it starts as Tiles once for everyone.) */
+    val secondFolderLook = EnumPref("second_folder_look2", FolderLook.TILES, FolderLook.values())
     /** Update 177: the console's logo over a folder picture (off: the picture alone — many packs have the name in it). */
     val secondFolderLogo = BoolPref("second_folder_logo", true)
     /** Update 176: the custom layout shown by Custom layout (CustomLayouts.kt; "" = the built-in example). */

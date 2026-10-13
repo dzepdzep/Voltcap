@@ -99,6 +99,8 @@ fun createScreenScraperApi(): ScreenScraperApi {
     val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(45, TimeUnit.SECONDS)
+        // Update 182: never longer than this per request (a server trickling bytes kept a lookup open for good).
+        .callTimeout(90, TimeUnit.SECONDS)
         .build()
     return Retrofit.Builder()
         .baseUrl("https://api.screenscraper.fr/api2/")

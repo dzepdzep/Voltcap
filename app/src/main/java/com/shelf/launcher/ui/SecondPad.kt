@@ -49,16 +49,24 @@ internal object SecondPad {
     var focused by mutableStateOf<String?>(null)
         private set
 
-    private class Target(val id: String, var rect: Rect, var press: () -> Unit, var order: Long)
+    /** [move]: update 182 — a control that moves inside itself (the Wall's slices): ◀ ▶ ▲ ▼ go to it first (true = used). */
+    private class Target(val id: String, var rect: Rect, var press: () -> Unit, var order: Long, var move: ((Int) -> Boolean)? = null)
+
+    /**
+     * Update 182: a scrolling list on the second screen (the Games page, a console's games) scrolls a step when ▲ ▼
+     * find nothing further on screen (its next rows aren't made yet); true = it scrolled.
+     */
+    var scroller: ((Int) -> Boolean)? = null
+    private val main by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
 
     private val targets = LinkedHashMap<String, Target>()
     private var counter = 0L
     private val keysDown = HashSet<Int>()
 
-    fun register(id: String, rect: Rect, press: () -> Unit) {
+    fun register(id: String, rect: Rect, press: () -> Unit, move: ((Int) -> Boolean)? = null) {
         synchronized(targets) {
             val t = targets[id]
-            if (t == null) targets[id] = Target(id, rect, press, counter++) else { t.rect = rect; t.press = press }
+            if (t == null) targets[id] = Target(id, rect, press, counter++, move) else { t.rect = rect; t.press = press; t.move = move }
         }
     }
 
@@ -100,8 +108,16 @@ internal object SecondPad {
         if (dir >= 0) {
             if (down) {
                 keysDown += code
+                // (Update 182: a control that moves inside itself first — the Wall's slices.)
+                val own = synchronized(targets) { targets[focused] }?.move
+                if (own != null && runCatching { own(dir) }.getOrDefault(false)) { sound(UiSound.MOVE); return true }
                 val next = step(dir)
                 if (next != null) { focused = next; sound(UiSound.MOVE) }
+                else if (dir >= 2 && scroller?.let { runCatching { it(dir) }.getOrDefault(false) } == true) {
+                    // Update 182: the list scrolled a row; the next one is lit once it's made.
+                    main.postDelayed({ step(dir)?.let { focused = it } }, 140L)
+                    sound(UiSound.MOVE)
+                }
                 else if (dir == 2 && event.nativeKeyEvent.repeatCount == 0) { leave(); sound(UiSound.MOVE) }
             }
             return true
@@ -163,18 +179,20 @@ internal object SecondPad {
  * Update 177: a control on the second screen the controller can reach ([SecondPad]): [id] unique on the screen, [onPress]
  * what A does (the same as a tap). Lit with an accent ring while the controller is on it, and scrolled into view.
  */
-internal fun Modifier.padTarget(id: String, onPress: () -> Unit): Modifier = composed {
+internal fun Modifier.padTarget(id: String, onMove: ((Int) -> Boolean)? = null, onPress: () -> Unit): Modifier = composed {
     // Only on the second screen (the same piece can be drawn on the main screen, where the D-pad has its own focus).
     // (No early return: the same steps run every time.)
     val here = LocalOnSecondScreen.current
     val press by rememberUpdatedState(onPress)
+    val move by rememberUpdatedState(onMove)
+    val hasMove = onMove != null
     val lit = here && SecondPad.active && SecondPad.focused == id
     val bring = remember { BringIntoViewRequester() }
     DisposableEffect(id, here) { onDispose { if (here) SecondPad.unregister(id) } }
     LaunchedEffect(lit) { if (lit) runCatching { bring.bringIntoView() } }
     if (!here) this else this
         .bringIntoViewRequester(bring)
-        .onGloballyPositioned { SecondPad.register(id, it.boundsInWindow()) { press() } }
+        .onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }, if (hasMove) { d -> move?.invoke(d) == true } else null) }
         .then(if (lit) Modifier.border(3.dp, ShelfTheme.accent, uiRounded(10.dp)) else Modifier)
 }
 
@@ -203,4 +221,12 @@ internal fun SecondPadHint() {
                 .padding(horizontal = 10.dp, vertical = 3.dp)
         )
     }
+}
+
+/** Update 182: a [padTarget] that draws no ring of its own (the control shows it's lit in its own style). */
+internal fun Modifier.padTargetPlain(id: String, onPress: () -> Unit): Modifier = composed {
+    val here = LocalOnSecondScreen.current
+    val press by rememberUpdatedState(onPress)
+    DisposableEffect(id, here) { onDispose { if (here) SecondPad.unregister(id) } }
+    if (!here) this else this.onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }) }
 }

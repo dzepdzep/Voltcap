@@ -1379,6 +1379,68 @@ object CloudSync {
     private fun toLocal(key: String, root: String) =
         if (key.startsWith(ROM_PREFIX)) root + key.removePrefix(ROM_PREFIX) else key
 
+    // ---- Update 182: playtime and last played matched by console + file name, not by folder ----
+    // The keys were the ROM's path under the library folder, so two handhelds with the console's games in differently
+    // named folders ("psx" / "PS1", a subfolder per game, the SD card…) never matched: each kept only its own hours.
+    // Now a ROM counts as "romf:<console>/<file name>" for these two (the console worked out from the folders the way
+    // the scan does). Old path keys on Drive and here are folded into it once (hours added up — the paths never
+    // matched, so they never counted the same play twice); a new key wins over an old one an older version still writes.
+
+    /** Update 182: every game this device has (stable keys), to put synced playtime back on the right game. */
+    @Volatile var libraryKeys: (() -> Collection<String>)? = null
+
+    private const val FILE_PREFIX = "romf:"
+
+    /** The device-independent key of a ROM (portable "rom:…" or a full path), or null for apps, Steam games… */
+    private fun fileKey(key: String): String? {
+        if (key.startsWith(FILE_PREFIX)) return key
+        val path = when {
+            key.startsWith(ROM_PREFIX) -> key.removePrefix(ROM_PREFIX)
+            key.startsWith("/") -> key
+            else -> return null
+        }
+        val parts = path.split('/').filter { it.isNotEmpty() }
+        if (parts.isEmpty()) return null
+        val folders = parts.dropLast(1)
+        val console = folders.asReversed().firstNotNullOfOrNull { runCatching { RomScanner.platformForFolderName(it) }.getOrNull() }
+            ?: folders.lastOrNull() ?: "-"
+        return FILE_PREFIX + console.lowercase() + "/" + parts.last().lowercase()
+    }
+
+    /** [m] with every ROM under its file key; entries landing on one key [combine]d. */
+    private fun byFile(m: Map<String, Long>, combine: (Long, Long) -> Long): Map<String, Long> {
+        val fresh = m.keys.filter { it.startsWith(FILE_PREFIX) }.toSet()
+        val out = LinkedHashMap<String, Long>()
+        for ((k, v) in m) {
+            val f = fileKey(k)
+            if (f == null) { out[k] = v; continue }
+            if (f in fresh && k != f) continue
+            out[f] = out[f]?.let { combine(it, v) } ?: v
+        }
+        return out
+    }
+
+    private fun normalized(d: LauncherData): LauncherData =
+        d.copy(playtime = byFile(d.playtime, Long::plus), recent = byFile(d.recent) { a, b -> maxOf(a, b) })
+
+    /** [d]'s file keys back on this device's own games (portable keys); unknown ones stay as they are. */
+    private fun localized(context: Context, d: LauncherData, local: LauncherData): LauncherData {
+        val root = romRoot(context)
+        val index = HashMap<String, String>()
+        val known = runCatching { libraryKeys?.invoke() }.getOrNull().orEmpty().map { toPortable(it, root) } +
+            local.playtime.keys + local.recent.keys
+        for (k in known) fileKey(k)?.let { f -> if (f != k) index.putIfAbsent(f, k) }
+        fun back(m: Map<String, Long>, combine: (Long, Long) -> Long): Map<String, Long> {
+            val out = LinkedHashMap<String, Long>()
+            for ((k, v) in m) {
+                val to = index[k] ?: k
+                out[to] = out[to]?.let { combine(it, v) } ?: v
+            }
+            return out
+        }
+        return d.copy(playtime = back(d.playtime, Long::plus), recent = back(d.recent) { a, b -> maxOf(a, b) })
+    }
+
     private val longMapType = object : TypeToken<Map<String, Long>>() {}.type
 
     /** Per-game data in a device-independent shape. Objects are kept as
@@ -1551,15 +1613,19 @@ object CloudSync {
     /** True when this device's data changed. */
     private fun syncLauncherData(context: Context, drive: DriveClient, root: String): Boolean {
         val baseFile = File(File(context.filesDir, "cloud_sync"), "launcher-base.json")
-        val base = baseFile.takeIf { it.exists() }?.let { runCatching { fromJson(it.readText()) }.getOrNull() }
+        val baseRaw = baseFile.takeIf { it.exists() }?.let { runCatching { fromJson(it.readText()) }.getOrNull() }
         val existing = drive.list(root, "name='$LAUNCHER_FILE'").filter { !it.isFolder }.maxByOrNull { it.modifiedTime }
         // Drive's copy couldn't be read (a dropped download, a damaged file): merging against "nothing" would
         // read as "everything was removed on the other device" and wipe favourites, artwork picks and manual
         // IDs here. Skip this round instead; the next sync tries again.
-        val remote = if (existing == null) LauncherData() else
+        val remoteRaw = if (existing == null) LauncherData() else
             runCatching { fromJson(drive.downloadBytes(existing.id).decodeToString()) }.getOrNull()
                 ?: throw LauncherDataUnreadable()
-        val local = readLocal(context)
+        val rawLocal = readLocal(context)
+        // Update 182: playtime / last played under console + file name on every side (see fileKey).
+        val local = normalized(rawLocal)
+        val base = baseRaw?.let { normalized(it) }
+        val remote = normalized(remoteRaw)
         // No file on Drive (first sync, or the Drive folder was deleted / recreated): merge like a first sync
         // (both sides together), never as if Drive had removed everything since the last one.
         val merged = mergeLauncherData(if (existing == null) null else base, local, remote).let { m ->
@@ -1569,7 +1635,7 @@ object CloudSync {
             if (retired.isEmpty()) m else m.copy(devices = m.devices - retired)
         }
 
-        if (merged != remote || existing == null) {
+        if (merged != remoteRaw || existing == null) {
             drive.uploadBytes(toJson(merged).toByteArray(), LAUNCHER_FILE, root, existing?.id)
         }
         // (Update 117: the other devices' play sessions are kept for the recaps; they never count as a change here.)
@@ -1577,8 +1643,10 @@ object CloudSync {
             val rootDir = romRoot(context)
             OtherDevices.store(context, merged.devices - OtherDevices.deviceId(context)) { k -> toLocal(k, rootDir) }
         }
-        val changedHere = merged.copy(devices = emptyMap()) != local.copy(devices = emptyMap())
-        if (changedHere) writeLocal(context, merged)
+        // (Update 182: written back under this device's own game keys; compared with what's stored here now.)
+        val mine = localized(context, merged, rawLocal)
+        val changedHere = mine.copy(devices = emptyMap()) != rawLocal.copy(devices = emptyMap())
+        if (changedHere) writeLocal(context, mine)
         baseFile.parentFile?.mkdirs()
         baseFile.writeText(toJson(merged))
         if (changedHere) _launcherDataChanged.tryEmit(Unit)

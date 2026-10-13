@@ -517,7 +517,10 @@ fun QuickSettingsCard(
                 })
             }
             // Endless: the row goes round from the last game to the first (off: it bumps against the end).
-            add(R1Tile("endless", Icons.Filled.Repeat, if (a.loopRow) "Endless\non" else "Endless\noff", a.loopRow) {
+            // (Update 182: greyed out on Hero tiles, which has no Endless.)
+            if (!endlessApplies(a.homeLayout)) add(R1Tile("endless", Icons.Filled.Repeat, "Endless\noff", false, disabled = true) {
+                android.widget.Toast.makeText(context, "${a.homeLayout.label} stops at the first and last game — no Endless there.", android.widget.Toast.LENGTH_SHORT).show()
+            }) else add(R1Tile("endless", Icons.Filled.Repeat, if (a.loopRow) "Endless\non" else "Endless\noff", a.loopRow) {
                 home.setAppearance(a.copy(loopRow = !a.loopRow))
             })
             // The round shortcut buttons: show / hide. Hold (update 104): where they sit, folded or open, move, off.
@@ -636,7 +639,10 @@ fun QuickSettingsCard(
             // Update 113: the hold list also has how many games show each side of the middle one (1–5).
             val sides = com.shelf.launcher.data.Features.tvCarouselSide.state.value
             val edge = com.shelf.launcher.data.Features.carouselEdge.state.value
-            add(R1Tile("carousel", Icons.Filled.ViewCarousel, if (carouselOn) "Carousel\n" + com.shelf.launcher.data.Features.carouselView.state.value.label + " · " + (if (edge) "edge" else "$sides") else "Carousel", carouselOn,
+            // Update 182: greyed out in a layout without a carousel (as the Look tile), like Settings, which hides it there.
+            if (!carouselApplies(a.homeLayout)) add(R1Tile("carousel", Icons.Filled.ViewCarousel, "Carousel", false, disabled = true) {
+                android.widget.Toast.makeText(context, "${a.homeLayout.label} has no carousel — it's for the other layouts.", android.widget.Toast.LENGTH_SHORT).show()
+            }) else add(R1Tile("carousel", Icons.Filled.ViewCarousel, if (carouselOn) "Carousel\n" + com.shelf.launcher.data.Features.carouselView.state.value.label + " · " + (if (edge) "edge" else "$sides") else "Carousel", carouselOn,
                 longAction = {
                     val turnOn = {
                         if (!carouselOn) {
@@ -644,7 +650,14 @@ fun QuickSettingsCard(
                             else com.shelf.launcher.data.Features.carouselLayouts.toggle(a.homeLayout.name)
                         }
                     }
-                    choiceSheet = "Carousel view · games each side" to (CarouselView.values().map { v ->
+                    // Update 182: "Carousel off" first (at the end it was below the screen's edge on small screens).
+                    val off = R1Choice("Carousel off", !carouselOn) {
+                        if (carouselOn) {
+                            if (tv) com.shelf.launcher.data.Features.tvRoomGames.value = TvRoom.Games.SPINES
+                            else com.shelf.launcher.data.Features.carouselLayouts.toggle(a.homeLayout.name)
+                        }
+                    }
+                    choiceSheet = "Carousel view · games each side" to (listOf(off) + CarouselView.values().map { v ->
                         // (Update 137: the 3D-case views say where they're real cases.)
                         R1Choice(v.label + if (v.cases) " (3D cases with a case look)" else "", com.shelf.launcher.data.Features.carouselView.value == v) {
                             com.shelf.launcher.data.Features.carouselView.value = v
@@ -662,12 +675,6 @@ fun QuickSettingsCard(
                         // Update 119: games all the way to the screen's edges.
                         com.shelf.launcher.data.Features.carouselEdge.value = true
                         turnOn()
-                    } + R1Choice("Carousel off", !carouselOn) {
-                        // (Update 175: off is here now — a tap steps through the views.)
-                        if (carouselOn) {
-                            if (tv) com.shelf.launcher.data.Features.tvRoomGames.value = TvRoom.Games.SPINES
-                            else com.shelf.launcher.data.Features.carouselLayouts.toggle(a.homeLayout.name)
-                        }
                     })
                 }) {
                 // Update 175: a tap turns the carousel on, then steps through its views (Tucked behind, Record flip, Wheel…
@@ -1495,7 +1502,10 @@ private class R1Choice(val label: String, val on: Boolean, val run: () -> Unit)
 private fun R1ChoicePopup(title: String, choices: List<R1Choice>, onDismiss: () -> Unit) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         ImmersiveDialogWindow()
-        ShelfCard {
+        // Update 182: the list scrolls (on a short screen its last choices were cut off below the edge).
+        val maxH = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.86f).dp
+        Box(Modifier.heightIn(max = maxH)) { ShelfCard {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
             SectionLabel(title)
             Spacer(Modifier.height(8.dp))
             val first = remember { FocusRequester() }
@@ -1510,7 +1520,8 @@ private fun R1ChoicePopup(title: String, choices: List<R1Choice>, onDismiss: () 
             }
             Spacer(Modifier.height(10.dp))
             Chip("Close", onClick = onDismiss)
-        }
+            }
+        } }
     }
 }
 
@@ -1603,3 +1614,8 @@ private fun VoltRail(level: Float, content: @Composable () -> Unit) {
         }
     }
 }
+
+/** Update 182: layouts that have a carousel look (the same ones Settings › Home › Layout offers it for). */
+internal fun carouselApplies(layout: com.shelf.launcher.data.HomeLayout): Boolean =
+    layout == com.shelf.launcher.data.HomeLayout.TV || !layout.styleHome ||
+        layout == com.shelf.launcher.data.HomeLayout.SIDE || layout == com.shelf.launcher.data.HomeLayout.STACKS

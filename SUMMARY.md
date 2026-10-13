@@ -4,6 +4,98 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (182): calmer game start, Achievements column with comments, Pocket layouts bigger with a home strip, second screen reachable, playtime sync, art scraping
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (29): `src_copy\LauncherUiState.kt`,
+`src_copy\LauncherViewModel.kt`, `src_copy\MainActivity.kt`, `src_copy\data\ArtFiles.kt`, `src_copy\data\CloudSync.kt`,
+`src_copy\data\Features.kt`, `src_copy\data\GameMode.kt`, `src_copy\data\IgdbApi.kt`, `src_copy\data\RawgApi.kt`,
+`src_copy\data\ScreenScraper.kt`, `src_copy\data\SteamGridDbRepository.kt`, `src_copy\data\TheGamesDbApi.kt`,
+`src_copy\ui\Carousel.kt`, `src_copy\ui\CrossTrophies.kt`, `src_copy\ui\EndlessRow.kt`, `src_copy\ui\LaunchThrow.kt`,
+`src_copy\ui\LauncherScreen.kt`, `src_copy\ui\PocketClassic.kt`, `src_copy\ui\PocketRibbon.kt`, `src_copy\ui\PocketSettings.kt`,
+`src_copy\ui\PocketShared.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\SecondGamesPage.kt`, `src_copy\ui\SecondPad.kt`,
+`src_copy\ui\SecondScreenTools.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`,
+`src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\TwinScreens.kt`.
+
+**Files to delete:** none.
+
+### Starting a game: plugged in, not thrown
+(Settings › Home › Animations › Starting a game.)
+- **Cartridges and discs:** the game lifts off, glides upright to just above the slot, then is pushed in with a soft click.
+  A cartridge goes about half way in; a disc goes all the way into the tray.
+- There's no spinning and no throw arc any more.
+- **Cases:** the disc is lifted out and carried down into the bottom edge, also without spinning.
+
+### Cross menu: Achievements
+- The category in the strip is now called **Achievements** (it was Trophies).
+- **X** in the column cycles All → **Missable** → Still to get → Earned.
+- **▶** opens the **comments** people left on the achievement you're on. ▲ ▼ read them; ◀ or B closes them.
+
+### R1 quick settings
+- **Carousel:** greyed out in layouts that have no carousel (like the Look tile).
+- **Holding a tile:** the list now scrolls, so its last choices aren't cut off at the bottom of the screen any more.
+- **Carousel off:** now the first choice when you hold the Carousel tile.
+- **Endless:** Hero tiles has no Endless any more; the tile is greyed out there and the rows stop at the ends.
+
+### Carousel
+- **To the edge:** counts the games each side from the screen's width, so the row reaches both edges on big screens like
+  the Thor's.
+- **Spine wall and Box flow:** also reach the edges now (their slim pieces get three times as many).
+- **Box flow:** the boxes in the stacks are all the same size; they used to grow toward the edges.
+
+### Pocket classic and Pocket ribbon
+- **Bigger:** they fill the screen. Pixel-perfect is now **off** by default; it used to leave the Thor's screens half
+  empty. You can turn it back on in Layout options.
+- **Redrawn pixel icons:** settings, statistics, sleep, achievements, all categories, back, volume, plus new music and
+  second-screen icons.
+- **Pocket ribbon:** has the same small tools as Pocket classic above the scroll bar: Settings, Achievements,
+  Statistics, Second screen and Sleep.
+- **Ribbon icons:** bigger (44 by default, up to 56).
+- **Home strip** along the bottom of both menus:
+  - your first four round shortcuts;
+  - the music playing, with ◀ ⏯ ▶;
+  - the time and the battery.
+- The strip can be turned off in Layout options › Home strip.
+- **Controller:**
+  - **Pocket classic:** ▼ goes from the panels to the tools, then to the strip.
+  - **Pocket ribbon:** ▼ goes from the row to the tools, then to the strip; ▲ or B goes back to the row.
+- **Second screen button:** both layouts have one with two screens (it opens the second screen's dashboard).
+
+### Second screen
+- **Wall page:**
+  - the Platforms, Games and Edit chips work with the controller;
+  - on the Wall itself, ◀ ▶ go along the slices and A picks.
+- **Games page:**
+  - consoles are shown as **Tiles** by default;
+  - a row of chips switches between Tiles, Folders, Wide cards and Logos;
+  - ▲ ▼ scroll through the grid, and through a console's games, so every one can be reached.
+- **↩ back to the layout:** the button on the dashboard now looks like the layout's own buttons. Twin desk and Twin icons
+  get a white bar with a round button; the Pocket layouts get a flat white panel with the pixel font and corner
+  brackets.
+
+### Art stuck at "Getting art 1/215"
+- **Likely cause:** on a two-screen handheld Voltcap can stay "in front" the whole time a game runs on the other screen.
+  It then never noticed the game had ended, and scraping (and saving art) waited for good.
+- **Fix:** any button or touch on Voltcap's home now ends that game mode, after the first seconds of a launch. Getting
+  focus back does the same.
+- **Time limits:** every artwork request now has an overall limit (SteamGridDB, ScreenScraper, IGDB, RAWG,
+  TheGamesDB, picture downloads), so a slow server can't hold a lookup open for ever.
+
+### Playtime between devices
+- **Why it didn't sync:** playtime was matched by the ROM's path under the library folder. With a console's games in
+  differently named folders on the two handhelds (psx / PS1, SD card, a subfolder per game), the entries never matched,
+  so each handheld kept only its own hours.
+- **Now:** playtime and last played are matched by **console + file name**.
+- **Your old entries:** folded together once, with the hours added up. The old paths never matched, so nothing is
+  counted twice.
+- Update both handhelds; the next sync (Settings › Sync) puts each game's total on both.
+
+**Not done yet:** Real cases on the Thor (the scans not showing, the 3D cases cut off) and more case-like 3D case
+models. These need a look on the Thor while it's free, and the case models are a separate job in your shape library.
+
+---
+
 ## Update — 13 Oct 2026 (181): two new pocket two-screen layouts (Pocket classic, Pocket ribbon); animated covers only on the game you're on
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

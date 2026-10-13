@@ -48,7 +48,7 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.DASH -> "Title, Now playing, row, player & status cards, glass"
     HomeLayout.LIVE -> "Category tabs, tiles per page, colour, backdrop"
     HomeLayout.SIDE -> "Picture, power capsule, width, gold trim, art behind, row title"
-    HomeLayout.CROSS -> "Colour wash, ribbons, size, names, details, achievements, Trophies category"
+    HomeLayout.CROSS -> "Colour wash, ribbons, size, names, details, achievements, Achievements category"
     HomeLayout.SPOT -> "Look (Home menu, Row & menu, Big picture), button hints, tiles, art and shade"
     HomeLayout.BAR -> "Top icons, tile size, bigger selection, names, Start, art behind"
     HomeLayout.HUB -> "Art behind"
@@ -245,9 +245,9 @@ private fun CrossSettings() {
     if (!Features.crossFolders.state.value) Toggle(Icons.Filled.Label, "Cut-out logos", "The console logos as clean cut-outs: no tile behind them, just the logo's shape in white (in the accent colour with \"Tiles in the accent colour\" on). Off: logos on glass tiles.", Features.crossLogoCut)
     Toggle(Icons.Filled.Info, "Details under the game", "Time played, console and last played.", Features.crossInfo)
     // Update 127.
-    Toggle(Icons.Filled.EmojiEvents, "Achievements in the menu's style", "Y (or Achievements in the game window) opens the game's achievements as a column beside it, like a console's trophy list: ▲ ▼ move, X all / still to get / earned, A the full list, B back. Off: the achievement list popup.", Features.crossTrophies)
+    Toggle(Icons.Filled.EmojiEvents, "Achievements in the menu's style", "Y (or Achievements in the game window) opens the game's achievements as a column beside it, like a console's list: ▲ ▼ move, X all / missable / still to get / earned, ▶ comments, A the full list, B back. Off: the achievement list popup.", Features.crossTrophies)
     // Update 132.
-    Toggle(Icons.Filled.EmojiEvents, "Trophies category", "A Trophies icon in the strip: every game with achievements, last played first, with how far you are under the one you're on; A opens its achievements. Only on this layout (move it in Settings › Categories › Category order).", Features.crossTrophyCat)
+    Toggle(Icons.Filled.EmojiEvents, "Achievements category", "An Achievements icon in the strip: every game with achievements, last played first, with how far you are under the one you're on; A opens its achievements. Only on this layout (move it in Settings › Categories › Category order).", Features.crossTrophyCat)
     // Update 168: lists beside the consoles, for this layout only.
     Spacer(Modifier.height(8.dp))
     SectionLabel("Lists in the strip")

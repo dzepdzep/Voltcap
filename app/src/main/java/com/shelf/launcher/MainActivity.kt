@@ -263,6 +263,7 @@ class MainActivity : ComponentActivity() {
     // button legend can follow the handheld's own setting (SystemButtonLayout).
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         com.shelf.launcher.ui.HomeIdle.poke()
+        com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
         // Update 152: moving through games: animated covers hold still for a moment (AnimatedArt.onMove).
         if (event.action == android.view.KeyEvent.ACTION_DOWN && when (event.keyCode) {
                 android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
@@ -278,6 +279,7 @@ class MainActivity : ComponentActivity() {
     // Any touch or stick movement also wakes the home screen's animations (see HomeIdle).
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
         com.shelf.launcher.ui.HomeIdle.poke()
+        com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
         if (ev.actionMasked == android.view.MotionEvent.ACTION_MOVE) com.shelf.launcher.data.AnimatedArt.onMove() // (Update 152)
         return super.dispatchTouchEvent(ev)
     }
@@ -344,6 +346,10 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemBars()
+        // Update 182: focus back for a few seconds (the game on the other screen closed): game mode ends.
+        if (hasFocus) window.decorView.postDelayed({
+            if (hasWindowFocus() && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) com.shelf.launcher.data.GameMode.userIsHere()
+        }, 4_000L)
     }
 
     /** Status bar hidden; navigation bar / gesture pill hidden with "Hide navigation bar" (see ui/SystemBars.kt). */

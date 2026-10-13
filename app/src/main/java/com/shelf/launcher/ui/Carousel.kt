@@ -346,7 +346,8 @@ internal object Carousel {
     val cases3d: Boolean get() = Features.carousel3d.state.value || view.cases
     /** How many games show each side for the [shown] view: the Spine wall packs three times as many (its spines are slim). */
     fun reach(side: Int, shown: CarouselView = view): Int =
-        if ((shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) && side < EDGE_SIDE) side * 3 else side
+        // (Update 182: with To the edge too — slim spines and boxes need three times as many to reach the edges.)
+        if (shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) side * 3 else side
     /** Spacing between the games (Settings, 60–160 %). */
     val gap: Float get() = Features.carouselGap.state.value / 100f
 
@@ -532,7 +533,9 @@ internal object Carousel {
             CarouselView.BOX_FLOW -> {
                 val a = 0.5f * midW + 0.32f
                 val e = stackEase(near, 0.15f / a)
-                val sc = (1f - 0.16f * e) * (1f + (far * 0.022f).coerceAtMost(0.16f))
+                // (Update 182: all the same size in the stacks — they grew toward the edges, which read as the boxes
+                // growing as you went along them.)
+                val sc = 1f - 0.16f * e
                 out.set(
                     sign * (a * e + 0.15f * far) * g, (1f - sc) * 0.5f * e - 0.04f * (1f - e),
                     sc, 66f * e + (far * 2.2f).coerceAtMost(16f), 0f,
@@ -622,7 +625,14 @@ internal fun GameCarousel(
     val recede = view == CarouselView.RECEDE
     val spinesRight = recede && spines && !cases3d
     // Spines are slim: three times as many each side (like the Spine wall), so they reach the screen's edges.
-    val side = Carousel.side.let { if ((spinesAside || spinesRight) && it < Carousel.EDGE_SIDE) it * 3 else it }
+    // Update 182: "To the edge" counts the games each side from the screen's width (a fixed 12 stopped short of the
+    // edges on big screens like the AYN Thor's, and spines never got their three times as many there).
+    val screenWide = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp / 600f).coerceIn(1f, 3f)
+    val side = Carousel.side.let {
+        val edge = it >= Carousel.EDGE_SIDE
+        val base = if (edge) kotlin.math.ceil(Carousel.EDGE_SIDE * screenWide).toInt() else it
+        if (spinesAside || spinesRight) base * 3 else base
+    }
     val n = games.size
     val looping = loop && n >= 2
     // The place on the endless row (just [focus] when it doesn't go round).

@@ -127,7 +127,7 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     PocketRibbonFrame(modifier, framed) {
         PocketScreen(Modifier.fillMaxSize(), responsive = !Features.pocketPixel.state.value, outside = RPaper) {
             val uPx = d(1f).value * density
-            Canvas(Modifier.atScreen(0f, 0f, width, POCKET_H)) { pocketPinstripes(uPx, RPaper, RStripe) }
+            Canvas(Modifier.atFull(0f, 0f, width, fullH)) { pocketPinstripes(uPx, RPaper, RStripe) }
             val status = Features.ribbonStatus.state.value
             if (status) {
                 Canvas(Modifier.atScreen(3f, 1f, 10f, 10f)) { pocketIcon(PocketIcons.VOLUME, RInk, accent) }
@@ -213,9 +213,11 @@ internal fun PocketRibbonBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
     // Starting: the others fade, the one you're on grows a little.
     val launch by animateFloatAsState(if (PocketNav.launching) 1f else 0f, tween(pocketMs(180)), label = "ribbonLaunch")
     PocketRibbonFrame(modifier, framed) {
-        PocketScreen(Modifier.fillMaxSize(), responsive = !Features.pocketPixel.state.value, outside = RLower) {
+        val strip = pocketStripOn()
+        PocketScreen(Modifier.fillMaxSize(), responsive = !Features.pocketPixel.state.value, outside = RLower,
+            designH = POCKET_H + if (strip) POCKET_STRIP_H else 0f) {
             val uPx = d(1f).value * density
-            Canvas(Modifier.atScreen(0f, 0f, width, POCKET_H)) { pocketPinstripes(uPx, RLower, RLowerStripe) }
+            Canvas(Modifier.atFull(0f, 0f, width, fullH)) { pocketPinstripes(uPx, RLower, RLowerStripe) }
             // The speech bubble with the name.
             Box(Modifier.at(20f, 6f, 216f, 46f)) {
                 Canvas(Modifier.fillMaxSize()) {
@@ -334,6 +336,16 @@ internal fun PocketRibbonBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
                     }
                 }
             }
+            // Update 182: the same small tools as Pocket classic (Settings, Achievements, Statistics, Second screen,
+            // Sleep), above the scroll bar, and the home strip under it all.
+            val tools = pocketTools(c, ribbon = true)
+            val spotNow = PocketNav.ribbonSpot
+            tools.forEachIndexed { i, (id, icon) ->
+                PocketToolButton(this, pocketToolX(i, tools.size), barY - 21f, icon, RInk, accent, spotNow == id, PocketNav.pressed == id) {
+                    PocketNav.ribbonSpot = id; pocketShared(live, id)
+                }
+            }
+            if (strip) PocketHomeStrip(this, c, POCKET_H, accent, font, RInk, RMuted, REdge, Color(0xFFF7F8FA), spotNow.takeIf { it >= 0 })
         }
     }
 }
@@ -355,6 +367,7 @@ private fun ribbonCur(c: StyleCtx) = if (PocketNav.ribbonGames) c.focus else Poc
 
 private fun ribbonSelect(c: StyleCtx, i: Int) {
     if (i == ribbonCur(c)) return
+    PocketNav.ribbonSpot = -1 // (Update 182: back on the row)
     if (PocketNav.ribbonGames) c.actions.select(i) else PocketNav.ribbonCat = i
     PocketSounds.play?.invoke(UiSound.MOVE)
 }
@@ -421,11 +434,33 @@ internal fun pocketRibbonKey(event: KeyEvent, reach: (Boolean) -> Boolean): Bool
     if (!down) return false
     val first = event.nativeKeyEvent.repeatCount == 0
     fun take(): Boolean { PocketNav.keysDown += code; return true }
+    // Update 182: below the row, the small tools and the home strip (PocketNav.ribbonSpot; −1 = the row).
+    val spot = PocketNav.ribbonSpot
+    val tools = pocketTools(c, ribbon = true)
+    val rows = listOf(
+        tools.mapIndexed { i, (id, _) -> id to pocketToolX(i, tools.size) + 9f },
+        if (pocketStripOn()) pocketStripSpots(c) else emptyList()
+    ).filter { it.isNotEmpty() }
+    fun go(s: Int): Boolean { if (s != spot) { PocketNav.ribbonSpot = s; PocketSounds.play?.invoke(UiSound.MOVE) }; return take() }
+    if (spot >= 0) return when (event.key) {
+        Key.DirectionLeft -> pocketRowStep(rows, spot, 0)?.let { go(it) } ?: take()
+        Key.DirectionRight -> pocketRowStep(rows, spot, 1)?.let { go(it) } ?: take()
+        Key.DirectionUp -> pocketRowStep(rows, spot, 2)?.let { go(it) } ?: go(-1)
+        Key.DirectionDown -> pocketRowStep(rows, spot, 3)?.let { go(it) } ?: run { if (first) reach(false); take() }
+        Key.ButtonA, Key.Enter, Key.DirectionCenter -> { if (first) pocketShared(c, spot); take() }
+        Key.ButtonStart -> { if (first) ribbonStart(c); take() }
+        Key.ButtonB, Key.Back -> { if (first) { PocketNav.ribbonSpot = -1; PocketSounds.play?.invoke(UiSound.BACK) }; take() }
+        else -> false
+    }
     return when (event.key) {
         Key.DirectionLeft -> { ribbonMove(c, -1); take() }
         Key.DirectionRight -> { ribbonMove(c, 1); take() }
         Key.DirectionUp -> { if (first) reach(true); take() }
-        Key.DirectionDown -> { if (first) reach(false); take() }
+        Key.DirectionDown -> {
+            // The tool nearest the middle first; without any, what lies below.
+            val first0 = rows.firstOrNull()?.minByOrNull { kotlin.math.abs(it.second - 128f) }?.first
+            if (first0 != null) go(first0) else { if (first) reach(false); take() }
+        }
         Key.ButtonA, Key.Enter, Key.DirectionCenter -> { if (first) ribbonOpen(c); take() }
         Key.ButtonStart -> { if (first) ribbonStart(c); take() }
         Key.ButtonB, Key.Back -> if (first && ribbonBack(c)) take() else false

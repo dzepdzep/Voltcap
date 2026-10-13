@@ -23,7 +23,10 @@ internal fun loopsOnItsOwn(layout: HomeLayout): Boolean = true
 internal const val LOOP_COPIES = 1000
 
 /** True when [c]'s row should go round (Endless on, at least two games). */
-internal fun loopRowOn(c: StyleCtx): Boolean = c.state.appearance.loopRow && c.games.size >= 2
+internal fun loopRowOn(c: StyleCtx): Boolean = c.state.appearance.loopRow && c.games.size >= 2 && endlessApplies(c.state.appearance.homeLayout)
+
+/** Update 182: Hero tiles has no Endless (its rows going round were confusing): it stops at the ends there. */
+internal fun endlessApplies(layout: com.shelf.launcher.data.HomeLayout): Boolean = layout != com.shelf.launcher.data.HomeLayout.HERO_TILES
 
 /**
  * The virtual place of [focus] on an endless row of [n] games: it moves by the D-pad's step ([tick] / [step] from the

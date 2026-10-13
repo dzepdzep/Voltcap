@@ -23,8 +23,12 @@ object GameMode {
     /** True while a game started from Voltcap is in front. */
     val active: Boolean get() = _playing.value
 
+    /** Update 182: when the game was started (see [userIsHere]). */
+    @Volatile private var enteredAt = 0L
+
     fun enter(context: Context) {
         if (_playing.value) return
+        enteredAt = System.currentTimeMillis()
         _playing.value = true
         runCatching {
             com.shelf.launcher.device.MemoryBudget.release(context, android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND)
@@ -34,6 +38,16 @@ object GameMode {
     /** Back in Voltcap: background work picks up where it stopped. */
     fun exit() {
         _playing.value = false
+    }
+
+    /**
+     * Update 182: a key or touch reached Voltcap's home screen, so no game has the controller: game mode ends (after the
+     * first seconds of a launch). On a two-screen handheld Voltcap can stay resumed the whole time a game runs on the
+     * other screen, so the resume check never saw the game end — scraping ("Getting art 1/215"), saving art and syncing
+     * then waited forever.
+     */
+    fun userIsHere() {
+        if (_playing.value && System.currentTimeMillis() - enteredAt > 6_000L) _playing.value = false
     }
 
     /** Suspends while a game is in front (background loops call this between items). */
