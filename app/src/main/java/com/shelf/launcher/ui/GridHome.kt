@@ -117,7 +117,8 @@ internal fun HomeGameGrid(
     val realRef = androidx.compose.runtime.remember(games, cardArtType) { realCaseRef(cardArtType, games) }
     // Box / disc / screenshot art is looked up only around the selection.
     // Square tiles (Features.gridTiles): every game is its cover as a rounded square, whatever the card artwork is.
-    val tiles = com.shelf.launcher.data.Features.gridTiles.state.value
+    // (Update 174: the Tile game look too — it had no effect on the Grid.)
+    val tiles = com.shelf.launcher.data.Features.gridTiles.state.value || (cardArtType == CardArtType.COVER && carouselTiles())
     // Update 113: the Spines look — a wall of spines, like a bookcase.
     val spines = !tiles && spinesOn(cardArtType)
     val needsLookup = !tiles && (cardArtType.wantsMedia() || cardArtType == CardArtType.SCREENSHOT)

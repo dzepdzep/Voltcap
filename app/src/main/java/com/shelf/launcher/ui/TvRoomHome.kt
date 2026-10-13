@@ -500,7 +500,8 @@ private fun CaseGrid(
     loopTick: Int = 0,
     loopStep: Int = 0
 ) {
-    val looping = loop && games.size >= 2
+    // (Update 174: only with more games than fit — two games filled the list again and again.)
+    val looping = loop && games.size > LAZY_LOOP_MIN
     // Cartridge / disc / box art: the label scans and box scans of the games around the one you're on.
     LaunchedEffect(focus, cardArtType, games.size) {
         if (!cardArtType.wantsMedia()) return@LaunchedEffect
@@ -541,7 +542,10 @@ private fun CaseGrid(
     // or so tall that only one fits.
     val gap = if (cols >= 3 && maxWidth < 360.dp) 6.dp else 12.dp
     val cellW = if (cols == 1) minOf(maxWidth - 16.dp, maxHeight * 0.58f * 0.78f) else (maxWidth - 16.dp - gap * (cols - 1)) / cols
-    val cellH = cellW / 0.78f
+    // Update 174: the Tile look — square tiles here too (the TV room always drew cases).
+    val tiles = cardArtType == com.shelf.launcher.data.CardArtType.COVER && carouselTiles()
+    val cellAspect = if (tiles) 1f else 0.78f
+    val cellH = cellW / cellAspect
     val padV = ((maxHeight - cellH) / 2f).coerceAtLeast(8.dp)
     // The R1 Size tile (update 104): smaller games leave more room either side.
     val sizeK = GameSize.scale(com.shelf.launcher.data.HomeLayout.TV).coerceAtMost(1f)
@@ -568,11 +572,25 @@ private fun CaseGrid(
             val lift by animateFloatAsState(if (on) 1f else 0f, tween(if (on) 110 else 160), label = "caseLift")
             val free = isFreeMedia(artForGame(cardArtType, g.platform, hiddenMedia, mixed), g.platform)
             Column(
-                Modifier.zIndex(if (on) 1f else 0f).fillMaxWidth().aspectRatio(0.78f)
+                Modifier.zIndex(if (on) 1f else 0f).fillMaxWidth().aspectRatio(cellAspect)
                     .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (looping) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ShelfGameArt(
+                if (tiles) {
+                    val url = overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
+                    val tileShape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+                    Box(
+                        Modifier.fillMaxWidth().weight(1f)
+                            .graphicsLayer { val sc = 1f + 0.06f * lift; scaleX = sc; scaleY = sc; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f) }
+                            .then(if (on) Modifier.focusedCard() else Modifier)
+                            .clip(tileShape).background(placeholderBrush(g.hue))
+                            .then(if (on && look.focusBorder) Modifier.border(2.5.dp, ShelfTheme.accent, tileShape) else Modifier)
+                    ) {
+                        if (url != null) AsyncImage(rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
+                        ConsoleBadge(g.platform, packageName = g.packageName)
+                    }
+                } else ShelfGameArt(
                     g, on, cardArtType, art, overrides, physicalMedia, screenshots, spines, mixed, realRef, pulse,
                     Modifier.fillMaxWidth().weight(1f)
                         .graphicsLayer { val sc = 1f + (if (free) 0.1f else 0.06f) * lift; scaleX = sc; scaleY = sc; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f) } // grows from its bottom edge: never over its own name
@@ -606,7 +624,8 @@ private fun SpineShelf(
     GridHome.focus = focus
     // Update 156: going round, the spines repeat as copies (the shelf starts in the middle copy) and the selection is on
     // its endless virtual place: last -> first slides one spine on, like any step.
-    val looping = loop && games.size >= 2
+    // (Update 174: only with more games than fit — two games filled the list again and again.)
+    val looping = loop && games.size > LAZY_LOOP_MIN
     val n = games.size
     val loopTap = remember { LoopTap() }
     val vFocus = rememberLoopPlace(focus, n, looping, loopTick, loopStep, games, loopTap)

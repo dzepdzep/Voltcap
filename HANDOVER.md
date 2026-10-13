@@ -256,6 +256,18 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 174
+- **Endless, each game once:** `drawnOnce(off, n, before)` (EndlessRow.kt) in GameCarousel's draw loop, CrossList,
+  StyleCircuit, AnchoredStrip; lazy rows `rememberLoopRow` and TV room lists loop only with `> LAZY_LOOP_MIN` (8) games.
+- **Tile look:** GridHome `tiles` also `COVER && carouselTiles()`; Cross list square art (`w × 0.58`); TV room grid
+  square cells (`cellAspect`) drawing the cover; GameCarousel `caseLook` false with tiles (no 3D cases).
+- **Case stacks bar focus:** `ArchRound` white 3 dp ring + 1.12 grow when on.
+- **Case + media in carousels:** slot `+ room` (right only), `CaseWithMedia3D` shifted left by half the room; unit adds
+  `room`.
+- **D-pad pass (173 on the Classic):** see SUMMARY 174. Layout picker: hold R1 › Layout; tapping the tile cycles. R1 tile
+  positions move with the look (Tile look: Layout at (852, 718) px, Player at (1012, 715)).
+- The user's music player had a free spot (Edit Home) — reset by a stray tap during the pass; told them.
+
 ## State after update 173
 - **Media matched to the case:** `CaseWithMedia3D` (Carousel.kt): `caseReal` (originalCases, not case-for-all, a front
   scan) → `BoxTexture.media(scans)` as `RealMediaPicture`, else `PhysicalMedia` with the "Disc label" scan / cover / app

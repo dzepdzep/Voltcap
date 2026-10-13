@@ -88,9 +88,13 @@ internal class LoopRow(val loop: Boolean, val n: Int, virtual: Int) {
 @Composable
 internal fun rememberLoopRow(c: StyleCtx): LoopRow {
     val v = rememberLoopFocus(c)
-    val loop = loopRowOn(c)
-    return remember(loop, c.games.size, v) { LoopRow(loop, c.games.size, v) }
+    // (Update 174: a lazy row goes round only with more games than fit, else its copies show side by side.)
+    val loop = loopRowOn(c) && c.games.size > LAZY_LOOP_MIN
+    return remember(loop, c.games.size, v, c.focus) { LoopRow(loop, c.games.size, if (loop) v else c.focus) }
 }
+
+/** Update 174: the fewest games a lazy row / list needs to go round (fewer fit on screen, so copies would show). */
+internal const val LAZY_LOOP_MIN = 8
 
 /**
  * Keeps the item you're on in view of a lazy row: one step glides, a long way (a new list, Endless switched on) jumps.
@@ -107,4 +111,15 @@ internal fun FollowFocus(list: LazyListState, row: LoopRow, before: Int = 1) {
         if (kotlin.math.abs(list.firstVisibleItemIndex - target) > 12) runCatching { list.scrollToItem(target) }
         else runCatching { list.animateScrollToItem(target) }
     }
+}
+
+/**
+ * Update 174: going round a row of only [n] games, whether the copy [off] places from the one you're on is the one drawn —
+ * each game once ([before] of them may stand before it), so a short category doesn't show the same games again and again
+ * (two Android games stood three times, four games twice each side). With more games than fit nothing changes.
+ */
+internal fun drawnOnce(off: Int, n: Int, before: Int = (n - 1) / 2): Boolean {
+    if (n <= 0) return true
+    val b = before.coerceIn(0, n - 1)
+    return off >= -b && off <= n - 1 - b
 }

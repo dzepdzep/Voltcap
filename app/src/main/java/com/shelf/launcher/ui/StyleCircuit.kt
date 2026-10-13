@@ -272,6 +272,8 @@ private fun CircuitBoard(c: StyleCtx, ink: Color, modifier: Modifier) {
         }
         // The chips.
         for (i in first..last) {
+            // (Update 174: each game once in a short category.)
+            if (loop && !drawnOnce(i - vf, count)) continue
             val real = if (loop) i.mod(count) else i
             val g = c.games[real]
             val up = Math.floorMod(i, 2) == 0

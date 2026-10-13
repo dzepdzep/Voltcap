@@ -257,10 +257,13 @@ private fun ArchRound(
 ) {
     val click by rememberUpdatedState(onClick)
     val on = StyleNav.on(StyleNav.Zone.BAR, index)
-    val grow by animateFloatAsState(if (on) 1.1f else 1f, spring(stiffness = Features.rowGlide.state.value.stiffness), label = "archRound")
+    val grow by animateFloatAsState(if (on) 1.12f else 1f, spring(stiffness = Features.rowGlide.state.value.stiffness), label = "archRound")
     Box(
         Modifier.size(size)
             .graphicsLayer { scaleX = grow; scaleY = grow }
+            // (Update 174: a clear ring round the one you're on — on Play, an accent ring on the accent button didn't show,
+            // so ▼ seemed to do nothing.)
+            .then(if (on) Modifier.border(3.dp, Color.White.copy(alpha = 0.95f), CircleShape).padding(4.dp) else Modifier)
             .clip(CircleShape)
             .background(
                 if (main) Brush.verticalGradient(listOf(lerp(ink.accent, Color.White, 0.25f), ink.accent))

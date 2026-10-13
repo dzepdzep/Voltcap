@@ -326,7 +326,8 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
     }
     val from = if (loop) vf - 4 else (c.focus - 4).coerceAtLeast(0)
     val to = if (loop) vf + 9 else (c.focus + 9).coerceAtMost(c.games.lastIndex)
-    for (v in from..to) androidx.compose.runtime.key(v) {
+    // (Update 174: each game once in a short list — the ones before above only when there are enough.)
+    for (v in from..to) if (!loop || drawnOnce(v - vf, c.games.size, minOf(4, (c.games.size - 1) / 2))) androidx.compose.runtime.key(v) {
         val i = if (loop) v.mod(c.games.size) else v
         val g = c.games[i]
         val rel = v - pos
@@ -354,10 +355,12 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
                     .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } },
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // (Update 174: the Tile look as square tiles of the same height — the list always showed wide art.)
+                val tile = c.type == com.shelf.launcher.data.CardArtType.COVER && carouselTiles()
                 StyleArt(
                     c, g,
-                    Modifier.width(w).height(w * 0.58f).then(if (on) Modifier.focusedCard() else Modifier),
-                    wide = true, corner = 4.dp, focused = on, fx = 0.4f, ring = Color.White, outline = 1.5.dp
+                    Modifier.width(if (tile) w * 0.58f else w).height(w * 0.58f).then(if (on) Modifier.focusedCard() else Modifier),
+                    square = tile, wide = !tile, corner = if (tile) 8.dp else 4.dp, focused = on, fx = 0.4f, ring = Color.White, outline = 1.5.dp
                 )
                 Spacer(Modifier.width(gapX))
                 Column(Modifier.widthIn(max = textMax)) {

@@ -4,6 +4,69 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (174): D-pad and Tile look through every layout, Endless without repeats, the case with its media centred
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (8): `src_copy\ui\AnchoredStrip.kt`,
+`src_copy\ui\Carousel.kt`, `src_copy\ui\EndlessRow.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\StacksArch.kt`,
+`src_copy\ui\StyleCircuit.kt`, `src_copy\ui\StyleCrossMenu.kt`, `src_copy\ui\TvRoomHome.kt`.
+
+**Files to delete:** none.
+
+### Checked on the Pocket Classic (173 installed)
+All 26 layouts with the Tile look in the Game Boy category: each layout as it opens, then ▼ and ▼ again. Your layout,
+look, category and game were put back after (see the note on the music player below).
+
+### D-pad ▼
+- Works in Timeline (next period, round), Arcade (to Continue), Disc station (Play), Hero tiles, Widget board, Icon bar
+  (row by row), Record crate (Continue), Hero carousel, Grid (row by row), TV room, Dashboard (Quick access), Live tiles
+  (shortcuts), Cross menu, Spotlight (Play), Game shelf (next shelf), Console hub, Resume & discover, Library panel,
+  Circuit board (Play). Console stack's ▼ is the next console (its consoles stand down the left).
+- **Case stacks:** ▼ did reach the bottom panel's Play, but its focus ring was accent on the accent button, so nothing
+  seemed to happen. The button you're on now has a white ring (and grows a little more).
+- Voltcap row, Side menu and Card binder have nothing under the games, so ▼ stays.
+
+### Tile look in more layouts
+It worked in the Library panel, Timeline, Hero tiles, Icon bar, Dashboard, Side menu, Spotlight, Console hub, Resume &
+discover and Circuit board. Now also:
+- **Grid:** square tiles (only its own "Square tiles" switch did it).
+- **Cross menu:** the list's games as square tiles (always wide art before).
+- **TV room:** its grid of games as square tiles (always cases).
+- **Case stacks / the carousels' case views (Box flow, Arc, Spine wall, Turned row):** square tiles, turned like the
+  others (they drew 3D cases over the Tile look).
+Layouts built round a shape of their own keep it: Arcade cabinets, Disc station, Record crate (its sleeves are square
+already), Card binder, Game shelf, Console stack.
+
+### Endless with a few games
+- The games aren't drawn again and again any more when a category has fewer than fit: each game once in the carousels
+  (your Continue playing's four games showed twice each side), the Cross menu list, Circuit board and the strips of
+  Spotlight / Icon bar / Console homes; lists and grids that scroll (TV room, Dashboard, Side menu) go round only with
+  more than 8 games. ◀ ▶ still go from the last game to the first.
+
+### Case + its media
+- The empty gap on the left of the game you're on is gone: the case and its cartridge / disc sit in the middle together,
+  the games either side moved in.
+
+### Note
+- While switching layouts I tapped the R1 Player tile by mistake: your music player's own spot (moved in Edit Home) was
+  reset; it's at the bottom right now. Hold R1 › Player › "Anywhere" to put it back where you want it.
+
+### Check
+- **Type-check:** 0 errors. No `NON_LOCAL_RETURN`.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 174: D-pad and Tile look through every layout, Endless without repeats, case with media centred" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UR1Vp5Caw6WQvJ1SHk1ke2"
+git push origin main
+.\gradlew installRelease
+```
+
+---
+
 ## Update — 13 Oct 2026 (173): bug check on the Pocket Classic (166–172) — media matched to the case, app icons everywhere, nothing over the tool strip
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

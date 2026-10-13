@@ -605,7 +605,9 @@ internal fun GameCarousel(
     // Update 141: every carousel view works with every look. The views made for 3D cases (Arc, Spine wall, Turned row)
     // draw the 3D cases only for the case looks (covers, real cases); with cartridges, discs, wide capsules, pictures or
     // spines they lay out that look itself, turned the same way.
-    val caseLook = !spines && (cardArtType == com.shelf.launcher.data.CardArtType.COVER || cardArtType == com.shelf.launcher.data.CardArtType.CASE ||
+    // (Update 174: not with the Tile look — the case views drew 3D cases over it; now square tiles there too.)
+    val caseLook = !spines && !(cardArtType == com.shelf.launcher.data.CardArtType.COVER && carouselTiles()) &&
+        (cardArtType == com.shelf.launcher.data.CardArtType.COVER || cardArtType == com.shelf.launcher.data.CardArtType.CASE ||
         cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL)
     // Update 162: the "3D cases" switch too turns only the case looks into 3D cases (it boxed cartridges, cards and discs
     // into cases); every other look shows each game as its own piece in every view, a turned flat piece with its edge.
@@ -785,7 +787,7 @@ internal fun GameCarousel(
         // (No room yet — a 0-high box while the screen opens: 1, not 0 / 0 = NaN, which crashes the offset.)
         val unitTarget = games.getOrNull(focus)?.takeIf { bigW > 0.dp }?.let { fg ->
             // (Update 171: with the room for its cartridge / disc beside it, so the neighbours stand clear of it.)
-            val media = if (cases3d) caseMediaFor(fg, cardArtType, mixed)?.room(realCaseMm(fg.platform))?.times(2f) ?: 0f else 0f
+            val media = if (cases3d) caseMediaFor(fg, cardArtType, mixed)?.room(realCaseMm(fg.platform)) ?: 0f else 0f
             val a = if (cases3d) case3dAspect(fg, mixed) else if (carouselWideOn(cardArtType)) CAPSULE_ASPECT else shelfArtAspect(fg, cardArtType, hidden, mixed)
             val sh = carouselSlotH(a, bigW, bigH, mixed)
             ((sh * (a + media)) / bigW).coerceIn(0.6f, 2.4f)
@@ -833,6 +835,8 @@ internal fun GameCarousel(
             val focusIdx = if (old) kotlin.math.round(oldPos).toInt() else vFocus
             for (i in lo..hi) {
                 // (Update 135: on an endless row item i is a place on the endless row; its game is i mod the count.)
+                // (Update 174: each game once when the row is shorter than the view.)
+                if (lLoop && !drawnOnce(i - focusIdx, ln)) continue
                 val real = if (lLoop) i.mod(ln) else i
                 val g = list.getOrNull(real) ?: continue
                 val relOf: () -> Float = if (old) ({ i - oldPos - dirS * shiftK * kNow() })
@@ -1071,7 +1075,8 @@ private fun CarouselItem(
         if (i == focusIdx) mediaFull else 0f, androidx.compose.animation.core.tween(240), label = "caseMediaRoom"
     )
     val mediaShow = if (mediaFull > 0f) (mediaRoom / mediaFull).coerceIn(0f, 1f) else 0f
-    val w0 = h0 * aspect + h0 * mediaRoom * 2f
+    // (Update 174: room on its right only — the case and its media together sit in the middle; the gap on the left went.)
+    val w0 = h0 * aspect + h0 * mediaRoom
     // A 3D case or model turns in its own drawing, a spine faces you: only the other flat art turns its slot.
     // (Update 144: at most 78°, never edge-on.)
     val turns = !(sideways || c.cases3d || model != null || (spineHere && (c.view == CarouselView.SPINE_WALL || c.view == CarouselView.BOX_FLOW)))
@@ -1221,7 +1226,9 @@ private fun CaseWithMedia3D(
             else PhysicalMedia(m.pick.shell, label ?: cover ?: appIcon, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover ?: appIcon, title = g.name, noCase = true)
         }
     }
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    // (Update 174: the case moved left by half the media's room, so the pair is centred in its slot.)
+    val pairShift = h * m.room(mm) * show / 2f
+    Box(Modifier.fillMaxSize().offset(x = -pairShift), contentAlignment = Alignment.Center) {
         // The disc behind the case, its middle at the case's right edge.
         if (m.discOut) MediaPiece(Modifier.size(mw, mh).offset(x = caseW / 2f))
         Box(Modifier.size(caseW, h)) {

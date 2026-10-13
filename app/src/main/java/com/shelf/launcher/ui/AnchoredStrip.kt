@@ -87,6 +87,8 @@ internal fun AnchoredStrip(
             val left = sx + shift
             if (left + w(idx) < -big || left > maxWidth + big) return@forEach
             val hh = h(idx)
+            // (Update 174: each game once in a short category.)
+            if (looping && !drawnOnce(idx - kotlin.math.round(p).toInt(), count, anchorSlots)) return@forEach
             val real = if (looping) idx.mod(count) else idx
             key(if (looping) "${keyOf(real)}#${Math.floorDiv(idx, count)}" else keyOf(idx)) {
                 Box(
