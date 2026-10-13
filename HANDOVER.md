@@ -256,6 +256,25 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 175
+- **R1 Carousel tile (QuickSettings.kt):** tap = on if off, else `Features.carouselView` next ordinal (wraps); a `cases` view
+  also sets `carouselReflect` + `carouselStage`. Hold list ends with `R1Choice("Carousel off")`.
+- **Folder games (RomScanner.kt):** `isFolderGame(dir)` (`PS3_GAME` dir or `PS3_DISC.SFB`) in `onEnter` → added to
+  `folderGames`, not walked; Game with `romPath` = folder, platform `folderGamePlatform` (PS3), name `folderGameTitle`
+  (PARAM.SFO via `SaveCapsules.sfoTitle`, else folder name minus .iso and `[A-Z]{4}\d{5}` serial). `notGames` extension set
+  skipped in the walk (no "md": Genesis).
+- **Launch (GameLauncher.kt):** `FOLDER_GAME_EXTRAS` (`aenu.aps3e` → `game_dir`); a directory `romPath` puts the plain
+  path in that extra instead of `applyRom`.
+- **Scraping (LauncherViewModel.kt):** lanes via `Semaphore` + `coroutineScope { launch }` on the main dispatcher (state
+  maps touched only between suspensions): `ART_LANES` 4 (scrapeMissingArt), `DETAIL_LANES` 3 + `DETAIL_LANE_PAUSE_MS` 250
+  (scrapeMissingMetadata), `MEDIA_LANES` 3 (scrapeEverything scans/shots/clips; no per-game delay). scrapeEverything runs
+  art + details together, progress = sum.
+- **ScreenScraper.kt:** `throttled` = `slots` Semaphore (permits = `threads`) + `gate` Mutex spacing starts by
+  `MIN_GAP_MS / threads` (≥ 400 ms); one thread still counts the gap from the end of the answer. `learnThreads` reads
+  `response.ssuser.maxthreads` from each gameInfo answer (capped at 4).
+- Not yet checked on a device: Thor PS3 list + aPS3e `game_dir` launch; scraping speed on a real library.
+- Open: custom animated layouts (user upload + tutorial) — waiting on the format choice.
+
 ## State after update 174
 - **Endless, each game once:** `drawnOnce(off, n, before)` (EndlessRow.kt) in GameCarousel's draw loop, CrossList,
   StyleCircuit, AnchoredStrip; lazy rows `rememberLoopRow` and TV room lists loop only with `> LAZY_LOOP_MIN` (8) games.

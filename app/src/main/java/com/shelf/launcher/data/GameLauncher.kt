@@ -194,10 +194,14 @@ object GameLauncher {
             }
         } else if (profile != null) {
             val format = chosen ?: profile.format
+            // Update 175: a game that is a whole folder (a PS3 game folder): the emulator's folder extra with the plain
+            // path (aPS3e's "game_dir", as ES-DE launches it) — a folder can't be shared as a file link.
+            val dirExtra = if (File(romPath).isDirectory) FOLDER_GAME_EXTRAS[pkg] else null
             fun build(activity: String?) = Intent(profile.action).apply {
                 if (activity != null) setClassName(pkg, activity) else setPackage(pkg)
                 if (profile.action == Intent.ACTION_VIEW) addCategory(Intent.CATEGORY_DEFAULT)
-                applyRom(this, context, pkg, romPath, profile.romExtra, format, romRoot, profile.mimeType)
+                if (dirExtra != null) putExtra(dirExtra, romPath)
+                else applyRom(this, context, pkg, romPath, profile.romExtra, format, romRoot, profile.mimeType)
                 if (profile.alsoAsData && profile.romExtra != null) {
                     applyRom(this, context, pkg, romPath, null, format, romRoot, profile.mimeType)
                 }
@@ -218,6 +222,9 @@ object GameLauncher {
         attempts += viewIntent(context, romPath, pkg, chosen ?: RomFormat.SHARED_URI, romRoot)
         return attempts
     }
+
+    /** Update 175: emulators that boot a game folder, and the extra that takes its path. */
+    private val FOLDER_GAME_EXTRAS = mapOf("aenu.aps3e" to "game_dir")
 
     private fun activityExists(context: Context, pkg: String, activity: String): Boolean = runCatching {
         context.packageManager.getActivityInfo(android.content.ComponentName(pkg, activity), 0)

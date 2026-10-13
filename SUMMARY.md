@@ -4,6 +4,48 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 13 Oct 2026 (175): R1 Carousel tile steps through the views, PS3 game folders as one game, faster scraping
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (5): `src_copy\LauncherViewModel.kt`,
+`src_copy\data\GameLauncher.kt`, `src_copy\data\RomScanner.kt`, `src_copy\data\ScreenScraper.kt`,
+`src_copy\ui\QuickSettings.kt`.
+
+**Files to delete:** none.
+
+### R1 › Carousel tile
+- A tap now turns the carousel on when it's off, and after that each tap moves to the next view (Tucked behind, Record
+  flip, Wheel … Box flow) and round again. It used to turn the carousel off.
+- To turn it off: hold the tile › **Carousel off** (new, at the end of the list).
+- Picking a 3D-case view by tapping also turns on its glossy floor, the same as picking it from the list.
+
+### PS3 games in folders (seen on the Thor)
+- A folder with `PS3_GAME` or `PS3_DISC.SFB` inside is now one game. Its files (EBOOT.BIN, ICON0.PNG, PARAM.SFO, the
+  DAT files…) are no longer listed as games, and the folder isn't searched further.
+- The name comes from the game's `PARAM.SFO`. Without one, it's the folder's name without ".iso" and its serial
+  (`UFC Undisputed 3 BLES01231` → "UFC Undisputed 3").
+- On the Thor, both kinds are found: `ROMs/ps3/UFC Undisputed 3 BLES01231/` and the TNA game inside a folder named
+  `….iso/` (with "Vimm's Lair.txt" next to it).
+- Files that are never games are skipped everywhere: texts, pictures, web pages, checksums, PS3 system files (txt, nfo,
+  pdf, png, jpg, sfo, sfb, pup, edat, rap, sprx, md5, sfv…). ".md" stays a Genesis game.
+- Launching: aPS3e gets the folder's path in its `game_dir` extra (the way ES-DE starts a folder game). The single-file
+  `.iso` games still go as before.
+
+### Faster scraping
+- **Artwork:** four games are looked up at once instead of one after another.
+- **Details:** three at once, with a short pause in each lane (0.25 s) instead of 0.6 s after every game.
+- **Settings › Scraping › Fetch everything:** artwork and details now run together, with one count. Cases, screenshots
+  and clips take three games at once, with no half-second wait between games.
+- **ScreenScraper:** still never goes over your account's limit. Free accounts stay one request at a time. An account
+  allowed more threads (ScreenScraper reports "maxthreads" in every answer) now gets that many at once, up to 4, with the
+  1.2 s gap shared between them.
+
+### Check after installing
+- On the Thor: the PS3 row shows two games (UFC Undisputed 3, TNA Impact!), and both start in aPS3e.
+- R1 › tap Carousel a few times: the views change. Hold › Carousel off turns it off.
+- Settings › Scraping › Re-scrape: art arrives in bigger steps.
+
 ## Update — 13 Oct 2026 (174): D-pad and Tile look through every layout, Endless without repeats, the case with its media centred
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

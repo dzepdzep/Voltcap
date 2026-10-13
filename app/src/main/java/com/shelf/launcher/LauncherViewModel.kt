@@ -119,6 +119,12 @@ import kotlinx.coroutines.sync.withLock
 /** Raichu-yellow blink for achievement unlocks. */
 private const val UNLOCK_YELLOW = 0xFFFFD84A.toInt()
 
+/** Update 175: games looked up at once while scraping artwork, details, and cases / screenshots / clips. */
+private const val ART_LANES = 4
+private const val DETAIL_LANES = 3
+private const val DETAIL_LANE_PAUSE_MS = 250L
+private const val MEDIA_LANES = 3
+
 /** Package-name prefixes of studios that only publish games. */
 private val GAME_PUBLISHER_PREFIXES = listOf(
     "com.supercell.", "com.mojang.", "com.miHoYo.", "com.HoYoverse.", "com.YoStar", "com.nintendo.",
@@ -2371,8 +2377,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
             _uiState.update { it.copy(metadataScrapeDone = 0, metadataScrapeTotal = pending.size) }
             var found = 0
-            pending.forEachIndexed { index, game ->
-                if (!isActive) return@forEachIndexed
+            // Update 175: three games at once, each lane pausing a little between its games (was one game and
+            // 0.6 s at a time). IGDB allows four requests a second; ScreenScraper keeps its own limit.
+            val lanes = kotlinx.coroutines.sync.Semaphore(DETAIL_LANES)
+            var done = 0
+            kotlinx.coroutines.coroutineScope { for (game in pending) {
+                lanes.acquire()
+                if (!isActive) { lanes.release(); break }
+                launch { try {
                 com.shelf.launcher.data.GameMode.awaitNotPlaying()
                 val fresh = runCatching {
                     if (rawgOnly) {
@@ -2388,9 +2400,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     metadataCacheStore.put(game.stableKey, merged)
                     _uiState.update { it.copy(metadata = it.metadata + (game.stableKey to merged)) }
                 }
-                _uiState.update { it.copy(metadataScrapeDone = index + 1) }
-                kotlinx.coroutines.delay(600)
-            }
+                done++
+                _uiState.update { it.copy(metadataScrapeDone = done) }
+                kotlinx.coroutines.delay(DETAIL_LANE_PAUSE_MS)
+                } finally { lanes.release() } }
+            } }
             _uiState.update {
                 it.copy(
                     metadataScrapeDone = 0,
@@ -5204,19 +5218,34 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
             }
             try {
-                pending.forEachIndexed { index, game ->
-                    if (!isActive) return@forEachIndexed
-                    if (com.shelf.launcher.data.GameMode.active && freshArt.isNotEmpty()) flushArt(index)
-                    com.shelf.launcher.data.GameMode.awaitNotPlaying()
-                    val art = withContext(Dispatchers.IO) { fetchArtFromSelectedSource(game) }
-                    asked[game.stableKey] = System.currentTimeMillis()
-                    if (art != null) {
-                        val merged = (freshArt[game.stableKey] ?: _uiState.value.art[game.stableKey]).mergeArt(art, fields)
-                        artCacheStore.put(game.stableKey, merged)
-                        freshArt[game.stableKey] = merged
-                        if (saveAsWeGo) withContext(Dispatchers.IO) { saveGameArtNow(merged) }
+                // Update 175: four games looked up at once instead of one after another (SteamGridDB, IGDB and RAWG
+                // answer in parallel; ScreenScraper keeps its own limit inside its repository). Everything below runs
+                // on the main thread between the lookups, so the batch maps need no locks.
+                val lanes = kotlinx.coroutines.sync.Semaphore(ART_LANES)
+                var done = 0
+                kotlinx.coroutines.coroutineScope {
+                    for (game in pending) {
+                        lanes.acquire()
+                        if (!isActive) { lanes.release(); break }
+                        launch {
+                            try {
+                                if (com.shelf.launcher.data.GameMode.active && freshArt.isNotEmpty()) flushArt(done)
+                                com.shelf.launcher.data.GameMode.awaitNotPlaying()
+                                val art = withContext(Dispatchers.IO) { fetchArtFromSelectedSource(game) }
+                                asked[game.stableKey] = System.currentTimeMillis()
+                                if (art != null) {
+                                    val merged = (freshArt[game.stableKey] ?: _uiState.value.art[game.stableKey]).mergeArt(art, fields)
+                                    artCacheStore.put(game.stableKey, merged)
+                                    freshArt[game.stableKey] = merged
+                                    if (saveAsWeGo) withContext(Dispatchers.IO) { saveGameArtNow(merged) }
+                                }
+                                done++
+                                if (android.os.SystemClock.uptimeMillis() - lastFlush >= 450L || done == pending.size) flushArt(done)
+                            } finally {
+                                lanes.release()
+                            }
+                        }
                     }
-                    if (android.os.SystemClock.uptimeMillis() - lastFlush >= 450L || index == pending.lastIndex) flushArt(index + 1)
                 }
             } finally {
                 if (freshArt.isNotEmpty() || asked.isNotEmpty()) flushArt(pending.size)
@@ -5497,22 +5526,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val E = com.shelf.launcher.data.EverythingScrape
         everythingJob = viewModelScope.launch {
             try {
-                if (com.shelf.launcher.data.EverythingScrape.Part.ART in parts) {
-                    E.stage = "Artwork"; E.progress = null
-                    scrapeMissingArt(manual = true)
-                    // (Update 149: its count shown here as it goes.)
-                    while (scrapeJob?.isActive == true) {
+                // Update 175: artwork and details are fetched together (they were one after the other), one count for both.
+                val art = com.shelf.launcher.data.EverythingScrape.Part.ART in parts
+                val details = com.shelf.launcher.data.EverythingScrape.Part.DETAILS in parts
+                if (art || details) {
+                    E.stage = when { art && details -> "Artwork & details"; art -> "Artwork"; else -> "Details" }
+                    E.progress = null
+                    if (art) scrapeMissingArt(manual = true)
+                    if (details) scrapeMissingMetadata(silent = true)
+                    // (Update 149: the count shown here as it goes.)
+                    while (scrapeJob?.isActive == true || metadataScrapeJob?.isActive == true) {
                         val st = _uiState.value
-                        E.progress = if (st.scrapeTotal > 0) st.scrapeDone to st.scrapeTotal else null
-                        kotlinx.coroutines.delay(500)
-                    }
-                }
-                if (com.shelf.launcher.data.EverythingScrape.Part.DETAILS in parts) {
-                    E.stage = "Details"; E.progress = null
-                    scrapeMissingMetadata(silent = true)
-                    while (metadataScrapeJob?.isActive == true) {
-                        val st = _uiState.value
-                        E.progress = if (st.metadataScrapeTotal > 0) st.metadataScrapeDone to st.metadataScrapeTotal else null
+                        val done = st.scrapeDone + st.metadataScrapeDone
+                        val total = st.scrapeTotal + st.metadataScrapeTotal
+                        E.progress = if (total > 0) done to total else null
                         kotlinx.coroutines.delay(500)
                     }
                 }
@@ -5531,7 +5558,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 if (pending.isNotEmpty()) {
                     E.stage = "Cases, screenshots & clips"
                     E.progress = 0 to pending.size
-                    for ((i, g) in pending.withIndex()) {
+                    // Update 175: three games at once (was one, with half a second between games). ScreenScraper
+                    // keeps its own limit; screenshots from the other sources come in alongside.
+                    val lanes = kotlinx.coroutines.sync.Semaphore(MEDIA_LANES)
+                    var done = 0
+                    kotlinx.coroutines.coroutineScope { for (g in pending) {
+                        lanes.acquire()
+                        if (!isActive) { lanes.release(); break }
+                        launch { try {
                         com.shelf.launcher.data.GameMode.awaitNotPlaying()
                         if (needsScans(g)) {
                             loadPhysicalMedia(g, needSpine = true, force = true)
@@ -5549,9 +5583,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                             if (url != null) _uiState.update { it.copy(videoUrls = it.videoUrls + (g.stableKey to url)) }
                             if (url != null && com.shelf.launcher.data.Features.clipsOffline.value) saveClipLater(g.stableKey, url)
                         }
-                        E.progress = (i + 1) to pending.size
-                        kotlinx.coroutines.delay(500)
-                    }
+                        done++
+                        E.progress = done to pending.size
+                        } finally { lanes.release() } }
+                    } }
                     if (_uiState.value.artStorage.autoSave) saveAllArt(silent = true)
                 }
                 val noSs = creds == null && (com.shelf.launcher.data.EverythingScrape.Part.SCANS in parts || com.shelf.launcher.data.EverythingScrape.Part.VIDEOS in parts)

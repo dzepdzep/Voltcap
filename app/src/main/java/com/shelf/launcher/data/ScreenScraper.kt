@@ -111,17 +111,39 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
 
     // Free accounts get one request "thread" — requests go strictly one at a
     // time, with a short gap, so the scraper never trips the limit.
+    // Update 175: accounts allowed more threads (ScreenScraper says how many in every answer, "maxthreads") get that
+    // many requests at once (up to 4), with the gap shared between them — scraping a big library goes that much faster.
     private val gate = Mutex()
+    @Volatile private var slots = kotlinx.coroutines.sync.Semaphore(1)
+    @Volatile private var threads = 1
     private val gson = Gson()
     private var lastRequestAt = 0L
 
-    private suspend fun <T> throttled(block: suspend () -> T): T = gate.withLock {
-        val wait = MIN_GAP_MS - (System.currentTimeMillis() - lastRequestAt)
-        if (wait > 0) delay(wait)
+    private suspend fun <T> throttled(block: suspend () -> T): T {
+        val s = slots
+        s.acquire()
         try {
-            block()
+            gate.withLock {
+                val gap = (MIN_GAP_MS / threads).coerceAtLeast(400L)
+                val wait = gap - (System.currentTimeMillis() - lastRequestAt)
+                if (wait > 0) delay(wait)
+                lastRequestAt = System.currentTimeMillis()
+            }
+            return block()
         } finally {
-            lastRequestAt = System.currentTimeMillis()
+            // One thread: the gap counts from the end of the last answer (as before).
+            if (threads == 1) synchronized(this) { lastRequestAt = System.currentTimeMillis() }
+            s.release()
+        }
+    }
+
+    /** Update 175: the number of requests at once the account may make, read from an answer's "ssuser". */
+    private fun learnThreads(root: JsonObject?) {
+        val n = root?.obj("response")?.obj("ssuser")?.str("maxthreads")?.toIntOrNull() ?: return
+        val want = n.coerceIn(1, 4)
+        if (want != threads) {
+            threads = want
+            slots = kotlinx.coroutines.sync.Semaphore(want)
         }
     }
 
@@ -183,7 +205,7 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
             return null // network trouble: don't remember, so a retry can work
         }
         val jeu = if (response.isSuccessful) {
-            parseJson(response.body()?.string().orEmpty())?.obj("response")?.obj("jeu")
+            parseJson(response.body()?.string().orEmpty())?.also { learnThreads(it) }?.obj("response")?.obj("jeu")
         } else {
             runCatching { response.errorBody()?.close() } // an unread error body keeps its connection busy
             null

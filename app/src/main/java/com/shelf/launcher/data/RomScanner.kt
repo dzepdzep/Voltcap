@@ -210,6 +210,36 @@ object RomScanner {
         )
     }
 
+    /**
+     * Update 175: files that are never a game, whatever folder they're in: pictures, texts, a disc's system files
+     * (PARAM.SFO, PS3_DISC.SFB, an update's .PUP), checksums and the like.
+     */
+    private val notGames = setOf(
+        "txt", "nfo", "diz", "pdf", "htm", "html", "url", "xml", "json", "ini", "cfg", "log",
+        "png", "jpg", "jpeg", "gif", "bmp", "webp", "ico",
+        "sfo", "sfb", "pup", "edat", "rap", "sprx", "self", "sdat",
+        "md5", "sha1", "sfv", "crc", "db", "ds_store", "tmp", "part", "torrent"
+    )
+
+    /** Update 175: a folder that is a whole game (a PS3 disc or game folder). */
+    private fun isFolderGame(dir: File): Boolean =
+        File(dir, "PS3_GAME").isDirectory || File(dir, "PS3_DISC.SFB").isFile
+
+    /** Update 175: a folder game's console: PS3 for a PS3 game folder, else its folders' console. */
+    private fun folderGamePlatform(dir: File, rootPath: String, deep: Boolean): String? =
+        if (File(dir, "PS3_GAME").isDirectory || File(dir, "PS3_DISC.SFB").isFile) "PS3"
+        else platformFor(File(dir, "x.iso"), rootPath, deep)
+
+    /** Update 175: a folder game's name: its PARAM.SFO title, else the folder's name without its serial or ".iso". */
+    private fun folderGameTitle(dir: File): String {
+        val sfo = File(dir, "PS3_GAME/PARAM.SFO")
+        val title = runCatching { if (sfo.isFile && sfo.length() < 64_000) SaveCapsules.sfoTitle(sfo.readBytes()) else null }.getOrNull()
+        if (!title.isNullOrBlank()) return title.replace('\n', ' ').trim()
+        val raw = dir.name.removeSuffix(".iso").removeSuffix(".ISO").removeSuffix(".ps3").removeSuffix(".PS3")
+            .replace(Regex("""\s*\[?\b[A-Z]{4}\d{5}\b\]?"""), "").trim()
+        return prettifyName(raw.ifBlank { dir.name })
+    }
+
     /** Folders never worth walking: hidden ones and Android's app-data trees. */
     private fun skipFolder(dir: File, root: File): Boolean {
         if (dir.absolutePath == root.absolutePath) return false
@@ -230,20 +260,40 @@ object RomScanner {
         val knownFiles = mutableListOf<File>()
         val m3uFiles = mutableListOf<File>()
         val skipped = mutableSetOf<String>()
+        // Update 175: games that are a whole folder (a PS3 game: PS3_GAME / PS3_DISC.SFB inside) — one game each, its
+        // folder not walked (every file in it — EBOOT.BIN, ICON0.PNG, PARAM.SFO, the DAT files — was listed as a game).
+        val folderGames = mutableListOf<File>()
 
         root.walkTopDown()
-            .onEnter { !skipFolder(it.absoluteFile, absRoot) }
+            .onEnter { dir ->
+                if (skipFolder(dir.absoluteFile, absRoot)) false
+                else if (dir.absolutePath != absRoot.absolutePath && isFolderGame(dir)) { folderGames += dir; false }
+                else true
+            }
             .filter { it.isFile }
             .forEach { file ->
                 val ext = file.extension.lowercase()
                 when {
                     ext == "m3u" -> m3uFiles += file
+                    // (Update 175: never a picture, a text or a disc's system file — in a console's folder every file
+                    // used to count as one of its games.)
+                    ext in notGames -> {}
                     platformFor(file, rootPath, deep) != null -> knownFiles += file
                     ext.isNotBlank() -> skipped += ext
                 }
             }
 
         val games = mutableListOf<Game>()
+        folderGames.forEach { dir ->
+            val platform = folderGamePlatform(dir, rootPath, deep) ?: return@forEach
+            games += Game(
+                name = folderGameTitle(dir),
+                platform = platform,
+                hue = hueFor(dir.name),
+                sourceType = SourceType.ROM,
+                romPath = dir.absolutePath
+            )
+        }
         val consumedPaths = mutableSetOf<String>()
 
         // The track files a .cue / .gdi sheet points at (Game.bin, Game (Track 2).bin…) are part of that

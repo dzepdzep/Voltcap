@@ -644,10 +644,26 @@ fun QuickSettingsCard(
                         // Update 119: games all the way to the screen's edges.
                         com.shelf.launcher.data.Features.carouselEdge.value = true
                         turnOn()
+                    } + R1Choice("Carousel off", !carouselOn) {
+                        // (Update 175: off is here now — a tap steps through the views.)
+                        if (carouselOn) {
+                            if (tv) com.shelf.launcher.data.Features.tvRoomGames.value = TvRoom.Games.SPINES
+                            else com.shelf.launcher.data.Features.carouselLayouts.toggle(a.homeLayout.name)
+                        }
                     })
                 }) {
-                if (tv) com.shelf.launcher.data.Features.tvRoomGames.value = if (carouselOn) TvRoom.Games.SPINES else TvRoom.Games.CAROUSEL
-                else com.shelf.launcher.data.Features.carouselLayouts.toggle(a.homeLayout.name)
+                // Update 175: a tap turns the carousel on, then steps through its views (Tucked behind, Record flip, Wheel…
+                // Box flow) and round again — it used to turn the carousel off. Off: hold the tile › Carousel off.
+                if (!carouselOn) {
+                    if (tv) com.shelf.launcher.data.Features.tvRoomGames.value = TvRoom.Games.CAROUSEL
+                    else com.shelf.launcher.data.Features.carouselLayouts.toggle(a.homeLayout.name)
+                } else {
+                    val views = CarouselView.values()
+                    val next = views[(com.shelf.launcher.data.Features.carouselView.value.ordinal + 1) % views.size]
+                    com.shelf.launcher.data.Features.carouselView.value = next
+                    // (As picking it from the list: the 3D-case views come with their glossy floor.)
+                    if (next.cases) { com.shelf.launcher.data.Features.carouselReflect.value = true; com.shelf.launcher.data.Features.carouselStage.value = true }
+                }
             })
             // Theme: the next favourite (hold: the theme list).
             add(R1Tile("theme", Icons.Filled.Palette, "Theme\n" + home.themeName, false,
