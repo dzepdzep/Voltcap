@@ -554,7 +554,11 @@ internal fun GameDock(
                         animationSpec = dockMotion(),
                         label = "dockTilt"
                     )
-
+                    // Update 203: a cartridge turns as a solid piece (its thickness showing) — the card hands it the turn
+                    // instead of turning the flat picture (SolidPiece.kt).
+                    val solidCart = (carousel || look.tiltOthers) &&
+                        artForGame(cardArtType, game.platform, hiddenMedia, mixedRow) == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+                    ProvidePieceTurn(if (solidCart) PieceTurn({ if (carousel) Carousel.placeFlat(relAnim, carouselSide).turnY else tilt }, 14f) else null) {
                     GameCard(
                         game = game,
                         art = art[game.stableKey],
@@ -629,12 +633,12 @@ internal fun GameDock(
                                     scaleX = sc; scaleY = sc
                                     alpha = pl.alpha
                                     translationY = pl.y * size.height
-                                    rotationY = pl.turnY
+                                    rotationY = if (solidCart) 0f else pl.turnY
                                     rotationZ = pl.turnZ
                                     if (rotationY != 0f) flatTextFor3d()
                                     cameraDistance = 14f * density
                                 } else if (look.tiltOthers) Modifier.graphicsLayer {
-                                    rotationY = tilt
+                                    rotationY = if (solidCart) 0f else tilt
                                     flatTextFor3d()
                                     cameraDistance = 14f * density
                                     // Hinged on the side facing the game you're on.
@@ -644,6 +648,7 @@ internal fun GameDock(
                                 } else Modifier
                             )
                     )
+                    }
                 }
             }
         }

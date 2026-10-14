@@ -474,27 +474,31 @@ internal fun PhysicalMedia(
     // looks come here as drawn shells, below.)
     // Update 195: a game on a shell from the cartridge library, the cover as its label.
     if (platform != null && platform.startsWith(SHELL_PREFIX)) {
-        CartShellArt(platform, caseCover ?: label, modifier.mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode()), title = title)
+        // (Update 203: a solid piece wherever it's turned — SolidPiece.kt.)
+        CartShellArt(platform, caseCover ?: label, modifier.solidPiece(rememberShellSolid(platform)).mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode()), title = title)
         return
     }
     // Update 128: a game on your cartridge pack — its cover in the window (a disc / label scan wouldn't fit it).
     if (platform != null && platform.startsWith(CUSTOM_CART)) {
+        // (Update 203: your pack's cartridge solid when turned; a disc from your optical pack turns flat.)
+        val packDisc = discShellFor(platform.removePrefix(CUSTOM_CART)) != null
         CustomCart(
             platform.removePrefix(CUSTOM_CART), caseCover ?: label,
-            modifier.mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode())
+            (if (packDisc) modifier.followTurn() else modifier.solidPiece(cartSolid(null, platform, Features.cartLook.state.value.aspect, custom = true)))
+                .mediaMotion(packDisc, (label?.hashCode() ?: 0) xor platform.hashCode())
         )
         return
     }
     // A game without a disc of its own on the blank CD: its own console's logo and name on it (GenericDisc.kt).
     genericDiscConsole(platform)?.let { console ->
-        GenericDisc(console, label, modifier.mediaMotion(true, (label?.hashCode() ?: 0) xor console.hashCode()))
+        GenericDisc(console, label, modifier.followTurn().mediaMotion(true, (label?.hashCode() ?: 0) xor console.hashCode()))
         return
     }
     val tpl = MediaTemplates.of(platform)
     // "Disc in its case": the case with the disc half out of it, spinning (disc games only).
     if (tpl != null && discCaseOn(tpl) && !noCase) {
         val front = caseCover ?: label.takeIf { !labelIsScan }
-        DiscInCase(tpl, boxFront(tpl.box!!, front, null).first, false, label ?: caseCover, modifier, platform = platform)
+        DiscInCase(tpl, boxFront(tpl.box!!, front, null).first, false, label ?: caseCover, modifier.followTurn(), platform = platform)
         return
     }
     // Discs turn slowly, cartridges give a little hop now and then (each on its own beat).
@@ -503,7 +507,9 @@ internal fun PhysicalMedia(
         tpl != null && (tpl.cart != null || tpl.label != null) -> false
         else -> shell.disc
     }
-    val modifier = modifier.mediaMotion(discLook, (label?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0))
+    // (Update 203: a cartridge solid wherever it's turned, at its template's / drawn shell's own shape; a disc turns flat.)
+    val modifier = (if (discLook) modifier.followTurn() else modifier.solidPiece(cartSolid(shell, platform, tpl?.cart?.aspect ?: shell.aspect)))
+        .mediaMotion(discLook, (label?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0))
     if (tpl != null && TemplateMedia(
             tpl, labelScan = if (labelIsScan) label else null, cover = if (labelIsScan) null else label, modifier = modifier,
             smallDisc = shell == MediaShell.MINI_DISC && !Features.bigGcDiscs.state.value
@@ -550,7 +556,8 @@ internal fun PhysicalMedia(
 // (Update 151: internal, for the 3D case + disc in DiscCase3D.kt.)
 @Composable
 internal fun Modifier.mediaMotion(disc: Boolean, seed: Int): Modifier =
-    motionLayer(disc, (if (disc) Features.discMotion else Features.cartMotion).state.value, seed)
+    // (Update 203: a cartridge's slow turn is drawn by its solid piece — solidPiece, rememberCartSpin — not turned flat here.)
+    motionLayer(disc, (if (disc) Features.discMotion else Features.cartMotion).state.value, seed, turnCart = false)
 
 /** A box (box art): turns slowly left and right and/or hops like a cartridge, as set under Cases (default still). */
 @Composable
@@ -561,7 +568,7 @@ internal fun Modifier.caseMotion(seed: Int): Modifier = motionLayer(false, Featu
 internal fun Modifier.motionPreview(disc: Boolean, motion: Features.MediaMotion): Modifier = motionLayer(disc, motion, 0)
 
 @Composable
-private fun Modifier.motionLayer(disc: Boolean, motion: Features.MediaMotion, seed: Int): Modifier {
+private fun Modifier.motionLayer(disc: Boolean, motion: Features.MediaMotion, seed: Int, turnCart: Boolean = true): Modifier {
     val on = !LocalLiteEffects.current && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
     if (!on || motion == Features.MediaMotion.OFF) return this
     // Update 112: only the game you're on moves (Home › Animations, per layout too).
@@ -588,7 +595,7 @@ private fun Modifier.motionLayer(disc: Boolean, motion: Features.MediaMotion, se
             // A soft bob: up and back down smoothly, no rest, small enough to stay inside its space.
             if (bounces) translationY = -size.height * 0.035f * (0.5f - 0.5f * kotlin.math.cos(bp * 2 * Math.PI).toFloat())
         } else {
-            if (spins) {
+            if (spins && turnCart) {
                 // Slowly left and right, about ±24°, like it's turning on a stand.
                 rotationY = 24f * kotlin.math.sin(sp * 2 * Math.PI).toFloat()
                 cameraDistance = 14f * density
@@ -722,7 +729,9 @@ internal fun DiscInCase(
  */
 @Composable
 internal fun RealMediaPicture(model: Any, round: Boolean, modifier: Modifier = Modifier) {
-    Box(modifier.mediaMotion(round, 0), contentAlignment = Alignment.Center) {
+    // (Update 203: the game's own cartridge photo solid when turned; a disc photo turns flat.)
+    val solid = androidx.compose.runtime.remember { SolidSpec(null, 0.12f, PLAIN_SHELL) }
+    Box((if (round) modifier.followTurn() else modifier.solidPiece(solid)).mediaMotion(round, 0), contentAlignment = Alignment.Center) {
         coil.compose.AsyncImage(
             mediaArtModel(model), null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, // (Update 157)
             modifier = Modifier.fillMaxSize().then(if (round) Modifier.clip(androidx.compose.foundation.shape.CircleShape) else Modifier),

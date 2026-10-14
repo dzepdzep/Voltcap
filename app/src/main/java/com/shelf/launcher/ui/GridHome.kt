@@ -201,6 +201,9 @@ internal fun HomeGameGrid(
                 // card's shape, so the Cartridges & discs look looked like covers in the Grid.)
                 val realScan = gArt == CardArtType.CARTRIDGE_DISC && !mediaShellsOn && typed != null && url == typed
                 val free = isFreeMedia(gArt, g.platform) || realScan || (drawnMediaWanted(gArt, typed) && MediaShell.of(g.platform) != null)
+                // Update 203: a drawn cartridge turns as a solid piece (its thickness showing) — the slot hands it the turn
+                // instead of turning the flat picture (SolidPiece.kt).
+                val solidCart = spin != null && !spines && gArt == CardArtType.CARTRIDGE_DISC && !realScan && drawnMediaWanted(gArt, typed)
                 Column(Modifier.zIndex(if (on) 1f else 0f)) {
                     Box(
                         Modifier
@@ -213,7 +216,7 @@ internal fun HomeGameGrid(
                                     val s = 1f + 0.04f * lift
                                     scaleX = s; scaleY = s
                                     translationY = -size.height * 0.05f * lift
-                                    rotationY = (spin?.value ?: 0f) * lift
+                                    rotationY = if (solidCart) 0f else (spin?.value ?: 0f) * lift
                                     cameraDistance = 12f * density
                                 } else {
                                     val s = 1f + (if (free) 0.1f else 0.05f) * lift
@@ -236,7 +239,7 @@ internal fun HomeGameGrid(
                             // Update 156: a tapped copy is where the selection goes (going round; its place counted from the
                             // middle copy, as rememberLoopPlace counts).
                             .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (drawLoop) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } }
-                    ) {
+                    ) { ProvidePieceTurn(if (solidCart) PieceTurn({ (spin?.value ?: 0f) * lift }, 12f) else null) {
                         val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC, gameKey = g.stableKey) else null
                         val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null
                         // (Update 173: an app without art: its icon on the label / in the case.)
@@ -267,7 +270,7 @@ internal fun HomeGameGrid(
                         if (on && !spines && chipAt != null && look.achievementsOnCards) progressOf(g)?.let { (e, t) ->
                             GameProgressChip(e, t, Modifier.align(chipAt))
                         }
-                    }
+                    } }
                     if (showNames) Spacer(Modifier.height(5.dp))
                     // Two lines' room for every name, so the rows stay even; a longer one slides while you're on it.
                     if (showNames) ScrollingName(

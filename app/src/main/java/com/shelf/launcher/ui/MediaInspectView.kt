@@ -307,13 +307,13 @@ internal fun caseItemOf(content: InspectPiece?): CaseItem? = content?.let { c ->
 
 private fun Color.toArgbInt(): Int = android.graphics.Color.argb((alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt())
 
-private val PLAIN_SHELL = Color(0xFF2C2E34)
-private val CUSTOM_SHELL = Color(0xFF55585F)
+internal val PLAIN_SHELL = Color(0xFF2C2E34)
+internal val CUSTOM_SHELL = Color(0xFF55585F)
 /** Update 202: Voltcap's own Android cartridge's green (tpl_cart_android). */
-private val ANDROID_SHELL = Color(0xFF26965B)
+internal val ANDROID_SHELL = Color(0xFF26965B)
 
 /** A cartridge's / card's thickness against its longest side. */
-private fun slabDepth(shell: MediaShell?): Float = when (shell) {
+internal fun slabDepth(shell: MediaShell?): Float = when (shell) {
     MediaShell.DS, MediaShell.DS3, MediaShell.SWITCH, MediaShell.VITA, MediaShell.CARD, MediaShell.HUCARD -> 0.055f
     MediaShell.UMD -> 0.075f
     MediaShell.N64, MediaShell.SNES, MediaShell.BLACK_CART -> 0.15f
@@ -321,7 +321,7 @@ private fun slabDepth(shell: MediaShell?): Float = when (shell) {
 }
 
 /** The plain colour of a shell's back and side. */
-private fun shellTone(shell: MediaShell?): Color = when (shell) {
+internal fun shellTone(shell: MediaShell?): Color = when (shell) {
     MediaShell.SNES, MediaShell.NES, MediaShell.GB, MediaShell.GBC -> Color(0xFF9D9FA6)
     MediaShell.HUCARD -> Color(0xFFD5D6DA)
     MediaShell.N64, MediaShell.GBA -> Color(0xFF45474E)

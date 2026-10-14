@@ -4,6 +4,34 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (203): cartridges stay solid when turned
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (1): `src_copy\ui\SolidPiece.kt`.
+Changed (9): `src_copy\ui\Carousel.kt`, `src_copy\ui\ConsoleBadge.kt`, `src_copy\ui\GameDock.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\HeroCarousel.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\StyleGreenCore.kt`, `src_copy\ui\TileHome.kt`.
+
+**Files to delete:** none.
+
+### Cartridges seen from the side
+- **Before:** a cartridge turned anywhere outside the game window was a flat picture turned, like a sheet of paper (nothing at all edge-on).
+- **Now:** it's a solid piece with its real thickness:
+  - its sides follow its own outline and colours (a notch, the N64's round top);
+  - the face is lit as it turns;
+  - from behind you see its real back (or its shell's colour).
+- **Where:**
+  - the carousels (the tilted games either side, in every carousel view);
+  - the Classic game row (carousel and tilt);
+  - the tile home's carousel;
+  - the grid's Lift focus turn;
+  - the hero carousel's Flip;
+  - Green Core's curved games carousel;
+  - a cartridge leaning against a 3D case;
+  - the slow turn of "Moving cartridges".
+- **Also:** discs turn flat as before. A console badge on a cartridge turns with it. Card text (names, trophies) stays facing you.
+
+---
+
 ## Update — 15 Oct 2026 (202): four simple looks, two new layouts, manuals in the case, update prompt, clean covers, and many fixes
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

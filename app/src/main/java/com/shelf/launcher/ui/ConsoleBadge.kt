@@ -88,7 +88,8 @@ internal fun BoxScope.ConsoleBadge(
     // GameCube case — the badge's pill over the case's own band; the same on PS2, Switch, N64, Android…). Only the
     // PlayStation (PS1) case, drawn without its band, keeps the badge.
     if (onCase && caseShowsConsole(platform)) return
-    BoxWithConstraints(Modifier.matchParentSize()) {
+    // (Update 203: turned with a solid cartridge it sits on — the view hands its turn down, SolidPiece.kt.)
+    BoxWithConstraints(Modifier.matchParentSize().followTurn()) {
         // Too small a tile (a small slot on a small screen): no badge.
         if (maxWidth < 44.dp) return@BoxWithConstraints
         val h = (maxWidth * 0.13f).coerceIn(11.dp, 20.dp)

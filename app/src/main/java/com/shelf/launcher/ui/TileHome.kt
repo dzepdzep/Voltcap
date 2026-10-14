@@ -474,6 +474,10 @@ internal fun TileHomeRow(
                 for (i in from..to) {
                     val game = games[if (looping) i.mod(n) else i]
                     key(game.stableKey, if (looping) i.floorDiv(n) else 0) {
+                        // Update 203: a cartridge turns as a solid piece (its thickness showing) — the tile hands it the
+                        // turn instead of turning the flat picture (SolidPiece.kt).
+                        val solidCart = carousel && artForGame(cardArtType, game.platform, hiddenMedia, mixedRow) == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+                        ProvidePieceTurn(if (solidCart) PieceTurn({ Carousel.placeFlat(i - nameX.value / strideDpValue, Carousel.side).turnY }, 12f) else null) {
                         HomeTile(
                             game = game,
                             art = art[game.stableKey],
@@ -517,7 +521,7 @@ internal fun TileHomeRow(
                                         val sc = pl.scale
                                         scaleX = sc; scaleY = sc
                                         alpha = pl.alpha
-                                        rotationY = pl.turnY
+                                        rotationY = if (solidCart) 0f else pl.turnY
                                         rotationZ = pl.turnZ
                                         cameraDistance = 12f * density
                                         if (rotationY != 0f) flatTextFor3d()
@@ -525,6 +529,7 @@ internal fun TileHomeRow(
                                 )
                                 .then(if (i == vFocus) Modifier.focusedCard() else Modifier)
                         )
+                        }
                     }
                 }
             }

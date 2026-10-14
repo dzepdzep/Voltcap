@@ -451,13 +451,15 @@ private fun CoverWheel(
             // Box art / cartridge / disc art as the real object, free-standing (no card behind it, no frame).
             val gArt = if (wide) com.shelf.launcher.data.CardArtType.COVER else artForGame(cardArtType, g.platform, hiddenMedia, mixed)
             val free = isFreeMedia(gArt, g.platform)
+            // Update 203: a cartridge flips as a solid piece (its thickness showing), not as a flat picture (SolidPiece.kt).
+            val solidCart = free && motion == Features.HeroCarouselMotion.FLIP && gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
             Box(
                 Modifier
                     .offset(x = x - w / 2, y = y - hh / 2)
                     .size(w, hh)
                     .graphicsLayer {
                         this.alpha = alpha; shadowElevation = if (free) 0f else 18f * sel; this.shape = shape; clip = !free
-                        rotationY = flip; cameraDistance = 10f * this.density
+                        rotationY = if (solidCart) 0f else flip; cameraDistance = 10f * this.density
                         // "Carousel look": the covers above and below turned away from the selected one, like pages.
                         if (heroCarousel) rotationX = kotlin.math.sign(d) * Carousel.TILT_DEG * abs(d).coerceAtMost(1f)
                         flatTextFor3d()
@@ -472,7 +474,7 @@ private fun CoverWheel(
                 if (free) {
                     val typed = typedArtFor(gArt, physicalMedia[g.stableKey], null, g.platform)
                     val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey) else null
-                    Box(Modifier.fillMaxSize().awardShine(g.stableKey, sel > 0.6f)) {
+                    Box(Modifier.fillMaxSize().awardShine(g.stableKey, sel > 0.6f)) { ProvidePieceTurn(if (solidCart) PieceTurn({ flip }, 10f) else null) {
                         // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
                         // (Update 200: the 3D cartridges looks drew their drawn piece whatever the scans. Update 202: "The
                         // game's own photo" decides in every cartridge look, see drawnMediaWanted.)
@@ -485,7 +487,7 @@ private fun CoverWheel(
                             g.platform, art, typed, Modifier.fillMaxSize().padding(2.dp), title = gameDisplayName(g.name), detail = 240, real = realRef,
                             caseModifier = if (sel > 0.6f && frameOn) Modifier.border(2.dp, ShelfTheme.accent.copy(alpha = 0.85f * sel), RoundedCornerShape(2.dp)) else Modifier
                         ) }
-                    }
+                    } }
                 } else if (cover != null) {
                     // (Update 202: the cover with its file's flat strips trimmed — TrimMargins.kt — in the wide slot too.)
                     val req = remember(cover, coverPx, wide) { artRequest(wheelContext, cover, if (wide) ArtKind.WIDE else ArtKind.COVER, coverPx, trim = true) }

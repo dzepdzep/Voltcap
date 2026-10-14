@@ -256,6 +256,17 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 203
+- **Solid cartridges (SolidPiece.kt):** a view that turns its games hands the turn down with `ProvidePieceTurn(PieceTurn(yawOf, camera))` and doesn't turn the slot itself when the game is a cartridge look.
+- **Drawing:** `Modifier.solidPiece(SolidSpec)` (in PhysicalMedia's cartridge branches and RealMediaPicture) draws the piece turned, using GraphicsLayer rotationY:
+  - the face is recorded, then drawn as slices through its depth, then the lit face (or the back);
+  - all of it goes into one Offscreen buffer with a margin.
+- **Flat parts:** discs and ConsoleBadge use `followTurn()` (a flat rotationY).
+- **Cartridge spin:** "Moving cartridges" no longer turns in `motionLayer` (`turnCart = false` from mediaMotion); `rememberCartSpin()` adds the spin inside solidPiece.
+- **Shared values:** `slabDepth`, `shellTone`, `PLAIN_SHELL` / `CUSTOM_SHELL` / `ANDROID_SHELL` in MediaInspectView are internal now.
+- **Not changed:** InspectSlab (the game window) keeps its own drawing.
+- **Views wired:** Carousel (CarouselArt slot + CaseWithMedia3D MediaPiece), GameDock, TileHome, GridHome (Lift), HeroCarousel (Flip), StyleGreenCore games carousel.
+
 ## State after update 202
 - **Looks:**
   - `GameLookPicker.kt` has 4 looks; their choices set the old prefs underneath.

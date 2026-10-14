@@ -816,6 +816,8 @@ private fun GcCarousel(c: StyleCtx, compact: Boolean, reduced: Boolean) {
                         val on = i == c.focus
                         val select by rememberUpdatedState(c.actions.select)
                         val open by rememberUpdatedState(c.actions.open)
+                        // Update 203: a cartridge turns as a solid piece (its thickness showing), not as a flat picture.
+                        val solidCart = artForGame(c.type, c.games[i].platform, LocalHiddenMedia.current, c.mixed) == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
                         Box(
                             Modifier
                                 .zIndex(-abs(i - c.focus).toFloat())
@@ -829,7 +831,7 @@ private fun GcCarousel(c: StyleCtx, compact: Boolean, reduced: Boolean) {
                                     val k = 0.5f + 0.5f * cos(a)
                                     scaleX = k; scaleY = k
                                     alpha = (cos(a) * 1.3f - 0.15f).coerceIn(0f, 1f)
-                                    rotationY = -a * 30f
+                                    rotationY = if (solidCart) 0f else -a * 30f
                                     cameraDistance = 12f * this.density
                                 }
                                 .pointerInput(i) {
@@ -838,7 +840,9 @@ private fun GcCarousel(c: StyleCtx, compact: Boolean, reduced: Boolean) {
                                     }
                                 }
                         ) {
-                            StyleArt(c, c.games[i], Modifier.fillMaxSize(), focused = on, fx = if (on) pulse else null, ring = accent)
+                            ProvidePieceTurn(if (solidCart) PieceTurn({ -((i - pos.value) * 0.36f).coerceIn(-1.5f, 1.5f) * 30f }, 12f) else null) {
+                                StyleArt(c, c.games[i], Modifier.fillMaxSize(), focused = on, fx = if (on) pulse else null, ring = accent)
+                            }
                         }
                     }
                 }

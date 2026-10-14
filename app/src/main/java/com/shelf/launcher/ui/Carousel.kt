@@ -1254,13 +1254,16 @@ private fun CarouselItem(
     ) {
         // (Update 166: the side band is off — not even its empty layer per piece. See MediaBandLayer.)
         // (Was: MediaBandLayer(band, c.dens, turnOf, shadeOf).)
+        // Update 203: a cartridge turns as a solid piece (its thickness showing) — the slot hands it the turn instead of
+        // turning the flat picture (SolidPiece.kt).
+        val solidHere = turns && !spineHere && !wideHere && gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
         Box(
             Modifier.fillMaxSize().graphicsLayer {
-                rotationY = turnOf()
+                rotationY = if (solidHere) 0f else turnOf()
                 cameraDistance = 12f * c.dens
                 if (rotationY != 0f) flatTextFor3d()
             }
-        ) {
+        ) { ProvidePieceTurn(if (solidHere) PieceTurn(turnOf, 12f) else null) {
             // (Update 200: CarouselModel — a game as its pre-rendered 3D model — is gone.)
             if (c.cases3d && withMedia != null) CaseWithMedia3D(
                 g, cover, c.physicalMedia[g.stableKey], aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow
@@ -1270,7 +1273,7 @@ private fun CarouselItem(
                 frame = on && c.focusBorder, frameColor = c.accent, yawOf = yawOf, shadeOf = shadeOf,
                 realFront = c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
             ) else CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, c.physicalMedia, c.screenshots, c.mixed, c.realRef, c.pulseOn)
-        }
+        } }
     }
 }
 
@@ -1330,19 +1333,16 @@ private fun CaseWithMedia3D(
     @Composable
     fun MediaPiece(mod: Modifier) {
         if (show <= 0.01f) return
+        // (Update 203: turned with the case as a solid piece — a cartridge its thickness, a disc flat; SolidPiece.kt.)
         Box(mod.graphicsLayer {
-            // Turned with the case, round the case's own middle.
-            rotationY = yawOf()
-            cameraDistance = 12f * dens
             val sh = shadeOf()
             alpha = (1f - 0.35f * sh) * show
-            flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
-        }) {
+        }) { ProvidePieceTurn(PieceTurn(yawOf, 12f)) {
             // (Update 171: the real photo is the piece itself — it was once put on the drawn cartridge's label, a small
             // cartridge inside the cartridge. Update 173: beside a real case only.)
             if (realMedia != null) RealMediaPicture(realMedia, m.pick.shell.disc || m.pick.shell == MediaShell.UMD, Modifier.fillMaxSize())
             else PhysicalMedia(m.pick.shell, label ?: cover ?: appIcon, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover ?: appIcon, title = g.name, noCase = true)
-        }
+        } }
     }
     // (Update 174: the case moved left by half the media's room, so the pair is centred in its slot.)
     val pairShift = h * m.room(mm) * show / 2f
