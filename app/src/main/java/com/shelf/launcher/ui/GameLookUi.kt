@@ -105,7 +105,7 @@ internal fun GameAmbienceLayer(
     modifier: Modifier = Modifier
 ) {
     val lite = LocalLiteEffects.current
-    val active = !covered && rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.deep
+    val active = !covered && rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.still
     val time = remember { mutableFloatStateOf(0f) }
     val step = if (HomeIdle.idle) 66_000_000L else 33_000_000L
     LaunchedEffect(active, step) {

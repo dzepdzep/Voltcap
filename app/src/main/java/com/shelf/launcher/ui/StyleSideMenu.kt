@@ -245,7 +245,7 @@ private fun SidePanel(c: StyleCtx, width: androidx.compose.ui.unit.Dp, compact: 
  */
 @Composable
 private fun SideCapsule(trim: Color) {
-    val still = LocalLiteEffects.current || HomeIdle.idle
+    val still = LocalLiteEffects.current || HomeIdle.calm
     val turn = if (still) 0.15f else {
         val t = rememberInfiniteTransition(label = "capsule")
         t.animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Restart), label = "capsuleTurn").value

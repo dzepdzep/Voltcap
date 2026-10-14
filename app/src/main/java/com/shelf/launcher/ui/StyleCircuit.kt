@@ -191,7 +191,7 @@ private fun CircuitBoard(c: StyleCtx, ink: Color, modifier: Modifier) {
         if (kotlin.math.abs(pos.value - vf) > 6f) pos.snapTo(vf.toFloat())
         else pos.animateTo(vf.toFloat(), tween(320, easing = FastOutSlowInEasing))
     }
-    val moving = !LocalLiteEffects.current && rememberAnimationsEnabled() && !HomeIdle.idle && Features.circuitCurrent.state.value
+    val moving = !LocalLiteEffects.current && rememberAnimationsEnabled() && !HomeIdle.calm && Features.circuitCurrent.state.value
     val clock = MediaClock.rememberFrameTime(running = moving)
     val labels = Features.circuitLabels.state.value
     val pulse = rememberFocusPulse(animate = !LocalLiteEffects.current && LocalCardLook.current.focusEffect != com.shelf.launcher.data.FocusEffect.NONE)

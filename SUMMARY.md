@@ -4,6 +4,60 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (187): a battery saver (low battery, and while you play on the other screen), the carousel stage in the game's colours, Box flow's box sways, a glow in Pocket ribbon, the game on Pocket classic's top screen
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (2): `src_copy\data\BatterySaver.kt`,
+`src_copy\ui\BatterySaverUi.kt`. Changed (35): `src_copy\MainActivity.kt`, `src_copy\data\AnimatedArt.kt`,
+`src_copy\data\Features.kt`, `src_copy\ui\AnimatedWallpaper.kt`, `src_copy\ui\BackdropAchievements.kt`,
+`src_copy\ui\Carousel.kt`, `src_copy\ui\CornerVisualizer.kt`, `src_copy\ui\DockBacking.kt`, `src_copy\ui\FocusEffects.kt`,
+`src_copy\ui\FramesScene.kt`, `src_copy\ui\GameLookUi.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\LauncherScreen.kt`,
+`src_copy\ui\LifecycleUtils.kt`, `src_copy\ui\LobbyScene.kt`, `src_copy\ui\Models3DLife.kt`, `src_copy\ui\NowPlayingPanel.kt`,
+`src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\PocketClassic.kt`, `src_copy\ui\PocketRibbon.kt`, `src_copy\ui\PocketSettings.kt`,
+`src_copy\ui\PowerSaver.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\SecondScreen.kt`, `src_copy\ui\SettingsDialog.kt`,
+`src_copy\ui\SettingsIndex.kt`, `src_copy\ui\StyleCircuit.kt`, `src_copy\ui\StyleConsoleHomes.kt`, `src_copy\ui\StyleCrossMenu.kt`,
+`src_copy\ui\StyleDiscStation.kt`, `src_copy\ui\StyleRecordCrate.kt`, `src_copy\ui\StyleSideMenu.kt`, `src_copy\ui\TvRoomHome.kt`,
+`src_copy\ui\TwinDesk.kt`, `src_copy\ui\VoltUi.kt`.
+
+**Files to delete:** none.
+
+### Battery saver (new: Settings › Device › Battery saver)
+- **While you play on the other screen:** on a two-screen handheld a game can run on one screen while Voltcap stays
+  awake and drawing on the other. Now, while a game or another app has the controller, Voltcap rests as if it were
+  behind it:
+  - the animated background, moving covers, video clips and slideshows stop;
+  - the home screen's timers stop.
+  A touch on Voltcap's screen (or getting the controller back) wakes it at once. Switch: **Rest while you play**.
+- **Low battery:** below 20 % and not plugged in, the theme animation holds a still frame, covers stop moving, video
+  clips wait and the card effects (pulse, shimmer, sparks, spinning discs) hold still. Moving through your games is
+  unchanged. Plugged in, everything comes back.
+  - **Save battery:** When the battery is low (default) · Always · Off.
+  - **Below:** 10 / 15 / 20 / 25 / 30 %.
+  - **Also with Android's Battery Saver** (on): Voltcap saves too while Android's own Battery Saver is on.
+- Settings shows whether it's saving right now and why.
+- **R1 › Battery saver** (new tile): a tap steps When low → Always → Off; hold it for the settings and the battery
+  watcher.
+- **A note about it, once:** after the first-start setup (or the first start after this update) a short card explains
+  what Voltcap does to save battery, with a button to its settings.
+- What already happened while a game runs is unchanged (artwork downloads, syncing and timers wait; loaded pictures are
+  given back to free memory).
+
+### Look
+- **Carousel › Dark stage** now takes the colours of the cover you're on (its light, floor and horizon), gliding to
+  the next game's as you move. Switch: **Stage in the game's colours** (under Dark stage; off: your colour).
+- **Pocket ribbon:** a soft glow round the icon you're on, gently breathing (still while idle or saving battery).
+  Switch: Layout options › **Glow**.
+
+### Layouts
+- **Box flow:** the box you're on leans a little into each move and settles facing you when you stop. Switch: Carousel
+  › **Box sways as you move** (shown with Box flow).
+- **Pocket classic:** while you browse a page of games, the top screen shows the game you're on — its screenshot,
+  its picture in the corner, its name, console and playtime. On All categories it shows the category's logo and name.
+  Switch: Layout options › **Game on the top screen while browsing** (off: the clock stays).
+
+---
+
 ## Update — 14 Oct 2026 (186): cases not cut off and bigger when opened, cases that look like the real ones, an R1 Background tile, Undo can be swiped away, details not re-asked at every start
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

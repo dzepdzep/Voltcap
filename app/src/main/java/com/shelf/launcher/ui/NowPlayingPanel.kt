@@ -294,7 +294,7 @@ internal fun com.shelf.launcher.data.Features.LyricsAlign.text(): androidx.compo
 @Composable
 internal fun Modifier.lyricFloat(): Modifier {
     if (com.shelf.launcher.data.Features.lyricsMotion.state.value != com.shelf.launcher.data.Features.LyricsMotion.FLOAT) return this
-    val active = rememberIsActive() && (MusicTheme.nowPlaying?.isPlaying == true || (!LocalLiteEffects.current && !HomeIdle.deep))
+    val active = rememberIsActive() && (MusicTheme.nowPlaying?.isPlaying == true || (!LocalLiteEffects.current && !HomeIdle.still))
     if (!active) return this
     val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "lyricFloat")
     val p by t.animateFloat(

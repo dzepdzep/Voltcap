@@ -170,7 +170,7 @@ internal val LockedBadgeFilter = androidx.compose.ui.graphics.ColorFilter.colorM
 
 @Composable
 private fun NextAchievementsTicker(list: List<com.shelf.launcher.data.RaAchievementDetail>, modifier: Modifier) {
-    val moving = !LocalLiteEffects.current && rememberAnimationsEnabled() && !HomeIdle.idle
+    val moving = !LocalLiteEffects.current && rememberAnimationsEnabled() && !HomeIdle.calm
     val now = MediaClock.rememberFrameTime(running = moving)
     val rowDp = 26.dp
     val perRowMs = 2400L

@@ -25,7 +25,7 @@ internal fun FramesScene(res: Int, frames: Int, frameMs: Long, modifier: Modifie
     val strip: ImageBitmap = ImageBitmap.imageResource(res)
     var frame by remember { mutableIntStateOf(0) }
     val lite = LocalLiteEffects.current && !LocalAnimateOnLite.current
-    val moving = !lite && !LocalSceneCovered.current && !HomeIdle.deep && rememberAnimationsEnabled()
+    val moving = !lite && !LocalSceneCovered.current && !HomeIdle.still && rememberAnimationsEnabled()
     LaunchedWhileActive(moving, frames, frameMs) {
         if (!moving) return@LaunchedWhileActive
         while (true) {

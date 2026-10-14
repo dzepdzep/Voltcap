@@ -51,7 +51,7 @@ internal fun BoxScope.CornerVisualizers(
     if (kind == Features.CornerViz.OFF) return
     if (Features.cornerVizOnlyMusic.state.value && !playing) return
     // Only hidden when nothing plays: while music plays it never stops (long idle, a window on top).
-    if (!playing && (LocalSceneCovered.current || HomeIdle.deep)) return
+    if (!playing && (LocalSceneCovered.current || HomeIdle.still)) return
     val size = Features.cornerVizSize.state.value.dp
     val corner = Features.cornerVizCorner.state.value
     val zone = safeZone()

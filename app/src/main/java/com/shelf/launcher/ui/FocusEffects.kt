@@ -88,7 +88,7 @@ internal fun Modifier.electricFrame(color: Color, corner: Dp, outset: Dp = 0.dp,
     var time by remember { mutableStateOf(0L) }
     // Only while resumed with the screen on, and not when the system animator scale is 0. While the
     // handheld sits idle the bolts hold still (no redraws at all).
-    val on = rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.idle
+    val on = rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.calm
     LaunchedEffect(on) {
         if (!on) return@LaunchedEffect
         val start = android.os.SystemClock.uptimeMillis()

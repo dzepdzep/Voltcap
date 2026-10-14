@@ -357,6 +357,17 @@ internal object Carousel {
      */
     @Volatile var spread = 1f
 
+    /**
+     * Update 187: how fast the carousel is moving now (games a second; read while placing, every moving frame), for Box
+     * flow's sway ([Features.boxFlowTilt]). Set by the carousel on screen.
+     */
+    @Volatile var speedOf: () -> Float = { 0f }
+
+    /** Update 187: Box flow — the box you're on leans into the move a little (degrees, ±10 at most). */
+    private fun flowSway(near: Float): Float =
+        if (!Features.boxFlowTilt.state.value || near >= 1f) 0f
+        else (-speedOf() * 1.4f).coerceIn(-10f, 10f) * (1f - near) * (1f - near)
+
     /** Update 135: how tall a spine aside is against the game you're on (they used to be nearly as tall as it). */
     const val SPINE_SIZE = 0.66f
     /** Size of a spine aside at distance [d]: from the middle game's size down to [SPINE_SIZE], then barely smaller. */
@@ -548,7 +559,7 @@ internal object Carousel {
                 val sc = 1f - 0.16f * e
                 out.set(
                     sign * (a * e * g0 + 0.15f * far * g), (1f - sc) * 0.5f * e - 0.04f * (1f - e),
-                    sc, 66f * e + (far * 2.2f).coerceAtMost(16f), 0f,
+                    sc, 66f * e + (far * 2.2f).coerceAtMost(16f) + flowSway(near), 0f,
                     alpha(d, reach(side, shown)), shade(d) * 0.45f, stackZ(rel)
                 )
             }
@@ -684,6 +695,8 @@ internal fun GameCarousel(
     val animOn = rememberAnimationsEnabled()
     val glideSpeed = Features.rowGlide.state.value
     val glide = remember { CarouselGlide(vFocus.toFloat()) }
+    // (Update 187: Box flow's sway reads how fast it's moving.)
+    androidx.compose.runtime.SideEffect { Carousel.speedOf = { glide.pos.velocity } }
     val swap = remember { CarouselSwap() }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     // Update 162: a category change slides the collection along the carousel's own path (the old one out, the new one
@@ -781,7 +794,12 @@ internal fun GameCarousel(
             // Update 182: the stage with more life — tinted by your colour, a soft spotlight behind the game you're on,
             // a pool of light on the glossy floor under it, a horizon line that glows in the middle and fades to the
             // sides, faint lines running into the distance, and the edges dimmed (it was plain black).
-            val accent = com.shelf.launcher.ui.theme.ShelfTheme.accent
+            // Update 187: in the colours of the game you're on (its cover's), gliding from one game's to the next.
+            val stageGame = games.getOrNull(focus)
+            val stageCover = if (Features.carouselStageGameColor.state.value) stageGame?.let { overrides[it.stableKey]?.cover ?: art[it.stableKey]?.gridUrl } else null
+            val stagePalette = rememberArtPalette(stageCover, stageCover != null)
+            val stageTarget = (if (stageCover != null) stagePalette?.accent else null) ?: com.shelf.launcher.ui.theme.ShelfTheme.accent
+            val accent by androidx.compose.animation.animateColorAsState(stageTarget, tween(700), label = "stageTint")
             val deep = androidx.compose.ui.graphics.lerp(accent, Color.Black, 0.86f)
             val bigHpx = with(androidx.compose.ui.platform.LocalDensity.current) { bigH.toPx() }
             androidx.compose.foundation.Canvas(Modifier.matchParentSize().zIndex(-1000f)) {

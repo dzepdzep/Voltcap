@@ -92,7 +92,7 @@ private const val MAX_BYTES = 40L * 1024 * 1024
 @Composable
 private fun DockAnimatedImage(uri: String, fallback: Color) {
     val context = LocalContext.current
-    val active = rememberIsActive() && !LocalSceneCovered.current && !HomeIdle.deep
+    val active = rememberIsActive() && !LocalSceneCovered.current && !HomeIdle.still
     val low = remember { com.shelf.launcher.device.DevicePerformance.isLowEnd(context) || com.shelf.launcher.device.MemoryBudget.small(context) }
     // null = still loading; Result.failure = use the still / colour.
     val drawable by produceState<Result<Drawable>?>(null, uri) {

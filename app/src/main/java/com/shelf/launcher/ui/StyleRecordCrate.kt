@@ -262,7 +262,7 @@ private fun CrateStage(c: StyleCtx, wood: CrateColours, modifier: Modifier) {
     val active = rememberIsActive()
     // The record turns only for the game you're on, never while the home screen rests, with Lite effects or with the
     // system's animations off.
-    val spinOn = Features.crateSpin.state.value && !HomeIdle.idle && !lite && animate && active
+    val spinOn = Features.crateSpin.state.value && !HomeIdle.calm && !lite && animate && active
     // With Endless on the place you're on keeps counting round (EndlessRow.kt): from the last game to the first is one
     // more flip, the first sleeves standing behind the last one again.
     val loop = loopRowOn(c)

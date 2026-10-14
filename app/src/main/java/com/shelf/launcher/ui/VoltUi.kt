@@ -415,7 +415,7 @@ private const val VOLT_SPARK_RUN = 1_600L
 internal fun VoltageLine(modifier: Modifier = Modifier, vertical: Boolean = false, color: Color = ShelfTheme.accent, thickness: Dp = 1.dp) {
     val color2 = lerpColor(color, ShelfTheme.colors.secondary, 0.7f)
     val pixel = VoltUi.pixel
-    val animate = VoltUi.sparks && !LocalLiteEffects.current && !HomeIdle.idle && rememberAnimationsEnabled() && rememberIsActive()
+    val animate = VoltUi.sparks && !LocalLiteEffects.current && !HomeIdle.calm && rememberAnimationsEnabled() && rememberIsActive()
     // The spark crosses in 1.6 s, then the line rests 2.4 s with no frames drawn at all.
     val spark = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(1f) }
     androidx.compose.runtime.LaunchedEffect(animate) {

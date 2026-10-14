@@ -516,7 +516,7 @@ internal fun Modifier.motionPreview(disc: Boolean, motion: Features.MediaMotion)
 
 @Composable
 private fun Modifier.motionLayer(disc: Boolean, motion: Features.MediaMotion, seed: Int): Modifier {
-    val on = !LocalLiteEffects.current && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.idle
+    val on = !LocalLiteEffects.current && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
     if (!on || motion == Features.MediaMotion.OFF) return this
     // Update 112: only the game you're on moves (Home › Animations, per layout too).
     MotionPrefs.observe()

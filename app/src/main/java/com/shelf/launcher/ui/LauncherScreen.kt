@@ -1147,6 +1147,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     SideEffect { HomeIdle.enabled = state.appearance.idleSaver }
     LaunchedWhileActive { HomeIdle.watch() }
     EffectClockDriver()
+    BatterySaverDriver() // (Update 187)
     // Only while on screen: no screensaver during a game or with the display off.
     val screensaverActive = rememberIsActive()
     LaunchedEffect(lastInputAt, aDialogIsOpen, showSearchBar, state.screensaver, screensaverOn, screensaverActive, HomeEditState.active) {
@@ -2257,7 +2258,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     }
                     androidx.compose.runtime.CompositionLocalProvider(
                         LocalSceneAvoid provides sceneAvoid,
-                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm),
+                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm || com.shelf.launcher.data.BatterySaver.low), // (Update 187: the battery saver's low-battery rest: a still frame)
                         LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                         // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                         LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
@@ -2461,10 +2462,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
         // Video preview: rest on a game for two seconds and its clip fades in.
         var videoReadyFor by remember { mutableStateOf<String?>(null) }
-        LaunchedEffect(focusedGame?.stableKey, state.appearance.videoPreviews) {
+        // (Update 187: not while the battery saver rests — low battery, or a game / another app has the controller.)
+        val videoRest = com.shelf.launcher.data.BatterySaver.resting
+        LaunchedEffect(focusedGame?.stableKey, state.appearance.videoPreviews, videoRest) {
             videoReadyFor = null
             val game = focusedGame ?: return@LaunchedEffect
-            if (!state.appearance.videoPreviews || com.shelf.launcher.CrashGuard.safeMode) return@LaunchedEffect
+            if (!state.appearance.videoPreviews || videoRest || com.shelf.launcher.CrashGuard.safeMode) return@LaunchedEffect
             viewModel.loadVideoUrl(game)
             kotlinx.coroutines.delay(2000)
             videoReadyFor = game.stableKey
@@ -4804,6 +4807,26 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(4_000); WhatsNew.check(firstRunContext) }
     WhatsNew.shown.value?.let { (v, notes) ->
         if (!showFirstRun) WhatsNewDialog(v, notes) { WhatsNew.shown.value = null }
+    }
+    // Update 187: once, a short note about the battery saver (first start after the setup, or after this update), when
+    // nothing else is open.
+    var saverIntro by remember { mutableStateOf(runCatching { com.shelf.launcher.data.BatterySaver.introDue(firstRunContext) }.getOrDefault(false)) }
+    var saverIntroReady by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(7_000); saverIntroReady = true }
+    if (saverIntro && saverIntroReady && !otherDialogOpen && WhatsNew.shown.value == null && !(showPermissionsPrompt && promptReady)) {
+        val done = {
+            com.shelf.launcher.data.BatterySaver.introSeen(firstRunContext)
+            saverIntro = false
+        }
+        BatterySaverIntroDialog(
+            onSettings = {
+                done()
+                prepareSettingsJump("Device", null, "dev_saver", "Battery saver")
+                menuStartCategory = "Device"
+                showMenu = true
+            },
+            onDismiss = done
+        )
     }
     if (showPermissionsPrompt && promptReady && !showFirstRun) {
         PermissionsPromptDialog(onDismiss = {

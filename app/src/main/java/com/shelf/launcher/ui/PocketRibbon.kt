@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
@@ -260,6 +261,26 @@ internal fun PocketRibbonBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
                         }
                     }
             ) {
+                // Update 187: a soft glow round the one you're on (gently breathing; still while idle or saving battery).
+                if (Features.ribbonGlow.state.value && n > 0) {
+                    val pulse = rememberFocusPulse(true)
+                    val gw = iconSize * 2.4f
+                    val gh = iconSize + 34f
+                    val gx = mid + (cur - pos) * pitch + drag + bump.value
+                    Canvas(Modifier.atScreen(gx - gw / 2f, 8f + (iconSize + 6f) / 2f - gh / 2f, gw, gh)) {
+                        val a = (0.2f + 0.2f * pulse) * (1f + 0.6f * launch)
+                        val r = size.width / 2f
+                        scale(1f, size.height / size.width, pivot = center) {
+                            drawCircle(
+                                androidx.compose.ui.graphics.Brush.radialGradient(
+                                    0f to accent.copy(alpha = a.coerceAtMost(1f)), 0.45f to accent.copy(alpha = (a * 0.4f).coerceAtMost(1f)),
+                                    1f to Color.Transparent, center = center, radius = r
+                                ),
+                                radius = r, center = center
+                            )
+                        }
+                    }
+                }
                 val shown = ((width / pitch) / 2f).toInt() + 2
                 val from = (pos.roundToInt() - shown).coerceAtLeast(0)
                 val to = (pos.roundToInt() + shown).coerceAtMost(n - 1)

@@ -161,7 +161,7 @@ internal fun pocketStepsTo(c: StyleCtx, target: Int): Int {
 private fun PocketClassicTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     val accent = pocketAccent(runCatching { PocketAccent.valueOf(Features.classicAccent.state.value) }.getOrDefault(PocketAccent.BLUE))
     val font = pocketFont()
-    val ticking = !HomeIdle.idle
+    val ticking = !HomeIdle.calm
     val time = rememberTwinTime(seconds = ticking)
     val tz = remember { java.util.TimeZone.getDefault() }
     val calendarOn = Features.classicCalendar.state.value
@@ -180,16 +180,62 @@ private fun PocketClassicTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             val clock = "%d/%d  %d:%02d".format(day.month, day.dayOfMonth, day.hour, day.minute)
             PocketText(this, clock, width - 24f - 90f, 2.5f, 90f, 10f, 8f, Color.White, font, TextAlign.End, screenX = true)
             Canvas(Modifier.atScreen(width - 18f, 3f, 14f, 7f)) { pocketBattery(uPx, battery.percent, Color.White) }
-            // The clock (left; in the middle without the calendar) and the calendar (right).
-            val clockX = if (calendarOn) 18f else 78f
-            if (analogue) {
-                Canvas(Modifier.at(clockX, 40f, 100f, 100f)) { pocketAnalogue(uPx, time.longValue, tz, ticking, accent) }
-            } else {
-                val t = "%d:%02d".format(day.hour, day.minute)
-                PocketText(this, t, clockX - 10f, 70f, 120f, 40f, 30f, InkC, font, TextAlign.Center)
-                if (ticking) PocketText(this, ":%02d".format(day.second), clockX - 10f, 102f, 120f, 12f, 9f, accent, font, TextAlign.Center)
+            // Update 187: browsing a page of games or categories, the top screen shows the one you're on instead.
+            if (Features.classicTopArt.state.value && PocketNav.page != PocketNav.Page.HOME) PocketTopBrowse(this, c, font)
+            else {
+                // The clock (left; in the middle without the calendar) and the calendar (right).
+                val clockX = if (calendarOn) 18f else 78f
+                if (analogue) {
+                    Canvas(Modifier.at(clockX, 40f, 100f, 100f)) { pocketAnalogue(uPx, time.longValue, tz, ticking, accent) }
+                } else {
+                    val t = "%d:%02d".format(day.hour, day.minute)
+                    PocketText(this, t, clockX - 10f, 70f, 120f, 40f, 30f, InkC, font, TextAlign.Center)
+                    if (ticking) PocketText(this, ":%02d".format(day.second), clockX - 10f, 102f, 120f, 12f, 9f, accent, font, TextAlign.Center)
+                }
+                if (calendarOn) PocketCalendar(this, time, tz, accent, font, 134f, 24f)
             }
-            if (calendarOn) PocketCalendar(this, time, tz, accent, font, 134f, 24f)
+        }
+    }
+}
+
+/**
+ * Update 187: the top screen while you browse a page of games (Pocket classic): the game you're on big — its screenshot
+ * (or backdrop) framed, its picture in the corner, its name, console and playtime under it; on All categories the
+ * category's console logo and name.
+ */
+@Composable
+private fun PocketTopBrowse(s: PocketScope, c: StyleCtx, font: androidx.compose.ui.text.font.FontFamily) {
+    val titles = LocalTitleOptions.current
+    val games = PocketNav.page == PocketNav.Page.GAMES
+    val n = if (games) c.games.size else c.stops.size
+    val cur = PocketNav.cursor.coerceIn(0, (n - 1).coerceAtLeast(0))
+    with(s) {
+        val uPx = d(1f).value * density
+        if (n == 0) PocketText(s, "There's nothing here.", 20f, 84f, 216f, 20f, 9f, MutedC, font, TextAlign.Center)
+        else if (games) {
+            val g = c.games[cur]
+            val shot = c.state.screenshots[g.stableKey]?.firstOrNull() ?: c.backdrop(g)
+            Box(Modifier.at(10f, 19f, 236f, 128f)) { Canvas(Modifier.fillMaxSize()) { drawRect(PaperC); pocketOutline(uPx, EdgeC) } }
+            Box(Modifier.at(12f, 21f, 232f, 124f)) {
+                if (shot != null) AsyncImage(shot, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                else Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))
+            }
+            // Its picture in the corner (not when the picture is the screenshot already).
+            if (Features.classicArt.state.value != Features.PocketArt.SHOT) {
+                Box(Modifier.at(16f, 89f, 52f, 52f)) { Canvas(Modifier.fillMaxSize()) { drawRect(PaperC); pocketOutline(uPx, EdgeC) } }
+                Box(Modifier.at(18f, 91f, 48f, 48f)) { PocketGameArt(c, g, Modifier.fillMaxSize()) }
+            }
+            PocketText(s, titles.display(g.name), 10f, 151f, 236f, 15f, 9f, InkC, font, TextAlign.Center)
+            PocketText(s, titles.console(g.platform) + " · " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), 10f, 167f, 236f, 11f, 6.5f, MutedC, font, TextAlign.Center)
+        } else {
+            val st = c.stops[cur]
+            val p = st.platform
+            Box(Modifier.at(48f, 28f, 160f, 100f), contentAlignment = Alignment.Center) {
+                if (p != null && !com.shelf.launcher.data.isCollectionKey(p)) PlatformLogo(p, st.label, Modifier.fillMaxSize(), tint = InkC, textColor = InkC, textSize = sp(12f))
+                else Icon(st.icon, null, tint = InkC, modifier = Modifier.fillMaxSize(0.6f))
+            }
+            PocketText(s, st.label, 10f, 140f, 236f, 16f, 10f, InkC, font, TextAlign.Center)
+            PocketText(s, if (cur == c.stop) "You're here · ${c.games.size} games" else "A: its games", 10f, 158f, 236f, 11f, 6.5f, MutedC, font, TextAlign.Center)
         }
     }
 }

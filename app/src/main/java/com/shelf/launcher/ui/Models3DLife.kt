@@ -82,7 +82,7 @@ internal fun Model3DLive(
     ModelColors.version.intValue
     val tint = Models3D.tintFor(id, platform, name?.let { gameDisplayName(it) })
     val moving = !LocalLiteEffects.current && rememberAnimationsEnabled() && rememberIsActive()
-    val turning = meta != null && focused && moving && Features.modelTurn.state.value && !HomeIdle.idle
+    val turning = meta != null && focused && moving && Features.modelTurn.state.value && !HomeIdle.calm
     val reflect = Features.modelReflect.state.value
     // The turn's clock (frames only while it turns), from the moment it started (so it starts from where it stands).
     val clock = MediaClock.rememberFrameTime(running = turning)

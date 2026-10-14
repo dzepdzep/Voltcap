@@ -38,7 +38,7 @@ import kotlinx.coroutines.withContext
 internal fun UserWallpaper(uri: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val kind = remember(uri) { WallpaperKind.of(context, uri) }
-    val active = rememberIsActive() && !LocalSceneCovered.current && !HomeIdle.deep
+    val active = rememberIsActive() && !LocalSceneCovered.current && !HomeIdle.still
     when (kind) {
         // Keyed on the file: the view and its player are made for one video, so a new pick gets a new one.
         WallpaperKind.VIDEO -> androidx.compose.runtime.key(uri) { WallpaperVideo(uri, active, modifier) }

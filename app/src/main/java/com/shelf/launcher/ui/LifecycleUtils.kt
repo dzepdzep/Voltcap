@@ -68,7 +68,12 @@ internal fun rememberIsInteractive(): Boolean {
 internal fun rememberIsActive(): Boolean {
     val resumed = rememberIsResumed()
     val interactive = rememberIsInteractive()
-    return resumed && interactive
+    // Update 187: and you're using Voltcap — not resting while a game or another app has the controller (a two-screen
+    // handheld keeps Voltcap resumed on the other screen; BatterySaver.away).
+    // (Only the home screen and its second screen rest: Voltcap's own other windows — the companion, the mixer — are
+    // what you're using then.)
+    val home = androidx.lifecycle.compose.LocalLifecycleOwner.current is com.shelf.launcher.MainActivity
+    return resumed && interactive && !(home && com.shelf.launcher.data.BatterySaver.away)
 }
 
 /** Like LaunchedEffect, but the block runs only while [rememberIsActive] and is cancelled the moment it stops. */

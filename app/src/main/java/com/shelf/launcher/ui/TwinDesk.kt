@@ -182,7 +182,7 @@ private fun TwinDeskTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     // background off — TwinScreens.fullTop): then no rounded sheet of its own.
     val full = !framed && TwinScreens.fullTop
     // The second hand moves once a second, only while the home screen isn't idle.
-    val ticking = !HomeIdle.idle
+    val ticking = !HomeIdle.calm
     val analogue = Features.twinClock.state.value == Features.TwinClock.ANALOGUE
     // Update 180: what the top shows is your choice (Layout options › Top screen shows): clock, calendar, the game's
     // picture, the game's name. One thing alone sits in the middle, bigger.

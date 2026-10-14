@@ -585,6 +585,8 @@ fun SettingsDialog(
                                 }
                                 "Device" -> Column {
                                     FoldGroup("This device", key = "dev_info", startOpen = true) { DeviceInfoContent(paneScroll) }
+                                    // Update 187.
+                                    FoldGroup("Battery saver", summary = "Voltcap rests at low battery and while you play", key = "dev_saver") { Column { BatterySaverSettings() } }
                                     FoldGroup("Battery watcher", summary = "How much battery Voltcap uses, and what to change", key = "dev_battery") { BatteryWatchCard() }
                                     FoldGroup("Works on this device", summary = "Which effects and features this handheld can run", key = "dev_compat") { DeviceCompatCard() }
                                     FoldGroup("Sleep mode", summary = "Wi-Fi / Bluetooth off while the screen is off", key = "dev_sleep") { SleepModeCard() }
@@ -5286,6 +5288,12 @@ private fun CarouselTiltChoices() {
             else -> "${v.label}: every carousel (Voltcap row, Tiles, Grid, Side menu, TV room)."
         } + " Hero has its own carousel (Hero carousel options)."
     )
+    // Update 187: Box flow's box you're on sways as it moves.
+    if (v == com.shelf.launcher.ui.CarouselView.BOX_FLOW) SwitchRow(
+        Icons.Filled.ViewInAr, "Box sways as you move",
+        "The box you're on leans a little into each move and settles facing you when you stop.",
+        f.boxFlowTilt.state.value, { f.boxFlowTilt.value = it }
+    )
     if (v == com.shelf.launcher.ui.CarouselView.TUCKED || v == com.shelf.launcher.ui.CarouselView.FLIP || v == com.shelf.launcher.ui.CarouselView.FLAT || v == com.shelf.launcher.ui.CarouselView.POP) {
         val sp = f.spineLook.state.value
         ChipFlow { Chip((if (sp) "✓ " else "") + "Spines aside", accent = sp) { f.spineLook.value = !sp } }
@@ -5306,6 +5314,12 @@ private fun CarouselTiltChoices() {
     SwitchRow(
         Icons.Filled.ViewInAr, "Dark stage", "The carousel stands on a dark floor that fades into black, the background dimmed around it.",
         f.carouselStage.state.value, { f.carouselStage.value = it }
+    )
+    // Update 187.
+    if (f.carouselStage.state.value) SwitchRow(
+        Icons.Filled.ViewInAr, "Stage in the game's colours",
+        "The stage's light and floor take the colours of the cover you're on, gliding to the next game's. Off: your colour.",
+        f.carouselStageGameColor.state.value, { f.carouselStageGameColor.value = it }
     )
     // Update 134: real 3D cases in any view.
     SwitchRow(

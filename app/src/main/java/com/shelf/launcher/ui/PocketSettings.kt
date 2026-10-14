@@ -41,6 +41,9 @@ internal fun PocketClassicSettings() {
     SwitchRow(Icons.Filled.CalendarMonth, "Calendar", "This month beside the clock. Off: the clock in the middle.", Features.classicCalendar.state.value, { Features.classicCalendar.value = it })
     SwitchRow(Icons.Filled.GridView, "Small icons along the bottom", "Settings, Statistics and Sleep.", Features.classicToolbar.state.value, { Features.classicToolbar.value = it })
     StyleChoice("Game picture", Features.PocketArt.values(), Features.classicArt.state.value, { it.label }) { Features.classicArt.value = it }
+    // Update 187.
+    SwitchRow(Icons.Filled.Slideshow, "Game on the top screen while browsing", "On a page of games: the one you're on, big, with its name and playtime; on All categories: the category. Off: the clock stays.",
+        Features.classicTopArt.state.value, { Features.classicTopArt.value = it })
     PocketCommonSettings()
 }
 
@@ -66,6 +69,7 @@ internal fun PocketRibbonSettings() {
     }
     SwitchRow(Icons.Filled.Slideshow, "Slideshow", "Screenshots change every 5 seconds (Screenshots slideshow).", Features.ribbonSlides.state.value, { Features.ribbonSlides.value = it })
     SwitchRow(Icons.Filled.Info, "Status line", "Volume, your name, the date, time and battery along the top.", Features.ribbonStatus.state.value, { Features.ribbonStatus.value = it })
+    SwitchRow(Icons.Filled.Slideshow, "Glow", "A soft light round the icon you're on.", Features.ribbonGlow.state.value, { Features.ribbonGlow.value = it }) // (Update 187)
     SwitchRow(Icons.Filled.Label, "Console under the name", "The speech bubble shows the console (or the number of games) under the name.", Features.ribbonNames.state.value, { Features.ribbonNames.value = it })
     SwitchRow(Icons.Filled.GridView, "Open on the categories", "Off: on the games of the category you're in.", Features.ribbonStartOnCategories.state.value, { Features.ribbonStartOnCategories.value = it })
     StyleChoice("Icon size", arrayOf(32, 38, 44, 50, 56), Features.ribbonIcon.state.value, { "$it" }) { Features.ribbonIcon.value = it }

@@ -34,6 +34,11 @@ object HomeIdle {
     var deep by mutableStateOf(false)
         private set
 
+    /** Update 187: as still as when deeply idle — or the battery saver's low-battery rest (BatterySaver.low). */
+    val still: Boolean get() = deep || com.shelf.launcher.data.BatterySaver.low
+    /** Update 187: as calm as when idle — or the battery saver's low-battery rest. */
+    val calm: Boolean get() = idle || com.shelf.launcher.data.BatterySaver.low
+
     @Volatile private var lastInput = SystemClock.elapsedRealtime()
     /** When the last input came (elapsedRealtime). */
     val lastInputAt: Long get() = lastInput
@@ -136,9 +141,9 @@ object EffectClock {
 @Composable
 internal fun EffectClockDriver() {
     val active = rememberIsActive() && rememberAnimationsEnabled()
-    val on = active && !HomeIdle.idle
+    val on = active && !HomeIdle.calm
     // Update 144: the shimmer's clock (see EffectClock.shimmer), slower while idle (~12 a second instead of ~24).
-    val shimmerOn = active && !HomeIdle.deep
+    val shimmerOn = active && !HomeIdle.still
     val idleNow = HomeIdle.idle
     LaunchedEffect(shimmerOn, idleNow) {
         if (!shimmerOn) return@LaunchedEffect
@@ -168,7 +173,7 @@ internal fun EffectClockDriver() {
 @Composable
 internal fun rememberFocusPulse(animate: Boolean): Float {
     var pulse by remember { mutableFloatStateOf(0.75f) }
-    val on = animate && rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.idle
+    val on = animate && rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.calm
     LaunchedEffect(on) {
         if (!on) { pulse = 0.75f; return@LaunchedEffect }
         val start = SystemClock.uptimeMillis()

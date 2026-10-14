@@ -199,6 +199,7 @@ fun SecondScreenHost(
                                         while (true) {
                                             awaitPointerEvent(PointerEventPass.Initial)
                                             SecondIdle.poke()
+                                            com.shelf.launcher.data.BatterySaver.poke() // (Update 187: a touch here wakes a resting Voltcap)
                                             currentActivity()
                                         }
                                     }
@@ -212,6 +213,8 @@ fun SecondScreenHost(
                                 androidx.compose.runtime.CompositionLocalProvider(
                                     LocalSceneQuality provides secondScreenQuality(LocalSceneQuality.current),
                                     LocalSceneMinFrameMs provides (if (slow) 66 else 0),
+                                    // Update 187: the battery saver's low-battery rest holds the scene here too.
+                                    LocalSceneCovered provides (LocalSceneCovered.current || com.shelf.launcher.data.BatterySaver.low),
                                     LocalOnSecondScreen provides true // Update 177: the controller can come here (SecondPad.kt)
                                 ) {
                                     currentContent()

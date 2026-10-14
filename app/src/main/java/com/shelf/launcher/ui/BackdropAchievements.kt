@@ -52,7 +52,7 @@ internal fun BackdropAchievementsLayer(
     val on = Features.backdropAchievements.state.value
     if (on.isEmpty()) return
     val zone = safeZone()
-    val active = !covered && rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.deep
+    val active = !covered && rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.still
     val time = remember { mutableFloatStateOf(0f) }
     LaunchedEffect(active) {
         if (!active) return@LaunchedEffect

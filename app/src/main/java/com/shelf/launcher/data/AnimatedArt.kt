@@ -69,7 +69,9 @@ object AnimatedArt {
     private val main by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
     @Volatile private var moving = false
     @Volatile private var sleeping = false
-    private val resume = Runnable { moving = false; if (!sleeping) restartHeld() }
+    /** Update 187: the battery saver's rest (BatterySaver): held still, like sleeping, but set apart from the idle timer. */
+    @Volatile private var resting = false
+    private val resume = Runnable { moving = false; if (!sleeping && !resting) restartHeld() }
 
     private fun register(g: Gate) { synchronized(live) { live += g } }
     private fun gates(): List<Gate> = synchronized(live) { live.toList() }
@@ -88,7 +90,17 @@ object AnimatedArt {
         main.post {
             if (sleeping == sleep) return@post
             sleeping = sleep
-            if (sleep) pauseAll() else if (!moving) restartHeld()
+            if (sleep) pauseAll() else if (!moving && !resting) restartHeld()
+        }
+    }
+
+    /** Update 187: the battery saver resting (true) or not (BatterySaver.sync). */
+    fun setResting(rest: Boolean) {
+        if (Build.VERSION.SDK_INT < 28) return
+        main.post {
+            if (resting == rest) return@post
+            resting = rest
+            if (rest) pauseAll() else if (!moving && !sleeping) restartHeld()
         }
     }
 
@@ -111,7 +123,7 @@ object AnimatedArt {
     ) : android.graphics.drawable.DrawableWrapper(inner), android.graphics.drawable.Animatable {
         private var wanted = false
 
-        private fun may(): Boolean = wanted && !moving && !sleeping &&
+        private fun may(): Boolean = wanted && !moving && !sleeping && !resting &&
             (forced || !focusOnly || src == null || src in focusUrls)
 
         /** Start or stop the picture to match [may]. Main thread. */

@@ -916,6 +916,10 @@ object Features {
     val carouselReflect = BoolPref("carousel_reflect", false)
     /** Update 147: the carousel on a dark floor fading into black (on with the 3D case views). */
     val carouselStage = BoolPref("carousel_stage", false)
+    /** Update 187: the dark stage tinted by the colours of the game you're on (off: your colour). */
+    val carouselStageGameColor = BoolPref("carousel_stage_game_color", true)
+    /** Update 187: Box flow — the box you're on sways a little as the carousel moves. */
+    val boxFlowTilt = BoolPref("box_flow_tilt", true)
     /** Update 148: animated covers move only on the game you're on (the others show their first frame). Off: every game.
      *  Update 181: on by default (a new key, so it starts on for everyone once), and followed by every layout (AnimatedArt.Gate). */
     val animatedFocusOnly = BoolPref("animated_focus_only2", true)
@@ -1037,12 +1041,16 @@ object Features {
     val classicCalendar = BoolPref("classic_calendar", true)
     val classicToolbar = BoolPref("classic_toolbar", true)
     val classicArt = EnumPref("classic_art", PocketArt.COVER, PocketArt.values())
+    /** Update 187: while you browse a page of games or categories, the top screen shows it instead of the clock. */
+    val classicTopArt = BoolPref("classic_top_art", true)
     // Pocket ribbon.
     val ribbonAccent = StringPref("ribbon_accent", "SKY")
     val ribbonTop = EnumPref("ribbon_top", RibbonTop.GAME, RibbonTop.values())
     val ribbonStatus = BoolPref("ribbon_status", true)
     val ribbonSlides = BoolPref("ribbon_slides", true)
     val ribbonNames = BoolPref("ribbon_names", true)
+    /** Update 187: a soft glow round the icon you're on. */
+    val ribbonGlow = BoolPref("ribbon_glow", true)
     /** Icon size (dots, 24–40) and the gap between icons (dots). */
     /** (Update 182: bigger by default, up to 56.) */
     val ribbonIcon = IntPref("ribbon_icon2", 44, 24..56)
@@ -1124,6 +1132,14 @@ object Features {
     val namesByLayout = StringPref("names_by_layout", "")
     /** Battery watcher: Voltcap measures its own share of the battery use (a light check once a minute). */
     val batteryWatch = BoolPref("battery_watch_on", true)
+    /** Update 187: the battery saver (BatterySaver): when the low-battery rest is on (when low / always / off). */
+    val saverMode = EnumPref("saver_mode", BatterySaver.Mode.AUTO, BatterySaver.Mode.values())
+    /** Update 187: below this level (%), not plugged in, the low-battery rest starts. */
+    val saverLowAt = IntPref("saver_low_at", 20, 5..50)
+    /** Update 187: Android's own Battery Saver on counts as low battery too. */
+    val saverFollowSystem = BoolPref("saver_follow_system", true)
+    /** Update 187: Voltcap rests while a game or another app has the controller (two-screen handhelds). */
+    val saverAway = BoolPref("saver_away", true)
     /** Ask "Who is playing?" at start-up when two RetroAchievements accounts are saved. */
     val whoPlays = BoolPref("who_plays", false)
     val dashStatus = BoolPref("dash_status", true)

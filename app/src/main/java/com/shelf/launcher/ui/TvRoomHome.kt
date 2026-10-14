@@ -404,7 +404,7 @@ private fun RetroTv(
     }
     val accent = ShelfTheme.accent
     // The tube's life: a faint flicker and a slow rolling bar (still with Lite effects / animations off).
-    val crtLive = !LocalLiteEffects.current && rememberAnimationsEnabled() && active && !HomeIdle.idle
+    val crtLive = !LocalLiteEffects.current && rememberAnimationsEnabled() && active && !HomeIdle.calm
     val crt = androidx.compose.animation.core.rememberInfiniteTransition(label = "crt")
     val flicker by if (crtLive) crt.animateFloat(
         0.86f, 1f,

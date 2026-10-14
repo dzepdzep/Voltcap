@@ -292,7 +292,7 @@ internal fun gameKeys(games: List<com.shelf.launcher.data.Game>): List<String> {
 /** The grid's "Raise & gentle spin": the game you're on turns slowly a few degrees left and right (still with Lite effects). */
 @Composable
 private fun gridSpin(): androidx.compose.runtime.State<Float>? {
-    val still = LocalLiteEffects.current || HomeIdle.idle
+    val still = LocalLiteEffects.current || HomeIdle.calm
     val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "gridSpin")
     val a = t.animateFloat(
         -9f, 9f,

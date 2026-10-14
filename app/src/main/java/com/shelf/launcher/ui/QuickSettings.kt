@@ -96,6 +96,7 @@ import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.BatterySaver
 import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Apps
@@ -246,6 +247,7 @@ fun QuickSettingsCard(
     }
     var showBattery by remember { mutableStateOf(false) }
     var showBatteryWatch by remember { mutableStateOf(false) }
+    var showSaver by remember { mutableStateOf(false) } // (Update 187)
     var showProfile by remember { mutableStateOf(false) }
     // The game's power profile, short ("Own · Balanced"): a prefs read, off the main thread.
     val profileLabel by produceState<String?>(null, home?.gameKey, refresh, sync, showProfile) {
@@ -788,6 +790,20 @@ fun QuickSettingsCard(
         }
         // How much battery Voltcap itself uses, and what to change (Settings › Device › Battery watcher).
         add(R1Tile("batterywatch", Icons.Filled.BatteryAlert, "Battery\nwatcher", com.shelf.launcher.data.Features.batteryWatch.state.value) { showBatteryWatch = true })
+        // Update 187: the battery saver — a tap steps through when it saves (battery low → always → off); hold: its settings.
+        run {
+            val mode = com.shelf.launcher.data.Features.saverMode.state.value
+            val short = when (mode) {
+                com.shelf.launcher.data.BatterySaver.Mode.AUTO -> if (com.shelf.launcher.data.BatterySaver.low) "Saving now" else "When low"
+                com.shelf.launcher.data.BatterySaver.Mode.ALWAYS -> "Always"
+                com.shelf.launcher.data.BatterySaver.Mode.OFF -> "Off"
+            }
+            add(R1Tile("saver", Icons.Filled.BatterySaver, "Battery saver\n$short", mode != com.shelf.launcher.data.BatterySaver.Mode.OFF,
+                longAction = { showSaver = true }) {
+                val modes = com.shelf.launcher.data.BatterySaver.Mode.values()
+                com.shelf.launcher.data.Features.saverMode.value = modes[(mode.ordinal + 1) % modes.size]
+            })
+        }
         deviceTiles.forEach { (control, st) ->
             add(R1Tile("dev_" + control.name, deviceIcon(control), deviceLabel(control, st.value), st.on) {
                 scope.launch {
@@ -1115,6 +1131,7 @@ fun QuickSettingsCard(
     }
     if (showLayoutList && home != null) LayoutListPopup(home, onDismiss = { showLayoutList = false }, undoable = undoable)
     if (showBatteryWatch) BatteryWatchPopup(onDismiss = { showBatteryWatch = false })
+    if (showSaver) BatterySaverPopup(onDismiss = { showSaver = false })
     if (showBattery) BatteryChargePopup(onDismiss = { showBattery = false; refresh++ })
     if (showProfile && home != null) GameProfilePopup(home, onDismiss = { showProfile = false })
     if (showLights) {

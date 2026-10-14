@@ -264,6 +264,7 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         com.shelf.launcher.ui.HomeIdle.poke()
         com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
+        com.shelf.launcher.data.BatterySaver.poke() // (Update 187)
         // Update 152: moving through games: animated covers hold still for a moment (AnimatedArt.onMove).
         if (event.action == android.view.KeyEvent.ACTION_DOWN && when (event.keyCode) {
                 android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
@@ -280,6 +281,7 @@ class MainActivity : ComponentActivity() {
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
         com.shelf.launcher.ui.HomeIdle.poke()
         com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
+        com.shelf.launcher.data.BatterySaver.poke() // (Update 187)
         if (ev.actionMasked == android.view.MotionEvent.ACTION_MOVE) com.shelf.launcher.data.AnimatedArt.onMove() // (Update 152)
         return super.dispatchTouchEvent(ev)
     }
@@ -331,6 +333,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        // Update 187: behind another app Voltcap rests anyway; the battery saver's "away" starts over when it's back.
+        com.shelf.launcher.data.BatterySaver.onStop()
         // …and give it back once Voltcap has left the front (a game, another app, screen off).
         com.shelf.launcher.data.GestureHint.onBackground(applicationContext)
         com.shelf.launcher.data.SyncNotifier.appInForeground = false
@@ -341,6 +345,15 @@ class MainActivity : ComponentActivity() {
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         com.shelf.launcher.device.MemoryBudget.release(this, level)
+    }
+
+    /**
+     * Update 187: which app has the controller. On a two-screen handheld a game on the other screen can have it while
+     * Voltcap stays resumed and drawing here; the battery saver then lets Voltcap rest (BatterySaver.away).
+     */
+    override fun onTopResumedActivityChanged(isTopResumedActivity: Boolean) {
+        super.onTopResumedActivityChanged(isTopResumedActivity)
+        com.shelf.launcher.data.BatterySaver.onFront(isTopResumedActivity)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

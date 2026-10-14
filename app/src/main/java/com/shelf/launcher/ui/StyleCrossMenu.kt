@@ -147,7 +147,7 @@ internal fun CrossBackdrop() {
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(top.copy(alpha = 0.92f), bottom.copy(alpha = 0.88f)))))
     }
     if (!Features.crossWaves.state.value) return
-    val still = LocalLiteEffects.current || HomeIdle.idle
+    val still = LocalLiteEffects.current || HomeIdle.calm
     // The phase is read while drawing (not here), so the waves repaint each frame without recomposing the screen.
     val phaseState: androidx.compose.runtime.State<Float> = if (still) androidx.compose.runtime.rememberUpdatedState(0.3f) else {
         val t = rememberInfiniteTransition(label = "crossWaves")

@@ -32,7 +32,7 @@ import com.shelf.launcher.ui.theme.ShelfColors
 @Composable
 internal fun LobbyScene(colors: ShelfColors, modifier: Modifier = Modifier) {
     val liteStill = LocalLiteEffects.current && !LocalAnimateOnLite.current
-    val active = rememberIsActive() && rememberAnimationsEnabled() && !liteStill && !LocalSceneCovered.current && !HomeIdle.idle
+    val active = rememberIsActive() && rememberAnimationsEnabled() && !liteStill && !LocalSceneCovered.current && !HomeIdle.calm
     val time = remember { mutableFloatStateOf(0f) }
     val tuning = LocalSceneTuning.current
     SceneClock(active, time, maxOf(idleFrameMs(), 50), tuning.speed)

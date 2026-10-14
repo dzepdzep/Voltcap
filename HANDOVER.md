@@ -256,6 +256,31 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 187
+- **BatterySaver** (data/BatterySaver.kt): `low` (mode AUTO: not plugged and level ≤ `saverLowAt`, or `systemSaver` with
+  `saverFollowSystem`; ALWAYS; OFF), `away` (`saverAway` && `notInFront`), `resting` = either.
+  - `notInFront`: `MainActivity.onTopResumedActivityChanged(false)` → `onFront(false)` → set after 3 s; true → cleared at
+    once. `poke()` (MainActivity key/touch, the Presentation's pointer watcher) clears it and, while not top, re-arms 20 s.
+    `onStop` resets it.
+  - Level/plug come from `BatterySaverDriver()` (ui/BatterySaverUi.kt, in LauncherScreen's AmbientEffects; its own
+    ACTION_BATTERY_CHANGED receiver while resumed); `ensure()` registers ACTION_POWER_SAVE_MODE_CHANGED once.
+  - `sync()` → `AnimatedArt.setResting` (a separate `resting` flag in `Gate.may()`).
+- **Where it bites:**
+  - `rememberIsActive()` is false while `away`, only when `LocalLifecycleOwner` is MainActivity (home + its
+    Presentation; the companion / mixer activities are unaffected).
+  - `low`: `LocalSceneCovered` (LauncherScreen's scene provider and SecondScreen) → still frame (music visualizer keeps
+    running while music plays); `HomeIdle.still` (= deep || low) and `HomeIdle.calm` (= idle || low) replace the old
+    `!HomeIdle.deep` / `!HomeIdle.idle` checks in the effect files; video previews' LaunchedEffect keyed on `resting`.
+- **Intro:** prefs "battery_saver" `intro_seen`; `BatterySaverIntroDialog` 7 s after start when no other dialog,
+  What's new or permissions prompt is up. "Settings" jumps to Device › `dev_saver`.
+- **Prefs:** `saver_mode`, `saver_low_at` (20), `saver_follow_system`, `saver_away`, `carousel_stage_game_color`,
+  `box_flow_tilt`, `ribbon_glow`, `classic_top_art` (all default on / 20).
+- **Carousel:** the stage accent = `rememberArtPalette(focused cover).accent`, animated 700 ms. Box flow sway:
+  `Carousel.speedOf` (= glide velocity, set by SideEffect) → `flowSway(near)` added to the middle box's turnY (±10°).
+- **Pocket:** ribbon glow canvas under the icons (`rememberFocusPulse`); classic's `PocketTopBrowse` replaces the
+  clock/calendar while `PocketNav.page != HOME`.
+- Not yet tried on a device.
+
 ## State after update 186
 - **ScanCase:** shape is `CoverAspects.rawOf(scan)` (noted in its `onSuccess`, minus the PS1 band), clamped to
   0.75–1.33× the template's.

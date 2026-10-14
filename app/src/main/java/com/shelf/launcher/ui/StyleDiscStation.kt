@@ -281,7 +281,7 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
 /** The game's disc, [d] across, turning slowly while it sits in the tray (Disc station › Spin the loaded disc). */
 @Composable
 private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
-    val spin = Features.discSpin.state.value && !HomeIdle.deep
+    val spin = Features.discSpin.state.value && !HomeIdle.still
     val angle = if (spin) {
         val t = rememberInfiniteTransition(label = "discSpin")
         t.animateFloat(0f, 360f, infiniteRepeatable(tween(14_000, easing = LinearEasing), RepeatMode.Restart), label = "discAngle")
