@@ -4,6 +4,27 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (194): page arrows on the second screen, the PlayStation cover whole in its case
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (3): `src_copy\ui\Case3D.kt`,
+`src_copy\ui\SecondScreenHome.kt`, `src_copy\ui\SecondShowcase.kt`.
+
+**Files to delete:** none.
+
+### Second screen, "Game art" look
+- Arrows next to the page's name at the top step back and on through the pages; swiping still works too. With the
+  game window open, they leave it as swiping does.
+
+### PlayStation cover (seen on the Thor: Donald Duck Goin' Quackers)
+- The cover was still cut on its right ("Ubi" for Ubisoft). Before going into the jewel case, it was cut to the
+  PlayStation template's narrower shape.
+- Now a front scan or booklet (about square) goes into the case whole, at the booklet's real place. Only art of
+  another shape (a tall poster-like cover) gets the template's band.
+
+---
+
 ## Update — 14 Oct 2026 (193): Voltcap shortcuts in the second screen's dock, cases with real opening edges
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

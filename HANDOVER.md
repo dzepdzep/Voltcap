@@ -256,6 +256,12 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 194
+- **`ShowcaseTopBar(onStep)`:** a pill with ‹ › (padTarget sc-prev / sc-next). SecondScreenHome passes `latestStep`
+  when there is more than one page or the game window is open.
+- **Case3D JEWEL face:** an art aspect of 0.86–1.16 goes to `jewelFront(f)` directly; other aspects use the
+  template-framed `made`. The PS1 template (0.894) used to crop square scans.
+
 ## State after update 193
 - **ui/SecondDockShortcuts.kt:**
   - `entries` (id → name), `page(id)` (ACHIEVEMENTS / MUSIC / LIBRARY / MAGNIFIER), `game(id)`, `all()`;

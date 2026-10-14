@@ -406,7 +406,8 @@ fun SecondScreenHome(
                 }
                 ShowcaseTopBar(
                     avatarUrl, raPoints, if (gameOpen) "Game" else page.label, onPageTap = { latestStep(1) }, endInset = headerEndInset,
-                    modifier = Modifier.align(Alignment.TopStart)
+                    modifier = Modifier.align(Alignment.TopStart),
+                    onStep = if (visiblePages.size > 1 || gameOpen) { d -> latestStep(d) } else null
                 )
                 Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (!gameOpen) ShowcaseDots(visiblePages.size, pageIndex, Modifier.padding(bottom = 7.dp))

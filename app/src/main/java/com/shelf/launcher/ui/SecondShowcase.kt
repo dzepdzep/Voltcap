@@ -39,6 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -170,7 +172,9 @@ private fun Pill(modifier: Modifier = Modifier, content: @Composable androidx.co
  */
 @Composable
 internal fun ShowcaseTopBar(
-    avatarUrl: String?, points: Int?, pageLabel: String, onPageTap: () -> Unit, endInset: Dp, modifier: Modifier = Modifier
+    avatarUrl: String?, points: Int?, pageLabel: String, onPageTap: () -> Unit, endInset: Dp, modifier: Modifier = Modifier,
+    /** Update 193: the arrows beside the page's name (−1 back, +1 on); null: none (one page). */
+    onStep: ((Int) -> Unit)? = null
 ) {
     val battery = rememberBatteryInfo()
     val context = LocalContext.current
@@ -193,6 +197,25 @@ internal fun ShowcaseTopBar(
             Spacer(Modifier.width(8.dp))
             Text(pageLabel, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             Spacer(Modifier.width(6.dp))
+        }
+        // Update 193: arrows to step through the pages (swiping still works too).
+        if (onStep != null) {
+            Spacer(Modifier.width(6.dp))
+            Pill {
+                for (dir in intArrayOf(-1, 1)) {
+                    Box(
+                        Modifier.size(30.dp).padTarget(rememberPadId(if (dir < 0) "sc-prev" else "sc-next")) { onStep(dir) }
+                            .clip(CircleShape).tapOnly { onStep(dir) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (dir < 0) androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowLeft
+                            else androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            if (dir < 0) "Previous page" else "Next page", tint = Color.White, modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            }
         }
         Spacer(Modifier.weight(1f))
         Pill {
