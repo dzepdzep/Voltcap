@@ -4,6 +4,75 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (199): fixes from the look-by-look check
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (6): `src_copy\ui\Carousel.kt`,
+`src_copy\ui\Case3D.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\MediaInspectView.kt`,
+`src_copy\ui\StyleConsoleStack.kt`, `src_copy\ui\StyleDiscStation.kt`.
+
+**Files to delete:** none.
+
+What the check of every layout and look (3D on and off) on the AYN Thor found, and what changed:
+
+### Tapping a cartridge, disc or 3D piece
+- **Before:** in the game window, a tap on a cartridge, a loose disc or a 3D piece did nothing (only cases open).
+- **Now** it turns once round to show every side. A 3D piece swings to one side, then the other, and back. Clicking
+  the right stick does the same. A drag or the stick stops it.
+
+### PlayStation (jewel case) fronts that aren't a cover scan
+- **Before:** in the Covers look, a tall poster stood small in a dark square on the case.
+- **Now** art that's far from square (a tall poster, a wide banner) fills the booklet, trimmed in the middle.
+- A real cover or booklet scan (about square), or a scan of the whole case, still shows whole.
+
+### Game window
+- **Hint under tall cases:** "Tap the case (or click the right stick) to open it" ran off the bottom of the screen
+  under tall cases (GameCube). The case now leaves room for it.
+- **Name over the picture:** the name stopped running under the disc or cartridge drawn in the picture's corner. This
+  showed in the Wide capsules, Hero art, Screenshots, Tile and Spines looks.
+- **Cross menu:** the window's last choice (Back) was cut off under a long name. The column now scrolls.
+- **Game shelf:** the button "Read the back" didn't fit and is now "Turn over".
+
+### Layouts
+- **Disc station:** the story now shows as many whole lines as fit. The category and count line under the buttons is
+  no longer cut in half.
+- **Voltcap row (Wide capsules, Hero art, Screenshots):** the game you're on is bigger, not a thin strip.
+- **Console stack:** a stop's name now shrinks to fit or takes two lines ("Continue playing" was cut to "Continue pla…").
+
+---
+
+## Update — 14 Oct 2026 (198): cases that open on the second screen, the stick turns the disc that's out, case and disc side by side
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (6): `src_copy\data\Features.kt`,
+`src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\SecondScreenDetails.kt`,
+`src_copy\ui\SecondScreenHome.kt`, `src_copy\ui\SettingsDialog.kt`.
+
+**Files to delete:** none.
+
+### The second screen's Details page
+- **Before:** a tap there only flipped a flat case to its cartridge, and did nothing for games without a drawn
+  cartridge (an Android game).
+- **Now** it shows the game's case in 3D:
+  - tap it to open it: the lid swings, the case moves aside and its disc or cartridge comes out beside it;
+  - tap that to put it back;
+  - drag to turn either.
+- **Switch:** Settings › Game look › Covers, cases & discs › "Cases that open on the second screen" (on by default).
+
+### Right stick with the disc out
+- With a disc or cartridge out of its case, the stick turned the case behind it. It now turns what came out; let go
+  and it turns back to face you.
+
+### Case and disc side by side
+- **Layout:** when a case opens, the case now goes to the left and its disc or cartridge to the right, no longer over
+  it.
+- **New switch:** Settings › Game look › Covers, cases & discs › "Open cases side by side" (off by default). A case
+  then opens by itself once it's out, in the game window and on the second screen's Details page.
+
+---
+
 ## Update — 14 Oct 2026 (197): the PlayStation front scan as the case's front, your 3D pieces in the shell picker, the Virtual Boy dust cap
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

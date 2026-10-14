@@ -1107,7 +1107,9 @@ private fun carouselSlotH(
     aspect: Float, bigW: androidx.compose.ui.unit.Dp, bigH: androidx.compose.ui.unit.Dp, mixed: Boolean
 ): androidx.compose.ui.unit.Dp =
     if (mixed) minOf(bigH * kotlin.math.sqrt(0.72f / aspect.coerceAtLeast(0.05f)), bigH, bigW * 1.5f / aspect.coerceAtLeast(0.05f))
-    else minOf(bigH, if (aspect > 1f) bigW / aspect * 1.25f else bigH)
+    // (Update 199: a wide capsule, hero art or screenshot a good deal wider than a case, so it isn't a thin strip — the
+    // row spaces its neighbours by the one you're on's width.)
+    else minOf(bigH, if (aspect > 1f) bigW / aspect * (if (aspect >= 1.6f) 1.7f else 1.25f) else bigH)
 
 /** Update 162: one carousel game's own scratch places (filled while placing / drawing on the main thread, never made per frame). */
 private class CarouselScratch {

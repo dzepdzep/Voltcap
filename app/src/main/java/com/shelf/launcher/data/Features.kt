@@ -1026,6 +1026,10 @@ object Features {
     val cartShellChoices = StringPref("cart_shell_choices", "")
     /** Update 195: every cartridge console on its own drawn authentic shell (Settings › Game look). */
     val authenticCarts = BoolPref("authentic_carts", false)
+    /** Update 198: the second screen's Details page shows the game's case in 3D, opening on a tap (MediaInspectView.kt). */
+    val secondOpenCase = BoolPref("second_open_case", true)
+    /** Update 198: an opening case starts opened — the case aside, its disc / cartridge out next to it. */
+    val inspectOpenAtStart = BoolPref("inspect_open_at_start", false)
     /** Update 147, Disc station: the loaded disc turns slowly. */
     val discSpin = BoolPref("disc_spin", true)
     /** Update 147, Disc station: a few lines about the game under its name. */

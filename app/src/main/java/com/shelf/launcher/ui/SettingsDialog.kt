@@ -3710,6 +3710,21 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.authenticCarts.state.value,
             onChange = { com.shelf.launcher.data.Features.authenticCarts.value = it }
         )
+        // Update 198: opening cases.
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Open cases side by side",
+            subtitle = "On: a game's case opens by itself once it's out in the game window (and on the second screen's Details page): the case to the left, its disc or cartridge out next to it. Off (default): tap the case (or click the right stick) to open it.",
+            checked = com.shelf.launcher.data.Features.inspectOpenAtStart.state.value,
+            onChange = { com.shelf.launcher.data.Features.inspectOpenAtStart.value = it }
+        )
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Cases that open on the second screen",
+            subtitle = "On (default): the second screen's Details page shows the game's case in 3D — tap it to open it, its disc or cartridge comes out beside it, drag to turn either. Off: the flat case and its media, flipped with a tap, as before.",
+            checked = com.shelf.launcher.data.Features.secondOpenCase.state.value,
+            onChange = { com.shelf.launcher.data.Features.secondOpenCase.value = it }
+        )
         // Update 191: real cases per region (CaseCatalog.kt).
         Spacer(Modifier.height(8.dp))
         StyleChoice(

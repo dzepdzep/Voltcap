@@ -113,7 +113,9 @@ class SecondHomeGame(
     /** The game's scraped screenshots (the Art page's "Screenshots", with your own). */
     val shots: List<String> = emptyList(),
     /** Update 189: the game's logo (the "Game art" look's middle). */
-    val logoUrl: String? = null
+    val logoUrl: String? = null,
+    /** Update 198: the game's case to open on the Details page (Settings › Screens: off → null, the flat case as before). */
+    val inspect: Any? = null
 )
 
 /** Settings › Appearance › Second screen, as the home screen needs them. */

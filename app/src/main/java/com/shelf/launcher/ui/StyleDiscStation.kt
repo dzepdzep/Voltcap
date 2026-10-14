@@ -411,12 +411,19 @@ private fun DiscInfo(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier)
         val summary = if (Features.discAbout.state.value) c.state.metadata[g.stableKey]?.summary?.trim()?.takeIf { it.isNotEmpty() } else null
         if (summary != null) {
             Spacer(Modifier.height(if (compact) 6.dp else 12.dp))
-            Text(
-                summary, color = Color.White.copy(alpha = 0.82f), fontSize = if (compact) 10.sp else 12.sp,
-                lineHeight = if (compact) 13.sp else 16.sp, maxLines = if (compact) 4 else 7, overflow = TextOverflow.Ellipsis, style = ink
-            )
-        }
-        Spacer(Modifier.weight(1f))
+            // (Update 199: as many whole lines as the panel has room for — seven lines pushed the panel's last line, the
+            // category and count, off its foot, cut in half.)
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+                val lh = if (compact) 13.sp else 16.sp
+                val fits = with(androidx.compose.ui.platform.LocalDensity.current) { (maxHeight.toPx() / lh.toPx()).toInt() }
+                val lines = minOf(fits, if (compact) 4 else 7)
+                if (lines > 0) Text(
+                    summary, color = Color.White.copy(alpha = 0.82f), fontSize = if (compact) 10.sp else 12.sp,
+                    lineHeight = lh, maxLines = lines, overflow = TextOverflow.Ellipsis, style = ink
+                )
+            }
+            Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
+        } else Spacer(Modifier.weight(1f))
         // The buttons: ◀ Play ▶ and Details (▼ reaches them; ◀ ▶ between them).
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)) {
             val bar = StyleNav.bar

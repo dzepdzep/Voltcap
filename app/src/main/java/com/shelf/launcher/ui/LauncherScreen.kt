@@ -1736,7 +1736,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     labelUrl = key?.let { k -> state.physicalMedia[k].orEmpty().firstOrNull { it.first == "Disc label" }?.second },
                     box2dUrl = key?.let { k -> BoxTexture.front(state.physicalMedia[k], game?.platform) },
                     shots = key?.let { k -> state.screenshots[k] }.orEmpty(),
-                    logoUrl = key?.let { k -> state.artOverrides[k]?.logo ?: state.art[k]?.logoUrl }
+                    logoUrl = key?.let { k -> state.artOverrides[k]?.logo ?: state.art[k]?.logoUrl },
+                    // Update 198: the case that opens on the Details page.
+                    inspect = if (game != null && com.shelf.launcher.data.Features.secondOpenCase.state.value)
+                        remember(game.stableKey, state.physicalMedia[game.stableKey], state.art[game.stableKey], state.artOverrides[game.stableKey],
+                            com.shelf.launcher.data.Features.printedBacks.state.value) { runCatching { secondCasePiece(game, state) }.getOrNull() }
+                    else null
                 ),
                 // Update 189: the "Game art" look's top-left pill.
                 avatarUrl = profilePictureUrl(com.shelf.launcher.data.RaBadges.mediaUrl(state.raProfile?.UserPic)),

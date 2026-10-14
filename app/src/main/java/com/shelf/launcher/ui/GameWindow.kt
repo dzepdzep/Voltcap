@@ -356,7 +356,7 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
             ink = Color(0xFFFFF3E2), muted = Color(0xFFFFE2BE).copy(alpha = 0.75f), accent = Color(0xFFFFD08A),
             btnFill = Brush.verticalGradient(listOf(Color(0xFFB98757), Color(0xFF9C6D43))), btnInk = Color(0xFF2A1A0E),
             btnOnFill = Brush.verticalGradient(listOf(Color(0xFFF2D3A6), Color(0xFFD9AE76))), btnOnInk = Color(0xFF2A1A0E), btnBorder = Color(0xFF24150B),
-            back = "Put back", details = "Read the back", play = playWord,
+            back = "Put back", details = "Turn over", play = playWord,
             paper = Color(0xFF3A2516)
         )
         // Hero carousel: the picture fills the window, the name and big buttons over its foot.
@@ -624,9 +624,11 @@ internal fun GameWindow(
         } else Box(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
             // Update 189: a click of the right stick (which turns the piece) opens / closes its case.
             val pc = piece
-            if (pc != null && pc.kind == InspectKind.BOX && e.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_BUTTON_THUMBR) {
-                if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_UP)
-                    motion.toggleCase(inspectScope, true, pc.content != null)
+            if (pc != null && e.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_BUTTON_THUMBR) {
+                // (Update 199: a cartridge, disc or 3D piece turns once round instead.)
+                if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_UP) {
+                    if (pc.kind == InspectKind.BOX) motion.toggleCase(inspectScope, true, pc.content != null) else motion.spinOnce(inspectScope)
+                }
                 true
             } else false
         }) {
@@ -1065,7 +1067,12 @@ private fun WindowBody(
                         if (video != null) androidx.compose.runtime.key(video) { VideoBackdrop(video, state.appearance.videoSound, Modifier.fillMaxSize()) }
                         if (showName) {
                             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.72f)))))
-                            Column(Modifier.align(Alignment.BottomStart).padding(16.dp)) {
+                            // (Update 199: the name stops short of the disc / cartridge drawn in the picture's lower right.)
+                            val mediaHere = look.arrange != Arrange.SHOWCASE && !LocalWinInspect.current && extras.at(WinPart.MEDIA, WinSlot.PICTURE) &&
+                                mediaFor(g.platform, gameKey = g.stableKey) != null
+                            val mediaAspect = if (Features.gameWindowCase.state.value && discCaseFits(g.platform)) 1.35f else 1f
+                            val nameW = if (mediaHere) (0.97f - 0.46f * mediaAspect / 1.78f).coerceIn(0.4f, 1f) else 1f
+                            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth(nameW).padding(16.dp)) {
                                 WinText(look, name, Color.White, 22, FontWeight.Bold, shadow = true)
                                 if (sub.isNotBlank()) WinText(look, sub, Color.White.copy(alpha = 0.85f), 13, FontWeight.Normal, shadow = true)
                             }
@@ -1170,13 +1177,16 @@ private fun WindowBody(
         Arrange.LIST -> {
             val h = minOf(maxH, maxW * 0.5f).coerceAtLeast(160.dp)
             Row(panelMod.width(minOf(maxW, h * 2.2f)).height(h), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.width(220.dp).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
-                    WinText(look, name, look.ink, 20, FontWeight.Bold)
-                    if (sub.isNotBlank()) WinText(look, sub, look.muted, 12, FontWeight.Normal)
-                    if (!details) { Spacer(Modifier.height(4.dp)); WinInfo(look, g, state, extras, descLines = 0) }
-                    Spacer(Modifier.height(16.dp))
-                    Buttons(vertical = true)
-                    if (!details) WinBottomPart(look, g, state, cover, extras, null)
+                // (Update 199: the column scrolls when a long name and the facts leave no room for the last choice.)
+                Box(Modifier.width(240.dp).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
+                    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                        WinText(look, name, look.ink, 20, FontWeight.Bold)
+                        if (sub.isNotBlank()) WinText(look, sub, look.muted, 12, FontWeight.Normal)
+                        if (!details) { Spacer(Modifier.height(4.dp)); WinInfo(look, g, state, extras, descLines = 0) }
+                        Spacer(Modifier.height(if (h > 300.dp) 16.dp else 8.dp))
+                        Buttons(vertical = true)
+                        if (!details) WinBottomPart(look, g, state, cover, extras, null)
+                    }
                 }
                 Spacer(Modifier.width(18.dp))
                 Media(Modifier.weight(1f).fillMaxHeight(), showName = false)

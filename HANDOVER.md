@@ -256,6 +256,31 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 199
+- **`InspectMotion.spinOnce(scope)`:** a tap on a non-BOX piece in MediaInspectPiece runs the showcase turn once, from
+  facing you. GameWindow's R3 does the same for a non-BOX piece. Only after lift reaches 1; a nudge cancels it.
+- **MediaInspectPiece hint room:** a BOX with content keeps 40 dp under it (`roomH`).
+- **`jewelFront`:** art with aspect / window outside 0.8–1.25 is centre-cropped to the booklet window. Otherwise it is
+  fitted whole as before.
+- **GameWindow:**
+  - Media(showName): the name's width is limited to `0.97 − 0.46·mediaAspect/1.78` when WinGameMedia is on the picture.
+  - Arrange.LIST: the column is 240 dp and scrolls.
+  - SHELF details label: "Turn over".
+- **StyleDiscStation:** the summary sits in a BoxWithConstraints with weight 1; its line count comes from the height.
+- **Carousel `carouselSlotH`:** non-mixed aspect ≥ 1.6 uses a 1.7 multiplier (was 1.25). The unit spacing follows.
+- **StyleConsoleStack:** the stop label is a FitText (11→7 sp, 2 lines).
+
+## State after update 198
+- **`InspectStick`:** when `out > 0.5`, it uses `nudgeContent` / `releaseContent`.
+- **Side by side:** InspectContent cw = min(0.56w, 0.84h·aspect), centred at 0.72w. The case aside uses
+  `CASE_ASIDE_SHIFT` 0.25 and `CASE_ASIDE_SHRINK` 0.48.
+- **`secondCasePiece(g, state)`:** boxPiece plus the printed back and content. `OpenableCase(piece, modifier)` has its
+  own InspectMotion (started, lift 1): tap toggles, drag turns, InspectContent.
+- **`SecondHomeGame.inspect: Any?`:** an InspectPiece, built in LauncherScreen when `Features.secondOpenCase`.
+  CaseDetailsPage uses OpenableCase when it's set.
+- **`Features.inspectOpenAtStart`:** MediaInspectPiece toggles the case once lift reaches 1; OpenableCase does after
+  250 ms.
+
 ## State after update 197
 - **`isWholeCaseScan(f, caseAspect)`:** within 8 % of the case's aspect. A JEWEL face then uses f as it is, and
   CaseLook uses `withoutStrip()`.

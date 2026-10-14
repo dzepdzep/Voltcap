@@ -279,9 +279,10 @@ private fun ConsoleUnit(stop: StyleStop, lit: State<Float>, accent: Color, w: Dp
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(stop.icon, null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size((bodyH * 0.4f).coerceAtMost(22.dp)))
                         Spacer(Modifier.width(4.dp))
-                        Text(
-                            stop.label, color = Color.White.copy(alpha = 0.92f), fontSize = if (h < 50.dp) 9.sp else 11.sp,
-                            fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis
+                        // (Update 199: shrinks to fit, then two lines — "Continue playing" was cut to "Continue pla…".)
+                        FitText(
+                            stop.label, Color.White.copy(alpha = 0.92f), maxSize = if (h < 50.dp) 9.sp else 11.sp, minSize = 7.sp,
+                            maxLines = 2, modifier = Modifier.weight(1f, fill = false), fontWeight = FontWeight.SemiBold
                         )
                     }
                 }

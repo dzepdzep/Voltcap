@@ -78,7 +78,12 @@ internal fun CaseDetailsPage(info: SecondHomeGame, caseFirst: Boolean, modifier:
                 val tall = maxHeight > maxWidth * 0.9f
                 val mediaW = if (tall) maxWidth else (maxWidth * 0.42f)
                 val mediaH = if (tall) maxHeight * 0.46f else maxHeight
-                val media: @Composable () -> Unit = {
+                val inspect = info.inspect as? InspectPiece
+                val media: @Composable () -> Unit = if (inspect != null) { {
+                    // Update 198: the case in 3D: a tap opens it, its disc / cartridge comes out beside it.
+                    OpenableCase(inspect, Modifier.width(mediaW).height(mediaH))
+                } } else {
+                    {
                     Box(
                         Modifier.width(mediaW).height(mediaH)
                             .then(if (canFlip) Modifier.pointerInput(game.stableKey) {
@@ -116,6 +121,7 @@ internal fun CaseDetailsPage(info: SecondHomeGame, caseFirst: Boolean, modifier:
                                 info.coverUrl?.let { AsyncImage(it, game.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize()) }
                             }
                         }
+                    }
                     }
                 }
                 val text: @Composable (Modifier) -> Unit = { m ->

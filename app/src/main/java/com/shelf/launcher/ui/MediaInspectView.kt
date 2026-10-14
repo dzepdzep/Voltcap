@@ -155,6 +155,79 @@ private fun contentPieceFor(g: Game, state: LauncherUiState): InspectPiece? {
     ) else null
 }
 
+/** Update 198: how far an opened case moves aside (share of its width) and shrinks, beside what came out of it. */
+internal const val CASE_ASIDE_SHIFT = 0.25f
+internal const val CASE_ASIDE_SHRINK = 0.48f
+
+/**
+ * Update 198: [g]'s case for the second screen's Details page — always its case (scanned front, printed back), with what's
+ * inside for opening it.
+ */
+internal fun secondCasePiece(g: Game, state: LauncherUiState): InspectPiece {
+    val k = g.stableKey
+    val cover: Any? = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl
+    return boxPiece(g, state.physicalMedia[k], cover, own = !LookStyles.caseForAll(), mixed = false).also {
+        if (it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)
+        it.content = contentPieceFor(g, state)
+    }
+}
+
+/**
+ * Update 198: a case that opens, standing on its own (the second screen's Details page): a tap opens it — its lid swings,
+ * the case moves aside and its disc / cartridge comes out next to it (a tap on that puts it back), a drag turns either,
+ * and it can start opened (Features.inspectOpenAtStart).
+ */
+@Composable
+internal fun OpenableCase(piece: InspectPiece, modifier: Modifier) {
+    val scope = rememberCoroutineScope()
+    val motion = remember(piece.game.stableKey) { InspectMotion().apply { started = true; lift.floatValue = 1f } }
+    val yawOf: () -> Float = remember(motion) { { motion.yaw() } }
+    val openOf: () -> Float = remember(motion) { { motion.lid.floatValue } }
+    val itemInCase: () -> Boolean = remember(motion) { { motion.out.floatValue <= 0.001f } }
+    val caseItem = remember(piece) { caseItemOf(piece.content) }
+    val startOpen = Features.inspectOpenAtStart.state.value
+    LaunchedEffect(piece.game.stableKey, startOpen) {
+        if (startOpen && piece.content != null && !motion.opened) { delay(250); motion.toggleCase(scope, true, true) }
+    }
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
+        val density = LocalDensity.current
+        val bw = constraints.maxWidth.toFloat(); val bh = constraints.maxHeight.toFloat()
+        val aspect = piece.aspect.coerceIn(0.25f, 4f)
+        // (Room for the disc beside it once it's out: the case a little smaller than the whole space.)
+        val w = minOf(bw * 0.9f, bh * 0.92f * aspect).coerceAtLeast(8f)
+        val h = w / aspect
+        val left = (bw - w) / 2f
+        val top = (bh - h) / 2f
+        Box(
+            Modifier
+                .offset { IntOffset(left.roundToInt(), top.roundToInt()) }
+                .size(with(density) { w.toDp() }, with(density) { h.toDp() })
+                .graphicsLayer {
+                    val o = motion.out.floatValue
+                    if (o > 0f) {
+                        val s = 1f - CASE_ASIDE_SHRINK * o
+                        scaleX = s; scaleY = s
+                        translationX = -w * CASE_ASIDE_SHIFT * o
+                        translationY = -h * 0.06f * o
+                    }
+                }
+                .pointerInput(piece.content) { detectTapGestures(onTap = { motion.toggleCase(scope, true, piece.content != null) }) }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(onDragEnd = { motion.release(scope) }, onDragCancel = { motion.release(scope) }) { change, dx ->
+                        change.consume(); motion.nudge(dx * 0.42f)
+                    }
+                }
+        ) {
+            Case3D(
+                piece.game, piece.front, piece.physical, 0f, aspect, Modifier.fillMaxSize(),
+                back = piece.back, yawOf = yawOf, fill = 0.97f, openOf = openOf, inside = caseItem, showItemOf = itemInCase
+            )
+        }
+        val content = piece.content
+        if (content != null) InspectContent(piece, content, motion, left, top, w, h, aspect, scope)
+    }
+}
+
 /** Update 189: what the opening case draws lying in it, from its [content]. */
 internal fun caseItemOf(content: InspectPiece?): CaseItem? = content?.let { c ->
     CaseItem(c.realScan, c.label ?: c.cover, if (c.kind == InspectKind.DISC) 1f else c.aspect, c.tone.toArgbInt(), c.kind == InspectKind.DISC)
@@ -447,6 +520,23 @@ internal class InspectMotion {
         manual.floatValue = m
     }
 
+    /**
+     * Update 199: a tap on a cartridge, disc or 3D piece (nothing to open): it turns once round to show every side (a 3D
+     * model: to one side, the other and back), from facing you. A drag or the stick stops it.
+     */
+    fun spinOnce(scope: CoroutineScope) {
+        if (closing || !started || lift.floatValue < 0.999f || spinJob?.isActive == true) return
+        easeJob?.cancel()
+        spinJob = scope.launch {
+            val total = turn.floatValue + manual.floatValue
+            val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
+            turn.floatValue = 0f
+            animate(total, front, animationSpec = tween(220, easing = FastOutSlowInEasing)) { v, _ -> manual.floatValue = v }
+            manual.floatValue = 0f
+            showcase()
+        }
+    }
+
     /** Let go: it eases back to facing you. */
     fun release(scope: CoroutineScope) {
         if (closing) return
@@ -553,12 +643,18 @@ internal fun InspectStick(motion: InspectMotion) {
             snapshotFlow { abs(motion.stick.floatValue) > 0.25f }.first { it }
             if (motion.closing) break
             var last = -1L
+            // (Update 198: with the disc / cartridge out of its case, the stick turns that — it used to flip the case
+            // aside behind it.)
+            val content = motion.out.floatValue > 0.5f
             while (abs(motion.stick.floatValue) > 0.25f && !motion.closing) {
                 val now = withFrameNanos { it }
-                if (last > 0L) motion.nudge(motion.stick.floatValue * 200f * ((now - last) / 1_000_000_000f).coerceAtMost(0.05f))
+                if (last > 0L) {
+                    val deg = motion.stick.floatValue * 200f * ((now - last) / 1_000_000_000f).coerceAtMost(0.05f)
+                    if (content) motion.nudgeContent(deg) else motion.nudge(deg)
+                }
                 last = now
             }
-            motion.release(this)
+            if (content) motion.releaseContent(this) else motion.release(this)
         }
     }
 }
@@ -579,6 +675,15 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
     val openOf: () -> Float = remember(motion) { { motion.lid.floatValue } }
     val itemInCase: () -> Boolean = remember(motion) { { motion.out.floatValue <= 0.001f } }
     val caseItem = remember(piece) { caseItemOf(piece.content) }
+    // Update 198: Settings › Game look › "Open cases side by side": once it has landed, it opens by itself.
+    val startOpen = Features.inspectOpenAtStart.state.value
+    LaunchedEffect(piece.game.stableKey, startOpen) {
+        if (startOpen && piece.kind == InspectKind.BOX && piece.content != null) {
+            snapshotFlow { motion.lift.floatValue >= 0.999f }.first { it }
+            delay(200)
+            if (!motion.opened && !motion.closing) motion.toggleCase(scope, true, true)
+        }
+    }
     Box(Modifier.fillMaxSize().onGloballyPositioned { c -> val o = c.positionInWindow(); win[0] = o.x; win[1] = o.y }) {
         if (slot != null) {
             // Update 186: a box at its scan's own shape (CoverAspects, noted when the card drew it), so its front isn't cut.
@@ -590,10 +695,14 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
             // (Update 186: always as big as fits — the real-size scaling made a PlayStation or Game Boy case small here,
             // where it stands alone.)
             // (Update 188: bigger still — it stood small in its space on the AYN Thor.)
-            val w = minOf(slot.width * 0.98f, slot.height * 0.95f * aspect).coerceAtLeast(8f)
+            // (Update 199: a case that opens keeps room under it for "Tap the case…" — a tall GameCube case pushed it off
+            // the bottom of the screen.)
+            val hintRoom = if (piece.kind == InspectKind.BOX && piece.content != null) with(density) { 40.dp.toPx() } else 0f
+            val roomH = (slot.height - hintRoom).coerceAtLeast(slot.height * 0.6f)
+            val w = minOf(slot.width * 0.98f, roomH * 0.95f * aspect).coerceAtLeast(8f)
             val h = w / aspect
             val left = slot.left + (slot.width - w) / 2f
-            val top = slot.top + (slot.height - h) / 2f
+            val top = slot.top + (roomH - h) / 2f
             val key = piece.game.stableKey
             Box(
                 Modifier
@@ -629,18 +738,21 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                     .graphicsLayer {
                         val o = motion.out.floatValue
                         if (o > 0f) {
-                            val s = 1f - 0.4f * o
+                            val s = 1f - CASE_ASIDE_SHRINK * o
                             scaleX = s; scaleY = s
-                            // (Update 189 (Thor): not so far — it went off the screen's left edge.)
-                            translationX = -w * 0.2f * o
+                            // (Update 189 (Thor): not so far — it went off the screen's left edge. Update 198: to the left
+                            // half, beside what came out.)
+                            translationX = -w * CASE_ASIDE_SHIFT * o
                             translationY = -h * 0.06f * o
                         }
                     }
                     // Update 189: a tap on a case opens it (and closes it again).
                     .pointerInput(piece.kind, piece.content) {
-                        if (piece.kind == InspectKind.BOX) detectTapGestures(onTap = {
+                        detectTapGestures(onTap = {
                             // (Update 191: a cardboard box opens too — its top flap.)
-                            motion.toggleCase(scope, true, piece.content != null)
+                            if (piece.kind == InspectKind.BOX) motion.toggleCase(scope, true, piece.content != null)
+                            // (Update 199: a cartridge, disc or 3D piece has nothing to open: it turns once round.)
+                            else motion.spinOnce(scope)
                         })
                     }
                     // A horizontal drag turns it yourself; let go and it eases back.
@@ -689,9 +801,10 @@ private fun InspectContent(
     val density = LocalDensity.current
     val disc = content.kind == InspectKind.DISC
     val cAspect = if (disc) 1f else content.aspect.coerceIn(0.3f, 3f)
-    val cw = minOf(w * 0.84f, h * 0.84f * cAspect)
+    // (Update 198: side by side with the case — the case on the left, this on the right, no longer over it.)
+    val cw = minOf(w * 0.56f, h * 0.84f * cAspect)
     val ch = cw / cAspect
-    val endCx = left + w / 2f + w * 0.1f
+    val endCx = left + w * 0.72f
     val endCy = top + h / 2f
     // (Update 191: the real case — what kind of inside, and where in it — as Case3D draws it; what lies in it decides
     // disc or card, so the disc in the case is the disc that comes out.)

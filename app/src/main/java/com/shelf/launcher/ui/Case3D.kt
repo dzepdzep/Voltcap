@@ -421,6 +421,19 @@ private fun jewelFront(art: android.graphics.Bitmap, aspect: Float, tray: Int): 
     // The cover whole in the booklet's place (letterboxed in the clear edge's colour when its shape is off).
     val a = art.width.toFloat() / art.height.coerceAtLeast(1)
     val wa = win.width() / win.height()
+    // (Update 199: art far from the booklet's square — a tall poster, a wide banner — fills the booklet, cut in the
+    // middle, rather than standing small in a dark square. A cover or booklet scan, about square, still goes in whole.)
+    if (a / wa < 0.8f || a / wa > 1.25f) {
+        val src = if (a > wa) {
+            val sw = (art.height * wa).toInt().coerceAtLeast(1)
+            android.graphics.Rect((art.width - sw) / 2, 0, (art.width - sw) / 2 + sw, art.height)
+        } else {
+            val sh = (art.width / wa).toInt().coerceAtLeast(1)
+            android.graphics.Rect(0, (art.height - sh) / 2, art.width, (art.height - sh) / 2 + sh)
+        }
+        c.drawBitmap(art, src, win, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+        return@runCatching out
+    }
     val dst = if (a > wa) {
         val hh = win.width() / a
         android.graphics.RectF(win.left, win.centerY() - hh / 2f, win.right, win.centerY() + hh / 2f)
