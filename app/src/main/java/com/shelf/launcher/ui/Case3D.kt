@@ -112,6 +112,8 @@ internal fun Case3D(
     // carousel of 3D cases showed dark fronts for a moment).
     val loading = remember(g.hue) { hueFront(g.hue) }
     val frameArgb = frameColor.toArgb()
+    // Update 186: what the case is made of, so it looks like the real one (a clear jewel case, a cardboard box, a keep case).
+    val style = caseStyleOf(g.platform)
     Canvas(modifier) {
         val yawNow = yawOf?.invoke() ?: yaw
         val shadeNow = shadeOf?.invoke() ?: shade
@@ -123,10 +125,21 @@ internal fun Case3D(
             CaseDraw.draw(
                 canvas.nativeCanvas, size.width / 2f, size.height / 2f, w, h, d, yawNow, pitch,
                 face ?: noCover ?: loading, spine, (1f - shadeNow).coerceIn(0f, 1f), reflect,
-                if (frame) frameArgb else 0, 2.5f * density, backFace
+                if (frame) frameArgb else 0, 2.5f * density, backFace, style
             )
         }
     }
+}
+
+/** Update 186: a keep case (DVD-style), a clear jewel case (CDs) or a cardboard box (cartridges). */
+internal const val CASE_KEEP = 0
+internal const val CASE_JEWEL = 1
+internal const val CASE_CARD = 2
+
+internal fun caseStyleOf(platform0: String?): Int = when (LookStyles.casePlatform(platform0)) {
+    "PS1", "Dreamcast", "Saturn", "SegaCD", "NeoGeoCD", "PCEngineCD", "3DO", "CDi" -> CASE_JEWEL
+    "NES", "SNES", "N64", "GB", "GBC", "GBA", "VirtualBoy", "Atari2600", "Atari7800", "Jaguar", "ColecoVision", "Lynx" -> CASE_CARD
+    else -> CASE_KEEP
 }
 
 /** Update 171: Steam / Android 3D cases' thickness against their height. */
@@ -295,7 +308,9 @@ private object CaseDraw {
         front: android.graphics.Bitmap?, spine: android.graphics.Bitmap, light: Float, reflect: Boolean,
         frameArgb: Int, frameWidth: Float,
         /** Update 162: the back's picture (null: plain plastic). */
-        back: android.graphics.Bitmap? = null
+        back: android.graphics.Bitmap? = null,
+        /** Update 186: CASE_KEEP / CASE_JEWEL / CASE_CARD. */
+        style: Int = CASE_KEEP
     ) {
         val ty = Math.toRadians(yaw.toDouble()); val tp = Math.toRadians(pitch.toDouble())
         val cy0 = kotlin.math.cos(ty).toFloat(); val sy0 = kotlin.math.sin(ty).toFloat()
@@ -337,6 +352,19 @@ private object CaseDraw {
             val v = (l.coerceIn(0f, 1f) * 255f).toInt()
             return filters[v] ?: android.graphics.LightingColorFilter(android.graphics.Color.rgb(v, v, v), 0).also { filters[v] = it }
         }
+        // Update 186: a point on the face just projected (corners TL, TR, BR, BL in [out]) at [u] across, [v] down.
+        fun px(u: Float, v: Float): Float {
+            val top = out[0] + (out[2] - out[0]) * u; val bot = out[6] + (out[4] - out[6]) * u
+            return top + (bot - top) * v
+        }
+        fun py(u: Float, v: Float): Float {
+            val top = out[1] + (out[3] - out[1]) * u; val bot = out[7] + (out[5] - out[7]) * u
+            return top + (bot - top) * v
+        }
+        fun lineOn(u0: Float, v0: Float, u1: Float, v1: Float, argb: Int, width: Float) {
+            line.strokeWidth = width; line.color = argb
+            c.drawLine(px(u0, v0), py(u0, v0), px(u1, v1), py(u1, v1), line)
+        }
         fun pathOf(): android.graphics.Path {
             path.reset()
             path.moveTo(out[0], out[1]); path.lineTo(out[2], out[3]); path.lineTo(out[4], out[5]); path.lineTo(out[6], out[7]); path.close()
@@ -375,9 +403,33 @@ private object CaseDraw {
                             m9[6] = 0f; m9[7] = 0f; m9[8] = 1f
                             shaderMatrix.setValues(m9)
                             gloss.setLocalMatrix(shaderMatrix)
-                            fill.shader = gloss
-                            c.drawPath(pathOf(), fill)
-                            fill.shader = null
+                            // (Update 186: a cardboard box is matte — no plastic gloss.)
+                            if (style != CASE_CARD) {
+                                fill.shader = gloss
+                                c.drawPath(pathOf(), fill)
+                                fill.shader = null
+                            }
+                            val px1 = (w / 260f).coerceIn(0.8f, 3f)
+                            when (style) {
+                                CASE_JEWEL -> {
+                                    // The hinge down the left: a dark groove and its lit ridge, and the clear lid's edges.
+                                    lineOn(0.055f, 0f, 0.055f, 1f, scaled(0x66000000, light), px1 * 1.6f)
+                                    lineOn(0.07f, 0f, 0.07f, 1f, scaled(0x88FFFFFF.toInt(), light), px1)
+                                    lineOn(0.09f, 0.012f, 0.99f, 0.012f, scaled(0x55FFFFFF, light), px1)
+                                    lineOn(0.988f, 0.012f, 0.988f, 0.988f, scaled(0x44FFFFFF, light), px1)
+                                    lineOn(0.09f, 0.988f, 0.99f, 0.988f, scaled(0x33000000, light), px1)
+                                }
+                                CASE_KEEP -> {
+                                    // The clear sleeve's top lip and a soft inner rim.
+                                    lineOn(0.01f, 0.018f, 0.99f, 0.018f, scaled(0x44FFFFFF, light), px1 * 1.4f)
+                                    lineOn(0.02f, 0.03f, 0.02f, 0.97f, scaled(0x22FFFFFF, light), px1)
+                                }
+                                else -> {
+                                    // Cardboard: worn, slightly lighter edges where the folds are.
+                                    lineOn(0f, 0.004f, 1f, 0.004f, scaled(0x30FFFFFF, light), px1 * 1.5f)
+                                    lineOn(0.996f, 0f, 0.996f, 1f, scaled(0x26FFFFFF, light), px1 * 1.5f)
+                                }
+                            }
                             line.strokeWidth = 1f; line.color = scaled(0x55FFFFFF, light)
                             c.drawPath(pathOf(), line)
                             if (frameArgb != 0) { line.strokeWidth = frameWidth; line.color = frameArgb; c.drawPath(pathOf(), line) }
@@ -392,9 +444,19 @@ private object CaseDraw {
                     }
                     else -> {
                         // The plastic: the open edge, the top and the back.
+                        // (Update 186: a jewel case's edges are clear, see-through grey plastic; a box's edges cardboard.)
                         fill.shader = null
-                        fill.color = scaled(if (f == 3) 0xFF3A3D47.toInt() else 0xFF22242C.toInt(), l)
+                        val base = when (style) {
+                            CASE_JEWEL -> if (f == 3) 0xFFB9BEC8.toInt() else 0xFF9AA0AB.toInt()
+                            CASE_CARD -> if (f == 3) 0xFF4A4740.toInt() else 0xFF3A3832.toInt()
+                            else -> if (f == 3) 0xFF3A3D47.toInt() else 0xFF22242C.toInt()
+                        }
+                        fill.color = scaled(base, l)
                         c.drawPath(pathOf(), fill)
+                        if (style == CASE_JEWEL) {
+                            // Its ribs along the edge.
+                            for (k in 1..3) lineOn(0f, k / 4f, 1f, k / 4f, scaled(0x33FFFFFF, l), 1f)
+                        }
                     }
                 }
             }

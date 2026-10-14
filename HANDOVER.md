@@ -256,6 +256,20 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 186
+- **ScanCase:** shape is `CoverAspects.rawOf(scan)` (noted in its `onSuccess`, minus the PS1 band), clamped to
+  0.75–1.33× the template's.
+- **Inspect BOX:** aspect is the front scan's (not PS1). Size is `min(slot.w × 0.92, slot.h × 0.88 × aspect)`; no more
+  `realCaseScale`.
+- **Case3D:**
+  - `caseStyleOf(platform)` gives `CASE_JEWEL` / `CASE_CARD` / `CASE_KEEP` → `CaseDraw.draw(style)`.
+  - Front details are drawn with `lineOn(u, v…)` on the projected quad; the edge colours follow the style.
+- **R1:**
+  - `background` tile cycles ART + videos → ART → ANIMATED → BLACK; hold lists all six.
+  - Undo can be swiped away or closed with ✕, shows 6 s, and its label is the tile's first line.
+- **Details:** `details_asked` prefs back off silent runs for 14 days; nothing is marked while offline
+  (`deviceOnline()`).
+
 ## State after update 185
 - **Carousel:** `Features.carouselSpread` (default true) gates `Carousel.spread`. R1 Carousel hold has gap choices.
 - **ViewModel:**

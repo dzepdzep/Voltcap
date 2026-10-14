@@ -534,16 +534,22 @@ internal fun ScanCase(
     /** Update 143: this share of the scan's width is cut off its left side (a PlayStation cover's band, see [PS1_BAND]). */
     cutLeft: Float = 0f
 ) {
+    // Update 186: the scan's own shape once it's known (CoverAspects), so nothing of it is cut off — a GoldenEye box lost
+    // the "G" when drawn at the template's shape. Kept near the template's (a wrong scan can't make a strange case).
+    val key = scan.toString()
+    val own = CoverAspects.rawOf(key)?.let { r -> (r * (1f - cutLeft.coerceIn(0f, 0.5f))).coerceIn(aspect * 0.75f, aspect * 1.33f) }
+    val shape = own ?: aspect
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
-        val w = minOf(maxWidth, maxHeight * aspect)
-        val h = w / aspect
+        val w = minOf(maxWidth, maxHeight * shape)
+        val h = w / shape
         Box(Modifier.size(w, h).caseShadow().then(caseModifier).background(CaseArtPlaceholder).then(if (cutLeft > 0f) Modifier.clipToBounds() else Modifier)) {
             // Update 119: the game's cover (usually already loaded) while its case scan comes in — never a dark box first.
             var scanIn by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
             if (cover != null && !scanIn) AsyncImage(cardArtModel(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             AsyncImage(
                 cardArtModel(scan), null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
-                onSuccess = { scanIn = true }, onError = { onFail() },
+                onSuccess = { r -> scanIn = true; r.painter.intrinsicSize.let { sz -> CoverAspects.note(key, sz.width, sz.height) } },
+                onError = { onFail() },
                 modifier = if (cutLeft > 0f) Modifier.fillMaxHeight().wrapContentWidth(Alignment.End, unbounded = true).width(w / (1f - cutLeft.coerceIn(0f, 0.5f)))
                 else Modifier.fillMaxSize()
             )

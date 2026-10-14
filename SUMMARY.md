@@ -4,6 +4,53 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (186): cases not cut off and bigger when opened, cases that look like the real ones, an R1 Background tile, Undo can be swiped away, details not re-asked at every start
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (6): `src_copy\LauncherViewModel.kt`,
+`src_copy\ui\Case3D.kt`, `src_copy\ui\CoverCases.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\QuickSettings.kt`,
+`src_copy\ui\R1Undo.kt`.
+
+**Files to delete:** none.
+
+### Cases not cut off
+- **Real cases:** a case scan is drawn at its own shape once it's loaded, not squeezed into the console's template shape.
+  On the Thor, GoldenEye's N64 box lost the "G" of its title.
+- **Opening a game:** the case comes out at the same shape as its scan. It's also **bigger**: as big as the space
+  beside the game window allows. It used to be shrunk to its real size against a DVD case, so a PlayStation or Game
+  Boy case came out small.
+
+### Cases that look like the real ones (the opened case and the 3D cases)
+- **CD jewel cases** (PlayStation, Dreamcast, Saturn, Sega CD, Neo Geo CD, PC Engine CD, 3DO):
+  - the hinge down the left side (a groove and its lit ridge);
+  - the clear lid's edges;
+  - see-through grey plastic edges with their ribs.
+- **Cartridge boxes** (NES, SNES, N64, Game Boy, GBA…): matte cardboard with no plastic shine, lighter fold edges and
+  cardboard-coloured sides.
+- **Keep cases** (PS2, GameCube, Wii, Switch…): the clear sleeve's top lip and a soft inner rim.
+
+### R1 › Background (new tile)
+- A tap steps through what's behind the home screen:
+  - game art + video clips;
+  - game art only;
+  - the theme's animation;
+  - a still background (the theme's own colour).
+- Hold it for every choice, including blurred game art and your wallpaper.
+
+### R1 › Undo
+- **Swipe** it sideways or tap **✕** to make it go; it also goes by itself after about 6 seconds.
+- It names the tile you used ("Changed: Badges").
+- Checked on the Thor: Undo put Badges back.
+
+### Details looked up again at every start
+- Games the sources had no details for were all asked again at every start ("Details 0/182" each time). Now they're
+  asked again automatically only every two weeks.
+- A lookup that failed because there was no connection is still retried next time.
+- Pressing Scrape missing in Settings › Metadata asks for all of them at once, as before.
+
+---
+
 ## Update — 14 Oct 2026 (185): the carousel gap on its own, each category remembers its game, Undo in R1, what's running in the background, games inside a console as Tiles
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

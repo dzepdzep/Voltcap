@@ -25,7 +25,7 @@ internal object R1Undo {
     private var appearance: AppearanceSettings? = null
 
     /** How long the Undo stays (ms). */
-    const val SHOWN_MS = 8_000L
+    const val SHOWN_MS = 6_000L
 
     fun offer(label: String, before: Map<String, String>, after: Map<String, String>, a0: AppearanceSettings?, a1: AppearanceSettings?) {
         val changed = before.filter { (k, v) -> after[k] != v }

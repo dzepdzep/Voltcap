@@ -474,11 +474,14 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
     val yawOf: () -> Float = remember(motion) { { motion.yaw() } }
     Box(Modifier.fillMaxSize().onGloballyPositioned { c -> val o = c.positionInWindow(); win[0] = o.x; win[1] = o.y }) {
         if (slot != null) {
-            val aspect = piece.aspect.coerceIn(0.25f, 4f)
-            // As big as fits its side of the window (some room kept for its turn and its shadow). Update 166: a case at its
-            // real size against a DVD case's (a Game Boy box smaller than a GameCube case).
-            val real = if (piece.kind == InspectKind.BOX) realCaseScale(piece.game.platform) else 1f
-            val w = (minOf(slot.width * 0.9f, slot.height * 0.8f * aspect) * real).coerceAtLeast(8f)
+            // Update 186: a box at its scan's own shape (CoverAspects, noted when the card drew it), so its front isn't cut.
+            val scanShape = if (piece.kind == InspectKind.BOX && piece.game.platform != "PS1")
+                CoverAspects.rawOf(piece.front?.toString())?.coerceIn(piece.aspect * 0.75f, piece.aspect * 1.33f) else null
+            val aspect = (scanShape ?: piece.aspect).coerceIn(0.25f, 4f)
+            // As big as fits its side of the window (some room kept for its turn and its shadow).
+            // (Update 186: always as big as fits — the real-size scaling made a PlayStation or Game Boy case small here,
+            // where it stands alone.)
+            val w = minOf(slot.width * 0.92f, slot.height * 0.88f * aspect).coerceAtLeast(8f)
             val h = w / aspect
             val left = slot.left + (slot.width - w) / 2f
             val top = slot.top + (slot.height - h) / 2f

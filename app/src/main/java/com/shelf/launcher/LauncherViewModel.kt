@@ -1893,6 +1893,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         _uiState.update { it.copy(specialFilter = filter, platformFilter = null, focusedIndex = 0).let { n -> n.copy(focusedIndex = rememberedFocus(n)) } }
     }
 
+    /** Update 186: a validated internet connection right now. */
+    private fun deviceOnline(): Boolean = runCatching {
+        val cm = getApplication<Application>().getSystemService(android.net.ConnectivityManager::class.java)
+        cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+    }.getOrDefault(true)
+
     // ---- Update 185: each category remembers the game you were on ----
     /** Category key → the stable key of the game you were on there (this session). */
     private val categoryFocus = HashMap<String, String>()
@@ -2381,13 +2387,18 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
         metadataScrapeJob = viewModelScope.launch {
             savedMetadataLoaded.await()
+            // Update 186: games the sources had nothing for are asked again automatically only every two weeks — the 182
+            // without details were looked up again at every start ("Details 0/182" each time on the Thor).
+            val askedPrefs = getApplication<Application>().getSharedPreferences("details_asked", android.content.Context.MODE_PRIVATE)
+            val nowMs = System.currentTimeMillis()
+            val askAgainAfter = 14L * 24 * 60 * 60 * 1000
             // Plain apps aren't games IGDB would know; Android games are looked up.
             val pending = _uiState.value.games.filter { game ->
                 if (game.sourceType == SourceType.APP && !_uiState.value.isAndroidGame(game)) return@filter false
                 if (com.shelf.launcher.data.TitleMatch.skipScraping(game)) return@filter false
                 val saved = _uiState.value.metadata[game.stableKey]
                 when {
-                    silent -> saved == null
+                    silent -> saved == null && nowMs - askedPrefs.getLong(game.stableKey, 0L) > askAgainAfter
                     refreshAll -> true
                     else -> saved.lacksAny(fields, rawgOn)
                 }
@@ -2419,6 +2430,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         fetchMetadataFor(game)
                     }
                 }.getOrNull()
+                // (Only while online: a lookup that failed for want of a connection is tried again next time.)
+                if (deviceOnline()) askedPrefs.edit().putLong(game.stableKey, System.currentTimeMillis()).apply()
                 if (fresh != null) {
                     val saved = _uiState.value.metadata[game.stableKey]
                     val merged = saved.mergeFields(fresh, fields)

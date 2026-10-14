@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.VolumeOff
@@ -708,6 +709,38 @@ fun QuickSettingsCard(
                 }
             })
             // Theme: the next favourite (hold: the theme list).
+            // Update 186: what's behind the home screen, in one tap: the game's picture with its video clip → the picture
+            // only → the theme's animated background → a still background (the theme's own colour). Hold: every choice.
+            run {
+                val now = when {
+                    a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART && a.videoPreviews -> "Art +\nvideos"
+                    a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART -> "Art\nonly"
+                    a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.BLURRED -> "Blurred\nart"
+                    a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ANIMATED -> "Theme\nanimation"
+                    a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.WALLPAPER -> "Your\nwallpaper"
+                    else -> "Still\nbackground"
+                }
+                add(R1Tile("background", Icons.Filled.Wallpaper, now, a.backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK,
+                    longAction = {
+                        choiceSheet = "Background" to listOf(
+                            R1Choice("Game art + video clips", a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART && a.videoPreviews) { home.setAppearance(a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.ART, videoPreviews = true)) },
+                            R1Choice("Game art only", a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART && !a.videoPreviews) { home.setAppearance(a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.ART, videoPreviews = false)) },
+                            R1Choice("Blurred game art", a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.BLURRED) { home.setAppearance(a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.BLURRED)) },
+                            R1Choice("Theme animation", a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ANIMATED) { home.setAppearance(a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.ANIMATED)) },
+                            R1Choice("Your wallpaper", a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.WALLPAPER) { home.setAppearance(a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.WALLPAPER)) },
+                            R1Choice("Still background", a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.BLACK) { home.setAppearance(a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.BLACK)) }
+                        )
+                    }) {
+                    home.setAppearance(
+                        when {
+                            a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART && a.videoPreviews -> a.copy(videoPreviews = false)
+                            a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART -> a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.ANIMATED)
+                            a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ANIMATED -> a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.BLACK)
+                            else -> a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.ART, videoPreviews = true)
+                        }
+                    )
+                })
+            }
             add(R1Tile("theme", Icons.Filled.Palette, "Theme\n" + home.themeName, false,
                 longAction = { home.openSettingsAt("Theme", "Themes") }) {
                 home.themeAction?.invoke() ?: home.openSettingsAt("Theme", "Themes")
@@ -953,7 +986,7 @@ fun QuickSettingsCard(
                         )
                     }
             ) {
-                if (editing) picked = if (picked == t.id) null else t.id else { countUse(t.id); undoable(t.label) { t.action() } }
+                if (editing) picked = if (picked == t.id) null else t.id else { countUse(t.id); undoable(t.label.substringBefore("\n")) { t.action() } }
             }
         }
         val firstFive = shown.take(5)
@@ -979,12 +1012,27 @@ fun QuickSettingsCard(
             if (R1Undo.at == at0) R1Undo.clear()
         }
         if (undoLabel != null && home != null) {
-            Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            // (Update 186: swipe it away sideways — or ✕ — when you don't need it.)
+            var swipe by remember(R1Undo.at) { mutableStateOf(0f) }
+            val swipeOut = with(androidx.compose.ui.platform.LocalDensity.current) { 64.dp.toPx() }
+            Row(
+                Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                    .graphicsLayer { translationX = swipe; alpha = (1f - kotlin.math.abs(swipe) / (swipeOut * 2.5f)).coerceIn(0f, 1f) }
+                    .pointerInput(R1Undo.at) {
+                        detectHorizontalDragGestures(
+                            onDragEnd = { if (kotlin.math.abs(swipe) > swipeOut) R1Undo.clear() else swipe = 0f },
+                            onDragCancel = { swipe = 0f }
+                        ) { ch, dx -> ch.consume(); swipe += dx }
+                    },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     "Changed: $undoLabel", color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1,
                     overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
                 )
                 Chip("↶ Undo") { R1Undo.undo { liveHome.value?.setAppearance?.invoke(it) } }
+                Spacer(Modifier.width(6.dp))
+                Chip("✕", accent = false) { R1Undo.clear() }
             }
         }
         Column(
