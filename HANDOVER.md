@@ -256,6 +256,13 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 184
+- **Pocket:** `pocketUsesLook(c.type)` (not Cover / wide / screenshot) and `PocketLookArt` → `ShelfGameArt` in the frames
+  (classic `PocketGameArt` with Game picture = Cover, ribbon icons). `layoutOwnLook` no longer lists the Pocket layouts.
+- **Carousel:** `placeInto` uses `g0 = gap / spread` near the middle and `g` (with the spread) only for the far steps
+  (TUCKED, Spine wall, Box flow). The floor pool is a radial glow scaled flat.
+- **Pocket classic top bar:** name and clock use `screenX`.
+
 ## State after update 183
 - **Art vs details:** `scrapeMissingMetadata` lanes wait (`silent` only) while `scrapeJob` is active. Both use
   ScreenScraper's single slot; the art waited behind details ("Getting art 1/215", seen on the Thor).

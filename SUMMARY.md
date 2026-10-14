@@ -4,6 +4,41 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (184): Pocket layouts follow your game look, carousel spacing and floor light, Pocket top bar
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (5): `src_copy\data\Features.kt`,
+`src_copy\ui\Carousel.kt`, `src_copy\ui\GameLookPicker.kt`, `src_copy\ui\PocketClassic.kt`, `src_copy\ui\PocketRibbon.kt`.
+
+**Files to delete:** none.
+
+### Pocket classic and Pocket ribbon: your game look
+- Games are drawn in your game look (Settings › Game look, R1 › Look): cartridges, cases, real cases, discs. This covers
+  Pocket classic's game panel and pages and Pocket ribbon's icons.
+- The Look tile and its options (Case, Disc, Cartridge…) work in them now; they're no longer greyed out.
+- **Covers look:** both layouts show the plain cover, as before.
+- **Pocket classic's Game picture option:** it's now called "Game look (cover, case, cartridge…)". Logo and Screenshot
+  still work as before.
+
+### Carousel (from the Thor after 183)
+- **Spacing:** spreading a short list out now only widens the steps between the games aside. The gap round the game
+  you're on stays as it was; it had become a wide empty space each side of it.
+- **Floor light:** the pool of light on the floor fades out on every side; its top and bottom edges showed.
+
+### Pocket classic's top bar
+- Your name sits at the screen's left edge and the date and time beside the battery on the right. On the Thor's wide
+  screen they sat in towards the middle.
+
+### Checked on the Thor with 183
+- Art first: no art was left to fetch, and the details were filling in.
+- Endless with games on both sides, the bigger games, and the new stage.
+- The Layout list's **Done** visible, 3D greyed out in the case looks.
+- Pocket classic: no status bar over it, the calendar and Achievements readable.
+- Set back to Case stacks afterwards.
+
+---
+
 ## Update — 14 Oct 2026 (183): art no longer waits for details, a livelier carousel stage, bigger and spread-out games, Endless on, 3D off for cases, Pocket fixes from the Thor
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

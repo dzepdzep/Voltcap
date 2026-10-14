@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -445,8 +446,12 @@ internal object Carousel {
         val near = d.coerceAtMost(1f)
         val far = (d - 1f).coerceAtLeast(0f)
         val g = gap
+        // (Update 183: the spread for few games only widens the steps between the ones aside, not the gap round the one
+        // you're on — it left a wide empty space each side of the middle game.)
+        val g0 = g / spread.coerceAtLeast(0.01f)
+        val farK = (g - g0)
         return when (shown) {
-            CarouselView.TUCKED -> out.set(offset(d, side) * sign * g, 0f, scale(d, side), turn(rel), 0f, alpha(d, side), shade(d), z(d))
+            CarouselView.TUCKED -> out.set((offset(d, side) * g0 + far * sideScale(side) * 0.5f * farK) * sign, 0f, scale(d, side), turn(rel), 0f, alpha(d, side), shade(d), z(d))
             CarouselView.FLIP -> out.set(
                 sign * ((0.7f * near + 0.22f * far) * g), 0f, 1f - 0.16f * near - 0.04f * far,
                 // Turned steeply towards the middle (or away with the tilt set outward).
@@ -495,7 +500,7 @@ internal object Carousel {
                 val e = stackEase(near, 0.125f / a)
                 val sc = 1f - 0.1f * e
                 out.set(
-                    sign * (a * e + 0.125f * far) * g, (1f - sc) * 0.5f,
+                    sign * (a * e * g0 + 0.125f * far * g), (1f - sc) * 0.5f,
                     sc, 72f * e + (far * 1.2f).coerceAtMost(8f), 0f, alpha(d, reach(side, shown)), shade(d) * 0.5f, stackZ(rel)
                 )
             }
@@ -542,7 +547,7 @@ internal object Carousel {
                 // growing as you went along them.)
                 val sc = 1f - 0.16f * e
                 out.set(
-                    sign * (a * e + 0.15f * far) * g, (1f - sc) * 0.5f * e - 0.04f * (1f - e),
+                    sign * (a * e * g0 + 0.15f * far * g), (1f - sc) * 0.5f * e - 0.04f * (1f - e),
                     sc, 66f * e + (far * 2.2f).coerceAtMost(16f), 0f,
                     alpha(d, reach(side, shown)), shade(d) * 0.45f, stackZ(rel)
                 )
@@ -822,14 +827,19 @@ internal fun GameCarousel(
                     )
                 }
                 // A pool of light on the floor under the game you're on.
-                drawOval(
-                    androidx.compose.ui.graphics.Brush.radialGradient(
-                        listOf(Color.White.copy(alpha = 0.10f), accent.copy(alpha = 0.05f), Color.Transparent),
-                        center = androidx.compose.ui.geometry.Offset(cx, floorY + bigHpx * 0.05f), radius = size.width * 0.32f
-                    ),
-                    topLeft = androidx.compose.ui.geometry.Offset(cx - size.width * 0.32f, floorY - bigHpx * 0.06f),
-                    size = androidx.compose.ui.geometry.Size(size.width * 0.64f, bigHpx * 0.32f)
-                )
+                // (Update 183: a round glow squashed flat, so it fades out on every side — drawn as an oval its top and
+                // bottom edges showed.)
+                val poolC = androidx.compose.ui.geometry.Offset(cx, floorY + bigHpx * 0.08f)
+                val poolR = size.width * 0.3f
+                scale(1f, (bigHpx * 0.22f / poolR).coerceIn(0.05f, 1f), pivot = poolC) {
+                    drawCircle(
+                        androidx.compose.ui.graphics.Brush.radialGradient(
+                            0f to Color.White.copy(alpha = 0.10f), 0.45f to accent.copy(alpha = 0.05f), 1f to Color.Transparent,
+                            center = poolC, radius = poolR
+                        ),
+                        radius = poolR, center = poolC
+                    )
+                }
                 // The glossy floor's sheen just under the line the games stand on.
                 drawRect(
                     androidx.compose.ui.graphics.Brush.verticalGradient(

@@ -174,10 +174,11 @@ private fun PocketClassicTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             Canvas(Modifier.atFull(0f, 0f, width, fullH)) { pocketPinstripes(uPx, PaperC, StripeC) }
             // The thin bar in your colour: your name; the date, time and battery (from the screen's very top).
             Box(Modifier.atFull(0f, 0f, width, 13f + cy).background(accent))
-            PocketText(this, user, 4f, 2.5f, 120f, 10f, 8f, Color.White, font, TextAlign.Start)
+            // (Update 183: from the screen's own edges — on a wide screen they sat in towards the middle.)
+            PocketText(this, user, 6f, 2.5f, 120f, 10f, 8f, Color.White, font, TextAlign.Start, screenX = true)
             val day = pocketDay(time.longValue, tz)
             val clock = "%d/%d  %d:%02d".format(day.month, day.dayOfMonth, day.hour, day.minute)
-            PocketText(this, clock, width - 4f - 90f - 18f - cx * 2f, 2.5f, 90f, 10f, 8f, Color.White, font, TextAlign.End, screenX = true)
+            PocketText(this, clock, width - 24f - 90f, 2.5f, 90f, 10f, 8f, Color.White, font, TextAlign.End, screenX = true)
             Canvas(Modifier.atScreen(width - 18f, 3f, 14f, 7f)) { pocketBattery(uPx, battery.percent, Color.White) }
             // The clock (left; in the middle without the calendar) and the calendar (right).
             val clockX = if (calendarOn) 18f else 78f
@@ -460,13 +461,16 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.pocketArrow(color: 
 /** The game's picture in a panel: its cover cut square, its logo, or a screenshot (Layout options › Game picture). */
 @Composable
 internal fun PocketGameArt(c: StyleCtx, g: Game, modifier: Modifier) {
+    // Update 183: your game look (cartridges, cases, discs…) as the picture, like the other layouts.
+    val asLook = Features.classicArt.state.value == Features.PocketArt.COVER && pocketUsesLook(c.type)
     val url = when (Features.classicArt.state.value) {
         Features.PocketArt.LOGO -> c.logo(g) ?: c.cover(g)
         Features.PocketArt.SHOT -> c.state.screenshots[g.stableKey]?.firstOrNull() ?: c.backdrop(g) ?: c.cover(g)
         else -> c.cover(g)
     }
     val model = coverOrAppIcon(g, url)
-    if (model != null) AsyncImage(
+    if (asLook) PocketLookArt(c, g, modifier)
+    else if (model != null) AsyncImage(
         model, g.name,
         contentScale = if (Features.classicArt.state.value == Features.PocketArt.LOGO) ContentScale.Fit else ContentScale.Crop,
         modifier = modifier.pixelArtwork()
@@ -653,4 +657,21 @@ internal fun pocketClassicKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boo
         Key.ButtonB, Key.Back -> if (spot != CARD) go(CARD) else false
         else -> false
     }
+}
+
+/** Update 183: the game look is one with a real thing to draw (cartridges, cases, discs), not a plain picture. */
+internal fun pocketUsesLook(type: com.shelf.launcher.data.CardArtType): Boolean =
+    type != com.shelf.launcher.data.CardArtType.COVER && type != com.shelf.launcher.data.CardArtType.CAPSULE &&
+        type != com.shelf.launcher.data.CardArtType.HERO && type != com.shelf.launcher.data.CardArtType.SCREENSHOT
+
+/**
+ * Update 183: the game drawn in your game look (Settings › Game look, R1 › Look) — its cartridge, case or disc — in the
+ * Pocket layouts' small frames, as the other layouts draw it.
+ */
+@Composable
+internal fun PocketLookArt(c: StyleCtx, g: Game, modifier: Modifier) {
+    ShelfGameArt(
+        g, false, c.type, c.art, c.state.artOverrides, c.state.physicalMedia, c.state.screenshots,
+        spines = false, mixed = c.mixed, realRef = null, pulse = 0f, modifier = modifier
+    )
 }

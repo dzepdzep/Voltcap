@@ -288,7 +288,9 @@ internal fun PocketRibbonBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
                         Box(Modifier.fillMaxSize().padding(d(3f)).background(Color(0xFFF2F3F5)), contentAlignment = Alignment.Center) {
                             val g = it1.game
                             val st = it1.stop
-                            if (g != null) {
+                            // (Update 183: in your game look — cartridges, cases, discs — when it's one of those.)
+                            if (g != null && pocketUsesLook(c.type)) PocketLookArt(c, g, Modifier.fillMaxSize())
+                            else if (g != null) {
                                 val url = coverOrAppIcon(g, c.cover(g))
                                 if (url != null) AsyncImage(url, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                                 else Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))

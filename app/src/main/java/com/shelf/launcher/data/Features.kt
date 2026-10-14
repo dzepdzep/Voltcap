@@ -1015,7 +1015,7 @@ object Features {
     // ---- Update 181: the two Pocket layouts (PocketClassic.kt, PocketRibbon.kt) ----
     enum class PocketAnim(val label: String) { NORMAL("Normal"), FAST("Fast"), OFF("Off") }
     enum class PocketArrange(val label: String) { AUTO("Two screens when there are"), STACKED("One above the other"), SIDE("Side by side") }
-    enum class PocketArt(val label: String) { COVER("Cover"), LOGO("Logo"), SHOT("Screenshot") }
+    enum class PocketArt(val label: String) { COVER("Game look (cover, case, cartridge…)"), LOGO("Logo"), SHOT("Screenshot") }
     enum class RibbonTop(val label: String) { GAME("Game art"), ALBUM("Album art"), PHOTO("Your photo"), SLIDES("Screenshots slideshow") }
     /** The user name on the top screens ("" = the RetroAchievements name, else "Player"). */
     val pocketName = StringPref("pocket_name", "")
