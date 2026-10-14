@@ -110,7 +110,9 @@ class SecondHomeGame(
     /** The flat front box scan (for the 3D box), when known. */
     val box2dUrl: String? = null,
     /** The game's scraped screenshots (the Art page's "Screenshots", with your own). */
-    val shots: List<String> = emptyList()
+    val shots: List<String> = emptyList(),
+    /** Update 189: the game's logo (the "Game art" look's middle). */
+    val logoUrl: String? = null
 )
 
 /** Settings › Appearance › Second screen, as the home screen needs them. */
@@ -194,7 +196,10 @@ fun SecondScreenHome(
     /** Music effects moved here from the main screen (corner visualizers), drawn over the pages. */
     fxOverlay: (@Composable androidx.compose.foundation.layout.BoxScope.() -> Unit)? = null,
     /** Room kept free at the right of the header row for something drawn over it (the in-game timer). */
-    headerEndInset: Dp = 0.dp
+    headerEndInset: Dp = 0.dp,
+    /** Update 189: your picture and points for the "Game art" look's top-left pill (RetroAchievements). */
+    avatarUrl: String? = null,
+    raPoints: Int? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("SecondScreenHome")
     // Without a Games page (the companion), a saved "Games" choice shows the Art page.
@@ -304,47 +309,33 @@ fun SecondScreenHome(
             ) { change, dx -> acc += dx; change.consume() }
         }
     ) {
-        if (sceneBehind != null) {
+        // Update 189: the "Game art" look — the game's art full screen, floating pills and dock (SecondShowcase.kt).
+        val showcase = com.shelf.launcher.data.Features.secondLook.state.value == com.shelf.launcher.data.Features.SecondLook.SHOWCASE
+        if (showcase) {
+            ShowcaseBackdrop(info, sceneBehind)
+        } else if (sceneBehind != null) {
             sceneBehind()
         } else if (info.heroUrl != null) {
             // A softer top end than before (64 dp): the art stays recognisable behind the pages.
             // Blurred once (update 121), not on every redraw of the pages over it.
             BakedBlurImage(info.heroUrl, blurRadiusFor(options.artBlur, 36f), Modifier.fillMaxSize(), alpha = 0.35f)
         }
-        Box(
+        if (!showcase) Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(listOf(Color.Transparent, ShelfTheme.background.copy(alpha = 0.92f)))
             ).then(if (VoltUi.on) Modifier.voltAmbient(ShelfTheme.accent, ShelfTheme.colors.secondary) else Modifier)
         )
 
-        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            // Volt look: the Voltcap mark, underlined tabs and the clock over a voltage line Volt sits on.
-            Box(Modifier.fillMaxWidth().padding(end = headerEndInset)) {
-            if (gameOpen) PageSwitcher(page, visiblePages.size + 1, latestStep) {
-                Text("Game", color = ShelfTheme.accent, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
-            }
-            else if (VoltUi.on) VoltSecondHeader(page, visiblePages, selectPage, nowPlaying, titleOnly = options.pageTitleOnly, onStep = latestStep)
-            else if (options.pageTitleOnly) PageSwitcher(page, visiblePages.size, latestStep)
-            // Update 122: a subtle arrow at each end of the tabs too, so it's clear the pages go on (swipe or tap).
-            else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PageArrow(left = true, visible = visiblePages.size > 1) { latestStep(-1) }
-                Box(Modifier.weight(1f)) {
-                    PageTabs(
-                        page, selectPage,
-                        showWalkthrough = walkthroughContent != null,
-                        showPerformance = performanceContent != null,
-                        showExtra = extraPage != null,
-                        showGames = gamesPage != null
-                    )
-                }
-                PageArrow(left = false, visible = visiblePages.size > 1) { latestStep(1) }
-            }
-            }
-            Spacer(Modifier.height(10.dp))
-            Box(Modifier.fillMaxWidth().weight(1f)) {
+        // The page itself (both looks).
+        val pageBody: @Composable () -> Unit = {
                 if (gameWindow != null) Box(Modifier.fillMaxSize().clip(uiRounded(18.dp))) { gameWindow() }
                 else when (page) {
-                    SecondPage.ART -> ArtPage(info, nowPlaying, onPlayPause, onNext, onPrevious, onSeek, options) { bigPlayer = true }
+                    SecondPage.ART -> if (showcase) ShowcaseArtPage(
+                        info, info.logoUrl,
+                        if (nowPlaying != null && nowPlaying.isPlaying && options.playerOverArt) {
+                            { MusicPlayer(nowPlaying, onPlayPause, onNext, onPrevious, onSeek, modifier = Modifier.tapOnly { bigPlayer = true }, artBackdrop = false) }
+                        } else null
+                    ) else ArtPage(info, nowPlaying, onPlayPause, onNext, onPrevious, onSeek, options) { bigPlayer = true }
                     SecondPage.VIDEO -> VideoPage(info, videoSound)
                     SecondPage.DETAILS -> CaseDetailsPage(info, options.detailsCaseFirst)
                     SecondPage.ACHIEVEMENTS -> AchievementsPage(info)
@@ -379,7 +370,63 @@ fun SecondScreenHome(
                     SecondPage.WIDGETS, SecondPage.WALL, SecondPage.MAGNIFIER ->
                         if (extraPage != null) extraPage(page) else Placeholder("Not available yet.")
                 }
+        }
+
+        if (showcase) {
+            // Update 189: the floating bars over the art; the page between them.
+            val pageIndex = visiblePages.indexOf(page).coerceAtLeast(0)
+            Box(Modifier.fillMaxSize()) {
+                Box(
+                    Modifier.fillMaxSize().padding(
+                        start = 12.dp, end = 12.dp, top = SHOWCASE_TOP,
+                        bottom = if (showDock && !gameOpen) SHOWCASE_BOTTOM else 22.dp
+                    )
+                ) {
+                    if (page == SecondPage.ART && !gameOpen) pageBody() else ShowcasePanel { Box(Modifier.fillMaxSize().padding(8.dp)) { pageBody() } }
+                }
+                ShowcaseTopBar(
+                    avatarUrl, raPoints, if (gameOpen) "Game" else page.label, onPageTap = { latestStep(1) }, endInset = headerEndInset,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
+                Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (!gameOpen) ShowcaseDots(visiblePages.size, pageIndex, Modifier.padding(bottom = 7.dp))
+                    if (showDock && !gameOpen) ShowcaseDock(
+                        apps = dockApps, maxApps = SECOND_DOCK_MAX,
+                        onHome = { visiblePages.firstOrNull()?.let { if (it != page) selectPage(it) } },
+                        onLaunch = onLaunchApp,
+                        onAllApps = { drawerOpen = true },
+                        onSettings = onOpenSettings,
+                        onAdd = { pickerOpen = true },
+                        onMenu = { menuFor = it },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                }
             }
+        } else Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
+            // Volt look: the Voltcap mark, underlined tabs and the clock over a voltage line Volt sits on.
+            Box(Modifier.fillMaxWidth().padding(end = headerEndInset)) {
+            if (gameOpen) PageSwitcher(page, visiblePages.size + 1, latestStep) {
+                Text("Game", color = ShelfTheme.accent, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
+            }
+            else if (VoltUi.on) VoltSecondHeader(page, visiblePages, selectPage, nowPlaying, titleOnly = options.pageTitleOnly, onStep = latestStep)
+            else if (options.pageTitleOnly) PageSwitcher(page, visiblePages.size, latestStep)
+            // Update 122: a subtle arrow at each end of the tabs too, so it's clear the pages go on (swipe or tap).
+            else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                PageArrow(left = true, visible = visiblePages.size > 1) { latestStep(-1) }
+                Box(Modifier.weight(1f)) {
+                    PageTabs(
+                        page, selectPage,
+                        showWalkthrough = walkthroughContent != null,
+                        showPerformance = performanceContent != null,
+                        showExtra = extraPage != null,
+                        showGames = gamesPage != null
+                    )
+                }
+                PageArrow(left = false, visible = visiblePages.size > 1) { latestStep(1) }
+            }
+            }
+            Spacer(Modifier.height(10.dp))
+            Box(Modifier.fillMaxWidth().weight(1f)) { pageBody() }
             if (showDock && !gameOpen) {
                 Spacer(Modifier.height(10.dp))
                 AppDockBar(

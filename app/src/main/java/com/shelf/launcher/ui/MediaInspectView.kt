@@ -7,6 +7,8 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
@@ -52,6 +54,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import com.shelf.launcher.LauncherUiState
 import com.shelf.launcher.data.CardArtType
 import com.shelf.launcher.data.Features
@@ -123,7 +129,33 @@ internal class InspectPiece(
 ) {
     /** Update 166: MODEL: the game's logo (SteamGridDB's, or yours), printed on the piece's back label. */
     var logo: Any? = null
+    /** Update 189: BOX: the disc / cartridge inside it (comes out when the case is opened); null: nothing to show. */
+    var content: InspectPiece? = null
 }
+
+/**
+ * Update 189: the disc / cartridge that's in [g]'s case — its own picture when it was scraped, else the drawn one (its
+ * console's disc or cartridge with the cover as the label), else a plain disc for a disc console.
+ */
+private fun contentPieceFor(g: Game, state: LauncherUiState): InspectPiece? {
+    val k = g.stableKey
+    val physical = state.physicalMedia[k]
+    val cover: Any? = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl
+    val small = Features.bigGcDiscs.state.value.not()
+    val piece = runCatching { mediaPiece(g, CardArtType.CARTRIDGE_DISC, physical, cover, small, false) }.getOrNull()
+    if (piece != null && (piece.kind == InspectKind.DISC || piece.kind == InspectKind.SLAB)) return piece
+    return if (mediaRound(g.platform)) InspectPiece(
+        g, InspectKind.DISC, 1f, 0.012f, MediaPick(MediaShell.DISC, genericDiscKey(g.platform)), cover, false, null, cover, null, null,
+        physical, null, PLAIN_SHELL, false
+    ) else null
+}
+
+/** Update 189: what the opening case draws lying in it, from its [content]. */
+internal fun caseItemOf(content: InspectPiece?): CaseItem? = content?.let { c ->
+    CaseItem(c.realScan, c.label ?: c.cover, if (c.kind == InspectKind.DISC) 1f else c.aspect, c.tone.toArgbInt())
+}
+
+private fun Color.toArgbInt(): Int = android.graphics.Color.argb((alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt())
 
 private val PLAIN_SHELL = Color(0xFF2C2E34)
 private val CUSTOM_SHELL = Color(0xFF55585F)
@@ -163,6 +195,8 @@ internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? =
         it.logo = state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
         // Update 170: a case without its back scanned gets a printed one (Settings › Game look › Printed case backs).
         if (it.kind == InspectKind.BOX && it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)
+        // Update 189: what's inside, for opening it.
+        if (it.kind == InspectKind.BOX) it.content = contentPieceFor(g, state)
     }
 
 /**
@@ -331,6 +365,59 @@ internal class InspectMotion {
     var closing = false
     /** A 3D model: it turns only as far as its pictures go (±60°). */
     var limited = false
+    /** Update 189: a case's lid, 0 shut … 1 wide open. */
+    val lid = mutableFloatStateOf(0f)
+    /** Update 189: 0 the disc / cartridge in its case … 1 out in the middle, the case aside. */
+    val out = mutableFloatStateOf(0f)
+    /** Update 189: the case is (being) opened. */
+    var opened = false
+    /** Update 189: your own turn of what came out of the case (a drag on it), degrees. */
+    val contentTurn = mutableFloatStateOf(0f)
+    private var contentEase: Job? = null
+
+    /** Update 189: turns what came out of the case [deg] more by hand. */
+    fun nudgeContent(deg: Float) { contentEase?.cancel(); contentTurn.floatValue += deg }
+
+    /** Update 189: let go: it turns back to face you (the short way). */
+    fun releaseContent(scope: CoroutineScope) {
+        contentEase?.cancel()
+        contentEase = scope.launch {
+            val now = contentTurn.floatValue
+            val to = (now / 360f).roundToInt() * 360f
+            animate(now, to, animationSpec = tween(620, easing = FastOutSlowInEasing)) { v, _ -> contentTurn.floatValue = v }
+            contentTurn.floatValue = 0f
+        }
+    }
+    private var caseJob: Job? = null
+
+    /**
+     * Update 189: opens the case (it turns to face you, the lid swings open — not a cardboard box, [hinged] false —
+     * then, with something inside, [hasContent], the case moves aside and that comes out) or closes it again.
+     */
+    fun toggleCase(scope: CoroutineScope, hinged: Boolean, hasContent: Boolean) {
+        if (closing || !started) return
+        caseJob?.cancel()
+        opened = !opened
+        caseJob = scope.launch {
+            if (opened) {
+                spinJob?.cancel(); easeJob?.cancel()
+                val total = turn.floatValue + manual.floatValue
+                val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
+                turn.floatValue = total
+                manual.floatValue = 0f
+                if (abs(front - total) > 0.5f) animate(total, front, animationSpec = tween(380, easing = FastOutSlowInEasing)) { v, _ -> turn.floatValue = v }
+                turn.floatValue = 0f
+                if (hinged) animate(lid.floatValue, 1f, animationSpec = tween(760, easing = CubicBezierEasing(0.35f, 0f, 0.2f, 1f))) { v, _ -> lid.floatValue = v }
+                if (hasContent) {
+                    delay(if (hinged) 260 else 0)
+                    animate(out.floatValue, 1f, animationSpec = tween(700, easing = CubicBezierEasing(0.3f, 0f, 0.15f, 1f))) { v, _ -> out.floatValue = v }
+                }
+            } else {
+                if (out.floatValue > 0f) animate(out.floatValue, 0f, animationSpec = tween(560, easing = FastOutSlowInEasing)) { v, _ -> out.floatValue = v }
+                if (lid.floatValue > 0f) animate(lid.floatValue, 0f, animationSpec = tween(620, easing = FastOutSlowInEasing)) { v, _ -> lid.floatValue = v }
+            }
+        }
+    }
     private var openJob: Job? = null
     private var spinJob: Job? = null
     private var easeJob: Job? = null
@@ -405,7 +492,15 @@ internal class InspectMotion {
     /** Back it goes: turns to face you, shrinks and flies to its place ([full]; else a short fade). Ends with amount 0. */
     suspend fun close(full: Boolean) {
         closing = true
-        openJob?.cancel(); spinJob?.cancel(); easeJob?.cancel()
+        openJob?.cancel(); spinJob?.cancel(); easeJob?.cancel(); caseJob?.cancel()
+        // (Update 189: an opened case goes back together first — quickly.)
+        if (out.floatValue > 0f || lid.floatValue > 0f) {
+            if (full) {
+                if (out.floatValue > 0f) animate(out.floatValue, 0f, animationSpec = tween(260)) { v, _ -> out.floatValue = v }
+                if (lid.floatValue > 0f) animate(lid.floatValue, 0f, animationSpec = tween(300)) { v, _ -> lid.floatValue = v }
+            }
+            out.floatValue = 0f; lid.floatValue = 0f; opened = false
+        }
         if (!started) { MediaInspect.amount.floatValue = 0f; return }
         if (!full) {
             animate(fade.floatValue, 0f, animationSpec = tween(140)) { v, _ -> fade.floatValue = v }
@@ -472,6 +567,10 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
     // Where this overlay sits in the window (the places are in window px).
     val win = remember { FloatArray(2) }
     val yawOf: () -> Float = remember(motion) { { motion.yaw() } }
+    // Update 189: the opening case (CaseOpen.kt): its lid, what lies in it, and whether that's still in it.
+    val openOf: () -> Float = remember(motion) { { motion.lid.floatValue } }
+    val itemInCase: () -> Boolean = remember(motion) { { motion.out.floatValue <= 0.001f } }
+    val caseItem = remember(piece) { caseItemOf(piece.content) }
     Box(Modifier.fillMaxSize().onGloballyPositioned { c -> val o = c.positionInWindow(); win[0] = o.x; win[1] = o.y }) {
         if (slot != null) {
             // Update 186: a box at its scan's own shape (CoverAspects, noted when the card drew it), so its front isn't cut.
@@ -517,6 +616,22 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                             }
                         }
                     }
+                    // Update 189: an opened case moves aside (and shrinks) while what's in it comes out.
+                    .graphicsLayer {
+                        val o = motion.out.floatValue
+                        if (o > 0f) {
+                            val s = 1f - 0.42f * o
+                            scaleX = s; scaleY = s
+                            translationX = -w * 0.34f * o
+                            translationY = -h * 0.06f * o
+                        }
+                    }
+                    // Update 189: a tap on a case opens it (and closes it again).
+                    .pointerInput(piece.kind, piece.content) {
+                        if (piece.kind == InspectKind.BOX) detectTapGestures(onTap = {
+                            motion.toggleCase(scope, CaseInside.kindOf(piece.game.platform) != CaseInside.Kind.BOX, piece.content != null)
+                        })
+                    }
                     // A horizontal drag turns it yourself; let go and it eases back.
                     .pointerInput(piece.kind) {
                         detectHorizontalDragGestures(
@@ -533,14 +648,117 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                     InspectKind.BOX -> Case3D(
                         piece.game, piece.front, piece.physical, 0f, aspect, Modifier.fillMaxSize(),
                         // (Update 162: Case3D's back face and its angle read while drawing.)
-                        back = piece.back, yawOf = yawOf, fill = 0.97f
+                        back = piece.back, yawOf = yawOf, fill = 0.97f,
+                        // (Update 189: it opens.)
+                        openOf = openOf, inside = caseItem, showItemOf = itemInCase
                     )
                     InspectKind.SLAB -> InspectSlab(piece, yawOf)
                     InspectKind.DISC -> InspectDisc(piece, yawOf)
                     InspectKind.MODEL -> piece.model?.let { id -> InspectModel(piece, id, aspect, yawOf) }
                 }
             }
+            // Update 189: what was in the case, out in the middle (CaseInside places where it lay).
+            val content = piece.content
+            if (content != null && piece.kind == InspectKind.BOX) InspectContent(piece, content, motion, left - win[0], top - win[1], w, h, aspect, scope)
+            // Update 189: how to open it, said once it's out.
+            if (piece.kind == InspectKind.BOX && piece.content != null) OpenHint(motion, left - win[0], top + h - win[1], w)
         }
+    }
+}
+
+/**
+ * Update 189: the disc / cartridge out of its case: it rises from where it lay in the open case (or out of a box's top)
+ * to the middle of the piece's side, big, and turns gently (a disc spins slowly); a tap puts it back and closes the case.
+ */
+@Composable
+private fun InspectContent(
+    piece: InspectPiece, content: InspectPiece, motion: InspectMotion, left: Float, top: Float, w: Float, h: Float, caseAspect: Float,
+    scope: CoroutineScope
+) {
+    val density = LocalDensity.current
+    val disc = content.kind == InspectKind.DISC
+    val cAspect = if (disc) 1f else content.aspect.coerceIn(0.3f, 3f)
+    val cw = minOf(w * 0.84f, h * 0.84f * cAspect)
+    val ch = cw / cAspect
+    val endCx = left + w / 2f + w * 0.1f
+    val endCy = top + h / 2f
+    val kind = CaseInside.kindOf(piece.game.platform)
+    // Where it lay: in the open book (the lid left of the hinge, the tray right of it), as Case3D draws it.
+    val fw = w * 0.97f; val fh = h * 0.97f
+    val k = 1f / 1.92f
+    val w2 = fw * k; val h2 = fh * k
+    val r = CaseInside.itemRect(kind, caseAspect, cAspect)
+    val startCx = if (kind == CaseInside.Kind.BOX) left + w / 2f else left + w / 2f + ((r[0] + r[2]) / 2f) * w2
+    val startCy = if (kind == CaseInside.Kind.BOX) top + h * 0.06f else top + h / 2f - h2 / 2f + ((r[1] + r[3]) / 2f) * h2
+    val startW = if (kind == CaseInside.Kind.BOX) cw * 0.5f else (r[2] - r[0]) * w2
+    val s0 = (startW / cw).coerceIn(0.1f, 1f)
+    val outNow by remember(motion) { androidx.compose.runtime.derivedStateOf { motion.out.floatValue > 0.001f } }
+    // (Its slow turn only while it's out.)
+    val spin = if (outNow) {
+        val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "contentSpin")
+        t.animateFloat(0f, 1f, androidx.compose.animation.core.infiniteRepeatable(tween(12_000, easing = androidx.compose.animation.core.LinearEasing)), label = "contentT")
+    } else null
+    // A gentle tilt to and fro (a disc shows its edge and, turned by hand, its data side), plus your own turn.
+    val yawOf: () -> Float = { (if (disc) 22f else 16f) * sin(2f * PI.toFloat() * (spin?.value ?: 0f) * 2f) + motion.contentTurn.floatValue }
+    Box(
+        Modifier
+            .offset { IntOffset((endCx - cw / 2f).roundToInt(), (endCy - ch / 2f).roundToInt()) }
+            .size(with(density) { cw.toDp() }, with(density) { ch.toDp() })
+            .graphicsLayer {
+                val o = motion.out.floatValue
+                alpha = if (o <= 0.001f) 0f else (o * 5f).coerceAtMost(1f) * motion.fade.floatValue
+                val e = o
+                val sc = s0 + (1f - s0) * e
+                scaleX = sc; scaleY = sc
+                // A little lift on its way (up and out of the case).
+                val lift = sin(PI.toFloat() * e) * h * 0.08f
+                translationX = (startCx - endCx) * (1f - e)
+                translationY = (startCy - endCy) * (1f - e) - lift
+                if (disc) rotationZ = 360f * (spin?.value ?: 0f)
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    if (motion.out.floatValue > 0.5f) motion.toggleCase(scope, kind != CaseInside.Kind.BOX, true)
+                })
+            }
+            // A drag turns it round (a disc: over to its data side); let go and it comes back.
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = { motion.releaseContent(scope) },
+                    onDragCancel = { motion.releaseContent(scope) }
+                ) { change, dx ->
+                    change.consume()
+                    if (motion.out.floatValue > 0.5f) motion.nudgeContent(dx * 0.5f)
+                }
+            }
+    ) {
+        if (disc) InspectDisc(content, yawOf) else InspectSlab(content, yawOf)
+    }
+}
+
+/** Update 189: "Tap the case to open it", under the case for a few seconds once it's out. */
+@Composable
+private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float) {
+    val density = LocalDensity.current
+    val shown = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) {
+        snapshotFlow { motion.lift.floatValue >= 0.999f }.first { it }
+        shown.animateTo(1f, tween(300))
+        delay(3_500)
+        shown.animateTo(0f, tween(500))
+    }
+    Box(
+        Modifier
+            .offset { IntOffset(left.roundToInt(), (bottom + with(density) { 6.dp.toPx() }).roundToInt()) }
+            .size(with(density) { w.toDp() }, 28.dp)
+            .graphicsLayer { alpha = shown.value * (1f - motion.out.floatValue) * (1f - motion.lid.floatValue) },
+        contentAlignment = Alignment.Center
+    ) {
+        androidx.compose.material3.Text(
+            "Tap the case (or click the right stick) to open it", color = Color.White, fontSize = 12.sp,
+            modifier = Modifier.background(Color.Black.copy(alpha = 0.55f), androidx.compose.foundation.shape.RoundedCornerShape(50))
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+        )
     }
 }
 
@@ -646,7 +864,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
 private fun InspectDisc(p: InspectPiece, yawOf: () -> Float) {
     // (Update 162 (review): both sides stay composed and the one facing you is picked while drawing — swapping them in
     // composition dropped the label's picture each time it turned over, and recomposed mid-turn.)
-    val k = if (p.smallDisc) 0.7f else 1f
+    // (Update 189: a mini disc at its real 8 cm against 12 cm.)
+    val k = if (p.smallDisc) 80f / 120f else 1f
+    // Update 189: its real format, for its data side (DiscUnderside.kt): from the console at once, from the image after.
+    val format by produceState(DiscFormats.quick(p.game.platform), p.game.stableKey) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { DiscFormats.of(p.game) }.getOrDefault(value) }
+    }
     val rim = remember { Color(0xFFA9ADB6) }
     Box(Modifier.fillMaxSize()) {
         Spacer(
@@ -678,32 +901,21 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float) {
             contentAlignment = Alignment.Center
         ) {
             PieceFace(p, Modifier.fillMaxSize().graphicsLayer { alpha = if (cos(Math.toRadians(yawOf().toDouble())) >= 0.0) 1f else 0f })
-            DiscDataSide(Modifier.fillMaxSize(k * 0.98f).graphicsLayer { alpha = if (cos(Math.toRadians(yawOf().toDouble())) >= 0.0) 0f else 1f })
+            DiscDataSide(format, yawOf, Modifier.fillMaxSize(k * 0.98f).graphicsLayer { alpha = if (cos(Math.toRadians(yawOf().toDouble())) >= 0.0) 0f else 1f })
         }
     }
 }
 
-/** A disc's data side: silver with a faint rainbow sheen, the clear inner ring and the hole. */
+/**
+ * A disc's data side (update 189: as its real format looks — DiscUnderside.kt — the light and the rainbow moving as it
+ * turns). Drawn into the face's own layer so the hole goes through.
+ */
 @Composable
-private fun DiscDataSide(modifier: Modifier) {
+private fun DiscDataSide(format: DiscFormat, yawOf: () -> Float, modifier: Modifier) {
     Spacer(
-        modifier.drawWithCache {
+        modifier.drawBehind {
             val r = minOf(size.width, size.height) / 2f
-            val c = Offset(size.width / 2f, size.height / 2f)
-            val base = Brush.radialGradient(listOf(Color(0xFFDADDE3), Color(0xFFB7BBC4), Color(0xFF8F949E)), center = c, radius = r)
-            val rainbow = Brush.sweepGradient(
-                listOf(Color(0x55FF7A7A), Color(0x55FFD97A), Color(0x557AFFA6), Color(0x557AC8FF), Color(0x55B87AFF), Color(0x55FF7A7A)),
-                center = c
-            )
-            val ringW = r * 0.012f
-            onDrawBehind {
-                drawCircle(base, radius = r, center = c)
-                drawCircle(rainbow, radius = r * 0.97f, center = c)
-                drawCircle(Color(0xFFCBCFD6), radius = r * 0.34f, center = c)
-                drawCircle(Color.White.copy(alpha = 0.35f), radius = r * 0.34f, center = c, style = Stroke(ringW))
-                // The hole, through (it's drawn into the face's own layer).
-                drawCircle(Color.Black, radius = r * 0.12f, center = c, blendMode = BlendMode.Clear)
-            }
+            drawDiscUnderside(Offset(size.width / 2f, size.height / 2f), r, format, yawOf())
         }
     )
 }

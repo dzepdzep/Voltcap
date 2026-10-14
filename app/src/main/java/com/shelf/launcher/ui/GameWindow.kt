@@ -50,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -620,7 +621,15 @@ internal fun GameWindow(
                     }
                 }
             }
-        } else Box(Modifier.fillMaxSize()) {
+        } else Box(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
+            // Update 189: a click of the right stick (which turns the piece) opens / closes its case.
+            val pc = piece
+            if (pc != null && pc.kind == InspectKind.BOX && e.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_BUTTON_THUMBR) {
+                if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_UP)
+                    motion.toggleCase(inspectScope, CaseInside.kindOf(pc.game.platform) != CaseInside.Kind.BOX, pc.content != null)
+                true
+            } else false
+        }) {
           Box(
             Modifier.fillMaxSize()
                 .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) }

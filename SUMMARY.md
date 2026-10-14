@@ -4,6 +4,80 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (189): cases that open, real disc undersides, a new second-screen look, a dimmed second screen you can still use, stick lights off with the screen
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (3): `src_copy\ui\CaseOpen.kt`, `src_copy\ui\DiscUnderside.kt`,
+`src_copy\ui\SecondShowcase.kt`. Changed (10): `src_copy\data\Features.kt`, `src_copy\ui\BatterySaverUi.kt`, `src_copy\ui\Case3D.kt`,
+`src_copy\ui\GameWindow.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\SecondDim.kt`,
+`src_copy\ui\SecondScreenHome.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`.
+
+**Files to delete:** none.
+
+### Cases open (game window, real cases)
+- Tap the case, or click the right stick:
+  - it turns to face you and the lid swings open on its hinge;
+  - you see inside: the tray with the disc on its hub, or the card in its slot, and the manual in its clips, or the
+    booklet in a jewel case's lid;
+  - then the case moves aside and the disc or cartridge rises out to the middle, big, tilting gently (a disc spins
+    slowly).
+- **Drag the disc or cartridge** to turn it round; a disc shows its data side. Tap it, or tap or click again, and it
+  goes back in and the case closes.
+- **Each kind of case in its real colour:**
+  - **Keep cases:** PS2 / GameCube / Xbox black, PS3 smoky, PS4 / Wii U blue, PS5 / Wii white, Switch red,
+    Xbox 360 / One green.
+  - **Jewel cases:** PlayStation with its black tray, hub rosette and finger notches; Dreamcast, Saturn, Sega CD…
+  - **Card cases** (DS, 3DS, Vita, PSP, Switch): the card slot.
+  - **Cartridge boxes:** no hinge; the cartridge slides out of the top.
+- The disc or card in the case is the game's own scanned one when it was scraped; otherwise it's drawn with the
+  cover as its label.
+- A hint under the case says how to open it.
+- I looked for free 3D models. The Sketchfab PS1 case is a 26-face box (CC-BY, login needed) and there was nothing
+  better for the others, so Voltcap draws its own cases.
+
+### Disc undersides look like the real ones
+The data side follows the disc's actual format, and its light and rainbow move as it turns.
+- **CD:** bright mirror silver with fine rainbow diffraction.
+- **DVD:** a little darker, with softer rainbows.
+- **Dual-layer DVD:** a faint champagne tint and its layer edge.
+- **Blu-ray** (PS3 / PS4 / PS5 / Xbox One / Series): cool silver with a blue-violet hint.
+- **PlayStation:** deep glossy black.
+- **PS2:** cobalt-blue CD-ROM or silver DVD, read from the game's image (cue/bin, ISO size, CHD header, CSO). Over
+  4.7 GB it's a dual-layer DVD.
+- **Dreamcast GD-ROM:** its two data areas and the darker ring between them.
+- **Saturn:** the security ring near the edge.
+- **GameCube:** its real 8 cm size.
+- **Wii U:** a rounded edge.
+- All of them have fine concentric tracks, a clear hub with the stacking ring, and the hole at its real size.
+
+### Second screen: new "Game art" look (Settings › Screens › Second screen art & music › Look; on by default)
+- **The art:** the game's art fills the screen, with its logo in the middle (its name when there's no logo) and the
+  console and playtime under it.
+- **Floating pills at the top:**
+  - left: your picture, your points and the page you're on (tap it for the next page);
+  - right: notifications, the battery (green while charging) and the time.
+- **Floating dock at the bottom:** a home button (back to the first page), your apps as round icons (hold one to move
+  or remove it, + adds one), all apps and settings.
+- Page dots sit above the dock, and you swipe between pages as before. The other pages show on dark glass over the
+  art.
+- **Classic** keeps the old tabs and bar.
+
+### Dimmed second screen stays usable
+- When it dims, the game's art and logo turn black-and-white and darker; buttons, text and icons keep their
+  colours at about half brightness.
+- **How dark:** Light, Medium (default) or Strong.
+- The backlight goes down less than before.
+- The first touch still only lights it up again.
+
+### Stick lights off with the screen
+- When the screen goes off (timeout or power button), every stick light now goes off. On the Thor only the right
+  one went off before.
+- When the screen comes back on, your colour comes back, also during a game.
+- Only when Voltcap runs the lights (Settings › Device › Controller lights not set to "System setting").
+
+---
+
 ## Update — 14 Oct 2026 (188): the second screen dims when unused (also during a game), a crash fixed, PlayStation cases with their black ridge and not cut off, bigger opened cases, games at start-up sooner, battery-saver fixes
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

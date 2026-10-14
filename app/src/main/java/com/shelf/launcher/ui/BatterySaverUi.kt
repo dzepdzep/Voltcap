@@ -109,8 +109,8 @@ internal fun SecondDimSettings() {
     ) { Features.secondDimAfter.value = it; SecondDim.settingsChanged() }
     if (after > 0) {
         StyleChoice(
-            "How dark", arrayOf(60, 85, 100), Features.secondDimLevel.state.value,
-            { when (it) { 60 -> "Dim"; 85 -> "Dark"; else -> "Black" } }
+            "How dark", arrayOf(30, 45, 60), Features.secondDimLevel.state.value,
+            { when (it) { 30 -> "Light"; 45 -> "Medium"; else -> "Strong" } }
         ) { Features.secondDimLevel.value = it; SecondDim.settingsChanged() }
         SwitchRow(
             Icons.Filled.BrightnessLow, "Backlight down too",
@@ -120,7 +120,8 @@ internal fun SecondDimSettings() {
     }
     MutedNote(
         "Nobody touching the second screen and nothing pressed in Voltcap for that long — also while a game runs on " +
-            "the other screen — and it fades dark. Touch it to light it up again (that touch doesn't press anything)."
+            "the other screen — and it dims: the game's pictures go black-and-white, everything else stays in colour, " +
+            "just darker, so you can still read and use it. Touch it to light it up again (that touch doesn't press anything)."
     )
 }
 

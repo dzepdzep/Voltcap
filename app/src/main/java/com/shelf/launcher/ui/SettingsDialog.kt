@@ -1825,6 +1825,18 @@ private fun SecondScreenExtras(appearance: AppearanceSettings, onChange: (Appear
         HomeLauncherCard()
         }
         FoldGroup("Second screen art & music", key = "second_look") {
+            // Update 189: the look of the whole second screen.
+            ShelfCard {
+                StyleChoice("Look", com.shelf.launcher.data.Features.SecondLook.values(), com.shelf.launcher.data.Features.secondLook.state.value, { it.label }) {
+                    com.shelf.launcher.data.Features.secondLook.value = it
+                }
+                MutedNote(
+                    if (com.shelf.launcher.data.Features.secondLook.state.value == com.shelf.launcher.data.Features.SecondLook.SHOWCASE)
+                        "The game's art fills the screen with its logo in the middle; small floating bars at the top (you, the page — tap it for the next one — notifications, battery, time) and a floating dock of round app icons with a home button. Swipe for the other pages."
+                    else "The page names along the top, the page in a card and the dock as a bar along the bottom."
+                )
+            }
+            Spacer(Modifier.height(10.dp))
             SecondScreenLookCard(appearance, onChange)
         }
         // Update 177: the Games page's console folders — their look, a folder pack, a picture per console.

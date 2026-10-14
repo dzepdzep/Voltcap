@@ -396,6 +396,7 @@ internal object SettingsIndex {
         E("Dim the second screen after", "Screens", null, "second_dim", "Dim the second screen"),
         E("Backlight down too", "Screens", null, "second_dim", "Dim the second screen"),
         E("Second screen art & music", "Screens", null, "second_look", "Second screen art & music"),
+        E("Look", "Screens", null, "second_look", "Second screen art & music"),
         E("Art page shows", "Screens", null, "second_look", "Second screen art & music"),
         E("Details page shows first", "Screens", null, "second_look", "Second screen art & music"),
         E("Arrows between pages", "Screens", null, "second_look", "Second screen art & music"),

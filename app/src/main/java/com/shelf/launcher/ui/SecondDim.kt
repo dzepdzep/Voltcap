@@ -6,12 +6,16 @@ import android.os.SystemClock
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import com.shelf.launcher.data.Features
 
 /**
  * Update 188: the second screen dims when nobody uses it (Settings › Screens › Dim the second screen; also under
  * Settings › Device › Battery saver). After [Features.secondDimAfter] seconds without a touch there or a press on Voltcap,
- * a black layer fades over it (and its backlight is turned down), also while a game runs on the other screen — that's
+ * a black layer fades part-way over it (update 189: the art goes black-and-white, see [secondDimArt]) and its backlight
+ * is turned down, also while a game runs on the other screen — that's
  * when Voltcap's second screen otherwise sat at full brightness the whole game. The first touch on it only wakes it
  * (that touch doesn't press anything); a press on Voltcap wakes it too.
  *
@@ -74,18 +78,39 @@ internal object SecondDim {
         if (since >= a) dim() else main.postDelayed(check, a - since)
     }
 
+    /**
+     * Update 189: how far the art has gone grey (0…1), read while drawing by [secondDimArt] — the game's pictures and
+     * logos turn black-and-white and darker while the rest (buttons, text, icons) only dims with the layer, so the
+     * screen stays readable and usable.
+     */
+    val artGrey = androidx.compose.runtime.mutableFloatStateOf(0f)
+    private var greyAnim: android.animation.ValueAnimator? = null
+
+    private fun greyTo(target: Float, ms: Long) {
+        greyAnim?.cancel()
+        if (ms <= 0L) { artGrey.floatValue = target; return }
+        greyAnim = android.animation.ValueAnimator.ofFloat(artGrey.floatValue, target).apply {
+            duration = ms
+            addUpdateListener { artGrey.floatValue = it.animatedValue as Float }
+            start()
+        }
+    }
+
     private fun dim() {
         val v = layer ?: return
         dimmed = true
         v.animate().cancel()
         v.visibility = View.VISIBLE
+        // (Update 189: part-way dark, not blacked out: what's there stays readable and can be tapped.)
         v.animate().alpha(Features.secondDimLevel.value / 100f).setDuration(900L).start()
+        greyTo(1f, 900L)
         backlight(true)
     }
 
     private fun undim() {
         dimmed = false
         layer?.let { v -> v.animate().cancel(); v.alpha = 0f; v.visibility = View.GONE }
+        greyTo(0f, 0L)
         backlight(false)
     }
 
@@ -94,8 +119,49 @@ internal object SecondDim {
         val w = window ?: return
         runCatching {
             val lp = w.attributes
-            val want = if (low && Features.secondDimBacklight.value) 0.02f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            val want = if (low && Features.secondDimBacklight.value) 0.12f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
             if (lp.screenBrightness != want) { lp.screenBrightness = want; w.attributes = lp }
         }
     }
+}
+
+/**
+ * Update 189: a game picture or logo on the second screen: black-and-white and darker while the second screen is dimmed
+ * ([SecondDim.artGrey], read while drawing — nothing recomposes). Android 12+: a colour filter on the layer; older: only
+ * darker.
+ */
+internal fun androidx.compose.ui.Modifier.secondDimArt(): androidx.compose.ui.Modifier =
+    if (android.os.Build.VERSION.SDK_INT >= 31) this.then(androidx.compose.ui.Modifier.graphicsLayerDimArt())
+    else this.then(androidx.compose.ui.Modifier.drawWithContentDarken())
+
+private fun androidx.compose.ui.Modifier.drawWithContentDarken(): androidx.compose.ui.Modifier =
+    this.then(androidx.compose.ui.Modifier.drawWithContent {
+        drawContent()
+        val g = SecondDim.artGrey.floatValue
+        if (g > 0.01f) drawRect(androidx.compose.ui.graphics.Color.Black, alpha = 0.35f * g)
+    })
+
+@androidx.annotation.RequiresApi(31)
+private fun androidx.compose.ui.Modifier.graphicsLayerDimArt(): androidx.compose.ui.Modifier =
+    this.then(androidx.compose.ui.Modifier.graphicsLayer {
+        val g = SecondDim.artGrey.floatValue
+        renderEffect = if (g < 0.02f) null else DimArtEffects.of(g)
+    })
+
+/** The art filter in 10 steps (made once each). */
+@androidx.annotation.RequiresApi(31)
+private object DimArtEffects {
+    private val cache = arrayOfNulls<androidx.compose.ui.graphics.RenderEffect>(11)
+    fun of(g: Float): androidx.compose.ui.graphics.RenderEffect {
+        val i = (g.coerceIn(0f, 1f) * 10f).roundToIntSafe()
+        cache[i]?.let { return it }
+        val k = i / 10f
+        val m = android.graphics.ColorMatrix().apply { setSaturation(1f - k) }
+        val dark = 1f - 0.3f * k
+        m.postConcat(android.graphics.ColorMatrix().apply { setScale(dark, dark, dark, 1f) })
+        val e = android.graphics.RenderEffect.createColorFilterEffect(android.graphics.ColorMatrixColorFilter(m)).asComposeRenderEffect()
+        cache[i] = e
+        return e
+    }
+    private fun Float.roundToIntSafe(): Int = kotlin.math.round(this).toInt().coerceIn(0, 10)
 }

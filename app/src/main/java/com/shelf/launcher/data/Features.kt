@@ -872,10 +872,14 @@ object Features {
     enum class SceneFps(val label: String, val frameMs: Int) { AUTO("Automatic", 0), FPS60("60 fps", 14), FPS30("30 fps", 28) }
     val sceneFps = EnumPref("scene_fps", SceneFps.AUTO, SceneFps.values())
     val secondSlowWhenUnused = BoolPref("second_slow_unused", true)
+    /** Update 189: the second screen's look — the game's art with floating pills and dock (SecondShowcase.kt), or classic. */
+    enum class SecondLook(val label: String) { SHOWCASE("Game art, floating bars"), CLASSIC("Classic: tabs and bar") }
+    val secondLook = EnumPref("second_look", SecondLook.SHOWCASE, SecondLook.values())
     /** Update 188: the second screen dims after this many seconds unused (0 = never; ui/SecondDim.kt). */
     val secondDimAfter = IntPref("second_dim_after", 60, 0..900)
     /** Update 188: how dark it goes, % black (100 = black). */
-    val secondDimLevel = IntPref("second_dim_level", 85, 30..100)
+    /** (Update 189: a new key — part-way dark by default, the screen stays usable; 30 / 45 / 60.) */
+    val secondDimLevel = IntPref("second_dim_level2", 45, 10..90)
     /** Update 188: its backlight turned down too while dimmed. */
     val secondDimBacklight = BoolPref("second_dim_backlight", true)
 

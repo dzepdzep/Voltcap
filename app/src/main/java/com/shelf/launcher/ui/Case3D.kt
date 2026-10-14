@@ -39,7 +39,13 @@ internal fun Case3D(
     /** Update 162: a picture for the case's back (the game window's inspect turns it round); null: plain plastic. */
     back: Any? = null,
     /** Update 188: how much of [modifier]'s room the front takes (the rest is room for its turn). */
-    fill: Float = 0.94f
+    fill: Float = 0.94f,
+    /** Update 189: how far the lid is open (0…1, read while drawing; CaseOpen.kt); null: it never opens. */
+    openOf: (() -> Float)? = null,
+    /** Update 189: the disc / card inside, for an opening case. */
+    inside: CaseItem? = null,
+    /** Update 189: whether the disc / card still lies in the case (read while drawing). */
+    showItemOf: (() -> Boolean)? = null
 ) {
     val title = gameDisplayName(g.name)
     // The spine, in the same order as the Spines look (GameSpine): the real scan first, then your console spine.
@@ -128,6 +134,19 @@ internal fun Case3D(
     val frameArgb = frameColor.toArgb()
     // Update 186: what the case is made of, so it looks like the real one (a clear jewel case, a cardboard box, a keep case).
     val style = caseStyleOf(g.platform)
+    // Update 189: what an opened case shows inside (made only for a case that can open).
+    val openKind = CaseInside.kindOf(g.platform)
+    val canOpen = openOf != null && openKind != CaseInside.Kind.BOX
+    val itemReal = rememberSoftBitmap(if (canOpen) inside?.real else null, 480)
+    val itemLabel = rememberSoftBitmap(if (canOpen && inside?.real == null) inside?.label else null, 480)
+    val itemAspect = inside?.aspect ?: 1f
+    val trayBmp = remember(canOpen, g.platform, shape, itemAspect) { if (canOpen) runCatching { CaseInside.tray(g.platform, shape, itemAspect) }.getOrNull() else null }
+    val lidBmp = remember(canOpen, g.platform, shape, front) { if (canOpen) runCatching { CaseInside.lid(g.platform, shape, front) }.getOrNull() else null }
+    val itemBmp = remember(canOpen, itemReal, itemLabel, itemAspect, openKind) {
+        if (canOpen && inside != null) runCatching { CaseInside.item(openKind, itemReal, itemLabel, itemAspect, inside.tone) }.getOrNull() else null
+    }
+    val itemRect = remember(openKind, shape, itemAspect) { CaseInside.itemRect(openKind, shape, itemAspect) }
+    val plastic = remember(g.platform) { CaseInside.plastic(g.platform) }
     Canvas(modifier) {
         val yawNow = yawOf?.invoke() ?: yaw
         val shadeNow = shadeOf?.invoke() ?: shade
@@ -135,7 +154,17 @@ internal fun Case3D(
         val h = fit
         val w = h * shape
         val d = h * depth
-        drawIntoCanvas { canvas ->
+        val openNow = if (canOpen) (openOf?.invoke() ?: 0f) else 0f
+        if (openNow > 0.002f && trayBmp != null && lidBmp != null) drawIntoCanvas { canvas ->
+            // Update 189: open — the whole book (lid to the left of the hinge, tray to the right) fitted in the same room.
+            val k = 1f / (1f + 0.92f * openNow)
+            val w2 = w * k; val h2 = h * k; val d2 = d * k
+            CaseOpenDraw.draw(
+                canvas.nativeCanvas, size.width / 2f + w2 * 0.5f * openNow, size.height / 2f, w2, h2, d2, yawNow, pitch + 8f * openNow,
+                openNow, face ?: noCover ?: loading, spine, backFace, trayBmp, lidBmp, itemBmp, itemRect,
+                showItemOf?.invoke() ?: true, plastic, (1f - shadeNow).coerceIn(0f, 1f)
+            )
+        } else drawIntoCanvas { canvas ->
             CaseDraw.draw(
                 canvas.nativeCanvas, size.width / 2f, size.height / 2f, w, h, d, yawNow, pitch,
                 face ?: noCover ?: loading, spine, (1f - shadeNow).coerceIn(0f, 1f), reflect,
@@ -144,6 +173,9 @@ internal fun Case3D(
         }
     }
 }
+
+/** Update 189: the disc / card in an opening case: its own picture ([real]) or the art for a drawn one ([label]). */
+internal class CaseItem(val real: Any?, val label: Any?, val aspect: Float, val tone: Int)
 
 /** Update 186: a keep case (DVD-style), a clear jewel case (CDs) or a cardboard box (cartridges). */
 internal const val CASE_KEEP = 0

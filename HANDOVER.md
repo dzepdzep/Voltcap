@@ -256,6 +256,37 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 189
+- **Opening cases:**
+  - `InspectPiece.content` (BOX only) = `contentPieceFor` (mediaPiece CARTRIDGE_DISC, else a generic disc for disc
+    consoles).
+  - `InspectMotion`: `lid` / `out` / `opened` / `toggleCase(scope, hinged, hasContent)`; `contentTurn`
+    (`nudgeContent` / `releaseContent`). `close()` resets the case first.
+  - Case3D draws `CaseOpenDraw` (ui/CaseOpen.kt) while `openOf() > 0`:
+    - a book fitted by k = 1/(1 + 0.92·open), centre shifted w2/2·open, pitch + 8·open;
+    - tray / item / walls / spine / back / lid outside / lid inside, sorted by depth;
+    - lid angle 178°·open around (x = −hw, z = +hd).
+  - `CaseInside`: Kind HUB / JEWEL / SLOT / BOX, `plastic(platform)`, and `tray` / `lid` / `item` bitmaps (LRU 12).
+  - `InspectContent` flies from `itemRect` in the open book (k = 1/1.92) to the slot centre + 0.1w. The case moves
+    −0.34w and scales 0.58 with `out`.
+  - Tap on the piece, or R3 (GameWindow `onPreviewKeyEvent`), toggles it; `OpenHint` explains.
+- **Disc undersides:**
+  - `DiscFormat` / `DiscFormats.of(game)` (file read for PS2 / DVD consoles: ext, ISO size, CHD unitBytes /
+    logicalBytes, CSO size); `drawDiscUnderside(c, r, format, view)`.
+  - InspectDisc uses it with yaw; mini disc k = 80/120.
+- **Second screen look:**
+  - `Features.secondLook` (SHOWCASE default / CLASSIC).
+  - SecondScreenHome: `ShowcaseBackdrop`, `pageBody` lambda shared by both looks, `ShowcaseTopBar` / `ShowcaseDots` /
+    `ShowcaseDock` (ui/SecondShowcase.kt); `SHOWCASE_TOP` 52 dp / `SHOWCASE_BOTTOM` 78 dp.
+  - `SecondHomeGame.logoUrl`; `avatarUrl` / `raPoints` params.
+- **Dim:**
+  - `secondDimLevel` is now `second_dim_level2` (30 / 45 / 60, default 45) and the backlight 0.12.
+  - `SecondDim.artGrey` (ValueAnimator) is read by `Modifier.secondDimArt()`: a RenderEffect colour matrix on
+    API 31+, darkening only below. Used on the showcase art and logo.
+- **Stick lights:** LauncherScreen registers SCREEN_OFF / ON while composed. Off: `apply(on = false)`; on: the
+  latest colour and level (`lightsNow`), on a thread.
+- Not yet tried on a device.
+
 ## State after update 188
 - **SecondDim** (ui/SecondDim.kt): plain Views, because Compose is paused while a game is in front and the
   Presentation stays up.

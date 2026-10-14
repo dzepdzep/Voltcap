@@ -1231,6 +1231,36 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
     }
 
+    // Update 189: the screen going off (timeout, power button) turns every stick light off — on the AYN Thor the
+    // firmware switched only the right stick's off and the left one stayed lit with the screen dark — and the screen
+    // coming on puts Voltcap's colour back (also while a game is in front). Only when Voltcap runs the lights.
+    val lightsNow by androidx.compose.runtime.rememberUpdatedState(
+        Triple(state.appearance.lightsEnabled && !com.shelf.launcher.CrashGuard.safeMode, !lightsDark && !lightsHeldOff,
+            com.shelf.launcher.data.LightsTheme.resolve(state.appearance.lightsColor) to
+                (if (state.appearance.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR) (state.appearance.lightsBrightness * 45 / 100).coerceAtLeast(3) else state.appearance.lightsBrightness))
+    )
+    DisposableEffect(Unit) {
+        val app = lightsContext.applicationContext
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(c: android.content.Context, i: android.content.Intent) {
+                val (enabled, on, colorLevel) = lightsNow
+                if (!enabled) return
+                val off = i.action == android.content.Intent.ACTION_SCREEN_OFF
+                Thread({
+                    runCatching {
+                        com.shelf.launcher.data.ControllerLights.apply(app, true, on = !off && on, color = colorLevel.first, brightness = colorLevel.second)
+                    }
+                }, "voltcap-lights-screen").start()
+            }
+        }
+        runCatching {
+            app.registerReceiver(receiver, android.content.IntentFilter().apply {
+                addAction(android.content.Intent.ACTION_SCREEN_OFF); addAction(android.content.Intent.ACTION_SCREEN_ON)
+            })
+        }
+        onDispose { runCatching { app.unregisterReceiver(receiver) } }
+    }
+
     // "Lights pulse with the music": while music plays and Voltcap is on screen, the lights beat in the
     // cover's colour — to the real sound when the music scene is listening, else to a steady 112 bpm.
     val musicPulse = state.appearance.lightsEnabled && state.appearance.lightsMusic && !lightsDark && !lightsHeldOff &&
@@ -1584,8 +1614,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     discUrl = key?.let { k -> state.physicalMedia[k].orEmpty().firstOrNull { it.first == "Disc / cartridge" }?.second },
                     labelUrl = key?.let { k -> state.physicalMedia[k].orEmpty().firstOrNull { it.first == "Disc label" }?.second },
                     box2dUrl = key?.let { k -> BoxTexture.front(state.physicalMedia[k], game?.platform) },
-                    shots = key?.let { k -> state.screenshots[k] }.orEmpty()
+                    shots = key?.let { k -> state.screenshots[k] }.orEmpty(),
+                    logoUrl = key?.let { k -> state.artOverrides[k]?.logo ?: state.art[k]?.logoUrl }
                 ),
+                // Update 189: the "Game art" look's top-left pill.
+                avatarUrl = profilePictureUrl(com.shelf.launcher.data.RaBadges.mediaUrl(state.raProfile?.UserPic)),
+                raPoints = state.raProfile?.TotalPoints,
                 onNeedAchievements = { viewModel.loadAchievementDetails(it) },
                 onNeedPhysical = { viewModel.loadPhysicalMedia(it) },
                 walkthroughContent = { g -> GuideSecondScreenPage(g, guideUi) { viewModel.peekGuide(it) } },
