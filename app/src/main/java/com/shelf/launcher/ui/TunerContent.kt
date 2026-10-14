@@ -193,6 +193,16 @@ private fun TunerLiveCard(s: com.shelf.launcher.device.tune.TunerStatus) {
         // Update 144: the note starts with a capital even when the fan reading is the only one.
         if (live.isNotEmpty()) MutedNote(live.joinToString(" · ").replaceFirstChar { it.uppercase() })
         s.note?.let { MutedNote(it) }
+        // Update 201: before this update the chip temperature was never found on AYN handhelds, so Curve / Hold temp switched
+        // the fan to manual and then never set a speed (it ran at AYN's fixed 50 %). Say so if a reading is still missing.
+        if ((p.fan == FanMode.CURVE || p.fan == FanMode.HOLD_TEMP) && s.tempC == null && !s.sleeping) MutedNote(
+            "No chip temperature reading yet: until there is one the fan runs at the handheld's own manual speed."
+        )
+        // Update 201: AYN's root service puts its own clocks back every 10 s; say how often Voltcap had to set the limits again.
+        if (s.resets > 0) MutedNote(
+            "The handheld put its own clocks back ${s.resets}× since these limits were set (its performance mode does that " +
+                "every 10 seconds); Voltcap set them again each time, within about a second."
+        )
     }
 }
 

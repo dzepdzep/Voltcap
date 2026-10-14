@@ -199,8 +199,10 @@ object DeviceControls {
     private fun floatingSettingKey(): String? {
         if (floatingSearched) return floatingKey
         floatingSearched = true
-        val list = RootShell.exec("settings list system") ?: return null
-        floatingKey = list.lines()
+        // Update 201: AYN's root service returns only the first line of output ("settings list" gave one setting), so the
+        // candidates are picked by grep and come back on one line, ';'-separated.
+        val list = RootShell.execJoined("settings list system | grep -i -E 'float|ball'", ';') ?: return null
+        floatingKey = list.split(';')
             .mapNotNull { line -> line.substringBefore('=', "").trim().takeIf { it.isNotEmpty() }?.let { it to line.substringAfter('=').trim() } }
             .firstOrNull { (k, v) -> (k.contains("float", true) || k.contains("suspend_ball", true) || k.contains("ball", true)) && (v == "0" || v == "1") }
             ?.first

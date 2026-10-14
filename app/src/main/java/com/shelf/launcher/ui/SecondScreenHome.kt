@@ -174,6 +174,8 @@ fun SecondScreenHome(
     onDockChange: (List<String>) -> Unit,
     onOpenSettings: () -> Unit,
     options: SecondScreenOptions = SecondScreenOptions(),
+    /** Update 201: the Lyrics stage's own settings (its gear). */
+    onOpenMusicSettings: (() -> Unit)? = null,
     onToggleLyrics: () -> Unit = {},
     /** Spotify library entry / blur setting for the full music page (null = hidden). */
     onBrowseSpotify: (() -> Unit)? = null,
@@ -383,7 +385,8 @@ fun SecondScreenHome(
                             onNext = onNext,
                             onPrevious = onPrevious,
                             onSeek = onSeek,
-                            modifier = Modifier.fillMaxSize().clip(uiRounded(18.dp))
+                            modifier = Modifier.fillMaxSize().clip(uiRounded(18.dp)),
+                            onSettings = onOpenMusicSettings
                         )
                     } else if (fullMusic && nowPlaying != null) {
                     FullMusicScreen(

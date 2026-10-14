@@ -130,7 +130,12 @@ class TuneService : Service() {
             }
             Tuner.updateLive(snap?.fps, target, snap?.powerW, temp, fan)
             // Caps the vendor's daemon lifted are put back within ~4 s.
+            // Update 201: while the handheld keeps putting its own clocks back (AYN's root service: every 10 s), a cheap
+            // one-call look every second puts them back within a second instead of up to 4 s of every 10 (on the Odin 2
+            // Portal the little cores went from the Eco cap of 0.79 GHz back to 1.46 GHz for ~4 s after every reset).
+            val fighting = Tuner.vendorFighting(nowMs)
             if (nowMs - lastReassert >= 4_000L) { lastReassert = nowMs; runCatching { Tuner.reassert() } }
+            else if (fighting) runCatching { Tuner.quickCheck() }
             if (tick % 5 == 0 && Tuner.ledStatus != LedStatus.OFF) runCatching { statusLight(Tuner.ledStatus, temp) }
             if (tick % 10 == 0) refreshNotification()
             tick++
@@ -138,7 +143,7 @@ class TuneService : Service() {
             // AutoTDP / hold-temp need a reading a second, a fan curve every 3 s, plain caps every 4 s.
             delay(
                 when {
-                    p.autoTdp || p.fan == FanMode.HOLD_TEMP -> 1_000L
+                    p.autoTdp || p.fan == FanMode.HOLD_TEMP || fighting -> 1_000L
                     p.fan == FanMode.CURVE -> 3_000L
                     else -> 4_000L
                 }

@@ -55,12 +55,56 @@ object TuneHardware {
         return out.trim().takeUnless { it.isEmpty() || it.contains("No such file") || it.contains("denied") }
     }
 
-    /** Writes value=path pairs in one go; true when the command ran. */
+    /**
+     * Writes value=path pairs, in order; true when every command ran.
+     * Update 201: it used to send one long "echo … ; echo …" chain, which AYN's root service cuts after 255
+     * characters: only the first cluster's governor / max / min ever landed, and the GPU caps, the msm_performance
+     * caps and the boost switches after them never ran (Odin 2 Portal: Underclock Medium left the prime core at
+     * 3.19 GHz and the GPU at max_pwrlevel 0). Now split into commands that fit ([RootShell.execAll]).
+     */
     fun writeAll(writes: List<Pair<String, String>>): Boolean {
         val parts = writes.filter { (p, v) -> safe(p) && v.matches(Regex("[A-Za-z0-9_.:\\- ]+")) }
             .map { (p, v) -> if (v.contains(' ') || v.contains(':')) "echo '$v' > $p" else "echo $v > $p" }
         if (parts.isEmpty()) return true
-        return RootShell.exec(parts.joinToString(" ; ")) != null
+        return RootShell.execAll(parts)
+    }
+
+    /**
+     * Update 201: reads several files in as few root calls as fit (the service returns one line per call, so the
+     * values come back joined by '|'). Same order as [paths]; null for a file that is missing or unreadable.
+     */
+    fun readMany(paths: List<String>): List<String?> {
+        if (paths.isEmpty()) return emptyList()
+        val out = ArrayList<String?>(paths.size)
+        // "cd <dir> && for f in a b; do echo "$(cat $f)"; done", joined: as many files per call as fit.
+        fun command(chunk: List<String>): String {
+            val dir = chunk.map { it.substringBeforeLast('/') }.reduce { a, b -> a.commonPrefix(b) }.substringBeforeLast('/', "")
+                .takeIf { it.length > 1 && chunk.all { p -> p.startsWith("$it/") } }
+            val names = if (dir != null) chunk.map { it.removePrefix("$dir/") } else chunk
+            return (if (dir != null) "cd $dir && " else "") + "for f in ${names.joinToString(" ")}; do echo \"\$(cat \$f)\"; done"
+        }
+        val joinCost = 40 // "{ … ; } 2>/dev/null | tr '\n' '|'"
+        var i = 0
+        while (i < paths.size) {
+            var chunk = listOf(paths[i])
+            var j = i + 1
+            while (j < paths.size && command(chunk + paths[j]).length + joinCost <= RootShell.MAX_COMMAND) { chunk = chunk + paths[j]; j++ }
+            val safeChunk = chunk.all { safe(it) }
+            val line = if (safeChunk) RootShell.execJoined(command(chunk), '|') else null
+            val values = line?.split('|')
+            chunk.indices.forEach { k ->
+                out += values?.getOrNull(k)?.trim()?.takeUnless { it.isEmpty() || it.contains("No such file") || it.contains("denied") }
+            }
+            i = j
+        }
+        return out
+    }
+
+    private fun String.commonPrefix(other: String): String {
+        val n = minOf(length, other.length)
+        var k = 0
+        while (k < n && this[k] == other[k]) k++
+        return substring(0, k)
     }
 
     // ---- CPU ----
@@ -68,8 +112,11 @@ object TuneHardware {
     fun clusters(): List<Cluster> {
         clusterCache?.let { return it }
         if (!available) return emptyList()
-        val ls = RootShell.exec("ls -d $CPUFREQ/policy*") ?: return emptyList()
-        val raw = ls.lines().map { it.trim() }.filter { it.matches(Regex("$CPUFREQ/policy[0-9]+")) }.mapNotNull { p ->
+        // Update 201: `ls -d` printed one policy per line and AYN's root service only returns the first line, so every
+        // AYN handheld showed a single "CPU (cores 0 1 2)" cluster: Big and Prime were never capped, AutoTDP only moved
+        // the little cores and the prime-core slider was missing. The shell's glob prints them all on one line.
+        val ls = RootShell.exec("echo $CPUFREQ/policy*") ?: return emptyList()
+        val raw = ls.split(Regex("\\s+")).map { it.trim() }.filter { it.matches(Regex("$CPUFREQ/policy[0-9]+")) }.mapNotNull { p ->
             val max = read("$p/cpuinfo_max_freq")?.toIntOrNull() ?: return@mapNotNull null
             val min = read("$p/cpuinfo_min_freq")?.toIntOrNull() ?: 0
             val freqs = read("$p/scaling_available_frequencies")?.split(Regex("\\s+"))?.mapNotNull { it.toIntOrNull() }?.sorted()
@@ -150,6 +197,19 @@ object TuneHardware {
     fun firstCpu(c: Cluster): Int? = c.cpus.split(Regex("[\\s,-]+")).firstOrNull { it.isNotBlank() }?.toIntOrNull()
         ?: c.policy.substringAfterLast("policy").toIntOrNull()
 
+    /** Update 201: every CPU of a cluster ("3 4 5 6" or "3-6" → 3, 4, 5, 6), for msm_performance's per-CPU lists. */
+    fun cpusOf(c: Cluster): List<Int> {
+        val list = c.cpus.split(Regex("[\\s,]+")).filter { it.isNotBlank() }.flatMap { part ->
+            val range = part.split('-').mapNotNull { it.trim().toIntOrNull() }
+            when {
+                range.size == 2 && range[0] <= range[1] -> (range[0]..range[1]).toList()
+                range.size == 1 -> range
+                else -> emptyList()
+            }
+        }.distinct()
+        return list.ifEmpty { listOfNotNull(firstCpu(c)) }
+    }
+
     // ---- GPU ----
 
     fun gpu(): Gpu? {
@@ -208,22 +268,32 @@ object TuneHardware {
 
     // ---- Temperature (root can read zones apps can't) ----
 
+    /** The CPU / GPU thermal zones' numbers (thermal_zoneN). */
     @Volatile private var zones: List<String>? = null
 
+    /**
+     * Update 201: the hottest CPU / GPU zone, °C. Both the zone list (one line per zone) and the readings
+     * ("cat a ; cat b") came back as their first line only from AYN's root service; zone 0 is a modem sensor ("pa")
+     * on the Odin 2 Portal and the Thor, so no zone was ever found and this was always null: Voltcap's fan curve and
+     * hold-temp never set a fan speed (the fan stayed at AYN's manual 50 %), the heat guard never stepped and the
+     * temperature light never changed outside AutoTDP. Both now come back on one line.
+     */
     fun socTempC(): Float? {
         if (!available) return null
         val z = zones ?: run {
-            val out = RootShell.exec("for z in /sys/class/thermal/thermal_zone*; do echo \"\$z \$(cat \$z/type)\"; done").orEmpty()
-            out.lines().mapNotNull { line ->
-                val parts = line.trim().split(' ')
-                if (parts.size < 2) return@mapNotNull null
+            val out = RootShell.execJoined("for z in /sys/class/thermal/thermal_zone*; do echo \"\${z##*zone} \$(cat \$z/type)\"; done", ';')
+                ?: return null
+            out.split(';').mapNotNull { entry ->
+                val parts = entry.trim().split(' ')
+                if (parts.size < 2 || parts[0].toIntOrNull() == null) return@mapNotNull null
                 val type = parts[1].lowercase()
-                if (type.contains("cpu") || type.contains("gpu") || type.contains("soc")) parts[0] else null
+                // "socd" is the SoC droop detector (a level, not a temperature).
+                if ((type.contains("cpu") || type.contains("gpu") || type.contains("soc")) && type != "socd") parts[0] else null
             }.take(24).also { zones = it }
         }
         if (z.isEmpty()) return null
-        val out = RootShell.exec(z.joinToString(" ; ") { "cat $it/temp" }) ?: return null
-        return out.lines().mapNotNull { it.trim().toFloatOrNull() }
+        val out = RootShell.execJoined("for n in ${z.joinToString(" ")}; do cat /sys/class/thermal/thermal_zone\$n/temp; done") ?: return null
+        return out.split(Regex("\\s+")).mapNotNull { it.trim().toFloatOrNull() }
             .map { if (it > 1000f) it / 1000f else it }.filter { it in 5f..130f }.maxOrNull()
     }
 }

@@ -467,8 +467,11 @@ object ChargeLimiter {
 
     private fun listChargingEnabled(): List<String> {
         if (RootShell.available) {
-            val out = RootShell.exec("ls -d /sys/class/power_supply/*/charging_enabled") ?: return emptyList()
-            return out.lines().map { it.trim() }.filter { it.startsWith("/sys/") && it.endsWith("/charging_enabled") }
+            // Update 201: AYN's root service returns only the first line of output, so `ls -d` (one path per line) found
+            // one charging_enabled switch at most; the glob prints them all on one line (unmatched, it stays a literal "*").
+            val out = RootShell.exec("echo /sys/class/power_supply/*/charging_enabled") ?: return emptyList()
+            return out.split(Regex("\\s+")).map { it.trim() }
+                .filter { it.startsWith("/sys/") && it.endsWith("/charging_enabled") && !it.contains('*') }
         }
         return File("/sys/class/power_supply").listFiles().orEmpty()
             .map { File(it, "charging_enabled") }.filter { it.exists() }.map { it.path }

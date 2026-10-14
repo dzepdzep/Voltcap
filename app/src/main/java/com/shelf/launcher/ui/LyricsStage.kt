@@ -36,7 +36,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BatterySaver
@@ -723,7 +725,9 @@ internal fun LyricsStage(
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     onSeek: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Update 201: the page's own settings (Settings › Screens › Second screen art & music › Music page layout). */
+    onSettings: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("LyricsStage")
     val context = LocalContext.current
@@ -919,7 +923,8 @@ internal fun LyricsStage(
             )
             val wideStats = maxWidth >= maxHeight * 1.5f
             val narrow = maxWidth < maxHeight * 0.9f
-            val statsOn = F.stageStats.state.value
+            // (Update 201: the stats panel is gone from the music page — asked for; its reader stays off.)
+            val statsOn = false
             val stats = rememberStageStats(statsOn && active)
             val sidePad = maxWidth * 0.03f
 
@@ -986,6 +991,18 @@ internal fun LyricsStage(
                 }
             }
 
+            // Update 201: a small gear at the top right — straight to this page's settings (its effects and toggles).
+            if (onSettings != null) {
+                androidx.compose.foundation.layout.Box(
+                    Modifier.align(Alignment.TopEnd).padding(top = vUnit * 1.6f, end = sidePad * 0.6f).size(36.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape).background(Color.Black.copy(alpha = 0.32f))
+                        .padTarget("stage-settings") { onSettings() }
+                        .clickable { onSettings() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.material3.Icon(Icons.Filled.Settings, "Lyrics stage settings", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
+                }
+            }
             // Volume (bottom-right) and the status line (bottom-left), over everything.
             if (F.stageVolume.state.value) {
                 StageVolume(sz, accent, Modifier.align(Alignment.BottomEnd).padding(end = sidePad * 0.6f, bottom = vUnit * 1.2f))
@@ -1677,17 +1694,6 @@ internal fun LyricsStageSettings() {
         FeatureSwitch(Icons.Filled.Timer, "Show seconds", "The clock ticks every second.", F.stageSeconds)
         PercentSlider("Interface size", F.stageUiScale.state.value, { F.stageUiScale.value = it }, min = 70, max = 130)
         Spacer(Modifier.height(12.dp))
-
-        SectionLabel("Stats panel")
-        FeatureSwitch(Icons.Filled.Speed, "Show stats panel", "This handheld's stats: at the left on wide screens, as a strip under the clock otherwise.", F.stageStats)
-        if (F.stageStats.state.value) {
-            FeatureSwitch(Icons.Filled.Memory, "CPU", "The cores' current speed as a share of their top speed (hidden if Android doesn't allow reading it).", F.stageCpu)
-            FeatureSwitch(Icons.Filled.DeveloperBoard, "GPU", "How busy the graphics chip is (hidden if this device doesn't report it).", F.stageGpu)
-            FeatureSwitch(Icons.Filled.Memory, "RAM", "Memory in use.", F.stageRam)
-            FeatureSwitch(Icons.Filled.Storage, "Drives", "Internal storage and SD cards: used and free.", F.stageDrives)
-            FeatureSwitch(Icons.Filled.NetworkCheck, "Network", "Download and upload speed right now.", F.stageNet)
-        }
-        Spacer(Modifier.height(4.dp))
 
         SectionLabel("Lyrics & volume")
         FeatureSwitch(Icons.Filled.Lyrics, "Show lyrics", "Synced lyrics beside the cover (under it on a tall screen); unsynced ones scroll with the song.", F.stageLyrics)

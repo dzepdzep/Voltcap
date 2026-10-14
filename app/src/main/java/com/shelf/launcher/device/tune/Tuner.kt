@@ -24,7 +24,13 @@ data class TunerStatus(
     /** Last write that didn't stick, or null. */
     val note: String? = null,
     /** Extra underclock steps the heat guard is holding (0 = none). */
-    val heatStep: Int = 0
+    val heatStep: Int = 0,
+    /**
+     * Update 201: how often the handheld put its own clocks back over Voltcap's limits since they were set (AYN's
+     * root service does it every 10 s while its performance mode is Standard / Performance / High), and Voltcap
+     * wrote them again. Shown on the tuner page so the fight isn't hidden.
+     */
+    val resets: Int = 0
 )
 
 /**
@@ -205,8 +211,11 @@ object Tuner {
         // Heat guard switched off, or no game: its extra steps end with it.
         if (!heatGuardOn || key == null) heatReset()
         val t = compute(p, level)
+        // Update 201: the count of the handheld's resets starts again with each profile.
+        resets = 0
+        lastResetAt = 0L
         write(t)
-        _status.value = _status.value.copy(supported = true, source = source, profile = p, level = level, heatStep = heatStep)
+        _status.value = _status.value.copy(supported = true, source = source, profile = p, level = level, heatStep = heatStep, resets = 0)
         // Any active profile needs the loop: the vendor's daemon lifts caps within seconds, also
         // outside games (the device-wide tier used to be written once and then quietly undone).
         // During a game the heat guard and the measurements need it too.
@@ -235,28 +244,89 @@ object Tuner {
         _status.value = _status.value.copy(fps = fps, targetFps = target, powerW = powerW, tempC = tempC, fanPercent = fan)
     }
 
+    /** Update 201: when the handheld last put its own clocks back over the limits (elapsedRealtime), 0 = not yet. */
+    @Volatile private var lastResetAt = 0L
+    @Volatile private var resets = 0
+
+    /**
+     * Update 201: the handheld is putting its clocks back over the limits right now (seen within the last 30 s).
+     * AYN's root service ("pservice", read from its binary and seen in its log as "cpu_init boot_completed
+     * cpugpumode=N" every 10.05 s on both the Odin 2 Portal and the Thor) writes, every 10 s while the screen is on:
+     * full scaling_max_freq on all three clusters, its performance-mode floors in scaling_min_freq
+     * (Performance: 1.23 / 2.05 / 2.48 GHz), GPU max_pwrlevel 0 and min_pwrlevel 2. The caps that msm_performance and
+     * GPU devfreq hold survive that (they are separate limits the kernel takes the lowest of), but the floors and the
+     * GPU's min level don't: with them back, the cores sit pinned at the cap and the GPU can't go below 550 MHz. While
+     * this is true, [TuneService] looks every second ([quickCheck]) instead of every 4 s.
+     */
+    /** Update 201: a clock limit (not just a fan mode or Stock) is what's written right now. */
+    val limitOn: Boolean get() = lastTarget?.limit == true && !sleeping
+
+    fun vendorFighting(nowMs: Long = android.os.SystemClock.elapsedRealtime()): Boolean =
+        lastResetAt > 0L && nowMs - lastResetAt < 30_000L && lastTarget?.limit == true && !sleeping
+
+    /**
+     * Update 201: one cheap root call (the fastest cluster's floor and top speed, and the GPU's min level): when the
+     * handheld has just put its own values back, the full [reassert] runs at once.
+     */
+    fun quickCheck() {
+        val t = lastTarget ?: return
+        if (sleeping || !t.limit) return
+        val c = TuneHardware.clusters().lastOrNull() ?: return
+        val g = TuneHardware.gpu()
+        val paths = listOfNotNull("${c.policy}/scaling_min_freq", "${c.policy}/scaling_max_freq", g?.let { "${it.root}/min_pwrlevel" })
+        val v = TuneHardware.readMany(paths)
+        val min = v.getOrNull(0)?.toIntOrNull()
+        val max = v.getOrNull(1)?.toIntOrNull()
+        val gpuMin = v.getOrNull(2)?.toIntOrNull()
+        val undone = (min != null && t.min[c.policy]?.let { min > it } == true) ||
+            (max != null && t.max[c.policy]?.let { max != it } == true) ||
+            (gpuMin != null && t.gpuMin != null && gpuMin < t.gpuMin)
+        if (undone) reassert()
+    }
+
     /** The vendor's game daemon resets caps mid-game: read back and write again if it did. */
     @Synchronized
     fun reassert() {
         val t = lastTarget ?: return
         if (sleeping || !t.limit) return
-        val drifted = TuneHardware.clusters().any { c ->
-            t.max[c.policy]?.let { it != TuneHardware.currentMax(c) } == true ||
+        // Update 201: every value in a few root calls ([TuneHardware.readMany]) instead of one call per file (it was
+        // 3 per cluster + 2 for the GPU + one per boost switch, every 4 s).
+        val clusters = TuneHardware.clusters()
+        val g = TuneHardware.gpu()
+        val o = TuneHardware.overrides()
+        val paths = ArrayList<String>()
+        clusters.forEach { c -> paths += "${c.policy}/scaling_max_freq"; paths += "${c.policy}/scaling_min_freq"; paths += "${c.policy}/scaling_governor" }
+        g?.let { paths += "${it.root}/max_pwrlevel"; paths += "${it.root}/min_pwrlevel" }
+        o?.msmMax?.let { paths += it }
+        o?.boosts?.keys?.forEach { paths += it }
+        val read = TuneHardware.readMany(paths)
+        val v = HashMap<String, String?>().apply { paths.forEachIndexed { i, p -> put(p, read.getOrNull(i)) } }
+        val drifted = clusters.any { c ->
+            val max = v["${c.policy}/scaling_max_freq"]?.toIntOrNull()
+            val min = v["${c.policy}/scaling_min_freq"]?.toIntOrNull()
+            val gov = v["${c.policy}/scaling_governor"]
+            t.max[c.policy]?.let { max != null && it != max } == true ||
                 // Update 200: AYN's root service writes its performance-mode floors (scaling_min_freq, GPU min_pwrlevel)
-                // again every 10 s to a few minutes (seen on both the Thor and the Odin 2 Portal): those count as drift too.
-                t.min[c.policy]?.let { want -> (TuneHardware.currentMin(c) ?: want) > want } == true ||
-                t.gov[c.policy]?.let { it != TuneHardware.currentGovernor(c) } == true
-        } || TuneHardware.gpu()?.let { g ->
-            val (maxLv, minLv) = TuneHardware.gpuLevels(g)
+                // again every 10 s (seen on both the Thor and the Odin 2 Portal): those count as drift too.
+                t.min[c.policy]?.let { want -> (min ?: want) > want } == true ||
+                t.gov[c.policy]?.let { gov != null && it != gov } == true
+        } || g?.let {
+            val maxLv = v["${it.root}/max_pwrlevel"]?.toIntOrNull()
+            val minLv = v["${it.root}/min_pwrlevel"]?.toIntOrNull()
             // A min level below the target's = a faster GPU floor (AYN's performance mode puts level 2 back).
-            (t.gpuMax != null && maxLv != t.gpuMax) || (t.gpuMin != null && minLv != null && minLv < t.gpuMin)
+            (t.gpuMax != null && maxLv != null && maxLv != t.gpuMax) || (t.gpuMin != null && minLv != null && minLv < t.gpuMin)
         } == true ||
-            TuneHardware.overrides()?.let { o ->
+            o?.let {
                 // The perf HAL raised its own limit again, or switched a boost back on.
-                (o.msmMax != null && !msmHolds(TuneHardware.read(o.msmMax), msmList(t.max))) ||
-                    o.boosts.keys.any { TuneHardware.read(it) != "0" }
+                (it.msmMax != null && !msmHolds(v[it.msmMax], msmList(t.max))) ||
+                    it.boosts.keys.any { k -> v[k].let { b -> b != null && b != "0" } }
             } == true
-        if (drifted) write(t)
+        if (drifted) {
+            lastResetAt = android.os.SystemClock.elapsedRealtime()
+            resets++
+            write(t)
+            _status.value = _status.value.copy(resets = resets)
+        }
     }
 
     // ---- screen off / on ----
@@ -297,7 +367,9 @@ object Tuner {
             heatCeiling(p) != null
         clusters.forEachIndexed { i, c ->
             val base = when (p.tier) {
-                PowerTier.CUSTOM -> p.clusterCaps[c.name] ?: 100
+                // Update 201: before this update AYN handhelds showed one cluster named "CPU" (really the little cores, see
+                // TuneHardware.clusters): a cap saved under that name goes on to the little cluster.
+                PowerTier.CUSTOM -> p.clusterCaps[c.name] ?: p.clusterCaps["CPU"].takeIf { i == 0 && clusters.size > 1 } ?: 100
                 else -> p.tier.cpu
             }
             var pct = base * scale
@@ -466,7 +538,8 @@ object Tuner {
     fun underclockKhz(p: TuneProfile, c: TuneHardware.Cluster, index: Int, count: Int): Int? {
         if (!p.underclocked) return null
         if (p.effectiveUnderclock == Underclock.CUSTOM) {
-            val want = p.underclockKhz[c.name] ?: return null
+            // Update 201: a speed saved under the old single "CPU" cluster (the little cores, see TuneHardware.clusters).
+            val want = p.underclockKhz[c.name] ?: p.underclockKhz["CPU"].takeIf { index == 0 && count > 1 } ?: return null
             return if (want >= c.maxKhz) null else TuneHardware.snap(c, want)
         }
         val u = p.effectiveUnderclock
@@ -516,10 +589,15 @@ object Tuner {
         return wanted.split(' ').filter { it.isNotBlank() }.all { it in have }
     }
 
-    /** "0:1200000 4:1800000 7:2000000" for msm_performance, from per-policy kHz. */
-    private fun msmList(perPolicy: Map<String, Int>): String = TuneHardware.clusters().mapNotNull { c ->
-        val cpu = TuneHardware.firstCpu(c) ?: return@mapNotNull null
-        perPolicy[c.policy]?.let { "$cpu:$it" }
+    /**
+     * "0:1200000 1:1200000 2:1200000 3:1800000 …" for msm_performance, from per-policy kHz.
+     * Update 201: every CPU of a cluster, not just its first: msm_performance keeps one limit per CPU and the kernel
+     * takes the highest floor / lowest cap of them, so a floor the perf HAL left on CPUs 1 and 2 (1.46 GHz on the Odin 2
+     * Portal) kept holding the whole little cluster up when only CPU 0's was lowered.
+     */
+    private fun msmList(perPolicy: Map<String, Int>): String = TuneHardware.clusters().flatMap { c ->
+        val khz = perPolicy[c.policy] ?: return@flatMap emptyList<String>()
+        TuneHardware.cpusOf(c).map { cpu -> "$cpu:$khz" }
     }.joinToString(" ")
 
     private fun write(t: Target, remember: Boolean = true) {
@@ -552,15 +630,25 @@ object Tuner {
             }
         }
         TuneHardware.overrides()?.let { o ->
-            val s = stock
             if (t.limit) {
+                // Update 201: what the perf HAL / game service had there is kept right before Voltcap's first limit and
+                // put back after the last one. (It used to put back what it read when the tuner first started, which
+                // can be a stale boost: the Odin 2 Portal's game service had /proc/sys/walt/sched_boost at 1 —
+                // "full throttle" — after a game, and the msm_performance floors held the little cores at 1.46 GHz.
+                // Those writes never ran before update 201, see TuneHardware.writeAll, so it didn't show.)
+                if (vendorSaved == null) {
+                    val paths = listOfNotNull(o.msmMax, o.msmMin) + o.boosts.keys
+                    val now = TuneHardware.readMany(paths)
+                    vendorSaved = paths.indices.mapNotNull { i ->
+                        now.getOrNull(i)?.takeIf { v -> v.matches(Regex("[0-9: ]+")) || v.matches(Regex("-?[0-9]+")) }?.let { paths[i] to it }
+                    }.toMap()
+                }
                 o.msmMin?.let { writes += it to msmList(t.min) }
                 o.msmMax?.let { writes += it to msmList(t.max) }
                 o.boosts.keys.forEach { writes += it to "0" }
             } else {
-                o.msmMax?.let { path -> (s?.msmMax ?: msmList(TuneHardware.clusters().associate { it.policy to it.maxKhz })).let { writes += path to it } }
-                o.msmMin?.let { path -> s?.msmMin?.let { writes += path to it } }
-                o.boosts.forEach { (path, value) -> writes += path to value }
+                vendorSaved?.forEach { (path, value) -> writes += path to value }
+                vendorSaved = null
             }
         }
         val ok = TuneHardware.writeAll(writes)
@@ -568,18 +656,29 @@ object Tuner {
         // Update 200: "the command ran" isn't "the caps hold". On the Thor the notification said "Underclock Medium"
         // while every core could still reach its full speed, so with a limit the top speeds are read back and a cap
         // that didn't take is said on the tuner page instead of being assumed.
-        val missed = if (ok && t.limit) TuneHardware.clusters().filter { c ->
-            t.max[c.policy]?.let { want -> TuneHardware.currentMax(c)?.let { it > want } } == true
-        } else emptyList()
+        // Update 201: the GPU's cap is read back too (it was never written on AYN handhelds and nothing said so), all in
+        // one or two root calls.
+        val clusters = TuneHardware.clusters()
+        val g = TuneHardware.gpu()
+        val back = if (ok && t.limit) TuneHardware.readMany(clusters.map { "${it.policy}/scaling_max_freq" } + listOfNotNull(g?.let { "${it.root}/max_pwrlevel" }))
+            else emptyList()
+        val missed = if (ok && t.limit) clusters.filterIndexed { i, c ->
+            t.max[c.policy]?.let { want -> back.getOrNull(i)?.toIntOrNull()?.let { it > want } } == true
+        }.map { it.name } + listOfNotNull(
+            "GPU".takeIf { t.gpuMax != null && back.getOrNull(clusters.size)?.toIntOrNull()?.let { it < t.gpuMax } == true }
+        ) else emptyList()
         _status.value = _status.value.copy(
             note = when {
                 !ok -> "The root service didn't take the new clocks."
-                missed.isNotEmpty() -> "The handheld didn't keep the top speed for " + missed.joinToString { it.name } +
-                    " (its own performance mode or game service sets clocks too). Voltcap writes it again every few seconds."
+                missed.isNotEmpty() -> "The handheld didn't keep the top speed for " + missed.joinToString() +
+                    " (its own performance mode or game service sets clocks too). Voltcap writes it again within seconds."
                 else -> null
             }
         )
     }
+
+    /** Update 201: msm_performance / boost values from right before Voltcap's first limit, put back after the last one. */
+    @Volatile private var vendorSaved: Map<String, String>? = null
 
     private fun captureStock() {
         if (stock != null) return

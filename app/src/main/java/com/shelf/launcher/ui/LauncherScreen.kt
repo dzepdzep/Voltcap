@@ -1851,6 +1851,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 onLaunchApp = { viewModel.launchDockApp(it) },
                 onDockChange = { list -> viewModel.setAppearance(state.appearance.copy(secondDockApps = list)) },
                 onOpenSettings = { menuStartCategory = "Screens"; showMenu = true },
+                // Update 201: the Lyrics stage's gear: straight to Music page layout and its options.
+                onOpenMusicSettings = {
+                    val e = SettingsIndex.all.firstOrNull { it.label == "Music page layout" }
+                    if (e != null) prepareSettingsJump(e.section, e.subpage, e.foldKey, e.label)
+                    menuStartCategory = e?.section ?: "Screens"; showMenu = true
+                },
                 onShortcut = dockShortcut,
                 options = SecondScreenOptions(
                     artType = state.appearance.secondArtType,

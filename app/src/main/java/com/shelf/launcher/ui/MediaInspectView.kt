@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -730,6 +731,36 @@ internal fun InspectStick(motion: InspectMotion) {
         }
         onDispose { view.setOnGenericMotionListener(null) }
     }
+    // Update 201: the stick click and the right stick, taken where the game window's own window gets them, before any
+    // of its parts. Both went only to the part that has the focus — and right after the window opened, or after a finger
+    // turned the piece, nothing in it had: the first click was lost (the case opened, took out or closed only on the
+    // second click) and the stick didn't turn it.
+    DisposableEffect(view, motion) {
+        val window = (view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+        val original = window?.callback
+        if (window == null || original == null) return@DisposableEffect onDispose { }
+        val wrapped = object : android.view.Window.Callback by original {
+            override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+                val code = event.keyCode
+                val hook = MediaInspect.stickClick
+                if (hook != null && (code == android.view.KeyEvent.KEYCODE_BUTTON_THUMBL || code == android.view.KeyEvent.KEYCODE_BUTTON_THUMBR)) {
+                    if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) hook()
+                    return true
+                }
+                return original.dispatchKeyEvent(event)
+            }
+            override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+                if (event.isFromSource(InputDevice.SOURCE_JOYSTICK) && event.action == MotionEvent.ACTION_MOVE) {
+                    val rx = event.getAxisValue(MotionEvent.AXIS_Z)
+                    motion.stick.floatValue = if (abs(rx) > 0.25f) rx else 0f
+                }
+                // (Never taken here either: the left stick still moves through the window's buttons.)
+                return original.dispatchGenericMotionEvent(event)
+            }
+        }
+        window.callback = wrapped
+        onDispose { if (window.callback === wrapped) window.callback = original }
+    }
     LaunchedEffect(motion) {
         // (Update 162 (review): ends once it's closing — held stick and closing made this loop spin without ever waiting.)
         while (!motion.closing) {
@@ -996,13 +1027,20 @@ private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float
         Modifier
             .offset { IntOffset(left.roundToInt(), (bottom + with(density) { 6.dp.toPx() }).roundToInt()) }
             .size(with(density) { w.toDp() }, 28.dp)
-            .graphicsLayer { alpha = shown.value * (1f - motion.out.floatValue) * (if (second) 1f else (1f - motion.lid.floatValue)) },
+            .graphicsLayer {
+                alpha = shown.value * (1f - motion.out.floatValue) * (if (second) 1f else (1f - motion.lid.floatValue))
+                // (Update 201: faded without a layer of its own, which would cut it to the case's width.)
+                compositingStrategy = CompositingStrategy.ModulateAlpha
+            },
         contentAlignment = Alignment.Center
     ) {
         androidx.compose.material3.Text(
             if (second) "Tap the $what (or click a stick) to take it out" else "Tap the case (or click a stick) to open it",
             color = Color.White, fontSize = 12.sp, maxLines = 1,
-            modifier = Modifier.background(Color.Black.copy(alpha = 0.55f), androidx.compose.foundation.shape.RoundedCornerShape(50))
+            // Update 201: as wide as it needs, centred under the case — it was cut to the case's width, so under a narrow
+            // case "Tap the cartridge (or click a stick) to take it out" lost its end ("… to").
+            modifier = Modifier.wrapContentWidth(unbounded = true)
+                .background(Color.Black.copy(alpha = 0.55f), androidx.compose.foundation.shape.RoundedCornerShape(50))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         )
     }
@@ -1102,6 +1140,19 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
             val edge = obtainGraphicsLayer()
             val lit = obtainGraphicsLayer()
             val back = obtainGraphicsLayer()
+            // Update 201: the back is drawn in a layer of its own. Its tone (SrcIn), sheen and shade (SrcAtop) blend with
+            // what's already drawn under them — without its own layer that was the game window's whole surface, so each
+            // of them filled the piece's whole box: a grey / see-through plate stood over the back of every cartridge
+            // (the N64's most of all, its round top inside a square), wider than the cartridge and with its outline
+            // showing through. Now they only touch the back itself.
+            back.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
+            // Update 201: the face's outline made solid (its alpha ×4, the faintest edge pixels dropped) for a back
+            // without a drawn one — a clear shell's face is see-through, so its tone was too, and the label (in the
+            // slices behind it) showed through mirrored.
+            val solid = obtainGraphicsLayer()
+            solid.colorFilter = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
+                1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 4f, -24f
+            )))
             val sheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))
             onDrawWithContent {
                 face.record { this@onDrawWithContent.drawContent() }
@@ -1131,7 +1182,9 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
                     lit.record { drawLayer(face) }
                     at(depth / 2f) { drawLayer(lit) }
                 } else {
-                    val tone = shell ?: p.tone
+                    // (Update 201: opaque — a clear shell's sampled colour is see-through.)
+                    val tone = (shell ?: p.tone).copy(alpha = 1f)
+                    if (shellBack == null) solid.record { drawLayer(face) }
                     back.record {
                         val sb = shellBack
                         if (sb != null) {
@@ -1141,7 +1194,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
                             drawImage(sb, dstOffset = androidx.compose.ui.unit.IntOffset(((size.width - bw) / 2f).toInt(), ((size.height - bh) / 2f).toInt()),
                                 dstSize = androidx.compose.ui.unit.IntSize(bw.toInt(), bh.toInt()))
                         } else {
-                            drawLayer(face)
+                            drawLayer(solid)
                             drawRect(tone, blendMode = BlendMode.SrcIn)
                         }
                         drawRect(sheen, blendMode = BlendMode.SrcAtop)

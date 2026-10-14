@@ -11,9 +11,23 @@ import android.util.Log
  * tried — no su, no exploits. Everything here is a no-op returning null when it isn't there.
  *
  * Calls block (binder round trip, usually a few ms): call them off the main thread.
+ *
+ * Update 201: two limits of AYN's service, read from its binary (/system/bin/pservice, the same build on the
+ * Odin 2 Portal and the Thor) and seen on both handhelds:
+ *  - each argument is copied into a 256-byte buffer without a length check and the next argument ("1") is
+ *    copied right after it, so a command longer than 255 characters is cut there and gets a stray "1"
+ *    appended. Voltcap's clock writes were one long "echo … ; echo …" chain: only the first CPU cluster's
+ *    writes ran, and every GPU cap, msm_performance cap and boost switch after them was silently dropped.
+ *    Long chains go through [execAll], which splits them into commands that fit.
+ *  - the reply is the command's FIRST LINE only (one fgets): `ls` of several paths, a loop printing one line
+ *    per item or `cat a ; cat b` came back with the first entry only (the tuner saw one CPU cluster out of
+ *    three and no CPU temperature at all). Commands with several lines of output go through [execJoined].
  */
 object RootShell {
     private const val TAG = "RootShell"
+
+    /** Update 201: the longest command the service runs intact (see above). */
+    const val MAX_COMMAND = 250
 
     private val pserver: IBinder? by lazy {
         runCatching {
@@ -27,6 +41,8 @@ object RootShell {
     /** Runs [cmd] and returns its trimmed output ("" for none), or null when it couldn't run. */
     fun exec(cmd: String): String? {
         val b = pserver ?: return null
+        // Update 201: the service would cut it (see the class comment); said in the log so it doesn't go unnoticed again.
+        if (cmd.length > MAX_COMMAND) Log.w(TAG, "Command of ${cmd.length} chars is cut by the root service: ${cmd.take(60)}…")
         val data = Parcel.obtain()
         val reply = Parcel.obtain()
         return try {
@@ -41,6 +57,37 @@ object RootShell {
             reply.recycle()
         }
     }
+
+    /**
+     * Update 201: runs [cmds] (each a complete shell command) packed into as few calls as fit the service's
+     * command limit, joined by " ; ". True when every call ran. A single command over the limit still runs on its
+     * own (and is logged): callers keep their commands short.
+     */
+    fun execAll(cmds: List<String>): Boolean {
+        if (cmds.isEmpty()) return true
+        if (pserver == null) return false
+        var ok = true
+        val batch = StringBuilder()
+        fun flush() {
+            if (batch.isEmpty()) return
+            if (exec(batch.toString()) == null) ok = false
+            batch.setLength(0)
+        }
+        cmds.forEach { c ->
+            if (batch.isNotEmpty() && batch.length + 3 + c.length > MAX_COMMAND) flush()
+            if (batch.isNotEmpty()) batch.append(" ; ")
+            batch.append(c)
+        }
+        flush()
+        return ok
+    }
+
+    /**
+     * Update 201: runs [cmd] with its output joined into one line (lines separated by [sep]), since the service only
+     * returns the first line. Null when it couldn't run. [cmd] plus the join must fit [MAX_COMMAND].
+     */
+    fun execJoined(cmd: String, sep: Char = ' '): String? =
+        exec("{ $cmd ; } 2>/dev/null | tr '\\n' '$sep'")
 
     /** Whether [packageName] has a live process: true / false, or null when it can't be told. */
     fun isRunning(packageName: String): Boolean? {

@@ -256,6 +256,20 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 201
+- **AYN pservice (RootShell):**
+  - Commands over 255 characters are cut, with a stray "1" appended; only the first output line comes back.
+  - Use `RootShell.execAll(list)` for writes (packed to at most `MAX_COMMAND` 250) and `execJoined(cmd)` for multi-line reads.
+  - pservice rewrites top speeds, its performance-mode floors and GPU levels every ~10 s while the screen is on; Tuner re-applies once a second while that happens.
+  - `persist.vendor.debug.mode=3` would stop that loop; not set, it needs the user's OK.
+- **Tuner:** all three clusters, plus msm_performance `cpu_max_freq` / `cpu_min_freq` per CPU (the old values are saved and put back), and the GPU cap read back. The fan curve and heat guard read the chip's thermal zone.
+- **InspectSlab:**
+  - The back is drawn in its own offscreen layer, so its SrcIn / SrcAtop blends stay on the back.
+  - Backs without a drawn shell back are an opaque silhouette.
+  - `CartShells.back()` paints an opaque inside under clear plastic.
+- **InspectStick:** catches the stick clicks and the right stick at the game window's view, before focus.
+- **LyricsStage:** `statsOn = false` (the panel and its settings are gone); the `onSettings` gear calls SecondScreenHome's `onOpenMusicSettings`, a LauncherScreen jump to "Music page layout".
+
 ## State after update 200
 - **InspectMotion steps:** `openLid` / `takeOut` / `putBack` / `closeCase`.
   - `tapCase(scope, hasContent, onItem)` and `stickClick(scope, hasContent)` drive them; `toggleCase` stays for opening all at once.

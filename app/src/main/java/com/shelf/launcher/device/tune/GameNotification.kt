@@ -110,7 +110,16 @@ object GameNotification {
         ) else emptyList()
         val overlayLine = if (overlayPart) "Overlay $overlays · size ${cfg.overlayScale}% · opacity ${cfg.overlayOpacity}%" else null
         val text = (live + listOfNotNull(overlayLine)).joinToString(" · ")
-            .ifEmpty { if (powerPart) "Clock limits held against the system's boosts" else "Overlays ready" }
+            // Update 201: this said "Clock limits held against the system's boosts" whatever happened — also on Stock, and
+            // while (before update 201) only the little cores were really capped. Now a cap that didn't hold says so.
+            .ifEmpty {
+                when {
+                    !powerPart -> "Overlays ready"
+                    st.note != null -> st.note
+                    tuner && Tuner.limitOn -> "Limits set · put back when the handheld resets them"
+                    else -> "The handheld's own clocks"
+                }
+            }
         val b = NotificationCompat.Builder(context, channel)
             .setSmallIcon(com.shelf.launcher.R.drawable.ic_stat_voltcap)
             .setContentTitle(title)

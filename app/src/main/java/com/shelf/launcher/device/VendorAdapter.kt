@@ -117,7 +117,10 @@ class AynAdapter : VendorAdapter {
             val sh = { cmd: String -> com.shelf.launcher.device.RootShell.exec(cmd).orEmpty() }
             val sn = listOf("sn3112l", "sn3112r").filter { sh("ls /sys/class/$it/led/brightness 2>/dev/null").contains("brightness") }
             layoutCache = if (sn.isNotEmpty()) Layout.Sn3112(sn) else {
-                val leds = sh("ls -d /sys/class/leds/* 2>/dev/null").lines().map { it.trim() }.filter { it.startsWith("/sys/class/leds/") }
+                // Update 201: `ls -d` printed one LED per line and the root service returns only the first line; the glob
+                // prints them all on one line.
+                val leds = sh("echo /sys/class/leds/*").split(Regex("\\s+")).map { it.trim() }
+                    .filter { it.startsWith("/sys/class/leds/") && !it.contains('*') }
                 val wanted = { n: String -> val l = n.lowercase(); listOf("stick", "joy", "rgb", "ring", "led_l", "led_r", "left", "right").any { it in l } }
                 // Every RGB LED device except the obviously unrelated ones: on the Thor the left stick's LED
                 // has a name none of the words above match, so "Off" only reached the right side.
@@ -160,7 +163,7 @@ class AynAdapter : VendorAdapter {
             val g = (color shr 8 and 0xFF) * level / 100
             val bl = (color and 0xFF) * level / 100
             val value = "$r:$g:$bl:255"
-            val command = when (val kind = layout()) {
+            val commands: List<String> = when (val kind = layout()) {
                 // Odin 2 family: two SN3112 drivers, two rings each.
                 // Update 200: the AYN Thor has the same two SN3112 drivers (/sys/class/sn3112l and sn3112r, checked
                 // on a Thor: its /sys/class/leds only holds the PMIC red/green/blue, flash and torch LEDs), so it
@@ -178,11 +181,11 @@ class AynAdapter : VendorAdapter {
                         enableHeld -> kind.sides.map { side -> "echo 1 > /sys/class/$side/led/enable" }.also { enableHeld = false }
                         else -> emptyList()
                     }
-                    (if (off) zones + enables else enables + zones).joinToString(" ; ")
+                    if (off) zones + enables else enables + zones
                 }
                 // Thor and newer firmware: standard multicolour LED class devices.
-                is Layout.MultiColor -> kind.leds.joinToString(" ; ") { led ->
-                    "echo $r $g $bl > $led/multi_intensity ; echo ${if (r + g + bl == 0) 0 else 255} > $led/brightness"
+                is Layout.MultiColor -> kind.leds.flatMap { led ->
+                    listOf("echo $r $g $bl > $led/multi_intensity", "echo ${if (r + g + bl == 0) 0 else 255} > $led/brightness")
                 }
                 // Separate red / green / blue LEDs per zone.
                 is Layout.Channels -> kind.zones.flatMap { (_, chans) ->
@@ -190,19 +193,33 @@ class AynAdapter : VendorAdapter {
                         val v = when (ch) { 'r' -> r; 'g' -> g; else -> bl }
                         "echo $v > $path/brightness"
                     }
-                }.joinToString(" ; ")
+                }
                 null -> return
             }
-            val data = android.os.Parcel.obtain()
-            val reply = android.os.Parcel.obtain()
-            try {
-                data.writeStringArray(arrayOf(command, "1"))
-                b.transact(0, data, reply, android.os.IBinder.FLAG_ONEWAY)
-            } catch (e: Exception) {
-                Log.w(TAG, "AYN stick lights failed", e)
-            } finally {
-                data.recycle()
-                reply.recycle()
+            // Update 201: AYN's root service cuts a command after 255 characters (see RootShell). The SN3112 "off" chain
+            // (four rings + two enables, ~300 characters) lost both `enable` writes, and the first colour after it lost the
+            // last ring — so update 200's "switch both drivers off" never ran. Sent in pieces that fit, in order (one-way
+            // calls to the same binder are delivered in order).
+            val batches = ArrayList<String>()
+            val sb = StringBuilder()
+            commands.forEach { c ->
+                if (sb.isNotEmpty() && sb.length + 3 + c.length > com.shelf.launcher.device.RootShell.MAX_COMMAND) { batches += sb.toString(); sb.setLength(0) }
+                if (sb.isNotEmpty()) sb.append(" ; ")
+                sb.append(c)
+            }
+            if (sb.isNotEmpty()) batches += sb.toString()
+            batches.forEach { command ->
+                val data = android.os.Parcel.obtain()
+                val reply = android.os.Parcel.obtain()
+                try {
+                    data.writeStringArray(arrayOf(command, "1"))
+                    b.transact(0, data, reply, android.os.IBinder.FLAG_ONEWAY)
+                } catch (e: Exception) {
+                    Log.w(TAG, "AYN stick lights failed", e)
+                } finally {
+                    data.recycle()
+                    reply.recycle()
+                }
             }
         }
     }

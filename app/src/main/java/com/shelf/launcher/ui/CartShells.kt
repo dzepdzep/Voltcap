@@ -573,16 +573,21 @@ internal object CartShells {
         // The outline as seen from behind (the front's, mirrored).
         val path = outlinePath(s, k).apply { transform(android.graphics.Matrix().apply { setScale(-1f, 1f, bw / 2f, 0f) }) }
         val base = colour.argb; val op = colour.opacity
+        // A see-through shell shows its board from behind too.
+        // (Update 201: what's inside first and solid — the board, dark round it — then the clear plastic over it. The
+        // back was see-through, and the turned piece's face behind it — its label, mirrored — showed through it.)
+        if (op < 0.85f) {
+            c.save(); c.clipPath(path)
+            p.color = withAlpha(shade(base, -0.62f), 1f); c.drawPath(path, p)
+            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+            p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
+            p.color = withAlpha(0xFF111111.toInt(), 0.92f)
+            c.drawRect(RectF(board.left + board.width() * 0.4f, board.top + board.height() * 0.25f, board.left + board.width() * 0.75f, board.top + board.height() * 0.5f), p)
+            c.restore()
+        }
         p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.04f), op), withAlpha(shade(base, -0.16f), op), Shader.TileMode.CLAMP)
         c.drawPath(path, p); p.shader = null
         c.save(); c.clipPath(path)
-        // A see-through shell shows its board from behind too.
-        if (op < 0.85f) {
-            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
-            p.color = withAlpha(0xFF1E5F3A.toInt(), 0.5f * (1f - op)); c.drawRect(board, p)
-            p.color = withAlpha(0xFF111111.toInt(), 0.55f * (1f - op))
-            c.drawRect(RectF(board.left + board.width() * 0.4f, board.top + board.height() * 0.25f, board.left + board.width() * 0.75f, board.top + board.height() * 0.5f), p)
-        }
         // The seam where the two halves meet, just inside the edge.
         p.style = Paint.Style.STROKE; p.strokeWidth = 0.35f * k
         p.color = withAlpha(shade(base, -0.45f), maxOf(op, 0.6f))
@@ -632,8 +637,21 @@ internal object CartShells {
         while (i + 4 < d.extras.size) {
             val kind = d.extras[i].toInt(); val r = rr(d.extras[i + 1], d.extras[i + 2], d.extras[i + 3], d.extras[i + 4])
             when (kind) {
-                0 -> { // a notch / step in the shell: a shadowed band
-                    p.color = withAlpha(shade(base, -0.3f), solid * 0.55f); c.drawRect(r, p)
+                0 -> { // a notch / step in the shell
+                    // (Update 201: a step down cut into the edge — its floor a shade darker, its walls (the sides not on
+                    // the shell's edge) a shadow line above / left and a lit one below / right. It was a flat dark
+                    // see-through block that read as a stray plate on the back, e.g. the Game Boy's power-lock notch.)
+                    p.color = withAlpha(shade(base, -0.12f), solid); c.drawRect(r, p)
+                    val edge = 0.6f * k
+                    val wPx = c.width.toFloat(); val hPx = c.height.toFloat()
+                    p.style = Paint.Style.STROKE; p.strokeWidth = 0.3f * k
+                    p.color = withAlpha(shade(base, -0.5f), solid)
+                    if (r.top > edge) c.drawLine(r.left, r.top, r.right, r.top, p)
+                    if (r.left > edge) c.drawLine(r.left, r.top, r.left, r.bottom, p)
+                    p.color = withAlpha(shade(base, 0.3f), solid * 0.8f)
+                    if (r.bottom < hPx - edge) c.drawLine(r.left, r.bottom, r.right, r.bottom, p)
+                    if (r.right < wPx - edge) c.drawLine(r.right, r.top, r.right, r.bottom, p)
+                    p.style = Paint.Style.FILL
                 }
                 1 -> { // grip ridges
                     val n = (minOf(r.width(), r.height()) / (1.4f * k)).toInt().coerceIn(2, 14)

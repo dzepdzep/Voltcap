@@ -4,6 +4,36 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (201): power controls that really work, cartridge backs fixed, Lyrics stage without stats
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (14): `src_copy\device\ChargeLimiter.kt`, `src_copy\device\DeviceControls.kt`, `src_copy\device\RootShell.kt`, `src_copy\device\VendorAdapter.kt`, `src_copy\device\tune\GameNotification.kt`, `src_copy\device\tune\TuneHardware.kt`, `src_copy\device\tune\TuneService.kt`, `src_copy\device\tune\Tuner.kt`, `src_copy\ui\CartShells.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\LyricsStage.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\SecondScreenHome.kt`, `src_copy\ui\TunerContent.kt`.
+
+**Files to delete:** none.
+
+### Power controls (checked live on the Odin 2 Portal and the Thor)
+- **The cause:** AYN's root service (the one Voltcap uses for clocks, fan and lights) cuts every command at 255 characters and answers with only the first line. Voltcap's clock writes were one long chain, so only the little CPU cores were ever capped. The big and prime cores, the GPU, the boost switches and the temperature reading were silently dropped. Underclock, the power tiers and AutoTDP therefore did almost nothing, and the tuner page showed one CPU cluster.
+- **The fix:** writes are now split into commands that fit, and replies that have several lines are joined into one. All three CPU clusters and the GPU are found and capped, plus the msm_performance limits. AutoTDP now moves every cluster and the GPU.
+- **AYN's resets:** the handheld resets its own clocks every 10 seconds; while it keeps doing that, Voltcap checks once a second and writes its limits again. The tuner page and the in-game notification say whether the limits hold.
+- **Fan curve and heat guard:** they had no temperature (they read a modem sensor); they now read the chip temperature.
+- **Charge limit and lights:**
+  - The charge limit now finds every charging switch.
+  - The stick lights' "off" is sent in pieces, so both rings really go off.
+
+### Cartridges in the game window
+- **Grey plate on the back:** a grey see-through plate the size of the whole piece showed over every cartridge's back (the N64 most visibly). It came from the back's shading spreading over the window; the back is now drawn on a layer of its own.
+- **Clear shells:** the mirrored label no longer shows through their backs.
+- **Game Boy notch:** drawn as a step cut into the edge.
+- **Stick clicks:** the first click after the window opens (or after touching it) now always works.
+- **Hint text:** no longer cut off under narrow pieces.
+
+### Lyrics stage
+- **Stats panel:** removed.
+- **Settings gear:** a gear at the top right opens its settings directly (Settings › Screens › Second screen art & music › Music page layout › Lyrics stage).
+
+---
+
 ## Update — 14 Oct 2026 (200): cases open a step at a time, a gliding second screen, the Lyrics stage, drawn 3D cartridges with real backs, folder icons that move, Android play time, fixes
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
