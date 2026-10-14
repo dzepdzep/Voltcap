@@ -56,6 +56,19 @@ internal object BoxTexture {
                 ?: physical?.firstOrNull { it.first == "Box (3D)" }?.second?.let { model(it, BoxPart.SPINE3D, platform) }
 
     /**
+     * Update 202: the spine a game's case shows wherever it's drawn, in the order the 3D cases (Case3D) and the Spines look
+     * (GameSpine) use: its real spine scan always, else (Original cases) the strip from its box scans ([spine]); null with
+     * one console's spine picked for all (R1 › Spine) or when there's none. The game window's case and the flat looks'
+     * boxes turned to their side used to ask for it only with Original cases on, so an opened case showed the console's
+     * template spine while the closed one showed the game's real spine (seen on the Portal).
+     */
+    fun realSpine(physical: List<Pair<String, String>>?, platform: String?): String? {
+        if (LookStyles.spineForAll()) return null
+        return physical?.firstOrNull { it.first == "Spine" }?.second
+            ?: if (com.shelf.launcher.data.Features.originalCases.state.value) spine(physical, platform) else null
+    }
+
+    /**
      * The case's own scanned front: ScreenScraper's front scan, else the front cut from the full box scan. Also notes
      * the game's own spine for that front, so a case drawn from it can turn to show its real spine ([spineFor]).
      */

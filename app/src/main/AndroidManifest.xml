@@ -47,6 +47,8 @@
     <!-- Performance overlay (Settings › Device › Performance): runs as a foreground service while shown. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Update 190: artwork keeps downloading while Voltcap is behind a game or the screen is off (ArtDownloadService). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!-- Screen Mirror widget on the second screen: captures the primary screen while it is switched on. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
@@ -137,6 +139,12 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Optional on-screen performance readout (FPS/CPU/GPU) shown over games while the user has switched it on." />
         </service>
+
+        <!-- Update 190: artwork downloads go on while Voltcap isn't on screen; only while a download runs. -->
+        <service
+            android:name=".data.ArtDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- 80 % charge limit (R1 menu): only runs while the limit is on and the charger is in. -->
         <service

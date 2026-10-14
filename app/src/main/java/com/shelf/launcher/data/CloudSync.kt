@@ -1452,7 +1452,26 @@ object CloudSync {
         val artOverrides: Map<String, String> = emptyMap(),
         val gameOverrides: Map<String, String> = emptyMap(),
         /** Update 117: each device's recent play sessions (device id → its entry, OtherDevices.kt), for the recaps. */
-        val devices: Map<String, String> = emptyMap()
+        val devices: Map<String, String> = emptyMap(),
+        /** Update 202: play time format 2 (per device); null in a file only older versions wrote. See [PlaytimeV2]. */
+        val pt: PlaytimeV2? = null
+    )
+
+    /**
+     * Update 202: play time, format 2 — "playtimeV2" in launcher-data.json ("format": 2).
+     *  - [devices]: device id → that device's own play time per game (file keys). Only that device adds to it; every
+     *    copy merges by max, so a sync repeated after an interrupted one, a restore or a stale base can't add hours twice.
+     *  - [legacy]: per game, the time from before format 2 that the one-time repair could vouch for (merged by max).
+     *  - [since]: when counting per device began (the first device to switch sets it; play ending later is in [devices]).
+     * Shown total = legacy + the sum over devices. The old "playtime" map is still written (that total) for older versions
+     * to show, but is never read back as a source once format 2 data exists: their "Drive + what changed here" sums
+     * can't inflate it again. Older versions drop "playtimeV2" when they upload; each device keeps a copy in its sync
+     * base (launcher-base.json) and puts it back on its next sync.
+     */
+    private data class PlaytimeV2(
+        val since: Long = 0L,
+        val legacy: Map<String, Long> = emptyMap(),
+        val devices: Map<String, Map<String, Long>> = emptyMap()
     )
 
     /** Update 117: a game's name and console from this device's library (set by the home screen), for the shared sessions. */
@@ -1500,13 +1519,13 @@ object CloudSync {
         )
     }
 
-    private fun writeLocal(context: Context, data: LauncherData) {
+    private fun writeLocal(context: Context, data: LauncherData, ownSeen: Map<String, Long>? = null) {
         val root = romRoot(context)
         val l = { k: String -> toLocal(k, root) }
         context.getSharedPreferences("favorites", Context.MODE_PRIVATE).edit()
             .putStringSet("favorite_keys", data.favorites.map(l).toSet()).commit()
-        context.getSharedPreferences("playtime", Context.MODE_PRIVATE).edit()
-            .putString("totals_json", gson.toJson(data.playtime.mapKeys { l(it.key) })).commit()
+        // Update 202: through PlaytimeStore (its lock): a session that ended while this sync ran is kept on top.
+        PlaytimeStore(context).replaceTotals(data.playtime.mapKeys { l(it.key) }, ownSeen)
         context.getSharedPreferences("recently_played", Context.MODE_PRIVATE).edit()
             .putString("last_played_json", gson.toJson(data.recent.mapKeys { l(it.key) })).commit()
 
@@ -1535,7 +1554,59 @@ object CloudSync {
         .put("artOverrides", JSONObject().apply { d.artOverrides.forEach { (k, v) -> put(k, JSONObject(v)) } })
         .put("gameOverrides", JSONObject().apply { d.gameOverrides.forEach { (k, v) -> put(k, JSONObject(v)) } })
         .put("devices", JSONObject().apply { d.devices.forEach { (k, v) -> put(k, JSONObject(v)) } })
+        .apply {
+            // Update 202: playtime format 2 (per device, see PlaytimeV2); "format" 2 marks a file that has it.
+            val pt = d.pt ?: return@apply
+            put("format", 2)
+            put("playtimeV2", playtimeV2Json(pt))
+        }
         .toString()
+
+    private fun playtimeV2Json(pt: PlaytimeV2): JSONObject = JSONObject()
+        .put("v", 2)
+        .put("since", pt.since)
+        .put("legacy", JSONObject(pt.legacy as Map<*, *>))
+        .put("devices", JSONObject().apply { pt.devices.forEach { (id, m) -> put(id, JSONObject(m as Map<*, *>)) } })
+
+    /**
+     * Update 202: this device's last copy of the format-2 play data (cloud_sync/playtime-v2.json), written after the repair
+     * and every sync: one more copy for [playtimeV2] to merge, so the repair's result isn't lost when the sync that ran
+     * it fails before its upload, or an older version's upload and a missing base leave no other copy.
+     */
+    private fun playtimeCopyFile(context: Context) = File(File(context.filesDir, "cloud_sync"), "playtime-v2.json")
+
+    private fun loadPlaytimeCopy(context: Context): PlaytimeV2? = runCatching {
+        val f = playtimeCopyFile(context)
+        if (!f.exists()) null else playtimeV2From(JSONObject(f.readText()))
+    }.getOrNull()
+
+    private fun savePlaytimeCopy(context: Context, pt: PlaytimeV2) {
+        runCatching {
+            val f = playtimeCopyFile(context)
+            f.parentFile?.mkdirs()
+            val tmp = File(f.parentFile, f.name + ".tmp")
+            tmp.writeText(JSONObject().put("playtimeV2", playtimeV2Json(pt)).toString())
+            if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) }
+        }
+    }
+
+    /** Update 202: the "playtimeV2" object (null when missing, or written by a newer, unknown version of it). */
+    private fun playtimeV2From(o: JSONObject): PlaytimeV2? {
+        val p = o.optJSONObject("playtimeV2") ?: return null
+        if (p.optInt("v", 0) != 2) return null
+        fun longs(m: JSONObject?): Map<String, Long> {
+            if (m == null) return emptyMap()
+            return m.keys().asSequence().associateWith { m.optLong(it) }.filterValues { it > 0L }
+        }
+        val devs = p.optJSONObject("devices")
+        val devices = HashMap<String, Map<String, Long>>()
+        if (devs != null) devs.keys().forEach { id -> devices[id] = longs(devs.optJSONObject(id)) }
+        return PlaytimeV2(
+            since = p.optLong("since", 0L),
+            legacy = longs(p.optJSONObject("legacy")),
+            devices = devices
+        )
+    }
 
     private fun fromJson(text: String): LauncherData {
         val o = JSONObject(text)
@@ -1554,7 +1625,8 @@ object CloudSync {
             recent = longs("recent"),
             artOverrides = objects("artOverrides"),
             gameOverrides = objects("gameOverrides"),
-            devices = objects("devices")
+            devices = objects("devices"),
+            pt = runCatching { playtimeV2From(o) }.getOrNull()
         )
     }
 
@@ -1563,8 +1635,9 @@ object CloudSync {
      * device (null on the first one):
      * - favourites: stars added or removed here since the last sync win,
      *   everything else follows Drive. First sync: both sets together.
-     * - playtime: Drive's total plus whatever was played here since the last
-     *   sync, so hours on both handhelds add up instead of one replacing the other.
+     * - playtime: (old format, Update 202: replaced right after by [playtimeV2]) Drive's total plus whatever was
+     *   played here since the last sync. Not safe to repeat: when this device's totals moved without the base
+     *   (a sync cut off after its upload, a restore / Settings import), the same hours were added again.
      * - recently played: the latest time from either side.
      * - artwork picks and manual IDs: an entry changed here wins, otherwise Drive's.
      */
@@ -1607,6 +1680,189 @@ object CloudSync {
         )
     }
 
+    // ---- Update 202: playtime format 2 (per-device counters) and the one-time repair ----
+
+    /** What [playtimeV2] worked out: the synced data, the shown totals (sync keys), and the own counter it read. */
+    private class PlaytimeResult(val pt: PlaytimeV2, val totals: Map<String, Long>, val ownSeen: Map<String, Long>)
+
+    /** One play session in sync keys (the repair's view). */
+    private data class PlaySpan(val key: String, val start: Long, val ms: Long)
+
+    /** Update 202: a game key of this device as the sync uses it (file key for ROMs, else the portable key). */
+    private fun syncKeyOf(key: String, root: String): String {
+        val p = toPortable(key, root)
+        return fileKey(p) ?: p
+    }
+
+    /** Update 202: [m] (this device's keys) under the sync keys; entries landing on one key are added up (separate play). */
+    private fun syncKeys(m: Map<String, Long>, root: String): Map<String, Long> {
+        val out = LinkedHashMap<String, Long>()
+        for ((k, v) in m) {
+            if (v <= 0L) continue
+            val f = syncKeyOf(k, root)
+            out[f] = (out[f] ?: 0L) + v
+        }
+        return out
+    }
+
+    /** Update 202: per key, the largest value of any copy (counters only grow: the largest copy is the newest). */
+    private fun maxMerge(maps: List<Map<String, Long>>): Map<String, Long> {
+        val out = HashMap<String, Long>()
+        maps.forEach { m -> m.forEach { (k, v) -> if (v > 0L && v > (out[k] ?: 0L)) out[k] = v } }
+        return out
+    }
+
+    /**
+     * Update 202: play time, format 2. Every copy of the per-device data (Drive's, the last sync's base, this device's
+     * own counter) merges by max per device and game; the shown total per game = legacy + the sum over devices. Nothing
+     * is ever added from a difference between two copies, so running it again (after an interrupted sync, a restore, an
+     * older version's upload) gives the same result. The first time on this device it runs the repair ([repairPlaytime]).
+     */
+    private fun playtimeV2(context: Context, local: LauncherData, base: LauncherData?, remote: LauncherData): PlaytimeResult {
+        val root = romRoot(context)
+        val me = OtherDevices.deviceId(context)
+        val retired = runCatching { OtherDevices.retiredIds(context) }.getOrDefault(emptySet())
+        val store = PlaytimeStore(context)
+        // Drive's copy, the base's and this device's own one: older versions upload without "playtimeV2", the others keep it.
+        val known = listOfNotNull(remote.pt, base?.pt, loadPlaytimeCopy(context))
+        val knownLegacy = maxMerge(known.map { it.legacy })
+        val knownSince = known.map { it.since }.filter { it > 0L }.minOrNull() ?: 0L
+        val others = remote.devices - me - retired
+        val (legacy, since, ownSeen) = synchronized(PlaytimeStore.LOCK) {
+            when {
+                // First sync with format 2 here: the repair, and this device's own counter from its session log.
+                !store.ownSeeded() -> {
+                    val r = repairPlaytime(store, local, others, knownSince, knownLegacy, me, root, seedOwn = true)
+                    Triple(r.first, r.second, store.loadOwn())
+                }
+                // Repaired before, but no copy of the format-2 data is left (Drive's file written by an older version
+                // AND the base gone): work the legacy part out again; this device's own counter stays as it is.
+                known.isEmpty() -> {
+                    val s = store.ownSince().takeIf { it > 0L } ?: System.currentTimeMillis()
+                    val r = repairPlaytime(store, local, others, s, emptyMap(), me, root, seedOwn = false)
+                    Triple(r.first, r.second, store.loadOwn())
+                }
+                else -> Triple(knownLegacy, store.ownSince().takeIf { it > 0L } ?: knownSince, store.loadOwn())
+            }
+        }
+        val mine = syncKeys(ownSeen, root)
+        val devices = HashMap<String, Map<String, Long>>()
+        (known.flatMap { it.devices.keys } + me).toSet().forEach { id ->
+            // An id this device used before: its play is in this device's own counter now.
+            if (id in retired) return@forEach
+            val copies = known.mapNotNull { it.devices[id] } + (if (id == me) listOf(mine) else emptyList())
+            val m = maxMerge(copies)
+            if (m.isNotEmpty()) devices[id] = m
+        }
+        val totals = HashMap<String, Long>()
+        legacy.forEach { (k, v) -> if (v > 0L) totals[k] = v }
+        devices.values.forEach { m -> m.forEach { (k, v) -> totals[k] = (totals[k] ?: 0L) + v } }
+        val pt = PlaytimeV2(since, legacy, devices)
+        savePlaytimeCopy(context, pt)
+        return PlaytimeResult(pt, totals, ownSeen)
+    }
+
+    /**
+     * Update 202: the one-time repair of totals inflated by the old merge (call holding PlaytimeStore.LOCK).
+     * Returns (legacy per game, since).
+     *
+     * Every session ever counted is also in a session log (this device's, and each other device's newest
+     * OtherDevices.SHARE_MAX in the synced "devices" entries). Per game:
+     *  - all those sessions together, each counted once: the same game + start time listed by two devices (a log copied
+     *    with a backup / Settings transfer, an old id's entry) is one session;
+     *  - "covered" = the logs reach back to the game's first session (no log that dropped old sessions starts after it):
+     *    the legacy part is then exactly the sessions that ended before [since] — the inflated total is rebuilt;
+     *  - not covered (no sessions for it, or play older than a full log reaches): the logs can't tell real play from
+     *    double-counted; the old total is kept as it is (minus the play since [since], counted per device), only once
+     *    per game for all devices (a legacy value already on Drive is kept, never added to).
+     * Legacy values from two devices merge by max: the sessions each one saw are real, so the larger is never too much.
+     * [seedOwn]: this device's own counter = its own logged sessions that ended from [since] on (a session also listed
+     * by a device with a smaller id is that one's), replacing what it held (already in the log).
+     */
+    private fun repairPlaytime(
+        store: PlaytimeStore, local: LauncherData, others: Map<String, String>, sharedSince: Long,
+        knownLegacy: Map<String, Long>, me: String, root: String, seedOwn: Boolean
+    ): Pair<Map<String, Long>, Long> {
+        // The first device to switch sets the moment; the others take it from Drive.
+        val since = if (sharedSince > 0L) sharedSince else System.currentTimeMillis()
+        val myLog = store.loadSessions()
+        val mine = myLog.map { PlaySpan(syncKeyOf(it.key, root), it.start, it.ms) }
+        val lists = HashMap<String, List<PlaySpan>>()
+        others.forEach { (id, text) ->
+            runCatching {
+                val arr = JSONObject(text).optJSONArray("s") ?: JSONArray()
+                lists[id] = (0 until arr.length()).mapNotNull { i ->
+                    val e = arr.optJSONArray(i) ?: return@mapNotNull null
+                    val p = e.optString(0)
+                    val ms = e.optLong(2)
+                    if (p.isEmpty() || ms <= 0L) null else PlaySpan(fileKey(p) ?: p, e.optLong(1), ms)
+                }
+            }
+        }
+        // Each session once (game + start time), and which devices list it.
+        val distinct = HashMap<Pair<String, Long>, Long>()
+        val owners = HashMap<Pair<String, Long>, MutableSet<String>>()
+        fun addSpan(id: String, s: PlaySpan) {
+            val k = s.key to s.start
+            distinct[k] = maxOf(distinct[k] ?: 0L, s.ms)
+            owners.getOrPut(k) { mutableSetOf() }.add(id)
+        }
+        mine.forEach { addSpan(me, it) }
+        lists.forEach { (id, l) -> l.forEach { addSpan(id, it) } }
+
+        // A log that's full has dropped its oldest sessions: it vouches only for play from its first entry on.
+        val fullFrom = ArrayList<Long>()
+        if (myLog.size >= PlaytimeStore.SESSION_LOG_MAX) mine.minOfOrNull { it.start }?.let { fullFrom += it }
+        lists.values.forEach { l -> if (l.size >= OtherDevices.SHARE_MAX) l.minOfOrNull { it.start }?.let { fullFrom += it } }
+        val logFrom = fullFrom.maxOrNull() ?: Long.MIN_VALUE
+
+        val before = HashMap<String, Long>()
+        val after = HashMap<String, Long>()
+        val first = HashMap<String, Long>()
+        distinct.forEach { (k, ms) ->
+            val (key, start) = k
+            if (start + ms < since) before[key] = (before[key] ?: 0L) + ms else after[key] = (after[key] ?: 0L) + ms
+            first[key] = minOf(first[key] ?: Long.MAX_VALUE, start)
+        }
+        val old = local.playtime   // this device's old totals (sync keys): what the old merge left, maybe inflated
+        val legacy = HashMap(knownLegacy)
+        var rebuilt = 0
+        var kept = 0
+        val notes = ArrayList<String>()
+        for (key in old.keys + before.keys + after.keys + knownLegacy.keys) {
+            val f = first[key]
+            val covered = f != null && f > logFrom
+            val value = if (covered) maxOf(knownLegacy[key] ?: 0L, before[key] ?: 0L)
+                else knownLegacy[key] ?: maxOf(0L, (old[key] ?: 0L) - (after[key] ?: 0L))
+            if (value > 0L) legacy[key] = value else legacy.remove(key)
+            if (covered) rebuilt++ else kept++
+            val was = old[key] ?: 0L
+            if (notes.size < 30 && was != value + (after[key] ?: 0L)) {
+                notes += "$key: ${was / 60_000} min -> ${(value + (after[key] ?: 0L)) / 60_000} min" + if (covered) "" else " (kept, not covered)"
+            }
+        }
+
+        if (seedOwn) {
+            val own = HashMap<String, Long>()
+            myLog.forEach { s ->
+                if (s.start + s.ms < since) return@forEach
+                val k = syncKeyOf(s.key, root) to s.start
+                // Listed by a device with a smaller id too: that device counts it.
+                if (owners[k].orEmpty().any { it != me && it < me }) return@forEach
+                own[s.key] = (own[s.key] ?: 0L) + s.ms
+            }
+            store.seedOwn(own, since)
+        }
+        runCatching {
+            android.util.Log.i(
+                "CloudSync",
+                "Update 202 playtime repair: since=$since, ${distinct.size} sessions from ${lists.size + 1} devices, " +
+                    "$rebuilt games rebuilt from the logs, $kept kept; changed: ${notes.joinToString("; ")}"
+            )
+        }
+        return legacy to since
+    }
+
     /** Drive's launcher-data file is there but couldn't be read this time. */
     private class LauncherDataUnreadable : Exception("Couldn't read favourites and playtime from Google Drive")
 
@@ -1626,6 +1882,9 @@ object CloudSync {
         val local = normalized(rawLocal)
         val base = baseRaw?.let { normalized(it) }
         val remote = normalized(remoteRaw)
+        // Update 202: play time from the per-device counters (format 2, PlaytimeV2) — the old "Drive + what changed here"
+        // sum isn't used any more. The sync base counts as a copy too (it's kept even when Drive's file was recreated).
+        val play = playtimeV2(context, local, base, remote)
         // No file on Drive (first sync, or the Drive folder was deleted / recreated): merge like a first sync
         // (both sides together), never as if Drive had removed everything since the last one.
         val merged = mergeLauncherData(if (existing == null) null else base, local, remote).let { m ->
@@ -1633,7 +1892,7 @@ object CloudSync {
             // counted again as "another device".
             val retired = runCatching { OtherDevices.retiredIds(context) }.getOrDefault(emptySet())
             if (retired.isEmpty()) m else m.copy(devices = m.devices - retired)
-        }
+        }.copy(playtime = play.totals, pt = play.pt)
 
         if (merged != remoteRaw || existing == null) {
             drive.uploadBytes(toJson(merged).toByteArray(), LAUNCHER_FILE, root, existing?.id)
@@ -1645,8 +1904,9 @@ object CloudSync {
         }
         // (Update 182: written back under this device's own game keys; compared with what's stored here now.)
         val mine = localized(context, merged, rawLocal)
-        val changedHere = mine.copy(devices = emptyMap()) != rawLocal.copy(devices = emptyMap())
-        if (changedHere) writeLocal(context, mine)
+        // (Update 202: the per-device play data is Drive's / the base's, not compared with this device's prefs.)
+        val changedHere = mine.copy(devices = emptyMap(), pt = null) != rawLocal.copy(devices = emptyMap(), pt = null)
+        if (changedHere) writeLocal(context, mine, play.ownSeen)
         baseFile.parentFile?.mkdirs()
         baseFile.writeText(toJson(merged))
         if (changedHere) _launcherDataChanged.tryEmit(Unit)

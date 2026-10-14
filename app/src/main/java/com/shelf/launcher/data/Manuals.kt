@@ -10,6 +10,8 @@ import java.io.File
  *  1. next to the ROM: `<rom name>.pdf`, or in a `manuals` / `Manuals` folder beside it;
  *  2. Voltcap's own `manuals` folder (files/manuals/<platform>/<rom name>.pdf);
  *  3. ScreenScraper's scanned manual (when connected), downloaded once and kept in (2).
+ * Update 202: (3) is now ManualLinks — the address is noted while scraping and the PDF downloads into the saved-art store
+ * the first time it's opened ([find] is no longer used; manuals it saved in (2) still open from there).
  */
 object Manuals {
     private fun base(game: Game): String? = game.romPath?.replace('\\', '/')?.substringAfterLast('/')?.substringBeforeLast('.')

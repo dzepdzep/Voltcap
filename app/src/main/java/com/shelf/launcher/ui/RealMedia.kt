@@ -128,16 +128,20 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
     return true
 }
 
-/** A game picture as a plain (software) bitmap the perspective drawing can use; null while it loads. */
+/**
+ * A game picture as a plain (software) bitmap the perspective drawing can use; null while it loads. Update 202: [trim]
+ * for a cover (or box front scan) drawn on a case: flat strips that are part of its file trimmed off (TrimMargins.kt),
+ * under its own memory key. Off for spines, backs, discs, cartridge labels and the 3D models.
+ */
 @Composable
-internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720): android.graphics.Bitmap? {
+internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean = false): android.graphics.Bitmap? {
     val context = LocalContext.current
     // (Update 147: a picture already in memory is there from the first frame — a case or piece coming back on screen
     // used to go blank for a moment while it was looked up again.)
-    val key = remember(model, maxSide) { (model as? String)?.let { coil.memory.MemoryCache.Key("soft|$maxSide|$it") } }
+    val key = remember(model, maxSide, trim) { (model as? String)?.let { coil.memory.MemoryCache.Key(softKey(maxSide, it, trim)) } }
     val cached = remember(key) { key?.let { coil.Coil.imageLoader(context).memoryCache?.get(it)?.bitmap } }
         ?.also { b -> (model as? String)?.let { Models3D.noteSource(b, it) } }
-    val state by produceState(cached, model) {
+    val state by produceState(cached, model, trim) {
         if (model == null) { value = null; return@produceState }
         if (cached != null) { value = cached; return@produceState }
         value = null
@@ -148,6 +152,7 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720): android.graphi
                 val req = coil.request.ImageRequest.Builder(context).data(model).size(maxSide, maxSide)
                     .precision(coil.size.Precision.INEXACT).allowHardware(false)
                     .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
+                    .apply { if (trim) transformations(TrimUniformMargins) }
                     .apply { if (key != null) memoryCacheKey(key) }.build()
                 drawableBitmap((coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable, maxSide)
                     // (Update 151: remembered as this address's picture, so the 3D pieces made with it are found again.)
@@ -163,19 +168,25 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720): android.graphi
  * case or 3D piece sliding into a carousel has its cover at once — the carousel warmed only the flat covers, and the 3D
  * ones came in dark for a moment while scrolling.
  */
-internal fun warmSoft(context: android.content.Context, urls: List<String>, maxSide: Int) {
+internal fun warmSoft(context: android.content.Context, urls: List<String>, maxSide: Int, trim: Boolean = false) {
     val loader = coil.Coil.imageLoader(context)
     for (u in urls) {
-        val key = coil.memory.MemoryCache.Key("soft|$maxSide|$u")
+        val key = coil.memory.MemoryCache.Key(softKey(maxSide, u, trim))
         if (loader.memoryCache?.get(key) != null) continue
         loader.enqueue(
             coil.request.ImageRequest.Builder(context).data(u).size(maxSide, maxSide)
                 .precision(coil.size.Precision.INEXACT).allowHardware(false)
                 .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
+                // (Update 202: as rememberSoftBitmap with trim — same transformation, same key.)
+                .apply { if (trim) transformations(TrimUniformMargins) }
                 .memoryCacheKey(key).build()
         )
     }
 }
+
+/** Update 202: the memory key of a [rememberSoftBitmap] / [warmSoft] picture (a trimmed cover has its own). */
+private fun softKey(maxSide: Int, url: String, trim: Boolean): String =
+    "soft|$maxSide|" + (if (trim) TrimUniformMargins.KEY + "|" else "") + url
 
 /**
  * The game's box in 3D from the template pack: [front] (a real box scan when [frontIsBox], else the cover inside
@@ -293,14 +304,19 @@ private fun cropToAspect(src: android.graphics.Bitmap, aspect: Float): android.g
 private fun rememberBoxFace(tpl: BoxTpl, front: Any?, frontIsBox: Boolean, detail: Int): android.graphics.Bitmap? {
     val frameRes = tpl.frameRes
     val framePic: ImageBitmap? = if (frameRes != null && !frontIsBox) ImageBitmap.imageResource(frameRes) else null
-    val art = rememberSoftBitmap(front, detail)
+    // (Update 202: the cover / box scan with flat strips in its file trimmed off, TrimMargins.kt; the window below already
+    // fills with a centred crop, never stretched.)
+    val art = rememberSoftBitmap(front, detail, trim = true)
     return remember(art, framePic) {
         val src = art ?: return@remember null
         val frame = framePic?.asAndroidBitmap()
         val win = tpl.frameWin
-        if (frame == null || win == null) {
+        // Update 202: a cover that is a box scan already (the case front's own shape, its own band and logo — as the flat
+        // case tells it, isBoxFront) is the whole front: the template's band over it printed the console's band twice.
+        val scanShaped = frame != null && looksLikeBoxFront(tpl.frameAspect, src.width.toFloat() / src.height.coerceAtLeast(1))
+        if (frame == null || win == null || scanShaped) {
             // A ready-made box scan: cut to the template front's real proportions so the corners map without squashing it.
-            if (frontIsBox && tpl.frameRes != null) cropToAspect(src, tpl.frameAspect) else src
+            if ((frontIsBox || scanShaped) && tpl.frameRes != null) cropToAspect(src, tpl.frameAspect) else src
         } else runCatching {
             val w = 600; val h = (600 / tpl.frameAspect).toInt().coerceIn(200, 1400)
             val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
@@ -344,7 +360,8 @@ internal fun FrontBox(tpl: BoxTpl, front: Any?, frontIsBox: Boolean, modifier: M
         // Update 119: while the face is being put together, the picture itself (usually already loaded) shows in the
         // case's place — not a dark panel first.
         if (face == null && front != null) coil.compose.AsyncImage(
-            mediaArtModel(front), null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, // (Update 157; 159: the scale was inside the comment)
+            // (Update 202: trimmed like the face it stands in for.)
+            mediaArtModel(front, trim = true), null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, // (Update 157; 159: the scale was inside the comment)
             modifier = Modifier.size(w, h).clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp))
         )
         Box(
@@ -459,7 +476,8 @@ private fun CaseArtBody(
                 // The game's own cartridge / disc picture when it has one (update 104), else Voltcap's drawn one.
                 // Update 173: matched to the case — the real cartridge / disc beside the game's real (scanned) case, Voltcap's
                 // own beside its template case — whatever the drawn-media setting says.
-                val caseReal = com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !LookStyles.caseForAll()
+                // (Update 202: not for an Android game — its scraped "cartridge" is store art, androidOwnCase.)
+                val caseReal = com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !LookStyles.caseForAll() && !androidOwnCase(platform)
                 val ownMedia = if (caseReal) BoxTexture.mediaOfFront(scan) else null
                 if (ownMedia != null) RealMediaPicture(ownMedia, round, Modifier.align(Alignment.BottomEnd).offset(y = -h * 0.03f).size(mW, mH))
                 else PhysicalMedia(
@@ -494,7 +512,9 @@ private fun CaseArtFace(
     // own spine on the box turned to its side. Falls back to the template case when the scan can't be loaded or cut.
     var scanFailed by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
     val ownSpine = spine ?: BoxTexture.spineFor(scan)
-    if (com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !scanFailed && !discCase) {
+    // Update 202: never for an Android game — its case is Voltcap's own (androidOwnCase): WWE All Stars' scraped store
+    // art stood in the Thor's case stacks as a plain white "scanned case", without the Android band.
+    if (com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !scanFailed && !discCase && !androidOwnCase(platform)) {
         if (side && box != null) {
             Box3D(box, scan, true, title, modifier, spin = false, detail = detail, realSpine = ownSpine)
             return true
@@ -520,9 +540,13 @@ private fun CaseArtFace(
         caseScan = if (com.shelf.launcher.data.Features.originalCases.state.value && !scanFailed) scan else null,
         realDisc = BoxTexture.mediaFor(scan),
         caseAspect = cov?.frontAspect ?: realCaseMm(platform)?.let { it.first / it.second },
-        platform = platform
+        platform = platform,
+        // (Update 202: its real spine on the 3D box's side, as the closed case shows it.)
+        realSpine = if (!LookStyles.spineForAll()) ownSpine else null
     )
-    else if (side) Box3D(box, front, isBox, title, modifier, spin = false, detail = detail, realSpine = if (com.shelf.launcher.data.Features.originalCases.state.value) ownSpine else null)
+    // (Update 202: the game's real spine whatever Original cases says, as its closed case and the Spines look show it —
+    // not with one console's spine picked for all.)
+    else if (side) Box3D(box, front, isBox, title, modifier, spin = false, detail = detail, realSpine = if (!LookStyles.spineForAll()) ownSpine else null)
     else FrontBox(box, front, isBox, modifier, detail)
     return true
 }

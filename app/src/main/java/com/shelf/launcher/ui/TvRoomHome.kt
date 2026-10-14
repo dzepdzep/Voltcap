@@ -250,7 +250,8 @@ internal fun TvRoomHome(
         Column(Modifier.align(Alignment.TopEnd).width(gamesW).fillMaxHeight()) {
             Box(Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "sticker"), "Console sticker")) { ConsoleSticker(game?.platform) }
             Spacer(Modifier.height(6.dp))
-            Box(Modifier.fillMaxWidth().weight(1f).categorySlide()) {
+            // (Update 202: the games, and the info strip below, are moved / resized / taken off in Edit Home too.)
+            Box(Modifier.fillMaxWidth().weight(1f).categorySlide().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "games"), "Games")) {
                 // Update 156: Endless goes round in the shelf and the grid too (one more step, nothing reloads).
                 if (mode == TvRoom.Games.SHELF) SpineShelf(games, focus, art, overrides, onSelect, onOpen, loop = loop, loopTick = loopTick, loopStep = loopStep)
                 else if (mode == TvRoom.Games.CAROUSEL) GameCarousel(games, focus, art, overrides, onSelect, onOpen, cardArtType, physicalMedia, screenshots, onNeedPhysical, loop = loop, loopTick = loopTick, loopStep = loopStep)
@@ -260,7 +261,7 @@ internal fun TvRoomHome(
             // The info strip stays here when there's no room under the set (or it's turned off there).
             if (game != null && !underOn) {
                 Spacer(Modifier.height(6.dp))
-                Box(Modifier.fillMaxWidth().height(if (gamesW < 260.dp) 54.dp else 62.dp).riseOnChange(game.stableKey)) {
+                Box(Modifier.fillMaxWidth().height(if (gamesW < 260.dp) 54.dp else 62.dp).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "info"), "Game info").riseOnChange(game.stableKey)) {
                     TvInfoBar(
                         game, metadata[game.stableKey], playtime[game.stableKey], lastPlayed[game.stableKey],
                         cover = overrides[game.stableKey]?.cover ?: art[game.stableKey]?.gridUrl,
@@ -586,7 +587,8 @@ private fun CaseGrid(
                             .clip(tileShape).background(placeholderBrush(g.hue))
                             .then(if (on && look.focusBorder) Modifier.border(2.5.dp, ShelfTheme.accent, tileShape) else Modifier)
                     ) {
-                        if (url != null) AsyncImage(rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        // (Update 202: the cover with its file's flat strips trimmed — TrimMargins.kt.)
+                        if (url != null) AsyncImage(rememberStyleArtRequest(url, trim = true), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                         else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
                         ConsoleBadge(g.platform, packageName = g.packageName)
                     }
@@ -701,7 +703,8 @@ private fun SpineShelf(
                         if (!mixed) {
                             PulledOutCase(g, cover, HomeScans.map[g.stableKey], sideBox != null, Modifier.fillMaxSize())
                         } else if (cover != null) {
-                            AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().background(placeholderBrush(g.hue)).pixelArtwork())
+                            // (Update 202: the cover's file's flat strips trimmed — coverModel / TrimMargins.kt; Crop fills the slot.)
+                            AsyncImage(coverModel(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().background(placeholderBrush(g.hue)).pixelArtwork())
                         } else Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))
                     } else if (!LookStyles.spineForAll() && (HomeScans.map[g.stableKey]?.any { it.first == "Spine" } == true ||
                         (Features.originalCases.state.value && BoxTexture.spine(HomeScans.map[g.stableKey], g.platform) != null))) {

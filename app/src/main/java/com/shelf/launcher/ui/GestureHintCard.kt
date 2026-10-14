@@ -55,8 +55,10 @@ internal fun GestureHintCard() {
         Spacer(Modifier.height(8.dp))
         SwitchRow(
             Icons.Filled.VisibilityOff, "Force-hide gesture hint",
-            "Only if the pill still shows. Turns off the device's own gesture-hint setting while Voltcap is in front, " +
-                "and puts it back when you leave Voltcap or turn this off. No other app has to run.",
+            // (Update 202: with Hide navigation bar on it also stays hidden in games, see data/GestureHint.kt.)
+            "Only if the pill still shows. Turns off the device's own gesture-hint setting while Voltcap is in front — " +
+                "with Hide navigation bar on, also in games started from Voltcap and while Voltcap is your home app — " +
+                "and puts it back when you leave Voltcap for another app or turn this off. No other app has to run.",
             checked = force,
             onChange = {
                 force = it
@@ -81,6 +83,27 @@ internal fun GestureHintCard() {
             }
         }
         Spacer(Modifier.height(6.dp))
-        MutedNote(status + if (force) " Turn this off before uninstalling Voltcap, so the hint comes back for good." else "")
+        // Update 202: with the handheld's root service a watcher gives the setting back after an uninstall by itself.
+        val rooted = com.shelf.launcher.device.RootShell.available
+        MutedNote(
+            status + when {
+                !force -> ""
+                rooted -> " If Voltcap is uninstalled, the handheld's own setting comes back by itself within about two minutes."
+                else -> " Turn this off before uninstalling Voltcap, so the hint comes back for good."
+            }
+        )
+        // Update 202: a second screen (AYN Thor): the handheld's system applies its setting to that screen only when the
+        // screen starts, so a change shows there after a restart or after turning that screen off and on.
+        val secondScreen = remember {
+            runCatching {
+                context.getSystemService(android.hardware.display.DisplayManager::class.java)?.displays?.any {
+                    it.displayId != android.view.Display.DEFAULT_DISPLAY && (it.flags and android.view.Display.FLAG_PRIVATE) == 0
+                } == true
+            }.getOrDefault(false)
+        }
+        if (force && rooted && secondScreen) {
+            Spacer(Modifier.height(4.dp))
+            MutedNote("Second screen: the handheld applies this there when that screen starts. After switching it, restart the handheld or turn the second screen off and on once.")
+        }
     }
 }

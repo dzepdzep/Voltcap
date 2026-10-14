@@ -422,8 +422,9 @@ internal val mediaShellsOn: Boolean get() = Features.mediaShells.state.value
  * fall back to the cover, so "Real discs" showed no discs at all until everything was scraped.
  */
 internal fun drawnMediaWanted(type: com.shelf.launcher.data.CardArtType, typed: String?): Boolean =
-    // (Update 200: the 3D cartridges looks always draw their pieces — as the 3D models did.)
-    type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && (mediaShellsOn || typed == null || drawn3dOn())
+    // (Update 200: the 3D cartridges looks always drew their pieces. Update 202: the 3D finish is every cartridge look now,
+    // so "The game's own photo" (Features.mediaShells off) decides there too: its own photo when found, else the shell.)
+    type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && (mediaShellsOn || typed == null)
 
 /**
  * Update 129: with "Real discs", the game's own cartridge / disc scan ([typed]) a Cartridges & discs card shows — it
@@ -669,7 +670,9 @@ internal fun DiscInCase(
     realDisc: Any? = null,
     caseAspect: Float? = null,
     /** Update 112: the console, for the disc's real size against its case (a 12 cm disc in a 12.5 cm jewel case, a 19 cm DVD case…). */
-    platform: String? = null
+    platform: String? = null,
+    /** Update 202: the game's own spine (BoxTexture.realSpine) for the template's 3D box — null: the console's. */
+    realSpine: Any? = null
 ) {
     val box = tpl.box ?: return
     val discOnly = MediaTpl(null, null, tpl.disc, null)
@@ -705,7 +708,9 @@ internal fun DiscInCase(
             }
             if (caseScan != null && !scanFailed) ScanCase(caseScan, aspect, Modifier.size(h * aspect, h).align(Alignment.CenterStart), onFail = { scanFailed = true }, cover = discArt, cutLeft = if (ps1) PS1_BAND else 0f)
             else if (ps1Cov != null) CoverCase(ps1Cov, discArt ?: front, CaseArtPlaceholder, Modifier.size(h * aspect, h).align(Alignment.CenterStart))
-            else Box3D(box, front, frontIsBox, title, Modifier.size(h * box.aspect, h).align(Alignment.CenterStart), spin = false, detail = detail)
+            // (Update 202: with the game's real spine, as its closed case shows it — the Portal's game window showed the
+            // console's plain template spine.)
+            else Box3D(box, front, frontIsBox, title, Modifier.size(h * box.aspect, h).align(Alignment.CenterStart), spin = false, detail = detail, realSpine = realSpine)
         }
     }
 }

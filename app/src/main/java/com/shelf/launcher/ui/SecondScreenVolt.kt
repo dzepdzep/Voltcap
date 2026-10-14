@@ -347,8 +347,10 @@ internal fun ShowcaseArt(info: SecondHomeGame, modifier: Modifier = Modifier) {
             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.width(mediaW).fillMaxHeight(), contentAlignment = Alignment.Center) {
                     if (shell != null) PhysicalMedia(shell, info.labelUrl ?: info.coverUrl, Modifier.fillMaxSize(), platform = game.platform, labelIsScan = info.labelUrl != null)
+                    // (Update 202: standing free at its own shape — nothing drawn round it; a case scan or cover with its
+                    // file's flat strips trimmed, coverModel / TrimMargins.kt; a disc scan as it is.)
                     else if (media != null) AsyncImage(
-                        model = media, contentDescription = game.name,
+                        model = if (media != info.discUrl) coverModel(media) else media, contentDescription = game.name,
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                         modifier = Modifier.fillMaxSize().pixelArtwork()
                     ) else if (game.sourceType == com.shelf.launcher.data.SourceType.APP) {

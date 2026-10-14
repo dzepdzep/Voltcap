@@ -53,15 +53,22 @@ internal fun artRequest(
     px: IntSize,
     fadeMillis: Int = ArtFadeMillis,
     /** Update 148: its first frame only (an animated cover on a game you're not on, "Only the game you're on"). */
-    still: Boolean = false
+    still: Boolean = false,
+    /**
+     * Update 202: flat grey / black / white strips that are part of the cover's file trimmed off (TrimMargins.kt) —
+     * covers only (box scans and users' own covers included); never wide art, heroes or screenshots.
+     */
+    trim: Boolean = kind == ArtKind.COVER
 ): ImageRequest = ImageRequest.Builder(context)
     .data(url)
     .size(px.width, px.height)
     .apply { if (still) setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true, memoryCacheKey = null) }
+    // Update 202: trimmed once at decode; an animated cover (not a still bitmap) skips it and stays animated.
+    .apply { if (trim) transformations(TrimUniformMargins).allowConversionToBitmap(false) }
     // Crop fills the card, so decode to cover it (not just fit inside).
     .scale(Scale.FILL)
     .precision(Precision.INEXACT)
-    .memoryCacheKey("$url|${kind.name}|${px.width}x${px.height}" + if (still) "|still" else "")
+    .memoryCacheKey("$url|${kind.name}|${px.width}x${px.height}" + (if (still) "|still" else "") + (if (trim) "|" + TrimUniformMargins.KEY else ""))
     // While the full-size art decodes, its small thumbnail (if already in memory) stands in,
     // so fast scrolling shows soft covers instead of empty dark cards.
     .placeholderMemoryCacheKey(thumbKey(url))

@@ -85,6 +85,10 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         // Update 181 (the nearest pictures: a grid of panels, a row).
         com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC -> Pictogram.GRID
         com.shelf.launcher.data.HomeLayout.POCKET_RIBBON -> Pictogram.ROW
+        // Update 202: Green Core (the nearest picture: a menu beside a big picture).
+        com.shelf.launcher.data.HomeLayout.GREENCORE -> Pictogram.SIDE_MENU
+        // Update 202: Pocket Quest (the nearest picture: a big game with others beside it).
+        com.shelf.launcher.data.HomeLayout.POCKET -> Pictogram.SHOWCASE
     }
     is TvRoom.Games -> when (value) {
         TvRoom.Games.SPINES -> Pictogram.SPINES

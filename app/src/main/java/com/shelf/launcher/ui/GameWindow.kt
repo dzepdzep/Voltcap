@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -292,6 +293,23 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
                 back = "BACK", details = "DETAILS", play = if (resumed) "CONTINUE" else "PLAY", mono = true, caps = true
             )
         }
+        // Update 202: Green Core — a dark green machine panel with a thin lit frame, letter-spaced caps and square keys
+        // that light up in the layout's colour (Settings › Home › Layout options › Accent colour).
+        HomeLayout.GREENCORE -> {
+            val gc = greenCoreAccent()
+            WinLook(
+                Arrange.SPLIT, Btn.SQUARE,
+                veil = Brush.verticalGradient(listOf(Color(0xE6020A05), Color(0xF0010402))),
+                panel = Brush.verticalGradient(listOf(Color(0xFF0D1C12), Color(0xFF050D07))), frame = gc.copy(alpha = 0.7f), frameW = 1.5.dp,
+                corner = 3.dp, mediaCorner = 2.dp, mediaFrame = gc.copy(alpha = 0.4f), mediaFrameW = 1.dp,
+                ink = Color(0xFFE4FBE8), muted = Color(0xFF9FC7A8), accent = gc,
+                btnFill = solid(Color(0xFF0F2416)), btnInk = Color(0xFFCDEED4),
+                btnOnFill = Brush.horizontalGradient(listOf(gc.copy(alpha = 0.9f), gc.copy(alpha = 0.6f))), btnOnInk = Color(0xFF02110A),
+                btnBorder = gc.copy(alpha = 0.5f),
+                back = "BACK", details = "DETAILS", play = if (resumed) "RESUME" else "PLAY", caps = true,
+                paper = Color(0xFF07120B)
+            )
+        }
         // The Cross menu: no panel, a soft wave of colour, the choices as a list of words that glow.
         HomeLayout.CROSS -> WinLook(
             Arrange.LIST, Btn.TEXT,
@@ -400,6 +418,23 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
             back = "Back", details = "Details", play = playWord,
             paper = Color.White
         )
+        // Update 202: Pocket Quest — a deep blue / indigo panel with a crisp accent (gold) edge and nearly square corners,
+        // the picture in a thin accent frame, square buttons; the lit one solid accent with dark words (its theme's palette).
+        HomeLayout.POCKET -> {
+            val q = pqPalette()
+            WinLook(
+                Arrange.SPLIT, Btn.SQUARE,
+                veil = Brush.verticalGradient(listOf(q.edgeDark.copy(alpha = 0.72f), Color.Black.copy(alpha = 0.84f))),
+                panel = Brush.verticalGradient(listOf(q.top, q.bottom)), frame = q.accent, frameW = 2.dp, corner = 4.dp, mediaCorner = 2.dp,
+                mediaFrame = q.accentDeep, mediaFrameW = 2.dp,
+                ink = q.ink, muted = q.muted, accent = q.accent,
+                btnFill = solid(q.deep), btnInk = q.ink,
+                btnOnFill = Brush.verticalGradient(listOf(q.accentLight, q.accent, q.accentDeep)), btnOnInk = q.onAccent,
+                btnBorder = q.accentDeep,
+                back = "Back", details = "Status", play = if (resumed) "Continue" else "Play Game",
+                paper = q.deep
+            )
+        }
         // The Voltcap row (and anything else): the theme's own glass panel, round-ended buttons.
         else -> WinLook(
             Arrange.STACK, Btn.PILL,
@@ -565,6 +600,8 @@ internal fun GameWindow(
         val listFocus = remember { FocusRequester() }
         androidx.activity.compose.BackHandler(enabled = details) { page = WinPage.MAIN }
         val hasTrophies = state.raAchievementDetails[g.stableKey].orEmpty().isNotEmpty()
+        // Update 202: a Manual button beside the window's small icons, only for a game that has a manual.
+        val hasManual = rememberHasManual(g)
         val extras = WinExtras(
             plan,
             onOptions = { if (options.isNotEmpty()) page = WinPage.OPTIONS else onOptions() },
@@ -572,7 +609,8 @@ internal fun GameWindow(
             onAchievements = { if (hasTrophies && !crossTrophiesOn(layout)) page = WinPage.TROPHIES else onAchievements() },
             onSync = onSync,
             onFullAchievements = onAchievements,
-            onLoadComments = onLoadComments
+            onLoadComments = onLoadComments,
+            onManual = if (hasManual) ({ com.shelf.launcher.data.ManualLinks.open?.invoke(g); Unit }) else null
         )
         // Turning the window over swaps the buttons: the D-pad's place goes back to Play (the button it was on may be gone),
         // or to the first row of the options / achievements.
@@ -763,7 +801,9 @@ private class WinExtras(
     /** The big achievement list (the button on the window's achievements page). */
     val onFullAchievements: () -> Unit = onAchievements,
     /** Update 132: loads an achievement's comments from RetroAchievements (shown under it on the achievements page). */
-    val onLoadComments: (Int) -> Unit = {}
+    val onLoadComments: (Int) -> Unit = {},
+    /** Update 202: opens the game's manual (null: it has none — no Manual button). */
+    val onManual: (() -> Unit)? = null
 ) {
     fun has(p: WinPart) = (plan[p] ?: WinSlot.OFF) != WinSlot.OFF
     fun at(p: WinPart, slot: WinSlot) = (plan[p] ?: WinSlot.OFF) == slot
@@ -811,7 +851,10 @@ private fun WinGameMedia(g: Game, state: LauncherUiState, cover: String?, modifi
                 val (front, frontIsBox) = boxFront(tpl!!.box!!, cover, caseScan)
                 DiscInCase(
                     tpl, front, frontIsBox, label ?: cover, Modifier.fillMaxSize(),
-                    realDisc = realScan.takeIf { !mediaShellsOn }, platform = g.platform
+                    realDisc = realScan.takeIf { !mediaShellsOn }, platform = g.platform,
+                    // Update 202: the game's own spine on the case's side, as its closed case shows it (the Portal's
+                    // game window showed the console's plain template spine instead).
+                    realSpine = BoxTexture.realSpine(physical ?: HomeScans.map[g.stableKey], g.platform)
                 )
             }
             pick != null && !mediaShellsOn && realScan != null ->
@@ -820,7 +863,20 @@ private fun WinGameMedia(g: Game, state: LauncherUiState, cover: String?, modifi
                 val label = physical?.firstOrNull { it.first == "Disc label" }?.second
                 MediaFocus(true) { PhysicalMedia(pick.shell, label ?: cover, Modifier.fillMaxSize(), platform = pick.platform, labelIsScan = label != null, caseCover = cover, title = g.name) }
             }
-            cover != null -> AsyncImage(cover, g.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)))
+            // Update 202: the cover at its own shape (CoverAspects once it has loaded), as big as the place allows, filling
+            // that box edge to edge (Crop, centred) — it was fitted into the square place (Fit), its rounded corners
+            // clipping empty room instead of the art. Its file's flat strips trimmed (TrimMargins.kt).
+            cover != null -> BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                val boxA = if (maxHeight.value > 0f && maxHeight.value.isFinite()) maxWidth / maxHeight else 0.7f
+                val a = CoverAspects.of(cover) ?: 0.7f
+                val cw = if (a >= boxA) maxWidth else maxHeight * a
+                val ch = if (a >= boxA) maxWidth / a else maxHeight
+                AsyncImage(
+                    rememberStyleArtRequest(cover, trim = true), g.name, contentScale = ContentScale.Crop, alignment = Alignment.Center,
+                    onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } },
+                    modifier = Modifier.size(cw, ch).clip(RoundedCornerShape(8.dp))
+                )
+            }
         }
     }
 }
@@ -912,6 +968,8 @@ private fun WinIcons(look: WinLook, extras: WinExtras, size: Dp = 40.dp, slot: W
         WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Settings, "Game options", size, extras.onOptions)
         WinIconButton(look, androidx.compose.material.icons.Icons.Filled.EmojiEvents, "Achievements", size, extras.onAchievements)
         WinIconButton(look, androidx.compose.material.icons.Icons.Filled.CloudSync, "Save sync", size, extras.onSync)
+        // Update 202: the game's manual (downloaded the first time it's opened).
+        extras.onManual?.let { WinIconButton(look, androidx.compose.material.icons.Icons.Filled.MenuBook, "Manual", size, it) }
     }
 }
 
@@ -1174,7 +1232,8 @@ private fun WindowBody(
                 // (Update 162: no cover beside the info while the piece itself is out beside the window.)
                 if (!LocalWinInspect.current) {
                     Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(look.mediaCorner)).background(placeholderBrush(g.hue))) {
-                        if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        // (Update 202: Crop fills the place; the cover's file's flat strips trimmed — rememberCoverRequest.)
+                        if (cover != null) AsyncImage(rememberCoverRequest(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                     }
                     Spacer(Modifier.width(16.dp))
                 }
@@ -1477,7 +1536,8 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
     val titles = LocalTitleOptions.current
     Row(modifier.background(paper).padding(16.dp)) {
         Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
-            if (cover != null) AsyncImage(cover, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            // (Update 202: the cover's file's flat strips trimmed — rememberCoverRequest; Crop fills the place.)
+            if (cover != null) AsyncImage(rememberCoverRequest(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {

@@ -103,7 +103,13 @@ fun ScreenSaver(
     /** With music: this music theme full screen (with the song) instead of the song card. */
     musicTheme: com.shelf.launcher.ui.theme.AppTheme? = null,
     /** While music plays: no fade to black, and the screen is kept on. */
-    stayWithMusic: Boolean = true
+    stayWithMusic: Boolean = true,
+    /**
+     * Update 202: told when it has faded to black (true) and when it's lit again / gone (false). Only the main
+     * screen's screensaver passes it (MusicBlackout.setSaverBlack, the background music fades out); the second
+     * screen's own blackout doesn't stop the music.
+     */
+    onBlackout: ((Boolean) -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("ScreenSaver")
     var blackout by remember { mutableStateOf(false) }
@@ -116,6 +122,12 @@ fun ScreenSaver(
             delay(blackoutMinutes * 60_000L)
             blackout = true
         }
+    }
+    // Update 202: the background music follows the fade to black (and comes back the moment it's dismissed).
+    val blackoutListener = androidx.compose.runtime.rememberUpdatedState(onBlackout)
+    LaunchedEffect(blackout) { blackoutListener.value?.invoke(blackout) }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { blackoutListener.value?.invoke(false) }
     }
     // Keep the display on while it plays along with the music.
     val view = androidx.compose.ui.platform.LocalView.current

@@ -555,6 +555,8 @@ class PerfOverlayService : Service() {
         }
         sh.ownSize = OverlayPositions.size(which.key)
         sh.arrowsOn = com.shelf.launcher.data.Features.overlayArrows.value
+        // Update 202: the trophies box is measured at its own size and kept on the screen whatever the Size (OverlayShell.fitScreen).
+        sh.fitScreen = which == Which.RA
         sh.setFolded(which.key in com.shelf.launcher.data.Features.overlayFolded.value, animate = false, tell = false)
         shells[content] = sh
         return sh
@@ -596,6 +598,8 @@ class PerfOverlayService : Service() {
             // Which way it folds and where its arrow goes: towards the nearer edge.
             sh.atBottom = free?.let { it.second > 0.5f } ?: (corner == PerfCorner.BOTTOM_LEFT || corner == PerfCorner.BOTTOM_RIGHT)
             sh.atEnd = free?.let { it.first > 0.5f } ?: (corner == PerfCorner.TOP_RIGHT || corner == PerfCorner.BOTTOM_RIGHT)
+            // Update 202: the small trophies box keeps the arrow's side clear (it's only a badge high now).
+            (v as? RaOverlayView)?.arrowSide = if (!sh.arrowsOn) -1 else if (sh.atEnd) 1 else 0
         }
         // Size and opacity (Settings › Overlay / the notification), times this overlay's own size (a corner drag).
         val cfg = PerfSettings.state.value
@@ -809,6 +813,8 @@ internal object OverlayClock {
  * The RetroAchievements overlay's text: progress on the first line (gold), the last unlock, the
  * missables still to get (amber warning, by name, a few at most) and the next one worth going for.
  * Nothing is repeated: the next achievement isn't listed again among the missables.
+ * Update 202: no longer used by the overlay — RaOverlayView.bindSummaryLines shows each part as its own line, each
+ * switched on separately and limited in lines. Kept as the plain-text version.
  */
 internal fun raOverlayText(st: com.shelf.launcher.data.RaOverlayData.State, cfg: PerfConfig): CharSequence {
     val b = android.text.SpannableStringBuilder()

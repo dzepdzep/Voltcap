@@ -72,7 +72,9 @@ object Backup {
      */
     internal val GAME_DATA = setOf(
         "metadata_cache", "art_cache", "art_overrides", "game_overrides", "favorites", "playtime",
-        "recently_played", "ra_matches", "screenshots", "screenshots_v2", "video_urls", "steam_games"
+        "recently_played", "ra_matches", "screenshots", "screenshots_v2", "video_urls", "steam_games",
+        // Update 202: manual addresses (ManualLinks), per game like the clip addresses.
+        "manual_urls"
     )
 
     private fun prefsDir(context: Context) = File(context.applicationInfo.dataDir, "shared_prefs")

@@ -90,6 +90,10 @@ internal fun PresetPreview(
             // Update 181.
             HomeLayout.POCKET_CLASSIC -> p.pocketClassic()
             HomeLayout.POCKET_RIBBON -> p.pocketRibbon()
+            // Update 202: Green Core draws its own little screen (GreenCoreSphere.kt).
+            HomeLayout.GREENCORE -> greenCorePreview(this, accent)
+            // Update 202: Pocket Quest draws its own little screen (PocketQuestScenery.kt).
+            HomeLayout.POCKET -> pqPreview()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()

@@ -211,37 +211,24 @@ fun PerfSettingsCard() {
     ShelfCard {
         SwitchRow(
             Icons.Filled.EmojiEvents, "RetroAchievements overlay",
-            "For games with achievements: your progress (unlocked, %, points), the last unlock, the missables you can still get, " +
-                "and the next achievement worth going for with its description - a missable first, then the easiest one left. " +
-                "Updates after every unlock check; never takes touches or the controller.",
+            // Update 202: says what it shows by default now (the rest is switched on below).
+            "For games with achievements: a small box with the badge of the achievement you're on (the pinned one, or the next one " +
+                "worth going for) and your progress bar. Name, description, totals, missables, the next one and the last unlock can be " +
+                "switched on below. Tap it for the full lists. Updates after every unlock check; the controller stays with the game.",
             cfg.raDuringGames,
             onChange = { v -> PerfSettings.update(context) { it.copy(raDuringGames = v) } }
         )
         if (cfg.raDuringGames) {
             Spacer(Modifier.height(6.dp))
+            // Update 202: the small overlay's parts, each its own switch (default: badge + progress bar only).
             SectionLabel("What the achievements overlay shows")
+            RaOverlayPartChips(cfg) { f -> PerfSettings.update(context, f) }
+            MutedNote("The badge is the 📌 pinned achievement, or when nothing is pinned the next one to get (a missable first, then the easiest one left).")
+            Spacer(Modifier.height(6.dp))
+            SectionLabel("Achievements overlay options")
             ChipFlow {
-                val showPin = com.shelf.launcher.data.Features.raShowPinned.state.value
-                Chip((if (showPin) "✓ " else "") + "📌 Pinned achievement", accent = showPin) {
-                    com.shelf.launcher.data.Features.raShowPinned.value = !showPin
-                }
-                Chip((if (cfg.raNext) "✓ " else "") + "Next achievement", accent = cfg.raNext) {
-                    PerfSettings.update(context) { it.copy(raNext = !cfg.raNext) }
-                }
-                Chip((if (cfg.raMissables) "✓ " else "") + "Missable warnings", accent = cfg.raMissables) {
-                    PerfSettings.update(context) { it.copy(raMissables = !cfg.raMissables) }
-                }
-                Chip((if (cfg.raBadges) "✓ " else "") + "Badges", accent = cfg.raBadges) {
-                    PerfSettings.update(context) { it.copy(raBadges = !cfg.raBadges) }
-                }
-                Chip((if (cfg.raProgressBar) "✓ " else "") + "Progress bar", accent = cfg.raProgressBar) {
-                    PerfSettings.update(context) { it.copy(raProgressBar = !cfg.raProgressBar) }
-                }
                 Chip((if (cfg.raPoints) "✓ " else "") + "Points", accent = cfg.raPoints) {
                     PerfSettings.update(context) { it.copy(raPoints = !cfg.raPoints) }
-                }
-                Chip((if (cfg.raLastUnlock) "✓ " else "") + "Last unlock", accent = cfg.raLastUnlock) {
-                    PerfSettings.update(context) { it.copy(raLastUnlock = !cfg.raLastUnlock) }
                 }
                 Chip((if (cfg.raUnlockedTab) "✓ " else "") + "Unlocked tab", accent = cfg.raUnlockedTab) {
                     PerfSettings.update(context) { it.copy(raUnlockedTab = !cfg.raUnlockedTab) }
@@ -261,6 +248,31 @@ fun PerfSettingsCard() {
             if (cfg.raCorner == cfg.corner && cfg.showDuringGames || cfg.raCorner == cfg.musicCorner && cfg.musicDuringGames) {
                 MutedNote("Another overlay uses this corner too - pick a free one so they don't overlap.")
             }
+        }
+    }
+}
+
+/**
+ * Update 202: one switch per part of the small achievements overlay — here (Settings › Overlay › Achievements over games)
+ * and in the in-game overlay panel (OverlayControlActivity). [change] applies a PerfConfig change.
+ */
+@Composable
+internal fun RaOverlayPartChips(
+    cfg: com.shelf.launcher.data.perf.PerfConfig,
+    change: ((com.shelf.launcher.data.perf.PerfConfig) -> com.shelf.launcher.data.perf.PerfConfig) -> Unit
+) {
+    ChipFlow {
+        Chip((if (cfg.raBadges) "✓ " else "") + "Badge icon", accent = cfg.raBadges) { change { it.copy(raBadges = !it.raBadges) } }
+        Chip((if (cfg.raProgressBar) "✓ " else "") + "Progress bar", accent = cfg.raProgressBar) { change { it.copy(raProgressBar = !it.raProgressBar) } }
+        Chip((if (cfg.raName) "✓ " else "") + "Name", accent = cfg.raName) { change { it.copy(raName = !it.raName) } }
+        Chip((if (cfg.raDescription) "✓ " else "") + "Description", accent = cfg.raDescription) { change { it.copy(raDescription = !it.raDescription) } }
+        Chip((if (cfg.raTotals) "✓ " else "") + "Totals (count · % · points)", accent = cfg.raTotals) { change { it.copy(raTotals = !it.raTotals) } }
+        Chip((if (cfg.raMissables) "✓ " else "") + "Missables line", accent = cfg.raMissables) { change { it.copy(raMissables = !it.raMissables) } }
+        Chip((if (cfg.raNext) "✓ " else "") + "Next achievement line", accent = cfg.raNext) { change { it.copy(raNext = !it.raNext) } }
+        Chip((if (cfg.raLastUnlock) "✓ " else "") + "Last unlock", accent = cfg.raLastUnlock) { change { it.copy(raLastUnlock = !it.raLastUnlock) } }
+        val showPin = com.shelf.launcher.data.Features.raShowPinned.state.value
+        Chip((if (showPin) "✓ " else "") + "📌 Pinned first", accent = showPin) {
+            com.shelf.launcher.data.Features.raShowPinned.value = !showPin
         }
     }
 }

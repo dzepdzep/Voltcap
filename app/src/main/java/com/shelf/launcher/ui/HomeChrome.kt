@@ -209,7 +209,8 @@ internal fun StatusBar(
         }
         // Compact, like Android's own: small icons, narrow gaps. The bell
         // only shows when there's something, with how many.
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // Update 202: the clock, battery, icons and profile are moved / resized / taken off in Edit Home (each layout its own).
+        Row(Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons"), verticalAlignment = Alignment.CenterVertically) {
         if (syncSlot != null) {
             syncSlot()
             Spacer(Modifier.width(10.dp))

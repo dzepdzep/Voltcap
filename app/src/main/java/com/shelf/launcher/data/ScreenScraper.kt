@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -216,7 +217,39 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         if (response.isSuccessful || response.code() == 404) {
             synchronized(recent) { recent[game.stableKey] = jeu }
         }
+        // Update 202: the game's manual noted from this same answer (whatever it was asked for) — no request of its own.
+        // Downloaded only when it's opened (ManualLinks).
+        if (jeu != null || response.code() == 404) runCatching {
+            ManualLinks.note(game.stableKey, jeu?.takeIf { isConfidentMatch(it, game) }?.let { manualFrom(it, game) })
+        }
         return jeu
+    }
+
+    /** Update 202: the manual's address in [jeu] (ScreenScraper's "manuel" media), its best region for [game]; null: none. */
+    private fun manualFrom(jeu: JsonObject, game: Game): String? {
+        val manuals = jeu.arr("medias")?.mapNotNull { it as? JsonObject }
+            ?.filter { it.str("type") == "manuel" && !it.str("url").isNullOrBlank() }
+            .orEmpty()
+        if (manuals.isEmpty()) return null
+        val order = ManualLinks.regionOrder(game)
+        val best = manuals.minByOrNull { m ->
+            val r = m.str("region")?.lowercase()
+            order.indexOf(r).let { if (it >= 0) it else 100 + regionRank(r) }
+        }
+        return best?.str("url")?.let { ManualLinks.withoutLogin(it) }
+    }
+
+    /**
+     * Update 202: a ScreenScraper media address ([url], kept without the login) ready to download: this app's developer
+     * ID and your account (ssid / sspassword — your quota, and media only members get) put in, as every API request has.
+     */
+    fun withLogin(url: String, c: ScreenScraperCredentials?): String {
+        if (c == null) return url
+        val parsed = url.toHttpUrlOrNull() ?: return url
+        if (!parsed.host.contains("screenscraper", ignoreCase = true)) return url
+        val b = parsed.newBuilder()
+        baseParams(c).forEach { (k, v) -> if (k != "output") b.setQueryParameter(k, v) }
+        return b.build().toString()
     }
 
     /** Art for one ROM, or null if ScreenScraper doesn't know it (or it's not a ROM). */
@@ -347,11 +380,16 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         )
     }
 
-    /** The scanned game manual (PDF), best region first, when ScreenScraper has one. */
+    /**
+     * The scanned game manual (PDF), best region first, when ScreenScraper has one. Update 202: its region picked for the
+     * game (ManualLinks.regionOrder), noted in ManualLinks, and returned without the login (add it with [withLogin] to
+     * download). A lookup already made for the game's art or scans is reused (no new request).
+     */
     suspend fun manualUrl(c: ScreenScraperCredentials, game: Game): String? {
-        val jeu = lookup(c, game)?.takeIf { isConfidentMatch(it, game) } ?: return null
-        val medias = jeu.arr("medias")?.mapNotNull { it as? JsonObject } ?: return null
-        return medias.filter { it.str("type") == "manuel" }.minByOrNull { regionRank(it.str("region")) }?.str("url")
+        val jeu = lookup(c, game)
+        val url = jeu?.takeIf { isConfidentMatch(it, game) }?.let { manualFrom(it, game) }
+        if (jeu != null) ManualLinks.note(game.stableKey, url)
+        return url
     }
 
     /** A short gameplay clip for the video preview — the "normalized" version

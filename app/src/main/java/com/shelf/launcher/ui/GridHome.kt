@@ -251,8 +251,11 @@ internal fun HomeGameGrid(
                                 g.platform, cover ?: artOrIcon, typed, Modifier.fillMaxSize().padding(4.dp).awardShine(g.stableKey, on), title = gameDisplayName(g.name), real = realRef,
                                 caseModifier = if (on && look.focusBorder) Modifier.border(2.dp, ShelfTheme.accent, androidx.compose.foundation.shape.RoundedCornerShape(2.dp)) else Modifier
                             ) }
-                            // Filled edge to edge (cropped, never letterboxed): no empty bands round the picture.
-                            url != null -> AsyncImage(url, g.name, contentScale = if (realScan) ContentScale.Fit else ContentScale.Crop, modifier = Modifier.fillMaxSize().then(if (realScan) Modifier.padding(6.dp) else Modifier).pixelArtwork())
+                            // Filled edge to edge (cropped, never letterboxed): no empty bands round the picture. (A real
+                            // cartridge / disc scan stands free and whole — media, not a cover; no card behind it.)
+                            // Update 202: the cover in the shared style shape with its file's flat strips trimmed
+                            // (TrimMargins.kt); other pictures as before.
+                            url != null -> AsyncImage(if (!realScan && url == cover) rememberStyleArtRequest(url, trim = true) else url, g.name, contentScale = if (realScan) ContentScale.Fit else ContentScale.Crop, modifier = Modifier.fillMaxSize().then(if (realScan) Modifier.padding(6.dp) else Modifier).pixelArtwork())
                             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = gridAspect(cardArtType, tiles) > 1f, modifier = Modifier.fillMaxSize())
                             else -> Text(titles.display(g.name), color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), textAlign = TextAlign.Center, maxLines = 4, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(8.dp))
                         }

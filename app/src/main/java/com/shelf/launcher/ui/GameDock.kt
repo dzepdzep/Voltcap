@@ -494,6 +494,8 @@ internal fun GameDock(
                     ),
                     modifier = Modifier
                         .focusedCard()
+                        // Update 202: the game you're on (its cover, box, cartridge or disc) moved / resized in Edit Home.
+                        .editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.CLASSIC, "media"), HomeWidgets.mediaLabel())
                         .then(Modifier.graphicsLayer {
                             val extra = ((popNow - 1f) * 0.07f).coerceIn(0f, 0.22f)
                             scaleX = 1f + extra; scaleY = 1f + extra
@@ -610,6 +612,8 @@ internal fun GameDock(
                             }
                             // The game you're on reports where it is (cover light, game window; no layout change).
                             .then(if (rel == 0) Modifier.focusedCard() else Modifier)
+                            // Update 202: the game you're on (its cover, box, cartridge or disc) moved / resized in Edit Home.
+                            .then(if (rel == 0) Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.CLASSIC, "media"), HomeWidgets.mediaLabel()) else Modifier)
                             // Update 112: "How far the game you're on stands out" (Home › Animations): above 100 % it grows
                             // a little out of the row (from its middle, so a wide capsule grows evenly too).
                             .then(if (!carousel) Modifier.graphicsLayer {

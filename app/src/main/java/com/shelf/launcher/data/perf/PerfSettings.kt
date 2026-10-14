@@ -40,10 +40,20 @@ data class PerfConfig(
     /** RetroAchievements over the game: progress, what's left, missables to get, the next one to go for. */
     val raDuringGames: Boolean = false,
     val raCorner: PerfCorner = PerfCorner.BOTTOM_LEFT,
-    /** Show the next achievement worth going for (with its description). */
-    val raNext: Boolean = true,
-    /** Warn about missables you can still get (by name). */
-    val raMissables: Boolean = true,
+    /**
+     * The small overlay's "Next: …" line (and why that one). Update 202: off by default — the small overlay shows only
+     * the featured achievement's badge (the pinned one, else the next one to get) and the progress bar; every other
+     * part is its own switch ([raName], [raDescription], [raTotals], [raMissables], [raNext], [raLastUnlock]).
+     */
+    val raNext: Boolean = false,
+    /** The "⚠ N missables still to get: …" line on the small overlay (by name). Update 202: off by default. */
+    val raMissables: Boolean = false,
+    /** Update 202: the featured achievement's name on the small overlay ("📌 Elite Five" when pinned). */
+    val raName: Boolean = false,
+    /** Update 202: the featured achievement's description on the small overlay (3 lines at most). */
+    val raDescription: Boolean = false,
+    /** Update 202: the totals line on the small overlay: "🏆 37/75 · 49 %" (+ points with [raPoints]). */
+    val raTotals: Boolean = false,
     /** Achievement badges (pictures) in the overlay and its lists. */
     val raBadges: Boolean = true,
     /** A progress capsule at the top: how far you are into the set. */
@@ -52,8 +62,8 @@ data class PerfConfig(
     val raUnlockedTab: Boolean = true,
     /** Points next to the progress. */
     val raPoints: Boolean = true,
-    /** The last unlock of this session in the summary. */
-    val raLastUnlock: Boolean = true,
+    /** The last unlock of this session in the summary (its line, and its badge in colour for a while). Update 202: off by default. */
+    val raLastUnlock: Boolean = false,
     /** Voltcap look (your accent, glass panel, capsule bar); off = the plain dark box. */
     val raThemed: Boolean = true,
     /** Overlays can be dragged to another corner with a finger (and swap places with what's there). */
@@ -95,6 +105,8 @@ data class PerfConfig(
  */
 object PerfSettings {
     private const val FILE = "perf_settings"
+    /** Update 202: set once the achievements overlay was put to its clean default (see ensureLoaded). */
+    private const val RA_CLEAN_202 = "ra_clean_default_202"
     private val _state = MutableStateFlow(PerfConfig())
     val state: StateFlow<PerfConfig> = _state.asStateFlow()
     @Volatile private var loaded = false
@@ -125,6 +137,9 @@ object PerfSettings {
                 .putString("ra_corner", next.raCorner.name)
                 .putBoolean("ra_next", next.raNext)
                 .putBoolean("ra_missables", next.raMissables)
+                .putBoolean("ra_name", next.raName)
+                .putBoolean("ra_description", next.raDescription)
+                .putBoolean("ra_totals", next.raTotals)
                 .putBoolean("ra_badges", next.raBadges)
                 .putBoolean("ra_progress_bar", next.raProgressBar)
                 .putBoolean("ra_unlocked_tab", next.raUnlockedTab)
@@ -165,6 +180,9 @@ object PerfSettings {
                     raCorner = runCatching { PerfCorner.valueOf(p.getString("ra_corner", null).orEmpty()) }.getOrDefault(d.raCorner),
                     raNext = p.getBoolean("ra_next", d.raNext),
                     raMissables = p.getBoolean("ra_missables", d.raMissables),
+                    raName = p.getBoolean("ra_name", d.raName),
+                    raDescription = p.getBoolean("ra_description", d.raDescription),
+                    raTotals = p.getBoolean("ra_totals", d.raTotals),
                     raBadges = p.getBoolean("ra_badges", d.raBadges),
                     raProgressBar = p.getBoolean("ra_progress_bar", d.raProgressBar),
                     raUnlockedTab = p.getBoolean("ra_unlocked_tab", d.raUnlockedTab),
@@ -175,6 +193,20 @@ object PerfSettings {
                     overlayScale = p.getInt("overlay_scale", d.overlayScale).coerceIn(50, 200),
                     overlayOpacity = p.getInt("overlay_opacity", d.overlayOpacity).coerceIn(20, 100)
                 )
+                // Update 202: once, everyone's small achievements overlay goes to the new clean default (asked for: it was
+                // too cluttered) — the featured badge and the progress bar only. Each other part can be switched back on.
+                if (!p.getBoolean(RA_CLEAN_202, false)) {
+                    _state.value = _state.value.copy(
+                        raBadges = true, raProgressBar = true, raName = false, raDescription = false, raTotals = false,
+                        raMissables = false, raNext = false, raLastUnlock = false
+                    )
+                    p.edit()
+                        .putBoolean("ra_badges", true).putBoolean("ra_progress_bar", true)
+                        .putBoolean("ra_name", false).putBoolean("ra_description", false).putBoolean("ra_totals", false)
+                        .putBoolean("ra_missables", false).putBoolean("ra_next", false).putBoolean("ra_last_unlock", false)
+                        .putBoolean(RA_CLEAN_202, true)
+                        .apply()
+                }
             }
             loaded = true
         }

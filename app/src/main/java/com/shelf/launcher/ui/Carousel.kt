@@ -112,8 +112,9 @@ internal fun ShelfGameArt(
         Box(modifier.awardShine(g.stableKey, on)) {
             val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey) else null
             // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
-            // (Update 200: the 3D cartridges looks draw their drawn piece whatever the scans — the 3D models did.)
-            val real = if (drawn3dOn() && pick != null && isCustomPiece(pick.platform)) null else realScanOf(gArt, typed)
+            // (Update 200: the 3D cartridges looks drew their drawn piece whatever the scans. Update 202: "The game's own
+            // photo" decides in every cartridge look — realScanOf is null with it off — see drawnMediaWanted.)
+            val real = realScanOf(gArt, typed)
             // (Update 173: an app without art: its icon on the label / case front — they stayed blank.)
             val appIcon = if (cover == null && typed == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
                 rememberAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
@@ -127,7 +128,8 @@ internal fun ShelfGameArt(
                 real = realRef, caseModifier = if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier
             ) }
             // Update 141: the console's badge on cartridges, discs, cases and 3D models too.
-            ConsoleBadge(g.platform, packageName = g.packageName)
+            // (Update 202: not on a case — its printed band shows the console already, it read twice.)
+            ConsoleBadge(g.platform, packageName = g.packageName, onCase = real == null && pick == null)
         }
     } else if (gArt == com.shelf.launcher.data.CardArtType.CAPSULE || gArt == com.shelf.launcher.data.CardArtType.HERO || gArt == com.shelf.launcher.data.CardArtType.SCREENSHOT) {
         // Update 115: the wide looks as themselves (they used to show the cover in a case).
@@ -148,7 +150,8 @@ internal fun ShelfGameArt(
                 .clip(shape)
                 .background(placeholderBrush(g.hue))
         ) {
-            if (url != null) AsyncImage(rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156)
+            // (Update 202: the cover, when it stands in for missing wide art, with its file's flat strips trimmed.)
+            if (url != null) AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156)
             else Text(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(6.dp))
             ConsoleBadge(g.platform, packageName = g.packageName)
         }
@@ -159,12 +162,13 @@ internal fun ShelfGameArt(
                 val (front, isBox) = boxFront(box3d, cover, null)
                 Box(Modifier.fillMaxSize().padding(2.dp).awardShine(g.stableKey, on)) {
                     // (Update 117: with the game's own spine on its side when it has one.)
-                    val ownSpine = if (Features.originalCases.state.value) BoxTexture.spine(physicalMedia[g.stableKey], g.platform) else null
+                    // (Update 202: the same real spine the closed cases and the Spines look show — BoxTexture.realSpine.)
+                    val ownSpine = BoxTexture.realSpine(physicalMedia[g.stableKey], g.platform)
                     Box3D(box3d, front, isBox, gameDisplayName(g.name), Modifier.fillMaxSize(), spin = false, realSpine = ownSpine)
                 }
             } else CoverCase(cov, cover, placeholderBrush(g.hue), Modifier.fillMaxSize().padding(2.dp).awardShine(g.stableKey, on), caseModifier = frame)
-            // Update 141: on the console's case too.
-            ConsoleBadge(g.platform, packageName = g.packageName)
+            // Update 141: on the console's case too. (Update 202: not over the case's own printed band — it read twice.)
+            ConsoleBadge(g.platform, packageName = g.packageName, onCase = true)
         }
     } else {
         val shape = RoundedCornerShape(4.dp)
@@ -179,7 +183,9 @@ internal fun ShelfGameArt(
             if (cover != null) AsyncImage(
                 // (Update 156: the warmed shape.) Update 159: the size was inside that comment, so the cover drew at its own
                 // small size in the slot's colour (a big red box with the art small).
-                rememberStyleArtRequest(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork(),
+                // (Update 202: flat strips that are part of the cover's file trimmed off first — TrimMargins.kt — so the
+                // shape noted below, and the slot, are the art's own.)
+                rememberStyleArtRequest(cover, trim = true), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork(),
                 // (Update 154: its shape noted, so the carousel's slot takes it — CoverAspects.)
                 onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
             )
@@ -609,7 +615,8 @@ internal fun GameCarousel(
             overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
         }.distinct()
         prefetchThumbs(warmCtx, urls)
-        warmStyleArt(warmCtx, urls)
+        // (Update 202: covers, drawn trimmed — CarouselArt.)
+        warmStyleArt(warmCtx, urls) { true }
         // Update 166: the 3D cases' and 3D pieces' covers too (they read their own plain bitmaps: Case3D 480 px, the 3D
         // pieces 640 px), a little further out — Box flow shows many at once.
         val f = Features
@@ -623,7 +630,9 @@ internal fun GameCarousel(
                 val g = games.getOrNull(if (loop) i.mod(n) else i) ?: return@mapNotNull null
                 overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
             }.distinct()
-            warmSoft(warmCtx, more, 480)
+            // (Update 202: the 3D cases read their cover trimmed — Case3D; the drawn cartridge shells as it is.)
+            if (box3d) warmSoft(warmCtx, more, 480, trim = true)
+            if (models) warmSoft(warmCtx, more, 480)
         }
     }
     val spines = spinesOn(cardArtType)

@@ -151,7 +151,14 @@ enum class HomeLayout(val label: String) {
     /** Update 181: Voltcap's take on the 2004 two-screen pocket menu: clock and calendar on top, four panels below (PocketClassic.kt). */
     POCKET_CLASSIC("Pocket classic"),
     /** Update 181: Voltcap's take on the 2008 two-screen pocket menu: a picture on top, a ribbon of icons below (PocketRibbon.kt). */
-    POCKET_RIBBON("Pocket ribbon");
+    POCKET_RIBBON("Pocket ribbon"),
+    /** Update 202: Green Core — a dark green machine dashboard: a living sphere of light on the left, angled menu panels
+     *  on the right (GAMES, SYSTEMS, APPS, SAVE VAULT, MUSIC, SETTINGS), its own games and systems pages (StyleGreenCore.kt). */
+    GREENCORE("Green Core (2001)"),
+    /** Update 202: Pocket Quest — a full-screen game menu in the style of the great 32-bit handheld RPGs: a big showcase
+     *  of the game you're on, layered blue panels with gold edges, a row of games along the bottom, pixel-art scenery
+     *  behind (StylePocketQuest.kt, PocketQuestScenery.kt, PocketQuestSettings.kt). */
+    POCKET("Pocket Quest");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
@@ -161,6 +168,8 @@ enum class HomeLayout(val label: String) {
         this == CRATE || // Update 158: Record crate
         this == CARDS || // Update 158: Card binder
         this == CUSTOM || // Update 176: Custom layout
+        this == GREENCORE || // Update 202: Green Core
+        this == POCKET || // Update 202: Pocket Quest
         this == POCKET_CLASSIC || this == POCKET_RIBBON // Update 181
 
     companion object {
@@ -992,7 +1001,23 @@ class AppearanceStore(context: Context) {
         prefs.edit().putString("second_music_layout", SecondMusicLayout.STAGE.name).putBoolean("stage_default_200", true).apply()
     }
 
-    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); oneGameLook(loadSettings()) }.also {
+    /**
+     * Update 202, once: the game look became four main looks with a few choices each (ui/GameLookPicker.kt). The look you
+     * had is read off its switches and written as those choices, so nothing you picked is lost; cartridges start on each
+     * console's real shell (asked for: the researched real backs). Only marked done once Features could be started (as
+     * [applyDefaultsV4]), else it's tried again next time.
+     */
+    private fun lookRework202(s: AppearanceSettings): AppearanceSettings {
+        if (prefs.getBoolean("look_rework_202", false)) return s
+        return runCatching {
+            Features.init(appContext)
+            com.shelf.launcher.ui.migrateGameLook202(s.cardArtType)
+            prefs.edit().putBoolean("look_rework_202", true).apply()
+            s
+        }.getOrDefault(s)
+    }
+
+    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); lookRework202(oneGameLook(loadSettings())) }.also {
         // Scraping in the background reads these too, without the home screen open.
         AnimatedArt.enabled = it.animatedArt
         AnimatedArt.preferAnimatedScraping = it.animatedArt && it.preferAnimatedArt
@@ -1499,7 +1524,9 @@ val AppearanceSettings.statusOn: Boolean
         // Update 158: Hero tiles has its own status pill on the picture (unless its Status bar is turned on).
         (homeLayout != HomeLayout.HERO_TILES || Features.heroTilesStatusBar.state.value) &&
         // Update 182: the Pocket layouts have their own bar on top (name, date, time, battery); Voltcap's sat over it.
-        homeLayout != HomeLayout.POCKET_CLASSIC && homeLayout != HomeLayout.POCKET_RIBBON
+        homeLayout != HomeLayout.POCKET_CLASSIC && homeLayout != HomeLayout.POCKET_RIBBON &&
+        // Update 202: Pocket Quest has its own top bar too (brand, consoles, search, settings, battery and clock).
+        homeLayout != HomeLayout.POCKET
 
 /** Update 132: Spotlight's Home menu draws its own top row (and its own button hints), so the status bar steps aside. */
 val AppearanceSettings.spotOwnTop: Boolean

@@ -48,16 +48,18 @@ data class PresetLook(
     val disc3d: Boolean = false,
     val leaning: Boolean = false
 ) {
-    /** The look's short name, as the R1 Game look tile says it; null = the card artwork's own name (Covers, Real cases…). */
+    /**
+     * The look's name for a preset's summary ("games as …"); null = the card artwork's own name (Covers, Cases…).
+     * Update 202: named as the game look's choices call it now (it was Tile, 3D cartridges, Case + its media…).
+     */
     fun label(): String? = when {
-        tiles -> "Tile"
+        tiles -> "Square tiles"
         spines -> "Spines"
-        // (Update 200: the 3D cartridges look — drawn shells now, no longer the pre-rendered 3D models.)
-        models -> "3D cartridges"
-        carts -> "Cartridges"
-        leaning -> "Case + its media"
-        disc3d -> "3D case + disc"
-        discInCase -> "Case + disc"
+        carts -> "Cartridges & discs, disc games on a cartridge"
+        models -> "Cartridges & discs"
+        leaning -> "Cases with the disc or cartridge beside them"
+        disc3d -> "Cases with the disc half out (3D case)"
+        discInCase -> "Cases with the disc half out"
         else -> null
     }
 }
@@ -326,8 +328,9 @@ object LayoutPresets {
             s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
         },
         // (Update 200: renamed from "TV room · 3D models" — the 3D cartridges look draws the drawn shells now; its id stays.)
-        preset("tv_models", HomeLayout.TV, "TV room · 3D cartridges",
-            "Every cartridge as its real shell in 3D beside the TV, the one you're on facing you.",
+        // (Update 202: "Cartridges", as Game look calls it now — it uses your Cartridge choice, real shells by default.)
+        preset("tv_models", HomeLayout.TV, "TV room · Cartridges",
+            "Every cartridge in 3D beside the TV (each console's real shell, unless you picked your pack's or clear ones), the one you're on facing you.",
             look = PresetLook(models = true), options = tvOpts() + o(Features.pickedFaces, true)) { s ->
             s.copy(cardArtType = CardArtType.CARTRIDGE_DISC, focusEffect = FocusEffect.GLOW)
         },
@@ -436,6 +439,23 @@ object LayoutPresets {
             "The same chips on a classic green board with its labels printed beside them, current flowing along the line.",
             options = circuitOpts(Features.CircuitColors.GREEN)) { s ->
             s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
+        },
+        // Update 202: Green Core (2001). Keeps your game look (cases, cartridges, discs show by the sphere).
+        preset("gc_std", HomeLayout.GREENCORE, "Green Core",
+            "A dark green machine dashboard: a living sphere of light on the left, angled menu panels on the right, your games as a list beside the sphere.",
+            look = null, options = listOf(
+                o(Features.gcBrowse, Features.GcBrowse.LIST), o(Features.gcAccent, Features.GcAccent.GREEN), o(Features.gcGlow),
+                o(Features.gcSphereSpeed), o(Features.gcBgMotion), o(Features.gcReducedMotion)
+            )) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("gc_carousel", HomeLayout.GREENCORE, "Green Core carousel",
+            "The same machine dashboard with your games on a curved carousel in front of the sphere, a softer glow.",
+            look = null, options = listOf(
+                o(Features.gcBrowse, Features.GcBrowse.CAROUSEL), o(Features.gcAccent, Features.GcAccent.GREEN), o(Features.gcGlow, 55),
+                o(Features.gcSphereSpeed), o(Features.gcBgMotion), o(Features.gcReducedMotion)
+            )) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
         },
         // Update 162: Library panel.
         preset("lib_std", HomeLayout.LIBRARY, "Library panel",

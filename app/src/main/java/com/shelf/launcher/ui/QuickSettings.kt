@@ -205,6 +205,8 @@ fun QuickSettingsCard(
     var showLights by remember { mutableStateOf(false) }
     var showOverlayLayout by remember { mutableStateOf(false) }
     var showGameSize by remember { mutableStateOf(false) }
+    // Update 202: holding the Look tile — the choices of the main look in use (GameLookPopup).
+    var showLookChoices by remember { mutableStateOf(false) }
     // A tile's hold list (update 104: the Player and Round shortcuts tiles): title and the choices.
     var choiceSheet by remember { mutableStateOf<Pair<String, List<R1Choice>>?>(null) }
     // Update 185: presses that change the look can be undone for a few seconds (R1Undo).
@@ -268,12 +270,31 @@ fun QuickSettingsCard(
         tilePrefs.edit().putInt("use_$id", n).apply()
     }
 
+    // Update 202: what decides which tiles show here (r1TileFit, R1TileRules.kt) — read again on resume / after a tap.
+    val secondDisplayHere = remember(refresh) { hasSecondDisplay(context) }
+    val bluetoothHere = remember { hasBluetooth(context) }
+    val rommSetUp = remember(refresh) { runCatching { com.shelf.launcher.data.RommCredentialsStore(context).load() != null }.getOrDefault(false) }
+    val raAccountCount = remember(refresh) { runCatching { com.shelf.launcher.data.RaCredentialsStore(context).usernames().count { it != null } }.getOrDefault(0) }
+    val r1Ctx = R1Ctx(
+        a = home?.appearance,
+        secondDisplay = secondDisplayHere,
+        bluetooth = bluetoothHere,
+        lights = hasLights,
+        romm = rommSetUp,
+        raAccounts = raAccountCount,
+        themeRecolorable = home?.themeKey?.let { tk -> com.shelf.launcher.ui.theme.AppTheme.values().firstOrNull { it.name == tk }?.recolorable } == true,
+        // (Listed on every device; read with the other device tiles. Not read yet: nothing to hide.)
+        chargeLimitWorks = deviceTiles.firstOrNull { it.first == com.shelf.launcher.device.DeviceControl.CHARGE_LIMIT }?.second?.supported ?: true
+    )
+
     // Every tile, in the default order; the saved order is applied on top (new tiles go at the end).
+    // (Update 202: every tile is built; r1TileFit then drops the ones that do nothing here — see the end of the list.)
     val allTiles = buildList {
         add(R1Tile("wifi", if (wifiOn) Icons.Filled.Wifi else Icons.Filled.WifiOff, "Wi-Fi", wifiOn) { QuickControls.toggleWifi(context); refresh++ })
         add(R1Tile("bt", if (bluetoothOn) Icons.Filled.Bluetooth else Icons.Filled.BluetoothDisabled, "Bluetooth", bluetoothOn) { QuickControls.toggleBluetooth(context); refresh++ })
         add(R1Tile("dnd", Icons.Filled.DoNotDisturbOn, "Do not disturb", dndOn) { QuickControls.toggleDnd(context); refresh++ })
-        if (hasLights) add(R1Tile("lights", Icons.Filled.Lightbulb,
+        // (Update 202: whether it shows — lights found — is decided with every other tile in r1TileFit, R1TileRules.kt.)
+        add(R1Tile("lights", Icons.Filled.Lightbulb,
             when { !lightsEnabled -> "RGB system"; com.shelf.launcher.data.Features.lightsHeldOff.state.value -> "RGB off"; else -> "RGB on" },
             lightsEnabled && !com.shelf.launcher.data.Features.lightsHeldOff.state.value,
             dot = Color(com.shelf.launcher.data.LightsTheme.resolve(lightsColor)).copy(alpha = 1f), focus = lightsTileFocus) { showLights = true })
@@ -319,15 +340,13 @@ fun QuickSettingsCard(
             }
         })
         if (sortLabel != null && onSort != null) add(R1Tile("sort", Icons.AutoMirrored.Filled.Sort, sortLabel, false) { onSort() })
-        // What the games are drawn as in the layout in use: Covers → Real cases → real sizes → Cartridges & discs → Discs only.
+        // What the games are drawn as: Covers → Cases → Cartridges & discs → Art (update 202: the four main looks, each as
+        // you last had it); hold: the choices of the one in use, with small pictures (GameLookPopup).
         if (gameLook != null && onCycleGameLook != null) {
-            // Update 177: greyed out in a layout that draws its games its own way (the look would change nothing there).
-            val layoutNow = home?.appearance?.homeLayout
-            val own = layoutNow?.let { layoutOwnLook(it) }
-            if (own != null) add(R1Tile("gamelook", Icons.Filled.Album, "Look\n$gameLook", false, disabled = true) {
-                android.widget.Toast.makeText(context, "${layoutNow.label} draws its games as $own — the look is for the other layouts.", android.widget.Toast.LENGTH_SHORT).show()
-            })
-            else add(R1Tile("gamelook", Icons.Filled.Album, "Look\n$gameLook", gameLook != "Covers") { onCycleGameLook() })
+            // (Update 177 greyed it out in a layout that draws its games its own way. Update 202: hidden there instead —
+            // r1TileFit, R1TileRules.kt.)
+            add(R1Tile("gamelook", Icons.Filled.Album, "Look\n$gameLook", gameLook != "Covers",
+                longAction = if (home != null) ({ showLookChoices = true }) else null) { onCycleGameLook() })
         }
         // The console badges: off, the small logo, the console's own big logo.
         if (home != null) {
@@ -345,22 +364,17 @@ fun QuickSettingsCard(
                     else -> { F.consoleBadges.value = false; F.consoleBadgeLogos.value = false }
                 }
             })
-            // Update 128: only while the Cartridges look is on — tap: the next of your pack's 14 cartridge shapes;
-            // hold: Original / Custom, Opaque / Clear and every shape (also Settings › Game look › Cartridges).
+            // Update 128: your pack's cartridge shape — tap: the next of its 14 shapes; hold: every shape.
             // (Update 131: only with some of your cartridge pack downloaded — Settings › Game look › Extra art packs.)
-            if (home.appearance.cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && F.cartsOnly.state.value &&
-                com.shelf.launcher.data.Packs.anyCarts()) {
+            // (Update 202: while the pack is drawn — Cartridges & discs with Your pack's shapes or Clear plastic, or disc
+            // games on a cartridge. Original / Custom and Opaque / Clear left its hold list: they're the Look tile's
+            // Cartridge choices now.)
+            // (Update 202: when it shows is decided in r1TileFit, R1TileRules.kt.)
+            run {
                 val look = F.cartLook.state.value
-                add(R1Tile("cartlook", Icons.Filled.Memory, "Cartridge\n" + look.label, F.cartSource.state.value == CartSource.CUSTOM,
+                add(R1Tile("cartlook", Icons.Filled.Memory, "Cartridge\n" + look.label, cartNow() != LookCart.REAL,
                     longAction = {
-                        choiceSheet = "Cartridges" to (
-                            CartSource.values().map { s -> R1Choice(s.label, F.cartSource.value == s) { F.cartSource.value = s } } +
-                                listOf(
-                                    R1Choice("Opaque", !F.cartClear.value) { F.cartClear.value = false },
-                                    R1Choice("Clear", F.cartClear.value) { F.cartClear.value = true }
-                                ) +
-                                CartLook.values().map { l -> R1Choice(l.label, F.cartLook.value == l) { F.cartLook.value = l } }
-                            )
+                        choiceSheet = "Cartridge shape" to CartLook.values().map { l -> R1Choice(l.label, F.cartLook.value == l) { F.cartLook.value = l } }
                     }) {
                     val all = CartLook.values()
                     F.cartLook.value = all[(all.indexOf(F.cartLook.value) + 1) % all.size]
@@ -368,25 +382,26 @@ fun QuickSettingsCard(
             }
             // Update 129: one console's disc / case / spine for every game, only while that look is on — tap: the next
             // console (or each game's own), hold: the list. (Like the Cartridge tile for the Cartridges look.)
-            val lookNow = home.appearance.cardArtType
-            fun styleTile(id: String, word: String, pref: com.shelf.launcher.data.Features.StringPref, list: List<String>, after: () -> Unit = {}) {
+            // (Update 202: where each shows — that look, and the layouts that always draw discs / cases / spines — is
+            // decided in r1TileFit, R1TileRules.kt; the lists are read only when pressed.)
+            fun styleTile(id: String, word: String, pref: com.shelf.launcher.data.Features.StringPref, consoles: () -> List<String>, after: () -> Unit = {}) {
                 val now = pref.state.value
                 val name = if (now.isEmpty()) "Own" else com.shelf.launcher.data.ConsoleNames.display(now)
                 add(R1Tile(id, Icons.Filled.Album, "$word\n$name", now.isNotEmpty(),
                     longAction = {
                         choiceSheet = "$word for every game" to (
                             listOf(R1Choice("Each game's own", pref.value.isEmpty()) { pref.value = "" }) +
-                                list.map { p -> R1Choice(com.shelf.launcher.data.ConsoleNames.display(p), pref.value == p) { pref.value = p; after() } }
+                                consoles().map { p -> R1Choice(com.shelf.launcher.data.ConsoleNames.display(p), pref.value == p) { pref.value = p; after() } }
                             )
                     }) {
-                    pref.value = LookStyles.next(pref.value, list)
+                    pref.value = LookStyles.next(pref.value, consoles())
                     if (pref.value.isNotEmpty()) after()
                 })
             }
             // (A picked disc is drawn, so "Drawn discs" goes on with it.)
-            if (lookNow == com.shelf.launcher.data.CardArtType.DISC) styleTile("discstyle", "Disc", F.discStyle, LookStyles.DISCS) { F.mediaShells.value = true }
-            if (lookNow == com.shelf.launcher.data.CardArtType.CASE || lookNow == com.shelf.launcher.data.CardArtType.CASE_REAL) styleTile("casestyle", "Case", F.caseStyle, LookStyles.cases())
-            if (lookNow == com.shelf.launcher.data.CardArtType.COVER && F.spineLook.state.value) styleTile("spinestyle", "Spine", F.spineStyle, LookStyles.spines())
+            styleTile("discstyle", "Disc", F.discStyle, { LookStyles.DISCS }) { F.mediaShells.value = true }
+            styleTile("casestyle", "Case", F.caseStyle, { LookStyles.cases() })
+            styleTile("spinestyle", "Spine", F.spineStyle, { LookStyles.spines() })
             // (Update 159: the "3D on / off" tile (look3d) stood here. Update 200: removed — most looks are 3D already, and the
             // pre-rendered 3D models it switched on are retired; the 3D cartridges looks (Game look tile, Settings › Game look)
             // draw the drawn shells with real depth. A saved tile order with "look3d" in it just skips it.)
@@ -400,7 +415,8 @@ fun QuickSettingsCard(
                 home.setAppearance(a.copy(homeLayout = all[(all.indexOf(a.homeLayout) + 1) % all.size]))
             })
             // Update 179: the two-screen layouts — the gap between their tiles (tap: the next, hold: the list).
-            if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TWIN_ICONS || a.homeLayout == com.shelf.launcher.data.HomeLayout.TWIN_DESK) {
+            // (Update 202: every tile is built; which show where is decided in r1TileFit, R1TileRules.kt.)
+            run {
                 val pref = if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TWIN_ICONS) com.shelf.launcher.data.Features.twinGap else com.shelf.launcher.data.Features.twinDeskGap
                 val gaps = TWIN_GAPS.filter { it <= (if (pref === com.shelf.launcher.data.Features.twinGap) 32 else 24) }
                 val now = pref.state.value
@@ -409,16 +425,16 @@ fun QuickSettingsCard(
                     pref.value = gaps[(gaps.indexOf(now).coerceAtLeast(0) + 1) % gaps.size]
                 })
             }
-            // Options of the layout in use (they only show while that layout is the one on screen).
+            // Options of the layout in use (they only show while that layout is the one on screen — r1TileFit).
             run {
                 val f = com.shelf.launcher.data.Features
-                when (a.homeLayout) {
-                    com.shelf.launcher.data.HomeLayout.SHELF -> add(R1Tile("shelflook", Icons.Filled.ViewModule, "Shelves\n" + f.shelfLook.state.value.label, false,
+                run {
+                    add(R1Tile("shelflook", Icons.Filled.ViewModule, "Shelves\n" + f.shelfLook.state.value.label, false,
                         longAction = { f.shelfBackdrop.value = !f.shelfBackdrop.value }) {
                         val all = com.shelf.launcher.data.Features.ShelfLook.values()
                         f.shelfLook.value = all[(f.shelfLook.value.ordinal + 1) % all.size]
                     })
-                    com.shelf.launcher.data.HomeLayout.SPOT -> add(R1Tile("spotlight", Icons.Filled.ViewModule, "Tiles\n" + f.spotTilesAt.state.value.label, false,
+                    add(R1Tile("spotlight", Icons.Filled.ViewModule, "Tiles\n" + f.spotTilesAt.state.value.label, false,
                         // Hold (update 104): where the names go — the tile's name and the big title.
                         longAction = {
                             val F = com.shelf.launcher.data.Features
@@ -430,12 +446,12 @@ fun QuickSettingsCard(
                         }) {
                         f.spotTilesAt.value = if (f.spotTilesAt.value == com.shelf.launcher.data.Features.SpotSide.TOP) com.shelf.launcher.data.Features.SpotSide.BOTTOM else com.shelf.launcher.data.Features.SpotSide.TOP
                     })
-                    com.shelf.launcher.data.HomeLayout.BAR -> add(R1Tile("bartabs", Icons.Filled.Label, if (f.barTabsCurrent.state.value) "Tab\ncategory" else "Tabs\nshortcuts", f.barTabsCurrent.state.value,
+                    add(R1Tile("bartabs", Icons.Filled.Label, if (f.barTabsCurrent.state.value) "Tab\ncategory" else "Tabs\nshortcuts", f.barTabsCurrent.state.value,
                         longAction = { f.barArtCut.value = !f.barArtCut.value }) {
                         f.barTabsCurrent.value = !f.barTabsCurrent.value
                     })
                     // Folders → logos on tiles → logos cut out (update 104).
-                    com.shelf.launcher.data.HomeLayout.CROSS -> add(R1Tile("crosscut", Icons.Filled.Label,
+                    add(R1Tile("crosscut", Icons.Filled.Label,
                         when { f.crossFolders.state.value -> "Consoles\nfolders"; f.crossLogoCut.state.value -> "Logos\ncut out"; else -> "Logos\non tiles" }, !f.crossFolders.state.value) {
                         when {
                             f.crossFolders.value -> { f.crossFolders.value = false; f.crossLogoCut.value = false }
@@ -443,20 +459,31 @@ fun QuickSettingsCard(
                             else -> { f.crossFolders.value = true; f.crossLogoCut.value = false }
                         }
                     })
-                    com.shelf.launcher.data.HomeLayout.CLASSIC -> add(R1Tile("headertight", Icons.Filled.Label, if (f.homeHeaderTight.state.value) "Header\ntight" else "Header\nroomy", f.homeHeaderTight.state.value) {
+                    // (Update 202: the Voltcap row's game header — only with the header on, r1TileFit.)
+                    add(R1Tile("headertight", Icons.Filled.Label, if (f.homeHeaderTight.state.value) "Header\ntight" else "Header\nroomy", f.homeHeaderTight.state.value) {
                         f.homeHeaderTight.value = !f.homeHeaderTight.value
                     })
-                    else -> Unit
+                    // Update 202: Pocket Quest — tap: the next theme; hold: pick one.
+                    add(R1Tile("pqtheme", Icons.Filled.ViewModule, "Theme\n" + f.pqTheme.state.value.label, false,
+                        longAction = {
+                            choiceSheet = "Pocket Quest · theme" to com.shelf.launcher.data.Features.PqTheme.values().map { t -> R1Choice(t.label, f.pqTheme.value == t) { f.pqTheme.value = t } }
+                        }) {
+                        val all = com.shelf.launcher.data.Features.PqTheme.values()
+                        f.pqTheme.value = all[(f.pqTheme.value.ordinal + 1) % all.size]
+                    })
                 }
-                // Real scraped discs / cartridges (off) or Voltcap's own drawn ones (on).
-                // (Update 129: only with the looks it changes — Discs only, Cartridges & discs — not beside every look.)
-                if (a.cardArtType == com.shelf.launcher.data.CardArtType.DISC ||
-                    (a.cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && !f.cartsOnly.state.value)
-                ) add(R1Tile("drawnmedia", Icons.Filled.Album, if (f.mediaShells.state.value) "Drawn\ndiscs" else "Real\ndiscs", f.mediaShells.state.value) {
-                    f.mediaShells.value = !f.mediaShells.value
-                })
+                // The game's own cartridge / disc photo when one is found (off: Voltcap's drawn ones).
+                // (Update 202: named as Cartridges & discs' "The game's own photo" choice, which it flips; it was "Real discs /
+                // Drawn discs". Only with that look, as before — r1TileFit.)
+                run {
+                    val photos = !f.mediaShells.state.value
+                    add(R1Tile("drawnmedia", Icons.Filled.Album, if (photos) "Own\nphotos" else "Drawn\nonly", photos) {
+                        f.mediaShells.value = !f.mediaShells.value
+                    })
+                }
                 // The second screen as a magnifier of the main one (tap: the Magnifier page on / off, hold: start the capture).
-                if (dualScreen && f.secondMagnifier.state.value) {
+                // (Update 202: with a second display and the Magnifier page on; greyed while Dual screen is off — r1TileFit.)
+                run {
                     val on = a.secondPage == com.shelf.launcher.data.SecondPage.MAGNIFIER
                     add(R1Tile("magnifier", Icons.Filled.Cast, if (on) "Magnifier\non" else "Magnifier", on,
                         longAction = { ScreenMirror.requestStart() }) {
@@ -500,10 +527,8 @@ fun QuickSettingsCard(
                 })
             }
             // Endless: the row goes round from the last game to the first (off: it bumps against the end).
-            // (Update 182: greyed out on Hero tiles, which has no Endless.)
-            if (!endlessApplies(a.homeLayout)) add(R1Tile("endless", Icons.Filled.Repeat, "Endless\noff", false, disabled = true) {
-                android.widget.Toast.makeText(context, "${a.homeLayout.label} stops at the first and last game — no Endless there.", android.widget.Toast.LENGTH_SHORT).show()
-            }) else add(R1Tile("endless", Icons.Filled.Repeat, if (a.loopRow) "Endless\non" else "Endless\noff", a.loopRow) {
+            // (Update 182 greyed it out on Hero tiles, which has no Endless. Update 202: hidden there — r1TileFit.)
+            add(R1Tile("endless", Icons.Filled.Repeat, if (a.loopRow) "Endless\non" else "Endless\noff", a.loopRow) {
                 home.setAppearance(a.copy(loopRow = !a.loopRow))
             })
             // The round shortcut buttons: show / hide. Hold (update 104): where they sit, folded or open, move, off.
@@ -575,8 +600,8 @@ fun QuickSettingsCard(
             // row at the bottom), changing it live.
             // (Update 200: no longer for the 3D models' window, and the "Cart colour" tile (cartcolour) for their custom
             // pieces is gone: the pre-rendered 3D models are retired — the 3D cartridges looks are drawn shells.)
-            val dropCase = a.cardArtType == com.shelf.launcher.data.CardArtType.CASE || a.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
-            if (dropCase) {
+            // (Update 202: the case looks, where the look is drawn — r1TileFit.)
+            run {
                 // (Update 137: Art position — moved with drag / D-pad and sized with pinch / L1 R1.)
                 val moved = ArtPlace.moved(false)
                 add(R1Tile("artdrop", Icons.Filled.VerticalAlignBottom, "Art position\n" + if (moved) "Moved" else "Centred", moved) {
@@ -588,17 +613,15 @@ fun QuickSettingsCard(
                 val all = com.shelf.launcher.data.CardCorners.values()
                 home.setAppearance(a.copy(cardCorners = all[(a.cardCorners.ordinal + 1) % all.size]))
             })
-            // Where the game row sits (Voltcap row and Tile home): Top → Middle → Bottom.
-            if (a.homeLayout == com.shelf.launcher.data.HomeLayout.CLASSIC || a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) {
+            // Where the game row sits (Voltcap row and Tile home): Top → Middle → Bottom. (Update 202: r1TileFit.)
+            run {
                 add(R1Tile("rowpos", Icons.Filled.SwapVert, "Row\n" + a.dockPosition.label, false) {
                     val all = com.shelf.launcher.data.DockPosition.values()
                     home.setAppearance(a.copy(dockPosition = all[(a.dockPosition.ordinal + 1) % all.size]))
                 })
             }
-            // RomM (update 93): browse your RomM server and download games (only once it's set up).
-            if (remember { com.shelf.launcher.data.RommCredentialsStore(context).load() != null }) {
-                add(R1Tile("romm", Icons.Filled.CloudDownload, "RomM", false) { RommUi.showing = true })
-            }
+            // RomM (update 93): browse your RomM server and download games (only once it's set up — rommSetUp, r1TileFit).
+            add(R1Tile("romm", Icons.Filled.CloudDownload, "RomM", false) { RommUi.showing = true })
             // Carousel look of the layout in use (TV room: Games beside the TV › Carousel).
             val tv = a.homeLayout == com.shelf.launcher.data.HomeLayout.TV
             val carouselOn = if (tv) com.shelf.launcher.data.Features.tvRoomGames.state.value == TvRoom.Games.CAROUSEL
@@ -607,10 +630,8 @@ fun QuickSettingsCard(
             // Update 113: the hold list also has how many games show each side of the middle one (1–5).
             val sides = com.shelf.launcher.data.Features.tvCarouselSide.state.value
             val edge = com.shelf.launcher.data.Features.carouselEdge.state.value
-            // Update 182: greyed out in a layout without a carousel (as the Look tile), like Settings, which hides it there.
-            if (!carouselApplies(a.homeLayout)) add(R1Tile("carousel", Icons.Filled.ViewCarousel, "Carousel", false, disabled = true) {
-                android.widget.Toast.makeText(context, "${a.homeLayout.label} has no carousel — it's for the other layouts.", android.widget.Toast.LENGTH_SHORT).show()
-            }) else add(R1Tile("carousel", Icons.Filled.ViewCarousel, if (carouselOn) "Carousel\n" + com.shelf.launcher.data.Features.carouselView.state.value.label + " · " + (if (edge) "edge" else "$sides") else "Carousel", carouselOn,
+            // (Update 182 greyed it out in a layout without a carousel. Update 202: hidden there, as Settings does — r1TileFit.)
+            add(R1Tile("carousel", Icons.Filled.ViewCarousel, if (carouselOn) "Carousel\n" + com.shelf.launcher.data.Features.carouselView.state.value.label + " · " + (if (edge) "edge" else "$sides") else "Carousel", carouselOn,
                 longAction = {
                     val turnOn = {
                         if (!carouselOn) {
@@ -701,8 +722,10 @@ fun QuickSettingsCard(
                 })
             }
             // Update 196: how the game's picture fits the background in this layout — Fill the screen or the Whole picture
-            // (Layout options › Background & game names, per layout). Greyed out where it changes nothing: another
-            // background than the game's art, or the Voltcap row with its games not at the bottom.
+            // (Layout options › Background & game names, per layout).
+            // (Update 202: hidden where the layout shows no background picture; greyed out — with why — while another
+            // background is picked, the layout draws the art itself, or the Voltcap row's games aren't at the bottom.
+            // All decided in r1TileFit, R1TileRules.kt.)
             run {
                 com.shelf.launcher.data.Features.heroFitByLayout.state.value
                 com.shelf.launcher.data.Features.carouselLayouts.state.value
@@ -710,16 +733,7 @@ fun QuickSettingsCard(
                 val layout = a.homeLayout
                 val fit = com.shelf.launcher.data.HeroFitPlan.of(layout, a.heroFit, a.cardArtType)
                 val whole = fit == com.shelf.launcher.data.HeroFit.WHOLE
-                val why = when {
-                    a.backgroundStyle != com.shelf.launcher.data.BackgroundStyle.ART ->
-                        "The background is ${a.backgroundStyle.label.replaceFirstChar { it.lowercase() }} — the fit is for the game's own picture (Background: game art)."
-                    layout == com.shelf.launcher.data.HomeLayout.CLASSIC && a.dockPosition != com.shelf.launcher.data.DockPosition.BOTTOM ->
-                        "${layout.label} shows the whole picture only with its row at the bottom (Row position)."
-                    else -> null
-                }
-                if (why != null) add(R1Tile("herofit", Icons.Filled.AspectRatio, "Picture\n" + if (whole) "Whole" else "Fill", false, disabled = true) {
-                    android.widget.Toast.makeText(context, why, android.widget.Toast.LENGTH_SHORT).show()
-                }) else add(R1Tile("herofit", Icons.Filled.AspectRatio, "Picture\n" + if (whole) "Whole" else "Fill", whole,
+                add(R1Tile("herofit", Icons.Filled.AspectRatio, "Picture\n" + if (whole) "Whole" else "Fill", whole,
                     longAction = {
                         choiceSheet = "Background picture · ${layout.label}" to com.shelf.launcher.data.HeroFit.values().map { f ->
                             R1Choice(f.label, f == fit) { com.shelf.launcher.data.HeroFitPlan.put(layout, f) }
@@ -736,7 +750,8 @@ fun QuickSettingsCard(
             // album cover). Same as Theme › Colours follow, for the theme in use; hold: that setting.
             home.themeKey?.let { tk ->
                 val theme = com.shelf.launcher.ui.theme.AppTheme.values().firstOrNull { it.name == tk }
-                if (theme != null && theme.recolorable) {
+                // (Update 202: only for themes that can be recoloured — themeRecolorable, r1TileFit.)
+                if (theme != null) {
                     val F = com.shelf.launcher.data.Features
                     val look = F.lookFor(tk)
                     val now = when {
@@ -812,14 +827,18 @@ fun QuickSettingsCard(
         })
         add(R1Tile("settings", Icons.Filled.Settings, "Android settings", false) { QuickControls.openAndroidSettings(context) })
     }.let { list ->
-        // Update 182: in a layout that draws its games its own way, the Look tile's own options (case, disc, spine,
-        // cartridge styles, 3D) are greyed out as well — they changed nothing there.
-        val layoutNow = home?.appearance?.homeLayout
-        val own = layoutNow?.let { layoutOwnLook(it) }
-        if (own == null) list else list.map { t ->
-            if (t.id in LOOK_SUB_TILES && !t.disabled) R1Tile(t.id, t.icon, t.label, false, disabled = true) {
-                android.widget.Toast.makeText(context, "${layoutNow.label} draws its games as $own — this is for the other layouts.", android.widget.Toast.LENGTH_SHORT).show()
-            } else t
+        // Update 202: every tile asks r1TileFit (R1TileRules.kt) whether it does something here — in this layout, with
+        // this look, on this device. Hidden where it doesn't (it keeps its place in your order for when it applies
+        // again); greyed out — its press says what to change — where it's only "not right now". (Update 182's greying of
+        // the look tiles in a layout with its own look is replaced by this: they're hidden there now.)
+        list.mapNotNull { t ->
+            when (val fit = r1TileFit(t.id, r1Ctx)) {
+                is R1Fit.Grey -> R1Tile(t.id, t.icon, t.label, false, dot = t.dot, focus = t.focus, disabled = true) {
+                    android.widget.Toast.makeText(context, fit.why, android.widget.Toast.LENGTH_LONG).show()
+                }
+                R1Fit.Hide -> null
+                R1Fit.Show -> t
+            }
         }
     }
     val byId = allTiles.associateBy { it.id }
@@ -835,6 +854,10 @@ fun QuickSettingsCard(
             R1Shortcut.pending = null
             countUse(id)
             tile.action()
+        } else if (id != "lights" && id != "profile" && !id.startsWith("dev_") && r1TileFit(id, r1Ctx) == R1Fit.Hide) {
+            // Update 202: a tile that does nothing in this layout / look / on this device (r1TileFit): said at once.
+            R1Shortcut.pending = null
+            android.widget.Toast.makeText(context, "That R1 tile does nothing here (this layout, game look or device)", android.widget.Toast.LENGTH_SHORT).show()
         } else {
             // Tiles that fill in later (a lights probe, the game's profile) get a few seconds before it is "not available".
             kotlinx.coroutines.delay(3000)
@@ -858,8 +881,14 @@ fun QuickSettingsCard(
         pageIds.removeAt(from); pageIds.add(to, id)
         var k = 0
         val merged = ids.map { if (onThisPage(it)) pageIds[k++] else it }
-        order = merged
-        tilePrefs.edit().putString("order", merged.joinToString(",")).apply()
+        // Update 202: tiles not shown in this layout / on this device (r1TileFit) keep their saved places: the shown ones
+        // take their new order in the slots they had, the others stay where they were in the saved order.
+        val shownNow = merged.toSet()
+        val full = order.distinct() + merged.filter { it !in order }
+        var j = 0
+        val kept = full.map { if (it in shownNow) merged[j++] else it }
+        order = kept
+        tilePrefs.edit().putString("order", kept.joinToString(",")).apply()
     }
     // In edit mode every tile shows (hidden ones faded); otherwise the first five, then the arrow.
     // "Most used first": the tiles you press most come first (your own order breaks ties; not while editing).
@@ -1111,6 +1140,8 @@ fun QuickSettingsCard(
         OverlayLayoutPopup(onDismiss = { showOverlayLayout = false })
     }
     if (showGameSize && home != null) GameSizePopup(home, onDismiss = { showGameSize = false })
+    // Update 202: holding the Look tile.
+    if (showLookChoices && home != null) GameLookPopup(home.appearance, home.setAppearance, onDismiss = { showLookChoices = false })
     choiceSheet?.let { (title, choices) ->
         R1ChoicePopup(title, choices.map { c -> R1Choice(c.label, c.on) { undoable(title.substringBefore(" ·")) { c.run() } } }, onDismiss = { choiceSheet = null })
     }
@@ -1152,7 +1183,8 @@ private class R1Tile(
     val dot: Color? = null, val focus: FocusRequester? = null,
     /** Hold (long press): a second action, e.g. the overlay layout. */
     val longAction: (() -> Unit)? = null,
-    /** Update 177: greyed out — it does nothing in the layout in use (its action only says why). */
+    /** Greyed out (update 177). Update 202: only "not right now, and you can change that" (R1Fit.Grey) — its action says
+     *  what to change; a tile that does nothing here is hidden instead (r1TileFit, R1TileRules.kt). */
     val disabled: Boolean = false,
     val action: () -> Unit
 )
@@ -1717,6 +1749,6 @@ internal fun carouselApplies(layout: com.shelf.launcher.data.HomeLayout): Boolea
     layout == com.shelf.launcher.data.HomeLayout.TV || !layout.styleHome ||
         layout == com.shelf.launcher.data.HomeLayout.SIDE || layout == com.shelf.launcher.data.HomeLayout.STACKS
 
-/** Update 182: the tiles that only tune the game look (greyed out with it in a layout with its own look). */
-// (Update 200: "look3d" is gone with the R1 3D tile.)
-private val LOOK_SUB_TILES = setOf("casestyle", "discstyle", "spinestyle", "cartlook")
+// (Update 182's LOOK_SUB_TILES — the look's own tiles, greyed out in a layout with its own look — stood here. Update 202:
+// gone; r1TileFit (R1TileRules.kt) hides each where it does nothing, and shows the disc / case / spine ones in the
+// layouts that always draw discs, cases or spines.)

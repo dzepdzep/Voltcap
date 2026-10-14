@@ -425,6 +425,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             ).toSet()
         )
     }
+    // Update 202: the game you're on, for the small pictures of the game look's choices (Settings › Game look, holding
+    // the R1 Look tile).
+    SideEffect {
+        LookPreviewGame.set(
+            focusedGame, focusOverride?.cover ?: focusArt?.gridUrl, focusOverride?.wide ?: focusArt?.wideGridUrl,
+            focusOverride?.hero ?: focusArt?.heroUrl, focusArtKey?.let { state.screenshots[it]?.firstOrNull() },
+            focusArtKey?.let { state.physicalMedia[it] }
+        )
+    }
     // Update 156: the next and previous categories got ready in the background (their covers in memory).
     CategoryWarmup(state)
     // A or a tap on the game you're on (update 113): the layout's own game window (GameWindow.kt; its Details button
@@ -737,19 +746,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // consoles" the missing pieces (a console added to the library, a download that failed) follow a few seconds after start.
     val packContext = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) { com.shelf.launcher.data.Packs.loadAsked(packContext) }
-    // Update 141: a quiet look for a new Voltcap at start (at most once a day, Settings › Updates & downloads), with a
-    // short note when there is one.
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(8000)
-        com.shelf.launcher.data.AppUpdates.checkOnStart(packContext)
-    }
-    // (Watched here without reading it while composing, so a download's progress never redraws the home screen.)
-    LaunchedEffect(Unit) {
-        androidx.compose.runtime.snapshotFlow { com.shelf.launcher.data.AppUpdates.state.value }.collect { st ->
-            val av = st as? com.shelf.launcher.data.AppUpdates.State.Available ?: return@collect
-            android.widget.Toast.makeText(packContext, "Voltcap ${av.release.tag} is out: Settings › Updates & downloads", android.widget.Toast.LENGTH_LONG).show()
-        }
-    }
+    // Update 202: Update 141's start check and its toast moved to UpdatePromptHost (further down, with the other
+    // questions): it checks a little after start and every 12 hours, and asks "Voltcap x is out" instead of a toast.
     LaunchedEffect(state.availablePlatforms) {
         val consoles = state.availablePlatforms.toSet()
         com.shelf.launcher.data.Packs.libraryConsoles = consoles
@@ -1157,6 +1155,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         kotlinx.coroutines.delay(settings.idleMinutes * 60_000L)
         screensaverOn = true
     }
+    // Update 202: the screensaver dismissed: the background music fades back in at once, not after its 250 ms fade-out.
+    LaunchedEffect(screensaverOn) { if (!screensaverOn) MusicBlackout.setSaverBlack(false) }
 
     LaunchedEffect(showMenu) { if (showMenu) viewModel.refreshArtStorageStats() }
 
@@ -1938,6 +1938,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false }
     // Update 181: the Pocket layouts play their sounds through the home screen's.
     SideEffect { PocketSounds.play = { s -> sounds?.play(s) } }
+    // Update 202: Green Core's menu opens the app drawer, the music library and the sort window through the hotkey actions.
+    SideEffect { GreenCoreHooks.hotkey = { a -> runHotkey(com.shelf.launcher.data.Hotkey(action = a)) } }
     val tileBarLast = remember { intArrayOf(0) }
     LaunchedEffect(tileLayout) { if (!tileLayout) tileBarFocus = null }
     val tileShortcuts = listOf(
@@ -2067,6 +2069,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 val info = state.appearance.rowInfo
                 if ((info == com.shelf.launcher.data.RowInfo.GAME || info == com.shelf.launcher.data.RowInfo.BOTH) && !headerOn) add(HomeWidgets.INFO)
                 if (info == com.shelf.launcher.data.RowInfo.NEWS || info == com.shelf.launcher.data.RowInfo.BOTH) add(HomeWidgets.NEWS)
+                // Update 202: a card added to the Voltcap row with + Add that its layout shows now anyway is there once.
+                val twice = filter { it.startsWith(com.shelf.launcher.data.HomeLayout.CLASSIC.name + ":") && HomeWidgets.baseId(it) in this }
+                removeAll(twice.toSet())
             }
         }
     }
@@ -2318,8 +2323,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             manualFor != null || artViewer != null || viewingShots != null ||
             // Update 180: a two-screen layout filling the top screen: the theme's animated background rests under it.
             (state.appearance.homeLayout.isTwin && TwinScreens.fullTop) ||
+            // Update 202: Green Core covers it with its own backdrop and sphere.
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.GREENCORE ||
             // Update 181: the Pocket layouts always draw their own (paper or the handheld's body).
-            state.appearance.homeLayout.isPocket
+            state.appearance.homeLayout.isPocket ||
+            // Update 202: Pocket Quest drawing its theme's scenery (Layout options › Background): the theme's background rests.
+            (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.POCKET && pqOwnsBackground())
         // Update 154: Disc station keeps what's behind it still (Disc station › Calm background, on by default): the
         // animated background holds a frame, game ambience and backdrop touches rest, no video clip plays.
         val discCalm = state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.DISCS &&
@@ -2865,6 +2874,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             ) {
                 Box(
                     Modifier
+                        // Update 202: moved / resized / taken off in Edit Home (each layout its own).
+                        .editablePart(LayoutParts.id(state.appearance.homeLayout, "lyrics"), "Lyrics line")
                         .lyricFloat()
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.45f))
@@ -2928,6 +2939,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     onNext = { viewModel.mediaNext() },
                     onPrevious = { viewModel.mediaPrevious() },
                     onSeek = { viewModel.mediaSeekTo(it) },
+                    // Update 202: moved / resized / taken off in Edit Home (each layout its own).
+                    modifier = Modifier.editablePart(LayoutParts.id(state.appearance.homeLayout, "nowplaying"), "Now playing card"),
                     focusedSlot = panelFocus
                 )
             }
@@ -2941,6 +2954,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     onNext = { viewModel.mediaNext() },
                     onPrevious = { viewModel.mediaPrevious() },
                     onSeek = { viewModel.mediaSeekTo(it) },
+                    // Update 202: moved / resized / taken off in Edit Home (each layout its own).
+                    modifier = Modifier.editablePart(LayoutParts.id(state.appearance.homeLayout, "nowplaying"), "Now playing card"),
                     focusedSlot = panelFocus
                 )
             }
@@ -3199,7 +3214,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         screensaver = { StyleNav.reset(); screensaverOn = true },
                         // Update 181: the Pocket layouts' statistics and achievements panels.
                         stats = { StyleNav.reset(); sounds?.play(UiSound.OPEN); hubScreen = HubScreen.STATS },
-                        achievementsHub = { StyleNav.reset(); sounds?.play(UiSound.OPEN); hubScreen = HubScreen.ACHIEVEMENTS }
+                        achievementsHub = { StyleNav.reset(); sounds?.play(UiSound.OPEN); hubScreen = HubScreen.ACHIEVEMENTS },
+                        // Update 202: Pocket Quest's panel (the game's summary, year, genre), its Sort & filter and Search buttons.
+                        needMetadata = { g -> if (state.metadataReady) viewModel.loadMetadata(g) },
+                        sort = { StyleNav.reset(); sounds?.play(UiSound.OPEN); showSortDialog = true },
+                        search = { StyleNav.reset(); sounds?.play(UiSound.OPEN); showSearchBar = true }
                     )
                 },
                 modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
@@ -3252,7 +3271,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 Modifier.align(Alignment.TopCenter).fillMaxSize()
                     .padding(top = if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else 12.dp, bottom = if (legendShown) 26.dp else 6.dp, start = 12.dp, end = 12.dp)
             ) {
-                if (state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF) { CategoriesBar(); Spacer(Modifier.height(4.dp)) }
+                // (Update 202: the category bar and the games are moved / resized / taken off in Edit Home.)
+                if (state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF) {
+                    Box(Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.GRID, "category"), "Category bar")) { CategoriesBar() }
+                    Spacer(Modifier.height(4.dp))
+                }
                 if (visibleGames.isEmpty()) {
                     Text("No games match.", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.padding(24.dp))
                 } else if (com.shelf.launcher.data.HomeLayout.GRID.name in com.shelf.launcher.data.Features.carouselLayouts.state.value) GameCarousel(
@@ -3261,7 +3284,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     onSelect = viewModel::setFocus, onOpen = { openGame() },
                     cardArtType = state.appearance.cardArtFor(), physicalMedia = state.physicalMedia, screenshots = state.screenshots,
                     onNeedPhysical = { viewModel.loadPhysicalMedia(it) },
-                    modifier = Modifier.fillMaxWidth().weight(1f), showName = true,
+                    modifier = Modifier.fillMaxWidth().weight(1f).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.GRID, "games"), "Games"), showName = true,
                     // Update 135: Endless goes round in the carousel too.
                     loop = state.appearance.loopRow, loopTick = state.loopTick, loopStep = state.loopStep
                 ) else HomeGameGrid(
@@ -3271,7 +3294,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     onNeedPhysical = { viewModel.loadPhysicalMedia(it) }, onNeedScreenshots = { viewModel.loadMedia(it) },
                     sizeScale = when (state.appearance.cardSize) { com.shelf.launcher.data.CardSize.SMALL -> 0.82f; com.shelf.launcher.data.CardSize.MEDIUM -> 1f; com.shelf.launcher.data.CardSize.LARGE -> 1.3f } *
                         GameSize.scale(com.shelf.launcher.data.HomeLayout.GRID),
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier.fillMaxWidth().weight(1f).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.GRID, "games"), "Games"),
                     progressOf = { g ->
                         val list = state.raAchievementDetails[g.stableKey].orEmpty()
                         val p = state.raProgress[g.stableKey]
@@ -3467,6 +3490,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     val dockTitles = LocalTitleOptions.current.let { if (homeHeaderOn) it.copy(placement = com.shelf.launcher.data.TitlePlacement.HIDDEN) else it }
                     val dockLook = LocalCardLook.current.let { if (homeHeaderOn) it.copy(playtimeOnHome = false) else it }
                     androidx.compose.runtime.CompositionLocalProvider(LocalTitleOptions provides dockTitles, LocalCardLook provides dockLook) {
+                    // Update 202: the game row itself is moved / resized / taken off in Edit Home (the game you're on in it
+                    // too, on its own — GameDock).
+                    Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.CLASSIC, "row"), "Game row")) {
                     GameDock(
                         games = visibleGames,
                         art = displayArt,
@@ -3505,6 +3531,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             )
                         }
                     )
+                    }
                     }
                 }
                 if (categoryBelow) {
@@ -3624,6 +3651,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val overlayLayout = state.appearance.homeLayout.takeIf { it in com.shelf.launcher.data.Features.overlayLayouts }
         val overlayParts = overlayLayout?.let { com.shelf.launcher.data.Features.overlayPartsFor(it) }.orEmpty()
         SideEffect { HomeEditState.layout = state.appearance.homeLayout }
+        // Update 202: the look Edit Home's Art position (R3) works on here — Box art on any layout; the covers, cartridges
+        // and discs where the game row draws them (the Voltcap row); none on the others.
+        val artLookHere = run {
+            val t = state.appearance.cardArtFor()
+            when {
+                t == com.shelf.launcher.data.CardArtType.CASE || t == com.shelf.launcher.data.CardArtType.CASE_REAL -> ArtPlace.Look.BOX
+                state.appearance.homeLayout != com.shelf.launcher.data.HomeLayout.CLASSIC -> null
+                t == com.shelf.launcher.data.CardArtType.DISC -> ArtPlace.Look.DISC
+                t == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC ->
+                    if (focusedGame?.platform?.let { mediaKind(it) == "disc" } == true) ArtPlace.Look.DISC else ArtPlace.Look.CART
+                t == com.shelf.launcher.data.CardArtType.COVER -> ArtPlace.Look.COVER
+                else -> null
+            }
+        }
+        SideEffect { HomeEditState.artLook = artLookHere }
         // Update 125: the floating parts over the games — but under anything that opens over the home screen.
         val homeCovered = showDetails || showControlsHelp || categoryScreenOpen || screensaverOn || stickLetter != null
         SideEffect { PartsLayer.z = if (homeCovered) 0f else 6f }
@@ -3646,7 +3688,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (overlayLayout != null && overlayParts.isNotEmpty() && focusedGame != null) {
             // (Update 125: over the games, always.)
             Box(Modifier.matchParentSize().zIndex(PartsLayer.z)) {
-                overlayParts.forEachIndexed { idx, part ->
+                // (Update 202: on the Voltcap row, a card added with + Add that its layout shows now anyway — News turned on
+                // in Next to the row after adding it — is shown once: in the layout.)
+                overlayParts.filter { !(overlayLayout == com.shelf.launcher.data.HomeLayout.CLASSIC && it in HomeWidgets.present) }.forEachIndexed { idx, part ->
                     val id = HomeWidgets.overlayId(overlayLayout, part)
                     androidx.compose.runtime.key(id) {
                         val w = HomeWidgets.width(id) ?: when (part) {
@@ -3708,7 +3752,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         Box(Modifier.matchParentSize().zIndex(6.5f)) { TopScreenFolderPreview(hoverShown, Modifier.fillMaxSize()) }
         if (legendShown) {
-            Box(Modifier.align(Alignment.BottomCenter)) { LegendBar() }
+            // Update 202: moved, resized or taken off in Edit Home like the layout's other parts (each layout its own).
+            Box(Modifier.align(Alignment.BottomCenter).editablePart(LayoutParts.id(state.appearance.homeLayout, "legend"), "Button legend")) { LegendBar() }
         }
         // The details window. Drawn last so it sits above the dock; real
         // dialogs (achievement list, options) are separate windows and still
@@ -3778,6 +3823,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 coverUrl = launchArt.url,
                 aspect = launchArt.aspect,
                 crop = launchArt.crop,
+                // (Update 202: a cover trimmed as the cards show it.)
+                trim = launchArt.trim,
                 title = LocalTitleOptions.current.display(game.name),
                 onDone = {
                     launchingGame = null
@@ -3950,7 +3997,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     (state.screensaver.musicTheme?.let { n -> runCatching { com.shelf.launcher.ui.theme.AppTheme.valueOf(n) }.getOrNull() }
                         ?: com.shelf.launcher.ui.theme.AppTheme.NOW_PLAYING)
                     else null,
-                stayWithMusic = state.screensaver.stayWithMusic
+                stayWithMusic = state.screensaver.stayWithMusic,
+                // Update 202: the main screen's screensaver faded to black: Voltcap's background music fades out too.
+                // (Only here: the second screen's saver above doesn't pass it.)
+                onBlackout = { black -> MusicBlackout.setSaverBlack(black) }
             )
         }
     }
@@ -4085,6 +4135,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     manualFor?.let { (game, file) ->
         ManualViewer(file, gameDisplayName(game.name)) { manualFor = null }
     }
+    // Update 202: the manual from anywhere — the game window's Manual button, the booklet in an opened case, the second
+    // screen's Details page: found (or downloaded once, its progress in ManualDownloadDialog), then read.
+    androidx.compose.runtime.DisposableEffect(viewModel) {
+        com.shelf.launcher.data.ManualLinks.open = { g ->
+            viewModel.openManual(g, onReady = { file -> manualFor = g to file }, onMissing = { manualMissing = g })
+        }
+        onDispose { com.shelf.launcher.data.ManualLinks.open = null }
+    }
+    ManualDownloadDialog()
 
     // Phone web remote: its game list and "start this game".
     androidx.compose.runtime.DisposableEffect(state.games) {
@@ -5038,6 +5097,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             showPermissionsPrompt = false
         })
     }
+    // Update 202: the automatic update check and its "Voltcap x is out" question (UpdatePrompt.kt). Asked only on the
+    // bare home screen: never over another popup or question, in the first-time setup, while a game starts, over the
+    // details / category screen, the screensaver or Edit Home — it waits until all of that is gone.
+    UpdatePromptHost(
+        canShow = !aDialogIsOpen && !showFirstRun && !whoAsk && launchingGame == null && LaunchThrow.plan == null &&
+            introVideo == null && cartShellForGame == null && !showDetails && !categoryScreenOpen && !screensaverOn &&
+            !showSearchBar && !HomeEditState.active && GamePopup.game == null && WhatsNew.shown.value == null &&
+            !(saverIntro && saverIntroReady) && !(showPermissionsPrompt && promptReady) &&
+            (com.shelf.launcher.data.Packs.asked.value || state.games.isEmpty())
+    )
     if (showFirstRun) {
         FirstRunDialog(
             status = SetupStatus(
@@ -5176,7 +5245,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         return listOf(
                             st.focusedIndex, st.platformFilter, st.specialFilter, StyleNav.zone, StyleNav.index,
                             HomeReach.zone, HomeReach.index, tileBarFocus, miniFocus, quickJump, showDetails,
-                            categoryScreenOpen, GamePopup.game?.stableKey, PocketNav.signature()
+                            categoryScreenOpen, GamePopup.game?.stableKey, PocketNav.signature(), GreenCoreNav.signature(),
+                            PqNav.signature() // (Update 202: Pocket Quest's own places)
                         )
                     }
                     val before = padSnapshot()
@@ -5944,12 +6014,17 @@ private fun gameWindowOptions(
     val isApp = g.sourceType == com.shelf.launcher.data.SourceType.APP
     val isRom = g.sourceType == com.shelf.launcher.data.SourceType.ROM
     val fav = g.stableKey in state.favorites
+    // Update 202: Manual in the options, only for a game that has one (the window stays open under the reader).
+    val hasManual = rememberHasManual(g)
     fun go(f: () -> Unit): () -> Unit = { close(); f() }
     return buildList {
         add(WinOption(if (fav) "Remove from favorites" else "Add to favorites") { viewModel.toggleFavorite(g) })
         add(WinOption("Game settings", "Sync, second screen, artwork, look — for this ${if (isApp) "app" else "game"}", onClick = go(onGameSettings)))
         add(WinOption("Music", "Music of its own while you're on it", onClick = go(onGameMusic)))
         if (!isApp) add(WinOption("Guide", "Walkthrough that follows where you are", onClick = go(onGuide)))
+        if (hasManual) add(WinOption("Manual", "The game's booklet, page by page (downloaded the first time)") {
+            com.shelf.launcher.data.ManualLinks.open?.invoke(g)
+        })
         if (state.appearance.playStatus && !isApp) add(WinOption(
             "Status: " + (state.playStatuses[g.stableKey]?.status?.let { "${it.glyph} ${it.label}" } ?: "none"), "Playing, finished, dropped or wishlist", onClick = go(onStatus)
         ))

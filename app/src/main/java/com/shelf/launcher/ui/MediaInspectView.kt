@@ -149,7 +149,11 @@ private fun contentPieceFor(g: Game, state: LauncherUiState): InspectPiece? {
     val physical = state.physicalMedia[k]
     val cover: Any? = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl
     val small = Features.bigGcDiscs.state.value.not()
-    val piece = runCatching { mediaPiece(g, CardArtType.CARTRIDGE_DISC, physical, cover, small, false) }.getOrNull()
+    // Update 202: an Android game's scraped "cartridge" / "disc label" pictures are its store art (ScreenScraper's Android
+    // entries), not a piece: WWE All Stars' opened case held a bare cover. It holds Voltcap's own green Android cartridge
+    // (mediaFor → ANDROID_CART, or the shell you picked for it) with its cover as the label.
+    val scans = if (androidOwnCase(g.platform)) null else physical
+    val piece = runCatching { mediaPiece(g, CardArtType.CARTRIDGE_DISC, scans, cover, small, false) }.getOrNull()
     if (piece != null && (piece.kind == InspectKind.DISC || piece.kind == InspectKind.SLAB)) return piece
     return if (mediaRound(g.platform)) InspectPiece(
         g, InspectKind.DISC, 1f, 0.012f, MediaPick(MediaShell.DISC, genericDiscKey(g.platform)), cover, false, null, cover, null, null,
@@ -196,6 +200,9 @@ internal fun OpenableCase(piece: InspectPiece, modifier: Modifier) {
         val bw = constraints.maxWidth.toFloat(); val bh = constraints.maxHeight.toFloat()
         val aspect = piece.aspect.coerceIn(0.25f, 4f)
         val itemPlace = remember(piece, aspect) { openItemPlace(piece, aspect) }
+        // Update 202: the manual's booklet in the open lid (only for a game that has a manual).
+        val hasManual = rememberHasManual(piece.game)
+        val bookPlace = remember(piece, aspect, hasManual) { if (hasManual) openBookletPlace(piece, aspect) else null }
         // (Room for the disc beside it once it's out: the case a little smaller than the whole space.)
         val w = minOf(bw * 0.9f, bh * 0.92f * aspect).coerceAtLeast(8f)
         val h = w / aspect
@@ -214,9 +221,12 @@ internal fun OpenableCase(piece: InspectPiece, modifier: Modifier) {
                         translationY = -h * 0.06f * o
                     }
                 }
-                .pointerInput(piece.content, itemPlace) {
+                .pointerInput(piece.content, itemPlace, bookPlace) {
                     detectTapGestures(onTap = { at ->
-                        motion.tapCase(scope, piece.content != null, itemPlace?.hit(at.x, at.y, size.width.toFloat(), size.height.toFloat()) == true)
+                        val sw = size.width.toFloat(); val sh = size.height.toFloat()
+                        val onItem = itemPlace?.hit(at.x, at.y, sw, sh) == true
+                        // (Update 202: a tap on the booklet opens the manual; everything else as before.)
+                        if (!tapBooklet(motion, piece, bookPlace, onItem, at.x, at.y, sw, sh)) motion.tapCase(scope, piece.content != null, onItem)
                     })
                 }
                 .pointerInput(Unit) {
@@ -262,6 +272,34 @@ internal fun openItemPlace(piece: InspectPiece, aspect: Float): OpenItemPlace? {
     return OpenItemPlace(shape, CaseInside.itemRect(kind, shape, cAspect, spec), spec?.mediaLeft == true, kind == CaseInside.Kind.BOX)
 }
 
+/**
+ * Update 202: where the manual's booklet lies in the opened case — on the lid's side, as CaseInside.lid draws it
+ * (CaseInside.bookletRect) — for telling a tap on it apart; null where the case has none (a cardboard box, or a case
+ * holding its disc in the lid).
+ */
+internal fun openBookletPlace(piece: InspectPiece, aspect: Float): OpenItemPlace? {
+    val c = piece.content
+    val spec = CaseCatalog.forGame(piece.game)
+    val kind = CaseInside.kindFor(spec, piece.game.platform, c?.let { it.kind == InspectKind.DISC })
+    val shape = spec?.aspect?.coerceIn(0.55f, 1.85f) ?: aspect
+    val r = CaseInside.bookletRect(spec, kind, shape) ?: return null
+    return OpenItemPlace(shape, r, onLid = true, box = false)
+}
+
+/**
+ * Update 202: a tap on the open case's booklet ([bookPlace]; the lid open and nothing taken out, and not on the disc,
+ * [onItem]) opens the game's manual (downloaded first if needed). True when it did — then the case stays as it is.
+ */
+internal fun tapBooklet(
+    motion: InspectMotion, piece: InspectPiece, bookPlace: OpenItemPlace?, onItem: Boolean, x: Float, y: Float, bw: Float, bh: Float
+): Boolean {
+    if (bookPlace == null || onItem || !motion.opened || motion.lid.floatValue < 0.9f || motion.out.floatValue > 0.1f) return false
+    if (!bookPlace.hit(x, y, bw, bh)) return false
+    val open = com.shelf.launcher.data.ManualLinks.open ?: return false
+    open(piece.game)
+    return true
+}
+
 /** Update 189: what the opening case draws lying in it, from its [content]. */
 internal fun caseItemOf(content: InspectPiece?): CaseItem? = content?.let { c ->
     CaseItem(c.realScan, c.label ?: c.cover, if (c.kind == InspectKind.DISC) 1f else c.aspect, c.tone.toArgbInt(), c.kind == InspectKind.DISC)
@@ -271,6 +309,8 @@ private fun Color.toArgbInt(): Int = android.graphics.Color.argb((alpha * 255).t
 
 private val PLAIN_SHELL = Color(0xFF2C2E34)
 private val CUSTOM_SHELL = Color(0xFF55585F)
+/** Update 202: Voltcap's own Android cartridge's green (tpl_cart_android). */
+private val ANDROID_SHELL = Color(0xFF26965B)
 
 /** A cartridge's / card's thickness against its longest side. */
 private fun slabDepth(shell: MediaShell?): Float = when (shell) {
@@ -383,7 +423,9 @@ private fun boxPiece(
 ): InspectPiece {
     // The case's own scanned front (Original cases), else the cover; the back cut from the full box scan, if there's one.
     val scan = if (own) BoxTexture.front(physical, g.platform) else null
-    val front = if (scan != null && (cover == null || (scanFront && Features.originalCases.state.value))) scan else cover ?: scan
+    // (Update 202: an Android game's own case shows its cover in the Android band's window — its scraped "box" is store
+    // art, used only when there's no cover; androidOwnCase.)
+    val front = if (scan != null && (cover == null || (scanFront && Features.originalCases.state.value && !androidOwnCase(g.platform)))) scan else cover ?: scan
     val back = if (own) BoxTexture.fullScan(physical)?.let { BoxTexture.model(it, BoxPart.BACK, g.platform) } else null
     return InspectPiece(
         g, InspectKind.BOX, case3dAspect(g, mixed), 0f, null, null, false, null, cover, front, back, physical, null, PLAIN_SHELL, false
@@ -428,7 +470,9 @@ private fun mediaPiece(
             // (Update 195: a library shell at its own real thickness.)
             if (pick.platform.startsWith(SHELL_PREFIX)) (CartShells.split(pick.platform).first?.shell?.depth ?: 0.12f).coerceIn(0.02f, 0.4f)
             else slabDepth(if (custom) null else pick.shell), pick, label, isScan, null,
-            cover, null, null, physical, null, if (custom) CUSTOM_SHELL else shellTone(pick.shell), false
+            cover, null, null, physical, null,
+            // (Update 202: Voltcap's Android cartridge is green — its edge and the card lying in the case too.)
+            if (custom) CUSTOM_SHELL else if (pick.platform == ANDROID_CART) ANDROID_SHELL else shellTone(pick.shell), false
         )
     }
 }
@@ -824,6 +868,9 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
             val hintRoom = if (piece.kind == InspectKind.BOX && piece.content != null) with(density) { 40.dp.toPx() } else 0f
             val roomH = (slot.height - hintRoom).coerceAtLeast(slot.height * 0.6f)
             val itemPlace = remember(piece, aspect) { if (piece.kind == InspectKind.BOX) openItemPlace(piece, aspect) else null }
+            // Update 202: the manual's booklet in the open lid (a game with a manual; tap it to read).
+            val hasManual = rememberHasManual(piece.game)
+            val bookPlace = remember(piece, aspect, hasManual) { if (hasManual && piece.kind == InspectKind.BOX) openBookletPlace(piece, aspect) else null }
             val w = minOf(slot.width * 0.98f, roomH * 0.95f * aspect).coerceAtLeast(8f)
             val h = w / aspect
             val left = slot.left + (slot.width - w) / 2f
@@ -872,14 +919,15 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                         }
                     }
                     // Update 189: a tap on a case opens it (and closes it again).
-                    .pointerInput(piece.kind, piece.content, itemPlace) {
+                    .pointerInput(piece.kind, piece.content, itemPlace, bookPlace) {
                         detectTapGestures(onTap = { at ->
+                            val sw = size.width.toFloat(); val sh = size.height.toFloat()
+                            val onItem = itemPlace?.hit(at.x, at.y, sw, sh) == true
                             // (Update 191: a cardboard box opens too — its top flap.)
                             // (Update 200: a step at a time — open, then a tap on the disc takes it out.)
-                            if (piece.kind == InspectKind.BOX) motion.tapCase(
-                                scope, piece.content != null,
-                                itemPlace?.hit(at.x, at.y, size.width.toFloat(), size.height.toFloat()) == true
-                            )
+                            // (Update 202: a tap on the booklet in the open lid opens the manual.)
+                            if (piece.kind == InspectKind.BOX && tapBooklet(motion, piece, bookPlace, onItem, at.x, at.y, sw, sh)) Unit
+                            else if (piece.kind == InspectKind.BOX) motion.tapCase(scope, piece.content != null, onItem)
                             // (Update 199: a cartridge, disc or 3D piece has nothing to open: it turns once round.)
                             else motion.spinOnce(scope)
                         })
@@ -915,7 +963,8 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
             // Update 189: how to open it, said once it's out.
             if (piece.kind == InspectKind.BOX && piece.content != null) OpenHint(
                 motion, left - win[0], top + h - win[1], w,
-                when (piece.content?.kind) { InspectKind.DISC -> "disc"; else -> if (piece.content?.game?.platform in setOf("NDS", "3DS", "Switch", "PSVita")) "card" else "cartridge" }
+                when (piece.content?.kind) { InspectKind.DISC -> "disc"; else -> if (piece.content?.game?.platform in setOf("NDS", "3DS", "Switch", "PSVita")) "card" else "cartridge" },
+                manual = bookPlace != null
             )
         }
     }
@@ -1007,7 +1056,7 @@ private fun InspectContent(
  * it's opened, "Tap the disc to take it out" (cartridge / card) for a few seconds.
  */
 @Composable
-private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float, what: String) {
+private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float, what: String, manual: Boolean = false) {
     val density = LocalDensity.current
     val shown = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
     var second by androidx.compose.runtime.remember { mutableStateOf(false) }
@@ -1035,7 +1084,9 @@ private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float
         contentAlignment = Alignment.Center
     ) {
         androidx.compose.material3.Text(
-            if (second) "Tap the $what (or click a stick) to take it out" else "Tap the case (or click a stick) to open it",
+            // (Update 202: with a manual in the lid, how to read it too.)
+            if (second && manual) "Tap the $what to take it out · the manual to read it"
+            else if (second) "Tap the $what (or click a stick) to take it out" else "Tap the case (or click a stick) to open it",
             color = Color.White, fontSize = 12.sp, maxLines = 1,
             // Update 201: as wide as it needs, centred under the case — it was cut to the case's width, so under a narrow
             // case "Tap the cartridge (or click a stick) to take it out" lost its end ("… to").

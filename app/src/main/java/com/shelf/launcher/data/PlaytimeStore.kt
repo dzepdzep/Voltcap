@@ -50,12 +50,66 @@ class PlaytimeStore(context: Context) {
         // A device left on overnight in-game shouldn't add 10 hours.
         val counted = minOf(duration, MAX_SESSION_MS)
 
-        val totals = loadTotals().toMutableMap()
-        totals[key] = (totals[key] ?: 0L) + counted
-        // Every session is also logged (for Settings › Stats: weeks, streaks).
-        val log = (loadSessions() + Session(key, now - counted, counted)).takeLast(MAX_SESSIONS)
-        prefs.edit().putString(KEY_TOTALS, gson.toJson(totals)).putString(KEY_SESSIONS, gson.toJson(log)).apply()
+        // Update 202: under LOCK, so a Drive sync seeding / reading this device's own counter never misses a session.
+        synchronized(LOCK) {
+            val totals = loadTotals().toMutableMap()
+            totals[key] = (totals[key] ?: 0L) + counted
+            // Update 202: this device's own play time (only ever added to here) — what Drive sync shares under this
+            // device's id. The displayed total is worked out from it on every sync (see CloudSync, playtime v2).
+            val own = loadOwn().toMutableMap()
+            own[key] = (own[key] ?: 0L) + counted
+            // Every session is also logged (for Settings › Stats: weeks, streaks).
+            val log = (loadSessions() + Session(key, now - counted, counted)).takeLast(MAX_SESSIONS)
+            prefs.edit().putString(KEY_TOTALS, gson.toJson(totals)).putString(KEY_OWN, gson.toJson(own))
+                .putString(KEY_SESSIONS, gson.toJson(log)).apply()
+        }
         return key to counted
+    }
+
+    // ---- Update 202: per-device play time (playtime format 2) ----
+    // Before: one total per game, and Drive sync merged it as "Drive's total + what changed here since the last sync".
+    // That isn't safe to repeat: a sync cut off after its upload (Wi-Fi drop, Voltcap killed while a game starts) or a
+    // restore / Settings import changing the totals without the sync base made the next sync add the same hours again,
+    // so a game played on two handhelds could show twice its real time (25 h → 50 h).
+    // Now each device keeps its OWN counter (own_json, local game keys, only endSession adds to it, never synced in), Drive
+    // keeps every device's counter under its device id plus the time from before this change ("legacy", set once by the
+    // repair), and the shown total = legacy + the sum of all devices' counters. Copies merge by max, never by adding, so
+    // a repeated or interrupted sync can't count anything twice. own_json and the marks below are this device's own
+    // (SettingsScopes: never brought over from another device's backup).
+
+    /** Update 202: the time played on THIS device per game (local keys) — since the per-device change, or seeded by the repair. */
+    fun loadOwn(): Map<String, Long> {
+        val json = prefs.getString(KEY_OWN, null) ?: return emptyMap()
+        val all = runCatching { gson.fromJson<Map<String, Long>>(json, type) }.getOrNull() ?: emptyMap()
+        return all.filterKeys { !StatsExclusions.excluded(app, it) }
+    }
+
+    /** Update 202: true once the one-time repair has set this device's own counter (CloudSync). */
+    fun ownSeeded(): Boolean = prefs.getBoolean(KEY_OWN_SEEDED, false)
+
+    /** Update 202: the moment play started counting per device (shared by all devices through Drive); 0 before. */
+    fun ownSince(): Long = prefs.getLong(KEY_OWN_SINCE, 0L)
+
+    /** Update 202: the one-time repair's result for this device (call while holding [LOCK]). */
+    fun seedOwn(own: Map<String, Long>, since: Long) {
+        prefs.edit().putString(KEY_OWN, gson.toJson(own)).putLong(KEY_OWN_SINCE, since).putBoolean(KEY_OWN_SEEDED, true).commit()
+    }
+
+    /**
+     * Update 202: puts the synced totals (local keys) in place. [ownSeen] is the own counter the sync worked from: a
+     * session that ended while the sync ran is added on top, so it isn't lost until the next sync.
+     */
+    fun replaceTotals(totals: Map<String, Long>, ownSeen: Map<String, Long>?) {
+        synchronized(LOCK) {
+            val out = totals.toMutableMap()
+            if (ownSeen != null) {
+                loadOwn().forEach { (k, v) ->
+                    val extra = v - (ownSeen[k] ?: 0L)
+                    if (extra > 0L) out[k] = (out[k] ?: 0L) + extra
+                }
+            }
+            prefs.edit().putString(KEY_TOTALS, gson.toJson(out)).commit()
+        }
     }
 
     /** One play session: which game, when it started, how long (ms). */
@@ -93,7 +147,15 @@ class PlaytimeStore(context: Context) {
         private const val KEY_OPEN_SINCE = "open_since"
         private const val KEY_SESSIONS = "sessions_json"
         private const val KEY_CLEANED = "cleaned_exclusions_v1"
+        // Update 202: this device's own counter and the one-time repair's marks (device keys, SettingsScopes).
+        const val KEY_OWN = "own_json"
+        const val KEY_OWN_SEEDED = "own_seeded_v2"
+        const val KEY_OWN_SINCE = "own_since"
+        /** Update 202: held while the own counter / totals change (endSession, the sync's repair and write-back). */
+        val LOCK = Any()
         private const val MAX_SESSIONS = 3000
+        /** Update 202: the session log keeps this many (older ones drop off): a full log may miss a game's early play. */
+        const val SESSION_LOG_MAX = MAX_SESSIONS
         private const val MIN_SESSION_MS = 20_000L
         private const val MAX_SESSION_MS = 8L * 60 * 60 * 1000
 

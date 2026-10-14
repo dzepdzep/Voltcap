@@ -31,8 +31,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * The RetroAchievements overlay over a game. Collapsed: the compact summary (a progress capsule, the
- * badge of the next one to go for, progress, last unlock, missables still open, the next one). Tap it to
+ * The RetroAchievements overlay over a game. Collapsed: the compact summary — update 202: by default only the badge
+ * of the pinned achievement (else the next one to go for) and a progress capsule; its name, description, totals, last
+ * unlock, missables and next-one lines are each switched on separately (see bindSummaryLines). Tap it to
  * open a small panel: how far you are into the set on top, then what's left, only the missables or what
  * you've unlocked (tabs), each achievement with its badge, points and how many players have it, and a tap
  * on one loads its comments from RetroAchievements underneath it, scrollable. Tap outside or ✕:
@@ -69,11 +70,27 @@ internal class RaOverlayView(
     }
     private val summaryBadge = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
     private val summaryBar = CapsuleBar(context)
-    private val summary = TextView(context).apply {
-        setTextColor(Color.WHITE)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-        maxWidth = px(280f)
+    /**
+     * Update 202: the summary's parts are their own lines (they were one text, so a long description or missables list
+     * just ran on and the box got cut off at the bottom). Each has a line limit and ends in "…"; each is switched on its
+     * own (Settings › Overlay › Achievements over games, and the in-game overlay panel).
+     */
+    private fun summaryLine(sp: Float, color: Int, lines: Int, bold: Boolean = false) = TextView(context).apply {
+        setTextColor(color)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
+        if (bold) setTypeface(typeface, Typeface.BOLD)
+        maxWidth = px(260f)
+        maxLines = lines
+        ellipsize = TextUtils.TruncateAt.END
+        visibility = View.GONE
     }
+    private val sumName = summaryLine(11f, Color.WHITE, 2, bold = true)
+    private val sumDesc = summaryLine(10f, 0xCCFFFFFF.toInt(), 3)
+    private val sumTotals = summaryLine(11f, 0xFFFFC94D.toInt(), 1, bold = true)
+    private val sumLast = summaryLine(10f, 0xFF5BD68A.toInt(), 1)
+    private val sumMissables = summaryLine(10f, 0xFFFFB547.toInt(), 2)
+    private val sumNext = summaryLine(11f, Color.WHITE, 2, bold = true)
+    private val sumWhy = summaryLine(10f, 0x99FFFFFF.toInt(), 1)
     private val panel = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
         visibility = View.GONE
@@ -97,8 +114,11 @@ internal class RaOverlayView(
         summaryBox.addView(summaryBadge, LinearLayout.LayoutParams(px(34f), px(34f)).apply { marginEnd = px(8f) })
         summaryBox.addView(LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            addView(summaryBar, LinearLayout.LayoutParams(px(150f), px(6f)).apply { bottomMargin = px(4f); topMargin = px(2f) })
-            addView(summary)
+            addView(summaryBar, LinearLayout.LayoutParams(px(150f), px(6f)).apply { bottomMargin = px(2f); topMargin = px(2f) })
+            // Update 202: one view per part, in the order they read (see summaryLine).
+            listOf(sumName, sumDesc, sumTotals, sumLast, sumMissables, sumNext, sumWhy).forEach { v ->
+                addView(v, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(1f) })
+            }
         })
         addView(summaryBox)
         val top = LinearLayout(context).apply {
@@ -111,10 +131,12 @@ internal class RaOverlayView(
                 setOnClickListener { collapse() }
             })
         }
-        panel.addView(top)
-        panel.addView(headerBar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, px(8f)).apply { topMargin = px(6f) })
-        panel.addView(headerStats, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(4f) })
-        panel.addView(pinnedBox, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
+        // Update 202: the open panel is as wide as its list (320 dp), whatever room the window offers — the bar and the
+        // pinned row used to stretch to whatever width they were given (the window now measures at the screen's width).
+        panel.addView(top, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT))
+        panel.addView(headerBar, LinearLayout.LayoutParams(px(320f), px(8f)).apply { topMargin = px(6f) })
+        panel.addView(headerStats, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(4f) })
+        panel.addView(pinnedBox, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
         panel.addView(tabs, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
         panel.addView(scroll, LinearLayout.LayoutParams(px(320f), (context.resources.displayMetrics.heightPixels * 0.5f).toInt()).apply { topMargin = px(6f) })
         addView(panel)
@@ -141,19 +163,14 @@ internal class RaOverlayView(
         applyLook(c)
         if (!c.raUnlockedTab && tab == 2) tab = 0
         val pin = pinnedOf(st)
-        summary.text = if (pin != null) android.text.SpannableStringBuilder().apply {
-            val s0 = length
-            append("📌 ").append(pin.title)
-            setSpan(android.text.style.StyleSpan(Typeface.BOLD), s0, length, 0)
-            pin.description?.let { append("\n").append(it) }
-            append("\n").append(raOverlayText(st, c))
-        } else raOverlayText(st, c)
+        bindSummaryLines(st, c, pin)
         val p = if (st.total > 0) st.unlocked / st.total.toFloat() else 0f
         summaryBar.progress = p
         summaryBar.visibility = if (c.raProgressBar) View.VISIBLE else View.GONE
-        // The badge: the last unlock for a while, otherwise the next one to go for.
+        // The badge: the pinned one, else (with Last unlock on) the last unlock for a while, otherwise the next one to go
+        // for. Update 202: the next one's badge no longer needs the "Next achievement line" (it's the featured badge now).
         val last = if (c.raLastUnlock) st.lastUnlockBadge else null
-        val badge = pin?.badge ?: last ?: if (c.raNext) st.nextBadge else null
+        val badge = pin?.badge ?: last ?: st.nextBadge
         // Only an unlocked one is shown in colour: the pinned / next one is still to get, so grey like RetroAchievements' locked badges.
         val stillLocked = badge != null && last != badge
         if (c.raBadges && badge != null) {
@@ -165,8 +182,83 @@ internal class RaOverlayView(
             summaryBadge.clipToOutline = true
             summaryBadge.outlineProvider = roundOutline(7f)
         } else summaryBadge.visibility = View.GONE
+        // Update 202: everything switched off (or no badge to show): the totals line, so there's still a box to tap.
+        if (summaryBadge.visibility != View.VISIBLE && summaryBar.visibility != View.VISIBLE &&
+            listOf(sumName, sumDesc, sumTotals, sumLast, sumMissables, sumNext, sumWhy).none { it.visibility == View.VISIBLE }
+        ) show(sumTotals, totalsText(st, c))
         if (expanded) rebuild()
     }
+
+    /** Update 202: [v] shows [text], or is gone when there's nothing to show. */
+    private fun show(v: TextView, text: CharSequence?) {
+        if (text.isNullOrBlank()) { v.visibility = View.GONE; v.text = "" } else { v.text = text; v.visibility = View.VISIBLE }
+    }
+
+    /** Update 202: "🏆 37/75 · 49 %" (+ " · 227/616 pts" with Points on). */
+    private fun totalsText(st: RaOverlayData.State, c: PerfConfig): String {
+        val pct = if (st.total > 0) st.unlocked * 100 / st.total else 0
+        return "🏆 ${st.unlocked}/${st.total} · $pct %" + (if (c.raPoints) " · ${st.points}/${st.totalPoints} pts" else "")
+    }
+
+    /**
+     * Update 202: the small overlay's lines, each one only when switched on. The featured achievement is the pinned one
+     * (📌), else the next one worth going for (RaOverlayData: a missable you can still get, then the easiest left, then the
+     * set's order) — the badge shows it; Name and Description add its name and what to do. Nothing is said twice: with the
+     * next one already named, the Next line only says why it's the one, and the missables line leaves out names shown above.
+     */
+    private fun bindSummaryLines(st: RaOverlayData.State, c: PerfConfig, pin: RaOverlayData.Item?) {
+        val mastered = st.total > 0 && st.unlocked == st.total
+        val title = pin?.title ?: st.nextTitle
+        val missable = if (pin != null) pin.missable else st.nextIsMissable
+        val shown = mutableSetOf<String>()
+        // Name
+        if (c.raName && title != null) {
+            show(sumName, if (pin != null) "📌 $title" else title)
+            sumName.setTextColor(if (missable) 0xFFFFB547.toInt() else Color.WHITE)
+            shown += title
+        } else if ((c.raName || c.raTotals) && mastered) {
+            show(sumName, "Mastered - every achievement unlocked")
+            sumName.setTextColor(gold)
+        } else show(sumName, null)
+        // Description (of the same one)
+        show(sumDesc, if (c.raDescription && title != null) (if (pin != null) pin.description else st.nextDescription) else null)
+        // Totals: count · % · points
+        show(sumTotals, if (c.raTotals) totalsText(st, c) else null)
+        // Last unlock (for a while)
+        show(sumLast, if (c.raLastUnlock) st.lastUnlock?.let { "✓ $it" } else null)
+        // Next achievement line: "Next: …" and why that one. When it's already the named featured one, only the why.
+        val nextNamed = pin == null && c.raName
+        val nextTitle = st.nextTitle
+        if (c.raNext && nextTitle != null) {
+            if (nextNamed) show(sumNext, null)
+            else {
+                show(sumNext, "Next: $nextTitle")
+                sumNext.setTextColor(if (st.nextIsMissable) 0xFFFFB547.toInt() else Color.WHITE)
+                shown += nextTitle
+            }
+            show(sumWhy, st.nextWhy)
+        } else { show(sumNext, null); show(sumWhy, null) }
+        // Missables still to get: the count, and a few names not already shown above.
+        show(sumMissables, if (c.raMissables && st.missablesLeft.isNotEmpty()) {
+            val n = st.missablesLeft.size
+            val others = st.missablesLeft.filter { it !in shown }
+            val names = others.take(2).joinToString(", ") + if (others.size > 2) " +${others.size - 2}" else ""
+            "⚠ $n missable${if (n == 1) "" else "s"} still to get" + if (names.isNotEmpty()) ": $names" else ""
+        } else null)
+    }
+
+    /**
+     * Update 202: which side the window frame's fold arrow sits on (-1 none, 0 start, 1 end), set by the service. The
+     * small box keeps that side clear, so the arrow doesn't sit on the badge now that the box is only a badge high.
+     */
+    var arrowSide = -1
+        set(v) {
+            if (field == v) return
+            field = v
+            val pad = px(8f)
+            val room = px(28f)
+            summaryBox.setPaddingRelative(if (v == 0) room else pad, pad / 2, if (v == 1) room else pad, pad / 2)
+        }
 
     fun expand() {
         if (expanded) return

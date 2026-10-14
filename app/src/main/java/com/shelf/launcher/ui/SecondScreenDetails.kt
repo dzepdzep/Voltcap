@@ -111,14 +111,18 @@ internal fun CaseDetailsPage(info: SecondHomeGame, caseFirst: Boolean, modifier:
                                     // The official case: the cover in the system's cover template with the system's real spine.
                                     CaseArt(game.platform, info.coverUrl, info.box2dUrl, Modifier.fillMaxSize(), gameDisplayName(game.name), 720)
                                 }
-                                else info.caseUrl?.let { AsyncImage(it, game.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize()) }
+                                // (Update 202: the scan at its own shape on the see-through stage — nothing drawn round it —
+                                // with its file's flat strips trimmed, coverModel / TrimMargins.kt.)
+                                else info.caseUrl?.let { AsyncImage(coverModel(it), game.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize()) }
                             } else if (tpl != null && hasMedia) {
                                 TemplateMedia(
                                     tpl, labelScan = info.labelUrl, cover = info.coverUrl, modifier = Modifier.fillMaxSize().padding(8.dp),
                                     smallDisc = game.platform == "GameCube" && !com.shelf.launcher.data.Features.bigGcDiscs.state.value
                                 )
                             } else {
-                                info.coverUrl?.let { AsyncImage(it, game.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize()) }
+                                // (Update 202: the cover at its own shape on the see-through stage — no card, colour or bars
+                                // round it — with its file's flat strips trimmed, coverModel / TrimMargins.kt.)
+                                info.coverUrl?.let { AsyncImage(coverModel(it), game.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize()) }
                             }
                         }
                     }
@@ -146,6 +150,17 @@ internal fun CaseDetailsPage(info: SecondHomeGame, caseFirst: Boolean, modifier:
                             meta?.summary != null -> Text(meta.summary, color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp, lineHeight = 17.sp)
                             info.metadataLoading -> Text("Loading the story…", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
                             else -> Text("No description yet (details come from your details sources, Settings › Accounts).", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+                        }
+                        // Update 202: the game's manual, when it has one — opens in the reader on the main screen.
+                        if (rememberHasManual(game)) {
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                "📕  Read the manual",
+                                color = ShelfTheme.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.clip(uiRounded(10.dp)).background(Color.White.copy(alpha = 0.1f))
+                                    .pointerInput(game.stableKey) { detectTapGestures { com.shelf.launcher.data.ManualLinks.open?.invoke(game) } }
+                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
                         }
                         if (canFlip) {
                             Spacer(Modifier.height(8.dp))

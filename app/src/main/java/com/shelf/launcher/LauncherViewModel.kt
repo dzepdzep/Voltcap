@@ -182,7 +182,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val scrapeOptionsStore = com.shelf.launcher.data.ScrapeOptionsStore(application)
     private val tgdbRepository = TheGamesDbRepository(createTheGamesDbApi())
     private val screenScraperStore = ScreenScraperStore(application)
-    private val screenScraperRepository = ScreenScraperRepository(createScreenScraperApi())
+    // (Update 202: the manual addresses it notes are loaded first — ManualLinks.)
+    private val screenScraperRepository = ScreenScraperRepository(createScreenScraperApi()).also { com.shelf.launcher.data.ManualLinks.init(application) }
     private val igdbCredentialsStore = IgdbCredentialsStore(application)
     private val igdbRepository = IgdbRepository(createIgdbApi())
     private val rawgKeyStore = com.shelf.launcher.data.RawgKeyStore(application)
@@ -3390,18 +3391,38 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         return withContext(Dispatchers.IO) { raGameListCache.get(consoleId, Long.MAX_VALUE) }
     }
 
-    /** Finds (or downloads) [game]'s manual and hands it to [onReady]; a status message when there's none. */
+    private var manualOpenJob: Job? = null
+
+    /**
+     * Finds (or downloads) [game]'s manual and hands it to [onReady]; a status message when there's none.
+     * Update 202: a PDF beside the ROM / picked / downloaded before opens at once. Else the manual's address noted while
+     * scraping (ManualLinks; asked of ScreenScraper now when it isn't known yet) is downloaded — once, into the saved-art
+     * store, with a progress window (ManualDownloadDialog) — and then opened.
+     */
     fun openManual(game: Game, onReady: (java.io.File) -> Unit, onMissing: () -> Unit = {}) {
-        viewModelScope.launch {
-            setStatusMessage("Looking for the manual…")
-            val file = runCatching {
-                com.shelf.launcher.data.Manuals.find(getApplication(), game) {
-                    screenScraperStore.load()?.let { c -> screenScraperRepository.manualUrl(c, game) }
-                }
-            }.getOrNull()
-            clearStatusMessage()
+        if (manualOpenJob?.isActive == true) return
+        manualOpenJob = viewModelScope.launch {
+            val app = getApplication<Application>()
+            val L = com.shelf.launcher.data.ManualLinks
+            val local = withContext(Dispatchers.IO) { runCatching { L.fileOnDevice(app, game) }.getOrNull() }
+            if (local != null) { onReady(local); return@launch }
+            val creds = screenScraperStore.load()
+            var url = L.url(game.stableKey)
+            if (url == null && creds != null && game.sourceType == SourceType.ROM) {
+                setStatusMessage("Looking for the manual…")
+                url = withContext(Dispatchers.IO) { runCatching { screenScraperRepository.manualUrl(creds, game) }.getOrNull() }
+                clearStatusMessage()
+            }
             // None: a window with what to do (pick a PDF, search online) instead of a passing message.
-            if (file != null) onReady(file) else onMissing()
+            val link = url
+            if (link == null) { onMissing(); return@launch }
+            val file = runCatching { L.download(app, game, link, screenScraperRepository.withLogin(link, creds)) }.getOrNull()
+            when {
+                file != null -> onReady(file)
+                L.stoppedLast -> Unit
+                creds == null -> setStatusMessage("The manual couldn't be downloaded — connect ScreenScraper (Settings › Accounts) and try again.")
+                else -> setStatusMessage("The manual couldn't be downloaded (ScreenScraper may be busy, or today's quota is used up). Try again later.")
+            }
         }
     }
 
@@ -3412,6 +3433,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun importManual(game: Game, uri: android.net.Uri, onReady: (java.io.File) -> Unit) {
         viewModelScope.launch {
             val file = com.shelf.launcher.data.Manuals.import(getApplication(), game, uri)
+            // (Update 202: the case's booklet shows its first page from now on.)
+            if (file != null) com.shelf.launcher.data.ManualLinks.version++
             if (file != null) onReady(file) else setStatusMessage("That file isn't a PDF manual.")
         }
     }
@@ -5332,40 +5355,43 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * Downloads scanned manuals (ScreenScraper) for ROMs that don't have one on the device yet, when
-     * Scraping › Manuals is on (the default). The automatic pass asks once per game; pressing
-     * Scrape missing / Re-scrape all ([retry]) looks again for every game still without one.
+     * Finds which ROMs have a scanned manual on ScreenScraper, when Scraping › Manuals is on (the default). The automatic
+     * pass asks once per game; pressing Scrape missing / Re-scrape all ([retry]) looks again for every game still without one.
      * Runs after the artwork so the row fills first; paced for ScreenScraper's limits.
+     * Update 202: only the manual's address is noted (ManualLinks) — the PDF downloads the first time it's opened. Games
+     * already looked up for their art, scans or clips had theirs noted then, so they cost no request here.
      */
     fun scrapeManuals(retry: Boolean = false) {
         if (!_uiState.value.scrapeOptions.manuals) return
         val creds = screenScraperStore.load() ?: return
         if (manualScrapeJob?.isActive == true) return
         val app = getApplication<Application>()
+        val L = com.shelf.launcher.data.ManualLinks
         manualScrapeJob = viewModelScope.launch(Dispatchers.IO) {
             val tried = manualPrefs.getStringSet("tried", emptySet()).orEmpty().toMutableSet()
             val pending = _uiState.value.games.filter { g ->
-                g.sourceType == SourceType.ROM && (retry || g.stableKey !in tried) &&
+                val k = g.stableKey
+                g.sourceType == SourceType.ROM && L.url(k) == null && (retry || (!L.known(k) && k !in tried)) &&
                     com.shelf.launcher.data.Manuals.local(app, g) == null
             }
             if (pending.isEmpty()) {
-                if (retry) setStatusMessage("Every game that has a manual on ScreenScraper already has it saved.")
+                if (retry) setStatusMessage("Every game with a manual on ScreenScraper already has it listed.")
                 return@launch
             }
             var got = 0
             pending.forEachIndexed { i, game ->
                 if (!isActive || !_uiState.value.scrapeOptions.manuals) return@launch
                 com.shelf.launcher.data.GameMode.awaitNotPlaying()
-                val file = runCatching {
-                    com.shelf.launcher.data.Manuals.find(app, game) { screenScraperRepository.manualUrl(creds, game) }
-                }.getOrNull()
-                if (file != null) got++
+                val url = runCatching { screenScraperRepository.manualUrl(creds, game) }.getOrNull()
+                if (url != null) got++
                 tried += game.stableKey
                 // Saved now and then, so closing Voltcap mid-way doesn't ask for those games again.
                 if (i % 10 == 9 || i == pending.lastIndex) manualPrefs.edit().putStringSet("tried", HashSet(tried)).apply()
                 kotlinx.coroutines.delay(400)
             }
-            if (retry || got > 0) setStatusMessage("Saved $got manual" + (if (got == 1) "" else "s") + " from ScreenScraper.")
+            if (retry || got > 0) setStatusMessage(
+                "Found $got manual" + (if (got == 1) "" else "s") + " on ScreenScraper — each downloads the first time you open it."
+            )
         }
     }
 

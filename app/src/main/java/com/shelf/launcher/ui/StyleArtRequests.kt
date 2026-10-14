@@ -23,39 +23,75 @@ internal fun styleArtPx(context: Context): Int {
     return (minOf(m.widthPixels, m.heightPixels) / 2).coerceIn(360, 720)
 }
 
-/** The request a style home's card draws [url] with, and the one its warm-up queues (same size, same key). */
-internal fun styleArtRequest(context: Context, url: String, px: Int = styleArtPx(context)): ImageRequest =
+/**
+ * The request a style home's card draws [url] with, and the one its warm-up queues (same size, same key). Update 202:
+ * [trim] for a game's cover (a card / carousel / case showing the cover): flat strips that are part of its file trimmed
+ * off once at decode (TrimMargins.kt), under its own memory key. Off for anything else drawn this way (labels, discs,
+ * wide art, screenshots) — a card and its warm-up must pass the same value to share the decode.
+ */
+internal fun styleArtRequest(context: Context, url: String, px: Int = styleArtPx(context), trim: Boolean = false): ImageRequest =
     ImageRequest.Builder(context)
         .data(url)
         .size(px, px)
         // Fit (not fill): a wide picture doesn't decode to many times the card's size; cards crop it as before.
+        // (The decode only bounds the picture's size; every card draws it with ContentScale.Crop, filling its slot.)
         .scale(Scale.FIT)
         .precision(Precision.INEXACT)
-        .memoryCacheKey("$url|style|$px")
+        // (Update 202: an animated cover skips the trim and stays animated.)
+        .apply { if (trim) transformations(TrimUniformMargins).allowConversionToBitmap(false) }
+        .memoryCacheKey("$url|style|$px" + if (trim) "|" + TrimUniformMargins.KEY else "")
         // The small thumbnail (ArtRequests.kt) stands in while the sharp picture is read.
         .placeholderMemoryCacheKey(thumbKey(url))
         .memoryCachePolicy(CachePolicy.ENABLED)
         .crossfade(100)
         .build()
 
-/** [styleArtRequest] for a card, remembered per picture. */
+/** [styleArtRequest] for a card, remembered per picture ([trim]: it's the game's cover, Update 202). */
 @Composable
-internal fun rememberStyleArtRequest(url: String): ImageRequest {
+internal fun rememberStyleArtRequest(url: String, trim: Boolean = false): ImageRequest {
     val context = LocalContext.current
     val px = styleArtPx(context)
-    return remember(url, px, context) { styleArtRequest(context, url, px) }
+    return remember(url, px, context, trim) { styleArtRequest(context, url, px, trim) }
 }
 
-/** Queues [urls] as the cards will ask for them (skips the ones already in memory). Returns the handles to cancel. */
-internal fun warmStyleArt(context: Context, urls: List<String>): List<coil.request.Disposable> {
+/**
+ * Queues [urls] as the cards will ask for them (skips the ones already in memory). Returns the handles to cancel.
+ * Update 202: [trimOf] says which of them are covers drawn trimmed (the same as the cards pass to [rememberStyleArtRequest]).
+ */
+internal fun warmStyleArt(context: Context, urls: List<String>, trimOf: (String) -> Boolean = { false }): List<coil.request.Disposable> {
     val loader = coil.Coil.imageLoader(context)
     val cache = loader.memoryCache
     val px = styleArtPx(context)
     return urls.distinct().mapNotNull { url ->
-        val req = styleArtRequest(context, url, px)
+        val req = styleArtRequest(context, url, px, trimOf(url))
         if (req.memoryCacheKey?.let { cache?.get(it) } != null) null else loader.enqueue(req)
     }
 }
+
+/**
+ * Update 202: a game's cover drawn at its own place's size (the details screen, the game window, the second screen —
+ * places bigger than the cards' shared shape) with flat strips that are part of its file trimmed off (TrimMargins.kt).
+ * Coil's own memory key (address, size, the trim) applies; the shared-shape interceptor leaves it alone (it has a
+ * transformation). An animated cover skips the trim and stays animated.
+ */
+@Composable
+internal fun rememberCoverRequest(url: String): ImageRequest {
+    val context = LocalContext.current
+    return remember(url, context) {
+        ImageRequest.Builder(context)
+            .data(url)
+            .transformations(TrimUniformMargins)
+            .allowConversionToBitmap(false)
+            // The small thumbnail (ArtRequests.kt) stands in while it's read.
+            .placeholderMemoryCacheKey(thumbKey(url))
+            .crossfade(100)
+            .build()
+    }
+}
+
+/** Update 202: [rememberCoverRequest] for an address, anything else (an app's icon, a file) as it is. */
+@Composable
+internal fun coverModel(model: Any?): Any? = if (model is String) rememberCoverRequest(model) else model
 
 /**
  * Update 157: a disc's / cartridge's / case's printed picture (labels, real disc scans, the 3D box front) in the same
@@ -64,7 +100,7 @@ internal fun warmStyleArt(context: Context, urls: List<String>): List<coil.reque
  * a bitmap) is passed through as it is.
  */
 @Composable
-internal fun mediaArtModel(model: Any?): Any? = if (model is String) rememberStyleArtRequest(model) else model
+internal fun mediaArtModel(model: Any?, trim: Boolean = false): Any? = if (model is String) rememberStyleArtRequest(model, trim) else model
 
 /**
  * Update 157: every plain game picture of a card's size (a layout's own AsyncImage(url) with no key of its own) is

@@ -63,13 +63,19 @@ object AppUpdates {
         return false
     }
 
-    /** Looks for a newer release (in the background). */
-    fun check(c: Context) {
+    /**
+     * Looks for a newer release (in the background).
+     * Update 202: [auto] = the automatic check (start / every 12 hours): a failure there leaves Settings as it was (no
+     * "Couldn't reach GitHub" for something the user didn't ask for), and a newer version not skipped becomes [prompt],
+     * the home screen's "Voltcap x is out" question. The Check button in Settings never pops that question.
+     */
+    fun check(c: Context, auto: Boolean = false) {
         val app = c.applicationContext
         if (state.value is State.Checking || state.value is State.Downloading) return
+        val before = state.value
         state.value = State.Checking
         worker.execute {
-            state.value = runCatching {
+            val result: State = runCatching {
                 val req = okhttp3.Request.Builder().url(LATEST).header("Accept", "application/vnd.github+json").build()
                 client.newCall(req).execute().use { res ->
                     if (res.code == 404) return@use State.Failed("No release on GitHub yet ($REPO › Releases).")
@@ -90,7 +96,15 @@ object AppUpdates {
                     if (newer(r.tag, installed(app).first)) State.Available(r) else State.UpToDate(r.tag)
                 }
             }.getOrElse { State.Failed("Couldn't reach GitHub (${it.javaClass.simpleName}). Check the connection.") }
-            lastChecked.value = System.currentTimeMillis()
+            val now = System.currentTimeMillis()
+            lastChecked.value = now
+            // Update 202: an automatic check that failed keeps what Settings showed (it tries again later on its own).
+            state.value = if (auto && result is State.Failed) before else result
+            // Update 202: the last check that reached GitHub, kept across restarts (the 12-hour spacing counts from it).
+            if (result !is State.Failed) prefs(app).edit().putLong(KEY_LAST, now).apply()
+            if (auto && result is State.Available && result.release.apkUrl != null && !isSkipped(result.release.tag)) {
+                prompt.value = result.release
+            }
         }
     }
 
@@ -156,17 +170,131 @@ object AppUpdates {
 
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("app_updates", Context.MODE_PRIVATE)
 
-    /** "Check for updates when Voltcap starts" (default on, at most once a day). */
-    fun autoCheck(c: Context): Boolean = prefs(c).getBoolean("auto", true)
-    fun setAutoCheck(c: Context, on: Boolean) { prefs(c).edit().putBoolean("auto", on).apply() }
+    /*
+     * Update 202: these stay in their own "app_updates" prefs file (where Update 141 already kept "auto" and "last")
+     * rather than in Features: everything in Features is copied into layout presets and Undo snapshots, and putting a
+     * preset back must never switch the update check off again or forget a skipped version.
+     *   "auto"    Boolean  true  "Check for updates automatically"
+     *   "last"    Long     0     when a check last reached GitHub (ms)
+     *   "skipped" String   ""    the version "Skip this version" was picked for ("v0.3.0"); "" = none
+     */
+    private const val KEY_AUTO = "auto"
+    private const val KEY_LAST = "last"
+    private const val KEY_SKIPPED = "skipped"
 
-    /** At start: checks quietly when it's on and the last check is over a day old. */
-    fun checkOnStart(c: Context) {
-        if (!autoCheck(c)) return
+    /** Update 202: at most one automatic check every 12 hours while Voltcap runs (and on coming back to it after that). */
+    const val AUTO_EVERY_MS = 12L * 3600_000L
+    /** Update 202: after an automatic check that failed (GitHub down, rate limit), the next try waits this long. */
+    private const val RETRY_MS = 3600_000L
+    /** Update 202: a quick restart (a crash, Android closing the launcher) doesn't ask GitHub again within this. */
+    private const val START_MIN_GAP_MS = 10L * 60_000L
+
+    /** Update 202: the newer release the home screen should ask about now ("Voltcap x is out"), or null. */
+    val prompt = mutableStateOf<Release?>(null)
+
+    /** Update 202: the skipped version as Compose state ("" = none), so Settings and the badge follow it. */
+    val skipped = mutableStateOf("")
+
+    /** Update 202: "Check for updates automatically" as Compose state (mirrors the "auto" pref). */
+    val auto = mutableStateOf(true)
+
+    @Volatile private var loaded = false
+    /** Update 202: the start's own check hasn't run yet (no connection at start: it runs once there is one). */
+    @Volatile private var startPending = true
+    @Volatile private var lastAttempt = 0L
+
+    /** Update 202: reads the prefs into [skipped] / [auto] once per run. */
+    fun load(c: Context) {
+        if (loaded) return
         val p = prefs(c)
-        val now = System.currentTimeMillis()
-        if (now - p.getLong("last", 0L) < 24L * 3600_000L) return
-        p.edit().putLong("last", now).apply()
-        check(c)
+        skipped.value = p.getString(KEY_SKIPPED, "") ?: ""
+        auto.value = p.getBoolean(KEY_AUTO, true)
+        loaded = true
     }
+
+    /** "Check for updates automatically" (default on). */
+    fun autoCheck(c: Context): Boolean { load(c); return auto.value }
+    fun setAutoCheck(c: Context, on: Boolean) {
+        load(c)
+        auto.value = on
+        prefs(c).edit().putBoolean(KEY_AUTO, on).apply()
+        // Switched off: nothing pops up any more this run either.
+        if (!on) prompt.value = null
+    }
+
+    /** When a check last reached GitHub (ms, 0 = never), kept across restarts. */
+    fun lastCheckedAt(c: Context): Long = prefs(c).getLong(KEY_LAST, 0L)
+
+    /** Update 202: whether [tag] is the skipped version (or older than it). */
+    fun isSkipped(tag: String): Boolean {
+        val s = skipped.value
+        return s.isNotBlank() && !newer(tag, s)
+    }
+
+    /** Update 202: "Skip this version" — never asked about [tag] again (Settings still shows it and can install it). */
+    fun skip(c: Context, tag: String) {
+        load(c)
+        skipped.value = tag
+        prefs(c).edit().putString(KEY_SKIPPED, tag).apply()
+        if (prompt.value?.tag == tag) prompt.value = null
+    }
+
+    /** Update 202: Settings' "Ask about it again". */
+    fun unskip(c: Context) {
+        load(c)
+        skipped.value = ""
+        prefs(c).edit().remove(KEY_SKIPPED).apply()
+    }
+
+    /** Update 202: "Later" — no question until the next automatic check (next start, or 12 hours on). */
+    fun later() { prompt.value = null }
+
+    /**
+     * Update 202: whether Settings' "Updates & downloads" gets its dot: a newer version is known (or downloading /
+     * downloaded) and it isn't the skipped one. Reads Compose state, so the dot follows on its own.
+     */
+    fun hasNews(): Boolean = when (val s = state.value) {
+        is State.Available -> !isSkipped(s.release.tag)
+        is State.Downloading -> !isSkipped(s.release.tag)
+        is State.Ready -> !isSkipped(s.release.tag)
+        else -> false
+    }
+
+    /** Update 202: only with a connection (the automatic check never waits on a timeout offline). */
+    private fun online(c: Context): Boolean = runCatching {
+        val cm = c.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        } else {
+            @Suppress("DEPRECATION") (cm.activeNetworkInfo?.isConnected == true)
+        }
+    }.getOrDefault(true)
+
+    /**
+     * Update 202: the automatic check. [atStart]: the one a little after Voltcap starts (every start, so "Later" asks
+     * again next time; not within 10 minutes of the last check). Otherwise (every few minutes while Voltcap is on
+     * screen, and on coming back to it) only once 12 hours have passed since the last check — or the start's check is
+     * still owed because there was no connection then. Quiet: never shows an error.
+     */
+    fun autoCheckIfDue(c: Context, atStart: Boolean = false) {
+        load(c)
+        // The start's check comes first (a little after start); until then coming back to Voltcap doesn't check.
+        if (atStart) startRan = true
+        if (!startRan || !auto.value) return
+        val now = System.currentTimeMillis()
+        // A failed try (GitHub down, rate limit) waits an hour before the next.
+        if (now - lastAttempt in 0L until RETRY_MS) return
+        val since = now - lastCheckedAt(c)
+        val gap = if (startPending) START_MIN_GAP_MS else AUTO_EVERY_MS
+        if (since in 0L until gap) { startPending = false; return }
+        if (!online(c)) return
+        if (state.value is State.Checking || state.value is State.Downloading) return
+        startPending = false
+        lastAttempt = now
+        check(c, auto = true)
+    }
+    @Volatile private var startRan = false
+
+    /** Update 141's name for the start's check (kept for any caller). */
+    fun checkOnStart(c: Context) = autoCheckIfDue(c, atStart = true)
 }

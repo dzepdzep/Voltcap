@@ -54,10 +54,14 @@ internal fun Case3D(
     val spec = remember(g.stableKey, g.platform, regionPref, casePlatformNow) { CaseCatalog.forGame(g) }
     // The spine, in the same order as the Spines look (GameSpine): the real scan first, then your console spine.
     val scans = physical ?: HomeScans.map[g.stableKey]
-    val ownFront = if (realFront && Features.originalCases.state.value && !LookStyles.caseForAll()) {
+    // (Update 202: never for an Android game — its case is Voltcap's own with the Android band, androidOwnCase; a scraped
+    // "box" of it is store art, it stood bare without the band.)
+    val ownFront = if (realFront && Features.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) {
         remember(scans, g.platform) { BoxTexture.front(scans, g.platform) }
     } else null
-    val front = rememberSoftBitmap(ownFront ?: cover, 480)
+    // (Update 202: flat strips that are part of the cover's / front scan's file trimmed off, TrimMargins.kt — the
+    // carousel's warmSoft for 3D cases asks the same way.)
+    val front = rememberSoftBitmap(ownFront ?: cover, 480, trim = true)
     // Not looked up yet (far along the Spine wall): ask once it has stayed on screen a moment, as the Spines look does.
     if (physical == null && !HomeScans.map.containsKey(g.stableKey)) {
         androidx.compose.runtime.LaunchedEffect(g.stableKey) { kotlinx.coroutines.delay(400); HomeScans.need?.invoke(g) }
@@ -129,8 +133,9 @@ internal fun Case3D(
             val whole = tplFront != null && isBoxFront(tplFront, f.width.toFloat() / f.height.coerceAtLeast(1))
             val made = if (band != null && tplFront != null && !whole) framed(f, band, fit?.win ?: tplFront.win) else null
             when {
-                // Update 191: a jewel case shows its booklet under the clear lid, beside the tray's hinge ridge — the
-                // whole cover, nothing cut, with the lid's clear edge round it.
+                // Update 191: a jewel case shows its booklet under the clear lid, beside the tray's hinge ridge, with the
+                // lid's clear edge round it. (Update 202: the cover fills the booklet, cut only as much as its shape is
+                // off — jewelFront; it was letterboxed over the tray's colour.)
                 // (Update 193 (Thor): a front scan or booklet — about square — goes in whole; the template's frame cut a
                 // PlayStation cover to its own narrower shape first. Only other art gets the template's band.)
                 // (Update 195 (Thor, still cut in 194): always the whole picture — the template's frame is never used
@@ -139,9 +144,11 @@ internal fun Case3D(
                 // case's shape — is the front itself: it fills the face, no drawn booklet window or ridge over it.)
                 spec?.shell == CaseShell.JEWEL -> if (isWholeCaseScan(f, shape)) f else jewelFront(f, shape, spec.tray)
                 // Update 191: a keep case's sleeve, a box's print: the cover over the whole front, at the real case's
-                // shape (a little off: fitted; further off: cut in the middle).
+                // shape. (Update 202: cut in the middle only as much as it's off — fillCrop, never stretched.)
                 spec != null -> made ?: fitFace(f, shape)
-                else -> made ?: stretchOrCrop(f, shape, 0.13f)
+                // (Update 202: the case already takes the cover's own shape within a quarter — [shape] above — so this
+                // cuts only past that; Update 200 stretched it up to 13 % here.)
+                else -> made ?: fillCrop(f, shape)
             }
         }
     }
@@ -172,7 +179,13 @@ internal fun Case3D(
     val itemLabel = rememberSoftBitmap(if (canOpen && inside?.real == null) inside?.label else null, 480)
     val itemAspect = inside?.aspect ?: 1f
     val trayBmp = remember(canOpen, g.platform, shape, itemAspect, spec, openKind) { if (canOpen) runCatching { CaseInside.tray(g.platform, shape, itemAspect, spec, openKind) }.getOrNull() else null }
-    val lidBmp = remember(canOpen, g.platform, shape, front, spec, openKind, itemAspect) { if (canOpen) runCatching { CaseInside.lid(g.platform, shape, front, spec, openKind, itemAspect) }.getOrNull() else null }
+    // Update 202: a game with a manual has it lying in the lid as a booklet (tap it to read; MediaInspectView), wearing
+    // its first page once it's been downloaded.
+    val hasBooklet = if (canOpen) rememberHasManual(g) else false
+    val bookletPage = if (canOpen) rememberManualCover(g, hasBooklet) else null
+    val lidBmp = remember(canOpen, g.platform, shape, front, spec, openKind, itemAspect, hasBooklet, bookletPage) {
+        if (canOpen) runCatching { CaseInside.lid(g.platform, shape, front, spec, openKind, itemAspect, hasBooklet, bookletPage) }.getOrNull() else null
+    }
     val itemBmp = remember(canOpen, itemReal, itemLabel, itemAspect, openKind) {
         if (canOpen && inside != null) runCatching { CaseInside.item(openKind, itemReal, itemLabel, itemAspect, inside.tone) }.getOrNull() else null
     }
@@ -372,9 +385,10 @@ private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap,
     val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
     val c = android.graphics.Canvas(out)
     val dst = android.graphics.RectF(win[0] * w, win[1] * h, win[2] * w, win[3] * h)
-    // (Update 200: a cover a little off the window's shape — up to an eighth — is fitted whole, gently stretched, not
-    // cut: covers lost their edges (a publisher's logo, the rating) on other consoles as the PlayStation's had.)
-    val cut = stretchOrCrop(art, dst.width() / dst.height().coerceAtLeast(1f), 0.13f)
+    // (Update 200 stretched a cover up to an eighth off the window's shape to fit it whole.) Update 202: never stretched —
+    // cut in the middle to the window's shape, only as much as it's off (object-fit: cover), so it fills the window
+    // edge to edge at its own proportions.
+    val cut = fillCrop(art, dst.width() / dst.height().coerceAtLeast(1f))
     val p = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
     c.drawBitmap(cut, null, dst, p)
     c.drawBitmap(frame, null, android.graphics.RectF(0f, 0f, w.toFloat(), h.toFloat()), p)
@@ -404,60 +418,42 @@ internal fun isWholeCaseScan(f: android.graphics.Bitmap, caseAspect: Float): Boo
 }
 
 /**
- * Update 191: [src] at [aspect]: within 6 % as it is (drawn onto the front), further off cut in the middle.
- * Update 200: within about an eighth fitted whole (gently stretched) — a cut cost covers their edges on every console,
- * not only the PlayStation; only art far off the case's shape is cut.
+ * Update 191: [src] at [aspect] for a real case's front ([spec]'s shape). Update 202: always [fillCrop] — Update 191 drew
+ * art within 6 % as it was (stretched onto the front by that much) and Update 200 stretched it up to an eighth.
  */
-private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
-    val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
-    return if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) < 0.06f) src else stretchOrCrop(src, aspect, 0.13f)
-}
+private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap = fillCrop(src, aspect)
 
-/** Update 200: [src] at [aspect]: within [tol] (a share) stretched whole, further off cut in the middle. */
-private fun stretchOrCrop(src: android.graphics.Bitmap, aspect: Float, tol: Float): android.graphics.Bitmap {
+/**
+ * Update 202: [src] cut in the middle to [aspect] (width / height), only as much as it's off — the bitmap form of
+ * ContentScale.Crop / object-fit: cover. Replaces Update 200's stretchOrCrop, which stretched covers up to 13 % instead
+ * of cutting them. The face is then drawn onto a front of exactly [aspect], so nothing is stretched. Within half a
+ * percent (a pixel or so) it is left as it is.
+ */
+private fun fillCrop(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
     val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
-    if (aspect <= 0f || kotlin.math.abs(cur - aspect) < 0.01f) return src
-    val k = cur / aspect
-    if (k < 1f - tol || k > 1f + tol) return cropTo(src, aspect)
-    val w = (src.height * aspect).toInt().coerceAtLeast(1)
-    return runCatching { android.graphics.Bitmap.createScaledBitmap(src, w, src.height, true) }.getOrDefault(src)
+    if (aspect <= 0f || kotlin.math.abs(cur / aspect - 1f) < 0.005f) return src
+    val w = if (cur > aspect) (src.height * aspect).toInt().coerceIn(1, src.width) else src.width
+    val h = if (cur > aspect) src.height else (src.width / aspect).toInt().coerceIn(1, src.height)
+    return runCatching { android.graphics.Bitmap.createBitmap(src, (src.width - w) / 2, (src.height - h) / 2, w, h) }.getOrDefault(src)
 }
 
 /**
- * Update 191: a jewel case's front at [aspect] (142 × 125 mm): the booklet (120 mm square) under the clear lid — the cover
- * fitted whole in it — and round it the lid's clear edge over the tray ([tray]'s colour, seen through the plastic). The
- * booklet's place is approximate (left of it the tray's hinge ridge, drawn by CaseDraw).
+ * Update 191: a jewel case's front at [aspect] (142 × 125 mm): the booklet (120 mm square) under the clear lid, and round
+ * it the lid's clear edge over the tray ([tray]'s colour, seen through the plastic). The booklet's place is approximate
+ * (left of it the tray's hinge ridge, drawn by CaseDraw). Update 202: the cover always fills the booklet's window edge to
+ * edge, cut in the middle only as much as its shape is off ([fillCrop]); a near-square cover used to go in whole,
+ * letterboxed over the tray's colour, so strips of it showed beside the art. (A whole-case scan never comes here:
+ * isWholeCaseScan, used as it is.)
  */
 private fun jewelFront(art: android.graphics.Bitmap, aspect: Float, tray: Int): android.graphics.Bitmap = runCatching {
     val w = 640; val h = (w / aspect).toInt().coerceAtLeast(1)
     val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
     val c = android.graphics.Canvas(out)
+    // The lid's clear edge round the booklet (the case itself, not a backdrop for the art: the booklet covers its window).
     c.drawColor(CaseInside.mix(tray, 0xFF2A2D33.toInt(), 0.45f))
     val win = android.graphics.RectF(w * 0.075f, h * 0.018f, w * 0.925f, h * 0.982f)
-    // The cover whole in the booklet's place (letterboxed in the clear edge's colour when its shape is off).
-    val a = art.width.toFloat() / art.height.coerceAtLeast(1)
-    val wa = win.width() / win.height()
-    // (Update 199: art far from the booklet's square — a tall poster, a wide banner — fills the booklet, cut in the
-    // middle, rather than standing small in a dark square. A cover or booklet scan, about square, still goes in whole.)
-    if (a / wa < 0.8f || a / wa > 1.25f) {
-        val src = if (a > wa) {
-            val sw = (art.height * wa).toInt().coerceAtLeast(1)
-            android.graphics.Rect((art.width - sw) / 2, 0, (art.width - sw) / 2 + sw, art.height)
-        } else {
-            val sh = (art.width / wa).toInt().coerceAtLeast(1)
-            android.graphics.Rect(0, (art.height - sh) / 2, art.width, (art.height - sh) / 2 + sh)
-        }
-        c.drawBitmap(art, src, win, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
-        return@runCatching out
-    }
-    val dst = if (a > wa) {
-        val hh = win.width() / a
-        android.graphics.RectF(win.left, win.centerY() - hh / 2f, win.right, win.centerY() + hh / 2f)
-    } else {
-        val ww = win.height() * a
-        android.graphics.RectF(win.centerX() - ww / 2f, win.top, win.centerX() + ww / 2f, win.bottom)
-    }
-    c.drawBitmap(art, null, dst, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+    val booklet = fillCrop(art, win.width() / win.height())
+    c.drawBitmap(booklet, null, win, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
     out
 }.getOrDefault(art)
 

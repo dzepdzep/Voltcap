@@ -78,6 +78,21 @@ internal class OverlayShell(
             }
         }
 
+    /**
+     * Update 202: fit the screen (the achievements overlay). The content is measured at its natural size (as wide as the
+     * screen allows at this scale, as tall as it needs) and drawn at [scale], held down just enough that the whole box
+     * fits on the screen. Before, a bigger Size squeezed it into the room the window was first offered (Android
+     * measures a wrap-content window at a dialog's width first — about 320 dp — and the frame never said that was too
+     * narrow), so its text wrapped into more lines than there was height for and the bottom was cut off.
+     */
+    var fitScreen = false
+        set(v) { if (field != v) { field = v; requestLayout() } }
+    /** Update 202: the scale really drawn at (below [scale] when the box had to shrink to fit the screen). */
+    private var drawnScale = 1f
+
+    /** Update 202: the own size that gives what's drawn now (a resize starts from what you see, not a clamped wish). */
+    private fun ownNow(): Float = if (fitScreen && scale > 0f && drawnScale < scale) ownSize * drawnScale / scale else ownSize
+
     init {
         clipChildren = false
         isFocusable = false
@@ -164,11 +179,35 @@ internal class OverlayShell(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         // The overlay itself is hidden: nothing to show, not even the tab.
         if (content.visibility == View.GONE) { setMeasuredDimension(0, 0); return }
+        if (fitScreen) { measureFitting(widthMeasureSpec, heightMeasureSpec); return }
         val s = scale.coerceAtLeast(0.1f)
         fun inner(spec: Int) = if (MeasureSpec.getMode(spec) == MeasureSpec.UNSPECIFIED) spec
         else MeasureSpec.makeMeasureSpec((MeasureSpec.getSize(spec) / s).toInt(), MeasureSpec.AT_MOST)
         scaler.measure(inner(widthMeasureSpec), inner(heightMeasureSpec))
         setMeasuredDimension(ceil(scaler.measuredWidth * s).toInt(), ceil(scaler.measuredHeight * s).toInt())
+    }
+
+    /** Update 202: see [fitScreen]. */
+    private fun measureFitting(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        // The whole screen this window is on, less a margin all round (the corner gap).
+        val m = android.util.DisplayMetrics()
+        val disp = display
+        @Suppress("DEPRECATION")
+        if (disp != null) disp.getRealMetrics(m) else m.setTo(resources.displayMetrics)
+        val roomW = (m.widthPixels - px(16f)).coerceAtLeast(px(80f))
+        val roomH = (m.heightPixels - px(16f)).coerceAtLeast(px(60f))
+        // Its natural size: every text has its own width and line limit (they end in "…"), the open panel is 320 dp wide.
+        val unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+        scaler.measure(unspecified, unspecified)
+        val nw = scaler.measuredWidth.coerceAtLeast(1)
+        val nh = scaler.measuredHeight.coerceAtLeast(1)
+        // Drawn at the chosen size, but never bigger than fits on the screen (across and down).
+        val s = minOf(scale.coerceIn(0.1f, 5f), roomW / nw.toFloat(), roomH / nh.toFloat()).coerceAtLeast(0.1f)
+        if (drawnScale != s || scaler.scaleX != s) { drawnScale = s; scaler.scaleX = s; scaler.scaleY = s }
+        val w = ceil(scaler.measuredWidth * s).toInt()
+        val h = ceil(scaler.measuredHeight * s).toInt()
+        // Narrower room offered than it needs (that first dialog-width try): say so, and Android offers the full width.
+        setMeasuredDimension(resolveSizeAndState(w, widthMeasureSpec, 0), resolveSizeAndState(h, heightMeasureSpec, 0))
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
@@ -210,7 +249,8 @@ internal class OverlayShell(
     private fun startResize() {
         onResizeStart?.invoke(pressRight, pressBottom)
         resizing = true
-        startOwn = ownSize; startW = width.coerceAtLeast(1); startH = height.coerceAtLeast(1)
+        // Update 202: from the size drawn now (ownNow), so shrinking a box held down to fit the screen answers at once.
+        startOwn = ownNow(); startW = width.coerceAtLeast(1); startH = height.coerceAtLeast(1)
         performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         scaler.alpha = 0.8f
     }
@@ -238,7 +278,7 @@ internal class OverlayShell(
                 if (ev.pointerCount == 2 && !folded && canResize()) {
                     armed = false; resizing = false
                     pinching = true
-                    startOwn = ownSize; startDist = spread(ev)
+                    startOwn = ownNow(); startDist = spread(ev) // Update 202: see startResize
                     scaler.alpha = 0.8f
                     return true
                 }

@@ -241,11 +241,37 @@ internal object CaseInside {
         }
     }
 
-    /** The lid side, seen from inside: the manual in its clips (keep / card cases) or the booklet's back (jewel). */
-    fun lid(platform: String?, aspect: Float, cover: Bitmap?, spec: CaseSpec? = null, kind0: Kind? = null, itemAspect: Float = 1f): Bitmap {
+    /**
+     * Update 202: where the game's manual — a booklet you can tap to read — lies in the lid (u0, v0, u1, v1 of the lid's
+     * picture, as [lid] draws it), or null where there's none: a cardboard box has no lid, and Xbox One / Series cases
+     * hold the disc there (no room beside it).
+     */
+    fun bookletRect(spec: CaseSpec?, kind: Kind, aspect: Float): FloatArray? {
+        if (spec?.mediaLeft == true || kind == Kind.BOX) return null
+        val a = aspect.coerceAtLeast(0.2f)
+        val jewelLid = if (spec != null) spec.shell == CaseShell.JEWEL else kind == Kind.JEWEL
+        if (jewelLid) { val m = 0.05f; return floatArrayOf(m / a, m, 1f - m / a, 1f - m) }
+        val mem = spec?.memCard == true
+        val mh = if (mem) 0.66f else 0.86f
+        val top = if (mem) 0.05f else (1f - mh) / 2f
+        return floatArrayOf(0.07f, top, 0.93f, top + mh)
+    }
+
+    /**
+     * The lid side, seen from inside: the manual in its clips (keep / card cases) or the booklet's back (jewel).
+     * Update 202: [booklet] — the game has a manual to read: it lies there as a booklet (its cover, the pages' edges under
+     * it, its fold and staples), wearing its own first page once downloaded ([bookletPage]), else the game's cover dressed
+     * as an instruction manual. Not in a case that holds its disc in the lid (see [bookletRect]).
+     */
+    fun lid(
+        platform: String?, aspect: Float, cover: Bitmap?, spec: CaseSpec? = null, kind0: Kind? = null, itemAspect: Float = 1f,
+        booklet: Boolean = false, bookletPage: Bitmap? = null
+    ): Bitmap {
         val kind = kind0 ?: kindFor(spec, platform, null)
         val col = plastic(spec, platform)
-        val key = "l|$kind|$col|${(aspect * 100).toInt()}|${cover?.let { System.identityHashCode(it) } ?: 0}|${specKey(spec)}|${(itemAspect * 100).toInt()}"
+        val book = if (booklet) bookletRect(spec, kind, aspect) else null
+        val key = "l|$kind|$col|${(aspect * 100).toInt()}|${cover?.let { System.identityHashCode(it) } ?: 0}|${specKey(spec)}|${(itemAspect * 100).toInt()}" +
+            "|${if (book != null) 1 else 0}|${bookletPage?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         val h = 512
         val w = (h * aspect).toInt().coerceIn(160, 1200)
@@ -263,7 +289,10 @@ internal object CaseInside {
             c.drawColor(0xFF0E0F12.toInt())
             val m = h * 0.035f
             val page = RectF(m, m, w - m, h - m)
-            if (cover != null) {
+            if (book != null) {
+                // Update 202: the booklet itself, its front up (the manual to read), under the clear lid.
+                drawBooklet(c, RectF(book[0] * w, book[1] * h, book[2] * w, book[3] * h), bookletPage, cover, h)
+            } else if (cover != null) {
                 p.alpha = 255
                 p.colorFilter = android.graphics.ColorMatrixColorFilter(android.graphics.ColorMatrix().apply {
                     setSaturation(0.35f)
@@ -272,11 +301,11 @@ internal object CaseInside {
                 c.drawBitmap(cover, null, page, p)
                 p.colorFilter = null
             } else { p.color = 0xFF2A2C33.toInt(); c.drawRect(page, p) }
-            // Faint printed lines (the back page's text).
+            // Faint printed lines (the back page's text). (Update 202: not over a booklet's front.)
             p.color = 0x22FFFFFF
             p.strokeWidth = h * 0.006f
             var y = h * 0.62f
-            while (y < h * 0.9f) { c.drawLine(w * 0.12f, y, w * (0.55f + (y * 7 % 30) / 100f), y, p); y += h * 0.035f }
+            while (book == null && y < h * 0.9f) { c.drawLine(w * 0.12f, y, w * (0.55f + (y * 7 % 30) / 100f), y, p); y += h * 0.035f }
             tabs(c, w, h, 0xFF9AA0AB.toInt(), p, onLeft = true)
             glare(c, w, h, p)
         } else {
@@ -287,10 +316,15 @@ internal object CaseInside {
             val mw = w * 0.86f; val mh = h * (if (mem) 0.66f else 0.86f)
             val top = if (mem) h * 0.05f else (h - mh) / 2f
             val page = RectF((w - mw) / 2f, top, (w + mw) / 2f, top + mh)
-            p.color = 0x55000000
-            c.drawRect(RectF(page.left + h * 0.008f, page.top + h * 0.01f, page.right + h * 0.008f, page.bottom + h * 0.01f), p)
-            if (cover != null) c.drawBitmap(cover, null, page, Paint(Paint.FILTER_BITMAP_FLAG))
-            else { p.color = 0xFFE9E9EC.toInt(); c.drawRect(page, p) }
+            if (book != null) {
+                // Update 202: the manual as a booklet you can tap to read (same place as the drawn manual).
+                drawBooklet(c, RectF(book[0] * w, book[1] * h, book[2] * w, book[3] * h), bookletPage, cover, h)
+            } else {
+                p.color = 0x55000000
+                c.drawRect(RectF(page.left + h * 0.008f, page.top + h * 0.01f, page.right + h * 0.008f, page.bottom + h * 0.01f), p)
+                if (cover != null) c.drawBitmap(cover, null, page, Paint(Paint.FILTER_BITMAP_FLAG))
+                else { p.color = 0xFFE9E9EC.toInt(); c.drawRect(page, p) }
+            }
             if (mem) {
                 val cardW = (if (spec?.platform == "GameCube") 39f else 42f) / (spec?.wMm ?: 135f) * w
                 val cardH = (if (spec?.platform == "GameCube") 46f else 56f) / (spec?.hMm ?: 190f) * h
@@ -361,6 +395,81 @@ internal object CaseInside {
         }
         cache.put(key, out)
         return out
+    }
+
+    /**
+     * Update 202: a manual booklet lying in [r] (lid picture px; [h] the picture's height): its shadow, the pages' edges
+     * under its cover (its thickness), the cover — the manual's own first page ([firstPage]) or, until it's downloaded,
+     * the game's [cover] with an "Instruction manual" band — then the fold along its left edge with two staples and a
+     * soft sheen.
+     */
+    private fun drawBooklet(c: Canvas, r: RectF, firstPage: Bitmap?, cover: Bitmap?, h: Int) {
+        val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        val t = h * 0.006f
+        p.color = 0x66000000
+        c.drawRect(RectF(r.left + t * 2f, r.top + t * 3f, r.right + t * 4f, r.bottom + t * 4.5f), p)
+        // The sheets' edges, lighter and darker in turn, showing below and right of the cover.
+        for (i in 3 downTo 1) {
+            p.color = if (i % 2 == 0) 0xFFD9D4C8.toInt() else 0xFFF1EEE6.toInt()
+            c.drawRect(RectF(r.left + t * i * 0.5f, r.top + t * i, r.right + t * i, r.bottom + t * i), p)
+        }
+        val art = firstPage ?: cover
+        if (art != null && art.width > 0 && art.height > 0) {
+            // Cut to the booklet's shape round its middle (not stretched).
+            val ra = r.width() / r.height().coerceAtLeast(1f)
+            val ba = art.width.toFloat() / art.height
+            val src = if (ba > ra) {
+                val sw = (art.height * ra).toInt().coerceIn(1, art.width)
+                android.graphics.Rect((art.width - sw) / 2, 0, (art.width + sw) / 2, art.height)
+            } else {
+                val sh = (art.width / ra).toInt().coerceIn(1, art.height)
+                android.graphics.Rect(0, (art.height - sh) / 2, art.width, (art.height + sh) / 2)
+            }
+            c.drawBitmap(art, src, r, p)
+        } else {
+            p.color = 0xFFE9E6DE.toInt()
+            c.drawRect(r, p)
+        }
+        if (firstPage == null) {
+            // Not downloaded yet: the cover dressed as the game's manual.
+            val band = RectF(r.left, r.top, r.right, r.top + r.height() * 0.12f)
+            p.color = 0xE6141518.toInt()
+            c.drawRect(band, p)
+            p.color = 0xFFFFFFFF.toInt()
+            p.textAlign = Paint.Align.CENTER
+            p.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+            p.letterSpacing = 0.14f
+            p.textSize = band.height() * 0.42f
+            val label = "INSTRUCTION MANUAL"
+            val maxW = band.width() * 0.88f
+            val tw = p.measureText(label)
+            if (tw > maxW) p.textSize = p.textSize * maxW / tw
+            c.drawText(label, band.centerX(), band.centerY() - (p.descent() + p.ascent()) / 2f, p)
+            p.textAlign = Paint.Align.LEFT
+            p.typeface = null
+            p.letterSpacing = 0f
+        }
+        // The fold along the left edge, and its two staples.
+        val fold = r.width() * 0.06f
+        p.shader = LinearGradient(r.left, 0f, r.left + fold, 0f, 0x55000000, 0x00000000, Shader.TileMode.CLAMP)
+        c.drawRect(RectF(r.left, r.top, r.left + fold, r.bottom), p)
+        p.shader = null
+        p.color = 0xFFB8BCC4.toInt()
+        val sx = r.left + r.width() * 0.02f
+        val sw = (r.width() * 0.012f).coerceAtLeast(1.5f)
+        for (fy in floatArrayOf(0.22f, 0.78f)) {
+            val cy = r.top + r.height() * fy
+            c.drawRect(sx, cy - r.height() * 0.035f, sx + sw, cy + r.height() * 0.035f, p)
+        }
+        // A soft sheen on the printed cover, and its edge.
+        p.shader = LinearGradient(r.left, r.top, r.right, r.bottom, intArrayOf(0x26FFFFFF, 0x00FFFFFF, 0x12000000), floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
+        c.drawRect(r, p)
+        p.shader = null
+        p.style = Paint.Style.STROKE
+        p.strokeWidth = t * 0.6f
+        p.color = 0x33000000
+        c.drawRect(r, p)
+        p.style = Paint.Style.FILL
     }
 
     private fun plasticBase(c: Canvas, w: Int, h: Int, col: Int, p: Paint) {

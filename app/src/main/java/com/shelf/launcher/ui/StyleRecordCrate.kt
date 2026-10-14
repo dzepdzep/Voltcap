@@ -297,7 +297,8 @@ private fun CrateStage(c: StyleCtx, wood: CrateColours, modifier: Modifier) {
             val gg = cc.games.getOrNull(at) ?: continue
             cc.cover(gg)?.let { urls += it }
         }
-        val handles = warmStyleArt(context, urls)
+        // (Update 202: covers, drawn trimmed.)
+        val handles = warmStyleArt(context, urls) { true }
         try { kotlinx.coroutines.awaitCancellation() } finally {
             kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { kotlinx.coroutines.delay(1500) }
             handles.forEach { it.dispose() }
@@ -488,12 +489,12 @@ private fun CrateSleeve(c: StyleCtx, g: Game, focused: Boolean, centre: Boolean,
             .background(placeholderBrush(g.hue))
     ) {
         when {
-            // Update 159: the whole cover on the sleeve (a tall box cover lost its logo cut to the square); the spare room
-            // is the same picture filled and dimmed behind it — one decode, no blur.
+            // (Update 159 showed the whole cover on the sleeve over a dimmed copy of itself.) Update 202: the cover fills
+            // the square sleeve edge to edge, centred, cut only as much as its shape is off the square (object-fit:
+            // cover) — no dimmed copy or strips beside it; its file's flat strips trimmed (TrimMargins.kt).
             url != null -> {
-                val req = rememberStyleArtRequest(url)
-                AsyncImage(req, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.32f })
-                AsyncImage(req, g.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().pixelArtwork())
+                val req = rememberStyleArtRequest(url, trim = true)
+                AsyncImage(req, g.name, contentScale = ContentScale.Crop, alignment = Alignment.Center, modifier = Modifier.fillMaxSize().pixelArtwork())
             }
             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
             else -> Text(
@@ -567,7 +568,8 @@ private fun CrateRecord(c: StyleCtx, g: Game, d: Dp, spin: Boolean, modifier: Mo
                 }
                 .background(placeholderBrush(g.hue))
         ) {
-            if (url != null) AsyncImage(rememberStyleArtRequest(url), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            // (Update 202: the same trimmed decode as the sleeve.)
+            if (url != null) AsyncImage(rememberStyleArtRequest(url, trim = true), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         // The spindle hole.
         Box(Modifier.align(Alignment.Center).size(d * 0.035f).clip(CircleShape).background(Color(0xFF0B0B0B)))

@@ -100,10 +100,10 @@ object LidPause {
     }
 
     fun pauseAll(context: Context) {
-        // Voltcap's own loop (main thread).
-        android.os.Handler(android.os.Looper.getMainLooper()).post {
-            runCatching { com.shelf.launcher.ui.BackgroundMusicGate.current?.haltForOtherMusic() }
-        }
+        // Voltcap's own loop. Update 202: held until the screen is back on and unlocked (MusicBlackout). It was
+        // haltForOtherMusic, which treats the pause as "another app's music" and fades the loop back in after ~7.5 s
+        // of nobody else playing — with the lid still shut.
+        runCatching { com.shelf.launcher.ui.MusicBlackout.holdForLid(context) }
         // Every app playing music.
         runCatching {
             val m = context.getSystemService(MediaSessionManager::class.java) ?: return

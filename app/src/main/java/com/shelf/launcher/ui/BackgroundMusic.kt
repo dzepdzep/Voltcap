@@ -77,16 +77,66 @@ fun BackgroundMusicHost(
     }
 
     // Only plays while Voltcap is on screen (a game or another app in front = pause).
+    // Update 202: the lifecycle, the screen and a game now reach the player directly (player.setFront / reevaluate), not
+    // through a state that waits for the next recomposition: while Voltcap is stopped (screen off) Compose draws no
+    // frames, so a pause that waited for one could come only when the screen was back on. And "resumed" no longer
+    // starts out true: when Voltcap was started again with the screen off (the AYN Thor restarted it at 22:10 with the
+    // screen dark), its observer was added to an activity that had already paused — it then only hears ON_CREATE /
+    // ON_START, never an ON_PAUSE — so the loop played for 22 minutes with the screen off. It's read from the
+    // lifecycle's real state instead.
     val activity = context as? ComponentActivity
-    var resumed by remember { mutableStateOf(true) }
-    DisposableEffect(activity) {
+    remember { MusicBlackout.ensure(context); true }
+    DisposableEffect(activity, player) {
+        val app = context.applicationContext
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) resumed = true
-            if (event == Lifecycle.Event.ON_PAUSE) resumed = false
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    // (A resume under the lock screen, before you unlock, still counts as dark: re-read here.)
+                    MusicBlackout.recheck(app)
+                    player.setFront(true, forSleep = false)
+                }
+                // Paused because the screen is going off (it's already "not interactive" by then): only matters
+                // for "Keep playing with the screen off".
+                Lifecycle.Event.ON_PAUSE -> player.setFront(false, forSleep = !MusicBlackout.interactive(app))
+                else -> Unit
+            }
         }
         activity?.lifecycle?.addObserver(observer)
+        player.setFront(activity?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) ?: true, forSleep = false)
         onDispose { activity?.lifecycle?.removeObserver(observer) }
     }
+    // Update 202: the display this window is on going off / dozing (one screen of a two-screen handheld can go dark
+    // on its own). Only Voltcap's own display counts: the second screen going black doesn't stop the music.
+    val view = androidx.compose.ui.platform.LocalView.current
+    DisposableEffect(view, player) {
+        val dm = context.getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
+        fun read() {
+            val s = view.display?.state
+            player.setDisplayOn(
+                s != android.view.Display.STATE_OFF && s != android.view.Display.STATE_DOZE &&
+                    s != android.view.Display.STATE_DOZE_SUSPEND
+            )
+        }
+        val listener = object : android.hardware.display.DisplayManager.DisplayListener {
+            override fun onDisplayAdded(displayId: Int) {}
+            override fun onDisplayRemoved(displayId: Int) {}
+            override fun onDisplayChanged(displayId: Int) {
+                if (displayId == (view.display?.displayId ?: android.view.Display.DEFAULT_DISPLAY)) read()
+            }
+        }
+        runCatching { dm?.registerDisplayListener(listener, android.os.Handler(android.os.Looper.getMainLooper())) }
+        read()
+        onDispose { runCatching { dm?.unregisterDisplayListener(listener) } }
+    }
+    // Update 202: a game started from Voltcap (GameMode) — also when it runs on the other screen of a two-screen
+    // handheld and Voltcap stays "resumed" here: the loop no longer plays on under the game. Collected in an effect
+    // (not as state) so it reaches the player even while Compose draws nothing.
+    LaunchedEffect(player) {
+        com.shelf.launcher.data.GameMode.playing.collect { player.setGame(it) }
+    }
+    // "Keep playing with the screen off" switched.
+    val keepWithScreenOff = com.shelf.launcher.data.Features.keepMusicScreenOff.state.value
+    LaunchedEffect(keepWithScreenOff) { player.reevaluate() }
 
     LaunchedEffect(mode, loop, customStamp, ownTrack?.key, ownTrack?.stamp, ownTrack?.restartOnReturn) {
         val custom = BackgroundMusicFiles.file(context)
@@ -102,8 +152,93 @@ fun BackgroundMusicHost(
         }
     }
     LaunchedEffect(volumePercent) { player.setVolume(volumePercent / 100f) }
-    LaunchedEffect(resumed, suppress, mode, ownTrack != null) {
-        player.setPaused(!resumed || suppress || (mode == BackgroundMusicMode.OFF && ownTrack == null))
+    LaunchedEffect(suppress, mode, ownTrack != null) {
+        // Update 202: the rest of the decision (screen, lifecycle, screensaver, game) is in player.reevaluate.
+        player.setWanted(!suppress && !(mode == BackgroundMusicMode.OFF && ownTrack == null))
+    }
+}
+
+/**
+ * Update 202: when the main screen is "blacked out" for the background music. The loop fades out and pauses when
+ * the screen goes off (power button, timeout, the lid closing), while the lock screen is up after it comes back on
+ * (until you unlock), and when Voltcap's own screensaver has faded to black on the main screen; it fades back in
+ * when you're back. The second screen going black / dim on its own doesn't count. Settings › Audio › Background
+ * music › "Keep playing with the screen off" (off by default) lets it play on — except after the lid closed with
+ * "Pause music when closed" (or "Also pause when locking") on: that always holds it until the screen's back on.
+ * All state is changed on the main thread.
+ */
+object MusicBlackout {
+    /** The screen is on and unlocked (false from screen off until it's back on and the lock screen is gone). */
+    val awake = mutableStateOf(true)
+    /** Voltcap's screensaver on the main screen has faded to black (ScreenSaver's blackout). */
+    val saverBlack = mutableStateOf(false)
+    /** LidPause paused the music (lid closed / "Also pause when locking"): held until the screen's back on. */
+    val heldByLid = mutableStateOf(false)
+    @Volatile private var registered = false
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+
+    /** The screen is on (not off, not dozing). */
+    fun interactive(context: Context): Boolean =
+        (context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager)?.isInteractive ?: true
+
+    /** The screen is on and the lock screen isn't showing. */
+    fun isAwake(context: Context): Boolean {
+        if (!interactive(context)) return false
+        val km = context.getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
+        return km?.isKeyguardLocked != true
+    }
+
+    /** Re-reads the screen (Voltcap resumed: it may be under the lock screen, before you unlock). Main thread. */
+    fun recheck(context: Context) {
+        val now = isAwake(context.applicationContext)
+        if (awake.value != now) awake.value = now
+        if (now && heldByLid.value) heldByLid.value = false
+        BackgroundMusicGate.current?.reevaluate()
+    }
+
+    /** One receiver for the app: screen off / on / unlocked. */
+    fun ensure(context: Context) {
+        val app = context.applicationContext
+        awake.value = isAwake(app)
+        if (registered) return
+        registered = true
+        runCatching {
+            app.registerReceiver(object : android.content.BroadcastReceiver() {
+                override fun onReceive(c: Context, i: android.content.Intent) {
+                    when (i.action) {
+                        android.content.Intent.ACTION_SCREEN_OFF -> {
+                            awake.value = false
+                            BackgroundMusicGate.current?.reevaluate()
+                        }
+                        // On: only "awake" once the lock screen is gone (USER_PRESENT comes when you unlock).
+                        else -> recheck(app)
+                    }
+                }
+            }, android.content.IntentFilter().apply {
+                addAction(android.content.Intent.ACTION_SCREEN_OFF)
+                addAction(android.content.Intent.ACTION_SCREEN_ON)
+                addAction(android.content.Intent.ACTION_USER_PRESENT)
+            })
+        }.onFailure { registered = false }
+    }
+
+    /** The main screen's screensaver went black (true) or isn't any more. Main thread. */
+    fun setSaverBlack(black: Boolean) {
+        if (saverBlack.value == black) return
+        saverBlack.value = black
+        BackgroundMusicGate.current?.reevaluate()
+    }
+
+    /** LidPause: the lid closed (or "Also pause when locking"). Any thread. */
+    fun holdForLid(context: Context) {
+        val app = context.applicationContext
+        main.post {
+            // (The lid check takes up to ~0.7 s: if the screen is already back on by now, there's nothing to hold.)
+            if (interactive(app)) return@post
+            heldByLid.value = true
+            if (awake.value) awake.value = false
+            BackgroundMusicGate.current?.reevaluate()
+        }
     }
 }
 
@@ -294,7 +429,38 @@ class BackgroundMusicPlayer(private val context: Context) {
         fadeTo(1f, 2000)
     }
 
-    fun setPaused(p: Boolean) {
+    // ---- Update 202: whether the loop may play at all (see MusicBlackout) ----
+    /** Music on and nobody else's music playing (BackgroundMusicHost). */
+    private var wanted = false
+    /** Voltcap is the resumed activity (a game / another app in front, or the screen off = false). */
+    private var front = false
+    /** The last pause came with the screen going off ("Keep playing with the screen off" plays on then). */
+    private var frontLostToSleep = false
+    /** The display Voltcap's window is on is on (not off / dozing). */
+    private var displayOn = true
+    /** A game started from Voltcap runs (GameMode), also on the other screen of a two-screen handheld. */
+    private var gameRunning = false
+
+    fun setWanted(w: Boolean) { wanted = w; reevaluate() }
+    fun setFront(f: Boolean, forSleep: Boolean) { front = f; frontLostToSleep = !f && forSleep; reevaluate() }
+    fun setDisplayOn(on: Boolean) { if (displayOn != on) { displayOn = on; reevaluate() } }
+    fun setGame(running: Boolean) { if (gameRunning != running) { gameRunning = running; reevaluate() } }
+
+    /**
+     * Update 202: plays only while it's wanted, Voltcap is in front, no game runs and the main screen isn't blacked
+     * out (screen off / locked, its display off, the screensaver faded to black, the lid closed). Going dark fades out
+     * slower than a game starting (the screensaver's own fade to black takes 4 s). Nothing here starts it while the
+     * screen is still off: every way back needs the screen on and unlocked (or "Keep playing with the screen off").
+     */
+    fun reevaluate() {
+        val keep = com.shelf.launcher.data.Features.keepMusicScreenOff.value
+        val dark = MusicBlackout.heldByLid.value ||
+            (!keep && (!MusicBlackout.awake.value || !displayOn || MusicBlackout.saverBlack.value))
+        val inFront = front || (keep && frontLostToSleep)
+        setPaused(!wanted || !inFront || gameRunning || dark, fadeOutMs = if (dark) 1_200L else 300L)
+    }
+
+    fun setPaused(p: Boolean, fadeOutMs: Long = 300L) {
         if (paused == p) return
         paused = p
         if (p) {
@@ -303,7 +469,7 @@ class BackgroundMusicPlayer(private val context: Context) {
             blockedByOther = false
             val was = playing
             playing = false
-            if (was) fadeTo(0f, 300) { pauseOutput(); abandonFocus() } else pauseOutput()
+            if (was) fadeTo(0f, fadeOutMs) { pauseOutput(); abandonFocus() } else pauseOutput()
         } else {
             tryStart()
         }

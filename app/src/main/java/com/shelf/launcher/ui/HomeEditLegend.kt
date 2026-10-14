@@ -73,6 +73,11 @@ internal fun BoxScope.HomeEditBarOpen() {
                 Spacer(Modifier.width(6.dp))
                 Chip("L3 ✎ Style", accent = false) { HomeEditState.styling = HomeEditState.selected }
                 Spacer(Modifier.width(6.dp))
+                // Update 202: Art position for the look that's on (covers, Box art, cartridges or discs).
+                HomeEditState.artLook?.let { look ->
+                    Chip("R3 Art position · ${look.label}", accent = false) { HomeEditState.openArtPosition() }
+                    Spacer(Modifier.width(6.dp))
+                }
                 Chip("A Done") { HomeEditState.done() }
                 Spacer(Modifier.width(8.dp))
                 LegendFold(1)
@@ -116,6 +121,8 @@ private fun LegendKeys() {
         LegendKey("Select ✕ Remove") { HomeWidgets.remove(HomeEditState.selected) }
         LegendKey("Start + Add") { HomeEditState.adding = true }
         LegendKey("L3 Style") { HomeEditState.styling = HomeEditState.selected }
+        // Update 202: Art position for the look that's on.
+        if (HomeEditState.artLook != null) LegendKey("R3 Art position") { HomeEditState.openArtPosition() }
         LegendKey("A Done", accent = true) { HomeEditState.done() }
     }
 }

@@ -361,8 +361,12 @@ object Features {
      * pre-rendered 3D models are retired.
      */
     val modelFinish = EnumPref("model_finish", com.shelf.launcher.ui.ModelFinish.OFF, com.shelf.launcher.ui.ModelFinish.values())
-    /** Update 141: the finish to come back to when the "3D models" look is picked again (it turns 3D models off when left). */
-    val modelFinishLast = EnumPref("model_finish_last", com.shelf.launcher.ui.ModelFinish.CUSTOM, com.shelf.launcher.ui.ModelFinish.values())
+    /**
+     * Update 141: the finish to come back to when the "3D models" look is picked again (it turns 3D models off when left).
+     * Update 202: Cartridges & discs' Cartridge choice while another look is on; Real by default (each console's real
+     * shell, so the researched real backs show — asked for), it was Custom.
+     */
+    val modelFinishLast = EnumPref("model_finish_last", com.shelf.launcher.ui.ModelFinish.REAL, com.shelf.launcher.ui.ModelFinish.values())
     val modelAngle = EnumPref("model_angle", com.shelf.launcher.ui.ModelAngle.FACE_PICKED, com.shelf.launcher.ui.ModelAngle.values())
     /** Update 136: the game's name on a strip along the bottom of the 3D model's label (Settings › Game look › 3D models). */
     val modelName = BoolPref("model_name", false)
@@ -394,6 +398,11 @@ object Features {
     val artShiftCase = IntPref("art_shift_case", 0, -50..50)
     val artShiftModel = IntPref("art_shift_model", 0, -50..50)
     val artZoomCase = IntPref("art_zoom_case", 100, 50..200)
+    /**
+     * Update 202: Art position for the other looks (Edit Home › R3 / Art position): "COVER=x,y,zoom;CART=…;DISC=…", the
+     * same steps as the Box art's three above (left / right −50…50, up / down −50…100, size 50–200 %). Missing = centred.
+     */
+    val artPosLooks = StringPref("art_pos_looks", "")
     val artZoomModel = IntPref("art_zoom_model", 100, 50..200)
     /**
      * Update 129: one console's disc, case or spine for every game ("" = each game's own), picked on the R1 panel's
@@ -402,6 +411,13 @@ object Features {
     val discStyle = StringPref("disc_style", "")
     val caseStyle = StringPref("case_style", "")
     val spineStyle = StringPref("spine_style", "")
+    /**
+     * Update 202: the game look is four main looks (Covers, Cases, Cartridges & discs, Art) with a few plain choices each
+     * (ui/GameLookPicker.kt). The choices still set the switches above, which the drawing code reads; this remembers what
+     * each main look had ("key=value;…": main, cover, caseSize, caseMedia, discs, art), so stepping through the four on
+     * the R1 Look tile brings each one back as you left it — two looks share switches (a disc half out of its case).
+     */
+    val lookMemory = StringPref("look_memory", "")
 
     // ---- 32-bit pixel style ----
     /** Square / cut pixel corners on panels, chips and dialogs (the type is [uiFont] now). */
@@ -1483,6 +1499,31 @@ object Features {
     val circuitLabels = BoolPref("circuit_labels", true)
     /** The faint traces of the board behind everything (off: your theme's background). */
     val circuitBackdrop = BoolPref("circuit_backdrop", true)
+
+    // ---- Update 202: Green Core (2001) — the machine-dashboard layout (StyleGreenCore.kt, GreenCoreSphere.kt) ----
+    /** Update 202: how the GAMES page shows the category: a vertical list, or a curved carousel in front of the sphere. */
+    enum class GcBrowse(val label: String) { LIST("List"), CAROUSEL("Curved carousel") }
+    /** Update 202: Green Core's light colour (the original look is the core green). */
+    enum class GcAccent(val label: String, val argb: Long) {
+        GREEN("Core green", 0xFF59E36BL), LIME("Lime", 0xFFB6F24AL), CYAN("Ice blue", 0xFF5FD8F0L),
+        AMBER("Amber", 0xFFF2B640L), RED("Red alert", 0xFFF0605AL), WHITE("White", 0xFFE8F2EAL)
+    }
+    /** Update 202: how strongly the sphere, the panels and the selection glow (0–100). */
+    val gcGlow = IntPref("gc_glow", 70, 0..100)
+    /** Update 202: the sphere's turning and pulsing speed, in % (0 = still). */
+    val gcSphereSpeed = IntPref("gc_sphere_speed", 100, 0..200)
+    /** Update 202: the slow drifting light in the background. */
+    val gcBgMotion = BoolPref("gc_bg_motion", true)
+    /** Update 202: the layout's own synthesised interface sounds (click, whoosh, confirm); off = Voltcap's usual sounds. */
+    val gcSounds = BoolPref("gc_sounds", true)
+    /** Update 202: their volume, in %. */
+    val gcVolume = IntPref("gc_volume", 60, 0..100)
+    /** Update 202: a low machine hum while Green Core is on screen (off by default). */
+    val gcHum = BoolPref("gc_hum", false)
+    /** Update 202: reduced motion — the sphere stands still and the panels change without sliding. */
+    val gcReducedMotion = BoolPref("gc_reduced_motion", false)
+    val gcBrowse = EnumPref("gc_browse", GcBrowse.LIST, GcBrowse.values())
+    val gcAccent = EnumPref("gc_accent", GcAccent.GREEN, GcAccent.values())
     /** Icon bar: the tiles as squares (off: the card artwork's own shape). */
     val barSquares = BoolPref("bar_squares", true)
 
@@ -1545,6 +1586,11 @@ object Features {
     val musicCrossfade = BoolPref("music_crossfade", true)
     /** Per platform / per game: restart the override from the beginning when you come back to it. Keys: "p:<platform>" / "g:<stableKey>". */
     val musicRestartOnReturn = SetPref("music_restart_on_return", emptySet())
+    /**
+     * Update 202: Voltcap's background music plays on when the screen goes off or the screensaver fades to black
+     * (Settings › Audio › Background music). Off: it fades out there and back in when you return (MusicBlackout).
+     */
+    val keepMusicScreenOff = BoolPref("music_keep_screen_off", false)
 
     // ---- Platform intro videos (after the launch animation, before the game starts) ----
     val platformIntroVideos = BoolPref("platform_intro_videos", true)
@@ -1619,6 +1665,44 @@ object Features {
     val cardsFrame = EnumPref("cards_frame", CardFrame.CONSOLE, CardFrame.values())
     /** Update 158, Card binder: A starts the game straight away (off: A opens the game's window, as on other layouts). */
     val cardsAPlays = BoolPref("cards_a_plays", true)
+
+    // ---- Update 202: Pocket Quest (StylePocketQuest.kt, PocketQuestScenery.kt, PocketQuestSettings.kt) ----
+    // Update 202: declared here (not in the layout's own files) because only prefs declared in Features are read by init().
+    /** Update 202, Pocket Quest: the scenery and colours behind the menu (all drawn in code, original pixel art). */
+    enum class PqTheme(val label: String) { ISLAND("Island Sky"), SUNSET("Sunset Ruins"), LAB("Deep Lab"), OCEAN("Ocean Depths") }
+    /** Update 202, Pocket Quest: the theme's scenery behind the menu, or Voltcap's own background (Theme › Background). */
+    enum class PqBackground(val label: String) { SCENERY("Theme scenery"), VOLTCAP("Voltcap background") }
+    /** Update 202, Pocket Quest: the colour of the panel edges, the cursor and Play (Theme = the theme's own). */
+    enum class PqAccent(val label: String) { THEME("Theme's own"), GOLD("Gold"), CYAN("Cyan"), ROSE("Rose"), EMERALD("Emerald"), SILVER("Silver"), VOLTCAP("Voltcap accent") }
+    /** Update 202, Pocket Quest: the games drawn as your game look (cartridges, discs, cases…) or as plain cover art. */
+    enum class PqMedia(val label: String) { LOOK("Your game look"), COVERS("Cover art") }
+    /** Update 202, Pocket Quest: how tall the collection along the bottom is. */
+    enum class PqSize(val label: String) { SMALL("Small"), MEDIUM("Medium"), LARGE("Large") }
+    /** Update 202, Pocket Quest: how quickly things glide. */
+    enum class PqSpeed(val label: String) { RELAXED("Relaxed"), NORMAL("Normal"), SNAPPY("Snappy") }
+    val pqTheme = EnumPref("pq_theme", PqTheme.ISLAND, PqTheme.values())
+    val pqBackground = EnumPref("pq_background", PqBackground.SCENERY, PqBackground.values())
+    /** Update 202, Pocket Quest: the scenery moves (drifting clouds, motes, bubbles); off: a still picture. */
+    val pqBgAnim = BoolPref("pq_bg_anim", true)
+    /** Update 202, Pocket Quest: how far the scenery's layers shift as you move along the games, % (0 = none). */
+    val pqParallax = IntPref("pq_parallax", 50, 0..100)
+    val pqAccent = EnumPref("pq_accent", PqAccent.THEME, PqAccent.values())
+    val pqMedia = EnumPref("pq_media", PqMedia.LOOK, PqMedia.values())
+    val pqDescription = BoolPref("pq_description", true)
+    val pqScreenshots = BoolPref("pq_screenshots", true)
+    val pqSize = EnumPref("pq_size", PqSize.MEDIUM, PqSize.values())
+    val pqSpeed = EnumPref("pq_speed", PqSpeed.NORMAL, PqSpeed.values())
+    /** Update 202, Pocket Quest: its own synthesized square-wave blips for moving around the menu (off: Voltcap's sounds). */
+    val pqSounds = BoolPref("pq_sounds", false)
+    val pqSoundVolume = IntPref("pq_sound_volume", 60, 0..100)
+    /** Update 202, Pocket Quest: reduced motion — no tilt, parallax, drifting or launch flash; changes are quick fades. */
+    val pqReducedMotion = BoolPref("pq_reduced_motion", false)
+    /** Update 202, Pocket Quest: the big picture of the game you're on leans gently in 3D. */
+    val pqTilt = BoolPref("pq_tilt", true)
+    /** Update 202, Pocket Quest: L1 / R1 switch the console (off: they do what they do everywhere else). */
+    val pqBumpers = BoolPref("pq_bumpers", true)
+    /** Update 202, Pocket Quest: A starts the game (off: A opens the game window, as on the other layouts). */
+    val pqAPlays = BoolPref("pq_a_plays", true)
 
     // ---- Quick Menu while in a game ----
     val quickMenuInGame = BoolPref("quick_menu_in_game", true)

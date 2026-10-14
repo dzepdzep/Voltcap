@@ -28,6 +28,18 @@ import java.util.concurrent.TimeUnit
  *    also uses it once to give itself WRITE_SECURE_SETTINGS for good ([grantWithRoot]);
  *  - WRITE_SECURE_SETTINGS granted once from a computer ([ADB_GRANT]); it stays after reboots and updates.
  *
+ * Update 202: inside a game the game's own window decides about the bars, so layer 1 can't reach it; only the
+ * device setting (layer 2) can. While "Hide navigation bar" and the force-hide are both on, the setting now stays
+ * hidden while a game started from Voltcap runs and while Voltcap is the home app ([holdsOutside]) — it used to be
+ * put back 0.7 s after Voltcap left the front, which brought the bar back in every game. It's put back when either
+ * switch is turned off, when Voltcap leaves the front with no game of its own running and isn't the home app, and —
+ * through a small root-service watcher ([ensureGuard]) — about two minutes after Voltcap is uninstalled.
+ * Checked on the AYN Thor and Odin 2 Portal (Android 13): AYN's SystemUI (NavigationBarController) reads
+ * `global hide_nav_bar` for *every* display's navigation bar when that bar is created, but a later change only reaches
+ * the main display's bar. So the Thor's lower screen follows from its next start (restart, or that screen turned off
+ * and on) — holding the setting instead of switching it on every visit is what keeps both screens hidden.
+ * (`global policy_control` is still written by AYN's launcher, but Android 13's window manager no longer applies it.)
+ *
  * Device-only: its prefs file "gesture_hint" never travels to another device (SettingsScopes).
  * All shell / settings work runs on one background thread, in order, so a quick in-and-out can't
  * leave the hint in the wrong state.
@@ -72,7 +84,13 @@ object GestureHint {
         (p.all["previous"] as? Int)?.let { p.edit().putString("previous", it.toString()).putString("previous_key", "navigation_bar_gesture_hint").apply() }
         // Left hidden by a crash or a killed process with the option off: give the hint back.
         val app = c.applicationContext
-        worker.execute { runCatching { if (!forceOn(app)) restoreNow(app) } }
+        // (Update 202: still held after a restart: the uninstall watcher is started again — a restart ends it.)
+        worker.execute {
+            runCatching {
+                if (!forceOn(app)) restoreNow(app)
+                else if (prefs(app).contains("previous")) hintKey(app)?.let { ensureGuard(app, it) }
+            }
+        }
     }
 
     /**
@@ -93,9 +111,14 @@ object GestureHint {
         prefs(c).edit().putBoolean("immersive", on).apply()
         immersiveState.value = on
         // (Update 137: where the force-hide follows this switch, the handle goes / comes back with it.)
+        // Update 202: also from the R1 tile over a game (Voltcap not in front): on hides it there too, off gives it back.
+        // With the force-hide set by hand, off only gives it back where it was held for a game / as the home app.
         val app = c.applicationContext
-        if (!prefs(app).contains("force")) worker.execute {
-            runCatching { if (forceOn(app) && foreground) { grantWithRoot(app); hideNow(app, retries = 2) } else if (!forceOn(app)) restoreNow(app) }
+        worker.execute {
+            runCatching {
+                if (forceOn(app) && (foreground || holdsOutside(app))) { grantWithRoot(app); hideNow(app, retries = 2) }
+                else restoreNow(app)
+            }
         }
     }
 
@@ -147,8 +170,20 @@ object GestureHint {
         foreground = false
         worker.execute {
             pendingRestore?.cancel(false)
-            pendingRestore = worker.schedule({ runCatching { if (!foreground) restoreNow(app) } }, 700, TimeUnit.MILLISECONDS)
+            // Update 202: not while a game started from Voltcap runs or Voltcap is the home app (see [holdsOutside]).
+            pendingRestore = worker.schedule({ runCatching { if (!foreground && !holdsOutside(app)) restoreNow(app) } }, 700, TimeUnit.MILLISECONDS)
         }
+    }
+
+    /**
+     * Update 202: the device setting stays hidden while Voltcap isn't in front — both "Hide navigation bar" and the
+     * force-hide on, and either a game started from Voltcap is running ([GameMode]) or Voltcap is the home app (then
+     * whatever runs was started from it, and Home comes back to it). Blocking (package manager): worker thread.
+     */
+    private fun holdsOutside(c: Context): Boolean {
+        if (!forceOn(c) || !immersive(c)) return false
+        if (GameMode.active) return true
+        return runCatching { HomeLauncher.isDefault(c) }.getOrDefault(false)
     }
 
     private fun hideNow(c: Context, retries: Int) {
@@ -157,9 +192,13 @@ object GestureHint {
         val now = read(c, k)
         // Remember the device's own value before Voltcap first changes it.
         if (!p.contains("previous") && now != k.hidden) p.edit().putString("previous", now ?: k.shown).putString("previous_key", k.key).apply()
-        if (now != k.hidden && !write(c, k, k.hidden) && retries > 0) {
-            worker.schedule({ runCatching { if (foreground && forceOn(c)) hideNow(c, retries - 1) } }, 1200, TimeUnit.MILLISECONDS)
+        val hidden = now == k.hidden || write(c, k, k.hidden)
+        if (!hidden && retries > 0) {
+            // (Update 202: also while it's held for a game / as the home app.)
+            worker.schedule({ runCatching { if ((foreground || holdsOutside(c)) && forceOn(c)) hideNow(c, retries - 1) } }, 1200, TimeUnit.MILLISECONDS)
         }
+        // Update 202: Voltcap changed the device's own value: a watcher gives it back if Voltcap is uninstalled.
+        if (hidden && p.contains("previous")) ensureGuard(c, k)
     }
 
     private fun restoreNow(c: Context) {
@@ -168,7 +207,51 @@ object GestureHint {
         val key = p.getString("previous_key", null)
         val k = CANDIDATES.firstOrNull { it.key == key } ?: hintKey(c) ?: return
         val value = p.getString("previous", k.shown) ?: k.shown
-        if (read(c, k) == value || write(c, k, value)) p.edit().remove("previous").remove("previous_key").apply()
+        if (read(c, k) == value || write(c, k, value)) {
+            p.edit().remove("previous").remove("previous_key").apply()
+            stopGuard() // (Update 202: given back: the uninstall watcher has nothing left to do.)
+        }
+    }
+
+    // ---- Update 202: the uninstall watcher ----
+
+    /** Its command line contains this; the pattern doesn't match itself (the `[$]`), so pkill spares its own shell. */
+    private const val GUARD_MATCH = "settings put [\$]1 [\$]2"
+    @Volatile private var guardStarted = false
+
+    /**
+     * Update 202: an app can't run anything when it's uninstalled, so the handheld's root service (the same one that
+     * writes the setting) runs a small shell loop in the background: once a minute it asks the package manager whether
+     * Voltcap is still installed; after two misses in a row (an update briefly replaces it) it puts the device's own
+     * value back — only if the setting still has Voltcap's value (the handheld's own Settings changing it later wins)
+     * — and ends. It ends at once if it can't see Voltcap at the start. Started once per Voltcap process while Voltcap's
+     * value is held, replacing an older one; stopped when Voltcap gives the value back itself. A restart of the handheld
+     * ends it; Voltcap starts it again when it starts ([init]). Only with the root service (AYN / Retroid).
+     * The root service cuts commands at 255 characters ([RootShell.MAX_COMMAND]): this one is about 236 for AYN's key.
+     */
+    private fun ensureGuard(c: Context, k: HintKey) {
+        if (guardStarted || !RootShell.available) return
+        val prev = prefs(c).getString("previous", null) ?: return
+        val token = Regex("[A-Za-z0-9._-]+")
+        if (!prev.matches(token) || !c.packageName.matches(token)) return
+        // $0 = package, $1 table, $2 key, $3 Voltcap's value, $4 the device's own value.
+        val loop = "i(){ pm path \$0|grep -q .;};i||exit;while i||{ sleep 60;i;};do sleep 60;done;" +
+            "[ \"\$(settings get \$1 \$2)\" = \$3 ]&&settings put \$1 \$2 \$4"
+        // In the background in its own session (setsid where the firmware has it), from a subshell that ends at once,
+        // so the root service's call comes back (the same start as the mixer's helper, AppMixer).
+        val cmd = "S=\$(command -v setsid);(\$S sh -c '$loop' ${c.packageName} ${k.table} ${k.key} ${k.hidden} $prev >/dev/null 2>&1 &);exit 0"
+        if (cmd.length > RootShell.MAX_COMMAND) {
+            android.util.Log.w("GestureHint", "Uninstall watcher not started: ${cmd.length} chars")
+            return
+        }
+        RootShell.exec("pkill -f '$GUARD_MATCH'")
+        guardStarted = RootShell.exec(cmd) != null
+    }
+
+    private fun stopGuard() {
+        if (!RootShell.available) return
+        RootShell.exec("pkill -f '$GUARD_MATCH'")
+        guardStarted = false
     }
 
     /** The hint setting this device has (found once, then remembered), or null when none / not readable yet. */

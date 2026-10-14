@@ -119,6 +119,13 @@ class OverlayControlActivity : ComponentActivity() {
                         change(rebuild = true) { it.copy(raDuringGames = !it.raDuringGames) }
                     }
                 }
+                // Update 202: what the small trophies box shows, part by part (applies live, no rebuild needed).
+                if (cfg.raDuringGames) {
+                    Spacer(Modifier.height(10.dp))
+                    Text("Trophies box shows", color = ShelfTheme.textMuted, fontSize = 12.sp)
+                    Spacer(Modifier.height(4.dp))
+                    RaOverlayPartChips(cfg) { g -> change(f = g) }
+                }
                 Spacer(Modifier.height(10.dp))
                 PercentSlider("Size", cfg.overlayScale, { v -> change { it.copy(overlayScale = v) } }, min = 50, max = 200, live = true)
                 PercentSlider("Opacity", cfg.overlayOpacity, { v -> change { it.copy(overlayOpacity = v) } }, min = 20, max = 100, live = true)

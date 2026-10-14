@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.input.key.Key
@@ -41,8 +42,11 @@ import com.shelf.launcher.data.Features
 internal object HomeAdjust {
     enum class Kind { ART_DROP, CART_COLOUR }
 
-    /** What's being adjusted: [model] Art drop of the 3D models (else of the Box art looks); the game you were on. */
-    class Target(val kind: Kind, val model: Boolean = false, val platform: String? = null, val name: String? = null)
+    /**
+     * What's being adjusted: [model] Art drop of the 3D models (else of the Box art looks); the game you were on.
+     * Update 202: [look] — Art position for that look (covers, Box art, cartridges, discs; from Edit Home); null = [model]'s.
+     */
+    class Target(val kind: Kind, val model: Boolean = false, val platform: String? = null, val name: String? = null, val look: ArtPlace.Look? = null)
 
     /** The control showing on the home screen, or null. LauncherScreen closes the R1 panel when this is set. */
     var open by mutableStateOf<Target?>(null)
@@ -69,6 +73,54 @@ internal object ArtPlace {
     fun moved(model: Boolean) = drop(model).state.value != 0 || shift(model).state.value != 0 || zoom(model).state.value != 100
 
     fun reset(model: Boolean) { drop(model).value = 0; shift(model).value = 0; zoom(model).value = 100 }
+
+    /**
+     * Update 202: the looks Art position works on, each its own: Box art (its three settings above, as before), and the
+     * covers, cartridges and discs of the game row (Features.artPosLooks; GameCard draws them moved and sized).
+     */
+    enum class Look(val label: String) { BOX("Box art"), COVER("Covers"), CART("Cartridges"), DISC("Discs") }
+
+    private fun looks(): Map<String, Triple<Int, Int, Int>> = Features.artPosLooks.state.value.split(';').mapNotNull { p ->
+        val i = p.indexOf('=')
+        if (i <= 0) return@mapNotNull null
+        val v = p.substring(i + 1).split(',').mapNotNull { it.trim().toIntOrNull() }
+        if (v.size < 3) null else p.substring(0, i) to Triple(v[0], v[1], v[2])
+    }.toMap()
+
+    /** [look]'s left / right, up / down and size (−50…50, −50…100, 50–200; reads state). */
+    fun get(look: Look): Triple<Int, Int, Int> =
+        if (look == Look.BOX) Triple(shift(false).state.value, drop(false).state.value, zoom(false).state.value)
+        else looks()[look.name] ?: Triple(0, 0, 100)
+
+    fun set(look: Look, x: Int, y: Int, z: Int) {
+        val cx = x.coerceIn(-50, 50); val cy = y.coerceIn(-50, 100); val cz = z.coerceIn(50, 200)
+        if (look == Look.BOX) { shift(false).value = cx; drop(false).value = cy; zoom(false).value = cz; return }
+        val m = looks().toMutableMap()
+        if (cx == 0 && cy == 0 && cz == 100) m.remove(look.name) else m[look.name] = Triple(cx, cy, cz)
+        Features.artPosLooks.value = m.entries.joinToString(";") { "${it.key}=${it.value.first},${it.value.second},${it.value.third}" }
+    }
+
+    /** [look]'s position now (read in composition: it redraws when it changes). */
+    fun ofLook(look: Look): ArtPos = get(look).let { ArtPos(it.first / 100f, it.second / 100f, it.third / 100f) }
+
+    fun movedLook(look: Look): Boolean = get(look).let { it.first != 0 || it.second != 0 || it.third != 100 }
+
+    fun resetLook(look: Look) = set(look, 0, 0, 100)
+}
+
+/**
+ * Update 202: [this] drawn at its look's Art position (moved within its place and sized), or as it is when centred. The
+ * covers, cartridges and discs of the game row (GameCard); Box art does it in the case's window itself (CoverCases.kt).
+ * (Not @Composable: it only reads state, which the composition calling it follows.)
+ */
+internal fun Modifier.artPosition(look: ArtPlace.Look?): Modifier {
+    if (look == null || look == ArtPlace.Look.BOX) return this
+    val pos = ArtPlace.ofLook(look)
+    if (pos.x == 0f && pos.y == 0f && kotlin.math.abs(pos.zoom - 1f) < 0.005f) return this
+    return this.graphicsLayer {
+        scaleX = pos.zoom; scaleY = pos.zoom
+        translationX = pos.x * size.width * ArtPlace.REACH; translationY = pos.y * size.height * ArtPlace.REACH
+    }
 }
 
 /** Colours offered for a custom cartridge (besides its console's own, and any you type). */
@@ -95,13 +147,18 @@ internal fun HomeAdjustBar(atTop: Boolean) {
         val dens = androidx.compose.ui.platform.LocalDensity.current.density
         val gestures = if (t.kind == HomeAdjust.Kind.ART_DROP) {
             // Art position: drag anywhere on the screen moves the cover, pinch sizes it (a screen's width ≈ the whole reach).
-            Modifier.pointerInput(t.model) {
+            Modifier.pointerInput(t.model, t.look) {
                 val span = (screen.screenWidthDp * dens / 3f).coerceAtLeast(1f)
+                // Update 202: for the look it was opened for (Box art from the R1 tile; any look from Edit Home).
+                val look = t.look ?: ArtPlace.Look.BOX
                 detectTransformGestures { _, pan, zoom, _ ->
-                    val m = t.model
-                    ArtPlace.shift(m).value = (ArtPlace.shift(m).value + pan.x / span * 100f).toInt().coerceIn(-50, 50)
-                    ArtPlace.drop(m).value = (ArtPlace.drop(m).value + pan.y / span * 100f).toInt().coerceIn(-50, 100)
-                    if (zoom != 1f) ArtPlace.zoom(m).value = (ArtPlace.zoom(m).value * zoom).toInt().coerceIn(50, 200)
+                    val now = ArtPlace.get(look)
+                    ArtPlace.set(
+                        look,
+                        (now.first + pan.x / span * 100f).toInt(),
+                        (now.second + pan.y / span * 100f).toInt(),
+                        if (zoom != 1f) (now.third * zoom).toInt() else now.third
+                    )
                 }
             }
         } else Modifier.pointerInput(Unit) { detectTapGestures { close() } }
@@ -112,7 +169,7 @@ internal fun HomeAdjustBar(atTop: Boolean) {
             // (A tap on the card itself doesn't close it.)
             Box(Modifier.widthIn(max = 820.dp).pointerInput(Unit) { detectTapGestures { } }) {
                 when (t.kind) {
-                    HomeAdjust.Kind.ART_DROP -> ArtDropBar(t.model, close)
+                    HomeAdjust.Kind.ART_DROP -> ArtDropBar(t.look ?: ArtPlace.Look.BOX, close)
                     HomeAdjust.Kind.CART_COLOUR -> CartColourBar(t, close)
                 }
             }
@@ -121,45 +178,56 @@ internal fun HomeAdjustBar(atTop: Boolean) {
 }
 
 @Composable
-private fun ArtDropBar(model: Boolean, close: () -> Unit) {
-    val x = ArtPlace.shift(model); val y = ArtPlace.drop(model); val z = ArtPlace.zoom(model)
+private fun ArtDropBar(look: ArtPlace.Look, close: () -> Unit) {
+    // Update 202: any look (Box art as before — its own three settings — and the covers, cartridges and discs).
+    val (x, y, z) = ArtPlace.get(look)
+    fun put(nx: Int = ArtPlace.get(look).first, ny: Int = ArtPlace.get(look).second, nz: Int = ArtPlace.get(look).third) = ArtPlace.set(look, nx, ny, nz)
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
     // D-pad moves the cover, L1 / R1 (or L2 / R2) size it, A is Done, Y resets; touch: drag and pinch anywhere.
     Box(
         Modifier.focusRequester(first).focusable().onPreviewKeyEvent { e ->
             if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            val now = ArtPlace.get(look)
             when (e.key) {
-                Key.DirectionLeft -> { x.value = (x.state.value - 2).coerceIn(-50, 50); true }
-                Key.DirectionRight -> { x.value = (x.state.value + 2).coerceIn(-50, 50); true }
-                Key.DirectionUp -> { y.value = (y.state.value - 2).coerceIn(-50, 100); true }
-                Key.DirectionDown -> { y.value = (y.state.value + 2).coerceIn(-50, 100); true }
-                Key.ButtonL1, Key.ButtonL2, Key.PageUp -> { z.value = (z.state.value - 5).coerceIn(50, 200); true }
-                Key.ButtonR1, Key.ButtonR2, Key.PageDown -> { z.value = (z.state.value + 5).coerceIn(50, 200); true }
-                Key.ButtonY -> { ArtPlace.reset(model); true }
-                Key.ButtonA, Key.Enter, Key.DirectionCenter -> { close(); true }
+                Key.DirectionLeft -> { put(nx = now.first - 2); true }
+                Key.DirectionRight -> { put(nx = now.first + 2); true }
+                Key.DirectionUp -> { put(ny = now.second - 2); true }
+                Key.DirectionDown -> { put(ny = now.second + 2); true }
+                Key.ButtonL1, Key.ButtonL2, Key.PageUp -> { put(nz = now.third - 5); true }
+                Key.ButtonR1, Key.ButtonR2, Key.PageDown -> { put(nz = now.third + 5); true }
+                Key.ButtonY -> { ArtPlace.resetLook(look); true }
+                // (Update 202: B closes it too — from Edit Home it goes back there.)
+                Key.ButtonA, Key.Enter, Key.DirectionCenter, Key.ButtonB, Key.Back -> { close(); true }
                 else -> false
             }
         }
     ) {
         ShelfCard {
-            // (Update 200: Box art only — the 3D models' Art position went with the retired pre-rendered 3D models.)
-            SectionLabel("Art position · Box art")
+            // (Update 200: the 3D models' Art position went with the retired pre-rendered 3D models.)
+            SectionLabel("Art position · ${look.label}")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     MutedNote("Drag the picture anywhere on the screen to move it, pinch to resize. D-pad: move · L1 / R1: size · A: Done · Y: Reset.")
-                    MutedNote("Left / right ${x.state.value} · Up / down ${y.state.value} · Size ${z.state.value}%")
+                    MutedNote("Left / right $x · Up / down $y · Size $z%")
                 }
                 Spacer(Modifier.width(12.dp))
-                Chip("Smaller", accent = false) { z.value = (z.state.value - 5).coerceIn(50, 200) }
+                Chip("Smaller", accent = false) { put(nz = ArtPlace.get(look).third - 5) }
                 Spacer(Modifier.width(8.dp))
-                Chip("Bigger", accent = false) { z.value = (z.state.value + 5).coerceIn(50, 200) }
+                Chip("Bigger", accent = false) { put(nz = ArtPlace.get(look).third + 5) }
                 Spacer(Modifier.width(8.dp))
-                Chip("Reset", accent = false) { ArtPlace.reset(model) }
+                Chip("Reset", accent = false) { ArtPlace.resetLook(look) }
                 Spacer(Modifier.width(8.dp))
                 Chip("Done", onClick = close)
             }
-            MutedNote("Every game in the Box art looks.")
+            MutedNote(
+                when (look) {
+                    ArtPlace.Look.BOX -> "Every game in the Box art looks."
+                    ArtPlace.Look.COVER -> "Every game's cover in the game row (moved and sized in its place)."
+                    ArtPlace.Look.CART -> "Every game's cartridge in the game row (moved and sized in its place)."
+                    ArtPlace.Look.DISC -> "Every game's disc in the game row (moved and sized in its place)."
+                }
+            )
         }
     }
 }

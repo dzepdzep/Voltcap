@@ -352,6 +352,10 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     // Update 176.
     // Update 181.
     com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC -> "Pocket classic: a 2004-style two-screen pocket menu — a clock and this month's calendar on top; the game you're on, Achievements, your category and All categories as flat panels below, three tiny icons for Settings, Statistics and Sleep."
+    // Update 202.
+    com.shelf.launcher.data.HomeLayout.GREENCORE -> "Green Core (2001): A dark green machine-dashboard: a living sphere of light on the left, angled menu panels on the right (inspired by the 2001 console dashboard)."
+    // Update 202.
+    com.shelf.launcher.data.HomeLayout.POCKET -> "Pocket Quest: A full-screen game menu in the style of the great 32-bit handheld RPGs: a big showcase of the game you're on, layered blue panels with gold edges, a row of games along the bottom, pixel-art scenery behind."
     com.shelf.launcher.data.HomeLayout.POCKET_RIBBON -> "Pocket ribbon: a 2008-style two-screen pocket menu — a framed picture on top; a row of square icons below with the one you're on in the middle, its name in a speech bubble and a START tab, your categories first and their games inside."
     com.shelf.launcher.data.HomeLayout.CUSTOM -> "Custom layout: a home screen made by anyone — import a .vclayout file, or make your own (Layout options › How to make one). Starts with the Neon drift example."
     com.shelf.launcher.data.HomeLayout.SHELF -> "Game shelf: your games as spines on a bookcase, the one you're on pulled out to show its front. ◀ ▶ along, ▲ ▼ to the shelf above / below."
@@ -371,7 +375,12 @@ private fun applyPresetExtras(p: com.shelf.launcher.data.LayoutPreset, after: Ap
         f.cartsOnly.value = l.carts
         // (As the Game look picker does: the 3D models are switched only with the cartridges & discs — the finish also
         // dresses the carousels' 3D cases — and the case switches only with a case look.)
-        if (type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) setModelsLook(l.models)
+        // (Update 202: Cartridges & discs always draws on its Cartridge choice's finish — each console's real shell unless
+        // your pack's or clear ones were picked — and the other looks never, as the R1 Look tile sets it; disc games keep
+        // their disc unless the preset puts them on a cartridge.)
+        val cartLook = type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC || type == com.shelf.launcher.data.CardArtType.DISC
+        setModelsLook(cartLook)
+        if (cartLook) { f.discCase.value = false; f.caseWithMedia.value = false }
         if (type == com.shelf.launcher.data.CardArtType.CASE || type == com.shelf.launcher.data.CardArtType.CASE_REAL) {
             f.discCase.value = l.discInCase
             f.discCase3d.value = l.disc3d
@@ -394,7 +403,8 @@ private fun lookIsNow(type: com.shelf.launcher.data.CardArtType, l: com.shelf.la
     val f = com.shelf.launcher.data.Features
     return when (type) {
         com.shelf.launcher.data.CardArtType.COVER -> f.squareTiles.state.value == l.tiles && f.spineLook.state.value == l.spines
-        com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> f.cartsOnly.state.value == l.carts && (f.modelFinish.state.value != ModelFinish.OFF) == l.models
+        // (Update 202: every cartridge look is on a 3D finish now, so [PresetLook.models] no longer tells two looks apart.)
+        com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> f.cartsOnly.state.value == l.carts && f.modelFinish.state.value != ModelFinish.OFF
         com.shelf.launcher.data.CardArtType.CASE, com.shelf.launcher.data.CardArtType.CASE_REAL ->
             f.discCase.state.value == l.discInCase && f.discCase3d.state.value == l.disc3d && f.caseWithMedia.state.value == l.leaning
         else -> true

@@ -145,6 +145,15 @@ object HomeWidgets {
     fun overlayId(layout: com.shelf.launcher.data.HomeLayout, part: String) = "${layout.name}:$part"
     fun baseId(id: String): String = id.substringAfter(':')
 
+    /** Update 202: the Voltcap row's game you're on, by the look that's on (Edit Home's name for it). */
+    fun mediaLabel(): String = when (HomeEditState.artLook) {
+        ArtPlace.Look.COVER -> "Cover you're on"
+        ArtPlace.Look.BOX -> "Box you're on"
+        ArtPlace.Look.CART -> "Cartridge you're on"
+        ArtPlace.Look.DISC -> "Disc you're on"
+        null -> "Game you're on"
+    }
+
     fun label(id: String): String = when (baseId(id)) {
         MUSIC -> "Music player"
         SHORTCUTS -> "Round shortcuts"
@@ -259,6 +268,22 @@ object HomeEditState {
     var selected by mutableStateOf(HomeWidgets.MUSIC)
     /** Update 125: the Edit Home bar folded away to the left (-1) or right (1); 0 = open. */
     var barFolded by mutableStateOf(0)
+    /**
+     * Update 202: the look Art position works on for the games on this home screen now (Box art, covers, cartridges,
+     * discs — set by the home screen), or null where there's none: Edit Home's R3 / "Art position" opens it.
+     */
+    internal var artLook by mutableStateOf<ArtPlace.Look?>(null)
+    /**
+     * Update 202: the part that owns the touch going on (a layout part inside another, like the game you're on inside the
+     * game row: the innermost one under the finger — it sees the touch last, so it's the one written here).
+     */
+    internal var touchOwner: String? = null
+
+    /** Update 202: opens Art position (HomeAdjust.kt) for [artLook], over Edit Home. */
+    fun openArtPosition() {
+        val look = artLook ?: return
+        HomeAdjust.open = HomeAdjust.Target(HomeAdjust.Kind.ART_DROP, look = look)
+    }
 
     /**
      * Update 125: where part [id] (a [w]×[h] box at fractions [raw]) lines up with another moved part — the same left /
@@ -383,6 +408,8 @@ object HomeEditState {
             Key.ButtonStart -> adding = true
             // Update 116: L3 opens the part's style.
             Key.ButtonThumbLeft -> styling = selected
+            // Update 202: R3 opens Art position for the look that's on (covers, Box art, cartridges or discs).
+            Key.ButtonThumbRight -> openArtPosition()
             Key.ButtonY -> resetEvery()
             Key.ButtonA, Key.Enter, Key.DirectionCenter, Key.ButtonB, Key.Back, Key.Escape -> done()
             else -> Unit
@@ -695,7 +722,8 @@ internal fun HomeAddSheet(layout: com.shelf.launcher.data.HomeLayout, onDismiss:
                     }
                 }
             }
-            val gone = Features.hiddenParts.state.value.toList()
+            // (Update 202: only this layout's own parts and the ones every layout shares — another layout's parts aren't here.)
+            val gone = Features.hiddenParts.state.value.filter { !it.startsWith(LayoutParts.PREFIX) || it.startsWith(LayoutParts.PREFIX + layout.name + ":") }
             if (gone.isNotEmpty()) {
                 Spacer(androidx.compose.ui.Modifier.height(10.dp))
                 SectionLabel("Taken off")
@@ -718,12 +746,20 @@ internal fun overlayChoices(layout: com.shelf.launcher.data.HomeLayout): List<Pa
         // Update 119.
         HomeWidgets.PROGRESS to "Achievement progress bar", HomeWidgets.AWARD to "Award badge"
     )
-    if (layout == com.shelf.launcher.data.HomeLayout.CLASSIC) return extra
-    return extra + listOf(
+    val rest = listOf(
         HomeWidgets.H_TITLE to "Title", HomeWidgets.H_LINE to "Continue line", HomeWidgets.H_STATS to "Stat boxes",
         HomeWidgets.H_ACTIONS to "Play & buttons", HomeWidgets.H_BADGE to "Console badge", HomeWidgets.CATEGORY to "Category name",
         HomeWidgets.INFO to "Game info", HomeWidgets.NEWS to "News"
     )
+    // Update 202: the Voltcap row offers its own cards too — the news bar, game info, category name and the header's
+    // pieces — whenever they aren't in its layout now (News off in Next to the row, the game header off, …); added, they
+    // float like on any other layout. One that's in the layout already isn't offered twice.
+    if (layout == com.shelf.launcher.data.HomeLayout.CLASSIC) {
+        val added = Features.overlayPartsFor(layout)
+        // (Not the category name: it's only missing there when Categories is off, and then it has nothing to show.)
+        return extra + rest.filter { it.first != HomeWidgets.CATEGORY && (it.first !in HomeWidgets.present || it.first in added) }
+    }
+    return extra + rest
 }
 
 /**
@@ -789,6 +825,8 @@ internal object LayoutParts {
     const val PREFIX = "part:"
     /** The parts on screen now: id → name. */
     val registered = mutableStateMapOf<String, String>()
+    /** Update 202: how many times each of them is drawn now (see editablePart). */
+    internal val uses = HashMap<String, Int>()
 
     fun id(layout: com.shelf.launcher.data.HomeLayout, name: String) = "$PREFIX${layout.name}:$name"
 
@@ -822,8 +860,18 @@ internal object LayoutParts {
 internal fun Modifier.editablePart(id: String, label: String): Modifier {
     androidx.compose.runtime.DisposableEffect(id, label) {
         LayoutParts.registered[id] = label
-        onDispose { LayoutParts.registered.remove(id) }
+        // Update 202: counted — the same part drawn twice for a moment (the game you're on while the row slides to the
+        // next one) stays listed until the last of them goes.
+        LayoutParts.uses[id] = (LayoutParts.uses[id] ?: 0) + 1
+        onDispose {
+            val n = (LayoutParts.uses[id] ?: 1) - 1
+            if (n <= 0) { LayoutParts.uses.remove(id); LayoutParts.registered.remove(id) } else LayoutParts.uses[id] = n
+        }
     }
+    // Update 202: where it is on the screen (the drag's snapping and the safe zone use it), and the screen's safe zone.
+    // (Before any return: the same composable calls every time.)
+    val coords = remember(id) { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
+    val zoneNow = androidx.compose.runtime.rememberUpdatedState(safeZone())
     val editing = HomeEditState.active
     val hidden = HomeWidgets.hidden(id)
     // Update 136: hidden and not editing: nothing of it shows, its own style's backing and frame included (the style
@@ -883,7 +931,23 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                 drawRoundRect(androidx.compose.ui.graphics.Color.White, androidx.compose.ui.geometry.Offset(c2.x - hw, c2.y - hh), androidx.compose.ui.geometry.Size(hw * 2, hh * 2), androidx.compose.ui.geometry.CornerRadius(r),
                     style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx()))
             }
+            // Update 202: the guide lines while it's snapped to the safe zone's edge or middle (as the floating parts have).
+            if (selected) {
+                val gx = HomeEditState.guideX
+                val gy = HomeEditState.guideY
+                val far = 6000f
+                val dash = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 8f))
+                if (gx != null) {
+                    val x = if (gx == 0f) 0f else if (gx == 1f) size.width else size.width / 2f
+                    drawLine(accent, androidx.compose.ui.geometry.Offset(x, -far), androidx.compose.ui.geometry.Offset(x, far), 1.5.dp.toPx(), pathEffect = dash)
+                }
+                if (gy != null) {
+                    val y = if (gy == 0f) 0f else if (gy == 1f) size.height else size.height / 2f
+                    drawLine(accent, androidx.compose.ui.geometry.Offset(-far, y), androidx.compose.ui.geometry.Offset(far, y), 1.5.dp.toPx(), pathEffect = dash)
+                }
+            }
         }
+        .onGloballyPositioned { coords[0] = it }
         .pointerInput(id) {
             // Ahead of the part's own buttons: while editing a touch picks / drags it, never presses what's in it.
             awaitPointerEventScope {
@@ -892,10 +956,30 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                     val first = down.changes.firstOrNull { it.pressed && !it.previousPressed } ?: continue
                     first.consume()
                     HomeEditState.selected = id
+                    // Update 202: a part inside another (the game you're on inside the game row) sees the touch after the
+                    // one round it, so the innermost one under the finger is the last to write itself here: only that one
+                    // acts on it, from the next event on (the outer ones just wait for the finger to lift).
+                    HomeEditState.touchOwner = id
+                    var pending: androidx.compose.ui.input.pointer.PointerEvent? = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                    if (HomeEditState.touchOwner != id) {
+                        var ch0 = pending?.changes?.firstOrNull()
+                        while (ch0 != null && ch0.pressed) {
+                            ch0 = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial).changes.firstOrNull()
+                        }
+                        continue
+                    }
+                    // (Below, each loop takes [pending] first — the event already waiting — then new ones.)
                     // (Update 119: generous corners, so the ✕ and the size handle are easy to hit.)
                     val r = 30.dp.toPx()
                     if (first.position.x > size.width - r && first.position.y < r) {
                         HomeWidgets.remove(id)
+                        // (Update 202: the rest of that touch goes nowhere.)
+                        var ch0 = pending?.changes?.firstOrNull()
+                        pending = null
+                        while (ch0 != null && ch0.pressed) {
+                            ch0.consume()
+                            ch0 = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial).changes.firstOrNull()
+                        }
                         continue
                     }
                     // Update 116: the corner handle resizes it (drag out: bigger, in: smaller).
@@ -903,7 +987,8 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                         // Update 133: a tap on it (no drag) opens the part's Style.
                         var moved = 0f
                         while (true) {
-                            val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                            val ev = pending ?: awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                            pending = null
                             val ch = ev.changes.firstOrNull() ?: break
                             if (!ch.pressed) { ch.consume(); break }
                             val d = ch.position - ch.previousPosition
@@ -928,7 +1013,8 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                     val downHit = first.position.y > size.height - r && kotlin.math.abs(first.position.x - size.width / 2f) < r
                     if (acrossHit || downHit) {
                         while (true) {
-                            val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                            val ev = pending ?: awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                            pending = null
                             val ch = ev.changes.firstOrNull() ?: break
                             if (!ch.pressed) { ch.consume(); break }
                             val d = ch.position - ch.previousPosition
@@ -944,16 +1030,68 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                         }
                         continue
                     }
+                    // Update 202: moved by the finger's place on the screen (a part made bigger or smaller used to move
+                    // slower or faster than the finger), snapping back to its own place and to the safe zone's edges and
+                    // middle (a guide line through it), and kept inside the safe zone (SnapPart below).
+                    var raw = HomeEditState.liveShift[id] ?: (0f to 0f)
+                    var last = coords[0]?.takeIf { it.isAttached }?.localToRoot(first.position)
                     while (true) {
-                        val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                        val ev = pending ?: awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                        pending = null
                         val ch = ev.changes.firstOrNull() ?: break
                         if (!ch.pressed) { ch.consume(); break }
-                        val d = ch.position - ch.previousPosition
                         ch.consume()
-                        val s = HomeEditState.liveShift[id] ?: (0f to 0f)
-                        HomeEditState.liveShift[id] = (s.first + d.x / density) to (s.second + d.y / density)
+                        val lc = coords[0]?.takeIf { it.isAttached }
+                        val here = lc?.localToRoot(ch.position)
+                        val d = if (here != null && last != null) here - last!! else ch.position - ch.previousPosition
+                        if (here != null) last = here
+                        raw = (raw.first + d.x / density) to (raw.second + d.y / density)
+                        HomeEditState.liveShift[id] = SnapPart.shift(id, raw, lc, zoneNow.value, density)
                     }
+                    HomeEditState.guideX = null; HomeEditState.guideY = null
                 }
             }
         }
+}
+
+/**
+ * Update 202: where a layout part goes while it's dragged in Edit Home. [raw] is where the finger would put it (its shift
+ * from its place, dp); it snaps back to its own place, or lines its left / right edge or middle up with the safe zone's
+ * (setting the guide lines), and is kept inside the safe zone — a part that already reaches past it (a full-width bar,
+ * a panel against the screen's edge) can stay where it is but goes no further out. [lc]: the part now; [density]: px per dp.
+ */
+internal object SnapPart {
+    fun shift(id: String, raw: Pair<Float, Float>, lc: androidx.compose.ui.layout.LayoutCoordinates?, zone: SafeZone, density: Float): Pair<Float, Float> {
+        val b = lc?.boundsInRoot()
+        if (b == null || b.width <= 0f || b.height <= 0f) { HomeEditState.guideX = null; HomeEditState.guideY = null; return raw }
+        val cur = HomeEditState.liveShift[id] ?: (0f to 0f)
+        val x = axis(raw.first, cur.first, b.left, b.width, zone.left.value * density, (zone.width - zone.right).value * density, density)
+        val y = axis(raw.second, cur.second, b.top, b.height, zone.top.value * density, (zone.height - zone.bottom).value * density, density)
+        HomeEditState.guideX = x.second
+        HomeEditState.guideY = y.second
+        return x.first to y.first
+    }
+
+    /** One axis: the shift (dp) to use and the guide (0 start edge, 0.5 middle, 1 end edge lined up; null = none). */
+    private fun axis(rawV: Float, curV: Float, start: Float, size: Float, zoneStart: Float, zoneEnd: Float, density: Float): Pair<Float, Float?> {
+        val reach = 10f * density
+        // Where its start edge would be (px) at [rawV], and at its own place.
+        val at = start + (rawV - curV) * density
+        val home = start - curV * density
+        var best = at
+        var guide: Float? = null
+        var bestD = reach
+        if (kotlin.math.abs(at - home) < bestD) { bestD = kotlin.math.abs(at - home); best = home }
+        for ((target, g) in listOf(zoneStart to 0f, (zoneStart + zoneEnd - size) / 2f to 0.5f, zoneEnd - size to 1f)) {
+            val dd = kotlin.math.abs(at - target)
+            if (dd < bestD) { bestD = dd; best = target; guide = g }
+        }
+        // Inside the safe zone (a part bigger than it isn't held on that axis).
+        if (size <= zoneEnd - zoneStart) {
+            val lo = minOf(zoneStart, start)
+            val hi = maxOf(zoneEnd - size, start)
+            best = best.coerceIn(lo, maxOf(lo, hi))
+        }
+        return (curV + (best - start) / density) to guide
+    }
 }

@@ -183,6 +183,10 @@ internal fun styleHomeKey(
     // Update 181: the Pocket layouts take every key themselves (their panels, pages and ribbon).
     if (layout == HomeLayout.POCKET_CLASSIC) return pocketClassicKey(event, reach)
     if (layout == HomeLayout.POCKET_RIBBON) return pocketRibbonKey(event, reach)
+    // Update 202: Green Core takes its menu, games and systems pages itself (StyleGreenCore.kt).
+    if (layout == HomeLayout.GREENCORE) return greenCoreKey(event, reach)
+    // Update 202: Pocket Quest takes every key too (its games, panel, top bar and pages; StylePocketQuest.kt).
+    if (layout == HomeLayout.POCKET) return pocketQuestKey(event, reach, sound)
     val code = event.nativeKeyEvent.keyCode
     val down = event.type == KeyEventType.KeyDown
     val up = event.type == KeyEventType.KeyUp
@@ -695,7 +699,11 @@ internal class StyleActions(
     val screensaver: () -> Unit = {},
     /** Update 181: the statistics page (play time, activity) and the achievements page (Pocket layouts). */
     val stats: () -> Unit = {},
-    val achievementsHub: () -> Unit = {}
+    val achievementsHub: () -> Unit = {},
+    /** Update 202: the game's details looked up (Pocket Quest's panel: summary, year, genre), sort & filter, search. */
+    val needMetadata: (Game) -> Unit = {},
+    val sort: () -> Unit = {},
+    val search: () -> Unit = {}
 )
 
 /** One stop of the category cycle (as L2 / R2 go through them). */
@@ -869,7 +877,8 @@ internal fun StyleArt(
         // (Update 113: the game you're on reports where it is, so the game window grows out of it.)
         Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline) else Modifier).clip(shape).background(placeholderBrush(g.hue))) {
             when {
-                url != null -> AsyncImage(rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
+                // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the tile.)
+                url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
                 g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = wide, modifier = Modifier.fillMaxSize())
                 else -> StyleNamePlate(titles.display(g.name))
             }
@@ -911,7 +920,8 @@ internal fun StyleArt(
             realScanOf(gArt, typed) != null -> MediaFocus(g.stableKey == c.game?.stableKey) {
                 RealMediaPicture(typed!!, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused))
             }
-            url != null -> AsyncImage(rememberStyleArtRequest(url), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
+            // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the card.)
+            url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = styleAspect(c.type) > 1f, modifier = Modifier.fillMaxSize())
             else -> StyleNamePlate(titles.display(g.name))
         }
@@ -1079,6 +1089,9 @@ internal fun StyleHome(
         val near = if (small) 4 else 8
         val thumbs = ArrayList<String>()
         val near1 = ArrayList<String>()
+        // Update 202: the ones of them the cards draw as covers (trimmed: StyleArt's rememberStyleArtRequest(trim)), so
+        // they're warmed in that shape too.
+        val nearCovers = HashSet<String>()
         val backdrops = ArrayList<String>() // (Update 156)
         // Update 156: with Endless on, the art of the games coming round (the first ones past the last game, the last ones
         // before the first) is warmed as well, so going round never shows blank cards. (Doubles are dropped below.)
@@ -1094,15 +1107,15 @@ internal fun StyleHome(
             val shown = cardArtUrl(gArt, false, cover, o?.wide ?: a?.wideGridUrl, o?.hero ?: a?.heroUrl, typed)
             shown?.let { thumbs += it }
             if (i in (focus - near)..(focus + near)) {
-                shown?.let { near1 += it }
+                shown?.let { near1 += it; if (it == cover && !drawnMediaWanted(gArt, typed)) nearCovers += it }
                 // Update 157: Disc station prints the game's own label scan on its disc when there is one: that too.
                 if (layout == HomeLayout.DISCS && mediaKind(g.platform) == "disc") typedArtFor(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, state.physicalMedia[k], state.screenshots[k], g.platform)?.let { near1 += it }
                 // Update 158: Hero tiles' square tiles show the cover whatever the game look is: that too.
-                if (layout == HomeLayout.HERO_TILES) cover?.let { near1 += it }
+                if (layout == HomeLayout.HERO_TILES) cover?.let { near1 += it; nearCovers += it }
                 // Update 158: so do the two-screen layouts' square icons (TwinDesk.kt / TwinIcons.kt).
-                if (layout.isTwin) cover?.let { near1 += it }
+                if (layout.isTwin) cover?.let { near1 += it; nearCovers += it }
                 // Update 158: Card binder's cards show the cover whatever the game look is: that too.
-                if (layout == HomeLayout.CARDS) cover?.let { near1 += it }
+                if (layout == HomeLayout.CARDS) cover?.let { near1 += it; nearCovers += it }
                 c.wide(g)?.let { near1 += it }
                 if (i in (focus - 1)..(focus + 1)) c.backdrop(g)?.let { backdrops += it }
             }
@@ -1111,7 +1124,7 @@ internal fun StyleHome(
         handles += prefetchThumbs(warmContext, thumbs.distinct())
         // Update 156: the cards' pictures warmed exactly as the cards ask for them (StyleArtRequests.kt): the old
         // 420 px warm-up was a different shape, so the cards read every picture from storage again (a second empty).
-        handles += warmStyleArt(warmContext, near1.distinct())
+        handles += warmStyleArt(warmContext, near1.distinct()) { it in nearCovers }
         val loader = warmContext.imageLoader
         backdrops.distinct().forEach { url ->
             handles += loader.enqueue(coil.request.ImageRequest.Builder(warmContext).data(url).size(coil.size.Size(420, 420)).build())
@@ -1157,6 +1170,10 @@ internal fun StyleHome(
         // Update 181: the Pocket layouts (PocketClassic.kt, PocketRibbon.kt).
         HomeLayout.POCKET_CLASSIC -> StylePocketClassic(c, modifier)
         HomeLayout.POCKET_RIBBON -> StylePocketRibbon(c, modifier)
+        // Update 202: Green Core (StyleGreenCore.kt).
+        HomeLayout.GREENCORE -> StyleGreenCore(c, modifier)
+        // Update 202: Pocket Quest (StylePocketQuest.kt).
+        HomeLayout.POCKET -> StylePocketQuest(c, modifier)
         else -> Unit
     }
 }
@@ -1216,6 +1233,10 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.TWIN_ICONS -> if (TwinScreens.fullTop) TwinIconsBackdrop(Modifier.fillMaxSize())
         // Update 181: the Pocket layouts: paper filling the top screen (two screens), else the handheld's light body.
         HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON -> PocketBackdrop(Modifier.fillMaxSize(), paper = TwinScreens.fullTop)
+        // Update 202: Green Core's near-black green backdrop over the whole screen (GreenCoreSphere.kt).
+        HomeLayout.GREENCORE -> GreenCoreBackdrop(Modifier.fillMaxSize())
+        // Update 202: Pocket Quest's pixel-art scenery (PocketQuestScenery.kt; nothing with Voltcap's background picked).
+        HomeLayout.POCKET -> PocketQuestBackdrop(Modifier.fillMaxSize())
         else -> Unit
     }
 }
@@ -1250,6 +1271,10 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS -> TwinScreens.fullTop
     // Update 181: always their own (the theme's background stays off).
     HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON -> true
+    // Update 202: Green Core always draws its own backdrop.
+    HomeLayout.GREENCORE -> true
+    // Update 202: Pocket Quest with its theme's scenery (Layout options › Background).
+    HomeLayout.POCKET -> pqOwnsBackground()
     else -> false
 }
 

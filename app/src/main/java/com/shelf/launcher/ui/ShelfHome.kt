@@ -526,7 +526,8 @@ internal fun PulledOutCase(
     }
     val cov = if (mode != Features.ShelfPulled.COVER) MediaCovers.used(g.platform) else null
     var scanFailed by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
-    if (mode == Features.ShelfPulled.FRONT && scan != null && !scanFailed) {
+    // (Update 202: never for an Android game — its case is Voltcap's own with the Android band, androidOwnCase.)
+    if (mode == Features.ShelfPulled.FRONT && scan != null && !scanFailed && !androidOwnCase(g.platform)) {
         // (Update 151: on the shelf the scan fades in over the plain case, not over the cover.)
         ScanCase(scan, cov?.frontAspect ?: realCaseMm(g.platform)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = if (waitForCase) null else cover)
         return
@@ -534,7 +535,8 @@ internal fun PulledOutCase(
     // (Update 173: an app without art: its icon in the case's window.)
     if (cov != null) CoverCase(cov, coverOrAppIcon(g, cover), placeholderBrush(g.hue), modifier)
     else Box(modifier.clip(RoundedCornerShape(4.dp)).background(placeholderBrush(g.hue))) {
-        if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+        // (Update 202: the cover's file's flat strips trimmed — coverModel / TrimMargins.kt; Crop fills the front.)
+        if (cover != null) AsyncImage(coverModel(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
     }
 }
 

@@ -160,7 +160,9 @@ fun LaunchAnimation(
     heroUrl: String? = null,
     subtitle: String? = null,
     aspect: Float? = null,
-    crop: Boolean = true
+    crop: Boolean = true,
+    /** Update 202: [coverUrl] is the game's cover: its file's flat strips trimmed (TrimMargins.kt), as the cards show it. */
+    trim: Boolean = false
 ) {
     com.shelf.launcher.Breadcrumbs.mark("LaunchAnimation")
     val done by rememberUpdatedState(onDone)
@@ -256,8 +258,10 @@ fun LaunchAnimation(
             if (coverUrl != null) {
                 // Update 200: cut to the card's shape only as the card cut it; else the whole picture (Fit), its shape
                 // noted as it loads so the frame and the sparks hug it.
+                // (Update 202: a cover with its file's flat strips trimmed — coverModel / TrimMargins.kt — as the cards
+                // show it, so the shape noted here and the frame sized to it are the art's own: Fit then fills it exactly.)
                 AsyncImage(
-                    model = coverUrl, contentDescription = title,
+                    model = if (trim) coverModel(coverUrl) else coverUrl, contentDescription = title,
                     contentScale = if (crop && aspect != null) ContentScale.Crop else ContentScale.Fit,
                     onSuccess = { r ->
                         r.painter.intrinsicSize.let { sz ->
@@ -358,8 +362,11 @@ fun LaunchAnimation(
     }
 }
 
-/** Update 200: what the launch animation shows for a game: its picture, the shape to show it at, cut to it or whole. */
-internal class LaunchArt(val url: String?, val aspect: Float?, val crop: Boolean)
+/**
+ * Update 200: what the launch animation shows for a game: its picture, the shape to show it at, cut to it or whole.
+ * Update 202: [trim]: the picture is the game's cover (its file's flat strips trimmed, as the cards show it).
+ */
+internal class LaunchArt(val url: String?, val aspect: Float?, val crop: Boolean, val trim: Boolean = false)
 
 /**
  * Update 200: the picture and shape of the card [game] starts from ([focusedKey]: the game you're on), so the launch
@@ -390,8 +397,8 @@ internal fun launchArtFor(game: com.shelf.launcher.data.Game, state: com.shelf.l
         // A card wider than it's high is the wide art (a capsule, the game you're on opened wide, a hero / screenshot).
         val typed = if (type == CardArtType.SCREENSHOT) state.screenshots[k]?.firstOrNull() else null
         val url = cardArtUrl(type, shape >= 1.2f, cover, wide, hero, typed)
-        if (url != null) return LaunchArt(url, shape, true)
+        if (url != null) return LaunchArt(url, shape, true, trim = url == cover)
     }
     val url = cover ?: wide ?: hero
-    return LaunchArt(url, CoverAspects.rawOf(url), false)
+    return LaunchArt(url, CoverAspects.rawOf(url), false, trim = url != null && url == cover)
 }

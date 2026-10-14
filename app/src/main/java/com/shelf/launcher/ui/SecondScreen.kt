@@ -257,6 +257,8 @@ fun SecondScreenHost(
                     // the focus: touches still work, the controller stays on the main screen.
                     window?.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
                     show()
+                    // Update 202: this window asks for the bars hidden too, like Voltcap's main window (SystemBars).
+                    window?.let { w -> runCatching { SystemBars.apply(w) } }
                 }
             }.getOrNull()
         } else null
@@ -287,6 +289,19 @@ fun SecondScreenHost(
                 window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
                 activity?.window?.decorView?.requestFocus()
             }
+        }
+    }
+    // Update 202: the second screen's window follows "Hide navigation bar" too, and asks again once it has settled
+    // (Android ignores a hide while the bar is still sliding in). Android 13 lets only the focused window of a display —
+    // or, with none, its top full-screen app window — decide that display's bars, and this window never takes the
+    // focus; so where an activity sits under it (the stock second-screen launcher on the AYN Thor) that activity
+    // decides, and the handheld's own setting (GestureHint, force-hide) is what hides the bar there.
+    val hideNavBar = com.shelf.launcher.data.GestureHint.immersiveState.value
+    LaunchedEffect(showing, hideNavBar) {
+        val window = presentationHolder[0]?.window ?: return@LaunchedEffect
+        for (wait in longArrayOf(0, 350, 1200)) {
+            kotlinx.coroutines.delay(wait)
+            runCatching { SystemBars.apply(window, hideNavBar) }
         }
     }
     // While an app has the second display, the screen still counts as in use.

@@ -4,6 +4,83 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (202): four simple looks, two new layouts, manuals in the case, update prompt, clean covers, and many fixes
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (12): `src_copy\data\ManualLinks.kt`, `src_copy\ui\GreenCoreSettings.kt`, `src_copy\ui\GreenCoreSounds.kt`, `src_copy\ui\GreenCoreSphere.kt`, `src_copy\ui\ManualReader.kt`, `src_copy\ui\PocketQuestScenery.kt`, `src_copy\ui\PocketQuestSettings.kt`, `src_copy\ui\R1TileRules.kt`, `src_copy\ui\StyleGreenCore.kt`, `src_copy\ui\StylePocketQuest.kt`, `src_copy\ui\TrimMargins.kt`, `src_copy\ui\UpdatePrompt.kt`.
+Changed (68): `src_copy\LauncherViewModel.kt`, `src_copy\data\AppUpdates.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\ArtFiles.kt`, `src_copy\data\Backup.kt`, `src_copy\data\BuiltinShortcuts.kt`, `src_copy\data\CloudSync.kt`, `src_copy\data\Features.kt`, `src_copy\data\GestureHint.kt`, `src_copy\data\LayoutPresets.kt`, `src_copy\data\Manuals.kt`, `src_copy\data\PlaytimeStore.kt`, `src_copy\data\ScreenScraper.kt`, `src_copy\data\SettingsScopes.kt`, `src_copy\data\perf\PerfSettings.kt`, `src_copy\device\LidPause.kt`, `src_copy\ui\ArtRequests.kt`, `src_copy\ui\BackgroundMusic.kt`, `src_copy\ui\BoxTexture.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\CaseOpen.kt`, `src_copy\ui\ConsoleBadge.kt`, `src_copy\ui\CoverCases.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\GameDock.kt`, `src_copy\ui\GameLookPicker.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\GestureHintCard.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\HeroCarousel.kt`, `src_copy\ui\HomeAdjust.kt`, `src_copy\ui\HomeChrome.kt`, `src_copy\ui\HomeEdit.kt`, `src_copy\ui\HomeEditLegend.kt`, `src_copy\ui\LaunchAnimation.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\ManualViewer.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\OptionIcons.kt`, `src_copy\ui\OverlayControlActivity.kt`, `src_copy\ui\OverlayShell.kt`, `src_copy\ui\PerfOverlayService.kt`, `src_copy\ui\PerfSettingsCard.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\PlatformBrowser.kt`, `src_copy\ui\PresetPreview.kt`, `src_copy\ui\PresetsCard.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\RaOverlayView.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\ScreenSaver.kt`, `src_copy\ui\SecondGamesPage.kt`, `src_copy\ui\SecondScreen.kt`, `src_copy\ui\SecondScreenDetails.kt`, `src_copy\ui\SecondScreenHome.kt`, `src_copy\ui\SecondScreenVolt.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\ShelfHome.kt`, `src_copy\ui\StyleArtRequests.kt`, `src_copy\ui\StyleCardBinder.kt`, `src_copy\ui\StyleCaseStacks.kt`, `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\StyleHomes.kt`, `src_copy\ui\StyleRecordCrate.kt`, `src_copy\ui\TvRoomHome.kt`, `src_copy\ui\UpdatesUi.kt`.
+
+**Copy `project_copy`** too (`robocopy project_copy . /E`): `README.md` (rewritten for GitHub: a short introduction and the features).
+
+**Files to delete:** none.
+
+### Game looks: 4 looks with plain choices
+- **The looks:** Covers, Cases, Cartridges & discs and Art replace the ~20 looks and hidden switches. R1 › Look steps through the 4; hold it (or Settings › Game look) for the choices, each with a small preview of the game you're on.
+- **Covers:** style (Cover · Wide · Square tile · Spine) and the game you're on (same / wide / only the first one wide).
+- **Cases:** your game's real scan (drawn if none) or always drawn; all the same size or real sizes; its disc or cartridge inside only, beside it, or half out.
+- **Cartridges & discs:**
+  - **Cartridge:** real shell for each console (the drawn ones with their real backs — the default now), your pack's shapes, or clear plastic.
+  - **Disc games:** their disc / their case / a cartridge too / every game as a disc.
+  - **Your game's own photo:** used when one is found, or switched off.
+- **Art:** hero art, screenshots or wide capsules.
+- **Migration:** your current look is carried over once. Leftover switches that still do something are under "More look options".
+
+### Two new layouts
+- **Green Core (2001):** a dark green machine dashboard. A living sphere of light on the left (rotating grid, pulsing core, rings) and angled menu panels on the right:
+  - **Menu:** Games, Systems, Apps, Save Vault, Music, Settings.
+  - **Games:** a list or curved carousel.
+  - **Systems:** consoles with counts.
+  - **Sounds:** made in code.
+  - **Its own options:** glow, sphere speed, motion, sounds and hum, reduced motion, browse style, accent colour.
+- **Pocket Quest:** a full-screen 32-bit handheld-RPG style menu:
+  - **Top bar:** console tabs.
+  - **Showcase:** a big showcase of the game with a gold-edged info panel and screenshots.
+  - **Collection:** your games along the bottom in your game look.
+  - **Screens:** Select a System and a details screen.
+  - **Themes:** four themes with pixel-art scenery drawn in code (Island Sky, Sunset Ruins, Deep Lab, Ocean Depths).
+  - **Sounds:** optional retro blips.
+  - **Its own options:** theme, background, motion, parallax, accent, media, description, screenshots, size, speed, sounds, reduced motion.
+
+### Manuals
+- **Recording:** a game's manual (from ScreenScraper) is noted when the game is looked up and downloaded only when you open it.
+- **In the case:** when a case opens, the manual lies in the lid as a booklet; tap it to read.
+- **Reader:**
+  - **Turn pages:** swipe, ◀ ▶ or L1 / R1.
+  - **Zoom:** A or a pinch.
+  - **Close:** B.
+- **Other ways in:** a Manual button in the game window, its options, and the second screen's Details page.
+
+### Updates
+- **Update prompt:** when a newer version is on GitHub, Voltcap asks: Update now (downloads, then installs) / Later / Skip this version.
+- **When it checks:** at start and every 12 hours (Settings › Updates & downloads › Check for updates automatically).
+
+### Covers, cases and cartridges
+- **Covers fill their place:** edge-to-edge with the smallest centred crop. No grey bars, no stretching, no blurred backdrop.
+- **Trim:** flat bars baked into a cover image are trimmed (only matching bars on opposite sides, never branding).
+- **Android games:** they use Voltcap's Android case and a green Android cartridge inside (not their store art).
+- **Console badge:** no longer drawn over a case that already has its console band (no more doubled "Nintendo GameCube").
+- **Real spine:** the game window's case uses the game's real spine.
+- **Real backs:** cartridges show their researched real backs by default (Cartridges & discs › Real shell).
+
+### Home screen
+- **R1 tiles:** each tile shows only where it does something (the header tile only on the Voltcap row with its header on, and so on). Hidden tiles keep their place.
+- **Edit Home:** every piece can be moved and sized, including:
+  - the news bar;
+  - the game row and the game you're on (cover / box / cartridge / disc);
+  - the clock, the button legend, the now-playing card and the lyrics line;
+  - the art position for every look.
+
+### Fixes
+- **Background music:** it no longer plays on with the screen off (it also pauses for the black screensaver, the lid closing and a game on the other screen). New setting: "Keep playing with the screen off" (off).
+- **Achievements overlay:**
+  - Only the pinned (or next) badge and the progress bar by default. Every part is a toggle in Settings › Overlay and in the in-game panel.
+  - Resizing no longer cuts off the bottom.
+- **Play time counted twice across devices (e.g. 50 h instead of 25):** each device now keeps its own counter, and syncing merges by the larger value, never by adding. A one-time repair rebuilds totals from the session log.
+- **Navigation bar:** it stays hidden inside games (AYN's own hide setting is held while a game from Voltcap runs and put back after). The lower screen of a two-screen handheld picks it up after its next start.
+
+---
+
 ## Update — 14 Oct 2026 (201): power controls that really work, cartridge backs fixed, Lyrics stage without stats
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

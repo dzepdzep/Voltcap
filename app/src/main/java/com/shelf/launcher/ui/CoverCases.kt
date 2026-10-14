@@ -25,6 +25,7 @@ import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.geometry.Offset
@@ -268,11 +269,31 @@ private const val SGDB_COVER = 2f / 3f
  * not SteamGridDB's 2:3 (a Saturn case is nearly that shape). Never for Voltcap's own Steam / Android cases.
  */
 internal fun isBoxFront(cov: CoverTpl, artAspect: Float?): Boolean {
-    val a = artAspect ?: return false
-    if (cov.isOwn() || a <= 0f) return false
-    if (kotlin.math.abs(a / SGDB_COVER - 1f) < 0.02f) return false
-    return kotlin.math.abs(a / cov.frontAspect - 1f) < 0.045f
+    if (cov.isOwn()) return false
+    return looksLikeBoxFront(cov.frontAspect, artAspect)
 }
+
+/** Update 202: [isBoxFront]'s shape test for a case front of [frontAspect] (the template boxes' framed fronts use it too). */
+internal fun looksLikeBoxFront(frontAspect: Float, artAspect: Float?): Boolean {
+    val a = artAspect ?: return false
+    if (a <= 0f || frontAspect <= 0f) return false
+    if (kotlin.math.abs(a / SGDB_COVER - 1f) < 0.02f) return false
+    return kotlin.math.abs(a / frontAspect - 1f) < 0.045f
+}
+
+/**
+ * Update 202: an Android game / app — its case is always Voltcap's own (the green ANDROID band, cov_front_android): there
+ * is no retail case to show, so a "box" scraped for it (ScreenScraper's Android entries are its store art) is never the
+ * case and its "cartridge" picture never what lies in it. On the Thor WWE All Stars stood as a plain white picture in
+ * the case stacks (its scraped box drawn as a scanned case) and a bare cover came out of its opened case.
+ */
+internal fun androidOwnCase(platform: String?): Boolean = platform == "App" || platform == "Android"
+
+/**
+ * Update 202: whether [platform]'s case (as drawn, R1 › Case included) prints its console's band and logo — every case
+ * but the PlayStation's, which is drawn without its black band (update 141 / 143). The console badge stays off it then.
+ */
+internal fun caseShowsConsole(platform: String?): Boolean = LookStyles.casePlatform(platform) != "PS1"
 
 /**
  * Update 169: how [cov] is reshaped for [art] (Settings › Game look › Covers, cases & discs): Voltcap's own Steam /
@@ -356,7 +377,11 @@ private fun FittedFrame(cov: CoverTpl, fit: CaseFit) {
     }
 }
 
-/** The cover template's front: the game's art behind the frame, cropped to the frame's window, never stretched. */
+/**
+ * The cover template's front: the game's art behind the frame, filling the frame's window. Update 202: like CSS
+ * object-fit: cover — scaled evenly until it covers the whole window, centred, only the overflow cut; never stretched,
+ * never shown whole between bars or over a blurred copy of itself.
+ */
 @Composable
 private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Modifier, fit: CaseFit? = null) {
     // Update 141: another console's case picked for every game (R1 › Case): only its shape — its frame in one plain
@@ -374,19 +399,36 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
         // Update 154: round a cover shown whole, the case's own colour (not the game-colour placeholder).
         val ctx = androidx.compose.ui.platform.LocalContext.current.applicationContext
         val frameColor = remember(cov.frontRes) { FrameColors.of(ctx, cov) }
+        // Update 202: an app's icon (a bitmap, not a cover) is the only picture still shown whole in the window.
+        val icon = art is android.graphics.Bitmap
+        // Update 202: once the cover is drawn nothing may show round it: the case colour / placeholder behind the window
+        // only while it loads, for an app's icon, or when your Art position (R1) has moved or shrunk the cover. On the
+        // Portal the GameCube Zelda's 2:3 cover sat between dark strips of this colour ("a frame inside the frame").
+        var artShown by remember(art) { androidx.compose.runtime.mutableStateOf(false) }
+        val moved = ArtPlace.moved(model = false)
         Box(
             Modifier.offset(w * win[0], h * win[1]).size(w * (win[2] - win[0]), h * (win[3] - win[1]))
-                .clipToBounds().then(if (art != null && owner == null) Modifier.background(frameColor) else Modifier.background(placeholder))
+                .clipToBounds().then(
+                    when {
+                        art != null && artShown && !icon && !moved -> Modifier
+                        art != null && owner == null -> Modifier.background(frameColor)
+                        else -> Modifier.background(placeholder)
+                    }
+                )
         ) {
+            // Update 202: no soft, blurred copy of the cover behind it any more (it showed beside a cover drawn whole):
+            // the cover itself covers the window (ContentScale.Crop below).
             // (Update 143: Art position moves and sizes the cover itself. Update 144: the cover fills the window — no
-            // empty strips at its sides, as the Android case had — unless that would cut away more than 15 % of it
-            // (a square or wide picture), which is then fitted whole.)
+            // empty strips at its sides, as the Android case had.) Update 202: plain fill-crop (object-fit: cover): scaled
+            // evenly until it covers the window, centred, only the overflow cut — never stretched (the 13 % stretch and
+            // the "shown whole between bars past 16 %" rule are gone). A cover of the window's own shape loses nothing.
             if (art != null) AsyncImage(
                 // (Update 147: the card's own request — a set size, so a cover already in memory shows in the first frame,
                 // and its small copy while it loads; the case used to go blank for a moment every time it came back on screen.)
-                cardArtModel(art), null, contentScale = FillUnlessMuchCut, alignment = Alignment.Center,
+                // (Update 202: an app's icon — not a cover — is cut at most a little, else shown whole: CropLittleOrFit.)
+                cardArtModel(art), null, contentScale = if (icon) CropLittleOrFit else ContentScale.Crop, alignment = Alignment.Center,
                 // (Update 169: its shape noted, so the case can take it — caseFitFor.)
-                onSuccess = { r -> if (art is String) r.painter.intrinsicSize.let { sz -> CoverAspects.note(art, sz.width, sz.height) } },
+                onSuccess = { r -> artShown = true; if (art is String) r.painter.intrinsicSize.let { sz -> CoverAspects.note(art, sz.width, sz.height) } },
                 modifier = Modifier.fillMaxSize().graphicsLayer {
                     scaleX = pos.zoom; scaleY = pos.zoom
                     translationX = pos.x * size.width * ArtPlace.REACH; translationY = pos.y * size.height * ArtPlace.REACH
@@ -407,23 +449,24 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
 @Composable
 internal fun cardArtModel(art: Any): Any = if (art is String) rememberCardArtRequest(art, ArtKind.COVER) else art
 
-/**
- * Update 144: fills the box like [ContentScale.Crop] when that cuts at most [MAX_CUT] of the picture, else fits it whole
- * ([ContentScale.Fit]) — a cover in a case window fills it, a square or wide picture isn't cut in half.
- * (Update 147: up to 30 % — a portrait cover in your wider Android / Steam case windows still had bars at its sides.)
+/*
+ * Update 202: FillUnlessMuchCut is gone. It stretched a cover up to 13 % to fill a case window, cut up to 16 %, and
+ * past that showed the cover whole over a blurred copy of itself: covers came out squashed or between strips. Covers
+ * now fill their window like ContentScale.Crop (object-fit: cover): even scale, centred, only the overflow cut. A
+ * SteamGridDB 2:3 cover loses ~7 % of its width in a GameCube window, ~17 % in a PS2 one, never its proportions.
  */
-internal object FillUnlessMuchCut : ContentScale {
-    // Update 154: at most 6 % — the user saw covers cut off on all sides (a GBA box lost its logo); a picture of
-    // another shape now shows whole, the window's spare room in the case's own colour (CoverFace).
-    const val MAX_CUT = 0.06f
-    fun scale(srcW: Float, srcH: Float, dstW: Float, dstH: Float): Float {
-        if (srcW <= 0f || srcH <= 0f) return 1f
-        val sx = dstW / srcW; val sy = dstH / srcH
-        val fill = maxOf(sx, sy); val fit = minOf(sx, sy)
-        return if (fit / fill >= 1f - MAX_CUT) fill else fit
-    }
+
+/**
+ * Update 202: only for a picture that isn't a cover (an app's icon on its case): fills the window like Crop when that
+ * cuts at most 6 %, else shows it whole (the case's colour round it). The same even scale both ways: never stretched.
+ */
+private object CropLittleOrFit : ContentScale {
+    private const val MAX_CUT = 0.06f
     override fun computeScaleFactor(srcSize: androidx.compose.ui.geometry.Size, dstSize: androidx.compose.ui.geometry.Size): androidx.compose.ui.layout.ScaleFactor {
-        val k = scale(srcSize.width, srcSize.height, dstSize.width, dstSize.height)
+        if (srcSize.width <= 0f || srcSize.height <= 0f || dstSize.width <= 0f || dstSize.height <= 0f) return androidx.compose.ui.layout.ScaleFactor(1f, 1f)
+        val sx = dstSize.width / srcSize.width; val sy = dstSize.height / srcSize.height
+        val fill = maxOf(sx, sy); val fit = minOf(sx, sy)
+        val k = if (fit / fill >= 1f - MAX_CUT) fill else fit
         return androidx.compose.ui.layout.ScaleFactor(k, k)
     }
 }
@@ -542,9 +585,11 @@ internal fun ScanCase(
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * shape)
         val h = w / shape
-        Box(Modifier.size(w, h).caseShadow().then(caseModifier).background(CaseArtPlaceholder).then(if (cutLeft > 0f) Modifier.clipToBounds() else Modifier)) {
-            // Update 119: the game's cover (usually already loaded) while its case scan comes in — never a dark box first.
-            var scanIn by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
+        // Update 119: the game's cover (usually already loaded) while its case scan comes in — never a dark box first.
+        var scanIn by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
+        // Update 202: the grey placeholder only until the scan is in: a scan with see-through corners (or one a hair off
+        // the box's shape) never shows grey round it once drawn — the scan itself fills the box (Crop, centred).
+        Box(Modifier.size(w, h).caseShadow().then(caseModifier).then(if (scanIn) Modifier else Modifier.background(CaseArtPlaceholder)).then(if (cutLeft > 0f) Modifier.clipToBounds() else Modifier)) {
             if (cover != null && !scanIn) AsyncImage(cardArtModel(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             AsyncImage(
                 cardArtModel(scan), null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,

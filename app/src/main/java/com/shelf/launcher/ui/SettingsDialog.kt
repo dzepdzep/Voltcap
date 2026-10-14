@@ -415,7 +415,9 @@ fun SettingsDialog(
                             ) {
                                 CATEGORIES.forEach { entry ->
                                     Box(if (entry == category) Modifier.focusRequester(openFocus) else Modifier) {
-                                        Chip(entry.label, accent = entry == category) { category = entry }
+                                        // Update 202: the compact chips get the update dot as a "•" after the name.
+                                        val dot = entry.label == "Updates & downloads" && com.shelf.launcher.data.AppUpdates.hasNews()
+                                        Chip(entry.label + (if (dot) " •" else ""), accent = entry == category) { category = entry }
                                     }
                                 }
                             }
@@ -605,7 +607,8 @@ fun SettingsDialog(
                                     )
                                     SwitchRow(
                                         Icons.Filled.MusicOff, "Also pause when locking",
-                                        "The power button or the screen timing out pauses music too (off: music keeps playing with the screen off).",
+                                        // Update 202: Voltcap's own music now pauses with the screen off anyway (Audio › Background music).
+                                        "The power button or the screen timing out pauses music apps too (off: they keep playing with the screen off). Voltcap's own music pauses with the screen off unless \"Keep playing with the screen off\" is on.",
                                         com.shelf.launcher.data.Features.pauseOnLock.state.value, { com.shelf.launcher.data.Features.pauseOnLock.value = it }
                                     )
                                     Spacer(Modifier.height(10.dp))
@@ -680,8 +683,10 @@ private fun HomeContent(
             MutedNote(
                 "Edit Home lets you drag anything on the home screen and resize it by pulling its corner handle: the music player, " +
                     "the round shortcuts, the whole game header or each piece of it (title, continue line, stat boxes, Play & buttons, " +
-                    "console badge), the category name, and the game info and news cards. Tap one to pick it. With a controller: D-pad moves, L1 / R1 pick the next one, " +
-                    "L2 / R2 resize, X puts one back, Y resets everything, A or B is done. Settings closes while you edit."
+                    "console badge), the category name, the game info and news cards, the game row and the game you're on in it, the clock & " +
+                    "battery, the button legend, the Now playing card and the lyrics line (update 202) — and each layout's own parts. " +
+                    "+ Add brings the news bar and the rest onto any layout. Tap one to pick it. With a controller: D-pad moves, L1 / R1 pick the next one, " +
+                    "L2 / R2 resize, X puts one back, Y resets everything, R3 opens Art position for the covers, boxes, cartridges or discs, A or B is done. Settings closes while you edit."
             )
             Spacer(Modifier.height(8.dp))
             ChipFlow {
@@ -2302,7 +2307,8 @@ private fun MetadataContent(
             }
             Spacer(Modifier.height(10.dp))
             Text("Real cases, discs, cartridges, labels and spines", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            MutedNote("Box art, Cartridge / disc, Discs only and Spines looks: only ScreenScraper has these scans (and RetroAchievements a box front). Connect ScreenScraper under Accounts; they're fetched as you reach each game.")
+            // (Update 202: the looks named as Game look calls them now.)
+            MutedNote("Cases, Cartridges & discs and Spines: only ScreenScraper has these scans (and RetroAchievements a box front). Connect ScreenScraper under Accounts; they're fetched as you reach each game.")
             Spacer(Modifier.height(8.dp))
             ChipFlow { Chip("Fetch all artwork again") { onRescrapeAll() } }
         }
@@ -2394,8 +2400,9 @@ private fun MetadataContent(
                     accent = scrapeOptions.manuals
                 ) { onScrapeOptionsChange(scrapeOptions.copy(manuals = !scrapeOptions.manuals)) }
                 MutedNote(
-                    "Scanned game manuals (PDF) from ScreenScraper, saved on the device so they open instantly. " +
-                        "Fetched with the artwork, the first time a game is scraped. A manual next to the ROM always wins."
+                    "Scanned game manuals (PDF) from ScreenScraper: found with the artwork, downloaded the first time you open " +
+                        "one (the booklet in an opened case, or Manual in the game window) and then kept with the saved art. " +
+                        "A manual next to the ROM always wins."
                 )
                 Spacer(Modifier.height(12.dp))
                 ChipFlow {
@@ -2879,8 +2886,18 @@ private fun NavItem(entry: SettingsCategory, selected: Boolean, onClick: () -> U
             entry.label,
             color = if (selected) onAccentColor() else ShelfTheme.colors.textPrimary,
             fontSize = 14.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            // Update 202: weighted (without filling) so the update dot below always has room beside a long label.
+            modifier = Modifier.weight(1f, fill = false)
         )
+        // Update 202: a dot on "Updates & downloads" while a newer Voltcap (not skipped) is waiting.
+        if (entry.label == "Updates & downloads" && com.shelf.launcher.data.AppUpdates.hasNews()) {
+            Spacer(Modifier.width(8.dp))
+            Box(
+                Modifier.size(8.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(if (selected) onAccentColor() else ShelfTheme.accent)
+            )
+        }
     }
 }
 
@@ -3653,6 +3670,7 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
 /**
  * Settings › Game look › Covers, cases & discs: what every game is drawn as, the same in every home layout, and the
  * switches that go with it (discs for all, cases, templates, games from several consoles).
+ * Update 202: the four main looks and their choices first (GameLookPicker), the finer options in "More look options".
  */
 @Composable
 private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceSettings) -> Unit) {
@@ -3674,8 +3692,11 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
                 com.shelf.launcher.ui.MixedArt.CARTRIDGE -> "Every game in a mixed list as a cartridge. Disc games get a plain generic cartridge (the Game Boy shell without its branding) with their disc label on it."
             }
         )
-        // Update 147: one style for every spine (Spines look, Game shelf, the carousels' spines).
+        // Update 202: the finer options (what spines, cases and cartridges look like up close, per console) in a fold under
+        // the look's choices, so the page starts with what matters; the switches the choices now set are gone from it.
         Spacer(Modifier.height(10.dp))
+        FoldGroup("More look options", summary = "Spines, case shapes and backs, cartridge backs, regions, moving discs", key = "look_more") {
+        // Update 147: one style for every spine (Spines look, Game shelf, the carousels' spines).
         SwitchRow(
             icon = Icons.Filled.ViewWeek,
             title = "Matching spines",
@@ -3707,14 +3728,8 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.printedBacks.state.value,
             onChange = { com.shelf.launcher.data.Features.printedBacks.value = it }
         )
-        // Update 195: every cartridge console on its own real shell (CartShells.kt).
-        SwitchRow(
-            icon = Icons.Filled.ViewWeek,
-            title = "Authentic drawn cartridges",
-            subtitle = "On: in the cartridge looks, every cartridge console's games are drawn on that console's real shell, by region (an NES or Famicom cart, a US or PAL SNES cart, a Japanese Mega Drive cart), turning in 3D at its real thickness. Off (default): your template pack's cartridges, as before. Any game can also go on any shell: its menu › Cartridge shell…",
-            checked = com.shelf.launcher.data.Features.authenticCarts.state.value,
-            onChange = { com.shelf.launcher.data.Features.authenticCarts.value = it }
-        )
+        // (Update 195's "Authentic drawn cartridges" switch stood here. Update 202: it's Cartridges & discs › Cartridge ›
+        // "Real shell for each console" now, which sets it. Any game can still go on any shell: its menu › Cartridge shell…)
         // Update 200: the cartridges' backs.
         RowChoice(
             "Cartridge backs", com.shelf.launcher.data.Features.CartBackStyle.values(),
@@ -3743,30 +3758,20 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             com.shelf.launcher.data.Features.caseRegion.state.value, { it.label }
         ) { com.shelf.launcher.data.Features.caseRegion.value = it }
         MutedNote("The 3D cases are drawn as sold in each region: a PAL PlayStation case is thicker, a European DS case clear, a Japanese GameCube case small and clear, a Super Famicom box a different shape. A game's file name says its region — (USA), (Europe), (Japan); this picks one for games whose name doesn't.")
-        when (artNow) {
-            com.shelf.launcher.data.CardArtType.CASE -> MutedNote("Every case the same size, in lists mixing consoles too (Continue playing, Favourites…).")
-            com.shelf.launcher.data.CardArtType.CASE_REAL -> MutedNote("Every case at its real size next to the others: a DS case smaller than a PS2 one, a Saturn case taller. Also in lists that mix consoles.")
-            com.shelf.launcher.data.CardArtType.DISC -> {
-                SwitchRow(
-                    icon = Icons.Filled.Album, title = "Cartridge games as discs too",
-                    subtitle = "On: every console game is a disc — cartridge games get a plain CD with their label (or cover) on it. Off: disc and UMD games show their disc, the others their cover.",
-                    checked = com.shelf.launcher.data.Features.discsForAll.state.value,
-                    onChange = { com.shelf.launcher.data.Features.discsForAll.value = it }
-                )
-                Spacer(Modifier.height(8.dp))
-            }
-            else -> {}
+        // (Update 202: the case looks' size notes went — Case size's choices say it — and so did "Original cases": it's
+        // Cases › Case › "Your game's real case scan" / "Always the drawn case" now.)
+        if (artNow == com.shelf.launcher.data.CardArtType.DISC) {
+            // (Update 202: Every game as a disc turns this on; off keeps cartridge games as their cover, as before.)
+            SwitchRow(
+                icon = Icons.Filled.Album, title = "Cartridge games as discs too",
+                subtitle = "On: every console game is a disc — cartridge games get a plain CD with their label (or cover) on it. Off: disc and UMD games show their disc, the others their cover.",
+                checked = com.shelf.launcher.data.Features.discsForAll.state.value,
+                onChange = { com.shelf.launcher.data.Features.discsForAll.value = it }
+            )
+            Spacer(Modifier.height(8.dp))
         }
         if (artNow == com.shelf.launcher.data.CardArtType.CASE || artNow == com.shelf.launcher.data.CardArtType.CASE_REAL) {
-            SwitchRow(
-                icon = Icons.Filled.Album,
-                title = "Original cases",
-                subtitle = "On (default): each game's own scanned case from ScreenScraper — its front scan (or the front cut from the full box scan) is the case, and its real spine scan shows on the turned box and the Game shelf. Off: Voltcap's case templates with the cover in them.",
-                checked = com.shelf.launcher.data.Features.originalCases.state.value,
-                onChange = { com.shelf.launcher.data.Features.originalCases.value = it }
-            )
             // Update 123: spines cut out of other scans are off unless asked for.
-            Spacer(Modifier.height(10.dp))
             SwitchRow(
                 icon = Icons.Filled.Album,
                 title = "Spines cut from box scans",
@@ -3800,16 +3805,9 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             onChange = { com.shelf.launcher.data.Features.coverTemplates.value = it }
         )
         Spacer(Modifier.height(10.dp))
+        // (Update 202: "Disc in its case" is Cases › "Half out" and Cartridges & discs › Disc games › "Their case" now.)
         if (artNow == com.shelf.launcher.data.CardArtType.CASE || artNow == com.shelf.launcher.data.CardArtType.CASE_REAL ||
             artNow == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC || artNow == com.shelf.launcher.data.CardArtType.DISC) {
-            SwitchRow(
-                icon = Icons.Filled.Album,
-                title = "Disc in its case",
-                subtitle = "Disc games (PlayStation, Saturn, Dreamcast, GameCube, Wii…) show their case with the disc half out of it, turning like it's playing.",
-                checked = com.shelf.launcher.data.Features.discCase.state.value,
-                onChange = { com.shelf.launcher.data.Features.discCase.value = it }
-            )
-            Spacer(Modifier.height(10.dp))
             // Update 151: the 3D box (or your 3D case) with its disc.
             if (com.shelf.launcher.data.Features.discCase.state.value) {
                 SwitchRow(
@@ -3822,16 +3820,7 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
                 Spacer(Modifier.height(10.dp))
             }
         }
-        if (artNow == com.shelf.launcher.data.CardArtType.CASE || artNow == com.shelf.launcher.data.CardArtType.CASE_REAL) {
-            SwitchRow(
-                icon = Icons.Filled.Album,
-                title = "Case with its cartridge / disc",
-                subtitle = "The original case standing, its cartridge or disc leaning against its lower right. Only the cartridge / disc moves (Moving discs, cartridges & cases). Used instead of \"Disc in its case\" when both are on.",
-                checked = com.shelf.launcher.data.Features.caseWithMedia.state.value,
-                onChange = { com.shelf.launcher.data.Features.caseWithMedia.value = it }
-            )
-            Spacer(Modifier.height(10.dp))
-        }
+        // (Update 202: "Case with its cartridge / disc" is Cases › Its disc or cartridge › "Beside it" now.)
         MediaMotionChoice()
         Spacer(Modifier.height(10.dp))
         if (artNow == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) {
@@ -3847,8 +3836,23 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
                 }
             }
             MutedNote("Switched off: those games show their cover instead.")
-            MediaShellSwitch()
+            // (Update 202: MediaShellSwitch's "Use Voltcap's drawn cartridges / discs" is Cartridges & discs › "The game's
+            // own photo" now; its two finer options stay here.)
+            Spacer(Modifier.height(8.dp))
+            SwitchRow(
+                Icons.Filled.Album, "Bigger GameCube discs",
+                "GameCube discs are 8 cm, so they're drawn smaller than 12 cm discs. On: as big as the others.",
+                com.shelf.launcher.data.Features.bigGcDiscs.state.value, { com.shelf.launcher.data.Features.bigGcDiscs.value = it }
+            )
+            Spacer(Modifier.height(8.dp))
+            SectionLabel("Game Boy Color cartridges")
+            ChipFlow {
+                com.shelf.launcher.data.Features.GbcCart.values().forEach { c ->
+                    Chip(c.label, accent = com.shelf.launcher.data.Features.gbcCart.state.value == c) { com.shelf.launcher.data.Features.gbcCart.value = c }
+                }
+            }
             Spacer(Modifier.height(10.dp))
+        }
         }
     }
 }
@@ -4595,6 +4599,15 @@ private fun BackgroundMusicCard(appearance: AppearanceSettings, onChange: (Appea
         MutedNote(
             "Theme music is a calm, endless loop composed for Voltcap — built in, nothing to download. " +
                 "It pauses while a game or another app is in front, and while a music app is playing."
+        )
+        // Update 202: the music fades out when the screen goes off / the screensaver fades to black, unless this is on.
+        Spacer(Modifier.height(6.dp))
+        SwitchRow(
+            Icons.Filled.MusicOff, "Keep playing with the screen off",
+            "Off: the music fades out when the screen turns off, the lid closes or the screensaver fades to black, and comes back when you do. " +
+                "(\"Pause music when closed\" under Device still pauses it when the lid closes.)",
+            com.shelf.launcher.data.Features.keepMusicScreenOff.state.value,
+            { com.shelf.launcher.data.Features.keepMusicScreenOff.value = it }
         )
         if (appearance.musicMode == com.shelf.launcher.data.BackgroundMusicMode.THEME) {
             Spacer(Modifier.height(10.dp))

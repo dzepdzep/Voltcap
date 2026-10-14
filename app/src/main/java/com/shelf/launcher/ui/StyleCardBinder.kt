@@ -571,12 +571,12 @@ private fun CardFront(c: StyleCtx, g: Game, game: Int, d: CardDims, centre: Bool
                     .background(placeholder),
                 contentAlignment = Alignment.Center
             ) {
-                // Update 159: the whole cover in the card's window (a tall cover lost its top and bottom to the wide
-                // window); the spare room is the same picture filled and dimmed behind it — one decode, no blur.
+                // (Update 159 showed the whole cover in the card's window over a dimmed copy of itself.) Update 202: the
+                // cover fills the window edge to edge, centred, cut only as much as its shape is off the window's
+                // (object-fit: cover) — no dimmed copy or strips beside it; its file's flat strips trimmed (TrimMargins.kt).
                 if (url != null) {
-                    val req = rememberStyleArtRequest(url)
-                    AsyncImage(req, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.32f })
-                    AsyncImage(req, g.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().pixelArtwork())
+                    val req = rememberStyleArtRequest(url, trim = url == c.cover(g))
+                    AsyncImage(req, g.name, contentScale = ContentScale.Crop, alignment = Alignment.Center, modifier = Modifier.fillMaxSize().pixelArtwork())
                 }
                 else if (g.sourceType == SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
                 else Text(

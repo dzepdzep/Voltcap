@@ -256,6 +256,36 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 202
+- **Looks:**
+  - `GameLookPicker.kt` has 4 looks; their choices set the old prefs underneath.
+  - `Features.lookMemory` (`look_memory`) remembers each look's choices.
+  - Migration flag `look_rework_202` (`migrateGameLook202`, called from AppearanceStore.load).
+- **Layouts:**
+  - `HomeLayout.GREENCORE`: StyleGreenCore.kt, GreenCoreSphere/Sounds/Settings, prefs `gc_*`.
+  - `HomeLayout.POCKET`: StylePocketQuest.kt, PocketQuestScenery/Settings, prefs `pq_*`.
+  - Both are dispatched in StyleHomes.kt and have a WinLook in GameWindow.kt.
+- **Manuals:** `ManualLinks` keeps the URLs (prefs `manual_urls`, login added on download only); ManualReader uses PdfRenderer.
+  - The booklet comes from `CaseInside.bookletRect` / `lid(... booklet)`.
+  - Taps go through `openBookletPlace` / `tapBooklet` in MediaInspectView.
+- **Updates:** AppUpdates `autoCheckIfDue` / `prompt` / `skip`, prefs file `app_updates`; `UpdatePromptHost` runs in LauncherScreen.
+- **Covers:**
+  - Plain centred crop everywhere: Case3D `fillCrop`, CoverCases CoverFace `ContentScale.Crop`.
+  - The `TrimUniformMargins` Coil transformation (TrimMargins.kt) runs on cover requests.
+- **Android cases:** `androidOwnCase()` in CoverCases.
+- **Badges and spines:** ConsoleBadge `onCase` hides the badge on banded cases; `BoxTexture.realSpine()`.
+- **R1 tiles:** `r1TileFit(id, ctx)` in R1TileRules.kt decides every tile.
+- **Edit Home:** `editablePart` items for every home piece; `art_pos_looks` holds the art position per look.
+- **Background music:**
+  - `MusicBlackout` and `reevaluate()` in BackgroundMusic.kt decide when it may play.
+  - ScreenSaver has `onBlackout`; LidPause calls `holdForLid`.
+  - Setting `keepMusicScreenOff`.
+- **Achievements overlay:** per-part toggles in PerfConfig (`ra_name`, `ra_description`, `ra_totals`…), migration `ra_clean_default_202`; OverlayShell `fitScreen`.
+- **Play time:** format 2 in CloudSync (`playtimeV2`: legacy + per-device counters, merged by max); PlaytimeStore `own_json`; a one-time repair per device.
+- **Navigation bar:** GestureHint holds AYN's `global hide_nav_bar` while a game from Voltcap runs or Voltcap is the home app.
+  - A root-service uninstall guard puts the value back if Voltcap is removed.
+  - The second display reads the value only when it starts.
+
 ## State after update 201
 - **AYN pservice (RootShell):**
   - Commands over 255 characters are cut, with a stray "1" appended; only the first output line comes back.

@@ -599,7 +599,8 @@ private fun SlidePart(el: SlideEl, tile: CategoryTile, art: TileArt) {
             ) {
                 Text("LAST PLAYED", color = Color.White.copy(alpha = 0.7f), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 Spacer(Modifier.height(4.dp))
-                AsyncImage(model = cover, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)))
+                // (Update 202: the cover's file's flat strips trimmed — coverModel / TrimMargins.kt.)
+                AsyncImage(model = coverModel(cover), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)))
                 tile.lastPlayedTitle?.let {
                     Spacer(Modifier.height(4.dp))
                     Text(it, color = Color.White, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)

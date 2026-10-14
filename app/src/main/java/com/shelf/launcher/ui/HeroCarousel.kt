@@ -252,7 +252,9 @@ internal fun BoxScope.HeroCarouselLayer(
         CoverWheel(
             games, focused, coverFor, onSelect, onOpen,
             // (Update 112: a new category slides / fades in, as everywhere.)
-            Modifier.fillMaxHeight().fillMaxWidth(0.42f).align(if (right) Alignment.CenterEnd else Alignment.CenterStart).categorySlide(),
+            Modifier.fillMaxHeight().fillMaxWidth(0.42f).align(if (right) Alignment.CenterEnd else Alignment.CenterStart).categorySlide()
+                // Update 202: moved / resized / taken off in Edit Home.
+                .editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.HERO, "covers"), "Cover column"),
             wideFor = wideFor, mirrored = right,
             cardArtType = cardArtType, physicalMedia = physicalMedia, onNeedPhysical = onNeedPhysical,
             loopFocus = rememberLoopFocus(focused, games.size, loop && games.size >= 2, loopTick, loopStep, games),
@@ -276,6 +278,8 @@ internal fun BoxScope.HeroCarouselLayer(
                         bottom = if (infoAtTop) 0.dp else maxOf(18.dp, zone.bottom) + bottomPadding
                     )
                     .fillMaxWidth(0.56f)
+                    // Update 202: moved / resized / taken off in Edit Home.
+                    .editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.HERO, "info"), "Info pages")
             )
         }
     }
@@ -470,8 +474,9 @@ private fun CoverWheel(
                     val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey) else null
                     Box(Modifier.fillMaxSize().awardShine(g.stableKey, sel > 0.6f)) {
                         // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
-                        // (Update 200: the 3D cartridges looks draw their drawn piece whatever the scans.)
-                        val real = if (drawn3dOn() && pick != null && isCustomPiece(pick.platform)) null else realScanOf(gArt, typed)
+                        // (Update 200: the 3D cartridges looks drew their drawn piece whatever the scans. Update 202: "The
+                        // game's own photo" decides in every cartridge look, see drawnMediaWanted.)
+                        val real = realScanOf(gArt, typed)
                         // (Update 173: an app without art: its icon on the label / in the case.)
                         val art = coverOrAppIcon(g, cover)
                         if (real != null) MediaFocus(v == loopFocus) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(2.dp)) }
@@ -482,7 +487,8 @@ private fun CoverWheel(
                         ) }
                     }
                 } else if (cover != null) {
-                    val req = remember(cover, coverPx, wide) { artRequest(wheelContext, cover, if (wide) ArtKind.WIDE else ArtKind.COVER, coverPx) }
+                    // (Update 202: the cover with its file's flat strips trimmed — TrimMargins.kt — in the wide slot too.)
+                    val req = remember(cover, coverPx, wide) { artRequest(wheelContext, cover, if (wide) ArtKind.WIDE else ArtKind.COVER, coverPx, trim = true) }
                     AsyncImage(model = req, contentDescription = g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                 }
                 else Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))

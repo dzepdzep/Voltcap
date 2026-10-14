@@ -520,7 +520,8 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                 g, c.cover(g), c.state.physicalMedia[k], if (PickedFacing.faces) 0f else STACKS_CASE_YAW, case3dAspect(g, false),
                 Modifier.fillMaxSize().awardShine(k, focused), frame = focused, frameColor = accent
             )
-            ConsoleBadge(g.platform, packageName = g.packageName)
+            // (Update 202: no badge over a case front printed with its console's band — it showed twice.)
+            ConsoleBadge(g.platform, packageName = g.packageName, onCase = MediaCovers.used(g.platform) != null)
             StacksProgress(c, g, on)
         }
     } else if (caseLook && !spines && caseMarker(g.platform) != null) {
@@ -533,7 +534,8 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                     caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier
                 )
             }
-            ConsoleBadge(g.platform, packageName = g.packageName)
+            // (Update 202: the case's printed band shows the console already.)
+            ConsoleBadge(g.platform, packageName = g.packageName, onCase = true)
             StacksProgress(c, g, on)
         }
     } else if (caseLook) {
@@ -553,7 +555,8 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                 .clip(uiRounded(corner)).background(placeholderBrush(g.hue))
         ) {
             if (cover != null) AsyncImage(
-                rememberStyleArtRequest(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork(),
+                // (Update 202: its file's flat strips trimmed first — TrimMargins.kt — so the shape noted is the art's own.)
+                rememberStyleArtRequest(cover, trim = true), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork(),
                 onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
             )
             else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())

@@ -141,6 +141,76 @@ object ArtFiles {
         }.getOrElse { part.delete(); false }
     }
 
+    /**
+     * Update 202: the art client for manuals (PDFs of many MB): the same connections, with time for a big file on a slow
+     * line (the 2-minute limit is for pictures).
+     */
+    private val manualClient by lazy {
+        client.newBuilder().readTimeout(60, TimeUnit.SECONDS).callTimeout(15, TimeUnit.MINUTES).build()
+    }
+
+    /** Update 202: where a manual downloaded while the store was full went (the app's cache folder). */
+    private fun manualOverflow(key: String): File? = app?.let { File(File(it.cacheDir, "manuals"), name(key) + ".pdf") }
+
+    /** Update 202: the manual saved for [key] (its address without the login), in the store or its overflow; null: none. */
+    fun manualFile(key: String): File? {
+        fileFor(key)?.takeIf { it.isFile && it.length() > 1000L }?.let { return it }
+        return manualOverflow(key)?.takeIf { it.isFile && it.length() > 1000L }
+    }
+
+    /**
+     * Update 202: downloads a game's manual (PDF) the first time it's opened, into this store — the same folders and
+     * size limit as the saved art — named after [key] (its address without the login); [url] is fetched (with the login).
+     * When the store is full it goes to the app's cache folder instead (Android may clear that one). Only a real PDF is
+     * kept (ScreenScraper answers some errors with text). [onProgress] gets bytes done and the total (-1: unknown);
+     * [cancelled] is asked between chunks and stops it. The file, or null.
+     */
+    fun downloadManual(key: String, url: String, onProgress: (Long, Long) -> Unit, cancelled: () -> Boolean): File? = runCatching {
+        val req = okhttp3.Request.Builder().url(url).header("User-Agent", "Voltcap").build()
+        manualClient.newCall(req).execute().use { r ->
+            if (!r.isSuccessful) return@runCatching null
+            val body = r.body ?: return@runCatching null
+            val total = body.contentLength()
+            val copy: (java.io.OutputStream) -> Unit = { out ->
+                val input = java.io.BufferedInputStream(body.byteStream(), 64 * 1024)
+                input.use { inp ->
+                    // A PDF starts with "%PDF".
+                    inp.mark(16)
+                    val sig = ByteArray(4)
+                    var got = 0
+                    while (got < 4) { val k = inp.read(sig, got, 4 - got); if (k < 0) break; got += k }
+                    if (got < 4 || String(sig, Charsets.ISO_8859_1) != "%PDF") throw java.io.IOException("not a PDF")
+                    inp.reset()
+                    val buf = ByteArray(64 * 1024)
+                    var done = 0L
+                    onProgress(0L, total)
+                    while (true) {
+                        if (cancelled()) throw java.io.InterruptedIOException("stopped")
+                        val n = inp.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                        done += n
+                        onProgress(done, total)
+                    }
+                }
+            }
+            if (!full()) {
+                if (write(key, copy)) manualFile(key) else null
+            } else {
+                val dest = manualOverflow(key) ?: return@runCatching null
+                dest.parentFile?.mkdirs()
+                val part = File(dest.parentFile, dest.name + ".part")
+                try {
+                    part.outputStream().buffered().use(copy)
+                    if (dest.exists()) dest.delete()
+                    if (part.renameTo(dest)) dest else null
+                } finally {
+                    part.delete()
+                }
+            }
+        }
+    }.getOrNull()
+
     /** Every saved picture removed (Settings › Metadata › Clear saved art). */
     fun clear() {
         roots.forEach { r -> r.listFiles()?.forEach { it.delete() } }

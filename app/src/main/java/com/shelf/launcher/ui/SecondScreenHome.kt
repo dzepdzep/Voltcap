@@ -748,6 +748,9 @@ private fun ArtPage(
         ShowcaseArt(info)
     } else {
         val stillOpen = game.stableKey in com.shelf.launcher.data.RunningGames.keys
+        // Update 202: a case or disc (drawn, or the game's own scan at its own shape) stands free: no tinted, bordered
+        // panel round it — a box scan fitted into that panel looked like a cover inside a second frame.
+        val standsFree = picture != null && (options.artType == SecondArtType.CASE || options.artType == SecondArtType.DISC)
         Column(Modifier.fillMaxSize()) {
             Box(
                 Modifier
@@ -756,8 +759,11 @@ private fun ArtPage(
                     // Still open in the background: the same green pulse as on the main grid.
                     .runningGlow(stillOpen, 18.dp)
                     .clip(uiRounded(18.dp))
-                    .background(Color.White.copy(alpha = 0.06f))
-                    .border(1.dp, if (VoltUi.on) ShelfTheme.accent.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.08f), uiRounded(18.dp))
+                    .then(
+                        if (standsFree) Modifier
+                        else Modifier.background(Color.White.copy(alpha = 0.06f))
+                            .border(1.dp, if (VoltUi.on) ShelfTheme.accent.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.08f), uiRounded(18.dp))
+                    )
             ) {
                 // The game's own transition (Game settings) or a quick fade, a little slower here than on the home screen.
                 val transitionStyle = com.shelf.launcher.data.GameLooks.transition(game.stableKey, com.shelf.launcher.data.HeroMotion.QUICK)
@@ -772,8 +778,11 @@ private fun ArtPage(
                         // Screenshots are files on the device, everything else is a URL.
                         val model: Any = if (url.startsWith("/")) java.io.File(url) else url
                         val fit = options.artType == SecondArtType.CASE || options.artType == SecondArtType.DISC
+                        // (Update 202: a cover or case scan with its file's flat strips trimmed, coverModel /
+                        // TrimMargins.kt; the other pictures — heroes, screenshots, disc scans — as they are.)
+                        val trimIt = (options.artType == SecondArtType.CASE || options.artType == SecondArtType.COVER) && (url == info.coverUrl || url == info.caseUrl)
                         AsyncImage(
-                            model = model, contentDescription = game.name,
+                            model = if (trimIt && model is String) coverModel(model) ?: model else model, contentDescription = game.name,
                             contentScale = if (fit) ContentScale.Fit else ContentScale.Crop,
                             modifier = Modifier.fillMaxSize().pixelArtwork().padding(if (fit) 12.dp else 0.dp)
                         )

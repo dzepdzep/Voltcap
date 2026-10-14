@@ -360,6 +360,8 @@ fun GameCard(
                 Modifier.matchParentSize()
                     .then(if (shineOn) Modifier.masteredShineOverShape(if (focused) 0.55f else 0.32f) else Modifier)
                     .graphicsLayer { alpha = if (greyOut || (!focused && look.otherGames != com.shelf.launcher.data.OtherGamesLook.NORMAL)) 0.55f else 1f }
+                    // Update 202: Art position for the cartridges / discs (Edit Home › R3), each look its own.
+                    .artPosition(if (pick.shell.isDisc) ArtPlace.Look.DISC else ArtPlace.Look.CART)
             ) {
                 MediaFocus(focused) { PhysicalMedia(
                     pick.shell, baseUrl ?: artUrl ?: appIcon, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (pick.shell.isDisc) 6.dp else 10.dp),
@@ -387,6 +389,8 @@ fun GameCard(
                 Modifier.matchParentSize()
                     .then(if (shineOn) Modifier.masteredShineOverShape(if (focused) 0.55f else 0.32f) else Modifier)
                     .graphicsLayer { alpha = if (greyOut || (!focused && look.otherGames != com.shelf.launcher.data.OtherGamesLook.NORMAL)) 0.55f else 1f }
+                    // Update 202: Art position for the cartridges / discs (the game's own scan too).
+                    .artPosition(if (mediaRound(game.platform)) ArtPlace.Look.DISC else ArtPlace.Look.CART)
             ) {
                 MediaFocus(focused) {
                     RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (mediaRound(game.platform)) 6.dp else 10.dp))
@@ -399,6 +403,8 @@ fun GameCard(
                 contentScale = ContentScale.Crop,
                 colorFilter = if (greyOut) GreyFilter else null,
                 modifier = Modifier.matchParentSize().pixelArtwork()
+                    // Update 202: Art position for the covers (moved and sized in the card, which cuts it off), not the wide capsule.
+                    .artPosition(if (!banner && cardArtType == CardArtType.COVER) ArtPlace.Look.COVER else null)
                     // Flip: the cover turns away (first half of the turn), the wide art comes round on the other side.
                     .then(if (flipping && wideLayer != null) Modifier.graphicsLayer {
                         val r = reveal.value
@@ -515,8 +521,10 @@ fun GameCard(
             val badgeLow = if (!banner && coverPlace != com.shelf.launcher.data.Features.AchPlace.CORNER) coverPlace == com.shelf.launcher.data.Features.AchPlace.ABOVE
             else look.trophyCorner == com.shelf.launcher.data.CardCorner.TOP_LEFT
             val corner = if (badgeLow) Alignment.BottomStart else Alignment.TopStart
-            ConsoleBadge(game.platform, corner, game.packageName)
-            if (com.shelf.launcher.data.Features.consoleBadges.state.value) corner else null
+            // (Update 202: not over a case — its printed band shows the console already; the corner stays free then.)
+            val onCase = pick == null && box3d != null && !(look.spines && !focused && !banner && !pinnedWide)
+            ConsoleBadge(game.platform, corner, game.packageName, onCase = onCase)
+            if (com.shelf.launcher.data.Features.consoleBadges.state.value && !(onCase && caseShowsConsole(game.platform))) corner else null
         }
         val badgeTop = badgeCorner == Alignment.TopStart
         // Just under a top-left badge (its pill is about 1.6 × its height down, as ConsoleBadge sizes it).

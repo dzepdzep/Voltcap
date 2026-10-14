@@ -52,6 +52,8 @@ private fun VersionCard() {
                 Text("Released ${st.release.published}$mb", color = ShelfTheme.textMuted, fontSize = 12.sp)
                 if (st.release.notes.isNotBlank()) { Spacer(Modifier.height(4.dp)); MutedNote(st.release.notes.take(800)) }
                 if (st.release.apkUrl == null) MutedNote("That release has no APK attached yet.")
+                // Update 202: a skipped version still shows (and installs) here; the home screen just doesn't ask about it.
+                if (AppUpdates.isSkipped(st.release.tag)) MutedNote("You skipped this version: the home screen doesn't ask about it.")
             }
             is AppUpdates.State.Downloading -> {
                 val pct = if (st.total > 0) " ${(st.done * 100 / st.total).coerceIn(0, 100)} %" else " ${st.done / 1_000_000} MB"
@@ -75,11 +77,28 @@ private fun VersionCard() {
             }
         }
         Spacer(Modifier.height(6.dp))
+        // Update 202: the automatic check (UpdatePrompt.kt) — at start and every 12 hours, asking on the home screen.
         ChipFlow {
-            Chip((if (auto) "✓ " else "") + "Check when Voltcap starts", accent = auto) {
+            Chip((if (auto) "✓ " else "") + "Check for updates automatically", accent = auto) {
                 auto = !auto; AppUpdates.setAutoCheck(context, auto)
             }
         }
-        MutedNote("At most once a day; a new version shows here and as a short note on the home screen.")
+        MutedNote(
+            "A little after Voltcap starts and then every 12 hours while it runs (only with a connection). A new version " +
+                "asks on the home screen: update now, later, or skip that version."
+        )
+        val lastAt = remember(st) { AppUpdates.lastCheckedAt(context) }
+        if (lastAt > 0) {
+            val whenText = java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(lastAt))
+            Text("Last checked $whenText", color = ShelfTheme.textMuted, fontSize = 11.sp)
+        }
+        // Update 202: "Skip this version" can be taken back here.
+        val skippedTag = AppUpdates.skipped.value
+        if (skippedTag.isNotBlank()) {
+            Spacer(Modifier.height(6.dp))
+            MutedNote("Skipped: $skippedTag (Voltcap doesn't ask about it again).")
+            Spacer(Modifier.height(4.dp))
+            ChipFlow { Chip("Ask about $skippedTag again", accent = false) { AppUpdates.unskip(context) } }
+        }
     }
 }

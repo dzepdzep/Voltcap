@@ -77,6 +77,9 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     // Update 181.
     HomeLayout.POCKET_CLASSIC -> "Colour, name, clock, calendar, toolbar, screens, sounds, scaling"
     HomeLayout.POCKET_RIBBON -> "Colour, top picture, status line, icons, screens, sounds, scaling"
+    // Update 202.
+    HomeLayout.GREENCORE -> "Glow, sphere speed, background motion, sounds & hum, reduced motion, list or carousel, colour"
+    HomeLayout.POCKET -> "Theme, scenery or Voltcap background, parallax, accent, media, panel parts, size, speed, retro sounds, reduced motion"
     else -> ""
 }
 
@@ -116,6 +119,10 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         // Update 181 (PocketSettings.kt).
         HomeLayout.POCKET_CLASSIC -> PocketClassicSettings()
         HomeLayout.POCKET_RIBBON -> PocketRibbonSettings()
+        // Update 202 (GreenCoreSettings.kt).
+        HomeLayout.GREENCORE -> GreenCoreSettings()
+        // Update 202 (PocketQuestSettings.kt).
+        HomeLayout.POCKET -> PocketQuestSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).

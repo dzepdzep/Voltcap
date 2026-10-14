@@ -46,93 +46,12 @@ import java.io.File
 
 /**
  * A game's manual, full screen, drawn by Android's own PDF renderer (nothing leaves the device).
- * ◀ ▶ or L1 / R1 turn pages, ▲ ▼ scroll a zoomed page, A switches fit-screen / fit-width, B closes.
- * Taps on the left / right half turn pages too.
+ * Update 202: the reader is ManualReader (ManualReader.kt) — pages rendered at the screen's size in the background with
+ * the ones around kept ready, a slide as pages turn, swipe / pinch, ◀ ▶ L1 R1 pages, A zoom, B close.
  */
 @Composable
 fun ManualViewer(file: File, title: String, onDismiss: () -> Unit) {
-    val pfd = remember(file) { runCatching { ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY) }.getOrNull() }
-    val renderer = remember(pfd) { pfd?.let { runCatching { PdfRenderer(it) }.getOrNull() } }
-    // Closed under the page lock, so a page still rendering finishes first; the renderer owns pfd and closes it too (update 91).
-    DisposableEffect(renderer) {
-        onDispose {
-            if (renderer != null) runCatching { synchronized(renderer) { renderer.close() } }
-            else runCatching { pfd?.close() }
-        }
-    }
-    var page by remember { mutableStateOf(0) }
-    var fitWidth by remember { mutableStateOf(false) }
-    val count = renderer?.pageCount ?: 0
-    val screen = screenSizeDp()
-    val scroll = rememberScrollState()
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val bitmap by produceState<Bitmap?>(null, renderer, page) {
-        val r = renderer ?: return@produceState
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                synchronized(r) {
-                    r.openPage(page).use { p ->
-                        // About 2x the screen width: sharp when zoomed to fit-width.
-                        val w = (screen.width.value * 2.2f).toInt().coerceIn(600, 2400)
-                        val h = (w.toFloat() * p.height / p.width.coerceAtLeast(1)).toInt().coerceIn(1, 8000)
-                        Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { bmp ->
-                            bmp.eraseColor(android.graphics.Color.WHITE)
-                            p.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                        }
-                    }
-                }
-            }.getOrNull()
-        }
-    }
-    LaunchedEffect(page) { scroll.scrollTo(0) }
-    val focus = remember { FocusRequester() }
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        ImmersiveDialogWindow()
-        // Inside the dialog: its window has to exist before the box can take focus (and the keys).
-        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .focusRequester(focus)
-                .focusable()
-                .onPreviewKeyEvent { e ->
-                    if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                    when (e.key) {
-                        Key.DirectionRight, Key.ButtonR1 -> { if (page < count - 1) page++; true }
-                        Key.DirectionLeft, Key.ButtonL1 -> { if (page > 0) page--; true }
-                        Key.DirectionDown -> { scope.launch { scroll.animateScrollTo(scroll.value + 300) }; true }
-                        Key.DirectionUp -> { scope.launch { scroll.animateScrollTo(scroll.value - 300) }; true }
-                        Key.ButtonA, Key.Enter, Key.DirectionCenter -> { fitWidth = !fitWidth; true }
-                        Key.ButtonB, Key.Back, Key.Escape -> { onDismiss(); true }
-                        else -> false
-                    }
-                }
-                .pointerInput(count) {
-                    detectTapGestures { o ->
-                        if (o.x > size.width / 2) { if (page < count - 1) page++ } else if (page > 0) page--
-                    }
-                }
-        ) {
-            val b = bitmap
-            if (renderer == null) {
-                Text("This manual can't be opened.", color = Color.White, modifier = Modifier.align(Alignment.Center))
-            } else if (b != null) {
-                if (fitWidth) {
-                    Box(Modifier.fillMaxSize().verticalScroll(scroll)) {
-                        Image(b.asImageBitmap(), title, contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxSize())
-                    }
-                } else {
-                    Image(b.asImageBitmap(), title, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
-                }
-            }
-            Text(
-                "$title · page ${page + 1} / $count   ◀ ▶ pages · A zoom · B close",
-                color = Color.White, fontSize = 11.sp,
-                modifier = Modifier.align(Alignment.BottomCenter).background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 10.dp, vertical = 4.dp)
-            )
-        }
-    }
+    ManualReader(file, title, onDismiss)
 }
 
 /**

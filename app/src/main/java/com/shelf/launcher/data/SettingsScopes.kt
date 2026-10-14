@@ -26,6 +26,8 @@ object SettingsScopes {
         "recently_played", "ui_prefs", "screensaver", "scrape_options", "hidden_apps", "library_apps",
         "shortcuts", "physical_media", "metadata_cache", "art_cache", "art_overrides", "game_overrides",
         "layout_presets", "game_profiles", "ra_matches", "ra_icons", "screenshots", "screenshots_v2", "video_urls", "steam_games",
+        // Update 202: the games' manual addresses (ManualLinks; the PDFs themselves are in the saved art).
+        "manual_urls",
         // Platform artwork / maker / year, and your own platform order.
         "platform_media", "platform_order"
     )
@@ -105,7 +107,12 @@ object SettingsScopes {
         },
         // The game open right now on this handheld: brought to another device it would read as "a game is
         // running" there for hours (save downloads held back, play time added to the wrong device).
-        "playtime" to { key -> key == "open_game" || key == "open_since" }
+        // Update 202: also this handheld's own play-time counter and its repair marks (PlaytimeStore, playtime format 2):
+        // brought to another device they'd be shared under that device's id too and count the same hours twice.
+        "playtime" to { key ->
+            key == "open_game" || key == "open_since" ||
+                key == PlaytimeStore.KEY_OWN || key == PlaytimeStore.KEY_OWN_SEEDED || key == PlaytimeStore.KEY_OWN_SINCE
+        }
     )
 
     fun scopeOf(name: String): SettingsScope = when {

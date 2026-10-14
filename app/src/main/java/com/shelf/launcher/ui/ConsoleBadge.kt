@@ -78,8 +78,16 @@ internal fun consoleColor(platform: String): Color = when (platform) {
  * Box). Nothing when Console badges is off.
  */
 @Composable
-internal fun BoxScope.ConsoleBadge(platform: String, corner: Alignment = Alignment.TopStart, packageName: String? = null) {
+internal fun BoxScope.ConsoleBadge(
+    platform: String, corner: Alignment = Alignment.TopStart, packageName: String? = null,
+    /** Update 202: the tile shows the game's case (its printed band carries the console's logo already). */
+    onCase: Boolean = false
+) {
     if (!Features.consoleBadges.state.value) return
+    // Update 202: not on a case that prints its console's band (the Portal showed "NINTENDO GAMECUBE" twice on every
+    // GameCube case — the badge's pill over the case's own band; the same on PS2, Switch, N64, Android…). Only the
+    // PlayStation (PS1) case, drawn without its band, keeps the badge.
+    if (onCase && caseShowsConsole(platform)) return
     BoxWithConstraints(Modifier.matchParentSize()) {
         // Too small a tile (a small slot on a small screen): no badge.
         if (maxWidth < 44.dp) return@BoxWithConstraints

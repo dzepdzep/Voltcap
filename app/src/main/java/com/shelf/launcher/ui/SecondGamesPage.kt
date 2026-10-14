@@ -410,7 +410,8 @@ private fun FolderPopup(
                         Row(tap.fillMaxWidth().height(54.dp).background(Color.White.copy(alpha = 0.05f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
                             val cover = coverOf(g)
                             Box(Modifier.fillMaxHeight().aspectRatio(0.72f).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.07f))) {
-                                if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                // (Update 202: the cover's file's flat strips trimmed — TrimMargins.kt; Crop fills the thumb.)
+                                if (cover != null) AsyncImage(rememberStyleArtRequest(cover, trim = true), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                             }
                             Spacer(Modifier.width(10.dp))
                             Text(
@@ -431,7 +432,8 @@ private fun FolderPopup(
                                 .background(Color.White.copy(alpha = 0.07f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (pic != null) AsyncImage(pic, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the tile.)
+                            if (pic != null) AsyncImage(rememberStyleArtRequest(pic, trim = pic == coverOf(g)), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                             else Text(
                                 gameDisplayName(g.name), color = ShelfTheme.colors.textPrimary, fontSize = 10.sp, textAlign = TextAlign.Center,
                                 maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(6.dp)
