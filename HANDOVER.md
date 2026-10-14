@@ -256,6 +256,11 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 192
+- **InspectSlab:** `toImageBitmap()` gives a HARDWARE bitmap, and `getPixel` threw IllegalStateException on the Thor and
+  the Classic (the crash buffer showed it at 12:34–12:37). It is now copied to ARGB_8888 first, and the whole
+  `sampleShell` call is wrapped in runCatching.
+
 ## State after update 191
 - **ui/CaseCatalog.kt:**
   - `CaseSpec(platform, region?, shell, w/h/t mm, plastic, opacity, tray, media CaseHeld, mediaWMm, mediaLeft,

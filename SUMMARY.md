@@ -4,6 +4,24 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (192): crash fix — turning a cartridge crashed Voltcap (Thor and Retroid Pocket Classic)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (1): `src_copy\ui\MediaInspectView.kt`.
+
+**Files to delete:** none.
+
+### The crash
+- Since 190, opening a game whose piece is a cartridge (your custom cartridges too) crashed Voltcap on both handhelds
+  after a moment.
+- Cause: the cartridge's shell colour is read from its own picture, and that picture lives on the graphics chip,
+  where Android doesn't allow reading its pixels.
+- Now a readable copy is read. If even that fails, the cartridge keeps its plain colour; nothing can crash there any
+  more.
+
+---
+
 ## Update — 14 Oct 2026 (191): real game cases per console and region, cardboard boxes that open, Xbox discs on the left, the disc no longer turns into a cartridge
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

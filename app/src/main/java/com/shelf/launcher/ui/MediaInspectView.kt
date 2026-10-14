@@ -842,7 +842,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
     LaunchedEffect(p) {
         delay(700)
         val bmp = runCatching { holder[0]?.toImageBitmap()?.asAndroidBitmap() }.getOrNull() ?: return@LaunchedEffect
-        shell = sampleShell(bmp)
+        // (Update 192: the layer's picture is a hardware bitmap — its pixels can't be read, that crashed Voltcap on the
+        // Thor and the Classic as soon as a cartridge was turned. A readable copy is read, and nothing can crash here.)
+        shell = runCatching {
+            val soft = if (bmp.config == android.graphics.Bitmap.Config.HARDWARE) bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else bmp
+            soft?.let { sampleShell(it) }
+        }.getOrNull()
     }
     Box(
         Modifier.fillMaxSize().drawWithCache {
