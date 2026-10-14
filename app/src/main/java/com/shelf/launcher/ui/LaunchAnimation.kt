@@ -20,8 +20,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -47,6 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.shelf.launcher.data.CardArtType
+import com.shelf.launcher.data.cardArtFor
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.pow
@@ -143,6 +147,10 @@ private fun outlinePoint(hw: Float, hh: Float, r: Float, s: Float, dir: Float): 
  * background art (blurred faintly behind), [subtitle] the console. [onDone]
  * opens the game — called once, at the end (or right away when the system's
  * animations are switched off).
+ * Update 200: [aspect] is the shape (width / height) the card it starts from had, [crop] whether the card filled that
+ * shape with the picture (cut to it, as the flat cards do) — else the picture is shown whole at its own shape (null
+ * [aspect]: once it's known). It used to be a fixed 2:3 portrait cut from whatever the card showed, so square, wide
+ * and capsule cards (and real box scans) lost their sides or top and bottom on the way into the game.
  */
 @Composable
 fun LaunchAnimation(
@@ -150,7 +158,9 @@ fun LaunchAnimation(
     title: String,
     onDone: () -> Unit,
     heroUrl: String? = null,
-    subtitle: String? = null
+    subtitle: String? = null,
+    aspect: Float? = null,
+    crop: Boolean = true
 ) {
     com.shelf.launcher.Breadcrumbs.mark("LaunchAnimation")
     val done by rememberUpdatedState(onDone)
@@ -162,10 +172,15 @@ fun LaunchAnimation(
     }
     val accent = com.shelf.launcher.ui.theme.ShelfTheme.accent
     val path = remember { Path() }
+    // Update 200: the picture's own shape once it has loaded (when the card's isn't given), so it's never cut or stretched.
+    var loadedAspect by remember(coverUrl) { mutableStateOf<Float?>(null) }
+    // (Not "shape": the cover's graphicsLayer below sets its own shape.)
+    val artAspect = (aspect ?: loadedAspect ?: CoverAspects.rawOf(coverUrl) ?: (2f / 3f)).let { if (it.isNaN() || it <= 0f) 2f / 3f else it }.coerceIn(0.3f, 3.5f)
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val coverH = maxHeight * 0.5f
-        val coverW = coverH * (2f / 3f)
-        val corner = coverH * 0.045f
+        // Update 200: fitted in a box half the screen high and 62 % of it wide, at [artAspect] (was always 2:3 by the height).
+        val coverW = minOf(maxWidth * 0.62f, maxHeight * 0.5f * artAspect)
+        val coverH = coverW / artAspect
+        val corner = minOf(coverW, coverH) * 0.0675f
         // The cover's centre sits a little above the middle, leaving room for the name.
         val centreY = maxHeight * 0.44f
         val density = LocalDensity.current
@@ -200,7 +215,8 @@ fun LaunchAnimation(
             drawRect(
                 Brush.radialGradient(
                     0f to Color(0xFFE6781E).copy(alpha = a), 0.5f to Color(0xFFA04614).copy(alpha = a * 0.4f), 1f to Color.Transparent,
-                    center = c, radius = coverHpx * 1.15f
+                    // (Update 200: round the longer side — a wide capsule is low.)
+                    center = c, radius = maxOf(coverHpx, coverW.toPx()) * 1.15f
                 )
             )
         }
@@ -238,7 +254,19 @@ fun LaunchAnimation(
                 }
         ) {
             if (coverUrl != null) {
-                AsyncImage(model = coverUrl, contentDescription = title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                // Update 200: cut to the card's shape only as the card cut it; else the whole picture (Fit), its shape
+                // noted as it loads so the frame and the sparks hug it.
+                AsyncImage(
+                    model = coverUrl, contentDescription = title,
+                    contentScale = if (crop && aspect != null) ContentScale.Crop else ContentScale.Fit,
+                    onSuccess = { r ->
+                        r.painter.intrinsicSize.let { sz ->
+                            CoverAspects.note(coverUrl, sz.width, sz.height)
+                            if (sz.width > 0f && sz.height > 0f && !sz.width.isInfinite() && !sz.height.isInfinite()) loadedAspect = sz.width / sz.height
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
             } else {
                 Text(
                     title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
@@ -328,4 +356,42 @@ fun LaunchAnimation(
             if (s.black > 0f) drawRect(Color.Black.copy(alpha = s.black))
         }
     }
+}
+
+/** Update 200: what the launch animation shows for a game: its picture, the shape to show it at, cut to it or whole. */
+internal class LaunchArt(val url: String?, val aspect: Float?, val crop: Boolean)
+
+/**
+ * Update 200: the picture and shape of the card [game] starts from ([focusedKey]: the game you're on), so the launch
+ * animation matches it. A flat card (cover, wide capsule, tile, hero, screenshot) is the picture cut to the card's own
+ * shape — its place on screen (GameOrigin) — with the art that card shows (the wide one on a wide card). A case,
+ * cartridge or disc card (when it isn't thrown in, LaunchThrow.kt), the Disc station, or a card whose place isn't
+ * known: the cover whole, at its own shape (CoverAspects, else as soon as it loads).
+ */
+internal fun launchArtFor(game: com.shelf.launcher.data.Game, state: com.shelf.launcher.LauncherUiState, focusedKey: String?): LaunchArt {
+    val k = game.stableKey
+    val o = state.artOverrides[k]
+    val a = state.art[k]
+    val cover = o?.cover ?: a?.gridUrl
+    val wide = o?.wide ?: a?.wideGridUrl
+    val hero = o?.hero ?: a?.heroUrl
+    val ap = state.appearance
+    val type = artForGame(ap.cardArtFor(), game.platform, ap.hiddenMedia)
+    val flat = ap.homeLayout != com.shelf.launcher.data.HomeLayout.DISCS && when (type) {
+        CardArtType.COVER, CardArtType.CAPSULE, CardArtType.HERO, CardArtType.SCREENSHOT -> true
+        else -> false
+    }
+    val key = GameOrigin.key
+    val rect = GameOrigin.rect?.takeIf { r ->
+        r.width >= 8f && r.height >= 8f && (key == k || (key == GameOrigin.FOCUSED && focusedKey == k))
+    }
+    if (flat && rect != null) {
+        val shape = rect.width / rect.height
+        // A card wider than it's high is the wide art (a capsule, the game you're on opened wide, a hero / screenshot).
+        val typed = if (type == CardArtType.SCREENSHOT) state.screenshots[k]?.firstOrNull() else null
+        val url = cardArtUrl(type, shape >= 1.2f, cover, wide, hero, typed)
+        if (url != null) return LaunchArt(url, shape, true)
+    }
+    val url = cover ?: wide ?: hero
+    return LaunchArt(url, CoverAspects.rawOf(url), false)
 }

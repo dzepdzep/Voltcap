@@ -28,11 +28,8 @@ internal fun disc3dOn(platform: String?): Boolean =
     platform != null && Features.discCase3d.state.value && Features.discCase.state.value &&
         MediaTemplates.of(platform)?.disc != null
 
-/** Update 151: the disc's height against a 3D model case's picture (a 12 cm disc against the case's real height). */
-private fun modelDiscFrac(platform: String?): Float {
-    val caseMm = realCaseMm(platform)?.second
-    return (if (caseMm != null && caseMm > 0f) (120f / caseMm).coerceIn(0.4f, 0.95f) else 0.66f) * 0.9f
-}
+// (Update 200: modelDiscFrac and DiscIn3DModelCase — the shape library's pre-rendered 3D case with its disc — are gone:
+// the pre-rendered 3D models no longer draw games.)
 
 /**
  * Update 151: how far right past its case the disc of a 3D case + disc sticks out (a share of the case's height), for
@@ -91,27 +88,3 @@ internal fun DiscInBox3D(
     }
 }
 
-/** Update 151: your 3D case ([model], the shape library) with the disc half out of it, standing at [yaw]. */
-@Composable
-internal fun DiscIn3DModelCase(
-    model: String, casePlatform: String?, cover: Any?, scan: Any?, yaw: Float, modifier: Modifier, caseModifier: Modifier,
-    name: String?, platform: String?
-) {
-    val tpl = MediaTemplates.of(casePlatform)
-    val realDisc = BoxTexture.mediaFor(scan)
-    val seed = (cover?.hashCode() ?: 0) xor model.hashCode()
-    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
-        val a = Models3D.aspect(model).coerceAtLeast(0.1f)
-        val h = minOf(maxHeight, maxWidth / a)
-        val caseW = h * a
-        val d = h * modelDiscFrac(casePlatform)
-        val lead = (maxWidth - caseW) / 2
-        Box(
-            Modifier.align(Alignment.CenterStart).wrapContentSize(Alignment.CenterStart, unbounded = true)
-                .offset(x = lead).size(caseW + d * DISC_OUT, h)
-        ) {
-            DiscBehind(tpl, realDisc, cover ?: scan, Modifier.size(d).align(Alignment.CenterEnd), seed)
-            Model3DArt(model, cover ?: scan, yaw, Modifier.size(caseW, h).align(Alignment.CenterStart).then(caseModifier), name = name, platform = platform)
-        }
-    }
-}

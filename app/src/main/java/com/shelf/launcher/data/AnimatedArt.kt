@@ -162,6 +162,26 @@ object AnimatedArt {
         }
     }
 
+    /** Update 200: where an animated picture's first frame is kept in memory ([StillFirst]). */
+    fun stillKey(src: String) = coil.memory.MemoryCache.Key("still|$src")
+
+    /**
+     * Update 200: the image loader, with one thing added: a request for a picture that may be animated gets that
+     * picture's first frame (kept in memory by [AnimatedDecoder]) as its stand-in while it's decoded. Animated
+     * pictures aren't kept in the memory cache (only still ones are), so each time a card came back into view — moving
+     * through the games — it decoded again, the card black for a moment meanwhile.
+     */
+    class StillFirst(private val inner: ImageLoader) : ImageLoader by inner {
+        private fun withStill(r: coil.request.ImageRequest): coil.request.ImageRequest {
+            if (r.placeholderMemoryCacheKey != null) return r
+            val url = r.data as? String ?: return r
+            if (!looksAnimated(url) || inner.memoryCache?.get(stillKey(url)) == null) return r
+            return r.newBuilder().placeholderMemoryCacheKey(stillKey(url)).build()
+        }
+        override fun enqueue(request: coil.request.ImageRequest): coil.request.Disposable = inner.enqueue(withStill(request))
+        override suspend fun execute(request: coil.request.ImageRequest): coil.request.ImageResult = inner.execute(withStill(request))
+    }
+
     /** A picture that's most likely animated, from its address (SteamGridDB's animated art is GIF / WebP). */
     fun looksAnimated(url: String?): Boolean {
         val u = url?.substringBefore('?')?.lowercase() ?: return false
@@ -179,7 +199,7 @@ object AnimatedArt {
             val h = (options.size.height as? Dimension.Pixels)?.px ?: Int.MAX_VALUE
             if (w <= 160 && h <= 160) return null
             if (!isAnimated(result.source)) return null
-            return AnimatedDecoder(result.source, options, options.parameters.value<String>(PARAM_SRC), forced)
+            return AnimatedDecoder(result.source, options, options.parameters.value<String>(PARAM_SRC), forced, imageLoader.memoryCache)
         }
 
         private fun isAnimated(source: ImageSource): Boolean = runCatching {
@@ -207,7 +227,8 @@ object AnimatedArt {
         private val source: ImageSource,
         private val options: Options,
         private val src: String?,
-        private val forced: Boolean
+        private val forced: Boolean,
+        private val memory: coil.memory.MemoryCache? = null
     ) : Decoder {
         override suspend fun decode(): DecodeResult {
             var sampled = false
@@ -228,6 +249,18 @@ object AnimatedArt {
             }
             val out = (drawable as? AnimatedImageDrawable)?.let {
                 it.repeatCount = AnimatedImageDrawable.REPEAT_INFINITE
+                // Update 200: its first frame kept in memory, the stand-in next time it's asked for (StillFirst).
+                val mem = memory; val from = src
+                if (from != null && mem != null && mem[stillKey(from)] == null) runCatching {
+                    val iw = it.intrinsicWidth.coerceAtLeast(1); val ih = it.intrinsicHeight.coerceAtLeast(1)
+                    val k = minOf(1f, 480f / maxOf(iw, ih))
+                    val bw = (iw * k).toInt().coerceAtLeast(1); val bh = (ih * k).toInt().coerceAtLeast(1)
+                    val still = android.graphics.Bitmap.createBitmap(bw, bh, android.graphics.Bitmap.Config.ARGB_8888)
+                    val c = android.graphics.Canvas(still)
+                    val was = it.bounds
+                    it.setBounds(0, 0, bw, bh); it.draw(c); it.bounds = was
+                    mem[stillKey(from)] = coil.memory.MemoryCache.Value(still)
+                }
                 Gate(it, src, forced).also { g -> register(g) }
             } ?: drawable
             return DecodeResult(out, sampled)

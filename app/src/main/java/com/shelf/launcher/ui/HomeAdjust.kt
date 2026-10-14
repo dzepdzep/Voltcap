@@ -143,7 +143,8 @@ private fun ArtDropBar(model: Boolean, close: () -> Unit) {
         }
     ) {
         ShelfCard {
-            SectionLabel("Art position · " + if (model) "3D models" else "Box art")
+            // (Update 200: Box art only — the 3D models' Art position went with the retired pre-rendered 3D models.)
+            SectionLabel("Art position · Box art")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     MutedNote("Drag the picture anywhere on the screen to move it, pinch to resize. D-pad: move · L1 / R1: size · A: Done · Y: Reset.")
@@ -158,7 +159,7 @@ private fun ArtDropBar(model: Boolean, close: () -> Unit) {
                 Spacer(Modifier.width(8.dp))
                 Chip("Done", onClick = close)
             }
-            MutedNote(if (model) "Every game in the 3D models look." else "Every game in the Box art looks.")
+            MutedNote("Every game in the Box art looks.")
         }
     }
 }

@@ -2995,7 +2995,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             return
         }
         val state = _uiState.value
-        if (state.isAndroidGame(app) && state.isAppInLibrary(app)) {
+        // Update 200: every Android game (Voltcap's "Android games" category) takes the game path, wherever it's
+        // opened from (second-screen dock, app drawer, L1 shortcuts, hotkeys, notifications). It also required the app
+        // to be in the library's normal categories, so with Settings › Library › "Only apps you add" an Android game
+        // opened from these places started like a plain app: no play time, no last played, nothing to sync.
+        if (state.isAndroidGame(app)) {
             launchNow(app)
             return
         }

@@ -104,6 +104,11 @@ class AynAdapter : VendorAdapter {
 
         @Volatile private var layoutCache: Layout? = null
         @Volatile private var probed = false
+        /**
+         * Update 200: Voltcap switched the SN3112 drivers' `enable` off, so the next colour switches them back on.
+         * Starts true: if Voltcap was closed while the lights were off, its first colour still switches them back on.
+         */
+        @Volatile private var enableHeld = true
 
         /** Which LED driver this AYN model has (Odin 2: SN3112; Thor: LED class devices). Found once. */
         private fun layout(): Layout? {
@@ -157,9 +162,24 @@ class AynAdapter : VendorAdapter {
             val value = "$r:$g:$bl:255"
             val command = when (val kind = layout()) {
                 // Odin 2 family: two SN3112 drivers, two rings each.
-                is Layout.Sn3112 -> kind.sides.flatMap { side ->
-                    listOf(1, 2).map { zone -> "echo $zone-$value > /sys/class/$side/led/brightness" }
-                }.joinToString(" ; ")
+                // Update 200: the AYN Thor has the same two SN3112 drivers (/sys/class/sn3112l and sn3112r, checked
+                // on a Thor: its /sys/class/leds only holds the PMIC red/green/blue, flash and torch LEDs), so it
+                // takes this route too. Each driver also has an `enable` switch, which AYN's own light code uses per
+                // side (its setting is "joystick_light_enabled=L,R" on the Thor): a black colour alone left one stick
+                // lit on the Thor when the lights timer ran out, so "off" now also switches both drivers' `enable` off,
+                // and the next colour switches them back on (only if Voltcap switched them off).
+                is Layout.Sn3112 -> {
+                    val off = r + g + bl == 0
+                    val zones = kind.sides.flatMap { side ->
+                        listOf(1, 2).map { zone -> "echo $zone-$value > /sys/class/$side/led/brightness" }
+                    }
+                    val enables = when {
+                        off -> kind.sides.map { side -> "echo 0 > /sys/class/$side/led/enable" }.also { enableHeld = true }
+                        enableHeld -> kind.sides.map { side -> "echo 1 > /sys/class/$side/led/enable" }.also { enableHeld = false }
+                        else -> emptyList()
+                    }
+                    (if (off) zones + enables else enables + zones).joinToString(" ; ")
+                }
                 // Thor and newer firmware: standard multicolour LED class devices.
                 is Layout.MultiColor -> kind.leds.joinToString(" ; ") { led ->
                     "echo $r $g $bl > $led/multi_intensity ; echo ${if (r + g + bl == 0) 0 else 255} > $led/brightness"

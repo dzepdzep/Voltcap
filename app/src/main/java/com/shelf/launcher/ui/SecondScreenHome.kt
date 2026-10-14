@@ -260,7 +260,10 @@ fun SecondScreenHome(
     // hidden); "Close" goes back to the Art page.
     // Only when it's really playing: a paused or stale session shows the classic card (the Visualizer layout stays up when paused).
     val gameOpen = gameWindow != null
-    val fullMusic = !gameOpen && page == SecondPage.MUSIC && options.musicLayout != SecondMusicLayout.CLASSIC &&
+    // Update 200: the Lyrics stage stays up while paused and even with nothing playing at all (it then rests like the
+    // dashboard it copies: clock, stats and the idle picture), so it doesn't wait for a playing session like the others.
+    val stageMusic = !gameOpen && page == SecondPage.MUSIC && options.musicLayout == SecondMusicLayout.STAGE && !musicClosed
+    val fullMusic = stageMusic || !gameOpen && page == SecondPage.MUSIC && options.musicLayout != SecondMusicLayout.CLASSIC &&
         nowPlaying != null && (nowPlaying.isPlaying || options.musicLayout == SecondMusicLayout.VISUALIZER) && !musicClosed
     // The full player is a page like the others now (inside the second screen, under its tabs), so you can
     // keep swiping through the pages — it used to take over the whole screen like a popup.
@@ -275,6 +278,9 @@ fun SecondScreenHome(
                 (it != SecondPage.MAGNIFIER || SecondScreenReal.active) && it.available() || it == page)
     }
     val latestCloseGame by rememberUpdatedState(onCloseGameWindow)
+    // Update 200: which way a step went ([0] = -1 / 1, [1] = the page it went to), so the slide follows the direction of
+    // travel even when it wraps around (last → first slides in from the right). Tabs and the dock use the page order.
+    val pageTravel = remember { IntArray(2) }
     val stepPage: (Int) -> Unit = { dir ->
         if (gameOpen) {
             // Out of the Game page: forward = the page you were on, back = the one before it.
@@ -287,7 +293,7 @@ fun SecondScreenHome(
         } else {
             val i = visiblePages.indexOf(page).coerceAtLeast(0)
             val next = visiblePages[(i + dir + visiblePages.size) % visiblePages.size]
-            if (next != page) selectPage(next)
+            if (next != page) { pageTravel[0] = dir; pageTravel[1] = next.ordinal; selectPage(next) }
         }
     }
     val latestStep by rememberUpdatedState(stepPage)
@@ -349,8 +355,16 @@ fun SecondScreenHome(
         )
 
         // The page itself (both looks).
-        val pageBody: @Composable () -> Unit = {
-                if (gameWindow != null) Box(Modifier.fillMaxSize().clip(uiRounded(18.dp))) { gameWindow() }
+        // Update 200: drawn for a given page (and whether it's the game window), so the page sliding out keeps drawing
+        // itself while the next one slides in (SecondPageSlide). The game window and the full music player are kept from
+        // the last time they showed: they're worked out for the current page only, and the page going out needs them too.
+        val keptGameWindow = remember { arrayOfNulls<(@Composable () -> Unit)>(1) }
+        if (gameWindow != null) keptGameWindow[0] = gameWindow
+        val keptFullMusic = remember { BooleanArray(1) }
+        if (page == SecondPage.MUSIC && !gameOpen) keptFullMusic[0] = fullMusic
+        val pageBody: @Composable (SecondPage, Boolean) -> Unit = { page, inGame ->
+                val fullMusic = keptFullMusic[0]
+                if (inGame) Box(Modifier.fillMaxSize().clip(uiRounded(18.dp))) { keptGameWindow[0]?.invoke() }
                 else when (page) {
                     SecondPage.ART -> if (showcase) ShowcaseArtPage(
                         info, info.logoUrl,
@@ -361,7 +375,17 @@ fun SecondScreenHome(
                     SecondPage.VIDEO -> VideoPage(info, videoSound)
                     SecondPage.DETAILS -> CaseDetailsPage(info, options.detailsCaseFirst)
                     SecondPage.ACHIEVEMENTS -> AchievementsPage(info)
-                    SecondPage.MUSIC -> if (fullMusic && nowPlaying != null) {
+                    // Update 200: the Lyrics stage (LyricsStage.kt) — playing, paused, or resting with nothing playing.
+                    SecondPage.MUSIC -> if (fullMusic && options.musicLayout == SecondMusicLayout.STAGE) {
+                        LyricsStage(
+                            nowPlaying = nowPlaying,
+                            onPlayPause = onPlayPause,
+                            onNext = onNext,
+                            onPrevious = onPrevious,
+                            onSeek = onSeek,
+                            modifier = Modifier.fillMaxSize().clip(uiRounded(18.dp))
+                        )
+                    } else if (fullMusic && nowPlaying != null) {
                     FullMusicScreen(
                             modifier = Modifier.fillMaxSize().clip(uiRounded(18.dp)),
                         nowPlaying = nowPlaying,
@@ -404,7 +428,10 @@ fun SecondScreenHome(
                         bottom = if (showDock && !gameOpen) SHOWCASE_BOTTOM else 22.dp
                     )
                 ) {
-                    if (page == SecondPage.ART && !gameOpen) pageBody() else ShowcasePanel { Box(Modifier.fillMaxSize().padding(8.dp)) { pageBody() } }
+                    // Update 200: the pages slide (the panel slides with its page; Art has none).
+                    SecondPageSlide(page, gameOpen, visiblePages, pageTravel) { p, inGame ->
+                        if (p == SecondPage.ART && !inGame) pageBody(p, false) else ShowcasePanel { Box(Modifier.fillMaxSize().padding(8.dp)) { pageBody(p, inGame) } }
+                    }
                 }
                 ShowcaseTopBar(
                     avatarUrl, raPoints, if (gameOpen) "Game" else page.label, onPageTap = { latestStep(1) }, endInset = headerEndInset,
@@ -466,7 +493,8 @@ fun SecondScreenHome(
             }
             }
             Spacer(Modifier.height(10.dp))
-            Box(Modifier.fillMaxWidth().weight(1f)) { pageBody() }
+            // Update 200: the pages slide in the direction of travel instead of just appearing.
+            Box(Modifier.fillMaxWidth().weight(1f)) { SecondPageSlide(page, gameOpen, visiblePages, pageTravel) { p, inGame -> pageBody(p, inGame) } }
             if (showDock && !gameOpen) {
                 Spacer(Modifier.height(10.dp))
                 AppDockBar(

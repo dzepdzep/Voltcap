@@ -594,6 +594,12 @@ enum class SecondArtType(val label: String) {
 
 /** How the second screen's Music page looks. */
 enum class SecondMusicLayout(val label: String) {
+    /**
+     * Update 200: the user's Wallpaper Engine lyrics dashboard rebuilt for the second screen (ui/LyricsStage.kt): the
+     * cover blurred behind everything, a clock, the cover with a circle visualizer, synced lyrics, effects and stats.
+     * First in the list because it is the default now.
+     */
+    STAGE("Lyrics stage"),
     FULL("Full screen"),
     /** Full screen over a music-reactive scene (the one used on the home screen, or Bloom). */
     VISUALIZER("Visualizer"),
@@ -829,7 +835,8 @@ data class AppearanceSettings(
     /** Second screen: also show the small music player over the artwork. Off = the player only lives on the Music page. */
     val secondPlayerOverArt: Boolean = false,
     /** Second screen › Music page: full screen player or the old card. */
-    val secondMusicLayout: SecondMusicLayout = SecondMusicLayout.FULL,
+    // Update 200: the Lyrics stage is the default now.
+    val secondMusicLayout: SecondMusicLayout = SecondMusicLayout.STAGE,
     /** Second screen and screensaver: blurred album art as the background while music plays. */
     val secondMusicBlurArt: Boolean = true,
     /** How strong that blur is, 0–100 %. */
@@ -976,7 +983,16 @@ class AppearanceStore(context: Context) {
         prefs.edit().putBoolean("video_previews", true).putBoolean("video_on_151", true).apply()
     }
 
-    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); oneGameLook(loadSettings()) }.also {
+    /**
+     * Update 200: the second screen's Music page switches to the new Lyrics stage once for everyone (asked for). The
+     * flag is written in the same step, so picking another layout afterwards sticks.
+     */
+    private fun applyStage200() {
+        if (prefs.getBoolean("stage_default_200", false)) return
+        prefs.edit().putString("second_music_layout", SecondMusicLayout.STAGE.name).putBoolean("stage_default_200", true).apply()
+    }
+
+    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); oneGameLook(loadSettings()) }.also {
         // Scraping in the background reads these too, without the home screen open.
         AnimatedArt.enabled = it.animatedArt
         AnimatedArt.preferAnimatedScraping = it.animatedArt && it.preferAnimatedArt
@@ -1116,7 +1132,7 @@ class AppearanceStore(context: Context) {
         secondArtType = enumPref("second_art_type", SecondArtType.HERO),
         secondArtBlur = prefs.getInt("second_art_blur", 50).coerceIn(0, 100),
         secondPlayerOverArt = prefs.getBoolean("second_player_over_art", false),
-        secondMusicLayout = enumPref("second_music_layout", SecondMusicLayout.FULL),
+        secondMusicLayout = enumPref("second_music_layout", SecondMusicLayout.STAGE),
         secondMusicBlurArt = prefs.getBoolean("second_music_blur_art", true),
         secondMusicBlur = prefs.getInt("second_music_blur", 3).coerceIn(0, 100),
         secondMusicLyrics = prefs.getBoolean("second_music_lyrics", false),

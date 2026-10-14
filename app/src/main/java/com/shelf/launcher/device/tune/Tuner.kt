@@ -242,8 +242,15 @@ object Tuner {
         if (sleeping || !t.limit) return
         val drifted = TuneHardware.clusters().any { c ->
             t.max[c.policy]?.let { it != TuneHardware.currentMax(c) } == true ||
+                // Update 200: AYN's root service writes its performance-mode floors (scaling_min_freq, GPU min_pwrlevel)
+                // again every 10 s to a few minutes (seen on both the Thor and the Odin 2 Portal): those count as drift too.
+                t.min[c.policy]?.let { want -> (TuneHardware.currentMin(c) ?: want) > want } == true ||
                 t.gov[c.policy]?.let { it != TuneHardware.currentGovernor(c) } == true
-        } || TuneHardware.gpu()?.let { g -> t.gpuMax != null && TuneHardware.gpuLevels(g).first != t.gpuMax } == true ||
+        } || TuneHardware.gpu()?.let { g ->
+            val (maxLv, minLv) = TuneHardware.gpuLevels(g)
+            // A min level below the target's = a faster GPU floor (AYN's performance mode puts level 2 back).
+            (t.gpuMax != null && maxLv != t.gpuMax) || (t.gpuMin != null && minLv != null && minLv < t.gpuMin)
+        } == true ||
             TuneHardware.overrides()?.let { o ->
                 // The perf HAL raised its own limit again, or switched a boost back on.
                 (o.msmMax != null && !msmHolds(TuneHardware.read(o.msmMax), msmList(t.max))) ||
@@ -302,7 +309,12 @@ object Tuner {
             underclockKhz(p, c, i, clusters.size)?.let { khz = minOf(khz, it) }
             heatCeiling(p)?.let { h -> underclockKhz(h, c, i, clusters.size)?.let { khz = minOf(khz, it) } }
             max[c.policy] = khz
-            val floorKhz = if (p.cpuFloor > 0) TuneHardware.snap(c, (c.maxKhz * p.cpuFloor / 100f).toInt()) else (s?.min?.get(c.policy) ?: c.minKhz)
+            // Update 200: with a limit the floor is the chip's own lowest speed, not the "stock" one. On AYN handhelds the
+            // stock floor is the handheld's performance mode (system setting performance_mode, applied by AYN's root
+            // service): on Performance it holds Little / Big / Prime at >= 1.23 / 2.05 / 2.48 GHz even in the menu, so
+            // an underclock kept as floor what it was meant to lower, and the cores sat pinned at the cap.
+            val floorKhz = if (p.cpuFloor > 0) TuneHardware.snap(c, (c.maxKhz * p.cpuFloor / 100f).toInt())
+                else if (limit) c.minKhz else (s?.min?.get(c.policy) ?: c.minKhz)
             min[c.policy] = minOf(floorKhz, khz)
             var choice = if (p.tier == PowerTier.CUSTOM || p.tier == PowerTier.OFF) p.governor else p.tier.governor
             // AutoTDP sets the ceiling; "performance" would pin every core at it even on easy frames.
@@ -319,7 +331,10 @@ object Tuner {
             // Higher level = slower: the underclock wins when it's the slower of the two.
             val ucLevel = listOfNotNull(underclockGpuLevel(p, g), heatCeiling(p)?.let { underclockGpuLevel(it, g) }).maxOrNull()
             gpuMax = if (ucLevel != null) maxOf(tierMax, ucLevel) else tierMax
-            gpuMin = if (p.gpuFloor > 0) maxOf(TuneHardware.gpuLevelFor(g, p.gpuFloor), gpuMax) else (s?.gpuMin ?: g.slowest)
+            // Update 200: same for the GPU — AYN's performance mode sets min_pwrlevel 2 (550 MHz) as its floor; with a limit
+            // the floor is the slowest level, and never faster than the cap (a min level below the max level is invalid).
+            gpuMin = if (p.gpuFloor > 0) maxOf(TuneHardware.gpuLevelFor(g, p.gpuFloor), gpuMax)
+                else if (limit) g.slowest else maxOf(s?.gpuMin ?: g.slowest, gpuMax)
         }
         return Target(max, min, gov, gpuMax, gpuMin, limit)
     }
@@ -550,7 +565,20 @@ object Tuner {
         }
         val ok = TuneHardware.writeAll(writes)
         if (remember) lastTarget = t
-        _status.value = _status.value.copy(note = if (ok) null else "The root service didn't take the new clocks.")
+        // Update 200: "the command ran" isn't "the caps hold". On the Thor the notification said "Underclock Medium"
+        // while every core could still reach its full speed, so with a limit the top speeds are read back and a cap
+        // that didn't take is said on the tuner page instead of being assumed.
+        val missed = if (ok && t.limit) TuneHardware.clusters().filter { c ->
+            t.max[c.policy]?.let { want -> TuneHardware.currentMax(c)?.let { it > want } } == true
+        } else emptyList()
+        _status.value = _status.value.copy(
+            note = when {
+                !ok -> "The root service didn't take the new clocks."
+                missed.isNotEmpty() -> "The handheld didn't keep the top speed for " + missed.joinToString { it.name } +
+                    " (its own performance mode or game service sets clocks too). Voltcap writes it again every few seconds."
+                else -> null
+            }
+        )
     }
 
     private fun captureStock() {

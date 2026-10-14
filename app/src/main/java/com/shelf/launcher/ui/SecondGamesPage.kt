@@ -10,6 +10,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -81,24 +85,43 @@ internal fun SecondGamesPage(
      * Update 195: the console (and game) lit or opened here, so the main screen follows it — its category, the game
      * selected — without opening anything.
      */
-    onHighlight: (platform: String, game: Game?) -> Unit = { _, _ -> }
+    onHighlight: (platform: String, game: Game?) -> Unit = { _, _ -> },
+    /**
+     * Update 200: the folder lit (controller), touched or hovered here while no folder is open — the top screen shows that
+     * console big; null when there's none (also when this page goes away).
+     */
+    onHover: (GamesFolder?) -> Unit = {}
 ) {
     var open by remember { mutableStateOf<GamesFolder?>(null) }
+    // Update 200: a folder's long-press menu (Open / Change icon… / Reset icon).
+    var menuFor by remember { mutableStateOf<GamesFolder?>(null) }
+    // Update 200: Settings › Screens › Second screen Games page › Top screen follows the Games page (on by default).
+    val follow = com.shelf.launcher.data.Features.secondTopFollows.state.value
     // Update 195: the main screen follows: a folder opened (tap or A) shows that console there; with the controller here,
-    // the folder or game that's lit does too (a moment after it stops moving).
+    // the game that's lit inside it does too (a moment after it stops moving). (Update 200: a folder only lit no longer
+    // switches the top screen's console — it shows the folder big there instead, onHover below.)
     val latestHighlight by androidx.compose.runtime.rememberUpdatedState(onHighlight)
-    androidx.compose.runtime.LaunchedEffect(open) { open?.let { latestHighlight(it.platform, null) } }
+    androidx.compose.runtime.LaunchedEffect(open, follow) { if (follow) open?.let { latestHighlight(it.platform, null) } }
     val padOn = SecondPad.active
     val lit = SecondPad.focused
+    // Update 200: the folder under a finger (pressed) or a mouse / stylus (hovered), reported by each folder.
+    var touchFolder by remember { mutableStateOf<String?>(null) }
+    val litFolder = if (padOn && lit != null && lit.startsWith("folder-")) lit.removePrefix("folder-") else null
+    val hoverPlatform = if (!follow || open != null || menuFor != null) null else touchFolder ?: litFolder
+    val latestHover by androidx.compose.runtime.rememberUpdatedState(onHover)
+    androidx.compose.runtime.LaunchedEffect(hoverPlatform, folders) {
+        val f = hoverPlatform?.let { p -> folders.firstOrNull { it.platform == p } }
+        // (A short wait first, so a quick tap that opens the folder, or the controller passing over, doesn't flash it up top.)
+        if (f != null) kotlinx.coroutines.delay(180)
+        latestHover(f)
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { latestHover(null) } }
     androidx.compose.runtime.LaunchedEffect(lit, padOn, open) {
         val id = lit
-        if (padOn && id != null) {
+        if (padOn && id != null && follow) {
             kotlinx.coroutines.delay(260)
             val f = open
-            if (f == null && id.startsWith("folder-")) {
-                val p = id.removePrefix("folder-")
-                if (folders.any { it.platform == p }) latestHighlight(p, null)
-            } else if (f != null && id.startsWith("game-")) {
+            if (f != null && id.startsWith("game-")) {
                 val key = id.removePrefix("game-")
                 gamesOf(f.platform).firstOrNull { it.stableKey == key }?.let { latestHighlight(f.platform, it) }
             }
@@ -135,16 +158,48 @@ internal fun SecondGamesPage(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(folders, key = { it.platform }) { f ->
-                    if (look == com.shelf.launcher.data.Features.FolderLook.FOLDERS) ConsoleFolder(f, Modifier.fillMaxWidth().aspectRatio(aspect)) { open = f }
-                    else ConsoleTile(f, look, Modifier.fillMaxWidth().aspectRatio(aspect)) { open = f }
+                    // Update 200: a finger on the folder (or a mouse / stylus over it) shows it up top, like the controller;
+                    // a long-press opens its menu (Change icon…).
+                    val src = remember { MutableInteractionSource() }
+                    val pressed by src.collectIsPressedAsState()
+                    val hovered by src.collectIsHoveredAsState()
+                    val touching = pressed || hovered
+                    androidx.compose.runtime.LaunchedEffect(touching) {
+                        if (touching) touchFolder = f.platform else if (touchFolder == f.platform) touchFolder = null
+                    }
+                    androidx.compose.runtime.DisposableEffect(f.platform) { onDispose { if (touchFolder == f.platform) touchFolder = null } }
+                    val showMenu = { menuFor = f }
+                    if (look == com.shelf.launcher.data.Features.FolderLook.FOLDERS) ConsoleFolder(f, Modifier.fillMaxWidth().aspectRatio(aspect), src, showMenu) { open = f }
+                    else ConsoleTile(f, look, Modifier.fillMaxWidth().aspectRatio(aspect), src, showMenu) { open = f }
                 }
             }
             }
         }
+        // Update 200: a folder's long-press menu, on its own controller layer (over the page, under a folder's popup).
+        menuFor?.let { mf ->
+            val ctx = androidx.compose.ui.platform.LocalContext.current.applicationContext
+            val v = com.shelf.launcher.data.FolderArt.version
+            val mine = remember(mf.platform, v) { runCatching { com.shelf.launcher.data.FolderArt.hasMine(ctx, mf.platform) }.getOrDefault(false) }
+            androidx.compose.runtime.CompositionLocalProvider(LocalPadLayer provides 2) {
+                FolderIconMenu(
+                    folder = mf,
+                    hasOwnIcon = mine,
+                    onOpen = { menuFor = null; open = mf },
+                    // The picker opens on the top screen, so the controller goes back up with it.
+                    onChange = { menuFor = null; FolderIcons.pick(mf.platform, mf.name); SecondPad.leave() },
+                    onReset = { menuFor = null; com.shelf.launcher.data.FolderArt.clearMine(ctx, mf.platform) },
+                    onClose = { menuFor = null }
+                )
+            }
+        }
         AnimatedVisibility(
             visible = open != null,
-            enter = fadeIn() + scaleIn(initialScale = 0.94f),
-            exit = fadeOut() + scaleOut(targetScale = 0.94f)
+            // Update 200: a set ~220 ms scale + fade (it used the loose default springs), in step with the second screen's
+            // page slide and gliding highlight; the highlight follows the games as the popup scales in.
+            enter = fadeIn(androidx.compose.animation.core.tween(220)) +
+                scaleIn(androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing), initialScale = 0.92f),
+            exit = fadeOut(androidx.compose.animation.core.tween(180)) +
+                scaleOut(androidx.compose.animation.core.tween(180, easing = androidx.compose.animation.core.FastOutLinearInEasing), targetScale = 0.94f)
         ) {
             // (Kept while it fades out: the folder that was open.)
             val f = remember { mutableStateOf<GamesFolder?>(null) }
@@ -160,13 +215,23 @@ internal fun SecondGamesPage(
 }
 
 /** A folder in the theme's colour (a back with its tab, a lighter front) with the console's logo on the front. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun ConsoleFolder(f: GamesFolder, modifier: Modifier, onClick: () -> Unit) {
+private fun ConsoleFolder(f: GamesFolder, modifier: Modifier, source: MutableInteractionSource, onLongClick: () -> Unit, onClick: () -> Unit) {
     val accent = ShelfTheme.accent
     val back = lerp(accent, Color.Black, 0.28f)
     val frontTop = lerp(accent, Color.White, 0.12f)
     val frontBottom = accent
-    Box(modifier.padTarget("folder-" + f.platform) { onClick() }.clip(RoundedCornerShape(10.dp)).clickable { onClick() }, contentAlignment = Alignment.Center) {
+    // (Update 200: a long-press opens the folder's menu; [source] tells the page it's touched or hovered.)
+    Box(
+        modifier.padTarget("folder-" + f.platform) { onClick() }.clip(RoundedCornerShape(10.dp))
+            .hoverable(source)
+            .combinedClickable(
+                interactionSource = source, indication = androidx.compose.foundation.LocalIndication.current,
+                onLongClick = onLongClick, onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
@@ -195,12 +260,12 @@ private fun ConsoleFolder(f: GamesFolder, modifier: Modifier, onClick: () -> Uni
             // A thin light line along the front's top edge, like the edge of a sheet.
             drawLine(Color.White.copy(alpha = 0.35f), Offset(left + r.x, frontY + 1f), Offset(right - r.x, frontY + 1f), strokeWidth = 2f)
         }
-        // Update 177: the folder's picture (FolderArt) on its front.
+        // Update 177: the folder's picture (FolderArt) on its front. (Update 200: animated GIF / WebP ones move.)
         val pic = rememberFolderPicture(f.platform)
         if (pic != null) {
             Column(Modifier.fillMaxSize()) {
                 Spacer(Modifier.weight(0.26f))
-                AsyncImage(pic, null, contentScale = ContentScale.Crop,
+                FolderIconImage(pic, null, contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth().weight(0.68f).padding(horizontal = 6.dp).clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)))
                 Spacer(Modifier.weight(0.06f))
             }
@@ -228,8 +293,12 @@ private fun rememberFolderPicture(platform: String): java.io.File? {
 }
 
 /** Update 177: a console as a tile, a wide card or its logo alone: its picture (FolderArt) filling it, else the theme's colours. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun ConsoleTile(f: GamesFolder, look: com.shelf.launcher.data.Features.FolderLook, modifier: Modifier, onClick: () -> Unit) {
+private fun ConsoleTile(
+    f: GamesFolder, look: com.shelf.launcher.data.Features.FolderLook, modifier: Modifier,
+    source: MutableInteractionSource, onLongClick: () -> Unit, onClick: () -> Unit
+) {
     val accent = ShelfTheme.accent
     val shape = RoundedCornerShape(if (look == com.shelf.launcher.data.Features.FolderLook.TILES) 14.dp else 12.dp)
     val pic = if (look == com.shelf.launcher.data.Features.FolderLook.LOGOS) null else rememberFolderPicture(f.platform)
@@ -241,11 +310,17 @@ private fun ConsoleTile(f: GamesFolder, look: com.shelf.launcher.data.Features.F
                 else Brush.linearGradient(listOf(lerp(accent, Color.White, 0.12f), lerp(accent, Color.Black, 0.3f)))
             )
             .border(1.dp, Color.White.copy(alpha = 0.12f), shape)
-            .clickable { onClick() },
+            // (Update 200: a long-press opens the folder's menu; [source] tells the page it's touched or hovered.)
+            .hoverable(source)
+            .combinedClickable(
+                interactionSource = source, indication = androidx.compose.foundation.LocalIndication.current,
+                onLongClick = onLongClick, onClick = onClick
+            ),
         contentAlignment = Alignment.Center
     ) {
         if (pic != null) {
-            AsyncImage(pic, f.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            // (Update 200: animated GIF / WebP pictures move.)
+            FolderIconImage(pic, f.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             if (logoOn) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
         }
         if (logoOn) {

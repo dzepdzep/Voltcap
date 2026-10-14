@@ -482,9 +482,22 @@ internal fun GameWindow(
     if (pieceNow != null) lastPiece[0] = pieceNow
     val piece = if (inspect) pieceNow ?: lastPiece[0] else null
     val motion = remember(g.stableKey) { InspectMotion().also { it.from = origin } }
-    // (Update 162: a 3D model turns all the way round too. Update 166: on its own pictures, every 20° round — InspectModel.)
+    // (Update 162: a piece turns all the way round. Update 200: the drawn shells of the 3D cartridges looks too — the
+    // pre-rendered 3D models and their InspectModel are retired.)
     motion.limited = false
     val inspectScope = rememberCoroutineScope()
+    // Update 200: the stick click for the piece, also from the home screen's key handler (MediaInspect.stickClick).
+    val pieceForStick by rememberUpdatedState(piece)
+    val hasPiece = piece != null
+    androidx.compose.runtime.DisposableEffect(motion, hasPiece) {
+        if (!hasPiece) return@DisposableEffect onDispose { }
+        val hook: () -> Unit = {
+            val pc = pieceForStick
+            if (pc != null) { if (pc.kind == InspectKind.BOX) motion.stickClick(inspectScope, pc.content != null) else motion.spinOnce(inspectScope) }
+        }
+        MediaInspect.stickClick = hook
+        onDispose { if (MediaInspect.stickClick === hook) MediaInspect.stickClick = null }
+    }
     // The flight and the turn with the window's animation on (Home › Animations), the system's animations on and no
     // Lite effects; otherwise a short fade.
     val sysAnims = rememberAnimationsEnabled()
@@ -624,10 +637,13 @@ internal fun GameWindow(
         } else Box(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
             // Update 189: a click of the right stick (which turns the piece) opens / closes its case.
             val pc = piece
-            if (pc != null && e.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_BUTTON_THUMBR) {
+            val code = e.nativeKeyEvent.keyCode
+            if (pc != null && (code == android.view.KeyEvent.KEYCODE_BUTTON_THUMBR || code == android.view.KeyEvent.KEYCODE_BUTTON_THUMBL)) {
                 // (Update 199: a cartridge, disc or 3D piece turns once round instead.)
-                if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_UP) {
-                    if (pc.kind == InspectKind.BOX) motion.toggleCase(inspectScope, true, pc.content != null) else motion.spinOnce(inspectScope)
+                // (Update 200: either stick's click, acted on as it goes down — one click a step: open, take out, put back
+                // and shut. It took two clicks.)
+                if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN && e.nativeKeyEvent.repeatCount == 0) {
+                    if (pc.kind == InspectKind.BOX) motion.stickClick(inspectScope, pc.content != null) else motion.spinOnce(inspectScope)
                 }
                 true
             } else false
@@ -782,7 +798,8 @@ private fun WinGameMedia(g: Game, state: LauncherUiState, cover: String?, modifi
     val physical = state.physicalMedia[g.stableKey]
     val pick = mediaFor(g.platform, gameKey = g.stableKey)
     // Update 128: on your cartridge pack (Cartridges look) it's that cartridge, never its disc case or a disc scan.
-    val custom = pick?.platform?.let { isCustomPiece(it) || it.startsWith(MODEL_3D) } == true
+    // (Update 200: the 3D cartridges looks' drawn shells count as custom pieces — the pre-rendered 3D models are retired.)
+    val custom = pick?.platform?.let { isCustomPiece(it) } == true
     val realScan = physical?.firstOrNull { it.first == "Disc / cartridge" }?.second?.takeIf { !custom }
     val tpl = MediaTemplates.of(g.platform)
     val caseOn = Features.gameWindowCase.state.value && tpl?.disc != null && tpl.box != null && pick != null && !custom
@@ -810,7 +827,7 @@ private fun WinGameMedia(g: Game, state: LauncherUiState, cover: String?, modifi
 
 /** Whether [platform]'s game shows as a case with its disc (a disc console with a case template). */
 private fun discCaseFits(platform: String): Boolean = MediaTemplates.of(platform).let { it?.disc != null && it.box != null } &&
-    mediaFor(platform).let { it != null && !isCustomPiece(it.platform) && !it.platform.startsWith(MODEL_3D) }
+    mediaFor(platform).let { it != null && !isCustomPiece(it.platform) }
 
 /** Facts, achievements and the story, as chosen (update 119). [descLines]: 0 = no story. */
 @Composable

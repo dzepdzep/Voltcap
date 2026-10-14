@@ -4,6 +4,73 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (200): cases open a step at a time, a gliding second screen, the Lyrics stage, drawn 3D cartridges with real backs, folder icons that move, Android play time, fixes
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (4): `src_copy\ui\CartBacks.kt`, `src_copy\ui\FolderIcons.kt`, `src_copy\ui\LyricsStage.kt`, `src_copy\ui\SecondPageSlide.kt`.
+Changed (39): `src_copy\LauncherUiState.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\data\AnimatedArt.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\ArtStorage.kt`, `src_copy\data\Features.kt`, `src_copy\data\FolderArt.kt`, `src_copy\data\LayoutPresets.kt`, `src_copy\data\RunningGames.kt`, `src_copy\device\SystemLights.kt`, `src_copy\device\VendorAdapter.kt`, `src_copy\device\tune\GameNotification.kt`, `src_copy\device\tune\Tuner.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\CartShellPicker.kt`, `src_copy\ui\CartShells.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\DiscCase3D.kt`, `src_copy\ui\GameLookPicker.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\HeroCarousel.kt`, `src_copy\ui\HomeAdjust.kt`, `src_copy\ui\LaunchAnimation.kt`, `src_copy\ui\LaunchThrow.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaInspect.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\Models3D.kt`, `src_copy\ui\OptionIcons.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\SecondGamesPage.kt`, `src_copy\ui\SecondGamesSettings.kt`, `src_copy\ui\SecondPad.kt`, `src_copy\ui\SecondScreen.kt`, `src_copy\ui\SecondScreenHome.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`.
+
+**Files to delete:** none.
+
+### Cases open a step at a time
+- **Steps:** a tap (or either stick's click) opens the case: the lid swings, the disc or cartridge still lies in it, and the open case can be turned and looked at. A tap on the disc takes it out beside the case; a tap on it puts it back in the open case; a tap on the case shuts it.
+- **Hints:** "Tap the case (or click a stick) to open it", then "Tap the disc to take it out".
+- **Finger taps fixed:** the disc, hidden inside the case, sat over the case's right half and took the taps, so a finger on the case didn't open it.
+- **Stick click fixed:** the first stick click now always reaches the piece (it took two).
+- **"Open cases side by side"** still opens it all the way by itself.
+- **Cartridges, loose discs and pieces:** a tap or stick click turns them once round.
+
+### Second screen
+- **Highlight:** one ring glides from control to control (it used to jump), follows lists as they scroll, and glides into a newly scrolled row.
+- **Pages:** they slide in the direction you go.
+- **Folders:** they open with a short scale and fade.
+
+### Lyrics stage — the second screen's new music page (default)
+Rebuilt from your lyrics wallpaper:
+- **Background:** the cover blurred behind, pulsing with the music.
+- **Clock and date** at the top.
+- **The cover** with a circle visualizer round it, then the title, progress, and previous / play / next.
+- **Synced lyrics** beside it.
+- **Effects:** particles, spectrum bars, beat rings, aurora, starfield, bokeh and wave lines.
+- **Panels:** a stats panel (CPU, GPU, RAM, drives, network — what Android lets an app read) and a volume control.
+- **Status line:** it says when something is missing (e.g. the Microphone permission for the music reaction).
+
+Every toggle from the wallpaper's settings is there: Settings › Screens › Second screen art & music › Music page layout › Lyrics stage (effects, reactions, background, idle and its picture, clock and size, stats panel, lyrics and volume, status line). Full screen, Visualizer and Classic card are still there to pick.
+
+### 3D cartridges: the drawn pieces, with real backs
+- **Old 3D models retired:** the pre-rendered models (pictures every 20°, which turned like a slide show) are gone. The 3D cartridges looks now draw the cartridges Voltcap draws itself, turning smoothly at their real thickness:
+  - **3D cartridges:** each console's authentic shell.
+  - **3D custom cartridges:** your pack's shapes.
+  - **3D clear cartridges:** clear plastic.
+- **Removed:**
+  - the R1 "3D on / off" tile;
+  - the old "3D models" settings;
+  - the Cartridge shell… menu's "Your 3D pieces" tab. A game set to one of those pieces gets its own console's shell.
+- **Backs:** every shell's back is drawn from research of real rear photos: its screws by type (cross, tri-wing, security, slot), moulded text, panels, stickers, seams and connector. The fronts weren't touched.
+- **Back setting:** Settings › Game look › Covers, cases & discs › Cartridge backs — the maker's markings on a game's own console's shell (default), always, or plain (same shape, screws and contacts, no branding).
+- **Research status:** some backs are still unverified (the research couldn't reach the photos); `CARTRIDGES.md` lists each.
+- **GBC back fixed:** the odd logo on the GBC back came from the old models and is gone.
+
+### Folder icons
+- **Setting one:** long-press a folder on the second screen's Games page › Change icon… / Reset icon. Settings › Screens › Second screen Games page › Folder icons has a short how-to and every console with Change / Reset.
+- **Animated icons:** GIFs and animated WebPs play.
+- **Top screen follows the Games page:** the folder you're on shows big on the top screen (its icon or GIF, name and game count); opening it shows its games up there. Switch: "Top screen follows the Games page" (on).
+
+### Fixes
+- **Crash on the Odin 2 Portal:** fixed. The cartridge shell choices were made the first time a game was drawn, in the middle of a screen's measuring — "Reading a state that was created after the snapshot was taken".
+- **Android games' play time:** a game's splash screen closing a second after the game opened ended the timing, so sessions came out at about a second and were dropped. That is also why nothing synced. Now:
+  - the game counts while any of its screens is open;
+  - every Android game is tracked from wherever it's started;
+  - Continue playing shows Android games and no ordinary apps.
+- **Launch animation:** it drew every cover at 2:3, cut to fit. It now uses the card's own shape and art; case and cartridge throws use the case's real shape.
+- **Thor RGB timer:** it now switches both light chips off, plus the Thor's combined "1,1" light setting, and puts them back.
+- **Underclocking didn't work:** AYN's performance mode keeps its own minimum speeds, and Voltcap kept them as the floor. While a limit is on, the floor is the chip's lowest speed. The tuner page says when a cap didn't hold, and the notification shows the profile that's really running.
+- **Animated covers:** they no longer go black for a moment while moving through the games (their first frame stands in while they're decoded again).
+- **Covers on cases (other consoles too):** a cover a little off its case's shape, up to about an eighth, is fitted whole instead of cut.
+
+---
+
 ## Update — 14 Oct 2026 (199): fixes from the look-by-look check
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

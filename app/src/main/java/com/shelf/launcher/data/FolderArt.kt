@@ -11,7 +11,8 @@ import java.util.zip.ZipInputStream
 
 /*
  * Update 177: pictures for the console folders on the second screen's Games page. Three places, first found wins:
- * 1. a picture picked for one console (Settings › Screens › Second screen Games page › the console › Pick a picture);
+ * 1. a picture picked for one console (Settings › Screens › Second screen Games page › Folder icons › Change; update 200:
+ *    also a long-press on the folder on the Games page › Change icon…; animated GIF / WebP ones play, FolderIcons.kt);
  * 2. a folder pack: a .zip (or the Voltcap/Folders folder) of pictures named after the consoles;
  * 3. none: the drawn folder / tile in the theme's colours with the console's logo.
  *

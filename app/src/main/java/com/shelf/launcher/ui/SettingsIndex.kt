@@ -127,15 +127,10 @@ internal object SettingsIndex {
         E("Discs only", "Game look", "Covers, cases & discs", null, null),
         E("Real cases", "Game look", "Covers, cases & discs", null, null),
         E("Cartridges & discs", "Game look", "Covers, cases & discs", null, null),
-        E("3D models", "Game look", "Covers, cases & discs", null, null),
-        E("3D cartridges cases cards (shape library)", "Game look", "Covers, cases & discs", null, null),
-        // Update 151: the 3D models' new options.
-        E("3D models: turn the one you're on", "Game look", "Covers, cases & discs", null, null),
-        E("3D models: floor reflection", "Game look", "Covers, cases & discs", null, null),
-        E("3D models: disc consoles as their 3D case or your custom cartridge", "Game look", "Covers, cases & discs", null, null),
+        // (Update 200: the 3D models' entries — the look and its turn / reflection / disc consoles / facing options — are gone
+        // with the retired pre-rendered 3D models; the 3D cartridges looks draw the drawn shells.)
+        E("3D cartridges (real shells, your pack's shapes or clear plastic)", "Game look", "Covers, cases & discs", null, null),
         E("Case stacks: cases in 3D", "Home", "Layout options", null, null),
-        // Update 158: the 3D piece / case you're on faces you, or stands turned like the others.
-        E("3D models: the one you're on faces you or is turned like the others", "Game look", "Covers, cases & discs", null, null),
         E("Carousel 3D cases: the one you're on faces you", "Home", "Layout options", null, null),
         E("Case stacks: the one you're on faces you", "Home", "Layout options", null, null),
         E("Cartridge games as discs too", "Game look", "Covers, cases & discs", null, null),
@@ -405,6 +400,11 @@ internal object SettingsIndex {
         E("Album cover on the visualizer", "Screens", null, "second_look", "Second screen art & music"),
         E("Lyrics in the full player", "Screens", null, "second_look", "Second screen art & music"),
         E("Player over the artwork", "Screens", null, "second_look", "Second screen art & music"),
+        // Update 200: the Games page's folder icons and the top screen following it, findable in Settings › search.
+        E("Second screen Games page", "Screens", null, "second_games", "Second screen Games page"),
+        E("Folder icons", "Screens", null, "second_games", "Second screen Games page"),
+        E("Top screen follows the Games page", "Screens", null, "second_games", "Second screen Games page"),
+        E("Folder pack", "Screens", null, "second_games", "Second screen Games page"),
         E("Not connected", "Profile", null, null, null),
         E("Currently playing", "Profile", null, null, null),
         E("Recent awards", "Profile", null, null, null),

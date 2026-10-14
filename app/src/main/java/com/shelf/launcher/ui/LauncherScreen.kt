@@ -1207,8 +1207,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             // "Off": the handheld's own light setting goes off too (it kept putting its colour back);
             // anything else puts it back the way it was.
+            // Update 200: the lights timer ("off with the screensaver") does the same while it holds them dark — the
+            // Thor's firmware otherwise put its colour back on a stick — and puts the setting back when it ends.
             runCatching {
-                if (a.lightsEnabled && lightsHeldOff) com.shelf.launcher.device.SystemLights.holdOff(lightsContext)
+                if (a.lightsEnabled && (lightsHeldOff || lightsDark)) com.shelf.launcher.device.SystemLights.holdOff(lightsContext)
                 else com.shelf.launcher.device.SystemLights.release(lightsContext)
             }
             com.shelf.launcher.data.ControllerLights.apply(
@@ -1220,10 +1222,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // quietly re-sent while Voltcap is on screen: every 8 s on AYN (a one-way call, nearly free), 30 s
         // elsewhere. (Not while the lights pulse with the music: that loop owns them then.)
         val resendMs = if (com.shelf.launcher.device.RootShell.available) 8_000L else 30_000L
-        while (a.lightsEnabled && !(a.lightsMusic && !lightsHeldOff && state.nowPlaying?.isPlaying == true)) {
+        // Update 200: also re-sent while the timer holds them dark with music playing (the pulse loop stops then,
+        // so nothing kept them off and the firmware's colour came back).
+        while (a.lightsEnabled && !(a.lightsMusic && !lightsHeldOff && !lightsDark && state.nowPlaying?.isPlaying == true)) {
             kotlinx.coroutines.delay(resendMs)
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                if (lightsHeldOff) runCatching { com.shelf.launcher.device.SystemLights.holdOff(lightsContext) }
+                if (lightsHeldOff || lightsDark) runCatching { com.shelf.launcher.device.SystemLights.holdOff(lightsContext) }
                 com.shelf.launcher.data.ControllerLights.apply(
                     lightsContext, true, on = !lightsDark && !lightsHeldOff, color = com.shelf.launcher.data.LightsTheme.resolve(a.lightsColor), brightness = lightLevel
                 )
@@ -1527,6 +1531,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             emptyList()
         }
     }
+    // Update 200: the console folder lit / touched on the second screen's Games page (no folder open there): the top screen
+    // shows it big over the home (TopScreenFolderPreview, FolderIcons.kt). Null: none.
+    var secondHoverCategory by remember { mutableStateOf<GamesFolder?>(null) }
+    // Update 200: "Change icon…" on a Games page folder opens Android's picture picker from here (the main screen's activity).
+    FolderIconPickerHost()
     // What the second screen shows.
     @Composable
     fun SecondScreenContent() {
@@ -1817,7 +1826,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                 val index = viewModel.uiState.value.visibleGames.indexOfFirst { it.stableKey == g.stableKey }
                                 if (index >= 0) viewModel.setFocus(index)
                             }
-                        }
+                        },
+                        // Update 200: a folder lit / touched there shows that console big up here (the overlay over the home).
+                        onHover = { secondHoverCategory = it }
                     )
                 },
                 page = gamePageOverride ?: state.appearance.secondPage,
@@ -3683,6 +3694,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 }
             }
         }
+        // Update 200: the console lit on the second screen's Games page, big over the dimmed home (fades in / out). It has no
+        // touch or focus handling of its own, so the home and the second screen keep working; it steps aside for anything
+        // opened over the home and for Settings › Top screen follows the Games page being off.
+        val hoverShown = secondHoverCategory?.takeIf {
+            com.shelf.launcher.data.Features.secondTopFollows.state.value && !homeCovered && !aDialogIsOpen && GamePopup.game == null
+        }
+        Box(Modifier.matchParentSize().zIndex(6.5f)) { TopScreenFolderPreview(hoverShown, Modifier.fillMaxSize()) }
         if (legendShown) {
             Box(Modifier.align(Alignment.BottomCenter)) { LegendBar() }
         }
@@ -3748,8 +3766,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
 
         launchingGame?.let { game ->
+            // Update 200: the picture and shape of the card it starts from (was the cover cut to 2:3 whatever the card).
+            val launchArt = remember(game) { launchArtFor(game, state, state.visibleGames.getOrNull(state.focusedIndex)?.stableKey) }
             LaunchAnimation(
-                coverUrl = state.artOverrides[game.stableKey]?.cover ?: state.art[game.stableKey]?.gridUrl,
+                coverUrl = launchArt.url,
+                aspect = launchArt.aspect,
+                crop = launchArt.crop,
                 title = LocalTitleOptions.current.display(game.name),
                 onDone = {
                     launchingGame = null
@@ -5162,6 +5184,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // EVERY other key press (bound or not) belongs to the combo:
                 // a bound one runs its action, an unbound one does nothing,
                 // and Select's own release then does not open the menu.
+                // Update 200: a stick click while a piece is out in the game window is for the piece (open its case a
+                // step, or turn it), even when the window's own controls haven't got the focus yet.
+                run {
+                    val code = event.nativeKeyEvent.keyCode
+                    val hook = MediaInspect.stickClick
+                    if (hook != null && (code == android.view.KeyEvent.KEYCODE_BUTTON_THUMBL || code == android.view.KeyEvent.KEYCODE_BUTTON_THUMBR)) {
+                        if (event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount == 0) hook()
+                        return@onKeyEvent true
+                    }
+                }
                 if (!aDialogIsOpen && quickJump == null) {
                     val code = event.nativeKeyEvent.keyCode
                     if (code == android.view.KeyEvent.KEYCODE_BUTTON_SELECT) {

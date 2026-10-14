@@ -112,7 +112,8 @@ internal fun ShelfGameArt(
         Box(modifier.awardShine(g.stableKey, on)) {
             val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey) else null
             // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
-            val real = realScanOf(gArt, typed)
+            // (Update 200: the 3D cartridges looks draw their drawn piece whatever the scans — the 3D models did.)
+            val real = if (drawn3dOn() && pick != null && isCustomPiece(pick.platform)) null else realScanOf(gArt, typed)
             // (Update 173: an app without art: its icon on the label / case front — they stayed blank.)
             val appIcon = if (cover == null && typed == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
                 rememberAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
@@ -613,15 +614,16 @@ internal fun GameCarousel(
         // pieces 640 px), a little further out — Box flow shows many at once.
         val f = Features
         val box3d = f.carousel3d.value || Carousel.view.cases
-        val models = Models3D.on() && cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+        // (Update 200: the 3D cartridges looks' drawn shells read the cover at 480 px, as the 3D cases do — the
+        // pre-rendered 3D models' 640 px is gone with them.)
+        val models = drawn3dOn() && cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
         if (box3d || models) {
             val far = reach + 3
             val more = ((focus - far)..(focus + far)).mapNotNull { i ->
                 val g = games.getOrNull(if (loop) i.mod(n) else i) ?: return@mapNotNull null
                 overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
             }.distinct()
-            if (box3d) warmSoft(warmCtx, more, 480)
-            if (models) warmSoft(warmCtx, more, 640)
+            warmSoft(warmCtx, more, 480)
         }
     }
     val spines = spinesOn(cardArtType)
@@ -636,8 +638,10 @@ internal fun GameCarousel(
     // Update 162: the "3D cases" switch too turns only the case looks into 3D cases (it boxed cartridges, cards and discs
     // into cases); every other look shows each game as its own piece in every view, a turned flat piece with its edge.
     val cases3d = caseLook && (Features.carousel3d.state.value || view.cases)
-    // Update 141: with 3D models on, the cartridges & discs look draws each game as its 3D model in every view, at its turn.
-    val modelLook = Models3D.on() && cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+    // Update 141: with 3D models on, the cartridges & discs look drew each game as its 3D model in every view, at its turn.
+    // (Update 200: retired — the 3D cartridges looks are drawn shells (mediaFor), each a turned flat piece like the other
+    // looks; kept false so the views' code stays as it is.)
+    val modelLook = false
     // Update 135: the games aside drawn as slim spines in a row (Spines look, or Record flip turning covers to their
     // spines), in the views that lay the games out in a row (Wheel and Deck keep their own places).
     val spinesAside = !cases3d && (view == CarouselView.TUCKED || view == CarouselView.FLIP || view == CarouselView.FLAT || view == CarouselView.POP) && (spines || (view == CarouselView.FLIP &&
@@ -1150,14 +1154,13 @@ private fun CarouselItem(
     val spineHere = !c.cases3d && ((c.spines && i != focusIdx) || sideways)
     val gArt = artForGame(c.cardArtType, g.platform, c.hidden, c.mixed)
     val freeArt = isFreeMedia(gArt, g.platform)
-    // Update 136: with 3D models on, the 3D cases are your 3D shape library's pieces, at the angle nearest their turn.
-    // (Update 149 / 151: with 3D cases only your library's real 3D *cases*, with the 3D models look or R1 › 3D.)
-    val model = if (c.cases3d) (if (c.modelLook || Features.caseModels3d.state.value) Models3D.caseModel(g.platform) else null)
-        else if (c.modelLook && freeArt) Models3D.available(g.platform) else null
+    // Update 136: with 3D models on, the 3D cases were your 3D shape library's pieces, at the angle nearest their turn.
+    // (Update 200: retired — the 3D cases are the drawn Case3D, the 3D cartridges looks drawn shells; never a model.)
+    val model: String? = null
     // Slot in the item's own shape (no empty bands round it), as tall as the middle one × its scale.
     // Update 166: "Covers · wide capsule": the one you're on unfolds into its wide capsule (and folds back as you move on).
     val wideHere = on && !spineHere && model == null && !c.cases3d && carouselWideOn(c.cardArtType)
-    val aspect0 = if (model != null) Models3D.aspect(model) else if (c.cases3d) case3dAspect(g, c.mixed) else if (spineHere) SPINE_ASPECT
+    val aspect0 = if (c.cases3d) case3dAspect(g, c.mixed) else if (spineHere) SPINE_ASPECT
         else if (wideHere) CAPSULE_ASPECT else shelfArtAspect(g, c.cardArtType, c.hidden, c.mixed, cover)
     val aspect by androidx.compose.animation.core.animateFloatAsState(aspect0, androidx.compose.animation.core.tween(220), label = "carouselWide")
     val hFull = if (model != null || spineHere) minOf(c.bigH, if (aspect > 1f) c.bigW / aspect * 1.25f else c.bigH)
@@ -1249,8 +1252,8 @@ private fun CarouselItem(
                 if (rotationY != 0f) flatTextFor3d()
             }
         ) {
-            if (model != null) CarouselModel(model, cover, g, on, yawOf, shadeOf)
-            else if (c.cases3d && withMedia != null) CaseWithMedia3D(
+            // (Update 200: CarouselModel — a game as its pre-rendered 3D model — is gone.)
+            if (c.cases3d && withMedia != null) CaseWithMedia3D(
                 g, cover, c.physicalMedia[g.stableKey], aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow
             )
             else if (c.cases3d) Case3D(
@@ -1281,7 +1284,6 @@ private fun caseMediaFor(g: Game, type: com.shelf.launcher.data.CardArtType, mix
     val lean = Features.caseWithMedia.state.value
     if (!disc && !lean) return null
     val pick = mediaFor(g.platform, mixed, gameKey = g.stableKey) ?: return null
-    if (pick.platform.startsWith(MODEL_3D)) return null
     val round = pick.shell.disc || pick.shell == MediaShell.UMD
     return when {
         lean -> CaseMedia(pick, discOut = false)
@@ -1349,19 +1351,6 @@ private fun CaseWithMedia3D(
     }
 }
 
-/**
- * Update 162: a carousel game as its 3D model (Update 151: its shadow, sheen and slow turn, Models3DLife.kt). Its turn
- * and shade are read here only, in whole degrees (it shows the nearest pre-rendered angle), so the game round it stays put.
- */
-@Composable
-private fun CarouselModel(model: String, cover: Any?, g: Game, on: Boolean, yawOf: () -> Float, shadeOf: () -> Float) {
-    val yawNow = rememberUpdatedState(yawOf)
-    val shadeNow = rememberUpdatedState(shadeOf)
-    val yaw by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.round(yawNow.value()) } }
-    val shade by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.round(shadeNow.value() * 50f) / 50f } }
-    Model3DArt(model, cover, yaw, Modifier.fillMaxSize(), shade = shade, name = g.name, platform = g.platform, life = true, focused = on)
-}
-
 /** Update 162: a flat piece's edge: how thick it is (a share of its width), its colour, and whether it's round (a disc). */
 private class MediaBand(val thick: Float, val color: Color, val round: Boolean)
 
@@ -1373,7 +1362,6 @@ private fun mediaBandFor(
     if (gArt == com.shelf.launcher.data.CardArtType.CASE) return MediaBand(0.1f, Color(0xFF23252C), false)
     if (gArt != com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return null
     val pick = mediaFor(platform, mixed, type == com.shelf.launcher.data.CardArtType.DISC) ?: return null
-    if (pick.platform.startsWith(MODEL_3D)) return null
     if (isCustomPiece(pick.platform)) return MediaBand(0.13f, Color(0xFF46484F), false)
     val grey = Color(0xFF7C7E85)
     val dark = Color(0xFF34363C)

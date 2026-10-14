@@ -31,6 +31,20 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlin.math.abs
+// (Update 200: the gliding ring.)
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.positionInWindow
 
 /*
  * Update 177: the controller on the second screen. The second screen used to be touch only (the controller always drove
@@ -49,8 +63,21 @@ internal object SecondPad {
     var focused by mutableStateOf<String?>(null)
         private set
 
-    /** [move]: update 182 — a control that moves inside itself (the Wall's slices): ◀ ▶ ▲ ▼ go to it first (true = used). */
-    private class Target(val id: String, var rect: Rect, var press: () -> Unit, var order: Long, var move: ((Int) -> Boolean)? = null, var layer: Int = 0)
+    /**
+     * Update 200: while true the gliding ring ([SecondPadRing]) holds still where it is — the list under it is scrolling a
+     * row (the scroller step in [key]) and the next control is lit a moment later; it then glides from here into that row.
+     */
+    var ringHold by mutableStateOf(false)
+        private set
+
+    /**
+     * [move]: update 182 — a control that moves inside itself (the Wall's slices): ◀ ▶ ▲ ▼ go to it first (true = used).
+     * Update 200: [rect] is snapshot state so the gliding ring (read in its draw phase) follows its control while a list
+     * scrolls or a popup scales in, and [plain] marks a control that shows it's lit in its own style (no ring over it).
+     */
+    private class Target(val id: String, rect: Rect, var press: () -> Unit, var order: Long, var move: ((Int) -> Boolean)? = null, var layer: Int = 0, var plain: Boolean = false) {
+        var rect by mutableStateOf(rect)
+    }
 
     /**
      * Update 182: a scrolling list on the second screen (the Games page, a console's games) scrolls a step when ▲ ▼
@@ -63,15 +90,37 @@ internal object SecondPad {
     private var counter = 0L
     private val keysDown = HashSet<Int>()
 
-    fun register(id: String, rect: Rect, press: () -> Unit, move: ((Int) -> Boolean)? = null, layer: Int = 0) {
+    fun register(id: String, rect: Rect, press: () -> Unit, move: ((Int) -> Boolean)? = null, layer: Int = 0, plain: Boolean = false) {
         synchronized(targets) {
             val t = targets[id]
-            if (t == null) targets[id] = Target(id, rect, press, counter++, move, layer) else { t.rect = rect; t.press = press; t.move = move; t.layer = layer }
+            if (t == null) targets[id] = Target(id, rect, press, counter++, move, layer, plain) else { t.rect = rect; t.press = press; t.move = move; t.layer = layer; t.plain = plain }
         }
+        if (layer > topLayer) topLayer = layer // (Update 200)
     }
 
+    /**
+     * Update 200: the highest layer with controls on it (a popup open over the page = 1). The ring is drawn over everything,
+     * so it hides while the lit control is under a popup (the folder just opened) instead of floating on top of the popup.
+     */
+    var topLayer by mutableIntStateOf(0)
+        private set
+
+    /** Update 200: control [id]'s layer (0 when unknown). */
+    internal fun layerOf(id: String?): Int = if (id == null) 0 else synchronized(targets) { targets[id] }?.layer ?: 0
+
+    /** Update 200: where control [id] is now (window coordinates; snapshot state, so a draw phase reading it follows it). */
+    internal fun rectOf(id: String?): Rect? {
+        if (id == null) return null
+        val r = synchronized(targets) { targets[id] }?.rect ?: return null
+        return if (r.width > 1f && r.height > 1f) r else null
+    }
+
+    /** Update 200: control [id] draws its own lit style (padTargetPlain), so the gliding ring stays off it. */
+    internal fun isPlain(id: String?): Boolean = id != null && synchronized(targets) { targets[id] }?.plain == true
+
     fun unregister(id: String) {
-        synchronized(targets) { targets.remove(id) }
+        val top = synchronized(targets) { targets.remove(id); targets.values.maxOfOrNull { it.layer } ?: 0 }
+        if (top != topLayer) topLayer = top // (Update 200: a popup closed)
         if (focused == id) focused = null
     }
 
@@ -97,6 +146,7 @@ internal object SecondPad {
 
     fun leave() {
         active = false
+        ringHold = false // (Update 200)
     }
 
     /** The keys while the controller is on the second screen (call before the main screen's own). True = handled. */
@@ -118,10 +168,13 @@ internal object SecondPad {
                 val own = synchronized(targets) { targets[focused] }?.move
                 if (own != null && runCatching { own(dir) }.getOrDefault(false)) { sound(UiSound.MOVE); return true }
                 val next = step(dir)
-                if (next != null) { focused = next; sound(UiSound.MOVE) }
+                if (next != null) { focused = next; ringHold = false; sound(UiSound.MOVE) }
                 else if (dir >= 2 && scroller?.let { runCatching { it(dir) }.getOrDefault(false) } == true) {
                     // Update 182: the list scrolled a row; the next one is lit once it's made.
-                    main.postDelayed({ step(dir)?.let { focused = it } }, 140L)
+                    // Update 200: the ring holds its place while the row scrolls in, then glides into it (it used to ride
+                    // up with the old control and pop down to the new one). Released even if nothing is found.
+                    ringHold = true
+                    main.postDelayed({ step(dir)?.let { focused = it }; ringHold = false }, 140L)
                     sound(UiSound.MOVE)
                 }
                 else if (dir == 2 && event.nativeKeyEvent.repeatCount == 0) { leave(); sound(UiSound.MOVE) }
@@ -192,15 +245,19 @@ internal fun Modifier.padTarget(id: String, onMove: ((Int) -> Boolean)? = null, 
     val press by rememberUpdatedState(onPress)
     val move by rememberUpdatedState(onMove)
     val hasMove = onMove != null
-    val lit = here && SecondPad.active && SecondPad.focused == id
+    // Update 200: derived, so a move recomposes only the two controls whose lit state changed (not every target).
+    val lit by remember(id, here) { derivedStateOf { here && SecondPad.active && SecondPad.focused == id } }
     val layer = LocalPadLayer.current
     val bring = remember { BringIntoViewRequester() }
     DisposableEffect(id, here) { onDispose { if (here) SecondPad.unregister(id) } }
+    // (Scrollable parents animate bringIntoView themselves — a spring, not a jump — and the gliding ring follows the
+    // control's live bounds while they do.)
     LaunchedEffect(lit) { if (lit) runCatching { bring.bringIntoView() } }
+    // Update 200: no border on the control any more — one ring over the whole second screen ([SecondPadRing]) glides
+    // from the control that was lit to this one (the old per-control border jumped from one to the next).
     if (!here) this else this
         .bringIntoViewRequester(bring)
         .onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }, if (hasMove) { d -> move?.invoke(d) == true } else null, layer) }
-        .then(if (lit) Modifier.border(3.dp, ShelfTheme.accent, uiRounded(10.dp)) else Modifier)
 }
 
 /** Update 195: which layer a second-screen control is on (a popup over the page is 1): only the top one is reachable. */
@@ -239,5 +296,82 @@ internal fun Modifier.padTargetPlain(id: String, onPress: () -> Unit): Modifier 
     val press by rememberUpdatedState(onPress)
     val layer = LocalPadLayer.current
     DisposableEffect(id, here) { onDispose { if (here) SecondPad.unregister(id) } }
-    if (!here) this else this.onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }, null, layer) }
+    // (Update 200: registered as plain — the gliding ring fades off while one of these is lit.)
+    if (!here) this else this.onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }, null, layer, plain = true) }
+}
+
+/** Update 200: what the gliding ring remembers between frames (plain fields: written and read in the draw phase only). */
+private class RingMemo {
+    /** Where the ring was when the lit control changed (it glides from here); null = sit on the control. */
+    var from: Rect? = null
+    /** Where it was last drawn (window coordinates). */
+    var shown: Rect? = null
+    /** The overlay's own place in the window (the controls report window coordinates). */
+    var origin: Offset = Offset.Zero
+}
+
+/**
+ * Update 200: the controller's highlight on the second screen — ONE accent ring drawn over everything there (pages and the
+ * folder popup alike) that glides, position and size, from the control that was lit to the next one with a soft spring,
+ * instead of a border jumping between controls ("going through stuff on the second screen just spawns the next column").
+ * It follows its control while a list scrolls (the control's bounds are snapshot state read in the draw phase), fades and
+ * shrinks onto the first control when the controller comes down here, fades out when it goes back up, and keeps off
+ * controls that show their own lit style (padTargetPlain). All motion is read in the draw phase: no recomposition per frame.
+ * Composed once, last, in SecondScreenHost.
+ */
+@Composable
+internal fun SecondPadRing() {
+    val accent = ShelfTheme.accent
+    val id = SecondPad.focused
+    val hold = SecondPad.ringHold
+    // (Off a plain control, and off one left under a popup until a move takes it into the popup.)
+    val show = SecondPad.active && id != null && !SecondPad.isPlain(id) && SecondPad.layerOf(id) >= SecondPad.topLayer
+    val glide = remember { Animatable(1f) }
+    val appear = remember { Animatable(0f) }
+    val memo = remember { RingMemo() }
+    LaunchedEffect(show) {
+        if (show) appear.animateTo(1f, spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow))
+        else appear.animateTo(0f, tween(170))
+    }
+    LaunchedEffect(id, hold) {
+        val start = memo.shown
+        // Not on screen yet (just came down, or back from a plain control): it appears on the control, no glide.
+        if (start == null || appear.value < 0.05f) { memo.from = null; glide.snapTo(1f); return@LaunchedEffect }
+        // From wherever it is right now (even mid-glide), so quick presses chain smoothly.
+        memo.from = start
+        glide.snapTo(0f)
+        // ~250 ms to settle, a hair of overshoot.
+        if (!hold) glide.animateTo(1f, spring(dampingRatio = 0.82f, stiffness = 520f))
+    }
+    androidx.compose.foundation.layout.Box(
+        Modifier.fillMaxSize()
+            .onGloballyPositioned { memo.origin = it.positionInWindow() }
+            .drawBehind {
+                val live = SecondPad.rectOf(SecondPad.focused)
+                val to = live ?: memo.shown ?: return@drawBehind
+                val p = glide.value
+                val from = memo.from
+                val r = if (from == null || p >= 1f) to else lerp(from, to, p)
+                memo.shown = r
+                val a = appear.value.coerceIn(0f, 1f)
+                if (a <= 0.01f) return@drawBehind
+                // Coming in it shrinks onto the control; going it grows a little as it fades.
+                val s = 1f + 0.14f * (1f - a)
+                val sw = 3.dp.toPx()
+                val w = r.width * s
+                val h = r.height * s
+                val left = r.center.x - w / 2f - memo.origin.x
+                val top = r.center.y - h / 2f - memo.origin.y
+                val radius = 10.dp.toPx()
+                // A soft glow just outside the edge (one wide, faint stroke: cheap)...
+                drawRoundRect(
+                    accent.copy(alpha = 0.22f * a), Offset(left, top), Size(w, h), CornerRadius(radius), style = Stroke(7.dp.toPx())
+                )
+                // ...and the 3 dp ring itself, inside the edge like the old border.
+                drawRoundRect(
+                    accent.copy(alpha = a), Offset(left + sw / 2f, top + sw / 2f), Size((w - sw).coerceAtLeast(0f), (h - sw).coerceAtLeast(0f)),
+                    CornerRadius((radius - sw / 2f).coerceAtLeast(0f)), style = Stroke(sw)
+                )
+            }
+    )
 }

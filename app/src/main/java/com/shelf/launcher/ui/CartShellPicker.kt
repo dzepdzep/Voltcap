@@ -34,13 +34,6 @@ import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.ui.theme.ShelfTheme
 
-/** Update 197: a shape-library piece's id as a name ("cart_gbc_atomic_purple_translucent" → "Gbc atomic purple, clear"). */
-private fun pieceName(id: String): String {
-    val clear = id.endsWith("_translucent")
-    val base = id.removeSuffix("_translucent").removePrefix("cart_").removePrefix("card_").replace("_real", " (real)").replace('_', ' ')
-    return base.replaceFirstChar { it.uppercase() } + if (clear) ", clear" else ""
-}
-
 /**
  * Update 195: the game's menu › Cartridge shell… — the whole cartridge library in one place: every console's real shell
  * (Authentic, by maker, searchable) and your cartridge pack's shapes (Your custom shells). The game stays what it is
@@ -54,13 +47,16 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
     var forConsole by remember { mutableStateOf(CartShellStore.forGame(game.stableKey) == null && CartShellStore.forConsole(platform) != null) }
     val current = if (forConsole) CartShellStore.forConsole(platform) else CartShellStore.forGame(game.stableKey)
     val currentChoice = CartShells.parse(current)
-    val currentId = current?.substringBefore('~')
+    val currentId0 = current?.substringBefore('~')
     var query by remember { mutableStateOf("") }
     var tab by remember { mutableStateOf(0) }
     var group by remember { mutableStateOf<ShellGroup?>(null) }
     var colour by remember { mutableStateOf(currentChoice?.colourKey ?: "") }
     val region = remember(game.stableKey) { CaseCatalog.regionOf(game.romPath ?: game.name) }
     val original = remember(platform, region) { CartShells.authenticId(platform, region) }
+    // Update 200: a 3D piece saved before ("m3d:<id>", the retired "Your 3D pieces" tab) is drawn as this console's own
+    // shell now (CartShells.pickOf), so that's the one shown as picked — and a colour picked goes onto it.
+    val currentId = currentId0?.let { if (it.startsWith("m3d:")) original ?: it else it }
     val packId = CustomCarts.idFor(platform)
     val packHere = packId != null && com.shelf.launcher.data.Packs.hasCart(packId)
 
@@ -86,7 +82,8 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
         ChipFlow {
             Chip("Authentic", accent = tab == 0) { tab = 0 }
             Chip("Your custom shells", accent = tab == 1) { tab = 1 }
-            Chip("Your 3D pieces", accent = tab == 2) { tab = 2 }
+            // (Update 200: "Your 3D pieces" is gone — the pre-rendered 3D models are retired; the drawn shells here turn
+            // in real 3D themselves.)
             Chip("For every $brand game", accent = forConsole) {
                 // (Moves the current choice over: from this game to the console, or back.)
                 val v = current
@@ -113,14 +110,10 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
             CartShells.all.filter { s -> (group == null || s.group == group) && (q.isEmpty() || s.name.lowercase().contains(q) || s.id.contains(q)) }
                 .sortedBy { if (it.id == original) 0 else 1 }
                 .map { it.id to it.name }
-        } else if (tab == 2) {
-            // (Update 197: your shape library's own cartridges and cards, as the 3D models look draws them.)
-            CartShells.libraryPieces().filter { q.isEmpty() || it.contains(q) }.map { "m3d:$it" to pieceName(it) }
         } else if (packHere) {
             CartLook.values().filter { q.isEmpty() || it.label.lowercase().contains(q) }.map { "pack:${it.key}" to "${it.label} (your pack)" }
         } else emptyList()
         if (tab == 1 && !packHere) MutedNote("Your cartridge pack isn't on this device for $brand: Settings › Game look › Extra art packs. Its shapes show here once it is.")
-        if (tab == 2 && ids.isEmpty() && q.isEmpty()) MutedNote("No 3D pieces on this device yet: Settings › Game look › Extra art packs › 3D models.")
         if (ids.isEmpty() && q.isNotEmpty()) MutedNote("Nothing matches \"$query\".")
         LazyVerticalGrid(
             GridCells.Adaptive(118.dp), Modifier.fillMaxWidth().heightIn(max = 360.dp),

@@ -86,7 +86,9 @@ object GameNotification {
         val cfg = PerfSettings.config(context)
         val tuner = Tuner.supported
         val st = Tuner.status.value
-        val p = if (tuner) TuneStore(context).global() else null
+        // Update 200: while a game's (or its console's) own profile is in charge, that one is what runs: the notification
+        // showed the device-wide profile's "Underclock Medium" even then.
+        val p = if (!tuner) null else if (st.source != "Device") st.profile else TuneStore(context).global()
         val powerLabel = p?.let {
             (if (it.autoTdp) "AutoTDP ${it.autoMode.label}" else it.tier.label) +
                 (if (it.underclocked) " · Underclock ${it.effectiveUnderclock.label}" else "") +

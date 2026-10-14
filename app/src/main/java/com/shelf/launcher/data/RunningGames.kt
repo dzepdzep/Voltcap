@@ -122,18 +122,21 @@ object RunningGames {
         val usm = c.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val events = usm.queryEvents(e.launchedAt - 5_000L, System.currentTimeMillis())
         val ev = UsageEvents.Event()
-        var last = -1
+        // Update 200: the last event per activity class, not for the whole app. An Android game's splash / launcher
+        // activity is destroyed right after it hands over to the real game activity; read app-wide, that late
+        // DESTROYED made a game that was still open count as closed. Closed = every activity seen was destroyed.
+        val last = HashMap<String, Int>()
         while (events.hasNextEvent()) {
             events.getNextEvent(ev)
             if (ev.packageName != e.pkg) continue
             when (ev.eventType) {
                 UsageEvents.Event.ACTIVITY_RESUMED, UsageEvents.Event.ACTIVITY_PAUSED,
-                UsageEvents.Event.ACTIVITY_STOPPED -> last = ev.eventType
+                UsageEvents.Event.ACTIVITY_STOPPED -> last[ev.className ?: ""] = ev.eventType
                 // ACTIVITY_DESTROYED (API 29+).
-                24 -> last = 24
+                24 -> last[ev.className ?: ""] = 24
             }
         }
-        if (last == -1) null else last == 24
+        if (last.isEmpty()) null else last.values.all { it == 24 }
     }.getOrNull()
 
     /**
@@ -144,21 +147,42 @@ object RunningGames {
         if (pkg == null || !hasUsageAccess(c)) return null
         return runCatching {
             val usm = c.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            val events = usm.queryEvents(from, to)
+            // Update 200: a little before [from]: the game's first "resumed" can be stamped a moment before the launch
+            // time was saved (startActivity is asynchronous). Time before [from] is never counted (clamped below).
+            val events = usm.queryEvents(from - 2_000L, to)
             val ev = UsageEvents.Event()
             var total = 0L
             var since = -1L
             var seen = false
+            // Update 200: the game counts as in front while ANY of its activities is resumed (per activity class).
+            // Android games almost always open through a splash / launcher activity that hands over to the real one
+            // (seen on the Thor: LauncherActivity → resumed → paused → WWEActivity resumed → LauncherActivity STOPPED).
+            // The old single "since" closed the open stretch on the splash's late STOPPED, so everything after the
+            // hand-over was lost: a session came out at ~1 s, under PlaytimeStore's 20 s minimum, and was dropped —
+            // no play time, no session for the recaps / Drive. Emulators started straight into one activity, so
+            // they were fine. Switching away (home, recents, another app) pauses the last activity and ends the stretch.
+            val open = HashSet<String>()
             while (events.hasNextEvent()) {
                 events.getNextEvent(ev)
                 if (ev.packageName != pkg) continue
                 seen = true
+                val cls = ev.className ?: ""
                 when (ev.eventType) {
-                    UsageEvents.Event.ACTIVITY_RESUMED -> if (since < 0) since = ev.timeStamp
-                    UsageEvents.Event.ACTIVITY_PAUSED, UsageEvents.Event.ACTIVITY_STOPPED -> if (since >= 0) { total += ev.timeStamp - since; since = -1 }
+                    UsageEvents.Event.ACTIVITY_RESUMED -> {
+                        if (open.isEmpty()) since = maxOf(ev.timeStamp, from)
+                        open += cls
+                    }
+                    // ACTIVITY_DESTROYED (24, API 29+) too: an activity can go without a STOPPED in the record.
+                    UsageEvents.Event.ACTIVITY_PAUSED, UsageEvents.Event.ACTIVITY_STOPPED, 24 -> {
+                        // An activity that wasn't resumed in this window (the splash's late STOPPED) changes nothing.
+                        if (open.remove(cls) && open.isEmpty() && since >= 0) {
+                            total += maxOf(0L, ev.timeStamp - since)
+                            since = -1L
+                        }
+                    }
                 }
             }
-            if (since >= 0) total += to - since
+            if (since >= 0) total += maxOf(0L, to - since)
             if (!seen) null else total
         }.getOrNull()
     }

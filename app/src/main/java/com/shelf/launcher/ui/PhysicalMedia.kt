@@ -216,16 +216,53 @@ internal const val ANDROID_CART = "~android-cart"
 internal class MediaPick(val shell: MediaShell, val platform: String, val aspect: Float = shell.aspect)
 
 /**
+ * Update 200: the 3D cartridges looks are on (Features.modelFinish isn't Off — the setting the retired 3D models used,
+ * kept so a look picked before still works).
+ */
+internal fun drawn3dOn(): Boolean = Features.modelFinish.state.value != ModelFinish.OFF
+
+/**
+ * Update 200: what a game is drawn as in the 3D cartridges looks — the drawn pieces (CartShells.kt) with real depth,
+ * which turn smoothly when inspected, instead of the pre-rendered 3D models:
+ *  - 3D cartridges (ModelFinish.REAL): its console's authentic shell, by the game's region (your pack's shape for a
+ *    console without one);
+ *  - 3D custom cartridges (CUSTOM): your cartridge pack's shape (R1 › Cartridge shape) when that console's part of the
+ *    pack is on the device, else the authentic shell;
+ *  - 3D clear cartridges (CLEAR): the same in clear plastic.
+ * Null for disc consoles (they keep their drawn disc / case, as in the other looks), with "All CDs" in a list mixing
+ * consoles, and for a console with neither a shell nor the pack.
+ */
+internal fun drawn3dPick(platform: String, mixed: Boolean, gameKey: String?): MediaPick? {
+    val finish = Features.modelFinish.state.value
+    if (finish == ModelFinish.OFF) return null
+    val own = MediaShell.of(platform)
+    if (own != null && (own.disc || own == MediaShell.UMD)) return null
+    if (mixed && Features.mixedArt.state.value == MixedArt.DISC) return null
+    val clear = finish == ModelFinish.CLEAR
+    val authentic = CartShells.authenticId(platform, CaseCatalog.regionOf(gameKey ?: ""))
+    val packHere = CustomCarts.idFor(platform)?.let { com.shelf.launcher.data.Packs.hasCart(it) } == true
+    val pack = "pack:" + Features.cartLook.state.value.key + "~" + (if (clear) "clear" else "opaque")
+    val raw = when {
+        finish != ModelFinish.REAL && packHere -> pack
+        authentic != null -> authentic + "~" + (if (clear) "clear" else "")
+        packHere -> pack
+        else -> return null
+    }
+    return CartShells.pickOf(raw, platform, gameKey)
+}
+
+/**
  * The cartridge / disc a game is drawn as: its console's own, or - in a list mixing consoles with "All CDs" /
  * "All cartridges" - the generic one (a cartridge game gets a plain CD with its label scan on it, a disc game a
  * plain cartridge). Null where the console has no physical game.
  */
 internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean = false, gameKey: String? = null): MediaPick? {
     // Update 195: the shell picked for this game or its console (the game's menu › Cartridge shell…, CartShells.kt).
-    if (!asDisc) CartShellStore.choice(platform, gameKey)?.let { raw -> CartShells.pickOf(raw, platform)?.let { return it } }
-    // Update 136: the game as its piece from your 3D shape library (Settings › Game look › 3D models), when it's downloaded.
-    // (Update 137: "<id>|<console>": the console's colours and logo for a custom piece.)
-    if (!asDisc) Models3D.available(platform)?.let { id -> return MediaPick(MediaShell.GB, "$MODEL_3D$id|$platform", Models3D.aspect(id)) }
+    // (Update 200: [gameKey] too — a 3D piece saved before goes on the console's authentic shell by the game's region.)
+    if (!asDisc) CartShellStore.choice(platform, gameKey)?.let { raw -> CartShells.pickOf(raw, platform, gameKey)?.let { return it } }
+    // Update 200: the 3D cartridges looks draw the drawn pieces with real depth (they used to draw the pre-rendered 3D
+    // models, which turned in 20° steps like a slide show): see drawn3dPick.
+    if (!asDisc) drawn3dPick(platform, mixed, gameKey)?.let { return it }
     // Update 128, Cartridges look: the game on your cartridge pack (CustomCarts.kt) — every console with Custom, the
     // ones without a cartridge of their own with Original (consoles Voltcap has no media for included).
     if (!asDisc && customCartFor(platform)) {
@@ -355,8 +392,8 @@ internal fun realCaseMm(platform0: String?): Pair<Float, Float>? {
 internal fun isFreeMedia(type: com.shelf.launcher.data.CardArtType, platform: String): Boolean = when (type) {
     // (Update 128: a game on your cartridge pack too — with "Real discs" as well, there's no scan of it to show.)
     // (Update 129: with "Real discs" too — the game's own scan stands free like the drawn one, see realScanOf.)
-    // (Update 151: or a 3D case from your shape library — PS5, Xbox One / Series have no drawn disc but do have a case.)
-    com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> customCartFor(platform) || MediaShell.of(platform) != null || Models3D.available(platform) != null
+    // (Update 200: or a drawn piece of the 3D cartridges looks — the pre-rendered 3D models are retired.)
+    com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> customCartFor(platform) || MediaShell.of(platform) != null || drawn3dPick(platform, false, null) != null
     // Box art always uses the template pack's case when there's one for the console.
     // (Update 129: the case picked for all on R1 › Case, when there is one.)
     com.shelf.launcher.data.CardArtType.CASE -> LookStyles.casePlatform(platform).let { p ->
@@ -385,7 +422,8 @@ internal val mediaShellsOn: Boolean get() = Features.mediaShells.state.value
  * fall back to the cover, so "Real discs" showed no discs at all until everything was scraped.
  */
 internal fun drawnMediaWanted(type: com.shelf.launcher.data.CardArtType, typed: String?): Boolean =
-    type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && (mediaShellsOn || typed == null || Models3D.on())
+    // (Update 200: the 3D cartridges looks always draw their pieces — as the 3D models did.)
+    type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && (mediaShellsOn || typed == null || drawn3dOn())
 
 /**
  * Update 129: with "Real discs", the game's own cartridge / disc scan ([typed]) a Cartridges & discs card shows — it
@@ -426,21 +464,13 @@ internal fun PhysicalMedia(
     labelIsScan: Boolean = false,
     /** The game's cover, for the front of its case when "Disc in its case" is on. */
     caseCover: Any? = null,
-    /** Update 136: the game's name, for the 3D models' name strip (Settings › Game look › 3D models › Name on the label). */
+    /** The game's name (a drawn shell's label shows it while there's no art). */
     title: String? = null,
     /** Update 168: the disc alone even with "Disc in its case" on (the carousels' 3D case draws the case itself). */
     noCase: Boolean = false
 ) {
-    // Update 136: a piece of your 3D shape library, the cover in its window; turned a little, the game you're on facing
-    // you (Settings › Game look › 3D models › Stand).
-    if (platform != null && platform.startsWith(MODEL_3D)) {
-        val on = LocalMediaFocused.current
-        val yaw = Models3D.standYaw(on)
-        val (id, console) = platform.removePrefix(MODEL_3D).split('|', limit = 2).let { it[0] to it.getOrNull(1) }
-        // Update 151: with more life — a contact shadow, a sheen as it gets focus, the one you're on turning slowly.
-        Model3DArt(id, caseCover ?: label, yaw, modifier, name = title, platform = console, life = true, focused = on)
-        return
-    }
+    // (Update 200: the pre-rendered 3D models' branch is gone — mediaFor never hands one out any more; the 3D cartridges
+    // looks come here as drawn shells, below.)
     // Update 195: a game on a shell from the cartridge library, the cover as its label.
     if (platform != null && platform.startsWith(SHELL_PREFIX)) {
         CartShellArt(platform, caseCover ?: label, modifier.mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode()), title = title)
@@ -690,7 +720,9 @@ internal fun RealMediaPicture(model: Any, round: Boolean, modifier: Modifier = M
     Box(modifier.mediaMotion(round, 0), contentAlignment = Alignment.Center) {
         coil.compose.AsyncImage(
             mediaArtModel(model), null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, // (Update 157)
-            modifier = Modifier.fillMaxSize().then(if (round) Modifier.clip(androidx.compose.foundation.shape.CircleShape) else Modifier)
+            modifier = Modifier.fillMaxSize().then(if (round) Modifier.clip(androidx.compose.foundation.shape.CircleShape) else Modifier),
+            // Update 200: its shape noted, so the launch animation (LaunchThrow) sizes the game's own cartridge at it.
+            onSuccess = { r -> (model as? String)?.let { k -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(k, sz.width, sz.height) } } }
         )
     }
 }

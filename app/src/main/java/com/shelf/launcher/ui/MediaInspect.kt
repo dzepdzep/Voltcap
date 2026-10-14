@@ -23,4 +23,11 @@ internal object MediaInspect {
      * the carousel sets for its middle game, so opening that game inspects a box rather than keeping the flat window.
      */
     @Volatile var drawnAsCase: String? = null
+
+    /**
+     * Update 200: a stick click for the piece out in the game window (open the case a step / turn it once), set while a
+     * piece is shown. The home screen's key handler calls it when the click didn't reach the window itself (no control in
+     * the window had the focus yet — the first click went nowhere and it took two).
+     */
+    @Volatile var stickClick: (() -> Unit)? = null
 }

@@ -105,6 +105,8 @@ object Features {
             saveVaultStyle.value = SaveVaultStyle.CAPSULE
         }
         migrate42(p)
+        // Update 200: the cartridge shell choices, made now — before any screen draws (see CartShellStore).
+        runCatching { com.shelf.launcher.ui.CartShellStore.warmUp() }
         migrate158(p) // Update 158
         migrate166(p) // Update 166
         // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
@@ -354,6 +356,9 @@ object Features {
      * Update 136: your 3D shape library (the "3D models" pack): which pieces the Cartridges & discs look and the 3D cases
      * of the carousels draw (Off = as before) and how they stand.
      * Settings › Game look › 3D models.
+     * Update 200: the 3D cartridges looks (Real = 3D cartridges, Custom = 3D custom, Clear = 3D clear; Off = none) — the
+     * same saved setting, now drawing the drawn shells with real depth (ui/PhysicalMedia.kt drawn3dPick); the
+     * pre-rendered 3D models are retired.
      */
     val modelFinish = EnumPref("model_finish", com.shelf.launcher.ui.ModelFinish.OFF, com.shelf.launcher.ui.ModelFinish.values())
     /** Update 141: the finish to come back to when the "3D models" look is picked again (it turns 3D models off when left). */
@@ -1026,6 +1031,12 @@ object Features {
     val cartShellChoices = StringPref("cart_shell_choices", "")
     /** Update 195: every cartridge console on its own drawn authentic shell (Settings › Game look). */
     val authenticCarts = BoolPref("authentic_carts", false)
+    /**
+     * Update 200: what a drawn cartridge's back shows when it's turned round: its maker's moulded text and stickers, or
+     * the same shell without them (no console branding) — by default the markings only on a game's own console's shell.
+     */
+    enum class CartBackStyle(val label: String) { AUTO("Markings on its own console's shell"), AUTHENTIC("Always the maker's markings"), NEUTRAL("Plain, no markings") }
+    val cartBackStyle = EnumPref("cart_back_style", CartBackStyle.AUTO, CartBackStyle.values())
     /** Update 198: the second screen's Details page shows the game's case in 3D, opening on a tap (MediaInspectView.kt). */
     val secondOpenCase = BoolPref("second_open_case", true)
     /** Update 198: an opening case starts opened — the case aside, its disc / cartridge out next to it. */
@@ -1403,6 +1414,7 @@ object Features {
     val stacks3d = BoolPref("stacks_3d", true)
     /** Update 159: the case looks (Real cases, Cases · real sizes) in your 3D shape library's cases (R1 › 3D). */
     /** (Update 182: off for good — the R1 3D tile is greyed out in the case looks; your real case scans look better.) */
+    /** (Update 200: read by nothing — the R1 3D tile is gone and the pre-rendered 3D cases are retired; a saved true is ignored.) */
     val caseModels3d = BoolPref("case_models_3d2", false)
     /** Update 159: Case stacks: the tool strip along the top (your round shortcuts as small square buttons). */
     val stacksToolbar = BoolPref("stacks_toolbar", true)
@@ -1434,6 +1446,11 @@ object Features {
     val secondGamesLook = EnumPref("second_games_look", FolderGamesLook.TILES, FolderGamesLook.values())
     /** Update 177: the console's logo over a folder picture (off: the picture alone — many packs have the name in it). */
     val secondFolderLogo = BoolPref("second_folder_logo", true)
+    /**
+     * Update 200: the top screen follows the second screen's Games page: a folder lit / touched there shows that console
+     * big up top, and opening it switches the top screen to that console's games (off: the top screen stays as it is).
+     */
+    val secondTopFollows = BoolPref("second_top_follows", true)
     /** Update 176: the custom layout shown by Custom layout (CustomLayouts.kt; "" = the built-in example). */
     val customLayout = StringPref("custom_layout", "")
     /** Arcade cabinets: scan lines over the screen. */
@@ -1613,4 +1630,54 @@ object Features {
      */
     enum class LaunchThrow(val label: String) { THROW("Throw it in"), OFF("Off") }
     val launchThrow = EnumPref("launch_throw", LaunchThrow.THROW, LaunchThrow.values())
+
+    // ---- Update 200: Lyrics stage (ui/LyricsStage.kt; the second screen's Music page, layout "Lyrics stage") ----
+    // Update 200: the same switches and sliders, with the same defaults, as the user's Wallpaper Engine lyrics dashboard
+    // (its project.json), so the stage behaves the way they already set it up on the PC. They live here, not in an
+    // object of their own, because only prefs declared in Features are read from disk by init().
+    /** Update 200, Lyrics stage: what the effects do once nothing has played for a while. */
+    enum class StageIdleFx(val label: String) { OFF("Switch off"), SLOW("Slow (12 fps)"), KEEP("Keep running") }
+    /** Update 200, Lyrics stage: when the status line in the bottom-left corner shows. */
+    enum class StageStatus(val label: String) { AUTO("Only when something is wrong"), ALWAYS("Always"), NEVER("Never") }
+    val stageLowPower = BoolPref("stage_low_power", false)
+    val stageParticles = BoolPref("stage_particles", true)
+    val stageCircle = BoolPref("stage_circle", true)
+    val stageSpectrum = BoolPref("stage_spectrum", false)
+    val stageRings = BoolPref("stage_rings", false)
+    val stageAurora = BoolPref("stage_aurora", false)
+    val stageStars = BoolPref("stage_stars", false)
+    val stageBokeh = BoolPref("stage_bokeh", false)
+    val stageLines = BoolPref("stage_lines", false)
+    val stageFxReact = BoolPref("stage_fx_react", true)
+    val stageBgReact = BoolPref("stage_bg_react", true)
+    val stageCoverColors = BoolPref("stage_cover_colors", true)
+    /** Update 200, Lyrics stage: how hard the effects and the background answer the bass, in %. */
+    val stageReaction = IntPref("stage_reaction", 150, 50..300)
+    /** Update 200, Lyrics stage: blur of the cover behind everything (0 = sharp). */
+    val stageBgBlur = IntPref("stage_bg_blur", 12, 0..60)
+    /** Update 200, Lyrics stage: brightness of that background, in %. */
+    val stageBgBright = IntPref("stage_bg_bright", 55, 20..100)
+    val stageParticleAmount = IntPref("stage_particle_amount", 90, 20..300)
+    /** Update 200, Lyrics stage: the effects' frame rate cap. */
+    val stageFps = IntPref("stage_fps", 30, 15..60)
+    val stageIdleFx = EnumPref("stage_idle_fx", StageIdleFx.OFF, StageIdleFx.values())
+    /** Update 200, Lyrics stage: seconds after a pause before the stage goes idle. */
+    val stageIdleAfter = IntPref("stage_idle_after", 30, 5..300)
+    /** Update 200, Lyrics stage: the picture shown while idle (a content:// address), "" = none. */
+    val stageIdlePicture = StringPref("stage_idle_picture", "")
+    val stageClock24 = BoolPref("stage_clock_24", true)
+    val stageSeconds = BoolPref("stage_seconds", true)
+    /** Update 200, Lyrics stage: interface size, in %. */
+    val stageUiScale = IntPref("stage_ui_scale", 100, 70..130)
+    val stageStats = BoolPref("stage_stats", true)
+    val stageCpu = BoolPref("stage_cpu", true)
+    val stageGpu = BoolPref("stage_gpu", true)
+    val stageRam = BoolPref("stage_ram", true)
+    val stageDrives = BoolPref("stage_drives", true)
+    val stageNet = BoolPref("stage_net", true)
+    val stageLyrics = BoolPref("stage_lyrics", true)
+    val stageVolume = BoolPref("stage_volume", true)
+    /** Update 200, Lyrics stage: lyric timing for every song, in ms (+ = the words come earlier). */
+    val stageLyricOffsetMs = IntPref("stage_lyric_offset_ms", 0, -5000..5000)
+    val stageStatus = EnumPref("stage_status", StageStatus.AUTO, StageStatus.values())
 }

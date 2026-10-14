@@ -470,7 +470,8 @@ private fun CoverWheel(
                     val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey) else null
                     Box(Modifier.fillMaxSize().awardShine(g.stableKey, sel > 0.6f)) {
                         // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
-                        val real = realScanOf(gArt, typed)
+                        // (Update 200: the 3D cartridges looks draw their drawn piece whatever the scans.)
+                        val real = if (drawn3dOn() && pick != null && isCustomPiece(pick.platform)) null else realScanOf(gArt, typed)
                         // (Update 173: an app without art: its icon on the label / in the case.)
                         val art = coverOrAppIcon(g, cover)
                         if (real != null) MediaFocus(v == loopFocus) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(2.dp)) }

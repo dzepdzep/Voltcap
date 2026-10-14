@@ -128,6 +128,8 @@ object ArtStorage {
                 add(SavedArtInterceptor())
             }
             .build()
+            // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
+            .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
     }
 }
 

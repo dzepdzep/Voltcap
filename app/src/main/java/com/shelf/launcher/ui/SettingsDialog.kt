@@ -1840,7 +1840,7 @@ private fun SecondScreenExtras(appearance: AppearanceSettings, onChange: (Appear
             SecondScreenLookCard(appearance, onChange)
         }
         // Update 177: the Games page's console folders — their look, a folder pack, a picture per console.
-        FoldGroup("Second screen Games page", summary = "Folders, tiles, cards or logos; folder packs; the controller there", key = "second_games") {
+        FoldGroup("Second screen Games page", summary = "Folders, tiles, cards or logos; folder icons (GIFs move); folder packs; the top screen following it", key = "second_games") {
             SecondGamesSettings()
         }
         FoldGroup("Second screen tools", summary = "Widget Board, Screen Mirror, Wall, wallpaper, virtual second screen", key = "second_tools") {
@@ -1895,7 +1895,12 @@ private fun SecondScreenLookCard(appearance: AppearanceSettings, onChange: (Appe
             appearance.secondMusicLayout,
             { it.label }
         ) { onChange(appearance.copy(secondMusicLayout = it)) }
-        MutedNote("Full screen = the player takes over the whole second screen. Classic card = the older layout.")
+        MutedNote("Lyrics stage = the cover with a visualizer, synced lyrics, a clock, stats and effects (stays up when paused). Full screen = the player takes over the whole second screen. Classic card = the older layout.")
+        // Update 200: the Lyrics stage's own options, grouped, right under the layout choice (LyricsStage.kt).
+        if (appearance.secondMusicLayout == com.shelf.launcher.data.SecondMusicLayout.STAGE) {
+            Spacer(Modifier.height(10.dp))
+            LyricsStageSettings()
+        }
         if (appearance.secondMusicLayout == com.shelf.launcher.data.SecondMusicLayout.VISUALIZER) {
             Spacer(Modifier.height(6.dp))
             SwitchRow(
@@ -3710,11 +3715,17 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.authenticCarts.state.value,
             onChange = { com.shelf.launcher.data.Features.authenticCarts.value = it }
         )
+        // Update 200: the cartridges' backs.
+        RowChoice(
+            "Cartridge backs", com.shelf.launcher.data.Features.CartBackStyle.values(),
+            com.shelf.launcher.data.Features.cartBackStyle.state.value, { it.label }
+        ) { com.shelf.launcher.data.Features.cartBackStyle.value = it }
+        MutedNote("Turn a drawn cartridge round to see its back: its screws, connector and panels as on the real one, with the maker's moulded text and stickers — or plain, without any console's branding (a game on another console's shell is plain by default).")
         // Update 198: opening cases.
         SwitchRow(
             icon = Icons.Filled.ViewWeek,
             title = "Open cases side by side",
-            subtitle = "On: a game's case opens by itself once it's out in the game window (and on the second screen's Details page): the case to the left, its disc or cartridge out next to it. Off (default): tap the case (or click the right stick) to open it.",
+            subtitle = "On: a game's case opens by itself once it's out in the game window (and on the second screen's Details page): the case to the left, its disc or cartridge out next to it. Off (default): tap the case (or click a stick) to open it, then tap the disc to take it out.",
             checked = com.shelf.launcher.data.Features.inspectOpenAtStart.state.value,
             onChange = { com.shelf.launcher.data.Features.inspectOpenAtStart.value = it }
         )

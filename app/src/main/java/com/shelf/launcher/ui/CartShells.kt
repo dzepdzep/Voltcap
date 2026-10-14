@@ -320,6 +320,27 @@ internal object CartShells {
         (if (key.isNullOrEmpty()) null else shell.colours.firstOrNull { it.key == key } ?: presets.firstOrNull { it.key == key }) ?: shell.colours.first()
 
     /** Each console's own shell (by region where they differ): what "Authentic drawn cartridges" draws. */
+    /**
+     * Update 200: [shellId] is a shell of [console]'s own (any region's, or one of its special cartridges) — its back then
+     * shows the maker's markings by default.
+     */
+    fun belongsTo(shellId: String, console: String): Boolean {
+        if (CaseRegion.values().any { authenticId(console, it) == shellId }) return true
+        val also = when (shellId) {
+            "gbc_dual", "np_gb" -> setOf("GB", "GBC")
+            "gb_camera" -> setOf("GB")
+            "pokemon_pinball", "kirby_tilt" -> setOf("GBC")
+            "warioware_twisted", "boktai", "drill_dozer", "yoshi_topsy", "ereader" -> setOf("GBA")
+            "genesis_ea", "virtua_racing", "sonic_knuckles", "codemasters", "jcart", "genesis", "megadrive_jp" -> setOf("Genesis", "MegaDrive")
+            "np_sfc", "sfc", "snes_na" -> setOf("SNES", "SFC")
+            "nes", "famicom" -> setOf("NES", "Famicom")
+            "sms", "sms_jp", "sega_card" -> setOf("MasterSystem")
+            "switch2_key" -> setOf("Switch2")
+            else -> emptySet()
+        }
+        return console in also
+    }
+
     fun authenticId(platform: String, region: CaseRegion): String? = when (platform) {
         "NES" -> if (region == CaseRegion.JP) "famicom" else "nes"
         "Famicom" -> "famicom"
@@ -367,8 +388,12 @@ internal object CartShells {
 
     // ---- Choices: "<shell>~<colour>" or "pack:<look key>~<clear|opaque>" ----
 
+    /**
+     * [model]: Update 200 — a piece of the retired 3D shape library ("m3d:<id>", saved by update 197's "Your 3D pieces"),
+     * kept only so [retired] can put the game on its own console's drawn shell instead.
+     */
     class Choice(val shell: CartShell?, val pack: CartLook?, val colourKey: String, val raw: String, val model: String? = null) {
-        val aspect: Float get() = shell?.aspect ?: pack?.aspect ?: model?.let { Models3D.aspect(it) } ?: 1f
+        val aspect: Float get() = shell?.aspect ?: pack?.aspect ?: 1f
         val clear: Boolean get() = colourKey == "clear"
     }
 
@@ -377,28 +402,36 @@ internal object CartShells {
         val id = raw.substringBefore('~')
         val colour = raw.substringAfter('~', "")
         return if (id.startsWith("pack:")) CartLook.values().firstOrNull { it.key == id.removePrefix("pack:") }?.let { Choice(null, it, colour, raw) }
-        else if (id.startsWith("m3d:")) id.removePrefix("m3d:").takeIf { it in Models3D.ALL }?.let { Choice(null, null, colour, raw, it) }
+        // (Update 200: no longer checked against the 3D pack's list — the piece itself isn't drawn any more, see [retired].)
+        else if (id.startsWith("m3d:")) Choice(null, null, colour, raw, id.removePrefix("m3d:"))
         else of(id)?.let { Choice(it, null, colour, raw) }
     }
 
-    /** The piece for a choice on [platform]'s game. */
-    fun pickOf(raw: String, platform: String): MediaPick? = parse(raw)?.let { ch ->
-        // (Update 197: a piece of your 3D shape library is drawn as before — the game's console's colours and logo on it.)
-        val m = ch.model
-        if (m != null) { if (com.shelf.launcher.data.Packs.hasModel(m)) MediaPick(MediaShell.GB, "$MODEL_3D$m|$platform", Models3D.aspect(m)) else null }
-        else MediaPick(MediaShell.GB, "$SHELL_PREFIX$raw|$platform", ch.aspect)
+    /**
+     * Update 200: the pre-rendered 3D pieces are retired (they turned in 20° steps, like a slide show, and the drawn shells
+     * look better). A saved "m3d:<id>" choice becomes the game's own console's authentic drawn shell — in clear plastic
+     * when the piece was a clear one — so nothing disappears; null (its usual look) for a console without a shell.
+     */
+    private fun retired(ch: Choice, platform: String?, region: CaseRegion): Choice? {
+        val m = ch.model ?: return ch
+        val id = platform?.let { authenticId(it, region) } ?: return null
+        val colour = if (m.endsWith("_translucent")) "clear" else ch.colourKey
+        return parse("$id~$colour")
     }
 
-    /** Update 197: your shape library's cartridges and cards on this device (the picker's "Your 3D pieces"). */
-    fun libraryPieces(): List<String> = Models3D.ALL.filter { id ->
-        (id.startsWith("cart_") || id.startsWith("card_") || id.endsWith("_cart_real") || id.endsWith("_card_real")) &&
-            com.shelf.launcher.data.Packs.hasModel(id)
-    }
+    /** The piece for a choice on [platform]'s game ([gameKey]: its region, for a retired 3D piece's authentic shell). */
+    fun pickOf(raw: String, platform: String, gameKey: String? = null): MediaPick? =
+        parse(raw)?.let { retired(it, platform, CaseCatalog.regionOf(gameKey ?: "")) }?.let { ch ->
+            // (Update 200: [Choice.raw] — a retired 3D piece's is its authentic shell's.)
+            MediaPick(MediaShell.GB, "$SHELL_PREFIX${ch.raw}|$platform", ch.aspect)
+        }
 
     /** "~sh:<choice>|<console>" → its choice and console. */
     fun split(pickPlatform: String): Pair<Choice?, String?> {
         val rest = pickPlatform.removePrefix(SHELL_PREFIX)
-        return parse(rest.substringBefore('|')) to rest.substringAfter('|', "").ifEmpty { null }
+        val console = rest.substringAfter('|', "").ifEmpty { null }
+        // (Update 200: a retired 3D piece as its console's authentic shell, here too.)
+        return parse(rest.substringBefore('|'))?.let { retired(it, console, CaseCatalog.regionOf("")) } to console
     }
 
     // ---- Drawing ----
@@ -519,37 +552,239 @@ internal object CartShells {
     /**
      * The shell's back (as seen from the front through it, so it reads right once turned round): the plastic, the seam
      * just inside its edge, its screws and contacts.
+     * Update 200: each shell's own back from the research (CartBacks): its screws (cross, tri-wing, security, slot) in
+     * their recesses, moulded text raised or sunken, sunken and raised panels, the warning / info stickers, the seams,
+     * the connector (open with its pads where it shows) and parts like notches, grips, windows and doors. [neutral]:
+     * the same shape, screws, panels and contacts without the maker's text and stickers (a game on another console's
+     * shell). Shells without researched backs keep the plain one. The front is never touched.
      */
-    fun back(s: CartShell, colour: ShellColour, maxPx: Int): Bitmap {
-        val key = "b|${s.id}|${colour.key}|$maxPx"
+    fun back(s: CartShell, colour: ShellColour, maxPx: Int, neutral: Boolean = false): Bitmap {
+        val data = CartBacks.of(s.id)
+        val plainText = neutral && data?.neutralOk != false
+        val key = "b|${s.id}|${colour.key}|$maxPx|$plainText"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
         val b = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
         val c = Canvas(b)
+        // (Drawn as seen from behind — text reads right — then mirrored, since the piece flips it back when turned.)
         c.scale(-1f, 1f, bw / 2f, 0f)
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
-        val path = outlinePath(s, k)
+        // The outline as seen from behind (the front's, mirrored).
+        val path = outlinePath(s, k).apply { transform(android.graphics.Matrix().apply { setScale(-1f, 1f, bw / 2f, 0f) }) }
         val base = colour.argb; val op = colour.opacity
         p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.04f), op), withAlpha(shade(base, -0.16f), op), Shader.TileMode.CLAMP)
         c.drawPath(path, p); p.shader = null
         c.save(); c.clipPath(path)
+        // A see-through shell shows its board from behind too.
+        if (op < 0.85f) {
+            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+            p.color = withAlpha(0xFF1E5F3A.toInt(), 0.5f * (1f - op)); c.drawRect(board, p)
+            p.color = withAlpha(0xFF111111.toInt(), 0.55f * (1f - op))
+            c.drawRect(RectF(board.left + board.width() * 0.4f, board.top + board.height() * 0.25f, board.left + board.width() * 0.75f, board.top + board.height() * 0.5f), p)
+        }
         // The seam where the two halves meet, just inside the edge.
         p.style = Paint.Style.STROKE; p.strokeWidth = 0.35f * k
         p.color = withAlpha(shade(base, -0.45f), maxOf(op, 0.6f))
         val inset = android.graphics.Matrix().apply { setScale(1f - 1.6f / s.w, 1f - 1.6f / s.h, bw / 2f, bh / 2f) }
         c.drawPath(Path(path).apply { transform(inset) }, p)
         p.style = Paint.Style.FILL
-        for (sc in s.screws) {
-            val x = sc[0] * k; val y = sc[1] * k; val r = 1.9f * k
-            p.color = withAlpha(shade(base, -0.5f), 1f); c.drawCircle(x, y, r * 1.25f, p)
-            p.color = 0xFF8C8E94.toInt(); c.drawCircle(x, y, r, p)
-            p.color = 0xFF4A4C52.toInt(); c.drawRect(x - r * 0.65f, y - r * 0.12f, x + r * 0.65f, y + r * 0.12f, p)
-        }
-        s.contactsBack?.let { ct -> contacts(c, ct, k, p) }
+        if (data == null) {
+            for (sc in s.screws) screw(c, (s.w - sc[0]) * k, sc[1] * k, 3.8f * k, 4.8f * k, 0, base, p)
+            s.contactsBack?.let { ct -> contacts(c, floatArrayOf(s.w - ct[0] - ct[2], ct[1], ct[2], ct[3]), k, p) }
+        } else drawBack(c, data, k, base, op, plainText, p)
         c.restore()
         cache.put(key, b)
         return b
+    }
+
+    /** Update 200: [d] drawn on the back (seen from behind, mm × [k]). */
+    private fun drawBack(c: Canvas, d: CartBack, k: Float, base: Int, op: Float, neutral: Boolean, p: Paint) {
+        val solid = maxOf(op, 0.6f)
+        fun rr(x: Float, y: Float, w: Float, h: Float) = RectF(x * k, y * k, (x + w) * k, (y + h) * k)
+        // Sunken panels: darker, shadowed along the top and left (the light comes from above), lit along the bottom.
+        var i = 0
+        while (i + 5 < d.recesses.size) {
+            val r = rr(d.recesses[i], d.recesses[i + 1], d.recesses[i + 2], d.recesses[i + 3]); val rad = d.recesses[i + 4] * k
+            val deep = d.recesses[i + 5].coerceIn(0.1f, 4f)
+            p.color = withAlpha(shade(base, -0.06f - 0.05f * deep), solid); c.drawRoundRect(r, rad, rad, p)
+            p.style = Paint.Style.STROKE; p.strokeWidth = (0.25f + 0.15f * deep) * k
+            p.color = withAlpha(shade(base, -0.45f), solid * 0.9f)
+            c.drawLine(r.left + rad, r.top, r.right - rad, r.top, p); c.drawLine(r.left, r.top + rad, r.left, r.bottom - rad, p)
+            p.color = withAlpha(shade(base, 0.25f), solid * 0.7f)
+            c.drawLine(r.left + rad, r.bottom, r.right - rad, r.bottom, p); c.drawLine(r.right, r.top + rad, r.right, r.bottom - rad, p)
+            p.style = Paint.Style.FILL
+            i += 6
+        }
+        // Raised panels: a little lighter, lit along the top, a shadow under them.
+        i = 0
+        while (i + 4 < d.raised.size) {
+            val r = rr(d.raised[i], d.raised[i + 1], d.raised[i + 2], d.raised[i + 3]); val rad = d.raised[i + 4] * k
+            p.color = withAlpha(0xFF000000.toInt(), 0.18f * solid); c.drawRoundRect(RectF(r.left, r.top + 0.5f * k, r.right, r.bottom + 0.6f * k), rad, rad, p)
+            p.color = withAlpha(shade(base, 0.07f), solid); c.drawRoundRect(r, rad, rad, p)
+            p.style = Paint.Style.STROKE; p.strokeWidth = 0.3f * k
+            p.color = withAlpha(shade(base, 0.35f), solid * 0.8f); c.drawLine(r.left + rad, r.top, r.right - rad, r.top, p)
+            p.style = Paint.Style.FILL
+            i += 5
+        }
+        // Other parts.
+        i = 0
+        while (i + 4 < d.extras.size) {
+            val kind = d.extras[i].toInt(); val r = rr(d.extras[i + 1], d.extras[i + 2], d.extras[i + 3], d.extras[i + 4])
+            when (kind) {
+                0 -> { // a notch / step in the shell: a shadowed band
+                    p.color = withAlpha(shade(base, -0.3f), solid * 0.55f); c.drawRect(r, p)
+                }
+                1 -> { // grip ridges
+                    val n = (minOf(r.width(), r.height()) / (1.4f * k)).toInt().coerceIn(2, 14)
+                    val across = r.width() >= r.height()
+                    for (g in 0 until n) {
+                        val f = (g + 0.5f) / n
+                        p.color = withAlpha(shade(base, -0.35f), solid)
+                        if (across) c.drawRect(r.left, r.top + r.height() * f - 0.25f * k, r.right, r.top + r.height() * f + 0.1f * k, p)
+                        else c.drawRect(r.left + r.width() * f - 0.25f * k, r.top, r.left + r.width() * f + 0.1f * k, r.bottom, p)
+                    }
+                }
+                3 -> { p.color = 0xFF0C0C0E.toInt(); c.drawRoundRect(r, 0.8f * k, 0.8f * k, p) } // a hole
+                4, 9 -> { // a dark glass window / lens
+                    p.color = 0xFF101318.toInt(); if (kind == 9) c.drawOval(r, p) else c.drawRoundRect(r, 0.8f * k, 0.8f * k, p)
+                    p.shader = LinearGradient(r.left, r.top, r.right, r.bottom, 0x33FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP)
+                    if (kind == 9) c.drawOval(r, p) else c.drawRoundRect(r, 0.8f * k, 0.8f * k, p); p.shader = null
+                }
+                5, 8 -> { // a compartment / battery door: a deep recess with its lid's seam and a finger catch
+                    p.color = withAlpha(shade(base, -0.18f), solid); c.drawRoundRect(r, 1f * k, 1f * k, p)
+                    p.style = Paint.Style.STROKE; p.strokeWidth = 0.4f * k; p.color = withAlpha(shade(base, -0.55f), solid)
+                    c.drawRoundRect(r, 1f * k, 1f * k, p); p.style = Paint.Style.FILL
+                    p.color = withAlpha(shade(base, -0.4f), solid)
+                    c.drawRoundRect(RectF(r.centerX() - 3f * k, r.bottom - 2.2f * k, r.centerX() + 3f * k, r.bottom - 1.2f * k), 0.5f * k, 0.5f * k, p)
+                }
+                6 -> { // a hinged flap: raised, its hinge line along the top
+                    p.color = withAlpha(shade(base, 0.06f), solid); c.drawRoundRect(r, 1.2f * k, 1.2f * k, p)
+                    p.color = withAlpha(shade(base, -0.5f), solid); c.drawRect(r.left, r.top + 0.8f * k, r.right, r.top + 1.2f * k, p)
+                }
+                7 -> { // a port: dark opening with pins
+                    p.color = 0xFF0B0B0D.toInt(); c.drawRoundRect(r, 0.6f * k, 0.6f * k, p)
+                    p.color = 0xFF8D8F94.toInt()
+                    val n = (r.width() / (1.6f * k)).toInt().coerceIn(3, 12)
+                    for (g in 0 until n) { val x = r.left + r.width() * (g + 0.5f) / n; c.drawRect(x - 0.25f * k, r.top + r.height() * 0.3f, x + 0.25f * k, r.bottom - r.height() * 0.3f, p) }
+                }
+                else -> { p.color = withAlpha(shade(base, 0.05f), solid); c.drawRoundRect(r, 0.8f * k, 0.8f * k, p) } // a tab
+            }
+            i += 5
+        }
+        // Seams: a dark line with a lit one beside it.
+        i = 0
+        p.strokeCap = Paint.Cap.ROUND
+        while (i + 3 < d.seams.size) {
+            val x1 = d.seams[i] * k; val y1 = d.seams[i + 1] * k; val x2 = d.seams[i + 2] * k; val y2 = d.seams[i + 3] * k
+            p.style = Paint.Style.STROKE
+            p.strokeWidth = 0.3f * k; p.color = withAlpha(shade(base, -0.5f), solid); c.drawLine(x1, y1, x2, y2, p)
+            p.strokeWidth = 0.2f * k; p.color = withAlpha(shade(base, 0.25f), solid * 0.6f); c.drawLine(x1, y1 + 0.35f * k, x2, y2 + 0.35f * k, p)
+            p.style = Paint.Style.FILL
+            i += 4
+        }
+        // The connector: open (its pads showing, with plastic ribs between them where it has them) or the shell's slot.
+        val cn = d.connector
+        if (cn.size >= 7) {
+            val r = rr(cn[0], cn[1], cn[2], cn[3])
+            val open = cn[4] > 0.5f; val n = cn[5].toInt(); val ribs = cn[6] > 0.5f
+            if (open && n > 0) {
+                p.color = 0xFF1E1F22.toInt(); c.drawRect(r, p)
+                val step = r.width() / n
+                for (g in 0 until n) {
+                    val x = r.left + g * step
+                    p.color = 0xFFC9A646.toInt(); c.drawRect(x + step * (if (ribs) 0.22f else 0.12f), r.top + 0.35f * k, x + step * (if (ribs) 0.78f else 0.88f), r.bottom - 0.2f * k, p)
+                    if (ribs && g > 0) { p.color = withAlpha(shade(base, -0.2f), 1f); c.drawRect(x - step * 0.1f, r.top, x + step * 0.1f, r.bottom, p) }
+                }
+            } else {
+                p.color = withAlpha(shade(base, -0.4f), solid * 0.8f)
+                c.drawRect(r.left, r.top, r.right, r.top + 0.35f * k, p)
+                p.color = withAlpha(shade(base, -0.15f), solid * 0.6f); c.drawRect(r.left, r.top + 0.35f * k, r.right, r.bottom, p)
+            }
+        }
+        // Stickers (not on the neutral back): the paper, a heading band and lines of small print.
+        if (!neutral) {
+            i = 0; var ci = 0
+            while (i + 4 < d.stickers.size) {
+                val r = rr(d.stickers[i], d.stickers[i + 1], d.stickers[i + 2], d.stickers[i + 3]); val kind = d.stickers[i + 4].toInt()
+                val bg = d.stickerColours.getOrElse(ci) { 0xFFEDEDED.toInt() }; val ink = d.stickerColours.getOrElse(ci + 1) { 0xFF222222.toInt() }
+                p.color = 0x22000000; c.drawRoundRect(RectF(r.left, r.top + 0.3f * k, r.right, r.bottom + 0.4f * k), 0.6f * k, 0.6f * k, p)
+                p.color = bg; c.drawRoundRect(r, 0.6f * k, 0.6f * k, p)
+                val pad = minOf(r.width(), r.height()) * 0.08f
+                p.color = withAlpha(ink, 0.85f)
+                val lineH = (0.9f * k).coerceAtMost(r.height() / 6f)
+                var y = r.top + pad
+                if (kind == 0 && r.height() > 6f * lineH) { c.drawRect(r.left + pad, y, r.left + r.width() * 0.45f, y + lineH * 1.6f, p); y += lineH * 3f }
+                p.color = withAlpha(ink, 0.55f)
+                var row = 0
+                while (y + lineH < r.bottom - pad) {
+                    val end = if (row % 4 == 3) 0.6f else 0.92f
+                    c.drawRect(r.left + pad, y, r.left + pad + (r.width() - 2 * pad) * end, y + lineH * 0.55f, p)
+                    y += lineH * 1.5f; row++
+                }
+                i += 5; ci += 2
+            }
+        }
+        // Moulded text (not on the neutral back): raised (lit above, shadow below) or sunken (the other way round).
+        if (!neutral) {
+            val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; isFakeBoldText = true; typeface = android.graphics.Typeface.DEFAULT_BOLD }
+            i = 0
+            var ti = 0
+            while (i + 4 < d.textPos.size) {
+                val t = d.texts.getOrElse(ti) { "" }
+                val x = d.textPos[i] * k; val y = d.textPos[i + 1] * k; val cap = d.textPos[i + 2] * k; val rot = d.textPos[i + 3]
+                val raisedText = d.textPos[i + 4] > 0.5f
+                if (t.isNotBlank() && cap > 1.5f) {
+                    tp.textSize = cap * 1.42f
+                    c.save(); c.rotate(rot, x, y)
+                    val by = y - (tp.descent() + tp.ascent()) / 2f
+                    val off = maxOf(0.18f * k, 0.6f)
+                    tp.color = withAlpha(shade(base, if (raisedText) 0.35f else -0.55f), solid); c.drawText(t, x, by - off, tp)
+                    tp.color = withAlpha(shade(base, if (raisedText) -0.55f else 0.35f), solid); c.drawText(t, x, by + off, tp)
+                    tp.color = withAlpha(shade(base, if (raisedText) 0.06f else -0.12f), solid); c.drawText(t, x, by, tp)
+                    c.restore()
+                }
+                i += 5; ti++
+            }
+        }
+        // Screws last, in their recesses.
+        i = 0
+        while (i + 4 < d.screws.size) {
+            screw(c, d.screws[i] * k, d.screws[i + 1] * k, d.screws[i + 2] * k, d.screws[i + 3] * k, d.screws[i + 4].toInt(), base, p)
+            i += 5
+        }
+    }
+
+    /** Update 200: a screw head ([head] Ø) in its recess ([recess] Ø), its drive drawn by [type]. */
+    private fun screw(c: Canvas, x: Float, y: Float, head: Float, recess: Float, type: Int, base: Int, p: Paint) {
+        val rr = maxOf(recess, head) / 2f; val hr = head / 2f
+        p.shader = android.graphics.RadialGradient(x, y - rr * 0.2f, rr, shade(base, -0.65f), shade(base, -0.35f), Shader.TileMode.CLAMP)
+        c.drawCircle(x, y, rr, p); p.shader = null
+        if (type == 4) return // a clip: just the hole
+        p.shader = android.graphics.RadialGradient(x - hr * 0.3f, y - hr * 0.3f, hr * 1.3f, 0xFFBFC1C6.toInt(), 0xFF6D6F75.toInt(), Shader.TileMode.CLAMP)
+        c.drawCircle(x, y, hr, p); p.shader = null
+        p.color = 0xFF2E3034.toInt()
+        val w = maxOf(hr * 0.16f, 0.6f)
+        when (type) {
+            0 -> { c.drawRect(x - hr * 0.62f, y - w, x + hr * 0.62f, y + w, p); c.drawRect(x - w, y - hr * 0.62f, x + w, y + hr * 0.62f, p) }
+            1 -> for (a in 0 until 3) { // tri-wing: three slots at 120°
+                c.save(); c.rotate(a * 120f - 90f, x, y); c.drawRect(x, y - w, x + hr * 0.7f, y + w, p); c.restore()
+            }
+            2 -> { // security / game bit: a round drive with a pin in it
+                p.color = 0xFF3A3C41.toInt(); c.drawCircle(x, y, hr * 0.55f, p)
+                p.color = 0xFF9A9CA2.toInt(); c.drawCircle(x, y, hr * 0.2f, p)
+            }
+            3 -> c.drawRect(x - hr * 0.7f, y - w, x + hr * 0.7f, y + w, p)
+            5 -> { // torx: a star
+                val star = Path()
+                for (s in 0 until 12) {
+                    val ang = Math.toRadians((s * 30f - 90f).toDouble()); val rad = if (s % 2 == 0) hr * 0.6f else hr * 0.38f
+                    val px = x + rad * kotlin.math.cos(ang).toFloat(); val py = y + rad * kotlin.math.sin(ang).toFloat()
+                    if (s == 0) star.moveTo(px, py) else star.lineTo(px, py)
+                }
+                star.close(); c.drawPath(star, p)
+            }
+        }
     }
 
     private fun contacts(c: Canvas, ct: FloatArray, k: Float, p: Paint) {
@@ -629,21 +864,33 @@ internal object CartShells {
 
 /** Update 195: which shell each game (or every game of a console) is drawn on — saved in Voltcap's settings. */
 internal object CartShellStore {
-    // (Read once from the settings, outside any screen's drawing: Snapshot.global.)
-    private val map by lazy {
-        androidx.compose.runtime.snapshots.Snapshot.global {
-            androidx.compose.runtime.mutableStateMapOf<String, String>().apply {
-                Features.cartShellChoices.value.split('\n').forEach { line ->
-                    val i = line.indexOf('\t')
-                    if (i > 0) put(line.substring(0, i), line.substring(i + 1))
-                }
-            }
+    // Update 200: a plain map plus a version number made when the app starts (Features.init → warmUp). The map used
+    // to be a state map made the first time a game was drawn — in the middle of a screen's measuring, made "outside"
+    // it (Snapshot.global), so reading it there crashed the Odin 2 Portal ("Reading a state that was created after the
+    // snapshot was taken").
+    private val map = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private val version = androidx.compose.runtime.mutableIntStateOf(0)
+    @Volatile private var loaded = false
+
+    /** Called once at start (Features.init), before any screen draws. */
+    fun warmUp() { load() }
+
+    @Synchronized private fun fill() {
+        if (loaded) return
+        Features.cartShellChoices.value.split('\n').forEach { line ->
+            val i = line.indexOf('\t')
+            if (i > 0) map[line.substring(0, i)] = line.substring(i + 1)
         }
+        loaded = true
     }
 
-    private fun load() { map.size }
+    /** Loads once, and (read from a screen) makes it redraw when a choice changes. */
+    private fun load() { if (!loaded) fill(); runCatching { version.intValue } }
 
-    private fun save() { Features.cartShellChoices.value = map.entries.joinToString("\n") { "${it.key}\t${it.value}" } }
+    private fun save() {
+        Features.cartShellChoices.value = map.entries.joinToString("\n") { "${it.key}\t${it.value}" }
+        version.intValue++
+    }
 
     fun forGame(key: String): String? { load(); return map[key] }
     fun forConsole(platform: String): String? { load(); return map["console:$platform"] }
@@ -660,10 +907,9 @@ internal object CartShellStore {
 internal fun CartShellArt(pickPlatform: String, art: Any?, modifier: Modifier, title: String? = null, maxPx: Int = 640) {
     val (choice, console) = remember(pickPlatform) { CartShells.split(pickPlatform) }
     val packLook = choice?.pack
-    val model = choice?.model
-    if (model != null) {
-        Model3DArt(model, art, 20f, modifier, name = title, platform = console)
-    } else if (packLook != null) {
+    // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
+    // pre-rendered pictures.)
+    if (packLook != null) {
         PackCart(console ?: "", art, modifier, packLook, choice.clear)
     } else {
         val shell = choice?.shell

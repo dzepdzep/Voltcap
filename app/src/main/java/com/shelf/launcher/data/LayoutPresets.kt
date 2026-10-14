@@ -52,7 +52,8 @@ data class PresetLook(
     fun label(): String? = when {
         tiles -> "Tile"
         spines -> "Spines"
-        models -> "3D models"
+        // (Update 200: the 3D cartridges look — drawn shells now, no longer the pre-rendered 3D models.)
+        models -> "3D cartridges"
         carts -> "Cartridges"
         leaning -> "Case + its media"
         disc3d -> "3D case + disc"
@@ -324,8 +325,9 @@ object LayoutPresets {
             look = CASES, options = tvOpts(com.shelf.launcher.ui.TvRoom.Games.CAROUSEL) + view(com.shelf.launcher.ui.CarouselView.SPINE_WALL)) { s ->
             s.copy(cardArtType = CardArtType.CASE, focusEffect = FocusEffect.GLOW)
         },
-        preset("tv_models", HomeLayout.TV, "TV room · 3D models",
-            "Your 3D cartridges, cards and cases beside the TV, the one you're on facing you.",
+        // (Update 200: renamed from "TV room · 3D models" — the 3D cartridges look draws the drawn shells now; its id stays.)
+        preset("tv_models", HomeLayout.TV, "TV room · 3D cartridges",
+            "Every cartridge as its real shell in 3D beside the TV, the one you're on facing you.",
             look = PresetLook(models = true), options = tvOpts() + o(Features.pickedFaces, true)) { s ->
             s.copy(cardArtType = CardArtType.CARTRIDGE_DISC, focusEffect = FocusEffect.GLOW)
         },

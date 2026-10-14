@@ -141,7 +141,7 @@ internal fun Case3D(
                 // Update 191: a keep case's sleeve, a box's print: the cover over the whole front, at the real case's
                 // shape (a little off: fitted; further off: cut in the middle).
                 spec != null -> made ?: fitFace(f, shape)
-                else -> made ?: cropTo(f, shape)
+                else -> made ?: stretchOrCrop(f, shape, 0.13f)
             }
         }
     }
@@ -372,7 +372,9 @@ private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap,
     val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
     val c = android.graphics.Canvas(out)
     val dst = android.graphics.RectF(win[0] * w, win[1] * h, win[2] * w, win[3] * h)
-    val cut = cropTo(art, dst.width() / dst.height().coerceAtLeast(1f))
+    // (Update 200: a cover a little off the window's shape — up to an eighth — is fitted whole, gently stretched, not
+    // cut: covers lost their edges (a publisher's logo, the rating) on other consoles as the PlayStation's had.)
+    val cut = stretchOrCrop(art, dst.width() / dst.height().coerceAtLeast(1f), 0.13f)
     val p = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
     c.drawBitmap(cut, null, dst, p)
     c.drawBitmap(frame, null, android.graphics.RectF(0f, 0f, w.toFloat(), h.toFloat()), p)
@@ -401,10 +403,24 @@ internal fun isWholeCaseScan(f: android.graphics.Bitmap, caseAspect: Float): Boo
     return caseAspect > 0f && kotlin.math.abs(a / caseAspect - 1f) < 0.08f
 }
 
-/** Update 191: [src] at [aspect]: within 6 % as it is (drawn onto the front), further off cut in the middle. */
+/**
+ * Update 191: [src] at [aspect]: within 6 % as it is (drawn onto the front), further off cut in the middle.
+ * Update 200: within about an eighth fitted whole (gently stretched) — a cut cost covers their edges on every console,
+ * not only the PlayStation; only art far off the case's shape is cut.
+ */
 private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
     val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
-    return if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) < 0.06f) src else cropTo(src, aspect)
+    return if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) < 0.06f) src else stretchOrCrop(src, aspect, 0.13f)
+}
+
+/** Update 200: [src] at [aspect]: within [tol] (a share) stretched whole, further off cut in the middle. */
+private fun stretchOrCrop(src: android.graphics.Bitmap, aspect: Float, tol: Float): android.graphics.Bitmap {
+    val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
+    if (aspect <= 0f || kotlin.math.abs(cur - aspect) < 0.01f) return src
+    val k = cur / aspect
+    if (k < 1f - tol || k > 1f + tol) return cropTo(src, aspect)
+    val w = (src.height * aspect).toInt().coerceAtLeast(1)
+    return runCatching { android.graphics.Bitmap.createScaledBitmap(src, w, src.height, true) }.getOrDefault(src)
 }
 
 /**

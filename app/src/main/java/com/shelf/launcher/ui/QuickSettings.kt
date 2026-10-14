@@ -387,38 +387,9 @@ fun QuickSettingsCard(
             if (lookNow == com.shelf.launcher.data.CardArtType.DISC) styleTile("discstyle", "Disc", F.discStyle, LookStyles.DISCS) { F.mediaShells.value = true }
             if (lookNow == com.shelf.launcher.data.CardArtType.CASE || lookNow == com.shelf.launcher.data.CardArtType.CASE_REAL) styleTile("casestyle", "Case", F.caseStyle, LookStyles.cases())
             if (lookNow == com.shelf.launcher.data.CardArtType.COVER && F.spineLook.state.value) styleTile("spinestyle", "Spine", F.spineStyle, LookStyles.spines())
-            // Update 159: 3D on / off for the looks with real things (cases, cartridges, discs): your 3D shape library's
-            // pieces and cases instead of the flat drawings — one tap, without leaving the look you're on.
-            val caseLookNow = lookNow == com.shelf.launcher.data.CardArtType.CASE || lookNow == com.shelf.launcher.data.CardArtType.CASE_REAL
-            if (caseLookNow || lookNow == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) {
-                // Case looks: their own switch (the cases in 3D); Cartridges & discs / Cartridges: the 3D models.
-                val on3d = if (caseLookNow) F.caseModels3d.state.value else F.modelFinish.state.value != com.shelf.launcher.ui.ModelFinish.OFF
-                // Update 182: greyed out in the case looks — the 3D cases cut the covers and looked worse than your real
-                // case scans; the cases and their inspect view stay as the flat (real) ones.
-                if (caseLookNow) add(R1Tile("look3d", Icons.Filled.ViewInAr, "3D\noff", false, disabled = true) {
-                    android.widget.Toast.makeText(context, "The case looks show your real cases — 3D is for cartridges & discs.", android.widget.Toast.LENGTH_SHORT).show()
-                }) else add(R1Tile("look3d", Icons.Filled.ViewInAr, if (on3d) "3D\non" else "3D\noff", on3d) {
-                    // Update 162: 3D for the cartridges you see — each console's real cartridge, or your custom ones only
-                    // when the Cartridges look is on your pack (clear when you picked clear).
-                    // (Update 164: and back to the same kind flat — 3D custom → Custom cartridges, 3D clear → Clear, 3D → as before.)
-                    if (caseLookNow) F.caseModels3d.value = !on3d
-                    else if (on3d) {
-                        val was = F.modelFinish.value
-                        setModelsLook(false)
-                        if (was == com.shelf.launcher.ui.ModelFinish.CUSTOM || was == com.shelf.launcher.ui.ModelFinish.CLEAR) {
-                            F.cartsOnly.value = true
-                            F.cartSource.value = CartSource.CUSTOM
-                            F.cartClear.value = was == com.shelf.launcher.ui.ModelFinish.CLEAR
-                        }
-                    } else {
-                        val custom = F.cartsOnly.value && F.cartSource.value == CartSource.CUSTOM
-                        F.modelFinish.value = if (!custom) com.shelf.launcher.ui.ModelFinish.REAL
-                            else if (F.cartClear.value) com.shelf.launcher.ui.ModelFinish.CLEAR else com.shelf.launcher.ui.ModelFinish.CUSTOM
-                    }
-                    // No 3D models downloaded yet: where to get them.
-                    if (!on3d && !com.shelf.launcher.data.Packs.anyModels()) home.openSettingsAt("Game look", "3D models")
-                })
-            }
+            // (Update 159: the "3D on / off" tile (look3d) stood here. Update 200: removed — most looks are 3D already, and the
+            // pre-rendered 3D models it switched on are retired; the 3D cartridges looks (Game look tile, Settings › Game look)
+            // draw the drawn shells with real depth. A saved tile order with "look3d" in it just skips it.)
         }
         if (home != null) {
             val a = home.appearance
@@ -599,32 +570,17 @@ fun QuickSettingsCard(
             add(R1Tile("gamesize", Icons.Filled.PhotoSizeSelectLarge, "Size\n" + GameSize.label(a), false, longAction = { showGameSize = true }) {
                 GameSize.step(a) { home.setAppearance(it) }
             })
-            // Update 136, Art drop: how far the cover drops below the case template's top band (Box art looks) or the
-            // 3D model window's top (3D models) — each look its own. Update 137: the panel closes and the slider shows
-            // on the home screen, under the game (above it with the row at the bottom), changing it live.
-            val dropModel = a.cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && Models3D.on()
+            // Update 136, Art drop: how far the cover drops below the case template's top band (Box art looks) — each look its
+            // own. Update 137: the panel closes and the slider shows on the home screen, under the game (above it with the
+            // row at the bottom), changing it live.
+            // (Update 200: no longer for the 3D models' window, and the "Cart colour" tile (cartcolour) for their custom
+            // pieces is gone: the pre-rendered 3D models are retired — the 3D cartridges looks are drawn shells.)
             val dropCase = a.cardArtType == com.shelf.launcher.data.CardArtType.CASE || a.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
-            if (dropModel || dropCase) {
+            if (dropCase) {
                 // (Update 137: Art position — moved with drag / D-pad and sized with pinch / L1 R1.)
-                val moved = ArtPlace.moved(dropModel)
+                val moved = ArtPlace.moved(false)
                 add(R1Tile("artdrop", Icons.Filled.VerticalAlignBottom, "Art position\n" + if (moved) "Moved" else "Centred", moved) {
-                    HomeAdjust.open = HomeAdjust.Target(HomeAdjust.Kind.ART_DROP, model = dropModel)
-                })
-            }
-            // Update 137, Cartridge colour (3D models, Custom or Clear): the custom cartridges' colour, for the game
-            // you're on or all of them; shown on the home screen like Art drop.
-            val finish = com.shelf.launcher.data.Features.modelFinish.state.value
-            if (dropModel && (finish == ModelFinish.CUSTOM || finish == ModelFinish.CLEAR)) {
-                ModelColors.version.intValue
-                val gp = home.gamePlatform; val gn = home.gameName
-                val mine = (if (gp != null && gn != null) ModelColors.game(gp, gn) else null) ?: ModelColors.all()
-                val which = when {
-                    gp != null && gn != null && ModelColors.game(gp, gn) != null -> "This game"
-                    ModelColors.all() != null -> "All"
-                    else -> "Console"
-                }
-                add(R1Tile("cartcolour", Icons.Filled.FormatColorFill, "Cart colour\n$which", mine != null, dot = mine?.let { Color(it) }) {
-                    HomeAdjust.open = HomeAdjust.Target(HomeAdjust.Kind.CART_COLOUR, model = true, platform = gp, name = gn)
+                    HomeAdjust.open = HomeAdjust.Target(HomeAdjust.Kind.ART_DROP, model = false)
                 })
             }
             // Corners of the covers and tiles (update 104): Square → Rounded → Extra round → Capsule.
@@ -1762,4 +1718,5 @@ internal fun carouselApplies(layout: com.shelf.launcher.data.HomeLayout): Boolea
         layout == com.shelf.launcher.data.HomeLayout.SIDE || layout == com.shelf.launcher.data.HomeLayout.STACKS
 
 /** Update 182: the tiles that only tune the game look (greyed out with it in a layout with its own look). */
-private val LOOK_SUB_TILES = setOf("casestyle", "discstyle", "spinestyle", "cartlook", "look3d")
+// (Update 200: "look3d" is gone with the R1 3D tile.)
+private val LOOK_SUB_TILES = setOf("casestyle", "discstyle", "spinestyle", "cartlook")

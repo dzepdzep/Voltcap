@@ -130,7 +130,11 @@ internal object LaunchThrow {
                 if (cover == null && scan == null) return null
                 val casePlatform = LookStyles.casePlatform(game.platform)
                 // (The case looks never stand a 3D model case, see CaseArt.)
-                val aspect = realCaseMm(casePlatform)?.let { it.first / it.second } ?: 0.7f
+                // Update 200: the shape the card draws this game's case front at — its own scan's shape (ScanCase), the
+                // case reshaped to its cover (CoverCase) — else the console's case as before. It was always the
+                // console's case shape, so the door (CaseArt fitted inside it) came out smaller than the tray behind it
+                // and swung from a hinge beside it, and the case didn't match the card it came from.
+                val aspect = caseFaceAspect(game.platform, cover, scan) ?: realCaseMm(casePlatform)?.let { it.first / it.second } ?: 0.7f
                 ThrowPlan(
                     game, ThrowKind.CASE, rect, GameOrigin.displayId, cover, scan, null,
                     MediaPick(shell, game.platform), discLabel ?: cover, discLabel != null, ownMedia,
@@ -149,21 +153,10 @@ internal object LaunchThrow {
                 val label = typed ?: cover ?: wide
                 if (label == null && realScan == null) return null
                 val round = if (pick != null) pick.shell.disc || pick.shell == MediaShell.UMD else mediaRound(game.platform)
-                val modelPick = pick?.takeIf { it.platform.startsWith(MODEL_3D) }
-                val model = modelPick?.platform?.removePrefix(MODEL_3D)?.substringBefore('|')
-                val inside = MediaShell.of(game.platform)
-                if (modelPick != null && model != null && model.startsWith("case_") && inside != null) {
-                    // Your 3D case: it opens and its disc flies out.
-                    ThrowPlan(
-                        game, ThrowKind.CASE, rect, GameOrigin.displayId, cover, null, modelPick,
-                        MediaPick(inside, game.platform), discLabel ?: cover, discLabel != null, ownMedia,
-                        inside.disc || inside == MediaShell.UMD, null, game.platform,
-                        modelPick.aspect.coerceIn(0.3f, 3f), inside.aspect
-                    )
-                } else {
+                // (Update 200: no 3D-model case or piece any more — the 3D cartridges looks are drawn shells, custom pieces.)
+                run {
                     val kind = when {
                         asDisc -> ThrowKind.DISC
-                        model != null -> ThrowKind.CART
                         pick != null && isCustomPiece(pick.platform) -> ThrowKind.CART
                         round -> ThrowKind.DISC
                         else -> ThrowKind.CART
@@ -171,13 +164,49 @@ internal object LaunchThrow {
                     ThrowPlan(
                         game, kind, rect, GameOrigin.displayId, cover, null, null, pick, label,
                         typed != null && label == typed, realScan, round, null, null, 1f,
-                        if (round) 1f else (pick?.aspect ?: 1f).coerceIn(0.3f, 3f)
+                        // Update 200: the game's own cartridge scan at its own shape (noted as the card loads it,
+                        // RealMediaPicture) — it was taken as square, so it ended the wrong size over a slot not its width.
+                        if (round) 1f else (pick?.aspect ?: CoverAspects.rawOf(realScan) ?: 1f).coerceIn(0.3f, 3f)
                     )
                 }
             }
             else -> null
         }
     }
+}
+
+/**
+ * Update 200: the width / height the card draws [platform]'s case front at for [cover] and its own case [scan] — as
+ * CaseArt picks it (CaseArtBody / CaseArtFace): the case with its cartridge / disc beside it, the game's own scan
+ * (ScanCase: the scan's shape, kept near the case's), or the console's printed case (CoverCase: reshaped to the cover).
+ * Null for the other cases (the 3D box, the disc half out of its case): those keep the console's case shape.
+ */
+private fun caseFaceAspect(platform: String, cover: String?, scan: String?): Float? {
+    val casePlatform = LookStyles.casePlatform(platform) ?: return null
+    val forAll = LookStyles.caseForAll()
+    val caseScan = if (forAll) null else scan
+    val cov = MediaCovers.used(casePlatform)
+    val tpl = MediaTemplates.of(casePlatform)
+    val box = tpl?.box
+    if (Features.caseWithMedia.value && MediaShell.of(casePlatform) != null) {
+        if (cov == null && box == null) return null
+        return cov?.frontAspectFor(cover ?: caseScan) ?: box?.let { if (it.frameRes != null) it.frameAspect else it.aspect }
+    }
+    if (discCaseOn(tpl)) return null
+    val noBand = casePlatform == "PS1"
+    val side = Features.boxSpine.value && !noBand
+    if (Features.originalCases.value && caseScan != null) {
+        if (side && box != null) return null
+        val base = cov?.frontAspect ?: box?.let { if (it.frameRes != null) it.frameAspect else null }
+            ?: realCaseMm(casePlatform)?.let { it.first / it.second } ?: 0.7f
+        val cut = if (noBand) PS1_BAND else 0f
+        return CoverAspects.rawOf(caseScan)?.let { r -> (r * (1f - cut)).coerceIn(base * 0.75f, base * 1.33f) } ?: base
+    }
+    if (cov != null && (box == null || (!Features.box3d.value && !side))) {
+        // Another console's case picked for all (R1 › Case): drawn as its plain shape, never reshaped (LocalCaseOwner).
+        return if (forAll && casePlatform != platform) cov.frontAspect else cov.frontAspectFor(cover ?: caseScan)
+    }
+    return null
 }
 
 private fun ph(t: Float, a: Float, b: Float) = ((t - a) / (b - a)).coerceIn(0f, 1f)
@@ -214,7 +243,7 @@ private fun ThrownPiece(p: ThrowPlan, pick: MediaPick?, label: Any?, labelIsScan
     if (pick == null) {
         if (p.realScan != null) RealMediaPicture(p.realScan, p.round, modifier)
     } else {
-        val own = pick.platform.startsWith(MODEL_3D) || isCustomPiece(pick.platform)
+        val own = isCustomPiece(pick.platform)
         val tpl = if (own) null else MediaTemplates.of(pick.platform)
         if (tpl?.disc != null && discCaseOn(tpl)) TemplateMedia(
             MediaTpl(null, null, tpl.disc, null), labelScan = if (labelIsScan) label else null,
@@ -339,9 +368,15 @@ private fun CaseScene(
     val mm = if (p.real != null) realCaseMm(p.casePlatform) else null
     val cw: Float
     val ch: Float
+    // Update 200: real sizes — the front is fitted (at its own shape, p.caseAspect) and centred in its real-size place
+    // standing on the floor, as CaseArt draws it; this is how far its bottom sits above the floor.
+    var floorGap = 0f
     if (p.real != null && mm != null) {
         val k = minOf(innerW / p.real.wMm, innerH / p.real.hMm)
-        cw = k * mm.first; ch = k * mm.second
+        val bw = k * mm.first
+        val bh = k * mm.second
+        cw = minOf(bw, bh * p.caseAspect); ch = cw / p.caseAspect
+        floorGap = (bh - ch) / 2f
     } else {
         cw = minOf(innerW, innerH * p.caseAspect); ch = cw / p.caseAspect
     }
@@ -355,7 +390,7 @@ private fun CaseScene(
         Modifier.size(with(density) { cw.toDp() }, with(density) { ch.toDp() }).graphicsLayer {
             val t = clock.value
             val left = p.from.left - win[0] + pad + (innerW - cw) / 2f
-            val top = p.from.top - win[1] + pad + (if (bottomStand) innerH - ch else (innerH - ch) / 2f)
+            val top = p.from.top - win[1] + pad + (if (bottomStand) innerH - ch - floorGap else (innerH - ch) / 2f)
             translationX = left
             translationY = top - ch * 0.03f * eOut3(ph(t, 0f, 120f))
         }
@@ -376,7 +411,7 @@ private fun CaseScene(
         Box(
             Modifier.align(Alignment.Center).size(with(density) { dw.toDp() }, with(density) { dh.toDp() }).graphicsLayer {
                 val t = clock.value
-                val caseTop = p.from.top - win[1] + pad + (if (bottomStand) innerH - ch else (innerH - ch) / 2f)
+                val caseTop = p.from.top - win[1] + pad + (if (bottomStand) innerH - ch - floorGap else (innerH - ch) / 2f)
                 val cy0 = caseTop + ch / 2f
                 val cx0 = p.from.left - win[0] + pad + innerW / 2f
                 // Update 182: lifted out of its case, then carried down and pushed into the bottom edge, upright.

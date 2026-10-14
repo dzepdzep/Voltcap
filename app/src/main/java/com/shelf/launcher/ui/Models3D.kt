@@ -111,9 +111,10 @@ internal object Models3D {
     fun isCase(id: String): Boolean = id in CASES.values
 
     /** Update 141: the 3D case [platform]'s games are drawn in with a case look, when 3D models are on and it's downloaded. */
-    fun caseModel(platform: String?): String? =
-        if (platform == null || (Features.modelFinish.state.value == ModelFinish.OFF && !Features.caseModels3d.state.value)) null
-        else CASES[platform]?.takeIf { Packs.hasModel(it) }
+    // (Update 200: always null — the pre-rendered 3D cases no longer draw games (the drawn Case3D does); kept so nothing
+    // that still asks breaks. The pack's files stay on the device, see [packFiles].)
+    @Suppress("UNUSED_PARAMETER")
+    fun caseModel(platform: String?): String? = null
 
     /** Update 141: how a piece stands (Settings › Game look › 3D models › Stand); [focused]: it's the game you're on. */
     fun standYaw(focused: Boolean): Float = when (Features.modelAngle.state.value) {
@@ -183,8 +184,13 @@ internal object Models3D {
         return ALL.associateWith { (out[it] ?: emptySet<String>()) } + (LOGOS to all)
     }
 
-    /** On: games are drawn as the library's pieces (where they're downloaded). */
-    fun on(): Boolean = Features.modelFinish.state.value != ModelFinish.OFF && Packs.anyModels()
+    /**
+     * On: games are drawn as the library's pieces (where they're downloaded). Update 200: never — the pre-rendered 3D
+     * models are retired as a way of drawing games (they turned in 20° steps, like a slide show); the 3D cartridges
+     * looks (Features.modelFinish) draw the drawn shells instead, drawn3dPick in PhysicalMedia.kt. Only the Save Vault's
+     * 3D card still uses the pack.
+     */
+    fun on(): Boolean = false
 
     /**
      * The model [platform]'s games are drawn as with the current choice (downloaded or not), or null.
@@ -212,8 +218,9 @@ internal object Models3D {
         return id.takeIf { Packs.hasModel(it) }
     }
 
-    /** [idFor], only when that model is on the device. */
-    fun available(platform: String): String? = idFor(platform)?.takeIf { Packs.hasModel(it) }
+    /** [idFor], only when that model is on the device. Update 200: always null — see [on]. */
+    @Suppress("UNUSED_PARAMETER")
+    fun available(platform: String): String? = null
 
     // ---- The pack's pictures ----
 

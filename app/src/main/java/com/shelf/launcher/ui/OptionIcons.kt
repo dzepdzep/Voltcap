@@ -115,6 +115,8 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
     is com.shelf.launcher.data.SecondMusicLayout -> when (value.name) {
         "FULL" -> Pictogram.MUSIC_FULL
         "VISUALIZER" -> Pictogram.MUSIC_VISUALIZER
+        // Update 200: the Lyrics stage is a cover with a visualizer round it; it borrows the visualizer's drawing.
+        "STAGE" -> Pictogram.MUSIC_VISUALIZER
         else -> Pictogram.MUSIC_CLASSIC
     }
     is Features.UiStyle -> when (value) {

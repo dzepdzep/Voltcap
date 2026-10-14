@@ -237,6 +237,8 @@ fun SecondScreenHost(
                                     LocalOnSecondScreen provides true // Update 177: the controller can come here (SecondPad.kt)
                                 ) {
                                     currentContent()
+                                    // Update 200: the controller's gliding highlight, over the pages and their popups.
+                                    SecondPadRing()
                                     SecondPadHint()
                                 }
                             }

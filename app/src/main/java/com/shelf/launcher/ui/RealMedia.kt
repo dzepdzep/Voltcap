@@ -398,8 +398,9 @@ internal fun CaseArt(
      * cases and Cases · real sizes are flat for every console (a PS2 game stood as a 3D case among flat ones); the 3D
      * cases belong to the 3D models look (mediaFor); 3D case + disc draws the template's 3D box for every console.
      */
-    // (Update 159: on with R1 › 3D in a case look, Features.caseModels3d.)
-    models3d: Boolean = com.shelf.launcher.data.Features.caseModels3d.state.value
+    // (Update 159: on with R1 › 3D in a case look, Features.caseModels3d. Update 200: ignored — the pre-rendered 3D cases
+    // are retired with the R1 3D tile; every case look draws the drawn cases. Kept so callers needn't change.)
+    @Suppress("UNUSED_PARAMETER") models3d: Boolean = false
 ): Boolean {
     // Update 129: one console's case picked for all (R1 › Case): every game's cover in that case, never its own scan.
     val casePlatform = LookStyles.casePlatform(platform)
@@ -409,37 +410,8 @@ internal fun CaseArt(
     val mm = if (real != null) realCaseMm(casePlatform) else null
     // Update 141: in another console's case, only its shape — no branding — and the game's own console's logo.
     val owner = if (forAll && platform != null && casePlatform != platform) platform else null
-    // Update 141: with 3D models on (Settings › Game look › 3D models), the case looks show the game in its console's
-    // 3D case from your shape library, standing as Stand says — consoles without one keep their flat case.
-    // (Update 151: only with [models3d].)
-    val model = if (owner == null) Models3D.caseModel(casePlatform) else null
-    // Update 151: 3D case + disc — your 3D case with the disc half out of it (DiscCase3D.kt). Only with [models3d] too:
-    // in the case looks every console's 3D case + disc is the template's 3D box (CaseArtFace), so no console stands apart.
-    if (model != null && models3d && real == null && disc3dOn(casePlatform)) {
-        DiscIn3DModelCase(
-            model, casePlatform, cover, scan, Models3D.standYaw(LocalMediaFocused.current), modifier, caseModifier,
-            title.takeIf { it.isNotBlank() }, platform
-        )
-        return true
-    }
-    if (model != null && models3d) {
-        val yaw = Models3D.standYaw(LocalMediaFocused.current)
-        val nm = title.takeIf { it.isNotBlank() }
-        // Update 144: with "Box art · real sizes" the 3D case is sized like the flat cases — its real size against the
-        // biggest case shown, standing on the slot's floor, the focus frame round the case (it used to fill the whole slot).
-        if (real != null && mm != null) BoxWithConstraints(modifier, contentAlignment = Alignment.BottomCenter) {
-            val k = minOf(maxWidth / real.wMm, maxHeight / real.hMm)
-            Model3DArt(model, cover ?: scan, yaw, Modifier.size(k * mm.first, k * mm.second).then(caseModifier), name = nm, platform = platform)
-        }
-        // (Update 149: the case drawn at its own shape in the middle of the slot, so the focus frame hugs the case — it
-        // used to frame the whole slot, wider and taller than the case.)
-        else BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
-            val a = Models3D.aspect(model).coerceAtLeast(0.1f)
-            val w = minOf(maxWidth, maxHeight * a)
-            Model3DArt(model, cover ?: scan, yaw, Modifier.size(w, w / a).then(caseModifier), name = nm, platform = platform)
-        }
-        return true
-    }
+    // (Update 141 / 151 / 159: the shape library's pre-rendered 3D case, with or without its disc, stood here with 3D
+    // models or R1 › 3D on. Update 200: retired — the case looks always draw the drawn cases below.)
     var drawn = true
     androidx.compose.runtime.CompositionLocalProvider(LocalCaseOwner provides owner) {
         if (real == null || mm == null) drawn = CaseArtBody(casePlatform, cover, caseScan, modifier, title, detail, caseModifier, caseSpine)

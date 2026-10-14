@@ -84,6 +84,91 @@ Sizes are width × height × thickness in mm, front view.
 | Nintendo Power SF Memory | Special | 127 × 86 × 20 | Drawn, partly estimated | The Super Famicom shell; its own colour unconfirmed. |
 | Nintendo Power GB Memory | Special | 57 × 65.5 × 9 | **Placeholder, not finished** | Assumed the Game Boy Color size; colour unconfirmed. |
 
+## Backs (update 200)
+
+Each shell's back is drawn from researched rear details (`src\ui\CartBacks.kt`, generated from the research data):
+screws by type in their recesses, moulded text (raised or sunken), sunken and raised panels, stickers (as paper with a
+heading and lines of small print — the wording isn't copied), seams, the connector (with its pads where they show) and
+parts like notches, grips, windows and doors. The fronts weren't changed.
+
+**Two kinds of back** (Settings › Game look › Covers, cases & discs › Cartridge backs):
+- **Markings on its own console's shell** (default): the maker's text and stickers on a game's own console's shell; a
+  game on another console's shell gets the plain back.
+- **Always the maker's markings** / **Plain, no markings**: the same shape, screws, panels and contacts either way.
+
+Many image hosts were blocked from the research sessions, so some backs come only from written sources. "Unverified"
+backs show just what's certain (seams, the connector); they need real rear photos to finish.
+
+| Shell | Back researched | What's drawn | Conflict with the approved front |
+|---|---|---|---|
+| NES Game Pak | Measured from rear photos | 3 screws (gamebit38); 1 sticker; moulded text; notch | front outline is a plain 120x134 rectangle but the real shell narrows to ~108 mm for the bottom ~25 mm. |
+| Nintendo 64 Game Pak | Measured from rear photos | 2 screws (gamebit38); 1 sticker; moulded text | the real top edge is a gentle arc (centre ~4 mm higher than the corners), the front outline draws it flat with 6 mm corners |
+| SNES Game Pak (North America) | Measured from rear photos | 1 sticker; moulded text | — |
+| Game Boy Game Pak | Measured from rear photos | 1 screw (gamebit38); moulded text; grip, notch | CartShells draws contactsBack 4,58,49,6 - not visible on real opaque carts) |
+| Game Boy Color Game Pak (black) | Measured from rear photos | 1 screw (gamebit38); moulded text; grip, notch | with contactsBack in CartShells). |
+| Game Boy Color Game Pak (clear) | Measured from rear photos | 1 screw (gamebit38); moulded text; notch | — |
+| Game Boy Advance Game Pak | Measured from rear photos | 1 screw (triwing); moulded text | from the back the wide upper part runs down to y~22.5 and the narrower plug part (~2 mm in each side) is only the bottom ~12.5 mm; the front outline steps in at y=8 |
+| Mega Drive / Genesis cartridge | Measured from rear photos | 2 screws (gamebit45); moulded text; notch | the side step-in is seen at y~29.5 (inset ~3.5 mm) on the back photos; the front outline puts the shoulders at y 46-50 with a 7 mm inset |
+| Mega Drive cartridge (Japan) | Measured from rear photos | 1 sticker; moulded text; grip | — |
+| Electronic Arts Genesis cartridge | Measured from rear photos | 2 screws (gamebit45); moulded text; grip | CartShells draws EA's yellow section across the top centre of the front (20,3,55,16); real EA carts have the yellow tab on the left side, upper part (front view), roughly x 0-16, y |
+| Virtua Racing (SVP) cartridge | Measured from rear photos | 2 screws (gamebit45); moulded text; notch | , the back scan shows the step ~13 mm higher. |
+| Sega 32X cartridge | Measured from rear photos | 2 screws (gamebit45); 1 sticker; moulded text; notch | step-in seen at y~31.5 (5 mm), front outline has it at y 50-54 (8 mm). |
+| Master System cartridge | Measured from rear photos | 2 screws (phillips); 1 sticker; moulded text; grip, notch | — |
+| Mark III / Master System (Japan) cartridge | From a description | moulded text; notch | — |
+| SG-1000 cartridge | Measured from rear photos | moulded text; notch | — |
+| Sega Card / My Card | Measured from rear photos | 2 stickers | — |
+| Game Gear cartridge | Measured from rear photos | 1 screw (gamebit45); moulded text | — |
+| Codemasters Mega Drive cartridge | Measured from rear photos | moulded text | ). |
+| Codemasters J-Cart | Measured from rear photos | moulded text | — |
+| PC Engine HuCard / TurboChip | Measured from rear photos | 2 stickers | — |
+| WonderSwan cartridge | Measured from rear photos | 2 screws (phillips); 1 sticker; moulded text; notch | the real cart is much wider than tall (photo aspect ~1.6:1, roughly 65 x 41 mm), not the 52 x 45 placeholder; coordinates here were mapped proportionally into 52 x 45 |
+| ColecoVision cartridge | Measured from rear photos | grip, notch | the top ~20 mm has a narrower waist with ribbed grips; front outline is a plain rectangle. |
+| Famicom cassette | Unverified (no rear photo found) | seam / connector only | — |
+| Super Famicom / SNES PAL cassette | Unverified (no rear photo found) | seam / connector only | — |
+| Virtual Boy Game Pak | Unverified (no rear photo found) | seam / connector only | — |
+| Nintendo DS Game Card | Partly (text sources / a poor photo) | 17 contacts showing | — |
+| Nintendo 3DS Game Card | Partly (text sources / a poor photo) | tab | — |
+| Nintendo Switch Game Card | Partly (text sources / a poor photo) | 17 contacts showing | — |
+| Nintendo Switch 2 Game Card | Partly (text sources / a poor photo) | 17 contacts showing; notch | — |
+| Nintendo Switch 2 Game-Key Card | Partly (text sources / a poor photo) | 17 contacts showing; notch | — |
+| Pokémon mini Game Pak | Unverified (no rear photo found) | seam / connector only | — |
+| Famicom Disk System disk | Partly (text sources / a poor photo) | moulded text; tab | — |
+| 64DD disk | Unverified (no rear photo found) | seam / connector only | — |
+| Game Boy Camera | Measured from rear photos | 4 screws (triwing); 2 stickers; moulded text; hole, notch | the front outline has a 31 mm wide head (x 13-44) down to y=45 with the body starting at y=45; the real camera has a ~34 mm ball (x~10.5-44.5) on a neck whose shoulders start at y~ |
+| Pokémon Pinball (rumble) | Measured from rear photos | 1 screw (gamebit38); moulded text; notch | front outline is a plain 57x84 rectangle; the real top edge has the hump (x~13.5-43.5) standing above the shoulders. |
+| Kirby Tilt 'n' Tumble | Measured from rear photos | 2 screws (gamebit38); moulded text; notch, window | the real cart is only ~57 x 64-65 mm (GBC-cart size; the tilt sensor adds a bump on the FRONT top, not height) - the listed 78 mm height is ~13 mm too tall; coordinates here are re |
+| WarioWare: Twisted! | Measured from rear photos | 1 screw (triwing); moulded text; compartment, window | the real back is ~51 mm tall at 57.5 wide (photo, perspective-sensitive ±3 mm) vs 48 listed, and the top is a big dome with ~8 mm corner radii plus small side tabs at y~20-27, not  |
+| Boktai (solar sensor) | Partly (text sources / a poor photo) | 1 screw (triwing); window | real height ~44 mm (rounded top, r~5) vs 50 listed; the front-outline window at x 23.75-33.75 is centred, but the dark sensor part sits at front-x ~33.5-38 (right of centre) |
+| Drill Dozer (rumble) | Measured from rear photos | 2 screws (triwing); moulded text; notch | real height ~43-45 mm vs 48 listed; top corners r~3; outline steps in below y~18.5 |
+| Yoshi Topsy-Turvy (tilt) | Measured from rear photos | 1 screw (triwing); moulded text; notch | real height ~43 mm (≈45 if the wide part is really 60 mm, as on normal GBA carts) vs 48 listed |
+| Nintendo e-Reader | Measured from rear photos | 4 screws (triwing); 1 sticker; moulded text; hole, notch | the front outline (120 x 72, 120-wide head over a 58-wide plug) does not match; here every value is the real layout scaled by 72/98 = 0.735 and centred in the 120 mm box (divide by |
+| Nintendo Power SF Memory | Measured from rear photos | 2 screws (gamebit38); 1 sticker; moulded text; grip | — |
+| Nintendo Power GB Memory | Measured from rear photos | 1 screw (gamebit38); moulded text; grip, notch | with CartShells (dark grey assumed) - the real shell is white. |
+| Sonic & Knuckles lock-on cartridge | Measured from rear photos | 4 screws (gamebit45); 1 sticker; moulded text; flap, notch, tab | on the back the body steps in at y~34 (to ~x 8-113) and narrows toward the bottom (~x 10-109); the outline's steps at y 20-22 and y 60-64 are not seen (lower body taper may be pers |
+| Atari 2600 cartridge | Partly (text sources / a poor photo) | seam / connector only | — |
+| Atari 2600 cartridge (Activision) | Partly (text sources / a poor photo) | seam / connector only | — |
+| Atari 5200 cartridge | Partly (text sources / a poor photo) | seam / connector only | — |
+| Atari 7800 cartridge | Unverified (no rear photo found) | seam / connector only | — |
+| Atari Lynx game card | Partly (text sources / a poor photo) | seam / connector only | — |
+| Atari Jaguar cartridge | Unverified (no rear photo found) | seam / connector only | — |
+| Neo Geo AES cartridge | Unverified (no rear photo found) | seam / connector only | — |
+| Neo Geo MVS cartridge | Unverified (no rear photo found) | seam / connector only | — |
+| Neo Geo Pocket cartridge | Partly (text sources / a poor photo) | seam / connector only | — |
+| Intellivision cartridge | Measured from rear photos | 2 screws (phillips); moulded text | — |
+| Vectrex cartridge | Partly (text sources / a poor photo) | 2 screws (phillips); port | — |
+| Odyssey² / Videopac cartridge | Partly (text sources / a poor photo) | hole | in the rear photo the lower body is within ~0.5 mm of the handle's width each side — the 'narrower connector' part isn't visible from the back (any narrowing is at most the very bo |
+| Channel F Videocart | Partly (text sources / a poor photo) | 2 screws (phillips); flap | front/back photos look closer to square than 102x133 (placeholder size). |
+| Amstrad GX4000 cartridge | Partly (text sources / a poor photo) | 1 sticker; notch | the real cart is roughly square / slightly taller than wide (w/h ≈ 0.85-0.95 in both photos), not 100 wide x 72 tall; the label starts at the very top edge (wraps over from the fro |
+| Super Cassette Vision cartridge | Measured from rear photos | 1 sticker | the photo's proportions are w/h ≈ 1.06, the listed size is 1.25. |
+| Casio PV-1000 cartridge | Partly (text sources / a poor photo) | 2 stickers; grip | the photographed cart is clearly landscape, w/h ≈ 1.57 (listed 90x80 = 1.125) |
+| Casio Loopy cartridge | Measured from rear photos | 4 screws (phillips); 2 stickers; notch | the photographed cart is w/h ≈ 1.14 (listed 110x75 = 1.47) |
+| Watara Supervision cartridge | Partly (text sources / a poor photo) | 20 contacts showing | shell+board is ~52x54 mm in this scan (listed 52x60). |
+| Mega Duck / Cougar Boy cartridge | Measured from rear photos | 1 sticker; 18 contacts showing; notch | photo proportions are w/h ≈ 0.85 (taller than wide), listed 62x56 is wider than tall. |
+| Microvision game module | Measured from rear photos | 1 sticker; tab | the real module is 89 wide x 197 tall (incl |
+| Tiger game.com cartridge | Measured from rear photos | 2 screws (phillips); 1 sticker | — |
+| N-Gage game card (MMC) | Measured from rear photos | 2 stickers; 7 contacts showing; notch | — |
+| Evercade cartridge | Measured from rear photos | 2 stickers; moulded text; notch | the real Evercade cart is LANDSCAPE (w/h ≈ 1.2), not 60 wide x 88 tall, so features are stretched ~1.75x vertically here |
+
 ## How it works
 - **Any game on any shell:** use the game's menu › Cartridge shell…, then pick one under Authentic (by maker,
   searchable) or Your custom shells (your cartridge pack's 14 shapes).

@@ -90,6 +90,8 @@ private val LOOK_STEPS = listOf(
     LookStep(CardArtType.CARTRIDGE_DISC, false, false, "Cartridges", carts = true, source = CartSource.ORIGINAL),
     LookStep(CardArtType.CARTRIDGE_DISC, false, false, "Custom cartridges", carts = true, source = CartSource.CUSTOM),
     LookStep(CardArtType.CARTRIDGE_DISC, false, false, "Clear cartridges", carts = true, source = CartSource.CUSTOM, clear = true),
+    // (Update 200: the 3D looks draw the drawn pieces with real depth — each console's authentic shell, your pack's shape,
+    // or clear plastic, drawn3dPick — instead of the retired pre-rendered 3D models; the same saved setting, modelFinish.)
     LookStep(CardArtType.CARTRIDGE_DISC, false, false, "3D cartridges", models = true, finish = ModelFinish.REAL),
     LookStep(CardArtType.CARTRIDGE_DISC, false, false, "3D custom cartridges", models = true, finish = ModelFinish.CUSTOM),
     LookStep(CardArtType.CARTRIDGE_DISC, false, false, "3D clear cartridges", models = true, finish = ModelFinish.CLEAR),
@@ -228,7 +230,9 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
                 com.shelf.launcher.data.Features.squareTiles.value = false
                 com.shelf.launcher.data.Features.spineLook.value = false
                 com.shelf.launcher.data.Features.cartsOnly.value = false
-                if (type == CardArtType.CARTRIDGE_DISC) setModelsLook(false)
+                // (Update 200: for every look — the 3D cartridges' shells come from mediaFor, which every look's media
+                // asks, so a 3D finish left on would put them leaning against cases or in the game window.)
+                setModelsLook(false)
                 if (type != CardArtType.COVER) com.shelf.launcher.data.Features.gridTiles.value = false
                 onChange(appearance.copy(cardArtType = type))
             }
@@ -271,7 +275,8 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
             Chip((if (on) "✓ " else "") + st.label, enabled = lookOk, accent = on) { pickCartStep(st, appearance, onChange) }
         }
     }
-    MutedNote("Cartridges: each console's own cartridge, disc games on your pack. Custom: every game on your cartridge pack. Clear: the pack in clear plastic. 3D: the same from your 3D shape library, turning in true 3D.")
+    // (Update 200: the 3D ones are the drawn shells now, not the 3D shape library.)
+    MutedNote("Cartridges: each console's own cartridge, disc games on your pack. Custom: every game on your cartridge pack. Clear: the pack in clear plastic. 3D cartridges: every cartridge as its real shell in 3D — or your pack's shapes (3D custom), or clear plastic (3D clear) — turning smoothly when you open a game.")
     Spacer(Modifier.height(8.dp))
     SectionLabel("Cases with a disc")
     ChipFlow {
@@ -296,7 +301,8 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
         else if (com.shelf.launcher.data.Features.squareTiles.state.value)
             "Tile: the Tile home's big square tiles in the Voltcap row, the game you're on a little bigger and kept a square (no wide capsule). Size and shape are in Home › Layout options."
         else if (modelsNow)
-            "3D models: every game as its console's piece from your 3D shape library — real cartridges and cards, or your custom cartridges (plain or clear) — with its cover in the window. Real / Custom / Clear and how they stand are under 3D models below. Also on the R1 panel: the Game look tile."
+            // (Update 200: what the 3D cartridges looks are now — the drawn shells, not the 3D shape library.)
+            "3D cartridges: every cartridge as its real shell in 3D — or your pack's shapes, or clear plastic. Each cartridge console's game on its own console's shell (by region) with its cover on the label, at its real thickness; 3D custom cartridges use your cartridge pack's shape (below) where it's on this device; 3D clear cartridges the same in clear plastic. Disc games keep their disc. Opening a game turns its cartridge smoothly all the way round. Also on the R1 panel: the Game look tile."
         else if (now == CardArtType.CARTRIDGE_DISC && com.shelf.launcher.data.Features.cartsOnly.state.value)
             "Cartridges: every game as a cartridge. Original: cartridge games keep their own (the real scan, or the drawn one); disc, UMD, Steam, Android, PC and arcade games get a cartridge from your pack with their cover in its window. Custom: every game on your pack. Also on the R1 panel: the Cartridges tile."
         else ALL_LOOKS.firstOrNull { it.first == now }?.third ?: now.label
@@ -341,9 +347,10 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
         MutedNote("Art position: where the cover sits under the case's frame (also R1 › Art position, by dragging). Each look keeps its own.")
     }
     // Update 128: the Cartridges look's options (also the R1 panel's Cartridges tile).
-    if (cartsNow) CartridgeOptions()
-    // Update 136: your 3D shape library.
-    ModelOptions()
+    // (Update 200: and the pack's shape for 3D custom / 3D clear cartridges, which draw it in 3D.)
+    if (cartsNow || (modelsNow && com.shelf.launcher.data.Features.modelFinish.state.value != ModelFinish.REAL)) CartridgeOptions()
+    // (Update 136: your 3D shape library's options — finish, stand, turn, reflection, name on the label, art position —
+    // stood here. Update 200: gone with the retired pre-rendered 3D models; the 3D cartridges looks above replace them.)
     if (appearance.homeLayout == HomeLayout.GRID && com.shelf.launcher.data.Features.gridTiles.state.value) {
         MutedNote("The Grid is set to square tiles (Home › Layout options), which shows covers whatever is picked here.")
     }
@@ -366,7 +373,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
         Chip((if (!logos) "✓ " else "") + "Small logo", accent = !logos) { F.consoleBadgeLogos.value = false }
         Chip((if (logos) "✓ " else "") + "Big logo", accent = logos) { F.consoleBadges.value = true; F.consoleBadgeLogos.value = true }
     }
-    MutedNote("A small badge in the corner of each game's tile: the console's logo in white on the console's own colour (or your theme's). On every look: covers, cases, cartridges, discs and 3D models (not on a spine too slim for it).")
+    MutedNote("A small badge in the corner of each game's tile: the console's logo in white on the console's own colour (or your theme's). On every look: covers, cases, cartridges (3D ones too) and discs (not on a spine too slim for it).")
 }
 
 /** Update 128: Original / Custom, Opaque / Clear and the 14 cartridge shapes of your pack (Settings › Game look). */
@@ -385,53 +392,9 @@ private fun CartridgeOptions() {
     MutedNote("Your cartridge pack: the shape and finish for every game drawn on it. Clear shows the board inside the shell.")
 }
 
-/** Update 136: Off / Real / Custom / Clear, the piece for consoles without one, and how they stand (Settings › Game look). */
-@Composable
-private fun ModelOptions() {
-    val F = com.shelf.launcher.data.Features
-    Spacer(Modifier.height(8.dp))
-    SectionLabel("3D models")
-    ChipFlow {
-        ModelFinish.values().forEach { f ->
-            val on = F.modelFinish.state.value == f
-            Chip((if (on) "✓ " else "") + f.label, accent = on) { F.modelFinish.value = f }
-        }
-    }
-    if (F.modelFinish.state.value != ModelFinish.OFF) {
-        SectionLabel("Stand")
-        ChipFlow {
-            ModelAngle.values().forEach { a ->
-                val on = F.modelAngle.state.value == a
-                Chip((if (on) "✓ " else "") + a.label, accent = on) {
-                    F.modelAngle.value = a
-                    // Update 158: the two turned stands set "The one you're on" below (it goes for every 3D view).
-                    if (a == ModelAngle.FACE_PICKED) F.pickedFaces.value = true
-                    if (a == ModelAngle.TURNED) F.pickedFaces.value = false
-                }
-            }
-        }
-        // Update 158: the one you're on faces you (default) or stands turned like the others.
-        PickedFacingChoice()
-        // Update 151: the one you're on turning slowly to and fro, and a faint reflection on the floor.
-        ChipFlow {
-            val tn = F.modelTurn.state.value
-            Chip((if (tn) "✓ " else "") + "Turn the one you're on", accent = tn) { F.modelTurn.value = !tn }
-            val rf = F.modelReflect.state.value
-            Chip((if (rf) "✓ " else "") + "Floor reflection", accent = rf) { F.modelReflect.value = !rf }
-        }
-        MutedNote("Every piece stands on a soft shadow and catches a sweep of light when you reach it. Turn the one you're on: it turns slowly from side to side, and stays put with Lite effects or while the screen rests.")
-        ChipFlow {
-            val nm = F.modelName.state.value
-            Chip((if (nm) "✓ " else "") + "Name on the label", accent = nm) { F.modelName.value = !nm }
-        }
-        // (Update 166: "Disc consoles as" is gone — the 3D looks are cartridges for every console; cases are the case looks' 3D.)
-        ArtPositionSliders(model = true)
-        MutedNote("Art position: where the cover sits in the window (also R1 › Art position, by dragging).")
-        val have = com.shelf.launcher.data.Packs.count(com.shelf.launcher.data.Packs.Pack.MODELS).first
-        if (have == 0) MutedNote("The 3D models aren't on this device yet: Settings › Game look › Extra art packs › 3D models downloads them.")
-    }
-    MutedNote("Your 3D shape library: with the 3D models look (or Cartridges & discs) every game is its console's piece with its cover in the window: every console its 3D cartridge or card (the disc consoles their custom cartridge). The 3D cases are the case looks' own: R1 › 3D in a case look. Real: each console's own cartridge or card. Custom: your custom cartridges. Clear: the custom ones in tinted clear plastic. Consoles without a piece keep their usual look; the SD and memory cards are for the Save Vault (its Style › 3D card).")
-}
+// (Update 200: ModelOptions — Settings › Game look › 3D models: Off / Real / Custom / Clear, Stand, Turn the one you're
+// on, Floor reflection, Name on the label, Art position — is gone: those only applied to the retired pre-rendered 3D
+// models. The finish is picked by the 3D cartridges looks; the one you're on facing you stays in Carousel options.)
 
 /** Width / height of a game drawn as its spine (Spines look, update 113): a little wider than a real one, so the name reads. */
 // (Update 129: 0.13, close to a real chunky spine; it was 0.2, too wide.)

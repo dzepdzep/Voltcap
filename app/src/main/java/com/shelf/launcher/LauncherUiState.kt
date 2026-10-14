@@ -439,8 +439,12 @@ data class LauncherUiState(
             specialFilter == SpecialFilter.FAVORITES -> library.filter { it.stableKey in favorites }
             // "Recently played" means actually played — anything with a
             // recorded launch timestamp, most recent first.
+            // Update 200: games only — every Android game (also with "Only apps you add", where they aren't in the
+            // library's normal categories but are tracked), never an ordinary app (Settings, Spotify, an emulator
+            // opened on its own…) that got a launch time from being started from the dock.
             specialFilter == SpecialFilter.RECENT ->
-                library.filter { lastPlayedAt.containsKey(it.stableKey) }
+                (library + games.filter { isAndroidGame(it) && !isAppInLibrary(it) })
+                    .filter { (it.sourceType != SourceType.APP || isAndroidGame(it)) && lastPlayedAt.containsKey(it.stableKey) }
                     .sortedByDescending { lastPlayedAt[it.stableKey] ?: 0L }
             specialFilter == SpecialFilter.MOST_PLAYED ->
                 library.filter { (playtime[it.stableKey] ?: 0L) > 0L }
@@ -477,7 +481,9 @@ data class LauncherUiState(
                 library.filter { g -> (lastPlayedAt[g.stableKey] ?: Long.MAX_VALUE) < cutoff }
                     .sortedBy { lastPlayedAt[it.stableKey] ?: 0L }
             }
-            specialFilter == SpecialFilter.SMART_CONTINUE -> smartContinue(library)
+            // (Update 200: games only here too, like Continue playing.)
+            specialFilter == SpecialFilter.SMART_CONTINUE ->
+                smartContinue(library.filter { it.sourceType != SourceType.APP || isAndroidGame(it) })
             // Update 132: every game with achievements — last played first, then the rest by name.
             specialFilter == SpecialFilter.TROPHIES -> library.filter { it.raGameId != null }
                 .sortedWith(compareByDescending<Game> { lastPlayedAt[it.stableKey] ?: 0L }.thenBy { sortName(it.name) })

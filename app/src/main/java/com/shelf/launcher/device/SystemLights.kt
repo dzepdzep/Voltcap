@@ -19,6 +19,11 @@ object SystemLights {
     private val KEY = Regex("(?i)(rgb|joystick[_]?light|stick[_]?light|led[_]?(light|mode|switch|enable|effect|state)|light[_]?(mode|effect|switch|enable)|breath)")
     private val NOT = Regex("(?i)(screen|display|notification|button|key|backlight|brightness_mode|torch|flash|battery|charg)")
 
+    /** Update 200: a plain number or a comma list of them ("1" on the Odin 2 Portal, "1,1" = left,right on the Thor). */
+    private val NUMS = Regex("-?[0-9]+(,-?[0-9]+)*")
+    private fun isOff(v: String) = v.split(',').all { it.trim() == "0" }
+    private fun offOf(v: String) = v.split(',').joinToString(",") { "0" }
+
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     /** Switches the system's light keys off (once; remembered). Blocking, off the main thread. */
@@ -31,7 +36,7 @@ object SystemLights {
             p.all.keys.filter { it.contains('/') }.forEach { k ->
                 val (table, key) = k.split('/', limit = 2)
                 val now = RootShell.exec("settings get $table $key")?.trim()
-                if (now != null && now != "0" && now != "null") RootShell.exec("settings put $table $key 0")
+                if (now != null && now.matches(NUMS) && !isOff(now)) RootShell.exec("settings put $table $key ${offOf(now)}")
             }
             return
         }
@@ -43,10 +48,12 @@ object SystemLights {
                 val value = line.substringAfter('=', "").trim()
                 if (key.isEmpty() || !key.matches(Regex("[A-Za-z0-9_.]+"))) return@forEach
                 if (!KEY.containsMatchIn(key) || NOT.containsMatchIn(key)) return@forEach
-                val n = value.toIntOrNull() ?: return@forEach
-                if (n == 0) return@forEach
+                // Update 200: also a list of numbers, one per side: the AYN Thor keeps its stick lights in
+                // joystick_light_enabled=1,1 (left,right) and has no separate left_/right_ keys like the Odin 2 Portal,
+                // so its key was skipped as "not a number" and nothing was held off there. "1,1" goes to "0,0".
+                if (!value.matches(NUMS) || isOff(value)) return@forEach
                 e.putString("$table/$key", value)
-                RootShell.exec("settings put $table $key 0")
+                RootShell.exec("settings put $table $key ${offOf(value)}")
             }
         }
         e.putBoolean("held", true).apply()
@@ -61,7 +68,7 @@ object SystemLights {
             p.all.forEach { (k, v) ->
                 if (!k.contains('/')) return@forEach
                 val (table, key) = k.split('/', limit = 2)
-                val value = (v as? String)?.takeIf { it.toIntOrNull() != null } ?: return@forEach
+                val value = (v as? String)?.takeIf { it.matches(NUMS) } ?: return@forEach
                 RootShell.exec("settings put $table $key $value")
             }
         }

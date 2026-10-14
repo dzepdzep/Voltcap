@@ -256,6 +256,39 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 200
+- **InspectMotion steps:** `openLid` / `takeOut` / `putBack` / `closeCase`.
+  - `tapCase(scope, hasContent, onItem)` and `stickClick(scope, hasContent)` drive them; `toggleCase` stays for opening all at once.
+  - `OpenItemPlace.hit` tells a tap on the item from one on the case, using Case3D's open book: the lid is left of the middle, the tray right of it, each scaled by 1/1.92.
+  - InspectContent takes taps only while `out` is up.
+- **`MediaInspect.stickClick`:** the GameWindow sets it while a piece is out; LauncherScreen's root `onKeyEvent` calls it for THUMBL / THUMBR.
+- **Second screen:**
+  - `SecondPadRing()` (SecondPad.kt) is the one highlight; targets register `plain` for `padTargetPlain`.
+  - `SecondPageSlide` slides the pages.
+- **LyricsStage.kt:** `LyricsStage(nowPlaying?, …)` and `LyricsStageSettings()`.
+  - Prefs `Features.stage*` (keys `stage_…`).
+  - `SecondMusicLayout.STAGE` is the default; `applyStage200()` moves existing users once (flag `stage_default_200`).
+- **Retired 3D models:**
+  - `drawn3dOn()` / `drawn3dPick()` in PhysicalMedia route ModelFinish REAL / CUSTOM / CLEAR to drawn shells.
+  - `InspectKind.MODEL`, `InspectModel` and `CarouselModel` are removed; `Models3D.on()` is false and `caseModel()` returns null (the Save Vault still uses Models3D).
+  - "m3d:" choices fall back to the authentic shell (`CartShells.retired`).
+- **CartBacks.kt:** generated from the research JSON (`/tmp/claude-0/backs/backs.json`; generator `/tmp/claude-0/gen/genbacks.py`). `CartShells.back(shell, colour, px, neutral)` draws it, mirrored.
+  - `Features.cartBackStyle` is AUTO / AUTHENTIC / NEUTRAL; `CartShells.belongsTo(shellId, console)` decides AUTO.
+- **CartShellStore:** a ConcurrentHashMap plus a `version` int state, made in `Features.init` (`warmUp`). Never make a snapshot state lazily during drawing.
+- **AnimatedArt.StillFirst** wraps the ImageLoader:
+  - The decoder keeps each animated picture's first frame at `stillKey(src)`.
+  - Requests for .gif / .webp without a placeholder get it as their placeholder.
+- **Folder icons:**
+  - FolderIcons.kt: `FolderIconImage`, `FolderIconMenu`, `FolderIconPickerHost` (the top screen opens the picker) and `TopScreenFolderPreview`.
+  - `SecondGamesPage.onHover`; `Features.secondTopFollows`.
+- **RunningGames.foregroundMs:** a game is in front while any of its screens is open; `closedPerUsage` waits for every screen to be destroyed. `launchApp` sends every Android game through the game path.
+- **Lights:**
+  - VendorAdapter writes `enable` 0/1 on both SN3112 chips.
+  - SystemLights holds list values ("1,1" → "0,0").
+  - The LauncherScreen timer holds the system light setting off while dark.
+- **Tuner:** while a limit is on, the CPU / GPU minimums go to the hardware minimum (AYN's floors are no longer kept); it reads back the caps.
+- **Case3D `stretchOrCrop(src, aspect, 0.13)`:** within 13 % the cover is stretched whole, further off it's cropped (`framed`, `fitFace`, no-spec faces).
+
 ## State after update 199
 - **`InspectMotion.spinOnce(scope)`:** a tap on a non-BOX piece in MediaInspectPiece runs the showcase turn once, from
   facing you. GameWindow's R3 does the same for a non-BOX piece. Only after lift reaches 1; a nudge cancels it.
