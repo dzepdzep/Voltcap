@@ -77,6 +77,22 @@ object ManualLinks {
         p.edit().putString(key, v).apply()
     }
 
+    /**
+     * Update 204: Settings › Artwork › Scraping › Manuals — find every game's manual on ScreenScraper (and download them
+     * all onto the device if asked), in the background with a progress line. Set by the view model.
+     */
+    @Volatile var runAll: ((download: Boolean) -> Unit)? = null
+    @Volatile var stopAll: (() -> Unit)? = null
+
+    /** Update 204: the find / download under way — what it's doing ([downloading]), done / total and manuals found so far. */
+    class Bulk(val downloading: Boolean, val done: Int, val total: Int, val found: Int)
+
+    /** Update 204: the find / download under way, for its progress line; null when none. */
+    var bulk by mutableStateOf<Bulk?>(null)
+
+    /** Update 204: how many games have a manual address noted (read in composition, it follows changes). */
+    fun foundCount(): Int = urls.values.count { it.isNotBlank() }
+
     /** Forgets every noted address (Settings › clear caches). */
     fun clear() {
         urls.clear()

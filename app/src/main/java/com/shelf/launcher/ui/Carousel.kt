@@ -119,7 +119,7 @@ internal fun ShelfGameArt(
             val appIcon = if (cover == null && typed == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
                 rememberAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
             } else null
-            if (real != null) MediaFocus(on) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp)) }
+            if (real != null) MediaFocus(on) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp), platform = g.platform, gameKey = g.stableKey) }
             else if (pick != null) {
                 MediaFocus(on) { PhysicalMedia(pick.shell, typed ?: cover ?: appIcon, Modifier.fillMaxSize().padding(4.dp), platform = pick.platform, labelIsScan = typed != null, caseCover = cover ?: appIcon, title = g.name) }
             }
@@ -1340,7 +1340,7 @@ private fun CaseWithMedia3D(
         }) { ProvidePieceTurn(PieceTurn(yawOf, 12f)) {
             // (Update 171: the real photo is the piece itself — it was once put on the drawn cartridge's label, a small
             // cartridge inside the cartridge. Update 173: beside a real case only.)
-            if (realMedia != null) RealMediaPicture(realMedia, m.pick.shell.disc || m.pick.shell == MediaShell.UMD, Modifier.fillMaxSize())
+            if (realMedia != null) RealMediaPicture(realMedia, m.pick.shell.disc || m.pick.shell == MediaShell.UMD, Modifier.fillMaxSize(), platform = g.platform, gameKey = g.stableKey)
             else PhysicalMedia(m.pick.shell, label ?: cover ?: appIcon, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover ?: appIcon, title = g.name, noCase = true)
         } }
     }

@@ -2404,6 +2404,8 @@ private fun MetadataContent(
                         "one (the booklet in an opened case, or Manual in the game window) and then kept with the saved art. " +
                         "A manual next to the ROM always wins."
                 )
+                // Update 204: manuals on their own — look every game up now, or download them all onto the device.
+                ManualsBulkRow()
                 Spacer(Modifier.height(12.dp))
                 ChipFlow {
                     Chip("Scrape missing", onClick = onScrapeMissing)
@@ -2413,6 +2415,36 @@ private fun MetadataContent(
                 MutedNote("Only the ticked kinds of artwork are fetched or replaced; the rest stays as it is.")
             }
         }
+    }
+}
+
+/**
+ * Update 204: Settings › Artwork › Scraping › Manuals — Find manuals (ask ScreenScraper about every game now) and
+ * Download all manuals (and put every manual found on the device), with their progress and Stop.
+ */
+@Composable
+private fun ManualsBulkRow() {
+    val L = com.shelf.launcher.data.ManualLinks
+    val bulk = L.bulk
+    Spacer(Modifier.height(8.dp))
+    if (bulk != null) {
+        Text(
+            (if (bulk.downloading) "Downloading manuals: " else "Looking for manuals: ") + "${bulk.done} / ${bulk.total}" +
+                (if (bulk.downloading) " · ${bulk.found} saved" else " · ${bulk.found} found"),
+            color = ShelfTheme.textMuted, fontSize = 12.sp
+        )
+        TaskProgressLine(bulk.done, bulk.total)
+        Spacer(Modifier.height(6.dp))
+        ChipFlow { Chip("Stop") { L.stopAll?.invoke() } }
+    } else {
+        ChipFlow {
+            Chip("Find manuals", accent = false) { L.runAll?.invoke(false) }
+            Chip("Download all manuals", accent = false) { L.runAll?.invoke(true) }
+        }
+        MutedNote(
+            "${L.foundCount()} manuals found so far. Find manuals asks ScreenScraper about every game now (not only while " +
+                "scraping); Download all manuals also saves every one found onto this device, for reading offline."
+        )
     }
 }
 

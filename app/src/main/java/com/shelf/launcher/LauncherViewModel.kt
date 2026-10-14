@@ -1193,7 +1193,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private fun restoreOverlaysForRunningGame() {
         val game = overlayGame ?: return
         if (ownLaunchPending) return
-        if (game.stableKey !in com.shelf.launcher.data.RunningGames.confirmed) { overlayGame = null; return }
+        // Update 204: still open = in the open list ([RunningGames.keys]). It asked for [RunningGames.confirmed], which is
+        // only filled by the background check a moment after Voltcap comes back — going back into the game before that
+        // ran (or with no usage access / root to confirm it) forgot the game for good, so the overlays never came back
+        // (after a trip to Voltcap, or to the overlay panel from the notification). A game that's gone drops off the
+        // list on its own (RunningGames.refresh).
+        if (game.stableKey !in com.shelf.launcher.data.RunningGames.keys) { overlayGame = null; return }
         val app = getApplication<Application>()
         val cfg = com.shelf.launcher.data.perf.PerfSettings.config(app)
         val perf = effectiveProfile(game).perfOverlay.value
@@ -1201,7 +1206,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val ra = cfg.raDuringGames && game.raGameId != null
         if (ra) followRaOverlay(game)
         if (perf || music || ra) {
-            com.shelf.launcher.ui.PerfOverlayService.start(app, overlayDisplay, perf = perf, music = music, ra = ra)
+            // (Update 204: the same play session — the overlay's session clock keeps counting instead of starting over.)
+            com.shelf.launcher.ui.PerfOverlayService.start(app, overlayDisplay, perf = perf, music = music, ra = ra, newSession = false)
         }
     }
 
@@ -5395,6 +5401,78 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private var manualBulkJob: Job? = null
+
+    /**
+     * Update 204: Settings › Artwork › Scraping › Manuals — "Find manuals" ([download] false) asks ScreenScraper about
+     * every ROM whose manual isn't known yet (whether Scraping › Manuals is ticked or not: you asked for it), paced for
+     * ScreenScraper's limits; "Download all manuals" ([download] true) does that and then downloads every manual found
+     * that isn't on the device yet (beside the ROM, picked by you or downloaded before), into the saved-art store as
+     * opening one does. Progress in ManualLinks.bulk; ManualLinks.stopAll stops it. Waits while a game is running.
+     */
+    fun findAllManuals(download: Boolean) {
+        if (manualBulkJob?.isActive == true) return
+        val creds = screenScraperStore.load()
+        if (creds == null) {
+            setStatusMessage("Manuals come from ScreenScraper: connect it in Settings › Accounts › ScreenScraper first.")
+            return
+        }
+        val app = getApplication<Application>()
+        val L = com.shelf.launcher.data.ManualLinks
+        // (The automatic pass waits for this one: both ask ScreenScraper about the same games.)
+        manualScrapeJob?.cancel()
+        manualBulkJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val roms = _uiState.value.games.filter { it.sourceType == SourceType.ROM }
+                val ask = roms.filter { g -> L.url(g.stableKey) == null && com.shelf.launcher.data.Manuals.local(app, g) == null }
+                var found = 0
+                ask.forEachIndexed { i, game ->
+                    if (!isActive) return@launch
+                    L.bulk = com.shelf.launcher.data.ManualLinks.Bulk(false, i, ask.size, found)
+                    com.shelf.launcher.data.GameMode.awaitNotPlaying()
+                    val url = runCatching { screenScraperRepository.manualUrl(creds, game) }.getOrNull()
+                    if (url != null) found++
+                    kotlinx.coroutines.delay(400)
+                }
+                val tried = manualPrefs.getStringSet("tried", emptySet()).orEmpty().toMutableSet()
+                tried += ask.map { it.stableKey }
+                manualPrefs.edit().putStringSet("tried", HashSet(tried)).apply()
+                if (!download) {
+                    setStatusMessage(
+                        if (ask.isEmpty()) "Every game's manual was looked for already: ${L.foundCount()} found on ScreenScraper."
+                        else "Found $found more manual" + (if (found == 1) "" else "s") + " on ScreenScraper (${L.foundCount()} in all) — each downloads the first time you open it."
+                    )
+                    return@launch
+                }
+                val get = roms.filter { g -> L.url(g.stableKey) != null && runCatching { L.fileOnDevice(app, g) }.getOrNull() == null }
+                var saved = 0
+                var failed = 0
+                get.forEachIndexed { i, game ->
+                    if (!isActive) return@launch
+                    L.bulk = com.shelf.launcher.data.ManualLinks.Bulk(true, i, get.size, saved)
+                    com.shelf.launcher.data.GameMode.awaitNotPlaying()
+                    val raw = L.url(game.stableKey) ?: return@forEachIndexed
+                    com.shelf.launcher.data.ArtFiles.init(app)
+                    val file = com.shelf.launcher.data.ArtFiles.downloadManual(
+                        raw, screenScraperRepository.withLogin(raw, creds), onProgress = { _, _ -> }, cancelled = { !isActive }
+                    )
+                    if (file != null) saved++ else failed++
+                    kotlinx.coroutines.delay(250)
+                }
+                if (saved > 0) L.version++
+                setStatusMessage(
+                    when {
+                        get.isEmpty() -> "Every manual found (${L.foundCount()}) is on this device already."
+                        failed == 0 -> "Downloaded $saved manual" + (if (saved == 1) "" else "s") + "."
+                        else -> "Downloaded $saved manual" + (if (saved == 1) "" else "s") + "; $failed couldn't be (ScreenScraper may be busy, or today's quota is used up) — try again later."
+                    }
+                )
+            } finally {
+                L.bulk = null
+            }
+        }
+    }
+
     /** Fetches and saves every game's details in the background, when that's
      * switched on and a details source is ready. Quiet: no status messages. */
     private fun autoSaveDetails() {
@@ -5724,6 +5802,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     init {
         com.shelf.launcher.data.SpineScrape.run = { again -> scrapeAllSpines(again) }
         com.shelf.launcher.data.SpineScrape.runMissingReal = { scrapeMissingRealArt() }
+        // Update 204: Settings › Scraping › Manuals: Find manuals / Download all manuals.
+        com.shelf.launcher.data.ManualLinks.runAll = { download -> findAllManuals(download) }
+        com.shelf.launcher.data.ManualLinks.stopAll = { manualBulkJob?.cancel() }
         // Update 117: the names and consoles that go up with this device's play sessions (for the other devices' recaps).
         var infoCache: Pair<List<Game>, Map<String, Game>>? = null
         // Update 182: the games here, so playtime synced from another handheld lands on the right one.

@@ -75,6 +75,40 @@ internal fun HomeRaLogoPart(name: String, icon: String?) {
 }
 
 /** The game's description (its summary), a few lines. */
+/**
+ * Update 204: the Category name part on a layout that doesn't draw the category itself — just the name, in the
+ * names' own style (Home › Name & logo). Every layout shows it by default (CATEGORY_PART_LAYOUTS); Edit Home moves,
+ * sizes or removes it.
+ */
+@Composable
+internal fun CategoryNamePart(label: String, backdrop: NameBackdrop) {
+    Text(
+        label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+        overflow = TextOverflow.Ellipsis, style = nameTextStyle(backdrop)
+    )
+}
+
+/**
+ * Update 204: where the Category name part starts on [layout] (fractions of the free room across and down, as
+ * MovableWidget takes them) — a spot that layout leaves free, so it overlaps nothing until you move it.
+ */
+internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (layout) {
+    // TV room: over the TV's top-left corner (its games and console sticker are down the right).
+    HomeLayout.TV -> 0f to 0f
+    // Case stacks: above the stage on the left, under the tool strip.
+    HomeLayout.STACKS -> 0f to 0.16f
+    // Card binder, Hero tiles, Twin icons: the top-left corner (the status pill / clock is at the right).
+    HomeLayout.CARDS, HomeLayout.HERO_TILES, HomeLayout.TWIN_ICONS -> 0f to 0f
+    // Console hub: on the art at the left, under the profile / icons / clock row.
+    HomeLayout.HUB -> 0f to 0.2f
+    // Resume & discover: in the middle of the top row, between the profile and the clock.
+    HomeLayout.RESUME -> 0.5f to 0f
+    // Hero carousel: along the top, right of the covers down the left and clear of the status bar at the right.
+    HomeLayout.HERO -> 0.35f to 0f
+    // Anywhere else it's added by hand: the top-left corner.
+    else -> 0f to 0f
+}
+
 @Composable
 internal fun HomeDescriptionPart(game: com.shelf.launcher.data.Game, summary: String?) {
     Text(

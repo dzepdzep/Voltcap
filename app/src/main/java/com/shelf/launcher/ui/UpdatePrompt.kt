@@ -41,10 +41,10 @@ import kotlinx.coroutines.launch
  * Update 202: "Voltcap x is out" — the automatic update check and the question it asks on the home screen.
  *
  * Before, a new version only showed in Settings › Updates & downloads (and as a short toast), so it was easy to miss.
- * Now Voltcap looks on its own (a little after start, then at most every 12 hours while it runs and on coming back to
+ * Now Voltcap looks on its own (a little after start, then — update 204 — every hour while it runs and on coming back to
  * it; only with a connection; Settings › Updates & downloads › "Check for updates automatically") and, when there is a
  * newer version that wasn't skipped, asks — by choice: Update now (download with progress here, then Android's
- * installer), Later (asks again at the next automatic check: next start or 12 hours on) or Skip this version.
+ * installer), Later (update 204: asks about that version again at the next start, or 12 hours on) or Skip this version.
  */
 
 /**
@@ -57,7 +57,7 @@ internal fun UpdatePromptHost(canShow: Boolean) {
     val context = LocalContext.current
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     // The start's check a little after start (never in the way of the intro or the first frames), then a look every
-    // 15 minutes while Voltcap is on screen — each a no-op until 12 hours have passed since the last check.
+    // 15 minutes while Voltcap is on screen — each a no-op until an hour has passed since the last check (update 204).
     LaunchedEffect(Unit) {
         delay(8_000)
         AppUpdates.autoCheckIfDue(context, atStart = true)
@@ -66,10 +66,11 @@ internal fun UpdatePromptHost(canShow: Boolean) {
             if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) AppUpdates.autoCheckIfDue(context)
         }
     }
-    // Coming back to Voltcap (from a game, an app) after the 12 hours: check then. (Ignored before the start's check.)
+    // Coming back to Voltcap (from a game, an app): check then, at most every 10 minutes (update 204; it waited for the
+    // 12 hours before). Ignored before the start's check.
     DisposableEffect(lifecycle) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) AppUpdates.autoCheckIfDue(context)
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) AppUpdates.autoCheckIfDue(context, resumed = true)
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }

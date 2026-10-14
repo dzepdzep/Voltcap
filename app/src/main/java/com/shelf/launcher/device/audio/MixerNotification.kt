@@ -36,6 +36,8 @@ object MixerNotification {
     /** The rows as last drawn: a tap redraws them at once, before the (slow) volume change has finished. */
     private val lock = Any()
     private var last: List<AppMixer.AudioApp> = emptyList()
+    /** Update 204: steps tapped and not set yet: package → (ticket, volume). */
+    private val wanted = HashMap<String, Pair<Long, Int>>()
 
     /** Posts, updates or (when switched off) removes it, on a background thread. Cheap to call often. */
     fun refreshAsync(context: Context) {
@@ -79,10 +81,14 @@ object MixerNotification {
         // Nothing here could hold a volume (no root service, no audio effects): don't offer controls that do nothing.
         if (!AppMixer.available(context)) { nm.cancel(ID); return }
         ensureChannel(context)
-        val apps = runCatching { AppMixer.apps(context) }.getOrDefault(emptyList())
+        val read = runCatching { AppMixer.apps(context) }.getOrDefault(emptyList())
             .filter { it.playing || it.volume < 100 || it.runningGame != null || it.pinned }
             .take(ROWS)
-        synchronized(lock) { last = apps }
+        // (Update 204: a step tapped but not set yet keeps showing — a look finishing meanwhile read the older volume
+        // and the bar jumped back.)
+        val apps = synchronized(lock) {
+            read.map { a -> wanted[a.packageName]?.let { a.copy(volume = it.second) } ?: a }.also { last = it }
+        }
         show(context, apps)
     }
 
@@ -142,18 +148,37 @@ object MixerNotification {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
-    internal fun handle(context: Context, pkg: String?, delta: Int) {
-        if (pkg != null && delta != 0) {
-            // Step from what the row shows (it may be the running game's own volume), and redraw right away.
-            val row = synchronized(lock) { last.firstOrNull { it.packageName == pkg } }
-            val now = row?.volume ?: AppMixer.effective(context)[pkg] ?: 100
-            val target = (now + delta).coerceIn(0, 100)
-            if (row != null) synchronized(lock) {
+    /**
+     * Update 204: a tap, on the main thread as it comes in (so taps keep their order): the new volume worked out from
+     * what the row shows (it may be the running game's own volume, or a step not set yet), drawn at once, and its
+     * ticket taken. Returns what [apply] then sets, off the main thread; null: just look again.
+     */
+    internal fun tap(context: Context, pkg: String?, delta: Int): Step? {
+        if (pkg == null || delta == 0) return null
+        val row = synchronized(lock) { last.firstOrNull { it.packageName == pkg } }
+        val now = row?.volume ?: AppMixer.effective(context)[pkg] ?: 100
+        val target = (now + delta).coerceIn(0, 100)
+        val ticket = AppMixer.ticket(pkg)
+        synchronized(lock) {
+            wanted[pkg] = ticket to target
+            if (row != null) {
                 last = last.map { if (it.packageName == pkg) it.copy(volume = target) else it }
                 runCatching { show(context, last) }
             }
-            val r = runCatching { AppMixer.setVolume(context, pkg, target, forGame = row?.gameOnly == true) }
+        }
+        return Step(pkg, target, ticket, row?.gameOnly == true)
+    }
+
+    internal class Step(val pkg: String, val volume: Int, val ticket: Long, val gameOnly: Boolean)
+
+    /** Sets a tapped step (skipped when a newer tap for that app came in) and looks again. Blocking. */
+    internal fun apply(context: Context, step: Step?) {
+        if (step != null) {
+            val r = runCatching { AppMixer.setVolume(context, step.pkg, step.volume, forGame = step.gameOnly, ticket = step.ticket) }
             if (r.isFailure) android.util.Log.w("MixerNotification", "setVolume failed", r.exceptionOrNull())
+            synchronized(lock) { if (wanted[step.pkg]?.first == step.ticket) wanted.remove(step.pkg) }
+            // (A newer tap is still on its way: it looks again once it's set.)
+            if (AppMixer.stale(step.pkg, step.ticket)) return
         }
         refreshAsync(context)
     }
@@ -164,10 +189,13 @@ class MixerNotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != MixerNotification.ACTION) return
         val pending = goAsync()
-        // Setting a volume talks to the helper / audio effects: off the main thread.
+        val app = context.applicationContext
+        // (Update 204: the step and its order taken here, as the taps come in; then set off the main thread — it talks
+        // to the helper / audio effects.)
+        val step = runCatching { MixerNotification.tap(app, intent.getStringExtra("pkg"), intent.getIntExtra("delta", 0)) }.getOrNull()
         Thread {
             try {
-                MixerNotification.handle(context.applicationContext, intent.getStringExtra("pkg"), intent.getIntExtra("delta", 0))
+                MixerNotification.apply(app, step)
             } finally { pending.finish() }
         }.start()
     }

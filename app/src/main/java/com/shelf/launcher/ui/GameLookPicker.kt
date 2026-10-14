@@ -115,6 +115,38 @@ internal enum class LookDiscGames(val label: String, val about: String) {
     ALL("Every game as a disc", "Every game is a disc: cartridge games get a plain CD with their label on it.")
 }
 
+/**
+ * Update 204: Cartridges & discs › Show as — the three ways the look draws your games (also steps on the R1 Look tile).
+ * Mix is each game's own medium; Cartridges / Discs put every game on one kind, Voltcap's own where a game has none.
+ * They are the old Disc games choices underneath (Their disc or Their case = Mix, A cartridge too = Cartridges, Every
+ * game as a disc = Discs), so nothing picked before changes.
+ */
+internal enum class LookShowAs(val label: String, val short: String, val about: String) {
+    MIX("Mix", "Mix", "Every game its own: cartridge games their cartridge, disc games their disc. Android, Steam and PC games get Voltcap's own."),
+    CARTS("Cartridges", "Cartridges", "Every game a cartridge: disc games, Android, Steam and PC games on a custom cartridge with their cover as the label."),
+    DISCS("Discs", "Discs", "Every game a disc: cartridge games, Android, Steam and PC games on a custom CD with their cover printed on it.")
+}
+
+/** Update 204: the Show as in use (read off the Disc games choice). */
+internal fun showAsNow(a: AppearanceSettings): LookShowAs = when (discGamesNow(a)) {
+    LookDiscGames.ALL -> LookShowAs.DISCS
+    LookDiscGames.CART -> LookShowAs.CARTS
+    LookDiscGames.DISC, LookDiscGames.CASE -> LookShowAs.MIX
+}
+
+/** Update 204: picks Show as [v]; Mix brings back its disc games' choice (their disc / their case). */
+internal fun pickShowAs(v: LookShowAs, a: AppearanceSettings): AppearanceSettings {
+    if (v != LookShowAs.DISCS && Features.modelFinish.value == ModelFinish.OFF) pickCart(cartLast())
+    return when (v) {
+        LookShowAs.MIX -> pickDiscGames(
+            if (LookMemory.get("mixDiscs") == LookDiscGames.CASE.name) LookDiscGames.CASE else LookDiscGames.DISC, a
+        )
+        LookShowAs.CARTS -> pickDiscGames(LookDiscGames.CART, a)
+        // (Picked here: cartridge games become discs too, Features.discsForAll.)
+        LookShowAs.DISCS -> { Features.discsForAll.value = true; pickDiscGames(LookDiscGames.ALL, a) }
+    }
+}
+
 /** Update 202: Art. */
 internal enum class LookArt(val label: String, val about: String, val type: CardArtType) {
     HERO("Hero art", "The game's wide background art, cropped to the card.", CardArtType.HERO),
@@ -126,7 +158,7 @@ internal enum class LookArt(val label: String, val about: String, val type: Card
 private val FOCUS_CHOICES: List<Triple<FocusedCardStyle, String, String>> = listOf(
     Triple(FocusedCardStyle.COVER, "Same as the others", "The game you're on stays a cover, just lifted."),
     Triple(FocusedCardStyle.WIDE, "Wide capsule", "The game you're on unfolds into its wide capsule; the carousels too."),
-    Triple(FocusedCardStyle.FIRST_ONLY, "Only the first one wide", "The first game of the row stays a wide capsule. Needs the game you're on at the left end.")
+    Triple(FocusedCardStyle.FIRST_ONLY, "Only the first one wide", "The first game of the Voltcap row stays a wide capsule at the left; the others are covers. (Turns the row's carousel off and puts the game you're on at the left.)")
 )
 
 /**
@@ -181,7 +213,7 @@ internal fun cartNow(): LookCart = when (Features.modelFinish.value) {
         (if (Features.cartClear.value) LookCart.CLEAR else LookCart.PACK) else LookCart.REAL
 }
 
-private fun discGamesNow(a: AppearanceSettings): LookDiscGames = when {
+internal fun discGamesNow(a: AppearanceSettings): LookDiscGames = when {
     a.cardArtFor() == CardArtType.DISC -> LookDiscGames.ALL
     Features.cartsOnly.value -> LookDiscGames.CART
     Features.discCase.value -> LookDiscGames.CASE
@@ -209,6 +241,14 @@ private fun pickCoverStyle(s: LookCoverStyle, a: AppearanceSettings): Appearance
 
 private fun pickFocus(f: FocusedCardStyle, a: AppearanceSettings): AppearanceSettings {
     Features.carouselWide.value = f == FocusedCardStyle.WIDE
+    // Update 204: "Only the first one wide" is the Voltcap row's fixed capsule at its left end — it only exists in the
+    // plain row, so picking it takes the row out of the carousel and puts the game you're on at the left (it seemed not
+    // to take: in the carousel nothing changed, or every game unfolded as you reached it).
+    if (f == FocusedCardStyle.FIRST_ONLY) {
+        val cl = Features.carouselLayouts.value
+        if (HomeLayout.CLASSIC.name in cl) Features.carouselLayouts.value = cl - HomeLayout.CLASSIC.name
+        return a.copy(focusedCardStyle = f, focusPosition = com.shelf.launcher.data.FocusPosition.LEFT)
+    }
     return a.copy(focusedCardStyle = f)
 }
 
@@ -240,6 +280,8 @@ private fun pickCart(c: LookCart) {
 private fun pickDiscGames(d: LookDiscGames, a: AppearanceSettings): AppearanceSettings {
     val F = Features
     LookMemory.put("main" to LookMain.CARTS.name, "discs" to d.name)
+    // (Update 204: Mix's own disc games choice, for coming back to Mix from Cartridges / Discs.)
+    if (d == LookDiscGames.DISC || d == LookDiscGames.CASE) LookMemory.put("mixDiscs" to d.name)
     F.cartsOnly.value = d == LookDiscGames.CART
     F.discCase.value = d == LookDiscGames.CASE
     F.caseWithMedia.value = false
@@ -355,16 +397,29 @@ internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? 
     else -> null
 }
 
-/** Name of the look in use for the R1 tile. Update 202: one of the four main looks. */
-internal fun currentLookName(a: AppearanceSettings): String = lookMainOf(a).short
+/**
+ * Name of the look in use for the R1 tile. Update 202: one of the four main looks. Update 204: Cartridges & discs by
+ * its Show as (Mix, Cartridges, Discs).
+ */
+internal fun currentLookName(a: AppearanceSettings): String =
+    if (lookMainOf(a) == LookMain.CARTS) showAsNow(a).short else lookMainOf(a).short
 
 /**
  * The R1 tile's next look. Update 202: the next of the four main looks, as you last had it (its choices: hold the tile,
  * or Settings › Game look).
  */
 internal fun stepGameLook(a: AppearanceSettings): AppearanceSettings {
-    val all = LookMain.values()
-    return applyMainLook(all[(lookMainOf(a).ordinal + 1) % all.size], a)
+    // Update 204: Covers → Cases → Mix → Cartridges → Discs → Art (Cartridges & discs' three Show as each a step).
+    return when (lookMainOf(a)) {
+        LookMain.COVERS -> applyMainLook(LookMain.CASES, a)
+        LookMain.CASES -> pickShowAs(LookShowAs.MIX, applyMainLook(LookMain.CARTS, a))
+        LookMain.CARTS -> when (showAsNow(a)) {
+            LookShowAs.MIX -> pickShowAs(LookShowAs.CARTS, a)
+            LookShowAs.CARTS -> pickShowAs(LookShowAs.DISCS, a)
+            LookShowAs.DISCS -> applyMainLook(LookMain.ART, a)
+        }
+        LookMain.ART -> applyMainLook(LookMain.COVERS, a)
+    }
 }
 
 /**
@@ -391,13 +446,20 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
     )
     // Update 177: a layout that draws its games its own way: the looks are greyed out (they'd change nothing there).
     val ownLook = layoutOwnLook(appearance.homeLayout)
-    val lookOk = ownLook == null
-    if (ownLook != null) {
+    // Update 204: where the layout draws its games its own way, the looks are left out (they were greyed out): only
+    // what applies here is shown. They come back on a layout that draws your look.
+    val pqCovers = appearance.homeLayout == HomeLayout.POCKET &&
+        com.shelf.launcher.data.Features.pqMedia.state.value == com.shelf.launcher.data.Features.PqMedia.COVERS
+    if (ownLook != null || pqCovers) {
         Spacer(Modifier.height(4.dp))
-        MutedNote("${appearance.homeLayout.label} draws its games as $ownLook, so the looks below can't be picked here — they're for the other layouts.")
+        MutedNote(
+            if (ownLook != null) "${appearance.homeLayout.label} draws its games as $ownLook, so the game looks don't apply here. They show again on a layout that draws your look."
+            else "Pocket Quest is set to show plain covers (Settings › Home › Layout options › Games shown as). Pick Your game look there to choose a look here."
+        )
+        return
     }
     Spacer(Modifier.height(8.dp))
-    LookChooser(appearance, onChange, enabled = lookOk)
+    LookChooser(appearance, onChange, enabled = true)
     val now = appearance.cardArtType
     // Update 202: your pack's shape matters with Your pack's shapes / Clear plastic, or with disc games on a cartridge.
     val packNow = (now == CardArtType.CARTRIDGE_DISC) &&
@@ -514,7 +576,7 @@ private fun ArtPositionSliders(model: Boolean) {
 private enum class Sample {
     COVER, WIDE, TILE, SPINE, FOCUS_SAME, FOCUS_WIDE, FOCUS_FIRST,
     CASE_SCAN, CASE_DRAWN, CASE_SAME, CASE_REAL, MEDIA_INSIDE, MEDIA_BESIDE, MEDIA_HALF,
-    CART_REAL, CART_PACK, CART_CLEAR, DISC_OWN, DISC_CASE, DISC_CART, DISC_ALL, PHOTO_ON, PHOTO_OFF,
+    CART_REAL, CART_PACK, CART_CLEAR, DISC_OWN, DISC_CASE, DISC_CART, DISC_ALL, PHOTO_ON, PHOTO_OFF, MIX,
     HERO, SHOT, ART_WIDE
 }
 
@@ -605,32 +667,42 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
             }
         }
         LookMain.CARTS -> {
-            val cart = cartNow()
-            SectionLabel("Cartridge")
+            // Update 204: Show as first — Mix, Cartridges or Discs (the old Disc games choices, named for what you see).
+            val showAs = showAsNow(appearance)
+            SectionLabel("Show as")
             ChoiceRow {
-                LookCart.values().forEach { c ->
-                    val sample = when (c) {
-                        LookCart.REAL -> Sample.CART_REAL
-                        LookCart.PACK -> Sample.CART_PACK
-                        LookCart.CLEAR -> Sample.CART_CLEAR
+                LookShowAs.values().forEach { v ->
+                    val sample = when (v) {
+                        LookShowAs.MIX -> Sample.MIX
+                        LookShowAs.CARTS -> Sample.DISC_CART
+                        LookShowAs.DISCS -> Sample.DISC_ALL
                     }
-                    LookChoiceCard(c.label, c.about, c == cart, enabled, sample) { pickCart(c) }
+                    LookChoiceCard(v.label, v.about, v == showAs, enabled, sample) { onChange(pickShowAs(v, appearance)) }
                 }
             }
-            val discs = discGamesNow(appearance)
-            SectionLabel("Disc games")
-            ChoiceRow {
-                LookDiscGames.values().forEach { d ->
-                    val sample = when (d) {
-                        LookDiscGames.DISC -> Sample.DISC_OWN
-                        LookDiscGames.CASE -> Sample.DISC_CASE
-                        LookDiscGames.CART -> Sample.DISC_CART
-                        LookDiscGames.ALL -> Sample.DISC_ALL
+            // The cartridge's shell: Mix and Cartridges (Discs draws none).
+            if (showAs != LookShowAs.DISCS) {
+                val cart = cartNow()
+                SectionLabel("Cartridge")
+                ChoiceRow {
+                    LookCart.values().forEach { c ->
+                        val sample = when (c) {
+                            LookCart.REAL -> Sample.CART_REAL
+                            LookCart.PACK -> Sample.CART_PACK
+                            LookCart.CLEAR -> Sample.CART_CLEAR
+                        }
+                        LookChoiceCard(c.label, c.about, c == cart, enabled, sample) { pickCart(c) }
                     }
-                    LookChoiceCard(d.label, d.about, d == discs, enabled, sample) {
-                        // (Picked here: cartridge games become discs too, Features.discsForAll.)
-                        if (d == LookDiscGames.ALL) F.discsForAll.value = true
-                        onChange(pickDiscGames(d, appearance))
+                }
+            }
+            // Mix: a disc game as its disc, or its case with the disc half out.
+            if (showAs == LookShowAs.MIX) {
+                val discs = discGamesNow(appearance)
+                SectionLabel("Disc games")
+                ChoiceRow {
+                    listOf(LookDiscGames.DISC, LookDiscGames.CASE).forEach { d ->
+                        val sample = if (d == LookDiscGames.DISC) Sample.DISC_OWN else Sample.DISC_CASE
+                        LookChoiceCard(d.label, d.about, d == discs, enabled, sample) { onChange(pickDiscGames(d, appearance)) }
                     }
                 }
             }
@@ -802,6 +874,11 @@ private fun LookSample(s: Sample, modifier: Modifier) {
             Sample.DISC_ALL -> Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 PhysicalMedia(MediaShell.DISC, cover, Modifier.fillMaxHeight(0.85f).aspectRatio(1f))
                 PhysicalMedia(MediaShell.DISC, cover, Modifier.fillMaxHeight(0.65f).aspectRatio(1f))
+            }
+            // Update 204: Mix — a cartridge and a disc side by side.
+            Sample.MIX -> Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                PhysicalMedia(MediaShell.GB, cover, Modifier.fillMaxHeight(0.8f).aspectRatio(MediaShell.GB.aspect))
+                PhysicalMedia(discShell, cover, Modifier.fillMaxHeight(0.7f).aspectRatio(1f))
             }
             Sample.PHOTO_ON -> {
                 val photo = g.physical?.firstOrNull { it.first == "Disc / cartridge" }?.second

@@ -625,6 +625,11 @@ internal object SettingsIndex {
         E("Game details", "Metadata", "Game details", null, null),
         E("What to download", "Metadata", "Game details", null, null),
         E("Scraping", "Metadata", "Scraping", null, null),
+        // Update 204: the manuals' own buttons (Scraping card).
+        E("Manuals", "Metadata", "Scraping", null, null),
+        E("Scrape manuals", "Metadata", "Scraping", null, null),
+        E("Find manuals", "Metadata", "Scraping", null, null),
+        E("Download all manuals", "Metadata", "Scraping", null, null),
         E("Matching achievements", "Achievements", "Matching achievements", null, null),
         E("Check new games", "Achievements", "Matching achievements", null, null),
         E("Re-check everything", "Achievements", "Matching achievements", null, null),

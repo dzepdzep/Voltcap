@@ -133,8 +133,10 @@ import kotlin.math.sin
  * The scenery behind is PocketQuestScenery.kt (StyleBackLayer draws it); the options are PocketQuestSettings.kt.
  *
  * Controller: ◀ ▶ games · ▲ the panel's buttons, then the top bar · ▼ back down (then what lies below) · A plays (or
- * the window: Layout options) · Y details · X favourite · L1 / R1 (and L2 / R2) console · Start the quick settings (R1
- * panel) · Select Select a System (held: sort & filter) · B back. Touch: everything can be tapped; swipe the collection.
+ * the window: Layout options) · Y details · X favourite · L2 / R2 console · L1 / R1 the shortcuts / quick settings as
+ * everywhere (update 204; "L1 / R1 switch the console" in Layout options makes them console keys again) · Start the
+ * quick settings (R1 panel) · Select Select a System (held: sort & filter) · B back. Touch: everything can be tapped;
+ * swipe the collection; the top bar's Quick settings button (update 204).
  */
 
 /** Update 202: where the controller is on Pocket Quest (kept while you play and come back; reset when the layout goes). */
@@ -172,8 +174,11 @@ internal object PqNav {
     }
 }
 
-/** The number of tools after the tabs in the top bar: Systems, Search, Sort & filter, Settings. */
-private const val PQ_TOOLS = 4
+/**
+ * The number of tools after the tabs in the top bar: Systems, Search, Sort & filter, Quick settings, Settings.
+ * (Update 204: Quick settings — the R1 panel's tiles — added; they could only be reached with Start before.)
+ */
+private const val PQ_TOOLS = 5
 
 @Composable
 internal fun StylePocketQuest(c: StyleCtx, modifier: Modifier = Modifier) {
@@ -298,7 +303,9 @@ private fun PqTopBar(c: StyleCtx, pal: PqPalette, compact: Boolean, pulse: Anima
             PqTool(pal, Icons.Filled.GridView, "Systems", inTop && PqNav.index == tabs, toolSize) { PqNav.zone = PqNav.Zone.TOP; PqNav.index = tabs; pqOpenSystems(live) }
             PqTool(pal, Icons.Filled.Search, "Search", inTop && PqNav.index == tabs + 1, toolSize) { live.actions.search() }
             PqTool(pal, Icons.Filled.SwapVert, "Sort & filter", inTop && PqNav.index == tabs + 2, toolSize) { live.actions.sort() }
-            PqTool(pal, Icons.Filled.Settings, "Settings", inTop && PqNav.index == tabs + 3, toolSize) { live.actions.settings() }
+            // Update 204: the R1 panel (quick tiles), by touch and from the top bar with the D-pad.
+            PqTool(pal, Icons.Filled.Tune, "Quick settings", inTop && PqNav.index == tabs + 3, toolSize) { live.actions.quickMenu() }
+            PqTool(pal, Icons.Filled.Settings, "Settings", inTop && PqNav.index == tabs + 4, toolSize) { live.actions.settings() }
             Spacer(Modifier.width(6.dp))
             PqStatus(pal, compact)
             Spacer(Modifier.width(6.dp))
@@ -462,7 +469,7 @@ private fun PqBrowse(
 private fun PqEmpty(pal: PqPalette, modifier: Modifier) {
     Box(modifier.pqPanel(pal, cut = 14.dp, edge = 2.dp), contentAlignment = Alignment.Center) {
         Text(
-            "No games here.\nL1 / R1 or the tabs above for another console.", color = pal.muted, fontSize = 14.sp,
+            (if (Features.pqBumpers.state.value) "No games here.\nL1 / R1 or the tabs above for another console." else "No games here.\nL2 / R2 or the tabs above for another console."), color = pal.muted, fontSize = 14.sp,
             textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp)
         )
     }
@@ -1013,7 +1020,7 @@ private fun PqSystems(c: StyleCtx, pal: PqPalette, compact: Boolean) {
                 }
             }
         }
-        PqHints(pal, compact, listOf("A" to "Choose", "B" to "Back", "SELECT" to "Sort & filter", "L1 / R1" to "Console"))
+        PqHints(pal, compact, listOf("A" to "Choose", "B" to "Back", "SELECT" to "Sort & filter", (if (Features.pqBumpers.state.value) "L1 / R1" else "L2 / R2") to "Console"))
     }
 }
 
@@ -1277,6 +1284,7 @@ private fun pqTopPress(c: StyleCtx, i: Int) {
         i == tabs -> pqOpenSystems(c)
         i == tabs + 1 -> c.actions.search()
         i == tabs + 2 -> c.actions.sort()
+        i == tabs + 3 -> c.actions.quickMenu()
         else -> c.actions.settings()
     }
 }

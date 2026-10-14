@@ -200,6 +200,16 @@ internal object BoxTexture {
     }
 
     /**
+     * Update 204: how wide the back (and the front) of a back | spine | front scan can be: the console's real case front
+     * shape at the scan's height. Null when the console's shape isn't known or doesn't fit this scan.
+     */
+    fun faceWidth(w: Int, h: Int, platform: String?): Int? {
+        val a = realCaseMm(platform)?.let { it.first / it.second } ?: return null
+        val face = (a * h).toInt()
+        return face.takeIf { it in (w * 0.3f).toInt()..(w / 2 - 1) }
+    }
+
+    /**
      * The spine face of a 3D box picture (a box turned so its left side shows, on a see-through background): from the
      * box's left edge to the fold where the front starts, between the highest bottom and lowest top of that strip (its
      * edges slant with the turn). Null when the picture doesn't look like that.
@@ -263,7 +273,7 @@ internal object BoxTexture {
 
 /** Cuts [part] out of a full box scan; fails (so the picture falls back) when the scan isn't laid out that way. */
 internal class BoxCrop(private val part: BoxPart, private val platform: String?) : Transformation {
-    override val cacheKey: String = "voltcapBoxCrop(${part.name},${platform ?: ""},1)"
+    override val cacheKey: String = "voltcapBoxCrop(${part.name},${platform ?: ""},3)"
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
         val w = input.width
@@ -271,11 +281,19 @@ internal class BoxCrop(private val part: BoxPart, private val platform: String?)
         val rect = if (part == BoxPart.SPINE3D) BoxTexture.findSpine3D(input) ?: throw IllegalStateException("No spine face on this 3D box")
         else {
         val (l, r) = BoxTexture.findSpine(input, platform) ?: throw IllegalStateException("Not a back | spine | front box scan")
+        // Update 204: the back and the front of a case are the same width, so each is cut no wider than the other — a
+        // fold found a little off (Game Boy and Game Boy Color scans) showed a strip of the spine along the back's edge. And
+        // a little more room from the fold than one pixel (half a percent of the scan), so no sliver of it shows.
+        val pad = maxOf(2, (w * 0.005f).toInt())
+        // (Update 204, Game Boy / Game Boy Color: their spines carry a full-height printed stripe that was taken for
+        // the fold, so the spine was found too narrow and its outer part stayed on the back. The back and front are
+        // never wider than the console's real front shape at the scan's height.)
+        val real = BoxTexture.faceWidth(w, h, platform)
+        val side = minOf(l, w - r, real ?: Int.MAX_VALUE)
         when (part) {
             BoxPart.SPINE -> android.graphics.Rect(l, 0, r, h)
-            // A pixel or two in from the fold, so no sliver of the spine shows on the front / back.
-            BoxPart.FRONT -> android.graphics.Rect((r + 1).coerceAtMost(w - 1), 0, w, h)
-            BoxPart.BACK -> android.graphics.Rect(0, 0, (l - 1).coerceAtLeast(1), h)
+            BoxPart.FRONT -> android.graphics.Rect((w - side + pad).coerceIn((r + 1).coerceAtMost(w - 2), w - 2), 0, w, h)
+            BoxPart.BACK -> android.graphics.Rect(0, 0, (side - pad).coerceIn(2, (l - 1).coerceAtLeast(2)), h)
             BoxPart.SPINE3D -> android.graphics.Rect(0, 0, 1, 1)
         }
         }

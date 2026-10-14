@@ -4,6 +4,86 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (204): update check that notices new versions, Pocket Quest quick settings, Mix / Cartridges / Discs, manuals, category name everywhere, real cartridge backs on photos, overlays coming back, volume mixer steps in order, fixes
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (27): `src_copy\LauncherViewModel.kt`, `src_copy\data\AppUpdates.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\data\ManualLinks.kt`, `src_copy\device\audio\AppMixer.kt`, `src_copy\device\audio\MixerNotification.kt`, `src_copy\ui\BoxTexture.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\GameLookPicker.kt`, `src_copy\ui\HeroCarousel.kt`, `src_copy\ui\HomeParts.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\MixerActivity.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\PocketQuestSettings.kt`, `src_copy\ui\R1TileRules.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\SolidPiece.kt`, `src_copy\ui\StyleHomes.kt`, `src_copy\ui\StylePocketQuest.kt`, `src_copy\ui\TileHome.kt`, `src_copy\ui\UpdatePrompt.kt`, `src_copy\ui\UpdatesUi.kt`.
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 204: update check that notices new versions, Pocket Quest quick settings, Mix / Cartridges / Discs, manuals, category name everywhere, cartridge backs on photos, overlays coming back, mixer steps in order" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+.\gradlew installDebug
+```
+
+### Automatic update check (Settings › Updates & downloads › Check for updates automatically)
+- **Why it did nothing:** after the check at start it waited **12 hours**, and coming back to Voltcap didn't check at all. 0.6.1 came out 10 minutes after 0.6.0, so it was never seen (you have 0.6.1 now, the newest on GitHub, so there's nothing to ask about at the moment).
+- **Now:** a little after start, every time you come back to Voltcap (from a game or an app, at most every 10 minutes) and every hour while it's on screen. A failed try waits 15 minutes.
+- **No GitHub limit trouble:** each check after the first asks "anything new since this?" (ETag); GitHub's "nothing new" answer doesn't count against its 60-an-hour limit.
+- **Later:** that version isn't asked about again for 12 hours (or until Voltcap starts again). The automatic check no longer flashes "Checking GitHub…" in Settings.
+
+### Pocket Quest: quick settings
+- **Why:** "L1 / R1 switch the console" was on by default, so R1 never opened the quick settings there (only Start did).
+- **Now:** off by default (a new setting key, so everyone gets it once): **R1 = quick settings, L1 = shortcuts, L2 / R2 switch the console**. Settings › Home › Layout options › "L1 / R1 switch the console" brings the old way back.
+- **Top bar:** a new **Quick settings** button (slider icon) between Sort & filter and Settings — tap it, or reach it with the D-pad.
+
+### Cartridges & discs
+- **WWE All Stars (and other Android games) flat:** a "disc / cartridge" picture of another console's release was used as the game's own photo. Android, Steam, PC and arcade games now always go on Voltcap's own cartridge / CD.
+- **Games without a cartridge or disc of their own** (arcade, PC, DOS…) get Voltcap's plain cartridge (or the plain CD with their console's name) instead of a flat cover — also in lists mixing consoles with "All CDs" / "All cartridges".
+- **Show as (new):** Settings › Game look › Covers, cases & discs › Cartridges & discs › **Show as: Mix / Cartridges / Discs**.
+  - **Mix:** every game its own medium (cartridge games their cartridge, disc games their disc); its "Disc games: Their disc / Their case" choice stays.
+  - **Cartridges:** every game a cartridge (disc, Android, Steam, PC games on a custom cartridge).
+  - **Discs:** every game a disc (cartridge, Android, Steam, PC games on a custom CD).
+  - (They're the old Disc games choices underneath, so your current look stays as it was.)
+- **R1 › Look:** steps Covers → Cases → **Mix → Cartridges → Discs** → Art; the tile shows which.
+- **Only what applies:** looks that don't apply to the layout on screen are left out instead of greyed — in Settings › Game look (a note says why) and on the R1 panel (Look tiles while Pocket Quest shows plain covers, the achievement place there, Background / Background fit while the layout draws its own background).
+
+### Cartridge backs on photos
+- **Why the new backs didn't show:** the researched backs were only on drawn shells. Most games show their own cartridge photo ("Use its own photo when one is found"), and a photo turned round showed a plain grey silhouette.
+- **Now:** a cartridge photo turned round (carousels, flips, the game window's inspect view, a cartridge beside its case) shows its console's real shell back (by region), at the shell's real thickness and colour. Settings › Game look › Covers, cases & discs › More look options › Cartridge backs › Neutral leaves the maker's text off.
+
+### Case backs (Game Boy, Game Boy Color)
+- **Spine strip on the back:** the back is cut out of the game's full box scan (back | spine | front). Game Boy / Color spines have a full-height printed stripe that was taken for the fold, so the spine was found too narrow and its outer part stayed on the back.
+- **Now:** the back and front are cut no wider than each other (they're the same width on a real box), never wider than the console's real box front at the scan's height, and a bit further from the fold. (Voltcap's own printed back, `tpl_back_gb` / `tpl_back_gbc`, has no spine in it — checked.)
+
+### Volume mixer: + steps going back
+- **Why:** each + tap (pull-down mixer) set the volume from its own thread; an older, slower one finishing last put the volume back a step, and a look at the volumes finishing in between redrew the older value.
+- **Now:** every step gets a number when it's tapped; one is set at a time, and a step that's been overtaken by a newer one is skipped. The pull-down keeps showing a tapped step until it's set. The mixer card (◀ ▶ / slider) uses the same.
+
+### Manuals (Settings › Metadata › Scraping)
+- **Find manuals:** asks ScreenScraper about every game's manual now (whether the Manuals tick is on or not), with a progress line and Stop.
+- **Download all manuals:** does that, then saves every manual found onto the device (offline reading).
+- Shows how many manuals are found so far. Also in the settings search (Manuals, Scrape manuals, Find manuals, Download all manuals).
+
+### Category name on every layout
+- **Default on:** the layouts that didn't show the category name (TV room, Case stacks, Card binder, Console hub, Resume & discover, Hero tiles, Twin icons, Hero carousel) get the **Category name** part once, at a free spot of each layout. (The others already show it: the Voltcap row / Tile home / Grid category bar, Timeline, Pocket Quest's tabs, Library panel, Spotlight, Cross / Side menu…)
+- **Look:** just the name, in the names' style (Settings › Home › Name & logo); with Settings › Categories › On the home screen › Category name › All categories it's the full row of categories.
+- **Turn it off:** its ✕ in Edit Home, or Settings › Home › Layout options › Game info on screen › Category name. Move / size it in Edit Home.
+
+### Voltcap row: "Only the first one wide"
+- **Why it wouldn't take:** it only works in the plain row with the game you're on at the left; in the carousel nothing changed, and every game unfolded into a wide capsule as you reached it.
+- **Now:** picking it (Settings › Game look › Covers › The game you're on) turns the row's carousel off and puts the game you're on at the left. Where the fixed capsule can't be drawn, games stay covers (no more unfolding one by one).
+
+### Overlays over games coming back
+- **Why they vanished on going back into a game:** they're brought back when you return to a running game, but only for a game *confirmed* open — and that's filled by a check that runs a moment after Voltcap comes back (and needs usage access or the root service). Going back in before it ran forgot the game for good, so the overlays never returned that session.
+- **Now:** any game still in the open list brings its overlays back, keeping the overlay's session clock running.
+- **Editing them from the Android drop-down:** not reproduced yet (see the reply) — tell me which control (the notification's buttons, its panel, or the Quick Settings tile) and I'll go after it.
+
+### Check
+- **Type-check:** full kotlinc 2.2.10 + Compose type-check of all of `src_copy` against your Gradle cache's jars and android-36: **0 errors**; no `NON_LOCAL_RETURN` in the compiled classes.
+- **Reread:** every change line by line against your PC's copies (taken at the start of this update); every caller of `mediaFor` checked for the "never null now" change (game window, case + media, Disc station, launch animation, carousels, grid, tiles, hero, style homes).
+- **Reproduced on the Thor (adb):** R1 on the home screen, the WWE All Stars flat cover, the update check (GitHub's newest = v0.6.1 = installed). The overlay service's lifecycle read through (start, reconfigure, restore, stop) — the shade case couldn't be reproduced without a game running.
+- **Not tested on a device:** all of it (needs your build). Especially: Pocket Quest's top bar with the extra button on the Retroid Pocket Classic's small screen; the category name's starting spot on each of the 8 layouts (move it in Edit Home if one sits badly); the Game Boy / Color case backs; the pull-down mixer's + / − tapped quickly; cartridge backs on photos in the inspect view.
+
+---
+
 ## Update — 15 Oct 2026 (203): cartridges stay solid when turned
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

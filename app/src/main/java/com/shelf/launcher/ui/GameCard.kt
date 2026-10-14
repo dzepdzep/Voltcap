@@ -393,7 +393,7 @@ fun GameCard(
                     .artPosition(if (mediaRound(game.platform)) ArtPlace.Look.DISC else ArtPlace.Look.CART)
             ) {
                 MediaFocus(focused) {
-                    RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (mediaRound(game.platform)) 6.dp else 10.dp))
+                    RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (mediaRound(game.platform)) 6.dp else 10.dp), platform = game.platform, gameKey = game.stableKey)
                 }
             }
         } else (baseUrl ?: artUrl)?.let { url ->
@@ -1226,6 +1226,10 @@ internal fun typedArtFor(
     CardArtType.CARTRIDGE_DISC ->
         // (Update 125, Cartridges only: a disc game's own disc picture doesn't fit on a cartridge; its cover is the label.)
         if (platform != null && cartsOnlyFor(platform)) null
+        // Update 204: Android, Steam, PC and arcade games have no cartridge or disc of their own: a "disc / cartridge"
+        // picture found for one is another release's (WWE All Stars on Android showed its console box), so they're
+        // always drawn on Voltcap's own cartridge / CD.
+        else if (platform != null && noOwnMedia(platform)) null
         // Update 159, Discs only: a cartridge game's own scan / label is its cartridge — on its CD its cover is printed.
         else if (platform != null && DiscLook.on && mediaKind(platform) != "disc") null
         else if (com.shelf.launcher.data.Features.mediaShells.value) physical?.firstOrNull { it.first == "Disc label" }?.second
@@ -1233,6 +1237,10 @@ internal fun typedArtFor(
     CardArtType.SCREENSHOT -> screenshots?.firstOrNull()
     else -> null
 }
+
+/** Update 204: games of [platform] have no cartridge or disc of their own (apps, Steam, PC, arcade…). */
+internal fun noOwnMedia(platform: String): Boolean =
+    platform == "App" || platform == "Android" || platform == "Steam" || MediaShell.of(platform) == null
 
 /** A diagonal band of light sweeping over the card every ~2.6 s (one gradient layer, cheap). */
 @Composable

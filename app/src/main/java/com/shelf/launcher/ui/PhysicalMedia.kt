@@ -169,8 +169,9 @@ private fun mixedArtFor(
             // Only games that have a physical console (apps and PC games keep their cover).
             val kind = if (Features.mixedArt.state.value == MixedArt.DISC) "disc" else "cartridge"
             // (Update 128: or a cartridge from your pack, Cartridges look.)
-            val has = MediaShell.of(platform) != null || (kind == "cartridge" && customCartFor(platform))
-            if (!has || kind in hidden) Art.COVER else Art.CARTRIDGE_DISC
+            // (Update 204: every game — apps, Steam, PC and arcade games get Voltcap's plain CD / cartridge, mediaFor;
+            // they used to keep their cover.)
+            if (kind in hidden) Art.COVER else Art.CARTRIDGE_DISC
         }
     }
 }
@@ -185,7 +186,8 @@ private fun artForGameOwn(
     com.shelf.launcher.data.CardArtType.DISC ->
         if (MediaShell.of(platform) != null && mediaKind(platform) == "disc") com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
         // (Update 129: or one console's disc picked for all on R1 › Disc.)
-        else if ((Features.discsForAll.state.value || LookStyles.disc() != null) && MediaShell.of(platform) != null && "disc" !in hidden) com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+        // (Update 204: every game with Discs — apps, PC and arcade games too, on the plain CD; they kept their cover.)
+        else if ((Features.discsForAll.state.value || LookStyles.disc() != null) && "disc" !in hidden) com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
         else com.shelf.launcher.data.CardArtType.COVER
     // (Update 128: a game on your cartridge pack counts as a cartridge.)
     com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC ->
@@ -254,7 +256,7 @@ internal fun drawn3dPick(platform: String, mixed: Boolean, gameKey: String?): Me
 /**
  * The cartridge / disc a game is drawn as: its console's own, or - in a list mixing consoles with "All CDs" /
  * "All cartridges" - the generic one (a cartridge game gets a plain CD with its label scan on it, a disc game a
- * plain cartridge). Null where the console has no physical game.
+ * plain cartridge). Update 204: never null any more — a console with no physical game gets the plain ones.
  */
 internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean = false, gameKey: String? = null): MediaPick? {
     // Update 195: the shell picked for this game or its console (the game's menu › Cartridge shell…, CartShells.kt).
@@ -277,7 +279,10 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
             CartShells.authenticId(platform, region)?.let { id -> CartShells.pickOf(id, platform)?.let { return it } }
         }
     }
-    val own = MediaShell.of(platform) ?: return null
+    // Update 204: a console without a cartridge or disc of its own (arcade, PC, DOS…) gets Voltcap's plain ones — the
+    // plain CD with its console's name as a disc, else the plain cartridge — instead of a flat cover among the others.
+    val own = MediaShell.of(platform) ?: return if (asDisc || (mixed && Features.mixedArt.state.value == MixedArt.DISC))
+        MediaPick(MediaShell.DISC, genericDiscKey(platform)) else MediaPick(MediaShell.GB, GENERIC_CART)
     // Update 129, Discs only with one console's disc picked for all (R1 › Disc): every game on that disc.
     // (Update 141: another console's disc only as a shape — a game of another console gets the plain disc with its own
     // console's branding instead of that console's printed disc; a UMD the plain drawn one.)
@@ -393,7 +398,8 @@ internal fun isFreeMedia(type: com.shelf.launcher.data.CardArtType, platform: St
     // (Update 128: a game on your cartridge pack too — with "Real discs" as well, there's no scan of it to show.)
     // (Update 129: with "Real discs" too — the game's own scan stands free like the drawn one, see realScanOf.)
     // (Update 200: or a drawn piece of the 3D cartridges looks — the pre-rendered 3D models are retired.)
-    com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> customCartFor(platform) || MediaShell.of(platform) != null || drawn3dPick(platform, false, null) != null
+    // (Update 204: every game — a console without a cartridge or disc of its own gets Voltcap's plain one, mediaFor.)
+    com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> true
     // Box art always uses the template pack's case when there's one for the console.
     // (Update 129: the case picked for all on R1 › Case, when there is one.)
     com.shelf.launcher.data.CardArtType.CASE -> LookStyles.casePlatform(platform).let { p ->
@@ -728,9 +734,14 @@ internal fun DiscInCase(
  * discs & cartridges). [round]: a disc (kept in its circle).
  */
 @Composable
-internal fun RealMediaPicture(model: Any, round: Boolean, modifier: Modifier = Modifier) {
+internal fun RealMediaPicture(
+    model: Any, round: Boolean, modifier: Modifier = Modifier,
+    /** Update 204: the game's console and key — a cartridge photo then shows its real shell's researched back when turned. */
+    platform: String? = null, gameKey: String? = null
+) {
     // (Update 203: the game's own cartridge photo solid when turned; a disc photo turns flat.)
-    val solid = androidx.compose.runtime.remember { SolidSpec(null, 0.12f, PLAIN_SHELL) }
+    // (Update 204: at the photo's own shape, with its console's real back — rememberPhotoSolid.)
+    val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) })
     Box((if (round) modifier.followTurn() else modifier.solidPiece(solid)).mediaMotion(round, 0), contentAlignment = Alignment.Center) {
         coil.compose.AsyncImage(
             mediaArtModel(model), null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, // (Update 157)

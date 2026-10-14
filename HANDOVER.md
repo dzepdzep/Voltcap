@@ -1,6 +1,6 @@
 # Voltcap — handover to a new Claude
 
-Written 12 Oct 2026, after update **(145)** (kept up to date to 165). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+Written 12 Oct 2026, after update **(145)** (kept up to date to 204). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is
 **Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
@@ -255,6 +255,22 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 204
+- **Update check (AppUpdates):** `autoCheckIfDue(c, atStart, resumed)` — start / resume at most every 10 min (`START_MIN_GAP_MS`), on screen every hour (`AUTO_EVERY_MS`), 15 min after a failure (`lastFailed`). Conditional request with the last ETag (`lastRelease` / `etag`, this run only; a 304 reuses the release). `later()` holds that tag 12 h (`laterTag` / `laterAt`). Automatic checks don't set `State.Checking`. UpdatePromptHost passes `resumed = true` on ON_RESUME.
+- **Pocket Quest:** `Features.pqBumpers` is key `pq_bumpers2`, default false (R1 / L1 as everywhere). Top bar has 5 tools (`PQ_TOOLS`): Systems, Search, Sort, Quick settings (`actions.quickMenu`), Settings; `pqTopPress` index `tabs + 3` = quick settings.
+- **Media for every game:** `mediaFor` never returns null — a console without its own medium gets `GENERIC_CART` (or `genericDiscKey(platform)` as a disc). `isFreeMedia(CARTRIDGE_DISC)` is always true. `typedArtFor(CARTRIDGE_DISC)` ignores scans for `noOwnMedia(platform)` (App, Android, Steam, no MediaShell) — GameCard.kt. Discs for all (`discsForAll`) covers consoles without a shell too; mixed All CDs / All cartridges covers every game.
+- **Show as (GameLookPicker):** `LookShowAs` MIX / CARTS / DISCS over `LookDiscGames` (MIX = DISC or CASE, remembered in LookMemory `mixDiscs`; CARTS = CART; DISCS = ALL). `showAsNow`, `pickShowAs`. `stepGameLook` goes Covers → Cases → Mix → Cartridges → Discs → Art; `currentLookName` shows the Show as for Cartridges & discs.
+- **Applicable only:** GameLookPicker returns early with a note when `layoutOwnLook` or Pocket Quest plain covers; R1TileRules hides (not greys) the look tiles there, `progressbar` on PQ covers, `herofit` where the layout shows its own art, and Background where the layout draws its own.
+- **Photo backs:** `RealMediaPicture(model, round, modifier, platform, gameKey)` uses `rememberPhotoSolid` (SolidPiece.kt: `ownShellOf`, `ownShellBack`) — the console's authentic shell back / depth / colour. InspectSlab uses `ownShellOf` for a real scan (`p.pick == null && p.realScan != null`).
+- **Box crop:** BoxCrop cuts back and front to `min(l, w - r)` minus 0.5 % from the fold (cache key `…,2`).
+- **Manuals:** `ManualLinks.runAll(download)` / `stopAll` / `bulk` (Bulk: downloading, done, total, found) / `foundCount()`; `LauncherViewModel.findAllManuals(download)` (lookups paced 400 ms, downloads via `ArtFiles.downloadManual`). UI: `ManualsBulkRow()` in SettingsDialog's Scraping card.
+- **Category name part:** `CATEGORY_PART_LAYOUTS` (AppearanceStore.kt) get `HomeWidgets.CATEGORY` added once (`categoryPart204`, flag `category_part_204` in "appearance"). The overlay draws `CategoryNamePart` (HomeParts.kt) unless Category name is All categories (then `CategoriesBar()`); start spot `categoryPartSpot(layout)`.
+- **First one wide:** `focusedWide` for FIRST_ONLY only when `pinnedFirstOn`; `pickFocus(FIRST_ONLY)` removes CLASSIC from `carouselLayouts` and sets `focusPosition = LEFT`.
+- **Overlay restore:** `restoreOverlaysForRunningGame` checks `RunningGames.keys` (was `confirmed`, filled late by `refresh`) and starts with `newSession = false`.
+- **Type-check setup (this session):** `/tmp/claude-0/cc` (jars from paths.txt, android.jar, themeshaders.jar from the debug classes.jar, discord_partner_sdk.jar out of the aar), kotlinc 2.2.10 in `/tmp/claude-0/kotlinc`; tools/compile_check/check.sh with `K=/tmp/claude-0/kotlinc`.
+- **Mixer order:** `AppMixer.ticket(pkg)` numbers a change when it's asked; `setVolume(..., ticket)` runs one at a time and skips a stale ticket. `MixerNotification.tap` (main thread, in `onReceive`) works out the step, draws it, keeps it in `wanted` until `apply` has set it; `post()` overlays `wanted`. The mixer card's `commit` passes a ticket too.
+- **Box scan cuts:** `BoxTexture.faceWidth` caps the back / front cut at the console's real front width (`realCaseMm`) at the scan's height; cache key version 3.
 
 ## State after update 203
 - **Solid cartridges (SolidPiece.kt):** a view that turns its games hands the turn down with `ProvidePieceTurn(PieceTurn(yawOf, camera))` and doesn't turn the slot itself when the game is a cartridge look.

@@ -96,6 +96,38 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
     }
 }
 
+/**
+ * Update 204: the shell a game's own cartridge photo stands for — its console's real shell, by the game's region
+ * ([gameKey]); null for a console without one (discs, apps, PC).
+ */
+internal fun ownShellOf(platform: String?, gameKey: String?): CartShell? =
+    platform?.let { CartShells.authenticId(it, CaseCatalog.regionOf(gameKey ?: "")) }?.let { CartShells.of(it) }
+
+/**
+ * Update 204: the researched back for [sh] in its own colour (Settings › Game look › Cartridge backs: Authentic or Auto
+ * show the maker's markings — it is the console's own shell — Neutral leaves them out), [px] on its longest side.
+ */
+internal fun ownShellBack(sh: CartShell, backStyle: Features.CartBackStyle, px: Int): ImageBitmap? = runCatching {
+    CartShells.back(sh, CartShells.colourOf(sh, null), px, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap()
+}.getOrNull()
+
+/**
+ * Update 204: [spec] for the game's own cartridge photo ([photo]): its console's real shell's thickness, colour and
+ * researched back (it showed a plain silhouette from behind, so the new backs never appeared on the many games with a
+ * photo). [aspect]: the photo's own shape once it has loaded.
+ */
+@Composable
+internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Float?): SolidSpec {
+    val backStyle = Features.cartBackStyle.state.value
+    return remember(platform, gameKey, backStyle, aspect) {
+        val sh = ownShellOf(platform, gameKey)
+        if (sh == null) SolidSpec(aspect, 0.12f, PLAIN_SHELL)
+        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(CartShells.colourOf(sh, null).argb).copy(alpha = 1f)) {
+            ownShellBack(sh, backStyle, 480)
+        }
+    }
+}
+
 /** [spec] for a drawn / template / pack cartridge of [shell] on [platform], at [aspect]. */
 internal fun cartSolid(shell: MediaShell?, platform: String?, aspect: Float?, custom: Boolean = false): SolidSpec =
     SolidSpec(

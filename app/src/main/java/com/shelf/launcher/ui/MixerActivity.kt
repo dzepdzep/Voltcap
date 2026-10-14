@@ -194,10 +194,14 @@ internal fun MixerContent() {
     /** Applies after a short pause, so holding ◀ ▶ or dragging doesn't restart the helper on every step. */
     fun commit(a: AppMixer.AudioApp, v: Int) {
         setLocal(a.packageName, v)
+        // (Update 204: numbered as it's asked, so a slower earlier step finishing last can't put an older volume back.)
+        val ticket = AppMixer.ticket(a.packageName)
         pending.remove(a.packageName)?.cancel()
         pending[a.packageName] = scope.launch {
             delay(280)
-            withContext(Dispatchers.IO) { runCatching { AppMixer.setVolume(context, a.packageName, v, forGame = a.gameOnly) } }
+            withContext(Dispatchers.IO) { runCatching { AppMixer.setVolume(context, a.packageName, v, forGame = a.gameOnly, ticket = ticket) } }
+            // (Shown a moment longer than it takes to set, so a look in the background reads the new one.)
+            if (!AppMixer.stale(a.packageName, ticket)) setLocal(a.packageName, v)
         }
     }
 

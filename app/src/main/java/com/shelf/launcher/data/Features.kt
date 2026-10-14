@@ -1699,8 +1699,12 @@ object Features {
     val pqReducedMotion = BoolPref("pq_reduced_motion", false)
     /** Update 202, Pocket Quest: the big picture of the game you're on leans gently in 3D. */
     val pqTilt = BoolPref("pq_tilt", true)
-    /** Update 202, Pocket Quest: L1 / R1 switch the console (off: they do what they do everywhere else). */
-    val pqBumpers = BoolPref("pq_bumpers", true)
+    /**
+     * Update 202, Pocket Quest: L1 / R1 switch the console (off: they do what they do everywhere else).
+     * Update 204: off by default — on, R1 couldn't open the quick settings (the R1 panel) on this layout. A new key, so
+     * everyone gets the new default once; turning it on again is kept.
+     */
+    val pqBumpers = BoolPref("pq_bumpers2", false)
     /** Update 202, Pocket Quest: A starts the game (off: A opens the game window, as on the other layouts). */
     val pqAPlays = BoolPref("pq_a_plays", true)
 

@@ -1159,8 +1159,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
     // Update 195: a library shell's own back (seam, screws, contacts), shown when it's turned round.
     // (Update 200: its researched back; plain — no maker's markings — on another console's shell, or as set.)
     val backStyle = Features.cartBackStyle.state.value
-    val shellBack = remember(p.pick?.platform, backStyle) {
-        p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
+    val shellBack = remember(p.pick?.platform, p.realScan, backStyle) {
+        // Update 204: the game's own cartridge photo turned round shows its console's real shell's researched back (it
+        // was a plain silhouette, so the new backs never showed for the many games with a photo).
+        if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { ownShellBack(it, backStyle, 640) }
+        else p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
             val (ch, console) = CartShells.split(pp)
             ch?.shell?.let { sh ->
                 val neutral = when (backStyle) {

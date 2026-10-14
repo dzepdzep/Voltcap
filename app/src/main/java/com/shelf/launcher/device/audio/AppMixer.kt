@@ -181,8 +181,32 @@ object AppMixer {
         return base.filterValues { it < 100 }.filterKeys { uidOf(c, it) != null }
     }
 
-    /** Sets one app's volume (or the running game's own one with [forGame]) and applies it. Blocking. */
-    fun setVolume(c: Context, packageName: String, percent: Int, forGame: Boolean = false) {
+    /**
+     * Update 204: a number for each volume change asked for, taken when it's asked (a tap, a step): a change that
+     * arrives after a newer one for the same app is skipped. Several quick + taps each set the volume from their own
+     * thread; an older one finishing last put the volume back a step (it went up, then jumped back a bit).
+     */
+    private val tickets = java.util.concurrent.atomic.AtomicLong()
+    private val newest = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val setLock = Any()
+
+    /** Update 204: the ticket for a volume change of [packageName] asked for now (pass it to [setVolume]). */
+    fun ticket(packageName: String): Long = tickets.incrementAndGet().also { newest[packageName] = it }
+
+    /** Update 204: true when [ticket] is no longer the newest change asked for [packageName]. */
+    fun stale(packageName: String, ticket: Long): Boolean = ticket != 0L && newest[packageName] != ticket
+
+    /**
+     * Sets one app's volume (or the running game's own one with [forGame]) and applies it. Blocking. With a [ticket]
+     * ([ticket]), nothing happens when a newer change for the app was asked for since (one at a time, newest wins).
+     */
+    fun setVolume(c: Context, packageName: String, percent: Int, forGame: Boolean = false, ticket: Long = 0L) {
+        synchronized(setLock) {
+            if (!stale(packageName, ticket)) setVolumeNow(c, packageName, percent, forGame)
+        }
+    }
+
+    private fun setVolumeNow(c: Context, packageName: String, percent: Int, forGame: Boolean) {
         val v = percent.coerceIn(0, 100)
         val before = effective(c).keys
         val g = runningGame(c)

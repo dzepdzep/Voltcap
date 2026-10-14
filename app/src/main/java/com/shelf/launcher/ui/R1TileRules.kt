@@ -132,7 +132,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         "progressbar" -> when (l) {
             HomeLayout.SHELF, HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.CRATE, HomeLayout.HERO, HomeLayout.TV,
             HomeLayout.CIRCUIT, HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON -> R1Fit.Hide
-            HomeLayout.POCKET -> if (Features.pqMedia.state.value == Features.PqMedia.COVERS) R1Fit.Grey(PQ_COVERS) else R1Fit.Show
+            // (Update 204: hidden, not greyed, while Pocket Quest shows plain covers.)
+            HomeLayout.POCKET -> on(Features.pqMedia.state.value != Features.PqMedia.COVERS)
             else -> R1Fit.Show
         }
         // Game size: the layouts that read it (GameSize) — not Disc station, the Twin layouts, Custom layout, the Pocket
@@ -174,8 +175,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         "herofit" -> when {
             l == HomeLayout.HERO || l == HomeLayout.TV -> R1Fit.Hide
             backgroundFit(l) != R1Fit.Show -> backgroundFit(l)
-            l.styleHome && styleArtBehind(l) ->
-                R1Fit.Grey("${l.label} shows the game's art itself (its Layout options › Background) — the fit is for Voltcap's background picture.")
+            // (Update 204: hidden where the layout shows the game's art itself — it was greyed out.)
+            l.styleHome && styleArtBehind(l) -> R1Fit.Hide
             a.backgroundStyle != BackgroundStyle.ART ->
                 R1Fit.Grey("The background is ${a.backgroundStyle.label.replaceFirstChar { it.lowercase() }} — the fit is for the game's own picture (Background: game art).")
             l == HomeLayout.CLASSIC && a.dockPosition != DockPosition.BOTTOM ->
@@ -187,13 +188,13 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
     }
 }
 
-/** Pocket Quest set to plain covers: why the look tiles are greyed there. */
-private const val PQ_COVERS = "Pocket Quest shows the games as plain covers — set its Layout options › Games shown as to Your game look to use this."
-
-/** Update 202: the look tiles' fit in layout [l]: hidden where the layout draws its games its own way. */
+/**
+ * Update 202: the look tiles' fit in layout [l]: hidden where the layout draws its games its own way.
+ * Update 204: and while Pocket Quest shows plain covers (they were greyed out there: only what applies shows now).
+ */
 private fun lookFit(l: HomeLayout): R1Fit = when {
     layoutOwnLook(l) != null -> R1Fit.Hide
-    l == HomeLayout.POCKET && Features.pqMedia.state.value == Features.PqMedia.COVERS -> R1Fit.Grey(PQ_COVERS)
+    l == HomeLayout.POCKET && Features.pqMedia.state.value == Features.PqMedia.COVERS -> R1Fit.Hide
     else -> R1Fit.Show
 }
 
@@ -203,10 +204,9 @@ private fun backgroundFit(l: HomeLayout): R1Fit = when {
     !l.styleHome || !styleOwnsBackground(l) -> R1Fit.Show
     // A custom layout's own colour / picture comes with its file.
     l == HomeLayout.CUSTOM -> R1Fit.Hide
-    l == HomeLayout.POCKET -> R1Fit.Grey("Pocket Quest shows its theme's scenery — pick Voltcap background in its Layout options › Background to use this.")
-    l == HomeLayout.TWIN_DESK || l == HomeLayout.TWIN_ICONS ->
-        R1Fit.Grey("${l.label} fills the top screen with its own background while two screens are in use (Dual screen).")
-    else -> R1Fit.Grey("${l.label} draws its own background right now — its Layout options › Background can show Voltcap's instead.")
+    // (Update 204: hidden while the layout draws its own background — they were greyed out. They show again once its
+    // Layout options › Background is set to Voltcap's.)
+    else -> R1Fit.Hide
 }
 
 /** Update 202: a second display is connected right now (as SecondScreenHost looks for one): the Dual screen tile's switch. */

@@ -340,6 +340,16 @@ enum class DetailsSection(val label: String) {
 }
 
 /** The category row above the games. */
+/**
+ * Update 204: the layouts that don't show the category's name themselves (the Voltcap row, Tile home and Grid have the
+ * category bar; Timeline, Pocket Quest, Library panel, Spotlight, Cross menu, Side menu… draw it in their design). They
+ * get the floating Category name part by default, once (AppearanceStore.categoryPart204).
+ */
+val CATEGORY_PART_LAYOUTS: List<HomeLayout> = listOf(
+    HomeLayout.TV, HomeLayout.STACKS, HomeLayout.CARDS, HomeLayout.HUB, HomeLayout.RESUME, HomeLayout.HERO_TILES,
+    HomeLayout.TWIN_ICONS, HomeLayout.HERO
+)
+
 enum class CategoryBar(val label: String) {
     FULL("All categories"),
     CURRENT("Just the current one"),
@@ -1017,7 +1027,26 @@ class AppearanceStore(context: Context) {
         }.getOrDefault(s)
     }
 
-    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); lookRework202(oneGameLook(loadSettings())) }.also {
+    /**
+     * Update 204, once: every layout shows the category's name by default (asked for). The layouts that don't draw it
+     * themselves get the Category name part (Edit Home › + Add) added, at a free spot (LauncherScreen,
+     * categoryPartSpot); its ✕ in Edit Home, or Layout options › On the screen, takes it off again for good. Only marked
+     * done once Features could be started (as [lookRework202]).
+     */
+    private fun categoryPart204() {
+        if (prefs.getBoolean("category_part_204", false)) return
+        runCatching {
+            Features.init(appContext)
+            for (l in CATEGORY_PART_LAYOUTS) {
+                if (com.shelf.launcher.ui.HomeWidgets.CATEGORY !in Features.overlayPartsFor(l)) {
+                    Features.toggleOverlayPart(l, com.shelf.launcher.ui.HomeWidgets.CATEGORY)
+                }
+            }
+            prefs.edit().putBoolean("category_part_204", true).apply()
+        }
+    }
+
+    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); categoryPart204(); lookRework202(oneGameLook(loadSettings())) }.also {
         // Scraping in the background reads these too, without the home screen open.
         AnimatedArt.enabled = it.animatedArt
         AnimatedArt.preferAnimatedScraping = it.animatedArt && it.preferAnimatedArt

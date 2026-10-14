@@ -481,7 +481,7 @@ private fun CoverWheel(
                         val real = realScanOf(gArt, typed)
                         // (Update 173: an app without art: its icon on the label / in the case.)
                         val art = coverOrAppIcon(g, cover)
-                        if (real != null) MediaFocus(v == loopFocus) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(2.dp)) }
+                        if (real != null) MediaFocus(v == loopFocus) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(2.dp), platform = g.platform, gameKey = g.stableKey) }
                         else if (pick != null) MediaFocus(v == loopFocus) { PhysicalMedia(pick.shell, typed ?: art, Modifier.fillMaxSize().padding(2.dp), platform = pick.platform, labelIsScan = typed != null, caseCover = art, title = g.name) }
                         else MediaFocus(v == loopFocus) { CaseArt(
                             g.platform, art, typed, Modifier.fillMaxSize().padding(2.dp), title = gameDisplayName(g.name), detail = 240, real = realRef,

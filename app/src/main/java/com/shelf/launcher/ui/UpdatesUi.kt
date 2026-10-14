@@ -77,15 +77,16 @@ private fun VersionCard() {
             }
         }
         Spacer(Modifier.height(6.dp))
-        // Update 202: the automatic check (UpdatePrompt.kt) — at start and every 12 hours, asking on the home screen.
+        // Update 202: the automatic check (UpdatePrompt.kt), asking on the home screen. Update 204: at start, on coming back to
+        // Voltcap and every hour.
         ChipFlow {
             Chip((if (auto) "✓ " else "") + "Check for updates automatically", accent = auto) {
                 auto = !auto; AppUpdates.setAutoCheck(context, auto)
             }
         }
         MutedNote(
-            "A little after Voltcap starts and then every 12 hours while it runs (only with a connection). A new version " +
-                "asks on the home screen: update now, later, or skip that version."
+            "A little after Voltcap starts, when you come back to it (from a game or an app) and every hour while it's on " +
+                "screen, only with a connection. A new version asks on the home screen: update now, later, or skip that version."
         )
         val lastAt = remember(st) { AppUpdates.lastCheckedAt(context) }
         if (lastAt > 0) {

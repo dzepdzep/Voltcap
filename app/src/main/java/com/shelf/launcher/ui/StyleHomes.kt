@@ -918,7 +918,7 @@ internal fun StyleArt(
             ) }
             // Update 129: "Real discs": the game's own scan, standing free.
             realScanOf(gArt, typed) != null -> MediaFocus(g.stableKey == c.game?.stableKey) {
-                RealMediaPicture(typed!!, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused))
+                RealMediaPicture(typed!!, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = g.platform, gameKey = k)
             }
             // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the card.)
             url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)

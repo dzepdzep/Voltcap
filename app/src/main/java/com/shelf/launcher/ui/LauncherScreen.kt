@@ -225,7 +225,9 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
             focusedWide = (appearance.focusedCardStyle == com.shelf.launcher.data.FocusedCardStyle.WIDE ||
                 // "Covers · first one wide" (update 141): the row's first game is a fixed wide capsule at the left
                 // end, always, and every other game a cover — the one you're on too (GameDock lets only game 1 be wide).
-                appearance.focusedCardStyle == com.shelf.launcher.data.FocusedCardStyle.FIRST_ONLY) &&
+                // (Update 204: only where that fixed capsule is drawn — pinnedFirstOn. Elsewhere (the row as a carousel)
+                // it made every game you landed on unfold into a wide capsule; there they stay covers now.)
+                (appearance.focusedCardStyle == com.shelf.launcher.data.FocusedCardStyle.FIRST_ONLY && pinnedFirstOn(appearance))) &&
                 appearance.homeLayout != com.shelf.launcher.data.HomeLayout.TILES && !tileLookOn(appearance),
             otherGames = appearance.otherGamesLook,
             focusPosition = appearance.focusPosition,
@@ -3707,7 +3709,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         MovableWidget(
                             id, defaultAlign = Alignment.CenterEnd, defaultPadding = PaddingValues(0.dp),
                             // The logo starts top left (over the art), the rest stacked on the right.
-                            defaultFrac = if (part == HomeWidgets.LOGO || part == HomeWidgets.LOGO_SGDB || part == HomeWidgets.LOGO_RA) 0f to 0.1f else 1f to (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w
+                            // (Update 204: the category name at its layout's free spot, categoryPartSpot.)
+                            defaultFrac = if (part == HomeWidgets.CATEGORY) categoryPartSpot(overlayLayout)
+                                else if (part == HomeWidgets.LOGO || part == HomeWidgets.LOGO_SGDB || part == HomeWidgets.LOGO_RA) 0f to 0.1f
+                                else 1f to (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w
                         ) {
                             // Update 104: the logo sits straight on the art; the others on the backing picked in
                             // Layout options › Game info on screen (the layout's colours by default).
@@ -3724,6 +3729,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             )
                             // Update 116: Play and the round buttons on their own sit right on the screen (no backing).
                             else if (part == HomeWidgets.H_PLAY || part == HomeWidgets.H_BUTTONS) HomeHeaderBlock(false, only = part)
+                            // Update 204: the category's name on its own (all the categories with "All categories").
+                            else if (part == HomeWidgets.CATEGORY && state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.FULL) {
+                                if (state.games.isNotEmpty() || state.platformFilter != null || state.specialFilter != null) {
+                                    PartBackingBox(state.appearance.homeLayout) {
+                                        CategoryNamePart(categoryKeyLabel(state.sortCategoryKey), state.appearance.nameBackdrop)
+                                    }
+                                }
+                            }
                             else PartBackingBox(state.appearance.homeLayout) {
                                 when (part) {
                                     HomeWidgets.CATEGORY -> CategoriesBar()

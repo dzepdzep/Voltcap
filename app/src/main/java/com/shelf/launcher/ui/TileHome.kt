@@ -689,7 +689,7 @@ private fun HomeTile(
         } else if (realScanOf(cardArtType, typedArtUrl) != null) {
             // Update 129: "Real discs": the game's own scan, standing free.
             Box(Modifier.fillMaxSize().then(if (shineOn) Modifier.masteredShineOverShape(if (focused) 0.55f else 0.32f) else Modifier)) {
-                MediaFocus(focused) { RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(8.dp)) }
+                MediaFocus(focused) { RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(8.dp), platform = game.platform, gameKey = game.stableKey) }
             }
         } else if (request != null) {
             AsyncImage(

@@ -73,11 +73,21 @@ object AppUpdates {
         val app = c.applicationContext
         if (state.value is State.Checking || state.value is State.Downloading) return
         val before = state.value
-        state.value = State.Checking
+        // Update 204: the automatic check runs often now (start, coming back, every hour), so it doesn't flash
+        // "Checking GitHub…" in Settings each time; the Check button still shows it.
+        if (!auto) state.value = State.Checking
         worker.execute {
             val result: State = runCatching {
-                val req = okhttp3.Request.Builder().url(LATEST).header("Accept", "application/vnd.github+json").build()
-                client.newCall(req).execute().use { res ->
+                val b = okhttp3.Request.Builder().url(LATEST).header("Accept", "application/vnd.github+json")
+                // Update 204: asked again with the answer's ETag — GitHub answers "304 nothing new" then, which doesn't
+                // count against its 60-an-hour limit, so checking often costs nothing.
+                val known = lastRelease
+                val tag = etag
+                if (known != null && tag != null) b.header("If-None-Match", tag)
+                client.newCall(b.build()).execute().use { res ->
+                    if (res.code == 304 && known != null) {
+                        return@use if (newer(known.tag, installed(app).first)) State.Available(known) else State.UpToDate(known.tag)
+                    }
                     if (res.code == 404) return@use State.Failed("No release on GitHub yet ($REPO › Releases).")
                     if (!res.isSuccessful) return@use State.Failed("GitHub answered ${res.code}. Try again later.")
                     val j = org.json.JSONObject(res.body?.string().orEmpty())
@@ -93,20 +103,33 @@ object AppUpdates {
                         j.optString("tag_name"), j.optString("name").ifBlank { j.optString("tag_name") },
                         j.optString("body"), url, bytes, j.optString("published_at").take(10)
                     )
+                    // Update 204: kept with its ETag for the next (conditional) ask.
+                    if (r.tag.isNotBlank()) { lastRelease = r; etag = res.header("ETag") }
                     if (newer(r.tag, installed(app).first)) State.Available(r) else State.UpToDate(r.tag)
                 }
             }.getOrElse { State.Failed("Couldn't reach GitHub (${it.javaClass.simpleName}). Check the connection.") }
             val now = System.currentTimeMillis()
             lastChecked.value = now
             // Update 202: an automatic check that failed keeps what Settings showed (it tries again later on its own).
-            state.value = if (auto && result is State.Failed) before else result
-            // Update 202: the last check that reached GitHub, kept across restarts (the 12-hour spacing counts from it).
+            // (Update 204: nor does it replace a download under way or one waiting to install, started meanwhile.)
+            val cur = state.value
+            if (!(auto && (result is State.Failed || cur is State.Downloading || cur is State.Ready))) state.value = result
+            else if (auto && result is State.Failed && cur is State.Checking) state.value = before
+            // Update 202: the last check that reached GitHub, kept across restarts.
             if (result !is State.Failed) prefs(app).edit().putLong(KEY_LAST, now).apply()
-            if (auto && result is State.Available && result.release.apkUrl != null && !isSkipped(result.release.tag)) {
+            // Update 204: a failed automatic check tries again after RETRY_MS (not the full spacing).
+            if (auto) lastFailed = if (result is State.Failed) now else 0L
+            if (auto && result is State.Available && result.release.apkUrl != null && !isSkipped(result.release.tag) &&
+                !laterFor(result.release.tag, now)
+            ) {
                 prompt.value = result.release
             }
         }
     }
+
+    /** Update 204: the newest release seen and its ETag (this run only), for the conditional ask. */
+    @Volatile private var lastRelease: Release? = null
+    @Volatile private var etag: String? = null
 
     /** Downloads [r]'s APK, then opens Android's installer for it. */
     fun download(c: Context, r: Release) {
@@ -182,12 +205,21 @@ object AppUpdates {
     private const val KEY_LAST = "last"
     private const val KEY_SKIPPED = "skipped"
 
-    /** Update 202: at most one automatic check every 12 hours while Voltcap runs (and on coming back to it after that). */
-    const val AUTO_EVERY_MS = 12L * 3600_000L
-    /** Update 202: after an automatic check that failed (GitHub down, rate limit), the next try waits this long. */
-    private const val RETRY_MS = 3600_000L
-    /** Update 202: a quick restart (a crash, Android closing the launcher) doesn't ask GitHub again within this. */
+    /**
+     * Update 204: while Voltcap stays on screen, an automatic check every hour (it was every 12 hours — a version
+     * released the same day was never noticed until the next day).
+     */
+    const val AUTO_EVERY_MS = 3600_000L
+    /** Update 204: after an automatic check that failed (GitHub down, rate limit), the next try waits this long. */
+    private const val RETRY_MS = 15L * 60_000L
+    /**
+     * Update 204: Voltcap starting and coming back to it (from a game, an app) check too, at most this often — a quick
+     * restart or popping in and out of a game doesn't ask GitHub every time. (Before, coming back didn't check at all
+     * within the 12 hours.)
+     */
     private const val START_MIN_GAP_MS = 10L * 60_000L
+    /** Update 204: "Later" holds the question for this release this long (or until Voltcap starts again). */
+    private const val LATER_MS = 12L * 3600_000L
 
     /** Update 202: the newer release the home screen should ask about now ("Voltcap x is out"), or null. */
     val prompt = mutableStateOf<Release?>(null)
@@ -199,9 +231,14 @@ object AppUpdates {
     val auto = mutableStateOf(true)
 
     @Volatile private var loaded = false
-    /** Update 202: the start's own check hasn't run yet (no connection at start: it runs once there is one). */
-    @Volatile private var startPending = true
+    /** Update 204: when an automatic check last asked GitHub (this run), and when one last failed (0 = it didn't). */
     @Volatile private var lastAttempt = 0L
+    @Volatile private var lastFailed = 0L
+    /** Update 204: the release "Later" was picked for, and when (this run only: a new start asks again). */
+    @Volatile private var laterTag: String? = null
+    @Volatile private var laterAt = 0L
+
+    private fun laterFor(tag: String, now: Long): Boolean = laterTag == tag && now - laterAt in 0L until LATER_MS
 
     /** Update 202: reads the prefs into [skipped] / [auto] once per run. */
     fun load(c: Context) {
@@ -246,8 +283,14 @@ object AppUpdates {
         prefs(c).edit().remove(KEY_SKIPPED).apply()
     }
 
-    /** Update 202: "Later" — no question until the next automatic check (next start, or 12 hours on). */
-    fun later() { prompt.value = null }
+    /**
+     * Update 202: "Later" — no question for now. Update 204: not again for this version for 12 hours while Voltcap
+     * runs (the checks are hourly now), and again at the next start.
+     */
+    fun later() {
+        prompt.value?.let { laterTag = it.tag; laterAt = System.currentTimeMillis() }
+        prompt.value = null
+    }
 
     /**
      * Update 202: whether Settings' "Updates & downloads" gets its dot: a newer version is known (or downloading /
@@ -271,25 +314,25 @@ object AppUpdates {
     }.getOrDefault(true)
 
     /**
-     * Update 202: the automatic check. [atStart]: the one a little after Voltcap starts (every start, so "Later" asks
-     * again next time; not within 10 minutes of the last check). Otherwise (every few minutes while Voltcap is on
-     * screen, and on coming back to it) only once 12 hours have passed since the last check — or the start's check is
-     * still owed because there was no connection then. Quiet: never shows an error.
+     * Update 202: the automatic check (quiet: never shows an error).
+     * Update 204: [atStart] a little after Voltcap starts, [resumed] on coming back to it (from a game, an app): each
+     * when no check ran in the last 10 minutes. Otherwise (the hourly look while Voltcap is on screen) once an hour has
+     * passed. Before, everything after the start waited 12 hours, so a version out the same day was never asked about.
+     * A failed try waits 15 minutes before the next. Only with a connection.
      */
-    fun autoCheckIfDue(c: Context, atStart: Boolean = false) {
+    fun autoCheckIfDue(c: Context, atStart: Boolean = false, resumed: Boolean = false) {
         load(c)
         // The start's check comes first (a little after start); until then coming back to Voltcap doesn't check.
         if (atStart) startRan = true
         if (!startRan || !auto.value) return
         val now = System.currentTimeMillis()
-        // A failed try (GitHub down, rate limit) waits an hour before the next.
-        if (now - lastAttempt in 0L until RETRY_MS) return
-        val since = now - lastCheckedAt(c)
-        val gap = if (startPending) START_MIN_GAP_MS else AUTO_EVERY_MS
-        if (since in 0L until gap) { startPending = false; return }
+        if (now - lastFailed in 0L until RETRY_MS) return
+        // The last ask: this run's, else the one saved (a restart within 10 minutes doesn't ask again).
+        val last = maxOf(lastAttempt, lastCheckedAt(c))
+        val gap = if (atStart || resumed) START_MIN_GAP_MS else AUTO_EVERY_MS
+        if (now - last in 0L until gap) return
         if (!online(c)) return
         if (state.value is State.Checking || state.value is State.Downloading) return
-        startPending = false
         lastAttempt = now
         check(c, auto = true)
     }
