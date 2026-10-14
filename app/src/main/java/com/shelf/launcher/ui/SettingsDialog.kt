@@ -559,6 +559,11 @@ fun SettingsDialog(
                                     )
                                     Spacer(Modifier.height(12.dp))
                                     SecondScreenExtras(appearance, onAppearanceChange, hasSecondScreen)
+                                    // Update 188.
+                                    if (hasSecondScreen) {
+                                        Spacer(Modifier.height(12.dp))
+                                        FoldGroup("Dim the second screen", summary = "When nobody uses it, also during a game", key = "second_dim") { ShelfCard { SecondDimSettings() } }
+                                    }
                                 }
                                 "Stats" -> Column {
                                     RecapsCard(onOpenYearRecap)
@@ -586,7 +591,7 @@ fun SettingsDialog(
                                 "Device" -> Column {
                                     FoldGroup("This device", key = "dev_info", startOpen = true) { DeviceInfoContent(paneScroll) }
                                     // Update 187.
-                                    FoldGroup("Battery saver", summary = "Voltcap rests at low battery and while you play", key = "dev_saver") { Column { BatterySaverSettings() } }
+                                    FoldGroup("Battery saver", summary = "Voltcap rests at low battery and while you play", key = "dev_saver") { ShelfCard { BatterySaverSettings() } }
                                     FoldGroup("Battery watcher", summary = "How much battery Voltcap uses, and what to change", key = "dev_battery") { BatteryWatchCard() }
                                     FoldGroup("Works on this device", summary = "Which effects and features this handheld can run", key = "dev_compat") { DeviceCompatCard() }
                                     FoldGroup("Sleep mode", summary = "Wi-Fi / Bluetooth off while the screen is off", key = "dev_sleep") { SleepModeCard() }

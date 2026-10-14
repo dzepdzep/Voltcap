@@ -30,6 +30,7 @@ object GameMode {
         if (_playing.value) return
         enteredAt = System.currentTimeMillis()
         _playing.value = true
+        BatterySaver.gameRunning = true // (Update 188)
         runCatching {
             com.shelf.launcher.device.MemoryBudget.release(context, android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND)
         }
@@ -38,6 +39,7 @@ object GameMode {
     /** Back in Voltcap: background work picks up where it stopped. */
     fun exit() {
         _playing.value = false
+        BatterySaver.gameRunning = false // (Update 188)
     }
 
     /**
@@ -47,7 +49,7 @@ object GameMode {
      * then waited forever.
      */
     fun userIsHere() {
-        if (_playing.value && System.currentTimeMillis() - enteredAt > 6_000L) _playing.value = false
+        if (_playing.value && System.currentTimeMillis() - enteredAt > 6_000L) { _playing.value = false; BatterySaver.gameRunning = false }
     }
 
     /** Suspends while a game is in front (background loops call this between items). */

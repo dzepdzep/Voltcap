@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import com.shelf.launcher.ui.theme.ShelfTheme
 
 /**
@@ -39,6 +40,7 @@ internal fun jumpAnchor(label: String): Modifier {
     val flash = remember { Animatable(0f) }
     val accent = ShelfTheme.accent
     val folds = LocalFoldKeys.current
+    val flashScope = androidx.compose.runtime.rememberCoroutineScope()
     LaunchedEffect(hit) {
         if (hit) {
             // Its groups stay open once the jump is over.
@@ -46,9 +48,13 @@ internal fun jumpAnchor(label: String): Modifier {
             // (Let the page and its group open first.)
             kotlinx.coroutines.delay(380)
             runCatching { req.bringIntoView() }
+            // (Update 187 (fix): the light fades in its own coroutine — clearing the jump ends this effect, which used to
+            // stop the fade at its start and leave the setting lit up for good.)
+            flashScope.launch {
+                flash.snapTo(1f)
+                flash.animateTo(0f, tween(1800))
+            }
             if (SettingsJump.pending.equals(label, ignoreCase = true)) SettingsJump.pending = null
-            flash.snapTo(1f)
-            flash.animateTo(0f, tween(1800))
         }
     }
     return Modifier

@@ -481,7 +481,8 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
             // As big as fits its side of the window (some room kept for its turn and its shadow).
             // (Update 186: always as big as fits — the real-size scaling made a PlayStation or Game Boy case small here,
             // where it stands alone.)
-            val w = minOf(slot.width * 0.92f, slot.height * 0.88f * aspect).coerceAtLeast(8f)
+            // (Update 188: bigger still — it stood small in its space on the AYN Thor.)
+            val w = minOf(slot.width * 0.98f, slot.height * 0.95f * aspect).coerceAtLeast(8f)
             val h = w / aspect
             val left = slot.left + (slot.width - w) / 2f
             val top = slot.top + (slot.height - h) / 2f
@@ -532,7 +533,7 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                     InspectKind.BOX -> Case3D(
                         piece.game, piece.front, piece.physical, 0f, aspect, Modifier.fillMaxSize(),
                         // (Update 162: Case3D's back face and its angle read while drawing.)
-                        back = piece.back, yawOf = yawOf
+                        back = piece.back, yawOf = yawOf, fill = 0.97f
                     )
                     InspectKind.SLAB -> InspectSlab(piece, yawOf)
                     InspectKind.DISC -> InspectDisc(piece, yawOf)

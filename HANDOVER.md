@@ -256,6 +256,34 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 188
+- **SecondDim** (ui/SecondDim.kt): plain Views, because Compose is paused while a game is in front and the
+  Presentation stays up.
+  - SecondScreen's Presentation content is a FrameLayout (ComposeView + a black `dimLayer`).
+  - `SecondDim.attach(window, layer)` / `detach`. `poke()` comes from MainActivity key/touch/generic motion, onResume,
+    and the Presentation's `dispatchTouchEvent`. While dimmed, the whole first gesture is swallowed and wakes it.
+  - After `secondDimAfter` s: the layer fades to `secondDimLevel` %; with `secondDimBacklight`,
+    `window.screenBrightness` = 0.02 (per-display override, to check on the Thor).
+- **AnimatedArt.gates()** walks the weak set with hasNext/next (toList → `first()` crashed with
+  NoSuchElementException after a GC).
+- **BatterySaver.away** = `saverAway && notInFront && gameRunning`. `gameRunning` is set by GameMode
+  enter/exit/userIsHere. On the Thor, display 4's launcher3 SecondaryDisplayLauncher becomes the global top-resumed
+  activity after any app there closes.
+- **Case3D:**
+  - `shape` = the front bitmap's own aspect (clamped 0.8–1.25× of `aspect`) unless it's framed in a template.
+  - `fitBack` stretches a back within ±20 %, else crops.
+  - `fill` param (inspect passes 0.97).
+  - `CASE_JEWEL_BLACK` (PS1): a black hinge strip at u 0–0.062 and dark edges.
+- **Inspect size:** `min(slot.w × 0.98, slot.h × 0.95 × aspect)`.
+- **RomLibraryPrefetch:** started in MainActivity.onCreate (once per process); `loadRomCache` = `take { romCacheFile }`.
+  Logs "Voltcap library": N games read in X ms, and shown X ms after start.
+- **Settings:**
+  - `jumpAnchor`'s flash fades in a `rememberCoroutineScope` (it used to be cancelled when `pending` cleared).
+  - Intro and popup fit `screenSizeDp().height × 0.92` with a weighted scroll area.
+  - FoldGroups `second_dim` (Screens) and `dev_saver` (ShelfCard).
+- Thor check of 187: the intro was too tall (fixed); "away" dropped home frames from 411 to 12 per 5 s with an app on
+  the second display.
+
 ## State after update 187
 - **BatterySaver** (data/BatterySaver.kt): `low` (mode AUTO: not plugged and level ≤ `saverLowAt`, or `systemSaver` with
   `saverFollowSystem`; ALWAYS; OFF), `away` (`saverAway` && `notInFront`), `resting` = either.

@@ -164,6 +164,7 @@ fun SecondScreenHost(
     var showing by remember { mutableStateOf(false) }
 
     DisposableEffect(display?.displayId, activity, suppressed) {
+        var dimView: android.view.View? = null // (Update 188)
         val presentation = if (display != null && activity != null && !suppressed) {
             runCatching {
                 object : Presentation(activity, display) {
@@ -174,6 +175,21 @@ fun SecondScreenHost(
                         runCatching { currentActivity() }
                         val handled = runCatching { activity.dispatchKeyEvent(event) }.getOrDefault(false)
                         return handled || super.dispatchKeyEvent(event)
+                    }
+                    // Update 188: a touch here keeps it lit; while it's dimmed (SecondDim) the first touch only wakes it —
+                    // that whole touch is used up, so it doesn't press what's under it.
+                    private var swallow = false
+                    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+                        if (ev.actionMasked == android.view.MotionEvent.ACTION_DOWN) swallow = SecondDim.dimmed
+                        if (swallow) {
+                            if (ev.actionMasked == android.view.MotionEvent.ACTION_UP || ev.actionMasked == android.view.MotionEvent.ACTION_CANCEL) {
+                                swallow = false
+                                SecondDim.poke()
+                            }
+                            return true
+                        }
+                        SecondDim.poke()
+                        return super.dispatchTouchEvent(ev)
                     }
                     override fun dispatchGenericMotionEvent(event: android.view.MotionEvent): Boolean {
                         val handled = runCatching { activity.dispatchGenericMotionEvent(event) }.getOrDefault(false)
@@ -188,7 +204,10 @@ fun SecondScreenHost(
                     }
                 }.apply {
                     setCancelable(false)
-                    setContentView(ComposeView(context).apply {
+                    // Update 188: the screen's content with a black layer over it for dimming (SecondDim).
+                    val dimLayer = android.view.View(context).apply { setBackgroundColor(android.graphics.Color.BLACK) }
+                    val root = android.widget.FrameLayout(context)
+                    root.addView(ComposeView(context).apply {
                         setParentCompositionContext(parent)
                         setContent {
                             // Watch touches without consuming them, only to reset the idle timers.
@@ -222,7 +241,11 @@ fun SecondScreenHost(
                                 }
                             }
                         }
-                    })
+                    }, android.widget.FrameLayout.LayoutParams(-1, -1))
+                    root.addView(dimLayer, android.widget.FrameLayout.LayoutParams(-1, -1))
+                    setContentView(root)
+                    SecondDim.attach(window, dimLayer)
+                    dimView = dimLayer
                     window?.decorView?.let { decor ->
                         decor.setViewTreeLifecycleOwner(activity)
                         decor.setViewTreeViewModelStoreOwner(activity)
@@ -242,6 +265,8 @@ fun SecondScreenHost(
             showing = false
             SecondScreenShown.value = false
             presentationHolder[0] = null
+            // (Update 188: its dimming layer goes with it.)
+            dimView?.let { SecondDim.detach(it) }
             presentation?.let { runCatching { it.dismiss() } }
         }
     }

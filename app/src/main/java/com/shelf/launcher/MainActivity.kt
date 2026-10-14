@@ -105,6 +105,8 @@ class MainActivity : ComponentActivity() {
         CrashGuard.install(this)
         // Credential stores (Keystore-backed, slow right after a reboot) open in the background now.
         com.shelf.launcher.data.StartupPrewarm.start(this)
+        // Update 188: the saved list of games read now, alongside everything else (RomLibraryPrefetch).
+        runCatching { com.shelf.launcher.data.RomLibraryPrefetch.start(this) }
         val crashReport = CrashGuard.takeReport(this)
         if (crashReport == null) CrashGuard.beginLauncher(this)
 
@@ -265,6 +267,7 @@ class MainActivity : ComponentActivity() {
         com.shelf.launcher.ui.HomeIdle.poke()
         com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
         com.shelf.launcher.data.BatterySaver.poke() // (Update 187)
+        com.shelf.launcher.ui.SecondDim.poke() // (Update 188: using Voltcap keeps its second screen lit)
         // Update 152: moving through games: animated covers hold still for a moment (AnimatedArt.onMove).
         if (event.action == android.view.KeyEvent.ACTION_DOWN && when (event.keyCode) {
                 android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
@@ -282,12 +285,14 @@ class MainActivity : ComponentActivity() {
         com.shelf.launcher.ui.HomeIdle.poke()
         com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
         com.shelf.launcher.data.BatterySaver.poke() // (Update 187)
+        com.shelf.launcher.ui.SecondDim.poke() // (Update 188: using Voltcap keeps its second screen lit)
         if (ev.actionMasked == android.view.MotionEvent.ACTION_MOVE) com.shelf.launcher.data.AnimatedArt.onMove() // (Update 152)
         return super.dispatchTouchEvent(ev)
     }
 
     override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent): Boolean {
         com.shelf.launcher.ui.HomeIdle.poke()
+        com.shelf.launcher.ui.SecondDim.poke() // (Update 188)
         return super.dispatchGenericMotionEvent(ev)
     }
 
@@ -308,6 +313,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Update 188: back in Voltcap (a game ended): its second screen lights up again.
+        com.shelf.launcher.ui.SecondDim.poke()
         // Update 125: Sleep mode starts listening as soon as the system rights are there (they can come a moment after start-up).
         runCatching { com.shelf.launcher.data.SleepRadios.init(this) }
         // Adaptive quality: frames after coming back (a game ended, screen on) are always slow; skip them.

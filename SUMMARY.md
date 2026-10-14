@@ -4,6 +4,56 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (188): the second screen dims when unused (also during a game), a crash fixed, PlayStation cases with their black ridge and not cut off, bigger opened cases, games at start-up sooner, battery-saver fixes
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (2): `src_copy\data\RomLibraryPrefetch.kt`,
+`src_copy\ui\SecondDim.kt`. Changed (13): `src_copy\LauncherViewModel.kt`, `src_copy\MainActivity.kt`,
+`src_copy\data\AnimatedArt.kt`, `src_copy\data\BatterySaver.kt`, `src_copy\data\Features.kt`, `src_copy\data\GameMode.kt`,
+`src_copy\ui\BatterySaverUi.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\SecondScreen.kt`,
+`src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\SettingsJump.kt`.
+
+**Files to delete:** none.
+
+### The second screen dims when nobody uses it (new: Settings › Screens › Dim the second screen)
+- After a while with no touch on it and no press in Voltcap, a black layer fades over Voltcap's second screen and its
+  backlight goes down. This also works while a game runs on the other screen; before, the second screen stayed at
+  full brightness for the whole game (checked on the Thor).
+- The first touch on it only lights it up again; that touch doesn't press anything. A press in Voltcap lights it too.
+- **Dim the second screen after:** Never · 30 s · 1 min (default) · 2 min · 5 min.
+- **How dark:** Dim · Dark (default) · Black.
+- **Backlight down too** (on).
+- The same settings are under Settings › Device › Battery saver.
+
+### Crash fixed
+- Voltcap closed by itself on the Thor (NoSuchElementException in the moving-covers list): reading the list while
+  Android had just thrown a picture away crashed it.
+
+### PlayStation cases
+- **Not cut off any more:** a 3D case now takes its scan's own shape (within a quarter of the console's case
+  shape). Before, it cut the cover to the template's shape: Donald Duck lost the right side of its cover, the Ubi
+  Soft logo.
+- **The back** is fitted instead of cut when it's a little off the case's shape (a jewel case back with its side flaps).
+- **The black ridge:** PlayStation cases now have the black tray's hinge ridge down the left of the front and dark,
+  smoked edges, like the real ones. Other CD jewel cases keep the clear grey look.
+- **Opened case bigger:** the case or 3D piece you open now fills almost all of its side of the game window.
+
+### Start-up
+- Your saved game list is read the moment Voltcap starts, on its own thread. On the Thor the categories showed
+  "0 games" and empty tiles for about two seconds after a start, until the list had been read.
+- The log notes how long it took, under the tag "Voltcap library".
+
+### Battery saver fixes (update 187)
+- **Rest while you play** now only rests while a game you started from Voltcap runs. On the Thor, the second
+  display's own launcher can hold the controller after any app there closes, and Voltcap then rested while you were
+  using it.
+- **The note about it** now fits the screen with its buttons showing. It's shorter, and it says your saves still sync.
+- **Settings › Device › Battery saver** is in a card like the other groups.
+- **Settings jumps** (the note's Settings button, search, R1 hold) no longer leave the setting highlighted for good.
+
+---
+
 ## Update — 14 Oct 2026 (187): a battery saver (low battery, and while you play on the other screen), the carousel stage in the game's colours, Box flow's box sways, a glow in Pocket ribbon, the game on Pocket classic's top screen
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

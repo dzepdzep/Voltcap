@@ -37,7 +37,9 @@ internal fun Case3D(
      */
     realFront: Boolean = false,
     /** Update 162: a picture for the case's back (the game window's inspect turns it round); null: plain plastic. */
-    back: Any? = null
+    back: Any? = null,
+    /** Update 188: how much of [modifier]'s room the front takes (the rest is room for its turn). */
+    fill: Float = 0.94f
 ) {
     val title = gameDisplayName(g.name)
     // The spine, in the same order as the Spines look (GameSpine): the real scan first, then your console spine.
@@ -96,18 +98,30 @@ internal fun Case3D(
     val noArt = cover == null && ownFront == null
     val appIcon = if (noArt && g.sourceType == com.shelf.launcher.data.SourceType.APP) rememberAppIcon(g.packageName) else null
     val noCover = remember(title, g.hue, noArt, appIcon) { if (noArt) plainFront(title, g.hue, appIcon?.asAndroidBitmap()) else null }
-    val face = remember(front, noCover, aspect, band) {
+    // Update 188: a scanned front (or a box scan used as the cover) keeps its own shape — the case takes it, within a
+    // quarter of the console's case shape — instead of being cut to the template's shape: a PlayStation case lost the
+    // right side of its cover (the publisher's logo) that way.
+    val framedFront = front != null && band != null && tplFront != null &&
+        !isBoxFront(tplFront, front.width.toFloat() / front.height.coerceAtLeast(1))
+    val shape = remember(front, framedFront, aspect) {
+        val f = front
+        if (f == null || framedFront) aspect
+        else (f.width.toFloat() / f.height.coerceAtLeast(1)).coerceIn(aspect * 0.8f, aspect * 1.25f)
+    }
+    val face = remember(front, noCover, shape, band) {
         (front ?: noCover)?.let { f ->
             // (Update 171: not over a box scan used as the cover — it has its own band and logo, they showed twice.)
             val whole = tplFront != null && isBoxFront(tplFront, f.width.toFloat() / f.height.coerceAtLeast(1))
-            if (band != null && tplFront != null && !whole) framed(f, band, fit?.win ?: tplFront.win) else cropTo(f, aspect)
+            if (band != null && tplFront != null && !whole) framed(f, band, fit?.win ?: tplFront.win) else cropTo(f, shape)
         }
     }
     // (Update 170: a printed back is made from its parts; a scanned one is a picture.)
     val printedBmp = rememberPrintedBack(back as? PrintedBack)
     val scannedBmp = rememberSoftBitmap(back.takeIf { it !is PrintedBack }, 480)
     val backBmp = printedBmp ?: scannedBmp
-    val backFace = remember(backBmp, aspect) { backBmp?.let { cropTo(it, aspect) } }
+    // (Update 188: a back scan a little off the case's shape — a jewel case's back with its side flaps — is fitted, not
+    // cut: its edges, text and logos stay.)
+    val backFace = remember(backBmp, shape) { backBmp?.let { fitBack(it, shape) } }
     // Update 166: while its cover is still loading, the front in the game's own colour (not near-black: scrolling a
     // carousel of 3D cases showed dark fronts for a moment).
     val loading = remember(g.hue) { hueFront(g.hue) }
@@ -117,9 +131,9 @@ internal fun Case3D(
     Canvas(modifier) {
         val yawNow = yawOf?.invoke() ?: yaw
         val shadeNow = shadeOf?.invoke() ?: shade
-        val fit = minOf(size.height, size.width / aspect) * 0.94f
+        val fit = minOf(size.height, size.width / shape) * fill
         val h = fit
-        val w = h * aspect
+        val w = h * shape
         val d = h * depth
         drawIntoCanvas { canvas ->
             CaseDraw.draw(
@@ -135,9 +149,12 @@ internal fun Case3D(
 internal const val CASE_KEEP = 0
 internal const val CASE_JEWEL = 1
 internal const val CASE_CARD = 2
+/** Update 188: a PlayStation jewel case — clear lid over a black tray: the black hinge ridge down the left, smoked edges. */
+internal const val CASE_JEWEL_BLACK = 3
 
 internal fun caseStyleOf(platform0: String?): Int = when (LookStyles.casePlatform(platform0)) {
-    "PS1", "Dreamcast", "Saturn", "SegaCD", "NeoGeoCD", "PCEngineCD", "3DO", "CDi" -> CASE_JEWEL
+    "PS1" -> CASE_JEWEL_BLACK
+    "Dreamcast", "Saturn", "SegaCD", "NeoGeoCD", "PCEngineCD", "3DO", "CDi" -> CASE_JEWEL
     "NES", "SNES", "N64", "GB", "GBC", "GBA", "VirtualBoy", "Atari2600", "Atari7800", "Jaguar", "ColecoVision", "Lynx" -> CASE_CARD
     else -> CASE_KEEP
 }
@@ -201,6 +218,19 @@ private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap,
     c.drawBitmap(frame, null, android.graphics.RectF(0f, 0f, w.toFloat(), h.toFloat()), p)
     out
 }.getOrDefault(art)
+
+/**
+ * Update 188: a case's back picture at [aspect]: within about a fifth of it, gently stretched (nothing cut); further off,
+ * cut in the middle like the front.
+ */
+private fun fitBack(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+    val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
+    if (aspect <= 0f || kotlin.math.abs(cur - aspect) < 0.02f) return src
+    val k = cur / aspect
+    if (k < 0.82f || k > 1.22f) return cropTo(src, aspect)
+    val w = (src.height * aspect).toInt().coerceAtLeast(1)
+    return runCatching { android.graphics.Bitmap.createScaledBitmap(src, w, src.height, true) }.getOrDefault(src)
+}
 
 /** [src] cut in the middle to [aspect] (width / height), no stretching. */
 private fun cropTo(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
@@ -411,6 +441,20 @@ private object CaseDraw {
                             }
                             val px1 = (w / 260f).coerceIn(0.8f, 3f)
                             when (style) {
+                                CASE_JEWEL_BLACK -> {
+                                    // Update 188: a PlayStation case — the black tray's hinge ridge down the left (solid
+                                    // black, a lit edge on its rounded top), then the clear lid's edges.
+                                    path.reset()
+                                    path.moveTo(px(0f, 0f), py(0f, 0f)); path.lineTo(px(0.062f, 0f), py(0.062f, 0f))
+                                    path.lineTo(px(0.062f, 1f), py(0.062f, 1f)); path.lineTo(px(0f, 1f), py(0f, 1f)); path.close()
+                                    fill.shader = null; fill.color = scaled(0xF20C0C0E.toInt(), light); c.drawPath(path, fill)
+                                    lineOn(0.022f, 0f, 0.022f, 1f, scaled(0x55FFFFFF, light), px1 * 1.2f)
+                                    lineOn(0.06f, 0f, 0.06f, 1f, scaled(0x99000000.toInt(), light), px1 * 1.4f)
+                                    lineOn(0.072f, 0f, 0.072f, 1f, scaled(0x77FFFFFF, light), px1)
+                                    lineOn(0.09f, 0.012f, 0.99f, 0.012f, scaled(0x55FFFFFF, light), px1)
+                                    lineOn(0.988f, 0.012f, 0.988f, 0.988f, scaled(0x44FFFFFF, light), px1)
+                                    lineOn(0.09f, 0.988f, 0.99f, 0.988f, scaled(0x33000000, light), px1)
+                                }
                                 CASE_JEWEL -> {
                                     // The hinge down the left: a dark groove and its lit ridge, and the clear lid's edges.
                                     lineOn(0.055f, 0f, 0.055f, 1f, scaled(0x66000000, light), px1 * 1.6f)
@@ -448,12 +492,13 @@ private object CaseDraw {
                         fill.shader = null
                         val base = when (style) {
                             CASE_JEWEL -> if (f == 3) 0xFFB9BEC8.toInt() else 0xFF9AA0AB.toInt()
+                            CASE_JEWEL_BLACK -> if (f == 3) 0xFF3C3E44.toInt() else 0xFF26282D.toInt()
                             CASE_CARD -> if (f == 3) 0xFF4A4740.toInt() else 0xFF3A3832.toInt()
                             else -> if (f == 3) 0xFF3A3D47.toInt() else 0xFF22242C.toInt()
                         }
                         fill.color = scaled(base, l)
                         c.drawPath(pathOf(), fill)
-                        if (style == CASE_JEWEL) {
+                        if (style == CASE_JEWEL || style == CASE_JEWEL_BLACK) {
                             // Its ribs along the edge.
                             for (k in 1..3) lineOn(0f, k / 4f, 1f, k / 4f, scaled(0x33FFFFFF, l), 1f)
                         }

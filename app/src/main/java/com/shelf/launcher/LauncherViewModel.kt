@@ -4394,14 +4394,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     /** A real scan has set [currentRomGames]: the saved list (read in the background) must not replace it. */
     @Volatile private var romScanApplied = false
 
-    private fun loadRomCache(): List<Game> {
-        if (!romCacheFile.exists()) return emptyList()
-        return runCatching {
-            com.google.gson.Gson().fromJson<List<Game>>(romCacheFile.readText(), romCacheType)
-                // Gson can leave fields null in a damaged file.
-                ?.filter { it.name != null && it.platform != null && it.sourceType != null }
-        }.getOrNull().orEmpty()
-    }
+    // (Update 188: read from the moment Voltcap starts — RomLibraryPrefetch.)
+    private fun loadRomCache(): List<Game> = com.shelf.launcher.data.RomLibraryPrefetch.take { romCacheFile }
 
     private fun saveRomCache(games: List<Game>) {
         runCatching {
@@ -5997,6 +5991,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             if (!romScanApplied && currentRomGames.isEmpty() && cached.isNotEmpty()) {
                 currentRomGames = cached
                 recombineGames()
+                runCatching { android.util.Log.i("Voltcap library", "shown ${android.os.SystemClock.elapsedRealtime() - android.os.Process.getStartElapsedRealtime()} ms after start") }
             }
         }
 

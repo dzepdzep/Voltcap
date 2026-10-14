@@ -872,6 +872,12 @@ object Features {
     enum class SceneFps(val label: String, val frameMs: Int) { AUTO("Automatic", 0), FPS60("60 fps", 14), FPS30("30 fps", 28) }
     val sceneFps = EnumPref("scene_fps", SceneFps.AUTO, SceneFps.values())
     val secondSlowWhenUnused = BoolPref("second_slow_unused", true)
+    /** Update 188: the second screen dims after this many seconds unused (0 = never; ui/SecondDim.kt). */
+    val secondDimAfter = IntPref("second_dim_after", 60, 0..900)
+    /** Update 188: how dark it goes, % black (100 = black). */
+    val secondDimLevel = IntPref("second_dim_level", 85, 30..100)
+    /** Update 188: its backlight turned down too while dimmed. */
+    val secondDimBacklight = BoolPref("second_dim_backlight", true)
 
     // ---- Save Vault ----
     /** The save grid wraps round: scrolling past the end starts again at the beginning. */

@@ -50,15 +50,22 @@ object BatterySaver {
             Mode.AUTO -> !plugged && ((level in 1..Features.saverLowAt.state.value) || (Features.saverFollowSystem.state.value && systemSaver))
         }
 
-    /** Away rest on now (see the class notes). */
-    val away: Boolean get() = Features.saverAway.state.value && notInFront
+    /** Update 188: a game started from Voltcap is running (GameMode, as Compose state). */
+    var gameRunning by mutableStateOf(false)
+
+    /**
+     * Away rest on now (see the class notes). Update 188: only while a game started from Voltcap runs — on the AYN Thor
+     * the other screen's own launcher can hold the controller after any app there closes, and Voltcap then rested
+     * while you were using it.
+     */
+    val away: Boolean get() = Features.saverAway.state.value && notInFront && gameRunning
 
     /** Either rest. */
     val resting: Boolean get() = low || away
 
     /** Why it's resting, for the little note in Settings (null: not resting). */
     fun reason(): String? = when {
-        away -> "Resting: a game or another app has the controller."
+        away -> "Resting: your game has the controller."
         Features.saverMode.state.value == Mode.ALWAYS -> "Saving battery all the time."
         low && systemSaver && level > Features.saverLowAt.state.value -> "Saving battery: Android's Battery Saver is on."
         low -> "Saving battery: $level % left."

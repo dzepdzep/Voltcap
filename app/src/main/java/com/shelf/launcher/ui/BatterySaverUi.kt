@@ -7,12 +7,14 @@ import android.content.IntentFilter
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatterySaver
+import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,12 +65,12 @@ internal fun BatterySaverDriver() {
 @Composable
 internal fun BatterySaverSettings() {
     MutedNote(
-        "Voltcap keeps its own battery use down. Low battery: below the level set here (not plugged in) the theme " +
-            "animation holds still, covers stop moving, video clips wait and the card effects rest — moving through " +
-            "your games stays as it is. Plugged in, everything comes back. Games themselves are never slowed down."
+        "Low battery: below the level set here (not plugged in) the theme animation holds still, covers stop moving, " +
+            "video clips wait and the card effects rest. Moving through your games stays as it is, and plugged in " +
+            "everything comes back. Games are never slowed down."
     )
     Spacer(Modifier.height(6.dp))
-    val now = BatterySaver.reason() ?: ("Not resting now · battery ${BatterySaver.level} %" + if (BatterySaver.plugged) ", plugged in" else "")
+    val now = BatterySaver.reason() ?: ("Not saving now · battery ${BatterySaver.level} %" + if (BatterySaver.plugged) ", plugged in" else "")
     Text(now, color = if (BatterySaver.resting) ShelfTheme.accent else ShelfTheme.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(8.dp))
     StyleChoice("Save battery", BatterySaver.Mode.values(), Features.saverMode.state.value, { it.label }) { Features.saverMode.value = it }
@@ -82,20 +84,54 @@ internal fun BatterySaverSettings() {
     }
     SwitchRow(
         Icons.Filled.SportsEsports, "Rest while you play",
-        "On a two-screen handheld a game on one screen leaves Voltcap showing on the other. While the game (or another " +
-            "app) has the controller, Voltcap rests as if it were behind it: no animation, moving covers, video clips, " +
-            "slideshows or timers. A touch on Voltcap's screen wakes it.",
+        "On a two-screen handheld a game on one screen leaves Voltcap showing on the other. While a game you started " +
+            "from Voltcap has the controller, Voltcap rests as if it were behind it: no animation, moving covers, video " +
+            "clips, slideshows or timers. A touch on Voltcap's screen wakes it.",
         Features.saverAway.state.value, { Features.saverAway.value = it }
+    )
+    // Update 188: the second screen's dimming, here too (it's in Settings › Screens as well).
+    if (SecondScreenShown.value) {
+        Spacer(Modifier.height(8.dp))
+        SecondDimSettings()
+    }
+}
+
+/**
+ * Update 188: when the second screen dims (SecondDim.kt): after how long unused, how dark, and the backlight.
+ * (Settings › Screens › Dim the second screen, and Settings › Device › Battery saver.)
+ */
+@Composable
+internal fun SecondDimSettings() {
+    val after = Features.secondDimAfter.state.value
+    StyleChoice(
+        "Dim the second screen after", arrayOf(0, 30, 60, 120, 300), after,
+        { when (it) { 0 -> "Never"; 30 -> "30 s"; 60 -> "1 min"; 120 -> "2 min"; else -> "5 min" } }
+    ) { Features.secondDimAfter.value = it; SecondDim.settingsChanged() }
+    if (after > 0) {
+        StyleChoice(
+            "How dark", arrayOf(60, 85, 100), Features.secondDimLevel.state.value,
+            { when (it) { 60 -> "Dim"; 85 -> "Dark"; else -> "Black" } }
+        ) { Features.secondDimLevel.value = it; SecondDim.settingsChanged() }
+        SwitchRow(
+            Icons.Filled.BrightnessLow, "Backlight down too",
+            "While it's dimmed, the second screen's own brightness goes down as well (the main screen is untouched).",
+            Features.secondDimBacklight.state.value, { Features.secondDimBacklight.value = it; SecondDim.settingsChanged() }
+        )
+    }
+    MutedNote(
+        "Nobody touching the second screen and nothing pressed in Voltcap for that long — also while a game runs on " +
+            "the other screen — and it fades dark. Touch it to light it up again (that touch doesn't press anything)."
     )
 }
 
-/** The R1 tile's popup: the saver and, under it, the battery watcher. */
+/** The R1 tile's popup: the saver and, under it, the battery watcher. Fits the screen; Done always shows. */
 @Composable
 internal fun BatterySaverPopup(onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
+    val maxH = screenSizeDp().height * 0.92f
+    Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
         ImmersiveDialogWindow()
-        Column(Modifier.widthIn(max = 600.dp)) { ShelfCard {
-            Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState())) {
+        Column(Modifier.widthIn(max = 640.dp).fillMaxWidth(0.9f).heightIn(max = maxH)) { ShelfCard {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 SectionLabel("Battery saver")
                 BatterySaverSettings()
                 Spacer(Modifier.height(12.dp))
@@ -109,33 +145,33 @@ internal fun BatterySaverPopup(onDismiss: () -> Unit) {
 
 /**
  * The one-time note (first start, or the first start after this update): what the battery saver does and where its
- * settings are.
+ * settings are. Wide and short so it fits a handheld's screen; the buttons always show.
  */
 @Composable
 internal fun BatterySaverIntroDialog(onSettings: () -> Unit, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
+    val maxH = screenSizeDp().height * 0.92f
+    Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
         ImmersiveDialogWindow()
-        Column(Modifier.widthIn(max = 560.dp)) { ShelfCard {
+        Column(Modifier.widthIn(max = 760.dp).fillMaxWidth(0.88f).heightIn(max = maxH)) { ShelfCard {
             SectionLabel("Voltcap saves your battery")
-            Column(Modifier.heightIn(max = 340.dp).verticalScroll(rememberScrollState())) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 Text(
                     listOf(
-                        "While you play, Voltcap rests: its artwork downloads, syncing and timers wait, and the pictures it " +
-                            "had loaded are given back so the emulator has the memory.",
-                        "On a two-screen handheld it rests on the other screen too while the game has the controller — a " +
-                            "touch there wakes it.",
+                        "While you play, Voltcap rests: artwork downloads wait and the pictures it had loaded are given " +
+                            "back to the emulator. Your saves still sync.",
+                        "Two screens: Voltcap rests on the other screen too, and it dims there when nobody uses it. A " +
+                            "touch lights it up again.",
                         "Below ${Features.saverLowAt.value} % (not plugged in), or with Android's Battery Saver on, the theme " +
                             "animation holds still, covers stop moving and video clips wait.",
-                        "Left alone for a while, the home screen calms down by itself; the first press brings it all back.",
                         "Games are never slowed down."
                     ).joinToString("\n") { "•  $it" },
-                    color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, lineHeight = 19.sp
+                    color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, lineHeight = 18.sp
                 )
-                Spacer(Modifier.height(6.dp))
-                MutedNote("Change it in Settings › Device › Battery saver, or with the Battery saver tile in R1 (hold it for the settings).")
+                Spacer(Modifier.height(4.dp))
+                MutedNote("Settings › Device › Battery saver, or hold the Battery saver tile in R1.")
             }
             Spacer(Modifier.height(10.dp))
-            ChipFlow {
+            androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
                 Chip("Got it", accent = true) { onDismiss() }
                 Chip("Settings", accent = false) { onSettings() }
             }

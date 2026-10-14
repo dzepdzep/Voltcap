@@ -74,7 +74,19 @@ object AnimatedArt {
     private val resume = Runnable { moving = false; if (!sleeping && !resting) restartHeld() }
 
     private fun register(g: Gate) { synchronized(live) { live += g } }
-    private fun gates(): List<Gate> = synchronized(live) { live.toList() }
+    /**
+     * Every live picture. (Update 188 (crash fix): walked with hasNext / next — `toList()` read the size first and then
+     * took the one picture without asking, and when the garbage collector had just dropped it Voltcap crashed
+     * (NoSuchElementException) on the AYN Thor.)
+     */
+    private fun gates(): List<Gate> = synchronized(live) {
+        val out = ArrayList<Gate>()
+        runCatching {
+            val it = live.iterator()
+            while (it.hasNext()) it.next()?.let { g -> out += g }
+        }
+        out
+    }
 
     /** A step on the D-pad (or a swipe): animated pictures hold still until you've stopped for a moment. Main thread. */
     fun onMove() {
