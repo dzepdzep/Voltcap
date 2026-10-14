@@ -1881,14 +1881,36 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         restoreActive = false
         preferencesStore.setLastPlatformFilter(platform)
         preferencesStore.setLastSpecialFilter(null)
-        _uiState.update { it.copy(platformFilter = platform, specialFilter = null, focusedIndex = 0) }
+        rememberCategoryFocus()
+        _uiState.update { it.copy(platformFilter = platform, specialFilter = null, focusedIndex = 0).let { n -> n.copy(focusedIndex = rememberedFocus(n)) } }
     }
 
     fun setSpecialFilter(filter: SpecialFilter?) {
         restoreActive = false
         preferencesStore.setLastSpecialFilter(filter?.name)
         preferencesStore.setLastPlatformFilter(null)
-        _uiState.update { it.copy(specialFilter = filter, platformFilter = null, focusedIndex = 0) }
+        rememberCategoryFocus()
+        _uiState.update { it.copy(specialFilter = filter, platformFilter = null, focusedIndex = 0).let { n -> n.copy(focusedIndex = rememberedFocus(n)) } }
+    }
+
+    // ---- Update 185: each category remembers the game you were on ----
+    /** Category key → the stable key of the game you were on there (this session). */
+    private val categoryFocus = HashMap<String, String>()
+
+    private fun categoryKeyOf(s: LauncherUiState): String =
+        s.specialFilter?.let { "S:" + it.name } ?: s.platformFilter?.let { "P:$it" } ?: "ALL"
+
+    /** Notes the game you're on in the category you're leaving. */
+    private fun rememberCategoryFocus() {
+        val s = _uiState.value
+        if (s.searchQuery.isNotBlank()) return
+        s.visibleGames.getOrNull(s.focusedIndex)?.let { categoryFocus[categoryKeyOf(s)] = it.stableKey }
+    }
+
+    /** Where to land in [s]'s category: the game you were on there last time (found by its key, wherever it is now), else the first. */
+    private fun rememberedFocus(s: LauncherUiState): Int {
+        val key = categoryFocus[categoryKeyOf(s)] ?: return 0
+        return s.visibleGames.indexOfFirst { it.stableKey == key }.coerceAtLeast(0)
     }
 
     /** Loads every artwork alternative SteamGridDB has for a game, for the
@@ -4948,6 +4970,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             if (game.sourceType == SourceType.APP) game.packageName else emulatorPackageFor(game)
         // Low-power mode for Voltcap itself while the game runs (GameMode).
         com.shelf.launcher.data.GameMode.enter(getApplication())
+        // (Update 185: Continue playing starts again at its newest game next time.)
+        categoryFocus.remove("S:" + SpecialFilter.RECENT.name)
         // Performance tuner: the game's own profile (or the device-wide one) before the game starts.
         run {
             val tunePkg = com.shelf.launcher.data.perf.PerfSampler.gamePackage

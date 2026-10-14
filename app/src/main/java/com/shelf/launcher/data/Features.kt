@@ -910,6 +910,8 @@ object Features {
     val carouselView = EnumPref("carousel_view", com.shelf.launcher.ui.CarouselView.TUCKED, com.shelf.launcher.ui.CarouselView.values())
     /** Space between the carousel's games, 60–160 % (update 104). */
     val carouselGap = IntPref("carousel_gap", 100, 60..160)
+    /** Update 185: a short list spread out wider (Carousel.spread). Off: the Spacing alone decides the gap. */
+    val carouselSpread = BoolPref("carousel_spread", true)
     /** A faint reflection under each game of the carousel (update 104). */
     val carouselReflect = BoolPref("carousel_reflect", false)
     /** Update 147: the carousel on a dark floor fading into black (on with the 3D case views). */
@@ -1376,8 +1378,11 @@ object Features {
     val autoM3u = BoolPref("auto_m3u", false)
     /** Update 177: how the consoles look on the second screen's Games page (SecondGamesPage.kt). */
     enum class FolderLook(val label: String) { FOLDERS("Folders"), TILES("Tiles"), CARDS("Wide cards"), LOGOS("Logos") }
-    /** (Update 182: Tiles by default — a new key, so it starts as Tiles once for everyone.) */
-    val secondFolderLook = EnumPref("second_folder_look2", FolderLook.TILES, FolderLook.values())
+    /** (Update 185: back to your own choice — Folders by default; it's the games inside that are Tiles now.) */
+    val secondFolderLook = EnumPref("second_folder_look", FolderLook.FOLDERS, FolderLook.values())
+    /** Update 185: the games inside a console on the second screen's Games page: Tiles (default), Covers, Wide, List. */
+    enum class FolderGamesLook(val label: String) { TILES("Tiles"), COVERS("Covers"), WIDE("Wide"), LIST("List") }
+    val secondGamesLook = EnumPref("second_games_look", FolderGamesLook.TILES, FolderGamesLook.values())
     /** Update 177: the console's logo over a folder picture (off: the picture alone — many packs have the name in it). */
     val secondFolderLogo = BoolPref("second_folder_logo", true)
     /** Update 176: the custom layout shown by Custom layout (CustomLayouts.kt; "" = the built-in example). */

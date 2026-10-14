@@ -771,7 +771,7 @@ internal fun GameCarousel(
         val bigW = minOf(maxHeight * 0.9f * 0.72f * sizeK, maxHeight * 0.97f * 0.72f / (1f + lift), maxWidth * 0.5f * sizeK)
         // Update 182: few games, spread out (the packed views most, their boxes are slim).
         val packed = view == CarouselView.BOX_FLOW || view == CarouselView.SPINE_WALL
-        val spreadNow = if (packed) (16f / games.size.coerceAtLeast(2)).coerceIn(1f, 2.2f) else (8f / games.size.coerceAtLeast(2)).coerceIn(1f, 1.5f)
+        val spreadNow = if (!Features.carouselSpread.state.value) 1f else if (packed) (16f / games.size.coerceAtLeast(2)).coerceIn(1f, 2.2f) else (8f / games.size.coerceAtLeast(2)).coerceIn(1f, 1.5f)
         androidx.compose.runtime.SideEffect { Carousel.spread = spreadNow }
         val bigH = bigW / 0.72f
         // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the

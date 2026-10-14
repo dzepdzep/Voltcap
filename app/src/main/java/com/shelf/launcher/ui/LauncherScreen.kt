@@ -1638,6 +1638,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         folders = folders,
                         gamesOf = { p -> state.copy(platformFilter = p, specialFilter = null, searchQuery = "").visibleGames },
                         coverOf = { g -> state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl },
+                        wideOf = { g -> state.artOverrides[g.stableKey]?.wide ?: state.art[g.stableKey]?.wideGridUrl ?: state.artOverrides[g.stableKey]?.hero ?: state.art[g.stableKey]?.heroUrl },
                         onPickGame = { p, g ->
                             viewModel.setPlatformFilter(p)
                             val index = viewModel.uiState.value.visibleGames.indexOfFirst { it.stableKey == g.stableKey }
@@ -1941,6 +1942,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     val headerMovable = com.shelf.launcher.data.Features.homeHeader.state.value && focusedGame != null &&
         !tileLayout && !heroLayout && !gridLayout && !tvLayout && !styleLayout
 
+    // Update 185: what's running in the background (a tap on the progress text at the top).
+    var showWork by remember { mutableStateOf(false) }
     @Composable
     fun HomeStatusBar(modifier: Modifier, nowPlaying: com.shelf.launcher.data.NowPlaying?, atBottom: Boolean) {
         // Live, so the bell's count is right without opening the panel.
@@ -1959,6 +1962,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             detailsTotal = state.metadataScrapeTotal,
             raProfile = state.raProfile,
             onProfileClick = { hubScreen = HubScreen.PROFILE },
+            onProgressClick = { showWork = true },
             // Achievements earned just before leaving the game: a trophy until they're opened.
             trophyCount = state.returnTrophies?.takeIf { System.currentTimeMillis() - it.at < 6 * 3_600_000L }?.count ?: 0,
             onTrophy = {
@@ -3585,6 +3589,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             )
         }
 
+        if (showWork) BackgroundWorkDialog(
+            state,
+            onStopArt = { viewModel.cancelScrape() },
+            onStopDetails = { viewModel.cancelMetadataScrape() },
+            onStopSaving = { viewModel.cancelArtSave() },
+            onOpenSettings = { menuStartCategory = "Metadata"; showMenu = true },
+            onDismiss = { showWork = false }
+        )
         // Update 151: the case opens / the cartridge or disc is thrown in; the game starts when it ends.
         LaunchThrow.plan?.let { plan ->
             LaunchThrowOverlay(plan) {

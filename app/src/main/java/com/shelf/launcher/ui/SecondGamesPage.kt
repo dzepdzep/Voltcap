@@ -74,7 +74,9 @@ internal fun SecondGamesPage(
     /** The console's games, in the order its row shows them. */
     gamesOf: (String) -> List<Game>,
     coverOf: (Game) -> String?,
-    onPickGame: (platform: String, game: Game) -> Unit
+    onPickGame: (platform: String, game: Game) -> Unit,
+    /** Update 185: a game's wide picture (banner / hero), for the Wide look of the games inside a console. */
+    wideOf: (Game) -> String? = { null }
 ) {
     var open by remember { mutableStateOf<GamesFolder?>(null) }
     Box(Modifier.fillMaxSize()) {
@@ -123,7 +125,7 @@ internal fun SecondGamesPage(
             val f = remember { mutableStateOf<GamesFolder?>(null) }
             if (open != null) f.value = open
             f.value?.let { folder ->
-                FolderPopup(folder, gamesOf(folder.platform), coverOf, onClose = { open = null }) { g -> onPickGame(folder.platform, g) }
+                FolderPopup(folder, gamesOf(folder.platform), coverOf, wideOf, onClose = { open = null }) { g -> onPickGame(folder.platform, g) }
             }
         }
     }
@@ -241,6 +243,7 @@ private fun FolderPopup(
     folder: GamesFolder,
     games: List<Game>,
     coverOf: (Game) -> String?,
+    wideOf: (Game) -> String?,
     onClose: () -> Unit,
     onPick: (Game) -> Unit
 ) {
@@ -273,24 +276,59 @@ private fun FolderPopup(
                     Icon(Icons.Filled.Close, "Close", tint = ShelfTheme.colors.textPrimary, modifier = Modifier.size(20.dp))
                 }
             }
+            // Update 185: how the games inside look — Tiles (default), Covers, Wide or a List — picked right here.
+            val look = com.shelf.launcher.data.Features.secondGamesLook.state.value
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                com.shelf.launcher.data.Features.FolderGamesLook.values().forEach { l ->
+                    val pick = { com.shelf.launcher.data.Features.secondGamesLook.value = l }
+                    Chip(l.label, accent = l == look, modifier = Modifier.padTarget("gamelook-" + l.name) { pick() }) { pick() }
+                    Spacer(Modifier.width(6.dp))
+                }
+            }
             Spacer(Modifier.height(10.dp))
             val gamesGrid = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
             PadScroller(gamesGrid, true)
+            val cols = when (look) {
+                com.shelf.launcher.data.Features.FolderGamesLook.TILES -> GridCells.Adaptive(minSize = 92.dp)
+                com.shelf.launcher.data.Features.FolderGamesLook.WIDE -> GridCells.Adaptive(minSize = 160.dp)
+                com.shelf.launcher.data.Features.FolderGamesLook.LIST -> GridCells.Fixed(1)
+                else -> GridCells.Adaptive(minSize = 78.dp)
+            }
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 78.dp),
+                columns = cols,
                 state = gamesGrid,
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(if (look == com.shelf.launcher.data.Features.FolderGamesLook.LIST) 6.dp else 10.dp)
             ) {
                 items(games, key = { it.stableKey }) { g ->
-                    Column(Modifier.padTarget("game-" + g.stableKey) { onPick(g); SecondPad.leave() }.clip(RoundedCornerShape(8.dp)).clickable { onPick(g) }, horizontalAlignment = Alignment.CenterHorizontally) {
-                        val cover = coverOf(g)
+                    val tap = Modifier.padTarget("game-" + g.stableKey) { onPick(g); SecondPad.leave() }.clip(RoundedCornerShape(8.dp)).clickable { onPick(g) }
+                    if (look == com.shelf.launcher.data.Features.FolderGamesLook.LIST) {
+                        Row(tap.fillMaxWidth().height(54.dp).background(Color.White.copy(alpha = 0.05f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            val cover = coverOf(g)
+                            Box(Modifier.fillMaxHeight().aspectRatio(0.72f).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.07f))) {
+                                if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                gameDisplayName(g.name), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                            )
+                        }
+                    } else Column(tap, horizontalAlignment = Alignment.CenterHorizontally) {
+                        val wide = look == com.shelf.launcher.data.Features.FolderGamesLook.WIDE
+                        val pic = if (wide) wideOf(g) ?: coverOf(g) else coverOf(g)
+                        val aspect = when (look) {
+                            com.shelf.launcher.data.Features.FolderGamesLook.TILES -> 1f
+                            com.shelf.launcher.data.Features.FolderGamesLook.WIDE -> 1.78f
+                            else -> 0.72f
+                        }
                         Box(
-                            Modifier.fillMaxWidth().aspectRatio(0.72f).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.07f)),
+                            Modifier.fillMaxWidth().aspectRatio(aspect).clip(RoundedCornerShape(if (look == com.shelf.launcher.data.Features.FolderGamesLook.TILES) 12.dp else 6.dp))
+                                .background(Color.White.copy(alpha = 0.07f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            if (pic != null) AsyncImage(pic, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                             else Text(
                                 gameDisplayName(g.name), color = ShelfTheme.colors.textPrimary, fontSize = 10.sp, textAlign = TextAlign.Center,
                                 maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(6.dp)

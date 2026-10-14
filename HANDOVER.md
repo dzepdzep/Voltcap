@@ -256,6 +256,25 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 185
+- **Carousel:** `Features.carouselSpread` (default true) gates `Carousel.spread`. R1 Carousel hold has gap choices.
+- **ViewModel:**
+  - `categoryFocus` (category key → stableKey). `setPlatformFilter` / `setSpecialFilter` remember the game and restore
+    it.
+  - Continue playing's entry is dropped at `GameMode.enter`.
+- **R1Undo (R1Undo.kt):**
+  - `r1Undoable(label, appearance, scope, run)` takes `Features.snapshot()` and the appearance before and 350 ms
+    after, then offers the difference.
+  - The bar is at the top of QuickSettingsCard (8 s).
+  - Wraps tile taps, hold choices and `LayoutListPopup`.
+- **BackgroundWorkDialog (BackgroundWork.kt):** opened by `StatusBar(onProgressClick)` from LauncherScreen's
+  `showWork`. Stops call `cancelScrape`, `cancelMetadataScrape` and `cancelArtSave`.
+- **Second screen Games page:**
+  - `secondFolderLook` is back on its old key (FOLDERS default).
+  - `Features.secondGamesLook` (TILES / COVERS / WIDE / LIST) is used in `FolderPopup`; `wideOf` comes from
+    LauncherScreen.
+- **After install:** the PowerShell block runs `adb shell am start -a MAIN -c HOME` on each device.
+
 ## State after update 184
 - **Pocket:** `pocketUsesLook(c.type)` (not Cover / wide / screenshot) and `PocketLookArt` → `ShelfGameArt` in the frames
   (classic `PocketGameArt` with Game picture = Cover, ribbon icons). `layoutOwnLook` no longer lists the Pocket layouts.

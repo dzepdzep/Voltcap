@@ -4,6 +4,52 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (185): the carousel gap on its own, each category remembers its game, Undo in R1, what's running in the background, games inside a console as Tiles
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (2): `src_copy\ui\BackgroundWork.kt`, `src_copy\ui\R1Undo.kt`.
+- Changed (8): `src_copy\LauncherViewModel.kt`, `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`,
+  `src_copy\ui\HomeChrome.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\QuickSettings.kt`,
+  `src_copy\ui\SecondGamesPage.kt`, `src_copy\ui\SettingsDialog.kt`.
+
+**Files to delete:** none.
+
+### The carousel's gap, set by you
+- **Settings:** Settings › Home › Layout options › Carousel › Spacing, with a new switch under it, **Spread out a short
+  list**. Off: Spacing alone sets the gap. On (default): a category with few games is spread wider.
+- **R1:** hold **Carousel** for Gap 80 / 100 / 120 / 140 / 160 % and Spread a short list.
+
+### Each category remembers the game you were on
+- Leaving a category (L2 / R2, the category screen…) and coming back lands on the game you were on there, wherever it
+  is in the list now. It used to start again at the first game.
+- **Continue playing:** starts at its newest game again after you've played something.
+
+### Undo in R1
+- After a tile (or one of its hold choices, or a layout from the Layout list) changes how the home screen looks, the
+  top of the panel shows **Changed: … ↶ Undo** for about 8 seconds.
+- Undo puts back exactly what that press changed.
+- Wi-Fi, brightness and the other device tiles leave nothing to undo.
+
+### What's running in the background
+- Tap the progress text at the top ("Getting art 12/215 · Details 3/182").
+- A small window lists each job: artwork, details, saving artwork, matching achievements. For each it shows how far it
+  is and what it's waiting for (the details wait for the artwork), with a **Stop** for each.
+- **Scraping settings** in that window jumps to Settings › Metadata.
+
+### Second screen: the games inside a console
+- Opening a console on the Games page now shows its games as **Tiles** (square), with chips at the top: Tiles, Covers,
+  Wide (the banner / background picture) and List (a small cover and the full name).
+- The consoles themselves are back to your own choice (Folders by default).
+
+### Voltcap coming back after an install
+- Android shows another home app while Voltcap is being replaced, and doesn't bring Voltcap back by itself (Voltcap was
+  still your home app on both handhelds).
+- The PowerShell block now ends with a line that presses Home on every connected handheld once the install is done.
+
+---
+
 ## Update — 14 Oct 2026 (184): Pocket layouts follow your game look, carousel spacing and floor light, Pocket top bar
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

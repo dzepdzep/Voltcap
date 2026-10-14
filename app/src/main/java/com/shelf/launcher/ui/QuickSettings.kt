@@ -204,6 +204,10 @@ fun QuickSettingsCard(
     var showGameSize by remember { mutableStateOf(false) }
     // A tile's hold list (update 104: the Player and Round shortcuts tiles): title and the choices.
     var choiceSheet by remember { mutableStateOf<Pair<String, List<R1Choice>>?>(null) }
+    // Update 185: presses that change the look can be undone for a few seconds (R1Undo).
+    val undoScope = androidx.compose.runtime.rememberCoroutineScope()
+    val liveHome = androidx.compose.runtime.rememberUpdatedState(home)
+    val undoable: (String, () -> Unit) -> Unit = remember { { label, run -> r1Undoable(label, { liveHome.value?.appearance }, undoScope, run) } }
     var showLayoutList by remember { mutableStateOf(false) }
     val lightsTileFocus = remember { FocusRequester() }
 
@@ -675,6 +679,15 @@ fun QuickSettingsCard(
                             com.shelf.launcher.data.Features.tvCarouselSide.value = n
                             turnOn()
                         }
+                    } + listOf(80, 100, 120, 140, 160).map { gp ->
+                        // Update 185: the gap between the games, right here (also Settings › Carousel › Spacing).
+                        R1Choice("Gap $gp %", com.shelf.launcher.data.Features.carouselGap.value == gp) {
+                            com.shelf.launcher.data.Features.carouselGap.value = gp
+                            turnOn()
+                        }
+                    } + R1Choice("Spread a short list",
+                        com.shelf.launcher.data.Features.carouselSpread.value) {
+                        com.shelf.launcher.data.Features.carouselSpread.value = !com.shelf.launcher.data.Features.carouselSpread.value
                     } + R1Choice("To the edge", edge) {
                         // Update 119: games all the way to the screen's edges.
                         com.shelf.launcher.data.Features.carouselEdge.value = true
@@ -940,7 +953,7 @@ fun QuickSettingsCard(
                         )
                     }
             ) {
-                if (editing) picked = if (picked == t.id) null else t.id else { countUse(t.id); t.action() }
+                if (editing) picked = if (picked == t.id) null else t.id else { countUse(t.id); undoable(t.label) { t.action() } }
             }
         }
         val firstFive = shown.take(5)
@@ -957,6 +970,22 @@ fun QuickSettingsCard(
             if (!com.shelf.launcher.data.Features.animPageSlide.value) return@LaunchedEffect
             pageSlide.snapTo(dir)
             pageSlide.animateTo(0f, androidx.compose.animation.core.tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        }
+        // Update 185: Undo for the last change made here (a few seconds).
+        val undoLabel = R1Undo.label
+        LaunchedEffect(R1Undo.at) {
+            val at0 = R1Undo.at
+            kotlinx.coroutines.delay(R1Undo.SHOWN_MS)
+            if (R1Undo.at == at0) R1Undo.clear()
+        }
+        if (undoLabel != null && home != null) {
+            Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Changed: $undoLabel", color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                )
+                Chip("↶ Undo") { R1Undo.undo { liveHome.value?.setAppearance?.invoke(it) } }
+            }
         }
         Column(
             Modifier.fillMaxWidth().onSizeChanged { rowWidthPx = it.width }
@@ -1033,8 +1062,10 @@ fun QuickSettingsCard(
         OverlayLayoutPopup(onDismiss = { showOverlayLayout = false })
     }
     if (showGameSize && home != null) GameSizePopup(home, onDismiss = { showGameSize = false })
-    choiceSheet?.let { (title, choices) -> R1ChoicePopup(title, choices, onDismiss = { choiceSheet = null }) }
-    if (showLayoutList && home != null) LayoutListPopup(home, onDismiss = { showLayoutList = false })
+    choiceSheet?.let { (title, choices) ->
+        R1ChoicePopup(title, choices.map { c -> R1Choice(c.label, c.on) { undoable(title.substringBefore(" ·")) { c.run() } } }, onDismiss = { choiceSheet = null })
+    }
+    if (showLayoutList && home != null) LayoutListPopup(home, onDismiss = { showLayoutList = false }, undoable = undoable)
     if (showBatteryWatch) BatteryWatchPopup(onDismiss = { showBatteryWatch = false })
     if (showBattery) BatteryChargePopup(onDismiss = { showBattery = false; refresh++ })
     if (showProfile && home != null) GameProfilePopup(home, onDismiss = { showProfile = false })
@@ -1449,7 +1480,7 @@ object QuickControls {
  */
 /** Hold on the Layout tile: every home layout to pick from. */
 @Composable
-private fun LayoutListPopup(home: R1Home, onDismiss: () -> Unit) {
+private fun LayoutListPopup(home: R1Home, onDismiss: () -> Unit, undoable: (String, () -> Unit) -> Unit = { _, run -> run() }) {
     val a = home.appearance
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         ImmersiveDialogWindow()
@@ -1468,7 +1499,7 @@ private fun LayoutListPopup(home: R1Home, onDismiss: () -> Unit) {
                 ChipFlow {
                     com.shelf.launcher.data.HomeLayout.pickable.forEach { l ->
                         Box(if (a.homeLayout == l) Modifier.focusRequester(current) else Modifier) {
-                            Chip((if (a.homeLayout == l) "✓ " else "") + l.label, accent = a.homeLayout == l) { home.setAppearance(a.copy(homeLayout = l)); onDismiss() }
+                            Chip((if (a.homeLayout == l) "✓ " else "") + l.label, accent = a.homeLayout == l) { undoable("Layout") { home.setAppearance(a.copy(homeLayout = l)) }; onDismiss() }
                         }
                     }
                 }

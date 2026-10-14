@@ -5292,6 +5292,12 @@ private fun CarouselTiltChoices() {
     }
     Spacer(Modifier.height(6.dp))
     PercentSlider("Spacing", f.carouselGap.state.value, { f.carouselGap.value = (it / 5) * 5 }, min = 60, max = 160, valueText = { "$it%" })
+    // Update 185: the gap set by hand alone, or wider for a short list.
+    SwitchRow(
+        Icons.Filled.ViewInAr, "Spread out a short list",
+        "With only a few games they stand further apart, so the sides aren't empty. Off: Spacing alone sets the gap.",
+        f.carouselSpread.state.value, { f.carouselSpread.value = it }
+    )
     SwitchRow(
         Icons.Filled.ViewInAr, "Reflection", "A faint mirror image of each game under it, as on a glossy floor.",
         f.carouselReflect.state.value, { f.carouselReflect.value = it }

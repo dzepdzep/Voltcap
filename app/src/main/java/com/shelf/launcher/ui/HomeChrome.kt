@@ -112,7 +112,9 @@ internal fun StatusBar(
     syncSlot: (@Composable () -> Unit)? = null,
     /** Achievements earned just before the last game ended (0 = no trophy). */
     trophyCount: Int = 0,
-    onTrophy: () -> Unit = {}
+    onTrophy: () -> Unit = {},
+    /** Update 185: a tap on the progress text — what's running in the background (BackgroundWorkDialog). */
+    onProgressClick: () -> Unit = {}
 ) {
     com.shelf.launcher.Breadcrumbs.mark("StatusBar")
     val battery = rememberBatteryInfo()
@@ -193,6 +195,8 @@ internal fun StatusBar(
         Box(Modifier.weight(if (nowPlaying != null) 0.001f else 1f).clipToBounds()) {
             if (progress.isNotEmpty() && !(nowPlaying != null && widthDp < 600)) {
                 Text(
+                    modifier = Modifier.tapOnly(onProgressClick),
+                    text = 
                     progress.joinToString("  ·  "),
                     color = ShelfTheme.accent,
                     fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
