@@ -256,6 +256,31 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 193
+- **ui/SecondDockShortcuts.kt:**
+  - `entries` (id → name), `page(id)` (ACHIEVEMENTS / MUSIC / LIBRARY / MAGNIFIER), `game(id)`, `all()`;
+  - `Icon(id, modifier)`: a builtin's icon on an accent plate, else AppIconArt.
+- **SecondScreenHome:**
+  - `onShortcut: ((String) -> String?)?` (null in CompanionHub, which shows no shortcuts);
+  - `launchFromDock` for both docks (a page if visible, else the note, else `onShortcut`);
+  - `dockNote` pill at the top for 2.4 s;
+  - the picker adds `SecondDockShortcuts.all()`, sorted first under ★.
+- **LauncherScreen:**
+  - dockApps maps unknown packages to `SecondDockShortcuts.game`;
+  - `dockShortcut` handles each id (the second screen's LocalContext as `dockCtx`);
+  - `onSecond(intent)` starts on `ScreenPlacement.secondScreen` with `optionsFor(displayId)`.
+- **CaseLook:** `seam` (front share of the depth), `edgeStyle` EDGE_KEEP / CARD / JEWEL / CLAM, `catches`.
+  - Keep cases: 2 mm / t. Card cases: 0.46 (0.5 when ≥ 18 mm). Switch: 2 / t. Jewel: 2.4 / t. Longbox: 3 / t.
+  - Clamshell and cassette: 0.5. Book box: 2.5 / t. Legacy styles have defaults.
+- **CaseDraw:**
+  - `openingEdge` on the EDGE face: lid band, seam shadow ±gap, lit lip, catch bumps;
+  - `topEdge`: the lid band and seam line, or a box's fold crease and tuck slit;
+  - the grip recess starts at seam + 0.08.
+- **CaseOpenDraw:**
+  - `lidFrac` / `lidEdge`: the tray walls run to zTop = hd − lidT;
+  - the lid's inside sits at zTop and its outside is offset by lidT along (−sinθ, cosθ);
+  - the rim quad is drawn from both sides (`twoSided`).
+
 ## State after update 192
 - **InspectSlab:** `toImageBitmap()` gives a HARDWARE bitmap, and `getPixel` threw IllegalStateException on the Thor and
   the Classic (the crash buffer showed it at 12:34–12:37). It is now copied to ARGB_8888 first, and the whole

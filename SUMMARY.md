@@ -4,6 +4,60 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (193): Voltcap shortcuts in the second screen's dock, cases with real opening edges
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (1): `src_copy\ui\SecondDockShortcuts.kt`. Changed (5):
+`src_copy\ui\Case3D.kt`, `src_copy\ui\CaseOpen.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\SecondScreenHome.kt`,
+`src_copy\ui\SecondShowcase.kt`.
+
+**Project root**, changed (1): `CASES.md` (a section on the opening edges).
+
+**Files to delete:** none.
+
+### Your own shortcuts in the second screen's dock (both looks)
+- On the second screen, tap + in the dock. Voltcap's shortcuts come first under ★, then the apps.
+- **Pages:** Achievements, Music, Games (the console folders) and Magnifier open as that page on the second screen.
+  If the page is switched off, a note says where to turn it on.
+- **Switches:** these work at once, with a short note on the second screen:
+  - Play / pause music, Explore, Rediscover;
+  - Lights on / off, Overlay (steps Off → Stats → Music → Trophies → All), Endless row, Hide nav bar;
+  - Who is playing, Drawn / real discs;
+  - Next theme (your starred themes), Battery saver (steps When low → Always → Off);
+  - Rescan library, Missing art, Do not disturb.
+- **Android panels:** Wi-Fi, Bluetooth and Android settings open on the second screen.
+- Nothing opens a window on the main screen.
+- Hold a shortcut in the dock to move it or take it out, as with apps.
+
+### The cases' opening side
+- **Two pieces:** every hinged case's right side now shows the front lid's own edge, a fine seam, and the rear shell's
+  lip just behind it.
+- **Catches and tabs:**
+  - keep and card cases: two small catches;
+  - jewel cases: the lid's two tabs;
+  - a cartridge clamshell: its one catch in the middle.
+- **Where the seam sits:**
+  - keep cases: the front cover is about 2 mm, so a slim Switch case shows more of it than a PS2 case;
+  - DS, 3DS and Vita: the halves are about even;
+  - Mega Drive and Neo Geo clamshells: even;
+  - jewel cases: the clear 2.4 mm lid in front of the tray, so a deep PAL PlayStation case shows far more tray than a
+    thin one.
+- **The thumb grip** is in the rear shell, behind the seam.
+- **The top** shows the same join. A cardboard box's top shows its fold at the back and the tuck flap's slit at the
+  front; its sides stay closed.
+- **Opening:**
+  - the halves part at the seam: the lid has its own thickness and its rim shows as it swings;
+  - the tray's walls stop where the lid sat.
+- **Not done:** rounded corners (the cases are still straight-edged boxes), and the PAL Dreamcast's own multi-part
+  case (no measurements found).
+
+### To check on the Thor
+- A PS2, PS4, Switch, DS and PS1 (PAL and US) case turned to their right side, closed and opening.
+- A dock shortcut of each kind: a page, a switch, Wi-Fi.
+
+---
+
 ## Update — 14 Oct 2026 (192): crash fix — turning a cartridge crashed Voltcap (Thor and Retroid Pocket Classic)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

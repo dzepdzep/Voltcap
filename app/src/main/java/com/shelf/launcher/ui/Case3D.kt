@@ -186,7 +186,9 @@ internal fun Case3D(
             CaseOpenDraw.draw(
                 canvas.nativeCanvas, size.width / 2f + w2 * 0.5f * openNow, size.height / 2f, w2, h2, d2, yawNow, pitch + 8f * openNow,
                 openNow, face ?: noCover ?: loading, spine, backFace, trayBmp, lidBmp, itemBmp, itemRect,
-                showItemOf?.invoke() ?: true, plastic, (1f - shadeNow).coerceIn(0f, 1f), itemOnLid
+                showItemOf?.invoke() ?: true, plastic, (1f - shadeNow).coerceIn(0f, 1f), itemOnLid,
+                // (Update 193: the lid's own thickness and its rim's colour, so the halves part at the seam.)
+                look.seam, look.edge
             )
         } else drawIntoCanvas { canvas ->
             CaseDraw.draw(
@@ -209,17 +211,25 @@ internal class CaseItem(val real: Any?, val label: Any?, val aspect: Float, val 
  */
 internal class CaseLook(
     val edge: Int, val top: Int, val back: Int, val grip: Boolean, val strip: Int, val stripW: Float, val matte: Boolean,
-    val inner: Int, val flap: Boolean
+    val inner: Int, val flap: Boolean,
+    /** Update 193: where the front lid meets the rear shell, across the thickness from the front (0: one piece, a box). */
+    val seam: Float = 0f,
+    val edgeStyle: Int = EDGE_NONE,
+    /** Update 193: the catches / tabs along the opening edge (down it, 0…1). */
+    val catches: FloatArray = FloatArray(0)
 ) {
     companion object {
         private const val DARK = 0xFF15171B.toInt()
+        private val KEEP_CATCHES = floatArrayOf(0.2f, 0.8f)
+        private val JEWEL_TABS = floatArrayOf(0.12f, 0.88f)
+        private val CLAM_CATCH = floatArrayOf(0.5f)
 
         fun of(spec: CaseSpec?, style: Int, face: android.graphics.Bitmap?): CaseLook {
             if (spec == null) return when (style) {
-                CASE_JEWEL -> CaseLook(0xFF9AA0AB.toInt(), 0xFFB9BEC8.toInt(), 0xFF22242C.toInt(), false, 0, 0f, false, 0, false)
-                CASE_JEWEL_BLACK -> CaseLook(0xFF26282D.toInt(), 0xFF3C3E44.toInt(), 0xFF22242C.toInt(), false, 0xF20C0C0E.toInt(), 0.062f, false, 0, false)
+                CASE_JEWEL -> CaseLook(0xFF9AA0AB.toInt(), 0xFFB9BEC8.toInt(), 0xFF22242C.toInt(), false, 0, 0f, false, 0, false, 0.23f, EDGE_JEWEL, JEWEL_TABS)
+                CASE_JEWEL_BLACK -> CaseLook(0xFF26282D.toInt(), 0xFF3C3E44.toInt(), 0xFF22242C.toInt(), false, 0xF20C0C0E.toInt(), 0.062f, false, 0, false, 0.23f, EDGE_JEWEL, JEWEL_TABS)
                 CASE_CARD -> CaseLook(0xFF3A3832.toInt(), 0xFF4A4740.toInt(), 0xFF22242C.toInt(), false, 0, 0f, true, 0xFFEFECE4.toInt(), true)
-                else -> CaseLook(0xFF22242C.toInt(), 0xFF3A3D47.toInt(), 0xFF22242C.toInt(), true, 0, 0f, false, 0, false)
+                else -> CaseLook(0xFF22242C.toInt(), 0xFF3A3D47.toInt(), 0xFF22242C.toInt(), true, 0, 0f, false, 0, false, 0.14f, EDGE_KEEP, KEEP_CATCHES)
             }
             fun lighter(c: Int, k: Float) = CaseInside.mix(c, 0xFFFFFFFF.toInt(), k)
             return when (spec.shell) {
@@ -227,23 +237,36 @@ internal class CaseLook(
                     // Printed cardboard: the top and side carry on the front's print (its colours there, a little darker).
                     val top = face?.let { averageOf(it, 0f, 0f, 1f, 0.08f) }?.let { CaseInside.mix(it, DARK, 0.15f) } ?: 0xFF4A4740.toInt()
                     val side = face?.let { averageOf(it, 0.92f, 0f, 1f, 1f) }?.let { CaseInside.mix(it, DARK, 0.2f) } ?: 0xFF3A3832.toInt()
-                    CaseLook(side, top, side, false, 0, 0f, true, spec.tray, spec.shell != CaseShell.BOOKBOX)
+                    // (A book box's front is a cardboard cover over the box: a seam where it closes.)
+                    if (spec.shell == CaseShell.BOOKBOX) CaseLook(side, top, side, false, 0, 0f, true, spec.tray, false, (2.5f / spec.tMm).coerceIn(0.05f, 0.3f), EDGE_KEEP)
+                    else CaseLook(side, top, side, false, 0, 0f, true, spec.tray, true)
                 }
                 CaseShell.JEWEL -> {
                     // Clear plastic over the tray: the edges are the tray's colour seen through it.
                     val lightTray = luma(spec.tray) > 150
                     val edge = if (lightTray) CaseInside.mix(spec.tray, 0xFF8E949E.toInt(), 0.35f) else CaseInside.mix(spec.tray, 0xFF5A5F68.toInt(), 0.18f)
                     val strip = if (lightTray) (spec.tray and 0x00FFFFFF) or 0x88000000.toInt() else (spec.tray and 0x00FFFFFF) or 0xF2000000.toInt()
-                    CaseLook(edge, lighter(edge, 0.15f), edge, false, strip, 0.062f, false, spec.tray, false)
+                    // (Update 193: the clear lid's edge in front — 2.4 mm, so a deep PAL case shows far more tray.)
+                    CaseLook(edge, lighter(edge, 0.15f), edge, false, strip, 0.062f, false, spec.tray, false,
+                        (2.4f / spec.tMm).coerceIn(0.08f, 0.32f), EDGE_JEWEL, JEWEL_TABS)
                 }
                 CaseShell.LONGBOX, CaseShell.CASSETTE -> {
                     val edge = CaseInside.mix(spec.tray, spec.plastic, 0.3f)
-                    CaseLook(edge, lighter(edge, 0.12f), edge, false, 0, 0f, false, spec.tray, false)
+                    if (spec.shell == CaseShell.CASSETTE) CaseLook(edge, lighter(edge, 0.12f), edge, false, 0, 0f, false, spec.tray, false, 0.5f, EDGE_CLAM)
+                    else CaseLook(edge, lighter(edge, 0.12f), edge, false, 0, 0f, false, spec.tray, false, (3f / spec.tMm).coerceIn(0.08f, 0.3f), EDGE_JEWEL, JEWEL_TABS)
                 }
                 else -> {
                     // A keep case / clamshell: its plastic, deeper the more see-through it is (you look through its depth).
                     val edge = CaseInside.mix(DARK, spec.plastic, 0.5f + 0.4f * spec.opacity)
-                    CaseLook(edge, lighter(edge, 0.12f), edge, spec.grip, 0, 0f, false, spec.tray, false)
+                    // (Update 193: the front cover is about 2 mm of a keep case's depth — Switch's thin case shows more of
+                    // it; a DS / 3DS / Vita case's halves are about even; a cartridge clamshell's halves even, one catch.)
+                    val (seam, style, catches) = when {
+                        spec.shell == CaseShell.CLAMSHELL -> Triple(0.5f, EDGE_CLAM, CLAM_CATCH)
+                        spec.shell == CaseShell.CARDCASE && spec.platform != "Switch" && spec.platform != "Switch2" ->
+                            Triple(if (spec.tMm >= 18f) 0.5f else 0.46f, EDGE_CARD, KEEP_CATCHES)
+                        else -> Triple((2f / spec.tMm).coerceIn(0.1f, 0.3f), EDGE_KEEP, KEEP_CATCHES)
+                    }
+                    CaseLook(edge, lighter(edge, 0.12f), edge, spec.grip, 0, 0f, false, spec.tray, false, seam, style, catches)
                 }
             }
         }
@@ -275,6 +298,13 @@ internal fun caseStyleOf(platform0: String?): Int = when (LookStyles.casePlatfor
     "NES", "SNES", "N64", "GB", "GBC", "GBA", "VirtualBoy", "Atari2600", "Atari7800", "Jaguar", "ColecoVision", "Lynx" -> CASE_CARD
     else -> CASE_KEEP
 }
+
+/** Update 193: how a case's opening edge is built (CaseLook.edgeStyle). */
+internal const val EDGE_NONE = 0
+internal const val EDGE_KEEP = 1
+internal const val EDGE_CARD = 2
+internal const val EDGE_JEWEL = 3
+internal const val EDGE_CLAM = 4
 
 /** Update 171: Steam / Android 3D cases' thickness against their height. */
 internal const val OWN_CASE_DEPTH = 0.05f
@@ -575,6 +605,48 @@ private object CaseDraw {
                 paint.colorFilter = null
             }
         }
+        // A part of the face just projected (u across, v down), filled.
+        fun bandOn(u0: Float, v0: Float, u1: Float, v1: Float, argb: Int) {
+            path.reset()
+            path.moveTo(px(u0, v0), py(u0, v0)); path.lineTo(px(u1, v0), py(u1, v0))
+            path.lineTo(px(u1, v1), py(u1, v1)); path.lineTo(px(u0, v1), py(u0, v1)); path.close()
+            fill.shader = null; fill.color = argb; c.drawPath(path, fill)
+        }
+        // Update 193: the opening edge (EDGE face: u 0 = front, 1 = back; v 0 = top).
+        fun openingEdge(look: CaseLook, l: Float) {
+            val s = look.seam
+            val black = 0xFF000000.toInt(); val white = 0xFFFFFFFF.toInt()
+            val hair = (0.0045f).coerceAtLeast(0.6f / (h.coerceAtLeast(1f)))
+            val gap = hair * (h / d.coerceAtLeast(1f)) * 0.5f
+            // The front lid's own edge: a jewel lid clear and lighter, a keep case's cover a touch lighter than the shell.
+            val lid = if (look.edgeStyle == EDGE_JEWEL) CaseInside.mix(look.edge, white, 0.38f) else CaseInside.mix(look.edge, white, 0.07f)
+            bandOn(0f, 0f, s, 1f, scaled(lid, l))
+            // The seam: a fine shadow where the halves meet, the rear shell's lip lit just behind it.
+            bandOn(s - gap, 0f, s + gap, 1f, scaled(CaseInside.mix(look.edge, black, 0.65f), l))
+            bandOn(s + gap, 0f, (s + gap * 3f).coerceAtMost(1f), 1f, scaled(CaseInside.mix(look.edge, white, 0.16f), l))
+            // The catches / tabs: small moulded bumps over the seam.
+            val cw = (0.06f).coerceAtMost(s * 0.9f).coerceAtLeast(0.03f)
+            for (v in look.catches) {
+                val half = if (look.edgeStyle == EDGE_CLAM) 0.04f else 0.022f
+                bandOn((s - cw).coerceAtLeast(0f), v - half, (s + cw * 0.6f).coerceAtMost(1f), v + half,
+                    scaled(CaseInside.mix(lid, white, 0.14f), l))
+            }
+        }
+        // Update 193: the top where the halves meet (TOP face: u 0 = spine, 1 = opening side; v 0 = back, 1 = front),
+        // or a box's top: the fold at the back and the tuck flap's slit at the front.
+        fun topEdge(look: CaseLook, l: Float) {
+            val black = 0xFF000000.toInt(); val white = 0xFFFFFFFF.toInt()
+            val hair = 0.012f
+            if (look.seam > 0f) {
+                val v = 1f - look.seam
+                val lid = if (look.edgeStyle == EDGE_JEWEL) CaseInside.mix(look.top, white, 0.3f) else CaseInside.mix(look.top, white, 0.06f)
+                bandOn(0f, v, 1f, 1f, scaled(lid, l))
+                bandOn(0f, v - hair, 1f, v + hair, scaled(CaseInside.mix(look.top, black, 0.6f), l))
+            } else if (look.flap) {
+                bandOn(0.01f, 0.02f, 0.99f, 0.05f, scaled(CaseInside.mix(look.top, white, 0.12f), l))
+                bandOn(0.04f, 0.955f, 0.96f, 0.985f, scaled(CaseInside.mix(look.top, black, 0.55f), l))
+            }
+        }
         fun drawFaces(mirror: Boolean) {
             for (f in FACES.indices) {
                 val face = FACES[f]
@@ -637,10 +709,17 @@ private object CaseDraw {
                         c.drawPath(pathOf(), fill)
                         // Update 189: a keep case's opening edge has its thumb grip — a recess in the middle third,
                         // where you open it (jewel cases and boxes don't have one; update 191: where the real case has).
+                        // Update 193: the opening side is two pieces fitted together (CaseLook.seam): the front lid's own
+                        // edge, a fine seam, the rear shell's lip, the small catches; a jewel case's clear lid over its
+                        // tray with the lid's tabs; a box's top its fold and tuck slit. The thumb grip sits in the rear
+                        // shell, behind the seam.
+                        if (!mirror && f == 2 && look.seam > 0f) openingEdge(look, l)
+                        if (!mirror && f == 3 && !opening) topEdge(look, l)
                         if (look.grip && f == 2) {
+                            val g0 = if (look.seam > 0f) (look.seam + 0.08f).coerceAtMost(0.5f) else 0.12f
                             path.reset()
-                            path.moveTo(px(0.12f, 0.36f), py(0.12f, 0.36f)); path.lineTo(px(0.88f, 0.36f), py(0.88f, 0.36f))
-                            path.lineTo(px(0.88f, 0.64f), py(0.88f, 0.64f)); path.lineTo(px(0.12f, 0.64f), py(0.12f, 0.64f)); path.close()
+                            path.moveTo(px(g0, 0.36f), py(g0, 0.36f)); path.lineTo(px(0.88f, 0.36f), py(0.88f, 0.36f))
+                            path.lineTo(px(0.88f, 0.64f), py(0.88f, 0.64f)); path.lineTo(px(g0, 0.64f), py(g0, 0.64f)); path.close()
                             fill.color = scaled(CaseInside.mix(look.edge, 0xFF000000.toInt(), 0.5f), l * 0.8f); c.drawPath(path, fill)
                         }
                     }

@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -199,7 +200,12 @@ fun SecondScreenHome(
     headerEndInset: Dp = 0.dp,
     /** Update 189: your picture and points for the "Game art" look's top-left pill (RetroAchievements). */
     avatarUrl: String? = null,
-    raPoints: Int? = null
+    raPoints: Int? = null,
+    /**
+     * Update 193: a Voltcap shortcut in the dock that isn't a page here (a switch, an Android panel): does it and returns
+     * what to say in the note on this screen (null: nothing to say). Null: no Voltcap shortcuts in this dock.
+     */
+    onShortcut: ((String) -> String?)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("SecondScreenHome")
     // Without a Games page (the companion), a saved "Games" choice shows the Art page.
@@ -283,6 +289,20 @@ fun SecondScreenHome(
         }
     }
     val latestStep by rememberUpdatedState(stepPage)
+    // Update 193: a Voltcap shortcut tapped in the dock: its page here, or done right away with a short note on this
+    // screen (SecondDockShortcuts.kt). Apps open as before.
+    var dockNote by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(dockNote) { if (dockNote != null) { kotlinx.coroutines.delay(2400); dockNote = null } }
+    val launchFromDock: (Game) -> Unit = { app ->
+        val id = app.packageName
+        if (id != null && com.shelf.launcher.data.BuiltinShortcuts.isBuiltin(id)) {
+            val p = SecondDockShortcuts.page(id)
+            if (p != null) {
+                if (p in visiblePages) { if (p != page) selectPage(p) }
+                else dockNote = "The ${p.label} page is off: Settings › Screens › Second screen tools"
+            } else dockNote = onShortcut?.invoke(id)
+        } else onLaunchApp(app)
+    }
     val latestOverlay by rememberUpdatedState({ drawerOpen || pickerOpen || menuFor != null })
     val latestCloseOverlay by rememberUpdatedState({ drawerOpen = false; pickerOpen = false; menuFor = null })
     androidx.compose.runtime.DisposableEffect(Unit) {
@@ -393,7 +413,7 @@ fun SecondScreenHome(
                     if (showDock && !gameOpen) ShowcaseDock(
                         apps = dockApps, maxApps = SECOND_DOCK_MAX,
                         onHome = { visiblePages.firstOrNull()?.let { if (it != page) selectPage(it) } },
-                        onLaunch = onLaunchApp,
+                        onLaunch = launchFromDock,
                         onAllApps = { drawerOpen = true },
                         onSettings = onOpenSettings,
                         onAdd = { pickerOpen = true },
@@ -431,7 +451,7 @@ fun SecondScreenHome(
                 Spacer(Modifier.height(10.dp))
                 AppDockBar(
                     apps = dockApps,
-                    onLaunch = onLaunchApp,
+                    onLaunch = launchFromDock,
                     onAllApps = { drawerOpen = true },
                     onSettings = onOpenSettings,
                     onAdd = { pickerOpen = true },
@@ -469,13 +489,27 @@ fun SecondScreenHome(
 
         if (pickerOpen) {
             SecondScreenAppPicker(
-                apps = allApps.filter { it.packageName !in dockPackages },
+                // (Update 193: Voltcap's own shortcuts too, first.)
+                apps = allApps.filter { it.packageName !in dockPackages } +
+                    (if (onShortcut != null) SecondDockShortcuts.all().filter { it.packageName !in dockPackages } else emptyList()),
                 onPick = { app ->
                     pickerOpen = false
                     app.packageName?.let { onDockChange((dockPackages + it).distinct().take(SECOND_DOCK_MAX)) }
                 },
                 onClose = { pickerOpen = false }
             )
+        }
+
+        // Update 193: what a dock shortcut just did.
+        dockNote?.let { note ->
+            Box(Modifier.fillMaxSize().padding(top = 58.dp), contentAlignment = Alignment.TopCenter) {
+                Text(
+                    note, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 520.dp).clip(RoundedCornerShape(50))
+                        .background(Color.Black.copy(alpha = 0.72f)).padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
         }
 
         menuFor?.let { target ->
@@ -975,7 +1009,7 @@ private fun DockSlot(app: Game?, onClick: () -> Unit, onLongClick: () -> Unit) {
         if (app == null) {
             Icon(Icons.Filled.Add, "Add an app to the dock", tint = ShelfTheme.accent, modifier = Modifier.size(22.dp))
         } else {
-            AppIconArt(app.packageName, wide = false, modifier = Modifier.fillMaxSize().padding(6.dp))
+            SecondDockShortcuts.Icon(app.packageName, Modifier.fillMaxSize().padding(6.dp))
         }
     }
 }
@@ -1030,9 +1064,13 @@ private fun MenuItem(text: String, onClick: () -> Unit) {
  */
 @Composable
 private fun SecondScreenAppPicker(apps: List<Game>, onPick: (Game) -> Unit, onClose: () -> Unit) {
-    val sorted = remember(apps) { apps.sortedBy { it.name.lowercase() } }
+    // (Update 193: Voltcap's own shortcuts first, under ★ in the letters.)
+    val sorted = remember(apps) {
+        apps.sortedWith(compareBy<Game>({ !com.shelf.launcher.data.BuiltinShortcuts.isBuiltin(it.packageName) }, { it.name.lowercase() }))
+    }
     val pickerKeys = remember(sorted) { appKeys(sorted) }
-    fun initial(g: Game): Char = g.name.trim().firstOrNull()?.uppercaseChar()?.takeIf { it in 'A'..'Z' } ?: '#'
+    fun initial(g: Game): Char = if (com.shelf.launcher.data.BuiltinShortcuts.isBuiltin(g.packageName)) '★'
+        else g.name.trim().firstOrNull()?.uppercaseChar()?.takeIf { it in 'A'..'Z' } ?: '#'
     val firstIndex = remember(sorted) {
         val map = LinkedHashMap<Char, Int>()
         sorted.forEachIndexed { i, g -> map.getOrPut(initial(g)) { i } }
@@ -1073,7 +1111,7 @@ private fun SecondScreenAppPicker(apps: List<Game>, onPick: (Game) -> Unit, onCl
                                 .padding(4.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            AppIconArt(app.packageName, wide = false, modifier = Modifier.size(48.dp).aspectRatio(1f))
+                            SecondDockShortcuts.Icon(app.packageName, Modifier.size(48.dp).aspectRatio(1f))
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 app.name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),

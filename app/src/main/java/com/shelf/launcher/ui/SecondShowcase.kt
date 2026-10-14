@@ -262,7 +262,7 @@ internal fun ShowcaseDock(
                     Modifier.size(40.dp).padTarget(id) { onLaunch(app) }.clip(CircleShape).background(Color.White.copy(alpha = 0.95f))
                         .combinedClickable(onClick = { onLaunch(app) }, onLongClick = { onMenu(app) }),
                     contentAlignment = Alignment.Center
-                ) { AppIconArt(app.packageName, wide = false, modifier = Modifier.fillMaxSize().padding(5.dp)) }
+                ) { SecondDockShortcuts.Icon(app.packageName, Modifier.fillMaxSize().padding(5.dp)) }
             }
             if (apps.size < maxApps) DockRound(rememberPadId("sc-add"), onAdd, bg = Color.White.copy(alpha = 0.10f)) {
                 Icon(Icons.Filled.Add, "Add an app to the dock", tint = Color.White, modifier = Modifier.size(20.dp))

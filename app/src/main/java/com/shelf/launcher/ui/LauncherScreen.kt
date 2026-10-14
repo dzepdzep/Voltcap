@@ -1574,7 +1574,128 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             }
             val dockApps = remember(state.appearance.secondDockApps, state.installedApps) {
                 state.appearance.secondDockApps.filter { it.isNotBlank() }.distinct().mapNotNull { p ->
-                    state.installedApps.firstOrNull { it.packageName == p }
+                    // (Update 193: Voltcap's own shortcuts sit in the dock too.)
+                    state.installedApps.firstOrNull { it.packageName == p } ?: SecondDockShortcuts.game(p)
+                }
+            }
+            // Update 193: a Voltcap shortcut tapped in the second screen's dock (not a page there): done right away, or
+            // Android's own panel opened on the second screen — nothing pops up on the main screen. Returns its note.
+            val dockCtx = androidx.compose.ui.platform.LocalContext.current
+            val dockShortcut: (String) -> String? = { id ->
+                val f = com.shelf.launcher.data.Features
+                fun onSecond(intent: android.content.Intent): Boolean {
+                    val d = com.shelf.launcher.data.ScreenPlacement.secondScreen(dockCtx)?.displayId
+                    return runCatching {
+                        dockCtx.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK), com.shelf.launcher.data.ScreenPlacement.optionsFor(d))
+                        true
+                    }.getOrDefault(false)
+                }
+                when (id) {
+                    "voltcap:spotify" -> { MusicApps.playPause(dockCtx, state.nowPlaying?.isPlaying == true); null }
+                    "voltcap:explore" -> {
+                        f.exploreMode.value = !f.exploreMode.value
+                        if (f.exploreMode.value) "Explore on: the whole collection, shown equally" else "Explore off: Living Library highlights are back"
+                    }
+                    "voltcap:rediscover" -> { viewModel.setSpecialFilter(com.shelf.launcher.SpecialFilter.REDISCOVER); "Rediscover: games you haven't played in a while" }
+                    "voltcap:r1:lights" -> {
+                        if (!state.appearance.lightsEnabled) {
+                            f.lightsHeldOff.value = false
+                            viewModel.setAppearance(state.appearance.copy(lightsEnabled = true))
+                            "Lights: Voltcap's colour"
+                        } else {
+                            f.lightsHeldOff.value = !f.lightsHeldOff.value
+                            if (f.lightsHeldOff.value) "Lights off" else "Lights on"
+                        }
+                    }
+                    "voltcap:r1:fps" -> {
+                        var label = "Off"
+                        com.shelf.launcher.data.perf.PerfSettings.update(dockCtx) { c ->
+                            val now = when {
+                                c.showDuringGames && c.musicDuringGames && c.raDuringGames -> "All"
+                                !c.showDuringGames && !c.musicDuringGames && !c.raDuringGames -> "Off"
+                                c.showDuringGames && !c.musicDuringGames && !c.raDuringGames -> "Stats"
+                                !c.showDuringGames && c.musicDuringGames && !c.raDuringGames -> "Music"
+                                !c.showDuringGames && !c.musicDuringGames && c.raDuringGames -> "Trophies"
+                                else -> "Mixed"
+                            }
+                            val next = when (now) {
+                                "Off" -> Triple(true, false, false)
+                                "Stats" -> Triple(false, true, false)
+                                "Music" -> Triple(false, false, true)
+                                "Trophies" -> Triple(true, true, true)
+                                else -> Triple(false, false, false)
+                            }
+                            label = when (next) {
+                                Triple(true, false, false) -> "Stats"
+                                Triple(false, true, false) -> "Music"
+                                Triple(false, false, true) -> "Trophies"
+                                Triple(true, true, true) -> "All"
+                                else -> "Off"
+                            }
+                            c.copy(showDuringGames = next.first, musicDuringGames = next.second, raDuringGames = next.third)
+                        }
+                        PerfOverlayService.reconfigure(dockCtx)
+                        if (label == "Stats" && com.shelf.launcher.data.perf.PerfAutoSetup.possible) {
+                            Thread { runCatching { com.shelf.launcher.data.perf.PerfAutoSetup.run(dockCtx.applicationContext) } }.start()
+                        }
+                        "Overlay over games: $label"
+                    }
+                    "voltcap:r1:endless" -> if (!endlessApplies(state.appearance.homeLayout)) "${state.appearance.homeLayout.label} has no Endless row" else {
+                        viewModel.setAppearance(state.appearance.copy(loopRow = !state.appearance.loopRow))
+                        if (!state.appearance.loopRow) "Endless row on" else "Endless row off"
+                    }
+                    "voltcap:r1:navbar" -> {
+                        val on = !com.shelf.launcher.data.GestureHint.immersiveState.value
+                        com.shelf.launcher.data.GestureHint.setImmersive(dockCtx, on)
+                        if (on) "Navigation bar hidden" else "Navigation bar shown"
+                    }
+                    "voltcap:r1:whoplays" -> { f.whoPlays.value = !f.whoPlays.value; if (f.whoPlays.value) "Who is playing: on" else "Who is playing: off" }
+                    "voltcap:r1:drawnmedia" -> { f.mediaShells.value = !f.mediaShells.value; if (f.mediaShells.value) "Drawn discs" else "Real discs" }
+                    "voltcap:r1:theme" -> {
+                        val favs = f.favoriteThemes.state.value
+                        val favThemes = com.shelf.launcher.ui.theme.AppTheme.values().filter { it.name in favs }
+                        if (favThemes.isEmpty()) "Star some themes first (Settings › Theme), then this steps through them"
+                        else {
+                            val next = favThemes[(favThemes.indexOf(state.appTheme) + 1).mod(favThemes.size)]
+                            viewModel.setTheme(next)
+                            "Theme: ${next.label}"
+                        }
+                    }
+                    "voltcap:r1:saver" -> {
+                        val modes = com.shelf.launcher.data.BatterySaver.Mode.values()
+                        val next = modes[(f.saverMode.value.ordinal + 1) % modes.size]
+                        f.saverMode.value = next
+                        when (next) {
+                            com.shelf.launcher.data.BatterySaver.Mode.AUTO -> "Battery saver: when the battery is low"
+                            com.shelf.launcher.data.BatterySaver.Mode.ALWAYS -> "Battery saver: always"
+                            com.shelf.launcher.data.BatterySaver.Mode.OFF -> "Battery saver: off"
+                        }
+                    }
+                    "voltcap:r1:rescan" -> if (state.isScanning) "Already scanning" else { viewModel.rescanEverything(); "Rescanning your library" }
+                    "voltcap:r1:scrape" -> if (state.scrapeTotal > 0) "Getting art: ${state.scrapeDone} of ${state.scrapeTotal}" else { viewModel.scrapeMissingArt(manual = true); "Getting the missing art" }
+                    "voltcap:r1:dnd" -> {
+                        val nm = dockCtx.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                        if (!nm.isNotificationPolicyAccessGranted) {
+                            onSecond(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+                            "Allow Voltcap to change Do not disturb, then tap it again"
+                        } else {
+                            val wasOn = QuickControls.isDndOn(dockCtx)
+                            QuickControls.toggleDnd(dockCtx)
+                            if (wasOn) "Do not disturb off" else "Do not disturb on"
+                        }
+                    }
+                    "voltcap:r1:wifi" -> {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                            if (!onSecond(android.content.Intent(android.provider.Settings.Panel.ACTION_WIFI))) onSecond(android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS))
+                            null
+                        } else { QuickControls.toggleWifi(dockCtx); "Wi-Fi switched" }
+                    }
+                    "voltcap:r1:bt" -> {
+                        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.R) { QuickControls.toggleBluetooth(dockCtx); "Bluetooth switched" }
+                        else { onSecond(android.content.Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)); null }
+                    }
+                    "voltcap:r1:settings" -> { onSecond(android.content.Intent(android.provider.Settings.ACTION_SETTINGS)); null }
+                    else -> "That shortcut only works on the main screen"
                 }
             }
             val secondMotif = SecondScene.motif
@@ -1706,6 +1827,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 onLaunchApp = { viewModel.launchDockApp(it) },
                 onDockChange = { list -> viewModel.setAppearance(state.appearance.copy(secondDockApps = list)) },
                 onOpenSettings = { menuStartCategory = "Screens"; showMenu = true },
+                onShortcut = dockShortcut,
                 options = SecondScreenOptions(
                     artType = state.appearance.secondArtType,
                     artBlur = state.appearance.secondArtBlur,

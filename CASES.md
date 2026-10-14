@@ -141,3 +141,17 @@ Famicom Disk System and 64DD packaging. Not drawn yet:
 8. On a device: a jewel case shows the whole booklet with the ridge beside it, nothing cut.
 9. On a device: an Android game with a custom cartridge shows a cartridge in its case (not a disc).
 10. Placeholders stay marked here until real measurements replace them.
+
+## Opening edges (update 193)
+- **Hinged cases:** the right side shows the front lid's edge, a fine seam and the rear shell's lip. The seam's place
+  is worked out from the lid's thickness, as follows:
+  - keep cases: about 2 mm;
+  - jewel lids: 2.4 mm;
+  - DS / 3DS / Vita halves: about even;
+  - clamshells: even.
+- **Catches:** two on keep and card cases, the two lid tabs on jewel cases, one on clamshells. Their positions are
+  approximate, not measured.
+- **Cardboard boxes:** no side opening. The top shows its back fold and the tuck flap's slit, and it opens there.
+- **Opening:** the lid has its own thickness and swings on the hinge; the tray's walls stop where it sat.
+- **Not yet:** rounded corners, the PAL Dreamcast multi-part case, and NA vs EU DS closure differences beyond
+  thickness.

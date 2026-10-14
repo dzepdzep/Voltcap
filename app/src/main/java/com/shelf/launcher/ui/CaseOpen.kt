@@ -448,6 +448,8 @@ internal object CaseOpenDraw {
         var ok = true
         /** Flip the picture left-right (a face seen from its back). */
         var edge = false
+        /** Update 193: drawn from either side (the lid's rim). */
+        var twoSided = false
     }
     private val quads = Array(16) { Quad() }
 
@@ -457,7 +459,11 @@ internal object CaseOpenDraw {
         front: Bitmap?, spine: Bitmap, back: Bitmap?, tray: Bitmap, lidInside: Bitmap, item: Bitmap?, itemRect: FloatArray,
         showItem: Boolean, plastic: Int, light: Float,
         /** Update 191: the disc lies inside the lid (Xbox One / Series), not in the tray. */
-        itemOnLid: Boolean = false
+        itemOnLid: Boolean = false,
+        /** Update 193: the front lid's share of the case's depth (its own thickness; the tray's walls are the rest). */
+        lidFrac: Float = 0f,
+        /** Update 193: the lid's edge colour (its rim, seen as it swings). */
+        lidEdge: Int = 0
     ) {
         val ty = Math.toRadians(yaw.toDouble()); val tp = Math.toRadians(pitch.toDouble())
         val cy0 = kotlin.math.cos(ty).toFloat(); val sy0 = kotlin.math.sin(ty).toFloat()
@@ -478,7 +484,7 @@ internal object CaseOpenDraw {
             q.pts[i * 2 + 1] = cy + y2 * s
             q.depth += z2 / 4f
         }
-        fun next(): Quad = quads[n++].also { it.depth = 0f; it.bmp = null; it.color = 0; it.ok = true; it.light = 1f; it.edge = false }
+        fun next(): Quad = quads[n++].also { it.depth = 0f; it.bmp = null; it.color = 0; it.ok = true; it.light = 1f; it.edge = false; it.twoSided = false }
         fun area(q: Quad): Float {
             var a = 0f
             for (i in 0 until 4) { val j = (i + 1) % 4; a += q.pts[i * 2] * q.pts[j * 2 + 1] - q.pts[j * 2] * q.pts[i * 2 + 1] }
@@ -496,13 +502,16 @@ internal object CaseOpenDraw {
             put(q, 0, x0, y0, z); put(q, 1, x1, y0, z); put(q, 2, x1, y1, z); put(q, 3, x0, y1, z) }
         // The walls: each drawn on the side that faces you (outside: the spine picture / plastic; inside: plastic).
         val wall = CaseInside.shade(plastic, 0.8f)
+        // (Update 193: the tray's walls stop where the lid sits on them — the lid has its own thickness.)
+        val lidT = d * lidFrac.coerceIn(0f, 0.6f)
+        val zTop = hd - lidT
         // top (outside faces up), bottom, open edge, spine.
         next().also { q -> q.color = wall; q.light = 0.75f
-            put(q, 0, -hw, -hh, -hd); put(q, 1, hw, -hh, -hd); put(q, 2, hw, -hh, hd); put(q, 3, -hw, -hh, hd) }
+            put(q, 0, -hw, -hh, -hd); put(q, 1, hw, -hh, -hd); put(q, 2, hw, -hh, zTop); put(q, 3, -hw, -hh, zTop) }
         next().also { q -> q.color = wall; q.light = 0.6f
-            put(q, 0, -hw, hh, hd); put(q, 1, hw, hh, hd); put(q, 2, hw, hh, -hd); put(q, 3, -hw, hh, -hd) }
+            put(q, 0, -hw, hh, zTop); put(q, 1, hw, hh, zTop); put(q, 2, hw, hh, -hd); put(q, 3, -hw, hh, -hd) }
         next().also { q -> q.color = wall; q.light = 0.7f
-            put(q, 0, hw, -hh, hd); put(q, 1, hw, -hh, -hd); put(q, 2, hw, hh, -hd); put(q, 3, hw, hh, hd) }
+            put(q, 0, hw, -hh, zTop); put(q, 1, hw, -hh, -hd); put(q, 2, hw, hh, -hd); put(q, 3, hw, hh, zTop) }
         next().also { q -> q.bmp = spine; q.light = 0.85f
             put(q, 0, -hw, -hh, -hd); put(q, 1, -hw, -hh, hd); put(q, 2, -hw, hh, hd); put(q, 3, -hw, hh, -hd) }
         // The back, from behind.
@@ -511,10 +520,15 @@ internal object CaseOpenDraw {
         // The lid, swung round the hinge (x = -hw, z = +hd): its outside (the cover) and its inside.
         val th = Math.toRadians((open.coerceIn(0f, 1f) * 178f).toDouble())
         val ct = kotlin.math.cos(th).toFloat(); val st = kotlin.math.sin(th).toFloat()
+        // (Update 193: the lid's inside on the tray's walls, its outside its own thickness further out.)
         fun lx(u: Float) = -hw + u * w * ct
-        fun lz(u: Float) = hd + u * w * st
+        fun lz(u: Float) = zTop + u * w * st
+        val ox = -st * lidT; val oz = ct * lidT
         next().also { q -> q.bmp = front; q.color = CaseInside.shade(plastic, 0.9f)
-            put(q, 0, lx(0f), -hh, lz(0f)); put(q, 1, lx(1f), -hh, lz(1f)); put(q, 2, lx(1f), hh, lz(1f)); put(q, 3, lx(0f), hh, lz(0f)) }
+            put(q, 0, lx(0f) + ox, -hh, lz(0f) + oz); put(q, 1, lx(1f) + ox, -hh, lz(1f) + oz); put(q, 2, lx(1f) + ox, hh, lz(1f) + oz); put(q, 3, lx(0f) + ox, hh, lz(0f) + oz) }
+        // Its opening edge (the rim you put your thumb on), as it swings.
+        if (lidT > 0.5f) next().also { q -> q.color = if (lidEdge != 0) lidEdge else wall; q.light = 0.8f; q.twoSided = true
+            put(q, 0, lx(1f), -hh, lz(1f)); put(q, 1, lx(1f) + ox, -hh, lz(1f) + oz); put(q, 2, lx(1f) + ox, hh, lz(1f) + oz); put(q, 3, lx(1f), hh, lz(1f)) }
         next().also { q -> q.bmp = lidInside; q.light = 0.97f
             put(q, 0, lx(1f), -hh, lz(1f)); put(q, 1, lx(0f), -hh, lz(0f)); put(q, 2, lx(0f), hh, lz(0f)); put(q, 3, lx(1f), hh, lz(1f)) }
         // Update 191: a disc held inside the lid (its place on the lid's picture: across from the lid's outer edge).
@@ -533,7 +547,7 @@ internal object CaseOpenDraw {
             val a = area(q)
             val isWall = q.bmp == null && q.color == wall
             // The walls show their inside when their outside faces away (they're open boxes): draw either way, darker inside.
-            if (a <= 0f && !isWall) continue
+            if (a <= 0f && !isWall && !q.twoSided) continue
             val lit = (q.light * light * (if (isWall && a <= 0f) 0.85f else 1f)).coerceIn(0f, 1f)
             val b = q.bmp
             if (b != null) {
