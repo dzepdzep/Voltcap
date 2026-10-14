@@ -2,6 +2,7 @@ package com.shelf.launcher.ui
 
 import android.app.NotificationManager
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Label
@@ -741,6 +742,34 @@ fun QuickSettingsCard(
                             else -> a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.ART, videoPreviews = true)
                         }
                     )
+                })
+            }
+            // Update 196: how the game's picture fits the background in this layout — Fill the screen or the Whole picture
+            // (Layout options › Background & game names, per layout). Greyed out where it changes nothing: another
+            // background than the game's art, or the Voltcap row with its games not at the bottom.
+            run {
+                com.shelf.launcher.data.Features.heroFitByLayout.state.value
+                com.shelf.launcher.data.Features.carouselLayouts.state.value
+                com.shelf.launcher.data.Features.spineLook.state.value
+                val layout = a.homeLayout
+                val fit = com.shelf.launcher.data.HeroFitPlan.of(layout, a.heroFit, a.cardArtType)
+                val whole = fit == com.shelf.launcher.data.HeroFit.WHOLE
+                val why = when {
+                    a.backgroundStyle != com.shelf.launcher.data.BackgroundStyle.ART ->
+                        "The background is ${a.backgroundStyle.label.replaceFirstChar { it.lowercase() }} — the fit is for the game's own picture (Background: game art)."
+                    layout == com.shelf.launcher.data.HomeLayout.CLASSIC && a.dockPosition != com.shelf.launcher.data.DockPosition.BOTTOM ->
+                        "${layout.label} shows the whole picture only with its row at the bottom (Row position)."
+                    else -> null
+                }
+                if (why != null) add(R1Tile("herofit", Icons.Filled.AspectRatio, "Picture\n" + if (whole) "Whole" else "Fill", false, disabled = true) {
+                    android.widget.Toast.makeText(context, why, android.widget.Toast.LENGTH_SHORT).show()
+                }) else add(R1Tile("herofit", Icons.Filled.AspectRatio, "Picture\n" + if (whole) "Whole" else "Fill", whole,
+                    longAction = {
+                        choiceSheet = "Background picture · ${layout.label}" to com.shelf.launcher.data.HeroFit.values().map { f ->
+                            R1Choice(f.label, f == fit) { com.shelf.launcher.data.HeroFitPlan.put(layout, f) }
+                        }
+                    }) {
+                    com.shelf.launcher.data.HeroFitPlan.put(layout, if (whole) com.shelf.launcher.data.HeroFit.FILL else com.shelf.launcher.data.HeroFit.WHOLE)
                 })
             }
             add(R1Tile("theme", Icons.Filled.Palette, "Theme\n" + home.themeName, false,

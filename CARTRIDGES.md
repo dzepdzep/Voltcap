@@ -25,7 +25,7 @@ Sizes are width × height × thickness in mm, front view.
 | Game Boy Color Game Pak (black) | Nintendo | 57 × 65.5 × 9 | Drawn, partly estimated | Size measured; layout as Game Boy (estimated). |
 | Game Boy Color Game Pak (clear) | Nintendo | 57 × 65.5 × 9 | Drawn, partly estimated | Clear shell, the board shows through; size measured, layout estimated. |
 | Game Boy Advance Game Pak | Nintendo | 60 × 35 × 8 | Drawn, partly estimated | Width 60 / 57.5 and height 35 measured; the wide top's height estimated. |
-| Virtual Boy Game Pak | Nintendo | 75.8 × 68.36 × 6.61 | Drawn, partly estimated | Size measured (75.8×68.36×6.61; 73.74 tall with its dust cap), label about 52×42 measured; the dust cap isn't drawn. |
+| Virtual Boy Game Pak | Nintendo | 75.8 × 73.74 × 6.61 | Drawn, partly estimated | Size measured (75.8×68.36×6.61, 73.74 tall with its removable dust cap, drawn at the bottom); label about 52×42 measured. |
 | Nintendo DS Game Card | Nintendo | 33 × 35 × 3.8 | Drawn, partly estimated | Size measured (33×35×3.8); layout estimated. |
 | Nintendo 3DS Game Card | Nintendo | 34 × 35 × 3.8 | Drawn, partly estimated | Size measured; the side tab (it stops a 3DS card going into a DS) estimated. |
 | Nintendo Switch Game Card | Nintendo | 21 × 31 × 3 | Drawn, partly estimated | Size 21×31×3 (Wikipedia; others say 3.3 thick); layout estimated. |
@@ -110,12 +110,11 @@ Sizes are width × height × thickness in mm, front view.
   WonderSwan Color / SwanCrystal differences, Neo Geo MVS revisions, and Casio PV-1000 vs Loopy details.
 - **Special parts not modelled in 3D:**
   - the Game Boy power-lock notch;
-  - the Virtual Boy dust cap;
   - the Sonic & Knuckles flap opening;
   - the J-Cart's ports, which are drawn on the front, not the top;
   - the Game Boy Camera ball's depth.
-- **3D models from your shape library (GLB):** these still work as before, but aren't in the Cartridge shell picker
-  yet.
+- **3D models from your shape library:** in the picker since update 197 (Your 3D pieces). They're drawn from their
+  pre-rendered angles, as the 3D models look draws them.
 - **Device check:** none of this has been tested on a device yet.
 
 ## Verification checklist (per shell)

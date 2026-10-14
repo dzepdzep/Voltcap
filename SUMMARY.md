@@ -4,6 +4,53 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (197): the PlayStation front scan as the case's front, your 3D pieces in the shell picker, the Virtual Boy dust cap
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (3): `src_copy\ui\Case3D.kt`,
+`src_copy\ui\CartShells.kt`, `src_copy\ui\CartShellPicker.kt`.
+
+**Project root**, changed (1): `CARTRIDGES.md`.
+
+**Files to delete:** none.
+
+### PlayStation front (seen on the Thor: Donald Duck Goin' Quackers)
+- The scraped front is a scan of the whole jewel case (its own hinge ribs at the left). It was being shown small, as a
+  booklet inside the drawn case, with a second drawn ridge beside it.
+- A front about the case's own shape (142 × 125, give or take 8 %) is now the case's front itself. It fills the face
+  with no drawn booklet window or ridge.
+- A square booklet scan still goes in whole under the lid, beside the drawn ridge.
+
+### Cartridge shells
+- **Your 3D pieces:** the game's menu › Cartridge shell… has a "Your 3D pieces" tab with your shape library's
+  cartridges and cards on this device (real and custom, clear ones too). A game picked onto one is drawn with its own
+  console's colours and logo, as the 3D models look draws it.
+- **Virtual Boy:** the cart now has its removable dust cap at the bottom (73.74 mm tall with it, measured).
+
+---
+
+## Update — 14 Oct 2026 (196): an R1 tile for how the game's picture fits the background
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (3): `src_copy\data\BuiltinShortcuts.kt`,
+`src_copy\ui\QuickSettings.kt`, `src_copy\ui\R1Shortcuts.kt`.
+
+**Files to delete:** none.
+
+### R1 › Picture (Fill / Whole)
+- **Tap:** switches the layout you're on between Fill the screen (top to bottom, the sides of wide art cut off) and
+  Whole picture (all of it across the top, a soft blurred copy filling the rest).
+- **Hold:** a list with both, for this layout.
+- **Same setting as** Layout options › Background & game names › Background picture: each layout keeps its own.
+- **Greyed out where it changes nothing.** A tap says why:
+  - the background isn't the game's art (blurred art, theme animation, your wallpaper, a still background);
+  - or it's the Voltcap row with its games not at the bottom.
+- **L1:** it can also be pinned there ("R1 · Background picture fit").
+
+---
+
 ## Update — 14 Oct 2026 (195): the cartridge collection (any game on any shell), the second screen's folders and arrows, the PlayStation cover whole
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

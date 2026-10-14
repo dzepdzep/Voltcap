@@ -20,7 +20,8 @@ object BuiltinShortcuts {
         "profile" to "Power profile", "batterywatch" to "Battery watcher", "battery" to "Battery & charge limit",
         "mixer" to "Volume mixer", "settings" to "Android settings",
         "shelflook" to "Shelf look", "spotlight" to "Spotlight tiles", "bartabs" to "Icon bar tabs", "crosscut" to "Cross menu logos",
-        "headertight" to "Header layout", "drawnmedia" to "Drawn / real discs", "magnifier" to "Magnifier", "whoplays" to "Who is playing"
+        "headertight" to "Header layout", "drawnmedia" to "Drawn / real discs", "magnifier" to "Magnifier", "whoplays" to "Who is playing",
+        "herofit" to "Background picture fit"
     )
 
     val all = listOf(

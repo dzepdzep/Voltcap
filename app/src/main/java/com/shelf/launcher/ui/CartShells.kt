@@ -130,9 +130,10 @@ internal object CartShells {
             listOf(rid(4f, 1f, 52f, 5f, 4)), listOf(sc(30f, 12f)),
             listOf(c("Dark grey", 0xFF4A4A50), c("Ruby red", 0xFFC0202A, 0.7f), c("Sapphire blue", 0xFF2850B0, 0.7f), c("Emerald green", 0xFF2E9A48, 0.7f)),
             contactsBack = floatArrayOf(5f, 30f, 50f, 4.5f), check = CaseCheck.ESTIMATED, note = "Width 60 / 57.5 and height 35 measured; the wide top's height estimated."),
-        CartShell("vb", "Virtual Boy Game Pak", ShellGroup.NINTENDO, 75.8f, 68.36f, 6.61f, rect(75.8f, 68.36f, 3f, 1f), lab(11.9f, 6f, 52f, 42f),
-            colours = listOf(c("Black", 0xFF232325)), check = CaseCheck.ESTIMATED,
-            note = "Size measured (75.8×68.36×6.61; 73.74 tall with its dust cap), label about 52×42 measured; the dust cap isn't drawn."),
+        CartShell("vb", "Virtual Boy Game Pak", ShellGroup.NINTENDO, 75.8f, 73.74f, 6.61f, rect(75.8f, 73.74f, 3f, 1f), lab(11.9f, 6f, 52f, 42f),
+            colours = listOf(c("Black", 0xFF232325)), extras = listOf(ShellExtra(ShellExtra.FLAP, 1.5f, 68.36f, 72.8f, 5.38f, 0xFF3A3A3D.toInt())),
+            check = CaseCheck.ESTIMATED,
+            note = "Size measured (75.8×68.36×6.61, 73.74 tall with its removable dust cap, drawn at the bottom); label about 52×42 measured."),
         CartShell("ds", "Nintendo DS Game Card", ShellGroup.NINTENDO, 33f, 35f, 3.8f, rect(33f, 35f, 1.5f, 0.8f), lab(2.5f, 5f, 28f, 28f),
             listOf(rid(1f, 0.5f, 31f, 2.5f, 1)), colours = listOf(c("Dark grey", 0xFF3C3C40), c("White", 0xFFF2F2F2)),
             contactsBack = floatArrayOf(2f, 29f, 29f, 5f), check = CaseCheck.ESTIMATED, note = "Size measured (33×35×3.8); layout estimated."),
@@ -366,8 +367,8 @@ internal object CartShells {
 
     // ---- Choices: "<shell>~<colour>" or "pack:<look key>~<clear|opaque>" ----
 
-    class Choice(val shell: CartShell?, val pack: CartLook?, val colourKey: String, val raw: String) {
-        val aspect: Float get() = shell?.aspect ?: pack?.aspect ?: 1f
+    class Choice(val shell: CartShell?, val pack: CartLook?, val colourKey: String, val raw: String, val model: String? = null) {
+        val aspect: Float get() = shell?.aspect ?: pack?.aspect ?: model?.let { Models3D.aspect(it) } ?: 1f
         val clear: Boolean get() = colourKey == "clear"
     }
 
@@ -376,11 +377,23 @@ internal object CartShells {
         val id = raw.substringBefore('~')
         val colour = raw.substringAfter('~', "")
         return if (id.startsWith("pack:")) CartLook.values().firstOrNull { it.key == id.removePrefix("pack:") }?.let { Choice(null, it, colour, raw) }
+        else if (id.startsWith("m3d:")) id.removePrefix("m3d:").takeIf { it in Models3D.ALL }?.let { Choice(null, null, colour, raw, it) }
         else of(id)?.let { Choice(it, null, colour, raw) }
     }
 
     /** The piece for a choice on [platform]'s game. */
-    fun pickOf(raw: String, platform: String): MediaPick? = parse(raw)?.let { MediaPick(MediaShell.GB, "$SHELL_PREFIX$raw|$platform", it.aspect) }
+    fun pickOf(raw: String, platform: String): MediaPick? = parse(raw)?.let { ch ->
+        // (Update 197: a piece of your 3D shape library is drawn as before — the game's console's colours and logo on it.)
+        val m = ch.model
+        if (m != null) { if (com.shelf.launcher.data.Packs.hasModel(m)) MediaPick(MediaShell.GB, "$MODEL_3D$m|$platform", Models3D.aspect(m)) else null }
+        else MediaPick(MediaShell.GB, "$SHELL_PREFIX$raw|$platform", ch.aspect)
+    }
+
+    /** Update 197: your shape library's cartridges and cards on this device (the picker's "Your 3D pieces"). */
+    fun libraryPieces(): List<String> = Models3D.ALL.filter { id ->
+        (id.startsWith("cart_") || id.startsWith("card_") || id.endsWith("_cart_real") || id.endsWith("_card_real")) &&
+            com.shelf.launcher.data.Packs.hasModel(id)
+    }
 
     /** "~sh:<choice>|<console>" → its choice and console. */
     fun split(pickPlatform: String): Pair<Choice?, String?> {
@@ -647,7 +660,10 @@ internal object CartShellStore {
 internal fun CartShellArt(pickPlatform: String, art: Any?, modifier: Modifier, title: String? = null, maxPx: Int = 640) {
     val (choice, console) = remember(pickPlatform) { CartShells.split(pickPlatform) }
     val packLook = choice?.pack
-    if (packLook != null) {
+    val model = choice?.model
+    if (model != null) {
+        Model3DArt(model, art, 20f, modifier, name = title, platform = console)
+    } else if (packLook != null) {
         PackCart(console ?: "", art, modifier, packLook, choice.clear)
     } else {
         val shell = choice?.shell

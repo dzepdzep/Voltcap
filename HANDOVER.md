@@ -256,6 +256,20 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 197
+- **`isWholeCaseScan(f, caseAspect)`:** within 8 % of the case's aspect. A JEWEL face then uses f as it is, and
+  CaseLook uses `withoutStrip()`.
+- **Choice "m3d:<id>":** `pickOf` gives a MODEL_3D pick (when it's downloaded). `libraryPieces()` lists the cart_ /
+  card_ / *_cart_real / *_card_real ids on the device. CartShellArt draws Model3DArt for it.
+- **VB shell:** h 73.74, with a FLAP extra as the dust cap.
+
+## State after update 196
+- **R1 tile "herofit":** QuickSettings, after the background tile, inside the same block. It uses
+  `HeroFitPlan.of` / `put` for `a.homeLayout`.
+- **Disabled (toast with the reason) when:** `backgroundStyle != ART`, or CLASSIC with `dockPosition != BOTTOM`.
+- **Hold:** the choiceSheet with the HeroFit values.
+- **Also added in:** BuiltinShortcuts.R1_TILES and the R1Shortcut icon (AspectRatio).
+
 ## State after update 195
 - **ui/CartShells.kt:**
   - `CartShell` (mm outline x,y,r triples, label, ridges, screws, colours, extras, contacts, check, note), 67 entries

@@ -3,6 +3,7 @@ package com.shelf.launcher.ui
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.BatteryAlert
@@ -89,6 +90,7 @@ internal object R1Shortcut {
         "drawnmedia" -> Icons.Filled.Album
         "magnifier" -> Icons.Filled.Search
         "whoplays" -> Icons.Filled.Person
+        "herofit" -> Icons.Filled.AspectRatio
         else -> Icons.Filled.Bolt
     }
 }

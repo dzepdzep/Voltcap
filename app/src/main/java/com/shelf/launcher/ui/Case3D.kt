@@ -135,7 +135,9 @@ internal fun Case3D(
                 // PlayStation cover to its own narrower shape first. Only other art gets the template's band.)
                 // (Update 195 (Thor, still cut in 194): always the whole picture — the template's frame is never used
                 // on a jewel case, whatever the picture's shape.)
-                spec?.shell == CaseShell.JEWEL -> jewelFront(f, shape, spec.tray)
+                // (Update 197 (Thor): a scan of the whole jewel case's front — its own hinge ribs at the left, about the
+                // case's shape — is the front itself: it fills the face, no drawn booklet window or ridge over it.)
+                spec?.shell == CaseShell.JEWEL -> if (isWholeCaseScan(f, shape)) f else jewelFront(f, shape, spec.tray)
                 // Update 191: a keep case's sleeve, a box's print: the cover over the whole front, at the real case's
                 // shape (a little off: fitted; further off: cut in the middle).
                 spec != null -> made ?: fitFace(f, shape)
@@ -157,7 +159,9 @@ internal fun Case3D(
     // Update 186: what the case is made of, so it looks like the real one (a clear jewel case, a cardboard box, a keep case).
     val style = caseStyleOf(g.platform)
     // Update 191: its plastic's colour and how see-through, its edges, grip and hinge ridge, from the real case.
-    val look = remember(spec, style, face) { CaseLook.of(spec, style, face) }
+    // (Update 197: a whole-case scan already shows the tray's ridge — no drawn one over it.)
+    val wholeScan = spec?.shell == CaseShell.JEWEL && front != null && isWholeCaseScan(front, shape)
+    val look = remember(spec, style, face, wholeScan) { CaseLook.of(spec, style, face).let { if (wholeScan) it.withoutStrip() else it } }
     // Update 189: what an opened case shows inside (made only for a case that can open).
     // (Update 191: from the real case, and from what lies in it — a disc case holding a cartridge shows the cartridge.)
     val openKind = CaseInside.kindFor(spec, g.platform, inside?.round)
@@ -222,6 +226,9 @@ internal class CaseLook(
     /** Update 193: the catches / tabs along the opening edge (down it, 0…1). */
     val catches: FloatArray = FloatArray(0)
 ) {
+    /** Update 197: the same without the drawn tray ridge (the scan shows its own). */
+    fun withoutStrip(): CaseLook = CaseLook(edge, top, back, grip, 0, 0f, matte, inner, flap, seam, edgeStyle, catches)
+
     companion object {
         private const val DARK = 0xFF15171B.toInt()
         private val KEEP_CATCHES = floatArrayOf(0.2f, 0.8f)
@@ -383,6 +390,15 @@ private fun fitBack(src: android.graphics.Bitmap, aspect: Float): android.graphi
     if (k < 0.82f || k > 1.22f) return cropTo(src, aspect)
     val w = (src.height * aspect).toInt().coerceAtLeast(1)
     return runCatching { android.graphics.Bitmap.createScaledBitmap(src, w, src.height, true) }.getOrDefault(src)
+}
+
+/**
+ * Update 197: a jewel case front scanned whole (the case's own shape, 142 × 125, give or take 8 %) rather than just its
+ * booklet (square): ScreenScraper's PlayStation fronts are often the whole case, hinge ribs and all.
+ */
+internal fun isWholeCaseScan(f: android.graphics.Bitmap, caseAspect: Float): Boolean {
+    val a = f.width.toFloat() / f.height.coerceAtLeast(1)
+    return caseAspect > 0f && kotlin.math.abs(a / caseAspect - 1f) < 0.08f
 }
 
 /** Update 191: [src] at [aspect]: within 6 % as it is (drawn onto the front), further off cut in the middle. */
