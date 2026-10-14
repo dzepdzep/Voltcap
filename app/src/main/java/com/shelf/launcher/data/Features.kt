@@ -1009,6 +1009,19 @@ object Features {
      * the template pack (barcode, seals, rating box) over the game's art, with its screenshots and description.
      */
     val printedBacks = BoolPref("printed_backs", true)
+    /**
+     * Update 191: which region's case a game gets (ui/CaseCatalog.kt) when its file name doesn't say ("(USA)", "(Europe)",
+     * "(Japan)"), or one region for every game.
+     */
+    enum class CaseRegionChoice(val label: String, val code: String, val fixed: Boolean) {
+        AUTO_US("From the file name, else North America", "US", false),
+        AUTO_EU("From the file name, else Europe", "EU", false),
+        AUTO_JP("From the file name, else Japan", "JP", false),
+        US("North America for all", "US", true),
+        EU("Europe / PAL for all", "EU", true),
+        JP("Japan for all", "JP", true)
+    }
+    val caseRegion = EnumPref("case_region", CaseRegionChoice.AUTO_US, CaseRegionChoice.values())
     /** Update 147, Disc station: the loaded disc turns slowly. */
     val discSpin = BoolPref("disc_spin", true)
     /** Update 147, Disc station: a few lines about the game under its name. */
@@ -1142,6 +1155,8 @@ object Features {
     val namesByLayout = StringPref("names_by_layout", "")
     /** Battery watcher: Voltcap measures its own share of the battery use (a light check once a minute). */
     val batteryWatch = BoolPref("battery_watch_on", true)
+    /** Update 190: artwork downloads go on while Voltcap isn't on screen (behind a game too; ArtDownloadService). */
+    val artInBackground = BoolPref("art_in_background", true)
     /** Update 187: the battery saver (BatterySaver): when the low-battery rest is on (when low / always / off). */
     val saverMode = EnumPref("saver_mode", BatterySaver.Mode.AUTO, BatterySaver.Mode.values())
     /** Update 187: below this level (%), not plugged in, the low-battery rest starts. */

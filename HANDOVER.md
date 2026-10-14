@@ -256,6 +256,75 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 191
+- **ui/CaseCatalog.kt:**
+  - `CaseSpec(platform, region?, shell, w/h/t mm, plastic, opacity, tray, media CaseHeld, mediaWMm, mediaLeft,
+    mediaU/V, memCard, gbaSlot, grip, check, note)`;
+  - `CaseShell` KEEP / CARDCASE / JEWEL / LONGBOX / CLAMSHELL / CARDBOARD / BOOKBOX / BIGBOX / CASSETTE;
+  - `CaseHeld` (named so to avoid Carousel's private CaseMedia);
+  - `CaseCatalog.forGame(g)` (LRU 600 keyed by platform, region pref and file) and `regionOf(file)` (the first tag
+    naming a region; several → the default);
+  - `noRetailCase` returns null and the legacy path is used;
+  - C64 `.tap` / `.t64` → cassette.
+- **`Features.caseRegion`** (`case_region`, `CaseRegionChoice` AUTO_US default / AUTO_EU / AUTO_JP / US / EU / JP;
+  `code`, `fixed`). Settings › Game look › Covers, cases & discs › Case region (StyleChoice after Printed case backs).
+- **Case3D:**
+  - `spec` remembered on stableKey, region pref and casePlatform;
+  - `shape` = `spec.aspect` when known;
+  - face = `jewelFront` (booklet window 0.075–0.925 × 0.018–0.982, letterboxed) for JEWEL, else framed or `fitFace`
+    (≤ 6 % kept, else cropped);
+  - the cover template is dropped when its aspect is off by more than 15 % (not for JEWEL);
+  - depth = `spec.depth`;
+  - `case3dAspect` uses the spec (clamped 0.55–1.85).
+- **`CaseLook.of(spec, style, face)`:** edge / top / back / grip / strip / matte / inner / flap.
+  - Keep cases: edge = mix(dark, plastic, 0.5 + 0.4·opacity).
+  - Jewel: the tray seen through the plastic; strip = tray colour with alpha F2 (dark) or 88 (light).
+  - Cardboard: the front's average colours at its top and right edge.
+- **CaseDraw** takes `look` and `flap`:
+  - the top becomes a dark opening;
+  - dust flaps 0–100°, tuck flap 0–118° with its tongue;
+  - the inner tray rises h·0.2 after flap 0.7, with its empty well.
+- **CaseInside:**
+  - `kindFor(spec, platform, itemRound)`: what lies in the case decides HUB / JEWEL vs SLOT (this fixes the flip);
+  - `plastic(spec, platform)`: keep cases mix paper white toward the plastic by 0.25 + 0.75·opacity;
+  - `itemRect(..., spec)`: real mm and mediaU/V;
+  - `tray` / `lid(..., spec, kind)`; `mediaBed` handles the hub (DISC80 hub ×1.5), the GBA slot, the Switch tabs and
+    the legacy leaflet;
+  - mediaLeft: hub on the lid, clips on the tray;
+  - memCard: recess under a shorter manual on the lid.
+- **CaseOpenDraw:** `itemOnLid` quad on the lid's inside (offset 0.18·d along its normal).
+- **Callers:**
+  - `CaseItem.round` (from `caseItemOf`).
+  - `toggleCase(hinged = true)` everywhere (boxes animate `lid` as the flap).
+  - InspectContent uses `kindFor` / `itemRect` with the spec; on the lid it starts at hinge − w2. Box start y is
+    top − 0.1h.
+  - `scanShape` is skipped when a spec exists.
+- **Not tested on a device yet.** The Thor was in a game during the work.
+
+## State after update 190
+- **ArtDownloadService** (data/; manifest: dataSync FGS + `FOREGROUND_SERVICE_DATA_SYNC`, in project_copy):
+  - ref-counted `start(ctx, total)` / `progress` / `stop`;
+  - started by scrapeMissingArt (try/finally round the whole job) and by saveAllArt;
+  - `Features.artInBackground` (`art_in_background`, true);
+  - `GameMode.awaitForArt()` waits only when that's off (art loop, saveAllArt, spines, real covers).
+  - `saveAllArt(afterScrape = true)` from the scrape job; it used to return at once.
+- **Case3D:** the decorative lines are removed; the PS1 strip stays. KEEP edge face (f == 2) gets a grip recess at
+  v 0.36–0.64.
+- **CaseOpenDraw:** no outlines.
+- **CaseInside.tray:** HUB has 3 arcs (200°/38, 330°/60, 122°/38); HUB and SLOT get a grip strip on the right edge.
+  The keep lid's tabs are on the hinge side.
+- **InspectSlab:** GraphicsLayer extrusion:
+  - `face` recorded, `edge` (SlabLight 0.42–0.64) drawn at n slices far to near;
+  - `lit` front, or the `back` silhouette in `shell` (sampled with `toImageBitmap`, `sampleShell`) or `p.tone`.
+- **InspectDisc:** the far oval and edge are clipped out of the hole (clipPath Difference).
+- **drawDiscUnderside:** sweep lobes (m1, m0, m1, m2 ×2) at view × 0.9 and a doubled rainbow at view × 0.9 + 28.
+- **Cases out:** translationX −0.2w, scale 1 − 0.4·out.
+- **To check on the Thor:**
+  - the notification and background art with Voltcap behind a game;
+  - the custom-cartridge spin;
+  - the case grip and no lines.
+- Cases built from a 3D case model (R1 › 3D in a case look) are pre-rendered pictures and don't open; the drawn cases do.
+
 ## State after update 189
 - **Opening cases:**
   - `InspectPiece.content` (BOX only) = `contentPieceFor` (mediaPiece CARTRIDGE_DISC, else a generic disc for disc

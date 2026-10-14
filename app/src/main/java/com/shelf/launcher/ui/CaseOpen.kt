@@ -26,6 +26,7 @@ import android.graphics.Shader
 internal object CaseInside {
     enum class Kind { HUB, JEWEL, SLOT, BOX }
 
+    /** Before update 191 (no catalogue entry): by the console alone. */
     fun kindOf(platform0: String?): Kind = when (val p = LookStyles.casePlatform(platform0)) {
         "NDS", "3DS", "PSVita", "PSP", "Switch" -> Kind.SLOT
         else -> when (caseStyleOf(p)) {
@@ -35,7 +36,27 @@ internal object CaseInside {
         }
     }
 
-    /** The case's inside plastic, its real colour. */
+    /**
+     * Update 191: what kind of inside a case has — from its real case ([spec], CaseCatalog.kt), and from what lies in it
+     * ([itemRound]: a disc or not). What lies in it decides: a disc case holding a cartridge (Voltcap's own case of an
+     * Android game with your cartridge on it) shows a cartridge in a recess, not a disc that turns into a cartridge on
+     * its way out.
+     */
+    fun kindFor(spec: CaseSpec?, platform: String?, itemRound: Boolean?): Kind {
+        val base = if (spec != null) when {
+            spec.cardboard -> Kind.BOX
+            spec.media.round -> if (spec.shell == CaseShell.JEWEL) Kind.JEWEL else Kind.HUB
+            else -> Kind.SLOT
+        } else kindOf(platform)
+        if (base == Kind.BOX || itemRound == null) return base
+        return when {
+            itemRound && base == Kind.SLOT -> if (spec?.shell == CaseShell.JEWEL) Kind.JEWEL else Kind.HUB
+            !itemRound && (base == Kind.HUB || base == Kind.JEWEL) -> Kind.SLOT
+            else -> base
+        }
+    }
+
+    /** The case's inside plastic, its real colour (before update 191, by console). */
     fun plastic(platform0: String?): Int = when (LookStyles.casePlatform(platform0)) {
         "PS3" -> 0xFF1F2733.toInt()
         "PS4", "WiiU" -> 0xFF2458B4.toInt()
@@ -49,9 +70,48 @@ internal object CaseInside {
         else -> 0xFF17181B.toInt()
     }
 
-    /** Where the disc / card lies on the tray (u0, v0, u1, v1 of the tray), for a case of [aspect] (width / height). */
-    fun itemRect(kind: Kind, aspect: Float, itemAspect: Float): FloatArray {
+    /**
+     * Update 191: the inside's colour from the real case: a see-through keep case shows its plastic over the paper
+     * insert's white back (a PS4 case light blue inside, a Switch case near white), a jewel case its tray.
+     */
+    fun plastic(spec: CaseSpec?, platform: String?): Int {
+        if (spec == null) return plastic(platform)
+        return when (spec.shell) {
+            CaseShell.KEEP, CaseShell.CARDCASE -> mix(0xFFDCDFE4.toInt(), spec.plastic, (0.25f + 0.75f * spec.opacity).coerceAtMost(1f))
+            CaseShell.CLAMSHELL -> spec.plastic
+            else -> spec.tray
+        }
+    }
+
+    /** [a] towards [b] by [k] (0…1). */
+    fun mix(a: Int, b: Int, k: Float): Int {
+        val t = k.coerceIn(0f, 1f)
+        fun ch(x: Int, y: Int) = (x + (y - x) * t).toInt().coerceIn(0, 255)
+        return AColor.argb(255, ch(AColor.red(a), AColor.red(b)), ch(AColor.green(a), AColor.green(b)), ch(AColor.blue(a), AColor.blue(b)))
+    }
+
+    /**
+     * Where the disc / card lies (u0, v0, u1, v1 of its side's panel), for a case of [aspect] (width / height). Update
+     * 191: at its real size and place in the real case when there's one ([spec]): an 8 cm GameCube disc smaller, a Switch
+     * card low on the right, a DS card at the top. Xbox One / Series: on the lid's inside (see [CaseSpec.mediaLeft]).
+     */
+    fun itemRect(kind: Kind, aspect: Float, itemAspect: Float, spec: CaseSpec? = null): FloatArray {
         val a = aspect.coerceAtLeast(0.2f)
+        if (spec != null && kind != Kind.BOX) {
+            val round = kind == Kind.HUB || kind == Kind.JEWEL
+            val mm = when {
+                round && spec.media.round -> if (spec.media == CaseHeld.DISC80) 80f else 120f
+                round -> 120f
+                !spec.media.round -> spec.mediaWMm
+                // (A cartridge in a disc case — your cartridge on Voltcap's own case: about a third of its width.)
+                else -> spec.wMm * 0.34f
+            }
+            val cw = (mm / spec.wMm).coerceIn(0.08f, 0.94f)
+            val ch = if (round) (cw * a).coerceAtMost(0.96f) else (cw * a / itemAspect.coerceIn(0.4f, 2.5f)).coerceAtMost(0.9f)
+            val cx = spec.mediaU.coerceIn(cw / 2f, 1f - cw / 2f)
+            val cy = spec.mediaV.coerceIn(ch / 2f, 1f - ch / 2f)
+            return floatArrayOf(cx - cw / 2f, cy - ch / 2f, cx + cw / 2f, cy + ch / 2f)
+        }
         return when (kind) {
             Kind.HUB, Kind.JEWEL -> {
                 // A round disc: its diameter against the case's shorter side.
@@ -72,11 +132,13 @@ internal object CaseInside {
 
     private val cache = android.util.LruCache<String, Bitmap>(12)
 
+    private fun specKey(spec: CaseSpec?): String = spec?.let { "${it.platform}.${it.region}.${it.shell}" } ?: "-"
+
     /** The tray side (the case's back half, seen from inside). */
-    fun tray(platform: String?, aspect: Float, itemAspect: Float): Bitmap {
-        val kind = kindOf(platform)
-        val col = plastic(platform)
-        val key = "t|$kind|$col|${(aspect * 100).toInt()}|${(itemAspect * 100).toInt()}"
+    fun tray(platform: String?, aspect: Float, itemAspect: Float, spec: CaseSpec? = null, kind0: Kind? = null): Bitmap {
+        val kind = kind0 ?: kindFor(spec, platform, null)
+        val col = plastic(spec, platform)
+        val key = "t|$kind|$col|${(aspect * 100).toInt()}|${(itemAspect * 100).toInt()}|${specKey(spec)}"
         cache.get(key)?.let { return it }
         val h = 512
         val w = (h * aspect).toInt().coerceIn(160, 1200)
@@ -84,9 +146,35 @@ internal object CaseInside {
         val c = Canvas(b)
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
         plasticBase(c, w, h, col, p)
-        val r = itemRect(kind, aspect, itemAspect)
-        val ir = RectF(r[0] * w, r[1] * h, r[2] * w, r[3] * h)
         val light = isLight(col)
+        if (spec?.mediaLeft == true) {
+            // Update 191 (Xbox One / Series): the disc is on the other side; this side only has its paper clips.
+            tabs(c, w, h, shade(col, if (light) 0.85f else 1.5f), p, onLeft = true)
+        } else {
+            mediaBed(c, w, h, kind, aspect, itemAspect, spec, col, p)
+        }
+        // Update 189: the opening edge's thumb grip (keep and card cases have one; jewel cases don't): a raised strip
+        // along the right edge's middle with a dip in it for your thumb. (Update 191: where the real case has one.)
+        if (spec?.grip ?: (kind == Kind.HUB || kind == Kind.SLOT)) {
+            p.style = Paint.Style.FILL
+            val gx = w - h * 0.07f
+            val top = h * 0.3f; val bot = h * 0.7f
+            p.color = shade(col, if (light) 0.8f else 0.55f)
+            c.drawRoundRect(RectF(gx + h * 0.006f, top + h * 0.008f, w - h * 0.02f + h * 0.006f, bot + h * 0.008f), h * 0.02f, h * 0.02f, p)
+            p.color = shade(col, if (light) 0.97f else 1.5f)
+            c.drawRoundRect(RectF(gx, top, w - h * 0.02f, bot), h * 0.02f, h * 0.02f, p)
+            p.color = shade(col, if (light) 0.86f else 1.15f)
+            c.drawOval(RectF(gx + h * 0.008f, h * 0.43f, w - h * 0.028f, h * 0.57f), p)
+        }
+        cache.put(key, b)
+        return b
+    }
+
+    /** What holds the disc / card: the hub and its ridges, a jewel tray's seat, a card's recess and the case's other slots. */
+    private fun mediaBed(c: Canvas, w: Int, h: Int, kind: Kind, aspect: Float, itemAspect: Float, spec: CaseSpec?, col: Int, p: Paint) {
+        val light = isLight(col)
+        val r = itemRect(kind, aspect, itemAspect, spec)
+        val ir = RectF(r[0] * w, r[1] * h, r[2] * w, r[3] * h)
         when (kind) {
             Kind.HUB, Kind.JEWEL -> {
                 val cx = ir.centerX(); val cy = ir.centerY(); val rad = ir.width() / 2f
@@ -100,45 +188,76 @@ internal object CaseInside {
                     p.color = shade(col, if (light) 0.85f else 1.2f)
                     c.drawCircle(cx, cy, rad * 0.97f, p)
                 } else {
-                    // A keep case's shallow ring round the disc and the foam-like pads.
-                    p.style = Paint.Style.STROKE; p.strokeWidth = h * 0.006f
-                    p.color = shade(col, if (light) 0.82f else 1.6f)
-                    c.drawCircle(cx, cy, rad * 1.02f, p)
+                    // A keep case: three curved ridges hold the disc's edge (upper left, right, lower left), as moulded
+                    // in the real tray — not a full ring.
+                    p.style = Paint.Style.STROKE; p.strokeWidth = h * 0.022f; p.strokeCap = Paint.Cap.ROUND
+                    val box = RectF(cx - rad * 1.04f, cy - rad * 1.04f, cx + rad * 1.04f, cy + rad * 1.04f)
+                    for ((start, sweep) in listOf(200f to 38f, 330f to 60f, 122f to 38f)) {
+                        p.color = shade(col, if (light) 0.78f else 0.55f)
+                        c.drawArc(RectF(box.left + h * 0.006f, box.top + h * 0.008f, box.right + h * 0.006f, box.bottom + h * 0.008f), start, sweep, false, p)
+                        p.color = shade(col, if (light) 0.95f else 1.7f)
+                        c.drawArc(box, start, sweep, false, p)
+                    }
+                    p.strokeCap = Paint.Cap.BUTT
                     p.style = Paint.Style.FILL
                 }
-                hub(c, cx, cy, rad, col, p)
+                hub(c, cx, cy, rad * (if (spec?.media == CaseHeld.DISC80) 1.5f else 1f), col, p)
             }
             Kind.SLOT -> {
                 // The card's recess with a thumb notch under it.
                 p.style = Paint.Style.FILL
                 p.color = shade(col, 0.62f)
                 val rr = h * 0.02f
-                c.drawRoundRect(RectF(ir.left - h * 0.012f, ir.top - h * 0.012f, ir.right + h * 0.012f, ir.bottom + h * 0.012f), rr, rr, p)
+                val m = h * 0.012f
+                c.drawRoundRect(RectF(ir.left - m, ir.top - m, ir.right + m, ir.bottom + m), rr, rr, p)
                 p.color = shade(col, 0.5f)
-                c.drawCircle(ir.centerX(), ir.bottom + h * 0.012f, ir.width() * 0.16f, p)
-                // A second, flat recess lower down (where a card case keeps its little leaflet).
-                p.color = shade(col, 0.85f)
-                val lw = w * 0.5f; val lt = h * 0.6f
-                c.drawRoundRect(RectF((w - lw) / 2f, lt, (w + lw) / 2f, lt + h * 0.24f), rr, rr, p)
+                c.drawCircle(ir.centerX(), ir.bottom + m, ir.width() * 0.16f, p)
+                when {
+                    // Update 191: a DS case's Game Boy Advance slot under the card (Game Boy Advance cartridge size).
+                    spec?.gbaSlot == true -> {
+                        p.color = shade(col, 0.66f)
+                        val gw = 57.5f / spec.wMm * w; val gh = 35f / spec.hMm * h
+                        val gy = (ir.bottom + m + h * 0.06f + gh / 2f).coerceAtMost(h * 0.86f)
+                        c.drawRoundRect(RectF(w / 2f - gw / 2f, gy - gh / 2f, w / 2f + gw / 2f, gy + gh / 2f), rr, rr, p)
+                        p.color = shade(col, 0.54f)
+                        c.drawCircle(w / 2f, gy + gh / 2f, gw * 0.1f, p)
+                    }
+                    // Update 191: a Switch case's two tabs above the card, for the paper inside.
+                    spec != null && (spec.platform == "Switch" || spec.platform == "Switch2") -> {
+                        p.color = shade(col, if (light) 0.82f else 1.4f)
+                        val ty = ir.top - h * 0.1f
+                        for (tx in floatArrayOf(w * 0.18f, w * 0.72f)) c.drawRoundRect(RectF(tx, ty, tx + w * 0.1f, ty + h * 0.03f), h * 0.01f, h * 0.01f, p)
+                    }
+                    // A second, flat recess lower down (where a card case keeps its little leaflet).
+                    spec == null -> {
+                        p.color = shade(col, 0.85f)
+                        val lw = w * 0.5f; val lt = h * 0.6f
+                        c.drawRoundRect(RectF((w - lw) / 2f, lt, (w + lw) / 2f, lt + h * 0.24f), rr, rr, p)
+                    }
+                    else -> Unit
+                }
             }
             Kind.BOX -> Unit
         }
-        cache.put(key, b)
-        return b
     }
 
     /** The lid side, seen from inside: the manual in its clips (keep / card cases) or the booklet's back (jewel). */
-    fun lid(platform: String?, aspect: Float, cover: Bitmap?): Bitmap {
-        val kind = kindOf(platform)
-        val col = plastic(platform)
-        val key = "l|$kind|$col|${(aspect * 100).toInt()}|${cover?.let { System.identityHashCode(it) } ?: 0}"
+    fun lid(platform: String?, aspect: Float, cover: Bitmap?, spec: CaseSpec? = null, kind0: Kind? = null, itemAspect: Float = 1f): Bitmap {
+        val kind = kind0 ?: kindFor(spec, platform, null)
+        val col = plastic(spec, platform)
+        val key = "l|$kind|$col|${(aspect * 100).toInt()}|${cover?.let { System.identityHashCode(it) } ?: 0}|${specKey(spec)}|${(itemAspect * 100).toInt()}"
         cache.get(key)?.let { return it }
         val h = 512
         val w = (h * aspect).toInt().coerceIn(160, 1200)
         val b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(b)
         val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        if (kind == Kind.JEWEL) {
+        val jewelLid = if (spec != null) spec.shell == CaseShell.JEWEL else kind == Kind.JEWEL
+        if (spec?.mediaLeft == true) {
+            // Update 191 (Xbox One / Series): the disc's hub is inside the front cover.
+            plasticBase(c, w, h, col, p)
+            mediaBed(c, w, h, kind, aspect, itemAspect, spec, col, p)
+        } else if (jewelLid) {
             // Clear plastic over the booklet: the booklet's back page (its cover, faded like a printed back), a little
             // smaller than the lid, with the lid's two tabs on the opening side.
             c.drawColor(0xFF0E0F12.toInt())
@@ -162,14 +281,28 @@ internal object CaseInside {
             glare(c, w, h, p)
         } else {
             plasticBase(c, w, h, col, p)
+            // Update 191: a memory card holder (PS2, GameCube) below the manual — where exactly isn't confirmed.
+            val mem = spec?.memCard == true
             // The manual, its front facing you, held by two clips.
-            val mw = w * 0.86f; val mh = h * 0.86f
-            val page = RectF((w - mw) / 2f, (h - mh) / 2f, (w + mw) / 2f, (h + mh) / 2f)
+            val mw = w * 0.86f; val mh = h * (if (mem) 0.66f else 0.86f)
+            val top = if (mem) h * 0.05f else (h - mh) / 2f
+            val page = RectF((w - mw) / 2f, top, (w + mw) / 2f, top + mh)
             p.color = 0x55000000
             c.drawRect(RectF(page.left + h * 0.008f, page.top + h * 0.01f, page.right + h * 0.008f, page.bottom + h * 0.01f), p)
             if (cover != null) c.drawBitmap(cover, null, page, Paint(Paint.FILTER_BITMAP_FLAG))
             else { p.color = 0xFFE9E9EC.toInt(); c.drawRect(page, p) }
-            tabs(c, w, h, shade(col, if (isLight(col)) 0.85f else 1.5f), p, onLeft = true)
+            if (mem) {
+                val cardW = (if (spec?.platform == "GameCube") 39f else 42f) / (spec?.wMm ?: 135f) * w
+                val cardH = (if (spec?.platform == "GameCube") 46f else 56f) / (spec?.hMm ?: 190f) * h
+                val cx = w * 0.62f; val cy = h * 0.86f
+                val rr = h * 0.015f
+                p.color = shade(col, if (isLight(col)) 0.8f else 0.55f)
+                c.drawRoundRect(RectF(cx - cardW / 2f, cy - cardH / 2f, cx + cardW / 2f, (cy + cardH / 2f).coerceAtMost(h - h * 0.03f)), rr, rr, p)
+                p.color = shade(col, if (isLight(col)) 0.7f else 0.45f)
+                c.drawRoundRect(RectF(cx - cardW / 2f + h * 0.008f, cy - cardH / 2f + h * 0.008f, cx + cardW / 2f - h * 0.008f, (cy + cardH / 2f).coerceAtMost(h - h * 0.03f) - h * 0.008f), rr, rr, p)
+            }
+            // (Update 189: the clips sit by the hinge, top and bottom, as in a real keep case.)
+            tabs(c, w, h, shade(col, if (isLight(col)) 0.85f else 1.5f), p, onLeft = false)
         }
         cache.put(key, b)
         return b
@@ -322,7 +455,9 @@ internal object CaseOpenDraw {
     fun draw(
         c: Canvas, cx: Float, cy: Float, w: Float, h: Float, d: Float, yaw: Float, pitch: Float, open: Float,
         front: Bitmap?, spine: Bitmap, back: Bitmap?, tray: Bitmap, lidInside: Bitmap, item: Bitmap?, itemRect: FloatArray,
-        showItem: Boolean, plastic: Int, light: Float
+        showItem: Boolean, plastic: Int, light: Float,
+        /** Update 191: the disc lies inside the lid (Xbox One / Series), not in the tray. */
+        itemOnLid: Boolean = false
     ) {
         val ty = Math.toRadians(yaw.toDouble()); val tp = Math.toRadians(pitch.toDouble())
         val cy0 = kotlin.math.cos(ty).toFloat(); val sy0 = kotlin.math.sin(ty).toFloat()
@@ -354,7 +489,7 @@ internal object CaseOpenDraw {
         next().also { q -> q.bmp = tray; q.light = 0.95f
             put(q, 0, -hw, -hh, floor); put(q, 1, hw, -hh, floor); put(q, 2, hw, hh, floor); put(q, 3, -hw, hh, floor) }
         // The disc / card lying in it.
-        if (showItem && item != null) next().also { q -> q.bmp = item
+        if (showItem && item != null && !itemOnLid) next().also { q -> q.bmp = item
             val z = floor + d * 0.18f
             val x0 = -hw + itemRect[0] * w; val x1 = -hw + itemRect[2] * w
             val y0 = -hh + itemRect[1] * h; val y1 = -hh + itemRect[3] * h
@@ -382,6 +517,14 @@ internal object CaseOpenDraw {
             put(q, 0, lx(0f), -hh, lz(0f)); put(q, 1, lx(1f), -hh, lz(1f)); put(q, 2, lx(1f), hh, lz(1f)); put(q, 3, lx(0f), hh, lz(0f)) }
         next().also { q -> q.bmp = lidInside; q.light = 0.97f
             put(q, 0, lx(1f), -hh, lz(1f)); put(q, 1, lx(0f), -hh, lz(0f)); put(q, 2, lx(0f), hh, lz(0f)); put(q, 3, lx(1f), hh, lz(1f)) }
+        // Update 191: a disc held inside the lid (its place on the lid's picture: across from the lid's outer edge).
+        if (showItem && item != null && itemOnLid) next().also { q -> q.bmp = item; q.light = 0.97f
+            val e = d * 0.18f
+            fun ix(u: Float) = lx(1f - u) + st * e
+            fun iz(u: Float) = lz(1f - u) - ct * e
+            val y0 = -hh + itemRect[1] * h; val y1 = -hh + itemRect[3] * h
+            put(q, 0, ix(itemRect[0]), y0, iz(itemRect[0])); put(q, 1, ix(itemRect[2]), y0, iz(itemRect[2]))
+            put(q, 2, ix(itemRect[2]), y1, iz(itemRect[2])); put(q, 3, ix(itemRect[0]), y1, iz(itemRect[0])) }
 
         // Far to near.
         val order = (0 until n).filter { quads[it].ok }.sortedBy { quads[it].depth }
@@ -408,12 +551,7 @@ internal object CaseOpenDraw {
                 path.moveTo(q.pts[0], q.pts[1]); path.lineTo(q.pts[2], q.pts[3]); path.lineTo(q.pts[4], q.pts[5]); path.lineTo(q.pts[6], q.pts[7]); path.close()
                 c.drawPath(path, fill)
             }
-            // A thin lit edge round each face (the plastic's rim).
-            line.strokeWidth = (w / 300f).coerceIn(0.8f, 2.5f)
-            line.color = 0x40FFFFFF
-            path.reset()
-            path.moveTo(q.pts[0], q.pts[1]); path.lineTo(q.pts[2], q.pts[3]); path.lineTo(q.pts[4], q.pts[5]); path.lineTo(q.pts[6], q.pts[7]); path.close()
-            c.drawPath(path, line)
+            // (Update 189 (Thor): no outlines — a square showed round the disc and lines round every face.)
         }
     }
 

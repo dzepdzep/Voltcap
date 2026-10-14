@@ -48,6 +48,10 @@ internal fun Case3D(
     showItemOf: (() -> Boolean)? = null
 ) {
     val title = gameDisplayName(g.name)
+    // Update 191: the real case this game came in (its console and region; CaseCatalog.kt).
+    val regionPref = Features.caseRegion.state.value
+    val casePlatformNow = LookStyles.casePlatform(g.platform)
+    val spec = remember(g.stableKey, g.platform, regionPref, casePlatformNow) { CaseCatalog.forGame(g) }
     // The spine, in the same order as the Spines look (GameSpine): the real scan first, then your console spine.
     val scans = physical ?: HomeScans.map[g.stableKey]
     val ownFront = if (realFront && Features.originalCases.state.value && !LookStyles.caseForAll()) {
@@ -74,19 +78,22 @@ internal fun Case3D(
             ?: if (!tplSpine.done) SpineCache.WAITING else plainSpine(title)
     }
     // How thick the case is (its spine's width against its height): the spine picture's own shape, kept to real cases'.
-    val depth = remember(spine, tpl, ownBmp, ownCase) {
+    val depth = remember(spine, tpl, ownBmp, ownCase, spec) {
         val own = spine.width.toFloat() / spine.height.coerceAtLeast(1)
         // Update 171: Voltcap's own Steam / Android cases slim, like a game card's case (they were as thick as a DVD case).
         if (ownCase != null && ownBmp == null) return@remember OWN_CASE_DEPTH
         // (Update 166: without a spine picture, the console's real case thickness — a Game Boy box is far thicker for its
         // size than a DVD case — not always a DVD case's.)
-        (if (ownBmp != null) own else tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
+        // (Update 191: the real case's thickness for its region — a PAL PlayStation case is deeper.)
+        (if (ownBmp != null) own else spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
     }
     // Update 166: a Steam / Android game's case front is Voltcap's own: the game's art in its window, the band on top.
     // Update 169: and with Settings › Cover templates on, every console's case front is its template too (the band, the
     // printed border) with the cover in its window — as the flat case shows it; the 3D cases had the bare cover. Not on
     // the game's own scanned front (that is the real thing), nor with R1 › Case (another console's shape for all).
-    val caseTpl = ownCase ?: if (Features.coverTemplates.state.value && !forAll && !LookStyles.caseForAll()) MediaCovers.of(g.platform) else null
+    // (Update 191: not a template made for another region's shape — a Super Famicom box isn't a US SNES box's shape.)
+    val caseTpl = ownCase ?: if (Features.coverTemplates.state.value && !forAll && !LookStyles.caseForAll()) MediaCovers.of(g.platform)
+        ?.takeIf { t -> spec == null || spec.shell == CaseShell.JEWEL || kotlin.math.abs(t.frontAspect / spec.aspect - 1f) < 0.15f } else null
     val tplFront = caseTpl.takeIf { ownFront == null }
     // (Update 169: Steam / Android cases at a SteamGridDB cover's shape — case3dAspect — so the cover fills the window.)
     val fit = tplFront?.takeIf { it.isOwn() && Features.ownCaseFit.state.value }?.fitTo(SGDB_COVER_ASPECT)
@@ -109,16 +116,27 @@ internal fun Case3D(
     // right side of its cover (the publisher's logo) that way.
     val framedFront = front != null && band != null && tplFront != null &&
         !isBoxFront(tplFront, front.width.toFloat() / front.height.coerceAtLeast(1))
-    val shape = remember(front, framedFront, aspect) {
+    val shape = remember(front, framedFront, aspect, spec) {
         val f = front
-        if (f == null || framedFront) aspect
+        // (Update 191: the real case's own shape when it's known; its art goes in it as on the real one.)
+        if (spec != null) spec.aspect.coerceIn(0.55f, 1.85f)
+        else if (f == null || framedFront) aspect
         else (f.width.toFloat() / f.height.coerceAtLeast(1)).coerceIn(aspect * 0.8f, aspect * 1.25f)
     }
-    val face = remember(front, noCover, shape, band) {
+    val face = remember(front, noCover, shape, band, spec) {
         (front ?: noCover)?.let { f ->
             // (Update 171: not over a box scan used as the cover — it has its own band and logo, they showed twice.)
             val whole = tplFront != null && isBoxFront(tplFront, f.width.toFloat() / f.height.coerceAtLeast(1))
-            if (band != null && tplFront != null && !whole) framed(f, band, fit?.win ?: tplFront.win) else cropTo(f, shape)
+            val made = if (band != null && tplFront != null && !whole) framed(f, band, fit?.win ?: tplFront.win) else null
+            when {
+                // Update 191: a jewel case shows its booklet under the clear lid, beside the tray's hinge ridge — the
+                // whole cover, nothing cut, with the lid's clear edge round it.
+                spec?.shell == CaseShell.JEWEL -> jewelFront(made ?: f, shape, spec.tray)
+                // Update 191: a keep case's sleeve, a box's print: the cover over the whole front, at the real case's
+                // shape (a little off: fitted; further off: cut in the middle).
+                spec != null -> made ?: fitFace(f, shape)
+                else -> made ?: cropTo(f, shape)
+            }
         }
     }
     // (Update 170: a printed back is made from its parts; a scanned one is a picture.)
@@ -134,19 +152,25 @@ internal fun Case3D(
     val frameArgb = frameColor.toArgb()
     // Update 186: what the case is made of, so it looks like the real one (a clear jewel case, a cardboard box, a keep case).
     val style = caseStyleOf(g.platform)
+    // Update 191: its plastic's colour and how see-through, its edges, grip and hinge ridge, from the real case.
+    val look = remember(spec, style, face) { CaseLook.of(spec, style, face) }
     // Update 189: what an opened case shows inside (made only for a case that can open).
-    val openKind = CaseInside.kindOf(g.platform)
+    // (Update 191: from the real case, and from what lies in it — a disc case holding a cartridge shows the cartridge.)
+    val openKind = CaseInside.kindFor(spec, g.platform, inside?.round)
     val canOpen = openOf != null && openKind != CaseInside.Kind.BOX
+    // Update 191: a cardboard box opens its top flap instead (the tray rises, the cartridge comes out).
+    val flapOpen = openOf != null && openKind == CaseInside.Kind.BOX
     val itemReal = rememberSoftBitmap(if (canOpen) inside?.real else null, 480)
     val itemLabel = rememberSoftBitmap(if (canOpen && inside?.real == null) inside?.label else null, 480)
     val itemAspect = inside?.aspect ?: 1f
-    val trayBmp = remember(canOpen, g.platform, shape, itemAspect) { if (canOpen) runCatching { CaseInside.tray(g.platform, shape, itemAspect) }.getOrNull() else null }
-    val lidBmp = remember(canOpen, g.platform, shape, front) { if (canOpen) runCatching { CaseInside.lid(g.platform, shape, front) }.getOrNull() else null }
+    val trayBmp = remember(canOpen, g.platform, shape, itemAspect, spec, openKind) { if (canOpen) runCatching { CaseInside.tray(g.platform, shape, itemAspect, spec, openKind) }.getOrNull() else null }
+    val lidBmp = remember(canOpen, g.platform, shape, front, spec, openKind, itemAspect) { if (canOpen) runCatching { CaseInside.lid(g.platform, shape, front, spec, openKind, itemAspect) }.getOrNull() else null }
     val itemBmp = remember(canOpen, itemReal, itemLabel, itemAspect, openKind) {
         if (canOpen && inside != null) runCatching { CaseInside.item(openKind, itemReal, itemLabel, itemAspect, inside.tone) }.getOrNull() else null
     }
-    val itemRect = remember(openKind, shape, itemAspect) { CaseInside.itemRect(openKind, shape, itemAspect) }
-    val plastic = remember(g.platform) { CaseInside.plastic(g.platform) }
+    val itemRect = remember(openKind, shape, itemAspect, spec) { CaseInside.itemRect(openKind, shape, itemAspect, spec) }
+    val plastic = remember(g.platform, spec) { CaseInside.plastic(spec, g.platform) }
+    val itemOnLid = spec?.mediaLeft == true
     Canvas(modifier) {
         val yawNow = yawOf?.invoke() ?: yaw
         val shadeNow = shadeOf?.invoke() ?: shade
@@ -162,20 +186,81 @@ internal fun Case3D(
             CaseOpenDraw.draw(
                 canvas.nativeCanvas, size.width / 2f + w2 * 0.5f * openNow, size.height / 2f, w2, h2, d2, yawNow, pitch + 8f * openNow,
                 openNow, face ?: noCover ?: loading, spine, backFace, trayBmp, lidBmp, itemBmp, itemRect,
-                showItemOf?.invoke() ?: true, plastic, (1f - shadeNow).coerceIn(0f, 1f)
+                showItemOf?.invoke() ?: true, plastic, (1f - shadeNow).coerceIn(0f, 1f), itemOnLid
             )
         } else drawIntoCanvas { canvas ->
             CaseDraw.draw(
                 canvas.nativeCanvas, size.width / 2f, size.height / 2f, w, h, d, yawNow, pitch,
                 face ?: noCover ?: loading, spine, (1f - shadeNow).coerceIn(0f, 1f), reflect,
-                if (frame) frameArgb else 0, 2.5f * density, backFace, style
+                if (frame) frameArgb else 0, 2.5f * density, backFace, look,
+                if (flapOpen) (openOf?.invoke() ?: 0f) else 0f
             )
         }
     }
 }
 
 /** Update 189: the disc / card in an opening case: its own picture ([real]) or the art for a drawn one ([label]). */
-internal class CaseItem(val real: Any?, val label: Any?, val aspect: Float, val tone: Int)
+internal class CaseItem(val real: Any?, val label: Any?, val aspect: Float, val tone: Int, val round: Boolean = true)
+
+/**
+ * Update 191: how a case's outside is drawn — the colour of its edges and top (a see-through PS4 case blue, a clear
+ * jewel case grey over its tray, a cardboard box its own print), its plain back, the thumb grip on its opening edge,
+ * the tray's hinge ridge seen through a jewel case's lid, matte cardboard, and a box's inside (for its opening flap).
+ */
+internal class CaseLook(
+    val edge: Int, val top: Int, val back: Int, val grip: Boolean, val strip: Int, val stripW: Float, val matte: Boolean,
+    val inner: Int, val flap: Boolean
+) {
+    companion object {
+        private const val DARK = 0xFF15171B.toInt()
+
+        fun of(spec: CaseSpec?, style: Int, face: android.graphics.Bitmap?): CaseLook {
+            if (spec == null) return when (style) {
+                CASE_JEWEL -> CaseLook(0xFF9AA0AB.toInt(), 0xFFB9BEC8.toInt(), 0xFF22242C.toInt(), false, 0, 0f, false, 0, false)
+                CASE_JEWEL_BLACK -> CaseLook(0xFF26282D.toInt(), 0xFF3C3E44.toInt(), 0xFF22242C.toInt(), false, 0xF20C0C0E.toInt(), 0.062f, false, 0, false)
+                CASE_CARD -> CaseLook(0xFF3A3832.toInt(), 0xFF4A4740.toInt(), 0xFF22242C.toInt(), false, 0, 0f, true, 0xFFEFECE4.toInt(), true)
+                else -> CaseLook(0xFF22242C.toInt(), 0xFF3A3D47.toInt(), 0xFF22242C.toInt(), true, 0, 0f, false, 0, false)
+            }
+            fun lighter(c: Int, k: Float) = CaseInside.mix(c, 0xFFFFFFFF.toInt(), k)
+            return when (spec.shell) {
+                CaseShell.CARDBOARD, CaseShell.BIGBOX, CaseShell.BOOKBOX -> {
+                    // Printed cardboard: the top and side carry on the front's print (its colours there, a little darker).
+                    val top = face?.let { averageOf(it, 0f, 0f, 1f, 0.08f) }?.let { CaseInside.mix(it, DARK, 0.15f) } ?: 0xFF4A4740.toInt()
+                    val side = face?.let { averageOf(it, 0.92f, 0f, 1f, 1f) }?.let { CaseInside.mix(it, DARK, 0.2f) } ?: 0xFF3A3832.toInt()
+                    CaseLook(side, top, side, false, 0, 0f, true, spec.tray, spec.shell != CaseShell.BOOKBOX)
+                }
+                CaseShell.JEWEL -> {
+                    // Clear plastic over the tray: the edges are the tray's colour seen through it.
+                    val lightTray = luma(spec.tray) > 150
+                    val edge = if (lightTray) CaseInside.mix(spec.tray, 0xFF8E949E.toInt(), 0.35f) else CaseInside.mix(spec.tray, 0xFF5A5F68.toInt(), 0.18f)
+                    val strip = if (lightTray) (spec.tray and 0x00FFFFFF) or 0x88000000.toInt() else (spec.tray and 0x00FFFFFF) or 0xF2000000.toInt()
+                    CaseLook(edge, lighter(edge, 0.15f), edge, false, strip, 0.062f, false, spec.tray, false)
+                }
+                CaseShell.LONGBOX, CaseShell.CASSETTE -> {
+                    val edge = CaseInside.mix(spec.tray, spec.plastic, 0.3f)
+                    CaseLook(edge, lighter(edge, 0.12f), edge, false, 0, 0f, false, spec.tray, false)
+                }
+                else -> {
+                    // A keep case / clamshell: its plastic, deeper the more see-through it is (you look through its depth).
+                    val edge = CaseInside.mix(DARK, spec.plastic, 0.5f + 0.4f * spec.opacity)
+                    CaseLook(edge, lighter(edge, 0.12f), edge, spec.grip, 0, 0f, false, spec.tray, false)
+                }
+            }
+        }
+
+        private fun luma(c: Int): Int =
+            (android.graphics.Color.red(c) * 299 + android.graphics.Color.green(c) * 587 + android.graphics.Color.blue(c) * 114) / 1000
+
+        /** The average colour of a part of [b] (fractions l, t, r, b). */
+        private fun averageOf(b: android.graphics.Bitmap, l: Float, t: Float, r: Float, bt: Float): Int? = runCatching {
+            val x = (l * b.width).toInt().coerceIn(0, b.width - 1); val y = (t * b.height).toInt().coerceIn(0, b.height - 1)
+            val w = ((r - l) * b.width).toInt().coerceIn(1, b.width - x); val h = ((bt - t) * b.height).toInt().coerceIn(1, b.height - y)
+            val part = android.graphics.Bitmap.createBitmap(b, x, y, w, h)
+            val one = android.graphics.Bitmap.createScaledBitmap(part, 1, 1, true)
+            one.getPixel(0, 0) or 0xFF000000.toInt()
+        }.getOrNull()
+    }
+}
 
 /** Update 186: a keep case (DVD-style), a clear jewel case (CDs) or a cardboard box (cartridges). */
 internal const val CASE_KEEP = 0
@@ -201,6 +286,8 @@ internal const val OWN_CASE_DEPTH = 0.05f
 internal fun case3dAspect(g: Game, mixed: Boolean): Float {
     // (Update 169: a Steam / Android case at a SteamGridDB cover's shape, its band on top — Case3D.)
     if (Features.ownCaseFit.state.value && !LookStyles.spineForAll()) MediaCovers.own(g.platform)?.let { o -> return (o.fitTo(SGDB_COVER_ASPECT)?.aspect ?: o.frontAspect).coerceIn(0.55f, 1.45f) }
+    // (Update 191: the real case's shape in the game's region — CaseCatalog.kt.)
+    CaseCatalog.forGame(g)?.let { return it.aspect.coerceIn(0.55f, 1.85f) }
     // (Update 166: in lists mixing consoles too — each case keeps its own shape there, as the flat box art does.)
     realCaseMm(g.platform)?.let { (w, h) -> if (w > 0f && h > 0f) return (w / h).coerceIn(0.55f, 1.45f) }
     return (if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null)?.coerceIn(0.55f, 1.45f) ?: 0.71f
@@ -263,6 +350,37 @@ private fun fitBack(src: android.graphics.Bitmap, aspect: Float): android.graphi
     val w = (src.height * aspect).toInt().coerceAtLeast(1)
     return runCatching { android.graphics.Bitmap.createScaledBitmap(src, w, src.height, true) }.getOrDefault(src)
 }
+
+/** Update 191: [src] at [aspect]: within 6 % as it is (drawn onto the front), further off cut in the middle. */
+private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+    val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
+    return if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) < 0.06f) src else cropTo(src, aspect)
+}
+
+/**
+ * Update 191: a jewel case's front at [aspect] (142 × 125 mm): the booklet (120 mm square) under the clear lid — the cover
+ * fitted whole in it — and round it the lid's clear edge over the tray ([tray]'s colour, seen through the plastic). The
+ * booklet's place is approximate (left of it the tray's hinge ridge, drawn by CaseDraw).
+ */
+private fun jewelFront(art: android.graphics.Bitmap, aspect: Float, tray: Int): android.graphics.Bitmap = runCatching {
+    val w = 640; val h = (w / aspect).toInt().coerceAtLeast(1)
+    val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(out)
+    c.drawColor(CaseInside.mix(tray, 0xFF2A2D33.toInt(), 0.45f))
+    val win = android.graphics.RectF(w * 0.075f, h * 0.018f, w * 0.925f, h * 0.982f)
+    // The cover whole in the booklet's place (letterboxed in the clear edge's colour when its shape is off).
+    val a = art.width.toFloat() / art.height.coerceAtLeast(1)
+    val wa = win.width() / win.height()
+    val dst = if (a > wa) {
+        val hh = win.width() / a
+        android.graphics.RectF(win.left, win.centerY() - hh / 2f, win.right, win.centerY() + hh / 2f)
+    } else {
+        val ww = win.height() * a
+        android.graphics.RectF(win.centerX() - ww / 2f, win.top, win.centerX() + ww / 2f, win.bottom)
+    }
+    c.drawBitmap(art, null, dst, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+    out
+}.getOrDefault(art)
 
 /** [src] cut in the middle to [aspect] (width / height), no stretching. */
 private fun cropTo(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
@@ -371,8 +489,10 @@ private object CaseDraw {
         frameArgb: Int, frameWidth: Float,
         /** Update 162: the back's picture (null: plain plastic). */
         back: android.graphics.Bitmap? = null,
-        /** Update 186: CASE_KEEP / CASE_JEWEL / CASE_CARD. */
-        style: Int = CASE_KEEP
+        /** Update 191: how its outside looks (the real case's plastic, grip, ridge…). */
+        look: CaseLook,
+        /** Update 191: a cardboard box's top flap, open 0…1 (its tray rises out of it). */
+        flap: Float = 0f
     ) {
         val ty = Math.toRadians(yaw.toDouble()); val tp = Math.toRadians(pitch.toDouble())
         val cy0 = kotlin.math.cos(ty).toFloat(); val sy0 = kotlin.math.sin(ty).toFloat()
@@ -380,6 +500,19 @@ private object CaseDraw {
         val focal = h * 3.4f
         val hw = w / 2f; val hh = h / 2f; val hd = d / 2f
         // Projects corner [i] of [face] (mirrored under the floor when [mirror]) into [out] at [i]; false when behind the eye.
+        // Projects the point (x, y, z) (px from the middle) into [out] at [i]; false when behind the eye.
+        fun point(i: Int, x: Float, y: Float, z: Float): Boolean {
+            val x1 = x * cy0 + z * sy0
+            val z1 = -x * sy0 + z * cy0
+            val y2 = y * cp + z1 * sp
+            val z2 = -y * sp + z1 * cp
+            val k = focal - z2
+            if (k <= 1f) return false
+            val s = focal / k
+            out[i * 2] = cx + x1 * s
+            out[i * 2 + 1] = cy + y2 * s
+            return true
+        }
         fun project(face: FloatArray, i: Int, mirror: Boolean): Boolean {
             val x = face[i * 3] * hw
             var y = face[i * 3 + 1] * hh
@@ -466,48 +599,23 @@ private object CaseDraw {
                             shaderMatrix.setValues(m9)
                             gloss.setLocalMatrix(shaderMatrix)
                             // (Update 186: a cardboard box is matte — no plastic gloss.)
-                            if (style != CASE_CARD) {
+                            if (!look.matte) {
                                 fill.shader = gloss
                                 c.drawPath(pathOf(), fill)
                                 fill.shader = null
                             }
                             val px1 = (w / 260f).coerceIn(0.8f, 3f)
-                            when (style) {
-                                CASE_JEWEL_BLACK -> {
-                                    // Update 188: a PlayStation case — the black tray's hinge ridge down the left (solid
-                                    // black, a lit edge on its rounded top), then the clear lid's edges.
-                                    path.reset()
-                                    path.moveTo(px(0f, 0f), py(0f, 0f)); path.lineTo(px(0.062f, 0f), py(0.062f, 0f))
-                                    path.lineTo(px(0.062f, 1f), py(0.062f, 1f)); path.lineTo(px(0f, 1f), py(0f, 1f)); path.close()
-                                    fill.shader = null; fill.color = scaled(0xF20C0C0E.toInt(), light); c.drawPath(path, fill)
-                                    lineOn(0.022f, 0f, 0.022f, 1f, scaled(0x55FFFFFF, light), px1 * 1.2f)
-                                    lineOn(0.06f, 0f, 0.06f, 1f, scaled(0x99000000.toInt(), light), px1 * 1.4f)
-                                    lineOn(0.072f, 0f, 0.072f, 1f, scaled(0x77FFFFFF, light), px1)
-                                    lineOn(0.09f, 0.012f, 0.99f, 0.012f, scaled(0x55FFFFFF, light), px1)
-                                    lineOn(0.988f, 0.012f, 0.988f, 0.988f, scaled(0x44FFFFFF, light), px1)
-                                    lineOn(0.09f, 0.988f, 0.99f, 0.988f, scaled(0x33000000, light), px1)
-                                }
-                                CASE_JEWEL -> {
-                                    // The hinge down the left: a dark groove and its lit ridge, and the clear lid's edges.
-                                    lineOn(0.055f, 0f, 0.055f, 1f, scaled(0x66000000, light), px1 * 1.6f)
-                                    lineOn(0.07f, 0f, 0.07f, 1f, scaled(0x88FFFFFF.toInt(), light), px1)
-                                    lineOn(0.09f, 0.012f, 0.99f, 0.012f, scaled(0x55FFFFFF, light), px1)
-                                    lineOn(0.988f, 0.012f, 0.988f, 0.988f, scaled(0x44FFFFFF, light), px1)
-                                    lineOn(0.09f, 0.988f, 0.99f, 0.988f, scaled(0x33000000, light), px1)
-                                }
-                                CASE_KEEP -> {
-                                    // The clear sleeve's top lip and a soft inner rim.
-                                    lineOn(0.01f, 0.018f, 0.99f, 0.018f, scaled(0x44FFFFFF, light), px1 * 1.4f)
-                                    lineOn(0.02f, 0.03f, 0.02f, 0.97f, scaled(0x22FFFFFF, light), px1)
-                                }
-                                else -> {
-                                    // Cardboard: worn, slightly lighter edges where the folds are.
-                                    lineOn(0f, 0.004f, 1f, 0.004f, scaled(0x30FFFFFF, light), px1 * 1.5f)
-                                    lineOn(0.996f, 0f, 0.996f, 1f, scaled(0x26FFFFFF, light), px1 * 1.5f)
-                                }
+                            // (Update 189: no drawn lines on the cases any more — the hinge, lid, sleeve and fold lines and
+                            // the thin white outline read as stray lines on the Thor. A jewel case keeps its tray's hinge
+                            // ridge seen through the lid, a solid strip as on the real one: black on PlayStation, clear
+                            // or white on Dreamcast — update 191.)
+                            if (look.strip != 0) {
+                                val sw = look.stripW
+                                path.reset()
+                                path.moveTo(px(0f, 0f), py(0f, 0f)); path.lineTo(px(sw, 0f), py(sw, 0f))
+                                path.lineTo(px(sw, 1f), py(sw, 1f)); path.lineTo(px(0f, 1f), py(0f, 1f)); path.close()
+                                fill.shader = null; fill.color = scaled(look.strip, light); c.drawPath(path, fill)
                             }
-                            line.strokeWidth = 1f; line.color = scaled(0x55FFFFFF, light)
-                            c.drawPath(pathOf(), line)
                             if (frameArgb != 0) { line.strokeWidth = frameWidth; line.color = frameArgb; c.drawPath(pathOf(), line) }
                         }
                     }
@@ -515,24 +623,25 @@ private object CaseDraw {
                     // (Update 162: the back's own picture when there is one.)
                     4 -> if (back != null) warp(back, filterOf(l)) else {
                         fill.shader = null
-                        fill.color = scaled(0xFF22242C.toInt(), l)
+                        fill.color = scaled(look.back, l)
                         c.drawPath(pathOf(), fill)
                     }
                     else -> {
                         // The plastic: the open edge, the top and the back.
                         // (Update 186: a jewel case's edges are clear, see-through grey plastic; a box's edges cardboard.)
                         fill.shader = null
-                        val base = when (style) {
-                            CASE_JEWEL -> if (f == 3) 0xFFB9BEC8.toInt() else 0xFF9AA0AB.toInt()
-                            CASE_JEWEL_BLACK -> if (f == 3) 0xFF3C3E44.toInt() else 0xFF26282D.toInt()
-                            CASE_CARD -> if (f == 3) 0xFF4A4740.toInt() else 0xFF3A3832.toInt()
-                            else -> if (f == 3) 0xFF3A3D47.toInt() else 0xFF22242C.toInt()
-                        }
+                        // (Update 191: a box with its flap open shows its dark inside on top.)
+                        val opening = f == 3 && !mirror && flap > 0.001f && look.flap
+                        val base = if (opening) 0xFF141210.toInt() else if (f == 3) look.top else look.edge
                         fill.color = scaled(base, l)
                         c.drawPath(pathOf(), fill)
-                        if (style == CASE_JEWEL || style == CASE_JEWEL_BLACK) {
-                            // Its ribs along the edge.
-                            for (k in 1..3) lineOn(0f, k / 4f, 1f, k / 4f, scaled(0x33FFFFFF, l), 1f)
+                        // Update 189: a keep case's opening edge has its thumb grip — a recess in the middle third,
+                        // where you open it (jewel cases and boxes don't have one; update 191: where the real case has).
+                        if (look.grip && f == 2) {
+                            path.reset()
+                            path.moveTo(px(0.12f, 0.36f), py(0.12f, 0.36f)); path.lineTo(px(0.88f, 0.36f), py(0.88f, 0.36f))
+                            path.lineTo(px(0.88f, 0.64f), py(0.88f, 0.64f)); path.lineTo(px(0.12f, 0.64f), py(0.12f, 0.64f)); path.close()
+                            fill.color = scaled(CaseInside.mix(look.edge, 0xFF000000.toInt(), 0.5f), l * 0.8f); c.drawPath(path, fill)
                         }
                     }
                 }
@@ -554,6 +663,59 @@ private object CaseDraw {
             c.restoreToCount(l)
         }
         drawFaces(false)
+        // Update 191: a cardboard box opening: the top's tuck flap swings up and back on its fold at the back, the two
+        // dust flaps fold out to the sides, and the inner tray rises out of the opening (the cartridge then comes out of
+        // it). Which end opens isn't confirmed for every console; the top is drawn.
+        if (flap > 0.001f && look.flap) {
+            val k = flap.coerceIn(0f, 1f)
+            fill.shader = null
+            // Fills the quad just projected: [outer] when its outside faces you, else [inner]; skipped behind the eye.
+            fun quad(p: FloatArray, outer: Int, inner: Int, lit: Float, cull: Boolean = false) {
+                for (i in 0 until 4) if (!point(i, p[i * 3], p[i * 3 + 1], p[i * 3 + 2])) return
+                val a = area()
+                if (cull && a <= 0f) return
+                fill.color = scaled(if (a > 0f) outer else inner, lit * light)
+                c.drawPath(pathOf(), fill)
+            }
+            val cardInside = 0xFFD6CFC0.toInt()
+            // The dust flaps, on the sides' top edges: from lying inwards to standing a little outwards.
+            val b = Math.toRadians((k * 100f).toDouble())
+            val bx = kotlin.math.cos(b).toFloat(); val by = kotlin.math.sin(b).toFloat()
+            val dl = minOf(d * 0.45f, hw * 0.5f)
+            for (sx in floatArrayOf(-1f, 1f)) {
+                val x0 = sx * hw * 0.99f
+                val tx = x0 - sx * dl * bx; val ty = -hh - dl * by
+                quad(floatArrayOf(x0, -hh, -hd * 0.9f, x0, -hh, hd * 0.9f, tx, ty, hd * 0.85f, tx, ty, -hd * 0.85f), cardInside, cardInside, 0.82f)
+            }
+            // The tuck flap, on the top's back edge, and its tongue (the part that tucks into the front).
+            val a = Math.toRadians((k * 118f).toDouble())
+            val ca = kotlin.math.cos(a).toFloat(); val sa = kotlin.math.sin(a).toFloat()
+            val fy = -hh - d * sa; val fz = -hd + d * ca
+            quad(floatArrayOf(-hw, -hh, -hd, hw, -hh, -hd, hw, fy, fz, -hw, fy, fz), look.top, cardInside, 0.95f)
+            val tl = d * 0.4f
+            val ey = fy + tl * ca; val ez = fz + tl * sa
+            quad(floatArrayOf(-hw * 0.94f, fy, fz, hw * 0.94f, fy, fz, hw * 0.94f, ey, ez, -hw * 0.94f, ey, ez), look.top, cardInside, 0.88f)
+            // The inner tray, rising once the flap is out of the way.
+            val rise = h * 0.2f * ((k - 0.7f) / 0.3f).coerceIn(0f, 1f)
+            if (rise > 0.5f) {
+                val tx = hw * 0.9f; val tz = hd * 0.78f
+                val top = -hh - rise
+                val sides = arrayOf(
+                    floatArrayOf(-tx, top, tz, tx, top, tz, tx, -hh, tz, -tx, -hh, tz) to NORMALS[0],
+                    floatArrayOf(-tx, top, -tz, -tx, top, tz, -tx, -hh, tz, -tx, -hh, -tz) to NORMALS[1],
+                    floatArrayOf(tx, top, tz, tx, top, -tz, tx, -hh, -tz, tx, -hh, tz) to NORMALS[2]
+                )
+                for ((q, n) in sides) quad(q, look.inner, look.inner, lightOf(n) / light.coerceAtLeast(0.01f), cull = true)
+                // Its top, with the empty well the cartridge sat in.
+                quad(floatArrayOf(-tx, top, -tz, tx, top, -tz, tx, top, tz, -tx, top, tz), look.inner, look.inner, lightOf(NORMALS[3]) / light.coerceAtLeast(0.01f), cull = true)
+                if (area() > 0f) {
+                    path.reset()
+                    path.moveTo(px(0.16f, 0.22f), py(0.16f, 0.22f)); path.lineTo(px(0.84f, 0.22f), py(0.84f, 0.22f))
+                    path.lineTo(px(0.84f, 0.8f), py(0.84f, 0.8f)); path.lineTo(px(0.16f, 0.8f), py(0.16f, 0.8f)); path.close()
+                    fill.color = scaled(CaseInside.mix(look.inner, 0xFF000000.toInt(), 0.45f), light); c.drawPath(path, fill)
+                }
+            }
+        }
     }
 
     /** [argb] with its colour times [l] (alpha kept). */

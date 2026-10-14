@@ -52,6 +52,14 @@ object GameMode {
         if (_playing.value && System.currentTimeMillis() - enteredAt > 6_000L) { _playing.value = false; BatterySaver.gameRunning = false }
     }
 
+    /**
+     * Update 190: artwork downloads wait for the game only when Settings › Artwork › Keep getting artwork in the
+     * background is off (on by default: they go on behind the game, a picture at a time).
+     */
+    suspend fun awaitForArt() {
+        if (!Features.artInBackground.value) awaitNotPlaying()
+    }
+
     /** Suspends while a game is in front (background loops call this between items). */
     suspend fun awaitNotPlaying() {
         if (_playing.value) _playing.first { !it }

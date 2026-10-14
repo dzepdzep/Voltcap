@@ -5256,6 +5256,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             artSaveJob?.cancel()
             _uiState.update { it.copy(scrapeDone = 0, scrapeTotal = pending.size, artSaveDone = 0, artSaveTotal = 0) }
             val saveAsWeGo = _uiState.value.artStorage.autoSave
+            // Update 190: keeps going while Voltcap isn't on screen (ArtDownloadService keeps the process awake).
+            val artApp = getApplication<Application>()
+            val holdAwake = com.shelf.launcher.data.Features.artInBackground.value
+            if (holdAwake) com.shelf.launcher.data.ArtDownloadService.start(artApp, pending.size)
+            try {
 
             // New art reaches the screen in small batches (about twice a second) instead of one full
             // home-screen update per game: big libraries used to redraw everything thousands of times.
@@ -5287,7 +5292,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         launch {
                             try {
                                 if (com.shelf.launcher.data.GameMode.active && freshArt.isNotEmpty()) flushArt(done)
-                                com.shelf.launcher.data.GameMode.awaitNotPlaying()
+                                // (Update 190: only waits for the game when "Keep getting artwork in the background" is off.)
+                                com.shelf.launcher.data.GameMode.awaitForArt()
                                 val art = withContext(Dispatchers.IO) { fetchArtFromSelectedSource(game) }
                                 asked[game.stableKey] = System.currentTimeMillis()
                                 if (art != null) {
@@ -5297,6 +5303,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                                     if (saveAsWeGo) withContext(Dispatchers.IO) { saveGameArtNow(merged) }
                                 }
                                 done++
+                                com.shelf.launcher.data.ArtDownloadService.progress(artApp, done, pending.size)
                                 if (android.os.SystemClock.uptimeMillis() - lastFlush >= 450L || done == pending.size) flushArt(done)
                             } finally {
                                 lanes.release()
@@ -5310,9 +5317,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
 
             // What's left to save (backgrounds already looked up, scans, screenshots…) right after, with its own count.
-            if (saveAsWeGo) saveAllArt(silent = true)
+            // (Update 190: it never ran — saveAllArt saw this scrape still running and stopped at once.)
+            if (saveAsWeGo) saveAllArt(silent = true, afterScrape = true)
             autoSaveDetails()
             scrapeManuals(retry = manual || force)
+            } finally {
+                if (holdAwake) com.shelf.launcher.data.ArtDownloadService.stop(artApp)
+            }
         }
     }
 
@@ -5405,10 +5416,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * after an update or a restart.
      */
     @OptIn(ExperimentalCoilApi::class)
-    fun saveAllArt(silent: Boolean = false) {
+    fun saveAllArt(silent: Boolean = false, afterScrape: Boolean = false) {
         if (artSaveJob?.isActive == true) return
         // (Update 119: while the art is being scraped, it saves as it goes and calls this when it's done.)
-        if (scrapeJob?.isActive == true) {
+        if (scrapeJob?.isActive == true && !afterScrape) {
             if (!silent) setStatusMessage("Saving together with the scrape running now.")
             return
         }
@@ -5416,7 +5427,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val disk = Coil.imageLoader(app).diskCache
         if (!silent) ArtStorage.forgetFailed(app)
 
+        // Update 190: keeps going while Voltcap isn't on screen (released when this is done).
+        val holdAwake = com.shelf.launcher.data.Features.artInBackground.value
+        if (holdAwake) com.shelf.launcher.data.ArtDownloadService.start(app, 0)
         artSaveJob = viewModelScope.launch {
+          try {
             val urls = artUrlsToSave()
             com.shelf.launcher.data.ArtFiles.wanted = urls.toHashSet()
             val missing = withContext(Dispatchers.IO) {
@@ -5441,7 +5456,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             val refused = ArrayList<String>()
             for ((index, url) in missing.withIndex()) {
                 if (!isActive) break
-                com.shelf.launcher.data.GameMode.awaitNotPlaying()
+                com.shelf.launcher.data.GameMode.awaitForArt()
                 if (com.shelf.launcher.data.ArtFiles.full()) { stopped = "The art store is full: raise its size in Settings › Metadata to save the rest."; break }
                 var wasRefused = false
                 val ok = withContext(Dispatchers.IO) {
@@ -5462,6 +5477,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     stopped = "Saving art stopped: no connection."; break
                 }
                 _uiState.update { it.copy(artSaveDone = index + 1) }
+                com.shelf.launcher.data.ArtDownloadService.progress(app, index + 1, missing.size)
             }
             ArtStorage.markFailed(app, refused)
             _uiState.update {
@@ -5473,6 +5489,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 )
             }
             refreshArtStorageStats()
+          } finally {
+            if (holdAwake) com.shelf.launcher.data.ArtDownloadService.stop(app)
+          }
         }
     }
 
@@ -5506,7 +5525,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             var found = 0
             try {
                 for ((i, g) in pending.withIndex()) {
-                    com.shelf.launcher.data.GameMode.awaitNotPlaying()
+                    com.shelf.launcher.data.GameMode.awaitForArt()
                     loadPhysicalMedia(g, needSpine = true)
                     // Its look-up runs on its own: wait for it (at most half a minute), then a short pause for the server.
                     var waited = 0
@@ -5549,7 +5568,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             var found = 0
             try {
                 for ((i, g) in pending.withIndex()) {
-                    com.shelf.launcher.data.GameMode.awaitNotPlaying()
+                    com.shelf.launcher.data.GameMode.awaitForArt()
                     loadPhysicalMedia(g, needSpine = true, force = true)
                     var waited = 0
                     while (g.stableKey in physicalLoading && waited < 30_000) { kotlinx.coroutines.delay(200); waited += 200 }

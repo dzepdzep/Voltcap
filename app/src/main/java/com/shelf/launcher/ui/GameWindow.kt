@@ -626,7 +626,7 @@ internal fun GameWindow(
             val pc = piece
             if (pc != null && pc.kind == InspectKind.BOX && e.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_BUTTON_THUMBR) {
                 if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_UP)
-                    motion.toggleCase(inspectScope, CaseInside.kindOf(pc.game.platform) != CaseInside.Kind.BOX, pc.content != null)
+                    motion.toggleCase(inspectScope, true, pc.content != null)
                 true
             } else false
         }) {

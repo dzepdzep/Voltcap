@@ -44,6 +44,11 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
@@ -152,7 +157,7 @@ private fun contentPieceFor(g: Game, state: LauncherUiState): InspectPiece? {
 
 /** Update 189: what the opening case draws lying in it, from its [content]. */
 internal fun caseItemOf(content: InspectPiece?): CaseItem? = content?.let { c ->
-    CaseItem(c.realScan, c.label ?: c.cover, if (c.kind == InspectKind.DISC) 1f else c.aspect, c.tone.toArgbInt())
+    CaseItem(c.realScan, c.label ?: c.cover, if (c.kind == InspectKind.DISC) 1f else c.aspect, c.tone.toArgbInt(), c.kind == InspectKind.DISC)
 }
 
 private fun Color.toArgbInt(): Int = android.graphics.Color.argb((alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt())
@@ -574,7 +579,8 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
     Box(Modifier.fillMaxSize().onGloballyPositioned { c -> val o = c.positionInWindow(); win[0] = o.x; win[1] = o.y }) {
         if (slot != null) {
             // Update 186: a box at its scan's own shape (CoverAspects, noted when the card drew it), so its front isn't cut.
-            val scanShape = if (piece.kind == InspectKind.BOX && piece.game.platform != "PS1")
+            // (Update 191: not when the real case's shape is known — CaseCatalog.kt.)
+            val scanShape = if (piece.kind == InspectKind.BOX && piece.game.platform != "PS1" && CaseCatalog.forGame(piece.game) == null)
                 CoverAspects.rawOf(piece.front?.toString())?.coerceIn(piece.aspect * 0.75f, piece.aspect * 1.33f) else null
             val aspect = (scanShape ?: piece.aspect).coerceIn(0.25f, 4f)
             // As big as fits its side of the window (some room kept for its turn and its shadow).
@@ -620,16 +626,18 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                     .graphicsLayer {
                         val o = motion.out.floatValue
                         if (o > 0f) {
-                            val s = 1f - 0.42f * o
+                            val s = 1f - 0.4f * o
                             scaleX = s; scaleY = s
-                            translationX = -w * 0.34f * o
+                            // (Update 189 (Thor): not so far — it went off the screen's left edge.)
+                            translationX = -w * 0.2f * o
                             translationY = -h * 0.06f * o
                         }
                     }
                     // Update 189: a tap on a case opens it (and closes it again).
                     .pointerInput(piece.kind, piece.content) {
                         if (piece.kind == InspectKind.BOX) detectTapGestures(onTap = {
-                            motion.toggleCase(scope, CaseInside.kindOf(piece.game.platform) != CaseInside.Kind.BOX, piece.content != null)
+                            // (Update 191: a cardboard box opens too — its top flap.)
+                            motion.toggleCase(scope, true, piece.content != null)
                         })
                     }
                     // A horizontal drag turns it yourself; let go and it eases back.
@@ -682,14 +690,22 @@ private fun InspectContent(
     val ch = cw / cAspect
     val endCx = left + w / 2f + w * 0.1f
     val endCy = top + h / 2f
-    val kind = CaseInside.kindOf(piece.game.platform)
+    // (Update 191: the real case — what kind of inside, and where in it — as Case3D draws it; what lies in it decides
+    // disc or card, so the disc in the case is the disc that comes out.)
+    val spec = remember(piece.game.stableKey, Features.caseRegion.state.value) { CaseCatalog.forGame(piece.game) }
+    val kind = CaseInside.kindFor(spec, piece.game.platform, disc)
     // Where it lay: in the open book (the lid left of the hinge, the tray right of it), as Case3D draws it.
     val fw = w * 0.97f; val fh = h * 0.97f
     val k = 1f / 1.92f
     val w2 = fw * k; val h2 = fh * k
-    val r = CaseInside.itemRect(kind, caseAspect, cAspect)
-    val startCx = if (kind == CaseInside.Kind.BOX) left + w / 2f else left + w / 2f + ((r[0] + r[2]) / 2f) * w2
-    val startCy = if (kind == CaseInside.Kind.BOX) top + h * 0.06f else top + h / 2f - h2 / 2f + ((r[1] + r[3]) / 2f) * h2
+    val r = CaseInside.itemRect(kind, caseAspect, cAspect, spec)
+    // (Xbox One / Series: in the lid, left of the hinge; its picture runs from the lid's outer edge to the hinge.)
+    val onLid = spec?.mediaLeft == true
+    val startCx = if (kind == CaseInside.Kind.BOX) left + w / 2f
+        else if (onLid) left + w / 2f - w2 + ((r[0] + r[2]) / 2f) * w2
+        else left + w / 2f + ((r[0] + r[2]) / 2f) * w2
+    // (Update 191: a box's cartridge comes up out of its risen tray.)
+    val startCy = if (kind == CaseInside.Kind.BOX) top - h * 0.1f else top + h / 2f - h2 / 2f + ((r[1] + r[3]) / 2f) * h2
     val startW = if (kind == CaseInside.Kind.BOX) cw * 0.5f else (r[2] - r[0]) * w2
     val s0 = (startW / cw).coerceIn(0.1f, 1f)
     val outNow by remember(motion) { androidx.compose.runtime.derivedStateOf { motion.out.floatValue > 0.001f } }
@@ -718,7 +734,7 @@ private fun InspectContent(
             }
             .pointerInput(Unit) {
                 detectTapGestures(onTap = {
-                    if (motion.out.floatValue > 0.5f) motion.toggleCase(scope, kind != CaseInside.Kind.BOX, true)
+                    if (motion.out.floatValue > 0.5f) motion.toggleCase(scope, true, true)
                 })
             }
             // A drag turns it round (a disc: over to its data side); let go and it comes back.
@@ -811,51 +827,96 @@ private fun Modifier.slabFace(yawOf: () -> Float, depth: Float): Modifier = this
     compositingStrategy = CompositingStrategy.Offscreen
 }
 
-/** A cartridge / card turning: its face, the shell's side band showing its thickness, its plain back. */
+/**
+ * A cartridge / card turning (update 189: a real solid piece). Its face is recorded once and drawn again, darkened,
+ * slice after slice through its thickness — so its sides have its own outline and its own colour (a green shell's
+ * edge is green, a notched cartridge's edge follows the notch) — then the face in front; from behind, its outline
+ * filled with its shell's colour (taken from the picture itself), never the label mirrored. It used to be the face
+ * squeezed beside a grey strip that floated apart from it.
+ */
 @Composable
 private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
-    val tone = p.tone
-    Box(Modifier.fillMaxSize()) {
-        // The side between front and back, as it comes round.
-        Spacer(
-            Modifier.matchParentSize().drawBehind {
+    val holder = remember { arrayOfNulls<androidx.compose.ui.graphics.layer.GraphicsLayer>(1) }
+    var shell by androidx.compose.runtime.remember(p) { androidx.compose.runtime.mutableStateOf<Color?>(null) }
+    // Its shell colour, from the face's own pixels (the edge, half-way down), once it's drawn.
+    LaunchedEffect(p) {
+        delay(700)
+        val bmp = runCatching { holder[0]?.toImageBitmap()?.asAndroidBitmap() }.getOrNull() ?: return@LaunchedEffect
+        shell = sampleShell(bmp)
+    }
+    Box(
+        Modifier.fillMaxSize().drawWithCache {
+            val face = obtainGraphicsLayer()
+            holder[0] = face
+            val edge = obtainGraphicsLayer()
+            val lit = obtainGraphicsLayer()
+            val back = obtainGraphicsLayer()
+            val sheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))
+            onDrawWithContent {
+                face.record { this@onDrawWithContent.drawContent() }
                 val t = Math.toRadians(yawOf().toDouble())
                 val c = cos(t).toFloat()
-                val s = sin(t).toFloat()
+                val sn = sin(t).toFloat()
                 val w = size.width
                 val h = size.height
-                val half = p.depth * maxOf(w, h) / 2f * abs(s)
-                if (half > 0.5f) {
-                    // The left side shows turning right, the right side turning left.
-                    val x = (if (s > 0f) -w / 2f else w / 2f) * c + w / 2f
-                    val bandH = h * 0.95f
-                    val tl = Offset(x - half - 1.5f, (h - bandH) / 2f)
-                    val sz = Size(2f * half + 3f, bandH)
-                    val corner = CornerRadius(minOf(half, w * 0.03f))
-                    drawRoundRect(tone, topLeft = tl, size = sz, cornerRadius = corner)
-                    // Lit as it faces you.
-                    drawRoundRect(Color.Black, topLeft = tl, size = sz, cornerRadius = corner, alpha = 0.58f - 0.38f * abs(s))
+                val depth = p.depth * maxOf(w, h)
+                val sx = if (abs(c) < 0.01f) (if (c < 0f) -0.01f else 0.01f) else c
+                fun at(z: Float, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) =
+                    withTransform({ translate(z * sn, 0f); scale(sx, 1f, pivot = center) }) { block() }
+                // The sides: the face's outline in its own colours, darker, lit a little as they face you.
+                edge.colorFilter = SlabLight.of(0.42f + 0.22f * abs(sn))
+                edge.record { drawLayer(face) }
+                val n = kotlin.math.ceil(depth * abs(sn) / 1.2f).toInt().coerceIn(0, 48)
+                if (n > 0) {
+                    // Far to near.
+                    for (k in 0..n) {
+                        val f = k.toFloat() / n
+                        val z = if (c >= 0f) -depth / 2f + depth * f else depth / 2f - depth * f
+                        at(z) { drawLayer(edge) }
+                    }
                 }
-            }
-        )
-        Box(
-            Modifier.matchParentSize().slabFace(yawOf, p.depth).drawWithCache {
-                val sheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Black.copy(alpha = 0.12f)))
-                onDrawWithContent {
-                    drawContent()
-                    val t = Math.toRadians(yawOf().toDouble())
-                    val c = cos(t).toFloat()
-                    val s = sin(t).toFloat()
-                    if (c < 0f) {
-                        // Seen from behind: the plain shell in its outline (never the label mirrored).
+                if (c >= 0f) {
+                    lit.colorFilter = SlabLight.of(1f - 0.4f * abs(sn))
+                    lit.record { drawLayer(face) }
+                    at(depth / 2f) { drawLayer(lit) }
+                } else {
+                    val tone = shell ?: p.tone
+                    back.record {
+                        drawLayer(face)
                         drawRect(tone, blendMode = BlendMode.SrcIn)
                         drawRect(sheen, blendMode = BlendMode.SrcAtop)
+                        drawRect(Color.Black, alpha = 0.4f * abs(sn), blendMode = BlendMode.SrcAtop)
                     }
-                    val dark = 0.4f * abs(s)
-                    if (dark > 0.01f) drawRect(Color.Black, alpha = dark, blendMode = BlendMode.SrcAtop)
+                    at(-depth / 2f) { drawLayer(back) }
                 }
             }
-        ) { PieceFace(p, Modifier.fillMaxSize()) }
+        }
+    ) { PieceFace(p, Modifier.fillMaxSize()) }
+}
+
+/** Update 189: the shell's colour in a cartridge / card picture — the first solid pixel in from its left edge, half-way down. */
+private fun sampleShell(b: android.graphics.Bitmap): Color? {
+    val y = b.height / 2
+    for (x in 0 until (b.width / 3)) {
+        val px = b.getPixel(x, y)
+        if ((px ushr 24) > 200) {
+            // A few pixels further in (past the outline).
+            val inX = (x + b.width / 40).coerceAtMost(b.width - 1)
+            return Color(b.getPixel(inX, y))
+        }
+    }
+    return null
+}
+
+/** Update 189: a brightness filter in 20 steps (made once each). */
+private object SlabLight {
+    private val cache = arrayOfNulls<ColorFilter>(21)
+    fun of(l: Float): ColorFilter? {
+        val i = (l.coerceIn(0f, 1f) * 20f).roundToInt()
+        if (i >= 20) return null
+        cache[i]?.let { return it }
+        val k = i / 20f
+        return ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToScale(k, k, k, 1f) }).also { cache[i] = it }
     }
 }
 
@@ -886,9 +947,16 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float) {
                     val ew = dia * abs(c)
                     // The far face's outline behind, joined to the near one by the edge.
                     val bx = cx - (if (c >= 0f) 1f else -1f) * d / 2f * s
-                    drawOval(rim, topLeft = Offset(bx - ew / 2f, cy - dia / 2f), size = Size(ew, dia))
-                    drawRect(rim, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia))
-                    drawRect(Color.Black, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia), alpha = 0.3f)
+                    // (Update 189: not through the hole — the edge and the far face showed in the middle of the disc.)
+                    val holeW = dia * 0.075f * abs(c).coerceAtLeast(0.05f)
+                    val hole = androidx.compose.ui.graphics.Path().apply {
+                        addOval(androidx.compose.ui.geometry.Rect(cx - holeW, cy - dia * 0.075f, cx + holeW, cy + dia * 0.075f))
+                    }
+                    clipPath(hole, androidx.compose.ui.graphics.ClipOp.Difference) {
+                        drawOval(rim, topLeft = Offset(bx - ew / 2f, cy - dia / 2f), size = Size(ew, dia))
+                        drawRect(rim, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia))
+                        drawRect(Color.Black, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia), alpha = 0.3f)
+                    }
                 }
             }
         )

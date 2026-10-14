@@ -618,6 +618,7 @@ internal object SettingsIndex {
         E("Saved on this device", "Metadata", "Saved on this device", null, null),
         E("Space it may use", "Metadata", "Saved on this device", null, null),
         E("Save new artwork automatically", "Metadata", "Saved on this device", null, null),
+        E("Keep getting artwork in the background", "Metadata", "Saved on this device", null, null),
         E("Save game details automatically", "Metadata", "Saved on this device", null, null)
     )
 }

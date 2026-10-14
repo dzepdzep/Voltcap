@@ -157,10 +157,13 @@ internal fun DrawScope.drawDiscUnderside(c: Offset, r: Float, format: DiscFormat
     val dataIn = if (gc) 0.55f else 0.383f
     val dataOut = if (gc) 0.965f else 0.975f
     val a = Math.toRadians(view.toDouble())
-    // The metal, lit a little more or less as it turns.
-    val turnLight = 0.9f + 0.1f * cos(a).toFloat()
+    // The metal: a mirror reflects the room in two bright lobes and two darker ones (the way a disc's underside
+    // catches the light), turning round as the disc turns.
     drawCircle(Brush.radialGradient(look.metal, center = c, radius = r), radius = r * dataOut, center = c)
-    if (turnLight < 0.999f) drawCircle(Color.Black, radius = r * dataOut, center = c, alpha = (1f - turnLight) * 0.6f)
+    val m0 = look.metal[0]; val m1 = look.metal[1]; val m2 = look.metal[2]
+    rotate(view * 0.9f, c) {
+        drawCircle(Brush.sweepGradient(listOf(m1, m0, m1, m2, m1, m0, m1, m2, m1), c), radius = r * dataOut, center = c, alpha = 0.8f)
+    }
     // The fine tracks: faint concentric lines across the data area.
     val dataMid = r * (dataIn + dataOut) / 2f
     val dataW = r * (dataOut - dataIn)
@@ -189,8 +192,9 @@ internal fun DrawScope.drawDiscUnderside(c: Offset, r: Float, format: DiscFormat
         else -> Unit
     }
     // The rainbow: light split by the tracks, turning round as the disc turns (never painted on: faint, in the data area).
-    if (look.rainbow > 0f) rotate(view * 1.6f, c) {
-        drawCircle(Brush.sweepGradient(look.rainbowColors, c), radius = dataMid, center = c, alpha = look.rainbow, style = Stroke(dataW))
+    // (Two bands, beside the bright lobes, as diffraction shows on a real disc.)
+    if (look.rainbow > 0f) rotate(view * 0.9f + 28f, c) {
+        drawCircle(Brush.sweepGradient(look.rainbowColors + look.rainbowColors.drop(1), c), radius = dataMid, center = c, alpha = (look.rainbow * 1.4f).coerceAtMost(0.35f), style = Stroke(dataW))
     }
     // The light's reflection: a soft band across the mirror, sliding as it turns.
     val dir = Offset(cos(a + 0.6).toFloat(), sin(a + 0.6).toFloat())

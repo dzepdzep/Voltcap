@@ -4,6 +4,138 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (191): real game cases per console and region, cardboard boxes that open, Xbox discs on the left, the disc no longer turns into a cartridge
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (1): `src_copy\ui\CaseCatalog.kt`. Changed (6):
+`src_copy\data\Features.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\CaseOpen.kt`, `src_copy\ui\GameWindow.kt`,
+`src_copy\ui\MediaInspectView.kt`, `src_copy\ui\SettingsDialog.kt`.
+
+**Project root**, new (1): `CASES.md` (what was found per console and region, and how sure each one is).
+
+**Files to delete:** none.
+
+### Bug: the disc turned into a cartridge
+- When a case held a cartridge (Voltcap's own case for an Android game with your cartridge on it), the open case
+  showed a disc in it, and a cartridge flew out. Now what lies in the case is what comes out: a cartridge sits in a
+  recess, a disc on its hub.
+
+### Real cases, researched console by console (ui/CaseCatalog.kt, CASES.md)
+- Each console's packaging was looked up per region:
+  - sizes;
+  - plastic colour and how see-through it is;
+  - where the disc or card sits;
+  - memory card and Game Boy Advance slots;
+  - cardboard boxes.
+- The 3D cases are now drawn from that table, not from one DVD-style case with different art.
+- **Region:** from the game's file name — (USA), (Europe), (Japan) and the usual short tags. For names without one:
+  Settings › Game look › Covers, cases & discs › Case region. The default is "From the file name, else North
+  America"; it can also be Europe or Japan, or one region for all.
+- **Sizes and thickness are the real ones.** A PAL PlayStation case is deeper (17.4 mm). A European DS case is clear
+  and 20 mm. A Japanese GameCube case is small (149×107) and clear. A Super Famicom box has its own shape. PS3, PS4,
+  PS5 and Xbox One cases are Blu-ray height.
+- **Plastic:**
+  - PS2: black in North America, dark blue in Europe.
+  - PS3: clear. PS4 and PS5: see-through blue.
+  - Original Xbox: green, near opaque (not black). Xbox 360: see-through lime green. Xbox One / Series: see-through
+    green.
+  - Wii: white. Wii U: blue. 3DS: white.
+  - Switch: clear (the red is the paper). Switch 2: red.
+  - Vita: blue. PSP: clear.
+  - Mega Drive, Master System and Neo Geo: black clamshells.
+  - Sega CD and Saturn (North America): clear longboxes.
+  - The edges of see-through cases are deeper in colour, as when you look through the plastic's depth.
+- **Jewel cases** (PS1, Dreamcast, Saturn and Mega-CD in Japan, Neo Geo CD, PC Engine CD, 3DO outside North
+  America):
+  - the booklet sits under the clear lid at its real 120 mm size, the whole cover, nothing cut;
+  - the tray's hinge ridge shows beside it: black on PlayStation, clear on a US Dreamcast, white on a Japanese one.
+- **Cardboard boxes** (NES, SNES, N64, Game Boy, GBA, Atari, Jaguar, Lynx, ColecoVision, Vectrex, Game Gear,
+  WonderSwan, computer big boxes):
+  - matte, their top and side in the colours of their print;
+  - they open: tap (or click the right stick) and the top's tuck flap swings up and back, the dust flaps fold out,
+    the inner tray rises and the cartridge comes up out of it.
+- **Inside:**
+  - Xbox One / Series: the disc is on the left, inside the front cover.
+  - GameCube: an 8 cm disc on its hub.
+  - Switch: the card low on the right, with the paper tabs above it.
+  - DS: the card at the top and the Game Boy Advance slot under it.
+  - PS2 and GameCube: a memory card holder under the manual.
+  - Mega Drive and Neo Geo clamshells: the cartridge in its bed.
+  - Intellivision: opens like a book, the cartridge in its plastic tray.
+  - See-through cases look light inside (the plastic over the paper's white back).
+- **Not invented:** Steam, Android, arcade and PICO-8 games never had retail cases, so they keep Voltcap's own case.
+- **How sure each one is:** every entry is marked Measured, From a published size, Estimated or Placeholder in
+  `CASES.md`.
+  - Placeholders draw the nearest known case and are listed there: Famicom, Japanese N64 and GBA boxes, Pokémon
+    mini, Master System and 32X sizes, Japanese Mega Drive, PAL Mega-CD, PAL Dreamcast thickness, Game Gear, the
+    TurboGrafx-16 case, CD-i.
+  - Not drawn yet: Platinum / Greatest Hits colours, obi strips, outer sleeves, early PS1 longboxes, late cardboard
+    Mega Drive boxes.
+
+### To check on the Thor
+- The case region switch, PAL vs US PS1 depth, an Xbox One / Series disc on the left.
+- A box opening (NES, SNES, Game Boy): the flap, the tray rising and the cartridge coming out.
+- An Android game with your cartridge: it lies in the case as a cartridge.
+
+---
+
+## Update — 14 Oct 2026 (190): artwork downloads in the background, cases without stray lines and with their thumb grip, solid cartridges when turned, nothing in the middle of a disc, discs that catch the light
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (1): `src_copy\data\ArtDownloadService.kt`. Changed (10):
+`src_copy\LauncherViewModel.kt`, `src_copy\data\Features.kt`, `src_copy\data\GameMode.kt`, `src_copy\ui\BatterySaverUi.kt`,
+`src_copy\ui\Case3D.kt`, `src_copy\ui\CaseOpen.kt`, `src_copy\ui\DiscUnderside.kt`, `src_copy\ui\MediaInspectView.kt`,
+`src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`.
+
+**Copy `project_copy`** (robocopy into the project root), changed (1): `project_copy\app\src\main\AndroidManifest.xml`
+(the artwork service and its permission, `FOREGROUND_SERVICE_DATA_SYNC`).
+
+**Files to delete:** none.
+
+### Artwork keeps downloading when Voltcap isn't on screen
+- "Getting art" now carries on behind a game, behind another app and with the screen off.
+- While it runs, a quiet minimum-priority notification shows the count, and it goes away when the download is done.
+- Android freezes a launcher in the background; this notification keeps Voltcap awake only while it downloads.
+- It no longer waits for the game to end.
+- The "save the rest" pass after a scrape now really runs. It used to stop at once because it saw the scrape still
+  running.
+- Switch: Settings › Metadata › Keep getting artwork in the background (on). Off: it waits until you're back, as
+  before.
+
+### Cases (checked on the Thor)
+- **The stray lines are gone:**
+  - the sleeve lip and inner rim on keep cases;
+  - the hinge and lid lines on jewel cases;
+  - the fold lines on boxes;
+  - the white outline round every case;
+  - the outlines round each part of an opened case, which made a square round the disc.
+- **The thumb grip:** keep cases (PS2/3/4/5, GameCube, Wii, Switch, Xbox) and card cases (DS, 3DS, Vita, PSP) now
+  have it on their opening edge, as the real ones do. When closed it's a recess on the edge; when open it's the
+  raised strip with the dip for your thumb. Jewel cases and cartridge boxes have none, like the real ones.
+- **Inside a keep case:** three curved ridges hold the disc, as moulded in a real tray, instead of a full ring. The
+  manual clips sit by the hinge.
+- **Out of the way:** an opened case moves aside less far; it went off the screen's left edge.
+- **The PlayStation case** keeps its solid black tray ridge.
+
+### Cartridges and cards when turned (the custom Android cartridge and every other one)
+- They're solid now. Their sides are their own outline in their own colour (a green shell has a green edge, and a
+  notched cartridge's edge follows the notch), drawn slice by slice through their thickness.
+- From behind, their outline shows in their shell colour, taken from the picture itself.
+- Before, the face only got narrower, with a grey strip floating apart from it.
+
+### Discs
+- Nothing shows in the middle any more: the disc's edge and back face showed through the hole as a grey disc with
+  a line across it.
+- The data side catches the light: two bright and two darker lobes, as a mirror reflects a room, with the rainbow
+  bands beside them. Both turn as the disc turns. It looked flat grey before.
+
+### Trailer
+- Shot list and script are in the doc "Voltcap trailer: shot list and script".
+
+---
+
 ## Update — 14 Oct 2026 (189): cases that open, real disc undersides, a new second-screen look, a dimmed second screen you can still use, stick lights off with the screen
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

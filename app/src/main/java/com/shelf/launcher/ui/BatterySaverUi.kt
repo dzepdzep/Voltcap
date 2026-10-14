@@ -158,8 +158,8 @@ internal fun BatterySaverIntroDialog(onSettings: () -> Unit, onDismiss: () -> Un
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 Text(
                     listOf(
-                        "While you play, Voltcap rests: artwork downloads wait and the pictures it had loaded are given " +
-                            "back to the emulator. Your saves still sync.",
+                        "While you play, Voltcap rests: the pictures it had loaded are given back to the emulator; your " +
+                            "saves still sync and artwork keeps downloading quietly.",
                         "Two screens: Voltcap rests on the other screen too, and it dims there when nobody uses it. A " +
                             "touch lights it up again.",
                         "Below ${Features.saverLowAt.value} % (not plugged in), or with Android's Battery Saver on, the theme " +

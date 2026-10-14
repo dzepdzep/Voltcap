@@ -3272,6 +3272,15 @@ private fun SavedArtCard(
         checked = settings.autoSave,
         onChange = { onChange(settings.copy(autoSave = it)) }
     )
+    // Update 190.
+    Spacer(Modifier.height(12.dp))
+    SwitchRow(
+        icon = Icons.Filled.Refresh,
+        title = "Keep getting artwork in the background",
+        subtitle = "Artwork keeps downloading while you play, use another app or the screen is off — a quiet notification shows the count while it runs. Off: it waits until you're back in Voltcap.",
+        checked = com.shelf.launcher.data.Features.artInBackground.state.value,
+        onChange = { com.shelf.launcher.data.Features.artInBackground.value = it }
+    )
     Spacer(Modifier.height(12.dp))
     SwitchRow(
         icon = Icons.Filled.Refresh,
@@ -3693,6 +3702,13 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.printedBacks.state.value,
             onChange = { com.shelf.launcher.data.Features.printedBacks.value = it }
         )
+        // Update 191: real cases per region (CaseCatalog.kt).
+        Spacer(Modifier.height(8.dp))
+        StyleChoice(
+            "Case region", com.shelf.launcher.data.Features.CaseRegionChoice.values(),
+            com.shelf.launcher.data.Features.caseRegion.state.value, { it.label }
+        ) { com.shelf.launcher.data.Features.caseRegion.value = it }
+        MutedNote("The 3D cases are drawn as sold in each region: a PAL PlayStation case is thicker, a European DS case clear, a Japanese GameCube case small and clear, a Super Famicom box a different shape. A game's file name says its region — (USA), (Europe), (Japan); this picks one for games whose name doesn't.")
         when (artNow) {
             com.shelf.launcher.data.CardArtType.CASE -> MutedNote("Every case the same size, in lists mixing consoles too (Continue playing, Favourites…).")
             com.shelf.launcher.data.CardArtType.CASE_REAL -> MutedNote("Every case at its real size next to the others: a DS case smaller than a PS2 one, a Saturn case taller. Also in lists that mix consoles.")
