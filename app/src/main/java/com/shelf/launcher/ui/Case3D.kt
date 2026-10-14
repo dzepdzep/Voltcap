@@ -133,10 +133,9 @@ internal fun Case3D(
                 // whole cover, nothing cut, with the lid's clear edge round it.
                 // (Update 193 (Thor): a front scan or booklet — about square — goes in whole; the template's frame cut a
                 // PlayStation cover to its own narrower shape first. Only other art gets the template's band.)
-                spec?.shell == CaseShell.JEWEL -> {
-                    val a = f.width.toFloat() / f.height.coerceAtLeast(1)
-                    jewelFront(if (a in 0.86f..1.16f) f else made ?: f, shape, spec.tray)
-                }
+                // (Update 195 (Thor, still cut in 194): always the whole picture — the template's frame is never used
+                // on a jewel case, whatever the picture's shape.)
+                spec?.shell == CaseShell.JEWEL -> jewelFront(f, shape, spec.tray)
                 // Update 191: a keep case's sleeve, a box's print: the cover over the whole front, at the real case's
                 // shape (a little off: fitted; further off: cut in the middle).
                 spec != null -> made ?: fitFace(f, shape)

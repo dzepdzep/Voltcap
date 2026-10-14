@@ -256,6 +256,33 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 195
+- **ui/CartShells.kt:**
+  - `CartShell` (mm outline x,y,r triples, label, ridges, screws, colours, extras, contacts, check, note), 67 entries
+    from the research;
+  - `presets` colours; `authenticId(platform, region)`;
+  - a choice is "<shell>~<colour>" or "pack:<CartLook key>~clear"; `parse` / `pickOf` / `split`;
+  - MediaPick.platform is "~sh:<choice>|<console>" (`SHELL_PREFIX`); `isCustomPiece()` = CUSTOM_CART or SHELL;
+  - `front()` / `back()` bitmaps (LRU 24), the back mirrored;
+  - `CartShellArt` composable (a pack choice goes to `PackCart(look, clear)`).
+- **CartShellStore:** `Features.cartShellChoices` ("key\tchoice" lines; keys are the game's stableKey or
+  console:<platform>), a SnapshotStateMap made in Snapshot.global.
+- **mediaFor(platform, mixed, asDisc, gameKey):** a per-game / per-console choice first; then
+  `Features.authenticCarts` (non-disc consoles; region from `CaseCatalog.regionOf(gameKey)`). Call sites with a game
+  pass `gameKey = g.stableKey`.
+- **PhysicalMedia:** SHELL branch. **MediaInspectView:** SLAB depth = shell.depth; InspectSlab draws the shell's back
+  bitmap when turned.
+- **CartShellPicker** (ShelfDialog): search; Authentic (groups) / Your custom shells; colours; "For every <console>
+  game". Opened from GameOptionsDialog `onCartShell` (LauncherUiFlags.cartShellForGame).
+- **SecondPad layers:** `LocalPadLayer`; `live()` keeps only the top layer. FolderPopup, the drawer, the picker and
+  the dock menu are layer 1.
+- **SecondGamesPage `onHighlight(platform, game?)`:** the folder opened, or `SecondPad.focused` "folder-…" / "game-…"
+  after 260 ms. LauncherScreen sets the platformFilter and focus.
+- **Showcase edge arrows:** "sc-edge-prev" / "sc-edge-next", 30×64 dp, CenterStart / CenterEnd. The top-bar ‹ › is
+  no longer passed.
+- **Case3D JEWEL:** always `jewelFront(f)`.
+- **Not tested on a device yet.**
+
 ## State after update 194
 - **`ShowcaseTopBar(onStep)`:** a pill with ‹ › (padTarget sc-prev / sc-next). SecondScreenHome passes `latestStep`
   when there is more than one page or the game window is open.

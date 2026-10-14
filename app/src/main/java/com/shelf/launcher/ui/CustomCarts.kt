@@ -140,12 +140,15 @@ internal fun CustomCart(platform: String, art: Any?, modifier: Modifier) {
     if (shell != null) DiscShellArt(shell, art, modifier) else PackCart(platform, art, modifier)
 }
 
-/** The game on the cartridge pack's shell (see [CustomCart]). */
+/**
+ * The game on the cartridge pack's shell (see [CustomCart]). Update 195: [look0] / [clear0] for a shape picked for this
+ * game or console (the Cartridge shell picker), else the pack's shape picked for all.
+ */
 @Composable
-private fun PackCart(platform: String, art: Any?, modifier: Modifier) {
+internal fun PackCart(platform: String, art: Any?, modifier: Modifier, look0: CartLook? = null, clear0: Boolean? = null) {
     val id = CustomCarts.idFor(platform)
-    val look = Features.cartLook.state.value
-    val clear = Features.cartClear.state.value
+    val look = look0 ?: Features.cartLook.state.value
+    val clear = clear0 ?: Features.cartClear.state.value
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * look.aspect)
         val h = w / look.aspect

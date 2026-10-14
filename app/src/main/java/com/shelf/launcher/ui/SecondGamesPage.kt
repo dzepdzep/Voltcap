@@ -76,9 +76,34 @@ internal fun SecondGamesPage(
     coverOf: (Game) -> String?,
     onPickGame: (platform: String, game: Game) -> Unit,
     /** Update 185: a game's wide picture (banner / hero), for the Wide look of the games inside a console. */
-    wideOf: (Game) -> String? = { null }
+    wideOf: (Game) -> String? = { null },
+    /**
+     * Update 195: the console (and game) lit or opened here, so the main screen follows it — its category, the game
+     * selected — without opening anything.
+     */
+    onHighlight: (platform: String, game: Game?) -> Unit = { _, _ -> }
 ) {
     var open by remember { mutableStateOf<GamesFolder?>(null) }
+    // Update 195: the main screen follows: a folder opened (tap or A) shows that console there; with the controller here,
+    // the folder or game that's lit does too (a moment after it stops moving).
+    val latestHighlight by androidx.compose.runtime.rememberUpdatedState(onHighlight)
+    androidx.compose.runtime.LaunchedEffect(open) { open?.let { latestHighlight(it.platform, null) } }
+    val padOn = SecondPad.active
+    val lit = SecondPad.focused
+    androidx.compose.runtime.LaunchedEffect(lit, padOn, open) {
+        val id = lit
+        if (padOn && id != null) {
+            kotlinx.coroutines.delay(260)
+            val f = open
+            if (f == null && id.startsWith("folder-")) {
+                val p = id.removePrefix("folder-")
+                if (folders.any { it.platform == p }) latestHighlight(p, null)
+            } else if (f != null && id.startsWith("game-")) {
+                val key = id.removePrefix("game-")
+                gamesOf(f.platform).firstOrNull { it.stableKey == key }?.let { latestHighlight(f.platform, it) }
+            }
+        }
+    }
     Box(Modifier.fillMaxSize()) {
         if (folders.isEmpty()) {
             Text("No consoles yet.", color = ShelfTheme.textMuted, fontSize = 13.sp, modifier = Modifier.align(Alignment.Center))
@@ -125,7 +150,10 @@ internal fun SecondGamesPage(
             val f = remember { mutableStateOf<GamesFolder?>(null) }
             if (open != null) f.value = open
             f.value?.let { folder ->
-                FolderPopup(folder, gamesOf(folder.platform), coverOf, wideOf, onClose = { open = null }) { g -> onPickGame(folder.platform, g) }
+                // (Update 195: the popup's controls on their own layer — the controller stays inside it.)
+                androidx.compose.runtime.CompositionLocalProvider(LocalPadLayer provides 1) {
+                    FolderPopup(folder, gamesOf(folder.platform), coverOf, wideOf, onClose = { open = null }) { g -> onPickGame(folder.platform, g) }
+                }
             }
         }
     }

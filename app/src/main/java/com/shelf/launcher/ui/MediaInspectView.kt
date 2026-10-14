@@ -183,7 +183,7 @@ private fun shellTone(shell: MediaShell?): Color = when (shell) {
 
 /** The shape the card draws [pick] in (a template cartridge has its own; with only the cover, its label frame's). */
 private fun slabAspect(pick: MediaPick, labelIsScan: Boolean): Float {
-    val own = pick.platform.startsWith(MODEL_3D) || pick.platform.startsWith(CUSTOM_CART)
+    val own = pick.platform.startsWith(MODEL_3D) || isCustomPiece(pick.platform)
     if (own) return pick.aspect.coerceIn(0.3f, 3f)
     val tpl = MediaTemplates.of(pick.platform)
     // (Update 169: the plain shell always, as TemplateMedia draws it.)
@@ -304,7 +304,7 @@ private fun mediaPiece(
     val p = g.platform
     val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, p)
     // (Update 162 (review): [mixed] as the cards ask for it — "All CDs" / "All cartridges" draw the generic piece.)
-    val pick = mediaFor(p, mixed, chosen == CardArtType.DISC)
+    val pick = mediaFor(p, mixed, chosen == CardArtType.DISC, gameKey = g.stableKey)
     // Your 3D piece (the 3D models look).
     if (pick != null && pick.platform.startsWith(MODEL_3D)) {
         val id = pick.platform.removePrefix(MODEL_3D).substringBefore('|')
@@ -324,7 +324,7 @@ private fun mediaPiece(
     if (pick == null) return null
     val label = typed ?: cover
     val isScan = typed != null
-    val custom = pick.platform.startsWith(CUSTOM_CART)
+    val custom = isCustomPiece(pick.platform)
     val tpl = if (custom) null else MediaTemplates.of(pick.platform)
     return when {
         // "Disc in its case": the card shows the case — that's what comes out.
@@ -334,7 +334,10 @@ private fun mediaPiece(
             pick.shell == MediaShell.MINI_DISC && small
         )
         else -> InspectPiece(
-            g, InspectKind.SLAB, slabAspect(pick, isScan), slabDepth(if (custom) null else pick.shell), pick, label, isScan, null,
+            g, InspectKind.SLAB, slabAspect(pick, isScan),
+            // (Update 195: a library shell at its own real thickness.)
+            if (pick.platform.startsWith(SHELL_PREFIX)) (CartShells.split(pick.platform).first?.shell?.depth ?: 0.12f).coerceIn(0.02f, 0.4f)
+            else slabDepth(if (custom) null else pick.shell), pick, label, isScan, null,
             cover, null, null, physical, null, if (custom) CUSTOM_SHELL else shellTone(pick.shell), false
         )
     }
@@ -802,7 +805,7 @@ private fun PieceFace(p: InspectPiece, modifier: Modifier) {
         val real = p.realScan
         if (real != null) RealMediaPicture(real, p.kind == InspectKind.DISC, modifier)
         else if (pick != null) {
-            val own = pick.platform.startsWith(MODEL_3D) || pick.platform.startsWith(CUSTOM_CART)
+            val own = pick.platform.startsWith(MODEL_3D) || isCustomPiece(pick.platform)
             val tpl = if (own) null else MediaTemplates.of(pick.platform)
             // A disc that the card shows in its case: here the disc alone.
             if (tpl?.disc != null && discCaseOn(tpl)) TemplateMedia(
@@ -837,6 +840,13 @@ private fun Modifier.slabFace(yawOf: () -> Float, depth: Float): Modifier = this
 @Composable
 private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
     val holder = remember { arrayOfNulls<androidx.compose.ui.graphics.layer.GraphicsLayer>(1) }
+    // Update 195: a library shell's own back (seam, screws, contacts), shown when it's turned round.
+    val shellBack = remember(p.pick?.platform) {
+        p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
+            val ch = CartShells.split(pp).first
+            ch?.shell?.let { sh -> runCatching { CartShells.back(sh, CartShells.colourOf(sh, ch.colourKey), 640).asImageBitmap() }.getOrNull() }
+        }
+    }
     var shell by androidx.compose.runtime.remember(p) { androidx.compose.runtime.mutableStateOf<Color?>(null) }
     // Its shell colour, from the face's own pixels (the edge, half-way down), once it's drawn.
     LaunchedEffect(p) {
@@ -887,8 +897,17 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
                 } else {
                     val tone = shell ?: p.tone
                     back.record {
-                        drawLayer(face)
-                        drawRect(tone, blendMode = BlendMode.SrcIn)
+                        val sb = shellBack
+                        if (sb != null) {
+                            // (Update 195: the shell's drawn back, fitted as its front is.)
+                            val a = sb.width.toFloat() / sb.height.coerceAtLeast(1)
+                            val bw = minOf(size.width, size.height * a); val bh = bw / a
+                            drawImage(sb, dstOffset = androidx.compose.ui.unit.IntOffset(((size.width - bw) / 2f).toInt(), ((size.height - bh) / 2f).toInt()),
+                                dstSize = androidx.compose.ui.unit.IntSize(bw.toInt(), bh.toInt()))
+                        } else {
+                            drawLayer(face)
+                            drawRect(tone, blendMode = BlendMode.SrcIn)
+                        }
                         drawRect(sheen, blendMode = BlendMode.SrcAtop)
                         drawRect(Color.Black, alpha = 0.4f * abs(sn), blendMode = BlendMode.SrcAtop)
                     }

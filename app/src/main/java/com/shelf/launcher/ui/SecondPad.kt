@@ -50,7 +50,7 @@ internal object SecondPad {
         private set
 
     /** [move]: update 182 — a control that moves inside itself (the Wall's slices): ◀ ▶ ▲ ▼ go to it first (true = used). */
-    private class Target(val id: String, var rect: Rect, var press: () -> Unit, var order: Long, var move: ((Int) -> Boolean)? = null)
+    private class Target(val id: String, var rect: Rect, var press: () -> Unit, var order: Long, var move: ((Int) -> Boolean)? = null, var layer: Int = 0)
 
     /**
      * Update 182: a scrolling list on the second screen (the Games page, a console's games) scrolls a step when ▲ ▼
@@ -63,10 +63,10 @@ internal object SecondPad {
     private var counter = 0L
     private val keysDown = HashSet<Int>()
 
-    fun register(id: String, rect: Rect, press: () -> Unit, move: ((Int) -> Boolean)? = null) {
+    fun register(id: String, rect: Rect, press: () -> Unit, move: ((Int) -> Boolean)? = null, layer: Int = 0) {
         synchronized(targets) {
             val t = targets[id]
-            if (t == null) targets[id] = Target(id, rect, press, counter++, move) else { t.rect = rect; t.press = press; t.move = move }
+            if (t == null) targets[id] = Target(id, rect, press, counter++, move, layer) else { t.rect = rect; t.press = press; t.move = move; t.layer = layer }
         }
     }
 
@@ -76,7 +76,13 @@ internal object SecondPad {
     }
 
     /** What can be reached now: on screen (a control scrolled away or on another page has no area). */
-    private fun live(): List<Target> = synchronized(targets) { targets.values.filter { it.rect.width > 1f && it.rect.height > 1f } }
+    private fun live(): List<Target> = synchronized(targets) {
+        val shown = targets.values.filter { it.rect.width > 1f && it.rect.height > 1f }
+        // (Update 195: a popup over the page (a console's games, the app drawer) takes the controller to itself: only the
+        // top layer's controls can be reached — moving inside a folder used to wander onto the page behind it.)
+        val top = shown.maxOfOrNull { it.layer } ?: 0
+        shown.filter { it.layer == top }
+    }
 
     /** Moves the controller onto the second screen (lighting the top-left control). False when there's nothing there. */
     fun enter(): Boolean {
@@ -187,14 +193,18 @@ internal fun Modifier.padTarget(id: String, onMove: ((Int) -> Boolean)? = null, 
     val move by rememberUpdatedState(onMove)
     val hasMove = onMove != null
     val lit = here && SecondPad.active && SecondPad.focused == id
+    val layer = LocalPadLayer.current
     val bring = remember { BringIntoViewRequester() }
     DisposableEffect(id, here) { onDispose { if (here) SecondPad.unregister(id) } }
     LaunchedEffect(lit) { if (lit) runCatching { bring.bringIntoView() } }
     if (!here) this else this
         .bringIntoViewRequester(bring)
-        .onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }, if (hasMove) { d -> move?.invoke(d) == true } else null) }
+        .onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }, if (hasMove) { d -> move?.invoke(d) == true } else null, layer) }
         .then(if (lit) Modifier.border(3.dp, ShelfTheme.accent, uiRounded(10.dp)) else Modifier)
 }
+
+/** Update 195: which layer a second-screen control is on (a popup over the page is 1): only the top one is reachable. */
+internal val LocalPadLayer = androidx.compose.runtime.staticCompositionLocalOf { 0 }
 
 /** Update 177: true inside the second screen's window (SecondScreenHost). */
 internal val LocalOnSecondScreen = androidx.compose.runtime.staticCompositionLocalOf { false }
@@ -227,6 +237,7 @@ internal fun SecondPadHint() {
 internal fun Modifier.padTargetPlain(id: String, onPress: () -> Unit): Modifier = composed {
     val here = LocalOnSecondScreen.current
     val press by rememberUpdatedState(onPress)
+    val layer = LocalPadLayer.current
     DisposableEffect(id, here) { onDispose { if (here) SecondPad.unregister(id) } }
-    if (!here) this else this.onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }) }
+    if (!here) this else this.onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }, null, layer) }
 }

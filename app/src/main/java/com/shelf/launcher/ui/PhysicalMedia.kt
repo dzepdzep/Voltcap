@@ -220,7 +220,9 @@ internal class MediaPick(val shell: MediaShell, val platform: String, val aspect
  * "All cartridges" - the generic one (a cartridge game gets a plain CD with its label scan on it, a disc game a
  * plain cartridge). Null where the console has no physical game.
  */
-internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean = false): MediaPick? {
+internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean = false, gameKey: String? = null): MediaPick? {
+    // Update 195: the shell picked for this game or its console (the game's menu › Cartridge shell…, CartShells.kt).
+    if (!asDisc) CartShellStore.choice(platform, gameKey)?.let { raw -> CartShells.pickOf(raw, platform)?.let { return it } }
     // Update 136: the game as its piece from your 3D shape library (Settings › Game look › 3D models), when it's downloaded.
     // (Update 137: "<id>|<console>": the console's colours and logo for a custom piece.)
     if (!asDisc) Models3D.available(platform)?.let { id -> return MediaPick(MediaShell.GB, "$MODEL_3D$id|$platform", Models3D.aspect(id)) }
@@ -229,6 +231,14 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     if (!asDisc && customCartFor(platform)) {
         // (Update 131: a disc console's own shell from your optical-system pack has its own shape.)
         return MediaPick(MediaShell.GB, CUSTOM_CART + platform, CustomCarts.aspectFor(platform))
+    }
+    // Update 195: Authentic drawn cartridges — a cartridge console's own real shell (by the game's region).
+    if (!asDisc && !mixed && Features.authenticCarts.state.value) {
+        val ownShell = MediaShell.of(platform)
+        if (ownShell == null || !(ownShell.disc || ownShell == MediaShell.UMD)) {
+            val region = CaseCatalog.regionOf(gameKey ?: "")
+            CartShells.authenticId(platform, region)?.let { id -> CartShells.pickOf(id, platform)?.let { return it } }
+        }
     }
     val own = MediaShell.of(platform) ?: return null
     // Update 129, Discs only with one console's disc picked for all (R1 › Disc): every game on that disc.
@@ -429,6 +439,11 @@ internal fun PhysicalMedia(
         val (id, console) = platform.removePrefix(MODEL_3D).split('|', limit = 2).let { it[0] to it.getOrNull(1) }
         // Update 151: with more life — a contact shadow, a sheen as it gets focus, the one you're on turning slowly.
         Model3DArt(id, caseCover ?: label, yaw, modifier, name = title, platform = console, life = true, focused = on)
+        return
+    }
+    // Update 195: a game on a shell from the cartridge library, the cover as its label.
+    if (platform != null && platform.startsWith(SHELL_PREFIX)) {
+        CartShellArt(platform, caseCover ?: label, modifier.mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode()), title = title)
         return
     }
     // Update 128: a game on your cartridge pack — its cover in the window (a disc / label scan wouldn't fit it).

@@ -406,9 +406,26 @@ fun SecondScreenHome(
                 }
                 ShowcaseTopBar(
                     avatarUrl, raPoints, if (gameOpen) "Game" else page.label, onPageTap = { latestStep(1) }, endInset = headerEndInset,
-                    modifier = Modifier.align(Alignment.TopStart),
-                    onStep = if (visiblePages.size > 1 || gameOpen) { d -> latestStep(d) } else null
+                    modifier = Modifier.align(Alignment.TopStart)
                 )
+                // Update 195: ‹ › fixed at the screen's left and right edges, half-way down, to step through the pages
+                // (swiping still works); reachable with the controller too.
+                if (visiblePages.size > 1 || gameOpen) for (dir in intArrayOf(-1, 1)) {
+                    Box(
+                        Modifier.align(if (dir < 0) Alignment.CenterStart else Alignment.CenterEnd).padding(horizontal = 2.dp)
+                            .size(width = 30.dp, height = 64.dp)
+                            .padTarget(if (dir < 0) "sc-edge-prev" else "sc-edge-next") { latestStep(dir) }
+                            .clip(RoundedCornerShape(15.dp)).background(Color.Black.copy(alpha = 0.42f))
+                            .clickable { latestStep(dir) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (dir < 0) androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowLeft
+                            else androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            if (dir < 0) "Previous page" else "Next page", tint = Color.White, modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
                 Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (!gameOpen) ShowcaseDots(visiblePages.size, pageIndex, Modifier.padding(bottom = 7.dp))
                     if (showDock && !gameOpen) ShowcaseDock(
@@ -480,7 +497,8 @@ fun SecondScreenHome(
             )
         }
 
-        if (drawerOpen) {
+        // (Update 195: the drawer, the picker and the dock menu on their own controller layer, like a folder's popup.)
+        if (drawerOpen) androidx.compose.runtime.CompositionLocalProvider(LocalPadLayer provides 1) {
             SecondScreenDrawer(
                 apps = allApps,
                 onLaunch = { drawerOpen = false; onLaunchApp(it) },
@@ -488,7 +506,7 @@ fun SecondScreenHome(
             )
         }
 
-        if (pickerOpen) {
+        if (pickerOpen) androidx.compose.runtime.CompositionLocalProvider(LocalPadLayer provides 1) {
             SecondScreenAppPicker(
                 // (Update 193: Voltcap's own shortcuts too, first.)
                 apps = allApps.filter { it.packageName !in dockPackages } +
@@ -516,7 +534,7 @@ fun SecondScreenHome(
         menuFor?.let { target ->
             val pkg = target.packageName
             val index = dockPackages.indexOf(pkg)
-            if (pkg != null && index >= 0) {
+            if (pkg != null && index >= 0) androidx.compose.runtime.CompositionLocalProvider(LocalPadLayer provides 1) {
                 DockAppMenu(
                     title = target.name,
                     canMoveLeft = index > 0,

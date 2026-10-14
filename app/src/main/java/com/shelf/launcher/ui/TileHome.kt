@@ -662,7 +662,7 @@ private fun HomeTile(
             )
             .pointerInput(game.stableKey) { detectTapGestures { tap() } }
     ) {
-        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc) else null
+        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
         val box3d = if (cardArtType == CardArtType.CASE) caseMarker(game.platform) else null
         // (Update 173: an app without art: its icon on the label / in the case.)
         val artOrIcon = if (pick != null || box3d != null) coverOrAppIcon(game, coverUrl) else null

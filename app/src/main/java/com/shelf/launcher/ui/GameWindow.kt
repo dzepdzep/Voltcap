@@ -778,9 +778,9 @@ private fun winButtonItems(
 @Composable
 private fun WinGameMedia(g: Game, state: LauncherUiState, cover: String?, modifier: Modifier) {
     val physical = state.physicalMedia[g.stableKey]
-    val pick = mediaFor(g.platform)
+    val pick = mediaFor(g.platform, gameKey = g.stableKey)
     // Update 128: on your cartridge pack (Cartridges look) it's that cartridge, never its disc case or a disc scan.
-    val custom = pick?.platform?.let { it.startsWith(CUSTOM_CART) || it.startsWith(MODEL_3D) } == true
+    val custom = pick?.platform?.let { isCustomPiece(it) || it.startsWith(MODEL_3D) } == true
     val realScan = physical?.firstOrNull { it.first == "Disc / cartridge" }?.second?.takeIf { !custom }
     val tpl = MediaTemplates.of(g.platform)
     val caseOn = Features.gameWindowCase.state.value && tpl?.disc != null && tpl.box != null && pick != null && !custom
@@ -808,7 +808,7 @@ private fun WinGameMedia(g: Game, state: LauncherUiState, cover: String?, modifi
 
 /** Whether [platform]'s game shows as a case with its disc (a disc console with a case template). */
 private fun discCaseFits(platform: String): Boolean = MediaTemplates.of(platform).let { it?.disc != null && it.box != null } &&
-    mediaFor(platform).let { it != null && !it.platform.startsWith(CUSTOM_CART) && !it.platform.startsWith(MODEL_3D) }
+    mediaFor(platform).let { it != null && !isCustomPiece(it.platform) && !it.platform.startsWith(MODEL_3D) }
 
 /** Facts, achievements and the story, as chosen (update 119). [descLines]: 0 = no story. */
 @Composable
@@ -969,7 +969,7 @@ private fun TvControls(
 private fun WinPicturePart(look: WinLook, g: Game, state: LauncherUiState, cover: String?, extras: WinExtras, modifier: Modifier, nameShown: Boolean, showcase: Boolean = false) {
     Box(modifier) {
         // (Update 162: not while the piece itself is out beside the window.)
-        if (!showcase && !LocalWinInspect.current && extras.at(WinPart.MEDIA, WinSlot.PICTURE) && mediaFor(g.platform) != null) WinGameMedia(
+        if (!showcase && !LocalWinInspect.current && extras.at(WinPart.MEDIA, WinSlot.PICTURE) && mediaFor(g.platform, gameKey = g.stableKey) != null) WinGameMedia(
             g, state, cover, Modifier.align(Alignment.BottomEnd).padding(10.dp).fillMaxHeight(0.46f)
                 .aspectRatio(if (Features.gameWindowCase.state.value && discCaseFits(g.platform)) 1.35f else 1f)
         )
@@ -989,7 +989,7 @@ private fun WinPicturePart(look: WinLook, g: Game, state: LauncherUiState, cover
 @Composable
 private fun WinBottomPart(look: WinLook, g: Game, state: LauncherUiState, cover: String?, extras: WinExtras, width: Dp?, center: Boolean = false) {
     // (Update 162: not while the piece itself is out beside the window.)
-    val media = !LocalWinInspect.current && extras.at(WinPart.MEDIA, WinSlot.BOTTOM) && mediaFor(g.platform) != null
+    val media = !LocalWinInspect.current && extras.at(WinPart.MEDIA, WinSlot.BOTTOM) && mediaFor(g.platform, gameKey = g.stableKey) != null
     val text = extras.textAt(WinSlot.BOTTOM)
     val icons = extras.at(WinPart.ICONS, WinSlot.BOTTOM)
     if (!media && !text && !icons) return

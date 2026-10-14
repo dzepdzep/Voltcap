@@ -891,7 +891,7 @@ internal fun StyleArt(
     val typed = typedArtFor(gArt, c.state.physicalMedia[k], c.state.screenshots[k], g.platform)
     val url = cardArtUrl(gArt, false, cover, o?.wide ?: a?.wideGridUrl, o?.hero ?: a?.heroUrl, typed)
     val free = isFreeMedia(gArt, g.platform) || (drawnMediaWanted(gArt, typed) && MediaShell.of(g.platform) != null)
-    val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, c.mixed, c.type == CardArtType.DISC) else null
+    val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, c.mixed, c.type == CardArtType.DISC, gameKey = g.stableKey) else null
     val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null
     // Update 173: an app without art wears its icon on its cartridge's label / case front (the window stayed black).
     val appIcon = if (url == null && cover == null && g.sourceType == com.shelf.launcher.data.SourceType.APP && (pick != null || box3d != null)) {

@@ -343,7 +343,7 @@ fun GameCard(
             if (atTop) (if (focused) 28.dp else 18.dp) else 0.dp
         } else 0.dp
         // Cartridge / disc art, drawn: the console's cartridge or a disc with the game's label on it.
-        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc) else null
+        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
         val box3d = if (cardArtType == CardArtType.CASE && !banner) caseMarker(game.platform) else null
         // Update 147: an app without art of its own wears its icon on its cartridge's label, disc or case front (the
         // icon used to be laid over the whole card, hiding the cartridge / case under it).

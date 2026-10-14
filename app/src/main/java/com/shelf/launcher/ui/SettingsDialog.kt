@@ -3702,6 +3702,14 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.printedBacks.state.value,
             onChange = { com.shelf.launcher.data.Features.printedBacks.value = it }
         )
+        // Update 195: every cartridge console on its own real shell (CartShells.kt).
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Authentic drawn cartridges",
+            subtitle = "On: in the cartridge looks, every cartridge console's games are drawn on that console's real shell, by region (an NES or Famicom cart, a US or PAL SNES cart, a Japanese Mega Drive cart), turning in 3D at its real thickness. Off (default): your template pack's cartridges, as before. Any game can also go on any shell: its menu › Cartridge shell…",
+            checked = com.shelf.launcher.data.Features.authenticCarts.state.value,
+            onChange = { com.shelf.launcher.data.Features.authenticCarts.value = it }
+        )
         // Update 191: real cases per region (CaseCatalog.kt).
         Spacer(Modifier.height(8.dp))
         StyleChoice(

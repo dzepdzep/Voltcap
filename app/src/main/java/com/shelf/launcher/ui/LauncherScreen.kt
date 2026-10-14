@@ -1804,6 +1804,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                 if (state.appearance.homeLayout.name in com.shelf.launcher.data.Features.classicWindowLayouts.value) openDetails()
                                 else GamePopup.game = g
                             }
+                        },
+                        // Update 195: the main screen follows what's lit or opened on the Games page (no window opens).
+                        onHighlight = { p, g ->
+                            if (viewModel.uiState.value.platformFilter != p) viewModel.setPlatformFilter(p)
+                            if (g != null) {
+                                val index = viewModel.uiState.value.visibleGames.indexOfFirst { it.stableKey == g.stableKey }
+                                if (index >= 0) viewModel.setFocus(index)
+                            }
                         }
                     )
                 },
@@ -3971,6 +3979,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 editingArtworkForGame = game
                 viewModel.loadArtCandidates(game)
             },
+            // Update 195: draw it on any shell of the cartridge library.
+            onCartShell = if (game.sourceType == com.shelf.launcher.data.SourceType.APP && game.packageName?.startsWith("voltcap:") == true) null
+                else { { optionsForGame = null; cartShellForGame = game } },
             onShowDetails = {
                 optionsForGame = null
                 if (!showDetails) openDetails()
@@ -4187,6 +4198,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onUseAsCardArt = { slot, url -> game?.let { viewModel.setArtOverride(it, slot, url) } },
             onDismiss = { artViewer = null }
         )
+    }
+
+    cartShellForGame?.let { game ->
+        CartShellPicker(game, state.artOverrides[game.stableKey]?.cover ?: state.art[game.stableKey]?.gridUrl) { cartShellForGame = null }
     }
 
     editingArtworkForGame?.let { game ->

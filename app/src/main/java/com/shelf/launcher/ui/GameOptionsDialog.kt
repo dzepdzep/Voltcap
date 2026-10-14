@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ScreenShare
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Delete
@@ -73,7 +74,9 @@ fun GameOptionsDialog(
     /** "Music…" row: music of its own while you're on this game (restart on return, fades). */
     onGameMusic: (() -> Unit)? = null,
     /** Update 125: the emulator's package for the last row, "App settings" (Android games and apps use their own). */
-    appSettingsPackage: String? = null
+    appSettingsPackage: String? = null,
+    /** Update 195: "Cartridge shell…" (CartShellPicker.kt); null hides it. */
+    onCartShell: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("GameOptionsDialog")
     ShelfMenuDialog(
@@ -93,6 +96,9 @@ fun GameOptionsDialog(
             MenuRow(Icons.Filled.Book, "Guide", "Walkthrough that follows where you are", onClick = onGuide)
         }
         MenuRow(Icons.Filled.Image, "Artwork & details", "Art, summary, score — pick the scraper or your own images", onClick = onEditArtwork)
+        if (onCartShell != null) {
+            MenuRow(Icons.Filled.Memory, "Cartridge shell…", "Draw it on any console's cartridge or your own — it stays a ${game.platform} game", onClick = onCartShell)
+        }
         if (onGameSettings != null) {
             MenuRow(Icons.Filled.Tune, "Game settings…", "Sync, second screen, launch parameters — inherited or set for this ${if (game.sourceType == SourceType.APP) "app" else "game"}", onClick = onGameSettings)
         }

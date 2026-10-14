@@ -37,6 +37,8 @@ internal class LauncherUiFlags(viewModel: LauncherViewModel, context: Context, i
     var showAppDrawer by mutableStateOf(false)
     var showAppsLibrary by mutableStateOf(false)
     var editingArtworkForGame by mutableStateOf<com.shelf.launcher.data.Game?>(null)
+    /** Update 195: the game whose cartridge shell is being picked (CartShellPicker.kt). */
+    var cartShellForGame by mutableStateOf<com.shelf.launcher.data.Game?>(null)
     var optionsForGame by mutableStateOf<com.shelf.launcher.data.Game?>(null)
     var showLibraryDialog by mutableStateOf(false)
     var showAddSteamGameDialog by mutableStateOf(false)

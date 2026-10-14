@@ -4,6 +4,69 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 14 Oct 2026 (195): the cartridge collection (any game on any shell), the second screen's folders and arrows, the PlayStation cover whole
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`):
+- New (2): `src_copy\ui\CartShells.kt`, `src_copy\ui\CartShellPicker.kt`.
+- Changed (20): `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\Case3D.kt`,
+  `src_copy\ui\CustomCarts.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\GameOptionsDialog.kt`,
+  `src_copy\ui\GameWindow.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\HeroCarousel.kt`,
+  `src_copy\ui\LaunchThrow.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\LauncherUiFlags.kt`,
+  `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\SecondGamesPage.kt`,
+  `src_copy\ui\SecondPad.kt`, `src_copy\ui\SecondScreenHome.kt`, `src_copy\ui\SettingsDialog.kt`,
+  `src_copy\ui\StyleHomes.kt`, `src_copy\ui\TileHome.kt`.
+
+**Project root**, new (1): `CARTRIDGES.md` (every shell, its sources and how sure it is; what's still missing).
+
+**Files to delete:** none.
+
+### The cartridge collection (first part)
+- **67 shells, drawn in code from researched sizes:**
+  - Nintendo: NES, Famicom, SNES North America, Super Famicom / PAL, N64, Game Boy, Game Boy Color black and clear,
+    GBA, Virtual Boy, DS, 3DS, Switch, Switch 2 and its Game-Key Card, Pokémon mini, the Disk System disk, 64DD;
+  - Sega: SG-1000, Sega Card, Master System West and Japan, Mega Drive West and Japan, 32X, Game Gear;
+  - Atari: 2600 (Atari and Activision), 5200, 7800, Lynx, Jaguar;
+  - NEC, SNK, Bandai: HuCard, Neo Geo AES and MVS, Neo Geo Pocket, WonderSwan;
+  - Other: ColecoVision, Intellivision, Vectrex, Odyssey², Channel F, GX4000, Super Cassette Vision, PV-1000,
+    Loopy, Supervision, Mega Duck, Microvision, game.com, N-Gage, Evercade;
+  - Special carts: EA, Virtua Racing, Sonic & Knuckles, Codemasters, J-Cart, Game Boy Camera, Pokémon Pinball,
+    Kirby Tilt 'n' Tumble, WarioWare: Twisted!, Boktai, Drill Dozer, Yoshi Topsy-Turvy, e-Reader, Nintendo Power.
+- **Each shell has:**
+  - its real outline and thickness;
+  - grip ridges, its rim and parts that stand out (lock slots, camera, solar window, the lock-on flap);
+  - the label in its recess;
+  - on its back, the seam, screws and contacts;
+  - turned in 3D, a solid piece at its real thickness.
+- **Any game on any shell:** use the game's menu › Cartridge shell…
+  - **Authentic:** by maker, searchable; ★ marks the game's own console's shell.
+  - **Your custom shells:** your pack's 14 shapes.
+  - **Scope:** this game, or every game of its console.
+  - **Colour:** the shell's own, its real variants, or black, grey, white, gold, clear, smoke, and clear red / blue /
+    green / purple / yellow. See-through shells show the board inside.
+  - **The label:** the game's cover, cut to the label area only (never stretched, never over the plastic), under a
+    band with its real console's name. A PS2 game on an N64 shell says PlayStation 2. The game's console, emulator
+    and file never change.
+- **Settings › Game look › Covers, cases & discs › Authentic drawn cartridges** (off by default): every cartridge
+  console's games on their own real shell, by region.
+- **How sure each shell is:** `CARTRIDGES.md` lists each one as Drawn, Drawn but partly estimated, or Placeholder
+  (not finished), with what's still missing.
+
+### Second screen
+- **Page arrows:** ‹ › sit fixed at the left and right edges of the screen, half-way down (no longer at the top).
+  They can be reached with the controller too.
+- **The controller stays inside a popup:** a console's games, the app drawer, the dock picker and the dock menu.
+  Moving inside a folder used to wander onto the page behind it.
+- **The main screen follows the Games page:** opening a folder, or lighting one with the controller, switches the
+  main screen to that console. Lighting a game in it selects that game up there (no window opens).
+
+### PlayStation cover
+- Still cut in 194 (Donald Duck on the Thor): the cover went through the PlayStation template's frame first.
+- A jewel case now always takes the whole picture, never the template's crop.
+
+---
+
 ## Update — 14 Oct 2026 (194): page arrows on the second screen, the PlayStation cover whole in its case
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

@@ -467,7 +467,7 @@ private fun CoverWheel(
                 val cover = if (wide) wideFor(g) ?: coverFor(g) else coverFor(g)
                 if (free) {
                     val typed = typedArtFor(gArt, physicalMedia[g.stableKey], null, g.platform)
-                    val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC) else null
+                    val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey) else null
                     Box(Modifier.fillMaxSize().awardShine(g.stableKey, sel > 0.6f)) {
                         // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
                         val real = realScanOf(gArt, typed)

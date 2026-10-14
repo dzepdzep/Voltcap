@@ -111,7 +111,7 @@ internal object LaunchThrow {
         val ownMedia = if (!Features.mediaShells.value) BoxTexture.media(physical) else null
         // Update 154: Disc station — every game is a disc there, whatever the game look: it drops into the tray.
         if (a.homeLayout == com.shelf.launcher.data.HomeLayout.DISCS) {
-            val pick = mediaFor(game.platform, asDisc = true)
+            val pick = mediaFor(game.platform, asDisc = true, gameKey = game.stableKey)
                 ?.takeIf { it.shell.isDisc || it.shell == MediaShell.UMD || it.platform.startsWith(GENERIC_DISC) }
                 ?: MediaPick(MediaShell.DISC, genericDiscKey(if (game.platform == "App") "Android" else game.platform))
             // Update 159: cartridge games print their cover (their scan is the cartridge), as on the disc in the tray.
@@ -144,7 +144,7 @@ internal object LaunchThrow {
                 val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, game.platform)
                 val drawn = drawnMediaWanted(type, typed)
                 val realScan = if (drawn) null else realScanOf(type, typed)
-                val pick = if (drawn) mediaFor(game.platform, false, asDisc) else null
+                val pick = if (drawn) mediaFor(game.platform, false, asDisc, gameKey = game.stableKey) else null
                 if (pick == null && realScan == null) return null
                 val label = typed ?: cover ?: wide
                 if (label == null && realScan == null) return null
@@ -164,7 +164,7 @@ internal object LaunchThrow {
                     val kind = when {
                         asDisc -> ThrowKind.DISC
                         model != null -> ThrowKind.CART
-                        pick != null && pick.platform.startsWith(CUSTOM_CART) -> ThrowKind.CART
+                        pick != null && isCustomPiece(pick.platform) -> ThrowKind.CART
                         round -> ThrowKind.DISC
                         else -> ThrowKind.CART
                     }
@@ -214,7 +214,7 @@ private fun ThrownPiece(p: ThrowPlan, pick: MediaPick?, label: Any?, labelIsScan
     if (pick == null) {
         if (p.realScan != null) RealMediaPicture(p.realScan, p.round, modifier)
     } else {
-        val own = pick.platform.startsWith(MODEL_3D) || pick.platform.startsWith(CUSTOM_CART)
+        val own = pick.platform.startsWith(MODEL_3D) || isCustomPiece(pick.platform)
         val tpl = if (own) null else MediaTemplates.of(pick.platform)
         if (tpl?.disc != null && discCaseOn(tpl)) TemplateMedia(
             MediaTpl(null, null, tpl.disc, null), labelScan = if (labelIsScan) label else null,

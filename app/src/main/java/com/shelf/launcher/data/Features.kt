@@ -1022,6 +1022,10 @@ object Features {
         JP("Japan for all", "JP", true)
     }
     val caseRegion = EnumPref("case_region", CaseRegionChoice.AUTO_US, CaseRegionChoice.values())
+    /** Update 195: the cartridge shell picked per game / per console ("key\tchoice" lines; ui/CartShells.kt). */
+    val cartShellChoices = StringPref("cart_shell_choices", "")
+    /** Update 195: every cartridge console on its own drawn authentic shell (Settings › Game look). */
+    val authenticCarts = BoolPref("authentic_carts", false)
     /** Update 147, Disc station: the loaded disc turns slowly. */
     val discSpin = BoolPref("disc_spin", true)
     /** Update 147, Disc station: a few lines about the game under its name. */
