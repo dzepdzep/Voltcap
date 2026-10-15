@@ -46,7 +46,7 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
     `robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\src_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher\app\src\main\java\com\shelf\launcher" /E /NJH /NP` and
     `robocopy "C:\Users\User\AndroidStudioProjects\ShelfLauncher\project_copy" "C:\Users\User\AndroidStudioProjects\ShelfLauncher" /E /NJH /NP`.
 14. **Always give me the easiest, fastest way** to do anything I have to do myself: one PowerShell block to paste rather than many manual steps, Git from the command line rather than clicking through web pages, and so on. If a manual way is the only option, say why. (Example, 140: the packs go up with one `git clone` / `robocopy` / `git push` block, not 100-file web uploads.)
-15. **GitHub (since 144):** the project folder is a git repo on `github.com/dzepdzep/Voltcap`, branch `main` (public: the code, the art packs in `packs/v1`, the releases). Every update's PowerShell block ends with the commit and push, after the robocopy lines: `cd "C:\Users\User\AndroidStudioProjects\ShelfLauncher"`, `git add -A`, `git commit -q -m "Update <n>: <short title>"`, `git push origin main`, (since 209) `& "$P\tools\release\release.ps1" <next 0.6.x> "<notes>"` (GitHub release "Voltcap <version>" with Voltcap-<version>.apk — the in-app updater's source), then `.\gradlew installDebug`. `.gitignore` keeps `app/libs/discord`, `src_copy`, `project_copy`, `Claude outputs`, `screens`, logs, keys and builds off GitHub. One-time set-up: `tools\release\setup_github.ps1`. Never put an interactive command (Read-Host, a sign-in) in the middle of a pasted block — pasted lines after it get read as its answers; run those as a one-line script call on their own.
+15. **GitHub (since 144):** the project folder is a git repo on `github.com/dzepdzep/Voltcap`, branch `main` (public: the code, the art packs in `packs/v1`, the releases). Every update's PowerShell block ends with the commit and push, after the robocopy lines: `cd "C:\Users\User\AndroidStudioProjects\ShelfLauncher"`, `git add -A`, `git commit -q -m "Update <n>: <short title>"`, `git push origin main`, (since 209) `& "$P\tools\release\release.ps1" <next 0.6.x> "<notes>"` (GitHub release "Voltcap <version>" with Voltcap-<version>.apk — the in-app updater's source), then `.\gradlew installRelease` (since 211; installDebug only when a check needs run-as). `.gitignore` keeps `app/libs/discord`, `src_copy`, `project_copy`, `Claude outputs`, `screens`, logs, keys and builds off GitHub. One-time set-up: `tools\release\setup_github.ps1`. Never put an interactive command (Read-Host, a sign-in) in the middle of a pasted block — pasted lines after it get read as its answers; run those as a one-line script call on their own.
 16. **Signing (since 144):** `keystore.properties` (your release key, never in git) signs debug and release builds alike (`app/build.gradle.kts`), so Android Studio installs, GitHub releases and the in-app updater all install over each other. Changing keys needs an uninstall on each handheld (Settings › Backup › Export first).
 
 ## How to deliver
@@ -255,6 +255,16 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 211
+- **Daily build = release:** blocks end with `.\gradlew installRelease` (debug and release share the key). Manifest has `<profileable android:shell="true"/>` so gfxinfo / simpleperf work on release; run-as (prefs, files) only on a debug install — ask the user for `.\gradlew installDebug` when a check needs it. Debug on the RP Classic: 34 % janky scrolling vs 0.4 % release.
+- **RP Classic:** serial MC94516AQF091001112, 1240 × 1080 landscape (1080 × 1240 panel), density 320 (2×), Android 14, layout Spotlight, card art HERO, category screen ON_B. Not the default home (Quickstep).
+- **Spotlight names:** Text placed by a zero-size `layout {}` under the tile (fixed width, 2 lines).
+- **GameCard trophy pill:** widthIn(max = card − 12 dp); percentage only at width ≥ 132 dp.
+- **SyncCornerNotice** top padding 60 dp.
+- **cycleCategory** skips stops whose visibleGames is empty.
+- **SwayingModel back:** compose(card, 180) or else compose(card, 0) without cover, mirrored.
+- **ArtFiles.name:** LruCache(8192), hex by table.
 
 ## State after update 210
 - **ShellMaterials** (ui/ShellMaterials.kt): material registry (id, kind OPAQUE / METALLIC / TRANSLUCENT / EDITION, base, highlight, roughness, metallic, transmission, glitter, back, edge, note). Choice colour key "m:<id>" → `CartShells.colourOf` via `ShellMaterials.colourFor`. ShellColour gained highlight / metallic / glitter / backArgb / matte; CartShells.front / back draw them in `finish()` (sheen gradient, seeded glitter dots), back uses backArgb.

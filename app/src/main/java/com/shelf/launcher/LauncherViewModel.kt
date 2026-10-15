@@ -2755,7 +2755,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val current = stops.indexOfFirst { (special, platform) ->
             special == state.specialFilter && platform == state.platformFilter
         }.coerceAtLeast(0)
-        val (special, platform) = stops[((current + if (forward) 1 else -1) + stops.size) % stops.size]
+        // (Update 211: past categories with nothing in them — on the RP Classic, R2 stopped on "Other apps" with
+        // "No games match." Only when every other one is empty does it go there.)
+        val step = if (forward) 1 else -1
+        var next = ((current + step) + stops.size) % stops.size
+        for (tries in 1 until stops.size) {
+            val (s, p) = stops[next]
+            val empty = runCatching { state.copy(specialFilter = s, platformFilter = p).visibleGames.isEmpty() }.getOrDefault(false)
+            if (!empty) break
+            next = ((next + step) + stops.size) % stops.size
+        }
+        val (special, platform) = stops[next]
         when {
             special != null -> setSpecialFilter(special)
             else -> setPlatformFilter(platform)

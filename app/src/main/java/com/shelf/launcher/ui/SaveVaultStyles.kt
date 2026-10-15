@@ -166,7 +166,9 @@ internal fun SwayingModel(card: String, icon: Any?, name: String, platform: Stri
     val backBmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, card, version, tint?.key) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             runCatching {
-                Models3D.compose(card, 180, null, null, ArtPos.NONE, tint)?.let { b ->
+                // (Update 211: the card's front without its label — the plain card — when the pack has no back picture:
+                // the turned card was a flat block of colour from behind, half of every turn.)
+                (Models3D.compose(card, 180, null, null, ArtPos.NONE, tint) ?: Models3D.compose(card, 0, null, null, ArtPos.NONE, tint))?.let { b ->
                     // (Mirrored: seen from behind once turned, it reads the right way round — as the drawn shells' backs.)
                     val m = android.graphics.Matrix().apply { setScale(-1f, 1f, b.width / 2f, 0f) }
                     android.graphics.Bitmap.createBitmap(b, 0, 0, b.width, b.height, m, true)

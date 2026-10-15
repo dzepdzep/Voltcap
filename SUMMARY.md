@@ -4,6 +4,58 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (211): RP Classic check — release build for daily use (debug build 2–5× slower there), Spotlight names that need two lines, trophy count cut off, sync note over the clock, empty categories skipped by L2 / R2, Save Vault card's back, Voltcap 0.6.4
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (6): `src_copy\LauncherViewModel.kt`, `src_copy\data\ArtFiles.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\SaveVaultStyles.kt`, `src_copy\ui\StyleSpotlight.kt`.
+
+**Copy `project_copy`**, changed (1): `project_copy\app\src\main\AndroidManifest.xml`.
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 211: RP Classic fixes - Spotlight two-line names, trophy count fits, sync note below the top row, empty categories skipped, Save Vault card back, release build profileable" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+& "$P\tools\release\release.ps1" 0.6.4 "RP Classic fixes: Spotlight names on two lines show again, trophy count fits small cards, sync note no longer over the clock, L2 / R2 skip empty categories, Save Vault 3D cards have a back."
+.\gradlew installRelease
+```
+
+### Checked on the RP Classic (1240 × 1080, Snapdragon G1 Gen 2 class, Android 14; 0.6.3 debug, then 0.6.3 release)
+- Crash log: only Voltcap 0.4.0 crashes from 14 Oct (fixed since 200) and Google Play services' own. None from 0.6.x.
+- Went through Spotlight home, L2 / R2, Choose a category (Reorder), the game window, Start menu, R1 quick menu, search, Save Vault (3D cards, details window), Help, Spotify, Settings.
+- Save sync works there: folders RetroArch / PPSSPP, account hexdonger@…; one conflict waiting for you (Pokémon Silver, see below). On the Thor too (208 at 19:21: "Save folders found and added", "11 uploaded").
+
+### What was wrong
+- **Slow:** scrolling Spotlight with the debug build had 34 % janky frames (median 44 ms, 90th percentile 150 ms). The profile was ART running the debug build interpreted. **The release build of the same 0.6.3:** 0.4 % janky (90th 30 ms); category switch 1.7 %.
+- **Spotlight:** the name under the game you're on never showed when it needed two lines (Pokémon - Silver Version, Yu-Gi-Oh!…); one-line names did.
+- **Trophy count** on a small card ("38/75 · 51%") ran off the card's edge.
+- **Sync note** ("RetroArch saves: comparing…") sat over the layout's own clock and icons.
+- **L2 / R2** stopped on "Other apps" with 0 games ("No games match.").
+- **Save Vault 3D card** turned showed a flat block of colour from behind (the pack has no back picture).
+- Every picture request worked out its saved-file name (SHA-1 + 20 String.format calls) on the screen's thread.
+
+### Now
+- Each block ends with `.\gradlew installRelease` (the release build, as on GitHub) instead of installDebug. The release build is now profileable from adb (`<profileable android:shell="true"/>`), so frame timing and profiles still work. Reading its settings from adb (run-as) doesn't — I'll ask for a debug install when a check needs it.
+- Spotlight: the name is a Text placed under the tile at a fixed width, two lines with "…".
+- The trophy pill never gets wider than its card; the percentage only on cards 132 dp wide or more.
+- The sync note sits at 60 dp from the top (below the layouts' top row).
+- L2 / R2 skip categories with nothing in them.
+- The turned Save Vault card shows the card itself without its label (mirrored) as its back.
+- Saved-file names worked out once per address (LruCache, plain hex).
+
+### Check
+- Type-check: 0 errors. No `NON_LOCAL_RETURN` in the compiled classes. Every change reread against your PC's copy.
+- Before / after numbers above are measured (gfxinfo, simpleperf). The fixes themselves aren't tested on the device yet.
+- **Waiting for you on the RP Classic:** "This save changed on two devices" — Pokémon Silver's .srm: the RP Classic's from today 4:18 PM (newer) vs Drive's from the RP Classic on 7 Oct (its last upload before Voltcap was reinstalled on 12 Oct, which forgot what had been synced). Keeping the newer one is likely right; the other is kept in Voltcap/Sync conflicts either way.
+
+---
+
 ## Update — 15 Oct 2026 (210): real special editions (Master Physical Media Collection V3, first part) — 105 sourced edition records, material registry, metallic / glitter / two-tone / see-through plastics, editions in Cartridge shell…, Voltcap 0.6.3
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (208 / 209 not run yet? This block covers them too — run 209's release line first if you want 0.6.2 on GitHub as well.)

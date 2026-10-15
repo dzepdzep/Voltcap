@@ -81,9 +81,17 @@ object ArtFiles {
     }
 
     private fun name(url: String): String {
+        // (Update 211: worked out once per address — every picture asks this on the screen's thread, memory-cache hits
+        // too, and the digest plus twenty String.format calls showed in the RP Classic's scrolling profile.)
+        nameCache.get(url)?.let { return it }
         val d = MessageDigest.getInstance("SHA-1").digest(url.toByteArray())
-        return d.joinToString("") { "%02x".format(it) }
+        val c = CharArray(d.size * 2)
+        for (i in d.indices) { val v = d[i].toInt() and 0xFF; c[i * 2] = HEX[v ushr 4]; c[i * 2 + 1] = HEX[v and 0x0F] }
+        return String(c).also { nameCache.put(url, it) }
     }
+
+    private val nameCache = android.util.LruCache<String, String>(8192)
+    private val HEX = "0123456789abcdef".toCharArray()
 
     /** Where [url]'s saved picture is (in any of the folders), or where it would go; null before [init]. */
     fun fileFor(url: String): File? {

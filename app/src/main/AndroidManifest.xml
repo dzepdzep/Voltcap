@@ -99,6 +99,10 @@
         android:enableOnBackInvokedCallback="true"
         android:largeHeap="true">
 
+        <!-- Update 211: release builds can be profiled from adb (simpleperf / frame timing) — the release build is
+             the one for daily use now (the debug build ran 2-5x slower on the RP Classic: ART interprets much of it). -->
+        <profileable android:shell="true" />
+
         <!-- Android 16 (targetSdk 36) ignores the landscape lock on screens 600 dp and wider, which
              some handheld second screens and TV boxes report. Voltcap's layouts are landscape-only,
              so keep the lock there too. -->

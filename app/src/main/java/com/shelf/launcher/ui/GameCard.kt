@@ -597,6 +597,8 @@ fun GameCard(
                     Modifier
                         .align(trophyAlign)
                         .padding(if (focused) 8.dp else 4.dp)
+                        // (Update 211: never wider than the card — the text shrinks / ends with … instead of being cut off.)
+                        .widthIn(max = (width - 12.dp).coerceAtLeast(24.dp))
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.65f))
                         .padding(horizontal = if (focused) 8.dp else 5.dp, vertical = if (focused) 4.dp else 2.dp)
@@ -619,7 +621,9 @@ fun GameCard(
                         Text(
                             // Always the count, the same on every card ("0/53", "12/120"); with room
                             // (the game you're on) the percentage joins it: "12/120 · 10%".
-                            if (focused) com.shelf.launcher.data.achievementProgress(earned, possible) else "$earned/$possible",
+                            // (Update 211: the percentage only where the card has room for it — on the RP Classic's
+                            // small Continue playing tiles "38/75 · 51%" ran off the card's edge.)
+                            if (focused && width >= 132.dp) com.shelf.launcher.data.achievementProgress(earned, possible) else "$earned/$possible",
                             color = Color.White,
                             fontSize = if (focused) 11.sp else 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (focused) 11.sp else 9.sp), maxFontSize = if (focused) 11.sp else 9.sp),
                             fontWeight = FontWeight.Bold,

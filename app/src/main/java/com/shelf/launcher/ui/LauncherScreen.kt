@@ -3938,7 +3938,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     else Alignment.TopEnd
                 )
                 .padding(
-                    top = 44.dp, end = 16.dp,
+                    // (Update 211: below the layouts' own top row — at 44 dp it sat over their clock and icons, e.g.
+                    // Spotlight on the RP Classic.)
+                    top = 60.dp, end = 16.dp,
                     bottom = if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP) 30.dp else 0.dp
                 )
         )

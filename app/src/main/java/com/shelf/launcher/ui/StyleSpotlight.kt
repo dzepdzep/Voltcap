@@ -722,7 +722,6 @@ private fun SpotMenuTiles(c: StyleCtx, pulse: Float, compact: Boolean) {
                 // Update 136: drawn straight under the tile (measured here, at a fixed width) instead of as a Text laid out
                 // past the tile's own box — long names that needed two lines never showed up that way.
                 val nameW = maxOf(w + 60.dp, 160.dp)
-                val measurer = androidx.compose.ui.text.rememberTextMeasurer()
                 val nameText = LocalTitleOptions.current.display(g.name).uppercase()
                 val nameStyle = nameTextStyle(NameBackdrop.SHADOW).merge(
                     androidx.compose.ui.text.TextStyle(
@@ -730,16 +729,17 @@ private fun SpotMenuTiles(c: StyleCtx, pulse: Float, compact: Boolean) {
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 )
-                val alpha = grow.coerceIn(0f, 1f)
-                Spacer(
-                    Modifier.size(w, h).drawBehind {
-                        val wPx = nameW.toPx()
-                        val layout = measurer.measure(
-                            nameText, nameStyle, overflow = TextOverflow.Ellipsis, maxLines = 2,
-                            constraints = androidx.compose.ui.unit.Constraints(minWidth = wPx.toInt(), maxWidth = wPx.toInt())
-                        )
-                        drawText(layout, alpha = alpha, topLeft = androidx.compose.ui.geometry.Offset((size.width - wPx) / 2f, size.height + 8.dp.toPx()))
-                    }
+                // (Update 211: a Text placed under the tile by a zero-size layout, at a fixed width and any height — the
+                // name drawn into the tile's spacer (update 136) still never showed when it needed two lines, e.g.
+                // "Pokémon - Silver Version" or Yu-Gi-Oh! on the RP Classic; one-line names did.)
+                Text(
+                    nameText, style = nameStyle, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .layout { m, _ ->
+                            val wPx = nameW.roundToPx()
+                            val pl = m.measure(androidx.compose.ui.unit.Constraints(minWidth = wPx, maxWidth = wPx))
+                            layout(0, 0) { pl.placeWithLayer(((w.toPx() - wPx) / 2f).toInt(), (h + 8.dp).roundToPx()) { alpha = grow.coerceIn(0f, 1f) } }
+                        }
                 )
             }
         }
