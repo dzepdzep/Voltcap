@@ -135,7 +135,7 @@ internal object CaseCatalog {
         keep("NDS", EU, 122f, 135f, 20f, 0xFFEEF2F5.toInt(), 0.2f, CaseHeld.CARD, 33f, v = 0.3f, gba = true, shell = CaseShell.CARDCASE, check = CaseCheck.SOURCED, note = "Europe: clear and thicker (20 mm)."),
         keep("3DS", ALL, 122f, 135f, 12f, 0xFFFAFAFA.toInt(), 1f, CaseHeld.CARD, 33f, v = 0.32f, shell = CaseShell.CARDCASE, check = CaseCheck.SOURCED, note = "White in every region. The moulded cut-outs inside aren't confirmed, so only the card slot is drawn."),
         keep("Switch", ALL, 104f, 170f, 10f, 0xFFF4F6F8.toInt(), 0.15f, CaseHeld.CARD, 21f, u = 0.66f, v = 0.8f, shell = CaseShell.CARDCASE, check = CaseCheck.SOURCED, note = "Clear (the red is the paper insert). Card holder low on the right, tabs above it for paper."),
-        keep("Switch2", ALL, 104f, 170f, 10f, 0xFFC8102E.toInt(), 0.7f, CaseHeld.CARD, 21f, u = 0.66f, v = 0.8f, shell = CaseShell.CARDCASE, check = CaseCheck.ESTIMATED, note = "Red, red inside too; same size as Switch. How see-through isn't confirmed."),
+        keep("Switch2", ALL, 104f, 170f, 10f, 0xFFC8102E.toInt(), 0.7f, CaseHeld.CARD, 21f, u = 0.66f, v = 0.8f, shell = CaseShell.CARDCASE, check = CaseCheck.SOURCED, note = "Red, red inside too; 170×104×10 like Switch (Wikipedia's keep-case table, update 206). How see-through isn't confirmed."),
         // ── Nintendo, cardboard ──
         box("NES", US, 127f, 180f, 24f, CARD_WHITE, CaseCheck.ESTIMATED, "From the inside of a protector made for it (the box is 1–2 mm smaller). Which end opens and the inner parts aren't confirmed; drawn with a top tuck flap."),
         box("NES", EU, 127f, 180f, 24f, CARD_WHITE, CaseCheck.ESTIMATED, "As North America; PAL boxes differ slightly (exact size not found)."),

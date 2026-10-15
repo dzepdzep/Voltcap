@@ -68,7 +68,8 @@ internal enum class MediaShell(
     BLACK_CART(R.drawable.media_black_cart, 318f / 348f, floatArrayOf(0.1761f, 0.1609f, 0.8239f, 0.6338f), 3f / 318f),
     GAME_GEAR(R.drawable.media_game_gear, 318f / 252f, floatArrayOf(0.1698f, 0.1984f, 0.8302f, 0.6587f), 3f / 318f),
     ATARI(R.drawable.media_atari, 318f / 318f, floatArrayOf(0.1635f, 0.4214f, 0.8365f, 0.8491f), 2f / 318f),
-    UMD(R.drawable.media_umd, 312f / 312f, floatArrayOf(0.1603f, 0.1795f, 0.8397f, 0.859f), 0f),
+    // (Update 206: Sony's published UMD size, approx. 65 W × 64 D × 4.2 mm — it was drawn square.)
+    UMD(R.drawable.media_umd, 65f / 64f, floatArrayOf(0.1603f, 0.1795f, 0.8397f, 0.859f), 0f),
     DISC(R.drawable.media_disc, 1f, floatArrayOf(0.0556f, 0.235f, 0.955f, 0f), 0f, disc = true),
     DISC_DARK(R.drawable.media_disc_dark, 1f, floatArrayOf(0.0556f, 0.235f, 0.955f, 0f), 0f, disc = true),
     DISC_WII(R.drawable.media_disc_white, 1f, floatArrayOf(0.0556f, 0.235f, 0.955f, 0f), 0f, disc = true),
@@ -282,7 +283,10 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     // Update 195: Authentic drawn cartridges — a cartridge console's own real shell (by the game's region).
     // (Update 205: in lists mixing consoles too — they drew the template's flat cartridge there, a different piece from
     // the one the same game showed in its own console's list.)
-    if (!asDisc && Features.authenticCarts.state.value) {
+    // (Update 206, one cartridge per console: always — not only after Real shell was picked once (Features.authenticCarts,
+    // off for anyone who never picked it). Without it a cartridge beside its case, in the Disc station or the launch
+    // animation was the template pack's flat picture: a second, different N64 / Game Boy / SNES cartridge.)
+    if (!asDisc) {
         val ownShell = MediaShell.of(platform)
         if (ownShell == null || !(ownShell.disc || ownShell == MediaShell.UMD)) {
             val region = CaseCatalog.regionOf(gameKey ?: "")
@@ -557,7 +561,7 @@ internal fun PhysicalMedia(
                         .clip(if (shell == MediaShell.UMD) androidx.compose.foundation.shape.CircleShape else RoundedCornerShape(w * shell.corner))
                         .androidx_background()
                 ) {
-                    if (label != null) AsyncImage(mediaArtModel(label), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
+                    if (label != null) AsyncImage(mediaArtModel(label), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize()) // (Update 157; 206: stretched to the label window)
                 }
             }
             Image(painterResource(shell.res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())

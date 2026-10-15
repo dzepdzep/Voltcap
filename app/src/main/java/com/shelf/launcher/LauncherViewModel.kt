@@ -5567,7 +5567,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      */
     @OptIn(ExperimentalCoilApi::class)
     fun saveAllArt(silent: Boolean = false, afterScrape: Boolean = false) {
-        if (artSaveJob?.isActive == true) return
+        // (Update 206: said when it's already saving — Save all now seemed to do nothing.)
+        if (artSaveJob?.isActive == true) {
+            if (!silent) setStatusMessage("Already saving art: ${_uiState.value.artSaveDone} / ${_uiState.value.artSaveTotal}.")
+            return
+        }
         // (Update 119: while the art is being scraped, it saves as it goes and calls this when it's done.)
         if (scrapeJob?.isActive == true && !afterScrape) {
             if (!silent) setStatusMessage("Saving together with the scrape running now.")
@@ -5798,6 +5802,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     /** Update 205 (Settings › Scraping › Real media › Save them all on the device): every game's drawn real media saved now. */
     fun saveAllRealMedia() {
         scansSeen += _uiState.value.games.filter { it.sourceType == SourceType.ROM }.map { it.stableKey }
+        // (A save already running has its list made before: it starts again with every game's real media in it.)
+        if (artSaveJob?.isActive == true) { artSaveJob?.cancel(); artSaveJob = null }
         saveAllArt(silent = false)
     }
 
@@ -5971,8 +5977,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 statusMessage = if (sizeChanged) "New storage size set." else it.statusMessage
             )
         }
-        // Turning automatic saving on starts it straight away.
-        if (settings.autoSave && !previous.autoSave) saveAllArt(silent = true)
+        // Turning automatic saving on starts it straight away. (Update 206: and so does more room — saving had stopped at
+        // the old size's 90 %, and nothing started again when a bigger size was picked.)
+        if (settings.autoSave && (!previous.autoSave || settings.maxMegabytes > previous.maxMegabytes || settings.unlimited && !previous.unlimited)) saveAllArt(silent = true)
     }
 
     fun cancelScrape() {

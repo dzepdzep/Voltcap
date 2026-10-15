@@ -1,6 +1,6 @@
 # Voltcap — handover to a new Claude
 
-Written 12 Oct 2026, after update **(145)** (kept up to date to 205). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+Written 12 Oct 2026, after update **(145)** (kept up to date to 206). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is
 **Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
@@ -255,6 +255,14 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 206
+- **Save all:** saveAllArt says "Already saving art" when a job runs (not silent); setArtStorage restarts saving when auto-save is on and the size grows (or turns unlimited); saveAllRealMedia cancels a running save and starts again (its URL list now includes every game's scans).
+- **mediaFor:** the authentic CartShells shell is the default for every cartridge console (the `Features.authenticCarts` gate is gone). Order: CartShellStore choice → drawn3dPick → customCartFor (Cartridges only / custom source) → authentic shell → MediaShell.
+- **Labels:** CartShells.front draws the art with `drawBitmap(art, null, artRect)` (stretched; key `f2|`); RealMedia TemplateMedia, CustomCarts PackCart and PhysicalMedia's label use ContentScale.FillBounds.
+- **UMD:** MediaShell.UMD aspect 65f / 64f (Sony 2004 spec).
+- **Audit data:** `docs/physical_media/physical_media_verification.json` is generated from CartShells / CaseCatalog plus sources (statuses verified / approximate / disputed / unconfirmed). Disputed sizes were deliberately not changed. When a size is measured, change it in CartShells.kt / CaseCatalog.kt and update its JSON entry.
+- **OOM watch:** /data/local/tmp/vcwatch.sh on the Thor logs the Java heap to vcheap.log and dumps vc.hprof above 260 MB (runs about 3 hours from 10:00, 15 Oct).
 
 ## State after update 205
 - **One piece rule:** typedArtFor(CARTRIDGE_DISC, …, platform, gameKey) returns null when CartShellStore has a choice (the picked shell wins), else the photo (own photo on) / label (shells on). drawnMediaWanted / realScanOf unchanged; MediaInspectView.mediaPiece now uses realScanOf only (the 202 mismatch). Drawn pieces get `drawnLabelScan(physical, platform)` ("Disc label") as label with labelIsScan; CartShellArt / CartShells.front(scan = true) draw it without the console band.

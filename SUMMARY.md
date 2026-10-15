@@ -4,6 +4,48 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (206): Save all fixed, one cartridge per console, labels stretched to fit, UMD at its real size, physical media audit with sources
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (6): `src_copy\LauncherViewModel.kt`, `src_copy\ui\CartShells.kt`, `src_copy\ui\CaseCatalog.kt`, `src_copy\ui\CustomCarts.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\RealMedia.kt`.
+
+**Copy `project_copy`**, new (3): `project_copy\docs\physical_media\PHYSICAL_MEDIA_AUDIT.md`, `project_copy\docs\physical_media\physical_media_verification.json`, `project_copy\docs\physical_media\qa_cartridges_to_scale.png` (they land in `docs\physical_media\`).
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 206: Save all fixed, one cartridge per console, labels stretched to fit, UMD at its real size, physical media audit with sources" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+.\gradlew installDebug
+```
+
+### What was wrong
+- **Save all did nothing (Settings › Metadata › Saved on this device).** The art store was at 929 MB of its 1 GB, and saving stops at 90 %. Picking a bigger size didn't start it again, and while automatic saving was already running, Save all now returned without a word.
+- **Two different N64 (Game Boy, SNES…) cartridges.** The real drawn shell was only the default for anyone who had once picked Real shell; everyone else got the template pack's flat picture in some views and the drawn shell in others.
+- **Labels were cropped** to the label window, cutting the edges off label scans.
+- **The UMD was drawn square** (Sony: approx. 65 × 64 mm).
+
+### Now
+- **Saving art:** a bigger size (or unlimited) starts saving again straight away; Save all now while saving says "Already saving art: n / total"; Settings › Metadata › Scraping › Real media › Save them all on the device restarts a running save with every game's real media in its list. (On the Thor it is saving now: 2,395 / 7,790 when checked, Java heap steady at 48–57 MB.)
+- **One cartridge per console:** every cartridge console's games are on its authentic drawn shell by default (by region). Custom pack shapes only when Cartridges only or the custom cartridge source is picked.
+- **Labels stretched to the label window** (never cut) on the drawn shells, the template cartridges and the custom pack cartridges. Drawn fronts' cache key `f2`.
+- **UMD** drawn 65 : 64. **Switch 2 case** marked sourced (Wikipedia lists 170 × 104 × 10).
+- **Audit:** `docs\physical_media\PHYSICAL_MEDIA_AUDIT.md` and `physical_media_verification.json` — 158 entries (every drawn cartridge / card, every case by region, UMD, discs), each with its source and status: 4 verified (Sony UMD, ECMA CD / DVD, Nintendo GameCube 8 cm), 73 approximate (ConsoleMods / Wikipedia agree), 16 disputed (sources disagree — sizes left as they were), 65 unconfirmed (no measurement found). Lists the deprecated duplicates, scraper and fallback rules, labels, regional variants and what still needs measuring.
+
+### Check
+- Type-check: 0 errors. No `NON_LOCAL_RETURN` in the compiled classes.
+- Every change reread against your PC's copy (diffed).
+- The Thor's crash at 09:25 was an OutOfMemoryError (Java heap full at 512 MB; it ran out inside OkHttp's download reader, which is only where it tipped over). **Cause not found:** with the 205 build saving all 7,790 pictures the heap stays at about 50 MB. A watcher on the Thor writes a heap dump if it climbs past 260 MB again (`/data/local/tmp/vc.hprof`).
+- **Not tested:** 206 on the device (not built yet); on-device front / back / ¾ / side renders of the shells.
+
+---
+
 ## Update — 15 Oct 2026 (205): physical media repaired — same piece everywhere, real labels, backs on every case, no stand-ins popping, solid sides, real-media scrape report, Arcade cabinets removed
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

@@ -119,7 +119,8 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
                         }
                         .background(Color(0xFFE9E6DF))
                 ) {
-                    if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
+                    // (Update 206: stretched to fill the label window exactly — the art adapts to the label, never cut.)
+                    if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize()) // (Update 157)
                 }
                 Image(painterResource(cart.res), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }

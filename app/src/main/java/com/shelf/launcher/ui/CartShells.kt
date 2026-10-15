@@ -478,7 +478,7 @@ internal object CartShells {
      * label's shape, never stretched) under a band with [brand] (the game's real console).
      */
     fun front(s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean = false): Bitmap {
-        val key = "f|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
+        val key = "f2|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -542,9 +542,9 @@ internal object CartShells {
         val band = if (scan && art != null) 0f else maxOf(lr.height() * 0.14f, 2.6f * k).coerceAtMost(lr.height() * 0.3f)
         val artRect = RectF(lr.left, lr.top + band, lr.right, lr.bottom)
         if (art != null) {
-            val a = artRect.width() / artRect.height().coerceAtLeast(1f)
-            val src = cropRect(art, a)
-            c.drawBitmap(art, src, artRect, p)
+            // (Update 206: the picture fills the label exactly — stretched to it, never cut — the label keeps the shell's
+            // real size and place, the art adapts to it; a label scan is the sticker itself.)
+            c.drawBitmap(art, null, artRect, p)
         } else if (!title.isNullOrBlank()) {
             text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
         }
