@@ -74,7 +74,13 @@ internal class SolidSpec(
      * Update 207: the back stretched over the whole piece and cut to the face's own outline — for a cartridge photo,
      * whose outline and size are the photo's, not the drawn shell's (from behind it was another, smaller cartridge).
      */
-    val fitBackToFace: Boolean = false
+    val fitBackToFace: Boolean = false,
+    /**
+     * Update 209: a see-through plastic (a translucent memory card): its sides as see-through as this (0…1, how much of
+     * what's behind they hide), nothing of them behind its face, and its back as see-through. Null: solid plastic. The
+     * sides were solid slices standing behind the face, so a translucent card turned into an opaque grey block.
+     */
+    val clear: Float? = null
 ) {
     val back: ImageBitmap? by lazy { runCatching { back?.invoke() }.getOrNull() }
 }
@@ -202,6 +208,9 @@ internal fun Modifier.solidPiece(
         back.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         // The face's outline made solid, for a back without a drawn one (a clear shell's face is see-through).
         val solid = obtainGraphicsLayer()
+        // Update 209: the face's outline that clears a see-through piece's sides from behind its face.
+        val hole = obtainGraphicsLayer()
+        hole.blendMode = BlendMode.DstOut
         solid.colorFilter = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
             1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 4f, -24f
         )))
@@ -219,6 +228,8 @@ internal fun Modifier.solidPiece(
             val c = cos(t).toFloat()
             val sn = sin(t).toFloat()
             for (l in arrayOf(edge, lit, back)) { l.rotationY = yaw; l.cameraDistance = cam }
+            // (Update 209: a see-through piece's back as see-through as its sides.)
+            back.alpha = spec.clear?.coerceIn(0.2f, 1f) ?: 1f
             // (Each part recorded at the node's own size, round its own middle; then placed in the buffer below.)
             // The sides: the face's outline, darker, lit a little as they face you. Update 205: filled with the shell's
             // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
@@ -267,13 +278,23 @@ internal fun Modifier.solidPiece(
                     // (Update 207: a slice every 2 px, at most 32 — 64 slices a piece, every piece in a row, each frame,
                     // was part of what made scrolling a big library heavy; 2 px apart still shows no gap.)
                     val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, 32)
+                    val clear = spec.clear
+                    // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
+                    edge.alpha = if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / (n + 1))).toFloat()
                     if (n > 0) for (k in 0..n) {
                         val f = k.toFloat() / n
                         val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
                         translate(z * sn, 0f) { drawLayer(edge) }
                     }
-                    if (c >= 0f) translate(depthPx / 2f * sn, 0f) { drawLayer(lit) }
-                    else translate(-depthPx / 2f * sn, 0f) { drawLayer(back) }
+                    val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
+                    // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
+                    if (clear != null) {
+                        hole.rotationY = yaw; hole.cameraDistance = cam
+                        hole.record { drawLayer(solid) }
+                        translate(faceX, 0f) { drawLayer(hole) }
+                    }
+                    if (c >= 0f) translate(faceX, 0f) { drawLayer(lit) }
+                    else translate(faceX, 0f) { drawLayer(back) }
                 }
             }
             translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }

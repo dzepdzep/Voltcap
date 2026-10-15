@@ -1148,6 +1148,7 @@ private fun FlyingSaveIcon(
     // Without: upright all the way, the angle only sweeps a light across the face.
     val angle = if (outbound) 360f * p else -360f * (1f - p)
     val flightShape = saveIconShape()
+    val card3d = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.CARD_3D && Models3D.saveCardId() != null
     SaveIconCard(
         game, icon, { angle },
         Modifier
@@ -1156,7 +1157,9 @@ private fun FlyingSaveIcon(
                 translationX = cx - w / 2f
                 translationY = cy - w / 2f
                 scaleX = scale; scaleY = scale
-                shadowElevation = 18.dp.toPx() * kotlin.math.sin(Math.PI * p).toFloat()
+                // (Update 209: no shadow under a 3D card — the shadow is the square's, not the card's: a dark square flew
+                // with it and stood behind it in the details window.)
+                shadowElevation = if (card3d) 0f else 18.dp.toPx() * kotlin.math.sin(Math.PI * p).toFloat()
                 shape = flightShape
             }
     )

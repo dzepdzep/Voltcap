@@ -4,7 +4,7 @@
 #   & "C:\Users\User\AndroidStudioProjects\ShelfLauncher\tools\release\release.ps1" 0.3.0 "What's new in this one"
 #
 # It raises versionCode by one and sets versionName in app\build.gradle.kts, builds the release APK, and makes the
-# GitHub release "v<version>" with the APK attached. The first time it installs GitHub's command-line tool (gh) and
+# GitHub release "Voltcap <version>" (tag v<version>) with Voltcap-<version>.apk attached. The first time it installs GitHub's command-line tool (gh) and
 # asks you to sign in once in the browser (as dzepdzep).
 # The APK is signed with keystore.properties' key if you have one, else this PC's debug key — the same key as the
 # Voltcap you install from Android Studio on this PC, so the update installs over it.
@@ -45,10 +45,16 @@ Write-Host "Version $Version (build $code)"
 & "$root\gradlew.bat" assembleRelease
 if ($LASTEXITCODE -ne 0) { throw "The build failed - nothing was published." }
 $apk = Get-ChildItem "$root\app\build\outputs\apk\release\*.apk" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-$out = Join-Path $env:TEMP "voltcap-$Version.apk"
+# (Update 209: attached as "Voltcap-<version>.apk".)
+$out = Join-Path $env:TEMP "Voltcap-$Version.apk"
 Copy-Item $apk.FullName $out -Force
 
+# (Update 209: the new version number committed and pushed first, so the release's tag is on it.)
+git add app/build.gradle.kts
+git commit -q -m "Voltcap $Version" 2>$null
+git push -q origin main
+
 if ($Notes -eq "") { $Notes = "Voltcap $Version" }
-gh release create "v$Version" $out -R dzepdzep/Voltcap --title "Voltcap $Version" --notes $Notes
+gh release create "v$Version" $out -R dzepdzep/Voltcap --target main --title "Voltcap $Version" --notes $Notes
 if ($LASTEXITCODE -ne 0) { throw "GitHub didn't take the release (see above)." }
 Write-Host "Done: https://github.com/dzepdzep/Voltcap/releases/tag/v$Version"

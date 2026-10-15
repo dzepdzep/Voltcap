@@ -95,6 +95,10 @@ android {
     }
 }
 
+// Update 209: the APKs come out named Voltcap-<version>-debug.apk / Voltcap-<version>-release.apk (were app-debug.apk /
+// app-release.apk).
+base { archivesName.set("Voltcap-" + (android.defaultConfig.versionName ?: "dev")) }
+
 composeCompiler {
     // Lists, maps and Voltcap's own data classes are never changed in place (state is copied),
     // so Compose may skip redrawing parts of the screen whose inputs didn't change.

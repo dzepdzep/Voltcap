@@ -177,7 +177,8 @@ internal fun SwayingModel(card: String, icon: Any?, name: String, platform: Stri
     val tone = remember(meta) { meta?.tint?.own?.first?.let { Color(it) } ?: Color(0xFF9EA2A8) }
     val spec = remember(meta, backBmp, tone) {
         val b = backBmp?.asImageBitmap()
-        SolidSpec(meta?.aspect, SAVE_CARD_DEPTH, tone, back = b?.let { img -> { img } })
+        // (Update 209: a translucent card stays see-through — SolidSpec.clear.)
+        SolidSpec(meta?.aspect, SAVE_CARD_DEPTH, tone, back = b?.let { img -> { img } }, clear = if (meta?.tint?.clear == true) 0.55f else null)
     }
     ProvidePieceTurn(PieceTurn({ ((latest() % 360f) + 360f) % 360f }, 14f)) {
         Box(modifier.solidPiece(spec, withCartSpin = false)) {

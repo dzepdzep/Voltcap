@@ -4,6 +4,48 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (209): no dark square behind a Save Vault 3D card, translucent cards see-through again, Voltcap 0.6.2 on GitHub (releases named Voltcap <version>)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (Update 208 not run yet? This block covers it too.)
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (3): `src_copy\ui\SaveExplorer.kt`, `src_copy\ui\SaveVaultStyles.kt`, `src_copy\ui\SolidPiece.kt`.
+
+**Copy `project_copy`**, changed (2): `project_copy\app\build.gradle.kts`, `project_copy\tools\release\release.ps1`.
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 209: no dark square behind Save Vault 3D cards, translucent cards see-through, releases named Voltcap <version>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+& "$P\tools\release\release.ps1" 0.6.2 "Updates 208-209: faster scrolling and category switch, save sync fixed (save folders, Google account shown and switchable), reorder categories, DS / 3DS cards, printed box sides, PS3 case size, Case only by default, Save Vault cards fixed."
+.\gradlew installDebug
+```
+
+### What was wrong (found on the Thor)
+- **Dark square:** opening a save flies its card into the details window with a shadow under it. The shadow is drawn for the card's square box, not the card, so with the 3D cards a dark square flew with the card and stood behind it when it landed.
+- **Translucent cards opaque:** since 207 the picked card turns as a solid piece. Its sides are slices in the plastic's colour standing behind the face. A translucent card's face lets them show through, so it looked like a solid grey block.
+- **Updates not on GitHub:** a GitHub release was only made when `release.ps1` was run by hand; the last was 0.6.1. Updates 202–208 went to `main` but not to Releases, which is where Settings › Updates & downloads looks.
+
+### Now
+- No shadow under a flying 3D card.
+- **See-through plastic** (`SolidSpec.clear`): the sides are faint enough that all of them together are about half see-through, none of them is drawn behind the face, and the back is as see-through.
+- **Releases:**
+  - Each update's block ends with `release.ps1 <version>`. It raises the version, builds the release APK and commits / pushes the new number. Then it makes the GitHub release **Voltcap <version>** (tag v<version>) with **Voltcap-<version>.apk** attached.
+  - This one is **Voltcap 0.6.2**.
+  - The APKs Android Studio builds are now named `Voltcap-<version>-debug.apk` / `-release.apk` (were `app-debug.apk` / `app-release.apk`).
+
+### Check
+- Type-check: 0 errors. No `NON_LOCAL_RETURN` in the compiled classes. Every change reread against your PC's copy.
+- Reproduced on the Thor (207 build): the dark square in the details window while the card lands; the Pokémon Silver card turning.
+- **Not tested:** 209 on the device; the release script's new commit step and the APK name change (Gradle `base.archivesName`) — if the build stops at that line, tell me.
+
+---
+
 ## Update — 15 Oct 2026 (208): backs without stand-ins, DS / 3DS cards rebuilt, box sides printed, PS3 case size, Case only by default, reorder categories, saving after scraping, faster scrolling and category switch, save sync fixed (folders, honest status, Google account shown and switchable)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
