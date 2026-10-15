@@ -41,7 +41,19 @@ internal enum class ShellGroup(val label: String) {
     NINTENDO("Nintendo"), SEGA("Sega"), ATARI("Atari"), NEC_SNK("NEC, SNK, Bandai"), OTHER("Other"), SPECIAL("Special carts")
 }
 
-internal class ShellColour(val key: String, val name: String, val argb: Int, val opacity: Float)
+internal class ShellColour(
+    val key: String, val name: String, val argb: Int, val opacity: Float,
+    /** Update 210 (ShellMaterials): a metallic / pearlescent sheen's colour (0: none). */
+    val highlight: Int = 0,
+    /** Update 210: how strong that sheen is (0…1). */
+    val metallic: Float = 0f,
+    /** Update 210: fine glitter / pigment speckles (0…1). */
+    val glitter: Float = 0f,
+    /** Update 210: the back half's own plastic, for two-tone shells (0: as the front). */
+    val backArgb: Int = 0,
+    /** Update 210: a matte plastic (less gloss over the shell). */
+    val matte: Boolean = false
+)
 
 /** A part of a shell that isn't the plain body: x, y, w, h in mm. */
 internal class ShellExtra(val kind: Int, val x: Float, val y: Float, val w: Float, val h: Float, val argb: Int = 0) {
@@ -144,21 +156,21 @@ internal object CartShells {
         // under a moulded ridge, the cover under a console band across it: it read as a little box.)
         CartShell("ds", "Nintendo DS Game Card", ShellGroup.NINTENDO, 33f, 35f, 3.8f,
             o(0f, 0f, 1.2f, 33f, 0f, 1.2f, 33f, 35f, 0.8f, 2.6f, 35f, 0.3f, 0f, 32.4f, 0.3f), lab(2.9f, 1.6f, 27f, 29f),
-            emptyList(), colours = listOf(c("Dark grey", 0xFF424245), c("White", 0xFFF2F2F2)),
+            emptyList(), colours = listOf(c("Dark grey", 0xFF45464B), c("White", 0xFFF2F2F2)), // (Update 210: V3's DS dark grey preset)
             contactsBack = floatArrayOf(2f, 29f, 29f, 5f), check = CaseCheck.ESTIMATED, note = "Size measured (33×35×3.8); sticker 27×29 and the cut corner measured off a photo (approximate)."),
         CartShell("3ds", "Nintendo 3DS Game Card", ShellGroup.NINTENDO, 34f, 35f, 3.8f,
             // (Update 208: the sticker as on the DS card — the 3DS card is the same form with its side tab.)
             o(0f, 0f, 1.5f, 33f, 0f, 0.3f, 33f, 3f, 0.3f, 34f, 3.5f, 0.3f, 34f, 7f, 0.3f, 33f, 7.5f, 0.3f, 33f, 35f, 0.8f, 2.6f, 35f, 0.3f, 0f, 32.4f, 0.3f), lab(2.9f, 1.6f, 27f, 29f),
-            emptyList(), colours = listOf(c("Light grey", 0xFFE6E6E8)),
+            emptyList(), colours = listOf(c("Pale grey", 0xFFCFD0CC)), // (Update 210: pale grey / off-white, not paper white — V3)
             contactsBack = floatArrayOf(2f, 29f, 29f, 5f), check = CaseCheck.ESTIMATED, note = "Size measured; the side tab (it stops a 3DS card going into a DS) estimated."),
         CartShell("switch", "Nintendo Switch Game Card", ShellGroup.NINTENDO, 21f, 31f, 3f, rect(21f, 31f, 1.5f, 0.8f), lab(1.5f, 4f, 18f, 25f),
             listOf(rid(1f, 0.5f, 19f, 2.5f, 1)), colours = listOf(c("Dark grey", 0xFF2C2C30)),
             contactsBack = floatArrayOf(2f, 25f, 17f, 5f), check = CaseCheck.ESTIMATED, note = "Size 21×31×3 (Wikipedia; others say 3.3 thick); layout estimated."),
         CartShell("switch2", "Nintendo Switch 2 Game Card", ShellGroup.NINTENDO, 21f, 31f, 3f, rect(21f, 31f, 1.5f, 0.8f), lab(1.5f, 4f, 18f, 25f),
-            listOf(rid(1f, 0.5f, 19f, 2.5f, 1)), colours = listOf(c("Red", 0xFFC41E2A)),
-            contactsBack = floatArrayOf(2f, 25f, 17f, 5f), check = CaseCheck.ESTIMATED, note = "Same size as Switch, red; the rear notch isn't drawn."),
+            listOf(rid(1f, 0.5f, 19f, 2.5f, 1)), colours = listOf(c("Red", 0xFFC53B3D)),
+            contactsBack = floatArrayOf(2f, 25f, 17f, 5f), check = CaseCheck.ESTIMATED, note = "Same size as Switch, red (Nintendo confirms red cards; colour approximate); the rear notch isn't drawn."),
         CartShell("switch2_key", "Nintendo Switch 2 Game-Key Card", ShellGroup.NINTENDO, 21f, 31f, 3f, rect(21f, 31f, 1.5f, 0.8f), lab(1.5f, 4f, 18f, 25f),
-            listOf(rid(1f, 0.5f, 19f, 2.5f, 1)), colours = listOf(c("Red", 0xFFC41E2A)),
+            listOf(rid(1f, 0.5f, 19f, 2.5f, 1)), colours = listOf(c("Red", 0xFFC53B3D)),
             extras = listOf(ShellExtra(ShellExtra.ACCENT, 15.5f, 4.5f, 3.5f, 2.6f, 0xFFF2C200.toInt())),
             contactsBack = floatArrayOf(2f, 25f, 17f, 5f), check = CaseCheck.ESTIMATED, note = "As Switch 2; the label's key mark drawn top right (licence only, no game on the card)."),
         CartShell("pokemini", "Pokémon mini Game Pak", ShellGroup.NINTENDO, 26f, 25f, 6f, rect(26f, 25f, 2f, 1f), lab(2f, 2f, 22f, 17f),
@@ -295,14 +307,16 @@ internal object CartShells {
         CartShell("kirby_tilt", "Kirby Tilt 'n' Tumble", ShellGroup.SPECIAL, 57f, 78f, 14f, rect(57f, 78f, 4f, 1f), lab(5f, 20f, 47f, 40f),
             colours = listOf(c("Clear pink", 0xFFF29AC0, 0.6f)), check = CaseCheck.PLACEHOLDER, note = "A clear Game Boy Color cart with the tilt sensor on top (estimated)."),
         CartShell("warioware_twisted", "WarioWare: Twisted!", ShellGroup.SPECIAL, 57.5f, 48f, 12f, rect(57.5f, 48f, 3f, 1f), lab(4f, 16f, 49.5f, 26f),
-            colours = listOf(c("Translucent", 0xFFD8D8E0, 0.6f)), check = CaseCheck.PLACEHOLDER, note = "A taller Game Boy Advance cart with gyro and rumble (estimated)."),
+            colours = listOf(c("Transparent grey", 0xFF9A9DA4, 0.55f), c("Translucent white (Japan)", 0xFFE0E9EB, 0.65f)), check = CaseCheck.PLACEHOLDER,
+            note = "A taller Game Boy Advance cart with gyro and rumble (AGB-019A transparent grey; Japan AGB-019 translucent white — Game Verifying; shape estimated)."),
         CartShell("boktai", "Boktai (solar sensor)", ShellGroup.SPECIAL, 57.5f, 50f, 9f, rect(57.5f, 50f, 3f, 1f), lab(4f, 18f, 49.5f, 26f),
             colours = listOf(c("Clear", 0xFFE6EAEE, 0.5f)), extras = listOf(ShellExtra(ShellExtra.WINDOW, 23.75f, 4f, 10f, 6f, 0xFF1E3A6A.toInt())),
             check = CaseCheck.PLACEHOLDER, note = "A clear, slightly taller Game Boy Advance cart with the solar window on top (estimated)."),
         CartShell("drill_dozer", "Drill Dozer (rumble)", ShellGroup.SPECIAL, 57.5f, 48f, 11f, rect(57.5f, 48f, 3f, 1f), lab(4f, 16f, 49.5f, 26f),
-            colours = listOf(c("Red", 0xFFC42030, 0.85f)), check = CaseCheck.PLACEHOLDER, note = "A taller Game Boy Advance cart with rumble (estimated)."),
+            colours = listOf(c("Brown", 0xFF795440)), check = CaseCheck.PLACEHOLDER, note = "A taller Game Boy Advance cart with rumble (AGB-021, brown — Game Verifying; shape estimated)."),
         CartShell("yoshi_topsy", "Yoshi Topsy-Turvy (tilt)", ShellGroup.SPECIAL, 57.5f, 48f, 11f, rect(57.5f, 48f, 3f, 1f), lab(4f, 16f, 49.5f, 26f),
-            colours = listOf(c("Green", 0xFF4FA84A, 0.7f)), check = CaseCheck.PLACEHOLDER, note = "A taller Game Boy Advance cart with a tilt sensor (estimated)."),
+            colours = listOf(c("Green", 0xFF4FA84A)), check = CaseCheck.PLACEHOLDER,
+            note = "A taller Game Boy Advance cart with a tilt sensor (AGB-013, green and white — Game Verifying; shape estimated)."),
         CartShell("ereader", "Nintendo e-Reader", ShellGroup.SPECIAL, 120f, 72f, 26f,
             o(0f, 0f, 6f, 120f, 0f, 6f, 120f, 40f, 4f, 89f, 40f, 0f, 89f, 72f, 1f, 31f, 72f, 1f, 31f, 40f, 0f, 0f, 40f, 4f), lab(10f, 6f, 100f, 20f),
             colours = listOf(c("Grey", 0xFF8E9096)), extras = listOf(ShellExtra(ShellExtra.SLOT, 6f, 30f, 108f, 2.5f)), check = CaseCheck.PLACEHOLDER,
@@ -327,7 +341,9 @@ internal object CartShells {
     )
 
     fun colourOf(shell: CartShell, key: String?): ShellColour =
-        (if (key.isNullOrEmpty()) null else shell.colours.firstOrNull { it.key == key } ?: presets.firstOrNull { it.key == key }) ?: shell.colours.first()
+        (if (key.isNullOrEmpty()) null else shell.colours.firstOrNull { it.key == key } ?: presets.firstOrNull { it.key == key }
+            // (Update 210: a material from the registry — "m:<id>", ShellMaterials.)
+            ?: ShellMaterials.colourFor(key)) ?: shell.colours.first()
 
     /** Each console's own shell (by region where they differ): what "Authentic drawn cartridges" draws. */
     /**
@@ -502,6 +518,35 @@ internal object CartShells {
         return p
     }
 
+    /**
+     * Update 210: a material's finish over the plastic (clipped to the shell already): a metallic / pearlescent sheen
+     * across it in its highlight colour, and fine glitter speckles (the same pattern every time for a shell).
+     */
+    private fun finish(c: Canvas, s: CartShell, colour: ShellColour, k: Float, bw: Int, bh: Int, p: Paint, front: Boolean) {
+        val base = if (!front && colour.backArgb != 0) colour.backArgb else colour.argb
+        val hi = if (colour.highlight != 0) colour.highlight else shade(base, 0.55f)
+        if (colour.metallic > 0f) {
+            val m = colour.metallic.coerceIn(0f, 1f)
+            p.shader = LinearGradient(
+                0f, 0f, bw.toFloat(), bh.toFloat(),
+                intArrayOf(withAlpha(hi, 0f), withAlpha(hi, 0.5f * m), withAlpha(hi, 0f), withAlpha(hi, 0.28f * m), withAlpha(hi, 0f)),
+                floatArrayOf(0f, 0.28f, 0.48f, 0.7f, 1f), Shader.TileMode.CLAMP
+            )
+            c.drawRect(0f, 0f, bw.toFloat(), bh.toFloat(), p)
+            p.shader = null
+        }
+        if (colour.glitter > 0f) {
+            val rnd = java.util.Random((s.id.hashCode() * 31 + if (front) 1 else 2).toLong())
+            val n = (s.w * s.h * colour.glitter * 0.9f).toInt().coerceIn(0, 4000)
+            for (i in 0 until n) {
+                val x = rnd.nextFloat() * bw; val y = rnd.nextFloat() * bh
+                val r = ((0.1f + rnd.nextFloat() * 0.2f) * k).coerceAtLeast(0.6f)
+                p.color = withAlpha(if (rnd.nextInt(6) == 0) 0xFFFFFFFF.toInt() else hi, 0.3f + rnd.nextFloat() * 0.6f)
+                c.drawCircle(x, y, r, p)
+            }
+        }
+    }
+
     private fun shade(argb: Int, k: Float): Int = CaseInside.mix(argb, if (k >= 0f) 0xFFFFFFFF.toInt() else 0xFF000000.toInt(), kotlin.math.abs(k))
     private fun withAlpha(argb: Int, a: Float): Int = (argb and 0x00FFFFFF) or ((a.coerceIn(0f, 1f) * 255f).toInt() shl 24)
 
@@ -535,6 +580,8 @@ internal object CartShells {
             p.color = withAlpha(0xFFC9A646.toInt(), 0.7f * (1f - op))
             c.drawRect(RectF(board.left + board.width() * 0.08f, board.bottom - bh * 0.05f, board.right - board.width() * 0.08f, board.bottom), p)
         }
+        // (Update 210: a metallic-looking plastic's sheen and a glittering one's speckles — ShellMaterials.)
+        finish(c, s, colour, k, bw, bh, p, front = true)
         // The rim: the moulded edge, a touch darker, lit along the top.
         p.style = Paint.Style.STROKE
         p.strokeWidth = 1.4f * k
@@ -619,7 +666,8 @@ internal object CartShells {
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
         // The outline as seen from behind (the front's, mirrored).
         val path = outlinePath(s, k).apply { transform(android.graphics.Matrix().apply { setScale(-1f, 1f, bw / 2f, 0f) }) }
-        val base = colour.argb; val op = colour.opacity
+        // (Update 210: a two-tone shell's back half in its own plastic.)
+        val base = if (colour.backArgb != 0) colour.backArgb else colour.argb; val op = colour.opacity
         // A see-through shell shows its board from behind too.
         // (Update 201: what's inside first and solid — the board, dark round it — then the clear plastic over it. The
         // back was see-through, and the turned piece's face behind it — its label, mirrored — showed through it.)
@@ -635,6 +683,7 @@ internal object CartShells {
         p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.04f), op), withAlpha(shade(base, -0.16f), op), Shader.TileMode.CLAMP)
         c.drawPath(path, p); p.shader = null
         c.save(); c.clipPath(path)
+        finish(c, s, colour, k, bw, bh, p, front = false)
         // The seam where the two halves meet, just inside the edge.
         p.style = Paint.Style.STROKE; p.strokeWidth = 0.35f * k
         p.color = withAlpha(shade(base, -0.45f), maxOf(op, 0.6f))

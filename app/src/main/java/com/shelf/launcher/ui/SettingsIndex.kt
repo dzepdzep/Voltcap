@@ -245,6 +245,8 @@ internal object SettingsIndex {
         E("Steam / Android cases fit the cover", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Console cases fit the cover too", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Printed case backs", "Game look", "Covers, cases & discs", "look_more", "More look options"),
+        // Update 210.
+        E("Real special editions", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         // Update 151: the "Everything at once" card is at the top of Metadata › Scraping now.
         E("Everything at once", "Metadata", "Scraping", null, null),
         E("Fetch everything that's missing", "Metadata", "Scraping", null, null),

@@ -1176,7 +1176,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
         // was a plain silhouette, so the new backs never showed for the many games with a photo).
         if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
             // (Update 207: in the photo's own plastic colour when it's been read.)
-            val own = CartShells.colourOf(sh, null)
+            val own = ownShellColour(sh, p.game.platform, p.game.stableKey) // (Update 210: its edition's plastic)
             val colour = PhotoTones.of(p.realScan)?.let { t -> ShellColour("photo", own.name, t.copy(alpha = 1f).toArgb(), own.opacity) } ?: own
             runCatching { CartShells.back(sh, colour, 640, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
         }

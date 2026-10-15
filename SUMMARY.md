@@ -4,6 +4,83 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (210): real special editions (Master Physical Media Collection V3, first part) — 105 sourced edition records, material registry, metallic / glitter / two-tone / see-through plastics, editions in Cartridge shell…, Voltcap 0.6.3
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (208 / 209 not run yet? This block covers them too — run 209's release line first if you want 0.6.2 on GitHub as well.)
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (8): `src_copy\data\Features.kt`, `src_copy\ui\CartShellPicker.kt`, `src_copy\ui\CartShells.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\SolidPiece.kt`. New (2): `src_copy\ui\MediaEditions.kt`, `src_copy\ui\ShellMaterials.kt`.
+
+**Copy `project_copy`**, new (2): `project_copy\docs\physical_media\MEDIA_EDITIONS.md`, `project_copy\docs\physical_media\media_editions.json`.
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 210: real special editions - sourced edition records, material registry, metallic / glitter / two-tone / see-through plastics, editions in Cartridge shell" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+& "$P\tools\release\release.ps1" 0.6.3 "Real special editions: gold Zelda, coloured N64 carts, Pokemon cartridges in their own plastics, Pokemon Crystal clear cyan, DS infrared cards, Boktai / Drill Dozer / WarioWare Twisted / Yoshi Topsy-Turvy shells - pick others in a game's Cartridge shell menu."
+.\gradlew installDebug
+```
+
+### What was there (inventory)
+- Drawn cartridge / card shells (`CartShells`, 67 shells, outlines and backs from measurements or marked Estimated / Placeholder), any game on any shell (`CartShellStore`, the game's menu › Cartridge shell…), each console's authentic shell by region (`authenticIdFor`), photo backs (`ownShellOf`), 3D turning (`SolidPiece`), disc data sides by physical format (`DiscUnderside`: PS1 black, PS2 blue CD / silver DVD from the image, dual-layer, Blu-ray, GD-ROM — update 189). No GLB models (the pre-rendered 3D pieces were retired in 200).
+- Missing: real editions per game, a material registry (only 11 flat colour presets), metallic / glitter / two-tone plastics, see-through plastic in 3D.
+
+### Now
+- **Material registry** (`ShellMaterials`): the V3 palette — 22 opaque, 7 metallic (with highlight), 12 translucent, plus 25 edition plastics. Each has its base / highlight colour, roughness, metallic sheen, transmission, glitter, back colour (two-tone), edge tint and a note. All approximate sRGB presets.
+- **Drawing:**
+  - Metallic plastics get a sheen in their highlight colour; Gold / Silver / Crystal / Stadium 2 get fine glitter.
+  - Two-tone shells have their own back colour (Pokémon Stadium 2 gold / silver).
+  - See-through plastics stay see-through when turned (`SolidSpec.clear`).
+  - The label art is never touched.
+- **Real editions** (`MediaEditions`, 105 records, each with status and source):
+  - **Verified, picked by themselves (59):**
+    - N64: 28 North American coloured carts with no grey re-release, plus PAL Majora's Mask and Pokémon Stadium 2.
+    - Game Boy: Pokémon Red / Blue / Yellow / Gold / Silver (western) and Donkey Kong Land.
+    - Game Boy Color: Pokémon Crystal clear cyan, Kirby Tilt 'n' Tumble, Command Master, Pokémon Pinball.
+    - Game Boy Advance:
+      - Pokémon Ruby / Sapphire / Emerald / FireRed / LeafGreen.
+      - Special shells: Boktai, Drill Dozer, WarioWare: Twisted! / Mawaru Made in Wario, Yoshi Topsy-Turvy.
+      - Series casings: Classic NES Series, GBA Video, bit Generations, Rockman EXE 5.
+    - DS: the eight NTR-031 infrared crimson games.
+    - SNES (North America): DOOM red, Killer Instinct black.
+    - Genesis: Sonic & Knuckles lock-on, J-Cart for files tagged (J-Cart).
+  - **Offered, not picked by themselves:**
+    - Coloured releases with a grey re-run, as both versions: Ocarina of Time, 007, Turok 2 / Rage Wars, Zelda / Zelda II on NES, Maximum Carnage, Rockman EXE 4.
+    - Pending research (9): Japanese Gold / Silver two-tone, Australian DK64 / Ocarina, PAL Turok 2, WCW grey, Mobile Series, J-Cart titles, DK Land 2 / 3.
+  - **Picking order:** your choice for the game (or for its console) → the game's verified edition → the console's standard shell.
+  - **Matching:** an edition is picked only from the ROM file name (title and stated region), and only when the region it names had that edition — "(USA, Europe)" doesn't get a USA-only colour.
+  - **On the Thor's library:** 33 ROM files get their edition by themselves (Pokémon GB / GBC / GBA / DS, Crystal, Pinball, Kirby Tilt, Boktai 1 / 2, Drill Dozer, Twisted!, Topsy-Turvy, DK64, EWJ3D, Majora's Mask, Stadium 2, Spider-Man, WWF ×2, DK Land). About 14 more offer a choice: Ocarina, 007, Army Men 2, Rugrats, Scooby-Doo, Turok 2 / Rage Wars / 3, Zelda / Zelda II, DK Land 2 / 3, the Red subset hack (no region in its name).
+- **Colours fixed to the V3 presets:**
+  - DS dark grey #45464B, 3DS pale grey #CFD0CC (was near-white), Switch 2 red #C53B3D.
+  - Drill Dozer brown (was red), WarioWare: Twisted! transparent grey (Japan: translucent white), Yoshi Topsy-Turvy green.
+- **Cartridge shell…:**
+  - "Real editions of this game": each drawn, with status, region, approximate HEX, front / back colours and the source's site.
+  - Plastics by kind (Opaque, Metallic, Translucent, Real editions), each shown with its HEX and marked custom appearance or real edition.
+  - "Its own look (no shell)" resets the game.
+- **Settings › Game look › Covers, cases & discs › More look options › Real special editions** (on by default).
+- **Report:** `docs\physical_media\MEDIA_EDITIONS.md` (every record, source, status, materials, known uncertainties) and `media_editions.json`.
+
+### Check
+- Type-check: 0 errors. No `NON_LOCAL_RETURN` in the compiled classes. Every change reread against your PC's copy.
+- The matching was run against the Thor's ROM folders (gb, gbc, gba, n64, nds, nes, snes): results above.
+- Sources read today: micro-64 coloured carts table; Game Verifying (Game Boy casing — partly loaded, Game Boy Color, GBA depository, NTR-031); Bulbapedia Game Pak; The Legend of NES variants; SVG's SNES article.
+- **Not tested:** 210 on the device; no screenshot compared with real cartridge photos yet (the spec's visual checklist) — next, once it's installed.
+- **Not done yet from V3 (next parts):**
+  - Measured special-shell geometry (the outlines are still estimates).
+  - Famicom per-publisher shells.
+  - Colour editions on Atari / SNK / NEC / Bandai.
+  - DSi-exclusive white card titles.
+  - Custom disc finishes (rainbow, holographic, coloured).
+  - A material finish selector (matte / satin / glitter on any plastic).
+  - The visual comparison report.
+
+---
+
 ## Update — 15 Oct 2026 (209): no dark square behind a Save Vault 3D card, translucent cards see-through again, Voltcap 0.6.2 on GitHub (releases named Voltcap <version>)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (Update 208 not run yet? This block covers it too.)

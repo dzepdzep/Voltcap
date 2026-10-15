@@ -256,6 +256,14 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 210
+- **ShellMaterials** (ui/ShellMaterials.kt): material registry (id, kind OPAQUE / METALLIC / TRANSLUCENT / EDITION, base, highlight, roughness, metallic, transmission, glitter, back, edge, note). Choice colour key "m:<id>" → `CartShells.colourOf` via `ShellMaterials.colourFor`. ShellColour gained highlight / metallic / glitter / backArgb / matte; CartShells.front / back draw them in `finish()` (sheen gradient, seeded glitter dots), back uses backArgb.
+- **MediaEditions** (ui/MediaEditions.kt): 105 `Edition` records generated from a Python list (see docs/physical_media/media_editions.json — regenerate both together). `forGame(platform, gameKey)` matches the ROM file name's normalised title (`titleOf`: brackets and "the" dropped, punctuation removed; "x*" = starts with, "#tag" = "(tag)" in the name). `auto()` = the single VERIFIED + auto edition whose regions contain every region the file name states (`regionsOf`); cached per game. Order: CartShellStore choice (game, then console) → `MediaEditions.autoRaw` (in mediaFor's authentic branch and drawn3dPick) → authentic shell. `ownShellOf` / `ownShellColour` (SolidPiece.kt) use the edition's shell / plastic for photo backs.
+- **Features.realEditions** (pref real_editions, default true): Settings › Game look › Covers, cases & discs › More look options › Real special editions.
+- **CartShellPicker:** "Real editions of this game" cards (EditionCard), plastics by MaterialKind; the old 11 presets still parse (saved choices) but aren't listed.
+- **SolidSpec.clear** also for library shells whose colour opacity < 0.85 (clear cartridges); back.alpha = 0.5 + 0.5 × clear.
+- **Colours:** ds #45464B, 3ds #CFD0CC, switch2 / switch2_key #C53B3D, drill_dozer brown, warioware_twisted transparent grey + JP translucent white, yoshi_topsy green (opaque).
+
 ## State after update 209
 - **SolidSpec.clear** (SolidPiece.kt): see-through plastic — edge slices each at alpha 1-(1-clear)^(1/(n+1)), a `hole` layer (the face outline, BlendMode.DstOut) clears them behind the face, back.alpha = clear. SwayingModel passes 0.55 for cards whose meta tint is clear.
 - **FlyingSaveIcon:** no shadowElevation with the 3D card style.

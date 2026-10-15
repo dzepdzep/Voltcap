@@ -3823,6 +3823,14 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             com.shelf.launcher.data.Features.cartBackStyle.state.value, { it.label }
         ) { com.shelf.launcher.data.Features.cartBackStyle.value = it }
         MutedNote("Turn a drawn cartridge round to see its back: its screws, connector and panels as on the real one, with the maker's moulded text and stickers — or plain, without any console's branding (a game on another console's shell is plain by default).")
+        // Update 210: real special editions (MediaEditions).
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Real special editions",
+            subtitle = "On (default): a game whose real cartridge had its own plastic or shell — the gold Majora's Mask, Pokémon Crystal's clear cyan, the DS infrared Pokémon cards, Boktai's solar cartridge — is drawn on it, when its file name says which release it is (\"(USA)\", \"(Europe)\"). Games with more than one real edition (a grey re-release too) stay on the standard shell: pick one in the game's menu › Cartridge shell…. Colours are approximate.",
+            checked = com.shelf.launcher.data.Features.realEditions.state.value,
+            onChange = { com.shelf.launcher.data.Features.realEditions.value = it }
+        )
         // Update 198: opening cases.
         SwitchRow(
             icon = Icons.Filled.ViewWeek,

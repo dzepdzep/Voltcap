@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -99,10 +102,46 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
                 ShellGroup.values().forEach { g -> Chip(g.label, accent = group == g) { group = g } }
             }
         }
+        // Update 210: this game's real editions (MediaEditions) — its own plastic or special shell, with how sure each is.
+        val editionsOn = com.shelf.launcher.data.Features.realEditions.state.value
+        val editions = remember(platform, game.stableKey) { MediaEditions.forGame(platform, game.stableKey) }
+        val autoEdition = remember(platform, game.stableKey, editionsOn) { MediaEditions.auto(platform, game.stableKey) }
+        if (editions.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text("Real editions of this game", color = ShelfTheme.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(4.dp))
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+            ) {
+                editions.forEach { e ->
+                    val raw = e.raw(platform, game.stableKey)
+                    if (raw != null) EditionCard(e, raw, platform, cover, game, selected = current == raw, picked = autoEdition?.id == e.id && current == null) {
+                        colour = raw.substringAfter('~', ""); store(raw)
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(6.dp))
+        // Update 210: the plastics by kind (ShellMaterials) — your own pick is always a custom appearance.
+        var kind by remember { mutableStateOf<MaterialKind?>(ShellMaterials.of(colour.removePrefix("m:"))?.kind) }
         ChipFlow {
             Chip("Shell's own colour", accent = colour.isEmpty()) { colour = ""; currentId?.let { pick(it) } }
-            CartShells.presets.forEach { c -> Chip(c.name, accent = colour == c.key) { colour = c.key; currentId?.let { pick(it) } } }
+            MaterialKind.values().forEach { k -> Chip(k.label, accent = kind == k) { kind = if (kind == k) null else k } }
+        }
+        kind?.let { k ->
+            Spacer(Modifier.height(4.dp))
+            ChipFlow {
+                ShellMaterials.ofKind(k).forEach { m -> Chip(m.name, accent = colour == "m:${m.id}") { colour = "m:${m.id}"; currentId?.let { pick(it) } } }
+            }
+        }
+        ShellMaterials.of(colour.removePrefix("m:"))?.takeIf { colour.startsWith("m:") }?.let { m ->
+            val fromEdition = editions.any { it.material == m.id && current == it.raw(platform, game.stableKey) }
+            MutedNote(
+                "${m.name} · ${ShellMaterials.hexOf(m.base)}" + (if (m.back != 0) " front / ${ShellMaterials.hexOf(m.back)} back" else "") +
+                    (if (m.transmission > 0f) " · see-through ${(m.transmission * 100).toInt()} %" else "") +
+                    (if (fromEdition) " · real edition" else " · custom appearance") + ". " + m.note
+            )
         }
         Spacer(Modifier.height(8.dp))
         val q = query.trim().lowercase()
@@ -145,5 +184,40 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
         }
         Spacer(Modifier.height(6.dp))
         MutedNote("★ is this game's own console's shell. Sizes and shapes come from measurements where they were found; \"Estimated\" and \"Placeholder\" ones are drawn from photos and memory (CARTRIDGES.md lists them).")
+    }
+}
+
+/**
+ * Update 210: one real edition of the game in Cartridge shell…: its piece drawn, its name, how sure it is and where it
+ * was sold, its plastic's approximate colour and its source.
+ */
+@Composable
+private fun EditionCard(e: Edition, raw: String, platform: String, cover: Any?, game: Game, selected: Boolean, picked: Boolean, onPick: () -> Unit) {
+    val m = ShellMaterials.of(e.material)
+    Column(
+        Modifier.width(150.dp).clip(uiRounded(12.dp))
+            .border(if (selected || picked) 2.dp else 1.dp, if (selected || picked) ShelfTheme.accent else Color.White.copy(alpha = 0.08f), uiRounded(12.dp))
+            .padTarget("edition-${e.id}") { onPick() }
+            .clickable { onPick() }
+            .padding(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(Modifier.fillMaxWidth().height(84.dp), contentAlignment = Alignment.Center) {
+            CartShellArt("$SHELL_PREFIX$raw|$platform", cover, Modifier.fillMaxSize(), title = gameDisplayName(game.name), maxPx = 240)
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(e.name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
+            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        Text(
+            e.status.label + " · " + e.regions.sorted().joinToString("/") + (if (picked) " · Picked by itself" else ""),
+            color = if (e.status == EditionStatus.PENDING) Color(0xFFE8A33D) else ShelfTheme.textMuted, fontSize = 9.sp, maxLines = 2, textAlign = TextAlign.Center
+        )
+        if (m != null) Text(
+            ShellMaterials.hexOf(m.base) + (if (m.back != 0) " / " + ShellMaterials.hexOf(m.back) else "") + " (approx.)",
+            color = ShelfTheme.textMuted, fontSize = 9.sp, maxLines = 1, textAlign = TextAlign.Center
+        )
+        e.sources.firstOrNull()?.let { src ->
+            Text(src.substringAfter("://").substringBefore('/').removePrefix("www."), color = ShelfTheme.textMuted, fontSize = 9.sp, maxLines = 1, textAlign = TextAlign.Center)
+        }
     }
 }

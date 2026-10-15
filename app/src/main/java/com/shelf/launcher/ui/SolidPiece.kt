@@ -97,7 +97,8 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
             sh == null -> SolidSpec(choice.aspect, 0.12f, CUSTOM_SHELL)
             else -> {
                 val colour = CartShells.colourOf(sh, choice.colourKey)
-                SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(colour.argb).copy(alpha = 1f), back = {
+                // (Update 210: a see-through plastic stays see-through turned — SolidSpec.clear.)
+                SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(colour.argb).copy(alpha = 1f), clear = if (colour.opacity < 0.85f) 0.5f else null, back = {
                     val neutral = when (backStyle) {
                         Features.CartBackStyle.AUTHENTIC -> false
                         Features.CartBackStyle.NEUTRAL -> true
@@ -115,7 +116,13 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
  * ([gameKey]); null for a console without one (discs, apps, PC).
  */
 internal fun ownShellOf(platform: String?, gameKey: String?): CartShell? =
-    platform?.let { CartShells.authenticIdFor(it, CaseCatalog.regionOf(gameKey ?: ""), gameKey) }?.let { CartShells.of(it) }
+    // (Update 210: its real edition's shell when it had its own — Boktai's solar cartridge, Kirby Tilt 'n' Tumble…)
+    platform?.let { p -> MediaEditions.auto(p, gameKey)?.shell ?: CartShells.authenticIdFor(p, CaseCatalog.regionOf(gameKey ?: ""), gameKey) }
+        ?.let { CartShells.of(it) }
+
+/** Update 210: [sh]'s plastic for this game — its real edition's material when it has one, else the shell's own. */
+internal fun ownShellColour(sh: CartShell, platform: String?, gameKey: String?): ShellColour =
+    platform?.let { MediaEditions.auto(it, gameKey)?.material }?.let { ShellMaterials.of(it)?.colour() } ?: CartShells.colourOf(sh, null)
 
 /**
  * Update 204: the researched back for [sh] in its own colour (Settings › Game look › Cartridge backs: Authentic or Auto
@@ -139,10 +146,10 @@ internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Flo
         // isn't the black of the usual Game Boy Color shell.)
         // (Update 207: a UMD photo at the UMD's own thickness.)
         if (sh == null) SolidSpec(aspect, if (platform != null && MediaShell.of(platform) == MediaShell.UMD) slabDepth(MediaShell.UMD) else 0.12f, tone ?: PLAIN_SHELL)
-        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(CartShells.colourOf(sh, null).argb).copy(alpha = 1f), {
+        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(ownShellColour(sh, platform, gameKey).argb).copy(alpha = 1f), {
             // (Update 207: in the photo's own plastic colour — a black or gold cartridge photo had the grey shell's back —
             // and cut to the photo's outline when drawn: fitBackToFace.)
-            val own = CartShells.colourOf(sh, null)
+            val own = ownShellColour(sh, platform, gameKey)
             val colour = tone?.let { t -> ShellColour("photo", own.name, t.copy(alpha = 1f).toArgb(), own.opacity) } ?: own
             runCatching { CartShells.back(sh, colour, 480, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
         }, fitBackToFace = true)
@@ -229,7 +236,7 @@ internal fun Modifier.solidPiece(
             val sn = sin(t).toFloat()
             for (l in arrayOf(edge, lit, back)) { l.rotationY = yaw; l.cameraDistance = cam }
             // (Update 209: a see-through piece's back as see-through as its sides.)
-            back.alpha = spec.clear?.coerceIn(0.2f, 1f) ?: 1f
+            back.alpha = spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f
             // (Each part recorded at the node's own size, round its own middle; then placed in the buffer below.)
             // The sides: the face's outline, darker, lit a little as they face you. Update 205: filled with the shell's
             // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and

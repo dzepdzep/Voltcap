@@ -1048,6 +1048,12 @@ object Features {
     /** Update 195: every cartridge console on its own drawn authentic shell (Settings › Game look). */
     val authenticCarts = BoolPref("authentic_carts", false)
     /**
+     * Update 210: games whose real cartridge came in its own plastic or shell (the gold Zelda, Pokémon Crystal's clear
+     * cyan, the DS infrared cards…) are drawn on it by themselves when the file name says which release it is
+     * (ui/MediaEditions.kt). Off: every game on its console's standard shell unless you pick one.
+     */
+    val realEditions = BoolPref("real_editions", true)
+    /**
      * Update 200: what a drawn cartridge's back shows when it's turned round: its maker's moulded text and stickers, or
      * the same shell without them (no console branding) — by default the markings only on a game's own console's shell.
      */

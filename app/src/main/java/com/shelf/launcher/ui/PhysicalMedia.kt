@@ -288,8 +288,11 @@ internal fun drawn3dPick(platform: String, mixed: Boolean, gameKey: String?): Me
     val authentic = CartShells.authenticIdFor(platform, CaseCatalog.regionOf(gameKey ?: ""), gameKey)
     val packHere = CustomCarts.idFor(platform)?.let { com.shelf.launcher.data.Packs.hasCart(it) } == true
     val pack = "pack:" + Features.cartLook.state.value.key + "~" + (if (clear) "clear" else "opaque")
+    // (Update 210: the game's own real edition — its plastic or special shell — where one is known for it, MediaEditions.)
+    val edition = if (clear) null else MediaEditions.autoRaw(platform, gameKey)
     val raw = when {
         finish != ModelFinish.REAL && packHere -> pack
+        edition != null -> edition
         authentic != null -> authentic + "~" + (if (clear) "clear" else "")
         packHere -> pack
         else -> return null
@@ -325,6 +328,8 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
         val ownShell = MediaShell.of(platform)
         if (ownShell == null || !(ownShell.disc || ownShell == MediaShell.UMD)) {
             val region = CaseCatalog.regionOf(gameKey ?: "")
+            // (Update 210: its real edition first — MediaEditions.)
+            MediaEditions.autoRaw(platform, gameKey)?.let { raw -> CartShells.pickOf(raw, platform, gameKey)?.let { return it } }
             CartShells.authenticIdFor(platform, region, gameKey)?.let { id -> CartShells.pickOf(id, platform)?.let { return it } }
         }
     }

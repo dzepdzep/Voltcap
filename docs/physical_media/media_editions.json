@@ -1,0 +1,2350 @@
+[
+ {
+  "id": "n64_007_world_is_not_enough",
+  "name": "Blue cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "007 world is not enough"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "blue",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_007_world_is_not_enough_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "007 world is not enough"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_aidyn_chronicles_first_mage",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "aidyn chronicles first mage"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_aidyn_chronicles_first_mage_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "aidyn chronicles first mage"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_all_star_baseball_2001",
+  "name": "Red cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "all star baseball 2001"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_armorines_project_swarm",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "armorines project swarm"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_army_men_air_combat",
+  "name": "Green cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "army men air combat"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "green",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_army_men_air_combat_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "army men air combat"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_army_men_sarges_heroes_2",
+  "name": "Green cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "army men sarges heroes 2"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "green",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_army_men_sarges_heroes_2_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "army men sarges heroes 2"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_bass_masters_2000",
+  "name": "Blue cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "bass masters 2000"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "blue",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_bass_masters_2000_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "bass masters 2000"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_batman_beyond_return_of_joker",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "batman beyond return of joker"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_battletanx_global_assault",
+  "name": "Green cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "battletanx global assault"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "green",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_battlezone_rise_of_black_dogs",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "battlezone rise of black dogs"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_donkey_kong_64",
+  "name": "Yellow cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "donkey kong 64"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "yellow",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_earthworm_jim_3d",
+  "name": "Yellow cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "earthworm jim 3d"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "yellow",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_ecw_hardcore_revolution",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "ecw hardcore revolution"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_fighter_destiny_2",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "fighter destiny 2"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_hydro_thunder",
+  "name": "Blue cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "hydro thunder"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "blue",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_hydro_thunder_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "hydro thunder"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_jeremy_mcgrath_supercross_2000",
+  "name": "Red cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "jeremy mcgrath supercross 2000"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_legend_of_zelda_majoras_mask",
+  "name": "Gold cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "legend of zelda majoras mask"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "zelda_gold",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "Label variants (incl. the lenticular collector's label) aren't drawn — the game's own label art is used."
+ },
+ {
+  "id": "n64_legend_of_zelda_ocarina_of_time",
+  "name": "Gold cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "legend of zelda ocarina of time"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "zelda_gold",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_legend_of_zelda_ocarina_of_time_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "legend of zelda ocarina of time"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_madden_nfl_2001",
+  "name": "Blue cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "madden nfl 2001"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "blue",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_madden_nfl_2002",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "madden nfl 2002"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_nba_jam_2000",
+  "name": "Red cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "nba jam 2000"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_nfl_quarterback_club_2001",
+  "name": "Red cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "nfl quarterback club 2001",
+   "nfl qb club 2001"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_nuclear_strike_64",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "nuclear strike 64"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_pokemon_stadium_2",
+  "name": "Gold front / silver back cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "pokemon stadium 2"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "stadium2",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_power_rangers_lightspeed_rescue",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "power rangers lightspeed rescue"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_rally_challenge_2000",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "rally challenge 2000"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_rayman_2_great_escape",
+  "name": "Green cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "rayman 2 great escape",
+   "rayman 2"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "green",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_road_rash_64",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "road rash 64",
+   "road rash"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_road_rash_64_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "road rash 64",
+   "road rash"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_rocket_robot_on_wheels",
+  "name": "Red cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "rocket robot on wheels"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_rugrats_in_paris_movie",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "rugrats in paris movie"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_rugrats_in_paris_movie_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "rugrats in paris movie"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_scooby_doo_classic_creep_capers",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "scooby doo classic creep capers"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_scooby_doo_classic_creep_capers_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "scooby doo classic creep capers"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_spider_man",
+  "name": "Red cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "spider man"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_tom_clancys_rainbow_six",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "tom clancys rainbow six"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_tom_clancys_rainbow_six_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "tom clancys rainbow six"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_tony_hawks_pro_skater",
+  "name": "Blue cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "tony hawks pro skater"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "blue",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_tony_hawks_pro_skater_2",
+  "name": "Yellow cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "tony hawks pro skater 2"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "yellow",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_tony_hawks_pro_skater_3",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "tony hawks pro skater 3"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_turok_2_seeds_of_evil",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "turok 2 seeds of evil"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_turok_2_seeds_of_evil_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "turok 2 seeds of evil"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_turok_3_shadow_of_oblivion",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "turok 3 shadow of oblivion"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_turok_rage_wars",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "turok rage wars"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "A grey release is documented too (micro-64), so neither is picked by itself — choose in the game's Cartridge shell…"
+ },
+ {
+  "id": "n64_turok_rage_wars_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "turok rage wars"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_wcw_backstage_assault",
+  "name": "Blue cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "wcw backstage assault"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "blue",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "Grey variant listed by micro-64 but disputed as a US release (its region markings) — choose in Cartridge shell…"
+ },
+ {
+  "id": "n64_wcw_backstage_assault_grey",
+  "name": "Grey cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "wcw backstage assault"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "n64_grey",
+  "status": "PENDING",
+  "auto": false,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "The documented grey release."
+ },
+ {
+  "id": "n64_wwf_no_mercy",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "wwf no mercy"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_wwf_wrestlemania_2000",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "wwf wrestlemania 2000"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": ""
+ },
+ {
+  "id": "n64_majora_pal",
+  "name": "Gold cartridge (PAL)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "legend of zelda majoras mask"
+  ],
+  "regions": [
+   "EU"
+  ],
+  "shell": null,
+  "material": "zelda_gold",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "micro-64 lists Majora's Mask among the PAL coloured releases."
+ },
+ {
+  "id": "n64_stadium2_pal",
+  "name": "Gold front / silver back (PAL)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "pokemon stadium 2"
+  ],
+  "regions": [
+   "EU"
+  ],
+  "shell": null,
+  "material": "stadium2",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "PAL coloured release (micro-64). The Japanese counterparts use standard grey shells."
+ },
+ {
+  "id": "n64_turok2_pal",
+  "name": "Black cartridge (PAL)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "turok 2 seeds of evil"
+  ],
+  "regions": [
+   "EU"
+  ],
+  "shell": null,
+  "material": "black",
+  "status": "PENDING",
+  "auto": false,
+  "sources": [
+   "V3 spec (not re-checked)",
+   "https://micro-64.com/database/colouredcarts.shtml"
+  ],
+  "note": "Listed as a PAL coloured release in the V3 spec (citing micro-64); grey PAL copies not ruled out."
+ },
+ {
+  "id": "n64_dk64_au",
+  "name": "Yellow cartridge (Australia)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "donkey kong 64"
+  ],
+  "regions": [
+   "AU"
+  ],
+  "shell": null,
+  "material": "yellow",
+  "status": "PENDING",
+  "auto": false,
+  "sources": [
+   "V3 spec (not re-checked)"
+  ],
+  "note": "Australian example from the V3 spec."
+ },
+ {
+  "id": "n64_oot_au",
+  "name": "Gold cartridge (Australia)",
+  "platforms": [
+   "N64"
+  ],
+  "titles": [
+   "legend of zelda ocarina of time"
+  ],
+  "regions": [
+   "AU"
+  ],
+  "shell": null,
+  "material": "zelda_gold",
+  "status": "PENDING",
+  "auto": false,
+  "sources": [
+   "V3 spec (not re-checked)"
+  ],
+  "note": "Australian example from the V3 spec."
+ },
+ {
+  "id": "gb_pkmn_red",
+  "name": "Red cartridge",
+  "platforms": [
+   "GB"
+  ],
+  "titles": [
+   "pokemon red version",
+   "pokemon red"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": null,
+  "material": "pkmn_red",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gb_pkmn_blue",
+  "name": "Blue cartridge",
+  "platforms": [
+   "GB"
+  ],
+  "titles": [
+   "pokemon blue version",
+   "pokemon blue"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": null,
+  "material": "pkmn_blue",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gb_pkmn_yellow",
+  "name": "Yellow cartridge",
+  "platforms": [
+   "GB",
+   "GBC"
+  ],
+  "titles": [
+   "pokemon yellow version special pikachu edition",
+   "pokemon yellow version",
+   "pokemon yellow"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": "gb",
+  "material": "pkmn_yellow",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"
+  ],
+  "note": "A Game Boy (DMG-shaped) cartridge in yellow."
+ },
+ {
+  "id": "gb_pkmn_gold",
+  "name": "Gold cartridge",
+  "platforms": [
+   "GB",
+   "GBC"
+  ],
+  "titles": [
+   "pokemon gold version",
+   "pokemon gold"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": "gbc_dual",
+  "material": "pkmn_gold",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"
+  ],
+  "note": "Dual-mode (black-style) Game Pak shape in sparkling gold."
+ },
+ {
+  "id": "gb_pkmn_silver",
+  "name": "Silver cartridge",
+  "platforms": [
+   "GB",
+   "GBC"
+  ],
+  "titles": [
+   "pokemon silver version",
+   "pokemon silver"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": "gbc_dual",
+  "material": "pkmn_silver",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/casing",
+   "V3 spec (not re-checked)"
+  ],
+  "note": "Silver isn't in the part of Game Verifying's casing list that loaded; the western silver cartridge is well known. Colour approximate."
+ },
+ {
+  "id": "gb_pkmn_gold_jp",
+  "name": "Two-tone cartridge (Japan)",
+  "platforms": [
+   "GB",
+   "GBC"
+  ],
+  "titles": [
+   "pocket monsters kin",
+   "pocket monsters gold"
+  ],
+  "regions": [
+   "JP"
+  ],
+  "shell": "gbc_dual",
+  "material": "pkmn_gold_jp",
+  "status": "PENDING",
+  "auto": false,
+  "sources": [
+   "V3 spec (not re-checked)"
+  ],
+  "note": "Dark blue front / dark grey back per the V3 spec; not yet checked against a photograph."
+ },
+ {
+  "id": "gb_pkmn_silver_jp",
+  "name": "Two-tone cartridge (Japan)",
+  "platforms": [
+   "GB",
+   "GBC"
+  ],
+  "titles": [
+   "pocket monsters gin",
+   "pocket monsters silver"
+  ],
+  "regions": [
+   "JP"
+  ],
+  "shell": "gbc_dual",
+  "material": "pkmn_silver_jp",
+  "status": "PENDING",
+  "auto": false,
+  "sources": [
+   "V3 spec (not re-checked)"
+  ],
+  "note": "Dark grey front / dark blue back per the V3 spec; not yet checked against a photograph."
+ },
+ {
+  "id": "gb_dkland",
+  "name": "Yellow cartridge",
+  "platforms": [
+   "GB"
+  ],
+  "titles": [
+   "donkey kong land"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": null,
+  "material": "yellow",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"
+  ],
+  "note": "Game Verifying lists Donkey Kong Land in yellow (DMG-09)."
+ },
+ {
+  "id": "gb_dkland23",
+  "name": "Yellow cartridge",
+  "platforms": [
+   "GB"
+  ],
+  "titles": [
+   "donkey kong land 2",
+   "donkey kong land iii",
+   "donkey kong land 3"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": null,
+  "material": "yellow",
+  "status": "PENDING",
+  "auto": false,
+  "sources": [
+   "V3 spec (not re-checked)"
+  ],
+  "note": "\"Donkey Kong Land series — yellow\" (V3 spec); the sequels not confirmed separately."
+ },
+ {
+  "id": "gb_tamagotchi",
+  "name": "Pink cartridge",
+  "platforms": [
+   "GB"
+  ],
+  "titles": [
+   "tamagotchi"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": null,
+  "material": "pink",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"
+  ],
+  "note": "Game Verifying lists Tamagotchi in pink; other Tamagotchi releases differ, so it isn't picked by itself."
+ },
+ {
+  "id": "gbc_crystal",
+  "name": "Clear cyan, glitter",
+  "platforms": [
+   "GBC"
+  ],
+  "titles": [
+   "pokemon crystal version",
+   "pokemon crystal",
+   "pocket monsters crystal version",
+   "pocket monsters crystal"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "gbc",
+  "material": "pkmn_crystal",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/color"
+  ],
+  "note": "\"Clear Cyan for Pokemon Crystal\". The Japanese crystal board art isn't drawn."
+ },
+ {
+  "id": "gbc_kirby_tilt",
+  "name": "Kirby Tilt 'n' Tumble shell, clear pink",
+  "platforms": [
+   "GBC"
+  ],
+  "titles": [
+   "kirby tilt n tumble",
+   "koro koro kirby"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "kirby_tilt",
+  "material": "kirby_pink",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/color"
+  ],
+  "note": "Clear pink (Game Verifying); the shell's shape is estimated."
+ },
+ {
+  "id": "gbc_command_master",
+  "name": "Clear teal",
+  "platforms": [
+   "GBC"
+  ],
+  "titles": [
+   "command master"
+  ],
+  "regions": [
+   "JP"
+  ],
+  "shell": "gbc",
+  "material": "command_teal",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/color"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gbc_pinball",
+  "name": "Pokémon Pinball rumble shell",
+  "platforms": [
+   "GBC"
+  ],
+  "titles": [
+   "pokemon pinball"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "pokemon_pinball",
+  "material": null,
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://bulbapedia.bulbagarden.net/wiki/Game_Pak"
+  ],
+  "note": "Special rumble cartridge (Bulbapedia). Colours by region (western black, Japanese yellow / black) not yet confirmed — drawn in the shell's own colour."
+ },
+ {
+  "id": "gbc_mobile",
+  "name": "Clear blue (Mobile Series)",
+  "platforms": [
+   "GBC"
+  ],
+  "titles": [
+   "mobile golf",
+   "mobile trainer",
+   "net de get minigame 100"
+  ],
+  "regions": [
+   "JP"
+  ],
+  "shell": "gbc",
+  "material": "mobile_blue",
+  "status": "PENDING",
+  "auto": false,
+  "sources": [
+   "https://gameverifying.com/wiki/cart-based-systems/gameboy/color"
+  ],
+  "note": "Game Verifying: \"Clear Blue for the Mobile Series\" — which titles belong to it not confirmed."
+ },
+ {
+  "id": "gba_ruby",
+  "name": "Transparent red",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "pokemon ruby version",
+   "pokemon ruby",
+   "pocket monsters ruby"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "gba",
+  "material": "gba_ruby",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gba_sapphire",
+  "name": "Transparent blue",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "pokemon sapphire version",
+   "pokemon sapphire",
+   "pocket monsters sapphire"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "gba",
+  "material": "gba_sapphire",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gba_emerald",
+  "name": "Transparent green",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "pokemon emerald version",
+   "pokemon emerald",
+   "pocket monsters emerald"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "gba",
+  "material": "gba_emerald",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gba_firered",
+  "name": "Red-orange, less see-through",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "pokemon firered version",
+   "pokemon firered",
+   "pocket monsters firered"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "gba",
+  "material": "gba_firered",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": "Sources disagree on the shade (orange / translucent red): the colour is a provisional compromise."
+ },
+ {
+  "id": "gba_leafgreen",
+  "name": "Green, less see-through",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "pokemon leafgreen version",
+   "pokemon leafgreen",
+   "pocket monsters leafgreen"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "gba",
+  "material": "gba_leafgreen",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gba_boktai",
+  "name": "Boktai solar shell, clear",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "boktai*",
+   "bokura no taiyou*",
+   "zoku bokura no taiyou*",
+   "shin bokura no taiyou*"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "boktai",
+  "material": "clear",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": "AGB-013 clear casing with the solar sensor; shape estimated."
+ },
+ {
+  "id": "gba_drill_dozer",
+  "name": "Drill Dozer rumble shell, brown",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "drill dozer",
+   "screw breaker*"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "drill_dozer",
+  "material": "brown",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": "AGB-021A (AGB-021 in Japan), brown; shape estimated."
+ },
+ {
+  "id": "gba_twisted",
+  "name": "WarioWare: Twisted! shell, transparent grey",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "warioware twisted"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": "warioware_twisted",
+  "material": "twisted_grey",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": "AGB-019A; shape estimated."
+ },
+ {
+  "id": "gba_mawaru",
+  "name": "Mawaru Made in Wario shell, translucent white",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "mawaru made in wario"
+  ],
+  "regions": [
+   "JP"
+  ],
+  "shell": "warioware_twisted",
+  "material": "mawaru_white",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": "AGB-019; shape estimated."
+ },
+ {
+  "id": "gba_yoshi_topsy",
+  "name": "Yoshi Topsy-Turvy tilt shell, green and white",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "yoshi topsy turvy",
+   "yoshis universal gravitation",
+   "yoshi no banyuu inryoku"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "yoshi_topsy",
+  "material": "yoshi_green_white",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": "AGB-013; PAL copies have a different front casing (not drawn). Which half is green not confirmed."
+ },
+ {
+  "id": "gba_classic_nes",
+  "name": "Classic NES Series medium grey",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "classic nes series*"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": "gba",
+  "material": "classic_nes_grey",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gba_video",
+  "name": "GBA Video light grey",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "game boy advance video*",
+   "gba video*"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU"
+  ],
+  "shell": "gba",
+  "material": "gba_video_grey",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gba_bitgen",
+  "name": "bit Generations black",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "bit generations*"
+  ],
+  "regions": [
+   "JP"
+  ],
+  "shell": "gba",
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gba_exe4_blue",
+  "name": "Blue cartridge (Japan)",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "rockman exe 4 tournament blue moon",
+   "rockman exe 4 blue moon"
+  ],
+  "regions": [
+   "JP"
+  ],
+  "shell": "gba",
+  "material": "blue",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": "Also released in a standard grey cartridge — choose in Cartridge shell…"
+ },
+ {
+  "id": "gba_exe4_red",
+  "name": "Red cartridge (Japan)",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "rockman exe 4 tournament red sun",
+   "rockman exe 4 red sun"
+  ],
+  "regions": [
+   "JP"
+  ],
+  "shell": "gba",
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": "Also released in a standard grey cartridge — choose in Cartridge shell…"
+ },
+ {
+  "id": "gba_exe5_colonel",
+  "name": "Teal cartridge (Japan)",
+  "platforms": [
+   "GBA"
+  ],
+  "titles": [
+   "rockman exe 5 team of colonel"
+  ],
+  "regions": [
+   "JP"
+  ],
+  "shell": "gba",
+  "material": "teal",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/depository/gba"
+  ],
+  "note": ""
+ },
+ {
+  "id": "ds_ntr031",
+  "name": "Infrared crimson card (NTR-031)",
+  "platforms": [
+   "NDS"
+  ],
+  "titles": [
+   "pokemon heartgold version",
+   "pokemon soulsilver version",
+   "pokemon black version",
+   "pokemon white version",
+   "pokemon black version 2",
+   "pokemon white version 2",
+   "pokemon heartgold",
+   "pokemon soulsilver",
+   "pokemon black",
+   "pokemon white",
+   "pokemon black 2",
+   "pokemon white 2",
+   "pocket monsters heartgold",
+   "pocket monsters soulsilver",
+   "pocket monsters black",
+   "pocket monsters white",
+   "pocket monsters black 2",
+   "pocket monsters white 2",
+   "personal trainer walking",
+   "walk with me*",
+   "active health with carol vorderman"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "ds",
+  "material": "ntr031",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.gameverifying.com/wiki/cart-based-systems/nds031",
+   "https://bulbapedia.bulbagarden.net/wiki/Game_Pak"
+  ],
+  "note": "Eight known NTR-031 games (Game Verifying). The crimson-light trick isn't proof of authenticity."
+ },
+ {
+  "id": "nes_zelda_gold",
+  "name": "Gold cartridge",
+  "platforms": [
+   "NES"
+  ],
+  "titles": [
+   "legend of zelda"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": "nes",
+  "material": "zelda_gold",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://www.thelegendofnes.com/game-specific-variants"
+  ],
+  "note": "Original release (NES-ZL-USA). A grey Classic Series re-issue exists — choose in Cartridge shell…"
+ },
+ {
+  "id": "nes_zelda_grey",
+  "name": "Grey cartridge (Classic Series)",
+  "platforms": [
+   "NES"
+  ],
+  "titles": [
+   "legend of zelda"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": "nes",
+  "material": "nes_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://www.thelegendofnes.com/game-specific-variants"
+  ],
+  "note": "NES-ZL-USA-1."
+ },
+ {
+  "id": "nes_zelda2_gold",
+  "name": "Gold cartridge",
+  "platforms": [
+   "NES"
+  ],
+  "titles": [
+   "zelda ii adventure of link"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": "nes",
+  "material": "zelda_gold",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://www.thelegendofnes.com/game-specific-variants"
+  ],
+  "note": "Original release (NES-AL-USA). A grey Classic Series re-issue exists — choose in Cartridge shell…"
+ },
+ {
+  "id": "nes_zelda2_grey",
+  "name": "Grey cartridge (Classic Series)",
+  "platforms": [
+   "NES"
+  ],
+  "titles": [
+   "zelda ii adventure of link"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": "nes",
+  "material": "nes_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://www.thelegendofnes.com/game-specific-variants"
+  ],
+  "note": "NES-AL-USA-1."
+ },
+ {
+  "id": "snes_doom",
+  "name": "Red cartridge (North America)",
+  "platforms": [
+   "SNES"
+  ],
+  "titles": [
+   "doom"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": "snes_na",
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.svg.com/1072450/only-these-three-snes-games-got-the-color-cartridge-treatment/"
+  ],
+  "note": "European / Japanese DOOM stays grey."
+ },
+ {
+  "id": "snes_ki",
+  "name": "Black cartridge (North America)",
+  "platforms": [
+   "SNES"
+  ],
+  "titles": [
+   "killer instinct"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": "snes_na",
+  "material": "black",
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://www.svg.com/1072450/only-these-three-snes-games-got-the-color-cartridge-treatment/"
+  ],
+  "note": ""
+ },
+ {
+  "id": "snes_carnage",
+  "name": "Red cartridge (North America)",
+  "platforms": [
+   "SNES"
+  ],
+  "titles": [
+   "spider man and venom maximum carnage"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": "snes_na",
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://www.svg.com/1072450/only-these-three-snes-games-got-the-color-cartridge-treatment/"
+  ],
+  "note": "Later runs were grey — choose in Cartridge shell…"
+ },
+ {
+  "id": "snes_carnage_grey",
+  "name": "Grey cartridge (later run)",
+  "platforms": [
+   "SNES"
+  ],
+  "titles": [
+   "spider man and venom maximum carnage"
+  ],
+  "regions": [
+   "US"
+  ],
+  "shell": "snes_na",
+  "material": "snes_grey",
+  "status": "ALTERNATE",
+  "auto": false,
+  "sources": [
+   "https://www.svg.com/1072450/only-these-three-snes-games-got-the-color-cartridge-treatment/"
+  ],
+  "note": ""
+ },
+ {
+  "id": "gen_carnage",
+  "name": "Red cartridge",
+  "platforms": [
+   "Genesis",
+   "MegaDrive"
+  ],
+  "titles": [
+   "spider man and venom maximum carnage"
+  ],
+  "regions": [
+   "US",
+   "EU"
+  ],
+  "shell": "genesis",
+  "material": "red",
+  "status": "VERIFIED",
+  "auto": false,
+  "sources": [
+   "https://www.svg.com/1072450/only-these-three-snes-games-got-the-color-cartridge-treatment/"
+  ],
+  "note": "\"The only red variant cartridge on the Sega Genesis\" (SVG); standard black copies too — choose in Cartridge shell…"
+ },
+ {
+  "id": "gen_sk",
+  "name": "Sonic & Knuckles lock-on cartridge",
+  "platforms": [
+   "Genesis",
+   "MegaDrive"
+  ],
+  "titles": [
+   "sonic and knuckles*"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "sonic_knuckles",
+  "material": null,
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://commons.wikimedia.org/wiki/File:SegaGenesis-Sonic%2BKnuckles-lock-on-open.jpg"
+  ],
+  "note": "Its own lock-on shell with the hinged flap (proportions partly estimated)."
+ },
+ {
+  "id": "gen_jcart",
+  "name": "Codemasters J-Cart (two controller ports)",
+  "platforms": [
+   "Genesis",
+   "MegaDrive"
+  ],
+  "titles": [
+   "#j-cart"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "jcart",
+  "material": null,
+  "status": "VERIFIED",
+  "auto": true,
+  "sources": [
+   "https://de.wikipedia.org/wiki/J-Cart"
+  ],
+  "note": "Picked only for files tagged \"(J-Cart)\" (a dump of the J-Cart release)."
+ },
+ {
+  "id": "gen_jcart_titles",
+  "name": "Codemasters J-Cart",
+  "platforms": [
+   "Genesis",
+   "MegaDrive"
+  ],
+  "titles": [
+   "pete sampras tennis",
+   "micro machines 2 turbo tournament",
+   "micro machines turbo tournament 96",
+   "micro machines military",
+   "super skidmarks"
+  ],
+  "regions": [
+   "US",
+   "EU",
+   "AU",
+   "JP"
+  ],
+  "shell": "jcart",
+  "material": null,
+  "status": "PENDING",
+  "auto": false,
+  "sources": [
+   "https://de.wikipedia.org/wiki/J-Cart"
+  ],
+  "note": "These game families had J-Cart releases; not every release was one, so it's offered, not picked."
+ }
+]
