@@ -46,6 +46,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -155,19 +156,38 @@ private val MemCardShape: Shape = GenericShape { size, _ ->
  */
 @Composable
 internal fun SwayingModel(card: String, icon: Any?, name: String, platform: String?, angle: () -> Float, modifier: Modifier = Modifier) {
+    // Update 207: all the way round and smoothly. It swayed ±60° by swapping the pack's pictures every 20° (a slide show)
+    // and never showed its back. Now its front picture (0°) is the face of a solid piece (SolidPiece.kt) turned by the
+    // clock itself — any angle, its sides in the card's plastic — and the pack's own back picture (180°) is its back.
     val latest by androidx.compose.runtime.rememberUpdatedState(angle)
-    fun yaw(): Float = kotlin.math.sin(Math.toRadians(latest().toDouble())).toFloat() * 60f
-    val frame by remember { androidx.compose.runtime.derivedStateOf { Models3D.nearest(yaw()) } }
-    Box(
-        modifier.graphicsLayer {
-            cameraDistance = 14f * density
-            rotationY = (yaw() - frame).coerceIn(-10f, 10f)
-            flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
+    val version = com.shelf.launcher.data.Packs.version.intValue
+    val meta = remember(card, version) { Models3D.meta(card) }
+    val tint = Models3D.tintFor(card, platform, name)
+    val backBmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, card, version, tint?.key) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            runCatching {
+                Models3D.compose(card, 180, null, null, ArtPos.NONE, tint)?.let { b ->
+                    // (Mirrored: seen from behind once turned, it reads the right way round — as the drawn shells' backs.)
+                    val m = android.graphics.Matrix().apply { setScale(-1f, 1f, b.width / 2f, 0f) }
+                    android.graphics.Bitmap.createBitmap(b, 0, 0, b.width, b.height, m, true)
+                }
+            }.getOrNull()
         }
-    ) {
-        Model3DArt(card, icon, frame.toFloat(), Modifier.fillMaxSize(), name = name, alwaysName = true, platform = platform)
+    }
+    val tone = remember(meta) { meta?.tint?.own?.first?.let { Color(it) } ?: Color(0xFF9EA2A8) }
+    val spec = remember(meta, backBmp, tone) {
+        val b = backBmp?.asImageBitmap()
+        SolidSpec(meta?.aspect, SAVE_CARD_DEPTH, tone, back = b?.let { img -> { img } })
+    }
+    ProvidePieceTurn(PieceTurn({ ((latest() % 360f) + 360f) % 360f }, 14f)) {
+        Box(modifier.solidPiece(spec, withCartSpin = false)) {
+            Model3DArt(card, icon, 0f, Modifier.fillMaxSize(), name = name, alwaysName = true, platform = platform)
+        }
     }
 }
+
+/** Update 207: a Save Vault 3D card's thickness against its longest side (a memory card is about 6 mm on 55). */
+private const val SAVE_CARD_DEPTH = 0.1f
 
 /** Width / height of each physical style. */
 internal fun SaveVaultStyle.aspect(): Float = when (this) {

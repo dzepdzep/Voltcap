@@ -29,7 +29,7 @@ internal fun CategoryWarmup(state: LauncherUiState) {
         val small = com.shelf.launcher.device.MemoryBudget.small(context)
         val perSide = if (small) 10 else 16
         val sharp = if (small) 4 else 8
-        val sides = withContext(Dispatchers.Default) {
+        val sideGames = withContext(Dispatchers.Default) {
             runCatching {
                 // The same stops as L2 / R2 (LauncherViewModel.cycleCategory).
                 val stops = state.categoryOrder.flatMap { key ->
@@ -40,21 +40,33 @@ internal fun CategoryWarmup(state: LauncherUiState) {
                         else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
                     }
                 }
-                if (stops.size < 2) return@runCatching emptyList<List<String>>()
+                if (stops.size < 2) return@runCatching emptyList<List<com.shelf.launcher.data.Game>>()
                 val cur = stops.indexOfFirst { (s, p) -> s == state.specialFilter && p == state.platformFilter }.coerceAtLeast(0)
                 listOf(1, -1).map { d -> stops[(cur + d + stops.size) % stops.size] }.distinct().map { (s, p) ->
                     // (Worked out once here: the switch itself then finds the list ready.)
-                    state.copy(specialFilter = s, platformFilter = p).visibleGames.take(perSide).flatMap { g ->
-                        // (Update 205: and the pictures its physical piece is drawn with in the look in use — its own
-                        // cartridge / disc photo or label, its case front and spine — so they're on the device's cache
-                        // when the category opens instead of loading one by one over Voltcap's stand-ins.)
-                        listOfNotNull(state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl) +
-                            mediaWarmUrls(state.appearance.cardArtType, g, state.physicalMedia[g.stableKey])
-                    }
+                    state.copy(specialFilter = s, platformFilter = p).visibleGames.take(perSide)
                 }
             }.getOrDefault(emptyList())
         }
-        if (sides.isEmpty()) return@LaunchedEffect
+        if (sideGames.isEmpty()) return@LaunchedEffect
+        val sides = sideGames.map { list ->
+            list.flatMap { g ->
+                // (Update 205: and the pictures its physical piece is drawn with in the look in use — its own
+                // cartridge / disc photo or label, its case front and spine — so they're on the device's cache
+                // when the category opens instead of loading one by one over Voltcap's stand-ins.)
+                listOfNotNull(state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl) +
+                    mediaWarmUrls(state.appearance.cardArtType, g, state.physicalMedia[g.stableKey])
+            }
+        }
+        // Update 207: the 3D cases' own prints too — their box scan front and spine, decoded as Case3D reads them — for the
+        // first games each side. A category opening showed its cases as bare plastic until those had been read.
+        val type = state.appearance.cardArtType
+        val caseLook = type == com.shelf.launcher.data.CardArtType.CASE || type == com.shelf.launcher.data.CardArtType.CASE_REAL
+        if (caseLook && (com.shelf.launcher.data.Features.carousel3d.value || Carousel.view.cases)) {
+            warmCase3d(context, sideGames.flatMap { it.take(sharp + 2) }.map { g ->
+                case3dModels(g, state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl, state.physicalMedia[g.stableKey], true)
+            })
+        }
         // (Left to finish even when you switch: what's on its way is what the next category shows.)
         prefetchThumbs(context, sides.flatten())
         val loader = coil.Coil.imageLoader(context)

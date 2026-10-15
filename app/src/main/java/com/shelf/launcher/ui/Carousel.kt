@@ -632,12 +632,14 @@ internal fun GameCarousel(
         val models = drawn3dOn() && cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
         if (box3d || models) {
             val far = reach + 3
-            val more = ((focus - far)..(focus + far)).mapNotNull { i ->
-                val g = games.getOrNull(if (loop) i.mod(n) else i) ?: return@mapNotNull null
-                overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
-            }.distinct()
+            val near = ((focus - far)..(focus + far)).mapNotNull { i -> games.getOrNull(if (loop) i.mod(n) else i) }.distinct()
+            val more = near.mapNotNull { g -> overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl }
             // (Update 202: the 3D cases read their cover trimmed — Case3D; the drawn cartridge shells as it is.)
-            if (box3d) warmSoft(warmCtx, more, 480, trim = true)
+            // (Update 207: the 3D cases' own box scan fronts and spines, as Case3D picks them — case3dModels.)
+            if (box3d) {
+                val realFront = cardArtType == com.shelf.launcher.data.CardArtType.CASE || cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
+                warmCase3d(warmCtx, near.map { g -> case3dModels(g, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, physicalMedia[g.stableKey], realFront) })
+            }
             if (models) warmSoft(warmCtx, more, 480)
         }
     }
@@ -762,7 +764,11 @@ internal fun GameCarousel(
         val tk = swap.token
         swap.k.snapTo(0f)
         swap.kPending = false
-        swap.k.animateTo(1f, tween(glideSpeed.carouselMs + 200, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        // (Update 207: the slide starts once the new collection has been drawn — two frames on. The frames spent making
+        // the new category's games came out of the slide's own time, so it jumped half-way and finished in a rush.)
+        androidx.compose.runtime.withFrameNanos { }
+        androidx.compose.runtime.withFrameNanos { }
+        swap.k.animateTo(1f, tween(glideSpeed.carouselMs + 260, easing = androidx.compose.animation.core.FastOutSlowInEasing))
         swap.doneToken.intValue = tk
     }
     // (Update 162 (review): the moving values always read first — while a slide was pending they weren't read at all, so

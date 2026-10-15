@@ -216,6 +216,30 @@ internal fun warmSoft(context: android.content.Context, urls: List<String>, maxS
     }
 }
 
+/**
+ * Update 207: the two pictures a 3D case ([Case3D]) is drawn with, worked out the way it does — its front (the game's box
+ * scan with Original cases on and [realFront], else [cover]) and its spine (the real spine scan, else the strip cut from
+ * its box scans) — so they can be decoded ahead under the same memory keys ([warmCase3d]). Keep in step with Case3D.
+ */
+internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans: List<Pair<String, String>>?, realFront: Boolean): Pair<String?, String?> {
+    val f = com.shelf.launcher.data.Features
+    val front = (if (realFront && f.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform))
+        BoxTexture.front(scans, g.platform) else null) ?: cover
+    val spine = if (LookStyles.spineForAll()) null
+        else scans?.firstOrNull { it.first == "Spine" }?.second ?: if (f.originalCases.state.value) BoxTexture.spine(scans, g.platform) else null
+    return front to spine
+}
+
+/**
+ * Update 207: decodes the 3D cases' fronts and spines ahead ([case3dModels]: front 480 px trimmed, spine 600 px — the sizes
+ * and keys Case3D reads), so cases sliding in or a category opening show their print at once. They were warmed with the
+ * flat cover only: on a category switch every case stood as bare plastic while its box scan and spine were read.
+ */
+internal fun warmCase3d(context: android.content.Context, models: List<Pair<String?, String?>>) {
+    warmSoft(context, models.mapNotNull { it.first }.distinct(), 480, trim = true)
+    warmSoft(context, models.mapNotNull { it.second }.distinct(), 600)
+}
+
 /** Update 202: the memory key of a [rememberSoftBitmap] / [warmSoft] picture (a trimmed cover has its own). */
 private fun softKey(maxSide: Int, url: String, trim: Boolean): String =
     "soft|$maxSide|" + (if (trim) TrimUniformMargins.KEY + "|" else "") + url

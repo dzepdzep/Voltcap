@@ -455,7 +455,8 @@ internal fun realScanOf(type: com.shelf.launcher.data.CardArtType, typed: String
     typed?.takeIf { type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && !mediaShellsOn }
 
 /** Update 129: [platform]'s game is round (a disc or UMD), for its own scan's picture. */
-internal fun mediaRound(platform: String): Boolean = mediaKind(platform) == "disc"
+// (Update 207: not a UMD — its photo is the UMD in its shell, which isn't round; it was cut to a circle and spun as a disc.)
+internal fun mediaRound(platform: String): Boolean = mediaKind(platform) == "disc" && MediaShell.of(platform) != MediaShell.UMD
 
 /** A ring: the printed part of a disc (between the hub and the rim). */
 private class RingShape(private val inner: Float, private val outer: Float) : Shape {
@@ -773,8 +774,16 @@ internal fun RealMediaPicture(
     }
     val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) }, tone)
     Box((if (round) modifier.followTurn() else modifier.solidPiece(solid)).mediaMotion(round, 0), contentAlignment = Alignment.Center) {
+        // (Update 207: a disc photo has its empty margins trimmed and fills its circle — with a margin round it, the disc's
+        // drawn rim and edge in the game window stood out round the smaller photo as a second layer behind the disc.)
+        val shared = mediaArtModel(model)
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        val roundModel = androidx.compose.runtime.remember(model, round) {
+            if (round && model is String) coil.request.ImageRequest.Builder(ctx).data(model).transformations(TrimToOpaque).build() else null
+        }
         coil.compose.AsyncImage(
-            mediaArtModel(model), null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, // (Update 157)
+            roundModel ?: shared, null,
+            contentScale = if (round) androidx.compose.ui.layout.ContentScale.Crop else androidx.compose.ui.layout.ContentScale.Fit, // (Update 157)
             modifier = Modifier.fillMaxSize().then(if (round) Modifier.clip(androidx.compose.foundation.shape.CircleShape) else Modifier),
             // Update 200: its shape noted, so the launch animation (LaunchThrow) sizes the game's own cartridge at it.
             onSuccess = { r ->

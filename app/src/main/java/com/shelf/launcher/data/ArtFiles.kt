@@ -95,6 +95,9 @@ object ArtFiles {
     /** Update 144: [url]'s saved picture from the list in memory (no disk access); null when it isn't listed. */
     fun savedFile(url: String): File? = names[name(url)]
 
+    /** Update 207: a ScreenScraper address (its downloads count against the account's requests-at-once limit). */
+    fun isScreenScraper(url: String): Boolean = url.contains("screenscraper.fr/", ignoreCase = true)
+
     fun has(url: String): Boolean = fileFor(url)?.let { it.isFile && it.length() > 0L } == true
 
     /** Bytes the saved pictures take (counted once, then kept up to date). */
@@ -112,10 +115,16 @@ object ArtFiles {
      * Downloads [url] into the store. True when it's saved; false when the server refused it ([refused] set) or the
      * connection failed.
      */
-    fun download(url: String, refused: (() -> Unit)? = null): Boolean = runCatching {
+    fun download(url: String, refused: (() -> Unit)? = null, busy: ((Int) -> Unit)? = null): Boolean = runCatching {
         val req = okhttp3.Request.Builder().url(url).header("User-Agent", "Voltcap").build()
         client.newCall(req).execute().use { r ->
-            if (!r.isSuccessful) { if (r.code in 400..499) refused?.invoke(); return@runCatching false }
+            if (!r.isSuccessful) {
+                // (Update 207: "too many requests" (429) and ScreenScraper's quota / thread answers (430, 431) aren't a
+                // refusal — the picture is there, just not now; they were marked failed for days.)
+                if (r.code == 429 || r.code == 430 || r.code == 431) busy?.invoke(r.code)
+                else if (r.code in 400..499) refused?.invoke()
+                return@runCatching false
+            }
             val body = r.body ?: return@runCatching false
             // Not a picture (an error page served with 200): left out.
             val type = body.contentType()?.type

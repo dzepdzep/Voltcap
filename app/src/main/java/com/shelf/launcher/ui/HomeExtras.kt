@@ -75,7 +75,11 @@ internal fun Modifier.categorySlide(): Modifier {
         // (Update 162: not round a carousel that slides its games along its own path, CategorySlide.pathOwners.)
         if (!on || CategorySlide.pathOwners > 0) return@LaunchedEffect
         anim.snapTo(CategorySlide.dir.toFloat())
-        anim.animateTo(0f, tween(280, easing = FastOutSlowInEasing))
+        // (Update 207: started once the new category has been drawn — two frames on — and a little longer, so the time
+        // spent making it doesn't eat the slide: it jumped part of the way, then rushed.)
+        androidx.compose.runtime.withFrameNanos { }
+        androidx.compose.runtime.withFrameNanos { }
+        anim.animateTo(0f, tween(340, easing = FastOutSlowInEasing))
     }
     return this.graphicsLayer {
         translationX = if (slide) anim.value * 64.dp.toPx() else 0f

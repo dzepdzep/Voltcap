@@ -1707,6 +1707,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         else { onSecond(android.content.Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)); null }
                     }
                     "voltcap:r1:settings" -> { onSecond(android.content.Intent(android.provider.Settings.ACTION_SETTINGS)); null }
+                    // Update 207: Voltcap's own screens, opened on the main screen from the second screen's dock.
+                    "voltcap:saves" -> { showSaveExplorer = true; "Save Vault: on the main screen" }
+                    "voltcap:whattoplay" -> { showWhatToPlay = true; "What to play: on the main screen" }
+                    "voltcap:stats" -> { hubScreen = HubScreen.STATS; "Stats: on the main screen" }
+                    "voltcap:search" -> { showSearchBar = true; "Search: on the main screen" }
+                    "voltcap:vsettings" -> { showSettings = true; "Settings: on the main screen" }
+                    "voltcap:screensaver" -> { screensaverOn = true; null }
                     else -> "That shortcut only works on the main screen"
                 }
             }

@@ -119,6 +119,8 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     private val gate = Mutex()
     @Volatile private var slots = kotlinx.coroutines.sync.Semaphore(1)
     @Volatile private var threads = 1
+    /** Update 207: requests at once the account may make (1 until an answer has said; Save all's ScreenScraper lanes). */
+    val allowedThreads: Int get() = threads
     private val gson = Gson()
     private var lastRequestAt = 0L
 

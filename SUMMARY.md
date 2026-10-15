@@ -4,6 +4,61 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (207): Save all faster and no longer slows the screen, Switch extras skipped, 3DS (.cci / n3ds) found, N64 label and DS / 3DS case shapes fixed, UMD as a UMD, smooth Save Vault cards, dock shortcuts, smoother category switch
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (17): `src_copy\LauncherViewModel.kt`, `src_copy\data\ArtFiles.kt`, `src_copy\data\RomScanner.kt`, `src_copy\data\ScreenScraper.kt`, `src_copy\ui\CartShells.kt`, `src_copy\ui\CaseCatalog.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\CategoryWarmup.kt`, `src_copy\ui\HomeExtras.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\SaveVaultStyles.kt`, `src_copy\ui\SecondDockShortcuts.kt`, `src_copy\ui\SolidPiece.kt`, `src_copy\ui\TrimMargins.kt`.
+
+**Copy `project_copy`**, changed (3): `project_copy\docs\physical_media\PHYSICAL_MEDIA_AUDIT.md`, `project_copy\docs\physical_media\physical_media_verification.json`, `project_copy\docs\physical_media\qa_cartridges_to_scale.png`.
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 207: Save all faster, Switch extras skipped, 3DS found, N64 label and DS / 3DS cases fixed, UMD, Save Vault cards, dock shortcuts, smoother category switch" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+.\gradlew installDebug
+```
+
+### What was wrong (found on the Thor)
+- **Save all took hours:** one picture at a time (7,790 here, about one a second). Every saved picture also made a new screen state, so the whole home was redrawn thousands of times while it ran — the sluggish scrolling in big libraries.
+- **Switch:** files in `ROMs\Switch\update`, `mods` and `Firmware` (updates, DLC, "Firmware 17.0.0.zip") were listed as games.
+- **3DS games not found:** the folder is `n3ds` and the files `.cci` (ES-DE's names); neither was known. (`scd` for Sega CD added too.)
+- **N64 fronts:** the label window was drawn 92 × 48 mm across the whole front; the real label is upright, about 50.8 × 60.3 mm in the middle (measured off GoldenEye 007's straight photo). The upright label scans were squashed sideways into it — GoldenEye's showed its own grey corners twice.
+- **Cartridge backs vs fronts:** a game's own cartridge photo turned round showed the drawn shell's back at the drawn shell's size and grey colour — another cartridge from behind (N64 most of all).
+- **DS / 3DS cases:** drawn upright (122 × 135); the cases are wider than tall (135 × 122 — ScreenScraper's DS box scans are 514 × 458), so every cover was cut.
+- **PSP:** the UMD photo was cut to a circle and spun as a disc (in the game window, out of its case, on the cards).
+- **Discs in the game window:** a disc photo with an empty margin sat smaller than the disc's drawn rim, which showed round it as a second layer.
+- **Save Vault 3D cards:** they swayed by swapping pictures every 20° (a slide show) and never turned round.
+- **Category switch:** the 3D cases' box fronts and spines weren't decoded ahead (only flat covers), so a new category stood as bare plastic first; and the slide's time was eaten by the frames spent building the new category, so it jumped then rushed.
+
+### Now
+- **Save all:** ScreenScraper's pictures as many at once as your account allows (one for a free account — its limit), every other site's 4 at once beside them; a "too many requests" answer waits and tries again; ScreenScraper's daily quota used up → its pictures wait for another day (said when done). The count updates about twice a second.
+- **Switch:** update / DLC / mods / patch / firmware folders, title IDs not ending in 000 (800 = update, others DLC), [UPD] / [DLC] / version tags are skipped. A rescan (R1 › Rescan library) drops them.
+- **3DS:** `.cci`, `.cxi`, `.3dsx` files and the `n3ds`, `new3ds`, `nintendo3ds` folders.
+- **N64:** upright label window; label scans and covers fit it.
+- **Photo backs:** the shell's researched back in the photo's own plastic colour, stretched over the photo and cut to its outline (cards, carousels and the game window).
+- **DS / 3DS cases** landscape (135 × 122).
+- **UMD:** its photo shown whole as a UMD (65 : 64, 4.2 mm thick), never a round disc.
+- **Discs:** photos trimmed to the disc so it fills its circle.
+- **Save Vault 3D cards:** the picked card turns all the way round smoothly — its front picture as a solid card, the pack's own back when it faces away.
+- **Second screen dock** (on the second screen, the dock's + adds them): new shortcuts Save Vault, What to play, Stats, Search, Voltcap settings, Screensaver — they open on the main screen.
+- **Category switch:** the next / previous categories' 3D case fronts and spines decoded ahead (as the carousel does while scrolling); the slide starts once the new category is drawn and runs a little longer.
+- **Lighter turning pieces:** a cartridge's sides drawn with at most 32 slices (was 64).
+- Audit docs updated (`docs\physical_media\`): N64 label, DS / 3DS orientation, UMD.
+
+### Check
+- Type-check: 0 errors. No `NON_LOCAL_RETURN` in the compiled classes. Every change reread against your PC's copy.
+- Checked on the Thor (205 build): the Switch folder's contents, the `n3ds` folder, GoldenEye's cartridge photo and label scan, two DS box scans, the Save Vault, PSP UMD in the game window.
+- **Not tested:** 207 on the device (not built yet). Not reproduced: the black outline round a picked Save Vault card (not seen in screenshots — tell me where it shows if it's still there after this).
+
+---
+
 ## Update — 15 Oct 2026 (206): Save all fixed, one cartridge per console, labels stretched to fit, UMD at its real size, physical media audit with sources
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

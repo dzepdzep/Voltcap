@@ -1,6 +1,6 @@
 # Voltcap — handover to a new Claude
 
-Written 12 Oct 2026, after update **(145)** (kept up to date to 206). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+Written 12 Oct 2026, after update **(145)** (kept up to date to 207). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is
 **Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
@@ -255,6 +255,18 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 207
+- **Save all (saveAllArt):** two worker sets on the main thread — ScreenScraper URLs (ArtFiles.isScreenScraper) with screenScraperRepository.allowedThreads workers, the rest with SAVE_LANES (4); ArtFiles.download(url, refused, busy) reports 429/430/431 as busy (not refused); 430 stops ScreenScraper's queue for the run. artSaveDone / the notification update at most every 600 ms.
+- **RomScanner:** Switch extras skipped (isSwitchExtra / inSwitchExtraFolder: update, dlc, mods, patch, firmware, keys, atmosphere, contents, romfs, exefs folders; title IDs not ending 000; [UPD]/[DLC]/vNNNNN). New: cci / cxi / 3dsx, folders n3ds / new3ds / nintendo3ds, scd.
+- **CartShells n64:** label lab(32.6, 7.5, 50.8, 60.3).
+- **CaseCatalog:** NDS / 3DS 135 wide × 122 tall.
+- **Photo backs:** SolidSpec(fitBackToFace) — rememberPhotoSolid's back in the photo tone (ShellColour "photo"), drawn over the piece rect masked by the face silhouette (SrcIn). InspectSlab does the same for p.realScan; its slab aspect is CoverAspects.rawOf(photo).
+- **mediaRound(p)** is false for UMD consoles (PSP): the UMD photo is a slab everywhere. Disc photos load with TrimToOpaque (TrimMargins.kt) and ContentScale.Crop.
+- **Save Vault 3D card (SwayingModel):** ProvidePieceTurn + solidPiece(spec, withCartSpin = false) over Model3DArt at 0°; back = Models3D.compose(card, 180) mirrored; depth SAVE_CARD_DEPTH 0.1.
+- **Second dock:** SecondDockShortcuts entries voltcap:saves / whattoplay / stats / search / vsettings / screensaver, handled in LauncherScreen's dockShortcut (open on the main screen).
+- **Category switch:** case3dModels / warmCase3d (RealMedia.kt) used by the carousel warm-up and CategoryWarmup; CarouselSwap's k and categorySlide wait two frames before animating (carouselMs + 260 / 340 ms).
+- **SolidPiece:** slices every 2 px, max 32.
 
 ## State after update 206
 - **Save all:** saveAllArt says "Already saving art" when a job runs (not silent); setArtStorage restarts saving when auto-save is on and the size grows (or turns unlimited); saveAllRealMedia cancels a running save and starts again (its URL list now includes every game's scans).

@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.BatterySaver
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,8 +50,18 @@ internal object SecondDockShortcuts {
         "voltcap:r1:dnd" to "Do not disturb",
         "voltcap:r1:wifi" to "Wi-Fi",
         "voltcap:r1:bt" to "Bluetooth",
-        "voltcap:r1:settings" to "Android settings"
+        "voltcap:r1:settings" to "Android settings",
+        // Update 207: Voltcap's own screens, opened on the main screen from down here.
+        "voltcap:saves" to "Save Vault",
+        "voltcap:whattoplay" to "What to play",
+        "voltcap:stats" to "Stats",
+        "voltcap:search" to "Search",
+        "voltcap:vsettings" to "Voltcap settings",
+        "voltcap:screensaver" to "Screensaver"
     )
+
+    /** Update 207: the shortcuts that open one of Voltcap's screens on the main screen (the rest work down here). */
+    val opensOnMain: Set<String> = setOf("voltcap:saves", "voltcap:whattoplay", "voltcap:stats", "voltcap:search", "voltcap:vsettings", "voltcap:screensaver")
 
     private val names = entries.toMap()
 
@@ -75,6 +87,8 @@ internal object SecondDockShortcuts {
     private fun iconOf(id: String) = when (id) {
         "voltcap:r1:theme" -> androidx.compose.material.icons.Icons.Filled.Palette
         "voltcap:r1:saver" -> androidx.compose.material.icons.Icons.Filled.BatterySaver
+        "voltcap:search" -> androidx.compose.material.icons.Icons.Filled.Search
+        "voltcap:vsettings" -> androidx.compose.material.icons.Icons.Filled.Settings
         else -> builtinIcon(id)
     }
 

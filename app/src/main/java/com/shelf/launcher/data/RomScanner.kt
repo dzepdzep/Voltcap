@@ -35,7 +35,7 @@ object RomScanner {
         "gb" to "GB", "gbc" to "GBC",
         "z64" to "N64", "n64" to "N64", "v64" to "N64",
         "nds" to "NDS",
-        "3ds" to "3DS", "cia" to "3DS",
+        "3ds" to "3DS", "cia" to "3DS", "cci" to "3DS", "cxi" to "3DS", "3dsx" to "3DS", // (Update 207: .cci / .cxi / .3dsx too)
         "gcm" to "GameCube", "rvz" to "GameCube",
         "wbfs" to "Wii",
         "cso" to "PSP",
@@ -83,7 +83,7 @@ object RomScanner {
         "wii" to "Wii",
         "dc" to "Dreamcast", "dreamcast" to "Dreamcast",
         "saturn" to "Saturn", "segasaturn" to "Saturn",
-        "segacd" to "SegaCD", "megacd" to "SegaCD",
+        "segacd" to "SegaCD", "megacd" to "SegaCD", "scd" to "SegaCD", // (Update 207: ES-DE's "scd")
         "pcecd" to "PCEngine", "pcenginecd" to "PCEngine",
         "arcade" to "Arcade", "mame" to "Arcade", "fbneo" to "Arcade", "fba" to "Arcade",
         "neogeo" to "NeoGeo",
@@ -94,7 +94,7 @@ object RomScanner {
         "gb" to "GB", "gameboy" to "GB",
         "gbc" to "GBC", "gameboycolor" to "GBC",
         "nds" to "NDS", "ds" to "NDS",
-        "3ds" to "3DS",
+        "3ds" to "3DS", "n3ds" to "3DS", "nintendo3ds" to "3DS", "nintendo 3ds" to "3DS", "new3ds" to "3DS", // (Update 207: ES-DE's "n3ds")
         "genesis" to "Genesis", "megadrive" to "Genesis", "md" to "Genesis",
         "mastersystem" to "MasterSystem", "sms" to "MasterSystem",
         "ps3" to "PS3", "playstation3" to "PS3", "playstation 3" to "PS3",
@@ -263,6 +263,34 @@ object RomScanner {
         "md5", "sha1", "sfv", "crc", "db", "ds_store", "tmp", "part", "torrent"
     )
 
+    /** Update 207: folders that hold a Switch game's extras (updates, DLC, mods), never games. */
+    private val switchExtraFolders = setOf("update", "updates", "upd", "dlc", "dlcs", "mod", "mods", "patch", "patches",
+        "atmosphere", "contents", "romfs", "exefs", "firmware", "keys")
+    private val SWITCH_TITLE_ID = Regex("""\b(0100[0-9a-fA-F]{12})\b""")
+    private val SWITCH_EXTRA_WORDS = Regex("""(?i)[\[(](upd|update|dlc|patch|mods?)[\])]|_(upd|update|dlc)(_|$)|\s(update|dlc)$|\bv[1-9]\d{4,}\b""")
+
+    /** Update 207: [file] is inside an update / DLC / mods / firmware folder (below [root]). */
+    private fun inSwitchExtraFolder(file: File, root: File): Boolean {
+        var dir = file.parentFile
+        while (dir != null && dir.absolutePath != root.absolutePath) {
+            if (dir.name.lowercase() in switchExtraFolders) return true
+            dir = dir.parentFile
+        }
+        return false
+    }
+
+    /**
+     * Update 207: a Switch file that is an update, DLC or mod rather than a game: in an update / DLC / mods folder, its
+     * title ID (in the name) not a base game's (a base game's ends in 000: 800 is its update, anything else DLC), or
+     * marked [UPD] / [DLC] / (Update) / a version number above v0.
+     */
+    private fun isSwitchExtra(file: File, root: File): Boolean {
+        if (inSwitchExtraFolder(file, root)) return true
+        val name = file.nameWithoutExtension
+        SWITCH_TITLE_ID.find(name)?.let { return !it.groupValues[1].endsWith("000") }
+        return SWITCH_EXTRA_WORDS.containsMatchIn(name.trim())
+    }
+
     /** Update 175: a folder that is a whole game (a PS3 disc or game folder). */
     private fun isFolderGame(dir: File): Boolean =
         File(dir, "PS3_GAME").isDirectory || File(dir, "PS3_DISC.SFB").isFile
@@ -320,6 +348,10 @@ object RomScanner {
                     // (Update 175: never a picture, a text or a disc's system file — in a console's folder every file
                     // used to count as one of its games.)
                     ext in notGames -> {}
+                    // (Update 207: a Switch game's update, DLC or mod files aren't games of their own.)
+                    (ext == "nsp" || ext == "xci" || ext == "nsz" || ext == "xcz") && isSwitchExtra(file, absRoot) -> {}
+                    // (Anything else in a Switch folder's firmware / update / DLC / mods folder — "Firmware 17.0.0.zip" was a game.)
+                    inSwitchExtraFolder(file, absRoot) && platformFor(file, rootPath, deep) == "Switch" -> {}
                     platformFor(file, rootPath, deep) != null -> knownFiles += file
                     ext.isNotBlank() -> skipped += ext
                 }

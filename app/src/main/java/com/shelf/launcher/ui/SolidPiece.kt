@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -67,7 +68,14 @@ internal fun Modifier.followTurn(): Modifier {
  * null: the whole node), [depth] its thickness against its longest side, [tone] its plastic, [back] its back (made
  * the first time it's seen from behind).
  */
-internal class SolidSpec(val aspect: Float?, val depth: Float, val tone: Color, back: (() -> ImageBitmap?)? = null) {
+internal class SolidSpec(
+    val aspect: Float?, val depth: Float, val tone: Color, back: (() -> ImageBitmap?)? = null,
+    /**
+     * Update 207: the back stretched over the whole piece and cut to the face's own outline — for a cartridge photo,
+     * whose outline and size are the photo's, not the drawn shell's (from behind it was another, smaller cartridge).
+     */
+    val fitBackToFace: Boolean = false
+) {
     val back: ImageBitmap? by lazy { runCatching { back?.invoke() }.getOrNull() }
 }
 
@@ -83,14 +91,14 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
             sh == null -> SolidSpec(choice.aspect, 0.12f, CUSTOM_SHELL)
             else -> {
                 val colour = CartShells.colourOf(sh, choice.colourKey)
-                SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(colour.argb).copy(alpha = 1f)) {
+                SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(colour.argb).copy(alpha = 1f), back = {
                     val neutral = when (backStyle) {
                         Features.CartBackStyle.AUTHENTIC -> false
                         Features.CartBackStyle.NEUTRAL -> true
                         Features.CartBackStyle.AUTO -> console == null || !CartShells.belongsTo(sh.id, console)
                     }
                     CartShells.back(sh, colour, 480, neutral).asImageBitmap()
-                }
+                })
             }
         }
     }
@@ -123,10 +131,15 @@ internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Flo
         val sh = ownShellOf(platform, gameKey)
         // (Update 205: [tone] — the photo's own plastic, read off its edge — for its sides; a silver Pokémon cartridge
         // isn't the black of the usual Game Boy Color shell.)
-        if (sh == null) SolidSpec(aspect, 0.12f, tone ?: PLAIN_SHELL)
-        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(CartShells.colourOf(sh, null).argb).copy(alpha = 1f)) {
-            ownShellBack(sh, backStyle, 480)
-        }
+        // (Update 207: a UMD photo at the UMD's own thickness.)
+        if (sh == null) SolidSpec(aspect, if (platform != null && MediaShell.of(platform) == MediaShell.UMD) slabDepth(MediaShell.UMD) else 0.12f, tone ?: PLAIN_SHELL)
+        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(CartShells.colourOf(sh, null).argb).copy(alpha = 1f), {
+            // (Update 207: in the photo's own plastic colour — a black or gold cartridge photo had the grey shell's back —
+            // and cut to the photo's outline when drawn: fitBackToFace.)
+            val own = CartShells.colourOf(sh, null)
+            val colour = tone?.let { t -> ShellColour("photo", own.name, t.copy(alpha = 1f).toArgb(), own.opacity) } ?: own
+            runCatching { CartShells.back(sh, colour, 480, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
+        }, fitBackToFace = true)
     }
 }
 
@@ -163,10 +176,14 @@ internal const val CART_SPIN_MS = 5200L
  * Nothing changes (no layers) when nothing turns it.
  */
 @Composable
-internal fun Modifier.solidPiece(spec: SolidSpec?): Modifier {
+internal fun Modifier.solidPiece(
+    spec: SolidSpec?,
+    /** Update 207: false for a piece that isn't a game's cartridge (the Save Vault's 3D card): no cartridge spin added. */
+    withCartSpin: Boolean = true
+): Modifier {
     if (spec == null) return this
     val turn = LocalPieceTurn.current
-    val spin = rememberCartSpin()
+    val spin = if (withCartSpin) rememberCartSpin() else null
     if (turn == null && spin == null) return this
     val dens = LocalDensity.current.density
     val cam = (turn?.camera ?: 14f) * dens
@@ -220,7 +237,14 @@ internal fun Modifier.solidPiece(spec: SolidSpec?): Modifier {
             } else {
                 val sb = spec.back
                 back.record {
-                    if (sb != null) {
+                    if (sb != null && spec.fitBackToFace) {
+                        // (Update 207: over the whole piece, cut to the face's outline — the photo's own shape.)
+                        drawLayer(solid)
+                        drawImage(
+                            sb, dstOffset = IntOffset(((size.width - pw) / 2f).roundToInt(), ((size.height - ph) / 2f).roundToInt()),
+                            dstSize = IntSize(pw.roundToInt(), ph.roundToInt()), blendMode = BlendMode.SrcIn
+                        )
+                    } else if (sb != null) {
                         // The shell's drawn back (made mirrored: seen from behind it reads the right way round).
                         val ba = sb.width.toFloat() / sb.height.coerceAtLeast(1)
                         val bw = minOf(size.width, size.height * ba); val bh = bw / ba
@@ -240,7 +264,9 @@ internal fun Modifier.solidPiece(spec: SolidSpec?): Modifier {
                 translate(m.toFloat(), m.toFloat()) {
                     // Far to near: the slices, then the face (or the back, seen from behind).
                     // (Update 205: close enough together that no gap shows between them on a thick piece side-on.)
-                    val n = ceil(depthPx * abs(sn) / 1.3f).toInt().coerceIn(0, 64)
+                    // (Update 207: a slice every 2 px, at most 32 — 64 slices a piece, every piece in a row, each frame,
+                    // was part of what made scrolling a big library heavy; 2 px apart still shows no gap.)
+                    val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, 32)
                     if (n > 0) for (k in 0..n) {
                         val f = k.toFloat() / n
                         val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f

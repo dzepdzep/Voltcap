@@ -124,6 +124,8 @@ private const val ART_LANES = 4
 private const val DETAIL_LANES = 3
 private const val DETAIL_LANE_PAUSE_MS = 250L
 private const val MEDIA_LANES = 3
+/** Update 207: pictures saved at once by Save all (ScreenScraper's own stay within its account limit). */
+private const val SAVE_LANES = 4
 
 /** Package-name prefixes of studios that only publish games. */
 private val GAME_PUBLISHER_PREFIXES = listOf(
@@ -5605,34 +5607,84 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
             _uiState.update { it.copy(artSaveDone = 0, artSaveTotal = missing.size) }
             var saved = 0
+            var done = 0
             var offlineInARow = 0
             var stopped: String? = null
+            var ssQuotaUsed = false
             val refused = ArrayList<String>()
-            for ((index, url) in missing.withIndex()) {
-                if (!isActive) break
-                com.shelf.launcher.data.GameMode.awaitForArt()
-                if (com.shelf.launcher.data.ArtFiles.full()) { stopped = "The art store is full: raise its size in Settings › Metadata to save the rest."; break }
-                var wasRefused = false
-                val ok = withContext(Dispatchers.IO) {
-                    // Already in the old image cache: copied over, no download.
-                    val copied = runCatching {
-                        disk?.openSnapshot(url)?.use { snap -> com.shelf.launcher.data.ArtFiles.keep(url, snap.data.toFile()) }
-                    }.getOrNull() == true
-                    // (The cache's copy isn't needed any more: no picture is kept twice.)
-                    if (copied) runCatching { disk?.remove(url) }
-                    copied || com.shelf.launcher.data.ArtFiles.download(url) { wasRefused = true }
+            // Update 207: several pictures at once (it was one after another — 7,790 pictures took about two hours).
+            // Two sets of workers, each taking the next address from its own queue: ScreenScraper's with as many workers
+            // as the account may make requests at once (one for a free account, so its limit is never tripped), every
+            // other site's with SAVE_LANES — so the other sites' pictures never wait behind ScreenScraper's. Everything
+            // here runs on the main thread (viewModelScope) between the downloads, so the counts and queues need no locks.
+            var shownAt = 0L
+            val ssQueue = ArrayDeque<String>()
+            val otherQueue = ArrayDeque<String>()
+            missing.forEach { if (com.shelf.launcher.data.ArtFiles.isScreenScraper(it)) ssQueue.addLast(it) else otherQueue.addLast(it) }
+            suspend fun saveOne(url: String) {
+                try {
+                    com.shelf.launcher.data.GameMode.awaitForArt()
+                    if (com.shelf.launcher.data.ArtFiles.full()) {
+                        stopped = "The art store is full: raise its size in Settings › Metadata to save the rest."
+                        return
+                    }
+                    var wasRefused = false
+                    var busy = 0
+                    val ok = run {
+                            withContext(Dispatchers.IO) {
+                                // Already in the old image cache: copied over, no download.
+                                val copied = runCatching {
+                                    disk?.openSnapshot(url)?.use { snap -> com.shelf.launcher.data.ArtFiles.keep(url, snap.data.toFile()) }
+                                }.getOrNull() == true
+                                // (The cache's copy isn't needed any more: no picture is kept twice.)
+                                if (copied) runCatching { disk?.remove(url) }
+                                if (copied) return@withContext true
+                                var got = com.shelf.launcher.data.ArtFiles.download(url, { wasRefused = true }, { code -> busy = code })
+                                // Too many requests just now: a short pause, then once more.
+                                if (!got && busy == 429) { kotlinx.coroutines.delay(4_000); busy = 0; got = com.shelf.launcher.data.ArtFiles.download(url, { wasRefused = true }, { code -> busy = code }) }
+                                got
+                            }
+                    }
+                    when {
+                        ok -> { saved++; offlineInARow = 0 }
+                        busy == 430 -> ssQuotaUsed = true // today's ScreenScraper quota is used up: the rest of its pictures wait
+                        wasRefused -> { refused += url; offlineInARow = 0 } // gone, forbidden…: not again for a few days
+                        busy != 0 -> offlineInARow = 0
+                        ++offlineInARow >= 3 * SAVE_LANES -> stopped = "Saving art stopped: no connection."
+                    }
+                } finally {
+                    done++
+                    // (Update 207: the count shown at most about twice a second. Every saved picture made a new
+                    // screen state — the whole home redrawn each time, thousands of times while saving — and
+                    // scrolling through a big library went sluggish for as long as it ran.)
+                    val now = android.os.SystemClock.uptimeMillis()
+                    if (now - shownAt >= 600L || done >= missing.size) {
+                        shownAt = now
+                        _uiState.update { it.copy(artSaveDone = done) }
+                        com.shelf.launcher.data.ArtDownloadService.progress(app, done, missing.size)
+                    }
                 }
-                if (ok) {
-                    saved++; offlineInARow = 0
-                } else if (wasRefused) {
-                    // The server answered but won't give it (gone, forbidden…): not again for a few days.
-                    refused += url; offlineInARow = 0
-                } else if (++offlineInARow >= 3) {
-                    stopped = "Saving art stopped: no connection."; break
-                }
-                _uiState.update { it.copy(artSaveDone = index + 1) }
-                com.shelf.launcher.data.ArtDownloadService.progress(app, index + 1, missing.size)
             }
+            kotlinx.coroutines.coroutineScope {
+                val ssWorkers = screenScraperRepository.allowedThreads.coerceAtLeast(1)
+                repeat(ssWorkers + SAVE_LANES) { n ->
+                    val fromSs = n < ssWorkers
+                    val queue = if (fromSs) ssQueue else otherQueue
+                    launch {
+                        while (isActive && stopped == null) {
+                            if (fromSs && ssQuotaUsed) {
+                                // Today's ScreenScraper quota is used up: the rest of its pictures wait for another day.
+                                done += queue.size; queue.clear()
+                                _uiState.update { it.copy(artSaveDone = done) }
+                                break
+                            }
+                            val url = queue.removeFirstOrNull() ?: break
+                            saveOne(url)
+                        }
+                    }
+                }
+            }
+            if (ssQuotaUsed && stopped == null) stopped = "Saved $saved images. ScreenScraper's daily quota is used up: its pictures are saved tomorrow."
             ArtStorage.markFailed(app, refused)
             _uiState.update {
                 it.copy(

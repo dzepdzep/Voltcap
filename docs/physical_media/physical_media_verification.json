@@ -112,8 +112,8 @@
    "heightMm": 76.6,
    "thicknessMm": 18.5,
    "region": "all",
-   "labelWidthMm": 92.0,
-   "labelHeightMm": 48.0,
+   "labelWidthMm": 50.8,
+   "labelHeightMm": 60.3,
    "previous": {
     "widthMm": 116.0,
     "heightMm": 76.6,
@@ -128,8 +128,8 @@
    "measurementStatus": "approximate",
    "sourceName": "ConsoleMods Wiki — Dimensions for Game Cartridges (community measurements)",
    "sourceUrl": "https://consolemods.org/wiki/Dimensions_for_Game_Cartridges",
-   "labelSource": "Estimated (no published label size found) — UNCONFIRMED — NEEDS MANUAL MEASUREMENT",
-   "notes": "Size measured (116×76.6×18.5); the step-in for the lower part and the label estimated. Matches ConsoleMods (community caliper measurement, not a manufacturer figure). ConsoleMods: confirmed by Reddit user gsx115."
+   "labelSource": "Update 207: 50.8×60.3 mm upright, measured off a straight-on photo (GoldenEye 007, ScreenScraper support-2D) — approximate — the label window drawn is the visible front part",
+   "notes": "Size measured (116×76.6×18.5); label 50.8×60.3 measured off a straight-on photo (approximate); the step-in for the lower part estimated. Matches ConsoleMods (community caliper measurement, not a manufacturer figure). ConsoleMods: confirmed by Reddit user gsx115."
   },
   {
    "system": "Game Boy Game Pak",
@@ -2050,7 +2050,7 @@
    },
    "changed": false,
    "aliases": [],
-   "notes": "Black slim case (North America, Japan). Card at the top, Game Boy Advance slot under it (places not confirmed). Matches Wikipedia's keep-case table (secondary source)."
+   "notes": "Black slim case (North America, Japan). Card at the top, Game Boy Advance slot under it (places not confirmed). Matches Wikipedia's keep-case table (secondary source). Update 207: landscape (135 wide × 122 tall) — ScreenScraper's DS box scans are 514 × 458 and the cover template 1.12 wide; it was drawn upright (122 × 135), so the art was cut. Wikipedia's table gives 135 × 122 without saying which side is which."
   },
   {
    "system": "NDS",
@@ -2073,7 +2073,7 @@
    },
    "changed": false,
    "aliases": [],
-   "notes": "As North America. Matches Wikipedia's keep-case table (secondary source)."
+   "notes": "As North America. Matches Wikipedia's keep-case table (secondary source). Update 207: landscape (135 wide × 122 tall) — ScreenScraper's DS box scans are 514 × 458 and the cover template 1.12 wide; it was drawn upright (122 × 135), so the art was cut. Wikipedia's table gives 135 × 122 without saying which side is which."
   },
   {
    "system": "NDS",
@@ -2096,7 +2096,7 @@
    },
    "changed": false,
    "aliases": [],
-   "notes": "Europe: clear and thicker (20 mm). Matches Wikipedia's keep-case table (secondary source)."
+   "notes": "Europe: clear and thicker (20 mm). Matches Wikipedia's keep-case table (secondary source). Update 207: landscape (135 wide × 122 tall) — ScreenScraper's DS box scans are 514 × 458 and the cover template 1.12 wide; it was drawn upright (122 × 135), so the art was cut. Wikipedia's table gives 135 × 122 without saying which side is which."
   },
   {
    "system": "3DS",
@@ -2119,7 +2119,7 @@
    },
    "changed": false,
    "aliases": [],
-   "notes": "White in every region. The moulded cut-outs inside aren't confirmed, so only the card slot is drawn. Matches Wikipedia's keep-case table (secondary source). Regional variant not drawn: New Nintendo 3DS black cases are 14 mm (Wikipedia)."
+   "notes": "White in every region. The moulded cut-outs inside aren't confirmed, so only the card slot is drawn. Matches Wikipedia's keep-case table (secondary source). Update 207: landscape (135 wide × 122 tall) — ScreenScraper's DS box scans are 514 × 458 and the cover template 1.12 wide; it was drawn upright (122 × 135), so the art was cut. Wikipedia's table gives 135 × 122 without saying which side is which. Regional variant not drawn: New Nintendo 3DS black cases are 14 mm (Wikipedia)."
   },
   {
    "system": "Switch",

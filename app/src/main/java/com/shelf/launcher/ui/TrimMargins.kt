@@ -28,6 +28,35 @@ import coil.transform.Transformation
  * so the same for users' own covers (content:// / file addresses go through the same requests). Never for app icons,
  * backgrounds, heroes, screenshots or logos.
  */
+/**
+ * Update 207: a cut-out picture (a disc photo on a see-through background) cut to what's drawn in it — the box round its
+ * visible pixels — so a disc photo fills its circle. ScreenScraper's disc photos often have an empty margin, and the game
+ * window's drawn rim and edge stood out round the smaller disc as a second layer behind it. Pictures without see-through
+ * pixels, or with less than 2 % to cut, are left as they are.
+ */
+internal object TrimToOpaque : Transformation {
+    override val cacheKey: String = "voltcapTrimToOpaque(1)"
+
+    override suspend fun transform(input: Bitmap, size: Size): Bitmap = runCatching { trim(input) }.getOrDefault(input)
+
+    fun trim(src: Bitmap): Bitmap {
+        val w = src.width; val h = src.height
+        if (w < 32 || h < 32 || !src.hasAlpha() || src.config == Bitmap.Config.HARDWARE) return src
+        val row = IntArray(w); val col = IntArray(h)
+        fun rowEmpty(y: Int): Boolean { src.getPixels(row, 0, w, 0, y, w, 1); return row.all { (it ushr 24) < 24 } }
+        fun colEmpty(x: Int): Boolean { src.getPixels(col, 0, 1, x, 0, 1, h); return col.all { (it ushr 24) < 24 } }
+        var t = 0; while (t < h - 1 && rowEmpty(t)) t++
+        if (t >= h - 1) return src
+        var b = h - 1; while (b > t && rowEmpty(b)) b--
+        var l = 0; while (l < w - 1 && colEmpty(l)) l++
+        var r = w - 1; while (r > l && colEmpty(r)) r--
+        val cw = r - l + 1; val ch = b - t + 1
+        if (cw < 16 || ch < 16) return src
+        if (cw > w * 0.98f && ch > h * 0.98f) return src
+        return Bitmap.createBitmap(src, l, t, cw, ch)
+    }
+}
+
 internal object TrimUniformMargins : Transformation {
     /** Goes into the memory-cache key of every request that trims (bump it when the rules below change). */
     const val KEY = "trim1"

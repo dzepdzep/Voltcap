@@ -110,11 +110,15 @@ internal object CartShells {
             listOf(c("Grey", 0xFF9E9DA3)), check = CaseCheck.ESTIMATED,
             note = "Size from Wikipedia (130×86×20; ConsoleMods 127 wide); the big round top corners and side grips estimated."),
         CartShell("n64", "Nintendo 64 Game Pak", ShellGroup.NINTENDO, 116f, 76.6f, 18.5f,
-            o(0f, 0f, 6f, 116f, 0f, 6f, 116f, 50f, 1f, 113f, 53f, 1f, 113f, 76.6f, 1.5f, 3f, 76.6f, 1.5f, 3f, 53f, 1f, 0f, 50f, 1f), lab(12f, 4f, 92f, 48f),
+            o(0f, 0f, 6f, 116f, 0f, 6f, 116f, 50f, 1f, 113f, 53f, 1f, 113f, 76.6f, 1.5f, 3f, 76.6f, 1.5f, 3f, 53f, 1f, 0f, 50f, 1f),
+            // (Update 207: the label is upright in the middle, about 50.8 × 60.3 mm — measured off a straight-on cartridge
+            // photo (GoldenEye 007's, its 600 px across the 116 mm shell). It was drawn 92 × 48 across the whole front, so
+            // a real label scan (upright) was squashed sideways into it.)
+            lab(32.6f, 7.5f, 50.8f, 60.3f),
             listOf(rid(4f, 0.5f, 108f, 2.5f, 20, false)), listOf(sc(28f, 22f), sc(88f, 22f)),
             listOf(c("Grey", 0xFF7C7D82), c("Black", 0xFF202022), c("Gold", 0xFFC9A84C), c("Red", 0xFFB3262E), c("Blue", 0xFF2D4FA0),
                 c("Clear", 0xFFE6E8EA, 0.45f), c("Smoke", 0xFF3A3A40, 0.6f)),
-            check = CaseCheck.ESTIMATED, note = "Size measured (116×76.6×18.5); the step-in for the lower part and the label estimated."),
+            check = CaseCheck.ESTIMATED, note = "Size measured (116×76.6×18.5); label 50.8×60.3 measured off a straight-on photo (approximate); the step-in for the lower part estimated."),
         CartShell("gb", "Game Boy Game Pak", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
             listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Grey", 0xFFA3A2A8), c("Yellow", 0xFFE8C51E)),
             contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED,

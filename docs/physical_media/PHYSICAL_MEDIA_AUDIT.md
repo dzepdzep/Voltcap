@@ -1,4 +1,4 @@
-# Voltcap — physical media audit (update 206)
+# Voltcap — physical media audit (updates 206–207)
 
 Source-first pass over every cartridge, card, UMD, disc and case Voltcap draws. The full per-model data, with a source
 for every size, is in `physical_media_verification.json` next to this file (158 entries). The to-scale sheet
@@ -47,6 +47,13 @@ source.
 | Switch 2 case | 104 × 170 × 10, estimated | same size, sourced | Wikipedia's keep-case table lists 170 × 104 × 10 |
 
 Every other size is unchanged. Where a source disagrees, the entry is **disputed** and the drawing stays as it was until it's measured.
+
+## Update 207 corrections
+| Model | Before | After | Evidence |
+|---|---|---|---|
+| N64 label window | 92 × 48 mm, across the whole front | 50.8 × 60.3 mm, upright in the middle (x 32.6, y 7.5) | measured off GoldenEye 007's straight-on cartridge photo (600 px = 116 mm); the label scans are upright (522 × 600) |
+| DS / 3DS cases | 122 wide × 135 tall | 135 wide × 122 tall | ScreenScraper DS box scans are 514 × 458; Voltcap's own DS / 3DS cover templates are 1.12 wide |
+| UMD (game window) | drawn as a round disc when it had a photo | the UMD slab (65 : 64, 4.2 mm) | Sony spec |
 
 ## Labels
 - The art is now **stretched to the label window** (never cropped) in every drawn shell, template cartridge and custom pack cartridge: the label keeps the shell's real size and place, the picture adapts to it (`frontArtworkFit = stretch`). A ScreenScraper label scan is the printed sticker, so it fits exactly.

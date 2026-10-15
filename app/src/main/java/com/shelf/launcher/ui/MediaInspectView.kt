@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.runtime.setValue
@@ -315,7 +316,7 @@ internal val ANDROID_SHELL = Color(0xFF26965B)
 /** A cartridge's / card's thickness against its longest side. */
 internal fun slabDepth(shell: MediaShell?): Float = when (shell) {
     MediaShell.DS, MediaShell.DS3, MediaShell.SWITCH, MediaShell.VITA, MediaShell.CARD, MediaShell.HUCARD -> 0.055f
-    MediaShell.UMD -> 0.075f
+    MediaShell.UMD -> 0.066f // (Update 207: Sony's 4.2 mm against 64 mm)
     MediaShell.N64, MediaShell.SNES, MediaShell.BLACK_CART -> 0.15f
     else -> 0.12f
 }
@@ -452,10 +453,13 @@ private fun mediaPiece(
     val real = realScanOf(CardArtType.CARTRIDGE_DISC, typed)
     if (real != null) {
         val shell = MediaShell.of(p)
-        return if (mediaRound(p)) InspectPiece(
+        // (Update 207: a UMD's photo is the UMD — its shell, a flat slab — never a spinning disc; PSP games turned into a
+        // round disc here because a UMD counts as round for its label.)
+        return if (mediaRound(p) && shell != MediaShell.UMD) InspectPiece(
             g, InspectKind.DISC, 1f, 0.012f, null, null, false, real, cover, null, null, physical, null, PLAIN_SHELL, false
         ) else InspectPiece(
-            g, InspectKind.SLAB, (shell?.aspect ?: 1f).coerceIn(0.3f, 3f), slabDepth(shell), null, null, false, real, cover, null, null,
+            // (Update 207: at the photo's own shape once it's known, so the back cut to its outline lines up.)
+            g, InspectKind.SLAB, ((real as? String)?.let { CoverAspects.rawOf(it) } ?: shell?.aspect ?: 1f).coerceIn(0.3f, 3f), slabDepth(shell), null, null, false, real, cover, null, null,
             physical, null, shellTone(shell), false
         )
     }
@@ -1170,7 +1174,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
     val shellBack = remember(p.pick?.platform, p.realScan, backStyle) {
         // Update 204: the game's own cartridge photo turned round shows its console's real shell's researched back (it
         // was a plain silhouette, so the new backs never showed for the many games with a photo).
-        if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { ownShellBack(it, backStyle, 640) }
+        if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
+            // (Update 207: in the photo's own plastic colour when it's been read.)
+            val own = CartShells.colourOf(sh, null)
+            val colour = PhotoTones.of(p.realScan)?.let { t -> ShellColour("photo", own.name, t.copy(alpha = 1f).toArgb(), own.opacity) } ?: own
+            runCatching { CartShells.back(sh, colour, 640, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
+        }
         else p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
             val (ch, console) = CartShells.split(pp)
             ch?.shell?.let { sh ->
@@ -1257,7 +1266,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
                     val tone = (shell ?: PhotoTones.of(p.realScan) ?: p.tone).copy(alpha = 1f)
                     back.record {
                         val sb = shellBack
-                        if (sb != null) {
+                        if (sb != null && p.pick == null && p.realScan != null) {
+                            // (Update 207: a cartridge photo's back over the whole piece, cut to the photo's own outline —
+                            // it was the drawn shell's back at the drawn shell's shape, another cartridge from behind.)
+                            drawLayer(solid)
+                            drawImage(sb, dstSize = androidx.compose.ui.unit.IntSize(size.width.toInt(), size.height.toInt()), blendMode = BlendMode.SrcIn)
+                        } else if (sb != null) {
                             // (Update 195: the shell's drawn back, fitted as its front is.)
                             val a = sb.width.toFloat() / sb.height.coerceAtLeast(1)
                             val bw = minOf(size.width, size.height * a); val bh = bw / a
