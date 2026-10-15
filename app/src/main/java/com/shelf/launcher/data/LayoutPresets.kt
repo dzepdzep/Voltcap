@@ -218,8 +218,6 @@ object LayoutPresets {
         o(Features.stacksMirror, mirror), o(Features.stacks3d, cases3d), o(Features.pickedFaces, true)
     )
     private fun timelineOpts(by: Features.TimelineBy) = listOf(o(Features.timelineBy, by), o(Features.timelineDates, true))
-    private fun arcadeOpts(clean: Boolean = false) =
-        listOf(o(Features.arcadeGlow, true), o(Features.arcadeLines, !clean), o(Features.arcadeGameColors, !clean))
     private fun consoleOpts(photos: Boolean = true, games: Int = Features.consoleStackGames.default) =
         listOf(o(Features.consolePhotos, photos), o(Features.consoleStackGames, games))
     private fun discOpts(player: Features.DiscPlayerLook = Features.DiscPlayerLook.PLAYER, calm: Boolean = true, spin: Boolean = true, blur: Int = Features.discBlur.default) =
@@ -500,15 +498,6 @@ object LayoutPresets {
         preset("tl_added", HomeLayout.TIMELINE, "New arrivals",
             "The games you added last at the top, a row for each month they came in.",
             options = timelineOpts(Features.TimelineBy.ADDED)) { s ->
-            s.copy(focusEffect = FocusEffect.GLOW)
-        },
-        // Update 162: Arcade cabinets (drawn its own way: your game look stays).
-        preset("arc_std", HomeLayout.ARCADE, "Arcade cabinets",
-            "The game on a big cabinet's screen with scan lines, its marquee lit, each cabinet in its game's colours.", look = null, options = arcadeOpts()) { s ->
-            s.copy(focusEffect = FocusEffect.GLOW)
-        },
-        preset("arc_clean", HomeLayout.ARCADE, "Clean cabinets",
-            "The same cabinets in your theme's colours, a clean picture without scan lines.", look = null, options = arcadeOpts(clean = true)) { s ->
             s.copy(focusEffect = FocusEffect.GLOW)
         },
         // Update 162: Console stack.

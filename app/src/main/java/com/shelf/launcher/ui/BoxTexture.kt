@@ -121,8 +121,9 @@ internal object BoxTexture {
         if (w < 40 || h < 40) return null
         val ratio = w.toFloat() / h
         // Two fronts side by side plus a spine: clearly wider than tall (a single front or a cross-shaped
-        // cardboard box layout isn't this).
-        if (ratio < 1.15f || ratio > 2.8f) return null
+        // cardboard box layout isn't this). (Update 205: up to 3.4 — a landscape box, N64 / SNES, is two 1.37 fronts
+        // and its spine, about 2.9: its scan was never cut, so its spine and back never came from it.)
+        if (ratio < 1.15f || ratio > 3.4f) return null
         // The spine's expected width from the case's front proportions: width = 2 × front + spine.
         val frontAspect = realCaseMm(platform)?.let { it.first / it.second }
         val expected = frontAspect?.let { (ratio - 2f * it) / ratio }?.takeIf { it in 0.012f..0.2f } // share of the width
@@ -200,16 +201,6 @@ internal object BoxTexture {
     }
 
     /**
-     * Update 204: how wide the back (and the front) of a back | spine | front scan can be: the console's real case front
-     * shape at the scan's height. Null when the console's shape isn't known or doesn't fit this scan.
-     */
-    fun faceWidth(w: Int, h: Int, platform: String?): Int? {
-        val a = realCaseMm(platform)?.let { it.first / it.second } ?: return null
-        val face = (a * h).toInt()
-        return face.takeIf { it in (w * 0.3f).toInt()..(w / 2 - 1) }
-    }
-
-    /**
      * The spine face of a 3D box picture (a box turned so its left side shows, on a see-through background): from the
      * box's left edge to the fold where the front starts, between the highest bottom and lowest top of that strip (its
      * edges slant with the turn). Null when the picture doesn't look like that.
@@ -273,7 +264,7 @@ internal object BoxTexture {
 
 /** Cuts [part] out of a full box scan; fails (so the picture falls back) when the scan isn't laid out that way. */
 internal class BoxCrop(private val part: BoxPart, private val platform: String?) : Transformation {
-    override val cacheKey: String = "voltcapBoxCrop(${part.name},${platform ?: ""},3)"
+    override val cacheKey: String = "voltcapBoxCrop(${part.name},${platform ?: ""},4)"
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
         val w = input.width
@@ -285,11 +276,10 @@ internal class BoxCrop(private val part: BoxPart, private val platform: String?)
         // fold found a little off (Game Boy and Game Boy Color scans) showed a strip of the spine along the back's edge. And
         // a little more room from the fold than one pixel (half a percent of the scan), so no sliver of it shows.
         val pad = maxOf(2, (w * 0.005f).toInt())
-        // (Update 204, Game Boy / Game Boy Color: their spines carry a full-height printed stripe that was taken for
-        // the fold, so the spine was found too narrow and its outer part stayed on the back. The back and front are
-        // never wider than the console's real front shape at the scan's height.)
-        val real = BoxTexture.faceWidth(w, h, platform)
-        val side = minOf(l, w - r, real ?: Int.MAX_VALUE)
+        // (Update 205: no longer also capped at the console's front shape, as 204 did — that shape is the cover
+        // template's, not the scan's: a PlayStation back lost a quarter of its right side. The back and front being the
+        // same width is enough: Pokémon Silver's back ends 18 px before its spine with it.)
+        val side = minOf(l, w - r)
         when (part) {
             BoxPart.SPINE -> android.graphics.Rect(l, 0, r, h)
             BoxPart.FRONT -> android.graphics.Rect((w - side + pad).coerceIn((r + 1).coerceAtMost(w - 2), w - 2), 0, w, h)

@@ -383,7 +383,7 @@ private fun inspectPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
         val pick = mediaFor(p, asDisc = true)
             ?.takeIf { it.shell.disc || it.shell == MediaShell.UMD || it.platform.startsWith(GENERIC_DISC) }
             ?: MediaPick(MediaShell.DISC, genericDiscKey(if (p == "App") "Android" else p))
-        val typed = if (mediaKind(p) != "disc") null else typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, p)
+        val typed = if (mediaKind(p) != "disc") null else typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, p, g.stableKey)
         val label = typed ?: cover ?: wide
         val isScan = typed != null && label == typed
         return if (pick.shell == MediaShell.UMD) InspectPiece(
@@ -426,7 +426,10 @@ private fun boxPiece(
     // (Update 202: an Android game's own case shows its cover in the Android band's window — its scraped "box" is store
     // art, used only when there's no cover; androidOwnCase.)
     val front = if (scan != null && (cover == null || (scanFront && Features.originalCases.state.value && !androidOwnCase(g.platform)))) scan else cover ?: scan
-    val back = if (own) BoxTexture.fullScan(physical)?.let { BoxTexture.model(it, BoxPart.BACK, g.platform) } else null
+    // (Update 205: ScreenScraper's own back scan first — the whole back, nothing to cut; the back cut out of the full
+    // box scan only without one.)
+    val back = if (own) physical?.firstOrNull { it.first == "Back of the box" }?.second
+        ?: BoxTexture.fullScan(physical)?.let { BoxTexture.model(it, BoxPart.BACK, g.platform) } else null
     return InspectPiece(
         g, InspectKind.BOX, case3dAspect(g, mixed), 0f, null, null, false, null, cover, front, back, physical, null, PLAIN_SHELL, false
     )
@@ -436,14 +439,17 @@ private fun mediaPiece(
     g: Game, chosen: CardArtType, physical: List<Pair<String, String>>?, cover: Any?, small: Boolean, mixed: Boolean
 ): InspectPiece? {
     val p = g.platform
-    val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, p)
+    val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, p, g.stableKey)
     // (Update 162 (review): [mixed] as the cards ask for it — "All CDs" / "All cartridges" draw the generic piece.)
     val pick = mediaFor(p, mixed, chosen == CardArtType.DISC, gameKey = g.stableKey)
     // (Update 200: the 3D cartridges looks come here as drawn shells — a SLAB at the shell's own depth below, turning
     // smoothly — never the pre-rendered 3D models.)
     // "Real discs": the game's own cartridge / disc picture. (Update 200: not in the 3D cartridges looks — the cards
     // draw their drawn piece there, drawnMediaWanted.)
-    val real = if (drawn3dOn() && pick != null && isCustomPiece(pick.platform)) null else realScanOf(CardArtType.CARTRIDGE_DISC, typed)
+    // (Update 205: exactly as the cards decide — its own photo when "Use its own photo" is on and it has one, else the
+    // drawn piece. Since 202 the cards showed the photo while the window still showed the drawn shell with the cover on
+    // it, so a game turned into another cartridge when opened. A shell picked for the game wins in both: typedArtFor.)
+    val real = realScanOf(CardArtType.CARTRIDGE_DISC, typed)
     if (real != null) {
         val shell = MediaShell.of(p)
         return if (mediaRound(p)) InspectPiece(
@@ -454,8 +460,10 @@ private fun mediaPiece(
         )
     }
     if (pick == null) return null
-    val label = typed ?: cover
-    val isScan = typed != null
+    // (Update 205: the drawn piece wears its real label scan when it has one, as on the home screen.)
+    val labelScan = if (typed == null) drawnLabelScan(physical, p) else null
+    val label = typed ?: labelScan ?: cover
+    val isScan = typed != null || labelScan != null
     val custom = isCustomPiece(pick.platform)
     val tpl = if (custom) null else MediaTemplates.of(pick.platform)
     return when {
@@ -1192,6 +1200,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
             val face = obtainGraphicsLayer()
             holder[0] = face
             val edge = obtainGraphicsLayer()
+            // (Update 205: the sides are the outline in the plastic's colour, in a layer of their own.)
+            edge.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
             val lit = obtainGraphicsLayer()
             val back = obtainGraphicsLayer()
             // Update 201: the back is drawn in a layer of its own. Its tone (SrcIn), sheen and shade (SrcAtop) blend with
@@ -1219,9 +1229,16 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
                 val sx = if (abs(c) < 0.01f) (if (c < 0f) -0.01f else 0.01f) else c
                 fun at(z: Float, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) =
                     withTransform({ translate(z * sn, 0f); scale(sx, 1f, pivot = center) }) { block() }
-                // The sides: the face's outline in its own colours, darker, lit a little as they face you.
+                // The sides: the face's outline, darker, lit a little as they face you. Update 205: in the shell's plastic
+                // colour — copies of the whole face showed its label in stripes along the side as it turned.
+                val sideTone = (shell ?: PhotoTones.of(p.realScan) ?: p.tone).copy(alpha = 1f)
+                solid.record { drawLayer(face) }
                 edge.colorFilter = SlabLight.of(0.42f + 0.22f * abs(sn))
-                edge.record { drawLayer(face) }
+                edge.record {
+                    drawLayer(solid)
+                    drawRect(sideTone, blendMode = BlendMode.SrcIn)
+                    drawRect(sheen, blendMode = BlendMode.SrcAtop)
+                }
                 val n = kotlin.math.ceil(depth * abs(sn) / 1.2f).toInt().coerceIn(0, 48)
                 if (n > 0) {
                     // Far to near.
@@ -1237,8 +1254,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
                     at(depth / 2f) { drawLayer(lit) }
                 } else {
                     // (Update 201: opaque — a clear shell's sampled colour is see-through.)
-                    val tone = (shell ?: p.tone).copy(alpha = 1f)
-                    if (shellBack == null) solid.record { drawLayer(face) }
+                    val tone = (shell ?: PhotoTones.of(p.realScan) ?: p.tone).copy(alpha = 1f)
                     back.record {
                         val sb = shellBack
                         if (sb != null) {

@@ -108,7 +108,9 @@ internal fun ShelfGameArt(
         .then(if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier)
     val cov = MediaCovers.used(g.platform, mixed)
     if (isFreeMedia(gArt, g.platform)) {
-        val typed = typedArtFor(gArt, physicalMedia[g.stableKey], screenshots[g.stableKey], g.platform)
+        val typed = typedArtFor(gArt, physicalMedia[g.stableKey], screenshots[g.stableKey], g.platform, g.stableKey)
+        // (Update 205: the drawn piece wears its real label scan when it has one.)
+        val labelScan = if (typed == null) drawnLabelScan(physicalMedia[g.stableKey], g.platform) else null
         Box(modifier.awardShine(g.stableKey, on)) {
             val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey) else null
             // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
@@ -121,7 +123,7 @@ internal fun ShelfGameArt(
             } else null
             if (real != null) MediaFocus(on) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp), platform = g.platform, gameKey = g.stableKey) }
             else if (pick != null) {
-                MediaFocus(on) { PhysicalMedia(pick.shell, typed ?: cover ?: appIcon, Modifier.fillMaxSize().padding(4.dp), platform = pick.platform, labelIsScan = typed != null, caseCover = cover ?: appIcon, title = g.name) }
+                MediaFocus(on) { PhysicalMedia(pick.shell, typed ?: labelScan ?: cover ?: appIcon, Modifier.fillMaxSize().padding(4.dp), platform = pick.platform, labelIsScan = typed != null || labelScan != null, caseCover = cover ?: appIcon, title = g.name) }
             }
             else MediaFocus(on) { CaseArt(
                 g.platform, cover ?: appIcon, typed, Modifier.fillMaxSize().padding(4.dp), title = gameDisplayName(g.name),
@@ -321,9 +323,13 @@ internal object Carousel {
         return (0.5f + s * 0.2f) * near + s * (if (side >= EDGE_SIDE) 0.62f else 0.5f) * far
     }
 
-    /** Shown at all: only [side] games each side (the next one fades in / out as it moves). */
+    /**
+     * Shown at all: only [side] games each side (the next one fades in / out as it moves).
+     * Update 205: the ones shown are fully opaque (they sit in the middle one's shadow — [shade] — instead): at 88 % the
+     * cases and cartridges packed in the stacks were see-through, each showing the ones behind it.
+     */
     fun alpha(d: Float, side: Int): Float = when {
-        d <= side -> 1f - 0.12f * d.coerceAtMost(1f)
+        d <= side -> 1f
         d >= side + 0.75f -> 0f
         else -> (1f - (d - side) / 0.75f) * 0.88f
     }

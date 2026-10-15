@@ -163,6 +163,37 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean =
     return state
 }
 
+/** Update 205: a picture being loaded by [rememberSoftLoad]: the bitmap (null while loading or when it failed) and whether the load is over. */
+internal class SoftLoad(val bitmap: android.graphics.Bitmap?, val done: Boolean)
+
+/**
+ * Update 205: [rememberSoftBitmap] that also says when it has finished — so a real spine still on its way shows a neutral
+ * stand-in instead of Voltcap's own spine popping to the real one, and one that can't load falls back to Voltcap's.
+ */
+@Composable
+internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
+    val context = LocalContext.current
+    val key = remember(model, maxSide) { (model as? String)?.let { coil.memory.MemoryCache.Key(softKey(maxSide, it, false)) } }
+    val cached = remember(key) { key?.let { coil.Coil.imageLoader(context).memoryCache?.get(it)?.bitmap } }
+    val start = remember(model, cached) { SoftLoad(cached, model == null || cached != null) }
+    val state by produceState(start, model) {
+        if (model == null || cached != null) { value = start; return@produceState }
+        value = SoftLoad(null, false)
+        val b = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val req = coil.request.ImageRequest.Builder(context).data(model).size(maxSide, maxSide)
+                    .precision(coil.size.Precision.INEXACT).allowHardware(false)
+                    .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
+                    .apply { if (key != null) memoryCacheKey(key) }.build()
+                drawableBitmap((coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable, maxSide)
+                    ?.also { bmp -> (model as? String)?.let { Models3D.noteSource(bmp, it) } }
+            }.getOrNull()
+        }
+        value = SoftLoad(b, true)
+    }
+    return state
+}
+
 /**
  * Update 166: decodes [urls] ahead as the plain bitmaps [rememberSoftBitmap] reads (same size, same memory key), so a 3D
  * case or 3D piece sliding into a carousel has its cover at once — the carousel warmed only the flat covers, and the 3D

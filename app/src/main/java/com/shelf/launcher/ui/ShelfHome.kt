@@ -574,6 +574,12 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     val forAll = LookStyles.spineForAll()
     // (Update 147: "Matching spines" leaves the real scans out, so every spine is Voltcap's own.)
     val matching = Features.spinesOwn.state.value
+    // Update 205: its scans aren't known yet (they're all read at start; this is the first moment): a neutral strip in
+    // the game's colour, never Voltcap's own spine that then pops to the real one.
+    if (physical == null && g.sourceType == com.shelf.launcher.data.SourceType.ROM && !HomeScans.known(g.stableKey) && !forAll && !matching) {
+        Box(modifier.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue)))
+        return
+    }
     val realSpine = if (forAll || matching) null else scans?.firstOrNull { it.first == "Spine" }?.second
     val own = realSpine ?: if (Features.originalCases.state.value && !forAll && !matching) BoxTexture.spine(scans, g.platform) else null
     var failed by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }

@@ -123,6 +123,14 @@ internal object HomeScans {
     var cover: ((String) -> String?)? = null
     /** Update 159: each game's key by its cover's address (set by the home screen), so a 3D case finds the game's scans. */
     var keyOfCover: Map<String, String> = emptyMap()
+    /** Update 205: these games were shown (a category's first games): their scans are saved with the rest of the art. */
+    var seen: ((Collection<String>) -> Unit)? = null
+
+    /**
+     * Update 205: whether [key]'s scans are known (saved ones are all read at start): until then a drawn stand-in (Voltcap's
+     * own spine, a plain back) would show first and the real one pop in after, so a neutral placeholder is drawn instead.
+     */
+    fun known(key: String): Boolean = map.containsKey(key)
 }
 
 /** Update 159: the Discs only look is on (set by the home screen), so cartridge games print their cover on their CD. */
@@ -241,7 +249,7 @@ internal fun drawn3dPick(platform: String, mixed: Boolean, gameKey: String?): Me
     if (own != null && (own.disc || own == MediaShell.UMD)) return null
     if (mixed && Features.mixedArt.state.value == MixedArt.DISC) return null
     val clear = finish == ModelFinish.CLEAR
-    val authentic = CartShells.authenticId(platform, CaseCatalog.regionOf(gameKey ?: ""))
+    val authentic = CartShells.authenticIdFor(platform, CaseCatalog.regionOf(gameKey ?: ""), gameKey)
     val packHere = CustomCarts.idFor(platform)?.let { com.shelf.launcher.data.Packs.hasCart(it) } == true
     val pack = "pack:" + Features.cartLook.state.value.key + "~" + (if (clear) "clear" else "opaque")
     val raw = when {
@@ -272,11 +280,13 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
         return MediaPick(MediaShell.GB, CUSTOM_CART + platform, CustomCarts.aspectFor(platform))
     }
     // Update 195: Authentic drawn cartridges — a cartridge console's own real shell (by the game's region).
-    if (!asDisc && !mixed && Features.authenticCarts.state.value) {
+    // (Update 205: in lists mixing consoles too — they drew the template's flat cartridge there, a different piece from
+    // the one the same game showed in its own console's list.)
+    if (!asDisc && Features.authenticCarts.state.value) {
         val ownShell = MediaShell.of(platform)
         if (ownShell == null || !(ownShell.disc || ownShell == MediaShell.UMD)) {
             val region = CaseCatalog.regionOf(gameKey ?: "")
-            CartShells.authenticId(platform, region)?.let { id -> CartShells.pickOf(id, platform)?.let { return it } }
+            CartShells.authenticIdFor(platform, region, gameKey)?.let { id -> CartShells.pickOf(id, platform)?.let { return it } }
         }
     }
     // Update 204: a console without a cartridge or disc of its own (arcade, PC, DOS…) gets Voltcap's plain ones — the
@@ -481,7 +491,12 @@ internal fun PhysicalMedia(
     // Update 195: a game on a shell from the cartridge library, the cover as its label.
     if (platform != null && platform.startsWith(SHELL_PREFIX)) {
         // (Update 203: a solid piece wherever it's turned — SolidPiece.kt.)
-        CartShellArt(platform, caseCover ?: label, modifier.solidPiece(rememberShellSolid(platform)).mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode()), title = title)
+        // (Update 205: the game's real label scan when it's handed one — the whole sticker, no console band over it.)
+        CartShellArt(
+            platform, if (labelIsScan && label != null) label else caseCover ?: label,
+            modifier.solidPiece(rememberShellSolid(platform)).mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode()),
+            title = title, labelIsScan = labelIsScan && label != null
+        )
         return
     }
     // Update 128: a game on your cartridge pack — its cover in the window (a disc / label scan wouldn't fit it).
@@ -741,13 +756,27 @@ internal fun RealMediaPicture(
 ) {
     // (Update 203: the game's own cartridge photo solid when turned; a disc photo turns flat.)
     // (Update 204: at the photo's own shape, with its console's real back — rememberPhotoSolid.)
-    val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) })
+    // (Update 205: its sides in the photo's own plastic colour, read off the photo once it has loaded.)
+    var loaded by androidx.compose.runtime.remember(model) { androidx.compose.runtime.mutableStateOf<android.graphics.drawable.Drawable?>(null) }
+    var tone by androidx.compose.runtime.remember(model) { androidx.compose.runtime.mutableStateOf(PhotoTones.of(model)) }
+    androidx.compose.runtime.LaunchedEffect(loaded) {
+        val d = loaded ?: return@LaunchedEffect
+        if (round || tone != null) return@LaunchedEffect
+        val t = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            (d as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { photoShellTone(it) }
+        }
+        if (t != null) { PhotoTones.put(model, t); tone = t }
+    }
+    val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) }, tone)
     Box((if (round) modifier.followTurn() else modifier.solidPiece(solid)).mediaMotion(round, 0), contentAlignment = Alignment.Center) {
         coil.compose.AsyncImage(
             mediaArtModel(model), null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, // (Update 157)
             modifier = Modifier.fillMaxSize().then(if (round) Modifier.clip(androidx.compose.foundation.shape.CircleShape) else Modifier),
             // Update 200: its shape noted, so the launch animation (LaunchThrow) sizes the game's own cartridge at it.
-            onSuccess = { r -> (model as? String)?.let { k -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(k, sz.width, sz.height) } } }
+            onSuccess = { r ->
+                (model as? String)?.let { k -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(k, sz.width, sz.height) } }
+                if (!round) loaded = r.result.drawable
+            }
         )
     }
 }
@@ -763,4 +792,11 @@ internal object MediaClock {
         }
         return t
     }
+}
+
+/** Update 205: the plastic colour read off each cartridge photo (its address), so it's read once per run. */
+internal object PhotoTones {
+    private val map = java.util.concurrent.ConcurrentHashMap<String, androidx.compose.ui.graphics.Color>()
+    fun of(model: Any?): androidx.compose.ui.graphics.Color? = (model as? String)?.let { map[it] }
+    fun put(model: Any?, c: androidx.compose.ui.graphics.Color) { (model as? String)?.let { if (map.size < 4000) map[it] = c } }
 }

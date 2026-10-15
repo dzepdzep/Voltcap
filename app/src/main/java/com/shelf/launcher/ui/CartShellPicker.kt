@@ -53,7 +53,7 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
     var group by remember { mutableStateOf<ShellGroup?>(null) }
     var colour by remember { mutableStateOf(currentChoice?.colourKey ?: "") }
     val region = remember(game.stableKey) { CaseCatalog.regionOf(game.romPath ?: game.name) }
-    val original = remember(platform, region) { CartShells.authenticId(platform, region) }
+    val original = remember(platform, region) { CartShells.authenticIdFor(platform, region, game.stableKey) }
     // Update 200: a 3D piece saved before ("m3d:<id>", the retired "Your 3D pieces" tab) is drawn as this console's own
     // shell now (CartShells.pickOf), so that's the one shown as picked — and a colour picked goes onto it.
     val currentId = currentId0?.let { if (it.startsWith("m3d:")) original ?: it else it }

@@ -1,6 +1,6 @@
 # Voltcap — handover to a new Claude
 
-Written 12 Oct 2026, after update **(145)** (kept up to date to 204). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
+Written 12 Oct 2026, after update **(145)** (kept up to date to 205). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is
 **Voltcap** is my Android game launcher, an Android Studio project called "ShelfLauncher" with package `com.shelf.launcher`. It is written in Kotlin with Jetpack Compose.
@@ -255,6 +255,19 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **Disc station:** `Features.discBlur` (game art behind the disc, BakedBlur); info column on a soft gradient.
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
+
+## State after update 205
+- **One piece rule:** typedArtFor(CARTRIDGE_DISC, …, platform, gameKey) returns null when CartShellStore has a choice (the picked shell wins), else the photo (own photo on) / label (shells on). drawnMediaWanted / realScanOf unchanged; MediaInspectView.mediaPiece now uses realScanOf only (the 202 mismatch). Drawn pieces get `drawnLabelScan(physical, platform)` ("Disc label") as label with labelIsScan; CartShellArt / CartShells.front(scan = true) draw it without the console band.
+- **Mixed lists:** MediaCovers.used ignores `mixed`; mediaFor uses the authentic shell in mixed lists; case3dAspect and the TV room's pulled-out case too. MixedArt choices still apply.
+- **GBC:** CartShells.authenticIdFor(platform, region, gameKey) — "(GB Compatible)" → gbc_dual. Used by mediaFor, drawn3dPick, ownShellOf, the shell picker.
+- **Scans at start:** LauncherViewModel.preloadPhysicalMedia() reads the whole "physical_media" prefs into state.physicalMedia (no network). artUrlsToSave only saves scans for `scansSeen` (looked up or shown: CategoryWarmup → HomeScans.seen) and only drawnScans() kinds; ScanReport.saveAll saves every game's.
+- **No stand-ins:** HomeScans.known(key); GameSpine draws a neutral strip for a ROM whose scans aren't known; Case3D uses rememberSoftLoad (RealMedia.kt) and SpineCache.WAITING while the real spine loads.
+- **Backs:** Case3D makes `defaultCaseBack` (back scan → full-scan cut → PrintedBack with the cover) when no back is passed, the first time its yaw passes 70°; boxPiece prefers "Back of the box"; fitBack(jewel) crops insert flaps (k 1.05–1.3).
+- **BoxTexture:** 204's faceWidth cap removed (it cut PS1 backs); findSpine accepts ratio up to 3.4 (N64 / SNES); cache key v4.
+- **Sides:** SolidPiece / InspectSlab edge layer = outline (solid layer) filled with the tone (SrcIn) — PhotoTones / photoShellTone read a photo's plastic; slices up to 64. Carousel.alpha is 1 for shown games.
+- **CustomCarts:** clear only with ModelFinish.CLEAR (or OFF + cartClear).
+- **ScanReport** (data/ArtFiles.kt): per-kind found / none, unknown, failed + reasons from ScreenScraperRepository.lookupOutcome (OUTCOME_* in ScreenScraper.kt); library count (countRealMedia). UI: SettingsDialog RealMediaReport().
+- **Arcade cabinets:** HomeLayout.pickable excludes ARCADE; AppearanceStore load maps ARCADE → CLASSIC; presets arc_std / arc_clean removed.
 
 ## State after update 204
 - **Update check (AppUpdates):** `autoCheckIfDue(c, atStart, resumed)` — start / resume at most every 10 min (`START_MIN_GAP_MS`), on screen every hour (`AUTO_EVERY_MS`), 15 min after a failure (`lastFailed`). Conditional request with the last ETag (`lastRelease` / `etag`, this run only; a 304 reuses the release). `later()` holds that tag 12 h (`laterTag` / `laterAt`). Automatic checks don't set `State.Checking`. UpdatePromptHost passes `resumed = true` on ON_RESUME.

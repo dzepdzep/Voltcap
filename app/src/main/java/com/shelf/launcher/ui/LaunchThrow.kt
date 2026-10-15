@@ -115,7 +115,7 @@ internal object LaunchThrow {
                 ?.takeIf { it.shell.isDisc || it.shell == MediaShell.UMD || it.platform.startsWith(GENERIC_DISC) }
                 ?: MediaPick(MediaShell.DISC, genericDiscKey(if (game.platform == "App") "Android" else game.platform))
             // Update 159: cartridge games print their cover (their scan is the cartridge), as on the disc in the tray.
-            val typed = if (mediaKind(game.platform) != "disc") null else typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, game.platform)
+            val typed = if (mediaKind(game.platform) != "disc") null else typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, game.platform, game.stableKey)
             val label = typed ?: cover ?: wide
             return ThrowPlan(
                 game, ThrowKind.DISC, rect, GameOrigin.displayId, cover, null, null, pick, label,
@@ -145,7 +145,7 @@ internal object LaunchThrow {
             }
             CardArtType.CARTRIDGE_DISC -> {
                 val asDisc = chosen == CardArtType.DISC
-                val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, game.platform)
+                val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, game.platform, game.stableKey)
                 val drawn = drawnMediaWanted(type, typed)
                 val realScan = if (drawn) null else realScanOf(type, typed)
                 val pick = if (drawn) mediaFor(game.platform, false, asDisc, gameKey = game.stableKey) else null

@@ -148,7 +148,11 @@ internal fun CustomCart(platform: String, art: Any?, modifier: Modifier) {
 internal fun PackCart(platform: String, art: Any?, modifier: Modifier, look0: CartLook? = null, clear0: Boolean? = null) {
     val id = CustomCarts.idFor(platform)
     val look = look0 ?: Features.cartLook.state.value
-    val clear = clear0 ?: Features.cartClear.state.value
+    // (Update 205: clear plastic only with Cartridges & discs › Cartridge › Clear plastic, or the flat look from before
+    // that set it. With Real shell for each console picked, the Android / Steam / PC games on the pack's shape stood
+    // see-through — the clear switch stayed on from an earlier pick.)
+    val finish = Features.modelFinish.state.value
+    val clear = clear0 ?: (Features.cartClear.state.value && (finish == ModelFinish.CLEAR || finish == ModelFinish.OFF))
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * look.aspect)
         val h = w / look.aspect

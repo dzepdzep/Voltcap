@@ -3364,6 +3364,61 @@ private fun SavedArtCard(
         }
     }
     MutedNote("Scrape spines now: every game without its own spine is asked again, even ones asked recently. Only the missing real covers: just the games with no box scan, disc / cartridge or full box yet (cases, discs, cartridges, spines) — the others aren't touched. Both need ScreenScraper (Settings › Accounts).")
+    // Update 205: what the real-media look-ups found, kind by kind, and what's saved on the device.
+    Spacer(Modifier.height(12.dp))
+    RealMediaReport()
+}
+
+/**
+ * Update 205: Settings › Metadata › Scraping › Real media. While a real-media look-up runs: the game and console being
+ * looked up, games done / to do, and each kind of picture counted on its own (found, none on ScreenScraper), plus the
+ * games ScreenScraper doesn't know and the look-ups that failed, with why. After: the same, marked finished. And the
+ * library's own count — what every game has and how much of it is saved on the device (Count) — with Save them all.
+ */
+@Composable
+private fun RealMediaReport() {
+    val R = com.shelf.launcher.data.ScanReport
+    SectionLabel("Real media")
+    val running = R.running
+    val total = R.total
+    if (running || R.finishedAt > 0L) {
+        val head = if (running) {
+            "Looking up" + (R.console?.let { " $it" } ?: "") + " — ${R.done} / $total games" + (R.game?.let { " · $it" } ?: "")
+        } else "Finished — ${R.done} / $total games looked up"
+        Text(head, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        if (running) TaskProgressLine(R.done, total)
+        Spacer(Modifier.height(6.dp))
+        val found = R.found; val none = R.none
+        R.KINDS.forEach { (label, name) ->
+            val f = found[label] ?: 0; val n = none[label] ?: 0
+            if (f > 0 || n > 0) Text(
+                "$name: $f found" + (if (n > 0) ", $n none on ScreenScraper" else ""),
+                color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+        }
+        if (R.unknown > 0) Text("${R.unknown} game" + (if (R.unknown == 1) "" else "s") + " not on ScreenScraper (or no sure match)", color = ShelfTheme.textMuted, fontSize = 12.sp)
+        if (R.failed > 0) Text(
+            "${R.failed} look-up" + (if (R.failed == 1) "" else "s") + " failed: " + R.failReasons.entries.joinToString(", ") { "${it.key} (${it.value})" } +
+                " — Only the missing real covers asks them again.",
+            color = com.shelf.launcher.ui.theme.Ds.warning, fontSize = 12.sp, lineHeight = 15.sp
+        )
+    } else {
+        MutedNote("Nothing looked up since Voltcap started. The counts show here while Scrape spines now, Only the missing real covers or Get everything run.")
+    }
+    Spacer(Modifier.height(8.dp))
+    val lib = R.library
+    if (lib != null) {
+        Text("In your library: ${lib.scanned} of ${lib.games} games have real media", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        R.KINDS.forEach { (label, name) ->
+            val h = lib.have[label] ?: 0
+            if (h > 0) Text("$name: $h · ${lib.saved[label] ?: 0} saved on the device", color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+    ChipFlow {
+        Chip("Count", accent = false) { R.count?.invoke() }
+        Chip("Save them all on the device", accent = false) { R.saveAll?.invoke() }
+    }
+    MutedNote("Count: what every game has, read from what's saved (no look-ups). Pictures not saved on the device load over the network the first time they're shown. Save them all: every game's real media the looks use (fronts, backs, spines, cartridges, discs, labels) — it can be a lot; it stops when the art store is full.")
 }
 
 /** Update 119: a background job's progress as a bar that fills up (scraping, saving art). */

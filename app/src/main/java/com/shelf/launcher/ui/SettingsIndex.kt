@@ -630,6 +630,10 @@ internal object SettingsIndex {
         E("Scrape manuals", "Metadata", "Scraping", null, null),
         E("Find manuals", "Metadata", "Scraping", null, null),
         E("Download all manuals", "Metadata", "Scraping", null, null),
+        // Update 205: the real-media report.
+        E("Real media", "Metadata", "Scraping", null, null),
+        E("Scrape progress", "Metadata", "Scraping", null, null),
+        E("Save real media on the device", "Metadata", "Scraping", null, null),
         E("Matching achievements", "Achievements", "Matching achievements", null, null),
         E("Check new games", "Achievements", "Matching achievements", null, null),
         E("Re-check everything", "Achievements", "Matching achievements", null, null),

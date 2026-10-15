@@ -291,6 +291,67 @@ object EverythingScrape {
     var progress by androidx.compose.runtime.mutableStateOf<Pair<Int, Int>?>(null)
 }
 
+/**
+ * Update 205: Settings › Metadata › Scraping › Real media — what the real-media look-ups (Scrape spines, Only the missing
+ * real covers, Get everything's cases pass) are doing and what they found, each kind of picture counted on its own:
+ * a game whose box front was found isn't counted as done for its back, spine, cartridge or label. Real counts only.
+ * Also the library's own count of what every game has and what of it is saved on the device ([library]).
+ */
+object ScanReport {
+    /** The kinds of real-media pictures, as saved for each game, with their names here. */
+    val KINDS: List<Pair<String, String>> = listOf(
+        "Box" to "Box fronts", "Back of the box" to "Backs", "Spine" to "Spines", "Disc / cartridge" to "Cartridge / disc photos",
+        "Disc label" to "Labels", "Box (full scan)" to "Full box scans", "Box (3D)" to "3D boxes"
+    )
+
+    var running by androidx.compose.runtime.mutableStateOf(false)
+    /** What's being looked up now: the game's name and its console. */
+    var game by androidx.compose.runtime.mutableStateOf<String?>(null)
+    var console by androidx.compose.runtime.mutableStateOf<String?>(null)
+    var done by androidx.compose.runtime.mutableIntStateOf(0)
+    var total by androidx.compose.runtime.mutableIntStateOf(0)
+    /** Per kind: games it was found for / games ScreenScraper knew but had none of it. */
+    var found by androidx.compose.runtime.mutableStateOf<Map<String, Int>>(emptyMap())
+    var none by androidx.compose.runtime.mutableStateOf<Map<String, Int>>(emptyMap())
+    /** Games ScreenScraper doesn't know (or without a sure match), and look-ups that failed — with the reasons. */
+    var unknown by androidx.compose.runtime.mutableIntStateOf(0)
+    var failed by androidx.compose.runtime.mutableIntStateOf(0)
+    var failReasons by androidx.compose.runtime.mutableStateOf<Map<String, Int>>(emptyMap())
+    /** When the last run finished (0: none yet this time). */
+    var finishedAt by androidx.compose.runtime.mutableLongStateOf(0L)
+
+    fun start(count: Int) {
+        running = true; game = null; console = null; done = 0; total = count
+        found = emptyMap(); none = emptyMap(); unknown = 0; failed = 0; failReasons = emptyMap(); finishedAt = 0L
+    }
+
+    /** One game looked up: [list] what it has now, [outcome] how the look-up went (ScreenScraperRepository.lookupOutcome). */
+    fun tally(list: List<Pair<String, String>>?, outcome: String?) {
+        val have = list.orEmpty().map { it.first }.toSet()
+        val ssKnown = KINDS.any { it.first in have }
+        when {
+            ssKnown -> {
+                val f = found.toMutableMap(); val n = none.toMutableMap()
+                for ((label, _) in KINDS) if (label in have) f[label] = (f[label] ?: 0) + 1 else n[label] = (n[label] ?: 0) + 1
+                found = f; none = n
+            }
+            outcome == null || outcome == OUTCOME_UNKNOWN || outcome == OUTCOME_UNSURE || outcome == OUTCOME_FOUND -> unknown++
+            else -> { failed++; failReasons = failReasons + (outcome to ((failReasons[outcome] ?: 0) + 1)) }
+        }
+        done++
+    }
+
+    fun finish() { running = false; game = null; console = null; finishedAt = System.currentTimeMillis() }
+
+    /** The library's count: per kind, how many games have it and how many of those pictures are saved on the device. */
+    class Library(val games: Int, val scanned: Int, val have: Map<String, Int>, val saved: Map<String, Int>)
+    var library by androidx.compose.runtime.mutableStateOf<Library?>(null)
+    /** Counts [library] again (set by the home screen's model). */
+    @Volatile var count: (() -> Unit)? = null
+    /** Saves every game's real-media pictures on the device now (set by the home screen's model). */
+    @Volatile var saveAll: (() -> Unit)? = null
+}
+
 object SpineScrape {
     /** Starts it (true: every game without its own spine is asked again, even recently asked ones). */
     @Volatile var run: ((Boolean) -> Unit)? = null

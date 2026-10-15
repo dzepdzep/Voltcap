@@ -845,6 +845,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      */
     fun loadPhysicalMedia(game: Game, needSpine: Boolean = false, force: Boolean = false) {
         val key = game.stableKey
+        scansSeen += key
         if (key in physicalLoading) return
         // Lists saved before the full box scan was scraped (update 101; before that the spine, update 92) are fetched
         // once more, for the game's own spine and case front (BoxTexture.kt). Only with ScreenScraper connected.
@@ -912,6 +913,46 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** Update 137: what ScreenScraper found for each game, before your picks (PhysicalOverrides). */
     private val physicalRaw = java.util.concurrent.ConcurrentHashMap<String, List<Pair<String, String>>>()
+
+    /**
+     * Update 205: the games whose scans were asked for or shown this run — the ones whose pictures "Save art on the
+     * device" keeps, as before 205 (every game's saved scans are in the state from the start now, see
+     * [preloadPhysicalMedia]; saving all of them would download every scan of every game at once).
+     */
+    private val scansSeen: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
+    /** Update 205: [keys] were shown (a category's games): their scans are saved with the rest of the art. */
+    fun markScansSeen(keys: Collection<String>) { scansSeen += keys }
+
+    /**
+     * Update 205: every game's scans saved before (box, back, spine, disc / cartridge, label…) put into the state at
+     * start, off the main thread. They were read only when a game's card first asked for them — and the cards, cases
+     * and spines waited 0.4 s on screen before asking — so every category showed Voltcap's own spines, plain backs and
+     * drawn cartridges first and the real ones popped in after, or only on going back to it; and a game's case had no
+     * back until its own card had asked. Nothing is looked up on the network here; [loadPhysicalMedia] still asks
+     * ScreenScraper again when a game's scans are due for a fresh look.
+     */
+    private fun preloadPhysicalMedia() {
+        viewModelScope.launch(Dispatchers.Default) {
+            // (Your own picks for a game's pictures go on top, as when a game is looked up; read here in case the
+            // packs, which read them at start, haven't yet.)
+            runCatching { com.shelf.launcher.data.PhysicalOverrides.init(getApplication()) }
+            val all = runCatching { physicalPrefs.all }.getOrNull().orEmpty()
+            val loaded = HashMap<String, List<Pair<String, String>>>(all.size)
+            for ((k, v) in all) {
+                val saved = v as? String ?: continue
+                val list = saved.split('\n').mapNotNull { line ->
+                    val parts = line.split('\t')
+                    if (parts.size == 2 && parts[1].isNotBlank()) parts[0] to parts[1] else null
+                }
+                if (list.isEmpty()) continue
+                physicalRaw.putIfAbsent(k, list)
+                loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, list) }.getOrDefault(list)
+            }
+            // (What was looked up meanwhile wins over the saved list.)
+            if (loaded.isNotEmpty()) _uiState.update { st -> st.copy(physicalMedia = loaded + st.physicalMedia) }
+        }
+    }
 
     /** Update 137: your pick for one of [game]'s real-media pictures ([label] as in the scraped list; null: back to the scan). */
     fun setPhysicalOverride(game: Game, label: String, url: String?) {
@@ -5496,7 +5537,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             // RetroAchievements icons used as logos are saved too.
             (if (state.appearance.raLogos) state.games.mapNotNull { g -> g.raGameId?.let { state.raIcons[it] } } else emptyList()) +
             state.sgdbLogos.values.filter { it.isNotEmpty() }
-        val scans = state.physicalMedia.values.flatMap { list -> list.map { it.second } }
+        // (Update 205: the scans of the games asked for or shown this run, as before — see scansSeen.)
+        val scans = state.physicalMedia.entries.filter { it.key in scansSeen }.flatMap { (_, list) -> drawnScans(list) }
         val shots = state.screenshots.values.flatten()
         // Your own images (content://) are already on the device.
         return (covers + wides + heroes + logos + scans + shots).filter { it.startsWith("http") }.distinct()
@@ -5630,20 +5672,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 return@launch
             }
             com.shelf.launcher.data.SpineScrape.progress = 0 to pending.size
+            com.shelf.launcher.data.ScanReport.start(pending.size)
             var found = 0
             try {
                 for ((i, g) in pending.withIndex()) {
                     com.shelf.launcher.data.GameMode.awaitForArt()
-                    loadPhysicalMedia(g, needSpine = true)
                     // Its look-up runs on its own: wait for it (at most half a minute), then a short pause for the server.
-                    var waited = 0
-                    while (g.stableKey in physicalLoading && waited < 30_000) { kotlinx.coroutines.delay(200); waited += 200 }
+                    scanOne(g, force = false)
                     if (_uiState.value.physicalMedia[g.stableKey]?.any { it.first == label } == true) found++
                     com.shelf.launcher.data.SpineScrape.progress = (i + 1) to pending.size
                     kotlinx.coroutines.delay(700)
                 }
             } finally {
                 com.shelf.launcher.data.SpineScrape.progress = null
+                com.shelf.launcher.data.ScanReport.finish()
             }
             if (again || found > 0) setStatusMessage("Found $found spine" + (if (found == 1) "" else "s") + " on ScreenScraper.")
             // The new scans are saved on the device with the rest of the art.
@@ -5673,19 +5715,19 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 return@launch
             }
             com.shelf.launcher.data.SpineScrape.progress = 0 to pending.size
+            com.shelf.launcher.data.ScanReport.start(pending.size)
             var found = 0
             try {
                 for ((i, g) in pending.withIndex()) {
                     com.shelf.launcher.data.GameMode.awaitForArt()
-                    loadPhysicalMedia(g, needSpine = true, force = true)
-                    var waited = 0
-                    while (g.stableKey in physicalLoading && waited < 30_000) { kotlinx.coroutines.delay(200); waited += 200 }
+                    scanOne(g, force = true)
                     if (hasReal(g.stableKey)) found++
                     com.shelf.launcher.data.SpineScrape.progress = (i + 1) to pending.size
                     kotlinx.coroutines.delay(700)
                 }
             } finally {
                 com.shelf.launcher.data.SpineScrape.progress = null
+                com.shelf.launcher.data.ScanReport.finish()
             }
             setStatusMessage("Found real covers for $found of ${pending.size} game" + (if (pending.size == 1) "" else "s") + " on ScreenScraper.")
             if (found > 0 && _uiState.value.artStorage.autoSave) saveAllArt(silent = true)
@@ -5695,6 +5737,68 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun stopSpineScrape() {
         spineJob?.cancel()
         com.shelf.launcher.data.SpineScrape.progress = null
+        if (com.shelf.launcher.data.ScanReport.running) com.shelf.launcher.data.ScanReport.finish()
+    }
+
+    /**
+     * Update 205: one game's real media looked up (and waited for, at most half a minute) and counted kind by kind in
+     * Settings › Scraping › Real media, with how the look-up went.
+     */
+    private suspend fun scanOne(g: Game, force: Boolean) {
+        val R = com.shelf.launcher.data.ScanReport
+        R.game = gameDisplayNameForReport(g)
+        R.console = com.shelf.launcher.data.ConsoleNames.display(g.platform)
+        screenScraperRepository.lookupOutcome.remove(g.stableKey)
+        loadPhysicalMedia(g, needSpine = true, force = force)
+        var waited = 0
+        while (g.stableKey in physicalLoading && waited < 30_000) { kotlinx.coroutines.delay(200); waited += 200 }
+        R.tally(_uiState.value.physicalMedia[g.stableKey], screenScraperRepository.lookupOutcome[g.stableKey])
+    }
+
+    private fun gameDisplayNameForReport(g: Game): String = runCatching { com.shelf.launcher.ui.gameDisplayName(g.name) }.getOrDefault(g.name)
+
+    /** The real-media kinds the looks draw (the full box scan and the 3D box only where a cut needs them). */
+    private fun drawnScans(list: List<Pair<String, String>>): List<String> {
+        val have = list.map { it.first }.toSet()
+        return list.filter { (label, _) ->
+            when (label) {
+                com.shelf.launcher.ui.BoxTexture.LABEL -> !("Spine" in have && "Back of the box" in have && "Box" in have)
+                "Box (3D)" -> !("Spine" in have && "Box" in have)
+                else -> true
+            }
+        }.map { it.second }
+    }
+
+    /**
+     * Update 205 (Settings › Scraping › Real media › Count): per kind, how many games have it and how many of those
+     * pictures are saved on the device — a picture not saved loads over the network when it's first shown.
+     */
+    fun countRealMedia() {
+        viewModelScope.launch {
+            val st = _uiState.value
+            val kinds = com.shelf.launcher.data.ScanReport.KINDS.map { it.first }.toSet()
+            val lib = withContext(Dispatchers.IO) {
+                val roms = st.games.filter { it.sourceType == SourceType.ROM }
+                val have = HashMap<String, Int>(); val saved = HashMap<String, Int>()
+                var scanned = 0
+                for (g in roms) {
+                    val list = st.physicalMedia[g.stableKey] ?: continue
+                    if (list.any { it.first in kinds }) scanned++
+                    for ((label, url) in list) if (label in kinds) {
+                        have[label] = (have[label] ?: 0) + 1
+                        if (runCatching { com.shelf.launcher.data.ArtFiles.has(url) }.getOrDefault(false)) saved[label] = (saved[label] ?: 0) + 1
+                    }
+                }
+                com.shelf.launcher.data.ScanReport.Library(roms.size, scanned, have, saved)
+            }
+            com.shelf.launcher.data.ScanReport.library = lib
+        }
+    }
+
+    /** Update 205 (Settings › Scraping › Real media › Save them all on the device): every game's drawn real media saved now. */
+    fun saveAllRealMedia() {
+        scansSeen += _uiState.value.games.filter { it.sourceType == SourceType.ROM }.map { it.stableKey }
+        saveAllArt(silent = false)
     }
 
     /**
@@ -5742,6 +5846,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 if (pending.isNotEmpty()) {
                     E.stage = "Cases, screenshots & clips"
                     E.progress = 0 to pending.size
+                    // (Update 205: the real media counted kind by kind as they come in — Settings › Scraping › Real media.)
+                    val scanCount = pending.count { needsScans(it) }
+                    if (scanCount > 0) com.shelf.launcher.data.ScanReport.start(scanCount)
                     // Update 175: three games at once (was one, with half a second between games). ScreenScraper
                     // keeps its own limit; screenshots from the other sources come in alongside.
                     val lanes = kotlinx.coroutines.sync.Semaphore(MEDIA_LANES)
@@ -5751,11 +5858,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         if (!isActive) { lanes.release(); break }
                         launch { try {
                         com.shelf.launcher.data.GameMode.awaitNotPlaying()
-                        if (needsScans(g)) {
-                            loadPhysicalMedia(g, needSpine = true, force = true)
-                            var waited = 0
-                            while (g.stableKey in physicalLoading && waited < 30_000) { kotlinx.coroutines.delay(200); waited += 200 }
-                        }
+                        if (needsScans(g)) scanOne(g, force = true)
                         if (needsShots(g)) {
                             loadMedia(g)
                             var waited = 0
@@ -5771,6 +5874,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         E.progress = done to pending.size
                         } finally { lanes.release() } }
                     } }
+                    if (com.shelf.launcher.data.ScanReport.running) com.shelf.launcher.data.ScanReport.finish()
                     if (_uiState.value.artStorage.autoSave) saveAllArt(silent = true)
                 }
                 val noSs = creds == null && (com.shelf.launcher.data.EverythingScrape.Part.SCANS in parts || com.shelf.launcher.data.EverythingScrape.Part.VIDEOS in parts)
@@ -5800,6 +5904,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     init {
+        preloadPhysicalMedia()
+        com.shelf.launcher.data.ScanReport.count = { countRealMedia() }
+        com.shelf.launcher.data.ScanReport.saveAll = { saveAllRealMedia() }
         com.shelf.launcher.data.SpineScrape.run = { again -> scrapeAllSpines(again) }
         com.shelf.launcher.data.SpineScrape.runMissingReal = { scrapeMissingRealArt() }
         // Update 204: Settings › Scraping › Manuals: Find manuals / Download all manuals.

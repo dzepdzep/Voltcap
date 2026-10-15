@@ -3,6 +3,8 @@ package com.shelf.launcher.ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -69,14 +71,21 @@ internal fun Case3D(
     val forAll = LookStyles.spineForAll()
     val realSpine = if (forAll) null else scans?.firstOrNull { it.first == "Spine" }?.second
     val own = realSpine ?: if (Features.originalCases.state.value && !forAll) BoxTexture.spine(scans, g.platform) else null
-    val ownBmp = rememberSoftBitmap(own, 600)
+    // (Update 205: loaded with its state — see [spine] below.)
+    val ownLoad = rememberSoftLoad(own, 600)
+    val ownBmp = ownLoad.bitmap
+    // Update 205: the game's real spine is on its way (or its scans aren't known yet): a neutral strip meanwhile, never
+    // Voltcap's own console spine that then pops to the real one.
+    val spinePending = (own != null && !ownLoad.done) ||
+        (physical == null && g.sourceType == com.shelf.launcher.data.SourceType.ROM && !HomeScans.known(g.stableKey))
     // (Update 166: Voltcap's own Steam / Android case always — its spine and its front band, see below.)
     val ownCase = MediaCovers.own(g.platform).takeIf { !forAll }
     val tpl = if (Features.coverTemplates.state.value || forAll || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     // (Made once per game, away from the screen's thread: SpineCache.)
     val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false)
-    val spine: android.graphics.Bitmap = remember(ownBmp, tplSpine, title) {
+    val spine: android.graphics.Bitmap = remember(ownBmp, tplSpine, title, spinePending) {
         ownBmp?.let { orientSpine(it, landscape = false) }
+            ?: (if (spinePending) SpineCache.WAITING else null)
             ?: tplSpine.bitmap
             // (A plain dark strip for the moment your console spine is being made, then the plain one with the name.)
             ?: if (!tplSpine.done) SpineCache.WAITING else plainSpine(title)
@@ -152,13 +161,21 @@ internal fun Case3D(
             }
         }
     }
+    // Update 205: a case with no back handed in (the carousels, Case stacks, the shelf's 3D cases) gets its own — its
+    // back scan, else the back cut from its full box scan, else a printed one — made the first time it turns far enough
+    // to show it (see the drawing below). It showed plain plastic from behind everywhere but the game window.
+    var backAsked by remember(g.stableKey) { androidx.compose.runtime.mutableStateOf(false) }
+    val backModel: Any? = back ?: if (!backAsked) null else remember(scans, g.platform, cover, aspect) { defaultCaseBack(g, scans, cover, aspect) }
     // (Update 170: a printed back is made from its parts; a scanned one is a picture.)
-    val printedBmp = rememberPrintedBack(back as? PrintedBack)
-    val scannedBmp = rememberSoftBitmap(back.takeIf { it !is PrintedBack }, 480)
+    val printedBmp = rememberPrintedBack(backModel as? PrintedBack)
+    val scannedBmp = rememberSoftBitmap(backModel.takeIf { it !is PrintedBack }, 480)
     val backBmp = printedBmp ?: scannedBmp
     // (Update 188: a back scan a little off the case's shape — a jewel case's back with its side flaps — is fitted, not
     // cut: its edges, text and logos stay.)
-    val backFace = remember(backBmp, shape) { backBmp?.let { fitBack(it, shape) } }
+    // (Update 205: a jewel case's back insert scanned with its two end flaps — the strips that fold into the case's
+    // sides — has them cut off instead of squeezing them onto the back.)
+    val jewelBack = spec?.shell == CaseShell.JEWEL || caseStyleOf(g.platform).let { it == CASE_JEWEL || it == CASE_JEWEL_BLACK }
+    val backFace = remember(backBmp, shape, jewelBack) { backBmp?.let { fitBack(it, shape, jewelBack) } }
     // Update 166: while its cover is still loading, the front in the game's own colour (not near-black: scrolling a
     // carousel of 3D cases showed dark fronts for a moment).
     val loading = remember(g.hue) { hueFront(g.hue) }
@@ -194,6 +211,11 @@ internal fun Case3D(
     val itemOnLid = spec?.mediaLeft == true
     Canvas(modifier) {
         val yawNow = yawOf?.invoke() ?: yaw
+        // (Update 205: turned far enough that its back will show: its back is made now, once.)
+        if (back == null && !backAsked) {
+            val a = ((yawNow % 360f) + 360f) % 360f
+            if (a > 70f && a < 290f) backAsked = true
+        }
         val shadeNow = shadeOf?.invoke() ?: shade
         val fit = minOf(size.height, size.width / shape) * fill
         val h = fit
@@ -344,7 +366,8 @@ internal fun case3dAspect(g: Game, mixed: Boolean): Float {
     CaseCatalog.forGame(g)?.let { return it.aspect.coerceIn(0.55f, 1.85f) }
     // (Update 166: in lists mixing consoles too — each case keeps its own shape there, as the flat box art does.)
     realCaseMm(g.platform)?.let { (w, h) -> if (w > 0f && h > 0f) return (w / h).coerceIn(0.55f, 1.45f) }
-    return (if (!mixed && Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null)?.coerceIn(0.55f, 1.45f) ?: 0.71f
+    // (Update 205: the same shape in a list mixing consoles — a game's case never changes with the list it's in.)
+    return (if (Features.coverTemplates.state.value) MediaCovers.of(g.platform)?.frontAspect else null)?.coerceIn(0.55f, 1.45f) ?: 0.71f
 }
 
 /**
@@ -399,10 +422,12 @@ private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap,
  * Update 188: a case's back picture at [aspect]: within about a fifth of it, gently stretched (nothing cut); further off,
  * cut in the middle like the front.
  */
-private fun fitBack(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+private fun fitBack(src: android.graphics.Bitmap, aspect: Float, jewel: Boolean = false): android.graphics.Bitmap {
     val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
     if (aspect <= 0f || kotlin.math.abs(cur - aspect) < 0.02f) return src
     val k = cur / aspect
+    // (Update 205: a jewel case's insert wider than its back — its end flaps — cut to the back's shape in the middle.)
+    if (jewel && k > 1.05f && k < 1.3f) return cropTo(src, aspect)
     if (k < 0.82f || k > 1.22f) return cropTo(src, aspect)
     val w = (src.height * aspect).toInt().coerceAtLeast(1)
     return runCatching { android.graphics.Bitmap.createScaledBitmap(src, w, src.height, true) }.getOrDefault(src)
@@ -849,4 +874,17 @@ private object CaseDraw {
         val r = (((argb shr 16) and 255) * k).toInt(); val g = (((argb shr 8) and 255) * k).toInt(); val b = ((argb and 255) * k).toInt()
         return (a shl 24) or (r shl 16) or (g shl 8) or b
     }
+}
+
+/**
+ * Update 205: [g]'s case back when none is handed in: its back scan ("Back of the box"), else the back cut from its full box
+ * scan, else (Settings › Game look › Printed case backs) a printed one with its cover behind the console's back print.
+ * Not the game's own scans with one console's case picked for all (R1 › Case).
+ */
+internal fun defaultCaseBack(g: Game, scans: List<Pair<String, String>>?, cover: Any?, aspect: Float): Any? {
+    if (!LookStyles.caseForAll()) {
+        scans?.firstOrNull { it.first == "Back of the box" }?.second?.let { return it }
+        BoxTexture.fullScan(scans)?.let { return BoxTexture.model(it, BoxPart.BACK, g.platform) }
+    }
+    return if (Features.printedBacks.state.value) PrintedBack(LookStyles.casePlatform(g.platform), cover, emptyList(), null, aspect, gameDisplayName(g.name)) else null
 }

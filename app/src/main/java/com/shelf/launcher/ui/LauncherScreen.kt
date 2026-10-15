@@ -718,6 +718,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     SideEffect {
         if (HomeScans.map !== state.physicalMedia) HomeScans.map = state.physicalMedia
         HomeScans.need = { g -> viewModel.loadPhysicalMedia(g, needSpine = true) }
+        HomeScans.seen = { keys -> viewModel.markScansSeen(keys) }
         HomeScans.cover = { k -> state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl }
         HomeScans.keyOfCover = coverKeys
     }

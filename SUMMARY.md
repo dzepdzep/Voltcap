@@ -4,6 +4,79 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (205): physical media repaired — same piece everywhere, real labels, backs on every case, no stand-ins popping, solid sides, real-media scrape report, Arcade cabinets removed
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (30): `src_copy\LauncherViewModel.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\ArtFiles.kt`, `src_copy\data\LayoutPresets.kt`, `src_copy\data\ScreenScraper.kt`, `src_copy\ui\BoxTexture.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\CartShellPicker.kt`, `src_copy\ui\CartShells.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\CategoryWarmup.kt`, `src_copy\ui\CustomCarts.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\GameDock.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\HeroCarousel.kt`, `src_copy\ui\LaunchThrow.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaCovers.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\ShelfHome.kt`, `src_copy\ui\SolidPiece.kt`, `src_copy\ui\StyleDiscStation.kt`, `src_copy\ui\StyleHomes.kt`, `src_copy\ui\TileHome.kt`, `src_copy\ui\TvRoomHome.kt`.
+
+**Files to delete:** none. Nothing in `project_copy` changed.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 205: physical media repaired - same piece everywhere, real labels, backs on every case, no stand-ins popping, solid sides, real-media scrape report, Arcade cabinets removed" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+.\gradlew installDebug
+```
+
+### What was wrong (root causes, found on the Thor and in Git history)
+- **The game window showed another piece than the home screen (update 202).** 202 made "Use its own photo when one is found" decide for the cards, but the game window kept the old rule (drawn shell whenever the 3D finish is on). So a game showed ScreenScraper's cartridge photo on the home screen and Voltcap's drawn shell with the cover under a console band when opened — seen with Pokémon Silver and Army Men (N64).
+- **Every Game Boy Color game was a clear see-through cartridge.** The real-shell table gave GBC only the clear Color-only Game Pak; the games marked "(GB Compatible)" came on the black dual-mode one.
+- **Drawn pieces wore the cover, not the label.** With the own photo on, a game without a photo got its cover under a console band, even when ScreenScraper had its real printed label.
+- **Lists mixing consoles (All games, Favorites, Continue playing…) drew different media.** Case templates, real case shapes and the real cartridge shells were switched off in mixed lists on purpose (from before), so the same game looked custom there.
+- **Real spines, backs and labels came late or never.** Every game's scans are saved (2,623 games here), but they were only read when a game's card asked — after it had been on screen 0.4 s. Until then Voltcap's own spine / plain back showed, then the real one popped in; often only on going back to a category.
+- **Cases never had a back outside the game window.** The carousels, Case stacks and the other 3D cases had no back handed to them — spinning cases showed plain plastic. Also ScreenScraper's own back scan was never used at all: the back was always cut out of the full box scan.
+- **PlayStation backs lost a quarter of their right side (update 204).** 204 capped the cut at the cover template's front shape, which isn't the scan's. Removed; the back and front being the same width is enough (checked on Pokémon Silver's scan: its back now ends 18 px before the spine; the PlayStation back ends 12 px before its spine).
+- **Glitches round turned cartridges.** A cartridge's sides were drawn as copies of its whole face, so seen from the side its label showed in stripes; and the cases / cartridges in the packed stacks were 88 % opaque, so each showed the ones behind it.
+- **Android / Steam / PC games stood in clear plastic** with Real shell picked — the clear switch from an earlier pick stayed on.
+- **Landscape box scans (N64, SNES) were never cut** (their scan is wider than the cut allowed), so no spine or back came from them.
+
+### Now
+- **One rule everywhere:** the cards, carousels, Case stacks, grid, tiles, hero, style homes, the launch animation and the game window all pick the same piece: a shell picked for the game or console (Cartridge shell…) wins; else its own photo when "Use its own photo" is on and it has one; else the drawn piece — the real shell for its console and region — **wearing its real label scan** (no console band over it), the cover only when there's no label.
+- **Mixed lists:** each game is drawn as in its own console's list (case template, real case shape, real shell). The explicit "Mixed categories" choices (All covers / All CDs / All cartridges…) still apply when you pick them.
+- **Game Boy Color:** "(GB Compatible)" games on the black dual-mode shell (with its researched back); Color-only games stay clear.
+- **Scans at start:** every saved game's scans are read once at start (no network), so the real spine, back, label and photo are there from the first frame; while a real spine is still loading a neutral strip shows, never Voltcap's spine first. The category you switch to has its pieces' pictures warmed with its covers.
+- **Backs:** every 3D case gets its back the first time it turns far enough to show it: its back scan, else the cut from its full box scan, else a printed back. Jewel cases (PlayStation, Saturn, Dreamcast…) have the end flaps of a back insert cut off instead of squeezed on.
+- **Solid sides:** a turned cartridge's sides are its outline in its plastic's colour (a photo's colour read off the photo), slices close enough that no gaps show; the pieces shown in the carousels are fully opaque (shade does the depth).
+- **Clear plastic** only with Cartridge › Clear plastic.
+- **Saving art:** as before, the scans of the games you've shown or that were looked up this run are saved on the device; Save them all (below) saves every game's.
+
+### Real media report (Settings › Metadata › Scraping › Real media)
+- While Scrape spines now, Only the missing real covers or Get everything run: "Looking up <console> — 35 / 80 games · <game>", a progress bar, then each kind counted on its own: Box fronts, Backs, Spines, Cartridge / disc photos, Labels, Full box scans, 3D boxes — found / none on ScreenScraper; games ScreenScraper doesn't know (or no sure match); failed look-ups with the reason (no connection, or what ScreenScraper answered, e.g. 429 too many requests, 430 quota). "Finished" when done.
+- **Count:** what every game in the library has, kind by kind, and how many of those pictures are saved on the device (no look-ups).
+- **Save them all on the device:** every game's real media the looks use (full box scans and 3D boxes only where a cut needs them).
+- Settings search: Real media, Scrape progress, Save real media on the device.
+
+### What ScreenScraper supplies (checked in your saved scans)
+- Of 2,623 games with saved scans, 2,248 have ScreenScraper's set: Box, Back of the box, Box (3D), Spine (box-2D-side), Box (full scan) — all 2,248; Disc / cartridge photo and Disc label — 2,204. The rest are RetroAchievements' box art and title screen only. So backs and spines were there; they weren't being shown.
+- ScreenScraper's cartridge photos are sometimes its own renders (007 The World Is Not Enough's N64 one is a blue render) — that's the photo, not Voltcap's media; turn "Use its own photo when one is found" off to draw every game on its real shell with its label instead.
+- PlayStation 3 games (folders) have no scans: they stay on the plain disc.
+
+### Arcade cabinets removed
+- Gone from the layout picker, the R1 Layout tile and the presets; a home still set to it opens as the Voltcap row. Its code stays (nothing else uses it).
+
+### Check
+- **Type-check:** full kotlinc 2.2.10 + Compose type-check of all of `src_copy` against your Gradle cache's jars and android-36: **0 errors**; no `NON_LOCAL_RETURN` in the compiled classes.
+- **Git history:** compared 201 → 204 (`a5a423b`…`4b61a2d`): the window / card mismatch is from 202 (`23393ba`, drawnMediaWanted lost its 3D-finish rule, the game window kept it); the PlayStation back cut is from 204 (`4b61a2d`, BoxTexture). The mixed-list rules are older (by design then).
+- **On the Thor (your 204 build, before these changes):** reproduced the window showing a drawn cartridge where the row showed the photo (Pokémon Silver GBC, Army Men N64), the clear GBC shell, the label stripes on turned cartridges in the Box flow stacks, the see-through stacks, and the old row showing for ~0.5 s after L2 / R2. Read the device's saved scans: no disc-console back scan had ever been loaded.
+- **Box cut checked on the real scans** (Pokémon Silver GBC, Donald Duck PS1) with the same numbers as the code.
+- **Not tested on a device:** everything in 205 (needs your build).
+
+### What to test (per console, after the build)
+1. A mixed list (All games, Continue playing) and the same games in their own console: same piece, same label, same case.
+2. Open a game (game window): the same piece as on the row; turn it all the way round — front, side, back.
+3. Game Boy Color: GB-compatible games black, Color-only clear; Pokémon Silver its own silver photo.
+4. Spin cases (Case stacks, carousels): a printed or scanned back on every one; PlayStation backs whole.
+5. L2 / R2 through consoles: real spines from the first frame, no Voltcap spine popping to the real one.
+6. Box flow stacks: solid cartridges with plain sides, nothing showing through.
+7. Settings › Metadata › Scraping › Real media: Count, then Only the missing real covers — the counts move kind by kind.
+
+---
+
 ## Update — 15 Oct 2026 (204): update check that notices new versions, Pocket Quest quick settings, Mix / Cartridges / Discs, manuals, category name everywhere, real cartridge backs on photos, overlays coming back, volume mixer steps in order, fixes
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

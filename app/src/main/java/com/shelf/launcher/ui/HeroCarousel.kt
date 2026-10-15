@@ -472,7 +472,9 @@ private fun CoverWheel(
             ) {
                 val cover = if (wide) wideFor(g) ?: coverFor(g) else coverFor(g)
                 if (free) {
-                    val typed = typedArtFor(gArt, physicalMedia[g.stableKey], null, g.platform)
+                    val typed = typedArtFor(gArt, physicalMedia[g.stableKey], null, g.platform, g.stableKey)
+                    // (Update 205: the drawn piece wears its real label scan when it has one.)
+                    val labelScan = if (typed == null) drawnLabelScan(physicalMedia[g.stableKey], g.platform) else null
                     val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey) else null
                     Box(Modifier.fillMaxSize().awardShine(g.stableKey, sel > 0.6f)) { ProvidePieceTurn(if (solidCart) PieceTurn({ flip }, 10f) else null) {
                         // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
@@ -482,7 +484,7 @@ private fun CoverWheel(
                         // (Update 173: an app without art: its icon on the label / in the case.)
                         val art = coverOrAppIcon(g, cover)
                         if (real != null) MediaFocus(v == loopFocus) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(2.dp), platform = g.platform, gameKey = g.stableKey) }
-                        else if (pick != null) MediaFocus(v == loopFocus) { PhysicalMedia(pick.shell, typed ?: art, Modifier.fillMaxSize().padding(2.dp), platform = pick.platform, labelIsScan = typed != null, caseCover = art, title = g.name) }
+                        else if (pick != null) MediaFocus(v == loopFocus) { PhysicalMedia(pick.shell, typed ?: labelScan ?: art, Modifier.fillMaxSize().padding(2.dp), platform = pick.platform, labelIsScan = typed != null || labelScan != null, caseCover = art, title = g.name) }
                         else MediaFocus(v == loopFocus) { CaseArt(
                             g.platform, art, typed, Modifier.fillMaxSize().padding(2.dp), title = gameDisplayName(g.name), detail = 240, real = realRef,
                             caseModifier = if (sel > 0.6f && frameOn) Modifier.border(2.dp, ShelfTheme.accent.copy(alpha = 0.85f * sel), RoundedCornerShape(2.dp)) else Modifier

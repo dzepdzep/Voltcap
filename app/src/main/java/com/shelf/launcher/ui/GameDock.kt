@@ -280,7 +280,7 @@ internal fun GameDock(
                     val wide = override?.wide ?: gameArt?.wideGridUrl
                     val hero = override?.hero ?: gameArt?.heroUrl
                     // What the card shows when it is not the focused one.
-                    val typed = typedArtFor(gArt, physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform)
+                    val typed = typedArtFor(gArt, physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey)
                     val shown = cardArtUrl(gArt, false, cover, wide, hero, typed)
                     // Update 157: a disc / cartridge / case look prints its picture in the style shape (mediaArtModel):
                     // that one warmed too (the discs came in blank for a moment).
@@ -318,7 +318,7 @@ internal fun GameDock(
                 val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow)
                 val override = artOverrides[game.stableKey]
                 val gameArt = art[game.stableKey]
-                val typed = typedArtFor(gArt, physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform)
+                val typed = typedArtFor(gArt, physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey)
                 cardArtUrl(gArt, false, override?.cover ?: gameArt?.gridUrl, override?.wide ?: gameArt?.wideGridUrl, override?.hero ?: gameArt?.heroUrl, typed)
             }
             val handles = prefetchThumbs(context, urls)
@@ -473,7 +473,7 @@ internal fun GameDock(
                     onToggleFavorite = { onToggleFavorite(game) },
                     artOverride = artOverrides[game.stableKey],
                     cardArtType = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow),
-                    typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform),
+                    typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey),
                     realCase = realRef,
                     mixed = mixedRow,
                     asDisc = cardArtType == com.shelf.launcher.data.CardArtType.DISC,
@@ -575,7 +575,7 @@ internal fun GameDock(
                         onToggleFavorite = { onToggleFavorite(game) },
                         artOverride = artOverrides[game.stableKey],
                         cardArtType = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow),
-                        typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform),
+                        typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey),
                         realCase = realRef,
                         mixed = mixedRow,
                         asDisc = cardArtType == com.shelf.launcher.data.CardArtType.DISC,

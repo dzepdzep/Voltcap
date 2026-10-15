@@ -177,7 +177,8 @@ enum class HomeLayout(val label: String) {
          * Update 112: the layouts you can pick. Tile home is gone as a layout (its look stays: Game look › Tiles on the
          * Voltcap row); a saved Tile home is moved to the Voltcap row with the tile look (LauncherScreen).
          */
-        val pickable: List<HomeLayout> get() = values().filter { it != TILES }
+        // (Update 205: Arcade cabinets removed — no longer offered; a home still set to it opens as the Voltcap row.)
+        val pickable: List<HomeLayout> get() = values().filter { it != TILES && it != ARCADE }
     }
 }
 
@@ -1227,7 +1228,7 @@ class AppearanceStore(context: Context) {
         launchAnimation = prefs.getBoolean("launch_animation", true),
         arrivalAnim = prefs.getBoolean("arrival_anim", true),
         popupZoom = prefs.getBoolean("popup_zoom", true),
-        homeLayout = prefs.getString("home_layout", null).let { if (it == "SWITCH") HomeLayout.TILES else enumPref("home_layout", HomeLayout.CLASSIC) },
+        homeLayout = prefs.getString("home_layout", null).let { if (it == "SWITCH") HomeLayout.TILES else enumPref("home_layout", HomeLayout.CLASSIC) }.let { if (it == HomeLayout.ARCADE) HomeLayout.CLASSIC else it },
         tileShortcuts = prefs.getBoolean("tile_shortcuts", true),
         // New key: everyone starts on the consistent theme colour once (design clean-up); their own colours stay a choice.
         tileShortcutTheme = prefs.getBoolean("tile_shortcut_theme2", true),

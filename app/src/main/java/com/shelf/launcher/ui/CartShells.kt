@@ -341,6 +341,16 @@ internal object CartShells {
         return console in also
     }
 
+    /**
+     * Update 205: [authenticId] for one game ([gameKey], its file): a Game Boy Color game that also runs on the Game Boy
+     * ("(GB Compatible)" in its name) came on the black dual-mode Game Pak — only the Color-only games were clear. Every
+     * Color game was drawn clear, so most of them looked like a custom see-through piece.
+     */
+    fun authenticIdFor(platform: String, region: CaseRegion, gameKey: String?): String? {
+        val id = authenticId(platform, region) ?: return null
+        return if (id == "gbc" && gameKey != null && gameKey.contains("GB Compatible", ignoreCase = true)) "gbc_dual" else id
+    }
+
     fun authenticId(platform: String, region: CaseRegion): String? = when (platform) {
         "NES" -> if (region == CaseRegion.JP) "famicom" else "nes"
         "Famicom" -> "famicom"
@@ -467,8 +477,8 @@ internal object CartShells {
      * inside, its rim, grip ridges, special parts, and the label in its recess — [art] (the game's cover, cut to the
      * label's shape, never stretched) under a band with [brand] (the game's real console).
      */
-    fun front(s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int): Bitmap {
-        val key = "f|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx"
+    fun front(s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean = false): Bitmap {
+        val key = "f|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -528,7 +538,8 @@ internal object CartShells {
         c.save()
         c.clipPath(Path().apply { addRoundRect(lr, rr, rr, Path.Direction.CW) })
         p.color = 0xFFE9E6DF.toInt(); c.drawRect(lr, p)
-        val band = maxOf(lr.height() * 0.14f, 2.6f * k).coerceAtMost(lr.height() * 0.3f)
+        // (Update 205: a real label scan is the whole printed sticker — no console band drawn over its top.)
+        val band = if (scan && art != null) 0f else maxOf(lr.height() * 0.14f, 2.6f * k).coerceAtMost(lr.height() * 0.3f)
         val artRect = RectF(lr.left, lr.top + band, lr.right, lr.bottom)
         if (art != null) {
             val a = artRect.width() / artRect.height().coerceAtLeast(1f)
@@ -538,8 +549,8 @@ internal object CartShells {
             text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
         }
         p.color = 0xEE141418.toInt()
-        c.drawRect(RectF(lr.left, lr.top, lr.right, lr.top + band), p)
-        if (brand.isNotEmpty()) text(c, brand, RectF(lr.left + band * 0.3f, lr.top, lr.right - band * 0.3f, lr.top + band), 0xFFF2F2F2.toInt(), p, bold = true, maxLines = 1)
+        if (band > 0f) c.drawRect(RectF(lr.left, lr.top, lr.right, lr.top + band), p)
+        if (band > 0f && brand.isNotEmpty()) text(c, brand, RectF(lr.left + band * 0.3f, lr.top, lr.right - band * 0.3f, lr.top + band), 0xFFF2F2F2.toInt(), p, bold = true, maxLines = 1)
         // A little gloss over the sticker.
         p.shader = LinearGradient(lr.left, lr.top, lr.right, lr.bottom, intArrayOf(0x22FFFFFF, 0x00FFFFFF, 0x10FFFFFF), floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
         c.drawRect(lr, p); p.shader = null
@@ -922,7 +933,11 @@ internal object CartShellStore {
 
 /** Update 195: a game drawn on a shell from the library ([pickPlatform] "~sh:<choice>|<console>"), its cover as the label. */
 @Composable
-internal fun CartShellArt(pickPlatform: String, art: Any?, modifier: Modifier, title: String? = null, maxPx: Int = 640) {
+internal fun CartShellArt(
+    pickPlatform: String, art: Any?, modifier: Modifier, title: String? = null, maxPx: Int = 640,
+    /** Update 205: [art] is the game's real label scan: it fills the label, no console band over it. */
+    labelIsScan: Boolean = false
+) {
     val (choice, console) = remember(pickPlatform) { CartShells.split(pickPlatform) }
     val packLook = choice?.pack
     // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
@@ -933,8 +948,8 @@ internal fun CartShellArt(pickPlatform: String, art: Any?, modifier: Modifier, t
         val shell = choice?.shell
         val bmpArt = rememberSoftBitmap(art, 480)
         val brand = remember(console) { console?.let { com.shelf.launcher.data.ConsoleNames.display(it) } ?: "" }
-        val front = remember(pickPlatform, bmpArt, brand, title, maxPx) {
-            if (shell == null) null else runCatching { CartShells.front(shell, CartShells.colourOf(shell, choice.colourKey), bmpArt, brand, title, maxPx) }.getOrNull()
+        val front = remember(pickPlatform, bmpArt, brand, title, maxPx, labelIsScan) {
+            if (shell == null) null else runCatching { CartShells.front(shell, CartShells.colourOf(shell, choice.colourKey), bmpArt, brand, title, maxPx, labelIsScan) }.getOrNull()
         }
         BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
             val a = shell?.aspect ?: 1f

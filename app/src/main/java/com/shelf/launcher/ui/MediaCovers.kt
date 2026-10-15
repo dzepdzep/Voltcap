@@ -35,11 +35,14 @@ internal object MediaCovers {
 
     /**
      * Update 166: the cover template to draw [platform]'s case with: Voltcap's own (Steam, Android) always — they were
-     * plain covers with the cover templates off — the others with Settings › Cover templates on ([mixed]: not in a list
-     * mixing consoles, as before).
+     * plain covers with the cover templates off — the others with Settings › Cover templates on.
+     * Update 205: in lists mixing consoles too ([mixed] is no longer looked at): a game's case is its console's case in
+     * All games, Favorites and Continue playing as in its own console's list — there they were plain covers / Voltcap's
+     * plain case, so a mixed list looked like custom media.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun used(platform: String?, mixed: Boolean = false): CoverTpl? =
-        own(platform) ?: if (!mixed && com.shelf.launcher.data.Features.coverTemplates.state.value) of(platform) else null
+        own(platform) ?: if (com.shelf.launcher.data.Features.coverTemplates.state.value) of(platform) else null
 
     /** Update 129 (by hand): every console with a case here (R1 › Case tile). */
     fun keys(): List<String> = (all.keys + byHand.keys).toList()

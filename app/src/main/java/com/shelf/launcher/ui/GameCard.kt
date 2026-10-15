@@ -363,9 +363,11 @@ fun GameCard(
                     // Update 202: Art position for the cartridges / discs (Edit Home › R3), each look its own.
                     .artPosition(if (pick.shell.isDisc) ArtPlace.Look.DISC else ArtPlace.Look.CART)
             ) {
+                // (Update 205: its real label scan on the drawn piece when it has one — HomeScans holds every game's scans.)
+                val labelScan = if (typedArtUrl == null) drawnLabelScan(HomeScans.map[game.stableKey], game.platform) else null
                 MediaFocus(focused) { PhysicalMedia(
-                    pick.shell, baseUrl ?: artUrl ?: appIcon, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (pick.shell.isDisc) 6.dp else 10.dp),
-                    platform = pick.platform, labelIsScan = typedArtUrl != null && (baseUrl ?: artUrl) == typedArtUrl,
+                    pick.shell, labelScan ?: baseUrl ?: artUrl ?: appIcon, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (pick.shell.isDisc) 6.dp else 10.dp),
+                    platform = pick.platform, labelIsScan = labelScan != null || (typedArtUrl != null && (baseUrl ?: artUrl) == typedArtUrl),
                     caseCover = coverUrl ?: appIcon, title = game.name
                 ) }
             }
@@ -1216,7 +1218,9 @@ internal fun typedArtFor(
     physical: List<Pair<String, String>>?,
     screenshots: List<String>?,
     /** The game's console: with 3D boxes on and a template for it, only the flat front scan counts (the 3D box is drawn). */
-    platform: String? = null
+    platform: String? = null,
+    /** Update 205: the game's key, for a shell picked for this game (the game's menu › Cartridge shell…). */
+    gameKey: String? = null
 ): String? = when (type) {
     // The case's own scanned front (or the front cut from the full box scan, BoxTexture.kt).
     CardArtType.CASE ->
@@ -1226,6 +1230,9 @@ internal fun typedArtFor(
     CardArtType.CARTRIDGE_DISC ->
         // (Update 125, Cartridges only: a disc game's own disc picture doesn't fit on a cartridge; its cover is the label.)
         if (platform != null && cartsOnlyFor(platform)) null
+        // Update 205: a shell picked for this game or its console (Cartridge shell…) is what it shows — everywhere, the
+        // game window too; its own photo showed on the home screen instead, and the picked shell only when opened.
+        else if (platform != null && CartShellStore.choice(platform, gameKey) != null) null
         // Update 204: Android, Steam, PC and arcade games have no cartridge or disc of their own: a "disc / cartridge"
         // picture found for one is another release's (WWE All Stars on Android showed its console box), so they're
         // always drawn on Voltcap's own cartridge / CD.
@@ -1236,6 +1243,18 @@ internal fun typedArtFor(
         else physical?.firstOrNull { it.first == "Disc / cartridge" }?.second
     CardArtType.SCREENSHOT -> screenshots?.firstOrNull()
     else -> null
+}
+
+/**
+ * Update 205: the game's printed label scan (ScreenScraper's "Disc label") for its drawn cartridge / disc, when the
+ * drawn one shows (no photo of its own, or the drawn pieces picked): the real sticker, not its cover under a console
+ * band — a drawn N64 or Game Boy cartridge with the cover on it looked like a custom one. Null where its label can't be
+ * its own (Cartridges only, Discs only on a cartridge game, games without media of their own).
+ */
+internal fun drawnLabelScan(physical: List<Pair<String, String>>?, platform: String?): String? {
+    if (platform == null || cartsOnlyFor(platform) || noOwnMedia(platform)) return null
+    if (DiscLook.on && mediaKind(platform) != "disc") return null
+    return physical?.firstOrNull { it.first == "Disc label" }?.second
 }
 
 /** Update 204: games of [platform] have no cartridge or disc of their own (apps, Steam, PC, arcade…). */

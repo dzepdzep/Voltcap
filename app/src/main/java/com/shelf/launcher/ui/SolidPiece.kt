@@ -101,7 +101,7 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
  * ([gameKey]); null for a console without one (discs, apps, PC).
  */
 internal fun ownShellOf(platform: String?, gameKey: String?): CartShell? =
-    platform?.let { CartShells.authenticId(it, CaseCatalog.regionOf(gameKey ?: "")) }?.let { CartShells.of(it) }
+    platform?.let { CartShells.authenticIdFor(it, CaseCatalog.regionOf(gameKey ?: ""), gameKey) }?.let { CartShells.of(it) }
 
 /**
  * Update 204: the researched back for [sh] in its own colour (Settings › Game look › Cartridge backs: Authentic or Auto
@@ -117,12 +117,14 @@ internal fun ownShellBack(sh: CartShell, backStyle: Features.CartBackStyle, px: 
  * photo). [aspect]: the photo's own shape once it has loaded.
  */
 @Composable
-internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Float?): SolidSpec {
+internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Float?, tone: Color? = null): SolidSpec {
     val backStyle = Features.cartBackStyle.state.value
-    return remember(platform, gameKey, backStyle, aspect) {
+    return remember(platform, gameKey, backStyle, aspect, tone) {
         val sh = ownShellOf(platform, gameKey)
-        if (sh == null) SolidSpec(aspect, 0.12f, PLAIN_SHELL)
-        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(CartShells.colourOf(sh, null).argb).copy(alpha = 1f)) {
+        // (Update 205: [tone] — the photo's own plastic, read off its edge — for its sides; a silver Pokémon cartridge
+        // isn't the black of the usual Game Boy Color shell.)
+        if (sh == null) SolidSpec(aspect, 0.12f, tone ?: PLAIN_SHELL)
+        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(CartShells.colourOf(sh, null).argb).copy(alpha = 1f)) {
             ownShellBack(sh, backStyle, 480)
         }
     }
@@ -171,6 +173,8 @@ internal fun Modifier.solidPiece(spec: SolidSpec?): Modifier {
     return this.drawWithCache {
         val face = obtainGraphicsLayer()
         val edge = obtainGraphicsLayer()
+        // (Update 205: the sides are the piece's outline in its plastic's colour, made in a layer of their own.)
+        edge.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         val lit = obtainGraphicsLayer()
         val back = obtainGraphicsLayer()
         // All of it in one buffer, so a faded piece (a carousel fades its games op by op) fades as one, its slices never
@@ -199,15 +203,22 @@ internal fun Modifier.solidPiece(spec: SolidSpec?): Modifier {
             val sn = sin(t).toFloat()
             for (l in arrayOf(edge, lit, back)) { l.rotationY = yaw; l.cameraDistance = cam }
             // (Each part recorded at the node's own size, round its own middle; then placed in the buffer below.)
-            // The sides: the face's outline in its own colours, darker, lit a little as they face you.
+            // The sides: the face's outline, darker, lit a little as they face you. Update 205: filled with the shell's
+            // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
+            // over in stripes (the "glitches" round the turned cartridges in the Box flow stacks).
+            solid.record { drawLayer(face) }
+            val sideTone = spec.tone.copy(alpha = 1f)
             edge.colorFilter = SolidLight.of(0.42f + 0.22f * abs(sn))
-            edge.record { drawLayer(face) }
+            edge.record {
+                drawLayer(solid)
+                drawRect(sideTone, blendMode = BlendMode.SrcIn)
+                drawRect(sheen, blendMode = BlendMode.SrcAtop)
+            }
             if (c >= 0f) {
                 lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))
                 lit.record { drawLayer(face) }
             } else {
                 val sb = spec.back
-                if (sb == null) solid.record { drawLayer(face) }
                 back.record {
                     if (sb != null) {
                         // The shell's drawn back (made mirrored: seen from behind it reads the right way round).
@@ -228,7 +239,8 @@ internal fun Modifier.solidPiece(spec: SolidSpec?): Modifier {
             whole.record(size = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)) {
                 translate(m.toFloat(), m.toFloat()) {
                     // Far to near: the slices, then the face (or the back, seen from behind).
-                    val n = ceil(depthPx * abs(sn) / 1.6f).toInt().coerceIn(0, 32)
+                    // (Update 205: close enough together that no gap shows between them on a thick piece side-on.)
+                    val n = ceil(depthPx * abs(sn) / 1.3f).toInt().coerceIn(0, 64)
                     if (n > 0) for (k in 0..n) {
                         val f = k.toFloat() / n
                         val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
@@ -254,3 +266,23 @@ private object SolidLight {
         return ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToScale(k, k, k, 1f) }).also { cache[i] = it }
     }
 }
+
+/**
+ * Update 205: the plastic's colour in a cartridge photo [b] — the first solid pixel in from its left edge half-way down,
+ * a little further in (past the outline). Null for a picture without a solid edge there. Reads a software copy (a
+ * hardware bitmap's pixels can't be read, update 192).
+ */
+internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
+    val soft = if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
+    val y = soft.height / 2
+    var found: Color? = null
+    for (x in 0 until soft.width / 3) {
+        val px = soft.getPixel(x, y)
+        if ((px ushr 24) > 200) {
+            val inX = (x + soft.width / 40).coerceAtMost(soft.width - 1)
+            found = Color(soft.getPixel(inX, y)).copy(alpha = 1f)
+            break
+        }
+    }
+    found
+}.getOrNull()

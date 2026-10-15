@@ -897,7 +897,9 @@ internal fun StyleArt(
     }
     val hiddenMedia = LocalHiddenMedia.current
     val gArt = artForGame(c.type, g.platform, hiddenMedia, c.mixed)
-    val typed = typedArtFor(gArt, c.state.physicalMedia[k], c.state.screenshots[k], g.platform)
+    val typed = typedArtFor(gArt, c.state.physicalMedia[k], c.state.screenshots[k], g.platform, k)
+    // (Update 205: the drawn piece wears its real label scan when it has one.)
+    val labelScan = if (typed == null) drawnLabelScan(c.state.physicalMedia[k], g.platform) else null
     val url = cardArtUrl(gArt, false, cover, o?.wide ?: a?.wideGridUrl, o?.hero ?: a?.heroUrl, typed)
     val free = isFreeMedia(gArt, g.platform) || (drawnMediaWanted(gArt, typed) && MediaShell.of(g.platform) != null)
     val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, c.mixed, c.type == CardArtType.DISC, gameKey = g.stableKey) else null
@@ -911,7 +913,7 @@ internal fun StyleArt(
     val here = modifier.gameOrigin(k, k == c.game?.stableKey)
     Box(if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))) {
         when {
-            pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, url ?: appIcon, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = typed != null && url == typed, caseCover = cover ?: appIcon, title = g.name) }
+            pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, labelScan ?: url ?: appIcon, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = labelScan != null || (typed != null && url == typed), caseCover = cover ?: appIcon, title = g.name) }
             box3d != null -> MediaFocus(g.stableKey == c.game?.stableKey) { CaseArt(
                 g.platform, cover ?: appIcon, typed, Modifier.fillMaxSize().padding(2.dp).awardShine(k, focused), title = gameDisplayName(g.name),
                 caseModifier = if (focused) Modifier.border(2.dp, ring, RoundedCornerShape(2.dp)) else Modifier

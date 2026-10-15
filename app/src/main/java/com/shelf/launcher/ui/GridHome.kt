@@ -184,7 +184,9 @@ internal fun HomeGameGrid(
                 val cover = o?.cover ?: a?.gridUrl
                 // Cartridges / discs this layout leaves out: that game's cover instead.
                 val gArt = if (tiles) CardArtType.COVER else artForGame(cardArtType, g.platform, hiddenMedia, mixed)
-                val typed = typedArtFor(gArt, physicalMedia[k], screenshots[k], g.platform)
+                val typed = typedArtFor(gArt, physicalMedia[k], screenshots[k], g.platform, k)
+                // (Update 205: the drawn piece wears its real label scan when it has one.)
+                val labelScan = if (typed == null) drawnLabelScan(physicalMedia[k], g.platform) else null
                 val url = cardArtUrl(gArt, false, cover, o?.wide ?: a?.wideGridUrl, o?.hero ?: a?.heroUrl, typed)
                 val lift by animateFloatAsState(if (on) 1f else 0f, tween(if (on) 110 else 160), label = "gridLift")
                 val corner = (if (tiles) maxOf(look.cornerDp, 14) else look.cornerDp).dp
@@ -247,7 +249,7 @@ internal fun HomeGameGrid(
                         when {
                             spines -> GameSpine(g, physicalMedia[g.stableKey], Modifier.fillMaxSize(), fit = true)
                             pick != null -> Box(Modifier.fillMaxSize().awardShine(g.stableKey, on)) {
-                                MediaFocus(on) { PhysicalMedia(pick.shell, url ?: artOrIcon, Modifier.fillMaxSize().padding(8.dp), platform = pick.platform, labelIsScan = typed != null && url == typed, caseCover = cover ?: artOrIcon, title = g.name) }
+                                MediaFocus(on) { PhysicalMedia(pick.shell, labelScan ?: url ?: artOrIcon, Modifier.fillMaxSize().padding(8.dp), platform = pick.platform, labelIsScan = labelScan != null || (typed != null && url == typed), caseCover = cover ?: artOrIcon, title = g.name) }
                             }
                             // Box art as the real box, straight from the front.
                             box3d != null -> MediaFocus(on) { CaseArt(

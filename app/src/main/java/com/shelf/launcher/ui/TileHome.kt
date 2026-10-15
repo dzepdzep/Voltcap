@@ -326,7 +326,7 @@ internal fun TileHomeRow(
                 val a = art[game.stableKey]
                 val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow)
                 cardArtUrl(gArt, false, o?.cover ?: a?.gridUrl, o?.wide ?: a?.wideGridUrl, o?.hero ?: a?.heroUrl,
-                    typedArtFor(gArt, physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform))
+                    typedArtFor(gArt, physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey))
             }
             val handles = prefetchThumbs(thumbContext, urls)
             try { kotlinx.coroutines.awaitCancellation() } finally {
@@ -488,7 +488,7 @@ internal fun TileHomeRow(
                             progress = raProgress[game.stableKey],
                             favorite = game.stableKey in favorites,
                             cardArtType = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow),
-                            typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform),
+                            typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey),
                             award = awards[game.stableKey],
                             realCase = realRef,
                             mixed = mixedRow,
@@ -675,7 +675,9 @@ private fun HomeTile(
         if (pick != null) {
             // Cartridge / disc art, drawn (PhysicalMedia), the label being the scraped label or the cover.
             Box(Modifier.fillMaxSize().then(if (shineOn) Modifier.masteredShineOverShape(if (focused) 0.55f else 0.32f) else Modifier)) {
-                MediaFocus(focused) { PhysicalMedia(pick.shell, url ?: artOrIcon, Modifier.fillMaxSize().padding(8.dp), platform = pick.platform, labelIsScan = typedArtUrl != null && url == typedArtUrl, caseCover = artOrIcon, title = game.name) }
+                // (Update 205: the drawn piece wears its real label scan when it has one.)
+                val labelScan = if (typedArtUrl == null) drawnLabelScan(HomeScans.map[game.stableKey], game.platform) else null
+                MediaFocus(focused) { PhysicalMedia(pick.shell, labelScan ?: url ?: artOrIcon, Modifier.fillMaxSize().padding(8.dp), platform = pick.platform, labelIsScan = labelScan != null || (typedArtUrl != null && url == typedArtUrl), caseCover = artOrIcon, title = game.name) }
             }
         } else if (box3d != null) {
             // Box art as the real box (template pack), straight from the front.

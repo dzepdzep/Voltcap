@@ -677,9 +677,10 @@ private fun SpineShelf(
                 // Pulled out, the slot takes the front's own shape (the console's cover frame, or a plain cover when the
                 // consoles are mixed), so the cover fills it edge to edge: no empty bands above or below it.
                 // (Update 129: or the 3D box from the side, as set in "Pulled out, it shows".)
-                val sideBox = if (Features.shelfPulled.state.value == Features.ShelfPulled.SIDE && !mixed) MediaTemplates.of(g.platform)?.box else null
+                // (Update 205: the same in a list mixing consoles — each game pulled out as its own case there too.)
+                val sideBox = if (Features.shelfPulled.state.value == Features.ShelfPulled.SIDE) MediaTemplates.of(g.platform)?.box else null
                 val frontAspect = if (sideBox != null) sideBox.aspect * 1.12f
-                    else if (cov != null && !mixed && Features.shelfPulled.state.value != Features.ShelfPulled.COVER) cov.frontAspect else 0.7f
+                    else if (cov != null && Features.shelfPulled.state.value != Features.ShelfPulled.COVER) cov.frontAspect else 0.7f
                 val fullW = minOf(h * frontAspect, maxPulledW)
                 val fullH = fullW / frontAspect
                 val w = baseW + (fullW - baseW) * pull
@@ -700,12 +701,8 @@ private fun SpineShelf(
                     if (pull > 0.4f) {
                         // Pulled out: the front alone, filling the slot (the spine is only for the shelf, seen from the side).
                         // Update 129: by default its real case when there's a scan of it, else Voltcap's (as on the Game shelf).
-                        if (!mixed) {
-                            PulledOutCase(g, cover, HomeScans.map[g.stableKey], sideBox != null, Modifier.fillMaxSize())
-                        } else if (cover != null) {
-                            // (Update 202: the cover's file's flat strips trimmed — coverModel / TrimMargins.kt; Crop fills the slot.)
-                            AsyncImage(coverModel(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().background(placeholderBrush(g.hue)).pixelArtwork())
-                        } else Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))
+                        // (Update 205: in a list mixing consoles too — it was the plain cover there.)
+                        PulledOutCase(g, cover, HomeScans.map[g.stableKey], sideBox != null, Modifier.fillMaxSize())
                     } else if (!LookStyles.spineForAll() && (HomeScans.map[g.stableKey]?.any { it.first == "Spine" } == true ||
                         (Features.originalCases.state.value && BoxTexture.spine(HomeScans.map[g.stableKey], g.platform) != null))) {
                         // Update 117: the game's own spine (its spine scan, or cut from its box scan), as on the Shelf.

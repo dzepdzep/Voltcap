@@ -183,6 +183,13 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     }
 
     /** ScreenScraper's record ("jeu") for one ROM, or null if unknown / not a ROM. */
+    /**
+     * Update 205: how each game's last look-up went (its key → a short reason), for Settings › Metadata › Scraping's real
+     * media report: found, not on ScreenScraper, no sure match, no connection, or what the server answered (429: too many
+     * requests at once; 401 / 403 / 430: the login or the day's quota).
+     */
+    val lookupOutcome = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     private suspend fun lookup(c: ScreenScraperCredentials, game: Game): JsonObject? {
         if (game.sourceType != SourceType.ROM) return null
         synchronized(recent) { if (recent.containsKey(game.stableKey)) return recent[game.stableKey] }
@@ -205,6 +212,7 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         val response = try {
             throttled { api.gameInfo(params) }
         } catch (e: Exception) {
+            lookupOutcome[game.stableKey] = OUTCOME_OFFLINE
             return null // network trouble: don't remember, so a retry can work
         }
         val jeu = if (response.isSuccessful) {
@@ -212,6 +220,11 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         } else {
             runCatching { response.errorBody()?.close() } // an unread error body keeps its connection busy
             null
+        }
+        lookupOutcome[game.stableKey] = when {
+            jeu != null -> OUTCOME_FOUND
+            response.isSuccessful || response.code() == 404 -> OUTCOME_UNKNOWN
+            else -> "ScreenScraper answered ${response.code()}"
         }
         // Only a clear "not found" is remembered; server trouble isn't.
         if (response.isSuccessful || response.code() == 404) {
@@ -328,7 +341,10 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     /** The physical game: box front / back, 3D box and the disc or cartridge,
      * as (label, address) pairs — for the details window. */
     suspend fun physicalMedia(c: ScreenScraperCredentials, game: Game): List<Pair<String, String>> {
-        val jeu = lookup(c, game)?.takeIf { isConfidentMatch(it, game) } ?: return emptyList()
+        val found = lookup(c, game)
+        // (Update 205: a match that isn't sure enough is reported as such.)
+        if (found != null && !isConfidentMatch(found, game)) lookupOutcome[game.stableKey] = OUTCOME_UNSURE
+        val jeu = found?.takeIf { isConfidentMatch(it, game) } ?: return emptyList()
         val medias = jeu.arr("medias")?.mapNotNull { it as? JsonObject } ?: return emptyList()
         return listOf(
             "box-2D" to "Box",
@@ -531,3 +547,9 @@ class VideoUrlStore(context: Context) {
     fun put(stableKey: String, url: String?) = prefs.edit().putString(stableKey, url ?: "").apply()
     fun clear() = prefs.edit().clear().apply()
 }
+
+/** Update 205: [ScreenScraperRepository.lookupOutcome]'s plain answers. */
+const val OUTCOME_FOUND = "Found"
+const val OUTCOME_UNKNOWN = "Not on ScreenScraper"
+const val OUTCOME_UNSURE = "No sure match"
+const val OUTCOME_OFFLINE = "No connection"
