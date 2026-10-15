@@ -2739,11 +2739,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      */
     fun cycleCategory(forward: Boolean) {
         val state = _uiState.value
+        // (Update 208: debug builds — how long the switch takes to settle, logged as "VoltcapPerf".)
+        com.shelf.launcher.ui.PerfDiag.mark(if (forward) "Category switch (R2)" else "Category switch (L2)")
         // Flatten the order into stops: ALL, each special, each console.
         val stops = state.categoryOrder.flatMap { key ->
             when (key) {
                 CategorySettings.ALL -> listOf<Pair<SpecialFilter?, String?>>(null to null)
-                CategorySettings.CONSOLES -> state.availablePlatforms.map { null to it }
+                // (Update 208: in your own console order — Choose a category › Reorder — as the category screen shows them.)
+                CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).map { null to it }
                 CategorySettings.COLLECTIONS -> state.collections.map { null to it.key }
                 else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
             }
@@ -5572,8 +5575,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // (Update 206: said when it's already saving — Save all now seemed to do nothing.)
         if (artSaveJob?.isActive == true) {
             if (!silent) setStatusMessage("Already saving art: ${_uiState.value.artSaveDone} / ${_uiState.value.artSaveTotal}.")
+            // (Update 208: asked again while saving — a scrape that just finished found new pictures the running save's
+            // list doesn't have: it goes round once more when it's done, so they're saved too without asking.)
+            artSaveAgain = true
             return
         }
+        artSaveAgain = false
         // (Update 119: while the art is being scraped, it saves as it goes and calls this when it's done.)
         if (scrapeJob?.isActive == true && !afterScrape) {
             if (!silent) setStatusMessage("Saving together with the scrape running now.")
@@ -5698,8 +5705,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
           } finally {
             if (holdAwake) com.shelf.launcher.data.ArtDownloadService.stop(app)
           }
+          // (Update 208: once more for what was found while this ran, when there's still room.)
+          if (artSaveAgain && isActive && !com.shelf.launcher.data.ArtFiles.full()) {
+              artSaveAgain = false
+              val finishing = artSaveJob
+              viewModelScope.launch { finishing?.join(); kotlinx.coroutines.delay(2_000); saveAllArt(silent = true) }
+          }
         }
     }
+
+    /** Update 208: saveAllArt was asked for while it ran: it goes round once more at the end. */
+    @Volatile private var artSaveAgain = false
 
     private var spineJob: kotlinx.coroutines.Job? = null
 

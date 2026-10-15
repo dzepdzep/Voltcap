@@ -55,7 +55,12 @@ internal fun Case3D(
     val casePlatformNow = LookStyles.casePlatform(g.platform)
     val spec = remember(g.stableKey, g.platform, regionPref, casePlatformNow) { CaseCatalog.forGame(g) }
     // The spine, in the same order as the Spines look (GameSpine): the real scan first, then your console spine.
-    val scans = physical ?: HomeScans.map[g.stableKey]
+    // (Update 208: without flat-colour stand-ins — ScreenScraper's green fill for a missing back — so the next picture in
+    // line shows instead: FlatArt.)
+    val flatVersion = FlatArt.version.intValue
+    // (Update 208: this game's own scans only — HomeScans.of — so another game's scans arriving don't rebuild this case.)
+    val homeScans = if (physical == null) HomeScans.of(g.stableKey) else null
+    val scans = remember(physical, homeScans, flatVersion) { (physical ?: homeScans).withoutFlat() }
     // (Update 202: never for an Android game — its case is Voltcap's own with the Android band, androidOwnCase; a scraped
     // "box" of it is store art, it stood bare without the band.)
     val ownFront = if (realFront && Features.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) {
@@ -65,7 +70,8 @@ internal fun Case3D(
     // carousel's warmSoft for 3D cases asks the same way.)
     val front = rememberSoftBitmap(ownFront ?: cover, 480, trim = true)
     // Not looked up yet (far along the Spine wall): ask once it has stayed on screen a moment, as the Spines look does.
-    if (physical == null && !HomeScans.map.containsKey(g.stableKey)) {
+    val scansKnown = physical != null || HomeScans.knownHere(g.stableKey)
+    if (!scansKnown) {
         androidx.compose.runtime.LaunchedEffect(g.stableKey) { kotlinx.coroutines.delay(400); HomeScans.need?.invoke(g) }
     }
     val forAll = LookStyles.spineForAll()
@@ -77,18 +83,18 @@ internal fun Case3D(
     // Update 205: the game's real spine is on its way (or its scans aren't known yet): a neutral strip meanwhile, never
     // Voltcap's own console spine that then pops to the real one.
     val spinePending = (own != null && !ownLoad.done) ||
-        (physical == null && g.sourceType == com.shelf.launcher.data.SourceType.ROM && !HomeScans.known(g.stableKey))
+        (!scansKnown && g.sourceType == com.shelf.launcher.data.SourceType.ROM)
     // (Update 166: Voltcap's own Steam / Android case always — its spine and its front band, see below.)
     val ownCase = MediaCovers.own(g.platform).takeIf { !forAll }
     val tpl = if (Features.coverTemplates.state.value || forAll || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     // (Made once per game, away from the screen's thread: SpineCache.)
     val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false)
     val spine: android.graphics.Bitmap = remember(ownBmp, tplSpine, title, spinePending) {
-        ownBmp?.let { orientSpine(it, landscape = false) }
+        ownBmp?.let { b -> DerivedArt.of(b, "spine|0") { orientSpine(b, landscape = false) } }
             ?: (if (spinePending) SpineCache.WAITING else null)
             ?: tplSpine.bitmap
             // (A plain dark strip for the moment your console spine is being made, then the plain one with the name.)
-            ?: if (!tplSpine.done) SpineCache.WAITING else plainSpine(title)
+            ?: if (!tplSpine.done) SpineCache.WAITING else DerivedArt.named("plainSpine|$title") { plainSpine(title) }
     }
     // How thick the case is (its spine's width against its height): the spine picture's own shape, kept to real cases'.
     val depth = remember(spine, tpl, ownBmp, ownCase, spec) {
@@ -151,21 +157,28 @@ internal fun Case3D(
                 // on a jewel case, whatever the picture's shape.)
                 // (Update 197 (Thor): a scan of the whole jewel case's front — its own hinge ribs at the left, about the
                 // case's shape — is the front itself: it fills the face, no drawn booklet window or ridge over it.)
-                spec?.shell == CaseShell.JEWEL -> if (isWholeCaseScan(f, shape)) f else jewelFront(f, shape, spec.tray)
+                spec?.shell == CaseShell.JEWEL -> if (isWholeCaseScan(f, shape)) f else DerivedArt.of(f, "jewel|$shape|${spec.tray}") { jewelFront(f, shape, spec.tray) }
                 // Update 191: a keep case's sleeve, a box's print: the cover over the whole front, at the real case's
                 // shape. (Update 202: cut in the middle only as much as it's off — fillCrop, never stretched.)
-                spec != null -> made ?: fitFace(f, shape)
+                spec != null -> made ?: DerivedArt.of(f, "fill|$shape") { fitFace(f, shape) }
                 // (Update 202: the case already takes the cover's own shape within a quarter — [shape] above — so this
                 // cuts only past that; Update 200 stretched it up to 13 % here.)
-                else -> made ?: fillCrop(f, shape)
+                else -> made ?: DerivedArt.of(f, "fill|$shape") { fillCrop(f, shape) }
             }
         }
     }
     // Update 205: a case with no back handed in (the carousels, Case stacks, the shelf's 3D cases) gets its own — its
     // back scan, else the back cut from its full box scan, else a printed one — made the first time it turns far enough
     // to show it (see the drawing below). It showed plain plastic from behind everywhere but the game window.
+    // (Update 208: asked for at once — it's decoded while the case stands, so it's there the moment it turns (a back made
+    // only once the case had turned 70° came late, or after a second turn). Small handhelds still wait for the turn.)
+    val backAtOnce = !com.shelf.launcher.device.MemoryBudget.small(androidx.compose.ui.platform.LocalContext.current)
     var backAsked by remember(g.stableKey) { androidx.compose.runtime.mutableStateOf(false) }
-    val backModel: Any? = back ?: if (!backAsked) null else remember(scans, g.platform, cover, aspect) { defaultCaseBack(g, scans, cover, aspect) }
+    // (Update 208: a back handed in that turned out a flat-colour stand-in is replaced by the next one in line.)
+    val given = back?.takeUnless { FlatArt.isKnown(it) }
+    val autoBack: Any? = if (given != null) null else remember(scans, g.platform, cover, aspect) { defaultCaseBack(g, scans, cover, aspect) }
+    // (A scanned back at once; a printed one — drawn from its parts — only once it's turned.)
+    val backModel: Any? = given ?: autoBack?.takeIf { back != null || backAsked || (backAtOnce && it !is PrintedBack) }
     // (Update 170: a printed back is made from its parts; a scanned one is a picture.)
     val printedBmp = rememberPrintedBack(backModel as? PrintedBack)
     val scannedBmp = rememberSoftBitmap(backModel.takeIf { it !is PrintedBack }, 480)
@@ -175,10 +188,10 @@ internal fun Case3D(
     // (Update 205: a jewel case's back insert scanned with its two end flaps — the strips that fold into the case's
     // sides — has them cut off instead of squeezing them onto the back.)
     val jewelBack = spec?.shell == CaseShell.JEWEL || caseStyleOf(g.platform).let { it == CASE_JEWEL || it == CASE_JEWEL_BLACK }
-    val backFace = remember(backBmp, shape, jewelBack) { backBmp?.let { fitBack(it, shape, jewelBack) } }
+    val backFace = remember(backBmp, shape, jewelBack) { backBmp?.let { b -> DerivedArt.of(b, "back|$shape|$jewelBack") { fitBack(b, shape, jewelBack) } } }
     // Update 166: while its cover is still loading, the front in the game's own colour (not near-black: scrolling a
     // carousel of 3D cases showed dark fronts for a moment).
-    val loading = remember(g.hue) { hueFront(g.hue) }
+    val loading = remember(g.hue) { DerivedArt.named("hue|${g.hue}") { hueFront(g.hue) } }
     val frameArgb = frameColor.toArgb()
     // Update 186: what the case is made of, so it looks like the real one (a clear jewel case, a cardboard box, a keep case).
     val style = caseStyleOf(g.platform)
@@ -212,7 +225,7 @@ internal fun Case3D(
     Canvas(modifier) {
         val yawNow = yawOf?.invoke() ?: yaw
         // (Update 205: turned far enough that its back will show: its back is made now, once.)
-        if (back == null && !backAsked) {
+        if (given == null && !backAsked) {
             val a = ((yawNow % 360f) + 360f) % 360f
             if (a > 70f && a < 290f) backAsked = true
         }
@@ -320,13 +333,27 @@ internal class CaseLook(
         private fun luma(c: Int): Int =
             (android.graphics.Color.red(c) * 299 + android.graphics.Color.green(c) * 587 + android.graphics.Color.blue(c) * 114) / 1000
 
-        /** The average colour of a part of [b] (fractions l, t, r, b). */
-        private fun averageOf(b: android.graphics.Bitmap, l: Float, t: Float, r: Float, bt: Float): Int? = runCatching {
-            val x = (l * b.width).toInt().coerceIn(0, b.width - 1); val y = (t * b.height).toInt().coerceIn(0, b.height - 1)
-            val w = ((r - l) * b.width).toInt().coerceIn(1, b.width - x); val h = ((bt - t) * b.height).toInt().coerceIn(1, b.height - y)
-            val part = android.graphics.Bitmap.createBitmap(b, x, y, w, h)
-            val one = android.graphics.Bitmap.createScaledBitmap(part, 1, 1, true)
-            one.getPixel(0, 0) or 0xFF000000.toInt()
+        /**
+         * The average colour of a part of [b] (fractions l, t, r, b). (Update 208: sampled on a grid, without copying the
+         * part and scaling it down — two new pictures per case, made on the screen's thread each time a case came into a
+         * row — and kept per picture: DerivedArt.)
+         */
+        private fun averageOf(b: android.graphics.Bitmap, l: Float, t: Float, r: Float, bt: Float): Int? =
+            DerivedArt.of(b, "avg|$l|$t|$r|$bt") { averageNow(b, l, t, r, bt) ?: NO_AVERAGE }.takeIf { it != NO_AVERAGE }
+
+        private const val NO_AVERAGE = 0x00FFFFFF
+
+        private fun averageNow(b: android.graphics.Bitmap, l: Float, t: Float, r: Float, bt: Float): Int? = runCatching {
+            val x0 = (l * b.width).toInt().coerceIn(0, b.width - 1); val y0 = (t * b.height).toInt().coerceIn(0, b.height - 1)
+            val x1 = (r * b.width).toInt().coerceIn(x0 + 1, b.width); val y1 = (bt * b.height).toInt().coerceIn(y0 + 1, b.height)
+            val nx = minOf(12, x1 - x0); val ny = minOf(24, y1 - y0)
+            var rs = 0L; var gs = 0L; var bs = 0L
+            for (j in 0 until ny) for (i in 0 until nx) {
+                val c = b.getPixel(x0 + ((i + 0.5f) * (x1 - x0) / nx).toInt().coerceAtMost(x1 - 1), y0 + ((j + 0.5f) * (y1 - y0) / ny).toInt().coerceAtMost(y1 - 1))
+                rs += (c shr 16) and 0xFF; gs += (c shr 8) and 0xFF; bs += c and 0xFF
+            }
+            val n = (nx * ny).coerceAtLeast(1)
+            0xFF000000.toInt() or ((rs / n).toInt() shl 16) or ((gs / n).toInt() shl 8) or (bs / n).toInt()
         }.getOrNull()
     }
 }
@@ -417,6 +444,56 @@ private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap,
     c.drawBitmap(frame, null, android.graphics.RectF(0f, 0f, w.toFloat(), h.toFloat()), p)
     out
 }.getOrDefault(art)
+
+/**
+ * Update 208: what a 3D case makes from its pictures — the cover cut to the case's shape, a jewel case's booklet, the back
+ * fitted, the spine turned upright, the colours along a box's edges, the plain fronts and spines — kept, keyed by the
+ * picture they came from (held weakly: once the picture itself is let go, its entry is never used again). Each was made
+ * again on the screen's thread every time a case came into a row: scrolling a long row of cases, or switching to a
+ * category of them, spent most of its frames copying pictures.
+ */
+internal object DerivedArt {
+    private class Entry(val src: java.lang.ref.WeakReference<Any>?, val value: Any, val bytes: Int)
+
+    private val cache = object : android.util.LruCache<String, Entry>(
+        (Runtime.getRuntime().maxMemory() / 12).coerceIn(8L * 1024 * 1024, 48L * 1024 * 1024).toInt()
+    ) {
+        override fun sizeOf(key: String, value: Entry): Int = value.bytes
+    }
+
+    @Volatile var hits = 0
+        private set
+    @Volatile var misses = 0
+        private set
+
+    private fun bytesOf(v: Any, src: Any?): Int =
+        if (v is android.graphics.Bitmap && v !== src) runCatching { v.allocationByteCount }.getOrDefault(64).coerceAtLeast(64) else 64
+
+    /** [make] for [src] (a picture), made once while [src] lives. */
+    fun <T : Any> of(src: android.graphics.Bitmap, kind: String, make: () -> T): T {
+        val key = "${System.identityHashCode(src)}|${src.width}x${src.height}|$kind"
+        val hit = cache.get(key)
+        @Suppress("UNCHECKED_CAST")
+        val known = if (hit != null && hit.src?.get() === src && !(hit.value is android.graphics.Bitmap && hit.value.isRecycled)) hit.value as? T else null
+        if (known != null) { hits++; return known }
+        misses++
+        val v = make()
+        // (Never one holding its own picture: the same picture back needs no keeping.)
+        if (v !== src) cache.put(key, Entry(java.lang.ref.WeakReference(src), v, bytesOf(v, src)))
+        return v
+    }
+
+    /** [make] for a [key] that says everything it's made from (a hue, a name). */
+    fun <T : Any> named(key: String, make: () -> T): T {
+        @Suppress("UNCHECKED_CAST")
+        val known = cache.get("n|$key")?.value?.takeUnless { it is android.graphics.Bitmap && it.isRecycled } as? T
+        if (known != null) { hits++; return known }
+        misses++
+        val v = make()
+        cache.put("n|$key", Entry(null, v, bytesOf(v, null)))
+        return v
+    }
+}
 
 /**
  * Update 188: a case's back picture at [aspect]: within about a fifth of it, gently stretched (nothing cut); further off,
@@ -717,6 +794,31 @@ private object CaseDraw {
                 bandOn(0.04f, 0.955f, 0.96f, 0.985f, scaled(CaseInside.mix(look.top, black, 0.55f), l))
             }
         }
+        // The plastic: the open edge, the top and the back (update 208: one function — a printed box's side above).
+        fun plainSide(f: Int, l: Float, mirror: Boolean) {
+            // (Update 186: a jewel case's edges are clear, see-through grey plastic; a box's edges cardboard.)
+            fill.shader = null
+            // (Update 191: a box with its flap open shows its dark inside on top.)
+            val opening = f == 3 && !mirror && flap > 0.001f && look.flap
+            val base = if (opening) 0xFF141210.toInt() else if (f == 3) look.top else look.edge
+            fill.color = scaled(base, l)
+            c.drawPath(pathOf(), fill)
+            // Update 189: a keep case's opening edge has its thumb grip — a recess in the middle third,
+            // where you open it (jewel cases and boxes don't have one; update 191: where the real case has).
+            // Update 193: the opening side is two pieces fitted together (CaseLook.seam): the front lid's own
+            // edge, a fine seam, the rear shell's lip, the small catches; a jewel case's clear lid over its
+            // tray with the lid's tabs; a box's top its fold and tuck slit. The thumb grip sits in the rear
+            // shell, behind the seam.
+            if (!mirror && f == 2 && look.seam > 0f) openingEdge(look, l)
+            if (!mirror && f == 3 && !opening) topEdge(look, l)
+            if (look.grip && f == 2) {
+                val g0 = if (look.seam > 0f) (look.seam + 0.08f).coerceAtMost(0.5f) else 0.12f
+                path.reset()
+                path.moveTo(px(g0, 0.36f), py(g0, 0.36f)); path.lineTo(px(0.88f, 0.36f), py(0.88f, 0.36f))
+                path.lineTo(px(0.88f, 0.64f), py(0.88f, 0.64f)); path.lineTo(px(g0, 0.64f), py(g0, 0.64f)); path.close()
+                fill.color = scaled(CaseInside.mix(look.edge, 0xFF000000.toInt(), 0.5f), l * 0.8f); c.drawPath(path, fill)
+            }
+        }
         fun drawFaces(mirror: Boolean) {
             for (f in FACES.indices) {
                 val face = FACES[f]
@@ -768,31 +870,17 @@ private object CaseDraw {
                         fill.color = scaled(look.back, l)
                         c.drawPath(pathOf(), fill)
                     }
-                    else -> {
-                        // The plastic: the open edge, the top and the back.
-                        // (Update 186: a jewel case's edges are clear, see-through grey plastic; a box's edges cardboard.)
-                        fill.shader = null
-                        // (Update 191: a box with its flap open shows its dark inside on top.)
-                        val opening = f == 3 && !mirror && flap > 0.001f && look.flap
-                        val base = if (opening) 0xFF141210.toInt() else if (f == 3) look.top else look.edge
-                        fill.color = scaled(base, l)
-                        c.drawPath(pathOf(), fill)
-                        // Update 189: a keep case's opening edge has its thumb grip — a recess in the middle third,
-                        // where you open it (jewel cases and boxes don't have one; update 191: where the real case has).
-                        // Update 193: the opening side is two pieces fitted together (CaseLook.seam): the front lid's own
-                        // edge, a fine seam, the rear shell's lip, the small catches; a jewel case's clear lid over its
-                        // tray with the lid's tabs; a box's top its fold and tuck slit. The thumb grip sits in the rear
-                        // shell, behind the seam.
-                        if (!mirror && f == 2 && look.seam > 0f) openingEdge(look, l)
-                        if (!mirror && f == 3 && !opening) topEdge(look, l)
-                        if (look.grip && f == 2) {
-                            val g0 = if (look.seam > 0f) (look.seam + 0.08f).coerceAtMost(0.5f) else 0.12f
-                            path.reset()
-                            path.moveTo(px(g0, 0.36f), py(g0, 0.36f)); path.lineTo(px(0.88f, 0.36f), py(0.88f, 0.36f))
-                            path.lineTo(px(0.88f, 0.64f), py(0.88f, 0.64f)); path.lineTo(px(g0, 0.64f), py(g0, 0.64f)); path.close()
-                            fill.color = scaled(CaseInside.mix(look.edge, 0xFF000000.toInt(), 0.5f), l * 0.8f); c.drawPath(path, fill)
+                    // Update 208: a printed cardboard box's other side carries its print too (the same panel as the spine,
+                    // as on the real Game Boy / NES / N64 boxes), with the folds along its edges — it was one solid colour
+                    // taken from the front's edge, a plain block of plastic down the whole side.
+                    2 -> if (look.flap && look.matte) {
+                        warp(spine, filterOf(l))
+                        if (!mirror) {
+                            lineOn(0f, 0f, 0f, 1f, scaled(0x66000000, 1f), (w / 400f).coerceIn(0.6f, 2f))
+                            lineOn(1f, 0f, 1f, 1f, scaled(0x55000000, 1f), (w / 400f).coerceIn(0.6f, 2f))
                         }
-                    }
+                    } else plainSide(f, l, mirror)
+                    else -> plainSide(f, l, mirror)
                 }
             }
         }

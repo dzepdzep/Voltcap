@@ -35,7 +35,7 @@ internal fun CategoryWarmup(state: LauncherUiState) {
                 val stops = state.categoryOrder.flatMap { key ->
                     when (key) {
                         CategorySettings.ALL -> listOf<Pair<SpecialFilter?, String?>>(null to null)
-                        CategorySettings.CONSOLES -> state.availablePlatforms.map { null to it }
+                        CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).map { null to it }
                         CategorySettings.COLLECTIONS -> state.collections.map { null to it.key }
                         else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
                     }

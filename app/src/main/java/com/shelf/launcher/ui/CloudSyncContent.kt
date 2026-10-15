@@ -95,6 +95,31 @@ internal fun CloudSyncContent() {
         }
     }
 
+    // Update 208: another Google account, picked from Android's own list of the accounts on this device.
+    val pickAccount = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val email = result.data?.getStringExtra(android.accounts.AccountManager.KEY_ACCOUNT_NAME) ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            message = "Switching to $email…"
+            runCatching { CloudSync.switchAccount(context, email) }
+                .onSuccess { pending ->
+                    if (pending != null) signIn.launch(IntentSenderRequest.Builder(pending.intentSender).build())
+                    else message = "Now syncing with $email."
+                }
+                .onFailure { message = com.shelf.launcher.data.DriveErrors.explain(it) }
+        }
+    }
+    val chooseAccount: () -> Unit = {
+        val current = state.account ?: com.shelf.launcher.data.DriveAuth.chosenAccount(context)
+        runCatching {
+            pickAccount.launch(
+                android.accounts.AccountManager.newChooseAccountIntent(
+                    current?.let { android.accounts.Account(it, "com.google") }, null, arrayOf("com.google"),
+                    null, null, null, null
+                )
+            )
+        }.onFailure { message = "Android's account list couldn't be opened here." }
+    }
+
     // ---- Account ----
     ShelfCard {
         SectionLabel("Google Drive")
@@ -111,6 +136,14 @@ internal fun CloudSyncContent() {
                 else -> "Connected. Not synced yet."
             }
         )
+        // Update 208: which Google account it syncs with (it never said, and couldn't be changed).
+        if (s.connected) {
+            Spacer(Modifier.height(6.dp))
+            MutedNote(
+                "Account: " + (state.account ?: com.shelf.launcher.data.DriveAuth.chosenAccount(context)
+                    ?: "not known yet — shown after the next sync")
+            )
+        }
         Spacer(Modifier.height(10.dp))
         ChipFlow {
             if (!s.connected || state.needsSignIn) {
@@ -121,6 +154,7 @@ internal fun CloudSyncContent() {
                     scope.launch { message = CloudSync.sync(context).summary }
                 }
                 if (state.running) Chip("Stop", accent = false) { CloudSync.stop() }
+                Chip("Switch account", accent = false, enabled = !state.running, onClick = chooseAccount)
                 BrowseSavesButton(onClick = { SaveExplorerHook.request() })
                 Chip("Clean up Drive", accent = false, enabled = !state.running) {
                     scope.launch { message = CloudSync.cleanUpDrive(context).summary }

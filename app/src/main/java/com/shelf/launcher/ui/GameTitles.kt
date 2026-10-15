@@ -129,7 +129,16 @@ private val TAG = Regex("""\s*[(\[]([^)\]]*)[)\]]""")
  * Removes region tags, language lists and dump flags; keeps things that tell
  * versions apart, like (Disc 2), (Rev 1) or (Beta).
  */
-fun stripRegionTags(name: String): String {
+fun stripRegionTags(name: String): String =
+    // (Update 208: each name worked out once — a scrolling carousel of 3D cases asked again for every game it built.)
+    REGION_CLEAN.get(name) ?: stripRegionTagsNow(name).also { REGION_CLEAN.put(name, it) }
+
+/** Update 208: names already cleaned, as shown (both ways) — the regexes cost a frame's worth on a long row. */
+private val REGION_CLEAN = android.util.LruCache<String, String>(4096)
+private val ALL_CLEAN = android.util.LruCache<String, String>(4096)
+private val FLAG_ONLY = Regex("^[!abhotfpc]\\d*$")
+
+private fun stripRegionTagsNow(name: String): String {
     val cleaned = TAG.replace(name) { match ->
         val inner = match.groupValues[1].trim()
         val parts = inner.split(',', '/', '+').map { it.trim() }.filter { it.isNotEmpty() }
@@ -138,7 +147,7 @@ fun stripRegionTags(name: String): String {
         val lower = inner.lowercase()
         val isPatch = PATCH_TAG.containsMatchIn(lower)
         val isFlag = inner.isEmpty() || inner in setOf("!", "a", "b", "h", "o", "t", "f", "p", "c") ||
-            inner.matches(Regex("^[!abhotfpc]\\d*$"))
+            inner.matches(FLAG_ONLY)
         if (isRegion || isLanguages || isPatch || (match.value.trim().startsWith("[") && isFlag)) "" else match.value
     }
     // Loose " - Widescreen Hack" / " + 60 FPS Patch" style suffixes too.
@@ -156,7 +165,9 @@ private val STRAY_CLOSE = Regex("""[)\]}）】]""")
  * (Update 125: brackets inside brackets "(Disc 1 (USA))", curly and full-width ones, and a bracket that never closes
  * "Game (Hack" go too; they used to stay, which is why the switch didn't seem to work on some names.)
  */
-fun stripAllBrackets(name: String): String {
+fun stripAllBrackets(name: String): String = ALL_CLEAN.get(name) ?: stripAllBracketsNow(name).also { ALL_CLEAN.put(name, it) }
+
+private fun stripAllBracketsNow(name: String): String {
     var s = name
     while (true) {
         val next = INNER_TAG.replace(s, "")

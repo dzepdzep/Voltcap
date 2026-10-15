@@ -142,9 +142,12 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean =
     val key = remember(model, maxSide, trim) { (model as? String)?.let { coil.memory.MemoryCache.Key(softKey(maxSide, it, trim)) } }
     val cached = remember(key) { key?.let { coil.Coil.imageLoader(context).memoryCache?.get(it)?.bitmap } }
         ?.also { b -> (model as? String)?.let { Models3D.noteSource(b, it) } }
+        // (Update 208: a flat-colour stand-in is no picture.)
+        ?.takeUnless { FlatArt.isKnown(model) }
     val state by produceState(cached, model, trim) {
         if (model == null) { value = null; return@produceState }
-        if (cached != null) { value = cached; return@produceState }
+        if (cached != null) { value = cached; if (PerfDiag.on) PerfDiag.softHits++; return@produceState }
+        if (PerfDiag.on) PerfDiag.softMisses++
         value = null
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
@@ -158,11 +161,49 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean =
                 drawableBitmap((coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable, maxSide)
                     // (Update 151: remembered as this address's picture, so the 3D pieces made with it are found again.)
                     ?.also { b -> (model as? String)?.let { Models3D.noteSource(b, it) } }
+                    // (Update 208: a flat-colour stand-in is no picture.)
+                    ?.takeUnless { b -> FlatArt.check(model, b) }
             }.getOrNull()
         }
     }
     return state
 }
+
+/**
+ * Update 208: pictures that are one flat colour — ScreenScraper sometimes serves a pure green 395 × 680 stand-in instead
+ * of a missing scan (the green back of the Ben 10 PSP cases; 14 such files were saved on the Thor). They count as no
+ * picture: the next one in line (the back cut from the full box scan, a printed back, the cover, Voltcap's spine) shows.
+ * Found when decoded; [version] makes the pieces that asked look again.
+ */
+internal object FlatArt {
+    private val known = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    val version = androidx.compose.runtime.mutableIntStateOf(0)
+
+    fun isKnown(model: Any?): Boolean = (model as? String)?.let { it in known } == true
+
+    /** Notes [model] as a stand-in when [b] is one flat colour; true then. */
+    fun check(model: Any?, b: android.graphics.Bitmap?): Boolean {
+        if (b == null || model !is String || !flat(b)) return false
+        if (known.add(model)) android.os.Handler(android.os.Looper.getMainLooper()).post { version.intValue++ }
+        return true
+    }
+
+    /** Every pixel of a 7 × 7 grid within a few levels of the first (a picture of anything has some variation). */
+    fun flat(b: android.graphics.Bitmap): Boolean = runCatching {
+        if (b.width < 8 || b.height < 8) return false
+        val soft = if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
+        val first = soft.getPixel(soft.width / 2, soft.height / 2)
+        for (i in 0..6) for (j in 0..6) {
+            val px = soft.getPixel((soft.width - 1) * i / 6, (soft.height - 1) * j / 6)
+            for (sh in intArrayOf(0, 8, 16, 24)) if (kotlin.math.abs(((px shr sh) and 255) - ((first shr sh) and 255)) > 6) return false
+        }
+        true
+    }.getOrDefault(false)
+}
+
+/** Update 208: [this] without the pictures found to be flat-colour stand-ins ([FlatArt]); the same list when there are none. */
+internal fun List<Pair<String, String>>?.withoutFlat(): List<Pair<String, String>>? =
+    if (this == null || none { FlatArt.isKnown(it.second) }) this else filterNot { FlatArt.isKnown(it.second) }
 
 /** Update 205: a picture being loaded by [rememberSoftLoad]: the bitmap (null while loading or when it failed) and whether the load is over. */
 internal class SoftLoad(val bitmap: android.graphics.Bitmap?, val done: Boolean)
@@ -176,6 +217,7 @@ internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
     val context = LocalContext.current
     val key = remember(model, maxSide) { (model as? String)?.let { coil.memory.MemoryCache.Key(softKey(maxSide, it, false)) } }
     val cached = remember(key) { key?.let { coil.Coil.imageLoader(context).memoryCache?.get(it)?.bitmap } }
+        ?.takeUnless { FlatArt.isKnown(model) }
     val start = remember(model, cached) { SoftLoad(cached, model == null || cached != null) }
     val state by produceState(start, model) {
         if (model == null || cached != null) { value = start; return@produceState }
@@ -188,6 +230,7 @@ internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
                     .apply { if (key != null) memoryCacheKey(key) }.build()
                 drawableBitmap((coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable, maxSide)
                     ?.also { bmp -> (model as? String)?.let { Models3D.noteSource(bmp, it) } }
+                    ?.takeUnless { bmp -> FlatArt.check(model, bmp) }
             }.getOrNull()
         }
         value = SoftLoad(b, true)
@@ -221,13 +264,16 @@ internal fun warmSoft(context: android.content.Context, urls: List<String>, maxS
  * scan with Original cases on and [realFront], else [cover]) and its spine (the real spine scan, else the strip cut from
  * its box scans) — so they can be decoded ahead under the same memory keys ([warmCase3d]). Keep in step with Case3D.
  */
-internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans: List<Pair<String, String>>?, realFront: Boolean): Pair<String?, String?> {
+internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans0: List<Pair<String, String>>?, realFront: Boolean): Triple<String?, String?, String?> {
     val f = com.shelf.launcher.data.Features
+    val scans = scans0.withoutFlat()
     val front = (if (realFront && f.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform))
         BoxTexture.front(scans, g.platform) else null) ?: cover
     val spine = if (LookStyles.spineForAll()) null
         else scans?.firstOrNull { it.first == "Spine" }?.second ?: if (f.originalCases.state.value) BoxTexture.spine(scans, g.platform) else null
-    return front to spine
+    // (Update 208: and its back — the scanned one Case3D asks for at once — so a turned case has it.)
+    val back = runCatching { defaultCaseBack(g, scans, cover, case3dAspect(g, false)) as? String }.getOrNull()
+    return Triple(front, spine, back)
 }
 
 /**
@@ -235,9 +281,10 @@ internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans
  * and keys Case3D reads), so cases sliding in or a category opening show their print at once. They were warmed with the
  * flat cover only: on a category switch every case stood as bare plastic while its box scan and spine were read.
  */
-internal fun warmCase3d(context: android.content.Context, models: List<Pair<String?, String?>>) {
+internal fun warmCase3d(context: android.content.Context, models: List<Triple<String?, String?, String?>>) {
     warmSoft(context, models.mapNotNull { it.first }.distinct(), 480, trim = true)
     warmSoft(context, models.mapNotNull { it.second }.distinct(), 600)
+    if (!com.shelf.launcher.device.MemoryBudget.small(context)) warmSoft(context, models.mapNotNull { it.third }.distinct(), 480)
 }
 
 /** Update 202: the memory key of a [rememberSoftBitmap] / [warmSoft] picture (a trimmed cover has its own). */

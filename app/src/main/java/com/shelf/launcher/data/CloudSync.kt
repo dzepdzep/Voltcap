@@ -93,7 +93,9 @@ data class CloudSyncState(
      * picks which to keep. */
     val conflicts: List<SyncConflict> = emptyList(),
     /** "Decide later" was pressed: don't ask again until the next sync. */
-    val conflictsSnoozed: Boolean = false
+    val conflictsSnoozed: Boolean = false,
+    /** Update 208: the Google account syncing (as Drive reports it), once known. */
+    val account: String? = null
 )
 
 /** One save that changed on both sides. */
@@ -223,7 +225,7 @@ object CloudSync {
             // Older versions offered save-state folders; states are never synced now.
             .filter { !isStateFolder(it.path) && !it.name.contains("states", ignoreCase = true) }
         val safe = settings.copy(folders = folders)
-        _state.update { it.copy(settings = safe, needsSignIn = DriveAuth.needsSignIn(context), authProblem = DriveAuth.problem(context)) }
+        _state.update { it.copy(settings = safe, needsSignIn = DriveAuth.needsSignIn(context), authProblem = DriveAuth.problem(context), account = DriveAuth.driveAccount(context)) }
     }
 
     fun updateSettings(context: Context, transform: (CloudSyncSettings) -> CloudSyncSettings) {
@@ -251,6 +253,26 @@ object CloudSync {
         load(context)
         val s = _state.value.settings
         return s.connected && s.syncSaves && s.syncAroundGames && s.folders.any { it.enabled }
+    }
+
+    /**
+     * Update 208: with saves on and no save folder set up at all (a fresh install — the list lives in Voltcap's own data,
+     * so reinstalling emptied it), the emulators' save folders found on this device are added: the same ones Settings ›
+     * Sync offers under "Found on this device", named as before, so they meet their Drive folders again. Only folders
+     * with something in them; done once — removing them all afterwards is left alone. Returns what was added.
+     */
+    fun autoAddFolders(context: Context): List<SyncFolder> {
+        load(context)
+        val s = _state.value.settings
+        if (!s.connected || !s.syncSaves || s.folders.isNotEmpty()) return emptyList()
+        if (prefs(context).getBoolean("auto_folders_208", false)) return emptyList()
+        val found = runCatching { presetFolders() }.getOrDefault(emptyList())
+            .filter { f -> runCatching { File(f.path).list()?.isNotEmpty() == true }.getOrDefault(false) }
+        if (found.isEmpty()) return emptyList()
+        prefs(context).edit().putBoolean("auto_folders_208", true).apply()
+        updateSettings(context) { it.copy(folders = it.folders + found) }
+        runCatching { SyncLog.add(context, "Save folders found and added: " + found.joinToString(", ") { it.name } + ".") }
+        return found
     }
 
     /** Known emulator save folders that exist here and aren't added yet. */
@@ -354,7 +376,7 @@ object CloudSync {
     suspend fun connect(context: Context): PendingIntent? = withContext(Dispatchers.IO) {
         val result = try {
             Tasks.await(
-                Identity.getAuthorizationClient(context).authorize(DriveAuth.request()), 60, TimeUnit.SECONDS
+                Identity.getAuthorizationClient(context).authorize(DriveAuth.request(context)), 60, TimeUnit.SECONDS
             )
         } catch (e: java.util.concurrent.ExecutionException) {
             noteProblem(context, e.cause ?: e)
@@ -403,8 +425,36 @@ object CloudSync {
     fun disconnect(context: Context) {
         stopRequested = true
         DriveAuth.forget()
+        DriveAuth.setDriveAccount(context, null)
+        _state.update { it.copy(account = null) }
         updateSettings(context) { it.copy(connected = false) }
         _state.update { it.copy(needsSignIn = false) }
+    }
+
+    /**
+     * Update 208: sync with another Google account ([email], picked in Android's account list). What this device knew of
+     * the old account's Drive — which files it had, the change feed, the folders' places — is dropped, so the new Drive
+     * is read fresh: files that differ become questions (nothing is overwritten), files only here go up. Then connects as
+     * [connect] does (the consent screen to show, or null).
+     */
+    suspend fun switchAccount(context: Context, email: String): PendingIntent? = withContext(Dispatchers.IO) {
+        stop()
+        mutex.withLock {
+            stopRequested = false
+            runCatching { DriveAuth.token(context).let { com.google.android.gms.auth.GoogleAuthUtil.clearToken(context, it) } }
+            DriveAuth.forget()
+            DriveAuth.setChosenAccount(context, email)
+            DriveAuth.setDriveAccount(context, null)
+            DriveClient.forgetFolders()
+            prefs(context).edit().remove("changes_token").apply()
+            // (The folders' records and the favourites' merge base — the new Drive is merged as a first sync, both sides
+            // together, never as "removed there". This device's own play-time copy stays.)
+            runCatching { File(context.filesDir, "cloud_sync").listFiles()?.filter { it.name != "playtime-v2.json" }?.forEach { it.delete() } }
+            runCatching { File(context.filesDir, "drive_only_saves_v1.json").delete() }
+            _state.update { it.copy(account = null, conflicts = emptyList()) }
+        }
+        stopWatching()
+        connect(context)
     }
 
     // ---- Running ----
@@ -842,16 +892,24 @@ object CloudSync {
         // The last emulator may still hold its saves in memory: send ours up, but don't replace any yet.
         val holdDownloads = !skipSaves && withContext(Dispatchers.IO) { EmulatorGuard.downloadsBlocked(context) } != null
         load(context)
+        // (Update 208: the emulators' save folders found on the device, when none are set up yet.)
+        withContext(Dispatchers.IO) { runCatching { autoAddFolders(context) } }
         val settings = _state.value.settings
         if (!settings.connected) return@withLock SyncOutcome(false, "Google Drive isn't connected.")
         stopRequested = false
         val report = Report()
+        report.noFolders = settings.syncSaves && settings.folders.none { it.enabled }
         _state.update { it.copy(running = true, progress = "Connecting to Google Drive…") }
         var offline = false
         var signIn = false
         val summary = try {
             withContext(Dispatchers.IO) {
                 val drive = DriveClient(context)
+                // (Update 208: which Google account this is, for Settings › Sync.)
+                if (DriveAuth.driveAccount(context) == null) runCatching { drive.accountEmail() }.getOrNull()?.let {
+                    DriveAuth.setDriveAccount(context, it)
+                    _state.update { st -> st.copy(account = it) }
+                }
                 val root = drive.folder(ROOT)
                 if (settings.syncSaves && !skipSaves) {
                     val savesRoot = drive.folder(SAVES, root)
@@ -1090,6 +1148,8 @@ object CloudSync {
         var downloaded = 0
         var failed = 0
         var launcherChanged = false
+        /** Update 208: saves are on but no save folder is set up — nothing of the saves was looked at. */
+        var noFolders = false
         val conflictList = mutableListOf<SyncConflict>()
         /** Folder name → files sent or fetched (all / fetched only), for the per-game status mapping. */
         val changedPaths = mutableMapOf<String, MutableList<String>>()
@@ -1100,6 +1160,10 @@ object CloudSync {
             if (downloaded > 0) parts += "$downloaded downloaded"
             if (conflictList.isNotEmpty()) parts += "${conflictList.size} save${if (conflictList.size == 1) "" else "s"} changed on two devices — pick which to keep"
             if (failed > 0) parts += "$failed failed"
+            // (Update 208: never "Everything up to date" when no saves were looked at — it said so for days after a
+            // reinstall had left the save folders list empty, while nothing went up to Drive.)
+            if (noFolders) return (if (parts.isEmpty()) "" else parts.joinToString(", ") + ". ") +
+                "No saves synced: no save folders are set up (Settings › Sync › Save folders)."
             return if (parts.isEmpty()) "Everything up to date." else parts.joinToString(", ") + "."
         }
     }

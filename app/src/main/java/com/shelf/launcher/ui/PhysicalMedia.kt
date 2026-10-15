@@ -117,7 +117,42 @@ internal val LocalHiddenMedia = androidx.compose.runtime.staticCompositionLocalO
 
 /** Update 113: every game's box / disc scans on the home screen (for the Spines look's own spines); set by the home screen. */
 internal object HomeScans {
-    var map by androidx.compose.runtime.mutableStateOf<Map<String, List<Pair<String, String>>>>(emptyMap())
+    private val whole = androidx.compose.runtime.mutableStateOf<Map<String, List<Pair<String, String>>>>(emptyMap())
+    var map: Map<String, List<Pair<String, String>>>
+        get() = whole.value
+        set(v) {
+            if (v === whole.value) return
+            whole.value = v
+            // (Update 208: only the games whose scans changed hear of it — see [of].)
+            for ((k, s) in slots) {
+                val n = v[k]
+                if (s.scans.value !== n) s.scans.value = n
+                val has = n != null || v.containsKey(k)
+                if (s.known.value != has) s.known.value = has
+            }
+        }
+
+    /**
+     * Update 208: one game's scans, read so that only this game redraws when they change. Every 3D case read the whole
+     * [map]: each scan looked up (they come in one by one while you scroll, or as a category opens) rebuilt every case on
+     * the screen — the largest part of a sluggish row.
+     */
+    fun of(key: String): List<Pair<String, String>>? = slot(key).scans.value
+
+    /** Update 208: [known], read as [of] is (only this game redraws when it changes). */
+    fun knownHere(key: String): Boolean = slot(key).known.value
+
+    private class Slot(
+        val scans: androidx.compose.runtime.MutableState<List<Pair<String, String>>?>,
+        val known: androidx.compose.runtime.MutableState<Boolean>
+    )
+
+    private val slots = HashMap<String, Slot>()
+
+    private fun slot(key: String): Slot = slots.getOrPut(key) {
+        val m = androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { whole.value }
+        Slot(androidx.compose.runtime.mutableStateOf(m[key]), androidx.compose.runtime.mutableStateOf(m.containsKey(key)))
+    }
     /** Looks a game's scans up (its spine among them); set by the home screen. */
     var need: ((com.shelf.launcher.data.Game) -> Unit)? = null
     /** Update 119: a game's cover (by its key), for a game without any real spine; set by the home screen. */
@@ -372,6 +407,13 @@ internal fun realCaseRef(type: com.shelf.launcher.data.CardArtType, games: List<
 internal fun realCaseMm(platform0: String?): Pair<Float, Float>? {
     // (Update 129: the case picked for all on R1 › Case, when there is one.)
     val platform = LookStyles.casePlatform(platform0)
+    // Update 208: the real case's own size from CaseCatalog (North American release) when it's known. The table below put
+    // PS3 games in a 190 mm DVD case (a Blu-ray case is 171.5) — PS3 cases came out as tall as PS2 ones — and shaped the
+    // rest from the cover templates.
+    // (Keep cases and card cases only: their sleeve is the whole front. A jewel case's or box's printed front isn't the
+    // case's outline, and the box scan cuts — BoxTexture — go by the cover templates' shapes there.)
+    if (platform != null) CaseCatalog.of(platform, CaseRegion.US)?.takeIf { it.shell == CaseShell.KEEP || it.shell == CaseShell.CARDCASE }
+        ?.let { return it.wMm to it.hMm }
     val longest = when (platform) {
         "NES", "Genesis", "MasterSystem", "32X", "Intellivision", "Vectrex", "C64", "Pico8" -> 184f
         "SNES", "N64" -> 185f
@@ -383,7 +425,8 @@ internal fun realCaseMm(platform0: String?): Pair<Float, Float>? {
         "Switch" -> 170f
         // (Update 119: Steam games in a PlayStation 4-sized case; update 125: Android games too.)
         "Steam", "PS4", "App", "Android" -> 170f
-        "GameCube", "Wii", "WiiU", "PS2", "PS3", "Xbox", "Xbox360" -> 190f
+        "GameCube", "Wii", "WiiU", "PS2", "Xbox", "Xbox360" -> 190f
+        "PS3", "PS5", "XboxOne", "XboxSeries" -> 171.5f
         "PS1", "Dreamcast", "NeoGeoCD", "PCEngineCD" -> 142f
         "Saturn" -> 220f
         "SegaCD" -> 280f

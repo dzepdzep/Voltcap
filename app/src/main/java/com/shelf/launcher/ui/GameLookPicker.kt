@@ -95,9 +95,11 @@ internal enum class LookCoverStyle(val label: String, val about: String) {
 
 /** Update 202: Cases › Its disc or cartridge. */
 internal enum class LookCaseMedia(val label: String, val about: String) {
-    INSIDE("Inside only", "Just the case. Its disc or cartridge is inside: open the game to take it out."),
-    BESIDE("Beside it", "The case standing, its disc or cartridge leaning against it."),
-    HALF("Half out", "Disc games show their disc half out of the case, turning.")
+    // (Update 208: named for what you see. Media only — the disc, UMD or cartridge without its case — is the Cartridges &
+    // discs look.)
+    INSIDE("Case only", "Just the case (the default). Its disc or cartridge is inside: open the game to take it out. For the media alone, pick Cartridges & discs."),
+    BESIDE("Case + media", "The case standing, its disc, UMD or cartridge leaning against it."),
+    HALF("Case + disc half out", "Disc games show their disc half out of the case, turning.")
 }
 
 /** Update 202: Cartridges & discs › Cartridge (each the 3D finish the drawn pieces use, PhysicalMedia.drawn3dPick). */
@@ -654,7 +656,7 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
                 }
             }
             val media = caseMediaNow()
-            SectionLabel("Its disc or cartridge")
+            SectionLabel("With its media") // (Update 208)
             ChoiceRow {
                 LookCaseMedia.values().forEach { m ->
                     val sample = when (m) {

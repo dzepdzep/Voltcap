@@ -147,7 +147,7 @@ internal class InspectPiece(
  */
 private fun contentPieceFor(g: Game, state: LauncherUiState): InspectPiece? {
     val k = g.stableKey
-    val physical = state.physicalMedia[k]
+    val physical = state.physicalMedia[k].withoutFlat() // (Update 208: no flat-colour stand-ins, FlatArt)
     val cover: Any? = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl
     val small = Features.bigGcDiscs.state.value.not()
     // Update 202: an Android game's scraped "cartridge" / "disc label" pictures are its store art (ScreenScraper's Android
@@ -173,7 +173,7 @@ internal const val CASE_ASIDE_SHRINK = 0.48f
 internal fun secondCasePiece(g: Game, state: LauncherUiState): InspectPiece {
     val k = g.stableKey
     val cover: Any? = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl
-    return boxPiece(g, state.physicalMedia[k], cover, own = !LookStyles.caseForAll(), mixed = false).also {
+    return boxPiece(g, state.physicalMedia[k].withoutFlat(), cover, own = !LookStyles.caseForAll(), mixed = false).also {
         if (it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)
         it.content = contentPieceFor(g, state)
     }
@@ -373,7 +373,7 @@ private fun inspectPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
     val a = state.appearance
     val k = g.stableKey
     val p = g.platform
-    val physical = state.physicalMedia[k]
+    val physical = state.physicalMedia[k].withoutFlat() // (Update 208: no flat-colour stand-ins, FlatArt)
     val cover: Any? = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl
     val wide: Any? = state.artOverrides[k]?.wide ?: state.art[k]?.wideGridUrl
     val small = Features.bigGcDiscs.state.value.not()

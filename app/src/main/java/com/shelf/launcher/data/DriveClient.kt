@@ -95,6 +95,43 @@ object DriveAuth {
     fun request(): AuthorizationRequest =
         AuthorizationRequest.builder().setRequestedScopes(listOf(Scope(SCOPE))).build()
 
+    /**
+     * Update 208: the request for the Google account picked in Settings › Sync › Switch account, when one was; without one
+     * Google chose by itself (on a device with several accounts, not necessarily the one you meant — and nothing said
+     * which).
+     */
+    fun request(context: Context): AuthorizationRequest {
+        val email = chosenAccount(context) ?: return request()
+        return AuthorizationRequest.builder().setRequestedScopes(listOf(Scope(SCOPE)))
+            .setAccount(android.accounts.Account(email, "com.google")).build()
+    }
+
+    /** Update 208: the account picked to sync with (null: Google's choice). */
+    fun chosenAccount(context: Context): String? = runCatching {
+        context.getSharedPreferences("cloud_sync", Context.MODE_PRIVATE).getString("account_email", null)
+    }.getOrNull()
+
+    fun setChosenAccount(context: Context, email: String?) {
+        runCatching {
+            context.getSharedPreferences("cloud_sync", Context.MODE_PRIVATE).edit().apply {
+                if (email == null) remove("account_email") else putString("account_email", email)
+            }.apply()
+        }
+    }
+
+    /** Update 208: the account Drive says it is (asked once per connection — Settings › Sync shows it). */
+    fun driveAccount(context: Context): String? = runCatching {
+        context.getSharedPreferences("cloud_sync", Context.MODE_PRIVATE).getString("drive_email", null)
+    }.getOrNull()
+
+    fun setDriveAccount(context: Context, email: String?) {
+        runCatching {
+            context.getSharedPreferences("cloud_sync", Context.MODE_PRIVATE).edit().apply {
+                if (email == null) remove("drive_email") else putString("drive_email", email)
+            }.apply()
+        }
+    }
+
     @Volatile private var cached: String? = null
     @Volatile private var cachedAt = 0L
 
@@ -109,7 +146,7 @@ object DriveAuth {
             cached = null
         }
         val result: AuthorizationResult = try {
-            Tasks.await(Identity.getAuthorizationClient(context).authorize(request()), 30, TimeUnit.SECONDS)
+            Tasks.await(Identity.getAuthorizationClient(context).authorize(request(context)), 30, TimeUnit.SECONDS)
         } catch (e: java.util.concurrent.TimeoutException) {
             throw DriveOffline(e)
         } catch (e: InterruptedException) {
@@ -274,6 +311,11 @@ class DriveClient(private val context: Context) {
 
     private fun json(build: () -> Request.Builder): JSONObject =
         execute(build).use { JSONObject(it.body?.string() ?: "{}") }
+
+    /** Update 208: the Google account this Drive belongs to (its address), or null. */
+    fun accountEmail(): String? =
+        json { Request.Builder().url("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)") }
+            .optJSONObject("user")?.optString("emailAddress")?.takeIf { it.isNotBlank() }
 
     /** All files (not in the bin) directly inside [parentId], every page. */
     fun list(parentId: String, extraQuery: String? = null): List<DriveFile> {

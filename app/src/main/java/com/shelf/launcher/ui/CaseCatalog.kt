@@ -250,6 +250,16 @@ internal object CaseCatalog {
     fun regionOf(file: String, pref: Features.CaseRegionChoice = Features.caseRegion.state.value): CaseRegion {
         val fallback = when (pref.code) { "EU" -> CaseRegion.EU; "JP" -> CaseRegion.JP; else -> CaseRegion.US }
         if (pref.fixed) return fallback
+        // (Update 208: each file's region read once — a row of 3D cases asked for every case as it came on screen.)
+        val key = "${pref.ordinal}|$file"
+        val known = regions.get(key)
+        if (known != null) return known
+        return regionNow(file, fallback).also { regions.put(key, it) }
+    }
+
+    private val regions = android.util.LruCache<String, CaseRegion>(2048)
+
+    private fun regionNow(file: String, fallback: CaseRegion): CaseRegion {
         val name = file.substringAfterLast('/')
         val found = LinkedHashSet<CaseRegion>()
         for (m in TAG.findAll(name)) {

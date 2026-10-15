@@ -931,7 +931,9 @@ internal fun GameCarousel(
         val accentNow = ShelfTheme.accent
         val ctx = remember(
             view, side, bigW, bigH, recede, recedeLeft, maxWidth, unitState, cases3d, modelLook, spines, spinesAside, spinesRight,
-            reflectOn, dens, cardArtType, art, overrides, physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, accentNow, pulseOn
+            // (Update 208: not the scans' map — each scan looked up made a new one and rebuilt every game in the row; each
+            // game reads its own scans instead, HomeScans.of.)
+            reflectOn, dens, cardArtType, art, overrides, screenshots, mixed, realRef, hidden, look.focusBorder, accentNow, pulseOn
         ) {
             CarouselCtx(
                 view, side, bigW, bigH, if (recede) -maxWidth / 2 + recedeLeft else null, unitState, recede, cases3d, modelLook,
@@ -940,6 +942,7 @@ internal fun GameCarousel(
             )
         }
         ctx.caseRefMm = caseRefMm
+        ctx.physicalMedia = physicalMedia
         // Update 162: while a category change slides, the collection that was here goes on along the path (layer 1)
         // and the new one comes in after it from the side the change came from (layer 0), each fading as it goes.
         val showOld = swap.token != 0 && swap.doneToken.intValue != swap.token && swap.oldGames.isNotEmpty()
@@ -974,7 +977,7 @@ internal fun GameCarousel(
                 val fadeOf: () -> Float = if (old) ({ 1f - kNow() }) else if (showOld) kNow else CarouselSwap.FULL
                 androidx.compose.runtime.key(old, if (lLoop) i else g.stableKey) {
                     CarouselItem(
-                        ctx, g, real, i, focusIdx, on = !old && i == vFocus, interactive = !old,
+                        ctx, g, real, i, atFocus = i == focusIdx, on = !old && i == vFocus, interactive = !old,
                         relOf = relOf, fadeOf = fadeOf, onTap = tap, modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -1078,7 +1081,9 @@ private class CarouselCtx(
     val unit: androidx.compose.runtime.State<Float>, val widen: Boolean, val cases3d: Boolean, val modelLook: Boolean,
     val spines: Boolean, val spinesAside: Boolean, val spinesRight: Boolean, val recede: Boolean, val reflect: Boolean,
     val dens: Float, val cardArtType: com.shelf.launcher.data.CardArtType, val art: Map<String, GameArt>,
-    val overrides: Map<String, ArtOverride>, val physicalMedia: Map<String, List<Pair<String, String>>>,
+    val overrides: Map<String, ArtOverride>,
+    /** (Update 208: set each composition, not a reason to make a new one — see CarouselItem's scans.) */
+    var physicalMedia: Map<String, List<Pair<String, String>>>,
     val screenshots: Map<String, List<String>>, val mixed: Boolean, val realRef: RealCaseRef?, val hidden: Set<String>,
     val focusBorder: Boolean, val accent: Color, val pulseOn: Boolean
 ) {
@@ -1153,7 +1158,7 @@ private class CarouselScratch {
  */
 @Composable
 private fun CarouselItem(
-    c: CarouselCtx, g: Game, real: Int, i: Int, focusIdx: Int, on: Boolean, interactive: Boolean,
+    c: CarouselCtx, g: Game, real: Int, i: Int, atFocus: Boolean, on: Boolean, interactive: Boolean,
     relOf: () -> Float, fadeOf: () -> Float, onTap: (Int) -> Unit, modifier: Modifier
 ) {
     val relNow = rememberUpdatedState(relOf)
@@ -1162,17 +1167,20 @@ private fun CarouselItem(
     val ctxNow = rememberUpdatedState(c)
     val ps = remember { CarouselScratch() }
     val cover = c.overrides[g.stableKey]?.cover ?: c.art[g.stableKey]?.gridUrl
+    // Update 208: this game's own scans — it redraws when they arrive, the rest of the row doesn't (HomeScans.of).
+    val homeScans = HomeScans.of(g.stableKey)
+    val physical = c.physicalMedia[g.stableKey] ?: homeScans
     val caseType = c.cardArtType == com.shelf.launcher.data.CardArtType.COVER || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE ||
         c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
     // Update 117: a game turned almost side-on (Record flip) shows its real spine, facing you, instead of a squashed cover.
     // (Update 162: worked out from the moving place, so only this game redraws when it flips to its spine.)
-    val sidewaysCan = !c.cases3d && !c.spines && i != focusIdx && caseType
+    val sidewaysCan = !c.cases3d && !c.spines && !atFocus && caseType
     val turnedFar = remember(sidewaysCan) {
         androidx.compose.runtime.derivedStateOf { sidewaysCan && kotlin.math.abs(ctxNow.value.place(ps.q, relNow.value()).turnY) > 50f }
     }
     val sideways = turnedFar.value
     // Update 113, Spines look: the games aside as their spines (closer together), the middle one its cover.
-    val spineHere = !c.cases3d && ((c.spines && i != focusIdx) || sideways)
+    val spineHere = !c.cases3d && ((c.spines && !atFocus) || sideways)
     val gArt = artForGame(c.cardArtType, g.platform, c.hidden, c.mixed)
     val freeArt = isFreeMedia(gArt, g.platform)
     // Update 136: with 3D models on, the 3D cases were your 3D shape library's pieces, at the angle nearest their turn.
@@ -1202,7 +1210,7 @@ private fun CarouselItem(
     // wall, Turned row) the cartridges lay over the neighbours' spines. It comes in and goes as you move.
     val mediaFull = withMedia?.room(realCaseMm(g.platform)) ?: 0f
     val mediaRoom by androidx.compose.animation.core.animateFloatAsState(
-        if (i == focusIdx) mediaFull else 0f, androidx.compose.animation.core.tween(240), label = "caseMediaRoom"
+        if (atFocus) mediaFull else 0f, androidx.compose.animation.core.tween(240), label = "caseMediaRoom"
     )
     val mediaShow = if (mediaFull > 0f) (mediaRoom / mediaFull).coerceIn(0f, 1f) else 0f
     // (Update 174: room on its right only — the case and its media together sit in the middle; the gap on the left went.)
@@ -1278,13 +1286,13 @@ private fun CarouselItem(
         ) { ProvidePieceTurn(if (solidHere) PieceTurn(turnOf, 12f) else null) {
             // (Update 200: CarouselModel — a game as its pre-rendered 3D model — is gone.)
             if (c.cases3d && withMedia != null) CaseWithMedia3D(
-                g, cover, c.physicalMedia[g.stableKey], aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow
+                g, cover, physical, aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow
             )
             else if (c.cases3d) Case3D(
-                g, cover, c.physicalMedia[g.stableKey], 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
+                g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
                 frame = on && c.focusBorder, frameColor = c.accent, yawOf = yawOf, shadeOf = shadeOf,
                 realFront = c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
-            ) else CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, c.physicalMedia, c.screenshots, c.mixed, c.realRef, c.pulseOn)
+            ) else CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn)
         } }
     }
 }

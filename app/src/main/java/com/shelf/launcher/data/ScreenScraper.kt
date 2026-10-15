@@ -348,6 +348,14 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         if (found != null && !isConfidentMatch(found, game)) lookupOutcome[game.stableKey] = OUTCOME_UNSURE
         val jeu = found?.takeIf { isConfidentMatch(it, game) } ?: return emptyList()
         val medias = jeu.arr("medias")?.mapNotNull { it as? JsonObject } ?: return emptyList()
+        // Update 208: the game's own region first (a PAL game's PAL box, back and spine — its file name's region,
+        // ManualLinks.regionOrder), and the whole set from the region its box front came from where that region has them,
+        // so front, back and spine are one edition. They were each picked World / US first on their own: a European Ben 10
+        // PSP game got the US box, with ScreenScraper's flat green stand-in for its US back.
+        val order = ManualLinks.regionOrder(game)
+        fun rank(r: String?): Int = order.indexOf(r?.lowercase()).let { if (it >= 0) it else 50 + regionRank(r) }
+        val boxRegion = medias.filter { it.str("type") == "box-2D" }.minByOrNull { rank(it.str("region")) }?.str("region")?.lowercase()
+        fun setRank(r: String?): Int = if (boxRegion != null && r?.lowercase() == boxRegion) -1 else rank(r)
         return listOf(
             "box-2D" to "Box",
             "box-2D-back" to "Back of the box",
@@ -361,7 +369,7 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
             // fronts are cut from it (BoxTexture.kt) when there's no separate spine / front scan.
             "box-texture" to "Box (full scan)"
         ).mapNotNull { (type, label) ->
-            val best = medias.filter { it.str("type") == type }.minByOrNull { regionRank(it.str("region")) }
+            val best = medias.filter { it.str("type") == type }.minByOrNull { setRank(it.str("region")) }
             val url = best?.str("url") ?: return@mapNotNull null
             // The full scan is fetched bigger: the spine is only a few percent of its width.
             val max = if (type == "box-texture") 1600 else 640

@@ -256,6 +256,21 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 208
+- **FlatArt (RealMedia.kt):** decoded pictures that are one flat colour (7 × 7 grid within 6 levels) are noted by URL and treated as missing: rememberSoftBitmap / rememberSoftLoad skip them, `withoutFlat()` drops them from scan lists (Case3D, case3dModels, MediaInspectView). `FlatArt.version` bumps when one is found.
+- **ScreenScraper.physicalMedia:** region order = ManualLinks.regionOrder(game); every kind prefers the box-2D's region (setRank).
+- **Case3D:** a scanned automatic back is asked at once unless MemoryBudget.small; case3dModels returns (front, spine, back) and warmCase3d warms backs at 480. CaseDraw face 2 on a matte flap box (cardboard) is the spine bitmap with fold lines; the plastic sides are `plainSide`.
+- **DerivedArt (Case3D.kt):** LruCache of pictures made from a source bitmap (fill / jewel / back / spine / avg keys, weak ref to the source) or named ones (hue fronts, plain spines). CaseLook.averageOf samples a grid.
+- **HomeScans (PhysicalMedia.kt):** `map` still a state for old readers; `of(key)` / `knownHere(key)` are per-game states — Case3D and CarouselItem use them. CarouselCtx.physicalMedia is a var set each composition (not a remember key). CarouselItem takes `atFocus`, not the focus index.
+- **CartShells:** ds / 3ds outline with the cut corner, lab(2.9, 1.6, 27, 29), no ridges; front() band always 0; `labelArt` crops box-shaped art to the MediaCovers window (COVER_OF); cache key f3.
+- **realCaseMm:** CaseCatalog (US) for KEEP / CARDCASE shells first; PS3 / PS5 / XboxOne / XboxSeries 171.5.
+- **Case only:** AppearanceStore.caseOnly208 (pref case_only_208) set discCase / caseWithMedia off and caseMedia=INSIDE once. LookCaseMedia labels Case only / Case + media / Case + disc half out.
+- **Reorder:** CategoryReorder (CategoryScreen.kt) on / held; LauncherScreen.moveCategoryTile (platforms → reorderPlatforms, else viewModel.moveCategory of the group); Start toggles, A holds, D-pad moves while held, B / back puts down / finishes; drag via detectDragGestures. cycleCategory, CategoryWarmup and styleStops sort consoles with PlatformOrder.
+- **saveAllArt:** a call while running sets artSaveAgain; the job runs once more (silent) after it ends if not full.
+- **PerfDiag (ui/PerfDiag.kt):** debug builds only (FLAG_DEBUGGABLE); FrameMetrics listener on its own thread; tag VoltcapPerf; `mark()` from cycleCategory; softHits / softMisses, DerivedArt.hits / misses.
+- **Sync:** CloudSync.autoAddFolders (pref auto_folders_208, only when connected, saves on and folders empty; presetFolders with files) runs at the start of sync(). Report.noFolders changes the summary. DriveAuth.request(context) uses the chosen account (pref account_email); driveAccount (pref drive_email) from DriveClient.accountEmail() (about?fields=user(emailAddress)), shown as CloudSyncState.account. CloudSync.switchAccount clears the old token, folder ids, changes_token, files/cloud_sync (except playtime-v2.json) and drive_only_saves_v1.json, then connect().
+- **Git:** update 207 is on GitHub (main = 09fe47d); no release since v0.6.1 (versionName still 0.6.1).
+
 ## State after update 207
 - **Save all (saveAllArt):** two worker sets on the main thread — ScreenScraper URLs (ArtFiles.isScreenScraper) with screenScraperRepository.allowedThreads workers, the rest with SAVE_LANES (4); ArtFiles.download(url, refused, busy) reports 429/430/431 as busy (not refused); 430 stops ScreenScraper's queue for the run. artSaveDone / the notification update at most every 600 ms.
 - **RomScanner:** Switch extras skipped (isSwitchExtra / inSwitchExtraFolder: update, dlc, mods, patch, firmware, keys, atmosphere, contents, romfs, exefs folders; title IDs not ending 000; [UPD]/[DLC]/vNNNNN). New: cci / cxi / 3dsx, folders n3ds / new3ds / nintendo3ds, scd.

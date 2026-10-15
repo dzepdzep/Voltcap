@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -74,6 +75,20 @@ data class CategoryTile(
     val appIcon: String? = null
 )
 
+/**
+ * Update 208: Choose a category › Reorder — move categories and consoles round. Start (or the Reorder button in the
+ * corner) turns it on; A picks the tile you're on up and puts it down, the D-pad moves it while it's held, B puts it
+ * down / finishes. On the touch screen, drag a tile to its new place while it's on. Consoles keep your order
+ * (PlatformOrder, also L2 / R2's); All, Favorites, Recent… and the consoles' and collections' blocks move as groups
+ * (Settings › Categories order).
+ */
+internal object CategoryReorder {
+    var on by androidx.compose.runtime.mutableStateOf(false)
+    /** A tile is picked up (the D-pad moves it). */
+    var held by androidx.compose.runtime.mutableStateOf(false)
+    fun stop() { on = false; held = false }
+}
+
 /** Columns on the category screen — the D-pad moves by this much up / down.
  * One source of truth: the tile style (Appearance › Game row). */
 fun categoryColumns(style: com.shelf.launcher.data.CategoryTileStyle): Int = style.columns
@@ -93,7 +108,11 @@ fun CategoryScreen(
     art: com.shelf.launcher.data.CategoryTileArt = com.shelf.launcher.data.CategoryTileArt.SLIDESHOW,
     style: com.shelf.launcher.data.CategoryTileStyle = com.shelf.launcher.data.CategoryTileStyle.LARGE,
     /** Hold a tile (touch): pick your own picture for it. */
-    onPickImage: (Int) -> Unit = {}
+    onPickImage: (Int) -> Unit = {},
+    /** Update 208: moves the tile at the first index to the second (true when it moved). */
+    onMove: (Int, Int) -> Boolean = { _, _ -> false },
+    /** Update 208: a tile tapped while reordering becomes the one you're on. */
+    onSelect: (Int) -> Unit = {}
 ) {
     com.shelf.launcher.Breadcrumbs.mark("CategoryScreen")
     val columns = categoryColumns(style)
@@ -120,32 +139,70 @@ fun CategoryScreen(
             .fillMaxSize()
             .background(ShelfTheme.background.copy(alpha = 0.94f))
     ) {
+        val reorder = CategoryReorder.on
+        val latestMove by rememberUpdatedState(onMove)
+        val latestSelect by rememberUpdatedState(onSelect)
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = gridState,
-            modifier = Modifier.fillMaxSize(),
+            // (Update 208: while reordering, a drag moves the tile under your finger to where you drag it.)
+            modifier = Modifier.fillMaxSize().then(if (!reorder) Modifier else Modifier.pointerInput(Unit) {
+                fun tileAt(p: androidx.compose.ui.geometry.Offset): Int? = gridState.layoutInfo.visibleItemsInfo.firstOrNull { info ->
+                    info.index > 0 && p.x >= info.offset.x && p.x < info.offset.x + info.size.width &&
+                        p.y >= info.offset.y && p.y < info.offset.y + info.size.height
+                }?.index?.minus(1)
+                var dragging: Int? = null
+                detectDragGestures(
+                    onDragStart = { p -> dragging = tileAt(p)?.also { latestSelect(it); CategoryReorder.held = true } },
+                    onDragEnd = { dragging = null; CategoryReorder.held = false },
+                    onDragCancel = { dragging = null; CategoryReorder.held = false }
+                ) { change, _ ->
+                    change.consume()
+                    val from = dragging ?: return@detectDragGestures
+                    val to = tileAt(change.position) ?: return@detectDragGestures
+                    if (to != from && latestMove(from, to)) { dragging = to; latestSelect(to) }
+                }
+            }),
+            // (Update 208: no scrolling by touch while reordering — a drag moves a tile then; the D-pad still scrolls to it.)
+            userScrollEnabled = !reorder,
             contentPadding = PaddingValues(horizontal = 32.dp, vertical = 28.dp),
             horizontalArrangement = Arrangement.spacedBy(if (style == com.shelf.launcher.data.CategoryTileStyle.LARGE) 14.dp else 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Column {
-                    Text("Choose a category", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "◀ ▶ ▲ ▼ Choose · A Open · Y (or hold) Your own picture · X Remove it · B Back",
-                        color = ShelfTheme.textMuted, fontSize = 12.sp
-                    )
-                    Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(if (reorder) "Reorder categories" else "Choose a category", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            if (reorder) "A Pick up / put down · ◀ ▶ ▲ ▼ Move it · Drag a tile to move it · B or Start Done"
+                            else "◀ ▶ ▲ ▼ Choose · A Open · Y (or hold) Your own picture · X Remove it · Start Reorder · B Back",
+                            color = ShelfTheme.textMuted, fontSize = 12.sp
+                        )
+                        Spacer(Modifier.height(4.dp))
+                    }
+                    // (Update 208: the Reorder button in the corner.)
+                    Chip(if (reorder) "Done" else "Reorder", accent = reorder) {
+                        if (CategoryReorder.on) CategoryReorder.stop() else CategoryReorder.on = true
+                    }
                 }
             }
             itemsIndexed(tiles, key = { _, t -> t.key }) { index, tile ->
+                val heldHere = reorder && CategoryReorder.held && index == selectedIndex
+                // (Update 208: tiles glide to their new places while reordering; the one held is lifted.)
+                Box(Modifier.animateItem().graphicsLayer {
+                    val k = if (heldHere) 1.06f else 1f
+                    scaleX = k; scaleY = k
+                    alpha = if (reorder && !heldHere && CategoryReorder.held) 0.75f else 1f
+                }) {
+                val pick: () -> Unit = { if (reorder) { onSelect(index); CategoryReorder.held = !CategoryReorder.held || selectedIndex != index } else onPick(index) }
                 if (style == com.shelf.launcher.data.CategoryTileStyle.TILES) {
-                    TileLookTile(tile, art, selected = index == selectedIndex, onClick = { onPick(index) }, onLongPress = { onPickImage(index) })
+                    TileLookTile(tile, art, selected = index == selectedIndex, onClick = pick, onLongPress = { if (!reorder) onPickImage(index) })
                 } else if (style == com.shelf.launcher.data.CategoryTileStyle.COMPACT) {
-                    CompactTile(tile, art, selected = index == selectedIndex, onClick = { onPick(index) }, onLongPress = { onPickImage(index) })
+                    CompactTile(tile, art, selected = index == selectedIndex, onClick = pick, onLongPress = { if (!reorder) onPickImage(index) })
                 } else {
-                    Tile(tile, art, selected = index == selectedIndex, onClick = { onPick(index) }, modifier = Modifier, onLongPress = { onPickImage(index) })
+                    Tile(tile, art, selected = index == selectedIndex, onClick = pick, modifier = Modifier, onLongPress = { if (!reorder) onPickImage(index) })
+                }
                 }
             }
         }

@@ -1047,7 +1047,25 @@ class AppearanceStore(context: Context) {
         }
     }
 
-    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); categoryPart204(); lookRework202(oneGameLook(loadSettings())) }.also {
+    /**
+     * Update 208, once: cases stand on their own (Case only) — the disc half out of every disc game's case had come on
+     * with a preset or the Mix look, and was asked to be a choice, off by default. Settings › Game look › Cases ›
+     * With its media puts it back (Case + media beside it / Case + disc half out). Only marked done once Features could
+     * be started.
+     */
+    private fun caseOnly208() {
+        if (prefs.getBoolean("case_only_208", false)) return
+        runCatching {
+            Features.init(appContext)
+            Features.discCase.value = false
+            Features.caseWithMedia.value = false
+            val mem = Features.lookMemory.value
+            if ("caseMedia=" in mem) Features.lookMemory.value = mem.replace(Regex("caseMedia=[A-Z]+"), "caseMedia=INSIDE")
+            prefs.edit().putBoolean("case_only_208", true).apply()
+        }
+    }
+
+    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); categoryPart204(); caseOnly208(); lookRework202(oneGameLook(loadSettings())) }.also {
         // Scraping in the background reads these too, without the home screen open.
         AnimatedArt.enabled = it.animatedArt
         AnimatedArt.preferAnimatedScraping = it.animatedArt && it.preferAnimatedArt

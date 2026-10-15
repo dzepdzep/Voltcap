@@ -4,6 +4,64 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 15 Oct 2026 (208): backs without stand-ins, DS / 3DS cards rebuilt, box sides printed, PS3 case size, Case only by default, reorder categories, saving after scraping, faster scrolling and category switch, save sync fixed (folders, honest status, Google account shown and switchable)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (20): `src_copy\LauncherViewModel.kt`, `src_copy\MainActivity.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\data\CloudSync.kt`, `src_copy\data\DriveClient.kt`, `src_copy\data\ScreenScraper.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\CartShells.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\CaseCatalog.kt`, `src_copy\ui\CategoryScreen.kt`, `src_copy\ui\CategoryWarmup.kt`, `src_copy\ui\CloudSyncContent.kt`, `src_copy\ui\GameLookPicker.kt`, `src_copy\ui\GameTitles.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\StyleHomes.kt`. New (1): `src_copy\ui\PerfDiag.kt`.
+
+**Copy `project_copy`:** nothing changed.
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 208: backs without stand-ins, DS / 3DS cards, printed box sides, PS3 case size, Case only default, reorder categories, save after scraping, faster scrolling and category switch, save sync folders and Google account" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+.\gradlew installDebug
+```
+
+### What was wrong (found on the Thor, 207 build)
+- **Green back on the Ben 10 PSP cases:** ScreenScraper served a pure green #00FF00 picture (395 × 680, 2.4 KB) as "Back of the box" — its stand-in for a missing scan. 14 such files were saved on the Thor. Voltcap drew it as the back.
+- **Backs from another edition:** each kind (box, back, spine) was picked World / US first on its own, whatever the game's region — the European Ben 10 got US scans (and the US green stand-in).
+- **Backs late or missing:** a case without a back handed in made its back only once it had turned past 70°, so the back came in after the turn (or on a second turn); the warm-up decoded fronts and spines only.
+- **DS cards:** drawn as a 28 × 28 window under a moulded ridge with a console band across it, so the cover with its printed NINTENDO DS strip read as a small box. The real card (measured off a straight Advance Wars: Dual Strike photo: 517 px = 33 mm) has a 27 × 29 mm sticker from 2.9 mm in and 1.6 mm down, plain plastic below, the lower left corner cut off. 3DS the same with its side tab.
+- **Game Boy boxes (and other cardboard boxes):** the side opposite the spine was one flat colour taken from the front's edge — a plain block (Battletoads & Double Dragon's right side).
+- **PS3 cases:** sized as 190 mm DVD cases (a Blu-ray case is 171.5 mm), as tall as PS2 ones.
+- **Disc half out of every case:** `disc_case` was on (look memory `caseMedia=HALF`) from a preset / the Mix look.
+- **Scrolling a long row of 3D cases (GBC, about 45 cases):** 94 % of frames janky, median 81 ms. Measured with simpleperf: half the screen thread was rebuilding the row — every case rebuilt on each D-pad step (each was handed the middle game's index), and again whenever any game's scans arrived (every case read the whole scans map, and the carousel's shared settings were rebuilt with each new map). Each rebuild copied pictures on the screen thread: the cover cut to the case's shape, two copies per case to average its edge colours, the turned spine, the loading front; and ran the name-cleaning regexes and the region lookup again (a regex was even compiled per name).
+- **Category switch:** 89.5 % janky, median 101 ms — the same per-case work for the whole new row at once.
+- **Save sync:** Voltcap was reinstalled on 13 Oct, which emptied its list of save folders (it lives in Voltcap's own data). Since then every sync only merged favourites and playtime and still said "Everything up to date", and the sync after playing had no folder to upload from. There was no way to see or pick the Google account (three on the Thor): Google chose one by itself.
+
+### Now
+- **No flat-colour stand-ins:** a picture that is one flat colour (checked on a 7 × 7 grid when decoded) counts as no picture: the next in line shows (the back cut from the full box scan, a printed back). Cases, the game window and the turned case use it.
+- **One edition:** the game's own region first (its file name), and back / spine from the region its box front came from. (Already-saved scans stay until the game is looked up again — R1 › Rescan or the game's menu.)
+- **Backs at once:** a scanned back is decoded with the case, and warmed ahead with the fronts and spines (not on small-memory devices, where it still waits for the turn).
+- **DS / 3DS cards:** the measured sticker and cut corner; no band or ridge on any cartridge's label; a box scan used as the label has the box's printed console strip cut off (cut to the cover template's art window).
+- **Cardboard boxes:** the other side carries the spine's print, with its fold lines.
+- **Case sizes:** keep cases and card cases from CaseCatalog (North American size); PS3 / PS5 / Xbox One / Series 171.5 mm.
+- **Case only by default:** Settings › Game look › Cases › With its media — **Case only** (default), **Case + media**, **Case + disc half out**. Media only is the Cartridges & discs look. Set once to Case only on this update.
+- **Reorder categories:** on Choose a category, press **Start** or the **Reorder** button in the corner; **A** picks the tile up / puts it down, the **D-pad** moves it, **B** finishes; on the touch screen drag a tile. Consoles take your order (also used by L2 / R2 and the warm-up); All, Favorites, Recent… and the consoles' and collections' blocks move as groups.
+- **Saving after scraping:** asking Save all while it runs (as a finished scrape does) makes it go round once more at the end, while there's room.
+- **Faster rows and switches:** each game in a row rebuilds only when it becomes / stops being the one in the middle or its own scans change (HomeScans.of); pictures a case makes from its cover are kept (DerivedArt, up to 1/12 of the memory, held only while the cover itself is); edge colours sampled without copies; names and regions worked out once.
+- **Diagnostics (debug builds):** `adb logcat -s VoltcapPerf` — every 5 s: frames, slow frames (> 33 ms), average and slowest, pictures ready / decoded, case faces kept / made; after L2 / R2: how long until the frames settled.
+- **Save sync:**
+  - With saves on and no save folder at all, the emulators' save folders found on the device are added (RetroArch saves, PPSSPP saves, ARMSX2 memory cards, Citra saves on the Thor), under the same names as before so they meet their Drive folders. Once only; files that differ from Drive are asked about, never overwritten.
+  - With no save folders the status says "No saves synced: no save folders are set up (Settings › Sync › Save folders)" instead of "Everything up to date".
+  - Settings › Sync › Google Drive shows **Account: …** (as Drive reports it) and has **Switch account** (Android's account list). Switching drops what this device knew of the old Drive (folder records, the favourites' merge base, the change feed) so the new one is read fresh, merged as a first sync.
+
+### Check
+- Type-check: 0 errors. No `NON_LOCAL_RETURN` in the compiled classes. Every change reread against your PC's copy.
+- Measured on the Thor before the fixes (207 build): category switch R2 × 6 and scrolling GBC × 20 (numbers above), simpleperf call graphs; Ben 10 backs, DS card photo, Battletoads box, PS3 size, prefs, the sync settings and log (`folders: []`, "Everything up to date" since the reinstall), the emulator save folders present.
+- **Not tested:** 208 on the device (not built yet) — after you install it I'll measure the same switch and scroll again and check the backs, DS cards, reorder and sync on the Thor. Not reproduced: the black outline round a picked Save Vault card.
+- Not done: PS3 folder games have no scans to show (nothing found for them).
+
+---
+
 ## Update — 15 Oct 2026 (207): Save all faster and no longer slows the screen, Switch extras skipped, 3DS (.cci / n3ds) found, N64 label and DS / 3DS case shapes fixed, UMD as a UMD, smooth Save Vault cards, dock shortcuts, smoother category switch
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

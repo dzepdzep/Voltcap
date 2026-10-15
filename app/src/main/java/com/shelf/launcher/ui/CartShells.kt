@@ -138,12 +138,18 @@ internal object CartShells {
             colours = listOf(c("Black", 0xFF232325)), extras = listOf(ShellExtra(ShellExtra.FLAP, 1.5f, 68.36f, 72.8f, 5.38f, 0xFF3A3A3D.toInt())),
             check = CaseCheck.ESTIMATED,
             note = "Size measured (75.8×68.36×6.61, 73.74 tall with its removable dust cap, drawn at the bottom); label about 52×42 measured."),
-        CartShell("ds", "Nintendo DS Game Card", ShellGroup.NINTENDO, 33f, 35f, 3.8f, rect(33f, 35f, 1.5f, 0.8f), lab(2.5f, 5f, 28f, 28f),
-            listOf(rid(1f, 0.5f, 31f, 2.5f, 1)), colours = listOf(c("Dark grey", 0xFF3C3C40), c("White", 0xFFF2F2F2)),
-            contactsBack = floatArrayOf(2f, 29f, 29f, 5f), check = CaseCheck.ESTIMATED, note = "Size measured (33×35×3.8); layout estimated."),
+        // (Update 208: measured off a straight-on DS card photo (Advance Wars: Dual Strike, ScreenScraper, 517 px across the
+        // 33 mm card): the sticker is 27 × 29 mm from 2.9 mm in and 1.6 mm down — it carries the printed NINTENDO DS
+        // logo itself — with plain charcoal plastic below it and the lower left corner cut off. It was a 28 × 28 window
+        // under a moulded ridge, the cover under a console band across it: it read as a little box.)
+        CartShell("ds", "Nintendo DS Game Card", ShellGroup.NINTENDO, 33f, 35f, 3.8f,
+            o(0f, 0f, 1.2f, 33f, 0f, 1.2f, 33f, 35f, 0.8f, 2.6f, 35f, 0.3f, 0f, 32.4f, 0.3f), lab(2.9f, 1.6f, 27f, 29f),
+            emptyList(), colours = listOf(c("Dark grey", 0xFF424245), c("White", 0xFFF2F2F2)),
+            contactsBack = floatArrayOf(2f, 29f, 29f, 5f), check = CaseCheck.ESTIMATED, note = "Size measured (33×35×3.8); sticker 27×29 and the cut corner measured off a photo (approximate)."),
         CartShell("3ds", "Nintendo 3DS Game Card", ShellGroup.NINTENDO, 34f, 35f, 3.8f,
-            o(0f, 0f, 1.5f, 33f, 0f, 0.3f, 33f, 3f, 0.3f, 34f, 3.5f, 0.3f, 34f, 7f, 0.3f, 33f, 7.5f, 0.3f, 33f, 35f, 0.8f, 0f, 35f, 0.8f), lab(2.5f, 5f, 28f, 28f),
-            listOf(rid(1f, 0.5f, 31f, 2.5f, 1)), colours = listOf(c("Light grey", 0xFFE6E6E8)),
+            // (Update 208: the sticker as on the DS card — the 3DS card is the same form with its side tab.)
+            o(0f, 0f, 1.5f, 33f, 0f, 0.3f, 33f, 3f, 0.3f, 34f, 3.5f, 0.3f, 34f, 7f, 0.3f, 33f, 7.5f, 0.3f, 33f, 35f, 0.8f, 2.6f, 35f, 0.3f, 0f, 32.4f, 0.3f), lab(2.9f, 1.6f, 27f, 29f),
+            emptyList(), colours = listOf(c("Light grey", 0xFFE6E6E8)),
             contactsBack = floatArrayOf(2f, 29f, 29f, 5f), check = CaseCheck.ESTIMATED, note = "Size measured; the side tab (it stops a 3DS card going into a DS) estimated."),
         CartShell("switch", "Nintendo Switch Game Card", ShellGroup.NINTENDO, 21f, 31f, 3f, rect(21f, 31f, 1.5f, 0.8f), lab(1.5f, 4f, 18f, 25f),
             listOf(rid(1f, 0.5f, 19f, 2.5f, 1)), colours = listOf(c("Dark grey", 0xFF2C2C30)),
@@ -450,6 +456,29 @@ internal object CartShells {
 
     // ---- Drawing ----
 
+    /** Update 208: the console whose box covers go with each shell (for [labelArt]). */
+    private val COVER_OF = mapOf(
+        "ds" to "NDS", "3ds" to "3DS", "gb" to "GB", "gbc" to "GBC", "gbc_dual" to "GBC", "gba" to "GBA", "n64" to "N64",
+        "snes_na" to "SNES", "sfc" to "SNES", "nes" to "NES", "genesis" to "Genesis", "switch" to "Switch", "switch2" to "Switch2",
+        "vb" to "VirtualBoy", "game_gear" to "GameGear", "sms" to "MasterSystem"
+    )
+
+    /**
+     * Update 208: [art] (a game's cover, used when it has no label scan) for [s]'s sticker: a scan of the whole box front —
+     * its shape within 6 % of the console's box template — is cut to the template's art window, leaving the box's printed
+     * console banner (the DS / Game Boy strip down its side, the N64 band) off the cartridge. Other pictures as they are.
+     */
+    private fun labelArt(s: CartShell, art: Bitmap): Bitmap = runCatching {
+        val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
+        val a = art.width.toFloat() / art.height.coerceAtLeast(1)
+        if (kotlin.math.abs(a / tpl.frontAspect - 1f) > 0.06f) return art
+        val w = tpl.win
+        val l = (w[0] * art.width).toInt(); val t = (w[1] * art.height).toInt()
+        val r = (w[2] * art.width).toInt(); val b = (w[3] * art.height).toInt()
+        if (r - l < 8 || b - t < 8 || (l == 0 && t == 0 && r >= art.width && b >= art.height)) art
+        else Bitmap.createBitmap(art, l, t, r - l, b - t)
+    }.getOrDefault(art)
+
     private val cache = android.util.LruCache<String, Bitmap>(24)
 
     private fun outlinePath(s: CartShell, k: Float): Path {
@@ -482,7 +511,7 @@ internal object CartShells {
      * label's shape, never stretched) under a band with [brand] (the game's real console).
      */
     fun front(s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean = false): Bitmap {
-        val key = "f2|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
+        val key = "f3|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -543,12 +572,15 @@ internal object CartShells {
         c.clipPath(Path().apply { addRoundRect(lr, rr, rr, Path.Direction.CW) })
         p.color = 0xFFE9E6DF.toInt(); c.drawRect(lr, p)
         // (Update 205: a real label scan is the whole printed sticker — no console band drawn over its top.)
-        val band = if (scan && art != null) 0f else maxOf(lr.height() * 0.14f, 2.6f * k).coerceAtMost(lr.height() * 0.3f)
+        // (Update 208: never a band — a separate console header over the sticker isn't on any real cartridge; the
+        // console's own branding comes from its sticker. A box scan used instead has its printed console banner cut
+        // off — labelArt — so a DS card no longer wore the box's NINTENDO DS strip like a little box.)
+        val band = 0f
         val artRect = RectF(lr.left, lr.top + band, lr.right, lr.bottom)
         if (art != null) {
             // (Update 206: the picture fills the label exactly — stretched to it, never cut — the label keeps the shell's
             // real size and place, the art adapts to it; a label scan is the sticker itself.)
-            c.drawBitmap(art, null, artRect, p)
+            c.drawBitmap(if (scan) art else labelArt(s, art), null, artRect, p)
         } else if (!title.isNullOrBlank()) {
             text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
         }

@@ -132,6 +132,8 @@ class MainActivity : ComponentActivity() {
                     .detectDiskReads().detectDiskWrites().detectNetwork().penaltyLog().build()
             )
         }
+        // Update 208: debug builds only — frame times and the picture caches' hits, logged as "VoltcapPerf" (PerfDiag.kt).
+        com.shelf.launcher.ui.PerfDiag.attach(this)
         LaunchInfo.update(intent)
         com.shelf.launcher.data.QrTransfer.fromIntent(intent)
         // Sleep mode for Wi-Fi / Bluetooth (Settings › Device): listens for screen off only when on.

@@ -773,7 +773,8 @@ internal fun styleStops(state: LauncherUiState, titles: TitleOptions): Pair<List
     val stops = state.categoryOrder.flatMap { key ->
         when (key) {
             CategorySettings.ALL -> listOf(StyleStop(null, null, "All", null))
-            CategorySettings.CONSOLES -> state.availablePlatforms.map {
+            // (Update 208: in your own console order, as L2 / R2 step.)
+            CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).map {
                 // Only the colour logos shipped with the app (your ES-DE set), never downloaded; else the category symbol.
                 StyleStop(null, it, titles.console(it), com.shelf.launcher.data.SystemLogos.bundled(it))
             }

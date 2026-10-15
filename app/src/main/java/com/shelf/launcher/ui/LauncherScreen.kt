@@ -987,6 +987,38 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         com.shelf.launcher.data.PlatformOrder.move(platforms, platforms.indexOf(a), platforms.indexOf(b))
         categoryTiles = categoryTiles.toMutableList().also { it.add(to, it.removeAt(from)) }
     }
+    // Update 208: Choose a category › Reorder — the tile at [from] to [to]. Two consoles: your console order
+    // (PlatformOrder); otherwise the groups they belong to (All, Favorites, Recent…, the consoles' block, the
+    // collections' block) one place along Settings › Categories' order. True when something moved.
+    var categoryFollowKey by remember { mutableStateOf<String?>(null) }
+    fun moveCategoryTile(from: Int, to: Int): Boolean {
+        val a = categoryTiles.getOrNull(from) ?: return false
+        val b = categoryTiles.getOrNull(to) ?: return false
+        if (a.platform != null && b.platform != null) {
+            reorderPlatforms(from, to)
+            categoryIndex = to
+            return true
+        }
+        fun group(t: CategoryTile): String = when {
+            t.platform != null -> com.shelf.launcher.data.CategorySettings.CONSOLES
+            t.key == "ALL" -> com.shelf.launcher.data.CategorySettings.ALL
+            t.key.startsWith("p:") -> com.shelf.launcher.data.CategorySettings.COLLECTIONS
+            else -> t.key
+        }
+        val ga = group(a); val gb = group(b)
+        if (ga == gb) return false
+        viewModel.moveCategory(ga, if (to > from) 1 else -1)
+        // (The tiles are worked out again from the new order; the one you're on is found again by its key.)
+        categoryFollowKey = a.key
+        return true
+    }
+    LaunchedEffect(categoryTiles) {
+        val k = categoryFollowKey ?: return@LaunchedEffect
+        val i = categoryTiles.indexOfFirst { it.key == k }
+        if (i >= 0) { categoryIndex = i; categoryFollowKey = null }
+    }
+    LaunchedEffect(categoryScreenOpen) { if (!categoryScreenOpen) CategoryReorder.stop() }
+
     // The random-game button: go to that category, then pick from it once the games are showing.
     fun randomFromBrowser() {
         val tile = categoryTiles.getOrNull(categoryIndex) ?: return
@@ -3920,6 +3952,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             if (browserView == com.shelf.launcher.data.Features.PlatformView.TILES) {
                 CategoryScreen(
                     categoryTiles, categoryIndex, onPick = { pickCategory(it) },
+                    onMove = { from, to -> moveCategoryTile(from, to).also { if (it) sounds?.play(UiSound.MOVE) } },
+                    onSelect = { categoryIndex = it },
                     art = com.shelf.launcher.data.Features.categoryArt.state.value, style = state.appearance.categoryTileStyle,
                     onPickImage = { i ->
                         categoryTiles.getOrNull(i)?.let { tile ->
@@ -5388,10 +5422,30 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             Key.DirectionDown -> categoryColumns(state.appearance.categoryTileStyle)
                             else -> 0
                         }
+                        // Update 208: reordering with a tile picked up — the D-pad moves it.
+                        if (step != 0 && count > 0 && CategoryReorder.on && CategoryReorder.held) {
+                            val to = (categoryIndex + step).coerceIn(0, count - 1)
+                            if (to != categoryIndex && moveCategoryTile(categoryIndex, to)) sounds?.play(UiSound.MOVE)
+                            return@onKeyEvent true
+                        }
                         if (step != 0 && count > 0) {
                             // ◀ ▶ wrap round at the ends; ▲ ▼ stop at the top / bottom row.
                             val next = if (step == 1 || step == -1) (categoryIndex + step).mod(count) else (categoryIndex + step).coerceIn(0, count - 1)
                             if (next != categoryIndex) { categoryIndex = next; sounds?.play(UiSound.MOVE) }
+                        }
+                        return@onKeyEvent true
+                    }
+                    // Update 208: Start — reorder on / done; while it's on, A picks up / puts down and B finishes.
+                    if (event.key == Key.ButtonStart) {
+                        if (CategoryReorder.on) CategoryReorder.stop() else CategoryReorder.on = true
+                        sounds?.play(UiSound.MOVE)
+                        return@onKeyEvent true
+                    }
+                    if (CategoryReorder.on) {
+                        when (event.key) {
+                            Key.ButtonA, Key.Enter, Key.DirectionCenter -> { CategoryReorder.held = !CategoryReorder.held; sounds?.play(UiSound.SELECT) }
+                            Key.ButtonB, Key.Back -> { if (CategoryReorder.held) CategoryReorder.held = false else CategoryReorder.stop(); sounds?.play(UiSound.BACK) }
+                            else -> Unit
                         }
                         return@onKeyEvent true
                     }
@@ -5909,6 +5963,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 categoryScreenOpen && pbState.editing -> { pbState.saveLayout(); pbState.editing = false }
                 categoryScreenOpen && pbState.grabbed >= 0 -> pbState.grabbed = -1
                 showDetails -> if (DetailsMore.open.value) DetailsMore.open.value = false else showDetails = false
+                // (Update 208: reordering — back puts the tile down / finishes first.)
+                categoryScreenOpen && CategoryReorder.on -> if (CategoryReorder.held) CategoryReorder.held = false else CategoryReorder.stop()
                 categoryScreenOpen -> categoryScreenOpen = false
             }
             sounds?.play(UiSound.BACK)
