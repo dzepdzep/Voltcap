@@ -29,8 +29,8 @@ android {
         minSdk = 24
         // Android 16. Play needs 36 for new apps since 31 Aug 2026; GitHub builds just benefit.
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.6.5"
+        versionCode = 12
+        versionName = "0.6.6"
 
         // Handheld CPUs only — also keeps Discord's native library small.
         ndk {
