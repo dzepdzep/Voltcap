@@ -2742,7 +2742,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // (Update 208: debug builds — how long the switch takes to settle, logged as "VoltcapPerf".)
         com.shelf.launcher.ui.PerfDiag.mark(if (forward) "Category switch (R2)" else "Category switch (L2)")
         // Flatten the order into stops: ALL, each special, each console.
-        val stops = state.categoryOrder.flatMap { key ->
+        // (Update 214: in your own order of the tiles too — CategoryTileOrder — as the category screen shows them.)
+        val stops = com.shelf.launcher.data.CategoryTileOrder.sort(state.categoryOrder.flatMap { key ->
             when (key) {
                 CategorySettings.ALL -> listOf<Pair<SpecialFilter?, String?>>(null to null)
                 // (Update 208: in your own console order — Choose a category › Reorder — as the category screen shows them.)
@@ -2750,7 +2751,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 CategorySettings.COLLECTIONS -> state.collections.map { null to it.key }
                 else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
             }
-        }
+        }) { (special, platform) -> special?.name ?: platform?.let { "p:$it" } ?: "ALL" }
         if (stops.isEmpty()) return
         val current = stops.indexOfFirst { (special, platform) ->
             special == state.specialFilter && platform == state.platformFilter

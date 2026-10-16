@@ -132,4 +132,12 @@ object PlatformOrder {
         prefs?.edit()?.remove("order")?.apply()
         version.value++
     }
+
+    /** Update 214: the order as saved now, and putting it back (a category move cancelled with B). */
+    fun snapshot(): List<String> = order
+    fun restore(saved: List<String>) {
+        order = saved
+        prefs?.edit()?.apply { if (saved.isEmpty()) remove("order") else putString("order", saved.joinToString("|")) }?.apply()
+        version.value++
+    }
 }

@@ -83,7 +83,9 @@ internal class CartShell(
     /** Gold contacts seen on the front (HuCard, N-Gage): x, y, w, h. */
     val contactsFront: FloatArray? = null,
     val check: CaseCheck,
-    val note: String
+    val note: String,
+    /** Update 214: the label's corner radius (mm) — the N64's sticker has round corners. */
+    val labelRadius: Float = 0.8f
 ) {
     val aspect: Float get() = w / h
     /** Thickness against the longest side (the solid piece's depth). */
@@ -121,16 +123,25 @@ internal object CartShells {
             listOf(rid(3f, 18f, 9f, 44f, 7), rid(118f, 18f, 9f, 44f, 7)), listOf(sc(32f, 24f), sc(98f, 24f)),
             listOf(c("Grey", 0xFF9E9DA3)), check = CaseCheck.ESTIMATED,
             note = "Size from Wikipedia (130×86×20; ConsoleMods 127 wide); the big round top corners and side grips estimated."),
+        // (Update 214: drawn as the real Game Pak looks straight on — measured off a straight-on photo of a PAL cartridge:
+        // the top arched about 6.5 mm higher in the middle than at its ends, the raised middle panel between two grooves
+        // about 22.7 mm in from each side, the sides stepping in about 1.6 mm some 56.5 mm down with the guide slot's
+        // ledge there, and the label 57 × 63.5 mm with round corners (about 3 mm) 7 mm below the top. It was a flat-topped
+        // block with grip ridges along its top, which the real front doesn't have. Same outline for every colour.)
         CartShell("n64", "Nintendo 64 Game Pak", ShellGroup.NINTENDO, 116f, 76.6f, 18.5f,
-            o(0f, 0f, 6f, 116f, 0f, 6f, 116f, 50f, 1f, 113f, 53f, 1f, 113f, 76.6f, 1.5f, 3f, 76.6f, 1.5f, 3f, 53f, 1f, 0f, 50f, 1f),
-            // (Update 207: the label is upright in the middle, about 50.8 × 60.3 mm — measured off a straight-on cartridge
-            // photo (GoldenEye 007's, its 600 px across the 116 mm shell). It was drawn 92 × 48 across the whole front, so
-            // a real label scan (upright) was squashed sideways into it.)
-            lab(32.6f, 7.5f, 50.8f, 60.3f),
-            listOf(rid(4f, 0.5f, 108f, 2.5f, 20, false)), listOf(sc(28f, 22f), sc(88f, 22f)),
+            o(0f, 6.5f, 3f, 14.5f, 3.656f, 8f, 29f, 1.625f, 8f, 43.5f, 0.406f, 8f, 58f, 0f, 8f, 72.5f, 0.406f, 8f, 87f, 1.625f, 8f,
+                101.5f, 3.656f, 8f, 116f, 6.5f, 3f, 116f, 56.5f, 0.8f, 114.4f, 57.5f, 0.5f, 114.4f, 76.6f, 1.5f, 1.6f, 76.6f, 1.5f,
+                1.6f, 57.5f, 0.5f, 0f, 56.5f, 0.8f),
+            lab(29.5f, 7f, 57f, 63.5f),
+            // (The middle panel's grooves, and the guide slots' ledge and edge low on each side.)
+            listOf(rid(22.2f, 0f, 1f, 76.6f, 1, false), rid(92.8f, 0f, 1f, 76.6f, 1, false),
+                rid(1.6f, 56.2f, 5.6f, 0.6f, 1), rid(108.8f, 56.2f, 5.6f, 0.6f, 1),
+                rid(6.7f, 56.5f, 1f, 20.1f, 1, false), rid(108.3f, 56.5f, 1f, 20.1f, 1, false)),
+            listOf(sc(28f, 22f), sc(88f, 22f)),
             listOf(c("Grey", 0xFF7C7D82), c("Black", 0xFF202022), c("Gold", 0xFFC9A84C), c("Red", 0xFFB3262E), c("Blue", 0xFF2D4FA0),
                 c("Clear", 0xFFE6E8EA, 0.45f), c("Smoke", 0xFF3A3A40, 0.6f)),
-            check = CaseCheck.ESTIMATED, note = "Size measured (116×76.6×18.5); label 50.8×60.3 measured off a straight-on photo (approximate); the step-in for the lower part estimated."),
+            check = CaseCheck.ESTIMATED, labelRadius = 3f,
+            note = "Size measured (116×76.6×18.5); arched top, panel grooves, side step and the 57×63.5 label measured off a straight-on photo (approximate)."),
         CartShell("gb", "Game Boy Game Pak", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
             listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Grey", 0xFFA3A2A8), c("Yellow", 0xFFE8C51E)),
             contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED,
@@ -612,7 +623,7 @@ internal object CartShells {
         s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
         // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
         val lr = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
-        val rr = 0.8f * k
+        val rr = s.labelRadius * k
         p.color = withAlpha(shade(base, -0.4f), maxOf(op, 0.7f))
         c.drawRoundRect(RectF(lr.left - 0.7f * k, lr.top - 0.7f * k, lr.right + 0.5f * k, lr.bottom + 0.5f * k), rr, rr, p)
         c.save()

@@ -945,7 +945,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     LaunchedEffect(
         tilesWanted, state.games, state.categoryOrder, state.availablePlatforms, state.art, state.artOverrides,
         fullNames, categoryImages, state.favorites, state.lastPlayedAt, state.playtime, state.collections,
-        com.shelf.launcher.data.PlatformOrder.version.value
+        com.shelf.launcher.data.PlatformOrder.version.value, com.shelf.launcher.data.CategoryTileOrder.version.value
     ) {
         if (!tilesWanted) return@LaunchedEffect
         // Art arrives in bursts while scraping: let a burst settle first.
@@ -985,32 +985,35 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val b = categoryTiles.getOrNull(to)?.platform ?: return
         val platforms = categoryTiles.mapNotNull { it.platform }
         com.shelf.launcher.data.PlatformOrder.move(platforms, platforms.indexOf(a), platforms.indexOf(b))
+        // (Update 214: with the tiles in your own order, that order follows too — else the move wouldn't show.)
+        if (com.shelf.launcher.data.CategoryTileOrder.snapshot().isNotEmpty()) com.shelf.launcher.data.CategoryTileOrder.move(categoryTiles.map { it.key }, from, to)
         categoryTiles = categoryTiles.toMutableList().also { it.add(to, it.removeAt(from)) }
     }
-    // Update 208: Choose a category › Reorder — the tile at [from] to [to]. Two consoles: your console order
-    // (PlatformOrder); otherwise the groups they belong to (All, Favorites, Recent…, the consoles' block, the
-    // collections' block) one place along Settings › Categories' order. True when something moved.
+    // Update 208: Choose a category › Reorder — the tile at [from] to [to]. True when something moved.
+    // (Update 214: every tile on its own — CategoryTileOrder — a console, Android games, Other apps, Continue playing, All
+    // games, a collection… It used to move the whole block it belonged to (all the consoles, all the collections) past
+    // the next one, and two tiles of the same kind of special filter couldn't pass each other. Two consoles still keep
+    // your console order (PlatformOrder) in step for the views that sort the consoles by it.)
     var categoryFollowKey by remember { mutableStateOf<String?>(null) }
     fun moveCategoryTile(from: Int, to: Int): Boolean {
         val a = categoryTiles.getOrNull(from) ?: return false
         val b = categoryTiles.getOrNull(to) ?: return false
+        if (from == to) return false
         if (a.platform != null && b.platform != null) {
-            reorderPlatforms(from, to)
-            categoryIndex = to
-            return true
+            val platforms = categoryTiles.mapNotNull { it.platform }
+            com.shelf.launcher.data.PlatformOrder.move(platforms, platforms.indexOf(a.platform), platforms.indexOf(b.platform))
         }
-        fun group(t: CategoryTile): String = when {
-            t.platform != null -> com.shelf.launcher.data.CategorySettings.CONSOLES
-            t.key == "ALL" -> com.shelf.launcher.data.CategorySettings.ALL
-            t.key.startsWith("p:") -> com.shelf.launcher.data.CategorySettings.COLLECTIONS
-            else -> t.key
-        }
-        val ga = group(a); val gb = group(b)
-        if (ga == gb) return false
-        viewModel.moveCategory(ga, if (to > from) 1 else -1)
+        com.shelf.launcher.data.CategoryTileOrder.move(categoryTiles.map { it.key }, from, to)
+        categoryTiles = categoryTiles.toMutableList().also { it.add(to, it.removeAt(from)) }
+        categoryIndex = to
         // (The tiles are worked out again from the new order; the one you're on is found again by its key.)
         categoryFollowKey = a.key
         return true
+    }
+    /** Update 214: B with a tile picked up — everything back where it was when it was picked up, still on that tile. */
+    fun cancelCategoryMove() {
+        categoryFollowKey = categoryTiles.getOrNull(categoryIndex)?.key
+        CategoryReorder.cancel()
     }
     LaunchedEffect(categoryTiles) {
         val k = categoryFollowKey ?: return@LaunchedEffect
@@ -1044,6 +1047,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     LaunchedEffect(Unit) {
         com.shelf.launcher.data.PlatformInfo.init(hotkeyContext)
         com.shelf.launcher.data.PlatformOrder.init(hotkeyContext)
+        com.shelf.launcher.data.CategoryTileOrder.init(hotkeyContext)
     }
     LaunchedEffect(com.shelf.launcher.data.Features.pbSlideLayout.state.value) { if (!pbState.editing) pbState.loadLayout() }
     LaunchedEffect(Unit) {
@@ -4777,9 +4781,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onOpenAppsLibrary = { showMenu = false; showAppsLibrary = true },
             onAppsAlwaysUseIcons = { viewModel.setAppsAlwaysUseIcons(it) },
             categories = uiState.categories,
-            onMoveCategory = { key, delta -> viewModel.moveCategory(key, delta) },
+            // (Update 214: a move here (the groups' order) starts again from Settings › Categories' order — the tiles' own
+            // order from Choose a category › Reorder would otherwise hide it.)
+            onMoveCategory = { key, delta -> com.shelf.launcher.data.CategoryTileOrder.reset(); viewModel.moveCategory(key, delta) },
             onToggleCategoryHidden = { viewModel.toggleCategoryHidden(it) },
-            onResetCategories = { viewModel.resetCategoryOrder() },
+            onResetCategories = { com.shelf.launcher.data.CategoryTileOrder.reset(); viewModel.resetCategoryOrder() },
             onSectionChange = { viewModel.rememberSettingsSection(it) },
             hasSecondScreen = secondScreenActive,
             screenLayoutsVersion = state.screenLayoutsVersion,
@@ -5469,7 +5475,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     if (CategoryReorder.on) {
                         when (event.key) {
                             Key.ButtonA, Key.Enter, Key.DirectionCenter -> { CategoryReorder.held = !CategoryReorder.held; sounds?.play(UiSound.SELECT) }
-                            Key.ButtonB, Key.Back -> { if (CategoryReorder.held) CategoryReorder.held = false else CategoryReorder.stop(); sounds?.play(UiSound.BACK) }
+                            // (Update 214: B with a tile picked up cancels the move — the order goes back to how it was.)
+                            Key.ButtonB, Key.Back -> { if (CategoryReorder.held) cancelCategoryMove() else CategoryReorder.stop(); sounds?.play(UiSound.BACK) }
                             else -> Unit
                         }
                         return@onKeyEvent true
@@ -5992,7 +5999,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 categoryScreenOpen && pbState.grabbed >= 0 -> pbState.grabbed = -1
                 showDetails -> if (DetailsMore.open.value) DetailsMore.open.value = false else showDetails = false
                 // (Update 208: reordering — back puts the tile down / finishes first.)
-                categoryScreenOpen && CategoryReorder.on -> if (CategoryReorder.held) CategoryReorder.held = false else CategoryReorder.stop()
+                categoryScreenOpen && CategoryReorder.on -> if (CategoryReorder.held) cancelCategoryMove() else CategoryReorder.stop()
                 categoryScreenOpen -> categoryScreenOpen = false
             }
             sounds?.play(UiSound.BACK)

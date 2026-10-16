@@ -91,8 +91,27 @@ data class CategoryTile(
  */
 internal object CategoryReorder {
     var on by androidx.compose.runtime.mutableStateOf(false)
-    /** A tile is picked up (the D-pad moves it). */
-    var held by androidx.compose.runtime.mutableStateOf(false)
+    private var heldNow by androidx.compose.runtime.mutableStateOf(false)
+    /**
+     * A tile is picked up (the D-pad moves it). Update 214: picking it up remembers the order as it was, so B puts it
+     * all back (cancel); A puts it down where it is (keep).
+     */
+    var held: Boolean
+        get() = heldNow
+        set(v) {
+            if (v && !heldNow) { savedTiles = com.shelf.launcher.data.CategoryTileOrder.snapshot(); savedPlatforms = com.shelf.launcher.data.PlatformOrder.snapshot() }
+            if (!v) { savedTiles = null; savedPlatforms = null }
+            heldNow = v
+        }
+    private var savedTiles: List<String>? = null
+    private var savedPlatforms: List<String>? = null
+    /** Update 214: B with a tile picked up — the order as it was when it was picked up, and the tile put down. */
+    fun cancel() {
+        val t = savedTiles; val pl = savedPlatforms
+        if (t != null) com.shelf.launcher.data.CategoryTileOrder.restore(t)
+        if (pl != null) com.shelf.launcher.data.PlatformOrder.restore(pl)
+        held = false
+    }
     fun stop() { on = false; held = false }
 }
 
@@ -443,7 +462,8 @@ fun buildCategoryTiles(
     fun coverSlidesOf(list: List<com.shelf.launcher.data.Game>) = list.asSequence()
         .mapNotNull { g -> state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl }
         .take(12).toList()
-    return buildList {
+    // (Update 214: in your own order of the tiles, each one on its own — CategoryTileOrder.)
+    return com.shelf.launcher.data.CategoryTileOrder.sort(buildList {
         state.categoryOrder.forEach { key ->
             when (key) {
                 com.shelf.launcher.data.CategorySettings.ALL ->
@@ -504,7 +524,7 @@ fun buildCategoryTiles(
                 }
             }
         }
-    }
+    }) { it.key }
 }
 
 /**

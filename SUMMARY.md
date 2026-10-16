@@ -4,6 +4,58 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 16 Oct 2026 (214): cartridges rock again instead of going round, a real-looking N64 cartridge, every category tile moves on its own (B cancels a move)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (Run 212's and 213's blocks first if you haven't yet.)
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (1): `src_copy\data\CategoryTileOrder.kt`.
+Changed (6): `src_copy\LauncherViewModel.kt`, `src_copy\data\PlatformInfo.kt`, `src_copy\ui\CartShells.kt`, `src_copy\ui\CategoryScreen.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\PhysicalMedia.kt`.
+
+**Copy `project_copy`:** nothing.
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 214: cartridge rock restored (no clock-hand spin), real N64 Game Pak shape, category tiles reorder one by one, B cancels a move" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+.\gradlew installRelease
+```
+(Not published as a release this time — the 214 instructions say no automatic release. When you want it: `& "$P\tools\release\release.ps1" 0.6.7 "Cartridges rock gently again, a real-looking N64 cartridge, and every category moves on its own in Choose a category › Reorder."`)
+
+### 1. Cartridges turning round like a clock's hands (home carousel)
+- **Bug:** with Settings › Game look › Moving discs on (Spin, the default), the cartridge-shaped shells from your optical-system pack — the green "android apps" cartridge, and the Steam / PlayStation / Dreamcast… cartridges in the Cartridges look — turned round and round on the screen (the disc's turn, 360° every 6 s) instead of rocking.
+- **Root cause (confirmed in the code and history):** update 203 (commit 5bae1a2, "cartridges stay solid when turned") changed the call for games on your pack from `mediaMotion(false, …)` to `mediaMotion(packDisc, …)`, so every game on an optical-system shell got the disc's motion (`rotationZ = 360° × t`).
+- **Fix (restored from history):** those shells move as cartridges again — `mediaMotion(false, …)` as before 203 — so they follow Settings › Game look › Moving cartridges like every other cartridge: with Spin, the original rock from git, ±24° left and right over 5.2 s, reversing, never a full turn (the same numbers as before 203). They're also drawn as solid pieces at their own shape now (they were flat when the carousel turned them).
+- **Not changed:** discs keep their spin, cases their motion, the carousel's own movement, memory / SD cards, your pack's normal cartridges.
+
+### 2. Nintendo 64 cartridge (drawn shell)
+- **Root cause:** there was never a correct drawn N64 shell in git. The library shell (since 195) was a flat-topped block with grip ridges along the top. The old template picture (`media_n64.png`) isn't the real shape either. Update 206 (35a0a5c) made the drawn shell the only N64 cartridge everywhere. So there was nothing to restore; it's redrawn from the straight-on photo you sent.
+- **Now:** the top arched (about 6.5 mm higher in the middle), the raised middle panel between two grooves about 22.7 mm in from each side, the sides stepping in about 1.6 mm low down with the guide slots' ledge, and the label 57 × 63.5 mm with round corners, 7 mm below the top (it was 50.8 × 60.3). It's the same outline for every N64 colour (grey, black, gold, red, blue, clear, smoke). The back, thickness and sides follow the new outline. Measurements are approximate (off a photo).
+
+### 3. Category reorder — every tile on its own
+- **Bug:** Choose a category › Reorder moved a non-console tile's whole block (all the consoles, all the collections, or the group in Settings › Categories) past the next block. Android games, Other apps, Continue playing and the like couldn't be put between consoles.
+- **Now:** every tile moves one place at a time, on its own, by its key ("ALL", the filter's name, "p:<console or collection>"). The order is saved in its own file (`category_tile_order`), so it survives restarts, rescans, scraping and layout changes. A new console or collection appears after the tile it follows by default. L2 / R2 go through the categories in the same order. Two consoles moved past each other still update your console order for the views that use it.
+- **Controller:** Start turns Reorder on (as before). A picks up the tile, the D-pad moves it a place at a time, and A puts it down. **New: B with a tile picked up cancels** — the order goes back to how it was when you picked it up (it used to just put the tile down where it was). B again leaves Reorder. Touch is unchanged (hold, drag, release).
+- **Side effect (please say if you don't want it):** moving a group in Settings › Categories, or its Reset, clears this tile order, because otherwise that page's changes wouldn't show.
+
+### Checked
+- Type-check of all sources: **0 errors**, no NON_LOCAL_RETURN. Your PC's copies of the 6 changed files were the same as my starting point.
+- The N64 outline was rendered here from the same numbers and outline maths as the app (preview sent in the chat). **No device test** (no handheld connected), so the rock, the N64 on screen and the reorder haven't been seen running yet.
+
+### Not done in 214 (reported, not changed)
+- **Disc centre-layer glitch:** not found. The disc's label, rim, edge and data side are all inside the same turning layer in the code (home and game popup). The stills are too small to show it. The original MP4 (VID20261016094108 / …094118) or a screen recording would let me find it.
+- **Switch game card:** size checked against Wikipedia (21 × 31 × 3 mm), which matches what's drawn. Nothing about its outline is shown to be wrong, so nothing was changed. A straight-on photo of a card (front and back) would let me check its top and contacts the way the N64 was checked.
+- **Flat side views / stretched custom cartridges:** only the optical-system shells were found flat (fixed above). Stretching can't be seen without the device.
+- **Category switching speed:** not measured — that needs the handheld (PerfDiag's "VoltcapPerf" timings, gfxinfo). The 5.9 s still in the clip showed "Smart Continue · Games: 1", so a single item there was expected. No speed changes were made without a measurement.
+- **Media loading consistency:** nothing wrong was found by reading the code. Needs the device.
+
+---
+
 ## Update — 16 Oct 2026 (213): the game popup — a Performance page (For this game: power mode, AutoTDP, underclock, fan, Advanced…) and the game's save sync always in sight, Voltcap 0.6.6
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (Run 212's block first if you haven't yet.)

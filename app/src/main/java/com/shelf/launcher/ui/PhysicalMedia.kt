@@ -568,12 +568,15 @@ internal fun PhysicalMedia(
     }
     // Update 128: a game on your cartridge pack — its cover in the window (a disc / label scan wouldn't fit it).
     if (platform != null && platform.startsWith(CUSTOM_CART)) {
-        // (Update 203: your pack's cartridge solid when turned; a disc from your optical pack turns flat.)
-        val packDisc = discShellFor(platform.removePrefix(CUSTOM_CART)) != null
+        // (Update 203: your pack's cartridge solid when turned.)
+        // (Update 214: a disc console's game on your optical-system pack is a cartridge-shaped shell too — solid at that
+        // shell's own shape, and moving as a cartridge does: rocking slowly left and right. Update 203 gave it the disc's
+        // motion, so with Moving discs on it went round and round like a clock's hands.)
+        val packShell = discShellFor(platform.removePrefix(CUSTOM_CART))
         CustomCart(
             platform.removePrefix(CUSTOM_CART), caseCover ?: label,
-            (if (packDisc) modifier.followTurn() else modifier.solidPiece(cartSolid(null, platform, Features.cartLook.state.value.aspect, custom = true)))
-                .mediaMotion(packDisc, (label?.hashCode() ?: 0) xor platform.hashCode())
+            modifier.solidPiece(cartSolid(null, platform, packShell?.aspect ?: Features.cartLook.state.value.aspect, custom = true))
+                .mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode())
         )
         return
     }
