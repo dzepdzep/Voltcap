@@ -4468,9 +4468,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     else -> configuringRaForGame = g
                 }
             },
-            onSync = { GamePopup.game = null; saveSyncForGame = g },
+            // (Update 213: the game's sync opens over the window — closing it comes back to the window.)
+            onSync = { saveSyncForGame = g },
             // Update 132: the comments under an achievement opened on the window's achievements page.
             onLoadComments = { id -> viewModel.loadAchievementComments(id) },
+            // Update 213: Performance — the emulator's / app's own profile counts too (as the tuner resolves it), the
+            // whole tuner in the game's settings over the window, Settings › Sync when save sync isn't set up, and the
+            // game's own "Sync saves".
+            perfPackage = remember(g.stableKey) { if (g.sourceType == com.shelf.launcher.data.SourceType.APP) g.packageName else viewModel.emulatorFor(g) },
+            onPerfAdvanced = { profileForGame = g },
+            onSyncSetUp = { GamePopup.game = null; menuStartCategory = "Sync"; showMenu = true },
+            syncOn = remember(g.stableKey, profileForGame) {
+                viewModel.effectiveProfile(g).syncSaves.let { if (it.source == com.shelf.launcher.data.ProfileSource.GLOBAL) null else it.value }
+            },
             // Update 125: the game's options on the window's own page, in its style; only what the window doesn't
             // already have (no Play, Details or achievement list) and nothing that's for the whole library.
             options = gameWindowOptions(
@@ -5091,7 +5101,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 com.shelf.launcher.data.CloudSync.unsnoozeConflicts()
                 saveSyncForGame = null
             },
-            onOpenSettings = { saveSyncForGame = null; menuStartCategory = "Sync"; showMenu = true },
+            onOpenSettings = { saveSyncForGame = null; GamePopup.game = null; menuStartCategory = "Sync"; showMenu = true },
             onDismiss = { saveSyncForGame = null }
         )
     }

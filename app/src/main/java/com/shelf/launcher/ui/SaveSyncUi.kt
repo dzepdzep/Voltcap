@@ -129,7 +129,8 @@ fun SaveSyncDialog(
         title = "Save sync — $gameName",
         onDismiss = onDismiss,
         footer = {
-            Chip(if (busy) "Syncing…" else "Sync now", enabled = !busy) { onSyncNow() }
+            // (Update 213: says what it syncs — this game only, not everything.)
+            Chip(if (busy) "Syncing…" else "Sync this game", enabled = !busy) { onSyncNow() }
             if (conflict) Chip("Resolve conflict", accent = false) { onResolveConflict() }
             Chip("Open Sync settings", accent = false) { onOpenSettings() }
         }

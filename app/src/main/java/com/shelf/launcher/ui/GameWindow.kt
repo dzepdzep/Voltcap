@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -145,7 +146,26 @@ internal enum class WinPart(val label: String) {
 internal enum class WinSlot(val label: String) { PICTURE("On the picture"), INFO("By the name"), BOTTOM("Under the buttons"), OFF("Off") }
 
 /** Update 125: the window's pages — the picture, the details, the game's options and its achievements, all in its style. */
-internal enum class WinPage { MAIN, DETAILS, OPTIONS, TROPHIES }
+internal enum class WinPage { MAIN, DETAILS, OPTIONS, TROPHIES, PERF }
+
+/**
+ * Update 213: the picked game's performance and save sync for the window's parts (GamePopupStatus.kt): the Performance
+ * page and button, and the small status line under the buttons on every page.
+ */
+internal class WinStatus(
+    val perf: GamePerfState?,
+    val sync: GameSyncView,
+    val hasFan: Boolean?,
+    val onSync: () -> Unit,
+    val onSyncSetUp: () -> Unit,
+    val onPerf: () -> Unit,
+    val onPerfAdvanced: () -> Unit,
+    val perfFocus: FocusRequester
+)
+internal val LocalWinStatus = androidx.compose.runtime.staticCompositionLocalOf<WinStatus?> { null }
+
+/** The label of the window's Performance button (update 213). */
+private const val PERF_LABEL = "Performance"
 
 /** Update 125: one of the game's options, shown on the window's own options page. */
 internal class WinOption(val label: String, val sub: String? = null, val destructive: Boolean = false, val onClick: () -> Unit)
@@ -468,11 +488,26 @@ internal fun GameWindow(
     /** Update 125: the game's options, shown on the window's own page in its style (empty: [onOptions] opens the menu). */
     options: List<WinOption> = emptyList(),
     /** Update 132: loads an achievement's comments (the achievements page shows them under the one you open). */
-    onLoadComments: (Int) -> Unit = {}
+    onLoadComments: (Int) -> Unit = {},
+    /** Update 213: the emulator's (or app's) package, for its performance profile ("pkg:"); null: none. */
+    perfPackage: String? = null,
+    /** Update 213: the game's settings with the whole tuner (Performance › Advanced…), over the window. */
+    onPerfAdvanced: () -> Unit = {},
+    /** Update 213: Settings › Sync (save sync not set up, or no folder for the game). */
+    onSyncSetUp: () -> Unit = {},
+    /** Update 213: the game's own "Sync saves" (Game settings), null = as Settings › Sync. */
+    syncOn: Boolean? = null
 ) {
+    // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
+    val perfState = rememberGamePerf(g, perfPackage)
+    val syncView = rememberGameSyncView(g, syncOn)
+    val hasFan = if (perfState != null) rememberHasFan() else null
     // Update 146: the banner page (Settings › Game window › Style), the same for every layout.
     if (Features.winBanner.state.value) {
-        BannerGameWindow(layout, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onSync, options, onLoadComments)
+        BannerGameWindow(
+            layout, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onSync, options, onLoadComments,
+            perf = perfState, sync = syncView, hasFan = hasFan, onPerfAdvanced = onPerfAdvanced, onSyncSetUp = onSyncSetUp
+        )
         return
     }
     val o = state.artOverrides[g.stableKey]
@@ -599,6 +634,13 @@ internal fun GameWindow(
         val details = page != WinPage.MAIN
         val listFocus = remember { FocusRequester() }
         androidx.activity.compose.BackHandler(enabled = details) { page = WinPage.MAIN }
+        // Update 213: back from the Performance page, the D-pad goes back onto its button.
+        val perfFocus = remember { FocusRequester() }
+        var fromPerf by remember { mutableStateOf(false) }
+        val winStatus = WinStatus(
+            perfState, syncView, hasFan, onSync, onSyncSetUp,
+            onPerf = { fromPerf = true; page = WinPage.PERF }, onPerfAdvanced = onPerfAdvanced, perfFocus = perfFocus
+        )
         val hasTrophies = state.raAchievementDetails[g.stableKey].orEmpty().isNotEmpty()
         // Update 202: a Manual button beside the window's small icons, only for a game that has a manual.
         val hasManual = rememberHasManual(g)
@@ -618,8 +660,11 @@ internal fun GameWindow(
         LaunchedEffect(page) {
             if (!turned) { turned = true; return@LaunchedEffect }
             kotlinx.coroutines.delay(60)
-            if (page == WinPage.OPTIONS || page == WinPage.TROPHIES) {
+            if (page == WinPage.OPTIONS || page == WinPage.TROPHIES || page == WinPage.PERF) {
                 if (runCatching { listFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
+            } else if (page == WinPage.MAIN && fromPerf) {
+                fromPerf = false
+                if (runCatching { perfFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
             } else runCatching { playFocus.requestFocus() }
         }
         var target by remember { mutableStateOf<Rect?>(null) }
@@ -640,6 +685,7 @@ internal fun GameWindow(
                 motion.open(inspectScope, fullInspect, spin = fullInspect) // (Update 164: the turn too on Lite, with Full animations on Lite)
             }
         }
+        androidx.compose.runtime.CompositionLocalProvider(LocalWinStatus provides winStatus) {
         if (tvRect != null) {
             // On the TV: the room stays lit round it, the window fills the set's screen, switching on like an old TV.
             LaunchedEffect(Unit) { if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing)) }
@@ -743,6 +789,7 @@ internal fun GameWindow(
             // Update 162: the piece itself, over the window (it flies from its card to its side and back).
             if (piece != null) MediaInspectPiece(piece, motion, slot, hereDisplay)
         }
+        }
     }
 }
 
@@ -818,13 +865,15 @@ private class WinExtras(
  */
 private fun winButtonItems(
     look: WinLook, page: WinPage, setPage: (WinPage) -> Unit, onClose: () -> Unit, onPlay: () -> Unit,
-    onFullDetails: () -> Unit, extras: WinExtras
+    onFullDetails: () -> Unit, extras: WinExtras,
+    /** Update 213: the Performance button after Play (null: none here — no tuner, or a narrow row that has its icon). */
+    onPerf: (() -> Unit)? = null
 ): List<Triple<String, () -> Unit, Boolean>> {
     val rest: List<Pair<String, () -> Unit>> = when (page) {
-        WinPage.MAIN -> listOf(look.details to { setPage(WinPage.DETAILS) }, look.back to onClose)
+        WinPage.MAIN -> listOfNotNull(onPerf?.let { PERF_LABEL to it }, look.details to { setPage(WinPage.DETAILS) }, look.back to onClose)
         WinPage.DETAILS -> listOf("Full details" to onFullDetails, "Back" to { setPage(WinPage.MAIN) })
         WinPage.TROPHIES -> listOf("Full list" to extras.onFullAchievements, "Back" to { setPage(WinPage.MAIN) })
-        WinPage.OPTIONS -> listOf("Back" to { setPage(WinPage.MAIN) })
+        WinPage.OPTIONS, WinPage.PERF -> listOf("Back" to { setPage(WinPage.MAIN) })
     }
     return listOf(Triple(look.play, onPlay, true)) + rest.map { (l, f) -> Triple(l, f, false) }
 }
@@ -996,6 +1045,7 @@ private fun TvWindowBody(
             WinPage.DETAILS -> WindowDetails(look, g, state, cover, Modifier.fillMaxSize())
             WinPage.OPTIONS -> WindowOptions(look, options, listFocus, Modifier.fillMaxSize())
             WinPage.TROPHIES -> WindowTrophies(look, g, state, listFocus, Modifier.fillMaxSize(), extras.onLoadComments)
+            WinPage.PERF -> WindowPerformance(look, listFocus, Modifier.fillMaxSize())
         }
         if (controlsInside) Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(10.dp)) {
             TvControls(look, g, page, setPage, playFocus, onClose, onPlay, onFullDetails, extras, roomy)
@@ -1021,6 +1071,7 @@ private fun TvControls(
             WinText(look, titles.display(g.name), Color.White, 17, FontWeight.Bold, shadow = true)
             Spacer(Modifier.height(6.dp))
         }
+        val status = LocalWinStatus.current
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras).forEach { (l, f, isPlay) ->
                 WinButton(
@@ -1029,12 +1080,17 @@ private fun TvControls(
                     wideButton = false, stretch = true, compact = true, onClick = f
                 )
             }
+            // (Update 213: Performance as a round button in the TV's small strip.)
+            if (page == WinPage.MAIN && status?.perf != null) Box(Modifier.focusRequester(status.perfFocus)) {
+                WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Speed, PERF_LABEL, 32.dp, status.onPerf)
+            }
             // (The small buttons only when there's room for them.)
             if (roomy && page == WinPage.MAIN) {
                 WinIcons(look, extras, 32.dp)
                 WinIcons(look, extras, 32.dp, WinSlot.BOTTOM)
             }
         }
+        if (roomy) WinStatusLine(look)
     }
 }
 
@@ -1098,23 +1154,36 @@ private fun WindowBody(
     val name = titles.display(g.name)
     val sub = listOfNotNull(titles.console(g.platform), state.playtime[g.stableKey]?.takeIf { it > 0L }?.let { stylePlaytime(it) }).joinToString("  ·  ")
     // The buttons: Play / Continue first (update 125), then the page's own.
+    val status = LocalWinStatus.current
     @Composable
     fun Buttons(vertical: Boolean, fill: Boolean = false) {
-        val all = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras)
+        // Update 213: Performance as a button after Play — or, where the buttons share a narrow row, as a round icon
+        // at the row's end (the window's own action strip).
+        val perfHere = status?.perf != null
+        val all = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, if (perfHere && !fill) status!!.onPerf else null)
+        fun btnMod(l: String, isPlay: Boolean): Modifier =
+            if (isPlay) Modifier.focusRequester(playFocus) else if (l == PERF_LABEL && status != null) Modifier.focusRequester(status.perfFocus) else Modifier
         if (vertical) Column(verticalArrangement = Arrangement.spacedBy(if (look.btn == Btn.TEXT) 4.dp else 10.dp)) {
-            all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, if (isPlay) Modifier.focusRequester(playFocus) else Modifier, wideButton = true, onClick = f) }
+            all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = true, onClick = f) }
             // (Update 119: the game's options, achievements and save sync under them.)
             if (!details) WinIcons(look, extras)
-        } else Row(if (fill) Modifier.fillMaxWidth() else Modifier, horizontalArrangement = Arrangement.spacedBy(if (fill) 8.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            // [fill]: the buttons share the width (a narrow column).
-            all.forEach { (l, f, isPlay) ->
-                WinButton(
-                    look, if (look.caps) l.uppercase() else l,
-                    (if (fill) Modifier.weight(1f) else Modifier).then(if (isPlay) Modifier.focusRequester(playFocus) else Modifier),
-                    wideButton = false, stretch = fill, onClick = f
-                )
+            WinStatusLine(look)
+        } else Column(if (fill) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(if (fill) Modifier.fillMaxWidth() else Modifier, horizontalArrangement = Arrangement.spacedBy(if (fill) 8.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                // [fill]: the buttons share the width (a narrow column).
+                all.forEach { (l, f, isPlay) ->
+                    WinButton(
+                        look, if (look.caps) l.uppercase() else l,
+                        (if (fill) Modifier.weight(1f) else Modifier).then(btnMod(l, isPlay)),
+                        wideButton = false, stretch = fill, onClick = f
+                    )
+                }
+                if (!details && fill && perfHere) Box(Modifier.focusRequester(status!!.perfFocus)) {
+                    WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Speed, PERF_LABEL, 38.dp, status.onPerf)
+                }
+                if (!details) WinIcons(look, extras, if (fill) 38.dp else 44.dp)
             }
-            if (!details) WinIcons(look, extras, if (fill) 38.dp else 44.dp)
+            WinStatusLine(look)
         }
     }
     @Composable
@@ -1158,6 +1227,7 @@ private fun WindowBody(
                     WinPage.DETAILS -> WindowDetails(look, g, state, cover, Modifier.fillMaxSize())
                     WinPage.OPTIONS -> WindowOptions(look, options, listFocus, Modifier.fillMaxSize())
                     WinPage.TROPHIES -> WindowTrophies(look, g, state, listFocus, Modifier.fillMaxSize(), extras.onLoadComments)
+                    WinPage.PERF -> WindowPerformance(look, listFocus, Modifier.fillMaxSize())
                 }
             }
         }
@@ -1168,7 +1238,7 @@ private fun WindowBody(
             // (Update 119: facts, achievements and two lines of the story under the picture, when chosen and there's room.)
             val info = extras.textAt(WinSlot.INFO) && maxH > 300.dp
             val bottom = (extras.textAt(WinSlot.BOTTOM) || extras.at(WinPart.MEDIA, WinSlot.BOTTOM) || extras.at(WinPart.ICONS, WinSlot.BOTTOM)) && !details
-            val btnRoom = 76.dp + (if (info) 74.dp else 0.dp) + (if (bottom) 82.dp else 0.dp)
+            val btnRoom = 100.dp + (if (info) 74.dp else 0.dp) + (if (bottom) 82.dp else 0.dp)
             val inner = (maxW - (if (look.panel != null) 28.dp else 0.dp)).coerceAtLeast(120.dp)
             val screenW = minOf(inner, (maxH - btnRoom - (if (look.panel != null) 28.dp else 0.dp)) * 1.78f).coerceAtLeast(120.dp)
             Column(panelMod, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1267,6 +1337,96 @@ private fun WindowBody(
                 Spacer(Modifier.width(18.dp))
                 Media(Modifier.weight(1f).fillMaxHeight(), showName = false)
             }
+        }
+    }
+}
+
+/**
+ * Update 213: the small line under the window's buttons, on every page: the game's save sync (a tap / A opens its
+ * sync, or Settings › Sync when it isn't set up) and its performance (a tap / A opens the Performance page). An icon
+ * with short words; stronger only when something needs you.
+ */
+@Composable
+private fun WinStatusLine(look: WinLook) {
+    val st = LocalWinStatus.current ?: return
+    Spacer(Modifier.height(6.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        val sv = st.sync
+        WinStatusChip(look, sv.icon, "Saves: " + sv.text, urgent = sv.urgent, onClick = if (sv.setUp) st.onSyncSetUp else st.onSync)
+        st.perf?.let { p ->
+            WinStatusChip(look, androidx.compose.material.icons.Icons.Filled.Speed, p.perf.summary, urgent = false, onClick = st.onPerf)
+        }
+    }
+}
+
+@Composable
+private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, urgent: Boolean, onClick: () -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    val focused by source.collectIsFocusedAsState()
+    val sounds = LocalUiSounds.current
+    LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
+    val shape = RoundedCornerShape(50)
+    val warn = Color(0xFFFFB74D)
+    Row(
+        Modifier.clip(shape)
+            .background(if (focused) look.btnOnFill else solid(if (urgent) warn.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.22f)))
+            .then(if (urgent && !focused) Modifier.border(1.dp, warn.copy(alpha = 0.7f), shape) else Modifier)
+            .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() }
+            .padding(horizontal = 9.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val ink = if (focused) look.btnOnInk else if (urgent) warn else Color.White.copy(alpha = 0.82f)
+        androidx.compose.material3.Icon(icon, null, tint = ink, modifier = Modifier.size(13.dp))
+        Spacer(Modifier.width(5.dp))
+        androidx.compose.material3.Text(
+            text, color = ink, fontSize = 11.sp, fontWeight = if (urgent) FontWeight.Bold else FontWeight.Medium, maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 260.dp),
+            fontFamily = if (look.mono) FontFamily.Monospace else null
+        )
+    }
+}
+
+/**
+ * Update 213: the window's Performance page, in its style: For this game — power mode, AutoTDP (and its target),
+ * underclock, fan, Advanced… (the whole tuner in the game's settings) and "Use … again" (its own settings removed).
+ * Each row says what it is now and, until the game has its own, where that comes from. A / a tap steps a row on.
+ */
+@Composable
+private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier: Modifier) {
+    val st = LocalWinStatus.current
+    val s = st?.perf
+    val paper = look.paper ?: Color(0xFF15181E)
+    val light = (paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f
+    val ink = if (light) Color(0xFF2E3640) else Color.White
+    Column(
+        modifier.background(paper).verticalScroll(rememberScrollState()).padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        // (If / else, never an early return out of the Column — see update 144.)
+        if (s == null || st == null) {
+            androidx.compose.material3.Text("Performance settings aren't available on this handheld.", color = ink, fontSize = 13.sp)
+        } else {
+        androidx.compose.material3.Text(
+            if (look.caps) "PERFORMANCE · FOR THIS GAME" else "Performance · For this game", color = ink, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+            fontFamily = if (look.mono) FontFamily.Monospace else null
+        )
+        androidx.compose.material3.Text("Now: " + s.perf.summary, color = ink.copy(alpha = 0.78f), fontSize = 12.sp, maxLines = 2)
+        perfRows(s, st.hasFan, st.onPerfAdvanced).forEachIndexed { i, row ->
+            WinRow(look, if (i == 0) Modifier.focusRequester(listFocus) else Modifier, onClick = { row.onClick?.invoke() }) { on ->
+                Column(Modifier.weight(1f)) {
+                    val c = when { on -> look.btnOnInk; row.destructive -> Color(0xFFFF8A80); else -> look.btnInk }
+                    androidx.compose.material3.Text(
+                        if (look.caps) row.label.uppercase() else row.label, color = c, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
+                    )
+                    androidx.compose.material3.Text(
+                        row.value, color = c.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
+                    )
+                }
+            }
+        }
+        androidx.compose.material3.Text(perfNote(s), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, lineHeight = 15.sp)
         }
     }
 }

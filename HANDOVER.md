@@ -256,6 +256,13 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 213
+- **Game popup status** (ui/GamePopupStatus.kt): `rememberGamePerf(g, pkg)` → `GamePerfState` (own / inherited from pkg: › plat: › global, `put` = TuneStore.setForKey(game, change(own ?: inherited)) + Tuner.profileChanged, `inherit` = remove; running = Tuner.status.source == g.name), keyed on `TuneStore.edits` (new counter bumped by setGlobal / setForKey / setForKeys). `perfRows` / `perfNote` shared by both window styles. `rememberGameSyncView(g, syncOn)` → `GameSyncView` (SyncStatusStore per game + CloudSync settings + canWatchSaves on IO; never syncs).
+- **GameWindow:** `WinPage.PERF`, `LocalWinStatus` (WinStatus: perf, sync, hasFan, onSync, onSyncSetUp, onPerf, onPerfAdvanced, perfFocus), Performance button after Play (`PERF_LABEL`) or a Speed WinIconButton in fill rows / TV strip, `WinStatusLine` under the buttons on every page, `WindowPerformance`. Back from PERF focuses Performance (`fromPerf`). STACK btnRoom 100 dp.
+- **Banner:** BannerTab.PERFORMANCE (only with a tuner), Speed BannerRound, `BannerSyncChip` in the status line (replaces console · year there).
+- **LauncherScreen:** onSync keeps the popup open; `perfPackage` (app package or emulatorFor), `onPerfAdvanced` = profileForGame, `onSyncSetUp`, `syncOn` (game / console override only). SaveSyncDialog's button reads "Sync this game".
+- **Not device-tested** (no handheld connected during 212 / 213).
+
 ## State after update 212
 - **Edit Home session** (ui/HomeEditSession.kt): `HomeEditSession.begin()` (from `HomeEditState.open()`, which returns if already active) snapshots the live maps + the at-once prefs (hiddenParts, overlayParts, partStyles, partBackingSolid, artPosLooks, art*Case) as `EditSnap`; `push(kind, force)` before every change (same kind within 900 ms coalesced), `undo()`, `dirty()`, `save()` (= `HomeEditState.done()`), `discard()` (snapshot back + `HomeEditState.close()`), `back()`. Unfinished session's prefs kept in "session" prefs `home_edit_open_212`, put back by `recover(context)` at start (LauncherScreen).
 - **Keys** (HomeEdit.kt › onKey): A panel (`styling = selected`), B back, Start Done, Y Undo, X `resetSelected`, Select `toggleShown`, L3 Elements, R3 Art position, D-pad `nudge`. Preview: any key / tap ends it.

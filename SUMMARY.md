@@ -4,6 +4,43 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 16 Oct 2026 (213): the game popup — a Performance page (For this game: power mode, AutoTDP, underclock, fan, Advanced…) and the game's save sync always in sight, Voltcap 0.6.6
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (Run 212's block first if you haven't yet.)
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (1): `src_copy\ui\GamePopupStatus.kt`.
+Changed (5): `src_copy\device\tune\TuneModel.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\GameWindowBanner.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\SaveSyncUi.kt`.
+
+**Copy `project_copy`:** nothing.
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 213: game popup Performance page (per-game power, AutoTDP, underclock, fan) and the game's save-sync status on every page" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+& "$P\tools\release\release.ps1" 0.6.6 "Game popup: a Performance button next to Play - power mode, AutoTDP, underclock and fan for this game, with where each setting comes from. The game's save sync shows under the buttons on every page; tap it for its sync."
+.\gradlew installRelease
+```
+
+### Where the controls are
+- **Performance** sits next to Play in the game popup (A on a game). Where the buttons share a narrow row (the Grid's and the split windows), and on the TV room's set, it's a round ⚡ button at the end of the row. One press from the popup. On the store-page style (Settings › Game window › Style › Banner) it's a **PERFORMANCE** tab (L1 / R1) and a round ⚡ button in the strip.
+- **The page:** *Performance · For this game*, then *Now: Balanced · PS2 default* (what it uses and where from), and the rows: **Power mode**, **AutoTDP** (Off / Efficient / Balanced / Smooth, with its wattage), **AutoTDP target** (when on), **Underclock** (With power shows what it is now), **Fan** ("Not adjustable on this handheld" where the fan can't be set), **Advanced…** (the game's settings with the whole tuner — CPU / GPU limits, governor, screen rate, buttons, what it cost), and **Use the PS2 default again** once the game has its own settings. A / a tap steps a row to its next choice. B goes back to the popup with the D-pad on Performance again.
+- **Rules kept:** the tuner's own profiles (a whole profile per game; game › emulator / app › console › device). A change here always makes or changes *this game's* profile, starting from what it used — never the console's or the device's. Heat guard and the screen-off profile stay device-wide (said on the page). Not running: "Applied when this game launches." Running (the tuner is on this game): "Running now: changes apply at once · now …".
+- **Shown on the popup's main page too:** a small ⚡ line with the summary, next to the save line.
+- **Save sync, always in sight:** a small line under the buttons on every page (the picture, details, options, achievements, performance), and in the store page's status line. It describes this game only: *Saves up to date · 5 min ago*, *Uploading saves… / Downloading saves…*, *Changes waiting to sync*, *Waiting for the first sync*, *Save conflict · choose which to keep*, *Sync failed · Retry*, *Offline · will retry*, *Sign in to Google Drive again*, *Not checked yet*, *No save folder for this game*, *Save sync off for this game*, *Save sync is off*, *Save sync isn't set up*, *No save sync for apps*; "· syncing all games…" while a full sync runs (said as everything, not this game). "Up to date" only from this game's own record.
+- An icon and short words; the ones that need you (conflict, failed, sign in) are bold, outlined and amber with a warning icon — not colour alone. A / a tap opens the game's sync (Save sync — *Sync this game*, Resolve conflict, Open Sync settings) **over the popup** — closing it comes back to the popup (it used to close it); when sync isn't set up, it opens Settings › Sync. Opening the popup or reading the line never starts a sync and never touches a conflict; nothing is fetched from the network for it.
+
+### Checked
+- Type-check of all sources: **0 errors**, no NON_LOCAL_RETURN. Your PC's copies of the 4 changed popup files were the same as my starting point.
+- **Not tested on a device yet** (no handheld connected): the button / icon fitting in each window style on the RP Classic and the Thor, long names, the banner tab, the second screen (the second screen's own Details page isn't changed), running-game "apply now".
+
+---
+
 ## Update — 16 Oct 2026 (212): Edit Home as a session (select → adjust → preview → Done, Undo, Discard, inspector, Elements), category reordering the same in both browsers (hold to move), Android games as disc or cartridge everywhere, the category title on every layout, Voltcap 0.6.5
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

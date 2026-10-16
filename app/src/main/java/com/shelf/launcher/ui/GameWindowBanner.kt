@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -119,7 +120,7 @@ import kotlinx.coroutines.launch
 
 /** Update 146: the banner page's tabs, left to right. OPTIONS only when the game's options come as a list. */
 private enum class BannerTab(val label: String) {
-    ACTIVITY("ACTIVITY"), ACHIEVEMENTS("ACHIEVEMENTS"), MEDIA("MEDIA"), INFO("GAME INFO"), OPTIONS("OPTIONS")
+    ACTIVITY("ACTIVITY"), ACHIEVEMENTS("ACHIEVEMENTS"), MEDIA("MEDIA"), INFO("GAME INFO"), PERFORMANCE("PERFORMANCE"), OPTIONS("OPTIONS")
 }
 
 /** Update 146: the banner page's colours, worked out once from the game's colour (or the theme's). */
@@ -190,7 +191,13 @@ internal fun BannerGameWindow(
     onAchievements: () -> Unit,
     onSync: () -> Unit,
     options: List<WinOption>,
-    onLoadComments: (Int) -> Unit
+    onLoadComments: (Int) -> Unit,
+    /** Update 213: the game's performance (null: no tuner here) and save sync (GamePopupStatus.kt). */
+    perf: GamePerfState? = null,
+    sync: GameSyncView? = null,
+    hasFan: Boolean? = null,
+    onPerfAdvanced: () -> Unit = {},
+    onSyncSetUp: () -> Unit = {}
 ) {
     val k = g.stableKey
     val o = state.artOverrides[k]
@@ -270,7 +277,11 @@ internal fun BannerGameWindow(
         }
         LaunchedEffect(k) { onNeedMedia(g) }
 
-        val tabs = remember(options.isNotEmpty()) { BannerTab.values().filter { it != BannerTab.OPTIONS || options.isNotEmpty() } }
+        // (Update 213: the Performance tab where the handheld can be tuned.)
+        val perfOn = perf != null
+        val tabs = remember(options.isNotEmpty(), perfOn) {
+            BannerTab.values().filter { (it != BannerTab.OPTIONS || options.isNotEmpty()) && (it != BannerTab.PERFORMANCE || perfOn) }
+        }
         var tab by remember(k) { mutableStateOf(BannerTab.ACTIVITY) }
         // (The options list can go away while the page is open: then back to the first tab.)
         LaunchedEffect(tabs) { if (tab !in tabs) tab = BannerTab.ACTIVITY }
@@ -405,6 +416,10 @@ internal fun BannerGameWindow(
                                 if (trophies.isNotEmpty()) { setTab(BannerTab.ACHIEVEMENTS); focusContent() } else onAchievements()
                             }
                             BannerRound(look, Icons.Filled.CloudSync, "Save sync", round, roundMod, onSync)
+                            // Update 213: Performance — its tab, one press away.
+                            if (perfOn) BannerRound(look, Icons.Filled.Speed, "Performance", round, roundMod) {
+                                setTab(BannerTab.PERFORMANCE); focusContent()
+                            }
                         }
                     }
                     // ---- a thin line and the short status ----
@@ -425,7 +440,10 @@ internal fun BannerGameWindow(
                             color = look.ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1
                         )
                         Spacer(Modifier.weight(1f))
-                        Text(
+                        // Update 213: the game's save sync, always in sight (a tap opens it; stronger only when it needs you).
+                        if (sync != null) {
+                            BannerSyncChip(look, sync, onClick = if (sync.setUp) onSyncSetUp else onSync, modifier = Modifier.padding(start = 10.dp))
+                        } else Text(
                             listOfNotNull(titles.console(g.platform), meta?.releaseYear?.toString()).joinToString("  ·  "),
                             color = look.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(start = 10.dp)
@@ -675,6 +693,26 @@ internal fun BannerGameWindow(
                                         }
                                     }
                                 }
+                                BannerTab.PERFORMANCE -> if (perf != null) {
+                                    item(key = "perfHead") {
+                                        BannerCard(look, firstMod) {
+                                            Text("FOR THIS GAME", color = look.muted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp)
+                                            Text(perf.perf.summary, color = look.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                                            Spacer(Modifier.height(4.dp))
+                                            Text(perfNote(perf), color = look.muted, fontSize = 12.sp)
+                                        }
+                                    }
+                                    val rows = perfRows(perf, hasFan, onPerfAdvanced)
+                                    itemsIndexed(rows, key = { i, r -> "p$i${r.label}" }) { _, r ->
+                                        BannerCard(look, onClick = r.onClick) {
+                                            Text(
+                                                r.label, color = if (r.destructive) Color(0xFFFF8A80) else look.ink, fontSize = 14.sp,
+                                                fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(r.value, color = look.muted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        }
+                                    }
+                                }
                                 BannerTab.OPTIONS -> {
                                     itemsIndexed(options, key = { i, _ -> "o$i" }) { i, opt ->
                                         BannerCard(look, if (i == 0) firstMod else Modifier, onClick = opt.onClick) {
@@ -868,6 +906,32 @@ private fun BannerRound(look: BannerLook, icon: ImageVector, label: String, size
         contentAlignment = Alignment.Center
     ) {
         Icon(icon, label, tint = if (focused) look.btnOnInk else look.btnInk, modifier = Modifier.size(size * 0.5f))
+    }
+}
+
+/** Update 213: the game's save sync in the status line — an icon and short words, a tap / A opens it. */
+@Composable
+private fun BannerSyncChip(look: BannerLook, sync: GameSyncView, onClick: () -> Unit, modifier: Modifier) {
+    val source = remember { MutableInteractionSource() }
+    val focused by source.collectIsFocusedAsState()
+    val sounds = LocalUiSounds.current
+    LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
+    val warn = Color(0xFFFFB74D)
+    val shape = RoundedCornerShape(50)
+    Row(
+        modifier.styleFocus(focused, 12.dp, 0.7f, look.glow).clip(shape)
+            .background(if (focused) look.cardOn else if (sync.urgent) warn.copy(alpha = 0.18f) else Color.Transparent)
+            .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() }
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val ink = if (sync.urgent) warn else look.muted
+        Icon(sync.icon, null, tint = ink, modifier = Modifier.size(14.dp))
+        Spacer(Modifier.width(5.dp))
+        Text(
+            "Saves: " + sync.text, color = if (focused) look.ink else ink, fontSize = 12.sp,
+            fontWeight = if (sync.urgent) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

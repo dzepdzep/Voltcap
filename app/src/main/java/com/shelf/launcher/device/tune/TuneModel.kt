@@ -180,6 +180,11 @@ class TuneStore(context: Context) {
 
     init { migrateUnderclockOnce() }
 
+    companion object {
+        /** Update 213: counts saved changes (any screen), so what shows a profile — the game popup — reads it again. */
+        val edits = androidx.compose.runtime.mutableIntStateOf(0)
+    }
+
     /**
      * Once: profiles saved with the underclock "Off" (the old default) follow the power tier from now on ("With
      * power") — a tier of Stock / Max still means no underclock. A level you picked (Light…Custom) stays.
@@ -194,7 +199,7 @@ class TuneStore(context: Context) {
     }
 
     fun global(): TuneProfile = runCatching { gson.fromJson(prefs.getString("global", null), TuneProfile::class.java) }.getOrNull()?.sane() ?: TuneProfile()
-    fun setGlobal(p: TuneProfile) = prefs.edit().putString("global", gson.toJson(p)).apply()
+    fun setGlobal(p: TuneProfile) { prefs.edit().putString("global", gson.toJson(p)).apply(); edits.intValue++ }
 
     fun perGame(): Map<String, TuneProfile> =
         runCatching { gson.fromJson<Map<String, TuneProfile>>(prefs.getString("per_game", null), mapType) }.getOrNull()
@@ -206,6 +211,7 @@ class TuneStore(context: Context) {
         val m = perGame().toMutableMap()
         if (p == null) m.remove(key) else m[key] = p
         prefs.edit().putString("per_game", gson.toJson(m)).apply()
+        edits.intValue++
     }
 
     fun learnedLevel(key: String): Float? =
@@ -274,6 +280,7 @@ class TuneStore(context: Context) {
         val m = perGame().toMutableMap()
         keys.forEach { m[it] = p }
         prefs.edit().putString("per_game", gson.toJson(m)).apply()
+        edits.intValue++
     }
 
     var applyOnBoot: Boolean
