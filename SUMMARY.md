@@ -4,6 +4,51 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 16 Oct 2026 (215): no second disc behind the discs, the Switch card shows in its case, real case insides for Switch / Xbox 360, covers never stretched on cartridges, flush N64 panel lines, the carousel's dark stage over the whole screen
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (Run 214's block first if you haven't yet.)
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (7): `src_copy\ui\Carousel.kt`, `src_copy\ui\CartShells.kt`, `src_copy\ui\CaseOpen.kt`, `src_copy\ui\CustomCarts.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\RealMedia.kt`.
+
+**Copy `project_copy`:** nothing. **Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 215: no ghost disc behind turning discs, Switch card visible in its case, Switch / Xbox 360 case insides, covers fitted on cartridges, flush N64 lines, full-screen carousel stage" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+.\gradlew installRelease
+```
+(No release published. When you want one: `& "$P\tools\release\release.ps1" 0.6.7 "Cartridges rock gently again, real N64 cartridge, categories move one by one, no ghost disc behind discs, Switch card shows in its case, covers never stretched on cartridges."`)
+
+### What changed (from your four recordings, checked frame by frame)
+1. **The layer behind the discs** (game popup, every disc: GameCube, PS1, Xbox 360…): a tilted disc drew its "far side" as a full silver oval behind itself, a few pixels off — it showed round the disc's own rim as a second disc. Root cause: InspectDisc (update 189). Now only the disc's thin edge is drawn (rounded at its ends); the disc turns as one piece. Its spin, art and speed are unchanged.
+2. **The Switch card disappearing in its case:** the card was in the tray only when the case was turned. Root cause: the open case draws its parts far-to-near by each part's middle, and a card low in the tray (the Switch's) counted as further away than the tray's middle with the case tilted towards you, so the tray was drawn over it (CaseOpen, since 189). The card (and a disc in an Xbox One / Series lid) is now always drawn right on top of what it lies in.
+3. **Switch and Xbox 360 case insides** (research below): the inside of the lid showed the front cover again, as a manual. A Switch case is clear plastic with the paper insert behind it, and holds no manual; the Xbox 360's is the same in green. Without a manual, the lid's inside is now the insert's plain back under the plastic. Games with a downloaded manual still show it as a booklet. Other cases are unchanged.
+4. **Covers stretched on cartridges:** a cover on a cartridge label (drawn shells like the N64, your cartridge pack, the template cartridges and the drawn shells) was stretched to the label's shape. It now keeps its own shape, as big as fits in the label; on the drawn shells the rest of the label is the colour along the cover's edge, on the pack / template cartridges the label paper. Real label scans still fill the label (they are the sticker).
+5. **N64 panel lines:** the grooves beside the label panel are hairline seams now (30 % as strong, half as wide); the front reads flush.
+6. **The dark shade on the carousel didn't cover the screen:** the carousel's dark stage (Spine wall, Box flow, the 3D-case views) stopped at the carousel's own edges, a little in from the screen's, with a hard edge at the top; the games ran on past it at both sides. It now covers the whole screen, and the dimmed edges are at the screen's edges (a little darker there, where the games come in).
+
+### Research (Switch / Xbox cases, Switch card)
+- Switch 1 case 170 × 104 × 10 mm, **clear** plastic (the red is the printed insert), card well low on the right with tabs above it, no second holder found ([Wikipedia: Keep case](https://en.wikipedia.org/wiki/Keep_case), [Nintendo Life](https://www.nintendolife.com/news/2025/05/heres-a-look-at-the-size-and-inside-of-switch-2-game-cases)). That matches what Voltcap draws now (clear over white, card low right).
+- Switch card 31 × 21 × 3 mm, dark grey, label on the front, contacts on the back ([Wikipedia: Nintendo Game Card](https://en.wikipedia.org/wiki/Nintendo_Game_Card), [SwitchBrew](https://switchbrew.org/wiki/Gamecard)). Matches the drawn card; no change made to it.
+- Xbox 360 case translucent green with a clear overlay and booklet clips ([Wikipedia: Keep case](https://en.wikipedia.org/wiki/Keep_case)).
+
+### Measured from your recording (not on the device)
+- Scrolling in PS2 (126 games, Spine wall): during a move the frames come every 8–25 ms, but the first two or three after each press take 28–43 ms (a small hitch as the new game becomes the one you're on). I couldn't find the cause from the recording; it needs a trace on the Thor (debug build: the "VoltcapPerf" lines). No speed change was made without a measurement.
+
+### Seen but not changed
+- **Super Mario Bros. Wonder's cover** is SteamGridDB's "This asset has been removed in response to a DMCA takedown notice" picture (it's what was downloaded). Re-pick its cover (game options › art) or re-scrape it.
+- Some PS1 disc photos show black in their clear middle — that's the photo's see-through hub showing the case behind.
+
+### Checked
+- Type-check of all sources: **0 errors**, no NON_LOCAL_RETURN. Your PC copies of the changed files were the same as my starting point (214 for CartShells / PhysicalMedia). The N64 and a fitted cover were rendered here from the same numbers (preview in the chat). **Not tested on a device** (none connected).
+
+---
+
 ## Update — 16 Oct 2026 (214): cartridges rock again instead of going round, a real-looking N64 cartridge, every category tile moves on its own (B cancels a move)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (Run 212's and 213's blocks first if you haven't yet.)

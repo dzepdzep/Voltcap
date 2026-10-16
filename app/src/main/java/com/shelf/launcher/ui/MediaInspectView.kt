@@ -1341,18 +1341,18 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float) {
                 if (half > 0.3f) {
                     val cx = size.width / 2f
                     val cy = size.height / 2f
-                    val ew = dia * abs(c)
-                    // The far face's outline behind, joined to the near one by the edge.
-                    val bx = cx - (if (c >= 0f) 1f else -1f) * d / 2f * s
                     // (Update 189: not through the hole — the edge and the far face showed in the middle of the disc.)
                     val holeW = dia * 0.075f * abs(c).coerceAtLeast(0.05f)
                     val hole = androidx.compose.ui.graphics.Path().apply {
                         addOval(androidx.compose.ui.geometry.Rect(cx - holeW, cy - dia * 0.075f, cx + holeW, cy + dia * 0.075f))
                     }
+                    // (Update 215: only the thin edge between the two faces, rounded at its ends — no far face any more.
+                    // Its full silver oval stood out round the disc's own rim whenever the disc was tilted, a second
+                    // disc behind the first ("the layer behind the discs"), on every disc.)
                     clipPath(hole, androidx.compose.ui.graphics.ClipOp.Difference) {
-                        drawOval(rim, topLeft = Offset(bx - ew / 2f, cy - dia / 2f), size = Size(ew, dia))
-                        drawRect(rim, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia))
-                        drawRect(Color.Black, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia), alpha = 0.3f)
+                        val cr = androidx.compose.ui.geometry.CornerRadius(half, half)
+                        drawRoundRect(rim, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia), cornerRadius = cr)
+                        drawRoundRect(Color.Black, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia), cornerRadius = cr, alpha = 0.3f)
                     }
                 }
             }

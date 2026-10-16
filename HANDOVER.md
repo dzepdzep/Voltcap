@@ -256,6 +256,16 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 215
+- **InspectDisc edge:** only a rounded strip `2·half × dia` at the centre (rim colour + 30 % black), clipped round the hole; the far-face oval is gone (it showed as a ghost disc behind every tilted disc).
+- **CaseOpenDraw:** the item quad's depth = tray quad + 0.001 (itemOnLid: lid-inside quad + 0.001) — average-depth sorting put a low-lying Switch card behind the tray when pitched.
+- **CaseInside.lid:** keep-case lid without a manual on Switch / Switch2 / Xbox360 (`INSERT_BACK_ONLY`, by `LookStyles.casePlatform`) = plastic over the insert's plain back (faint lines + glare), no cover-as-manual.
+- **Covers on cartridge labels fitted, not stretched:** CartShells.front (cache key "f4") fits `labelArt` inside the label and fills the rest with `edgeColour` (average of the cover's edge pixels); PackCart / TemplateMedia cart / drawn MediaShell label use ContentScale.Fit for covers, FillBounds only for real label scans.
+- **CartShell.ridgeDepth** (default 1): N64 0.3 — ridge shade × depth, line width × 0.5 when < 1.
+- **Carousel stage** (Features.carouselStage): drawn in screen coordinates (`positionInWindow` + LocalView size) so it covers the whole screen; edge dim 0.6 at the screen edges (0 → 0.14 / 0.86 → 1).
+- **Measured off the user's PS2 Spine-wall recording:** 2–3 frames of 28–43 ms at the start of each move, the rest 8–25 ms. Cause not found without a device trace.
+- Switch / Xbox case research (clear Switch 1 case, red insert; card 31 × 21 × 3; 360 translucent green) is in SUMMARY 215. **Not device-tested.**
+
 ## State after update 214
 - **Optical-system pack shells** (PhysicalMedia › CUSTOM_CART branch): always `solidPiece(cartSolid(null, platform, packShell?.aspect ?: cartLook.aspect, custom = true)).mediaMotion(false, …)` — the cartridge rock (rememberCartSpin, ±24° / 5.2 s with Moving cartridges = Spin / Both). 203 had `mediaMotion(packDisc, …)` = disc rotationZ 360° on a cartridge-shaped shell (the "clock hands" bug).
 - **N64 shell** (CartShells "n64"): arched top (parabola, 6.5 mm rise, 9 points r 8), grooves at 22.7 / 93.3 (ridges with across = false, n = 1), side step at 56.5 → 57.5 (1.6 mm), guide-slot ledge + edge ridges, label 29.5 / 7 / 57 × 63.5, `labelRadius = 3f` (new CartShell param, default 0.8 — `front()` uses it). Measured off the user's straight-on PAL Super Mario 64 photo.

@@ -85,7 +85,9 @@ internal class CartShell(
     val check: CaseCheck,
     val note: String,
     /** Update 214: the label's corner radius (mm) — the N64's sticker has round corners. */
-    val labelRadius: Float = 0.8f
+    val labelRadius: Float = 0.8f,
+    /** Update 215: how strongly the moulded lines ([ridges]) show, 0…1 (1 = grip ridges; the N64's flush panel lines are faint). */
+    val ridgeDepth: Float = 1f
 ) {
     val aspect: Float get() = w / h
     /** Thickness against the longest side (the solid piece's depth). */
@@ -140,7 +142,8 @@ internal object CartShells {
             listOf(sc(28f, 22f), sc(88f, 22f)),
             listOf(c("Grey", 0xFF7C7D82), c("Black", 0xFF202022), c("Gold", 0xFFC9A84C), c("Red", 0xFFB3262E), c("Blue", 0xFF2D4FA0),
                 c("Clear", 0xFFE6E8EA, 0.45f), c("Smoke", 0xFF3A3A40, 0.6f)),
-            check = CaseCheck.ESTIMATED, labelRadius = 3f,
+            // (Update 215: the panel lines faint — the front is flush, they're only hairline seams.)
+            check = CaseCheck.ESTIMATED, labelRadius = 3f, ridgeDepth = 0.3f,
             note = "Size measured (116×76.6×18.5); arched top, panel grooves, side step and the 57×63.5 label measured off a straight-on photo (approximate)."),
         CartShell("gb", "Game Boy Game Pak", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
             listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Grey", 0xFFA3A2A8), c("Yellow", 0xFFE8C51E)),
@@ -495,6 +498,27 @@ internal object CartShells {
      * its shape within 6 % of the console's box template — is cut to the template's art window, leaving the box's printed
      * console banner (the DS / Game Boy strip down its side, the N64 band) off the cartridge. Other pictures as they are.
      */
+    /**
+     * Update 215: the average colour along [b]'s top and bottom edges ([topBottom]) or its left and right edges — what
+     * fills the label round a cover fitted inside it. The label's paper colour when the pixels can't be read.
+     */
+    private fun edgeColour(b: Bitmap, topBottom: Boolean): Int = runCatching {
+        val soft = if (b.config == Bitmap.Config.HARDWARE) b.copy(Bitmap.Config.ARGB_8888, false) else b
+        var r = 0L; var g = 0L; var bl = 0L; var n = 0
+        val steps = 24
+        for (i in 0 until steps) {
+            val f = (i + 0.5f) / steps
+            val pts = if (topBottom) listOf((f * (soft.width - 1)).toInt() to 1, (f * (soft.width - 1)).toInt() to soft.height - 2)
+                else listOf(1 to (f * (soft.height - 1)).toInt(), soft.width - 2 to (f * (soft.height - 1)).toInt())
+            for ((x, y) in pts) {
+                val px = soft.getPixel(x.coerceIn(0, soft.width - 1), y.coerceIn(0, soft.height - 1))
+                if ((px ushr 24) < 200) continue
+                r += (px shr 16) and 0xFF; g += (px shr 8) and 0xFF; bl += px and 0xFF; n++
+            }
+        }
+        if (n == 0) 0xFFE9E6DF.toInt() else (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (bl / n).toInt()
+    }.getOrDefault(0xFFE9E6DF.toInt())
+
     private fun labelArt(s: CartShell, art: Bitmap): Bitmap = runCatching {
         val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
         val a = art.width.toFloat() / art.height.coerceAtLeast(1)
@@ -567,7 +591,7 @@ internal object CartShells {
      * label's shape, never stretched) under a band with [brand] (the game's real console).
      */
     fun front(s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean = false): Bitmap {
-        val key = "f3|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
+        val key = "f4|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -603,6 +627,9 @@ internal object CartShells {
         c.save(); c.translate(0f, 0.6f * k); c.drawPath(path, p); c.restore()
         p.style = Paint.Style.FILL
         // Grip ridges: a shadow line and a lit line each.
+        val rd = s.ridgeDepth.coerceIn(0f, 1f)
+        // (Update 215: lines that are only seams — ridgeDepth under 1 — are thinner too.)
+        val rw = if (rd < 1f) 0.5f else 1f
         for (r in s.ridges) {
             val n = r[4].toInt().coerceAtLeast(1)
             val across = r[5] > 0.5f
@@ -610,12 +637,12 @@ internal object CartShells {
                 val f = (i + 0.5f) / n
                 if (across) {
                     val y = (r[1] + r[3] * f) * k
-                    p.color = withAlpha(shade(base, -0.35f), maxOf(op, 0.6f)); c.drawRect(r[0] * k, y - 0.3f * k, (r[0] + r[2]) * k, y + 0.15f * k, p)
-                    p.color = withAlpha(shade(base, 0.2f), maxOf(op, 0.6f)); c.drawRect(r[0] * k, y + 0.15f * k, (r[0] + r[2]) * k, y + 0.45f * k, p)
+                    p.color = withAlpha(shade(base, -0.35f * rd), maxOf(op, 0.6f)); c.drawRect(r[0] * k, y - 0.3f * rw * k, (r[0] + r[2]) * k, y + 0.15f * rw * k, p)
+                    p.color = withAlpha(shade(base, 0.2f * rd), maxOf(op, 0.6f)); c.drawRect(r[0] * k, y + 0.15f * rw * k, (r[0] + r[2]) * k, y + 0.45f * rw * k, p)
                 } else {
                     val x = (r[0] + r[2] * f) * k
-                    p.color = withAlpha(shade(base, -0.35f), maxOf(op, 0.6f)); c.drawRect(x - 0.3f * k, r[1] * k, x + 0.15f * k, (r[1] + r[3]) * k, p)
-                    p.color = withAlpha(shade(base, 0.2f), maxOf(op, 0.6f)); c.drawRect(x + 0.15f * k, r[1] * k, x + 0.45f * k, (r[1] + r[3]) * k, p)
+                    p.color = withAlpha(shade(base, -0.35f * rd), maxOf(op, 0.6f)); c.drawRect(x - 0.3f * rw * k, r[1] * k, x + 0.15f * rw * k, (r[1] + r[3]) * k, p)
+                    p.color = withAlpha(shade(base, 0.2f * rd), maxOf(op, 0.6f)); c.drawRect(x + 0.15f * rw * k, r[1] * k, x + 0.45f * rw * k, (r[1] + r[3]) * k, p)
                 }
             }
         }
@@ -638,7 +665,19 @@ internal object CartShells {
         if (art != null) {
             // (Update 206: the picture fills the label exactly — stretched to it, never cut — the label keeps the shell's
             // real size and place, the art adapts to it; a label scan is the sticker itself.)
-            c.drawBitmap(if (scan) art else labelArt(s, art), null, artRect, p)
+            if (scan) c.drawBitmap(art, null, artRect, p)
+            else {
+                // (Update 215: a cover keeps its own shape — fitted inside the label, never stretched to it — and the
+                // rest of the label is the colour along the cover's own edge, so it reads as one printed sticker. A real
+                // label scan is the sticker itself and still fills it.)
+                val pic = labelArt(s, art)
+                val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
+                val la = artRect.width() / artRect.height().coerceAtLeast(1f)
+                val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
+                    else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
+                if (kotlin.math.abs(pa - la) > 0.02f) { p.color = edgeColour(pic, pa > la); c.drawRect(artRect, p) }
+                c.drawBitmap(pic, null, fit, p)
+            }
         } else if (!title.isNullOrBlank()) {
             text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
         }

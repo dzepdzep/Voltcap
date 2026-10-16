@@ -56,6 +56,9 @@ internal object CaseInside {
         }
     }
 
+    /** Update 215: cases whose lid shows the insert's plain back when the game has no manual (no manual in the real case). */
+    private val INSERT_BACK_ONLY = setOf("Switch", "Switch2", "Xbox360")
+
     /** The case's inside plastic, its real colour (before update 191, by console). */
     fun plastic(platform0: String?): Int = when (LookStyles.casePlatform(platform0)) {
         "PS3" -> 0xFF1F2733.toInt()
@@ -319,6 +322,14 @@ internal object CaseInside {
             if (book != null) {
                 // Update 202: the manual as a booklet you can tap to read (same place as the drawn manual).
                 drawBooklet(c, RectF(book[0] * w, book[1] * h, book[2] * w, book[3] * h), bookletPage, cover, h)
+            } else if (LookStyles.casePlatform(platform) in INSERT_BACK_ONLY) {
+                // (Update 215: a Switch or Xbox 360 game without a manual: the lid's inside is the clear plastic over the
+                // paper insert's plain back, as on the real case — it showed the front cover again, as a manual, which
+                // isn't in these cases.)
+                p.color = 0x14000000
+                var y = h * 0.14f
+                while (y < h * 0.3f) { c.drawRect(w * 0.14f, y, w * (0.5f + (y * 7 % 30) / 100f), y + h * 0.006f, p); y += h * 0.03f }
+                glare(c, w, h, p)
             } else {
                 p.color = 0x55000000
                 c.drawRect(RectF(page.left + h * 0.008f, page.top + h * 0.01f, page.right + h * 0.008f, page.bottom + h * 0.01f), p)
@@ -601,14 +612,18 @@ internal object CaseOpenDraw {
         }
         val floor = -hd + d * 0.12f
         // The tray (the back half's inside).
-        next().also { q -> q.bmp = tray; q.light = 0.95f
+        val trayQ = next().also { q -> q.bmp = tray; q.light = 0.95f
             put(q, 0, -hw, -hh, floor); put(q, 1, hw, -hh, floor); put(q, 2, hw, hh, floor); put(q, 3, -hw, hh, floor) }
         // The disc / card lying in it.
+        // (Update 215: always drawn just after the tray it lies in. Sorted by its own middle, a card low in the tray
+        // (the Switch's) came out "behind" the tray's middle with the case tilted towards you, so the tray covered it —
+        // the card was only there when the case was turned.)
         if (showItem && item != null && !itemOnLid) next().also { q -> q.bmp = item
             val z = floor + d * 0.18f
             val x0 = -hw + itemRect[0] * w; val x1 = -hw + itemRect[2] * w
             val y0 = -hh + itemRect[1] * h; val y1 = -hh + itemRect[3] * h
-            put(q, 0, x0, y0, z); put(q, 1, x1, y0, z); put(q, 2, x1, y1, z); put(q, 3, x0, y1, z) }
+            put(q, 0, x0, y0, z); put(q, 1, x1, y0, z); put(q, 2, x1, y1, z); put(q, 3, x0, y1, z)
+            q.depth = trayQ.depth + 0.001f }
         // The walls: each drawn on the side that faces you (outside: the spine picture / plastic; inside: plastic).
         val wall = CaseInside.shade(plastic, 0.8f)
         // (Update 193: the tray's walls stop where the lid sits on them — the lid has its own thickness.)
@@ -638,7 +653,7 @@ internal object CaseOpenDraw {
         // Its opening edge (the rim you put your thumb on), as it swings.
         if (lidT > 0.5f) next().also { q -> q.color = if (lidEdge != 0) lidEdge else wall; q.light = 0.8f; q.twoSided = true
             put(q, 0, lx(1f), -hh, lz(1f)); put(q, 1, lx(1f) + ox, -hh, lz(1f) + oz); put(q, 2, lx(1f) + ox, hh, lz(1f) + oz); put(q, 3, lx(1f), hh, lz(1f)) }
-        next().also { q -> q.bmp = lidInside; q.light = 0.97f
+        val lidQ = next().also { q -> q.bmp = lidInside; q.light = 0.97f
             put(q, 0, lx(1f), -hh, lz(1f)); put(q, 1, lx(0f), -hh, lz(0f)); put(q, 2, lx(0f), hh, lz(0f)); put(q, 3, lx(1f), hh, lz(1f)) }
         // Update 191: a disc held inside the lid (its place on the lid's picture: across from the lid's outer edge).
         if (showItem && item != null && itemOnLid) next().also { q -> q.bmp = item; q.light = 0.97f
@@ -647,7 +662,9 @@ internal object CaseOpenDraw {
             fun iz(u: Float) = lz(1f - u) - ct * e
             val y0 = -hh + itemRect[1] * h; val y1 = -hh + itemRect[3] * h
             put(q, 0, ix(itemRect[0]), y0, iz(itemRect[0])); put(q, 1, ix(itemRect[2]), y0, iz(itemRect[2]))
-            put(q, 2, ix(itemRect[2]), y1, iz(itemRect[2])); put(q, 3, ix(itemRect[0]), y1, iz(itemRect[0])) }
+            put(q, 2, ix(itemRect[2]), y1, iz(itemRect[2])); put(q, 3, ix(itemRect[0]), y1, iz(itemRect[0]))
+            // (Update 215: just after the lid's inside it lies on, as the tray's item.)
+            q.depth = lidQ.depth + 0.001f }
 
         // Far to near.
         val order = (0 until n).filter { quads[it].ok }.sortedBy { quads[it].depth }

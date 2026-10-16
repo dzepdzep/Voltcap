@@ -165,7 +165,9 @@ internal fun PackCart(platform: String, art: Any?, modifier: Modifier, look0: Ca
                     .clip(RoundedCornerShape(k * win[4])).background(CartPaper)
             ) {
                 // (Update 206: stretched to the label window exactly — the art adapts to the pack's label, never cut.)
-                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                // (Update 215: never stretched — the cover at its own shape, as big as fits in the window, on the label's
+                // paper; stretched to the window it came out wide or tall.)
+                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
             }
             val file = id?.let { CustomCarts.asset(look, clear, it) }
             // (Update 141: the clear shell a little more see-through.)

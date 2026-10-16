@@ -61,6 +61,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -827,17 +829,28 @@ internal fun GameCarousel(
             val accent by androidx.compose.animation.animateColorAsState(stageTarget, tween(700), label = "stageTint")
             val deep = androidx.compose.ui.graphics.lerp(accent, Color.Black, 0.86f)
             val bigHpx = with(androidx.compose.ui.platform.LocalDensity.current) { bigH.toPx() }
-            androidx.compose.foundation.Canvas(Modifier.matchParentSize().zIndex(-1000f)) {
+            // (Update 215: across the whole screen — it stopped at the carousel's own edges, a little in from the screen's,
+            // so a dark box stood on the background with the games running on past it at both sides.)
+            val stageView = androidx.compose.ui.platform.LocalView.current
+            val stageAt = remember { FloatArray(2) }
+            androidx.compose.foundation.Canvas(Modifier.matchParentSize().zIndex(-1000f).onGloballyPositioned { lc ->
+                val o = lc.positionInWindow(); stageAt[0] = o.x; stageAt[1] = o.y
+            }) {
                 val floorY = size.height * floorK
                 val below = size.height * 1.5f
                 val cx = size.width / 2f
+                // The screen, in this node's own coordinates.
+                val sx0 = -stageAt[0]
+                val sy0 = minOf(-stageAt[1], -size.height * 0.25f)
+                val sw = maxOf(stageView.width.toFloat(), size.width)
+                val sBottom = maxOf(stageView.height.toFloat() - stageAt[1], floorY + below)
                 drawRect(
                     androidx.compose.ui.graphics.Brush.verticalGradient(
                         0f to Color.Black.copy(alpha = 0f), 0.35f to deep.copy(alpha = 0.6f), 1f to deep.copy(alpha = 0.93f),
                         startY = -size.height * 0.25f, endY = floorY
                     ),
-                    topLeft = androidx.compose.ui.geometry.Offset(0f, -size.height * 0.25f),
-                    size = androidx.compose.ui.geometry.Size(size.width, floorY + size.height * 0.25f)
+                    topLeft = androidx.compose.ui.geometry.Offset(sx0, sy0),
+                    size = androidx.compose.ui.geometry.Size(sw, floorY - sy0)
                 )
                 // The spotlight behind the game you're on.
                 val spotC = androidx.compose.ui.geometry.Offset(cx, floorY - bigHpx * 0.5f)
@@ -853,8 +866,8 @@ internal fun GameCarousel(
                         listOf(androidx.compose.ui.graphics.lerp(deep, Color.Black, 0.2f).copy(alpha = 0.95f), Color.Black.copy(alpha = 0.97f)),
                         startY = floorY, endY = floorY + size.height * 0.5f
                     ),
-                    topLeft = androidx.compose.ui.geometry.Offset(0f, floorY),
-                    size = androidx.compose.ui.geometry.Size(size.width, below)
+                    topLeft = androidx.compose.ui.geometry.Offset(sx0, floorY),
+                    size = androidx.compose.ui.geometry.Size(sw, sBottom - floorY)
                 )
                 // Lines running into the distance (towards a point far behind the game you're on).
                 val vanish = androidx.compose.ui.geometry.Offset(cx, floorY - size.height * 0.6f)
@@ -888,25 +901,28 @@ internal fun GameCarousel(
                     androidx.compose.ui.graphics.Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.06f), Color.Transparent), startY = floorY, endY = floorY + size.height * 0.22f
                     ),
-                    topLeft = androidx.compose.ui.geometry.Offset(0f, floorY),
-                    size = androidx.compose.ui.geometry.Size(size.width, size.height * 0.22f)
+                    topLeft = androidx.compose.ui.geometry.Offset(sx0, floorY),
+                    size = androidx.compose.ui.geometry.Size(sw, size.height * 0.22f)
                 )
                 // The horizon: brightest in the middle, in your colour, fading to the sides.
                 drawRect(
                     androidx.compose.ui.graphics.Brush.horizontalGradient(
                         0f to Color.Transparent, 0.3f to accent.copy(alpha = 0.25f), 0.5f to Color.White.copy(alpha = 0.32f),
-                        0.7f to accent.copy(alpha = 0.25f), 1f to Color.Transparent
+                        0.7f to accent.copy(alpha = 0.25f), 1f to Color.Transparent,
+                        startX = sx0, endX = sx0 + sw
                     ),
-                    topLeft = androidx.compose.ui.geometry.Offset(0f, floorY - 0.75f),
-                    size = androidx.compose.ui.geometry.Size(size.width, 1.5f)
+                    topLeft = androidx.compose.ui.geometry.Offset(sx0, floorY - 0.75f),
+                    size = androidx.compose.ui.geometry.Size(sw, 1.5f)
                 )
                 // The edges dimmed.
                 drawRect(
                     androidx.compose.ui.graphics.Brush.horizontalGradient(
-                        0f to Color.Black.copy(alpha = 0.45f), 0.18f to Color.Transparent, 0.82f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.45f)
+                        // (Update 215: darkest at the screen's own edges, where the games come in.)
+                        0f to Color.Black.copy(alpha = 0.6f), 0.14f to Color.Transparent, 0.86f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.6f),
+                        startX = sx0, endX = sx0 + sw
                     ),
-                    topLeft = androidx.compose.ui.geometry.Offset(0f, -size.height * 0.25f),
-                    size = androidx.compose.ui.geometry.Size(size.width, size.height * 1.75f + below)
+                    topLeft = androidx.compose.ui.geometry.Offset(sx0, sy0),
+                    size = androidx.compose.ui.geometry.Size(sw, sBottom - sy0)
                 )
             }
         }
