@@ -559,6 +559,7 @@ private fun GcGameList(c: StyleCtx, compact: Boolean, reduced: Boolean) {
         // The game you're on, in your game look, floating in front of the sphere's core.
         if (g != null) GcPreview(c, g, w * GC_GAMES_X, h * GC_GAMES_Y, w * 0.3f, h * 0.6f, accent)
         Column(Modifier.align(Alignment.TopEnd).width(w * 0.64f).fillMaxHeight()) {
+            CategoryTitle.Native() // (Update 212: the layout's own category title.)
             GcHeader(c, "GAMES · ${c.categoryLabel.uppercase()}", if (c.games.isEmpty()) null else "${c.focus + 1} / ${c.games.size}", accent, compact, tools = true)
             Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
             if (c.games.isEmpty()) {
@@ -817,7 +818,7 @@ private fun GcCarousel(c: StyleCtx, compact: Boolean, reduced: Boolean) {
                         val select by rememberUpdatedState(c.actions.select)
                         val open by rememberUpdatedState(c.actions.open)
                         // Update 203: a cartridge turns as a solid piece (its thickness showing), not as a flat picture.
-                        val solidCart = artForGame(c.type, c.games[i].platform, LocalHiddenMedia.current, c.mixed) == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+                        val solidCart = artForGame(c.type, c.games[i].platform, LocalHiddenMedia.current, c.mixed, gameKey = c.games[i].stableKey) == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
                         Box(
                             Modifier
                                 .zIndex(-abs(i - c.focus).toFloat())

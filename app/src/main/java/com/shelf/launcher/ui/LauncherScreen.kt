@@ -3101,6 +3101,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         @Composable
         fun CategoriesBar() {
             if (state.games.isNotEmpty()) Box(Modifier) {
+                // (Update 212: the category bar is this layout's own category title, CategoryTitle.kt.)
+                if (state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
                 when (state.appearance.categoryBar) {
                     com.shelf.launcher.data.CategoryBar.FULL -> PlatformFilterRow(
                         bottomGap = state.appearance.infoSpacing.dp.dp,
@@ -3727,12 +3729,22 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             kotlinx.coroutines.delay(450)
             viewModel.loadMetadata(g)
         }
-        if (overlayLayout != null && overlayParts.isNotEmpty() && focusedGame != null) {
+        // Update 212: the category title where the layout shows none of its own right now (CategoryTitle.kt) — the same
+        // Category name part, once the layout has settled (its own label registers as it's drawn).
+        var catSettled by remember(state.appearance.homeLayout) { mutableStateOf(false) }
+        LaunchedEffect(state.appearance.homeLayout) { kotlinx.coroutines.delay(600); catSettled = true }
+        // (On the row layouts, Settings › Categories › Category name: Off is your choice of no name there: no fallback.)
+        val catFallback = overlayLayout != null && catSettled && HomeWidgets.CATEGORY !in overlayParts && CategoryTitle.fallbackOn(overlayLayout) &&
+            !(!overlayLayout.styleHome && state.appearance.categoryBar == com.shelf.launcher.data.CategoryBar.OFF)
+        // (Update 212: the category title shows with no game too — an empty category; the other parts need the game.)
+        val partsHere = (if (catFallback) overlayParts + HomeWidgets.CATEGORY else overlayParts)
+            .filter { focusedGame != null || it == HomeWidgets.CATEGORY }
+        if (overlayLayout != null && partsHere.isNotEmpty()) {
             // (Update 125: over the games, always.)
             Box(Modifier.matchParentSize().zIndex(PartsLayer.z)) {
                 // (Update 202: on the Voltcap row, a card added with + Add that its layout shows now anyway — News turned on
                 // in Next to the row after adding it — is shown once: in the layout.)
-                overlayParts.filter { !(overlayLayout == com.shelf.launcher.data.HomeLayout.CLASSIC && it in HomeWidgets.present) }.forEachIndexed { idx, part ->
+                partsHere.filter { !(overlayLayout == com.shelf.launcher.data.HomeLayout.CLASSIC && it in HomeWidgets.present) }.forEachIndexed { idx, part ->
                     val id = HomeWidgets.overlayId(overlayLayout, part)
                     androidx.compose.runtime.key(id) {
                         val w = HomeWidgets.width(id) ?: when (part) {
@@ -3754,9 +3766,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                 else if (part == HomeWidgets.LOGO || part == HomeWidgets.LOGO_SGDB || part == HomeWidgets.LOGO_RA) 0f to 0.1f
                                 else 1f to (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w
                         ) {
+                            // Update 204: the category's name on its own (all the categories with "All categories").
+                            // (Update 212: the category title — the category or filter you're in, with or without a
+                            // game; clear when it changes, then dimmed (Settings › Home › Category title).)
+                            if (part == HomeWidgets.CATEGORY && state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.FULL) {
+                                val key = state.sortCategoryKey + "|" + state.searchQuery
+                                Box(Modifier.categoryTitleFade(key)) {
+                                    PartBackingBox(state.appearance.homeLayout) {
+                                        CategoryNamePart(CategoryTitle.text(state.sortCategoryKey, state.searchQuery), state.appearance.nameBackdrop)
+                                    }
+                                }
+                            }
+                            else if (focusedGame == null) Unit
                             // Update 104: the logo sits straight on the art; the others on the backing picked in
                             // Layout options › Game info on screen (the layout's colours by default).
-                            if (part == HomeWidgets.LOGO) HomeLogoPart(focusedGame.name, bigLogo(focusedGame, state))
+                            else if (part == HomeWidgets.LOGO) HomeLogoPart(focusedGame.name, bigLogo(focusedGame, state))
                             // Update 125: SteamGridDB's logo only / RetroAchievements' game icon only.
                             else if (part == HomeWidgets.LOGO_SGDB) HomeLogoPart(
                                 focusedGame.name,
@@ -3769,14 +3793,6 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             )
                             // Update 116: Play and the round buttons on their own sit right on the screen (no backing).
                             else if (part == HomeWidgets.H_PLAY || part == HomeWidgets.H_BUTTONS) HomeHeaderBlock(false, only = part)
-                            // Update 204: the category's name on its own (all the categories with "All categories").
-                            else if (part == HomeWidgets.CATEGORY && state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.FULL) {
-                                if (state.games.isNotEmpty() || state.platformFilter != null || state.specialFilter != null) {
-                                    PartBackingBox(state.appearance.homeLayout) {
-                                        CategoryNamePart(categoryKeyLabel(state.sortCategoryKey), state.appearance.nameBackdrop)
-                                    }
-                                }
-                            }
                             else PartBackingBox(state.appearance.homeLayout) {
                                 when (part) {
                                     HomeWidgets.CATEGORY -> CategoriesBar()
@@ -3957,13 +3973,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     onMove = { from, to -> moveCategoryTile(from, to).also { if (it) sounds?.play(UiSound.MOVE) } },
                     onSelect = { categoryIndex = it },
                     art = com.shelf.launcher.data.Features.categoryArt.state.value, style = state.appearance.categoryTileStyle,
-                    onPickImage = { i ->
-                        categoryTiles.getOrNull(i)?.let { tile ->
-                            categoryIndex = i
-                            pickingImageFor = tile.key
-                            pickTileImage.launch(arrayOf("image/*"))
-                        }
-                    }
+                    // (Update 212: the tile's options — its picture, Reorder; a hold reorders now.)
+                    onOptions = { i -> categoryTiles.getOrNull(i)?.let { tile -> categoryIndex = i; pbState.options = tile } }
                 )
             } else {
                 PlatformBrowser(
@@ -5224,6 +5235,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             .background(ShelfTheme.background)
             .focusRequester(rootFocusRequester)
             .focusable()
+            // Update 212: while editing, a touch that isn't on a part or Edit Home's bars goes nowhere (HomeEditSession.kt).
+            .homeEditShield()
             .onPreviewKeyEvent { event ->
                 lastInputAt = System.currentTimeMillis()
                 when {
@@ -5454,16 +5467,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     when (event.key) {
                         Key.ButtonA, Key.Enter, Key.DirectionCenter -> pickCategory(categoryIndex)
                         Key.ButtonB, Key.Back -> { categoryScreenOpen = false; sounds?.play(UiSound.BACK) }
-                        // Y: pick your own picture for this tile; X: back to the games' art.
-                        Key.ButtonY -> categoryTiles.getOrNull(categoryIndex)?.let { tile ->
-                            pickingImageFor = tile.key
-                            pickTileImage.launch(arrayOf("image/*"))
-                        }
-                        Key.ButtonX -> categoryTiles.getOrNull(categoryIndex)?.let { tile ->
-                            categoryImagesStore.set(tile.key, null)
-                            categoryImages = categoryImagesStore.loadAll()
-                            sounds?.play(UiSound.BACK)
-                        }
+                        // Y: the tile's options — Change picture, Reset picture, Reorder (update 212: the picture used to be
+                        // straight on Y and X; the same as the platform browser's Y now).
+                        Key.ButtonY -> categoryTiles.getOrNull(categoryIndex)?.let { tile -> pbState.options = tile; sounds?.play(UiSound.OPEN) }
                         else -> Unit
                     }
                     return@onKeyEvent true
@@ -5958,6 +5964,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     ) {
         HomeLayer()
         HomeEditBar()
+        // Update 212: Edit Home — the panels close themselves; the home screen gets the keys back after them, an edit
+        // left unfinished when Voltcap closed is put back, and touch Back is B (a step back, then Save / Discard).
+        val editContext = androidx.compose.ui.platform.LocalContext.current
+        LaunchedEffect(Unit) {
+            HomeEditSession.recover(editContext)
+            HomeEditState.refocus = { runCatching { rootFocusRequester.requestFocus() } }
+        }
+        androidx.activity.compose.BackHandler(enabled = HomeEditState.active && !aDialogIsOpen) {
+            HomeEditSession.back()
+        }
         // Touch back (the back gesture / button with no controller key: Android 13+ doesn't send one) closes
         // what's on top of the home screen, like B. Popups handle their own back.
         androidx.activity.compose.BackHandler(enabled = !aDialogIsOpen && (showDetails || categoryScreenOpen)) {
@@ -5993,10 +6009,23 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 categoryImagesStore.set(tile.key, null)
                 categoryImages = categoryImagesStore.loadAll()
             },
-            onDesignSlide = {
+            // (Update 212: the classic category screen has no slides to design; it opens these options too.)
+            onDesignSlide = if (com.shelf.launcher.data.Features.platformView.value == com.shelf.launcher.data.Features.PlatformView.TILES) null else { {
                 com.shelf.launcher.data.Features.platformView.value = com.shelf.launcher.data.Features.PlatformView.SLIDES
                 pbState.loadLayout()
                 pbState.editing = true
+            } },
+            // Update 212: Reorder from the tile's options — the classic screen and the platform browser's Grid (a console
+            // only there: the other tiles keep their places in the grid).
+            onReorder = run {
+                val v = com.shelf.launcher.data.Features.platformView.value
+                val i = categoryTiles.indexOfFirst { it.key == tile.key }
+                when {
+                    i < 0 -> null
+                    v == com.shelf.launcher.data.Features.PlatformView.TILES -> { { categoryIndex = i; CategoryReorder.on = true; CategoryReorder.held = true } }
+                    v == com.shelf.launcher.data.Features.PlatformView.GRID && tile.platform != null -> { { categoryIndex = i; pbState.grabbed = i } }
+                    else -> null
+                }
             },
             onMusic = { tile.platform?.let { musicOverrideFor = com.shelf.launcher.data.MusicOverrides.platformKey(it) to tile.label } }
         )

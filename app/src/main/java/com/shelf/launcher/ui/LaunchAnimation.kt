@@ -383,7 +383,7 @@ internal fun launchArtFor(game: com.shelf.launcher.data.Game, state: com.shelf.l
     val wide = o?.wide ?: a?.wideGridUrl
     val hero = o?.hero ?: a?.heroUrl
     val ap = state.appearance
-    val type = artForGame(ap.cardArtFor(), game.platform, ap.hiddenMedia)
+    val type = artForGame(ap.cardArtFor(), game.platform, ap.hiddenMedia, gameKey = game.stableKey)
     val flat = ap.homeLayout != com.shelf.launcher.data.HomeLayout.DISCS && when (type) {
         CardArtType.COVER, CardArtType.CAPSULE, CardArtType.HERO, CardArtType.SCREENSHOT -> true
         else -> false

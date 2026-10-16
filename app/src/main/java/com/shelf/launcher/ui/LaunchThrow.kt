@@ -102,7 +102,7 @@ internal object LaunchThrow {
         if (rect.width < 8f || rect.height < 8f || rect.bottom <= 0f) return null
         val a = state.appearance
         val chosen = a.cardArtFor()
-        val type = artForGame(chosen, game.platform, a.hiddenMedia)
+        val type = artForGame(chosen, game.platform, a.hiddenMedia, gameKey = game.stableKey)
         val k = game.stableKey
         val physical = state.physicalMedia[k]
         val cover = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl

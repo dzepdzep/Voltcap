@@ -571,7 +571,7 @@ private fun CaseGrid(
             val g = games[i]
             val on = vi == focusItem
             val lift by animateFloatAsState(if (on) 1f else 0f, tween(if (on) 110 else 160), label = "caseLift")
-            val free = isFreeMedia(artForGame(cardArtType, g.platform, hiddenMedia, mixed), g.platform)
+            val free = isFreeMedia(artForGame(cardArtType, g.platform, hiddenMedia, mixed, gameKey = g.stableKey), g.platform)
             Column(
                 Modifier.zIndex(if (on) 1f else 0f).fillMaxWidth().aspectRatio(cellAspect)
                     .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (looping) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } },

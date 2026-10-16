@@ -95,6 +95,7 @@ internal fun StyleSideMenu(c: StyleCtx, modifier: Modifier) {
                     StyleEmpty(Modifier.weight(1f))
                 } else {
                     if (Features.sideRowTitle.state.value) {
+                        CategoryTitle.Native() // (Update 212: the layout's own category title.)
                         Text(
                             c.categoryLabel.uppercase(), color = Color.White, fontSize = if (compact) 13.sp else 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 13.sp else 16.sp), maxFontSize = if (compact) 13.sp else 16.sp), fontWeight = FontWeight.Bold,
                             letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW),
@@ -162,6 +163,7 @@ private fun SidePanel(c: StyleCtx, width: androidx.compose.ui.unit.Dp, compact: 
                 }
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
+                    CategoryTitle.Native()
                     FitText(
                         c.categoryLabel.let { if (caps) it.uppercase() else it }, color = trim, maxSize = 11.sp, minSize = 7.sp, maxLines = 2,
                         fontWeight = FontWeight.Bold

@@ -449,7 +449,7 @@ private fun CoverWheel(
             }
             val flip = if (motion == Features.HeroCarouselMotion.FLIP && sel > 0.5f) 90f * (1f - change.value) else 0f
             // Box art / cartridge / disc art as the real object, free-standing (no card behind it, no frame).
-            val gArt = if (wide) com.shelf.launcher.data.CardArtType.COVER else artForGame(cardArtType, g.platform, hiddenMedia, mixed)
+            val gArt = if (wide) com.shelf.launcher.data.CardArtType.COVER else artForGame(cardArtType, g.platform, hiddenMedia, mixed, gameKey = g.stableKey)
             val free = isFreeMedia(gArt, g.platform)
             // Update 203: a cartridge flips as a solid piece (its thickness showing), not as a flat picture (SolidPiece.kt).
             val solidCart = free && motion == Features.HeroCarouselMotion.FLIP && gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC

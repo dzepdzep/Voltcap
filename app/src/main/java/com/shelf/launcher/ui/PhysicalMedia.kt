@@ -186,10 +186,12 @@ internal fun mediaKind(platform: String): String =
  * - "Cartridge / disc" falls back to the cover where that kind is switched off.
  */
 internal fun artForGame(
-    type: com.shelf.launcher.data.CardArtType, platform: String, hidden: Set<String>, mixed: Boolean = false
+    type: com.shelf.launcher.data.CardArtType, platform: String, hidden: Set<String>, mixed: Boolean = false,
+    /** Update 212: the game's key, for an Android game's own Disc / Cartridge choice (AndroidMedia.kt). */
+    gameKey: String? = null
 ): com.shelf.launcher.data.CardArtType {
     if (mixed) mixedArtFor(type, platform, hidden)?.let { return it }
-    return artForGameOwn(type, platform, hidden, mixed)
+    return artForGameOwn(type, platform, hidden, mixed, gameKey)
 }
 
 /**
@@ -221,7 +223,7 @@ private fun mixedArtFor(
 }
 
 private fun artForGameOwn(
-    type: com.shelf.launcher.data.CardArtType, platform: String, hidden: Set<String>, mixed: Boolean
+    type: com.shelf.launcher.data.CardArtType, platform: String, hidden: Set<String>, mixed: Boolean, gameKey: String? = null
 ): com.shelf.launcher.data.CardArtType = when (type) {
     com.shelf.launcher.data.CardArtType.CASE -> type
     com.shelf.launcher.data.CardArtType.CASE_REAL -> com.shelf.launcher.data.CardArtType.CASE
@@ -229,13 +231,17 @@ private fun artForGameOwn(
     // else their cover. Drawn through CARTRIDGE_DISC with mediaFor(…, asDisc = true).
     com.shelf.launcher.data.CardArtType.DISC ->
         if (MediaShell.of(platform) != null && mediaKind(platform) == "disc") com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+        // (Update 212: an Android game set to Disc — this game, or Settings › Game look › Android games — is its disc.)
+        else if (AndroidMedia.discPicked(platform, gameKey) && "disc" !in hidden) com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
         // (Update 129: or one console's disc picked for all on R1 › Disc.)
         // (Update 204: every game with Discs — apps, PC and arcade games too, on the plain CD; they kept their cover.)
         else if ((Features.discsForAll.state.value || LookStyles.disc() != null) && "disc" !in hidden) com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
         else com.shelf.launcher.data.CardArtType.COVER
     // (Update 128: a game on your cartridge pack counts as a cartridge.)
     com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC ->
-        if (hidden.isNotEmpty() && (if (customCartFor(platform)) "cartridge" else mediaKind(platform)) in hidden) com.shelf.launcher.data.CardArtType.COVER else type
+        // (Update 212: an Android game is the kind it's drawn as — AndroidMedia.)
+        if (hidden.isNotEmpty() && (if (AndroidMedia.isAndroid(platform)) (if (AndroidMedia.disc(platform, gameKey, DiscLook.on)) "disc" else "cartridge")
+                else if (customCartFor(platform)) "cartridge" else mediaKind(platform)) in hidden) com.shelf.launcher.data.CardArtType.COVER else type
     else -> type
 }
 
@@ -306,6 +312,14 @@ internal fun drawn3dPick(platform: String, mixed: Boolean, gameKey: String?): Me
  * plain cartridge). Update 204: never null any more — a console with no physical game gets the plain ones.
  */
 internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean = false, gameKey: String? = null): MediaPick? {
+    // Update 212: Android games — disc or cartridge by one rule everywhere (AndroidMedia.kt): this game's choice, a shell
+    // or pack you picked, Settings › Game look › Android games, else the look (Discs only, "All CDs").
+    if (AndroidMedia.isAndroid(platform)) {
+        val lookDisc = asDisc || (mixed && Features.mixedArt.state.value == MixedArt.DISC) || DiscLook.on
+        if (AndroidMedia.disc(platform, gameKey, lookDisc)) return MediaPick(MediaShell.DISC, genericDiscKey("Android"))
+        // A cartridge: the one it has on its own (its shell, your pack, else the green Android cartridge).
+        if (asDisc || mixed) return mediaFor(platform, false, false, gameKey)
+    }
     // Update 195: the shell picked for this game or its console (the game's menu › Cartridge shell…, CartShells.kt).
     // (Update 200: [gameKey] too — a 3D piece saved before goes on the console's authentic shell by the game's region.)
     if (!asDisc) CartShellStore.choice(platform, gameKey)?.let { raw -> CartShells.pickOf(raw, platform, gameKey)?.let { return it } }

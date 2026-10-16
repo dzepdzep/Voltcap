@@ -194,6 +194,9 @@ object HomeWidgets {
         val layout = id.substringBefore(':', "").let { n -> com.shelf.launcher.data.HomeLayout.values().firstOrNull { it.name == n } }
         if (layout != null) {
             if (baseId(id) in Features.overlayPartsFor(layout)) Features.toggleOverlayPart(layout, baseId(id))
+            // (Update 212: the category title taken off is remembered, so the layout's fallback title (CategoryTitle.kt)
+            // doesn't bring it back on its own; + Add › Taken off, or Elements › Show, puts it back.)
+            if (baseId(id) == CATEGORY) Features.hiddenParts.value = Features.hiddenParts.value + id
         } else Features.hiddenParts.value = Features.hiddenParts.value + id
         HomeEditState.live.remove(id); HomeEditState.liveScale.remove(id); HomeEditState.liveStretch.remove(id)
         HomeEditState.selected =HomeWidgets.present.firstOrNull { it != id } ?: MUSIC
@@ -278,10 +281,28 @@ object HomeEditState {
      * game row: the innermost one under the finger — it sees the touch last, so it's the one written here).
      */
     internal var touchOwner: String? = null
+    /** Update 212: Preview — Edit Home's frames, handles and bars are hidden until any button or a tap. */
+    var preview by mutableStateOf(false)
+    /** Update 212: the Elements list is open. */
+    var elements by mutableStateOf(false)
+    /** Update 212: Save / Discard / Keep editing is asked (leaving with changes). */
+    var leaving by mutableStateOf(false)
+    /** Update 212: the inspector's group (0 Position & size, 1 Appearance, 2 Visibility, 3 More). */
+    var inspectorTab by mutableStateOf(0)
+    /** Update 212: where each editable part is on the screen (root px), for the touch shield, Elements and the panels. */
+    internal val bounds = HashMap<String, androidx.compose.ui.geometry.Rect>()
+    /** Update 212: Edit Home's own bars on the home screen (root px): touches there aren't shielded. */
+    internal val chrome = HashMap<String, androidx.compose.ui.geometry.Rect>()
+    /** Update 212: gives the home screen the keys back once Edit Home's panels close (set by the home screen). */
+    var refocus: (() -> Unit)? = null
+    /** Update 212: the default place of a part not moved yet (set by the home screen), for the inspector's Move. */
+    internal var defaultOf: ((String) -> Pair<Float, Float>)? = null
 
     /** Update 202: opens Art position (HomeAdjust.kt) for [artLook], over Edit Home. */
     fun openArtPosition() {
         val look = artLook ?: return
+        // (Update 212: one step of Undo; Discard puts it back too.)
+        HomeEditSession.push("art")
         HomeAdjust.open = HomeAdjust.Target(HomeAdjust.Kind.ART_DROP, look = look)
     }
 
@@ -328,8 +349,6 @@ object HomeEditState {
     /** Update 133: one part's place, size and stretch back to normal (X, or Reset position). */
     fun resetOne(id: String) { live.remove(id); liveScale.remove(id); liveShift.remove(id); liveStretch.remove(id) }
 
-    /** Update 133: every part back (Y, or Reset layout). */
-    fun resetEvery() { live.clear(); liveScale.clear(); liveShift.clear(); liveStretch.clear() }
 
     /** Update 133: stretches [id] by a drag of [dx] / [dy] px over a part [w] × [h] px big (either can be 0). */
     fun stretchBy(id: String, dx: Float, dy: Float, w: Int, h: Int) {
@@ -345,6 +364,8 @@ object HomeEditState {
     internal val flowWidth = mutableStateMapOf<String, Dp>()
 
     fun open() {
+        // (Update 212: already editing — an interruption, or Edit Home asked for again: the session carries on as it was.)
+        if (active) return
         liveShift.clear()
         liveShift.putAll(LayoutParts.parse(Features.partShifts.value))
         live.clear()
@@ -354,7 +375,11 @@ object HomeEditState {
         liveStretch.clear()
         liveStretch.putAll(HomeWidgets.parseStretch(Features.widgetStretch.value))
         selected = HomeWidgets.all.firstOrNull { it in HomeWidgets.present } ?: HomeWidgets.present.firstOrNull() ?: HomeWidgets.all.first()
+        preview = false; elements = false; leaving = false; adding = false; styling = null; inspectorTab = 0
+        bounds.clear(); chrome.clear()
         active = true
+        // Update 212: an edit session — Undo, Discard, Save (HomeEditSession.kt).
+        HomeEditSession.begin()
     }
 
     fun done() {
@@ -366,52 +391,69 @@ object HomeEditState {
         Features.widgetScales.value = HomeWidgets.formatScales(liveScale.toMap())
         Features.widgetStretch.value = HomeWidgets.formatStretch(liveStretch.toMap())
         Features.partShifts.value = LayoutParts.format(liveShift.toMap())
+        close()
+    }
+
+    /** Update 212: Edit Home closes (after Done, or Discard): its panels with it. */
+    internal fun close() {
+        preview = false; elements = false; leaving = false; adding = false; styling = null
+        guideX = null; guideY = null
         active = false
     }
 
-    /** Controller keys while editing. Always consumes them (the home screen stays still meanwhile). */
-    fun onKey(e: KeyEvent, defaultOf: (String) -> Pair<Float, Float>): Boolean {
-        if (e.type != KeyEventType.KeyDown) return true
-        val part = selected.startsWith(LayoutParts.PREFIX)
-        val cur = if (part) 0f to 0f else live[selected] ?: defaultOf(selected)
+    /** Update 212: moves [id] one step ([dx], [dy]: -1, 0 or 1) — the D-pad, and the inspector's Move. One step of Undo. */
+    fun nudge(id: String, dx: Int, dy: Int) {
+        HomeEditSession.push("move:$id")
         val step = 0.04f
-        fun move(dx: Float, dy: Float) {
-            if (part) {
-                // A layout's own part moves in 8 dp steps from its place.
-                val s = liveShift[selected] ?: (0f to 0f)
-                liveShift[selected] = (s.first + dx / step * 8f) to (s.second + dy / step * 8f)
-                return
-            }
-            live[selected] = HomeWidgets.snap((cur.first + dx).coerceIn(0f, 1f)) to HomeWidgets.snap((cur.second + dy).coerceIn(0f, 1f))
+        if (id.startsWith(LayoutParts.PREFIX)) {
+            // A layout's own part moves in 8 dp steps from its place.
+            val s = liveShift[id] ?: (0f to 0f)
+            liveShift[id] = (s.first + dx * 8f) to (s.second + dy * 8f)
+            return
         }
+        val cur = live[id] ?: defaultOf?.invoke(id) ?: (0.5f to 0.5f)
+        live[id] = HomeWidgets.snap((cur.first + dx * step).coerceIn(0f, 1f)) to HomeWidgets.snap((cur.second + dy * step).coerceIn(0f, 1f))
+    }
+
+    /**
+     * Controller keys while editing. Always consumes them (the home screen stays still meanwhile: no game starts, the
+     * row doesn't move). Update 212: A adjusts (the inspector), B goes back a step (Save / Discard / Keep editing at the
+     * top), Start is Done, Y is Undo, Select hides / shows, X resets the part; L3 (Elements) and R3 (Art position) are
+     * shortcuts only — both are in the inspector too.
+     */
+    fun onKey(e: KeyEvent, defaultOf: (String) -> Pair<Float, Float>): Boolean {
+        this.defaultOf = defaultOf
+        if (preview) {
+            // Any button ends Preview (and does nothing else).
+            if (e.type == KeyEventType.KeyDown) preview = false
+            return true
+        }
+        if (e.type != KeyEventType.KeyDown) return true
         when (e.key) {
-            Key.DirectionLeft -> move(-step, 0f)
-            Key.DirectionRight -> move(step, 0f)
-            Key.DirectionUp -> move(0f, -step)
-            Key.DirectionDown -> move(0f, step)
+            Key.DirectionLeft -> nudge(selected, -1, 0)
+            Key.DirectionRight -> nudge(selected, 1, 0)
+            Key.DirectionUp -> nudge(selected, 0, -1)
+            Key.DirectionDown -> nudge(selected, 0, 1)
             Key.ButtonL1, Key.ButtonR1 -> {
-                val list = (HomeWidgets.all.filter { it in HomeWidgets.present } + HomeWidgets.present.filter { it !in HomeWidgets.all } +
-                    LayoutParts.registered.keys.sorted())
-                    .ifEmpty { HomeWidgets.all }
+                val list = HomeEditSession.cycleList()
                 val i = list.indexOf(selected).coerceAtLeast(0)
                 val n = list.size
-                selected = list[((i + if (e.key == Key.ButtonR1) 1 else -1) % n + n) % n]
+                if (n > 0) selected = list[((i + if (e.key == Key.ButtonR1) 1 else -1) % n + n) % n]
             }
             // L2 / R2: smaller / bigger.
             Key.ButtonL2, Key.ButtonR2 -> {
+                HomeEditSession.push("size:$selected")
                 val now = liveScale[selected] ?: 1f
                 liveScale[selected] = (now + if (e.key == Key.ButtonR2) 0.1f else -0.1f).coerceIn(HomeWidgets.SCALE_MIN, HomeWidgets.SCALE_MAX)
             }
-            Key.ButtonX -> resetOne(selected)
-            // Update 104: Select takes the part off the screen (its red ✕), Start opens + Add.
-            Key.ButtonSelect -> HomeWidgets.remove(selected)
-            Key.ButtonStart -> adding = true
-            // Update 116: L3 opens the part's style.
-            Key.ButtonThumbLeft -> styling = selected
-            // Update 202: R3 opens Art position for the look that's on (covers, Box art, cartridges or discs).
+            Key.ButtonX -> HomeEditSession.resetSelected(selected)
+            Key.ButtonY -> HomeEditSession.undo()
+            Key.ButtonSelect -> HomeEditSession.toggleShown(selected)
+            Key.ButtonStart -> HomeEditSession.save()
+            Key.ButtonThumbLeft -> elements = true
             Key.ButtonThumbRight -> openArtPosition()
-            Key.ButtonY -> resetEvery()
-            Key.ButtonA, Key.Enter, Key.DirectionCenter, Key.ButtonB, Key.Back, Key.Escape -> done()
+            Key.ButtonA, Key.Enter, Key.DirectionCenter -> styling = selected
+            Key.ButtonB, Key.Back, Key.Escape -> HomeEditSession.back()
             else -> Unit
         }
         return true
@@ -462,6 +504,8 @@ internal fun BoxScope.MovableWidget(
     val zoneNow by androidx.compose.runtime.rememberUpdatedState(zone)
     val fNow by androidx.compose.runtime.rememberUpdatedState(f)
     val selected = editing && HomeEditState.selected == id
+    // Update 212: Preview hides the frames and handles; only the selected part has handles, the rest a faint outline.
+    val chromeOn = editing && !HomeEditState.preview
     val shape = RoundedCornerShape(16.dp)
     val guideColor = ShelfTheme.accent
     /**
@@ -482,9 +526,10 @@ internal fun BoxScope.MovableWidget(
             .zIndex(if (PartsLayer.z > 0f && selected) PartsLayer.z + 2f else PartsLayer.z)
             .offset(pos.x, pos.y)
             .onSizeChanged { size = it; HomeEditState.sizes[id] = it }
+            .then(if (editing) Modifier.onGloballyPositioned { HomeEditState.bounds[id] = it.boundsInRoot() } else Modifier)
             .then(
                 if (editing) Modifier
-                    .border(if (selected) 2.dp else 1.dp, if (selected) ShelfTheme.accent else ShelfTheme.accent.copy(alpha = 0.4f), shape)
+                    .then(if (chromeOn) Modifier.border(if (selected) 2.dp else 1.dp, if (selected) ShelfTheme.accent else ShelfTheme.accent.copy(alpha = 0.25f), shape) else Modifier)
                     // A tap picks it (then the D-pad, L2 / R2 and X work on it).
                     .pointerInput(id) { detectTapGestures { HomeEditState.selected = id } }
                     .pointerInput(id) {
@@ -492,7 +537,7 @@ internal fun BoxScope.MovableWidget(
                         // through it on the axis it snapped to; the finger's own place is followed underneath.
                         var raw = HomeEditState.live[id] ?: fNow
                         detectDragGestures(
-                            onDragStart = { HomeEditState.selected = id; raw = HomeEditState.live[id] ?: fNow },
+                            onDragStart = { HomeEditState.selected = id; HomeEditSession.push("drag:$id", force = true); raw = HomeEditState.live[id] ?: fNow },
                             onDrag = { change, drag ->
                                 change.consume()
                                 val fw = (zoneNow.usableWidth - wNow).coerceAtLeast(1.dp).toPx()
@@ -536,7 +581,7 @@ internal fun BoxScope.MovableWidget(
         Box(Modifier.stretched(sx, sy)) {
             ScaledWidget(scale) { StyledPart(id) { if (fixedWidth != null) Box(Modifier.width(fixedWidth)) { content() } else content() } }
         }
-        if (editing) {
+        if (selected && chromeOn) {
             // The size handle (bottom left, update 125 — the ✕ keeps the top right): drag out to make it bigger, in to make it smaller.
             // Update 119: inside the part (a handle hanging outside it never got the touch), bigger, and the drag keeps
             // going while the part grows (the gesture used to restart — and stop — at every change of size).
@@ -546,10 +591,10 @@ internal fun BoxScope.MovableWidget(
                     .background(if (selected) ShelfTheme.accent else ShelfTheme.colors.surfaceRaised)
                     .border(1.5.dp, ShelfTheme.colors.textPrimary.copy(alpha = 0.6f), RoundedCornerShape(50))
                     // Update 133: a tap on the handle opens the part's Style (a drag still resizes it).
-                    .pointerInput(id) { detectTapGestures { HomeEditState.selected = id; HomeEditState.styling = id } }
+                    .pointerInput(id) { detectTapGestures { HomeEditState.selected = id; HomeEditState.inspectorTab = 0; HomeEditState.styling = id } }
                     .pointerInput(id) {
                         detectDragGestures(
-                            onDragStart = { HomeEditState.selected = id },
+                            onDragStart = { HomeEditState.selected = id; HomeEditSession.push("resize:$id", force = true) },
                             onDrag = { change, drag ->
                                 change.consume()
                                 val diag = kotlin.math.max(1f, (sizeNow.width + sizeNow.height).toFloat())
@@ -571,11 +616,12 @@ internal fun BoxScope.MovableWidget(
             StretchHandle(id, across = true, selected = selected, onStretch = { rx, ry -> keepCorner(rx, ry, keepRight = false) }) { sizeNow }
             StretchHandle(id, across = false, selected = selected, onStretch = { rx, ry -> keepCorner(rx, ry, keepRight = false) }) { sizeNow }
             // The red ✕ (update 104): takes the part off the screen (+ Add brings it back). (Inside the part too.)
+            // (Update 212: one step of Undo; Elements › Show brings it back too.)
             Box(
                 Modifier.align(Alignment.TopEnd).size(26.dp).clip(RoundedCornerShape(50))
                     .background(androidx.compose.ui.graphics.Color(0xFFE5484D))
                     .border(1.5.dp, androidx.compose.ui.graphics.Color.White, RoundedCornerShape(50))
-                    .pointerInput(id) { detectTapGestures { HomeWidgets.remove(id) } },
+                    .pointerInput(id) { detectTapGestures { HomeEditSession.toggleShown(id) } },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Filled.Close, "Remove", tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(14.dp))
@@ -632,7 +678,7 @@ internal fun BoxScope.StretchHandle(
             .border(1.5.dp, ShelfTheme.colors.textPrimary.copy(alpha = 0.6f), RoundedCornerShape(50))
             .pointerInput(id, across) {
                 detectDragGestures(
-                    onDragStart = { HomeEditState.selected = id },
+                    onDragStart = { HomeEditState.selected = id; HomeEditSession.push("stretch:$id", force = true) },
                     onDrag = { change, drag ->
                         change.consume()
                         val s = sizeNow()
@@ -676,16 +722,27 @@ internal fun MusicPlayerPlaceholder() {
     }
 }
 
-/** The bar along the bottom while editing: what the buttons do, Reset Position / Reset Layout / Done. */
+/**
+ * Edit Home's bars and panels (update 212, HomeEditSession.kt): the toolbar (Elements · Add · Undo · Preview · Done) with
+ * the button hints, the inspector of the selected part, the Elements list, + Add and Save / Discard / Keep editing.
+ * Preview hides all of it. When every panel is closed the home screen gets the keys back (focus restored).
+ */
 @Composable
 internal fun BoxScope.HomeEditBar() {
     if (!HomeEditState.active) return
     // Update 125: the bar folds away to the left or right with its arrows (a small tab brings it back), so nothing is
     // hidden under it while you place things at the bottom.
     val folded = HomeEditState.barFolded
-    if (folded != 0) {
+    // (The bars' places, for the touch shield: only the one showing.)
+    androidx.compose.runtime.SideEffect {
+        if (HomeEditState.preview || folded != 0) HomeEditState.chrome.remove("bar")
+        if (HomeEditState.preview || folded == 0) HomeEditState.chrome.remove("fold")
+    }
+    if (HomeEditState.preview) PreviewNote()
+    else if (folded != 0) {
         Row(
             Modifier.align(if (folded < 0) Alignment.BottomStart else Alignment.BottomEnd).zIndex(9f).safeZonePadding()
+                .onGloballyPositioned { HomeEditState.chrome["fold"] = it.boundsInRoot() }
                 .clip(RoundedCornerShape(50)).background(ShelfTheme.colors.surfaceRaised.copy(alpha = 0.95f))
                 .pointerInput(Unit) { detectTapGestures { HomeEditState.barFolded = 0 } }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -693,9 +750,15 @@ internal fun BoxScope.HomeEditBar() {
         ) {
             Text(if (folded < 0) "Edit Home  ▶" else "◀  Edit Home", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         }
-    } else HomeEditBarOpen() // Update 151: the open legend, fitted to small screens (HomeEditLegend.kt).
+    } else HomeEditToolbar() // (HomeEditLegend.kt)
     if (HomeEditState.adding) HomeAddSheet(HomeEditState.layout, onDismiss = { HomeEditState.adding = false })
-    HomeEditState.styling?.let { id -> PartStyleSheet(id, onDismiss = { HomeEditState.styling = null }) }
+    HomeEditState.styling?.let { id -> HomeInspector(id, onDismiss = { HomeEditState.styling = null }) }
+    if (HomeEditState.elements) HomeElementsSheet(onDismiss = { HomeEditState.elements = false })
+    if (HomeEditState.leaving) HomeLeavePrompt()
+    val anyOpen = HomeEditState.adding || HomeEditState.styling != null || HomeEditState.elements || HomeEditState.leaving || HomeAdjust.open != null
+    androidx.compose.runtime.LaunchedEffect(anyOpen) {
+        if (!anyOpen) { kotlinx.coroutines.delay(60); HomeEditState.refocus?.invoke() }
+    }
 }
 
 /**
@@ -718,7 +781,12 @@ internal fun HomeAddSheet(layout: com.shelf.launcher.data.HomeLayout, onDismiss:
                 overlayChoices(layout).forEachIndexed { i, (id, label) ->
                     val sel = id in on
                     Box(if (i == 0) Modifier.focusRequester(first) else Modifier) {
-                        Chip((if (sel) "✓ " else "+ ") + label, accent = sel) { Features.toggleOverlayPart(layout, id) }
+                        Chip((if (sel) "✓ " else "+ ") + label, accent = sel) {
+                            // (Update 212: one step of Undo; a category title taken off before comes back with it.)
+                            HomeEditSession.push("add")
+                            Features.toggleOverlayPart(layout, id)
+                            if (!sel) HomeWidgets.restore(HomeWidgets.overlayId(layout, id))
+                        }
                     }
                 }
             }
@@ -728,7 +796,7 @@ internal fun HomeAddSheet(layout: com.shelf.launcher.data.HomeLayout, onDismiss:
                 Spacer(androidx.compose.ui.Modifier.height(10.dp))
                 SectionLabel("Taken off")
                 Spacer(androidx.compose.ui.Modifier.height(6.dp))
-                ChipFlow { gone.forEach { id -> Chip("↺ " + HomeWidgets.label(id), accent = false) { HomeWidgets.restore(id) } } }
+                ChipFlow { gone.forEach { id -> Chip("↺ " + HomeWidgets.label(id), accent = false) { HomeEditSession.push("show"); HomeWidgets.restore(id) } } }
             }
             Spacer(androidx.compose.ui.Modifier.height(10.dp))
             Box(Modifier.fillMaxWidth()) { Chip("Done", modifier = Modifier.align(Alignment.CenterEnd), onClick = onDismiss) }
@@ -897,16 +965,20 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
     val selected = HomeEditState.selected == id
     val accent = ShelfTheme.accent
     val density = LocalDensity.current.density
+    // Update 212: Preview hides the frames; only the selected part has its handles (the others a faint outline).
+    val preview = HomeEditState.preview
     return m
-        .graphicsLayer { alpha = if (hidden) 0.3f else 1f }
+        .graphicsLayer { alpha = if (hidden) (if (preview) 0f else 0.3f) else 1f }
         .drawWithContent {
             drawContent()
+            if (preview) return@drawWithContent
             val r = 9.dp.toPx()
             drawRoundRect(
-                if (selected) accent else accent.copy(alpha = 0.45f),
+                if (selected) accent else accent.copy(alpha = 0.25f),
                 style = androidx.compose.ui.graphics.drawscope.Stroke(if (selected) 2.dp.toPx() else 1.dp.toPx()),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(8.dp.toPx())
             )
+            if (!selected) return@drawWithContent
             // The red ✕ in its top right corner.
             val c = androidx.compose.ui.geometry.Offset(size.width - r - 1.dp.toPx(), r + 1.dp.toPx())
             drawCircle(androidx.compose.ui.graphics.Color(0xFFE5484D), r, c)
@@ -947,7 +1019,7 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                 }
             }
         }
-        .onGloballyPositioned { coords[0] = it }
+        .onGloballyPositioned { coords[0] = it; HomeEditState.bounds[id] = it.boundsInRoot() }
         .pointerInput(id) {
             // Ahead of the part's own buttons: while editing a touch picks / drags it, never presses what's in it.
             awaitPointerEventScope {
@@ -955,6 +1027,8 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                     val down = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
                     val first = down.changes.firstOrNull { it.pressed && !it.previousPressed } ?: continue
                     first.consume()
+                    // (Update 212: its handles are only drawn — and only work — once it's the selected part.)
+                    val wasSelected = HomeEditState.selected == id
                     HomeEditState.selected = id
                     // Update 202: a part inside another (the game you're on inside the game row) sees the touch after the
                     // one round it, so the innermost one under the finger is the last to write itself here: only that one
@@ -971,8 +1045,8 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                     // (Below, each loop takes [pending] first — the event already waiting — then new ones.)
                     // (Update 119: generous corners, so the ✕ and the size handle are easy to hit.)
                     val r = 30.dp.toPx()
-                    if (first.position.x > size.width - r && first.position.y < r) {
-                        HomeWidgets.remove(id)
+                    if (wasSelected && first.position.x > size.width - r && first.position.y < r) {
+                        HomeEditSession.toggleShown(id)
                         // (Update 202: the rest of that touch goes nowhere.)
                         var ch0 = pending?.changes?.firstOrNull()
                         pending = null
@@ -983,9 +1057,10 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                         continue
                     }
                     // Update 116: the corner handle resizes it (drag out: bigger, in: smaller).
-                    if (first.position.x < r && first.position.y > size.height - r) {
+                    if (wasSelected && first.position.x < r && first.position.y > size.height - r) {
                         // Update 133: a tap on it (no drag) opens the part's Style.
                         var moved = 0f
+                        HomeEditSession.push("resize:$id", force = true)
                         while (true) {
                             val ev = pending ?: awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
                             pending = null
@@ -1005,13 +1080,14 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                             val sh = HomeEditState.liveShift[id] ?: (0f to 0f)
                             HomeEditState.liveShift[id] = (sh.first - ds * stx * size.width / 2f / density) to (sh.second + ds * sty * size.height / 2f / density)
                         }
-                        if (moved < 8.dp.toPx()) HomeEditState.styling = id
+                        if (moved < 8.dp.toPx()) { HomeEditState.inspectorTab = 0; HomeEditState.styling = id }
                         continue
                     }
                     // Update 133: the stretch handles — the middle of the right edge (wider), of the bottom edge (taller).
-                    val acrossHit = first.position.x > size.width - r && kotlin.math.abs(first.position.y - size.height / 2f) < r
-                    val downHit = first.position.y > size.height - r && kotlin.math.abs(first.position.x - size.width / 2f) < r
+                    val acrossHit = wasSelected && first.position.x > size.width - r && kotlin.math.abs(first.position.y - size.height / 2f) < r
+                    val downHit = wasSelected && first.position.y > size.height - r && kotlin.math.abs(first.position.x - size.width / 2f) < r
                     if (acrossHit || downHit) {
+                        HomeEditSession.push("stretch:$id", force = true)
                         while (true) {
                             val ev = pending ?: awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
                             pending = null
@@ -1035,6 +1111,8 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                     // middle (a guide line through it), and kept inside the safe zone (SnapPart below).
                     var raw = HomeEditState.liveShift[id] ?: (0f to 0f)
                     var last = coords[0]?.takeIf { it.isAttached }?.localToRoot(first.position)
+                    // (Update 212: one step of Undo, taken when it really starts moving — a tap only selects.)
+                    var pushed = false
                     while (true) {
                         val ev = pending ?: awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
                         pending = null
@@ -1045,6 +1123,7 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                         val here = lc?.localToRoot(ch.position)
                         val d = if (here != null && last != null) here - last!! else ch.position - ch.previousPosition
                         if (here != null) last = here
+                        if (!pushed && (d.x != 0f || d.y != 0f)) { HomeEditSession.push("drag:$id", force = true); pushed = true }
                         raw = (raw.first + d.x / density) to (raw.second + d.y / density)
                         HomeEditState.liveShift[id] = SnapPart.shift(id, raw, lc, zoneNow.value, density)
                     }

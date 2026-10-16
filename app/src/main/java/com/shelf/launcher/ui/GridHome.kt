@@ -183,7 +183,7 @@ internal fun HomeGameGrid(
                 val a = art[k]
                 val cover = o?.cover ?: a?.gridUrl
                 // Cartridges / discs this layout leaves out: that game's cover instead.
-                val gArt = if (tiles) CardArtType.COVER else artForGame(cardArtType, g.platform, hiddenMedia, mixed)
+                val gArt = if (tiles) CardArtType.COVER else artForGame(cardArtType, g.platform, hiddenMedia, mixed, gameKey = g.stableKey)
                 val typed = typedArtFor(gArt, physicalMedia[k], screenshots[k], g.platform, k)
                 // (Update 205: the drawn piece wears its real label scan when it has one.)
                 val labelScan = if (typed == null) drawnLabelScan(physicalMedia[k], g.platform) else null

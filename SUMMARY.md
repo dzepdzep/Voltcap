@@ -4,6 +4,66 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 16 Oct 2026 (212): Edit Home as a session (select → adjust → preview → Done, Undo, Discard, inspector, Elements), category reordering the same in both browsers (hold to move), Android games as disc or cartridge everywhere, the category title on every layout, Voltcap 0.6.5
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), new (3): `src_copy\ui\HomeEditSession.kt`, `src_copy\ui\CategoryTitle.kt`, `src_copy\ui\AndroidMedia.kt`.
+Changed (46): `src_copy\data\Features.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\CartShellPicker.kt`, `src_copy\ui\CategoryScreen.kt`, `src_copy\ui\GameDock.kt`, `src_copy\ui\GameLookPicker.kt`, `src_copy\ui\GameOptionsDialog.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\HeroCarousel.kt`, `src_copy\ui\HomeEdit.kt`, `src_copy\ui\HomeEditLegend.kt`, `src_copy\ui\HomePartStyle.kt`, `src_copy\ui\HomeParts.kt`, `src_copy\ui\LaunchAnimation.kt`, `src_copy\ui\LaunchThrow.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\PlatformBrowser.kt`, `src_copy\ui\PlatformBrowserSettings.kt`, `src_copy\ui\PlatformOptions.kt`, `src_copy\ui\PocketClassic.kt`, `src_copy\ui\PocketRibbon.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\ShelfHome.kt`, `src_copy\ui\StyleArcade.kt`, `src_copy\ui\StyleCircuit.kt`, `src_copy\ui\StyleConsoleStack.kt`, `src_copy\ui\StyleCrossMenu.kt`, `src_copy\ui\StyleCustom.kt`, `src_copy\ui\StyleDashboard.kt`, `src_copy\ui\StyleDiscStation.kt`, `src_copy\ui\StyleGreenCore.kt`, `src_copy\ui\StyleHomes.kt`, `src_copy\ui\StyleIconBar.kt`, `src_copy\ui\StyleLibrary.kt`, `src_copy\ui\StyleLiveTiles.kt`, `src_copy\ui\StylePocketQuest.kt`, `src_copy\ui\StyleRecordCrate.kt`, `src_copy\ui\StyleSideMenu.kt`, `src_copy\ui\StyleSpotlight.kt`, `src_copy\ui\StyleTimeline.kt`, `src_copy\ui\TileHome.kt`, `src_copy\ui\TvRoomHome.kt`, `src_copy\ui\TwinDesk.kt`.
+
+**Copy `project_copy`:** nothing.
+
+**Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 212: Edit Home session (Undo, Discard, inspector, Elements, Preview), hold-to-reorder categories in both browsers, Android games as disc or cartridge everywhere, category title on every layout" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01WbJedvGWbgwMpCSDZKodzC"
+git push origin main
+& "$P\tools\release\release.ps1" 0.6.5 "Edit Home: pick a part, adjust it in its panel, Preview, then Done - Undo (Y), Discard, Elements list, handles only on the part you picked. Categories: hold a tile to move it, in the category screen and the platform Grid; Y opens its options (picture, Reorder). Android games can be a disc or a cartridge (Settings > Game look, or each game's menu). Every layout shows the category's title."
+.\gradlew installRelease
+```
+
+### How Edit Home works now
+- **Open it** as before (R1 › Edit home, the home Options menu, Settings). It's an edit session: nothing is kept until **Done**, and **Discard** puts back everything — what used to be saved at once included (parts taken off or added, their styles, the backing of every part, Art position).
+- **Pick** a part: tap it, or L1 / R1. Only the picked one has handles (size in its bottom-left corner, ↔ ↕ stretch, red ✕ hide); the others have a faint outline. **Elements** (☰ on the toolbar, or L3) lists every part of this home screen — hidden, under another or off the screen too — with Show / Hide.
+- **Adjust**: A (or ✎ Adjust, or a tap on the size handle) opens its panel — a side panel on a wide screen (on the side away from the part), a sheet on a small one (top or bottom, away from it; it folds). Groups: Position & size · Appearance · Visibility · More (backing of every part, Art position, Elements, + Add, Preview, Reset this layout). Each says what it reaches: *This layout only (…)*, *Every layout* (music player, round shortcuts) or *Shared: Voltcap row, Tile home, Grid* (header, game info, news, category bar).
+- **Preview** hides every frame, handle and bar; any button or a tap goes back.
+- **Done** = Start or ✓ Done. **B** goes back one step (closes the panel); at the top it leaves — with changes it asks **Save / Discard / Keep editing**. The touch Back gesture does the same.
+- **Undo** = Y (or ↶ Undo): moves, sizes, stretches, styles, adding, hiding, showing, resets, Art position — one step each (held D-pad presses count as one).
+- **Reset**: X resets the picked part (place, size, stretch, appearance). *Reset this layout* (panel › More) resets only this layout's parts — the other layouts, the music player and the round shortcuts keep theirs (it used to reset every layout).
+- While editing, a touch beside the parts does nothing (it can't start a game or scroll the row); keys never reach the home screen.
+- Home button / screen off / a call: the session stays open as it was. If Voltcap is closed in the middle, what it changed at once is put back next start.
+
+**Controls, old → new:** A *saved and left* → opens the part's panel · B *saved and left* → back a step / Save–Discard–Keep editing · Start *+ Add* → Done · Select *✕ (saved at once)* → hide / show (undoable) · Y *reset every part on every layout* → Undo · X reset part (same) · L1 / R1 pick (same) · L2 / R2 size (same) · D-pad move (same) · L3 *Style* → Elements (shortcut; Style is in the panel) · R3 Art position (same; also in the panel). Nothing needs L3 / R3.
+
+### Category reordering
+- **Choose a category** (classic tiles): **hold a tile** — it's picked up (Reorder turns on) and the same touch drags it; near the top / bottom edge the list scrolls on. Each tile shows a drag handle while reordering. Start / the Reorder button, A pick up / put down, the D-pad and B work as before.
+- **Y** (or the new **Options** button) opens the tile's options: **Reorder**, **Change picture…**, **Reset picture**. The hold no longer opens the picture picker, and X no longer resets the picture straight away.
+- **Platform browser › Grid:** hold a console's card and drag it — always now (the "Drag-and-drop reorder" switch is gone; Settings says how); near the left / right edge it scrolls on. Start picks it up, ◀ ▶ move it, A puts it down. Holding a card that isn't a console opens its options. The card you're on shows a drag handle. Y opens the same options (Reorder there too).
+- The rule is said on screen while reordering: consoles move among the consoles (your console order, also L2 / R2's); All, Favorites, Recent… and the consoles' and collections' blocks move as whole groups. The moved tile is followed by its key.
+
+### Android games: disc or cartridge
+- **Settings › Game look › Covers, cases & discs** (with Cases or Cartridges & discs as the main look) › **Android games**: Follow the current look (default, as before) / **Disc (Suggested)** / Cartridge.
+- **One game:** its menu (Start) › **Disc or cartridge…** (the Cartridge shell row, renamed for Android games) › As the setting / Disc / Cartridge; it says what it is now and why.
+- **Which wins:** a layout where every game is a disc (Disc station) → the game's own choice → a shell or cartridge pack you picked for it or for Android (stays a cartridge — never replaced without asking) → the Android games setting → the look (Discs only, "All CDs").
+- One rule for every place: the cards, the closed and opened cases and what lies in them (a disc lies on the hub), the game window, the inspection view, the edge band and the launch animation (`mediaFor` decides; the game window used to ask with no look at all). The platform, category and launch settings never change. Presentation (case only / beside / half out) and the art stay their own settings.
+
+### The category title
+- **Settings › Categories › On the home screen › Category title**: Show, then dim (default: clear when you switch category, then 60 %, never gone) / Always clear / Off.
+- A layout that shows the category itself (its tabs, header, caption — 20 layouts mark their label) keeps it. One that shows none right now gets one title, the Category name part, at that layout's free spot — e.g. Spotlight with its category tabs off or hidden in Edit Home, an empty category on the Voltcap row / Tile home / Grid, a custom layout without a category text. Never two.
+- The title is the category or filter you're in — with a search, "“mario” in All games" — and shows with no game too (an empty category). Long names end in "…".
+- Hiding a layout's category tabs (navigation) no longer hides the title. Taken off in Edit Home it stays off on that layout (Elements or + Add › Taken off brings it back). On the row layouts, Settings › Categories › Category name: Off still means no name there.
+
+### Checked
+- Type-check of all sources against the project's libraries: **0 errors**, no NON_LOCAL_RETURN. Your PC's copies of every changed file were the same as my starting point (nothing of yours overwritten).
+- **Not tested on a device yet:** no handheld was connected while I worked (adb listed none). Not seen yet: the toolbar / panel placement on the RP Classic (compact) and the Thor, the touch shield, the hold-to-drag and edge scroll in both browsers, Android media in every place, the fallback title's position on each layout, the second screen. I'll go through them with screenshots as soon as a handheld is plugged in.
+
+---
+
 ## Update — 15 Oct 2026 (211): RP Classic check — release build for daily use (debug build 2–5× slower there), Spotlight names that need two lines, trophy count cut off, sync note over the clock, empty categories skipped by L2 / R2, Save Vault card's back, Voltcap 0.6.4
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`.

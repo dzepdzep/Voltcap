@@ -141,6 +141,7 @@ private fun CircuitCategory(c: StyleCtx, ink: Color) {
     ) {
         Text("◀", color = ink.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.pointerInput(Unit) { detectTapGestures { c.actions.category(-1) } })
         Spacer(Modifier.width(8.dp))
+        CategoryTitle.Native() // (Update 212: the layout's own category title.)
         Text(
             c.categoryLabel.uppercase(), color = ink, fontSize = 14.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
             maxLines = 1, softWrap = false, modifier = Modifier.widthIn(max = 260.dp)

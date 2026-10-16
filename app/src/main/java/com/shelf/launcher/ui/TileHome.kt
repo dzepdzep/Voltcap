@@ -324,7 +324,7 @@ internal fun TileHomeRow(
                 val game = (if (looping) games.getOrNull(i.mod(n)) else games.getOrNull(i)) ?: return@mapNotNull null
                 val o = artOverrides[game.stableKey]
                 val a = art[game.stableKey]
-                val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow)
+                val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey)
                 cardArtUrl(gArt, false, o?.cover ?: a?.gridUrl, o?.wide ?: a?.wideGridUrl, o?.hero ?: a?.heroUrl,
                     typedArtFor(gArt, physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey))
             }
@@ -476,7 +476,7 @@ internal fun TileHomeRow(
                     key(game.stableKey, if (looping) i.floorDiv(n) else 0) {
                         // Update 203: a cartridge turns as a solid piece (its thickness showing) — the tile hands it the
                         // turn instead of turning the flat picture (SolidPiece.kt).
-                        val solidCart = carousel && artForGame(cardArtType, game.platform, hiddenMedia, mixedRow) == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+                        val solidCart = carousel && artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey) == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
                         ProvidePieceTurn(if (solidCart) PieceTurn({ Carousel.placeFlat(i - nameX.value / strideDpValue, Carousel.side).turnY }, 12f) else null) {
                         HomeTile(
                             game = game,
@@ -487,8 +487,8 @@ internal fun TileHomeRow(
                             tile = m.tile,
                             progress = raProgress[game.stableKey],
                             favorite = game.stableKey in favorites,
-                            cardArtType = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow),
-                            typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey),
+                            cardArtType = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey),
+                            typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey),
                             award = awards[game.stableKey],
                             realCase = realRef,
                             mixed = mixedRow,

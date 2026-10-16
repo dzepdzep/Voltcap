@@ -433,6 +433,7 @@ private fun DiscInfo(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier)
             DiscRound(Icons.Filled.Info, "Details", StyleNav.on(StyleNav.Zone.BAR, 3), compact) { bar.getOrNull(3)?.invoke() }
         }
         Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
+        CategoryTitle.Native() // (Update 212: the layout's own category title.)
         Text(
             "${c.categoryLabel} · ${c.focus + 1} / ${c.games.size}", color = Color.White.copy(alpha = 0.6f),
             fontSize = if (compact) 9.sp else 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink

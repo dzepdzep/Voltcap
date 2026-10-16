@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,8 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,118 +32,112 @@ import androidx.compose.ui.zIndex
 import com.shelf.launcher.ui.theme.ShelfTheme
 
 /*
- * Update 151: Edit Home's button legend along the bottom (HomeEdit.kt › HomeEditBar), now fitted to the screen. On a
- * small screen (a 620 × 540 dp handheld) the one long line didn't fit: the hint shrank to nothing and the last buttons
- * (Style, Done and the fold arrow) were cut off past the right edge. Below [LEGEND_ONE_LINE] it is two lines: a short
- * hint with the fold arrows, then smaller buttons that wrap onto a further line if they still don't fit.
+ * Update 212: Edit Home's toolbar (it replaces the update 151 legend): the selected part and what it reaches, the
+ * actions — Elements, + Add, Undo, Preview, Discard, Done — and the button hints with this controller's own glyphs.
+ * At the bottom, or at the top while the selected part is low on the screen (so it never sits over what you're
+ * placing); it folds away to either side with its arrows. Touch and controller do the same things (HomeEdit.kt › onKey).
  */
 
-/** Narrower than this, the legend takes two lines. */
-private val LEGEND_ONE_LINE = 900.dp
+/** Narrower than this, the toolbar takes two lines and the hints are short. */
+private val TOOLBAR_ONE_LINE = 900.dp
 
-/** The open Edit Home legend (the folded tab stays in HomeEditBar). */
 @Composable
-internal fun BoxScope.HomeEditBarOpen() {
-    // (zIndex here: it sits over the home screen's other parts, as the bar did.)
+internal fun BoxScope.HomeEditToolbar() {
     BoxWithConstraints(Modifier.matchParentSize().zIndex(9f)) {
-        val narrow = maxWidth < LEGEND_ONE_LINE
-        if (!narrow) {
-            Row(
-                Modifier.align(Alignment.BottomCenter).safeZonePadding().clip(RoundedCornerShape(50))
-                    .background(ShelfTheme.colors.surfaceRaised.copy(alpha = 0.95f)).padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        val narrow = maxWidth < TOOLBAR_ONE_LINE
+        val dens = LocalDensity.current.density
+        val sel = HomeEditState.selected
+        val b = HomeEditState.bounds[sel]
+        // Low on the screen (its middle below 62 %): the bar goes to the top.
+        val atTop = b != null && b.center.y / dens > maxHeight.value * 0.62f
+        Column(
+            Modifier.align(if (atTop) Alignment.TopCenter else Alignment.BottomCenter).safeZonePadding().widthIn(max = maxWidth - 8.dp)
+                .onGloballyPositioned { HomeEditState.chrome["bar"] = it.boundsInRoot() }
+                .clip(RoundedCornerShape(16.dp)).background(ShelfTheme.colors.surfaceRaised.copy(alpha = 0.95f))
+                .pointerInput(Unit) { detectTapGestures { } }
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 LegendFold(-1)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "Edit Home · ${HomeWidgets.label(HomeEditState.selected)} · drag or D-pad to move, corner or L2 / R2 to resize (tap it: Style), side and bottom handles to stretch",
-                    color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.SemiBold,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                Spacer(Modifier.width(10.dp))
-                // Same as the X / Y buttons: position and size (update 91).
-                Chip("X Reset position", accent = false) { HomeEditState.resetOne(HomeEditState.selected) }
                 Spacer(Modifier.width(6.dp))
-                Chip("Y Reset layout", accent = false) { HomeEditState.resetEvery() }
-                Spacer(Modifier.width(6.dp))
-                Chip("Select ✕", accent = false) { HomeWidgets.remove(HomeEditState.selected) }
-                Spacer(Modifier.width(6.dp))
-                Chip("Start + Add", accent = false) { HomeEditState.adding = true }
-                Spacer(Modifier.width(6.dp))
-                Chip("L3 ✎ Style", accent = false) { HomeEditState.styling = HomeEditState.selected }
-                Spacer(Modifier.width(6.dp))
-                // Update 202: Art position for the look that's on (covers, Box art, cartridges or discs).
-                HomeEditState.artLook?.let { look ->
-                    Chip("R3 Art position · ${look.label}", accent = false) { HomeEditState.openArtPosition() }
-                    Spacer(Modifier.width(6.dp))
+                Column(Modifier.weight(1f, fill = false)) {
+                    Text(
+                        "Edit Home · " + HomeWidgets.label(sel) + if (!HomeEditSession.shown(sel)) " (hidden)" else "",
+                        color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                    Text(HomeEditSession.scopeOf(sel), color = ShelfTheme.textMuted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Chip("A Done") { HomeEditState.done() }
                 Spacer(Modifier.width(8.dp))
+                if (!narrow) ToolbarActions()
+                Spacer(Modifier.width(6.dp))
                 LegendFold(1)
             }
-        } else {
-            Column(
-                Modifier.align(Alignment.BottomCenter).safeZonePadding().widthIn(max = maxWidth - 8.dp)
-                    .clip(RoundedCornerShape(16.dp)).background(ShelfTheme.colors.surfaceRaised.copy(alpha = 0.95f))
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LegendFold(-1)
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        "Edit Home · ${HomeWidgets.label(HomeEditState.selected)} · D-pad moves, L2 / R2 resize, tap the corner for Style",
-                        color = ShelfTheme.colors.textPrimary, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(11.sp), maxFontSize = 11.sp),
-                        fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    LegendFold(1)
-                }
-                Spacer(Modifier.height(5.dp))
-                LegendKeys()
+            if (narrow) { Spacer(Modifier.size(4.dp)); ToolbarActions() }
+            Spacer(Modifier.size(4.dp))
+            Hints(narrow)
+        }
+    }
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun ToolbarActions() {
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        ToolKey("☰ Elements") { HomeEditState.elements = true }
+        ToolKey("+ Add") { HomeEditState.adding = true }
+        ToolKey("↶ Undo", enabled = HomeEditSession.undoCount > 0) { HomeEditSession.undo() }
+        ToolKey("◉ Preview") { HomeEditState.preview = true }
+        ToolKey("✎ Adjust") { HomeEditState.inspectorTab = 0; HomeEditState.styling = HomeEditState.selected }
+        ToolKey("Discard") { if (HomeEditSession.dirty()) HomeEditState.leaving = true else HomeEditSession.save() }
+        ToolKey("✓ Done", accent = true) { HomeEditSession.save() }
+    }
+}
+
+/** The buttons' hints, with the glyphs printed on this controller (GlyphPill). */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun Hints(narrow: Boolean) {
+    val list = buildList {
+        add("A" to "Adjust"); add("B" to "Back")
+        add("✚" to "Move"); add("L1" to if (narrow) "R1 Pick" else "R1 Pick part")
+        add("L2" to "R2 Size"); add("X" to "Reset part"); add("Y" to "Undo")
+        add("SELECT" to "Hide"); add("START" to "Done")
+    }
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        list.forEach { (k, l) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (k == "✚") Text("✚", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp) else GlyphPill(k)
+                Spacer(Modifier.width(4.dp))
+                Text(l, color = ShelfTheme.textMuted, fontSize = 10.sp, maxLines = 1, softWrap = false)
             }
         }
     }
 }
 
-/** The buttons in small chips, wrapping onto another line when they don't fit. */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+/** One button of the toolbar. */
 @Composable
-private fun LegendKeys() {
-    androidx.compose.foundation.layout.FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
-    ) {
-        LegendKey("X Reset part") { HomeEditState.resetOne(HomeEditState.selected) }
-        LegendKey("Y Reset all") { HomeEditState.resetEvery() }
-        LegendKey("Select ✕ Remove") { HomeWidgets.remove(HomeEditState.selected) }
-        LegendKey("Start + Add") { HomeEditState.adding = true }
-        LegendKey("L3 Style") { HomeEditState.styling = HomeEditState.selected }
-        // Update 202: Art position for the look that's on.
-        if (HomeEditState.artLook != null) LegendKey("R3 Art position") { HomeEditState.openArtPosition() }
-        LegendKey("A Done", accent = true) { HomeEditState.done() }
-    }
-}
-
-/** One small button of the legend. */
-@Composable
-private fun LegendKey(label: String, accent: Boolean = false, onClick: () -> Unit) {
+private fun ToolKey(label: String, accent: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
     Box(
         Modifier.clip(RoundedCornerShape(50))
-            .background(if (accent) ShelfTheme.accent else Color.White.copy(alpha = 0.10f))
-            .pointerInput(label) { detectTapGestures { onClick() } }
-            .padding(horizontal = 9.dp, vertical = 5.dp)
+            .background(if (accent) ShelfTheme.accent else Color.White.copy(alpha = if (enabled) 0.10f else 0.04f))
+            .pointerInput(label, enabled) { detectTapGestures { if (enabled) onClick() } }
+            .padding(horizontal = 10.dp, vertical = 5.dp)
     ) {
         Text(
-            label, color = if (accent) onAccentColor() else ShelfTheme.colors.textPrimary,
+            label, color = if (accent) onAccentColor() else ShelfTheme.colors.textPrimary.copy(alpha = if (enabled) 1f else 0.4f),
             fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false
         )
     }
 }
 
-/** The arrow that folds the legend away to that side ([side] -1 left, 1 right). */
+/** The arrow that folds the toolbar away to that side ([side] -1 left, 1 right). */
 @Composable
 private fun LegendFold(side: Int) {
     Box(

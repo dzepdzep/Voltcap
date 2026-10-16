@@ -63,6 +63,8 @@ internal fun StyleLiveTiles(c: StyleCtx, modifier: Modifier) {
     // player's ⏮ ⏯ ⏭ along the bottom (▼).
     // Update 109: the tabs hidden in Edit Home are skipped by the D-pad.
     val tabs = if (Features.liveTabs.state.value && !LayoutParts.off(com.shelf.launcher.data.HomeLayout.LIVE, "tabs")) liveTabs(c) else emptyList()
+    // (Update 212: the layout's own category title, CategoryTitle.kt.)
+    if (tabs.isNotEmpty()) CategoryTitle.Native()
     val musicOn = styleMusicShown(c) && c.game != null
     SideEffect {
         StyleNav.livePage = page.size

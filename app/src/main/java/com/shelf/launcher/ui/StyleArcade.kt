@@ -533,6 +533,7 @@ private fun ArcadeCategory(c: StyleCtx, compact: Boolean) {
             // (The padding sits inside the tap area, so the small arrows are easy to hit with a finger.)
             Text("◀", color = Color.White.copy(alpha = 0.6f), fontSize = size, modifier = Modifier.tapOnly { step(-1) }.padding(end = 8.dp, top = 6.dp, bottom = 6.dp))
         }
+        CategoryTitle.Native() // (Update 212: the layout's own category title.)
         Text(
             c.categoryLabel.uppercase(), color = accent, fontSize = size, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
             maxLines = 1, softWrap = false, modifier = Modifier.weight(1f, fill = false), style = nameTextStyle(NameBackdrop.SHADOW)

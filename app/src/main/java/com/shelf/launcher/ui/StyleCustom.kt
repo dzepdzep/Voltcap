@@ -307,6 +307,8 @@ private fun SceneText(c: StyleCtx, p: ScenePart, g: Game, h: Float) {
         "info" -> p.show.joinToString("  ·  ") { "{$it}" }
         else -> p.text ?: ""
     }
+    // (Update 212: a text showing the category is the layout's own category title, CategoryTitle.kt.)
+    if ("{category}" in raw) CategoryTitle.Native()
     val ticking = "{time}" in raw || "{date}" in raw
     val now = rememberSceneNow(ticking)
     val context = LocalContext.current

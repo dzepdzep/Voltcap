@@ -247,6 +247,9 @@ internal object SettingsIndex {
         E("Printed case backs", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         // Update 210.
         E("Real special editions", "Game look", "Covers, cases & discs", "look_more", "More look options"),
+        // Update 212.
+        E("Android games disc or cartridge", "Game look", "Covers, cases & discs", null, null),
+        E("Category title", "Categories", null, "cat_home", "On the home screen"),
         // Update 151: the "Everything at once" card is at the top of Metadata › Scraping now.
         E("Everything at once", "Metadata", "Scraping", null, null),
         E("Fetch everything that's missing", "Metadata", "Scraping", null, null),

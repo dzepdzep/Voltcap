@@ -102,7 +102,7 @@ internal fun ShelfGameArt(
     val frameOn = on && look.focusBorder
     val glowOn = on && look.focusEffect != com.shelf.launcher.data.FocusEffect.NONE
     val cover = overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
-    val gArt = artForGame(cardArtType, g.platform, LocalHiddenMedia.current, mixed)
+    val gArt = artForGame(cardArtType, g.platform, LocalHiddenMedia.current, mixed, gameKey = g.stableKey)
     val frame = Modifier
         .then(if (glowOn) Modifier.softGlow(ShelfTheme.accent, 2.dp, 0.5f + 0.5f * pulse) else Modifier)
         .then(if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier)
@@ -210,7 +210,7 @@ internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardAr
     // Update 166: the Tile look in the carousels too: every cover a square tile (it was the Voltcap row's only).
     if (cardArtType == com.shelf.launcher.data.CardArtType.COVER && carouselTiles()) return 1f
     if (cardArtType == com.shelf.launcher.data.CardArtType.HERO || cardArtType == com.shelf.launcher.data.CardArtType.SCREENSHOT) return 16f / 9f
-    val gArt = artForGame(cardArtType, g.platform, hidden, mixed)
+    val gArt = artForGame(cardArtType, g.platform, hidden, mixed, gameKey = g.stableKey)
     if (isFreeMedia(gArt, g.platform)) {
         if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey)?.aspect ?: 0.7f
         return MediaCovers.of(g.platform)?.frontAspect ?: 0.7f
@@ -1181,7 +1181,7 @@ private fun CarouselItem(
     val sideways = turnedFar.value
     // Update 113, Spines look: the games aside as their spines (closer together), the middle one its cover.
     val spineHere = !c.cases3d && ((c.spines && !atFocus) || sideways)
-    val gArt = artForGame(c.cardArtType, g.platform, c.hidden, c.mixed)
+    val gArt = artForGame(c.cardArtType, g.platform, c.hidden, c.mixed, gameKey = g.stableKey)
     val freeArt = isFreeMedia(gArt, g.platform)
     // Update 136: with 3D models on, the 3D cases were your 3D shape library's pieces, at the angle nearest their turn.
     // (Update 200: retired — the 3D cases are the drawn Case3D, the 3D cartridges looks drawn shells; never a model.)
@@ -1219,7 +1219,7 @@ private fun CarouselItem(
     // (Update 144: at most 78°, never edge-on.)
     val turns = !(sideways || c.cases3d || model != null || (spineHere && (c.view == CarouselView.SPINE_WALL || c.view == CarouselView.BOX_FLOW)))
     val piece = turns && !spineHere && freeArt
-    val band = if (piece) remember(gArt, g.platform, c.mixed, c.cardArtType) { mediaBandFor(gArt, g.platform, c.mixed, c.cardArtType) } else null
+    val band = if (piece) remember(gArt, g.platform, c.mixed, c.cardArtType, AndroidMedia.isAndroid(g.platform) && AndroidMedia.disc(g.platform, g.stableKey, DiscLook.on)) { mediaBandFor(gArt, g.platform, c.mixed, c.cardArtType, g.stableKey) } else null
     val turnOf: () -> Float = {
         if (!turns) 0f else {
             val rel = relNow.value()
@@ -1385,12 +1385,14 @@ private class MediaBand(val thick: Float, val color: Color, val round: Boolean)
 
 /** Update 162: the edge of [platform]'s piece in the [gArt] look (real proportions, a disc a little thicker to read); null: none. */
 private fun mediaBandFor(
-    gArt: com.shelf.launcher.data.CardArtType, platform: String, mixed: Boolean, type: com.shelf.launcher.data.CardArtType
+    gArt: com.shelf.launcher.data.CardArtType, platform: String, mixed: Boolean, type: com.shelf.launcher.data.CardArtType,
+    /** Update 212: for an Android game's own Disc / Cartridge choice. */
+    gameKey: String? = null
 ): MediaBand? {
     // A game case's plastic (box art drawn flat).
     if (gArt == com.shelf.launcher.data.CardArtType.CASE) return MediaBand(0.1f, Color(0xFF23252C), false)
     if (gArt != com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return null
-    val pick = mediaFor(platform, mixed, type == com.shelf.launcher.data.CardArtType.DISC) ?: return null
+    val pick = mediaFor(platform, mixed, type == com.shelf.launcher.data.CardArtType.DISC, gameKey = gameKey) ?: return null
     if (isCustomPiece(pick.platform)) return MediaBand(0.13f, Color(0xFF46484F), false)
     val grey = Color(0xFF7C7E85)
     val dark = Color(0xFF34363C)

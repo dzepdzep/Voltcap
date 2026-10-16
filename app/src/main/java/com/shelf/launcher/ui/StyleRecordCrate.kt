@@ -411,6 +411,7 @@ private fun CrateStage(c: StyleCtx, wood: CrateColours, modifier: Modifier) {
                 contentAlignment = Alignment.Center
             ) {
                 val fs = with(density) { (plankH * 0.5f).toSp() }
+                CategoryTitle.Native() // (Update 212: the layout's own category title.)
                 Text(
                     c.categoryLabel.uppercase(), color = wood.paint.copy(alpha = 0.74f), fontSize = fs,
                     fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Black, letterSpacing = 2.sp,

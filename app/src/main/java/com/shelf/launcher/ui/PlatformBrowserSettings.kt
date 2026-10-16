@@ -78,7 +78,8 @@ internal fun CategoryLookOptions(view: Features.PlatformView) {
                 FeatureSwitch(Icons.Filled.ViewCarousel, "Tall 2:3 cards", "Off: wide cards in two rows.", Features.pbTallCards)
                 FeatureSwitch(Icons.Filled.Title, "Platform name on the card", "", Features.pbShowName)
                 FeatureSwitch(Icons.Filled.Info, "Game count on the card", "", Features.pbShowCount)
-                FeatureSwitch(Icons.Filled.Refresh, "Drag-and-drop reorder", "Hold a card and drag it (controller: Start picks it up, ◀ ▶ move it, A drops it).", Features.pbReorder)
+                // (Update 212: reordering is always on — a hold picks a console up — the same as the classic category screen.)
+                MutedNote("Reorder: hold a console's card and drag it; with the controller, Start picks it up, ◀ ▶ move it, A puts it down. Its options (Y): Reorder, Change picture, Reset picture.")
                 Chip("Back to the alphabetical order", accent = false) { com.shelf.launcher.data.PlatformOrder.reset() }
                 Spacer(Modifier.height(12.dp))
             }

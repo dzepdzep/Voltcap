@@ -17,6 +17,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -300,8 +303,8 @@ internal fun platformBrowserKey(
         }
         Key.ButtonY -> tiles.getOrNull(index)?.let { st.options = it }
         Key.ButtonX -> onRandom()
-        // Start: pick a platform up to move it (grid with the reorder mode switched on).
-        Key.ButtonStart -> if (view == Features.PlatformView.GRID && Features.pbReorder.value && tiles.getOrNull(index)?.platform != null) {
+        // Start: pick a platform up to move it (Grid). (Update 212: always — no separate switch; a hold does it by touch.)
+        Key.ButtonStart -> if (view == Features.PlatformView.GRID && tiles.getOrNull(index)?.platform != null) {
             st.grabbed = if (st.grabbed >= 0) -1 else index
             onMoveSound()
         }
@@ -386,7 +389,7 @@ fun PlatformBrowser(
                 LegendItem("A", "Choose")
                 LegendItem("Y", "Options")
                 if (Features.pbBarRandom.value) LegendItem("X", "Random game")
-                if (view == Features.PlatformView.GRID && Features.pbReorder.value) LegendItem("Start", "Move platform")
+                if (view == Features.PlatformView.GRID) LegendItem("Start", if (state.grabbed >= 0) "Put down" else "Move (or hold)")
                 LegendItem("B", "Back")
             }
         }
@@ -786,7 +789,6 @@ private fun GridView(
     onFocus: (Int) -> Unit, onPick: (Int) -> Unit, onReorder: (Int, Int) -> Unit
 ) {
     val tall = Features.pbTallCards.value
-    val reorder = Features.pbReorder.value
     val rows = if (tall) 1 else 2
     val gridState = rememberLazyGridState()
     val columnFirst = selected / rows
@@ -799,13 +801,82 @@ private fun GridView(
             gridState.animateScrollToItem(((columnFirst - 1).coerceAtLeast(0)) * rows)
         }
     }
-    val density = LocalDensity.current
     val latestTiles by rememberUpdatedState(tiles)
     val latestReorder by rememberUpdatedState(onReorder)
+    val latestFocus by rememberUpdatedState(onFocus)
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    // Update 212: the card being dragged (by its key), the finger and the edge scroll (as the classic category screen).
+    val drag = remember { DragState() }
+    fun cardAt(p: androidx.compose.ui.geometry.Offset): Int? = gridState.layoutInfo.visibleItemsInfo.firstOrNull { info ->
+        p.x >= info.offset.x && p.x < info.offset.x + info.size.width && p.y >= info.offset.y && p.y < info.offset.y + info.size.height
+    }?.index
+    fun moveUnder(p: androidx.compose.ui.geometry.Offset) {
+        val k = drag.key ?: return
+        val cur = latestTiles.indexOfFirst { it.key == k }
+        val target = cardAt(p) ?: return
+        // (A console only swaps with consoles: All games, Favorites… keep their places here.)
+        if (cur >= 0 && target != cur && latestTiles.getOrNull(target)?.platform != null) {
+            latestReorder(cur, target)
+            state.grabbed = target
+            latestFocus(target)
+        }
+    }
+    LaunchedEffect(drag.edge != 0f) {
+        while (drag.edge != 0f && drag.key != null) {
+            androidx.compose.runtime.withFrameNanos { }
+            gridState.scrollBy(drag.edge)
+            drag.pos?.let { moveUnder(it) }
+        }
+    }
     LazyHorizontalGrid(
         rows = GridCells.Fixed(rows),
         state = gridState,
-        modifier = Modifier.fillMaxSize().padding(top = 70.dp, bottom = 44.dp),
+        // Update 212: hold a console's card to pick it up and drag it (always — the "Drag-and-drop reorder" switch is
+        // gone); near the left or right edge the grid scrolls on. Held, any other card opens its options.
+        modifier = Modifier.fillMaxSize().padding(top = 70.dp, bottom = 44.dp).pointerInput(Unit) {
+            val slop = viewConfiguration.touchSlop
+            val holdMs = viewConfiguration.longPressTimeoutMillis
+            val edgePx = 56.dp.toPx()
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                val start = cardAt(down.position) ?: return@awaitEachGesture
+                val ended = withTimeoutOrNull(holdMs) {
+                    var stop = false
+                    while (!stop) {
+                        val c = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial).changes.firstOrNull { it.id == down.id }
+                        if (c == null || !c.pressed || (c.position - down.position).getDistance() > slop) stop = true
+                    }
+                    true
+                }
+                if (ended == true) return@awaitEachGesture
+                val tile = latestTiles.getOrNull(start) ?: return@awaitEachGesture
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                if (tile.platform == null) {
+                    // Not a console: its options (it can't move in the grid).
+                    state.options = tile
+                } else {
+                    state.grabbed = start
+                    latestFocus(start)
+                    drag.key = tile.key
+                }
+                // The rest of this touch belongs to the hold (no tap on the card when the finger lifts).
+                while (true) {
+                    val c = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial).changes.firstOrNull { it.id == down.id } ?: break
+                    c.consume()
+                    if (!c.pressed) break
+                    if (drag.key == null) continue
+                    drag.pos = c.position
+                    drag.edge = when {
+                        c.position.x < edgePx -> -(edgePx - c.position.x).coerceAtMost(edgePx) / 4f
+                        c.position.x > size.width - edgePx -> (c.position.x - (size.width - edgePx)).coerceAtMost(edgePx) / 4f
+                        else -> 0f
+                    }
+                    moveUnder(c.position)
+                }
+                drag.edge = 0f; drag.pos = null
+                if (drag.key != null) { drag.key = null; state.grabbed = -1 }
+            }
+        },
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 32.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -815,43 +886,18 @@ private fun GridView(
             val grabbed = state.grabbed == index
             val latestSel by rememberUpdatedState(isSel)
             val latestIndex by rememberUpdatedState(index)
-            var accX by remember { mutableFloatStateOf(0f) }
-            var accY by remember { mutableFloatStateOf(0f) }
-            GridCard(
-                tile, tall, isSel, grabbed,
-                Modifier
-                    .pointerInput(reorder, tile.key) {
+            Box {
+                GridCard(
+                    tile, tall, isSel, grabbed,
+                    Modifier.pointerInput(tile.key) {
                         detectTapGestures(
-                            onTap = { if (state.grabbed >= 0) state.grabbed = -1 else if (latestSel) onPick(latestIndex) else onFocus(latestIndex) },
-                            onLongPress = { if (!reorder) state.options = tile }
+                            onTap = { if (state.grabbed >= 0) state.grabbed = -1 else if (latestSel) onPick(latestIndex) else onFocus(latestIndex) }
                         )
                     }
-                    .then(
-                        if (reorder && tile.platform != null) Modifier.pointerInput(tile.key) {
-                            // Long press picks it up; dragging moves it a slot each time you pass half a card.
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = { state.grabbed = latestTiles.indexOfFirst { it.key == tile.key }; accX = 0f; accY = 0f },
-                                onDragEnd = { state.grabbed = -1 },
-                                onDragCancel = { state.grabbed = -1 }
-                            ) { change, drag ->
-                                change.consume()
-                                accX += drag.x; accY += drag.y
-                                val cardW = with(density) { (if (tall) 120.dp else 200.dp).toPx() }
-                                val cur = latestTiles.indexOfFirst { it.key == tile.key }
-                                var target = cur
-                                if (accX > cardW * 0.6f) { target = cur + rows; accX = 0f }
-                                else if (accX < -cardW * 0.6f) { target = cur - rows; accX = 0f }
-                                else if (rows > 1 && accY > cardW * 0.4f) { target = cur + 1; accY = 0f }
-                                else if (rows > 1 && accY < -cardW * 0.4f) { target = cur - 1; accY = 0f }
-                                if (target != cur && target in latestTiles.indices && latestTiles[target].platform != null) {
-                                    latestReorder(cur, target)
-                                    state.grabbed = target
-                                    onFocus(target)
-                                }
-                            }
-                        } else Modifier
-                    )
-            )
+                )
+                // (Update 212: a console's drag handle on the card you're on, and on the one you're moving.)
+                if (tile.platform != null && (isSel || grabbed)) DragHandleBadge(Modifier.align(Alignment.TopEnd).padding(6.dp))
+            }
         }
     }
 }

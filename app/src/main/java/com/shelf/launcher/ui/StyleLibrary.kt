@@ -214,6 +214,7 @@ private fun LibraryTabs(c: StyleCtx, compact: Boolean, modifier: Modifier) {
     val single = c.stop < 0 || c.stops.isEmpty()
     val singleNow by rememberUpdatedState(single)
     val tabs: List<Pair<String, ImageVector>> = if (single) listOf(c.categoryLabel to Icons.Filled.Apps) else c.stops.map { it.label to it.icon }
+    CategoryTitle.Native() // (Update 212: the layout's own category title.)
     val current = if (single) 0 else c.stop
     val inTop = StyleNav.zone == StyleNav.Zone.TOP
     // The tab the D-pad is on while up there, else the category you're in: that one is kept in view.

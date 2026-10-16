@@ -716,6 +716,14 @@ object Features {
      * 100 = nearly solid). Settings › Home › Layout options › Game info on screen › Backing, and Edit Home › ✎ Style.
      */
     val partBackingSolid = IntPref("part_backing_solid", 70, 0..100)
+    /** Update 212: the category title on layouts that don't show the category themselves (CategoryTitle.kt). */
+    enum class CategoryTitleMode(val label: String) { SUBTLE("Show, then dim"), ALWAYS("Always clear"), OFF("Off") }
+    val categoryTitle = EnumPref("category_title_212", CategoryTitleMode.SUBTLE, CategoryTitleMode.values())
+    /** Update 212: what Android games are drawn as where games are drawn as cartridges or discs (AndroidMedia.kt). */
+    enum class AndroidMediaMode(val label: String) { FOLLOW("Follow the current look"), DISC("Disc"), CARTRIDGE("Cartridge") }
+    val androidMedia = EnumPref("android_media_212", AndroidMediaMode.FOLLOW, AndroidMediaMode.values())
+    /** Update 212: one Android game's own choice: "gameKey=DISC;gameKey=CARTRIDGE" (none: the setting above). */
+    val androidMediaGames = StringPref("android_media_games_212", "")
     fun overlayPartsFor(layout: com.shelf.launcher.data.HomeLayout): List<String> =
         overlayParts.state.value.split(';').firstNotNullOfOrNull { p ->
             val i = p.indexOf('='); if (i > 0 && p.substring(0, i) == layout.name) p.substring(i + 1).split(',').filter { it.isNotBlank() } else null

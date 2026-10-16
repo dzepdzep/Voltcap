@@ -150,90 +150,84 @@ internal fun Modifier.partStyle(id: String): Modifier {
 }
 
 /**
- * Edit Home › ✎ Style (or L3): the picked part's backing, see-through, outline, shape, still, size and where it lines
- * up (left / middle / right, top / middle / bottom of the screen).
+ * Update 212: the selected part's appearance in Edit Home's inspector (HomeEditSession.kt › HomeInspector): its backing,
+ * see-through, shape and outline, and whether it stays still. Each change is one step of the session's Undo; nothing is
+ * kept until Done (Discard puts the styles back as they were).
  */
 @Composable
-internal fun PartStyleSheet(id: String, onDismiss: () -> Unit) {
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        ImmersiveDialogWindow()
-        ShelfCard {
-            // Update 125: scrolls, so the last row (Reset style / Done) is always reachable on a short screen.
-            val sheetScroll = androidx.compose.foundation.rememberScrollState()
-            androidx.compose.foundation.layout.Column(
-                Modifier.heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.82f).dp)
-                    .verticalScroll(sheetScroll)
-            ) {
-            SectionLabel("Style · " + HomeWidgets.label(id))
-            val st = PartStyles.of(id)
-            fun put(n: PartStyle) = PartStyles.set(id, n)
-            val first = remember { FocusRequester() }
-            androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
-            MutedNote("Backing")
-            ChipFlow {
-                PartBg.values().forEachIndexed { i, b ->
-                    Box(if (i == 0) Modifier.focusRequester(first) else Modifier) { Chip(b.label, accent = st.bg == b) { put(st.copy(bg = b)) } }
-                }
-            }
-            // Update 133: sliders instead of steps — the whole part's see-through, and how solid every part's backing is.
-            PercentSlider("See-through (this part)", st.alpha, { put(st.copy(alpha = ((it / 5) * 5).coerceIn(20, 100))) }, min = 20, max = 100, valueText = { if (it >= 100) "Solid" else "$it %" })
-            Spacer(Modifier.height(4.dp))
-            PercentSlider("Backing (every part)", Features.partBackingSolid.state.value, { Features.partBackingSolid.value = ((it / 5) * 5).coerceIn(0, 100) }, min = 0, max = 100, valueText = { if (it == 0) "Light" else "$it %" })
-            Spacer(Modifier.height(4.dp))
-            MutedNote("Shape and outline")
-            ChipFlow {
-                PartShape.values().forEach { s -> Chip(s.label, accent = st.shape == s) { put(st.copy(shape = s)) } }
-                Chip((if (st.outline) "✓ " else "") + "Outline", accent = st.outline) { put(st.copy(outline = !st.outline)) }
-            }
-            if (!id.startsWith(LayoutParts.PREFIX)) {
-                MutedNote("Movement")
-                val stillNow = st.still || PartStyles.stillByDefault(id)
-                ChipFlow {
-                    Chip((if (stillNow) "✓ " else "") + "Stays still", accent = stillNow) { put(st.copy(still = true)) }
-                    if (!PartStyles.stillByDefault(id)) Chip((if (!stillNow) "✓ " else "") + "Animated", accent = !stillNow) { put(st.copy(still = false)) }
-                }
-            }
-            MutedNote("Size")
-            ChipFlow {
-                val now = HomeEditState.liveScale[id] ?: 1f
-                listOf(0.7f to "70 %", 0.85f to "85 %", 1f to "100 %", 1.25f to "125 %", 1.5f to "150 %").forEach { (v, l) ->
-                    Chip(l, accent = kotlin.math.abs(now - v) < 0.02f) { HomeEditState.liveScale[id] = v }
-                }
-            }
-            // Update 133: stretched on its own, wider or taller (the same as its side and bottom handles).
-            val str = HomeEditState.liveStretch[id] ?: (1f to 1f)
-            PercentSlider("Stretch wider", (str.first * 100).toInt(), { v ->
-                HomeEditState.liveStretch[id] = (((v / 5) * 5) / 100f).coerceIn(HomeWidgets.STRETCH_MIN, HomeWidgets.STRETCH_MAX) to str.second
-            }, min = (HomeWidgets.STRETCH_MIN * 100).toInt(), max = (HomeWidgets.STRETCH_MAX * 100).toInt(), valueText = { "$it %" })
-            PercentSlider("Stretch taller", (str.second * 100).toInt(), { v ->
-                HomeEditState.liveStretch[id] = str.first to (((v / 5) * 5) / 100f).coerceIn(HomeWidgets.STRETCH_MIN, HomeWidgets.STRETCH_MAX)
-            }, min = (HomeWidgets.STRETCH_MIN * 100).toInt(), max = (HomeWidgets.STRETCH_MAX * 100).toInt(), valueText = { "$it %" })
-            Spacer(Modifier.height(4.dp))
-            if (!id.startsWith(LayoutParts.PREFIX)) {
-                MutedNote("Line up on the screen")
-                ChipFlow {
-                    val cur = HomeEditState.live[id]
-                    fun at(x: Float?, y: Float?) {
-                        val c = HomeEditState.live[id] ?: (0.5f to 0.5f)
-                        HomeEditState.live[id] = (x ?: c.first) to (y ?: c.second)
-                    }
-                    Chip("Left", accent = cur?.first == 0f) { at(0f, null) }
-                    Chip("Centre", accent = cur?.first == 0.5f) { at(0.5f, null) }
-                    Chip("Right", accent = cur?.first == 1f) { at(1f, null) }
-                    Chip("Top", accent = cur?.second == 0f) { at(null, 0f) }
-                    Chip("Middle", accent = cur?.second == 0.5f) { at(null, 0.5f) }
-                    Chip("Bottom", accent = cur?.second == 1f) { at(null, 1f) }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Box(Modifier.fillMaxWidth()) {
-                androidx.compose.foundation.layout.Row(Modifier.align(Alignment.CenterEnd)) {
-                    Chip("Reset style", accent = false) { PartStyles.set(id, PartStyle()); HomeEditState.liveStretch.remove(id) }
-                    Spacer(Modifier.padding(4.dp))
-                    Chip("Done", onClick = onDismiss)
-                }
-            }
-            }
+internal fun PartLookControls(id: String, first: FocusRequester? = null) {
+    val st = PartStyles.of(id)
+    fun put(n: PartStyle) { HomeEditSession.push("style:$id"); PartStyles.set(id, n) }
+    MutedNote("Backing")
+    ChipFlow {
+        PartBg.values().forEachIndexed { i, b ->
+            Box(if (i == 0 && first != null) Modifier.focusRequester(first) else Modifier) { Chip(b.label, accent = st.bg == b) { put(st.copy(bg = b)) } }
         }
     }
+    PercentSlider("See-through", st.alpha, { put(st.copy(alpha = ((it / 5) * 5).coerceIn(20, 100))) }, min = 20, max = 100, valueText = { if (it >= 100) "Solid" else "$it %" })
+    Spacer(Modifier.height(4.dp))
+    MutedNote("Shape and outline")
+    ChipFlow {
+        PartShape.values().forEach { s -> Chip(s.label, accent = st.shape == s) { put(st.copy(shape = s)) } }
+        Chip((if (st.outline) "✓ " else "") + "Outline", accent = st.outline) { put(st.copy(outline = !st.outline)) }
+    }
+    if (!id.startsWith(LayoutParts.PREFIX)) {
+        MutedNote("Animation")
+        val stillNow = st.still || PartStyles.stillByDefault(id)
+        ChipFlow {
+            Chip((if (stillNow) "✓ " else "") + "Stays still", accent = stillNow) { put(st.copy(still = true)) }
+            if (!PartStyles.stillByDefault(id)) Chip((if (!stillNow) "✓ " else "") + "Animated", accent = !stillNow) { put(st.copy(still = false)) }
+        }
+    }
+    Spacer(Modifier.height(6.dp))
+    Chip("Reset appearance", accent = false) { HomeEditSession.push("style:$id"); PartStyles.set(id, PartStyle()) }
+}
+
+/**
+ * Update 212: the selected part's size, stretch and (a floating part) where it lines up on the screen — the inspector's
+ * Position & size group. The corner / side handles, L2 / R2 and the D-pad do the same on the home screen.
+ */
+@Composable
+internal fun PartSizeControls(id: String, first: FocusRequester? = null) {
+    MutedNote("Move")
+    ChipFlow {
+        val dirs = listOf("◀ Left" to (-1 to 0), "▲ Up" to (0 to -1), "▼ Down" to (0 to 1), "Right ▶" to (1 to 0))
+        dirs.forEachIndexed { i, (l, d) ->
+            Box(if (i == 0 && first != null) Modifier.focusRequester(first) else Modifier) { Chip(l, accent = false) { HomeEditState.nudge(id, d.first, d.second) } }
+        }
+    }
+    MutedNote("Size")
+    ChipFlow {
+        val now = HomeEditState.liveScale[id] ?: 1f
+        listOf(0.7f to "70 %", 0.85f to "85 %", 1f to "100 %", 1.25f to "125 %", 1.5f to "150 %").forEach { (v, l) ->
+            Chip(l, accent = kotlin.math.abs(now - v) < 0.02f) { HomeEditSession.push("size:$id"); HomeEditState.liveScale[id] = v }
+        }
+    }
+    val str = HomeEditState.liveStretch[id] ?: (1f to 1f)
+    PercentSlider("Stretch wider", (str.first * 100).toInt(), { v ->
+        HomeEditSession.push("stretch:$id")
+        HomeEditState.liveStretch[id] = (((v / 5) * 5) / 100f).coerceIn(HomeWidgets.STRETCH_MIN, HomeWidgets.STRETCH_MAX) to str.second
+    }, min = (HomeWidgets.STRETCH_MIN * 100).toInt(), max = (HomeWidgets.STRETCH_MAX * 100).toInt(), valueText = { "$it %" })
+    PercentSlider("Stretch taller", (str.second * 100).toInt(), { v ->
+        HomeEditSession.push("stretch:$id")
+        HomeEditState.liveStretch[id] = str.first to (((v / 5) * 5) / 100f).coerceIn(HomeWidgets.STRETCH_MIN, HomeWidgets.STRETCH_MAX)
+    }, min = (HomeWidgets.STRETCH_MIN * 100).toInt(), max = (HomeWidgets.STRETCH_MAX * 100).toInt(), valueText = { "$it %" })
+    if (!id.startsWith(LayoutParts.PREFIX)) {
+        MutedNote("Line up on the screen")
+        ChipFlow {
+            val cur = HomeEditState.live[id]
+            fun at(x: Float?, y: Float?) {
+                HomeEditSession.push("line:$id")
+                val c = HomeEditState.live[id] ?: (0.5f to 0.5f)
+                HomeEditState.live[id] = (x ?: c.first) to (y ?: c.second)
+            }
+            Chip("Left", accent = cur?.first == 0f) { at(0f, null) }
+            Chip("Centre", accent = cur?.first == 0.5f) { at(0.5f, null) }
+            Chip("Right", accent = cur?.first == 1f) { at(1f, null) }
+            Chip("Top", accent = cur?.second == 0f) { at(null, 0f) }
+            Chip("Middle", accent = cur?.second == 0.5f) { at(null, 0.5f) }
+            Chip("Bottom", accent = cur?.second == 1f) { at(null, 1f) }
+        }
+    }
+    MutedNote("Dragging snaps to the screen's edges, thirds and middle and to the other parts; a dashed guide shows while it snaps. Everything stays inside the safe zone (Settings › Screens › Safe zone).")
 }

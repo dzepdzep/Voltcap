@@ -80,6 +80,8 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
             Chip("Done", onClick = onDismiss)
         }
     ) {
+        // Update 212: an Android game — a disc or a cartridge first (AndroidMedia.kt); the shells below are for the cartridge.
+        if (AndroidMedia.isAndroid(platform)) AndroidMediaGameChoice(platform, game.stableKey)
         ShelfTextField(query, { query = it }, "Search shells (NES, Genesis, card…)", leadingIcon = Icons.Filled.Search)
         Spacer(Modifier.height(8.dp))
         ChipFlow {

@@ -414,6 +414,7 @@ private fun PocketHome(s: PocketScope, c: StyleCtx, accent: Color, font: android
                 if (p != null && !com.shelf.launcher.data.isCollectionKey(p)) PlatformLogo(p, c.categoryLabel, Modifier.fillMaxSize(), tint = InkC, textColor = InkC, textSize = sp(5f))
                 else Icon(stop?.icon ?: Icons.Filled.GridView, null, tint = InkC, modifier = Modifier.fillMaxSize())
             }
+            CategoryTitle.Native()
             PocketText(s, c.categoryLabel, 28f - cx, 4f, 58f, 30f, 7f, InkC, font, TextAlign.Center, maxLines = 2)
             Box(Modifier.at(80f - cx, 30f, 6f, 6f).background(accent))
         }
@@ -540,6 +541,7 @@ private fun PocketBrowser(s: PocketScope, c: StyleCtx, accent: Color, font: andr
         Box(Modifier.atScreen(3f, 1.5f, 12f, 12f).pointerInput(Unit) { detectTapGestures { pocketBack() } }) {
             Canvas(Modifier.fillMaxSize()) { pocketIcon(PocketIcons.BACK, InkC, accent) }
         }
+        if (games) CategoryTitle.Native() // (Update 212: the layout's own category title.)
         PocketText(s, if (games) c.categoryLabel else "All Categories", 18f, 2f, 160f, 12f, 8f, InkC, font, TextAlign.Start, screenX = true)
         PocketText(s, if (n == 0) "" else "${cur + 1} / $n", width - 64f, 2f, 60f, 12f, 7f, MutedC, font, TextAlign.End, screenX = true)
         for (k in 0 until perPage) {

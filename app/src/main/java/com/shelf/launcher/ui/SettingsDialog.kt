@@ -5550,6 +5550,11 @@ private fun CategoriesContent(
                 RowChoice("It sits", com.shelf.launcher.data.RowSide.values(), appearance.categorySide, { it.label }) {
                     onChange(appearance.copy(categorySide = it))
                 }
+                // Update 212: the title on the layouts that show no category of their own (CategoryTitle.kt).
+                RowChoice("Category title", com.shelf.launcher.data.Features.CategoryTitleMode.values(), F.categoryTitle.state.value, { it.label }) {
+                    F.categoryTitle.value = it
+                }
+                MutedNote("On a layout that doesn't show the category itself (or with its category tabs hidden), its title: clear when you switch, then dimmed but readable; or always clear; or off. Move, size or hide it in Edit Home.")
                 // Console / platform categories only: keep the name in one fixed place (or hide it).
                 Text("Console categories", color = ShelfTheme.textMuted, fontSize = 12.sp)
                 Spacer(Modifier.height(6.dp))

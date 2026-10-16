@@ -444,6 +444,7 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
             Modifier.offset(x = 8.dp, y = captionY).graphicsLayer { alpha = out.value },
             verticalAlignment = Alignment.CenterVertically
         ) {
+            CategoryTitle.Native() // (Update 212: the layout's own category title.)
             Text(
                 c.categoryLabel, color = Color.White, fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.SemiBold,
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW),

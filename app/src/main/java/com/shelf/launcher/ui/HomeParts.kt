@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -82,9 +83,10 @@ internal fun HomeRaLogoPart(name: String, icon: String?) {
  */
 @Composable
 internal fun CategoryNamePart(label: String, backdrop: NameBackdrop) {
+    // (Update 212: a long name ends in "…" instead of running over the screen.)
     Text(
         label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-        overflow = TextOverflow.Ellipsis, style = nameTextStyle(backdrop)
+        overflow = TextOverflow.Ellipsis, style = nameTextStyle(backdrop), modifier = Modifier.widthIn(max = 420.dp)
     )
 }
 

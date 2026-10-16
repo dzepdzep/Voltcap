@@ -132,7 +132,7 @@ internal fun GameDock(
         // slide along.
         // A free-standing cartridge / disc / box never opens into a wide capsule: its slot is a bigger cover.
         val bannerGame = games[if (pinnedFirst) 0 else focus]
-        val bannerFree = isFreeMedia(artForGame(cardArtType, bannerGame.platform, hiddenMedia, mixedRow), bannerGame.platform)
+        val bannerFree = isFreeMedia(artForGame(cardArtType, bannerGame.platform, hiddenMedia, mixedRow, gameKey = bannerGame.stableKey), bannerGame.platform)
         // Update 143: only while the game you're on really opens into a wide capsule. A case / cartridge / disc never
         // does: then the row moves like a plain cover row — the next game slides along into the place of the one you
         // were on, which slides off to the left. The fixed place made the next game vanish from the row and pop up at
@@ -144,7 +144,7 @@ internal fun GameDock(
         val bannerWidth = if ((bannerFree || carousel) && look.focusedWide) coverWidth * grow else sizes.focused.width
         // Update 144: room after the game you're on for its disc / cartridge sticking out of its case (Case + disc), so it
         // shows whole; the other games tuck theirs behind the next one. (Card padding is 4 dp each side.)
-        val peek = if (carousel || pinnedFirst) 0f else casePeek(artForGame(cardArtType, bannerGame.platform, hiddenMedia, mixedRow), bannerGame.platform)
+        val peek = if (carousel || pinnedFirst) 0f else casePeek(artForGame(cardArtType, bannerGame.platform, hiddenMedia, mixedRow, gameKey = bannerGame.stableKey), bannerGame.platform)
         val discRoom = if (peek > 0f) (sizes.bigCover.height - 8.dp) * peek else 0.dp
         // (The room the game you're on takes, gliding along with the row when it changes from one game to the next.)
         val glideBanner by animateDpAsState(bannerWidth, dockMotion(), label = "dockBanner")
@@ -273,7 +273,7 @@ internal fun GameDock(
                     // Update 156: going round, the games coming in past the last one (the first ones) are warmed too, so
                     // their art is there as they slide in.
                     val game = games.getOrNull(if (loop) i.mod(games.size) else i) ?: continue
-                    val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow)
+                    val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey)
                     val override = artOverrides[game.stableKey]
                     val gameArt = art[game.stableKey]
                     val cover = override?.cover ?: gameArt?.gridUrl
@@ -315,7 +315,7 @@ internal fun GameDock(
             val urls = ((focus - reach)..(focus + reach)).mapNotNull { i ->
                 // Update 156: past the ends of a row going round, the games from the other end.
                 val game = games.getOrNull(if (loop) i.mod(games.size) else i) ?: return@mapNotNull null
-                val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow)
+                val gArt = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey)
                 val override = artOverrides[game.stableKey]
                 val gameArt = art[game.stableKey]
                 val typed = typedArtFor(gArt, physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey)
@@ -472,8 +472,8 @@ internal fun GameDock(
                     isFavorite = game.stableKey in favorites,
                     onToggleFavorite = { onToggleFavorite(game) },
                     artOverride = artOverrides[game.stableKey],
-                    cardArtType = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow),
-                    typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey),
+                    cardArtType = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey),
+                    typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey),
                     realCase = realRef,
                     mixed = mixedRow,
                     asDisc = cardArtType == com.shelf.launcher.data.CardArtType.DISC,
@@ -557,7 +557,7 @@ internal fun GameDock(
                     // Update 203: a cartridge turns as a solid piece (its thickness showing) — the card hands it the turn
                     // instead of turning the flat picture (SolidPiece.kt).
                     val solidCart = (carousel || look.tiltOthers) &&
-                        artForGame(cardArtType, game.platform, hiddenMedia, mixedRow) == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+                        artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey) == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
                     ProvidePieceTurn(if (solidCart) PieceTurn({ if (carousel) Carousel.placeFlat(relAnim, carouselSide).turnY else tilt }, 14f) else null) {
                     GameCard(
                         game = game,
@@ -574,8 +574,8 @@ internal fun GameDock(
                         isFavorite = game.stableKey in favorites,
                         onToggleFavorite = { onToggleFavorite(game) },
                         artOverride = artOverrides[game.stableKey],
-                        cardArtType = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow),
-                        typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey),
+                        cardArtType = artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey),
+                        typedArtUrl = typedArtFor(artForGame(cardArtType, game.platform, hiddenMedia, mixedRow, gameKey = game.stableKey), physicalMedia[game.stableKey], screenshots[game.stableKey], game.platform, game.stableKey),
                         realCase = realRef,
                         mixed = mixedRow,
                         asDisc = cardArtType == com.shelf.launcher.data.CardArtType.DISC,

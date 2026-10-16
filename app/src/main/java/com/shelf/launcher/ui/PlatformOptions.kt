@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.runtime.Composable
@@ -38,8 +39,11 @@ internal fun PlatformOptionsDialog(
     onDismiss: () -> Unit,
     onPickPicture: () -> Unit,
     onRemovePicture: () -> Unit,
-    onDesignSlide: () -> Unit,
-    onMusic: () -> Unit
+    /** Null: no "Design this slide" (the classic category screen has no slides). */
+    onDesignSlide: (() -> Unit)?,
+    onMusic: () -> Unit,
+    /** Update 212: "Reorder" — picks this tile up to move it; null where it can't move here. */
+    onReorder: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("PlatformOptionsDialog")
     val context = LocalContext.current
@@ -58,7 +62,7 @@ internal fun PlatformOptionsDialog(
             status = "Intro video set."
         }
     }
-    ShelfMenuDialog(title = tile.label, subtitle = "Platform options", onDismiss = onDismiss, icon = Icons.Filled.Settings) {
+    ShelfMenuDialog(title = tile.label, subtitle = if (platform != null) "Platform options" else "Category options", onDismiss = onDismiss, icon = Icons.Filled.Settings) {
         status?.let { MutedNote(it) }
         if (platform != null && Features.platformMediaScrape.state.value) {
             MenuRow(
@@ -74,11 +78,15 @@ internal fun PlatformOptionsDialog(
                 }
             }
         }
-        MenuRow(Icons.Filled.Image, "Your own picture…", "Pick a picture for this platform's tile") { onDismiss(); onPickPicture() }
-        if (tile.customImage != null) {
-            MenuRow(Icons.Filled.Delete, "Back to the default picture", destructive = true) { onRemovePicture(); onDismiss() }
+        // (Update 212: the same options from the classic category screen — Y or its Options button, a hold reorders now.)
+        if (onReorder != null) {
+            MenuRow(Icons.Filled.SwapVert, "Reorder", "Pick it up and move it: ◀ ▶ ▲ ▼ or drag, A puts it down") { onDismiss(); onReorder() }
         }
-        MenuRow(Icons.Filled.ViewCarousel, "Design this slide", "Place the logo, name, covers and the rest anywhere, at any size") { onDismiss(); onDesignSlide() }
+        MenuRow(Icons.Filled.Image, "Change picture…", "Your own picture for this tile") { onDismiss(); onPickPicture() }
+        if (tile.customImage != null) {
+            MenuRow(Icons.Filled.Delete, "Reset picture", "Back to the default picture", destructive = true) { onRemovePicture(); onDismiss() }
+        }
+        if (onDesignSlide != null) MenuRow(Icons.Filled.ViewCarousel, "Design this slide", "Place the logo, name, covers and the rest anywhere, at any size") { onDismiss(); onDesignSlide() }
         if (platform != null) {
             MenuRow(
                 Icons.Filled.Videocam, "Intro video…",

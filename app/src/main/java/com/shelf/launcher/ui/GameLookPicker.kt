@@ -667,6 +667,8 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
                     LookChoiceCard(m.label, m.about, m == media, enabled, sample) { pickCaseMedia(m) }
                 }
             }
+            // Update 212: what Android games hold — a disc or a cartridge (AndroidMedia.kt).
+            AndroidMediaChoice()
         }
         LookMain.CARTS -> {
             // Update 204: Show as first — Mix, Cartridges or Discs (the old Disc games choices, named for what you see).
@@ -708,6 +710,8 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
                     }
                 }
             }
+            // Update 212: Android games as a disc or a cartridge (AndroidMedia.kt).
+            AndroidMediaChoice()
             val photos = !F.mediaShells.value
             SectionLabel("The game's own photo")
             ChoiceRow {

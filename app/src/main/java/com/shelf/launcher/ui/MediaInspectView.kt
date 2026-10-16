@@ -399,7 +399,7 @@ private fun inspectPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
     // (Update 162 (review): the carousel's 3D cases (MediaInspect.drawnAsCase) count for the case looks too — a console
     // without a template case is still a 3D case there; mixed lists as the cards draw them.)
     val drawnAsCase = MediaInspect.drawnAsCase == k
-    return when (artForGame(chosen, p, a.hiddenMedia, mixed)) {
+    return when (artForGame(chosen, p, a.hiddenMedia, mixed, gameKey = g.stableKey)) {
         CardArtType.CASE -> if (!isFreeMedia(CardArtType.CASE, p) && !drawnAsCase) null else casePiece(g, physical, cover, mixed)
         CardArtType.CARTRIDGE_DISC -> mediaPiece(g, chosen, physical, cover, small, mixed)
         // A cover look the carousel draws as 3D cases (it says so for the game you're on): the box with the cover on its

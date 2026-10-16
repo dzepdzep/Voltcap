@@ -700,6 +700,7 @@ private fun DeskBar(c: StyleCtx, h: Dp, modifier: Modifier) {
         DeskRound(Icons.Filled.Tune, names[0], StyleNav.on(StyleNav.Zone.BAR, 0), round) { c.actions.quickMenu() }
         Spacer(Modifier.width(6.dp))
         DeskRound(Icons.Filled.Settings, names[1], StyleNav.on(StyleNav.Zone.BAR, 1), round) { c.actions.settings() }
+        CategoryTitle.Native() // (Update 212: the layout's own category title.)
         Text(
             if (inBar) names.getOrElse(StyleNav.index) { "" } else c.categoryLabel,
             color = if (inBar) DeskInk else DeskMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,

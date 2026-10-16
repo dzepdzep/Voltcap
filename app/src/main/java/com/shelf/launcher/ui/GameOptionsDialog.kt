@@ -97,7 +97,9 @@ fun GameOptionsDialog(
         }
         MenuRow(Icons.Filled.Image, "Artwork & details", "Art, summary, score — pick the scraper or your own images", onClick = onEditArtwork)
         if (onCartShell != null) {
-            MenuRow(Icons.Filled.Memory, "Cartridge shell…", "Draw it on any console's cartridge or your own — it stays a ${game.platform} game", onClick = onCartShell)
+            // (Update 212: an Android game picks a disc or a cartridge here first, AndroidMedia.kt.)
+            if (game.platform == "App" || game.platform == "Android") MenuRow(Icons.Filled.Memory, "Disc or cartridge…", "How this game is drawn: a disc, or a cartridge in any shell — it stays an Android game", onClick = onCartShell)
+            else MenuRow(Icons.Filled.Memory, "Cartridge shell…", "Draw it on any console's cartridge or your own — it stays a ${game.platform} game", onClick = onCartShell)
         }
         if (onGameSettings != null) {
             MenuRow(Icons.Filled.Tune, "Game settings…", "Sync, second screen, launch parameters — inherited or set for this ${if (game.sourceType == SourceType.APP) "app" else "game"}", onClick = onGameSettings)

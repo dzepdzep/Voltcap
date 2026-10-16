@@ -320,6 +320,7 @@ private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Sh
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
     Column(modifier.stylePanel(panel, op, shape).padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 8.dp)) {
+        if (custom.isBlank()) CategoryTitle.Native() // (Update 212: the layout's own category title.)
         PanelLabel(custom.ifBlank { c.categoryLabel }, ink)
         Spacer(Modifier.height(6.dp))
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {

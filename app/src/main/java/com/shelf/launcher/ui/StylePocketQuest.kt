@@ -353,6 +353,7 @@ private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, sin
                 },
             verticalAlignment = Alignment.CenterVertically
         ) {
+            CategoryTitle.Native() // (Update 212: the layout's own category title.)
             for (t in 0 until tabs) {
                 val st = if (single) null else c.stops.getOrNull(t)
                 val isHere = t == current

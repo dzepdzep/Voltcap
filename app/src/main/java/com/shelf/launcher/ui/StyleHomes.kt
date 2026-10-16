@@ -897,7 +897,7 @@ internal fun StyleArt(
         return
     }
     val hiddenMedia = LocalHiddenMedia.current
-    val gArt = artForGame(c.type, g.platform, hiddenMedia, c.mixed)
+    val gArt = artForGame(c.type, g.platform, hiddenMedia, c.mixed, gameKey = g.stableKey)
     val typed = typedArtFor(gArt, c.state.physicalMedia[k], c.state.screenshots[k], g.platform, k)
     // (Update 205: the drawn piece wears its real label scan when it has one.)
     val labelScan = if (typed == null) drawnLabelScan(c.state.physicalMedia[k], g.platform) else null
@@ -1105,7 +1105,7 @@ internal fun StyleHome(
             val o = state.artOverrides[k]
             val a = art[k]
             val cover = o?.cover ?: a?.gridUrl
-            val gArt = artForGame(type, g.platform, hiddenMediaWarm, mixed)
+            val gArt = artForGame(type, g.platform, hiddenMediaWarm, mixed, gameKey = g.stableKey)
             val typed = typedArtFor(gArt, state.physicalMedia[k], state.screenshots[k], g.platform)
             val shown = cardArtUrl(gArt, false, cover, o?.wide ?: a?.wideGridUrl, o?.hero ?: a?.heroUrl, typed)
             shown?.let { thumbs += it }

@@ -181,6 +181,8 @@ internal fun CrossBackdrop() {
 private fun CrossIcons(c: StyleCtx, baseX: Dp, top: Dp, spacing: Dp, big: Dp, small: Dp, slide: Float, labels: Boolean, k: Float, width: Dp) {
     val move by rememberUpdatedState(c.actions.category)
     val n = c.stops.size
+    // (Update 212: the layout's own category title — its name, or the icons' labels.)
+    if (labels || n == 0 || c.stop < 0) CategoryTitle.Native()
     if (n == 0 || c.stop < 0) {
         // Not in the cycle (e.g. Rediscover): just its name.
         Text(

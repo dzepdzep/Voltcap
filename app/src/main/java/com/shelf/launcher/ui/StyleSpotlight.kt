@@ -124,6 +124,8 @@ private fun SpotCinema(c: StyleCtx, modifier: Modifier) {
                     verticalAlignment = Alignment.Bottom
                 ) {
                     if (tabOn) Text("◀  ", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                    // (Update 212: the layout's own category title — unless its tabs are hidden in Edit Home.)
+                    CategoryTitle.Native(LayoutParts.id(com.shelf.launcher.data.HomeLayout.SPOT, "tabs"))
                     Text(c.categoryLabel, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW))
                     val next = c.stopAt(1)
                     if (next != null && c.stops.size > 1) {
