@@ -266,6 +266,7 @@ class MainActivity : ComponentActivity() {
     // Every key press also tells which face-button layout the system uses (Xbox / Nintendo), so the
     // button legend can follow the handheld's own setting (SystemButtonLayout).
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.action == android.view.KeyEvent.ACTION_DOWN) com.shelf.launcher.ui.KeyInput.lastWasKey = true // (Update 233, #120)
         com.shelf.launcher.ui.HomeIdle.poke()
         com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
         com.shelf.launcher.data.BatterySaver.poke() // (Update 187)
@@ -284,6 +285,7 @@ class MainActivity : ComponentActivity() {
 
     // Any touch or stick movement also wakes the home screen's animations (see HomeIdle).
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        if (ev.actionMasked == android.view.MotionEvent.ACTION_DOWN) com.shelf.launcher.ui.KeyInput.lastWasKey = false // (Update 233, #120)
         com.shelf.launcher.ui.HomeIdle.poke()
         com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
         com.shelf.launcher.data.BatterySaver.poke() // (Update 187)

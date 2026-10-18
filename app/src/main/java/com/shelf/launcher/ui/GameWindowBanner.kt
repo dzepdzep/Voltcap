@@ -256,6 +256,10 @@ internal fun BannerGameWindow(
         ImmersiveDialogWindow()
         val scope = rememberCoroutineScope()
         val playFocus = remember { FocusRequester() }
+        // (Update 233, #120: opened with a button after a touch — leave Android's touch mode first, so Play is lit at once
+        // and the first ◀ / ▶ moves; it only lit Play, and A, ▶, A started the game.)
+        val keyView = androidx.compose.ui.platform.LocalView.current
+        LaunchedEffect(Unit) { kotlinx.coroutines.delay(20); KeyInput.leaveTouchMode(keyView) }
         // Always opens on Play / Continue: the window can take a moment to get the focus (from a touch, or picked on
         // the second screen), so ask again until something in it has it (as the other game windows do).
         var focusInside by remember { mutableStateOf(false) }
@@ -271,6 +275,7 @@ internal fun BannerGameWindow(
         LaunchedEffect(windowInfo.isWindowFocused) {
             if (windowInfo.isWindowFocused && !askedOnFocus) {
                 askedOnFocus = true
+                KeyInput.leaveTouchMode(keyView) // (Update 233, #120)
                 delay(30)
                 runCatching { playFocus.requestFocus() }
             }

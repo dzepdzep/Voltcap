@@ -605,6 +605,10 @@ internal fun GameWindow(
     ) {
         ImmersiveDialogWindow()
         val playFocus = remember { FocusRequester() }
+        // (Update 233, #120: opened with a button after a touch — leave Android's touch mode first, so Play is lit at once
+        // and the first ◀ / ▶ moves; it only lit Play, and A, ▶, A started the game.)
+        val keyView = androidx.compose.ui.platform.LocalView.current
+        LaunchedEffect(Unit) { kotlinx.coroutines.delay(20); KeyInput.leaveTouchMode(keyView) }
         // Update 122: always opens on Play / Continue. The window can take a moment to get the focus
         // (from a touch, or picked on the second screen): ask again until something in it has the focus.
         var focusInside by remember { mutableStateOf(false) }
@@ -624,6 +628,7 @@ internal fun GameWindow(
         LaunchedEffect(windowInfo.isWindowFocused) {
             if (windowInfo.isWindowFocused && !askedOnFocus) {
                 askedOnFocus = true
+                KeyInput.leaveTouchMode(keyView) // (Update 233, #120)
                 kotlinx.coroutines.delay(30)
                 runCatching { playFocus.requestFocus() }
             }

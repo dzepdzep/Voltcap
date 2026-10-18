@@ -315,6 +315,18 @@ fun CategoryScreen(
                 }
             }
         }
+        // (Update 233, #94: scrolled down, the heading and the tiles ran under the status bar's clock and icons — the
+        // top now fades into the background there, as the rest of the screen.)
+        val scrolledDown by androidx.compose.runtime.remember {
+            androidx.compose.runtime.derivedStateOf { gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 24 }
+        }
+        if (scrolledDown) Box(
+            Modifier.fillMaxWidth().height(44.dp).align(Alignment.TopCenter).background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    0f to ShelfTheme.background.copy(alpha = 0.97f), 0.6f to ShelfTheme.background.copy(alpha = 0.85f), 1f to Color.Transparent
+                )
+            )
+        )
     }
 }
 

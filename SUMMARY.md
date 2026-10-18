@@ -4,6 +4,24 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (233): the game window answers the first ◀ / ▶ after a touch (#120), Choose a category no longer runs under the status bar (#94)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (5): `src_copy\ui\KeyInput.kt` (**new**), `src_copy\MainActivity.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\GameWindowBanner.kt`, `src_copy\ui\CategoryScreen.kt`. **Files to delete:** none.
+
+### Found while checking the game window (#120)
+- After any touch on the screen, opening a game's window with A showed **no highlight**, and the **first ▶ only lit Play** (Android swallows the first D-pad press to leave "touch mode"). So **A, ▶, A started the game** instead of opening Performance — it happened during this check (on a 3DS game, which can't start, so nothing ran).
+- Now a window opened with a button leaves touch mode as it opens: Play is lit at once and the first ▶ moves to Performance. Opened by touch it stays as before (no highlight until you press a button). Same for the Banner page window.
+
+### Choose a category (#94)
+- Scrolled down (and while reordering), the heading and the tiles ran under the status bar's clock and icons (seen on the Thor) → the top now fades into the background there; at the top of the list nothing changes.
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed on both.
+- Thor, 3DS › Deer Drive Legends (can't start: no 3DS emulator set, so safe): touch the screen, then A → **Play lit at once**; one ▶ → **Performance** lit; A → "Performance · For this game" page (before: the first ▶ only lit Play). B, B back home.
+- Also seen: your Thor's power mode is **Balanced · Device default** (CPU big cores capped at 2.05 / 2.34 GHz, GPU 401 MHz) — that is why the 232 frame times couldn't be compared with 231's; with the same Balanced caps, update 232 left only 7 slow-UI-thread frames over 8 steps (18 in 231).
+
 ## Update — 18 Oct 2026 (232): Spotlight's tiles sit right under the line (#10), less work the first time you reach a game (#60)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
