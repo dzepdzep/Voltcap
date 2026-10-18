@@ -202,6 +202,18 @@ internal fun rememberGameSyncView(g: Game, syncOn: Boolean?): GameSyncView {
     val matched by produceState<Boolean?>(null, g.stableKey, s.connected, s.syncSaves, s.folders) {
         value = withContext(Dispatchers.IO) { runCatching { CloudSync.canWatchSaves(context, g) }.getOrDefault(false) }
     }
+    val st0 = all[g.stableKey]
+    // Update 222 (#106): what the files say, not only the last job — a save written after the last upload (size / date
+    // differ from what was sent: no reading, no network) and when they last went to / came from Drive for certain.
+    val probe by produceState<Pair<Int, Pair<Long, String?>?>?>(null, g.stableKey, matched, st0?.updatedAt, sync.running) {
+        value = if (matched != true) null else withContext(Dispatchers.IO) {
+            runCatching {
+                CloudSync.changedSaves(context, CloudSync.ScopedGame.of(g)).size to CloudSync.lastConfirmedSync(context, g)
+            }.getOrNull()
+        }
+    }
+    val unsent = (probe?.first ?: 0) > 0
+    val sending = if (com.shelf.launcher.data.SaveObserver.watchingKey() == g.stableKey) " · sending soon" else ""
     if (!s.connected) return GameSyncView("Save sync isn't set up", SyncLook.OFF, setUp = true)
     if (!s.syncSaves) return GameSyncView("Save sync is off", SyncLook.OFF, setUp = true)
     if (g.sourceType != SourceType.ROM) return GameSyncView("No save sync for apps", SyncLook.OFF)
@@ -210,7 +222,8 @@ internal fun rememberGameSyncView(g: Game, syncOn: Boolean?): GameSyncView {
     val st = all[g.stableKey]
     val everything = if (sync.running && st?.state != SyncState.UPLOADING && st?.state != SyncState.DOWNLOADING) " · syncing all games…" else ""
     return when (st?.state) {
-        SyncState.SYNCED -> GameSyncView("Saves up to date" + (if (st.lastSuccessAt > 0L) " · ${syncAgo(st.lastSuccessAt)}" else "") + everything, SyncLook.OK)
+        SyncState.SYNCED -> if (unsent) GameSyncView("Newer save on this device · not sent yet$sending", SyncLook.WAIT)
+            else GameSyncView("Saves up to date" + (if (st.lastSuccessAt > 0L) " · ${syncAgo(st.lastSuccessAt)}" else "") + everything, SyncLook.OK)
         SyncState.UPLOADING -> GameSyncView("Uploading saves…", SyncLook.BUSY)
         SyncState.DOWNLOADING -> GameSyncView("Downloading saves…", SyncLook.BUSY)
         SyncState.PENDING -> GameSyncView((if (st.lastSuccessAt > 0L) "Changes waiting to sync" else "Waiting for the first sync") + everything, SyncLook.WAIT)
@@ -220,7 +233,15 @@ internal fun rememberGameSyncView(g: Game, syncOn: Boolean?): GameSyncView {
         SyncState.NEEDS_SIGN_IN -> GameSyncView("Sign in to Google Drive again", SyncLook.ATTENTION, setUp = true)
         null -> when (matched) {
             false -> GameSyncView("No save folder for this game", SyncLook.OFF, setUp = true)
-            true -> GameSyncView("Not checked yet" + everything, SyncLook.UNKNOWN)
+            true -> {
+                val last = probe?.second
+                when {
+                    unsent && last == null -> GameSyncView("Not on Google Drive yet$sending", SyncLook.WAIT)
+                    unsent -> GameSyncView("Newer save on this device · not sent yet$sending", SyncLook.WAIT)
+                    last != null -> GameSyncView("Saves up to date · ${syncAgo(last.first)}" + (last.second?.let { " · from $it" } ?: "") + everything, SyncLook.OK)
+                    else -> GameSyncView("Not checked yet" + everything, SyncLook.UNKNOWN)
+                }
+            }
             null -> GameSyncView("Save sync", SyncLook.UNKNOWN)
         }
     }

@@ -328,6 +328,14 @@ class DriveClient(private val context: Context) {
         json { Request.Builder().url("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)") }
             .optJSONObject("user")?.optString("emailAddress")?.takeIf { it.isNotBlank() }
 
+    /**
+     * Update 222 (#103 / #77): one file's current state on Drive (its md5 now), read right before replacing it —
+     * the folder list can be minutes old by then. Null when it's gone.
+     */
+    fun file(id: String): DriveFile? = runCatching {
+        parse(json { Request.Builder().url("$API/files/$id?fields=$FIELDS") })
+    }.getOrElse { e -> if (e is DriveSignInNeeded || e is DriveRetryable) throw e else null }?.takeIf { it.id.isNotEmpty() }
+
     /** All files (not in the bin) directly inside [parentId], every page. */
     fun list(parentId: String, extraQuery: String? = null): List<DriveFile> {
         val out = mutableListOf<DriveFile>()

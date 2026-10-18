@@ -1837,6 +1837,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private fun afterGameSync(openKey: String): Boolean {
         val app = getApplication<Application>()
         com.shelf.launcher.data.SaveWatchWorker.endSession(app)
+        // (Update 222: the file watcher stays a while longer — emulators often write once more as they close.)
+        com.shelf.launcher.data.SaveObserver.gameEnded()
         if (com.shelf.launcher.CrashGuard.safeMode) return false
         val game = _uiState.value.games.firstOrNull { it.stableKey == openKey }
         // Per-game opt-out skips only this game's scoped sync; the normal full sync below still covers every folder.
@@ -5185,7 +5187,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             com.shelf.launcher.data.SyncNotifier.appInForeground = false
             if (effectiveProfile(game).syncSaves.value) {
                 com.shelf.launcher.data.SaveWatchWorker.startSession(getApplication(), game, now)
-            }
+                // Update 222 (#103): saves go up seconds after the emulator writes them (SaveObserver).
+                com.shelf.launcher.data.SaveObserver.start(getApplication(), game)
+            } else com.shelf.launcher.data.SaveObserver.stop()
             if (_uiState.value.appearance.discordPresence) {
                 val state = _uiState.value
                 val cover = state.artOverrides[game.stableKey]?.cover ?: state.art[game.stableKey]?.gridUrl

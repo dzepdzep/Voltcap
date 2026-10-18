@@ -26,6 +26,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -689,6 +691,29 @@ object CloudSync {
         return scopeFor(_state.value.settings, ScopedGame.of(game)).isNotEmpty()
     }
 
+    /**
+     * Update 222 (#103): the plain folders (not Android-picker trees) that can hold [game]'s saves, with their
+     * sub-folders a few levels down (RetroArch sorts saves by core) — for SaveObserver's file events. Save-state
+     * folders are left out. Picker trees get no events; SaveObserver's quick checks cover them.
+     */
+    fun watchDirs(context: Context, game: ScopedGame): List<File> {
+        load(context)
+        val settings = _state.value.settings
+        if (!settings.connected || !settings.syncSaves) return emptyList()
+        val out = ArrayList<File>()
+        scopeFor(settings, game).forEach { (folder, _) ->
+            if (folder.treeUri != null || isStateFolder(folder.path)) return@forEach
+            val root = File(folder.path).takeIf { it.isDirectory } ?: return@forEach
+            fun walk(dir: File, depth: Int) {
+                if (out.size >= 64 || isStateFolder(dir.path)) return
+                out += dir
+                if (depth < 3) dir.listFiles { f -> f.isDirectory && !f.name.startsWith(".") }?.forEach { walk(it, depth + 1) }
+            }
+            walk(root, 0)
+        }
+        return out
+    }
+
     /** One save file that differs from what the last sync recorded. */
     data class ChangedSave(val folder: String, val path: String, val size: Long, val modified: Long)
 
@@ -1008,7 +1033,7 @@ object CloudSync {
                             // Park Drive's version first.
                             val tag = c.remoteDevice?.replace(Regex("[^A-Za-z0-9]+"), "-") ?: "drive"
                             drive.download(c.remoteId, conflictCopy(context, folderName, rel, tag), c.remoteModified)
-                            push(drive, tree, rel, entry, localHash(state, tree, rel, entry), remoteDir, c.remoteId, state)
+                            push(context, drive, tree, rel, entry, localHash(state, tree, rel, entry), remoteDir, c.remoteId, state)
                         }
                         done++
                         settled += c
@@ -1070,6 +1095,25 @@ object CloudSync {
      * folder last synced. Null when there's nothing to say. Reads files: call
      * off the main thread.
      */
+    /**
+     * Update 222 (#106): when this game's save files last went to / came from Drive for certain (the newest recorded
+     * base of a file named after the ROM), with the device it came from; null when none is recorded.
+     */
+    fun lastConfirmedSync(context: Context, game: Game): Pair<Long, String?>? {
+        load(context)
+        val s = _state.value.settings
+        if (!s.connected || !s.syncSaves || game.sourceType != SourceType.ROM) return null
+        val stem = game.romPath?.substringAfterLast('/')?.substringBeforeLast('.')?.lowercase() ?: return null
+        var best: Base? = null
+        s.folders.filter { it.enabled }.forEach { folder ->
+            loadFolderState(context, folder.name).base.forEach { (rel, b) ->
+                val name = rel.substringAfterLast('/').substringBeforeLast('.').lowercase()
+                if (name == stem && b.at > (best?.at ?: 0L)) best = b
+            }
+        }
+        return best?.let { b -> b.at to b.from?.takeIf { it != Build.MODEL } }
+    }
+
     fun saveStatusFor(context: Context, game: Game): String? {
         load(context)
         val s = _state.value.settings
@@ -1258,10 +1302,39 @@ object CloudSync {
         }
     }
 
-    /** This device's [rel] into Drive. */
-    private fun push(drive: DriveClient, tree: SyncTree, rel: String, entry: LocalEntry, md5: String, remoteDir: String, existingId: String?, state: FolderState) {
-        val up = drive.upload(tree.body(rel, entry), rel, remoteDir, existingId, entry.modified)
-        state.base[rel] = Base(md5, up.id, System.currentTimeMillis(), Build.MODEL)
+    /** Update 222: Drive's copy of the file changed after the folder was listed — nothing was uploaded. */
+    private class RemoteMoved : Exception("Changed on Drive meanwhile")
+
+    /**
+     * This device's [rel] into Drive.
+     *
+     * Update 222 (#103 / #77) — three gaps closed:
+     * - The file is copied once into a snapshot, and exactly those bytes are hashed and sent. Before, it was hashed in
+     *   one read and streamed again for the upload, so an emulator writing in between sent other bytes than the hash
+     *   that was recorded as synced.
+     * - [expectRemoteMd5]: right before replacing Drive's copy, its md5 is read again; if it's no longer the one the
+     *   decision was made on (another handheld uploaded meanwhile), nothing is sent ([RemoteMoved] → a conflict:
+     *   both kept). Before, the folder list could be minutes old and the newer save was replaced.
+     * - Drive's md5 of what arrived must equal the snapshot's, or the base isn't moved (the next sync tries again).
+     */
+    private fun push(context: Context, drive: DriveClient, tree: SyncTree, rel: String, entry: LocalEntry, md5: String, remoteDir: String, existingId: String?, state: FolderState, expectRemoteMd5: String? = null) {
+        val snap = tempFile(context)
+        try {
+            tree.open(rel).use { input -> snap.outputStream().use { input.copyTo(it) } }
+            snap.setLastModified(entry.modified)
+            val sent = md5(snap)
+            if (existingId != null && expectRemoteMd5 != null) {
+                val now = drive.file(existingId)
+                if (now?.md5 != null && !now.md5.equals(expectRemoteMd5, ignoreCase = true)) throw RemoteMoved()
+            }
+            val up = drive.upload(snap.asRequestBody("application/octet-stream".toMediaType()), rel, remoteDir, existingId, entry.modified)
+            if (up.md5 != null && !up.md5.equals(sent, ignoreCase = true)) error("Drive didn't get all of $rel — it stays marked as not synced.")
+            state.base[rel] = Base(sent, up.id, System.currentTimeMillis(), Build.MODEL)
+            // Written again while it was read: the recorded hash belongs to the old bytes, so it's looked at afresh next time.
+            if (!sent.equals(md5, ignoreCase = true)) state.hashes.remove(rel)
+        } finally {
+            snap.delete()
+        }
     }
 
     /**
@@ -1338,7 +1411,7 @@ object CloudSync {
                 val b = state.base[rel]
 
                 fun upload() {
-                    push(drive, tree, rel, entry!!, l!!, remoteDir, r?.id, state)
+                    push(context, drive, tree, rel, entry!!, l!!, remoteDir, r?.id, state, expectRemoteMd5 = r?.md5)
                     report.uploaded++
                     report.changedPaths.getOrPut(folder.name) { mutableListOf() } += rel
                 }
@@ -1388,6 +1461,14 @@ object CloudSync {
                 // No point trying the remaining files: the worker retries the whole sync later.
                 saveFolderState(context, folder.name, state)
                 throw e
+            } catch (e: RemoteMoved) {
+                // (Update 222: another handheld uploaded this save while we compared — both versions stay; the player chooses.)
+                val entry = local[rel]
+                val r = remote[rel]
+                if (entry != null && r != null) report.conflictList += SyncConflict(
+                    folderName = folder.name, folder = folder, relativePath = rel, localModified = entry.modified,
+                    remoteId = r.id, remoteModified = System.currentTimeMillis(), remoteDevice = null
+                )
             } catch (e: Exception) {
                 report.failed++
             }

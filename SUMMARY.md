@@ -4,6 +4,27 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (222): saves go to Drive seconds after the emulator writes them (#103), an upload never replaces a newer Drive save (#77), the game's save status says when a newer save hasn't gone up yet (#106)
+
+You OK'd save / sync work on 18 Oct ("Keep em all coming"). All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic (Voltcap 0.6.9 + this) by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (6): `src_copy\data\SaveObserver.kt` (**new**), `src_copy\data\CloudSync.kt`, `src_copy\data\DriveClient.kt`, `src_copy\data\SaveWatchWorker.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\ui\GamePopupStatus.kt`. **Files to delete:** none.
+
+### What changed
+1. **Saves go up within seconds, while the game still runs (#103).** New `SaveObserver`: from the game's start until 15 min after Voltcap is back (emulators often write once more as they close) it listens to Android's file events on the game's save folders (a file closed after writing, renamed / moved into place, created) and also takes a cheap look every 15 s (60 s with the screen off; size and date only — no reading, no network), which also covers folders shared through Android's picker. A change counts once it has **settled** (same files, same size and date on two looks ≥ 4 s apart, newest write ≥ 4 s old): several writes of one save are one change; a memory card being written is never sent half-done. It then queues one **per-game upload job** (`SaveNowWorker`, WorkManager: survives Voltcap being closed or killed, waits for a connection, retries offline). Upload-only — nothing on this device is replaced while the game may run. A save made while one is uploading is sent right after by the same job. Save states stay excluded as before. The old 10-minute watcher stays as the safety net when the process dies, now first looking after 3 min.
+2. **An upload never replaces a newer Drive save (#77).** Three gaps in the upload step closed (`CloudSync.push`):
+   - the file is copied once into a snapshot and exactly those bytes are hashed and sent (before: hashed in one read and streamed again — an emulator writing in between sent other bytes than the hash recorded as synced);
+   - right before replacing Drive's copy its md5 is read again (`DriveClient.file`); changed by another handheld since the folder was listed → nothing sent, **conflict, both kept** (before: the list could be minutes old and the newer save was replaced);
+   - Drive's md5 of what arrived must match the snapshot, or it isn't marked synced.
+3. **The game's save status tells the truth (#106).** Details › save line: when a save file is newer than what was last sent (size / date differ — no reading, no network) it says **"Newer save on this device · not sent yet"** (+ "· sending soon" while the watcher runs) instead of "up to date"; a game never checked by a job but with files synced before shows **"Saves up to date · <when> · from <device>"** instead of "Not checked yet"; files never sent: "Not on Google Drive yet".
+
+### Check (device, disposable file — no real save touched)
+- RP Classic: Dr. Mario (no battery save on the cartridge) started from Voltcap; a disposable 8 KB `Dr. Mario (World).srm` written into RetroArch/saves/Gambatte while it ran → upload job ran **7 s** after the write (3 s long); written again → job **8 s** after. The AYN Thor then had the file with the **same md5** (44ca00a4…) — so Drive got exactly those bytes. Details shows the green synced cloud.
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed with `adb install -r` on both; no crashes.
+- **Not device-tested:** the "Drive changed meanwhile" conflict (needs two uploads within the same second), process death mid-game, SAF picker folders, offline → online.
+- Test residue: the disposable `Dr. Mario (World).srm` (random bytes) is now in Drive and on both handhelds. Dr. Mario's cartridge has no save memory, so RetroArch ignores it; delete it from Drive's Voltcap › Saves › RetroArch folder and both handhelds if you want it gone (Voltcap never deletes everywhere).
+- Seen: right after an update, the first Home press showed Android's own launcher once (the home app was being replaced); the next press was Voltcap.
+
 ## Update — 18 Oct 2026 (221): the home screen stops redrawing when nobody uses it (#60 / #96), Icon bar's category name clear of its tabs (#94)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

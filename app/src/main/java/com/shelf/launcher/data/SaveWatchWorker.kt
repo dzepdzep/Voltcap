@@ -90,7 +90,8 @@ class SaveWatchWorker(context: Context, params: WorkerParameters) : CoroutineWor
         private const val RECHECK_MS = 2 * 60_000L
         /** The watcher gives up after this long. */
         const val MAX_SESSION_MS = 12L * 60 * 60 * 1000
-        private val STEPS_MIN = longArrayOf(10, 20, 40, 60)
+        // (Update 222: first look after 3 min — SaveObserver sends saves within seconds; this chain is the safety net when the process dies.)
+        private val STEPS_MIN = longArrayOf(3, 10, 20, 40, 60)
 
         /** Minutes between checks grow 10 → 20 → 40 → 60 (cap). */
         private fun delayFor(step: Int): Long = TimeUnit.MINUTES.toMillis(STEPS_MIN[step.coerceIn(0, STEPS_MIN.size - 1)])
