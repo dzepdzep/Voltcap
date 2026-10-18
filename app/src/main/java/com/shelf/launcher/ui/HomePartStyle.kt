@@ -218,7 +218,10 @@ internal fun PartSizeControls(id: String, first: FocusRequester? = null) {
             val cur = HomeEditState.live[id]
             fun at(x: Float?, y: Float?) {
                 HomeEditSession.push("line:$id")
-                val c = HomeEditState.live[id] ?: (0.5f to 0.5f)
+                // (Update 241, #05: the other axis stays where the part is now — it jumped to the middle when the part
+                // hadn't been moved yet; and a part lined up on the screen comes out of a hollow part, #06.)
+                HomeNest.release(id)
+                val c = HomeEditState.placeOf(id)
                 HomeEditState.live[id] = (x ?: c.first) to (y ?: c.second)
             }
             Chip("Left", accent = cur?.first == 0f) { at(0f, null) }
@@ -229,5 +232,5 @@ internal fun PartSizeControls(id: String, first: FocusRequester? = null) {
             Chip("Bottom", accent = cur?.second == 1f) { at(null, 1f) }
         }
     }
-    MutedNote("Dragging snaps to the screen's edges, thirds and middle and to the other parts; a dashed guide shows while it snaps. Everything stays inside the safe zone (Settings › Screens › Safe zone).")
+    MutedNote("Dragging snaps to the screen's edges, thirds and middle and to the other parts (a dashed guide shows while it snaps), else to a 2 % grid. The D-pad moves it a grid step; hold A with the D-pad to size it. Everything stays inside the safe zone (Settings › Screens › Safe zone).")
 }

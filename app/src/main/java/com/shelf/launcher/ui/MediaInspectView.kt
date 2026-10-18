@@ -1402,6 +1402,14 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     }
     val customPlatform = p.pick?.platform?.takeIf { isCustomPiece(it) }
     val saved = if (customPlatform != null) rememberCustomPieceTone(customPlatform) else null
+    // (Update 241, #45: your pack's cartridge turned round shows its back with its console's logo moulded in —
+    // CustomCartBacks — cut to the cartridge's own outline; it was a plain plate.)
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val customBack = remember(customPlatform, saved) {
+        customPlatform?.removePrefix(CUSTOM_CART)?.takeIf { customPlatform.startsWith(CUSTOM_CART) && CustomCartBacks.applies(it) }?.let { console ->
+            runCatching { CustomCartBacks.backImage(ctx, console, (saved ?: p.tone).copy(alpha = 1f).toArgb(), CustomCarts.aspectFor(console)) }.getOrNull()
+        }
+    }
     var shell by androidx.compose.runtime.remember(p) { androidx.compose.runtime.mutableStateOf<Color?>(null) }
     // Its shell colour, from the face's own pixels (the edge, half-way down), once it's drawn.
     LaunchedEffect(p) {
@@ -1485,8 +1493,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                     // (Update 201: opaque — a clear shell's sampled colour is see-through.)
                     val tone = (saved ?: shell ?: PhotoTones.of(p.realScan) ?: p.tone).copy(alpha = 1f)
                     back.record {
+                        val cb = customBack
                         val sb = shellBack
-                        if (sb != null && p.pick == null && p.realScan != null) {
+                        if (cb != null) {
+                            drawLayer(solid)
+                            drawImage(cb, dstSize = androidx.compose.ui.unit.IntSize(size.width.toInt(), size.height.toInt()), blendMode = BlendMode.SrcIn)
+                        } else if (sb != null && p.pick == null && p.realScan != null) {
                             // (Update 207: a cartridge photo's back over the whole piece, cut to the photo's own outline —
                             // it was the drawn shell's back at the drawn shell's shape, another cartridge from behind.)
                             drawLayer(solid)

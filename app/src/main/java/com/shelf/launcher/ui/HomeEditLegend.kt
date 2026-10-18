@@ -90,6 +90,8 @@ private fun ToolbarActions() {
         ToolKey("☰ Elements") { HomeEditState.elements = true }
         ToolKey("+ Add") { HomeEditState.adding = true }
         ToolKey("↶ Undo", enabled = HomeEditSession.undoCount > 0) { HomeEditSession.undo() }
+        // (Update 241, #05: Reset this layout on the bar too — it was only in the inspector's More; one step of Undo.)
+        ToolKey("⟲ Reset layout") { HomeEditSession.resetLayout(HomeEditState.layout) }
         ToolKey("◉ Preview") { HomeEditState.preview = true }
         ToolKey("✎ Adjust") { HomeEditState.inspectorTab = 0; HomeEditState.styling = HomeEditState.selected }
         ToolKey("Discard") { if (HomeEditSession.dirty()) HomeEditState.leaving = true else HomeEditSession.save() }
@@ -104,7 +106,8 @@ private fun Hints(narrow: Boolean) {
     val list = buildList {
         add("A" to "Adjust"); add("B" to "Back")
         add("✚" to "Move"); add("L1" to if (narrow) "R1 Pick" else "R1 Pick part")
-        add("L2" to "R2 Size"); add("X" to "Reset part"); add("Y" to "Undo")
+        add("L2" to "R2 Size"); add("A" to if (narrow) "+ ✚ Size" else "held + ✚ Size") // (Update 241, #05)
+        add("X" to "Reset part"); add("Y" to "Undo")
         add("SELECT" to "Hide"); add("START" to "Done")
     }
     androidx.compose.foundation.layout.FlowRow(

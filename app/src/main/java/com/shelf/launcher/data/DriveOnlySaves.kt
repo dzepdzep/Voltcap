@@ -31,8 +31,24 @@ internal object DriveOnlySaves {
 
     private fun cacheFile(context: Context) = File(context.filesDir, "drive_only_saves_v1.json")
 
-    /** Every save in Drive's folders this device has no enabled folder for (empty when Drive isn't connected). */
-    fun entries(context: Context): List<Entry> {
+    /**
+     * Update 241 (#76): Drive would be listed again by the next [entries] (nothing kept yet, or the copy is older than
+     * 20 minutes / a sync happened since) — the Save Vault then first shows what it has without waiting for it.
+     */
+    fun needsFetch(context: Context): Boolean {
+        val app = context.applicationContext
+        CloudSync.load(app)
+        if (!CloudSync.state.value.settings.connected) return false
+        val cached = memory ?: readCache(app)?.also { memory = it }
+        val age = if (cached != null) System.currentTimeMillis() - cached.first else -1L
+        return cached == null || stale || age < 0L || age >= MAX_AGE_MS
+    }
+
+    /**
+     * Every save in Drive's folders this device has no enabled folder for (empty when Drive isn't connected).
+     * [allowFetch] false (update 241, #76): only the copy kept on disk, never the network.
+     */
+    fun entries(context: Context, allowFetch: Boolean = true): List<Entry> {
         val app = context.applicationContext
         CloudSync.load(app)
         val settings = CloudSync.state.value.settings
@@ -42,6 +58,7 @@ internal object DriveOnlySaves {
         val cached = memory ?: readCache(app)?.also { memory = it }
         val age = if (cached != null) now - cached.first else -1L
         val list = if (cached != null && !stale && age >= 0L && age < MAX_AGE_MS) cached.second
+        else if (!allowFetch) cached?.second.orEmpty()
         else fetch(app)?.also { fresh -> memory = now to fresh; stale = false; runCatching { writeCache(app, now, fresh) } }
             ?: cached?.second.orEmpty()
         return list.filter { it.folder.lowercase() !in mine }
@@ -51,8 +68,8 @@ internal object DriveOnlySaves {
      * The same saves as the vault's loose saves, each with the kind of folder it's in (by the folder's name, else by
      * what's in it), only the files that kind counts as saves.
      */
-    fun loose(context: Context): List<CloudSync.LooseSave> {
-        val all = entries(context)
+    fun loose(context: Context, allowFetch: Boolean = true): List<CloudSync.LooseSave> {
+        val all = entries(context, allowFetch)
         if (all.isEmpty()) return emptyList()
         val out = mutableListOf<CloudSync.LooseSave>()
         all.groupBy { it.folder }.forEach { (folder, files) ->
@@ -77,6 +94,9 @@ internal object DriveOnlySaves {
         return when {
             exts.any { it == "gci" } || folder.contains("gamecube", true) -> SaveKind.DOLPHIN_GC
             dirs.any { d -> d.size >= 3 && d[0].length == 8 && d[0].startsWith("0001000") && d[2] == "data" } -> SaveKind.DOLPHIN_WII
+            // (Update 241, #72: a 3DS save folder set up on another device only, under any name — its files are "main",
+            // "00000001.metadata"…, no extension: as a plain folder every one of them was dropped.)
+            rels.any { SaveLayouts.n3ds(it) != null } -> SaveKind.CITRA
             exts.any { it == "ps2" } || dirs.any { d -> d.any { it.endsWith(".ps2") } } -> SaveKind.PS2_MEMCARDS
             names.any { it.equals("PARAM.SFO", true) } -> SaveKind.PSP_SAVEDATA
             exts.isNotEmpty() && exts.all { it in PS1_EXTS } -> SaveKind.PS1_MEMCARDS
@@ -92,13 +112,13 @@ internal object DriveOnlySaves {
      * The PSP saves among [files] (Drive-only PPSSPP folders): one per save folder ("ULUS10041DATA00/…"), named from its
      * PARAM.SFO (a small download, kept) or else its folder.
      */
-    fun pspSaves(context: Context, files: List<CloudSync.LooseSave>): List<MemoryCards.CardSave> {
+    fun pspSaves(context: Context, files: List<CloudSync.LooseSave>, allowNetwork: Boolean = true): List<MemoryCards.CardSave> {
         val out = mutableListOf<MemoryCards.CardSave>()
         files.filter { it.path.contains('/') }.groupBy { it.folder to it.path.substringBeforeLast('/') }.forEach { (key, list) ->
             val (folder, dir) = key
             val save = dir.substringAfterLast('/')
             val sfo = list.firstOrNull { it.path.substringAfterLast('/').equals("PARAM.SFO", true) }
-            val title = sfo?.let { bytes(context, folder, it.path, 256_000L) }?.let { SaveCapsules.sfoTitle(it) }?.takeIf { it.isNotBlank() } ?: save
+            val title = sfo?.let { bytes(context, folder, it.path, 256_000L, allowNetwork) }?.let { SaveCapsules.sfoTitle(it) }?.takeIf { it.isNotBlank() } ?: save
             val from = list.firstOrNull()?.fromDevice
             out += MemoryCards.CardSave(
                 "SAVEDATA", "$folder · synced from ${from ?: "another device"}", MemoryCards.normaliseCode(save), title,
@@ -113,7 +133,7 @@ internal object DriveOnlySaves {
      * once and kept in the cache by its content's hash. Null when it isn't one of these files, Drive isn't reachable or
      * it's too big.
      */
-    fun bytes(context: Context, folder: String, rel: String, maxBytes: Long): ByteArray? = runCatching {
+    fun bytes(context: Context, folder: String, rel: String, maxBytes: Long, allowNetwork: Boolean = true): ByteArray? = runCatching {
         val app = context.applicationContext
         val list = memory?.second ?: readCache(app)?.second ?: return@runCatching null
         val e = list.firstOrNull { it.folder == folder && it.rel == rel } ?: return@runCatching null
@@ -121,6 +141,7 @@ internal object DriveOnlySaves {
         val name = (e.md5 ?: e.id).replace(Regex("[^A-Za-z0-9]"), "")
         val cache = File(File(app.cacheDir, "remote_saves"), "$name.bin")
         if (cache.length() > 0) return@runCatching cache.readBytes()
+        if (!allowNetwork) return@runCatching null // (Update 241, #76)
         if (!CloudSync.state.value.settings.connected) return@runCatching null
         val bytes = DriveClient(app).downloadBytes(e.id, maxBytes)
         if (bytes.isEmpty() || bytes.size > maxBytes) return@runCatching null

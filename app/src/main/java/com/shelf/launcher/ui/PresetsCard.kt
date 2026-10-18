@@ -124,9 +124,15 @@ internal fun PresetsCard(
         }
         SectionLabel("Presets for ${browse.label}")
         Spacer(Modifier.height(6.dp))
-        com.shelf.launcher.data.LayoutPresets.forLayout(browse).forEach { p ->
+        val builtIns = com.shelf.launcher.data.LayoutPresets.forLayout(browse)
+        builtIns.forEach { p ->
             PresetDetails(p, appearance, theme, isActive = p.id == active?.id, modified = modified, applying = pending != null,
                 onApply = { applyPreset(p) })
+            Spacer(Modifier.height(8.dp))
+        }
+        // (Update 241, #110: Custom layout and the Pocket layouts have no presets of their own — say so, the heading stood alone.)
+        if (builtIns.isEmpty()) {
+            MutedNote("No presets are made for ${browse.label} — use it as it is, then set it up in its Layout options.")
             Spacer(Modifier.height(8.dp))
         }
         notice?.let { MutedNote(it); Spacer(Modifier.height(6.dp)) }
@@ -265,9 +271,21 @@ private fun PresetDetails(
                 tiles = p.look?.tiles ?: f.squareTiles.state.value,
                 spines = p.look?.spines ?: f.spineLook.state.value,
                 carts = p.look?.carts ?: f.cartsOnly.state.value,
-                models = p.look?.models ?: (f.modelFinish.state.value != ModelFinish.OFF),
+                // (Update 241, #110: as applyPresetExtras sets it — a preset's Cartridges & discs / Discs look always
+                // comes with the 3D finish, whatever its models switch says.)
+                models = p.look?.let {
+                    after.cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC || after.cardArtType == com.shelf.launcher.data.CardArtType.DISC
+                } ?: (f.modelFinish.state.value != ModelFinish.OFF),
                 carousel = presetCarousel(p, after.homeLayout),
-                options = p.features
+                options = p.features,
+                // (Update 241, #110: where the row sits, the game you're on and the others, and Tile home's size — the
+                // previews of "Big tiles", "Big tile home" and "Cover shelf" were the same picture as their standard one.)
+                dock = after.dockPosition,
+                focusCenter = after.focusPosition == com.shelf.launcher.data.FocusPosition.CENTER,
+                focusedWide = after.focusedCardStyle != com.shelf.launcher.data.FocusedCardStyle.COVER,
+                dimOthers = after.otherGamesLook != com.shelf.launcher.data.OtherGamesLook.NORMAL,
+                tiltOthers = after.tiltOthers,
+                tileScale = after.tileScale / 100f
             )
         }
         // Lists with games from several consoles (Recently played, Favourites…): the same look, or plain covers.

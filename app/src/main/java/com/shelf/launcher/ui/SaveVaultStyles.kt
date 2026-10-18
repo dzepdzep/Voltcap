@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
@@ -167,18 +168,10 @@ internal fun SwayingModel(
     val version = com.shelf.launcher.data.Packs.version.intValue
     val meta = remember(card, version) { Models3D.meta(card) }
     val tint = Models3D.tintFor(card, platform, name, shell, badge)
-    val backBmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, card, version, tint?.key) {
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-            runCatching {
-                // (Update 211: the card's front without its label — the plain card — when the pack has no back picture:
-                // the turned card was a flat block of colour from behind, half of every turn.)
-                (Models3D.compose(card, 180, null, null, ArtPos.NONE, tint) ?: Models3D.compose(card, 0, null, null, ArtPos.NONE, tint))?.let { b ->
-                    // (Mirrored: seen from behind once turned, it reads the right way round — as the drawn shells' backs.)
-                    val m = android.graphics.Matrix().apply { setScale(-1f, 1f, b.width / 2f, 0f) }
-                    android.graphics.Bitmap.createBitmap(b, 0, 0, b.width, b.height, m, true)
-                }
-            }.getOrNull()
-        }
+    // (Update 241, #44/#46: its back carries the SaveVault mark, moulded in the back's own plastic — saveCardBack.)
+    val engrave = Features.saveEngraving.state.value
+    val backBmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, card, version, tint?.key, engrave) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { saveCardBack(card, tint, engrave) }
     }
     // (Update 236, #42: its sides in the picked shell colour too.)
     val tone = remember(meta, shell) { (shell ?: meta?.tint?.own?.first)?.let { Color(it) } ?: Color(0xFF9EA2A8) }
@@ -195,7 +188,81 @@ internal fun SwayingModel(
 }
 
 /** Update 207: a Save Vault 3D card's thickness against its longest side (a memory card is about 6 mm on 55). */
-private const val SAVE_CARD_DEPTH = 0.1f
+internal const val SAVE_CARD_DEPTH = 0.1f
+
+/** (Update 241, #44: the 3D cards' backs made so far — key: card, colours, engraved.) */
+private val cardBacks = object : android.util.LruCache<String, android.graphics.Bitmap>(12 * 1024 * 1024) {
+    override fun sizeOf(key: String, value: android.graphics.Bitmap) = value.byteCount
+}
+
+/**
+ * The Save Vault 3D card [card]'s back in [tint]'s colours, mirrored (seen from behind once turned, it reads the right way
+ * round — as the drawn shells' backs): the pack's own back picture, else its front without a label. Off the main thread.
+ * (Update 241, #44/#46: with [engrave], "SaveVault" and the cloud moulded into its plastic first — in the colour that's
+ * already there, so it keeps the picture's own light and any colour picked — on the larger blank band of the back above
+ * or below its label; left off where no band is big enough to read it, rather than over a label or the badge. Cached.)
+ */
+internal fun saveCardBack(card: String, tint: Models3D.Tint?, engrave: Boolean): android.graphics.Bitmap? = runCatching {
+    val key = "$card|${tint?.key.orEmpty()}|$engrave|${com.shelf.launcher.data.Packs.version.intValue}"
+    cardBacks.get(key)?.let { return@runCatching it }
+    // (Update 211: the card's front without its label — the plain card — when the pack has no back picture: the turned
+    // card was a flat block of colour from behind, half of every turn.)
+    val own = Models3D.compose(card, 180, null, null, ArtPos.NONE, tint)
+    val src = own ?: Models3D.compose(card, 0, null, null, ArtPos.NONE, tint) ?: return@runCatching null
+    // (The pack's pictures are cached: marked on a copy.)
+    val work = if (engrave) src.copy(android.graphics.Bitmap.Config.ARGB_8888, true) else src
+    if (engrave && work != null) {
+        val meta = Models3D.meta(card)
+        engraveCardBack(work, if (own != null) meta?.backs?.get(180) else meta?.quads?.get(0))
+    }
+    val b = work ?: src
+    val m = android.graphics.Matrix().apply { setScale(-1f, 1f, b.width / 2f, 0f) }
+    val out = android.graphics.Bitmap.createBitmap(b, 0, 0, b.width, b.height, m, true)
+    if (work != null && work !== src && work !== out) work.recycle()
+    cardBacks.put(key, out)
+    out
+}.getOrNull()
+
+/**
+ * (Update 241, #44: the SaveVault mark on a 3D card's back picture [b] (seen from behind, unmirrored): inside the card's
+ * own outline (its visible pixels), in the bigger band above or below [label] (the back label's / window's four corners,
+ * shares of the picture; null: none) — stacked where it's tall enough, else in one line, else not at all.)
+ */
+private fun engraveCardBack(b: android.graphics.Bitmap, label: FloatArray?) {
+    val w = b.width; val h = b.height
+    val px = IntArray(w * h)
+    b.getPixels(px, 0, w, 0, 0, w, h)
+    var x0 = w; var x1 = -1; var y0 = h; var y1 = -1
+    var y = 0
+    while (y < h) {
+        var x = 0
+        val row = y * w
+        while (x < w) {
+            if ((px[row + x] ushr 24) > 160) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y }
+            x += 2
+        }
+        y += 2
+    }
+    if (x1 <= x0 || y1 <= y0) return
+    val bw = (x1 - x0).toFloat(); val bh = (y1 - y0).toFloat()
+    // The band free of the label: above it or below it, whichever is taller (the whole card without a label).
+    var top = y0 + bh * 0.08f; var bottom = y1 - bh * 0.08f
+    if (label != null && label.size >= 8) {
+        val ly0 = minOf(label[1], label[3], label[5], label[7]) * h
+        val ly1 = maxOf(label[1], label[3], label[5], label[7]) * h
+        val above = ly0 - top; val below = bottom - ly1
+        if (above >= below) bottom = ly0 - bh * 0.03f else top = ly1 + bh * 0.03f
+    }
+    val band = bottom - top
+    val markW = bw * 0.46f
+    val layout = when {
+        markW * Engraving.ratio(Engraving.Layout.STACKED) <= band -> Engraving.Layout.STACKED
+        bw * 0.56f * Engraving.ratio(Engraving.Layout.HORIZONTAL) <= band -> Engraving.Layout.HORIZONTAL
+        else -> return
+    }
+    val mw = if (layout == Engraving.Layout.STACKED) markW else bw * 0.56f
+    Engraving.engraveOnto(b, x0 + bw / 2f, top + band / 2f, mw.toInt(), layout)
+}
 
 /** Width / height of each physical style. */
 internal fun SaveVaultStyle.aspect(): Float = when (this) {
@@ -288,6 +355,10 @@ internal fun StyledSaveCard(
             .clip(shape)
             .background(Brush.verticalGradient(body))
             .border(1.dp + 1.5.dp * lift, if (selected) accent else Color.White.copy(alpha = 0.18f), shape)
+            // (Update 241, #44/#46: "SaveVault" and the cloud pressed into the front's blank plastic — the memory card's
+            // between its triangle and "MEMORY CARD", the SD card's under its label — in the body's own colour there;
+            // only once the object is drawn big enough to read it (Appearance, Inspect), never as noise in the grid.)
+            .then(frontMark(style, body)?.let { (tone, where) -> Modifier.saveVaultMark(tone, Engraving.Layout.HORIZONTAL, where = where) } ?: Modifier)
     ) {
         when (style) {
             SaveVaultStyle.FLOPPY -> {
@@ -358,6 +429,162 @@ internal fun StyledSaveCard(
             }
         }
         SyncBadge(state, 18.dp, Modifier.align(Alignment.BottomEnd).padding(4.dp))
+    }
+}
+
+/**
+ * (Update 241, #44: where a drawn object's front has blank plastic for the SaveVault mark — its area in the object's box —
+ * and the body's colour there; null for a front without one: the floppy's is shutter and label, so its mark is on its back.)
+ */
+private fun frontMark(style: SaveVaultStyle, body: List<Color>): Pair<Int, (Size) -> androidx.compose.ui.geometry.Rect?>? = when (style) {
+    // Between the raised triangle (to 7.5 %) and "MEMORY CARD" (from 30 %).
+    SaveVaultStyle.MEMORY_CARD -> androidx.compose.ui.graphics.lerp(body.first(), body.last(), 0.18f).toArgb() to { s: Size ->
+        markArea(s.width * 0.5f, s.height * 0.18f, s.width * 0.5f, s.height * 0.075f)
+    }
+    // Under the label (it ends at 81 %), clear of the sync badge in the corner.
+    SaveVaultStyle.SD_CARD -> androidx.compose.ui.graphics.lerp(body.first(), body.last(), 0.88f).toArgb() to { s: Size ->
+        markArea(s.width * 0.36f, s.height * 0.895f, s.width * 0.5f, s.height * 0.08f)
+    }
+    else -> null
+}
+
+/**
+ * (Update 241, #44/#49: the back of a drawn Save Vault object — memory card, SD card, floppy, capsule — for the Inspect
+ * viewer: the same outline and plastic as its front, in the save's colours (SaveLook), its own back details (the memory
+ * card's screws and shallow panel, the SD card's plateau and lock slot, the floppy's shutter, hub and corner holes, the
+ * capsule's glass with the save inside it), and "SaveVault" with the cloud moulded into it. Its details are drawn as seen
+ * from behind and then mirrored inside the front's outline, as every drawn back is: the viewer turns it round, so from
+ * behind it reads the right way round. The capsule's save shows through its glass the other way round, as it would.)
+ */
+@Composable
+internal fun SaveObjectBack(style: SaveVaultStyle, look: SaveLook?, icon: String?, state: SyncState, modifier: Modifier = Modifier) {
+    val capsule = style == SaveVaultStyle.CAPSULE
+    val shape: Shape = when (style) {
+        SaveVaultStyle.SD_CARD -> SdShape
+        SaveVaultStyle.MEMORY_CARD -> MemCardShape
+        SaveVaultStyle.CAPSULE -> RoundedCornerShape(50)
+        else -> RoundedCornerShape(5.dp)
+    }
+    val mem = memCardTones(look)
+    val body = when (style) {
+        SaveVaultStyle.SD_CARD -> sdBody(look)
+        SaveVaultStyle.FLOPPY -> floppyBody(look)
+        else -> mem.body
+    }
+    val charge = syncColor(state)
+    val glass = look?.shell?.let { Color(it) }
+    val shutter = floppyShutter(look)
+    val plateau = androidx.compose.ui.graphics.lerp(body.first(), Color.White, 0.06f)
+    // The mark's place (centre, width and height at most), layout and the plastic under it.
+    val markTone = when (style) {
+        SaveVaultStyle.MEMORY_CARD -> mem.recess
+        SaveVaultStyle.SD_CARD -> plateau
+        SaveVaultStyle.CAPSULE -> androidx.compose.ui.graphics.lerp(Color(0xFF0B0D16), charge, 0.32f)
+        else -> androidx.compose.ui.graphics.lerp(body.first(), body.last(), 0.85f)
+    }.toArgb()
+    val layout = if (style == SaveVaultStyle.FLOPPY) Engraving.Layout.HORIZONTAL else Engraving.Layout.STACKED
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .fillMaxWidth(if (capsule) 0.82f else 0.86f)
+                .aspectRatio(style.aspect())
+                .clip(shape)
+                .background(
+                    if (capsule) Brush.verticalGradient(
+                        0f to (glass?.copy(alpha = 0.30f) ?: Color.White.copy(alpha = 0.07f)),
+                        0.6f to (glass?.copy(alpha = 0.16f) ?: Color.White.copy(alpha = 0.04f)),
+                        0.6f to charge.copy(alpha = 0.22f),
+                        1f to charge.copy(alpha = 0.42f)
+                    ) else Brush.verticalGradient(body)
+                )
+                .border(1.dp, Color.White.copy(alpha = if (capsule) 0.16f else 0.18f), shape)
+        ) {
+            if (capsule && icon != null) {
+                // The save inside, seen through the glass from behind (left as it is: the turn shows it mirrored).
+                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Spacer(Modifier.fillMaxHeight(0.07f))
+                    AsyncImage(
+                        icon, null, contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxWidth(0.8f).aspectRatio(1f)
+                            .graphicsLayer { alpha = 0.22f }
+                            .clip(RoundedCornerShape(topStartPercent = 50, topEndPercent = 50, bottomStartPercent = 18, bottomEndPercent = 18))
+                    )
+                }
+            }
+            Box(Modifier.fillMaxSize().graphicsLayer { scaleX = -1f }) {
+                Canvas(Modifier.fillMaxSize()) {
+                    val w = size.width; val h = size.height
+                    val dark = Color(0xFF15171C)
+                    when (style) {
+                        SaveVaultStyle.MEMORY_CARD -> {
+                            drawRect(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.06f), Color.Transparent, Color.White.copy(alpha = 0.08f))))
+                            for (x in floatArrayOf(w * 0.1f, w * 0.9f)) {
+                                drawCircle(mem.screwOuter, w * 0.03f, Offset(x, h * 0.93f))
+                                drawCircle(mem.screwInner, w * 0.017f, Offset(x, h * 0.93f))
+                            }
+                            // The shallow panel the mark is pressed into: a darker edge round a slightly darker floor.
+                            val l = w * 0.12f; val t = h * 0.14f; val r = w * 0.88f; val b = h * 0.66f
+                            drawRoundRect(mem.recessEdge, Offset(l - 2f, t - 2f), Size(r - l + 4f, b - t + 4f), androidx.compose.ui.geometry.CornerRadius(w * 0.03f))
+                            drawRoundRect(mem.recess, Offset(l, t), Size(r - l, b - t), androidx.compose.ui.geometry.CornerRadius(w * 0.03f))
+                            // A moulded arrow (which way it goes in) and a ridged grip.
+                            val arrow = androidx.compose.ui.graphics.Path().apply {
+                                moveTo(w * 0.5f, h * 0.71f); lineTo(w * 0.545f, h * 0.75f); lineTo(w * 0.455f, h * 0.75f); close()
+                            }
+                            drawPath(arrow, mem.recessEdge)
+                            for (i in 0 until 5) {
+                                val y = h * (0.79f + i * 0.022f)
+                                drawLine(Color.Black.copy(alpha = 0.10f), Offset(w * 0.34f, y), Offset(w * 0.66f, y), 1.dp.toPx())
+                            }
+                        }
+                        SaveVaultStyle.SD_CARD -> {
+                            drawRect(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.10f), Color.Transparent, Color.White.copy(alpha = 0.05f))))
+                            // The raised plateau, the lock switch's slot on its edge, a few ribs to hold it by.
+                            val l = w * 0.10f; val t = h * 0.16f; val r = w * 0.90f; val b = h * 0.70f
+                            drawRoundRect(Color.Black.copy(alpha = 0.30f), Offset(l + 1.5f, t + 1.5f), Size(r - l, b - t), androidx.compose.ui.geometry.CornerRadius(w * 0.03f))
+                            drawRoundRect(plateau, Offset(l, t), Size(r - l, b - t), androidx.compose.ui.geometry.CornerRadius(w * 0.03f))
+                            drawRect(dark, Offset(w * 0.955f, h * 0.30f), Size(w * 0.045f, h * 0.18f))
+                            for (i in 0 until 4) {
+                                val y = h * (0.80f + i * 0.035f)
+                                drawLine(Color.White.copy(alpha = 0.07f), Offset(w * 0.30f, y), Offset(w * 0.70f, y), 1.dp.toPx())
+                            }
+                        }
+                        SaveVaultStyle.FLOPPY -> {
+                            drawRect(Brush.horizontalGradient(shutter), Offset(w * 0.22f, 0f), Size(w * 0.56f, h * 0.3f))
+                            drawRect(dark, Offset(w * 0.40f, h * 0.04f), Size(w * 0.12f, h * 0.21f))
+                            // The metal hub in its ring, its spindle hole and drive-pin hole.
+                            val hc = Offset(w * 0.5f, h * 0.60f); val hr = w * 0.15f
+                            drawCircle(Color.Black.copy(alpha = 0.35f), hr * 1.18f, hc)
+                            drawCircle(Brush.radialGradient(shutter, hc, hr), hr, hc)
+                            drawRect(dark, Offset(hc.x - hr * 0.22f, hc.y - hr * 0.22f), Size(hr * 0.44f, hr * 0.44f))
+                            drawRect(dark, Offset(hc.x + hr * 0.45f, hc.y - hr * 0.10f), Size(hr * 0.20f, hr * 0.32f))
+                            // The write-protect and density holes in the bottom corners.
+                            drawRect(Color.Black.copy(alpha = 0.6f), Offset(w * 0.05f, h * 0.88f), Size(w * 0.06f, h * 0.07f))
+                            drawRect(Color.Black.copy(alpha = 0.6f), Offset(w * 0.89f, h * 0.88f), Size(w * 0.06f, h * 0.07f))
+                        }
+                        SaveVaultStyle.CAPSULE -> {
+                            drawLine(Color.White.copy(alpha = 0.22f), Offset(0f, h * 0.6f), Offset(w, h * 0.6f), 1.dp.toPx())
+                            drawRoundRect(
+                                Color.White.copy(alpha = 0.10f), Offset(5.dp.toPx(), h * 0.19f), Size(4.dp.toPx(), h * 0.62f),
+                                androidx.compose.ui.geometry.CornerRadius(2.dp.toPx())
+                            )
+                        }
+                        else -> Unit
+                    }
+                }
+                // The mark, on top of the details it sits in.
+                Box(
+                    Modifier.fillMaxSize().saveVaultMark(markTone, layout, minWidth = 0.dp) { s ->
+                        when (style) {
+                            SaveVaultStyle.MEMORY_CARD -> markArea(s.width * 0.5f, s.height * 0.40f, s.width * 0.44f, s.height * 0.42f)
+                            SaveVaultStyle.SD_CARD -> markArea(s.width * 0.5f, s.height * 0.43f, s.width * 0.5f, s.height * 0.44f)
+                            SaveVaultStyle.FLOPPY -> markArea(s.width * 0.5f, s.height * 0.875f, s.width * 0.52f, s.height * 0.09f)
+                            SaveVaultStyle.CAPSULE -> markArea(s.width * 0.5f, s.height * 0.80f, s.width * 0.56f, s.height * 0.30f)
+                            else -> null
+                        }
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -546,6 +773,12 @@ internal fun SaveVaultSettings(onDark: Boolean = false) {
                 }
             }
             if (Models3D.saveCardId() == null) Text("The 3D cards come with the 3D models pack (Settings › Game look › Extra art packs); until then it's the drawn memory card.", color = label, fontSize = 11.sp)
+        }
+        // (Update 241, #44: "SaveVault" and Voltcap's cloud moulded into the objects — big views and their backs only.)
+        if (Features.saveVaultStyle.state.value != SaveVaultStyle.CLASSIC) ChipFlow {
+            Chip(if (Features.saveEngraving.state.value) "✓ SaveVault engraving" else "SaveVault engraving", accent = Features.saveEngraving.state.value) {
+                Features.saveEngraving.toggle()
+            }
         }
         // (Update 239, #112: PS2 saves as the console's memory-card browser shows them — their own save icons — whatever
         // the style above; other consoles keep it. Off by default.)

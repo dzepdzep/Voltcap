@@ -1,7 +1,12 @@
 package com.shelf.launcher.data
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -119,6 +124,7 @@ object SaveCapsules {
      * millis). Reads folders and cards (cached by size + date): runs on the IO dispatcher.
      */
     suspend fun refresh(context: Context, games: List<Game>, lastPlayed: Map<String, Long>) {
+        lastArgs = games to lastPlayed // (Update 241, #76: for requestRefresh)
         // The last list shows at once (saved on disk), the fresh look-up replaces it when it's done.
         if (_all.value.isEmpty()) {
             val cached = withContext(Dispatchers.IO) { runCatching { readCache(context.applicationContext, games) }.getOrNull() }
@@ -127,12 +133,45 @@ object SaveCapsules {
         mutex.withLock {
             _loading.value = true
             try {
+                // (Update 241, #76 / #68: on a new device — or when Drive's folders have to be listed again — the vault
+                // waited for Drive's listing and every memory card to download before showing a single save. A quick
+                // look first, with what's on this device and already kept (no network), shows the real saves at once;
+                // it's only shown when it doesn't hide anything the list already has. The full look replaces it.)
+                val app = context.applicationContext
+                val quickHelps = _all.value.isEmpty() || runCatching { DriveOnlySaves.needsFetch(app) }.getOrDefault(false)
+                if (quickHelps) {
+                    val quick = withContext(Dispatchers.IO) { runCatching { build(app, games, lastPlayed, net = false) }.getOrNull() }
+                    val shown = _all.value.map { it.game.stableKey }.toSet()
+                    if (!quick.isNullOrEmpty() && quick.map { it.game.stableKey }.toSet().containsAll(shown)) _all.value = quick
+                }
                 val result = withContext(Dispatchers.IO) { build(context.applicationContext, games, lastPlayed) }
                 _all.value = result
                 withContext(Dispatchers.IO) { runCatching { writeCache(context.applicationContext, result) } }
             } finally {
                 _loading.value = false
             }
+        }
+    }
+
+    /** (Update 241, #76) What the vault last asked for, so a sync can bring the list up to date by itself. */
+    @Volatile private var lastArgs: Pair<List<Game>, Map<String, Long>>? = null
+    private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile private var pending: Job? = null
+
+    /**
+     * Update 241 (#68 / #76): saves just arrived (a sync finished a folder with downloads). When the Save Vault has been
+     * open in this run and someone still watches the list, it looks again — a couple of seconds later, once for a
+     * burst of folders. Reads only (the same look-up as [refresh]); never touches a save.
+     */
+    fun requestRefresh(context: Context) {
+        val args = lastArgs ?: return
+        if (_all.subscriptionCount.value == 0) return
+        if (pending?.isActive == true) return
+        if (runCatching { PlaySession.isOpen(context) }.getOrDefault(false)) return
+        val app = context.applicationContext
+        pending = refreshScope.launch {
+            delay(2_000)
+            runCatching { refresh(app, args.first, args.second) }
         }
     }
 
@@ -193,7 +232,8 @@ object SaveCapsules {
         }
     }
 
-    private fun build(context: Context, games: List<Game>, lastPlayed: Map<String, Long>): List<Capsule> {
+    /** [net] false (update 241, #76): nothing from the network — only this device and what's already kept from Drive. */
+    private fun build(context: Context, games: List<Game>, lastPlayed: Map<String, Long>, net: Boolean = true): List<Capsule> {
         loadOptions(context)
         SyncStatusStore.load(context)
         val statuses = SyncStatusStore.all.value
@@ -202,7 +242,7 @@ object SaveCapsules {
         fun add(game: Game, item: SaveItem) { items.getOrPut(game.stableKey) { mutableListOf() } += item }
         // Update 151: saves on Google Drive in folders this device doesn't sync (set up on another device only) — they
         // never showed. Their memory cards, PSP saves and named saves join the steps below like synced ones.
-        val driveOnly = runCatching { DriveOnlySaves.loose(context) }.getOrDefault(emptyList())
+        val driveOnly = runCatching { DriveOnlySaves.loose(context, allowFetch = net) }.getOrDefault(emptyList())
         // Update 151: the library's names worked out once, for matching saves by file name and title (step 4).
         val romIndex = SaveMatch.index(roms)
 
@@ -248,9 +288,9 @@ object SaveCapsules {
         // (Listed once: the memory-card folders' files only on Drive, for step 2 and step 4.)
         val remoteCardList = runCatching { CloudSync.remoteCardFiles(context) }.getOrDefault(emptyList()) +
             driveOnly.filter { it.kind == SaveKind.PS1_MEMCARDS || it.kind == SaveKind.PS2_MEMCARDS } // (Update 151)
-        val saves = readCards(context) + remoteCards(context, remoteCardList, openedCards, notCards) +
+        val saves = readCards(context) + remoteCards(context, remoteCardList, openedCards, notCards, net) +
             // Update 151: PSP saves only on Drive (a PPSSPP folder this device doesn't sync), named from their PARAM.SFO.
-            runCatching { DriveOnlySaves.pspSaves(context, driveOnly.filter { it.kind == SaveKind.PSP_SAVEDATA }) }
+            runCatching { DriveOnlySaves.pspSaves(context, driveOnly.filter { it.kind == SaveKind.PSP_SAVEDATA }, allowNetwork = net) }
                 .getOrDefault(emptyList()).map { Platform.PSP to it }
         if (saves.isNotEmpty()) {
             val byCode = HashMap<String, Game>()
@@ -313,9 +353,9 @@ object SaveCapsules {
                 if (name.substringBeforeLast('.').equals("SRAM", true)) { gcDone += key; return@forEach }
                 val cap = if (ext == "raw") 17_000_000L else 2_000_000L
                 val bytes = if (f.onDevice) CloudSync.localFileBytes(context, f.folder, f.path, cap)
-                    else runCatching { CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = cap.toInt()) }.getOrNull()
+                    else runCatching { CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = cap.toInt(), allowNetwork = net) }.getOrNull()
                         // Update 151: or from a Drive folder this device doesn't sync.
-                        ?: DriveOnlySaves.bytes(context, f.folder, f.path, cap)
+                        ?: DriveOnlySaves.bytes(context, f.folder, f.path, cap, allowNetwork = net)
                 val from = if (!f.onDevice) " · synced from ${f.fromDevice ?: "another device"}" else ""
                 val gcSaves = when {
                     bytes == null -> null
@@ -370,7 +410,14 @@ object SaveCapsules {
         // 2c. Wii (update 151): Dolphin keeps each game's save in "<type>/<title id>/data/…"; the title id's last part is
         //     the game code ("524d4345" = "RMCE"), matched to the code in a Wii disc's header (or its file name). One
         //     save per game folder; one that isn't in the library shows as that code's Wii save.
-        val wiiFiles = loose.filter { it.kind == SaveKind.DOLPHIN_WII }
+        // (Update 241, #53: also Wii title folders in a folder you picked yourself, found by their path
+        //  (SaveLayouts.wii: "00010000/<low>/data/…", "title/…" or "Wii/title/…" in front); every file of a title folder —
+        //  banner.bin and the game's own files — is one save. One that isn't in the library is "Unassigned Wii save
+        //  (CODE)", with its title id in where it's kept.)
+        val wiiFiles = loose.mapNotNull { f ->
+            val u = SaveLayouts.wii(f.path) ?: if (f.kind == SaveKind.DOLPHIN_WII) legacyWiiUnit(f.path) else null
+            u?.let { f to it }
+        }
         if (wiiFiles.isNotEmpty()) {
             val wiiLib = roms.filter { it.platform.equals("wii", true) }
             val byWiiId = HashMap<String, Game>()
@@ -379,18 +426,19 @@ object SaveCapsules {
                 val id = MemoryCards.gcGameId(path) ?: Regex("\\[([A-Z0-9]{6})]").find(path.substringAfterLast('/'))?.groupValues?.get(1)
                 id?.let { byWiiId.putIfAbsent(it.take(4).uppercase(), g) }
             }
-            wiiFiles.groupBy { f -> f.folder to f.path.split('/').take(2).joinToString("/") }.forEach { (key, files) ->
-                val hex = key.second.substringAfter('/', "")
-                val code = wiiCode(hex)
+            wiiFiles.groupBy { (f, u) -> f.folder to u.prefix }.forEach { (key, list) ->
+                val files = list.map { it.first }
+                val unit = list.first().second
+                val code = wiiCode(unit.low)
                 val first = files.first()
                 val item = SaveItem(
                     title = "Save data (${files.size} file${if (files.size == 1) "" else "s"})",
-                    where = key.first + if (!first.onDevice) " · synced from ${first.fromDevice ?: "another device"}" else "",
+                    where = key.first + " · title ${unit.high}/${unit.low}" + if (!first.onDevice) " · synced from ${first.fromDevice ?: "another device"}" else "",
                     sizeBytes = files.sumOf { it.size }, modified = files.maxOf { it.modified },
                     kind = if (files.all { it.onDevice }) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE
                 )
                 val g = byWiiId[code] ?: strayGames.getOrPut("WII:${code.lowercase()}") {
-                    Game(name = "Wii save ($code)", platform = "Wii", hue = (code.hashCode() and 0x7FFFFFFF) % 360,
+                    Game(name = "Unassigned Wii save ($code)", platform = "Wii", hue = (code.hashCode() and 0x7FFFFFFF) % 360,
                         sourceType = SourceType.ROM, romPath = "save:wii:${code.lowercase()}")
                 }
                 add(g, item)
@@ -401,27 +449,30 @@ object SaveCapsules {
         //     ".../title/<high>/<low>/data/<id>/…" (files often called "main", or savedata0.dat…). One save per title
         //     folder, matched by the title id in the game's ROM header (MemoryCards.n3dsTitleLow); one that isn't in the
         //     library shows as that title id's 3DS save. Extra data (extdata) isn't a game save and isn't listed.
-        val n3dsFiles = loose.filter { it.kind == SaveKind.CITRA }
+        //     (Update 241, #72 / #73: also from a folder you picked yourself or a Drive-only folder (SaveLayouts.n3ds), every
+        //     file of the title folder — "main" with no extension, "00000001.metadata" — in one save; separate 3DS profiles
+        //     (id0/id1) stay separate saves; one without its game here is "Unassigned 3DS save (title ID …)".)
+        val n3dsFiles = loose.mapNotNull { f ->
+            val u = SaveLayouts.n3ds(f.path) ?: if (f.kind == SaveKind.CITRA) legacyN3dsUnit(f.path) else null
+            u?.let { f to it }
+        }
         if (n3dsFiles.isNotEmpty()) {
             val n3dsLib = roms.filter { it.platform.lowercase().let { p -> p == "3ds" || p == "n3ds" || p.contains("3ds") } }
             val byTitle = HashMap<String, Game>()
             n3dsLib.forEach { g -> MemoryCards.n3dsTitleLow(g.romPath!!)?.let { byTitle.putIfAbsent(it, g) } }
-            n3dsFiles.mapNotNull { f ->
-                val parts = f.path.split('/')
-                val t = parts.indexOf("title")
-                if (t < 0 || parts.size < t + 4 || parts[t + 3] != "data") null else Triple(f, parts[t + 1].lowercase(), parts[t + 2].lowercase())
-            }.groupBy { (f, high, low) -> Triple(f.folder, high, low) }.forEach { (key, list) ->
+            n3dsFiles.groupBy { (f, u) -> Triple(f.folder, u.profile.lowercase(), u.high + "/" + u.low) }.forEach { (key, list) ->
                 val files = list.map { it.first }
-                val low = key.third
+                val unit = list.first().second
+                val low = unit.low
                 val first = files.first()
                 val item = SaveItem(
                     title = "Save data (${files.size} file${if (files.size == 1) "" else "s"})",
-                    where = key.first + " · ${key.second}${low}" + if (!first.onDevice) " · synced from ${first.fromDevice ?: "another device"}" else "",
+                    where = key.first + " · title ID ${unit.titleId}" + if (!first.onDevice) " · synced from ${first.fromDevice ?: "another device"}" else "",
                     sizeBytes = files.sumOf { it.size }, modified = files.maxOf { it.modified },
                     kind = if (files.all { it.onDevice }) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE
                 )
                 val g = byTitle[low] ?: strayGames.getOrPut("N3DS:$low") {
-                    Game(name = "3DS save (${(key.second + low).uppercase()})", platform = "3DS", hue = (low.hashCode() and 0x7FFFFFFF) % 360,
+                    Game(name = "Unassigned 3DS save (title ID ${unit.titleId})", platform = "3DS", hue = (low.hashCode() and 0x7FFFFFFF) % 360,
                         sourceType = SourceType.ROM, romPath = "save:3ds:$low")
                 }
                 add(g, item)
@@ -501,6 +552,8 @@ object SaveCapsules {
             // Update 119: GameCube saves are only ever read in step 2b (by their content); update 151: Wii saves in 2c;
             // update 223: 3DS saves in 2d.
             if (ext == "gci" || f.kind == SaveKind.DOLPHIN_GC || f.kind == SaveKind.DOLPHIN_WII || f.kind == SaveKind.CITRA) return@forEach
+            // (Update 241: and 3DS / Wii title folders in any other folder, in 2c / 2d — never matched by a file name like "main".)
+            if (SaveLayouts.titleUnit(f.path) != null) return@forEach
             // Update 151: the emulator core in front of the name ("Gambatte_Pokemon - Red…") is not part of the game's name.
             val (core, bare) = SaveMatch.splitCore(f.title)
             val stripped = com.shelf.launcher.ui.stripRegionTags(bare)
@@ -510,10 +563,17 @@ object SaveCapsules {
             // ("… [patched]", "(Subset - …)"), a game of the save's own console first (it used to take the first title
             // match of any console).
             val hint = SaveMatch.platformOfCore(core) ?: loosePlatform(f)
-            val mine = SaveMatch.best(bare, hint, romIndex) { g ->
+            val found = SaveMatch.match(bare, hint, romIndex) { g ->
                 f.kind == SaveKind.RETROARCH || f.kind == SaveKind.GENERIC || f.kind in CloudSync.kindsForPlatform(g.platform)
             }
+            val mine = found.game
             if (mine != null) { add(mine, item); return@forEach }
+            // (Update 241, #74: its name fits several of your games equally well — other regions, another console: it's
+            // left unassigned under "Other saves" and says so, instead of going to the first of them.)
+            if (found.ambiguous > 1) {
+                other(f.path.substringAfterLast('/'), item.copy(where = item.where + " · fits ${found.ambiguous} games here — not assigned"))
+                return@forEach
+            }
             // Without a recognisable name (a number, a code) it isn't a game of its own (update 119): "Other saves" (update 151).
             if (!looksLikeTitle(stripped)) { other(f.path.substringAfterLast('/'), item); return@forEach }
             // Its console (update 104): from the folder's kind, the file's type, or the emulator / system folder it's in;
@@ -799,7 +859,24 @@ object SaveCapsules {
     }
 
     /** Update 151: the kinds of Drive-only saves that join the loose saves (named after their game, GameCube, Wii). */
-    private val DRIVE_LOOSE_KINDS = setOf(SaveKind.RETROARCH, SaveKind.GENERIC, SaveKind.NDS, SaveKind.N64, SaveKind.DOLPHIN_GC, SaveKind.DOLPHIN_WII)
+    // (Update 241, #72 / #76: and 3DS — a Drive-only Citra / Azahar folder went to "Other saves" as one lump per folder,
+    // never under its games.)
+    private val DRIVE_LOOSE_KINDS = setOf(SaveKind.RETROARCH, SaveKind.GENERIC, SaveKind.NDS, SaveKind.N64, SaveKind.DOLPHIN_GC, SaveKind.DOLPHIN_WII, SaveKind.CITRA)
+
+    /** (Update 241) The Wii folder grouping of update 151 ("<type>/<id>/data/…"), for files SaveLayouts.wii doesn't take. */
+    private fun legacyWiiUnit(rel: String): SaveLayouts.TitleUnit? {
+        val parts = rel.split('/')
+        if (parts.size < 2) return null
+        return SaveLayouts.TitleUnit("wii", parts.take(2).joinToString("/"), parts[0].lowercase(), parts[1].lowercase(), "")
+    }
+
+    /** (Update 241) The 3DS folder grouping of update 223 (any "title/<high>/<low>/data/…"), for CITRA files SaveLayouts.n3ds doesn't take. */
+    private fun legacyN3dsUnit(rel: String): SaveLayouts.TitleUnit? {
+        val parts = rel.split('/')
+        val t = parts.indexOf("title")
+        if (t < 0 || parts.size < t + 4 || parts[t + 3] != "data") return null
+        return SaveLayouts.TitleUnit("3ds", parts.take(t + 4).joinToString("/"), parts[t + 1].lowercase(), parts[t + 2].lowercase(), parts.take(t).joinToString("/"))
+    }
 
     /** Update 151: a Wii title id's game part ("524d4345") as its code ("RMCE"); the hex itself when it isn't letters. */
     private fun wiiCode(hex: String): String {
@@ -834,7 +911,8 @@ object SaveCapsules {
      * not to be a card at all (a plain save named like one).
      */
     private fun remoteCards(
-        context: Context, cardFolderFiles: List<CloudSync.LooseSave>, opened: MutableSet<String>, notCards: MutableSet<String>
+        context: Context, cardFolderFiles: List<CloudSync.LooseSave>, opened: MutableSet<String>, notCards: MutableSet<String>,
+        net: Boolean = true
     ): List<Pair<Platform, MemoryCards.CardSave>> {
         val out = mutableListOf<Pair<Platform, MemoryCards.CardSave>>()
         val files = runCatching { CloudSync.looseSaveFiles(context) }.getOrDefault(emptyList()).filter { !it.onDevice } + cardFolderFiles
@@ -853,8 +931,8 @@ object SaveCapsules {
             folderFrom.putIfAbsent("${f.folder}|$card", f.fromDevice)
             val old = m[save] ?: Triple(null, 0L, 0L)
             val icon = if (old.first == null && parts.last().equals("icon.sys", true) && parts.size == at + 3)
-                (runCatching { CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = 64_000) }.getOrNull()
-                    ?: DriveOnlySaves.bytes(context, f.folder, f.path, 64_000L)) else old.first // (Update 151: or a Drive-only folder)
+                (runCatching { CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = 64_000, allowNetwork = net) }.getOrNull()
+                    ?: DriveOnlySaves.bytes(context, f.folder, f.path, 64_000L, allowNetwork = net)) else old.first // (Update 151: or a Drive-only folder)
             // (Update 144: the save's size adds up its files, like the local twin above - it used to stay 0 B.)
             m[save] = Triple(icon, old.second + f.size, maxOf(old.third, f.modified))
             if (parts.size == at + 3) // (Update 239, #112)
@@ -884,8 +962,8 @@ object SaveCapsules {
                 // (PS2 cards can be 8 to 64 MB; on a handheld with little memory only up to 16 MB ones are opened.)
                 val cap = if (com.shelf.launcher.device.MemoryBudget.small(context)) 17_400_000 else 70_000_000
                 // (Update 151: a card in a Drive folder this device doesn't sync is fetched by DriveOnlySaves.)
-                val bytes = CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = cap)
-                    ?: DriveOnlySaves.bytes(context, f.folder, f.path, cap.toLong()) ?: return@forEach
+                val bytes = CloudSync.remoteFileBytes(context, f.folder, f.path, maxBytes = cap, allowNetwork = net)
+                    ?: DriveOnlySaves.bytes(context, f.folder, f.path, cap.toLong(), allowNetwork = net) ?: return@forEach
                 val r = runCatching { MemoryCards.readAny(name, bytes, f.modified) }.getOrNull()
                     .let { RemoteCard(it?.first ?: 0, it?.second.orEmpty()) }
                 synchronized(remoteCache) { remoteCache[key] = r }

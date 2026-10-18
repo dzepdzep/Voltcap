@@ -202,7 +202,18 @@ object LayoutPresets {
 
     private fun gridOpts(tiles: Boolean = false) = listOf(o(Features.gridTiles, tiles))
     private fun heroOpts(side: Features.HeroSideCovers = Features.HeroSideCovers.ALL) = listOf(o(Features.heroSideCovers, side))
-    private fun tvOpts(games: com.shelf.launcher.ui.TvRoom.Games = com.shelf.launcher.ui.TvRoom.Games.SPINES) = listOf(o(Features.tvRoomGames, games))
+    // (Update 241, #110: every TV room preset sets "the case you're on facing you" — it was only in the Cartridges one,
+    // so going from it to another TV preset left it as that one had it.)
+    private fun tvOpts(games: com.shelf.launcher.ui.TvRoom.Games = com.shelf.launcher.ui.TvRoom.Games.SPINES) =
+        listOf(o(Features.tvRoomGames, games), o(Features.pickedFaces, true))
+    // (Update 241, #110: the options the Live tiles, Spotlight and Icon bar presets differ by — those layouts draw their
+    // tiles with fixed corners and (Live, Icon bar) no focus glow, so corners / glow alone never told their presets apart.)
+    private fun liveOpts(art: Boolean = false) =
+        listOf(o(Features.liveLight, !art), o(Features.liveArt, art), o(Features.livePage, Features.LivePage.BIG_FOUR))
+    private fun spotOpts(shape: Features.TileShape = Features.TileShape.SQUARE) =
+        listOf(o(Features.spotShape, shape), o(Features.spotTilesAt, Features.SpotSide.TOP))
+    private fun barOpts(art: Boolean = false) =
+        listOf(o(Features.barSquares, true), o(Features.barArt, art), o(Features.barGamesAt, Features.SpotSide.TOP))
     private fun shelfOpts(stand: Features.ShelfStand = Features.ShelfStand.SPINES, wood: Features.ShelfLook = Features.ShelfLook.DARK) =
         listOf(o(Features.shelfStand, stand), o(Features.shelfLook, wood))
     private fun hubOpts(art: Boolean = true) = listOf(o(Features.hubArt, art), o(Features.resNextAch))
@@ -348,9 +359,12 @@ object LayoutPresets {
         },
         // (Update 200: renamed from "TV room · 3D models" — the 3D cartridges look draws the drawn shells now; its id stays.)
         // (Update 202: "Cartridges", as Game look calls it now — it uses your Cartridge choice, real shells by default.)
+        // (Update 241, #110: it set the same look as "TV room" — every Cartridges & discs look is drawn on the 3D finish since
+        // update 202, so models = true changed nothing and the two were the same room. Now every game is a cartridge, disc
+        // games too, as its name says; "TV room" keeps the discs as discs.)
         preset("tv_models", HomeLayout.TV, "TV room · Cartridges",
-            "Every cartridge in 3D beside the TV (each console's real shell, unless you picked your pack's or clear ones), the one you're on facing you.",
-            look = PresetLook(models = true), options = tvOpts() + o(Features.pickedFaces, true)) { s ->
+            "Every game as a 3D cartridge beside the TV — each console's real shell, disc games on your cartridge pack — the one you're on facing you.",
+            look = PresetLook(carts = true, models = true), options = tvOpts()) { s ->
             s.copy(cardArtType = CardArtType.CARTRIDGE_DISC, focusEffect = FocusEffect.GLOW)
         },
         // Dashboard
@@ -364,12 +378,14 @@ object LayoutPresets {
         },
         // Live tiles
         preset("l_live", HomeLayout.LIVE, "Live tiles",
-            "Flat square tiles on a pale backdrop, no glow — clean and calm.") { s ->
+            "Flat square tiles on a pale backdrop, one big and four small, no glow — clean and calm.", options = liveOpts()) { s ->
             s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.NONE)
         },
-        preset("live_soft", HomeLayout.LIVE, "Soft tiles",
-            "The same tiles with rounded corners and a soft glow on the one you're on.") { s ->
-            s.copy(cardCorners = CardCorners.ROUNDED, focusEffect = FocusEffect.GLOW)
+        // (Update 241, #110: was "Soft tiles" — rounded corners and a glow, but Live tiles draws its tiles square and
+        // without a glow whatever those say, so it looked exactly like "Live tiles". Its id stays.)
+        preset("live_soft", HomeLayout.LIVE, "Live tiles on art",
+            "The same flat tiles over the game's own art instead of the pale backdrop.", options = liveOpts(art = true)) { s ->
+            s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.NONE)
         },
         // Side menu (update 162: the row along the bottom, or the turned row of cases).
         preset("l_side", HomeLayout.SIDE, "Side menu",
@@ -390,27 +406,33 @@ object LayoutPresets {
             "Categories as icons across the screen, the games as a list going down, with their covers.") { s ->
             s.copy(focusEffect = FocusEffect.GLOW)
         },
-        preset("cross_discs", HomeLayout.CROSS, "Cross menu with discs",
-            "The same list with each game as its disc.") { s ->
-            s.copy(cardArtType = CardArtType.DISC, focusEffect = FocusEffect.GLOW)
+        // (Update 241, #110: was "Cross menu with discs" — the Cross menu's list always shows wide art (or square tiles
+        // with the Tile look), never discs, so it looked exactly like "Cross menu". Now the list's square tiles; id kept.)
+        preset("cross_discs", HomeLayout.CROSS, "Cross menu · square tiles",
+            "The same list with each game as a rounded square tile instead of its wide art.", look = PresetLook(tiles = true)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
         },
         // Spotlight
         preset("l_spot", HomeLayout.SPOT, "Spotlight",
-            "The game's art full screen, small tiles on top, its logo big, Play and activity cards.") { s ->
+            "The game's art full screen, small square tiles on top, its logo big, Play and activity cards.", options = spotOpts()) { s ->
             s.copy(cardCorners = CardCorners.ROUNDED, showGameLogos = true, focusEffect = FocusEffect.GLOW)
         },
+        // (Update 241, #110: the tiles' shape is Spotlight's own option (squares by default), so the capsule artwork alone
+        // never showed — it set the tiles to wide now, and both presets set the shape and the tiles on top.)
         preset("spot_wide", HomeLayout.SPOT, "Spotlight · wide art",
-            "The same with wide capsule art in the tiles on top.") { s ->
+            "The same with wide capsule art in the tiles on top.", options = spotOpts(Features.TileShape.WIDE)) { s ->
             s.copy(cardArtType = CardArtType.CAPSULE, cardCorners = CardCorners.ROUNDED, showGameLogos = true, focusEffect = FocusEffect.GLOW)
         },
         // Icon bar
         preset("l_bar", HomeLayout.BAR, "Icon bar",
-            "Shortcut icons along the top, a row of square tiles with the selected one big, Start under it.") { s ->
+            "Shortcut icons along the top, a row of square tiles with the selected one big, Start under it, on your theme.", options = barOpts()) { s ->
             s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.NONE)
         },
+        // (Update 241, #110: the Icon bar draws no focus glow, and its corners stop at 8 dp, so "rounded tiles and a soft
+        // glow" was only a slightly rounder corner. Now rounder tiles over the game's art, as the description says.)
         preset("bar_round", HomeLayout.BAR, "Rounded icon bar",
-            "The same with rounded tiles and a soft glow.") { s ->
-            s.copy(cardCorners = CardCorners.ROUND, focusEffect = FocusEffect.GLOW)
+            "The same with rounder tiles, the game's art fading in behind the top of the screen.", options = barOpts(art = true)) { s ->
+            s.copy(cardCorners = CardCorners.ROUND, focusEffect = FocusEffect.NONE)
         },
         // Game shelf (update 90; update 162: it draws its own spines and cases, so it keeps your game look).
         preset("l_shelf", HomeLayout.SHELF, "Game shelf",
@@ -427,9 +449,11 @@ object LayoutPresets {
             "The game's art full screen, a row of tiles with the one you're on big, Play, Achievements and Details cards under them.", options = hubOpts()) { s ->
             s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
         },
-        preset("hub_boxes", HomeLayout.HUB, "Hub with boxes",
-            "The same hub with the games' real cases in the row.", options = hubOpts()) { s ->
-            s.copy(cardArtType = CardArtType.CASE, cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
+        // (Update 241, #110: was "Hub with boxes" — the hub's row always crops every game to a square cover, so the cases
+        // never showed and it looked exactly like "Console hub". Now the hub on your theme; id kept.)
+        preset("hub_boxes", HomeLayout.HUB, "Hub on your theme",
+            "The same hub on your theme's background instead of the game's art — calmer as you move.", options = hubOpts(art = false)) { s ->
+            s.copy(cardCorners = CardCorners.SQUARE, focusEffect = FocusEffect.GLOW)
         },
         preset("res_std", HomeLayout.RESUME, "Resume & discover",
             "The game you're on as a big square with shortcut tiles under it, the next games in a row, Discover cards.", options = resumeOpts()) { s ->

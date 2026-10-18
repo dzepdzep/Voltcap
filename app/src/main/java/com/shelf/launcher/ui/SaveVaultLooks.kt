@@ -191,8 +191,8 @@ internal fun floppyShutter(look: SaveLook?): List<Color> =
 /** A capsule's glass (and its halves when it opens): the look's shell, else its own clear white. */
 internal fun capsuleGlass(look: SaveLook?): Color = look?.shell?.let { Color(it) } ?: Color.White
 
-/** Where a style's colour starts when you go to Custom (its original shell). */
-private fun originalShell(style: SaveVaultStyle): Int = when (style) {
+/** Where a style's colour starts when you go to Custom (its original shell). (Update 241, #51: the Inspect viewer's Original swatch too.) */
+internal fun originalShell(style: SaveVaultStyle): Int = when (style) {
     SaveVaultStyle.SD_CARD -> 0xFF2B2F3A.toInt()
     SaveVaultStyle.FLOPPY -> 0xFF22252E.toInt()
     SaveVaultStyle.CAPSULE -> 0xFFFFFFFF.toInt()
@@ -333,9 +333,9 @@ internal fun SaveLookDialog(game: Game, icon: String?, state: SyncState, onDismi
     }
 }
 
-/** A chip with a colour swatch (D-pad and touch, like [Chip]). */
+/** A chip with a colour swatch (D-pad and touch, like [Chip]). (Update 241, #51: the Inspect viewer's colour strip too.) */
 @Composable
-private fun SwatchChip(label: String, swatch: Int?, selected: Boolean, onClick: () -> Unit) {
+internal fun SwatchChip(label: String, swatch: Int?, selected: Boolean, onClick: () -> Unit) {
     val shape = uiRounded(50)
     Row(
         Modifier

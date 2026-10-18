@@ -104,17 +104,31 @@ class PerfOverlayService : Service() {
         val running = view != null || musicView != null || raView != null
         // Overlays switched mid-game (Quick Settings tile): rebuild with the new choice, same screen.
         val reconfigure = intent?.getBooleanExtra(EXTRA_RECONFIGURE, false) == true
-        if (reconfigure && !running) return START_NOT_STICKY
-        if (running && !reconfigure) return START_NOT_STICKY // already showing
+        // (Update 241, #82: this returned here, leaving the service alive with nothing on screen — e.g. a tile tap landing
+        // between "Off" and onDestroy. Every later tap then went to this alive-but-empty service and was dropped here too,
+        // so the overlay never came back mid-game. Now it builds from the settings while a game is in front, else stops.)
+        if (reconfigure && !running) {
+            val inGame = intent?.getBooleanExtra(EXTRA_IN_GAME, false) == true || com.shelf.launcher.data.GameMode.active
+            if (!inGame) { done(null); stopSelf(startId); return START_NOT_STICKY }
+        }
+        if (running && !reconfigure) { done(null); return START_NOT_STICKY } // already showing
         val wantPerf: Boolean
         val wantMusic: Boolean
         val wantRa: Boolean
         if (reconfigure) {
             teardownViews()
+            // (Update 241, #82) Built afresh (nothing was showing): on the screen the game was on.
+            if (!running) lastDisplay?.let { displayId = it }
             val c = PerfSettings.config(this)
             wantPerf = c.showDuringGames
             wantMusic = c.musicDuringGames
             wantRa = c.raDuringGames && com.shelf.launcher.data.RaOverlayData.state.value != null
+            // (Update 241, #82) Switched to Off (or only Trophies, for a game without them): nothing to build, just stop.
+            if (!wantPerf && !wantMusic && !wantRa) {
+                done(if (c.raDuringGames) NOTE_NO_TROPHIES else null)
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
         } else {
             displayId = intent?.getIntExtra(EXTRA_DISPLAY, android.view.Display.DEFAULT_DISPLAY) ?: android.view.Display.DEFAULT_DISPLAY
             wantPerf = intent?.getBooleanExtra(EXTRA_PERF, true) ?: true
@@ -124,14 +138,18 @@ class PerfOverlayService : Service() {
         // A foreground service, so Android's background limits don't stop the overlay a minute
         // into the game (a plain started service is killed once Voltcap is in the background).
         com.shelf.launcher.data.Features.init(this) // the pinned achievement and overlay options
-        if (!goForeground()) { stopSelf(startId); return START_NOT_STICKY }
-        if (!canDraw(this)) { stopSelf(startId); return START_NOT_STICKY }
+        if (!goForeground()) { done(NOTE_REFUSED); stopSelf(startId); return START_NOT_STICKY }
+        if (!canDraw(this)) { done(NOTE_NO_PERMISSION); stopSelf(startId); return START_NOT_STICKY }
         val s = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         scope = s
         val perfShown = wantPerf && show()
         val musicShown = wantMusic && showMusic()
         val raShown = wantRa && showRa()
-        if (!perfShown && !musicShown && !raShown) { stopSelf(startId); return START_NOT_STICKY }
+        if (!perfShown && !musicShown && !raShown) {
+            done(if (!wantPerf && !wantMusic && !wantRa) NOTE_NO_TROPHIES else NOTE_NO_WINDOW)
+            stopSelf(startId); return START_NOT_STICKY
+        }
+        done(null)
         if (raShown) {
             // Redrawn only when the achievement data or the settings change (no timer).
             s.launch {
@@ -660,6 +678,17 @@ class PerfOverlayService : Service() {
         shells.clear()
         if (acquired) { PerfSampler.release(); acquired = false }
         musicVisible.value = false
+        showing = false
+    }
+
+    /**
+     * (Update 241, #82) After a start / rebuild: whether anything is on screen now and, if not, why ([note]); the Quick
+     * Settings tile redraws from it, so it never says "on" for an overlay that didn't come up.
+     */
+    private fun done(note: String?) {
+        showing = view != null || musicView != null || raView != null
+        lastNote = if (showing) null else note
+        com.shelf.launcher.device.tune.OverlayTileService.refresh(applicationContext)
     }
 
     override fun onDestroy() {
@@ -672,6 +701,8 @@ class PerfOverlayService : Service() {
         if (acquired) { PerfSampler.release(); acquired = false }
         PerfSampler.setPaused(false)
         alive = false
+        showing = false // (Update 241, #82)
+        com.shelf.launcher.device.tune.OverlayTileService.refresh(applicationContext)
         // The shared in-game notification stays if the tuner still runs, without the overlay part.
         com.shelf.launcher.device.tune.GameNotification.overlayOn = false
         com.shelf.launcher.device.tune.GameNotification.refresh(this)
@@ -689,29 +720,75 @@ class PerfOverlayService : Service() {
 
     private fun postNotification() = com.shelf.launcher.device.tune.GameNotification.refresh(this)
 
+    /** (Update 241, #82) What [applyNow] did: the Quick Settings tile shows it and, on REFUSED, retries through an activity. */
+    enum class Applied { REBUILT, STARTED, OFF, NO_PERMISSION, NO_GAME, NO_TROPHIES, REFUSED }
+
     companion object {
         private const val EXTRA_ADJUST = "adjust"
         private const val EXTRA_RECONFIGURE = "reconfigure"
 
+        private const val EXTRA_IN_GAME = "in_game"
+
         /** The overlay choice changed while a game runs: a running overlay rebuilds itself (no-op otherwise). */
         fun reconfigure(context: Context) {
-            if (!canDraw(context)) return
-            if (alive) {
-                runCatching {
-                    context.startService(Intent(context, PerfOverlayService::class.java).putExtra(EXTRA_RECONFIGURE, true))
-                }
-                return
+            applyNow(context, com.shelf.launcher.data.GameMode.active)
+        }
+
+        /**
+         * (Update 241, #82) Applies the overlay settings now. Showing: the running overlays rebuild with them. Nothing
+         * showing and [gameInFront]: the service starts on the game's screen. Before, the tile relied on
+         * GameMode.active (false for a game started outside Voltcap, after Android ended Voltcap's idle process, or on
+         * the Thor once the other screen was touched) and dropped a refused start silently — tapping it mid-game did
+         * nothing. Switching on in Voltcap's own menus (no game in front) still only saves the choice.
+         */
+        fun applyNow(context: Context, gameInFront: Boolean): Applied {
+            if (!canDraw(context)) { lastNote = NOTE_NO_PERMISSION; return Applied.NO_PERMISSION }
+            if (alive && showing) {
+                val sent = runCatching {
+                    context.startService(Intent(context, PerfOverlayService::class.java)
+                        .putExtra(EXTRA_RECONFIGURE, true).putExtra(EXTRA_IN_GAME, gameInFront))
+                }.isSuccess
+                if (sent) { lastNote = null; return Applied.REBUILT }
             }
-            // Not running (the overlays were Off, or "Off" was picked a moment ago, which stops the service):
-            // switching them back on mid-game starts it again, on the screen the game was on. Android may
-            // refuse that from the background on some versions; then nothing changes until the next game.
-            // Only while a game runs: switching overlays on in Voltcap's own menus must not put them over Voltcap.
-            if (!com.shelf.launcher.data.GameMode.active) return
             val c = PerfSettings.config(context)
             val ra = c.raDuringGames && com.shelf.launcher.data.RaOverlayData.state.value != null
-            if (c.showDuringGames || c.musicDuringGames || ra) {
-                start(context, lastDisplay, perf = c.showDuringGames, music = c.musicDuringGames, ra = ra, newSession = false)
+            if (!c.showDuringGames && !c.musicDuringGames && !ra) {
+                // Off (a showing overlay was told above and stops itself); only Trophies for a game without them: say so.
+                lastNote = if (c.raDuringGames) NOTE_NO_TROPHIES else null
+                return if (c.raDuringGames && gameInFront) Applied.NO_TROPHIES else Applied.OFF
             }
+            if (!gameInFront) { lastNote = null; return Applied.NO_GAME }
+            // Nothing showing (stopped, or alive between "Off" and onDestroy): start it again. startForegroundService
+            // goes foreground straight away, so this also covers an alive-but-empty service.
+            val ok = start(context, gameDisplay(context), perf = c.showDuringGames, music = c.musicDuringGames, ra = ra, newSession = false)
+            lastNote = if (ok) null else NOTE_REFUSED
+            return if (ok) Applied.STARTED else Applied.REFUSED
+        }
+
+        /** (Update 241, #82) Something is on screen right now (set by the service once it has built or torn down). */
+        @Volatile var showing = false
+            private set
+        /** (Update 241, #82) Why the chosen overlays aren't on screen (null: they are, or none is chosen). */
+        @Volatile var lastNote: String? = null
+            private set
+        const val NOTE_REFUSED = "Android didn't start it"
+        const val NOTE_NO_PERMISSION = "Allow Display over other apps"
+        const val NOTE_NO_TROPHIES = "No trophies for this game"
+        const val NOTE_NO_WINDOW = "Couldn't show it"
+        private const val RT_PREFS = "perf_overlay_rt"
+
+        /**
+         * (Update 241, #82) The screen the game is on: the last start's, kept across Voltcap's process being ended while
+         * the same play session is open (Thor: the other screen), else the default one. A screen that's gone → default.
+         */
+        private fun gameDisplay(context: Context): Int? {
+            val id = lastDisplay ?: runCatching {
+                if (!com.shelf.launcher.data.PlaySession.isOpen(context)) null
+                else context.applicationContext.getSharedPreferences(RT_PREFS, Context.MODE_PRIVATE)
+                    .getInt("last_display", -1).takeIf { it >= 0 }
+            }.getOrNull() ?: return null
+            val dm = context.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+            return if (dm?.getDisplay(id) != null) id else null
         }
 
         /** The service exists (created and not yet destroyed). */
@@ -729,14 +806,23 @@ class PerfOverlayService : Service() {
 
         fun canDraw(context: Context) = com.shelf.launcher.data.Permissions.granted(context, com.shelf.launcher.data.VoltPermission.OVERLAY)
 
-        /** Starts the overlay if allowed. Call while Voltcap is still in front; a refusal is ignored. */
-        fun start(context: Context, displayId: Int?, perf: Boolean = true, music: Boolean = false, ra: Boolean = false, newSession: Boolean = true) {
-            if (!canDraw(context)) return
+        /**
+         * Starts the overlay if allowed. Call while Voltcap is still in front; a refusal is ignored.
+         * (Update 241, #82) Returns false when Android refused the start (ForegroundServiceStartNotAllowedException from the
+         * background, Android 12+; on 15+ holding "Display over other apps" no longer exempts an app without a visible overlay).
+         */
+        fun start(context: Context, displayId: Int?, perf: Boolean = true, music: Boolean = false, ra: Boolean = false, newSession: Boolean = true): Boolean {
+            if (!canDraw(context)) return false
             lastDisplay = displayId
+            // (Update 241, #82) Kept for a tile tap after Android ended Voltcap's idle process mid-game.
+            runCatching {
+                context.applicationContext.getSharedPreferences(RT_PREFS, Context.MODE_PRIVATE).edit()
+                    .putInt("last_display", displayId ?: android.view.Display.DEFAULT_DISPLAY).apply()
+            }
             if (newSession) OverlayClock.sessionStart = System.currentTimeMillis()
             stopAfterStart = false
             pendingStarts.incrementAndGet()
-            runCatching {
+            return runCatching {
                 androidx.core.content.ContextCompat.startForegroundService(
                     context,
                     Intent(context, PerfOverlayService::class.java)
@@ -745,7 +831,10 @@ class PerfOverlayService : Service() {
                         .putExtra(EXTRA_MUSIC, music)
                         .putExtra(EXTRA_RA, ra)
                 )
-            }.onFailure { pendingStarts.decrementAndGet() }
+            }.onFailure {
+                pendingStarts.decrementAndGet()
+                android.util.Log.w("PerfOverlay", "start refused (Update 241, #82)", it)
+            }.isSuccess
         }
 
         fun stop(context: Context) {

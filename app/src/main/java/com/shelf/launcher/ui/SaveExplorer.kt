@@ -54,6 +54,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -131,6 +132,16 @@ internal fun SaveExplorerDialog(
     // Only games with real save evidence (save files, memory-card / SAVEDATA saves, saves Drive moved):
     // looking at a game never makes a capsule. Read again each time the browser opens.
     LaunchedEffect(games, lastPlayed, connected) { if (connected) com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed) }
+    // (Update 241, #76: a sync that wasn't started from here (the watcher, another screen) finishing while the vault is
+    // open — the list is read again, so saves that just arrived show without closing it.)
+    val fullSync by com.shelf.launcher.data.CloudSync.lastFullSync.collectAsState()
+    val openedAtSerial = remember { fullSync.serial }
+    LaunchedEffect(fullSync.serial) {
+        if (connected && fullSync.serial > openedAtSerial) {
+            com.shelf.launcher.data.DriveOnlySaves.invalidate()
+            com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed)
+        }
+    }
     val capsules by com.shelf.launcher.data.SaveCapsules.all.collectAsState()
     val capsuleOptions by com.shelf.launcher.data.SaveCapsules.options.collectAsState()
     val scanning by com.shelf.launcher.data.SaveCapsules.loading.collectAsState()
@@ -832,7 +843,12 @@ internal fun CapsuleSaveCard(
                     1f to charge.copy(alpha = 0.42f + 0.2f * lift)
                 )
             )
-            .border(1.dp + 1.5.dp * lift, if (selected) ShelfTheme.accent else Color.White.copy(alpha = 0.16f), shape),
+            .border(1.dp + 1.5.dp * lift, if (selected) ShelfTheme.accent else Color.White.copy(alpha = 0.16f), shape)
+            // (Update 241, #44/#46: "SaveVault" and the cloud moulded into the charge half under the seam, in the colour that
+            // half shows; only once it's drawn big enough to read — Inspect — never as noise in the grid.)
+            .saveVaultMark(androidx.compose.ui.graphics.lerp(Color(0xFF0B0D16), charge, 0.3f).toArgb(), Engraving.Layout.HORIZONTAL, minWidth = 100.dp) { s ->
+                markArea(s.width * 0.5f, s.height * 0.655f, s.width * 0.56f, s.height * 0.06f)
+            },
     ) {
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.fillMaxHeight(0.07f))
@@ -902,6 +918,8 @@ private fun SaveDetail(
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(80); runCatching { focus.requestFocus() } }
     // (Update 236, #47: Appearance… — this save's object colour; its look read here, so the icon up close follows it live.)
     var showLook by remember { mutableStateOf(false) }
+    // (Update 241, #49/#50: Inspect — this save's object up close from every side; only here, inside Save Vault.)
+    var showInspect by remember { mutableStateOf(false) }
     val look = SaveLookStore.look(game.stableKey, game.platform)
     val context = LocalContext.current
     val fmt = remember { android.text.format.DateFormat.getLongDateFormat(context) }
@@ -1009,6 +1027,9 @@ private fun SaveDetail(
                     Box(Modifier.focusRequester(focus)) { Chip("Save options", accent = true, onClick = onOpenSave) }
                     // (Update 236, #47: the object's colour — not for the Classic squares, which have none.)
                     if (Features.saveVaultStyle.state.value != Features.SaveVaultStyle.CLASSIC) Chip("Appearance", accent = false) { showLook = true }
+                    // (Update 241, #49/#50: the object (or a PS2 save's own 3D icon) in the Free Inspect viewer — only for a
+                    // save shown as a 3D object; the Classic squares are flat icons.)
+                    if (saveInspectable(game, capsule)) Chip("Inspect", accent = false) { showInspect = true }
                     // Hides the capsule only; the save files are never touched.
                     Chip(if (hidden) "Show in the vault" else "Hide from the vault", accent = false) { onHide(!hidden) }
                     Chip("Back", accent = false, onClick = onBack)
@@ -1017,6 +1038,7 @@ private fun SaveDetail(
         }
     }
     if (showLook) SaveLookDialog(game, icon, st.state) { showLook = false }
+    if (showInspect) SaveInspectDialog(game, icon, st.state, capsule) { showInspect = false }
 }
 
 /**

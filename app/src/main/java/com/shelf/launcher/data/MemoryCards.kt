@@ -361,7 +361,10 @@ object MemoryCards {
                 val head = ByteArray(0x120)
                 r.readFully(head)
                 val magic = String(head, 0x100, 4, Charsets.ISO_8859_1)
-                val at = when (magic) { "NCSD" -> 0x108; "NCCH" -> 0x118; else -> return@use null }
+                // (Update 241, #72 / #74: an installable .cia carries its title id in its TMD — read from there, so a .cia
+                // without "[0004000…]" in its name still gets its own save instead of "Unassigned".)
+                if (magic != "NCSD" && magic != "NCCH") return@use ciaTitleLow(r, head)
+                val at = if (magic == "NCSD") 0x108 else 0x118
                 // Little-endian u64: bytes at..at+3 are the low half.
                 "%02x%02x%02x%02x".format(head[at + 3], head[at + 2], head[at + 1], head[at])
             }
@@ -369,6 +372,27 @@ object MemoryCards {
         n3dsIdCache[romPath] = id ?: ""
         return id
     }
+
+    /**
+     * Update 241 (#72): a CIA's title id (low half) from its TMD. Layout (3dbrew "CIA" / "Title metadata"): header size
+     * (0x2020), cert chain, ticket and TMD sizes at 0x00 / 0x08 / 0x0C / 0x10, each section 64-byte aligned; the TMD
+     * starts with its signature (type 0x10003 / 0x10004 / 0x10005 → 0x200 / 0x100 / 0x3C bytes, plus padding), then the
+     * header, whose title id (big-endian u64) is at 0x4C. Null when it isn't one.
+     */
+    private fun ciaTitleLow(r: java.io.RandomAccessFile, head: ByteArray): String? = runCatching {
+        if (u32le(head, 0) != 0x2020L) return@runCatching null
+        fun align(x: Long) = (x + 63L) and 63L.inv()
+        val certs = u32le(head, 0x08); val ticket = u32le(head, 0x0C); val tmd = u32le(head, 0x10)
+        if (tmd < 0xC4L) return@runCatching null
+        val tmdAt = align(0x2020L) + align(certs) + align(ticket)
+        if (tmdAt + 0x300 > r.length()) return@runCatching null
+        val sig = ByteArray(4); r.seek(tmdAt); r.readFully(sig)
+        val skip = when (u32be(sig, 0)) { 0x10003L -> 0x200 + 0x3C; 0x10004L -> 0x100 + 0x3C; 0x10005L -> 0x3C + 0x40; else -> return@runCatching null }
+        val id = ByteArray(8); r.seek(tmdAt + 4 + skip + 0x4C); r.readFully(id)
+        // 3DS titles: high half 0004xxxx.
+        if (id[0] != 0.toByte() || id[1] != 4.toByte()) return@runCatching null
+        "%02x%02x%02x%02x".format(id[4], id[5], id[6], id[7])
+    }.getOrNull()
 
     fun gcGameId(romPath: String): String? {
         gcIdCache[romPath]?.let { return it.ifEmpty { null } }
@@ -388,6 +412,8 @@ object MemoryCards {
                     magic == "WBFS" -> {
                         val b = ByteArray(6); r.seek(0x200); r.readFully(b); gcCode(b, 0)
                     }
+                    // (Update 241, #53: Dolphin's .gcz — the disc header is the start of its first (zlib) block.)
+                    head[0] == 0x01.toByte() && head[1] == 0xC0.toByte() && head[2] == 0x0B.toByte() && head[3] == 0xB1.toByte() -> gczCode(r, head)
                     else -> gcCode(head, 0)
                 }
             }
@@ -395,6 +421,41 @@ object MemoryCards {
         gcIdCache[romPath] = id ?: ""
         return id
     }
+
+    /**
+     * Update 241 (#53): the game code at the start of a GCZ image (Dolphin's CompressedBlob: 32-byte header — compressed
+     * size u64 at 0x08, block count u32 at 0x1C — then one u64 offset per block (top bit = stored uncompressed), one
+     * u32 hash per block, then the blocks). Only the first block's first bytes are inflated.
+     */
+    private fun gczCode(r: java.io.RandomAccessFile, head: ByteArray): String? = runCatching {
+        val blocks = u32le(head, 0x1C)
+        if (blocks <= 0L || blocks > 50_000_000L) return@runCatching null
+        val compressedSize = u32le(head, 0x08) or (u32le(head, 0x0C) shl 32)
+        val ptr = ByteArray(16); r.seek(0x20); r.readFully(ptr, 0, if (blocks > 1) 16 else 8)
+        val p0 = u32le(ptr, 0) or (u32le(ptr, 4) shl 32)
+        val stored = p0 < 0L
+        val off0 = p0 and Long.MAX_VALUE
+        val end = if (blocks > 1) (u32le(ptr, 8) or (u32le(ptr, 12) shl 32)) and Long.MAX_VALUE else compressedSize
+        val len = (end - off0).coerceIn(0L, 64L * 1024)
+        if (len < 6) return@runCatching null
+        val dataAt = 0x20L + blocks * 12L
+        val buf = ByteArray(len.toInt()); r.seek(dataAt + off0); r.readFully(buf)
+        if (stored) return@runCatching gcCode(buf, 0)
+        val out = ByteArray(64)
+        val inf = java.util.zip.Inflater()
+        try {
+            inf.setInput(buf)
+            var n = 0
+            while (n < 6) {
+                val k = inf.inflate(out, n, out.size - n)
+                if (k <= 0) break
+                n += k
+            }
+            if (n < 6) null else gcCode(out, 0)
+        } finally {
+            inf.end()
+        }
+    }.getOrNull()
 
     private fun u16le(b: ByteArray, o: Int): Int = (b[o].toInt() and 0xFF) or ((b[o + 1].toInt() and 0xFF) shl 8)
     private fun u32le(b: ByteArray, o: Int): Long =

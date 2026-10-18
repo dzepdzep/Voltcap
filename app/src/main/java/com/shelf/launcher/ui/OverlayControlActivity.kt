@@ -45,9 +45,14 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  * over the game; tap outside, Done or B to close it. Every change applies to the running overlays at once.
  */
 class OverlayControlActivity : ComponentActivity() {
+    /** (Update 241, #82) Opened by the overlay tile only to start the overlays (no panel): see [onResume]. */
+    private var startHop = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         com.shelf.launcher.CrashGuard.install(this)
         super.onCreate(savedInstanceState)
+        startHop = savedInstanceState == null && intent?.getBooleanExtra(EXTRA_START_OVERLAYS, false) == true
+        if (startHop) return
         // Update 136: drawn edge to edge like Voltcap's home, with the bars hidden from the start. Without it Android
         // painted a black navigation-bar strip along the bottom while this window was open, even with the bar hidden.
         enableEdgeToEdge()
@@ -61,6 +66,21 @@ class OverlayControlActivity : ComponentActivity() {
             if (theme != null && appearance != null) ShelfLauncherTheme(appTheme = theme, appearance = appearance) { Panel { finish() } }
             else ShelfLauncherTheme { Panel { finish() } }
         }
+    }
+
+    /**
+     * (Update 241, #82) Android refused to start the overlay service from the Quick Settings tile (background-start rules).
+     * Now an activity of Voltcap's is in front, which may start it: start it on the game's screen and close at once, so
+     * the game is back in front with the overlay over it. Nothing is drawn, no panel.
+     */
+    override fun onResume() {
+        super.onResume()
+        if (!startHop) return
+        startHop = false
+        val r = runCatching { PerfOverlayService.applyNow(applicationContext, gameInFront = true) }.getOrNull()
+        android.util.Log.i("OverlayTile", "start from the tile's activity hop: $r (Update 241, #82)")
+        finish()
+        @Suppress("DEPRECATION") overridePendingTransition(0, 0)
     }
 
     // Update 130: Hide navigation bar applies to this window too (it used to bring the bar back while open).
@@ -197,5 +217,10 @@ class OverlayControlActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    companion object {
+        /** (Update 241, #82) Start the overlays and close (the overlay tile's fallback), instead of showing the panel. */
+        const val EXTRA_START_OVERLAYS = "start_overlays"
     }
 }

@@ -1077,6 +1077,13 @@ object Features {
      * "g:<stableKey>" / "console:<platform>", values "p=<preset>;shell=#RRGGBB;trim=#RRGGBB"; ui/SaveVaultLooks.kt.)
      */
     val saveObjectLooks = StringPref("save_object_looks", "")
+    /**
+     * (Update 241, #44/#46: "SaveVault" and Voltcap's cloud moulded into every Save Vault object's plastic — the front's
+     * blank area where it has one, always its back; ui/Engraving.kt. On by default.)
+     */
+    val saveEngraving = BoolPref("save_engraving", true)
+    /** (Update 241, #49: Save Vault › a save › Inspect turns the object by itself — off by default; ui/SaveInspect.kt.) */
+    val saveInspectAutoRotate = BoolPref("save_inspect_auto_rotate", false)
     /** Update 195: every cartridge console on its own drawn authentic shell (Settings › Game look). */
     val authenticCarts = BoolPref("authentic_carts", false)
     /**

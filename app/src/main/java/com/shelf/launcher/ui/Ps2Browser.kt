@@ -98,6 +98,8 @@ internal class Ps2IconMesh(icon: Ps2Icons.Icon) {
     private val radius: Float
     private val yMid: Float
     private val yHalf: Float
+    /** (Update 241, #49: the icon's radius about its middle in every direction — the free viewer fits it by this.) */
+    private val radius3: Float
 
     init {
         var r = 0f
@@ -111,6 +113,12 @@ internal class Ps2IconMesh(icon: Ps2Icons.Icon) {
         radius = r.coerceAtLeast(0.01f)
         yMid = if (n > 0) (y0 + y1) / 2f else 0f
         yHalf = if (n > 0) ((y1 - y0) / 2f).coerceAtLeast(0.01f) else 1f
+        var r3 = 0f
+        for (i in 0 until n) {
+            val x = pos[i * 3]; val y = pos[i * 3 + 1] - yMid; val z = pos[i * 3 + 2]
+            r3 = max(r3, sqrt(x * x + y * y + z * z))
+        }
+        radius3 = r3.coerceAtLeast(0.01f)
     }
 
     val ok: Boolean get() = tris > 0
@@ -134,6 +142,39 @@ internal class Ps2IconMesh(icon: Ps2Icons.Icon) {
             verts[i * 2 + 1] = cy + (y - yMid) * k * f
             rz[i] = zr
         }
+        finish(c)
+    }
+
+    /**
+     * (Update 241, #49: the Save Vault Inspect viewer's free turn — [yawDeg] about the upright, then [pitchDeg] about the
+     * level (positive: its top comes towards you), fitted by its radius in every direction so it never leaves [w] × [h]
+     * however it's turned. The vault's own tiles keep [draw].)
+     */
+    fun drawFree(c: android.graphics.Canvas, w: Float, h: Float, yawDeg: Float, pitchDeg: Float) {
+        if (tris == 0 || w <= 1f || h <= 1f) return
+        val a = Math.toRadians(yawDeg.toDouble()); val b = Math.toRadians(pitchDeg.toDouble())
+        val cs = cos(a).toFloat(); val sn = sin(a).toFloat()
+        val cp = cos(b).toFloat(); val sp = sin(b).toFloat()
+        val d = radius3 * 3.5f
+        val k = min(w, h) * 0.42f / (radius3 * 1.4f)
+        val cx = w / 2f; val cy = h / 2f
+        for (i in 0 until n) {
+            val x = pos[i * 3]; val y = pos[i * 3 + 1] - yMid; val z = pos[i * 3 + 2]
+            val xr = x * cs - z * sn
+            val z1 = x * sn + z * cs
+            // y points down: its top (−y) comes nearer (−z) as the pitch grows.
+            val yr = y * cp - z1 * sp
+            val zr = y * sp + z1 * cp
+            val f = d / (d + zr).coerceAtLeast(d * 0.2f)
+            verts[i * 2] = cx + xr * k * f
+            verts[i * 2 + 1] = cy + yr * k * f
+            rz[i] = zr
+        }
+        finish(c)
+    }
+
+    /** Back to front, then drawn (the projected [verts] / depths [rz] are set). */
+    private fun finish(c: android.graphics.Canvas) {
         for (t in 0 until tris) depth[t] = rz[t * 3] + rz[t * 3 + 1] + rz[t * 3 + 2]
         sortBackToFront()
         for (t in 0 until tris) {
@@ -168,7 +209,7 @@ internal class Ps2IconMesh(icon: Ps2Icons.Icon) {
 }
 
 /** (Update 239, #112: an offscreen picture for hardware canvases that can't draw vertices — before Android 10.) */
-private class SoftBuffer {
+internal class SoftBuffer {
     var bitmap: Bitmap? = null
     var canvas: android.graphics.Canvas? = null
     fun ensure(w: Int, h: Int): Bitmap? {
@@ -201,19 +242,26 @@ internal fun Ps2IconView(mesh: Ps2IconMesh, turning: Boolean, fast: Boolean, mod
     }
 }
 
-private fun DrawScope.drawMesh(mesh: Ps2IconMesh, buffer: SoftBuffer, angle: Float) {
+private fun DrawScope.drawMesh(mesh: Ps2IconMesh, buffer: SoftBuffer, angle: Float) = drawPs2Mesh(mesh, buffer, angle, null)
+
+/**
+ * (Update 241, #49: [mesh] filling this scope, turned [angle]° — and, with [pitch] (the Inspect viewer), tilted too and
+ * fitted for any turn (Ps2IconMesh.drawFree). Straight onto the canvas where it can draw vertices, else through [buffer].)
+ */
+internal fun DrawScope.drawPs2Mesh(mesh: Ps2IconMesh, buffer: SoftBuffer, angle: Float, pitch: Float?) {
     val w = size.width; val h = size.height
     drawIntoCanvas { cv ->
         val nc = cv.nativeCanvas
         runCatching {
-            if (!nc.isHardwareAccelerated || android.os.Build.VERSION.SDK_INT >= 29) mesh.draw(nc, w, h, angle)
-            else {
+            if (!nc.isHardwareAccelerated || android.os.Build.VERSION.SDK_INT >= 29) {
+                if (pitch != null) mesh.drawFree(nc, w, h, angle, pitch) else mesh.draw(nc, w, h, angle)
+            } else {
                 val b = buffer.ensure(w.toInt(), h.toInt()) ?: return@runCatching
                 val bc = buffer.canvas ?: return@runCatching
                 b.eraseColor(0)
                 bc.save()
                 bc.scale(b.width / w, b.height / h)
-                mesh.draw(bc, w, h, angle)
+                if (pitch != null) mesh.drawFree(bc, w, h, angle, pitch) else mesh.draw(bc, w, h, angle)
                 bc.restore()
                 nc.drawBitmap(b, null, android.graphics.RectF(0f, 0f, w, h), null)
             }

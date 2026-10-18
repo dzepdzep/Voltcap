@@ -89,7 +89,9 @@ internal object HomeEditSession {
         "styles" to Features.partStyles.value,
         "backing" to Features.partBackingSolid.value.toString(),
         "art" to Features.artPosLooks.value,
-        "artBox" to "${Features.artShiftCase.value},${Features.artDropCase.value},${Features.artZoomCase.value}"
+        "artBox" to "${Features.artShiftCase.value},${Features.artDropCase.value},${Features.artZoomCase.value}",
+        // (Update 241, #06: which parts are inside a hollow part — HomeNest.)
+        "nest" to HomeNest.raw
     )
 
     private fun writePrefs(m: Map<String, String>) {
@@ -98,6 +100,7 @@ internal object HomeEditSession {
         m["styles"]?.let { if (Features.partStyles.value != it) Features.partStyles.value = it }
         m["backing"]?.toIntOrNull()?.let { if (Features.partBackingSolid.value != it) Features.partBackingSolid.value = it }
         m["art"]?.let { if (Features.artPosLooks.value != it) Features.artPosLooks.value = it }
+        m["nest"]?.let { HomeNest.set(it) }
         m["artBox"]?.split(',')?.mapNotNull { it.toIntOrNull() }?.takeIf { it.size == 3 }?.let { v ->
             if (Features.artShiftCase.value != v[0]) Features.artShiftCase.value = v[0]
             if (Features.artDropCase.value != v[1]) Features.artDropCase.value = v[1]
@@ -197,6 +200,8 @@ internal object HomeEditSession {
     /** At start: an edit session left unfinished when Voltcap closed is put back (nothing of it was kept). */
     fun recover(context: android.content.Context) {
         if (store == null) store = runCatching { context.applicationContext.getSharedPreferences("session", android.content.Context.MODE_PRIVATE) }.getOrNull()
+        // (Update 241, #06: the parts inside hollow parts, read before an unfinished edit is put back.)
+        HomeNest.init(context)
         if (HomeEditState.active) return
         val saved = runCatching { store?.getString(DRAFT, "") }.getOrNull().orEmpty()
         if (saved.isBlank()) return
@@ -236,6 +241,8 @@ internal object HomeEditSession {
         push("reset:$id", force = true)
         HomeEditState.resetOne(id)
         PartStyles.set(id, PartStyle())
+        // (Update 241, #06: out of the hollow part it was in.)
+        HomeNest.release(id)
     }
 
     /**
@@ -248,6 +255,8 @@ internal object HomeEditSession {
         listOf(HomeEditState.live, HomeEditState.liveShift, HomeEditState.liveStretch).forEach { m -> m.keys.filter { belongs(it, layout) }.forEach { m.remove(it) } }
         HomeEditState.liveScale.keys.filter { belongs(it, layout) }.forEach { HomeEditState.liveScale.remove(it) }
         Features.partStyles.value = PartStyles.format(PartStyles.parse(Features.partStyles.value).filterKeys { !belongs(it, layout) })
+        // (Update 241, #06: and its parts out of the hollow parts.)
+        HomeNest.releaseLayout(layout)
     }
 
     /** [id] is shown on the home screen (not hidden, and — a part added to a layout — still added). */
@@ -285,7 +294,8 @@ internal object HomeEditSession {
         HomeWidgets.present.filter { it !in HomeWidgets.all }.forEach { out += it }
         Features.overlayPartsFor(layout).forEach { out += HomeWidgets.overlayId(layout, it) }
         LayoutParts.registered.keys.filter { it.startsWith(LayoutParts.PREFIX + layout.name + ":") }.sorted().forEach { out += it }
-        return out.toList().ifEmpty { HomeWidgets.all }
+        // (Update 241, #06: a part inside a hollow part comes right after it.)
+        return HomeNest.order(out.toList()).ifEmpty { HomeWidgets.all }
     }
 
     fun elementsList(): List<String> {
@@ -419,6 +429,17 @@ private fun InspectorBody(id: String, folded: Boolean, onFold: (() -> Unit)?, on
             when (tab) {
                 0 -> {
                     PartSizeControls(id)
+                    Spacer(Modifier.height(6.dp))
+                    // (Update 241, #06: in / out of a hollow part on this screen, as dropping it there does.)
+                    val inside = HomeNest.anchorOf(id)
+                    val room = if (inside == null) HomeNest.containerFor(id) else null
+                    if (inside != null) {
+                        Chip("Take out of ${HomeWidgets.label(inside.parent)}", accent = false) { HomeEditSession.push("nest:$id", force = true); HomeNest.release(id) }
+                        MutedNote("It's inside ${HomeWidgets.label(inside.parent)} and moves with it; the D-pad moves it inside it.")
+                    } else if (room != null) {
+                        Chip("Put inside ${HomeWidgets.label(room)}", accent = false) { HomeEditSession.push("nest:$id", force = true); HomeNest.putInside(id, room) }
+                        MutedNote("Or drag it there: let go with its middle in the dashed area.")
+                    }
                     Spacer(Modifier.height(6.dp))
                     Chip("Reset this part", accent = false) { HomeEditSession.resetSelected(id) }
                 }

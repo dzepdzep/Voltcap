@@ -56,27 +56,53 @@ internal object SaveMatch {
     }
 
     /**
+     * Update 241 (#74): what [match] found — the game, or (when [game] is null) how many different library games fit
+     * equally well ([ambiguous] > 1: the save is left unassigned rather than given to one of them at random).
+     */
+    data class Match(val game: Game?, val ambiguous: Int = 0)
+
+    /**
      * The library game a save named [fileStem] (its file name without the type, core already taken off) belongs to:
      * the same file name first, then the same name with its tags, then the same title without tags. Within each step a
      * game of the save's console ([platformHint]) wins. [allowed] says which games may hold this kind of save.
      */
-    fun best(fileStem: String, platformHint: String?, among: List<Named>, allowed: (Game) -> Boolean = { true }): Game? {
-        if (among.isEmpty()) return null
+    fun best(fileStem: String, platformHint: String?, among: List<Named>, allowed: (Game) -> Boolean = { true }): Game? =
+        match(fileStem, platformHint, among, allowed).game
+
+    /**
+     * [best], telling an ambiguous name apart from no match (update 241, #74). Within a step: exactly one game of the
+     * save's console → that game; several → none (ambiguous), and no looser step is tried (it could only be less
+     * sure). No game of its console but exactly one of another → that one (consoles are named differently across
+     * libraries: "mame" / "arcade"); several → ambiguous. Before, the first of several was taken: a save could land
+     * silently on another region's or another console's game.
+     */
+    fun match(fileStem: String, platformHint: String?, among: List<Named>, allowed: (Game) -> Boolean = { true }): Match {
+        if (among.isEmpty()) return Match(null)
         val stem = fold(fileStem)
         val tags = tagKey(fileStem)
         val title = MemoryCards.titleKey(com.shelf.launcher.ui.stripRegionTags(fileStem))
-        fun pick(test: (Named) -> Boolean): Game? {
-            var other: Game? = null
+        // [sameName]: every candidate has the save's exact file name (with its tags) — copies of one ROM on one console
+        // are the same game, so the first is fine there; a looser title match never is.
+        fun pick(sameName: Boolean, test: (Named) -> Boolean): Match? {
+            val same = LinkedHashMap<String, Game>()
+            val other = LinkedHashMap<String, Game>()
             for (n in among) {
                 if (!test(n) || !allowed(n.game)) continue
-                if (samePlatform(platformHint, n.game.platform)) return n.game
-                if (other == null) other = n.game
+                if (samePlatform(platformHint, n.game.platform)) same.putIfAbsent(n.game.stableKey, n.game)
+                else other.putIfAbsent(n.game.stableKey, n.game)
             }
-            return other
+            return when {
+                same.size == 1 -> Match(same.values.first())
+                same.size > 1 -> if (sameName) Match(same.values.first()) else Match(null, same.size)
+                other.size == 1 -> Match(other.values.first())
+                other.size > 1 -> Match(null, other.size)
+                else -> null
+            }
         }
-        return pick { it.stem == stem }
-            ?: (if (tags.length >= 3) pick { it.tagKey == tags } else null)
-            ?: pick { keysMatch(title, it.titleKey) || keysMatch(it.titleKey, title) }
+        return pick(true) { it.stem == stem }
+            ?: (if (tags.length >= 3) pick(true) { it.tagKey == tags } else null)
+            ?: pick(false) { keysMatch(title, it.titleKey) || keysMatch(it.titleKey, title) }
+            ?: Match(null)
     }
 
     /** [MemoryCards.titleMatches] on names already turned into keys. */

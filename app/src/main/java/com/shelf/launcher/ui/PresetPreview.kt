@@ -47,13 +47,22 @@ internal fun PresetPreview(
     /** Update 162: the carousel's view when the layout shows its games as the carousel; null = its own row / grid. */
     carousel: CarouselView? = null,
     /** Update 162: the layout options the preset sets (Features key -> value); the others are drawn as they are now. */
-    options: Map<String, String> = emptyMap()
+    options: Map<String, String> = emptyMap(),
+    // (Update 241, #110: where the row sits, the game you're on in the middle or at the left, as a wide capsule or a
+    // cover, the other games dimmed / leaning away, and Tile home's tile size — set by presets, drawn now.)
+    dock: com.shelf.launcher.data.DockPosition = com.shelf.launcher.data.DockPosition.BOTTOM,
+    focusCenter: Boolean = false,
+    focusedWide: Boolean = true,
+    dimOthers: Boolean = false,
+    tiltOthers: Boolean = false,
+    tileScale: Float = 1f
 ) {
     val accent = ShelfTheme.accent
     val bg = ShelfTheme.colors.background
     val surface = ShelfTheme.colors.surface
     Canvas(modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(uiRounded(12.dp))) {
-        val p = PreviewPainter(this, accent, bg, surface, focusEffect, cardScale, art, corners.radiusDp / 10f, tiles, spines, carts, models, options)
+        val p = PreviewPainter(this, accent, bg, surface, focusEffect, cardScale, art, corners.radiusDp / 10f, tiles, spines, carts, models, options,
+            dock, focusCenter, focusedWide, dimOthers, tiltOthers, tileScale)
         p.background(layout, background)
         // Update 162: every layout drawn as itself (the newer ones had the nearest older preview), the carousel ones
         // with their carousel view when it is on.
@@ -91,7 +100,7 @@ internal fun PresetPreview(
             HomeLayout.POCKET_CLASSIC -> p.pocketClassic()
             HomeLayout.POCKET_RIBBON -> p.pocketRibbon()
             // Update 202: Green Core draws its own little screen (GreenCoreSphere.kt).
-            HomeLayout.GREENCORE -> greenCorePreview(this, accent)
+            HomeLayout.GREENCORE -> { greenCorePreview(this, accent); p.greenCoreBrowse() }
             // Update 202: Pocket Quest draws its own little screen (PocketQuestScenery.kt).
             HomeLayout.POCKET -> pqPreview()
             // (Update 239, #93: Cube menu.)
@@ -114,7 +123,14 @@ private class PreviewPainter(
     val spines: Boolean = false,
     val carts: Boolean = false,
     val models: Boolean = false,
-    val options: Map<String, String> = emptyMap()
+    val options: Map<String, String> = emptyMap(),
+    // (Update 241, #110.)
+    val dock: com.shelf.launcher.data.DockPosition = com.shelf.launcher.data.DockPosition.BOTTOM,
+    val focusCenter: Boolean = false,
+    val focusedWide: Boolean = true,
+    val dimOthers: Boolean = false,
+    val tiltOthers: Boolean = false,
+    val tileScale: Float = 1f
 ) {
     val w = d.size.width
     val h = d.size.height
@@ -141,20 +157,27 @@ private class PreviewPainter(
 
     /** A cover with a picture-ish gradient; [on] = the game you're on (focus effect + outline). */
     fun card(
-        x: Float, y: Float, ww: Float, hh: Float, i: Int, on: Boolean = false, r0: Float = 3f, ring: Color = accent,
+        x: Float, y0: Float, ww: Float, hh0: Float, i: Int, on: Boolean = false, r0: Float = 3f, ring: Color = accent,
         /** Update 162: the cover whatever the look (layouts that draw their own square tiles, sleeves, cards…). */
         plainCover: Boolean = false
     ) {
-        // Update 162: the game look's switches — Cartridges / 3D models every game as a cartridge, Spines a slim spine
-        // beside the game you're on, Tile rounder squares.
+        // Update 162: the game look's switches — Cartridges every game as a cartridge, Spines a slim spine beside the
+        // game you're on, Tile rounder squares. (Update 241, #110: the 3D finish alone no longer turns discs into
+        // cartridges — only the Cartridges switch does, as on the home screen.)
         val look = if (plainCover) com.shelf.launcher.data.CardArtType.COVER else this.art
-        if (look == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && (carts || models)) { cartridge(x, y, ww, hh, i, on, ring, models); return }
+        if (look == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && carts) { cartridge(x, y0, ww, hh0, i, on, ring, models); return }
+        // (Update 241, #110: wide artwork (capsule, hero, screenshot) drawn wide in a tall slot, so "wide art" presets
+        // look wide — they were the same tall cover as the standard preset.)
+        val wideArt = (look == com.shelf.launcher.data.CardArtType.CAPSULE || look == com.shelf.launcher.data.CardArtType.HERO ||
+            look == com.shelf.launcher.data.CardArtType.SCREENSHOT) && hh0 * h > ww * w * 0.75f
+        val hh = if (wideArt) ww * w / h / 2.1f else hh0
+        val y = if (wideArt) y0 + (hh0 - hh) / 2f else y0
         if (look == com.shelf.launcher.data.CardArtType.COVER && spines && !on && !plainCover) { spine(x, y, ww, hh, i); return }
         val r = (if (look == com.shelf.launcher.data.CardArtType.COVER && tiles && !plainCover) maxOf(r0, 8f) else r0) * cornerK
         when (look) {
             com.shelf.launcher.data.CardArtType.DISC -> { disc(x, y, ww, hh, i, on, ring); return }
             com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC -> {
-                if (i % 2 == 0) disc(x, y, ww, hh, i, on, ring) else cartridge(x, y, ww, hh, i, on, ring)
+                if (i % 2 == 0) disc(x, y, ww, hh, i, on, ring) else cartridge(x, y, ww, hh, i, on, ring, models)
                 return
             }
             else -> Unit
@@ -228,23 +251,60 @@ private class PreviewPainter(
         if (on) frame(cx, cy, cw, ch, ring, 3f, 2f)
     }
 
+    /** (Update 241, #110) Live tiles' / Channel grid's pale backdrop, as their options set it (styleOwnsBackground). */
+    private fun pale(layout: HomeLayout): Boolean = when (layout) {
+        HomeLayout.LIVE -> ob(Features.liveLight) && !ob(Features.liveArt)
+        HomeLayout.CHAN -> ob(Features.chanLight) && !ob(Features.chanArt)
+        HomeLayout.HERO_TILES -> ob(Features.heroTilesPale)
+        else -> false
+    }
+
+    /** (Update 241, #110) The game's art behind a style home as its own option says (styleArtBehind); null = not its own. */
+    private fun artBehind(layout: HomeLayout): Boolean? = when (layout) {
+        HomeLayout.HERO -> true
+        HomeLayout.SIDE -> ob(Features.sideArt)
+        HomeLayout.SPOT -> ob(Features.spotArt)
+        HomeLayout.BAR -> ob(Features.barArt)
+        HomeLayout.HUB -> ob(Features.hubArt)
+        HomeLayout.RESUME -> ob(Features.resArt)
+        HomeLayout.LIVE -> ob(Features.liveArt)
+        HomeLayout.CHAN -> ob(Features.chanArt)
+        else -> null
+    }
+
+    private fun themeBackdrop() {
+        d.drawRect(Brush.linearGradient(listOf(bg, surface, accent.copy(alpha = 0.35f)), Offset.Zero, Offset(w, h)))
+        // The animated scene, hinted by soft lights.
+        for (i in 0..5) dot(0.1f + i * 0.17f, 0.2f + (i % 3) * 0.22f, 10f + (i % 2) * 8f, accent.copy(alpha = 0.08f))
+    }
+
     fun background(layout: HomeLayout, style: BackgroundStyle) {
+        if ((layout == HomeLayout.LIVE || layout == HomeLayout.CHAN) && pale(layout)) {
+            d.drawRect(Brush.verticalGradient(listOf(Color(0xFFF2F2F2), Color(0xFFD8D8D8)))); return
+        }
+        // (Update 241, #110: the style homes' own "game's art behind" option — Resume on your theme, Hub on your theme,
+        // Live tiles on art, Rounded icon bar showed the same background as their standard preset.)
+        when (artBehind(layout)) {
+            true -> {
+                if (layout == HomeLayout.BAR && ob(Features.barArtCut)) {
+                    themeBackdrop()
+                    d.clipRect(0f, 0f, w, h * 0.55f) { heroArt(style == BackgroundStyle.BLURRED) }
+                } else heroArt(style == BackgroundStyle.BLURRED)
+                return
+            }
+            false -> { if (style == BackgroundStyle.BLACK) d.drawRect(Color(0xFF050608)) else themeBackdrop(); return }
+            null -> Unit
+        }
         when (layout) {
-            HomeLayout.LIVE, HomeLayout.CHAN -> { d.drawRect(Brush.verticalGradient(listOf(Color(0xFFF2F2F2), Color(0xFFD8D8D8)))); return }
             // Update 162: Hero tiles' pale backdrop.
             HomeLayout.HERO_TILES -> if (ob(Features.heroTilesPale)) { d.drawRect(Brush.verticalGradient(listOf(Color(0xFFF4F5F7), Color(0xFFDDE0E5)))); return }
             HomeLayout.CROSS -> { d.drawRect(Brush.verticalGradient(listOf(Color(0xFF3B2350), Color(0xFFB59AD8)))); waves(); return }
             else -> Unit
         }
-        val heroBehind = layout == HomeLayout.HERO || layout == HomeLayout.SIDE || layout == HomeLayout.SPOT || layout == HomeLayout.HUB || layout == HomeLayout.RESUME
-        when {
-            style == BackgroundStyle.BLACK && !heroBehind -> d.drawRect(Color(0xFF050608))
-            style == BackgroundStyle.ART || style == BackgroundStyle.BLURRED || heroBehind -> heroArt(style == BackgroundStyle.BLURRED)
-            else -> {
-                d.drawRect(Brush.linearGradient(listOf(bg, surface, accent.copy(alpha = 0.35f)), Offset.Zero, Offset(w, h)))
-                // The animated scene, hinted by soft lights.
-                for (i in 0..5) dot(0.1f + i * 0.17f, 0.2f + (i % 3) * 0.22f, 10f + (i % 2) * 8f, accent.copy(alpha = 0.08f))
-            }
+        when (style) {
+            BackgroundStyle.BLACK -> d.drawRect(Color(0xFF050608))
+            BackgroundStyle.ART, BackgroundStyle.BLURRED -> heroArt(style == BackgroundStyle.BLURRED)
+            else -> themeBackdrop()
         }
     }
 
@@ -274,7 +334,8 @@ private class PreviewPainter(
 
     fun statusBar(layout: HomeLayout) {
         // (Update 162: dark on Hero tiles' pale backdrop too.)
-        val ink = if (layout == HomeLayout.LIVE || (layout == HomeLayout.HERO_TILES && ob(Features.heroTilesPale))) Color(0xFF333333) else Color.White
+        // (Update 241, #110: and on Live tiles / Channel grid only while their pale backdrop is on.)
+        val ink = if (pale(layout)) Color(0xFF333333) else Color.White
         for (i in 0..3) dot(0.74f + i * 0.045f, 0.06f, 2.2f, ink.copy(alpha = 0.75f))
         line(0.92f, 0.05f, 0.05f, ink.copy(alpha = 0.75f), 0.02f)
     }
@@ -284,18 +345,62 @@ private class PreviewPainter(
         for (i in 0..3) { dot(0.06f + i * 0.14f, 0.965f, 2.5f, Color.White.copy(alpha = 0.7f)); line(0.08f + i * 0.14f, 0.955f, 0.06f, Color.White.copy(alpha = 0.55f), 0.018f) }
     }
 
+    /** (Update 241, #110) One of the other games in a row: leaning away (narrower) and / or dimmed, as the preset sets it. */
+    private fun other(x: Float, y: Float, ww: Float, hh: Float, i: Int, r0: Float = 3f) {
+        val tw = if (tiltOthers) ww * 0.8f else ww
+        val tx = x + (ww - tw) / 2f
+        card(tx, y, tw, hh, i, r0 = r0)
+        if (dimOthers) rect(tx, y, tw, hh, Color.Black.copy(alpha = 0.45f), r0 * cornerK)
+    }
+
+    /** (Update 241, #110) Where the row's top sits for the dock position (Top / Middle / Bottom), for a row [rowH] high. */
+    private fun rowTop(rowH: Float, bottomEdge: Float): Float = when (dock) {
+        com.shelf.launcher.data.DockPosition.TOP -> 0.2f
+        com.shelf.launcher.data.DockPosition.MIDDLE -> 0.5f - rowH / 2f
+        com.shelf.launcher.data.DockPosition.BOTTOM -> bottomEdge - rowH
+    }
+
     fun classic() {
+        // (Update 241, #110: the row's place, the game you're on in the middle or at the left end, as its wide capsule
+        // or as a cover, and the other games dimmed / leaning — "Cover shelf" and "Big tiles" drew the standard row.)
         val ch = 0.3f * k
-        val y = 0.62f - (ch - 0.3f)
-        line(0.05f, y - 0.1f, 0.25f, Color.White, 0.035f)
-        card(0.05f, y, 0.3f * k, ch, 0, on = true)
-        for (i in 1..5) card(0.07f + 0.3f * k + (i - 1) * 0.135f * k, y + 0.03f, 0.11f * k, ch - 0.03f, i)
+        val y = rowTop(ch, 0.92f)
+        val fw = if (focusedWide) 0.3f * k else 0.15f * k
+        val sw = 0.11f * k
+        val gap = 0.025f * k
+        if (focusCenter) {
+            val fx = 0.5f - fw / 2f
+            line(0.375f, y - 0.1f, 0.25f, Color.White, 0.035f)
+            for (j in 1..4) {
+                other(fx - j * (sw + gap), y + 0.03f, sw, ch - 0.03f, 10 - j)
+                other(fx + fw + gap + (j - 1) * (sw + gap), y + 0.03f, sw, ch - 0.03f, j)
+            }
+            card(fx, y, fw, ch, 0, on = true)
+        } else {
+            line(0.05f, y - 0.1f, 0.25f, Color.White, 0.035f)
+            card(0.05f, y, fw, ch, 0, on = true)
+            for (i in 1..6) {
+                val x = 0.05f + fw + gap + (i - 1) * (sw + gap)
+                if (x > 1f) break
+                other(x, y + 0.03f, sw, ch - 0.03f, i)
+            }
+        }
     }
 
     fun tiles() {
-        val s = 0.15f * k
-        line(0.24f, 0.36f, 0.2f, Color.White, 0.035f)
-        for (i in 0..4) card(0.06f + i * (s + 0.025f) + (if (i > 1) 0.03f else 0f), 0.44f - (if (i == 1) 0.03f else 0f), if (i == 1) s + 0.03f else s, (if (i == 1) s + 0.03f else s) * w / h, i, on = i == 1, r0 = 8f)
+        // (Update 241, #110: Tile home's own tile size and the row's place — "Big tile home" drew the standard picture.)
+        val s = 0.15f * k * tileScale
+        val big = s + 0.03f
+        val y = rowTop(big * w / h, 0.74f) + 0.03f
+        line(0.24f, y - 0.08f, 0.2f, Color.White, 0.035f)
+        var x = 0.06f
+        for (i in 0..6) {
+            val on = i == 1
+            val ww = if (on) big else s
+            if (x + ww > 0.98f) break
+            card(x, y - (if (on) 0.03f else 0f), ww, ww * w / h, i, on = on, r0 = 8f)
+            x += ww + 0.025f
+        }
         for (i in 0..5) dot(0.3f + i * 0.08f, 0.9f, 4f, Color.White.copy(alpha = if (i == 0) 0.9f else 0.45f))
     }
 
@@ -359,7 +464,10 @@ private class PreviewPainter(
         line(0.24f, 0.33f, 0.24f, Color.White, 0.04f)
         rect(0.24f, 0.42f, 0.11f, 0.06f, accent, 2f)
         rect(0.21f, 0.58f, 0.52f, 0.24f, glass, 6f)
-        for (i in 0..4) card(0.23f + i * 0.095f, 0.62f, 0.075f, 0.17f, i, on = i == 0)
+        // (Update 241, #110: wide artwork makes Quick access's cards wide, fewer to the row, as StyleDashboard sizes them.)
+        val wide = art == com.shelf.launcher.data.CardArtType.CAPSULE || art == com.shelf.launcher.data.CardArtType.HERO || art == com.shelf.launcher.data.CardArtType.SCREENSHOT
+        if (wide) for (i in 0..2) card(0.23f + i * 0.165f, 0.625f, 0.15f, 0.15f, i, on = i == 0, plainCover = true)
+        else for (i in 0..4) card(0.23f + i * 0.095f, 0.62f, 0.075f, 0.17f, i, on = i == 0)
         rect(0.21f, 0.85f, 0.52f, 0.1f, glass, 6f)
         for (i in 0..4) rect(0.225f + i * 0.1f, 0.87f, 0.09f, 0.06f, if (i == 0) accent else Color(0xFF243140).copy(alpha = 0.15f), 2f)
         rect(0.75f, 0.12f, 0.22f, 0.3f, glass, 6f)
@@ -370,13 +478,15 @@ private class PreviewPainter(
     }
 
     fun live() {
-        val ink = Color(0xFF2B2B2B)
+        // (Update 241, #110: light text over the game's art when the pale backdrop is off.)
+        val ink = if (pale(HomeLayout.LIVE)) Color(0xFF2B2B2B) else Color.White
         line(0.05f, 0.13f, 0.1f, ink.copy(alpha = 0.35f), 0.05f)
         line(0.18f, 0.13f, 0.12f, ink, 0.05f)
         for (i in 0..2) line(0.34f + i * 0.14f, 0.13f, 0.1f, ink.copy(alpha = 0.35f), 0.05f)
-        card(0.05f, 0.24f, 0.42f, 0.45f, 0, on = false, r0 = 0f)
+        // (Update 241, #110: Live tiles always shows the games' wide art, square-cornered — the game look doesn't change it.)
+        card(0.05f, 0.24f, 0.42f, 0.45f, 0, on = false, r0 = 0f, plainCover = true)
         frame(0.05f, 0.24f, 0.42f, 0.45f, ink, 0f, 2.5f)
-        for (r in 0..1) for (c in 0..1) card(0.5f + c * 0.23f, 0.24f + r * 0.235f, 0.21f, 0.215f, 1 + r * 2 + c, r0 = 0f)
+        for (r in 0..1) for (c in 0..1) card(0.5f + c * 0.23f, 0.24f + r * 0.235f, 0.21f, 0.215f, 1 + r * 2 + c, r0 = 0f, plainCover = true)
         for (i in 0..3) rect(0.05f + i * 0.235f, 0.73f, 0.21f, 0.14f, if (i == 0) Color(0xFF107C10) else Color(0xFF2E2E2E), 0f)
         line(0.05f, 0.9f, 0.3f, ink.copy(alpha = 0.7f), 0.03f)
     }
@@ -406,17 +516,38 @@ private class PreviewPainter(
             dot(0.22f + i * 0.13f, 0.24f, if (on) 11f else 7f, Color.White.copy(alpha = if (on) 1f else 0.6f))
         }
         line(0.15f, 0.36f, 0.14f, Color.White, 0.03f)
-        card(0.16f, 0.44f, 0.22f, 0.2f, 0, on = true, r0 = 2f, ring = Color.White)
+        // (Update 241, #110: the list shows the games' wide art, or square tiles with the Tile look (StyleCrossMenu) —
+        // never discs or cases, so it is drawn so here too.)
+        val tile = art == com.shelf.launcher.data.CardArtType.COVER && tiles && !spines
+        val bw = if (tile) 0.128f else 0.22f
+        card(0.16f + (0.22f - bw), 0.43f, bw, 0.227f, 0, on = true, r0 = if (tile) 8f else 2f, ring = Color.White, plainCover = true)
         line(0.41f, 0.47f, 0.3f, Color.White, 0.04f); line(0.41f, 0.54f, 0.14f, Color.White.copy(alpha = 0.7f))
-        for (r in 0..1) { card(0.19f, 0.7f + r * 0.15f, 0.15f, 0.12f, r + 1, r0 = 2f); line(0.41f, 0.75f + r * 0.15f, 0.18f, Color.White.copy(alpha = 0.75f)) }
+        val sw = if (tile) 0.07f else 0.15f
+        for (r in 0..1) { card(0.19f + (0.15f - sw), 0.7f + r * 0.15f, sw, 0.124f, r + 1, r0 = if (tile) 6f else 2f, plainCover = true); line(0.41f, 0.75f + r * 0.15f, 0.18f, Color.White.copy(alpha = 0.75f)) }
     }
 
     fun spot() {
         d.drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.25f), 0.35f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.55f)))
         line(0.05f, 0.11f, 0.08f, Color.White, 0.03f); line(0.17f, 0.11f, 0.07f, Color.White.copy(alpha = 0.5f), 0.03f)
-        card(0.05f, 0.18f, 0.1f, 0.18f, 0, on = true, r0 = 5f, ring = Color.White)
-        line(0.17f, 0.25f, 0.14f, Color.White, 0.03f)
-        for (i in 1..5) card(0.33f + (i - 1) * 0.085f, 0.2f, 0.07f, 0.125f, i, r0 = 4f)
+        // (Update 241, #110: the tiles' shape is Spotlight's own option — squares (the cover cropped), wide capsules, or
+        // the game look's shape; "Spotlight · wide art" drew the same squares.)
+        when (oe(Features.spotShape)) {
+            Features.TileShape.WIDE.name -> {
+                card(0.05f, 0.18f, 0.17f, 0.17f, 0, on = true, r0 = 5f, ring = Color.White, plainCover = true)
+                line(0.24f, 0.25f, 0.12f, Color.White, 0.03f)
+                for (i in 1..4) card(0.38f + (i - 1) * 0.135f, 0.2f, 0.12f, 0.12f, i, r0 = 4f, plainCover = true)
+            }
+            Features.TileShape.SQUARE.name -> {
+                card(0.05f, 0.18f, 0.1f, 0.18f, 0, on = true, r0 = 5f, ring = Color.White, plainCover = true)
+                line(0.17f, 0.25f, 0.14f, Color.White, 0.03f)
+                for (i in 1..5) card(0.33f + (i - 1) * 0.085f, 0.2f, 0.07f, 0.125f, i, r0 = 4f, plainCover = true)
+            }
+            else -> {
+                card(0.05f, 0.18f, 0.1f, 0.18f, 0, on = true, r0 = 5f, ring = Color.White)
+                line(0.17f, 0.25f, 0.14f, Color.White, 0.03f)
+                for (i in 1..5) card(0.33f + (i - 1) * 0.085f, 0.2f, 0.07f, 0.125f, i, r0 = 4f)
+            }
+        }
         line(0.05f, 0.5f, 0.42f, Color.White, 0.08f)
         rect(0.05f, 0.64f, 0.14f, 0.08f, Color(0xFFE9E9EC), 20f)
         dot(0.23f, 0.68f, 6f, Color(0xFF3A3D44))
@@ -425,8 +556,10 @@ private class PreviewPainter(
 
     fun bar() {
         for (i in 0..6) rect(0.27f + i * 0.068f, 0.13f, 0.045f, 0.08f, if (i == 2) accent else Color.White.copy(alpha = 0.15f), 3f)
-        card(0.05f, 0.32f, 0.2f * k, 0.36f * k, 0, on = true, r0 = 2f, ring = Color.White)
-        for (i in 1..6) card(0.07f + 0.2f * k + (i - 1) * 0.12f, 0.32f, 0.11f, 0.2f, i, r0 = 2f)
+        // (Update 241, #110: square tiles while the Icon bar's Squares option is on, as StyleIconBar draws them.)
+        val sq = ob(Features.barSquares)
+        card(0.05f, 0.32f, 0.2f * k, 0.36f * k, 0, on = true, r0 = 2f, ring = Color.White, plainCover = sq)
+        for (i in 1..6) card(0.07f + 0.2f * k + (i - 1) * 0.12f, 0.32f, 0.11f, 0.2f, i, r0 = 2f, plainCover = sq)
         line(0.05f, 0.33f + 0.36f * k + 0.04f, 0.25f, Color.White, 0.035f)
         frame(0.05f, 0.33f + 0.36f * k + 0.11f, 0.1f, 0.07f, Color.White, 2f, 1.2f)
     }
@@ -435,8 +568,9 @@ private class PreviewPainter(
     fun hub() {
         dot(0.07f, 0.1f, 6f, Color.White.copy(alpha = 0.6f))
         for (i in 0..3) dot(0.4f + i * 0.07f, 0.1f, 4f, Color.White.copy(alpha = 0.5f))
-        card(0.05f, 0.4f, 0.17f * k, 0.3f * k, 0, on = true, r0 = 2f, ring = Color.White)
-        for (i in 1..7) card(0.07f + 0.17f * k + (i - 1) * 0.1f, 0.4f, 0.085f, 0.15f, i, r0 = 2f)
+        // (Update 241, #110: the hub's row always shows square covers (HubTiles), whatever the game look.)
+        card(0.05f, 0.4f, 0.17f * k, 0.3f * k, 0, on = true, r0 = 2f, ring = Color.White, plainCover = true)
+        for (i in 1..7) card(0.07f + 0.17f * k + (i - 1) * 0.1f, 0.4f, 0.085f, 0.15f, i, r0 = 2f, plainCover = true)
         for (i in 0..2) rect(0.05f + i * 0.31f, 0.76f, 0.29f, 0.14f, Color.Black.copy(alpha = 0.55f), 2f)
     }
 
@@ -452,10 +586,16 @@ private class PreviewPainter(
 
     /** Channel grid: three rows of wide tiles, a curved bar with a clock. */
     fun chan() {
-        for (r in 0..2) for (c in 0..3) {
+        // (Update 241, #110: channels to a row as the preset sets it — "Wide channels" drew four to a row too.)
+        val cols = oi(Features.chanCols).coerceIn(2, 6)
+        val tw = (0.92f - (cols - 1) * 0.02f) / cols
+        val th = tw * 0.81f
+        for (r in 0..3) for (c in 0 until cols) {
+            val y = 0.07f + r * (th + 0.03f)
+            if (y + th > 0.73f) break
             val on = r == 0 && c == 1
-            rect(0.05f + c * 0.23f, 0.07f + r * 0.2f, 0.21f, 0.17f, cover(r * 4 + c), 5f)
-            if (on) frame(0.05f + c * 0.23f, 0.07f + r * 0.2f, 0.21f, 0.17f, accent, 5f, 2.4f)
+            rect(0.04f + c * (tw + 0.02f), y, tw, th, cover(r * cols + c), 5f)
+            if (on) frame(0.04f + c * (tw + 0.02f), y, tw, th, accent, 5f, 2.4f)
         }
         rect(0.0f, 0.74f, 1f, 0.3f, Color.White.copy(alpha = 0.9f), 14f)
         dot(0.1f, 0.88f, 12f, Color.White)
@@ -465,11 +605,20 @@ private class PreviewPainter(
 
     /** Circuit board: chips zig-zagging along a glowing line, one lit, a readout and a switch. */
     fun circuit() {
-        line(0.04f, 0.5f, 0.92f, accent, 0.012f)
+        // (Update 241, #110: the board's colours — "Green board" drew the theme's board.)
+        val colors = oe(Features.circuitColors)
+        if (ob(Features.circuitBackdrop)) when (colors) {
+            Features.CircuitColors.GREEN.name -> d.drawRect(Brush.verticalGradient(listOf(Color(0xFF0F4A24), Color(0xFF0A3319))))
+            Features.CircuitColors.DARK.name -> d.drawRect(Color(0xFF0A0B0C))
+            else -> Unit
+        }
+        val trace = if (colors == Features.CircuitColors.GREEN.name) Color(0xFFE2C46A) else accent
+        line(0.04f, 0.5f, 0.92f, trace, 0.012f)
         for (i in 0..7) {
             val x = 0.08f + i * 0.11f
             val up = i % 2 == 0
-            rect(x - 0.005f, if (up) 0.42f else 0.5f, 0.01f, 0.08f, accent.copy(alpha = 0.6f), 0f)
+            rect(x - 0.005f, if (up) 0.42f else 0.5f, 0.01f, 0.08f, trace.copy(alpha = 0.6f), 0f)
+            if (ob(Features.circuitLabels)) line(x + 0.075f, if (up) 0.2f else 0.62f, 0.025f, Color.White.copy(alpha = 0.5f), 0.015f)
             card(x - 0.07f, if (up) 0.16f else 0.58f, 0.14f, 0.26f, i, on = i == 2, r0 = 2f)
         }
         rect(0.04f, 0.88f, 0.34f, 0.08f, Color(0xFF0D1410), 3f)
@@ -920,6 +1069,22 @@ private class PreviewPainter(
         face(c0, Offset(x0 + k, y0 - rr * 0.5f), Offset(x0 + k, y0 + rr * 0.5f), Offset(x0, y0 + rr), tint.copy(red = tint.red * 0.5f, green = tint.green * 0.5f, blue = tint.blue * 0.62f, alpha = 0.85f))
         // A small diamond on the face turned to you.
         dot(cx - k / w * 0.5f, cy + 0.25f * rr / h, 1.6f, Color.White.copy(alpha = 0.8f))
+    }
+
+    /**
+     * (Update 241, #110) Green Core's games: with the curved carousel on, a curve of covers in front of the sphere —
+     * "Green Core carousel" drew the same screen as "Green Core" (greenCorePreview draws only the sphere and menu).
+     */
+    fun greenCoreBrowse() {
+        if (oe(Features.gcBrowse) != Features.GcBrowse.CAROUSEL.name) return
+        for (j in listOf(-3, 3, -2, 2, -1, 1, 0)) {
+            val a = kotlin.math.abs(j)
+            val ch = if (j == 0) 0.3f else 0.22f - a * 0.025f
+            val cw = ch * h / w * 0.72f
+            val cx = 0.3f + j * 0.085f
+            val cy = 0.74f - (3 - a) * 0.025f
+            card(cx - cw / 2f, cy - ch / 2f, cw, ch, j + 4, on = j == 0, r0 = 2f)
+        }
     }
 
     /** Card binder: collectible cards fanned out like a hand, the one you're on big in the middle. */

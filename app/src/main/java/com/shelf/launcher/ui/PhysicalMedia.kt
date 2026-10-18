@@ -589,7 +589,8 @@ internal fun PhysicalMedia(
         CustomCart(
             platform.removePrefix(CUSTOM_CART), caseCover ?: label,
             // (Update 239, #33: at the shape it's drawn in — CustomCarts.aspectFor, an app's Switch-card shape too.)
-            modifier.solidPiece(cartSolid(null, platform, packShell?.aspect ?: CustomCarts.aspectFor(platform.removePrefix(CUSTOM_CART)), custom = true, tone = packTone))
+            // (Update 241, #45: turned round, its back carries its console's logo moulded into the plastic — CustomCartBacks.)
+            modifier.solidPiece(rememberCustomCartSolid(platform, packShell?.aspect ?: CustomCarts.aspectFor(platform.removePrefix(CUSTOM_CART)), packTone))
                 .mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode())
         )
         return

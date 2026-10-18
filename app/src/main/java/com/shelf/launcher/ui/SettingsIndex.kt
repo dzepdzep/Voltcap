@@ -384,6 +384,8 @@ internal object SettingsIndex {
         E("Brief update after playing", "Achievements", "Achievement look & unlocks", "Unlock animations", "Unlock animations"),
         E("In the backdrop", "Achievements", "Achievement look & unlocks", "In the backdrop", "In the backdrop"),
         E("Save Vault", "Library", null, "lib_vault", "Save Vault"),
+        // (Update 241, #44)
+        E("SaveVault engraving (logo moulded into the save objects)", "Library", null, "lib_vault", "Save Vault"),
         E("Notifications", "Device", null, "dev_notes", "Notifications"),
         E("Game header", "Home", "Next to the row", "home_header", "Game header"),
         E("Achievement views", "Achievements", "Achievement views", null, null),

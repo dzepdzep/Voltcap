@@ -317,11 +317,22 @@ object CloudSync {
         }
         val gc = top.firstOrNull { it.equals("GC", true) }
         val wii = top.firstOrNull { it.equals("Wii", true) }
+        // (Update 241, #72: a Citra / Lime3DS / Azahar user folder — or its sdmc, or "Nintendo 3DS" itself — becomes the
+        // 3DS save folder (the same "Citra saves" Drive folder), so only title saves are synced, not installed games.)
+        val sdmc = top.firstOrNull { it.equals("sdmc", true) }
+        val n3dsPath = when {
+            sdmc != null && DocTree(context, uri, "$sdmc/Nintendo 3DS").exists() -> "$sdmc/Nintendo 3DS"
+            top.any { it.equals("Nintendo 3DS", true) } -> top.first { it.equals("Nintendo 3DS", true) }
+            top.isNotEmpty() && top.all { it.length == 32 && it.all { c -> c.isDigit() || c.lowercaseChar() in 'a'..'f' } } -> ""
+            else -> null
+        }
         if (gc != null || wii != null) {
             gc?.let { offer(SyncFolder("Dolphin GameCube", it, treeUri = uri.toString(), kind = SaveKind.DOLPHIN_GC.name)) }
             if (wii != null && DocTree(context, uri, "$wii/title").exists()) {
                 offer(SyncFolder("Dolphin Wii", "$wii/title", treeUri = uri.toString(), kind = SaveKind.DOLPHIN_WII.name))
             }
+        } else if (n3dsPath != null) {
+            offer(SyncFolder("Citra saves", n3dsPath, treeUri = uri.toString(), kind = SaveKind.CITRA.name))
         } else {
             val name = tree.displayName() ?: "Shared folder"
             if (isStateFolder(name)) return@withContext "That's a save-state folder — states are never synced."
@@ -505,8 +516,9 @@ object CloudSync {
             when (folder.saveKind) {
                 in shared -> folder to { _: String -> true }
                 in PER_GAME_KINDS -> folder to { rel: String ->
-                    rel.substringAfterLast('/').substringBefore('.').lowercase() == stem ||
-                        rel.substringAfterLast('/').substringBeforeLast('.').lowercase() == stem
+                    // (Update 241, #74) Never another title's 3DS / Wii folder file just because it's called like the ROM.
+                    SaveLayouts.titleUnit(rel) == null && (rel.substringAfterLast('/').substringBefore('.').lowercase() == stem ||
+                        rel.substringAfterLast('/').substringBeforeLast('.').lowercase() == stem)
                 }
                 else -> null
             }
@@ -526,6 +538,8 @@ object CloudSync {
         if (game.sourceType != SourceType.ROM) return emptyList()
         val stem = game.romPath?.substringAfterLast('/')?.substringBeforeLast('.')?.lowercase() ?: return emptyList()
         fun ours(rel: String): Boolean {
+            // (Update 241, #74: a 3DS / Wii title folder's file is that title's, never a ROM's that happens to be called "main".)
+            if (SaveLayouts.titleUnit(rel) != null) return false
             val n = rel.substringAfterLast('/')
             return n.substringBefore('.').lowercase() == stem || n.substringBeforeLast('.').lowercase() == stem
         }
@@ -558,6 +572,8 @@ object CloudSync {
         }
         if (byStem.isEmpty()) return emptyMap()
         fun owners(rel: String): List<Game> {
+            // (Update 241, #74) A title folder's file belongs to its title (Save Vault steps 2c / 2d), not to a ROM name.
+            if (SaveLayouts.titleUnit(rel) != null) return emptyList()
             val n = rel.substringAfterLast('/')
             val a = byStem[n.substringBefore('.').lowercase()]
             val b = byStem[n.substringBeforeLast('.').lowercase()]
@@ -663,12 +679,14 @@ object CloudSync {
      * when Drive isn't connected, the file isn't known, it's bigger than [maxBytes] or can't be fetched. Network: call
      * off the main thread.
      */
-    fun remoteFileBytes(context: Context, folderName: String, rel: String, maxBytes: Int = 16_000_000): ByteArray? {
+    fun remoteFileBytes(context: Context, folderName: String, rel: String, maxBytes: Int = 16_000_000, allowNetwork: Boolean = true): ByteArray? {
         load(context)
         if (!_state.value.settings.connected) return null
         val b = loadFolderState(context, folderName).base[rel] ?: return null
         val cache = File(File(context.cacheDir, "remote_saves"), b.md5.replace(Regex("[^A-Za-z0-9]"), "") + ".bin")
         if (cache.length() > 0) return runCatching { cache.readBytes() }.getOrNull()
+        // (Update 241, #76: the Save Vault's quick first look uses only what's already here.)
+        if (!allowNetwork) return null
         val bytes = runCatching { DriveClient(context).downloadBytes(b.remoteId, maxBytes.toLong()) }.getOrNull() ?: return null
         if (bytes.isEmpty() || bytes.size > maxBytes) return null
         runCatching { cache.parentFile?.mkdirs(); cache.writeBytes(bytes) }
@@ -1011,7 +1029,10 @@ object CloudSync {
                     val local = tree.list()
                     // "Newest" on a PS2 folder card decides for the whole card (newest file on either side),
                     // so its files always come from one device.
-                    val cardUsesDrive = items.groupBy { folderCardOf(it.relativePath) }
+                    // (Update 241, #73: the same for a 3DS / Wii title folder or a PSP save folder.)
+                    val unitKind = items.first().folder.saveKind
+                    fun unitOf(rel: String) = folderCardOf(rel) ?: SaveLayouts.unitOf(unitKind, rel)
+                    val cardUsesDrive = items.groupBy { unitOf(it.relativePath) }
                         .filterKeys { it != null }
                         .mapValues { (_, cs) -> cs.maxOf { it.remoteModified } > cs.maxOf { it.localModified } }
                     items.forEach { c ->
@@ -1020,7 +1041,7 @@ object CloudSync {
                         val useDrive = when (choice) {
                             ConflictChoice.USE_DRIVE -> true
                             ConflictChoice.KEEP_LOCAL -> false
-                            ConflictChoice.NEWEST -> cardUsesDrive[folderCardOf(rel)] ?: !c.localNewer
+                            ConflictChoice.NEWEST -> cardUsesDrive[unitOf(rel)] ?: !c.localNewer
                         }
                         if (useDrive || entry == null) {
                             // Park this device's version first.
@@ -1284,10 +1305,11 @@ object CloudSync {
         File.createTempFile("sync", ".part", File(context.cacheDir, "sync").apply { mkdirs() })
 
     /** Drive's version of [rel] into [tree]; returns the hash now on disk. */
-    private fun pull(context: Context, drive: DriveClient, tree: SyncTree, rel: String, id: String, modified: Long, md5Hint: String?, state: FolderState, from: String? = null, backupFolder: String? = null): String {
-        val tmp = tempFile(context)
+    private fun pull(context: Context, drive: DriveClient, tree: SyncTree, rel: String, id: String, modified: Long, md5Hint: String?, state: FolderState, from: String? = null, backupFolder: String? = null, pre: File? = null): String {
+        // (Update 241, #68: [pre] — Drive's file already fetched by the parallel prefetch; checked exactly like a fresh download.)
+        val tmp = pre ?: tempFile(context)
         try {
-            drive.download(id, tmp, modified)
+            if (pre == null) drive.download(id, tmp, modified)
             // Never trust a download blindly: an interrupted or mangled transfer must not reach the
             // emulator's folder. Drive's own checksum has to match what actually arrived.
             val md5 = md5(tmp)
@@ -1404,6 +1426,17 @@ object CloudSync {
         // mixing files from two devices corrupts the card. A card changed on both sides is one conflict
         // for every changed file in it, never a half-and-half merge.
         val mixedCards = mixedFolderCards(all, local, remote, state, tree)
+        // (Update 241, #73: the same rule for the other multi-file saves — a 3DS / Wii title folder, a PSP save folder: a
+        // file changed here and another file of the same save changed there is a conflict, never a mix of two devices'
+        // halves. Files only one side has are still copied (that never replaces anything).)
+        val mixedUnits = mixedSaveUnits(kind, all, local, remote, state, tree)
+        // (Update 241, #68: files Drive has and this device doesn't — every file on a new device's first sync — were
+        // fetched one after another. They're now fetched a few at a time ahead of the loop, into temporary files; the
+        // loop below still decides, checks Drive's checksum and writes each one exactly as before.)
+        val prefetch = if (uploadOnly) null else Prefetch(context, drive, all.filter { rel ->
+            rel !in local && remote[rel] != null && folderCardOf(rel).let { it == null || it !in mixedCards }
+        }.map { it to remote.getValue(it) })
+        try {
         all.forEachIndexed { index, rel ->
             if (stopRequested) return@forEachIndexed
             _state.update { it.copy(progress = "${folder.name}: ${index + 1}/${all.size}") }
@@ -1419,7 +1452,11 @@ object CloudSync {
                     report.changedPaths.getOrPut(folder.name) { mutableListOf() } += rel
                 }
                 fun download() {
-                    pull(context, drive, tree, rel, r!!.id, r.modifiedTime, r.md5, state, r.device, backupFolder = folder.name)
+                    val pre = if (entry == null) prefetch?.take(rel) else null
+                    // (Update 241: a file that appeared here since the folder was listed — the emulator just made it — is
+                    // never replaced by a prefetched copy; the next sync compares it properly.)
+                    if (pre != null && tree.entry(rel) != null) { pre.delete(); return }
+                    pull(context, drive, tree, rel, r!!.id, r.modifiedTime, r.md5, state, r.device, backupFolder = folder.name, pre = pre)
                     report.downloaded++
                     report.changedPaths.getOrPut(folder.name) { mutableListOf() } += rel
                     report.downloadedPaths.getOrPut(folder.name) { mutableListOf() } += rel
@@ -1438,11 +1475,14 @@ object CloudSync {
                 }
 
                 val card = folderCardOf(rel)
+                val unit = if (card == null) SaveLayouts.unitOf(kind, rel) else null
                 when {
                     card != null && card in mixedCards -> if (l != r?.md5) {
                         if (l != null && r != null) conflict()
                         // A file only one side has inside a mixed card: left alone until the card is settled.
                     }
+                    // (Update 241, #73) Both sides have it, it differs, and its save was changed on both devices.
+                    unit != null && unit in mixedUnits && l != null && r != null && l != r.md5 -> conflict()
                     l != null && r == null -> upload()
                     l == null && r != null -> if (!uploadOnly) download() // new elsewhere, or deleted here: never deleted everywhere
                     l != null && r != null -> when {
@@ -1479,6 +1519,9 @@ object CloudSync {
             // misjudge) what's already done.
             if (index % 25 == 24) saveFolderState(context, folder.name, state)
         }
+        } finally {
+            prefetch?.close()
+        }
         // Forget hashes of files that are gone.
         state.hashes.keys.retainAll(local.keys + state.base.keys)
         saveFolderState(context, folder.name, state)
@@ -1486,6 +1529,97 @@ object CloudSync {
             context.getSharedPreferences("cloud_sync_folders", Context.MODE_PRIVATE).edit()
                 .putLong(folder.name, System.currentTimeMillis()).apply()
         }
+        // (Update 241, #68 / #76: saves that just arrived show in an open Save Vault now, folder by folder — not only
+        // after the whole sync, a reopen or "Sync now".)
+        if (report.downloadedPaths[folder.name].orEmpty().isNotEmpty()) runCatching { SaveCapsules.requestRefresh(context) }
+    }
+
+    /**
+     * Update 241 (#68): fetches [wanted] (relative path → Drive file) from Drive [PARALLEL] at a time, at most [AHEAD]
+     * files ahead of what the sync loop asks for, each into its own temporary file. Nothing here touches the save
+     * folder: [take] hands the file to [pull], which verifies Drive's checksum and writes it as before. A failure is
+     * thrown again by [take] for that file, so the loop handles it (offline, sign-in…) exactly like its own download.
+     */
+    private class Prefetch(private val context: Context, private val drive: DriveClient, wanted: List<Pair<String, DriveFile>>) {
+        private val order = wanted.map { it.first }
+        private val positions = order.withIndex().associate { it.value to it.index }
+        private val files = wanted.toMap()
+        @Volatile private var closed = false
+        private val pool = if (wanted.isEmpty()) null else java.util.concurrent.Executors.newFixedThreadPool(PARALLEL)
+        private val started = LinkedHashMap<String, java.util.concurrent.Future<File>>()
+        private var next = 0
+
+        private fun fill(upTo: Int) {
+            val p = pool ?: return
+            while (next < order.size && next <= upTo) {
+                val rel = order[next++]
+                val f = files.getValue(rel)
+                started[rel] = p.submit(java.util.concurrent.Callable {
+                    val tmp = CloudSync.tempFile(context)
+                    try {
+                        drive.download(f.id, tmp, f.modifiedTime)
+                        // Finished after the sync moved on (stopped, failed): nobody will take it.
+                        if (closed) { tmp.delete(); error("not needed any more") }
+                        tmp
+                    } catch (t: Throwable) {
+                        tmp.delete()
+                        throw t
+                    }
+                })
+            }
+        }
+
+        /** [rel]'s fetched file (the caller owns it now), null when it wasn't prefetched. */
+        fun take(rel: String): File? {
+            val at = positions[rel] ?: return null
+            fill(at + AHEAD)
+            val future = started.remove(rel) ?: return null
+            return try {
+                future.get()
+            } catch (e: java.util.concurrent.ExecutionException) {
+                throw (e.cause as? Exception) ?: e
+            }
+        }
+
+        /** Stops what's still running and removes every fetched file nobody took. */
+        fun close() {
+            closed = true
+            pool?.shutdownNow()
+            started.values.forEach { fu ->
+                fu.cancel(true)
+                runCatching { fu.get(30, java.util.concurrent.TimeUnit.SECONDS)?.delete() }
+            }
+            started.clear()
+        }
+
+        companion object {
+            const val PARALLEL = 4
+            const val AHEAD = 8
+        }
+    }
+
+    /**
+     * Update 241 (#73): the multi-file saves ([SaveLayouts.unitOf]: 3DS / Wii title folders, PSP save folders) changed on
+     * this device AND in Drive since the last sync — judged on the files both sides have (a file only one side has is
+     * just copied, which never replaces anything).
+     */
+    private fun mixedSaveUnits(
+        kind: SaveKind, all: List<String>, local: Map<String, LocalEntry>, remote: Map<String, DriveFile>, state: FolderState, tree: SyncTree
+    ): Set<String> {
+        val changedHere = mutableSetOf<String>()
+        val changedThere = mutableSetOf<String>()
+        for (rel in all) {
+            if (folderCardOf(rel) != null) continue
+            val unit = SaveLayouts.unitOf(kind, rel) ?: continue
+            val entry = local[rel] ?: continue
+            val r = remote[rel] ?: continue
+            val l = runCatching { localHash(state, tree, rel, entry) }.getOrNull() ?: continue
+            if (l == r.md5) continue
+            val b = state.base[rel]
+            if (b == null || l != b.md5) changedHere += unit
+            if (b == null || r.md5 != b.md5) changedThere += unit
+        }
+        return changedHere intersect changedThere
     }
 
     /** "Mcd001.ps2/…/file" → "Mcd001.ps2" (the folder card it belongs to), else null. */

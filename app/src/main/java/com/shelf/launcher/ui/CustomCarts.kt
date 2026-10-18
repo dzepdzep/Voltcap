@@ -12,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.shelf.launcher.data.Features
@@ -321,5 +323,94 @@ private fun rememberShellRequest(file: java.io.File): coil.request.ImageRequest 
         coil.request.ImageRequest.Builder(context).data(file).size(560, 560)
             .scale(coil.size.Scale.FIT).precision(coil.size.Precision.INEXACT)
             .memoryCacheKey("shell|${file.path}|${file.lastModified()}").build()
+    }
+}
+
+/**
+ * (Update 241, #45/#46: the back of one of Voltcap's own platform cartridges — your pack's cartridge for a console, or its
+ * optical-system shell (PlayStation, PlayStation 2, GameCube, Dreamcast…) — in its own plastic with that console's logo
+ * moulded into it: the app's baked logo (PlatformLogos, the redrawn set already shipped with its credits) as a raised
+ * relief in the plastic's own colour, only its shape — never its printed colours — so it stays in relief and readable
+ * whatever colour the cartridge is; the console's name in moulded letters where there's no logo. A moulded seam runs round
+ * the back. Only for these custom cartridges (CUSTOM_CART / a pack shape picked in the shell picker): never on a real
+ * game's own cartridge, scan or disc, and never with SaveVault branding (that's the Save Vault objects', Engraving.kt).
+ * Made mirrored, as every drawn back is (seen from behind once turned it reads the right way round), the size of the
+ * cartridge's own box: SolidSpec(back = …, fitBackToFace = true) cuts it to the shell's outline. Cached per console,
+ * colour and size — made once, never per frame.)
+ */
+internal object CustomCartBacks {
+    private val cache = object : android.util.LruCache<String, android.graphics.Bitmap>(10 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: android.graphics.Bitmap) = value.byteCount
+    }
+
+    /** Whether [console] (a Voltcap console key) has a custom cartridge of its own in your pack — the only ones engraved. */
+    fun applies(console: String): Boolean = CustomCarts.idFor(console) != null
+
+    /**
+     * The back for [console]'s custom cartridge, [aspect] wide for 1 tall, [px] on its longest side, in [tone] (its plastic,
+     * opaque ARGB — rememberCustomPieceTone). Null for a console without a custom cartridge.
+     */
+    fun back(context: android.content.Context, console: String, tone: Int, aspect: Float, px: Int = 480): android.graphics.Bitmap? = runCatching {
+        if (!applies(console)) return@runCatching null
+        val a = aspect.coerceIn(0.2f, 5f)
+        val w = (if (a >= 1f) px.toFloat() else px * a).toInt().coerceAtLeast(16)
+        val h = (if (a >= 1f) px / a else px.toFloat()).toInt().coerceAtLeast(16)
+        val shell = tone or 0xFF000000.toInt()
+        val key = "$console|$shell|$w|$h"
+        cache.get(key)?.let { return@runCatching it }
+        val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(out)
+        c.drawColor(shell)
+        val wf = w.toFloat(); val hf = h.toFloat()
+        val sheen = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            shader = android.graphics.LinearGradient(
+                0f, 0f, 0f, hf, intArrayOf(0x1FFFFFFF, 0x00000000, 0x2E000000), floatArrayOf(0f, 0.5f, 1f), android.graphics.Shader.TileMode.CLAMP
+            )
+        }
+        c.drawRect(0f, 0f, wf, hf, sheen)
+        // The moulded seam: a dark groove with its lit lip just inside it.
+        val m = minOf(wf, hf)
+        val inset = m * 0.07f; val r = m * 0.05f
+        val sw = maxOf(1.5f, m * 0.008f)
+        val groove = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            style = android.graphics.Paint.Style.STROKE; strokeWidth = sw; color = 0x40000000
+        }
+        c.drawRoundRect(android.graphics.RectF(inset, inset, wf - inset, hf - inset), r, r, groove)
+        groove.color = 0x2EFFFFFF
+        c.drawRoundRect(android.graphics.RectF(inset + sw, inset + sw, wf - inset + sw, hf - inset + sw), r, r, groove)
+        // The console's logo, raised from the plastic, a little above the middle (mirrored, see above).
+        Engraving.platformLogo(context, console, shell, (wf * 0.58f).toInt(), (hf * 0.30f).toInt(), raised = true)?.let { logo ->
+            c.save()
+            c.scale(-1f, 1f, wf / 2f, 0f)
+            c.drawBitmap(logo, (wf - logo.width) / 2f, hf * 0.42f - logo.height / 2f, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+            c.restore()
+        }
+        cache.put(key, out)
+        out
+    }.getOrNull()
+
+    /** [back] as an ImageBitmap, for a SolidSpec's back. */
+    fun backImage(context: android.content.Context, console: String, tone: Int, aspect: Float, px: Int = 480): androidx.compose.ui.graphics.ImageBitmap? =
+        back(context, console, tone, aspect, px)?.asImageBitmap()
+}
+
+/**
+ * (Update 241, #45: [cartSolid] for a game on your pack's cartridge ([pickPlatform] = CUSTOM_CART + console) with its back
+ * engraved — CustomCartBacks, cut to the shell's own outline — instead of a plain silhouette in its plastic. A drop-in
+ * for PhysicalMedia's CUSTOM_CART branch: `cartSolid(null, platform, aspect, custom = true, tone = packTone)` →
+ * `rememberCustomCartSolid(platform, aspect, packTone)`. The back is made the first time it's seen from behind.)
+ */
+@Composable
+internal fun rememberCustomCartSolid(pickPlatform: String, aspect: Float?, tone: Color?): SolidSpec {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return androidx.compose.runtime.remember(pickPlatform, aspect, tone) {
+        val base = cartSolid(null, pickPlatform, aspect, custom = true, tone = tone)
+        val console = pickPlatform.removePrefix(CUSTOM_CART)
+        if (!CustomCartBacks.applies(console)) base
+        else SolidSpec(
+            base.aspect, base.depth, base.tone,
+            back = { CustomCartBacks.backImage(context, console, base.tone.toArgb(), base.aspect ?: CustomCarts.aspectFor(console)) },
+            fitBackToFace = true
+        )
     }
 }

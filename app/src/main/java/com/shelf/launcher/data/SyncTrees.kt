@@ -348,7 +348,11 @@ fun SaveKind.accepts(rel: String): Boolean {
         SaveKind.CITRA -> "data" in dirs && "content" !in dirs
         SaveKind.N64 -> ext(name) in N64_SAVES
         SaveKind.GENERIC -> ext(name) in RETRO_SAVES || ext(name) in PS1_CARDS || VMU_SAVE.matches(name) ||
-            ("savedata" in dirs && ext(name) !in PSP_MEDIA) || dirs.any { it.endsWith(".ps2") }
+            ("savedata" in dirs && ext(name) !in PSP_MEDIA) || dirs.any { it.endsWith(".ps2") } ||
+            // (Update 241, #72: a folder you picked yourself — Azahar's / Lime3DS's user folder, a Dolphin folder — also
+            // holds 3DS and Wii title folders, whose files are "main", "00000001.metadata", "banner.bin"…: no extension
+            // above, so they were never listed, synced or shown. Only files inside a real title/<id>/data/ folder count.)
+            SaveLayouts.titleUnit(rel) != null
     }
 }
 
@@ -364,8 +368,17 @@ private class Preset(
     val kind: SaveKind,
     val candidates: List<String>,
     val keyword: String? = null,
-    val sub: String? = null
+    val sub: String? = null,
+    /** (Update 241) More names tried like [keyword], in order. */
+    val moreKeywords: List<String> = emptyList()
 )
+
+/** (Update 241, #72) Citra-family package names: Azahar, Lime3DS, Citra (official + PabloMK7's fork). */
+internal val N3DS_PACKAGES = listOf("org.azahar_emu.azahar", "io.github.lime3ds.android", "org.citra.citra_emu", "org.citra.emu")
+
+/** Dolphin's package names (official + popular forks). (Update 241: declared before PRESETS, which uses them —
+ * top-level vals are set up in file order.) */
+internal val DOLPHIN_PACKAGES = listOf("org.dolphinemu.dolphinemu", "org.dolphinemu.mmjr", "org.dolphinemu.handheld")
 
 /**
  * Emulator save folders offered when they exist on this device — paths
@@ -382,9 +395,21 @@ private val PRESETS = listOf(
     Preset("ePSXe memory cards", SaveKind.PS1_MEMCARDS, listOf("epsxe/memcards"), "epsxe", "memcards"),
     Preset("DraStic saves", SaveKind.NDS, listOf("DraStic/backup"), "drastic", "backup"),
     Preset("Flycast saves", SaveKind.DREAMCAST_VMU, listOf("Flycast/data"), "flycast", "data"),
-    Preset("Dolphin GameCube", SaveKind.DOLPHIN_GC, listOf("dolphin-emu/GC")),
-    Preset("Dolphin Wii", SaveKind.DOLPHIN_WII, listOf("dolphin-emu/Wii/title")),
-    Preset("Citra saves", SaveKind.CITRA, listOf("citra-emu/sdmc/Nintendo 3DS")),
+    // (Update 241, #53: Dolphin's user folder is Android/data/<package>/files on current builds — readable only where the
+    // device allows it; elsewhere Settings › Sync's Dolphin picker (a shared tree) is the way in, as before.)
+    Preset("Dolphin GameCube", SaveKind.DOLPHIN_GC, listOf("dolphin-emu/GC") + DOLPHIN_PACKAGES.map { "Android/data/$it/files/GC" }),
+    Preset("Dolphin Wii", SaveKind.DOLPHIN_WII, listOf("dolphin-emu/Wii/title") + DOLPHIN_PACKAGES.map { "Android/data/$it/files/Wii/title" }),
+    // (Update 241, #72: Azahar and Lime3DS too — their user folder is the one picked at their first start, usually
+    // "Azahar" / "Lime3DS" on internal storage, or their own Android/data folder. Same Drive folder as Citra's: the
+    // save layout is the same, so a Citra handheld and an Azahar one meet there.)
+    Preset(
+        "Citra saves", SaveKind.CITRA,
+        listOf(
+            "citra-emu/sdmc/Nintendo 3DS", "Azahar/sdmc/Nintendo 3DS", "azahar-emu/sdmc/Nintendo 3DS",
+            "Lime3DS/sdmc/Nintendo 3DS", "lime3ds-emu/sdmc/Nintendo 3DS", "Citra/sdmc/Nintendo 3DS"
+        ) + N3DS_PACKAGES.map { "Android/data/$it/files/sdmc/Nintendo 3DS" },
+        "azahar", "sdmc/Nintendo 3DS", listOf("lime3ds", "citra")
+    ),
     Preset("M64Plus FZ saves", SaveKind.N64, listOf("mupen64plus/GameData"))
 )
 
@@ -408,8 +433,10 @@ internal fun presetFolders(): List<SyncFolder> {
     return PRESETS.mapNotNull { preset ->
         val found = preset.candidates.firstNotNullOfOrNull { resolveIgnoringCase(storage, it) }
             ?: if (preset.keyword != null && preset.sub != null) {
-                topLevel.filter { it.name.contains(preset.keyword, ignoreCase = true) }
-                    .firstNotNullOfOrNull { resolveIgnoringCase(it, preset.sub) }
+                (listOf(preset.keyword) + preset.moreKeywords).firstNotNullOfOrNull { word ->
+                    topLevel.filter { it.name.contains(word, ignoreCase = true) }
+                        .firstNotNullOfOrNull { resolveIgnoringCase(it, preset.sub) }
+                }
             } else null
         found?.let { SyncFolder(preset.name, it.absolutePath, kind = preset.kind.name) }
     }
@@ -419,8 +446,6 @@ internal fun presetFolders(): List<SyncFolder> {
 internal fun kindForName(name: String): SaveKind =
     PRESETS.firstOrNull { it.name == name }?.kind ?: SaveKind.GENERIC
 
-/** Dolphin's package names (official + popular forks). */
-internal val DOLPHIN_PACKAGES = listOf("org.dolphinemu.dolphinemu", "org.dolphinemu.mmjr", "org.dolphinemu.handheld")
 
 /** Byte-for-byte comparison of two streams (both read to the end). */
 internal fun streamsEqual(a: InputStream, b: InputStream): Boolean {
