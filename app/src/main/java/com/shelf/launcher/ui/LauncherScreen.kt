@@ -1334,7 +1334,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     NowPlayingUpdates(
         enabled = screensaverOn || showNotifications || state.appearance.miniPlayer ||
             musicThemeOn || (state.appearance.lightsEnabled && state.appearance.lightsMusic) ||
-            com.shelf.launcher.data.Features.cornerViz.state.value != com.shelf.launcher.data.Features.CornerViz.OFF
+            com.shelf.launcher.data.Features.cornerViz.state.value != com.shelf.launcher.data.Features.CornerViz.OFF ||
+            // (Update 229, #03: the Pocket ribbon's album-art top and the Pocket home strip only changed track on resume)
+            (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.POCKET_RIBBON &&
+                com.shelf.launcher.data.Features.ribbonTop.state.value == com.shelf.launcher.data.Features.RibbonTop.ALBUM) ||
+            ((state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.POCKET_RIBBON ||
+                state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC) && pocketStripOn())
     ) {
         viewModel.refreshNowPlaying()
     }

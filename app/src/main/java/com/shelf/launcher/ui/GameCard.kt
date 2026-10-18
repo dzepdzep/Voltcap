@@ -1209,6 +1209,8 @@ internal fun cardArtUrl(
         CardArtType.HERO -> hero
         else -> typed
     }
+    // (Update 229, #31/#24: with no cover yet, a case / disc look no longer prints the wide capsule or hero on the disc label or crops it into the case.)
+    if (!banner && type.wantsMedia()) return requested ?: cover
     return requested ?: if (banner) (wide ?: hero ?: cover) else (cover ?: wide ?: hero)
 }
 

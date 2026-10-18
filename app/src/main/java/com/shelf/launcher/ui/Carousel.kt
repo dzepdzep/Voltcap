@@ -114,7 +114,7 @@ internal fun ShelfGameArt(
         // (Update 205: the drawn piece wears its real label scan when it has one.)
         val labelScan = if (typed == null) drawnLabelScan(physicalMedia[g.stableKey], g.platform) else null
         Box(modifier.awardShine(g.stableKey, on)) {
-            val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey) else null
+            val pick = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey) else null // (Update 229, #31: "All cartridges" in a mixed list no longer forced to a CD by Discs only)
             // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
             // (Update 200: the 3D cartridges looks drew their drawn piece whatever the scans. Update 202: "The game's own
             // photo" decides in every cartridge look — realScanOf is null with it off — see drawnMediaWanted.)
@@ -214,7 +214,7 @@ internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardAr
     if (cardArtType == com.shelf.launcher.data.CardArtType.HERO || cardArtType == com.shelf.launcher.data.CardArtType.SCREENSHOT) return 16f / 9f
     val gArt = artForGame(cardArtType, g.platform, hidden, mixed, gameKey = g.stableKey)
     if (isFreeMedia(gArt, g.platform)) {
-        if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC, gameKey = g.stableKey)?.aspect ?: 0.7f
+        if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey)?.aspect ?: 0.7f // (Update 229, #31)
         return MediaCovers.of(g.platform)?.frontAspect ?: 0.7f
     }
     // (Update 169: a Steam / Android case reshaped to its cover — CoverCase.)
@@ -1408,7 +1408,7 @@ private fun mediaBandFor(
     // A game case's plastic (box art drawn flat).
     if (gArt == com.shelf.launcher.data.CardArtType.CASE) return MediaBand(0.1f, Color(0xFF23252C), false)
     if (gArt != com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return null
-    val pick = mediaFor(platform, mixed, type == com.shelf.launcher.data.CardArtType.DISC, gameKey = gameKey) ?: return null
+    val pick = mediaFor(platform, mixed, type == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = gameKey) ?: return null // (Update 229, #31)
     if (isCustomPiece(pick.platform)) return MediaBand(0.13f, Color(0xFF46484F), false)
     val grey = Color(0xFF7C7E85)
     val dark = Color(0xFF34363C)

@@ -146,10 +146,16 @@ private class MediaWatch(private val context: Context, private val onChange: () 
         handler.removeCallbacks(fire)
         handler.postDelayed(fire, 150)
     }
+    // (Update 229, #03: a new title / cover waited out the debounce too) A track change goes out at once; only the
+    // bursts of playback-state changes keep the 150 ms debounce.
+    private fun pokeNow() {
+        handler.removeCallbacks(fire)
+        handler.post(fire)
+    }
 
     private val callback = object : MediaController.Callback() {
         override fun onPlaybackStateChanged(state: android.media.session.PlaybackState?) = poke()
-        override fun onMetadataChanged(metadata: android.media.MediaMetadata?) = poke()
+        override fun onMetadataChanged(metadata: android.media.MediaMetadata?) = pokeNow()
         override fun onSessionDestroyed() = poke()
     }
 

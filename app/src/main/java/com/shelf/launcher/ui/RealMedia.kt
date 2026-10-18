@@ -446,7 +446,11 @@ private fun rememberBoxFace(tpl: BoxTpl, front: Any?, frontIsBox: Boolean, detai
  * no spine, never turned. Returns false while there's nothing to show yet.
  */
 @Composable
-internal fun FrontBox(tpl: BoxTpl, front: Any?, frontIsBox: Boolean, modifier: Modifier = Modifier, detail: Int = 360) {
+internal fun FrontBox(
+    tpl: BoxTpl, front: Any?, frontIsBox: Boolean, modifier: Modifier = Modifier, detail: Int = 360,
+    /** The game's console, for its real front proportions when the template has no cover frame (null: from the outline). */
+    platform: String? = null
+) {
     val face = rememberBoxFace(tpl, front, frontIsBox, detail)
     val img = remember(face) { face?.asImageBitmap() }
     // The template pack's own case (its glass overlay): its front, straightened so it faces you, laid over the face.
@@ -457,7 +461,11 @@ internal fun FrontBox(tpl: BoxTpl, front: Any?, frontIsBox: Boolean, modifier: M
     val frontW = (dist(q[0], q[1], q[2], q[3]) + dist(q[6], q[7], q[4], q[5])) / 2f
     val frontH = (dist(q[0], q[1], q[6], q[7]) + dist(q[2], q[3], q[4], q[5])) / 2f
     // The cover template's own proportions when there is one (the outline above is foreshortened by the box's angle).
-    val aspect = if (tpl.frameRes != null) tpl.frameAspect.coerceIn(0.4f, 2.5f) else if (frontH > 0f) (frontW / frontH).coerceIn(0.4f, 2.5f) else 0.7f
+    // (Update 229, #27: without a cover frame, the console's real box shape — the outline is drawn at an angle, so an N64 or PS2 box came out squashed.)
+    val realAspect = if (tpl.frameRes == null) (MediaCovers.of(platform)?.frontAspect ?: realCaseMm(platform)?.let { it.first / it.second }) else null
+    val aspect = if (tpl.frameRes != null) tpl.frameAspect.coerceIn(0.4f, 2.5f)
+        else if (realAspect != null && realAspect > 0f) realAspect.coerceIn(0.4f, 2.5f)
+        else if (frontH > 0f) (frontW / frontH).coerceIn(0.4f, 2.5f) else 0.7f
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * aspect)
         val h = w / aspect
@@ -651,7 +659,7 @@ private fun CaseArtFace(
     // (Update 202: the game's real spine whatever Original cases says, as its closed case and the Spines look show it —
     // not with one console's spine picked for all.)
     else if (side) Box3D(box, front, isBox, title, modifier, spin = false, detail = detail, realSpine = if (!LookStyles.spineForAll()) ownSpine else null)
-    else FrontBox(box, front, isBox, modifier, detail)
+    else FrontBox(box, front, isBox, modifier, detail, platform = platform) // (Update 229, #27)
     return true
 }
 

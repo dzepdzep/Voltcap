@@ -87,8 +87,6 @@ object MusicTheme {
         val key = "${playing.title}|${playing.artist}|${art.width}x${art.height}"
         val artId = System.identityHashCode(art)
         if (artId == lastArtId || key == lastKey && softArt != null) return
-        lastArtId = artId
-        lastKey = key
         smallMemory = runCatching { com.shelf.launcher.device.MemoryBudget.small(context) }.getOrDefault(false)
         val result = withContext(Dispatchers.Default) {
             runCatching {
@@ -110,6 +108,9 @@ object MusicTheme {
             withContext(Dispatchers.Default) { runCatching { pushHistory(previous) } }
         }
         sharpArt = result.third
+        // (Update 229, #03: a track change during this work left the old cover stuck) Marked done only once it is.
+        lastArtId = artId
+        lastKey = key
         val pal = result.second ?: return
         colors = pal
         withContext(Dispatchers.IO) {

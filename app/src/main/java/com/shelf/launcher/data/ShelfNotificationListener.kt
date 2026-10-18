@@ -220,6 +220,21 @@ class ShelfNotificationListener : NotificationListenerService() {
             }.getOrDefault(false)
         }
 
+        /** The cover handed out last time: kept so the same picture stays the same object. */
+        @Volatile private var lastArt: Bitmap? = null
+
+        // (Update 229, #03: each read gave a new copy of the same cover, so the album art reloaded / faded on every
+        // play / pause / position change) The same picture as last time comes back as last time's object. Never recycled.
+        private fun sameArt(art: Bitmap?): Bitmap? {
+            if (art == null) return null
+            val last = lastArt
+            if (last != null && last !== art && !last.isRecycled && !art.isRecycled &&
+                last.width == art.width && last.height == art.height &&
+                runCatching { last.sameAs(art) }.getOrDefault(false)) return last
+            lastArt = art
+            return art
+        }
+
         fun nowPlaying(context: Context): Pair<NowPlaying, MediaController>? {
             if (!hasAccess(context)) return null
             return try {
@@ -247,9 +262,9 @@ class ShelfNotificationListener : NotificationListenerService() {
                     isPlaying = state?.state == PlaybackState.STATE_PLAYING || state?.state == PlaybackState.STATE_BUFFERING,
                     album = metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM),
                     // Apps put the cover in different keys; try them in order.
-                    art = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                    art = sameArt(metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                         ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
-                        ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON),
+                        ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)),
                     durationMs = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION)?.coerceAtLeast(0L) ?: 0L,
                     positionMs = state?.position?.coerceAtLeast(0L) ?: 0L,
                     positionAt = state?.lastPositionUpdateTime ?: 0L,

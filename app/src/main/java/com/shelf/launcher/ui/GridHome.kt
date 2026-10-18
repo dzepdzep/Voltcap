@@ -247,7 +247,7 @@ internal fun HomeGameGrid(
                             // middle copy, as rememberLoopPlace counts).
                             .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (drawLoop) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } }
                     ) { ProvidePieceTurn(if (solidCart) PieceTurn({ (spin?.value ?: 0f) * lift }, 12f) else null) {
-                        val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC, gameKey = g.stableKey) else null
+                        val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC && !(mixed && com.shelf.launcher.data.Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey) else null // (Update 229, #31: "All cartridges" in a mixed list no longer forced to a CD by Discs only)
                         val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null
                         // (Update 173: an app without art: its icon on the label / in the case.)
                         val artOrIcon = if (pick != null || box3d != null) coverOrAppIcon(g, url ?: cover) else null

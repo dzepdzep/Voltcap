@@ -121,8 +121,13 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             while (true) { kotlinx.coroutines.delay(5000); value = (value + 1) % shots.size }
         }
     }
+    // (Update 229, #03: at a track change the first news often had no cover yet — the game's picture flashed before the
+    // album) The last cover stays while music is playing or paused; only no music at all goes back to the game.
+    val np = c.state.nowPlaying
+    val heldArt = remember { arrayOfNulls<android.graphics.Bitmap>(1) }
+    if (np == null) heldArt[0] = null else np.art?.let { heldArt[0] = it }
     val model: Any? = when (source) {
-        Features.RibbonTop.ALBUM -> c.state.nowPlaying?.art ?: g?.let { c.backdrop(it) }
+        Features.RibbonTop.ALBUM -> (np?.art ?: heldArt[0]?.takeIf { np != null && !it.isRecycled }) ?: g?.let { c.backdrop(it) }
         Features.RibbonTop.PHOTO -> PocketPhoto.file(context)?.takeIf { it.isFile } ?: g?.let { c.backdrop(it) }
         Features.RibbonTop.SLIDES -> shots.getOrNull(slideIndex) ?: g?.let { c.backdrop(it) }
         else -> g?.let { c.backdrop(it) ?: c.wide(it) }

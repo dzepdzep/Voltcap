@@ -42,6 +42,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -299,7 +301,11 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
             return if (i < from) -push else push
         }
 
-        Box(Modifier.fillMaxSize().clipToBounds().categorySlide()) { // (update 112: a new category slides / fades in)
+        // (Update 229, #94: the shelves end above the footer — a shelf more than fit stood half behind the game's name and
+        // console there, its spines running through the text.)
+        Box(Modifier.fillMaxSize().clipToBounds().drawWithContent {
+            clipRect(bottom = (size.height - footerH.toPx()).coerceAtLeast(0f)) { this@drawWithContent.drawContent() }
+        }.categorySlide()) { // (update 112: a new category slides / fades in)
             // Shelves (boards) and their spines.
             // Update 130 (lag going over many games): the scroll is read where things are placed, not while composing, so
             // a scroll no longer rebuilds every shelf and spine on every frame; only a new shelf coming into view does.

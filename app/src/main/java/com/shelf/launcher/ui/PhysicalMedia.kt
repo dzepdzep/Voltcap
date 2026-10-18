@@ -312,6 +312,9 @@ internal fun drawn3dPick(platform: String, mixed: Boolean, gameKey: String?): Me
  * plain cartridge). Update 204: never null any more — a console with no physical game gets the plain ones.
  */
 internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean = false, gameKey: String? = null): MediaPick? {
+    // (Update 229, #31: "All cartridges" for a list of several consoles wins over Discs only on every layout — the look
+    // said cartridge but the layouts asked for a disc, so cartridge games came out as CDs.)
+    @Suppress("NAME_SHADOWING") val asDisc = asDisc && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE)
     // Update 212: Android games — disc or cartridge by one rule everywhere (AndroidMedia.kt): this game's choice, a shell
     // or pack you picked, Settings › Game look › Android games, else the look (Discs only, "All CDs").
     if (AndroidMedia.isAndroid(platform)) {

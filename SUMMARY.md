@@ -4,6 +4,32 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (229): music on the Pocket layouts follows track changes at once (#03), cases and discs keep their shape and art (#24 / #27 / #31), Game shelf ends above its footer (#94)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (12): `src_copy\LauncherViewModel.kt`, `src_copy\data\ShelfNotificationListener.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\PocketRibbon.kt`, `src_copy\ui\LifecycleUtils.kt`, `src_copy\ui\MusicTheme.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\ShelfHome.kt`. **Files to delete:** none.
+
+### Music slow to change (#03 — read as the Pocket ribbon with the album art on top; there's nothing named "Palette Ribbon", see the questions list)
+1. The media watcher wasn't running for the Pocket layouts at all: the Pocket ribbon's album-art top and the Pocket home strip only changed track when you came back to Voltcap or pressed a button. Now it runs whenever they show the music.
+2. After ◀ / ▶ the old title stayed (it was read before the player had switched): read again 0.3 s and 1 s later.
+3. Every play / pause / position update handed out a new copy of the same cover, so the album art reloaded and faded each time: the same picture now stays the same.
+4. A new track's first update often has no cover yet → the game's picture flashed in before the album: the last cover is held until the new one arrives.
+5. Track changes no longer wait the 150 ms meant for bursts of playback updates; a colour update cut short no longer leaves the previous cover's colours for the whole track.
+
+### Cases and discs (#24 / #27 / #31)
+1. **No cover yet → a wide picture on a disc label or in a case** (Cases, Discs, Cartridges & discs looks): the fallback now stops at the cover; the wide / hero pictures stay for the looks that use them.
+2. **Squashed N64 / PS2 / SNES / GameCube boxes** (#27, GoldenEye): boxes whose template has no cover frame took their shape from the template's outline, which is drawn at an angle (an N64 box came out 2.1 wide for 1 tall instead of 1.37; PS2 0.52 instead of 0.71). They now take the console's real box shape; the template's glass is still fitted onto it.
+3. **"All cartridges" for lists of several consoles was overruled by Discs only** (#31): cartridge games came out as CDs on every layout. The cartridge choice now wins everywhere (one rule in `mediaFor`).
+
+### Game shelf (#94)
+- The shelf after the last one that fits stood half behind the name and console at the bottom, its spines running through the text: the shelves now end above that line.
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL (first try failed on a missing import, fixed); installed on both; no crashes after start (crash log empty).
+- Game shelf on the Thor (before this fix, screenshot): the 4th shelf ran through "Adventures Of Tintin…" at the bottom.
+- **Not tested on a device**: the music fixes (nothing was playing, and I didn't start music on your handhelds), the box shapes and disc/cartridge choices (code-reviewed only).
+
 ## Update — 18 Oct 2026 (228): Game shelf puts games back smoothly (#17) and shows the case picked for all (#18), custom cartridges keep their colour when turned (#36), no line across disc backs (#37)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

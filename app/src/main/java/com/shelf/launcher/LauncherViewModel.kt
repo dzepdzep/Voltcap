@@ -2974,7 +2974,16 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             action(pair.second)
         }
         refreshNotifications()
+        // (Update 229, #03: after ◀ / ▶ the old title stayed — the player hadn't switched yet when we read it)
+        nowPlayingFollowJob?.cancel()
+        nowPlayingFollowJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(300)
+            refreshNowPlaying()
+            kotlinx.coroutines.delay(700)
+            refreshNowPlaying()
+        }
     }
+    private var nowPlayingFollowJob: Job? = null
 
     /**
      * Plays / pauses Spotify without opening it (hotkey). Uses Spotify's own
