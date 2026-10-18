@@ -271,6 +271,10 @@ internal fun styleHomeKey(
                     // Dashboard: ◀ from Play goes on to the menu on the left.
                     StyleNav.leave()
                     if (StyleNav.enter(StyleNav.Zone.SIDE, event.nativeKeyEvent.eventTime)) sound(UiSound.MOVE)
+                } else if (first && zone == StyleNav.Zone.SIDE && reach(d < 0)) {
+                    // (Update 234, #14: ▲ on the menu's first button / ▼ on its last goes on to what lies there, e.g. a
+                    // music player moved above or below the menu.)
+                    StyleNav.reset()
                 }
             } else if (first) {
                 // The way back to the games: ▶ from a menu on the left, ▲ from a bar under them, ▼ from one above.
@@ -348,7 +352,8 @@ internal fun styleHomeKey(
     fun leftToMenu(): Boolean = if (menuOk) { StyleNav.edgeKnock = false; enter(StyleNav.Zone.SIDE) } else knock()
     when (layout) {
         HomeLayout.SIDE -> return when (k) {
-            Key.DirectionUp -> enter(StyleNav.Zone.SIDE)
+            // (Update 234, #14: with no menu buttons ▲ goes on to what lies above instead of doing nothing.)
+            Key.DirectionUp -> if (StyleNav.side.isNotEmpty()) enter(StyleNav.Zone.SIDE) else { if (first) reach(true); take() }
             Key.DirectionDown -> { if (first) reach(false); take() }
             // Update 151: knock first, then the menu (leftToMenu); with Endless on ◀ slides on round to the last game.
             Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty() && !StyleNav.sideLoops) leftToMenu() else false
@@ -500,6 +505,10 @@ internal fun styleHomeKey(
                     } else if (k == Key.DirectionDown && first && count > 1) {
                         // Update 166: ▼ from the last game goes round to the first.
                         setFocus(0)
+                        sound(UiSound.MOVE)
+                    } else if (k == Key.DirectionUp && first && count > 1 && StyleLoop.on) {
+                        // (Update 234, #14: with Endless on ▲ from the first game goes round to the last.)
+                        setFocus(count - 1)
                         sound(UiSound.MOVE)
                     } else if (first) reach(k == Key.DirectionUp)
                 }

@@ -4,6 +4,34 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (234): Side menu and Cross menu D-pad fixes (#14), animated covers keep the sharp cover while loading (#22), Hero's R1 tile names what it moves (#30)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (7): `src_copy\ui\StyleHomes.kt`, `src_copy\ui\StyleCrossMenu.kt`, `src_copy\ui\StyleSideMenu.kt`, `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\ArtRequests.kt`, `src_copy\data\AnimatedArt.kt`, `src_copy\ui\QuickSettings.kt`. **Files to delete:** none.
+
+### Side menu / Cross menu (#14) — every option was found wired up; the D-pad had gaps
+1. Cross menu: ▼ on the last game went round to the first, but ▲ on the first never went to the last, even with Endless on → with Endless on it does now.
+2. Side menu without any shortcuts: ▲ did nothing (it tried to go into the empty menu) → it now goes on up (e.g. to a music player placed above).
+3. Side menu: from inside the menu nothing above it could be reached → ▲ on the menu's first entry now goes on up.
+4. The Side menu's help text said "◀ on the first game" goes into the menu; it takes ◀ twice, and not with Endless on → text corrected.
+5. Long achievement / play-time / game-count lines were cut off without "…" → now end in "…".
+
+### Animated covers (#22)
+1. Landing on a game with an animated cover swapped its sharp cover for a small blurry thumbnail until the animation was ready → the sharp still stays until the animation takes over.
+2. A cover that couldn't be played as an animation left the card empty → it shows as a still picture.
+
+### Hero carousel (#30)
+- With "Covers beside the hero: None", the R1 side tile still said "Covers Left / Right" though it only moves the info panel → it says "Info Left / Right" then. (A no-tiles option for the Voltcap row would be a new option — in the questions list.)
+
+### Not changed
+- #16 Switch-inspired layout = the Tile home layout taken out of the pickers in update 112; its code is all still there. Bringing it back is in the questions list (with #15).
+- #19 (front-facing shelf) and #29 (only the first game as a wide capsule) were already there (Game shelf › Facing forward; Game look › The game you're on › Only the first one wide); #28 the look is already called "Wide capsules".
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed on both; Thor home moves, no crashes.
+- **Not tested on a device**: Side menu / Cross menu keys, animated covers, Hero tile label (your handhelds don't use these right now).
+
 ## Update — 18 Oct 2026 (233): the game window answers the first ◀ / ▶ after a touch (#120), Choose a category no longer runs under the status bar (#94)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

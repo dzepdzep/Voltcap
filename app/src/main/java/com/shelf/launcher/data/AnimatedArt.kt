@@ -173,7 +173,9 @@ object AnimatedArt {
      */
     class StillFirst(private val inner: ImageLoader) : ImageLoader by inner {
         private fun withStill(r: coil.request.ImageRequest): coil.request.ImageRequest {
-            if (r.placeholderMemoryCacheKey != null) return r
+            // (Update 234, #22: the small blurry thumbnail every card asks for gives way to the sharp first frame.)
+            val ph = r.placeholderMemoryCacheKey
+            if (ph != null && !ph.key.startsWith("thumb|")) return r
             val url = r.data as? String ?: return r
             if (!looksAnimated(url) || inner.memoryCache?.get(stillKey(url)) == null) return r
             return r.newBuilder().placeholderMemoryCacheKey(stillKey(url)).build()
@@ -233,7 +235,7 @@ object AnimatedArt {
         override suspend fun decode(): DecodeResult {
             var sampled = false
             val file = source.file().toFile()
-            val drawable = runInterruptible {
+            val drawable = try { runInterruptible {
                 ImageDecoder.decodeDrawable(ImageDecoder.createSource(file)) { decoder, info, _ ->
                     // Requests that read pixels (hardware not allowed) get a software bitmap, as Coil's own decoders do (update 91).
                     decoder.allocator = if (options.config == android.graphics.Bitmap.Config.HARDWARE) ImageDecoder.ALLOCATOR_DEFAULT
@@ -246,6 +248,12 @@ object AnimatedArt {
                         sampled = true
                     }
                 }
+            } } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // (Update 234, #22: a picture Android's animated decoder can't read shows as a still picture instead
+                // of nothing.)
+                return stillFallback(file, e)
             }
             val out = (drawable as? AnimatedImageDrawable)?.let {
                 it.repeatCount = AnimatedImageDrawable.REPEAT_INFINITE
@@ -264,6 +272,21 @@ object AnimatedArt {
                 Gate(it, src, forced).also { g -> register(g) }
             } ?: drawable
             return DecodeResult(out, sampled)
+        }
+
+        /** (Update 234, #22) [file] as a plain still bitmap, sampled down towards the requested size; [cause] if even that fails. */
+        private fun stillFallback(file: java.io.File, cause: Exception): DecodeResult {
+            val tw = (options.size.width as? Dimension.Pixels)?.px
+            val th = (options.size.height as? Dimension.Pixels)?.px
+            val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeFile(file.path, bounds)
+            var s = 1
+            if (tw != null && th != null && bounds.outWidth > 0 && bounds.outHeight > 0) {
+                while (bounds.outWidth / (s * 2) >= tw && bounds.outHeight / (s * 2) >= th) s *= 2
+            }
+            val bmp = android.graphics.BitmapFactory.decodeFile(file.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = s })
+                ?: throw cause
+            return DecodeResult(android.graphics.drawable.BitmapDrawable(options.context.resources, bmp), isSampled = s > 1)
         }
     }
 }

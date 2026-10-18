@@ -228,7 +228,7 @@ private fun LiveSettings() {
 
 @Composable
 private fun SideSettings() {
-    MutedNote("A dark menu down the left (your picture, your shortcuts, a charging power capsule), the game's art behind and the row along the bottom. ▲ (or ◀ on the first game) goes into the menu.")
+    MutedNote("A dark menu down the left (your picture, your shortcuts, a charging power capsule), the game's art behind and the row along the bottom. ▲ (or ◀ twice on the first game, with Endless off) goes into the menu.") // (Update 234, #14: as the keys work.)
     Spacer(Modifier.height(10.dp))
     StyleChoice("At the top of the menu", Features.SideEmblem.values(), Features.sideEmblem.state.value, { it.label }) { Features.sideEmblem.value = it }
     Slider("Menu width", Features.sideWidth, 140, 280) { "$it dp" }

@@ -688,7 +688,9 @@ fun QuickSettingsCard(
                 // left / right (Hero settings › Covers); the Voltcap row and Tile home keep Top → Middle → Bottom.)
                 if (a.homeLayout == com.shelf.launcher.data.HomeLayout.HERO) {
                     val coversRight = com.shelf.launcher.data.Features.heroCoversRight.state.value
-                    add(R1Tile("rowpos", Icons.Filled.SwapVert, "Covers\n" + if (coversRight) "Right" else "Left", false) {
+                    // (Update 234, #30: with Covers beside the hero set to None only the info moves — it sits opposite the covers' side.)
+                    val noCovers = com.shelf.launcher.data.Features.heroSideCovers.state.value == com.shelf.launcher.data.Features.HeroSideCovers.NONE
+                    add(R1Tile("rowpos", Icons.Filled.SwapVert, if (noCovers) "Info\n" + (if (coversRight) "Left" else "Right") else "Covers\n" + if (coversRight) "Right" else "Left", false) {
                         com.shelf.launcher.data.Features.heroCoversRight.toggle()
                     })
                 } else

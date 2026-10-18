@@ -71,11 +71,23 @@ internal fun artRequest(
     .memoryCacheKey("$url|${kind.name}|${px.width}x${px.height}" + (if (still) "|still" else "") + (if (trim) "|" + TrimUniformMargins.KEY else ""))
     // While the full-size art decodes, its small thumbnail (if already in memory) stands in,
     // so fast scrolling shows soft covers instead of empty dark cards.
-    .placeholderMemoryCacheKey(thumbKey(url))
+    .placeholderMemoryCacheKey(artPlaceholder(context, url, kind, px, still, trim))
     .memoryCachePolicy(CachePolicy.ENABLED)
     .allowHardware(true)
     .crossfade(fadeMillis)
     .build()
+
+/**
+ * (Update 234, #22: landing on a game with an animated cover showed its blurry thumbnail until the animation decoded:
+ * the sharp still version that was on screen — same slot and size, [still] — stands in now when it's in memory.)
+ */
+private fun artPlaceholder(context: Context, url: String, kind: ArtKind, px: IntSize, still: Boolean, trim: Boolean): coil.memory.MemoryCache.Key {
+    if (!still && com.shelf.launcher.data.AnimatedArt.looksAnimated(url)) {
+        val key = coil.memory.MemoryCache.Key("$url|${kind.name}|${px.width}x${px.height}|still" + (if (trim) "|" + TrimUniformMargins.KEY else ""))
+        if (coil.Coil.imageLoader(context).memoryCache?.get(key) != null) return key
+    }
+    return thumbKey(url)
+}
 
 /** [artRequest] for a card, remembered per url / slot / size. */
 @Composable

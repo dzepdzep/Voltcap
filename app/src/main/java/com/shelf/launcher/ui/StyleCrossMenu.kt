@@ -73,6 +73,8 @@ internal fun StyleCrossMenu(c: StyleCtx, modifier: Modifier) {
         StyleNav.side = emptyList()
         StyleNav.bar = emptyList()
         StyleNav.top = emptyList()
+        // (Update 234, #14: Endless for the key handler — ▲ on the first game goes round to the last.)
+        StyleLoop.on = loopRowOn(c)
     }
     val scale = Features.crossScale.state.value / 100f
     // The colour wash and ribbons are drawn across the screen by StyleBackLayer; the icons and list are kept
@@ -380,7 +382,7 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
                         Spacer(Modifier.height(2.dp))
                         Text(
                             p?.let { (e, t) -> "$e / $t achievements · ${(e * 100) / t} %" } ?: "Achievements loading…",
-                            color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1
+                            color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis // (Update 234, #14: ends in "…")
                         )
                         if (p != null) {
                             Spacer(Modifier.height(4.dp))
@@ -388,11 +390,11 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
                                 Box(Modifier.fillMaxWidth(p.first.toFloat() / p.second).height(3.dp).background(ShelfTheme.accent))
                             }
                         }
-                        Text("A: its achievements", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp * k, maxLines = 1)
+                        Text("A: its achievements", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis) // (Update 234, #14: ends in "…")
                     }
                     if (on && info && !trophyRow) Column(Modifier.riseOnEnter()) {
                         Spacer(Modifier.height(2.dp))
-                        Text(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1)
+                        Text(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis) // (Update 234, #14: ends in "…")
                         Text(
                             titles.console(g.platform) + (c.lastPlayed(g)?.let { " · Last played: " + lastPlayedLabel(it) } ?: ""),
                             color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp * k, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp * k), maxFontSize = 11.sp * k), maxLines = 1, overflow = TextOverflow.Ellipsis
