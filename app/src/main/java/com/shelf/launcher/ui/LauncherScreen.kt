@@ -3929,6 +3929,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onOpenSettings = { menuStartCategory = "Metadata"; showMenu = true },
             onDismiss = { showWork = false }
         )
+        // Update 225 (#102): the status line ("Couldn't launch …", "No emulator set up for …") was drawn only by the
+        // Voltcap row and Tile home: on every other layout a game that didn't start just did nothing. There it shows here.
+        if (heroLayout || gridLayout || tvLayout || styleLayout) state.statusMessage?.let { message ->
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 64.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    message, color = Color.White, fontSize = 13.sp,
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.75f))
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+            }
+        }
         // Update 151: the case opens / the cartridge or disc is thrown in; the game starts when it ends.
         LaunchThrow.plan?.let { plan ->
             LaunchThrowOverlay(plan) {

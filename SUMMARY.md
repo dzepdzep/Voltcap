@@ -4,6 +4,25 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (225): a game that doesn't start now says why on every layout (#102), the save line of an app opens nothing
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (5): `src_copy\ui\LauncherScreen.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\ui\GamePopupStatus.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\GameWindowBanner.kt`. **Files to delete:** none.
+
+### Found (#102, Thor)
+Starting any 3DS game from Voltcap did **nothing visible** — no emulator, no message. Cause: no emulator is set up for the 3DS on the Thor (Citra, Azahar and Lime3DS are installed; Voltcap's message "No emulator set up for 3DS yet — press Start on the game to configure one" was produced) — but that status line was only drawn by the Voltcap row and Tile home. On Case stacks, TV room, Grid, Hero and every style layout a launch that failed simply did nothing.
+
+### What changed
+1. The status line (launch failed, no emulator set up, emulator refused the launch, couldn't place it on the other screen…) now shows above the bottom of the screen on every layout, for its usual 3.5 s. A launch that didn't start is also written to the log ("VoltcapLaunch"), for launch reports.
+2. An Android app's game window said "Saves: No save sync for apps", but tapping it opened "Save sync — <app> · Sync this game". Now that line does nothing for apps.
+
+### Check
+- Thor, Case stacks, 3DS › The Adventures of Tintin › Play: "No emulator set up for 3DS yet — press Start on the game to configure one." shows (screenshot). Before: nothing.
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed on both; no crashes.
+- **#102 sweep stopped on purpose**: starting the first game of each console also started Pokémon Silver (your real save) for ~6 s before it was stopped. Checked right after: all four Silver files (.srm/.rtc, normal and [patched]) have the **same md5 and dates** as before (76d2a4bf…, 927ed6e9…, 86d91a55…, 761962b6…), Sync backups unchanged. The rest of the sweep needs disposable games per console (see the questions list). Side effects of the sweep: "Last played" moved to today for Pokémon Silver and WWE All Stars (your port, stopped after ~5 s), so they sit first in Continue playing; no play time was added (sessions under 20 s don't count).
+- Launched fine this session: Game Boy (RetroArch / Gambatte), GBC (RetroArch), WWE All Stars (Android). Not reached: GameCube onwards.
+
 ## Update — 18 Oct 2026 (224): overlay controls fade when untouched and stay tappable (#107 / #108 / #84), achievement list ▲ ▼ modes (#83), rename your own layouts (#11), This week / Last week stand out (#02), swipe up for all apps works with gesture navigation (#12)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

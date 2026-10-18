@@ -5227,6 +5227,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             is LaunchOutcome.Error ->
                 "Couldn't launch ${game.name}: ${outcome.message}"
         }
+        // (Update 225: a launch that didn't start is in the log too — for crash / launch reports.)
+        if (outcome !is LaunchOutcome.Launched) android.util.Log.w("VoltcapLaunch", "${game.platform} · ${game.name}: $message")
         _uiState.update { it.copy(statusMessage = message) }
     }
 

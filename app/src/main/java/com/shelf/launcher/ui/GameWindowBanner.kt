@@ -442,7 +442,7 @@ internal fun BannerGameWindow(
                         Spacer(Modifier.weight(1f))
                         // Update 213: the game's save sync, always in sight (a tap opens it; stronger only when it needs you).
                         if (sync != null) {
-                            BannerSyncChip(look, sync, onClick = if (sync.setUp) onSyncSetUp else onSync, modifier = Modifier.padding(start = 10.dp))
+                            BannerSyncChip(look, sync, onClick = if (sync.inert) ({}) else if (sync.setUp) onSyncSetUp else onSync, modifier = Modifier.padding(start = 10.dp))
                         } else Text(
                             listOfNotNull(titles.console(g.platform), meta?.releaseYear?.toString()).joinToString("  ·  "),
                             color = look.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,

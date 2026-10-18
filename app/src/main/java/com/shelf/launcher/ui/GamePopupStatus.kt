@@ -174,7 +174,11 @@ internal fun rememberHasFan(): Boolean? {
 internal enum class SyncLook { OK, BUSY, WAIT, ATTENTION, FAIL, OFFLINE, UNKNOWN, OFF }
 
 /** The game's save-sync line: words, kind, icon, and whether a tap opens Settings › Sync (not set up) or the game's sync. */
-internal class GameSyncView(val text: String, val kind: SyncLook, val setUp: Boolean = false) {
+internal class GameSyncView(
+    val text: String, val kind: SyncLook, val setUp: Boolean = false,
+    /** Update 225: nothing to open (an Android app: its saves can't be synced) — a tap does nothing. */
+    val inert: Boolean = false
+) {
     val icon: ImageVector get() = when (kind) {
         SyncLook.OK -> Icons.Filled.CloudDone
         SyncLook.BUSY -> Icons.Filled.Sync
@@ -216,7 +220,7 @@ internal fun rememberGameSyncView(g: Game, syncOn: Boolean?): GameSyncView {
     val sending = if (com.shelf.launcher.data.SaveObserver.watchingKey() == g.stableKey) " · sending soon" else ""
     if (!s.connected) return GameSyncView("Save sync isn't set up", SyncLook.OFF, setUp = true)
     if (!s.syncSaves) return GameSyncView("Save sync is off", SyncLook.OFF, setUp = true)
-    if (g.sourceType != SourceType.ROM) return GameSyncView("No save sync for apps", SyncLook.OFF)
+    if (g.sourceType != SourceType.ROM) return GameSyncView("No save sync for apps", SyncLook.OFF, inert = true)
     if (syncOn == false) return GameSyncView("Save sync off for this game", SyncLook.OFF)
     if (sync.needsSignIn) return GameSyncView("Sign in to Google Drive again", SyncLook.ATTENTION, setUp = true)
     val st = all[g.stableKey]

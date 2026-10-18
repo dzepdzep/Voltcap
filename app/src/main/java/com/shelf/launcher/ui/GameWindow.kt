@@ -1352,7 +1352,7 @@ private fun WinStatusLine(look: WinLook) {
     Spacer(Modifier.height(6.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         val sv = st.sync
-        WinStatusChip(look, sv.icon, "Saves: " + sv.text, urgent = sv.urgent, onClick = if (sv.setUp) st.onSyncSetUp else st.onSync)
+        WinStatusChip(look, sv.icon, "Saves: " + sv.text, urgent = sv.urgent, onClick = if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync)
         st.perf?.let { p ->
             WinStatusChip(look, androidx.compose.material.icons.Icons.Filled.Speed, p.perf.summary, urgent = false, onClick = st.onPerf)
         }
