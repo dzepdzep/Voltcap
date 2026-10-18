@@ -1563,6 +1563,33 @@ object Features {
     val gcReducedMotion = BoolPref("gc_reduced_motion", false)
     val gcBrowse = EnumPref("gc_browse", GcBrowse.LIST, GcBrowse.values())
     val gcAccent = EnumPref("gc_accent", GcAccent.GREEN, GcAccent.values())
+
+    // ---- (Update 239, #93: Cube menu — the optional cube-navigator home layout, StyleCube.kt) ----
+    /** (Update 239, #93: where the cube waits while you browse the games — a column on the left, a band on top, or
+     *  hidden behind a small category chip. A screen too small for the one you picked docks it where it fits.) */
+    enum class CubeDock(val label: String) { LEFT("Left column"), TOP("Top band"), HIDDEN("Hidden (category chip)") }
+    /** (Update 239, #93: what a cube face shows for its category.) */
+    enum class CubeFace(val label: String) { LOGO("Logo or icon + name"), NAME("Name only") }
+    /** (Update 239, #93: the cube's glass colour.) */
+    enum class CubeTint(val label: String, val argb: Long) {
+        INDIGO("Indigo", 0xFF5B4FC8L), LILAC("Lilac", 0xFF9A7FE0L), SMOKE("Smoke", 0xFF6F7486L), THEME("Theme accent", 0L)
+    }
+    /** (Update 239, #93: start on the big cube — A opens a face's games, B comes back to it. Off: straight to the games
+     *  with the cube docked.) */
+    val cubeHome = BoolPref("cube_home", true)
+    val cubeDock = EnumPref("cube_dock", CubeDock.LEFT, CubeDock.values())
+    val cubeFace = EnumPref("cube_face", CubeFace.LOGO, CubeFace.values())
+    val cubeTint = EnumPref("cube_tint", CubeTint.INDIGO, CubeTint.values())
+    /** (Update 239, #93: a gentle float and sway while you rest on the big cube; it stops when the home screen idles.) */
+    val cubeIdle = BoolPref("cube_idle", true)
+    /** (Update 239, #93: the cube's top and bottom faces — ▲ Apps, ▼ Settings. Off: ▲ ▼ go past the cube.) */
+    val cubeExtraFaces = BoolPref("cube_extra_faces", true)
+    /** (Update 239, #93: the big cube's size, in %.) */
+    val cubeSize = IntPref("cube_size", 100, 70..115)
+    /** (Update 239, #93: the dark indigo backdrop with a faint floor grid; off: your theme's background.) */
+    val cubeBackdrop = BoolPref("cube_backdrop", true)
+    /** (Update 239, #93: reduced motion — the cube turns and docks without animating.) */
+    val cubeReducedMotion = BoolPref("cube_reduced_motion", false)
     /** Icon bar: the tiles as squares (off: the card artwork's own shape). */
     val barSquares = BoolPref("bar_squares", true)
 

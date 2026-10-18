@@ -283,7 +283,10 @@ object SaveCapsules {
                     title = s.title, where = "${s.card} · ${s.folder}", sizeBytes = s.sizeBytes, modified = s.modified,
                     kind = if (kind == Platform.PSP) Kind.PSP_SAVEDATA else Kind.MEMORY_CARD
                 ))
+                // (Update 239, #112: where this PS2 save's browser icon comes from, for Save Vault's PS2 browser style.)
+                if (kind == Platform.PS2) s.ps2Icon?.let { Ps2Icons.register(Ps2Icons.idOf("${s.card} · ${s.folder}", s.sizeBytes, s.modified), it) }
             }
+            Ps2Icons.bump() // (Update 239, #112)
         }
 
         // 2b. GameCube (update 112): Dolphin's .gci saves and .raw memory cards are opened and each save goes to its game —
@@ -720,6 +723,9 @@ object SaveCapsules {
         val files = tree.list()
         // PS2 folder cards: "Mcd001.ps2/BASLUS-20312/icon.sys"
         val folderCards = HashMap<String, HashMap<String, Triple<ByteArray?, Long, Long>>>()
+        // (Update 239, #112: each save folder's own files — lower-case name → (path, size) — so its browser icon can be read
+        // when the PS2 browser style shows it.)
+        val folderFiles = HashMap<String, HashMap<String, HashMap<String, Pair<String, Long>>>>()
         // PSP: "ULUS10041DATA00/PARAM.SFO"
         val psp = HashMap<String, Triple<ByteArray?, Long, Long>>()
         files.forEach { (rel, e) ->
@@ -736,6 +742,8 @@ object SaveCapsules {
                     val icon = if (fileName.equals("icon.sys", true) && parts.size == cardDirIndex + 3)
                         runCatching { tree.open(rel).use { it.readBytes() } }.getOrNull() else old.first
                     m[save] = Triple(icon ?: old.first, old.second + e.size, maxOf(old.third, e.modified))
+                    if (parts.size == cardDirIndex + 3) // (Update 239, #112)
+                        folderFiles.getOrPut(card) { HashMap() }.getOrPut(save) { HashMap() }[fileName.lowercase()] = rel to e.size
                 }
                 kind == SaveKind.PSP_SAVEDATA || parts.any { it.equals("SAVEDATA", true) } -> {
                     if (parts.size < 2) return@forEach
@@ -774,7 +782,16 @@ object SaveCapsules {
                 }
             }
         }
-        folderCards.forEach { (card, dirs) -> MemoryCards.readPs2Folder(card, dirs).forEach { out += Platform.PS2 to it } }
+        folderCards.forEach { (card, dirs) ->
+            // (Update 239, #112: a reader per save folder, for its icon file — only called when the icon is shown.)
+            val readers = folderFiles[card].orEmpty().mapValues { (_, own) ->
+                { wanted: String ->
+                    own[wanted.lowercase()]?.takeIf { it.second in 20L..Ps2Icons.MAX_ICON_BYTES.toLong() }
+                        ?.let { (path, _) -> runCatching { tree.open(path).use { it.readBytes() } }.getOrNull() }
+                }
+            }
+            MemoryCards.readPs2Folder(card, dirs, readers).forEach { out += Platform.PS2 to it }
+        }
         psp.forEach { (dir, info) ->
             val title = info.first?.let { sfoTitle(it) } ?: dir
             out += Platform.PSP to MemoryCards.CardSave("SAVEDATA", dir, MemoryCards.normaliseCode(dir), title, info.second, info.third)
@@ -825,6 +842,8 @@ object SaveCapsules {
         // from its icon.sys (a small download) or else its product code.
         val folderCards = HashMap<String, HashMap<String, Triple<ByteArray?, Long, Long>>>()
         val folderFrom = HashMap<String, String?>()
+        // (Update 239, #112: each save folder's files on Drive — lower-case name → (Drive folder, path, size) — for its icon.)
+        val folderFiles = HashMap<String, HashMap<String, HashMap<String, Triple<String, String, Long>>>>()
         files.forEach { f ->
             val parts = f.path.split('/')
             val at = parts.dropLast(1).indexOfFirst { it.lowercase().endsWith(".ps2") }
@@ -838,10 +857,22 @@ object SaveCapsules {
                     ?: DriveOnlySaves.bytes(context, f.folder, f.path, 64_000L)) else old.first // (Update 151: or a Drive-only folder)
             // (Update 144: the save's size adds up its files, like the local twin above - it used to stay 0 B.)
             m[save] = Triple(icon, old.second + f.size, maxOf(old.third, f.modified))
+            if (parts.size == at + 3) // (Update 239, #112)
+                folderFiles.getOrPut("${f.folder}|$card") { HashMap() }.getOrPut(save) { HashMap() }[parts.last().lowercase()] = Triple(f.folder, f.path, f.size)
         }
         folderCards.forEach { (key, dirs) ->
             val from = " · synced from ${folderFrom[key] ?: "another device"}"
-            MemoryCards.readPs2Folder(key.substringAfter('|'), dirs).forEach { sv -> out += Platform.PS2 to sv.copy(folder = sv.folder + from) }
+            // (Update 239, #112: its icon file fetched from Drive only when the PS2 browser style shows it — then kept in
+            // Ps2Icons' small disk cache.)
+            val readers = folderFiles[key].orEmpty().mapValues { (_, own) ->
+                { wanted: String ->
+                    own[wanted.lowercase()]?.takeIf { it.third in 20L..Ps2Icons.MAX_ICON_BYTES.toLong() }?.let { (folder, path, _) ->
+                        runCatching { CloudSync.remoteFileBytes(context, folder, path, maxBytes = Ps2Icons.MAX_ICON_BYTES) }.getOrNull()
+                            ?: runCatching { DriveOnlySaves.bytes(context, folder, path, Ps2Icons.MAX_ICON_BYTES.toLong()) }.getOrNull()
+                    }
+                }
+            }
+            MemoryCards.readPs2Folder(key.substringAfter('|'), dirs, readers).forEach { sv -> out += Platform.PS2 to sv.copy(folder = sv.folder + from) }
         }
         files.forEach { f ->
             if (!looksLikeCard(f)) return@forEach

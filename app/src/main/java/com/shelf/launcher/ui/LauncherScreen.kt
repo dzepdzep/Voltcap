@@ -2389,7 +2389,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // Update 181: the Pocket layouts always draw their own (paper or the handheld's body).
             state.appearance.homeLayout.isPocket ||
             // Update 202: Pocket Quest drawing its theme's scenery (Layout options › Background): the theme's background rests.
-            (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.POCKET && pqOwnsBackground())
+            (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.POCKET && pqOwnsBackground()) ||
+            // (Update 239, #93: the Cube menu's own room covers it while its backdrop is on.)
+            (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CUBE && com.shelf.launcher.data.Features.cubeBackdrop.state.value)
         // Update 154: Disc station keeps what's behind it still (Disc station › Calm background, on by default): the
         // animated background holds a frame, game ambience and backdrop touches rest, no video clip plays.
         val discCalm = state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.DISCS &&
@@ -5431,7 +5433,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             st.focusedIndex, st.platformFilter, st.specialFilter, StyleNav.zone, StyleNav.index,
                             HomeReach.zone, HomeReach.index, tileBarFocus, miniFocus, quickJump, showDetails,
                             categoryScreenOpen, GamePopup.game?.stableKey, PocketNav.signature(), GreenCoreNav.signature(),
-                            PqNav.signature() // (Update 202: Pocket Quest's own places)
+                            PqNav.signature(), // (Update 202: Pocket Quest's own places)
+                            CubeNav.signature() // (Update 239, #93: the Cube menu's page and faces)
                         )
                     }
                     val before = padSnapshot()

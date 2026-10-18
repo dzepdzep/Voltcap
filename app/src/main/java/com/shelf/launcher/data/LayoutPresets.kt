@@ -230,6 +230,15 @@ object LayoutPresets {
     private fun cardsOpts(fan: Int = Features.cardsFan.default, frame: Features.CardFrame = Features.CardFrame.CONSOLE) =
         listOf(o(Features.cardsFan, fan), o(Features.cardsSheen, true), o(Features.cardsFrame, frame))
 
+    // (Update 239, #93: the Cube menu's own options.)
+    private fun cubeOpts(
+        dock: Features.CubeDock = Features.CubeDock.LEFT, home: Boolean = true,
+        tint: Features.CubeTint = Features.CubeTint.INDIGO, face: Features.CubeFace = Features.CubeFace.LOGO
+    ) = listOf(
+        o(Features.cubeHome, home), o(Features.cubeDock, dock), o(Features.cubeFace, face), o(Features.cubeTint, tint),
+        o(Features.cubeExtraFaces), o(Features.cubeIdle), o(Features.cubeSize), o(Features.cubeBackdrop), o(Features.cubeReducedMotion)
+    )
+
     private val CASES = PresetLook()
 
     /** A few presets for each home layout, made for it (Settings › Home › Layout & presets; update 162: every layout has its own). */
@@ -590,6 +599,17 @@ object LayoutPresets {
         preset("cards_collector", HomeLayout.CARDS, "Card collector",
             "A wider fan of cards framed in each game's own colours, mastered games in gold.",
             look = null, options = cardsOpts(fan = 10, frame = Features.CardFrame.ART)) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // (Update 239, #93: Cube menu. Keeps your game look — the games in the browser are drawn in it.)
+        preset("cube_std", HomeLayout.CUBE, "Cube menu",
+            "A translucent cube in a dark indigo room, its sides your categories, its top Apps and its bottom Settings; open a face and the cube docks to the left while the games fill the screen.",
+            look = null, options = cubeOpts()) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("cube_band", HomeLayout.CUBE, "Cube band",
+            "The same cube docked in a band along the top while you browse, lilac glass and the faces' names only — more room across for the games.",
+            look = null, options = cubeOpts(dock = Features.CubeDock.TOP, tint = Features.CubeTint.LILAC, face = Features.CubeFace.NAME)) { s ->
             s.copy(focusEffect = FocusEffect.GLOW)
         }
     )

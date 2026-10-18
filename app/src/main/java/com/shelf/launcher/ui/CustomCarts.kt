@@ -91,7 +91,53 @@ internal object CustomCarts {
     fun asset(look: CartLook, clear: Boolean, id: String): java.io.File? = com.shelf.launcher.data.Packs.cartFile(id, look.key, clear)
 
     /** Width / height of what [platform]'s game is drawn on: its disc-console shell, else the cartridge shape picked. */
-    fun aspectFor(platform: String): Float = discShellFor(platform)?.aspect ?: Features.cartLook.state.value.aspect
+    // (Update 239, #33: an app's / Android game's own shape — lookFor.)
+    fun aspectFor(platform: String): Float = discShellFor(platform)?.aspect ?: lookFor(platform).aspect
+
+    /**
+     * Update 239 (#33): the pack shape [platform]'s games are drawn on when no shape was picked for the game or its console
+     * (the Cartridge shell picker passes its own): the shape picked for all (R1 › Cartridge shape) — but apps and Android
+     * games on the pack's Switch-card shape, once their part of the pack is on the device (every console's part has all
+     * 14 shapes). An app's icon or an Android game's cover is square or portrait: in an N64 / SNES / Genesis shape's wide
+     * window it came out a small picture in a band of label paper; the Switch card's window is about square. Every
+     * console with a cartridge of its own keeps the shape picked (no real cartridge is resized).
+     */
+    fun lookFor(platform: String): CartLook {
+        val all = Features.cartLook.state.value
+        if (all == CartLook.SWITCH || !AndroidMedia.isAndroid(platform)) return all
+        val id = idFor(platform) ?: return all
+        return if (com.shelf.launcher.data.Packs.hasCart(id)) CartLook.SWITCH else all
+    }
+}
+
+/**
+ * Update 239 (#34): a cover as the sticker in your pack's window, [winAspect] wide for 1 tall — CartShells.packSticker
+ * (its console banner cut off, fitted at its own shape, the rest the colour along its edge).
+ */
+internal class PackSticker(private val platform: String, private val winAspect: Float) : coil.transform.Transformation {
+    override val cacheKey: String = "voltcapPackSticker(1)|$platform|${(winAspect * 1000f).toInt()}"
+    override suspend fun transform(input: android.graphics.Bitmap, size: coil.size.Size): android.graphics.Bitmap =
+        CartShells.packSticker(platform, input, winAspect)
+}
+
+/**
+ * Update 239 (#34): [art] for your pack's window ([winAspect]) — a picture (URL, file, bitmap) with [PackSticker]; other
+ * models (and none) as they are. An animated cover stays animated and uncut.
+ */
+@Composable
+private fun rememberPackLabel(art: Any?, platform: String, winAspect: Float): Any? {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return androidx.compose.runtime.remember(art, platform, winAspect) {
+        when (art) {
+            is String, is java.io.File, is android.net.Uri, is android.graphics.Bitmap ->
+                coil.request.ImageRequest.Builder(context).data(art).size(720, 720)
+                    .scale(coil.size.Scale.FIT).precision(coil.size.Precision.INEXACT)
+                    .transformations(TrimUniformMargins, PackSticker(platform, winAspect))
+                    .allowConversionToBitmap(false)
+                    .build()
+            else -> art
+        }
+    }
 }
 
 /**
@@ -137,7 +183,7 @@ private val CartPaper = Color(0xFFE9E6DF)
 internal fun CustomCart(platform: String, art: Any?, modifier: Modifier) {
     // Update 131: a disc console on its own shell (your optical-system pack).
     val shell = discShellFor(platform)
-    if (shell != null) DiscShellArt(shell, art, modifier) else PackCart(platform, art, modifier)
+    if (shell != null) DiscShellArt(shell, art, modifier, platform) else PackCart(platform, art, modifier)
 }
 
 /**
@@ -147,7 +193,8 @@ internal fun CustomCart(platform: String, art: Any?, modifier: Modifier) {
 @Composable
 internal fun PackCart(platform: String, art: Any?, modifier: Modifier, look0: CartLook? = null, clear0: Boolean? = null) {
     val id = CustomCarts.idFor(platform)
-    val look = look0 ?: Features.cartLook.state.value
+    // (Update 239, #33: apps / Android games on the Switch-card shape unless a shape was picked for them — lookFor.)
+    val look = look0 ?: CustomCarts.lookFor(platform)
     // (Update 205: clear plastic only with Cartridges & discs › Cartridge › Clear plastic, or the flat look from before
     // that set it. With Real shell for each console picked, the Android / Steam / PC games on the pack's shape stood
     // see-through — the clear switch stayed on from an earlier pick.)
@@ -159,6 +206,9 @@ internal fun PackCart(platform: String, art: Any?, modifier: Modifier, look0: Ca
         // Dp per unit of the pack's own measurements.
         val k = w / look.w
         val win = look.win
+        // (Update 239, #34: the cover as one printed sticker for this window — its console banner cut off, never
+        // stretched, the rest in the colour along its edge: rememberPackLabel.)
+        val labelModel = rememberPackLabel(art, platform, win[2] / win[3])
         Box(Modifier.size(w, h)) {
             Box(
                 Modifier.offset(x = k * win[0], y = k * win[1]).size(k * win[2], k * win[3])
@@ -167,7 +217,7 @@ internal fun PackCart(platform: String, art: Any?, modifier: Modifier, look0: Ca
                 // (Update 206: stretched to the label window exactly — the art adapts to the pack's label, never cut.)
                 // (Update 215: never stretched — the cover at its own shape, as big as fits in the window, on the label's
                 // paper; stretched to the window it came out wide or tall.)
-                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                if (art != null) AsyncImage(if (labelModel !== art) labelModel else mediaArtModel(art), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
             }
             val file = id?.let { CustomCarts.asset(look, clear, it) }
             // (Update 141: the clear shell a little more see-through.)
@@ -235,18 +285,23 @@ internal object DiscShells {
 
 /** [art] (the game's cover) in [shell]'s window, the shell over it, keeping the shell's proportions inside [modifier]. */
 @Composable
-private fun DiscShellArt(shell: DiscShells.Shell, art: Any?, modifier: Modifier) {
+private fun DiscShellArt(shell: DiscShells.Shell, art: Any?, modifier: Modifier, platform: String = "") {
     val file = com.shelf.launcher.data.Packs.discFile(shell.file)
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * shell.aspect)
         val h = w / shell.aspect
         val win = shell.win
+        // (Update 239, #34: the window's shape — its share of the width and height of a picture [aspect] wide for 1 tall.)
+        val labelModel = rememberPackLabel(art, platform, shell.aspect * win[2] / win[3].coerceAtLeast(0.01f))
         Box(Modifier.size(w, h)) {
             Box(
                 Modifier.offset(x = w * win[0], y = h * win[1]).size(w * win[2], h * win[3])
                     .clip(RoundedCornerShape(w * shell.corner)).background(CartPaper)
             ) {
-                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                // (Update 239, #34: fitted as one printed sticker — rememberPackLabel — instead of cut to the window: a PS2
+                // game's portrait cover on the near-square PS2 shell lost its top and bottom, its title and the PS2 header
+                // with them, and still wore the header's edge.)
+                if (art != null) AsyncImage(if (labelModel !== art) labelModel else mediaArtModel(art), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
             }
             if (file != null) AsyncImage(rememberShellRequest(file), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
         }

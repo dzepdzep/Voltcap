@@ -187,6 +187,8 @@ internal fun styleHomeKey(
     if (layout == HomeLayout.GREENCORE) return greenCoreKey(event, reach)
     // Update 202: Pocket Quest takes every key too (its games, panel, top bar and pages; StylePocketQuest.kt).
     if (layout == HomeLayout.POCKET) return pocketQuestKey(event, reach, sound)
+    // (Update 239, #93: the Cube menu takes every key too — its big cube, the docked cube, the games and buttons; StyleCube.kt.)
+    if (layout == HomeLayout.CUBE) return cubeKey(event, reach, sound)
     val code = event.nativeKeyEvent.keyCode
     val down = event.type == KeyEventType.KeyDown
     val up = event.type == KeyEventType.KeyUp
@@ -1201,6 +1203,8 @@ internal fun StyleHome(
         HomeLayout.GREENCORE -> StyleGreenCore(c, modifier)
         // Update 202: Pocket Quest (StylePocketQuest.kt).
         HomeLayout.POCKET -> StylePocketQuest(c, modifier)
+        // (Update 239, #93: Cube menu, StyleCube.kt.)
+        HomeLayout.CUBE -> StyleCube(c, modifier)
         else -> Unit
     }
 }
@@ -1264,6 +1268,8 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.GREENCORE -> GreenCoreBackdrop(Modifier.fillMaxSize())
         // Update 202: Pocket Quest's pixel-art scenery (PocketQuestScenery.kt; nothing with Voltcap's background picked).
         HomeLayout.POCKET -> PocketQuestBackdrop(Modifier.fillMaxSize())
+        // (Update 239, #93: the Cube menu's dark indigo room, its option; off: your theme's background.)
+        HomeLayout.CUBE -> if (Features.cubeBackdrop.state.value) CubeBackdrop(Modifier.fillMaxSize())
         else -> Unit
     }
 }
@@ -1302,6 +1308,8 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.GREENCORE -> true
     // Update 202: Pocket Quest with its theme's scenery (Layout options › Background).
     HomeLayout.POCKET -> pqOwnsBackground()
+    // (Update 239, #93: the Cube menu with its own backdrop on.)
+    HomeLayout.CUBE -> Features.cubeBackdrop.state.value
     else -> false
 }
 

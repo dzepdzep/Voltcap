@@ -200,7 +200,8 @@ internal object CustomPieceTones {
             else {
                 val finish = Features.modelFinish.state.value
                 val clear = Features.cartClear.state.value && (finish == ModelFinish.CLEAR || finish == ModelFinish.OFF)
-                CustomCarts.idFor(console)?.let { CustomCarts.asset(Features.cartLook.state.value, clear, it) }
+                // (Update 239, #33: the shape it's drawn in — an app's / Android game's Switch-card shape, CustomCarts.lookFor.)
+                CustomCarts.idFor(console)?.let { CustomCarts.asset(CustomCarts.lookFor(console), clear, it) }
             }
         }
         else -> null

@@ -293,7 +293,8 @@ internal fun drawn3dPick(platform: String, mixed: Boolean, gameKey: String?): Me
     val clear = finish == ModelFinish.CLEAR
     val authentic = CartShells.authenticIdFor(platform, CaseCatalog.regionOf(gameKey ?: ""), gameKey)
     val packHere = CustomCarts.idFor(platform)?.let { com.shelf.launcher.data.Packs.hasCart(it) } == true
-    val pack = "pack:" + Features.cartLook.state.value.key + "~" + (if (clear) "clear" else "opaque")
+    // (Update 239, #33: an app / Android game on the pack's Switch-card shape — CustomCarts.lookFor.)
+    val pack = "pack:" + CustomCarts.lookFor(platform).key + "~" + (if (clear) "clear" else "opaque")
     // (Update 210: the game's own real edition — its plastic or special shell — where one is known for it, MediaEditions.)
     val edition = if (clear) null else MediaEditions.autoRaw(platform, gameKey)
     val raw = when {
@@ -587,7 +588,8 @@ internal fun PhysicalMedia(
         val packTone = rememberCustomPieceTone(platform)
         CustomCart(
             platform.removePrefix(CUSTOM_CART), caseCover ?: label,
-            modifier.solidPiece(cartSolid(null, platform, packShell?.aspect ?: Features.cartLook.state.value.aspect, custom = true, tone = packTone))
+            // (Update 239, #33: at the shape it's drawn in — CustomCarts.aspectFor, an app's Switch-card shape too.)
+            modifier.solidPiece(cartSolid(null, platform, packShell?.aspect ?: CustomCarts.aspectFor(platform.removePrefix(CUSTOM_CART)), custom = true, tone = packTone))
                 .mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode())
         )
         return

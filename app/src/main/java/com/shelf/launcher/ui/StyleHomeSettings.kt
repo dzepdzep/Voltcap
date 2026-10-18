@@ -80,6 +80,8 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     // Update 202.
     HomeLayout.GREENCORE -> "Glow, sphere speed, background motion, sounds & hum, reduced motion, list or carousel, colour"
     HomeLayout.POCKET -> "Theme, scenery or Voltcap background, parallax, accent, media, panel parts, size, speed, retro sounds, reduced motion"
+    // (Update 239, #93.)
+    HomeLayout.CUBE -> "Cube home, where it docks, faces, Apps & Settings faces, colour, size, idle float, backdrop, reduced motion"
     else -> ""
 }
 
@@ -123,6 +125,8 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.GREENCORE -> GreenCoreSettings()
         // Update 202 (PocketQuestSettings.kt).
         HomeLayout.POCKET -> PocketQuestSettings()
+        // (Update 239, #93: Cube menu, below.)
+        HomeLayout.CUBE -> CubeSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).
@@ -132,6 +136,56 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
     }
     Spacer(Modifier.height(4.dp))
     MutedNote("The menus use your round shortcuts: which ones, and how many this layout shows, are in Settings › Home › Round shortcuts.")
+}
+
+/**
+ * (Update 239, #93: Settings › Home › Layout options (Cube menu). Every one its own "cube_…" Features pref — backed up,
+ * carried by the Cube presets, and touching no other layout.)
+ */
+@Composable
+private fun CubeSettings() {
+    MutedNote(
+        "A translucent cube whose sides are your categories, its top face Apps and its bottom face Settings. ◀ ▶ turn it, " +
+            "▲ ▼ tip it, A opens the face turned to you. Opening a category docks the cube out of the way and the games fill " +
+            "the rest of the screen: ◀ ▶ the games, ▼ Play / Details, ▲ the docked cube (turn it to another category), " +
+            "L2 / R2 change the category, B brings the big cube back. Touch: tap or drag the cube, tap a game twice to open it."
+    )
+    Spacer(Modifier.height(10.dp))
+    Toggle(
+        Icons.Filled.Dashboard, "Cube home screen",
+        "Start on the big cube; A opens a face's games and B comes back to it. Off: straight to the games, the cube docked.",
+        Features.cubeHome
+    )
+    StyleChoice("While you browse the games, the cube sits", Features.CubeDock.values(), Features.cubeDock.state.value, { it.label }) { Features.cubeDock.value = it }
+    MutedNote("It never covers the games: a screen too narrow for the column uses the band, one too short for either shows the category chip instead.")
+    Spacer(Modifier.height(10.dp))
+    StyleChoice("Cube faces show", Features.CubeFace.values(), Features.cubeFace.state.value, { it.label }) { Features.cubeFace.value = it }
+    Toggle(
+        Icons.Filled.Apps, "Apps and Settings faces",
+        "The cube's top face opens your apps (▲), its bottom face Voltcap's settings (▼). Off: ▲ ▼ go past the cube.",
+        Features.cubeExtraFaces
+    )
+    StyleChoice("Cube colour", Features.CubeTint.values(), Features.cubeTint.state.value, { it.label }) { Features.cubeTint.value = it }
+    PercentSlider(
+        "Big cube size", Features.cubeSize.state.value, { Features.cubeSize.value = it.coerceIn(70, 115) },
+        min = 70, max = 115, valueText = { "$it%" }
+    )
+    Spacer(Modifier.height(8.dp))
+    Toggle(
+        Icons.Filled.Waves, "Gentle float",
+        "The big cube floats and sways a little while you rest on it; it settles when the home screen goes quiet.",
+        Features.cubeIdle
+    )
+    Toggle(
+        Icons.Filled.WbSunny, "Cube room backdrop",
+        "A dark indigo room with a faint floor grid behind the cube. Off: your theme's background.",
+        Features.cubeBackdrop
+    )
+    Toggle(
+        Icons.Filled.MonitorHeart, "Reduced motion",
+        "The cube turns, tips and docks without animating, and doesn't float. (Also when Android's animations are off.)",
+        Features.cubeReducedMotion
+    )
 }
 
 /** Whether [layout] has round-shortcut options of its own (shown in Settings › Home › Round shortcuts). */

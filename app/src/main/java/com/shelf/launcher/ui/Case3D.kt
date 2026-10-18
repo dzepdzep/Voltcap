@@ -104,7 +104,11 @@ internal fun Case3D(
         // (Update 166: without a spine picture, the console's real case thickness — a Game Boy box is far thicker for its
         // size than a DVD case — not always a DVD case's.)
         // (Update 191: the real case's thickness for its region — a PAL PlayStation case is deeper.)
-        (if (ownBmp != null) own else spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
+        // (Update 239, #88: a PlayStation jewel case is as thick as its real case — CaseCatalog: 10.4 mm, PAL 17.4 mm, the
+        // multi-disc case 25 mm — whatever shape its spine scan is; the scan is drawn onto that side. A trimmed or
+        // single-case spine scan made a multi-disc case as slim as a single one.)
+        val physical = spec?.takeIf { it.platform == "PS1" && it.shell == CaseShell.JEWEL }?.depth
+        (physical ?: if (ownBmp != null) own else spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
     }
     // Update 166: a Steam / Android game's case front is Voltcap's own: the game's art in its window, the band on top.
     // Update 169: and with Settings › Cover templates on, every console's case front is its template too (the band, the

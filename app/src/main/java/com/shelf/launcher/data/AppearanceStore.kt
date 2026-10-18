@@ -158,7 +158,10 @@ enum class HomeLayout(val label: String) {
     /** Update 202: Pocket Quest — a full-screen game menu in the style of the great 32-bit handheld RPGs: a big showcase
      *  of the game you're on, layered blue panels with gold edges, a row of games along the bottom, pixel-art scenery
      *  behind (StylePocketQuest.kt, PocketQuestScenery.kt, PocketQuestSettings.kt). */
-    POCKET("Pocket Quest");
+    POCKET("Pocket Quest"),
+    /** (Update 239, #93: a cube home — a big translucent cube whose faces are your categories (▲ Apps, ▼ Settings);
+     *  A opens a face and the cube docks to the side while the games fill the rest of the screen (StyleCube.kt).) */
+    CUBE("Cube menu");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
@@ -170,6 +173,7 @@ enum class HomeLayout(val label: String) {
         this == CUSTOM || // Update 176: Custom layout
         this == GREENCORE || // Update 202: Green Core
         this == POCKET || // Update 202: Pocket Quest
+        this == CUBE || // (Update 239, #93: Cube menu)
         this == POCKET_CLASSIC || this == POCKET_RIBBON // Update 181
 
     companion object {

@@ -547,6 +547,20 @@ internal fun SaveVaultSettings(onDark: Boolean = false) {
             }
             if (Models3D.saveCardId() == null) Text("The 3D cards come with the 3D models pack (Settings › Game look › Extra art packs); until then it's the drawn memory card.", color = label, fontSize = 11.sp)
         }
+        // (Update 239, #112: PS2 saves as the console's memory-card browser shows them — their own save icons — whatever
+        // the style above; other consoles keep it. Off by default.)
+        val context = androidx.compose.ui.platform.LocalContext.current
+        remember { com.shelf.launcher.data.Ps2BrowserStyle.load(context) }
+        val ps2On = com.shelf.launcher.data.Ps2BrowserStyle.on.value
+        ChipFlow {
+            Chip(if (ps2On) "✓ PS2 browser style" else "PS2 browser style", accent = ps2On) {
+                com.shelf.launcher.data.Ps2BrowserStyle.set(context, !ps2On)
+            }
+        }
+        if (ps2On) Text(
+            "PS2 saves show their own save icon from the memory card; a save without a readable one shows a generic card marked \"No save icon\".",
+            color = label, fontSize = 11.sp
+        )
         Spacer(Modifier.height(6.dp))
         Text("Motion", color = label, fontSize = 12.sp)
         ChipFlow {

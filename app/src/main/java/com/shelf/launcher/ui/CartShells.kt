@@ -87,7 +87,13 @@ internal class CartShell(
     /** Update 214: the label's corner radius (mm) — the N64's sticker has round corners. */
     val labelRadius: Float = 0.8f,
     /** Update 215: how strongly the moulded lines ([ridges]) show, 0…1 (1 = grip ridges; the N64's flush panel lines are faint). */
-    val ridgeDepth: Float = 1f
+    val ridgeDepth: Float = 1f,
+    // (Update 239, #40: the N64 sticker's own shape — ConsoleMods' label table gives it 4 mm top / 3 mm bottom corners
+    // and a top edge arched on a 325 mm diameter, like the shell's arched top. Defaults keep every other label as it was.)
+    /** The label's bottom corners' radius (mm); below 0: as [labelRadius]. */
+    val labelRadiusBottom: Float = -1f,
+    /** The label's top edge arched up on a circle of this diameter (mm), its middle at the label's top; 0: straight. */
+    val labelTopArc: Float = 0f
 ) {
     val aspect: Float get() = w / h
     /** Thickness against the longest side (the solid piece's depth). */
@@ -143,8 +149,12 @@ internal object CartShells {
             listOf(c("Grey", 0xFF7C7D82), c("Black", 0xFF202022), c("Gold", 0xFFC9A84C), c("Red", 0xFFB3262E), c("Blue", 0xFF2D4FA0),
                 c("Clear", 0xFFE6E8EA, 0.45f), c("Smoke", 0xFF3A3A40, 0.6f)),
             // (Update 215: the panel lines faint — the front is flush, they're only hairline seams.)
-            check = CaseCheck.ESTIMATED, labelRadius = 3f, ridgeDepth = 0.3f,
-            note = "Size measured (116×76.6×18.5); arched top, panel grooves, side step and the 57×63.5 label measured off a straight-on photo (approximate)."),
+            // (Update 239, #40: the sticker's shape from ConsoleMods' Cart Labels table — 4 mm top / 3 mm bottom corners, the
+            // top edge on a 325 mm circle (about 2.5 mm lower at its ends than in the middle). It was a plain 3 mm round
+            // rectangle. Its size stays 57 × 63.5: the sources disagree (ConsoleMods 54.5 × 62.5, not test-fitted; the
+            // GoldenEye photo 50.8 × 60.3; the Super Mario 64 photo 57 × 63.5), so it isn't changed until it's measured.)
+            check = CaseCheck.ESTIMATED, labelRadius = 4f, ridgeDepth = 0.3f, labelRadiusBottom = 3f, labelTopArc = 325f,
+            note = "Size measured (116×76.6×18.5, ConsoleMods / Wikipedia); arched top, panel grooves, side step and the 57×63.5 label measured off a straight-on photo (approximate; ConsoleMods' label table says 54.5×62.5); label corners 4 / 3 mm and its 325 mm top arc from ConsoleMods."),
         CartShell("gb", "Game Boy Game Pak", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
             listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Grey", 0xFFA3A2A8), c("Yellow", 0xFFE8C51E)),
             contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED,
@@ -530,7 +540,80 @@ internal object CartShells {
         else Bitmap.createBitmap(art, l, t, r - l, b - t)
     }.getOrDefault(art)
 
+    /**
+     * Update 239 (#34): [art] (a [platform] game's cover) as the sticker in your pack's cartridge / disc-console shell window,
+     * [winAspect] wide for 1 tall: a whole box-front scan has its printed console banner cut off, as [labelArt] does for the
+     * drawn shells (a PS2 cover's black "PlayStation 2" header sat under the pack's own PS2 plaque), then the cover keeps
+     * its own shape, as big as fits, and the rest of the window is the colour along the cover's edge — one printed
+     * sticker, never stretched. (The disc-console shells cut a portrait PS2 cover to their near-square window, losing its
+     * top and bottom — the title among them; your cartridge pack left bare label paper round it.) Off the main thread
+     * (a Coil transformation, [PackSticker]).
+     */
+    internal fun packSticker(platform: String, art: Bitmap, winAspect: Float): Bitmap = runCatching {
+        val tpl = MediaCovers.of(platform)?.takeIf { !it.isOwn() }
+        val a = art.width.toFloat() / art.height.coerceAtLeast(1)
+        val pic = if (tpl != null && kotlin.math.abs(a / tpl.frontAspect - 1f) <= 0.06f) {
+            val w = tpl.win
+            val l = (w[0] * art.width).toInt(); val t = (w[1] * art.height).toInt()
+            val r = (w[2] * art.width).toInt().coerceAtMost(art.width); val b = (w[3] * art.height).toInt().coerceAtMost(art.height)
+            if (r - l < 8 || b - t < 8 || (l == 0 && t == 0 && r >= art.width && b >= art.height)) art
+            else Bitmap.createBitmap(art, l, t, r - l, b - t)
+        } else art
+        val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
+        if (winAspect <= 0f || kotlin.math.abs(pa / winAspect - 1f) <= 0.02f) pic
+        else {
+            val wide = pa > winAspect
+            val ow = (if (wide) pic.width else (pic.height * winAspect).toInt()).coerceAtLeast(1)
+            val oh = (if (wide) (pic.width / winAspect).toInt() else pic.height).coerceAtLeast(1)
+            val out = Bitmap.createBitmap(ow, oh, Bitmap.Config.ARGB_8888)
+            val c = Canvas(out)
+            c.drawColor(edgeColour(pic, wide))
+            val dst = if (wide) RectF(0f, (oh - pic.height) / 2f, ow.toFloat(), (oh + pic.height) / 2f)
+                else RectF((ow - pic.width) / 2f, 0f, (ow + pic.width) / 2f, oh.toFloat())
+            c.drawBitmap(pic, null, dst, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+            out
+        }
+    }.getOrDefault(art)
+
     private val cache = android.util.LruCache<String, Bitmap>(24)
+
+    /**
+     * Update 239 (#40): [s]'s label outline over [r] (px, [k] px per mm): [CartShell.labelRadius] at the top corners,
+     * [CartShell.labelRadiusBottom] at the bottom ones, and the top edge arched on [CartShell.labelTopArc]'s circle (its
+     * middle at [r]'s top, its ends lower) — the N64 sticker's shape. A plain round rectangle for every other label.
+     */
+    private fun labelPath(s: CartShell, r: RectF, k: Float): Path {
+        val rt = s.labelRadius * k
+        val rb = (if (s.labelRadiusBottom >= 0f) s.labelRadiusBottom else s.labelRadius) * k
+        val p = Path()
+        val arcR = s.labelTopArc * k / 2f
+        val half = r.width() / 2f
+        if (arcR <= half + 0.5f) {
+            // A straight top (or no arc that spans the label).
+            if (rt == rb) p.addRoundRect(r, rt, rt, Path.Direction.CW)
+            else p.addRoundRect(r, floatArrayOf(rt, rt, rt, rt, rb, rb, rb, rb), Path.Direction.CW)
+            return p
+        }
+        val cx = r.centerX()
+        fun arcY(x: Float): Float { val dx = x - cx; return r.top + arcR - kotlin.math.sqrt((arcR * arcR - dx * dx).coerceAtLeast(0f)) }
+        val ends = arcY(r.left)
+        val rtc = minOf(rt, (r.bottom - ends) / 2f, half)
+        val rbc = minOf(rb, (r.bottom - ends) / 2f, half)
+        p.moveTo(r.left, ends + rtc)
+        p.quadTo(r.left, ends, r.left + rtc, arcY(r.left + rtc))
+        val n = 24
+        for (i in 1..n) {
+            val x = r.left + rtc + (r.width() - 2f * rtc) * i / n
+            p.lineTo(x, arcY(x))
+        }
+        p.quadTo(r.right, ends, r.right, ends + rtc)
+        p.lineTo(r.right, r.bottom - rbc)
+        p.quadTo(r.right, r.bottom, r.right - rbc, r.bottom)
+        p.lineTo(r.left + rbc, r.bottom)
+        p.quadTo(r.left, r.bottom, r.left, r.bottom - rbc)
+        p.close()
+        return p
+    }
 
     private fun outlinePath(s: CartShell, k: Float): Path {
         val p = Path()
@@ -650,11 +733,12 @@ internal object CartShells {
         s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
         // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
         val lr = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
-        val rr = s.labelRadius * k
+        // (Update 239, #40: the label's own outline — labelPath: its top and bottom corners and an arched top where the
+        // real sticker has one, the N64's. Other shells' labels are the same round rectangles as before.)
         p.color = withAlpha(shade(base, -0.4f), maxOf(op, 0.7f))
-        c.drawRoundRect(RectF(lr.left - 0.7f * k, lr.top - 0.7f * k, lr.right + 0.5f * k, lr.bottom + 0.5f * k), rr, rr, p)
+        c.drawPath(labelPath(s, RectF(lr.left - 0.7f * k, lr.top - 0.7f * k, lr.right + 0.5f * k, lr.bottom + 0.5f * k), k), p)
         c.save()
-        c.clipPath(Path().apply { addRoundRect(lr, rr, rr, Path.Direction.CW) })
+        c.clipPath(labelPath(s, lr, k))
         p.color = 0xFFE9E6DF.toInt(); c.drawRect(lr, p)
         // (Update 205: a real label scan is the whole printed sticker — no console band drawn over its top.)
         // (Update 208: never a band — a separate console header over the sticker isn't on any real cartridge; the

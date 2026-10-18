@@ -147,6 +147,9 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
             HomeLayout.DISCS, HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.CUSTOM,
             HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.GREENCORE, HomeLayout.POCKET
         ))
+        // (Update 239, #93: the Cube menu needs no rule of its own — its games are drawn with StyleArt in your look, size
+        // (GameSize), badges and achievement chip, its row goes round with Endless; Carousel / Row position / Twin gaps
+        // hide there as on every style home, and Background hides while its own room backdrop is on: styleOwnsBackground.)
         // Endless row: every layout but Hero tiles (it stops at the ends there); Green Core and Pocket Quest go round.
         "endless" -> on(endlessApplies(l))
         // Carousel: the layouts with a carousel look (Voltcap row, Hero, Grid, TV room, Side menu, Case stacks).

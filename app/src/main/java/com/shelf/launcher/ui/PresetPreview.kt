@@ -94,6 +94,8 @@ internal fun PresetPreview(
             HomeLayout.GREENCORE -> greenCorePreview(this, accent)
             // Update 202: Pocket Quest draws its own little screen (PocketQuestScenery.kt).
             HomeLayout.POCKET -> pqPreview()
+            // (Update 239, #93: Cube menu.)
+            HomeLayout.CUBE -> p.cube()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()
@@ -835,6 +837,89 @@ private class PreviewPainter(
         line(0.62f, 0.3f, 0.3f, Color.White, 0.05f)
         for (r in 0..2) line(0.62f, 0.4f + r * 0.06f, 0.24f - r * 0.04f, Color.White.copy(alpha = 0.6f))
         rect(0.62f, 0.66f, 0.14f, 0.08f, accent, 5f)
+    }
+
+    /**
+     * (Update 239, #93) Cube menu: the dark indigo room; the big cube on the left with its caption (Cube home screen on),
+     * or the cube docked — a small cube in the left column or the top band — beside the row of games, the game's name
+     * and Play / Details.
+     */
+    fun cube() {
+        val tintName = oe(Features.cubeTint)
+        val tint = Features.CubeTint.values().firstOrNull { it.name == tintName }
+            ?.let { if (it == Features.CubeTint.THEME) accent else Color(it.argb) } ?: accent
+        if (ob(Features.cubeBackdrop)) {
+            d.drawRect(
+                Brush.radialGradient(
+                    listOf(Color(0xFF241C4C), Color(0xFF120E28), Color(0xFF05040B)),
+                    center = Offset(w * 0.36f, h * 0.45f), radius = maxOf(w, h) * 0.78f
+                )
+            )
+            for (j in 0..3) line(0f, 0.68f + j * 0.07f + j * j * 0.012f, 1f, Color(0xFF8C7CFF).copy(alpha = 0.10f), 0.004f)
+        }
+        if (ob(Features.cubeHome)) {
+            cubeShape(0.3f, 0.5f, 0.15f, tint)
+            line(0.6f, 0.38f, 0.26f, Color.White, 0.06f)
+            line(0.6f, 0.48f, 0.16f, Color.White.copy(alpha = 0.6f))
+            rect(0.6f, 0.56f, 0.12f, 0.08f, tint, 6f)
+            line(0.6f, 0.7f, 0.3f, Color.White.copy(alpha = 0.3f), 0.015f)
+            return
+        }
+        val top = oe(Features.cubeDock) == Features.CubeDock.TOP.name
+        val hidden = oe(Features.cubeDock) == Features.CubeDock.HIDDEN.name
+        val gx: Float
+        val gy: Float
+        when {
+            hidden -> { rect(0.04f, 0.12f, 0.16f, 0.06f, Color.White.copy(alpha = 0.2f), 6f); gx = 0.04f; gy = 0.3f }
+            top -> {
+                cubeShape(0.08f, 0.2f, 0.045f, tint)
+                line(0.15f, 0.17f, 0.2f, Color.White, 0.04f)
+                line(0.15f, 0.23f, 0.1f, Color.White.copy(alpha = 0.55f))
+                gx = 0.04f; gy = 0.36f
+            }
+            else -> {
+                cubeShape(0.11f, 0.24f, 0.06f, tint)
+                line(0.04f, 0.42f, 0.14f, Color.White, 0.035f)
+                line(0.06f, 0.48f, 0.1f, Color.White.copy(alpha = 0.55f))
+                gx = 0.25f; gy = 0.2f
+            }
+        }
+        // The row of games, the one you're on bigger, its name and the buttons under it.
+        val small = 0.26f
+        val big = 0.36f
+        var x = gx
+        for (i in 0..5) {
+            val on = i == 1
+            val hh = if (on) big else small
+            val ww = hh * h / w * 0.72f
+            if (x + ww > 0.98f) break
+            card(x, gy + (big - hh) / 2f, ww, hh, i, on = on)
+            x += ww + 0.02f
+        }
+        line(gx, gy + big + 0.06f, 0.3f, Color.White, 0.045f)
+        line(gx, gy + big + 0.13f, 0.22f, Color.White.copy(alpha = 0.55f))
+        rect(gx, gy + big + 0.19f, 0.1f, 0.07f, tint, 6f)
+        rect(gx + 0.12f, gy + big + 0.19f, 0.1f, 0.07f, Color.White.copy(alpha = 0.2f), 6f)
+    }
+
+    /** (Update 239, #93) A translucent cube seen from a corner (three faces), centre [cx] / [cy], [r] of the width. */
+    private fun cubeShape(cx: Float, cy: Float, r: Float, tint: Color) {
+        val x0 = cx * w
+        val y0 = cy * h
+        val rr = r * w
+        val k = 0.87f * rr
+        d.drawOval(Color.Black.copy(alpha = 0.35f), Offset(x0 - rr * 1.1f, y0 + rr * 1.05f), Size(rr * 2.2f, rr * 0.4f))
+        fun face(a: Offset, b: Offset, c2: Offset, e: Offset, col: Color) {
+            val path = Path().apply { moveTo(a.x, a.y); lineTo(b.x, b.y); lineTo(c2.x, c2.y); lineTo(e.x, e.y); close() }
+            d.drawPath(path, col)
+            d.drawPath(path, Color.White.copy(alpha = 0.5f), style = Stroke(1.2f * px))
+        }
+        val c0 = Offset(x0, y0)
+        face(Offset(x0, y0 - rr), Offset(x0 + k, y0 - rr * 0.5f), c0, Offset(x0 - k, y0 - rr * 0.5f), tint.copy(alpha = 0.85f))
+        face(Offset(x0 - k, y0 - rr * 0.5f), c0, Offset(x0, y0 + rr), Offset(x0 - k, y0 + rr * 0.5f), tint.copy(red = tint.red * 0.7f, green = tint.green * 0.7f, blue = tint.blue * 0.8f, alpha = 0.85f))
+        face(c0, Offset(x0 + k, y0 - rr * 0.5f), Offset(x0 + k, y0 + rr * 0.5f), Offset(x0, y0 + rr), tint.copy(red = tint.red * 0.5f, green = tint.green * 0.5f, blue = tint.blue * 0.62f, alpha = 0.85f))
+        // A small diamond on the face turned to you.
+        dot(cx - k / w * 0.5f, cy + 0.25f * rr / h, 1.6f, Color.White.copy(alpha = 0.8f))
     }
 
     /** Card binder: collectible cards fanned out like a hand, the one you're on big in the middle. */

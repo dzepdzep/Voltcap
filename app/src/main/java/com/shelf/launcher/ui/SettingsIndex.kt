@@ -100,6 +100,10 @@ internal object SettingsIndex {
         E("TV room: game info under the TV", "Home", "Layout options", null, null),
         E("TV room: recent badges on the wall", "Home", "Layout options", null, null),
         E("Circuit board layout (green board, current, chip labels)", "Home", "Layout options", null, null),
+        // (Update 239, #93: Cube menu.)
+        E("Cube menu (cube home screen, where the cube docks, faces, colour, size)", "Home", "Layout options", null, null),
+        E("Cube menu: Apps and Settings faces", "Home", "Layout options", null, null),
+        E("Cube menu: gentle float, room backdrop, reduced motion", "Home", "Layout options", null, null),
         E("Game size in % (every layout)", "Home", "Layout options", null, null),
         E("Carousel view (Tucked, Record flip, Wheel, Deck, Flat row, Arc, Spine wall, Turned row)", "Home", "Layout options", null, null),
         // (Update 238, #21: the pull-out stack view.)

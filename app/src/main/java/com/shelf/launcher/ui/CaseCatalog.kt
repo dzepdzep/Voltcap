@@ -203,6 +203,47 @@ internal object CaseCatalog {
         box("C64", ALL, 150f, 200f, 50f, CARD_BEIGE, CaseCheck.SOURCED, "Disk games: a big box (no standard size).", CaseShell.BIGBOX),
     )
 
+    /**
+     * Update 239 (#88): a PlayStation game on two or more discs in North America / Japan: the thick multi-disc ("fat")
+     * jewel case, 142 × 125 × 25 mm (PSX PAL Database's multiway jewel case, https://www.psxpaldb.com/case-types/multiway-jewel-two-disk/
+     * — the same 25 mm outer shell for its 3- and 4-disc cases). The PAL case stays the 17.4 mm one: from G-Police (October
+     * 1997) on, two-disc PAL games came in the Full Jewel case (https://www.psxpaldb.com/case-types/full-jewel-pal/), only
+     * earlier ones in the 25 mm case, and a file name doesn't say which. Some releases came in a slim double case instead —
+     * the release isn't known from the files, so this stays an estimate.
+     */
+    private val PS1_MULTI: Map<CaseRegion, CaseSpec> = mapOf(
+        US to jewel("PS1", US, 25f, BLACK_TRAY, CaseCheck.ESTIMATED, "Multi-disc game: the thick multi-disc jewel case (142×125×25, PSX PAL Database's multiway case). Which case a release really came in isn't known from its files (some used a slim double case)."),
+        JP to jewel("PS1", JP, 25f, BLACK_TRAY, CaseCheck.ESTIMATED, "Multi-disc game: the thick multi-disc jewel case (142×125×25, PSX PAL Database's multiway case); Japanese releases not checked one by one.")
+    )
+
+    private val DISC_TAG = Regex("""(?i)[\(\[]\s*(?:disc|disk|cd)\s*(\d+)(?:\s*(?:of|/)\s*(\d+))?\s*[\)\]]""")
+
+    /**
+     * Update 239 (#88): how many discs [file] is: an .m3u playlist's entries (the scan makes one for a "(Disc N)" set,
+     * RomScanner), a "(Disc 1 of 3)" tag, or a "(Disc 1)" file with its "(Disc 2)" beside it (a set listed without a
+     * playlist). 1 when nothing says more.
+     */
+    internal fun discCount(file: String): Int = runCatching {
+        if (file.endsWith(".m3u", ignoreCase = true)) {
+            val f = java.io.File(file)
+            if (!f.isFile || f.length() > 64L * 1024L) 1
+            else f.useLines { lines -> lines.map { it.trim() }.count { it.isNotEmpty() && !it.startsWith("#") } }.coerceAtLeast(1)
+        } else {
+            val name = file.substringAfterLast('/')
+            val m = DISC_TAG.find(name)
+            val total = m?.groupValues?.getOrNull(2)?.toIntOrNull()
+            val n = m?.groupValues?.getOrNull(1)?.toIntOrNull()
+            val num = m?.groups?.get(1)?.range
+            when {
+                m == null || n == null -> 1
+                total != null && total >= 1 -> total
+                n >= 2 -> n
+                num != null && java.io.File(java.io.File(file).parentFile, name.replaceRange(num, "2")).exists() -> 2
+                else -> 1
+            }
+        }
+    }.getOrDefault(1)
+
     /** A C64 game on tape (.tap / .t64) comes in a cassette case. */
     private val C64_TAPE = CaseSpec("C64", ALL, CaseShell.CASSETTE, 69f, 109f, 17f, CLEAR, 0.3f, BLACK_TRAY, CaseHeld.TAPE, 63f, check = CaseCheck.SOURCED, note = "Tape games: a compact cassette case (standard size).")
 
@@ -235,7 +276,11 @@ internal object CaseCatalog {
         cache.get(key)?.let { return it as? CaseSpec }
         val region = regionOf(file, pref)
         val tape = platform == "C64" && (file.endsWith(".tap", true) || file.endsWith(".t64", true))
-        val spec = if (tape) C64_TAPE else of(platform, region)
+        // (Update 239, #88: a multi-disc PlayStation game in North America / Japan in the thick multi-disc case — PS1_MULTI.
+        // Every multi-disc PS1 game was drawn in the single 10.4 mm case.)
+        val spec = if (tape) C64_TAPE else of(platform, region)?.let { s ->
+            if (s.platform == "PS1" && s.shell == CaseShell.JEWEL) s.region?.let { r -> PS1_MULTI[r] }?.takeIf { discCount(file) >= 2 } ?: s else s
+        }
         cache.put(key, spec ?: NONE)
         return spec
     }

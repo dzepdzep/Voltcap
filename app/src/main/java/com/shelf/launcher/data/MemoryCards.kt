@@ -25,7 +25,9 @@ object MemoryCards {
         val code: String?,
         val title: String,
         val sizeBytes: Long,
-        val modified: Long
+        val modified: Long,
+        /** (Update 239, #112: a PS2 save's own browser icon — icon.sys and its icon file — for Save Vault's PS2 browser style.) */
+        val ps2Icon: Ps2Icons.Source? = null
     )
 
     private val sjis: Charset? = runCatching { Charset.forName("Shift_JIS") }.getOrNull()
@@ -167,9 +169,22 @@ object MemoryCards {
         root.drop(2).filter { (it.mode and 0x8000) != 0 && (it.mode and 0x0020) != 0 && !isSystemFolder(it.name) }.map { dir ->
             val files = entries(dir.cluster, dir.length.coerceIn(2, 256))
             val icon = files.firstOrNull { it.name.equals("icon.sys", true) && (it.mode and 0x8000) != 0 }
-            val title = icon?.let { f -> chain(f.cluster, 1024).takeIf { it.size >= 0x104 }?.let { cleanTitle(it.copyOfRange(0xC0, 0x104)) } }
+            // (Update 239, #112: icon.sys read once — for the title, and kept with the save's icon file for the PS2 browser style.)
+            val sysBytes = icon?.let { f -> chain(f.cluster, 1024).takeIf { it.size >= 0x104 } }
+            val title = sysBytes?.let { cleanTitle(it.copyOfRange(0xC0, 0x104)) }
             val size = files.drop(2).sumOf { it.length.toLong().coerceAtLeast(0) }
-            CardSave(name, dir.name, normaliseCode(dir.name), title?.takeIf { it.isNotBlank() } ?: dir.name, size, dir.modified.takeIf { it > 0 } ?: modified)
+            val ps2Icon = if (sysBytes == null) Ps2Icons.Source(null) else sysBytes.let { sb ->
+                runCatching {
+                    val sys = sb.copyOf(minOf(sb.size, (icon?.length ?: sb.size).coerceIn(0x104, 1024)))
+                    val icoName = Ps2Icons.normalIconName(sys)
+                    val f = icoName?.let { n -> files.drop(2).firstOrNull { it.name.equals(n, true) && (it.mode and 0x8000) != 0 && (it.mode and 0x0020) == 0 } }
+                    val ico = f?.takeIf { it.length in 20..Ps2Icons.MAX_ICON_BYTES }?.let { e ->
+                        chain(e.cluster, e.length).takeIf { it.size >= e.length }?.copyOf(e.length)
+                    }
+                    Ps2Icons.Source(sys, ico)
+                }.getOrNull()
+            }
+            CardSave(name, dir.name, normaliseCode(dir.name), title?.takeIf { it.isNotBlank() } ?: dir.name, size, dir.modified.takeIf { it > 0 } ?: modified, ps2Icon)
         }
     }.getOrDefault(emptyList())
 
@@ -185,11 +200,18 @@ object MemoryCards {
 
     // ---- PS2 folder card (one folder per save) ----
 
-    /** [dirs]: save folder name → (icon.sys bytes or null, total size, newest file date). */
-    fun readPs2Folder(name: String, dirs: Map<String, Triple<ByteArray?, Long, Long>>): List<CardSave> =
+    /**
+     * [dirs]: save folder name → (icon.sys bytes or null, total size, newest file date). (Update 239, #112: [readers]: save
+     * folder name → a reader for one of its files by name, so the PS2 browser style can fetch the save's icon when shown.)
+     */
+    fun readPs2Folder(
+        name: String, dirs: Map<String, Triple<ByteArray?, Long, Long>>,
+        readers: Map<String, (String) -> ByteArray?> = emptyMap()
+    ): List<CardSave> =
         dirs.filterKeys { !isSystemFolder(it) }.map { (dir, info) ->
             val title = info.first?.takeIf { it.size >= 0x104 }?.let { cleanTitle(it.copyOfRange(0xC0, 0x104)) }
-            CardSave(name, dir, normaliseCode(dir), title?.takeIf { it.isNotBlank() } ?: dir, info.second, info.third)
+            CardSave(name, dir, normaliseCode(dir), title?.takeIf { it.isNotBlank() } ?: dir, info.second, info.third,
+                Ps2Icons.Source(info.first, null, readers[dir]))
         }
 
     /** The console's own data ("BEDATA-SYSTEM": system configuration, browser data), not a game save. */

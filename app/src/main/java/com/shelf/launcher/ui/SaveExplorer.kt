@@ -118,6 +118,9 @@ internal fun SaveExplorerDialog(
 ) {
     val context = LocalContext.current
     LaunchedEffect(Unit) { SyncStatusStore.load(context); com.shelf.launcher.data.SaveCapsules.loadOptions(context) }
+    // (Update 239, #112: Filters & look › "PS2 browser style" — read before the first frame.)
+    remember { com.shelf.launcher.data.Ps2BrowserStyle.load(context) }
+    val ps2Style = com.shelf.launcher.data.Ps2BrowserStyle.on.value
     // Google Drive sync, right inside the vault: "Sync now" runs a saves sync, then looks for saves again.
     // (Update 151: read before the first frame, so a connected vault never flashes "Not connected".)
     remember { com.shelf.launcher.data.CloudSync.load(context) }
@@ -541,7 +544,9 @@ internal fun SaveExplorerDialog(
                                 // (the D-pad used to wander into it and pick another save).
                                 canFocus = detail == null,
                                 onFocus = { if (selected != i) { selected = i; sounds?.play(UiSound.MOVE) } },
-                                onOpen = { open(entry) }
+                                onOpen = { open(entry) },
+                                // (Update 239, #112: with the PS2 browser style, a PS2 game's saves as the console shows them.)
+                                ps2 = if (ps2Style && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsuleByKey[game.stableKey]) else null
                             )
                           }
                         }
@@ -686,7 +691,9 @@ private fun SaveSlot(
     onIconPlaced: (androidx.compose.ui.geometry.Rect) -> Unit,
     modifier: Modifier,
     onFocus: () -> Unit,
-    onOpen: () -> Unit
+    onOpen: () -> Unit,
+    /** (Update 239, #112: this PS2 game's memory-card saves, when the PS2 browser style draws its slot; null: the vault's style.) */
+    ps2: List<Ps2SaveRef>? = null
 ) {
     val lift by androidx.compose.animation.core.animateFloatAsState(if (selected) 1f else 0f, tween(220), label = "lift")
     val latestFocus by androidx.compose.runtime.rememberUpdatedState(onFocus)
@@ -724,7 +731,10 @@ private fun SaveSlot(
         val vaultStyle = Features.saveVaultStyle.state.value
         // (Update 236, #42: this save's colours — its own, else its console's; none = the original look.)
         val look = SaveLookStore.look(game.stableKey, game.platform)
-        if (vaultStyle == Features.SaveVaultStyle.SD_CARD || vaultStyle == Features.SaveVaultStyle.MEMORY_CARD || vaultStyle == Features.SaveVaultStyle.FLOPPY || vaultStyle == Features.SaveVaultStyle.CARD_3D) {
+        if (ps2 != null) {
+            // (Update 239, #112: the PS2 memory-card browser's look — the save's own icon, else a generic one marked so.)
+            Ps2SaveTile(ps2, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced)
+        } else if (vaultStyle == Features.SaveVaultStyle.SD_CARD || vaultStyle == Features.SaveVaultStyle.MEMORY_CARD || vaultStyle == Features.SaveVaultStyle.FLOPPY || vaultStyle == Features.SaveVaultStyle.CARD_3D) {
             StyledSaveCard(
                 vaultStyle, icon, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, platform = game.platform,
                 spin = spin, look = look
