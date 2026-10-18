@@ -29,9 +29,14 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  * frame is ready, so a slow or failed download just leaves the artwork.
  */
 @Composable
-fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier) {
+fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier, paused: Boolean = false) {
     com.shelf.launcher.Breadcrumbs.mark("VideoBackdrop")
     var playing by remember(url) { mutableStateOf(false) }
+    // Update 221 (#60 / #96): [paused] — the home screen is idle (HomeIdle.calm: 30 s without input, or the battery
+    // saver's rest). The clip holds its frame: a looping clip redrew the whole screen ~30 times a second forever (on the
+    // RP Classic ~17 ms of GPU per frame, so it never reached 60 and kept the GPU busy). The first press plays it on.
+    val pausedNow = androidx.compose.runtime.rememberUpdatedState(paused)
+    val prepared = remember(url) { java.util.concurrent.atomic.AtomicBoolean(false) }
     val alpha by animateFloatAsState(if (playing) 1f else 0f, tween(700), label = "video")
 
     Box(modifier.graphicsLayer { this.alpha = alpha }) {
@@ -52,7 +57,10 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
                             if (!withSound) player.setVolume(0f, 0f)
                             player.setOnPreparedListener { mp ->
                                 cropToFill(view, mp.videoWidth, mp.videoHeight)
+                                prepared.set(true)
+                                // (Already idle when it got ready: the first frame is shown, then it holds.)
                                 mp.start()
+                                if (pausedNow.value) view.postDelayed({ runCatching { if (pausedNow.value && mp.isPlaying) mp.pause() } }, 400)
                             }
                             player.setOnInfoListener { _, what, _ ->
                                 if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) playing = true
@@ -83,6 +91,10 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
             // The sound setting changed while this clip plays: apply it now (not only for the next clip).
             update = { view ->
                 (view.tag as? MediaPlayer)?.let { mp -> runCatching { val v = if (withSound) 1f else 0f; mp.setVolume(v, v) } }
+                // (Update 221: hold / play on with the home screen's idle state.)
+                (view.tag as? MediaPlayer)?.takeIf { prepared.get() }?.let { mp ->
+                    runCatching { if (paused && mp.isPlaying) mp.pause() else if (!paused && !mp.isPlaying) mp.start() }
+                }
             },
             onRelease = { view ->
                 (view.tag as? MediaPlayer)?.let { runCatching { it.release() } }

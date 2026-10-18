@@ -83,7 +83,10 @@ internal fun StyleDashboard(c: StyleCtx, modifier: Modifier) {
     // when the menu already shows them all).
     val rest = if (menuOn) c.shortcuts.drop(menu.size) else c.shortcuts
     val quick = rest.ifEmpty { c.shortcuts }.take(Features.dashQuick.state.value)
-    val pulse = rememberFocusPulse(animate = !LocalLiteEffects.current && LocalCardLook.current.focusEffect != FocusEffect.NONE)
+    // (Update 221, #60 / #96: the focus pulse is read in the highlighted card only — DashRow. Read here, its 20 ticks a
+    // second rebuilt the whole Dashboard — menu, Now playing, the row, Quick access — measured on the RP Classic as
+    // ~20 frames a second at ~30 ms each while nothing moved.)
+    val pulseOn = !LocalLiteEffects.current && LocalCardLook.current.focusEffect != FocusEffect.NONE
     BoxWithConstraints(modifier) {
         val compact = maxHeight < 360.dp
         val music = styleMusicShown(c)
@@ -120,7 +123,7 @@ internal fun StyleDashboard(c: StyleCtx, modifier: Modifier) {
                     }
                     val rowH = if (Features.dashHero.state.value) ((this@BoxWithConstraints.maxHeight * 0.4f).coerceIn(110.dp, 260.dp) * GameSize.scale(com.shelf.launcher.data.HomeLayout.DASH).coerceAtLeast(1f)).coerceAtMost(this@BoxWithConstraints.maxHeight * 0.6f) else 0.dp
                     DashRow(
-                        c, panel, midOp, shape, pulse,
+                        c, panel, midOp, shape, pulseOn,
                         (if (Features.dashHero.state.value) Modifier.height(rowH) else Modifier.weight(1f)).fillMaxWidth()
                     )
                     if (quick.isNotEmpty()) {
@@ -309,7 +312,7 @@ private fun DashHero(c: StyleCtx, g: com.shelf.launcher.data.Game, panel: Featur
 
 /** The row of games under the big card. */
 @Composable
-private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Shape, pulse: Float, modifier: Modifier) {
+private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Shape, pulseOn: Boolean, modifier: Modifier) {
     val ink = panelInk(panel)
     val custom = Features.dashRowTitle.state.value
     // Update 125: the row goes round with Endless on (EndlessRow.kt).
@@ -341,6 +344,8 @@ private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Sh
                     // While a menu has the D-pad, the game keeps its place but loses the highlight.
                     val sel = on && StyleNav.zone == StyleNav.Zone.GAMES
                     val lift = styleLift(sel)
+                    // (Update 221: only the highlighted card pulses, so only it is redrawn by the pulse.)
+                    val pulse = if (sel) rememberFocusPulse(animate = pulseOn) else 0.75f
                     StyleArt(
                         c, g,
                         Modifier

@@ -4,6 +4,29 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (221): the home screen stops redrawing when nobody uses it (#60 / #96), Icon bar's category name clear of its tabs (#94)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (4): `src_copy\ui\VideoPreview.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\StyleDashboard.kt`, `src_copy\ui\HomeParts.kt`. **Files to delete:** none.
+
+### What was measured (RP Classic, 60 Hz, Dashboard, nothing pressed)
+- Art + videos: ~30–60 frames a second forever, ~30 ms each, GPU 17–23 ms per frame — the GPU never rests (heat and battery; it can't reach 60 either).
+- Art only: still ~20 frames a second — the focus pulse rebuilt the whole Dashboard 20 times a second.
+- Moving through the row: 9 % janky frames, p50 31 ms, p90 48 ms (Art + videos); 4 %, p50 28 ms (Art only).
+
+### What changed
+1. **The background clip holds its frame while the home screen is idle** (30 s without input — the existing Save power when idle — or the battery saver's rest) and plays on at the first press. Same on the Hero carousel. Measured after: **0 frames** in 10 s idle (was ~300–600); after a press it plays again at once.
+2. **Dashboard: the focus pulse redraws only the highlighted card**, not the whole Dashboard, and only while a card is highlighted.
+3. **Icon bar: the category name starts between the row of tiles and the game's title** (it sat in the top-left corner over "All apps · Search · …"). A place you moved it to in Edit Home is kept.
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed with `adb install -r` on both (data kept); no new crashes.
+- RP Classic Dashboard: idle 0 frames / 10 s (clip frozen on its last frame, screenshot); a key press → 154 frames in 4 s (playing again).
+- RP Classic Icon bar: "Continue playing" sits between the tiles and "Dr. Mario"; layout put back to Dashboard.
+- Thor Case stacks idle: ~30 cheap frames a second remain (GPU 4 ms) — the focused game's animated cover, which rests only after 3 min (update 152); left as it is.
+- **Not changed (needs a decision):** while you look at the screen the clip still costs the RP Classic ~20 ms of GPU per frame; the mastered shimmer and animated covers keep moving until 3 min idle (update 144 chose that).
+
 ## Update — 18 Oct 2026 (220): tap the category name to change category (#04), where a game's play time comes from (#01), R1's Undo no longer moves the tiles, Spotlight's category name clear of the profile (#94)
 
 You OK'd these four small visual changes on 18 Oct ("Do all and continue"). All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

@@ -2727,7 +2727,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (videoUrl != null && !roomClip && !screensaverOn && !heroLayout && !discCalm && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK &&
             !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))) {
             androidx.compose.runtime.key(videoUrl) {
-                VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize())
+                VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize(), paused = HomeIdle.calm) // (Update 221: holds its frame while idle)
             }
         }
 
@@ -2763,7 +2763,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Not when the info panel plays it already, Detail layers › Preview video: one clip at a time.)
             if (videoUrl != null && !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value) {
                 androidx.compose.runtime.key(videoUrl) {
-                    VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize())
+                    VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize(), paused = HomeIdle.calm) // (Update 221: holds its frame while idle)
                 }
             }
         }
