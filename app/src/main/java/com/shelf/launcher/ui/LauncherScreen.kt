@@ -3232,7 +3232,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         needAchievements = { g -> if (g.raGameId != null) viewModel.loadAchievementDetails(g) },
                         play = { g -> StyleNav.reset(); sounds?.play(UiSound.SELECT); startGame(g) },
                         category = { steps ->
-                            repeat(kotlin.math.abs(steps)) { viewModel.cycleCategory(forward = steps > 0) }
+                            // (Update 219, #04: straight to the tapped tab, not N single steps that skip empty ones.)
+                            viewModel.jumpCategory(steps)
                             CategorySlide.step(if (steps > 0) 1 else -1)
                             sounds?.play(UiSound.MOVE)
                         },

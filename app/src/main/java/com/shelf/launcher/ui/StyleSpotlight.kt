@@ -596,6 +596,13 @@ private fun SpotHomeMenu(c: StyleCtx, modifier: Modifier) {
             Spacer(Modifier.height(if (compact) 10.dp else 24.dp))
             if (g == null) {
                 StyleEmpty(Modifier.weight(1f))
+            } else if (Features.spotTilesAt.state.value == Features.SpotSide.BOTTOM) {
+                // (Update 219, #08: "Tiles sit at the bottom" — R1's Spotlight tile and Spotlight options — did nothing on
+                // the Home menu, the default look. The tiles now sit low, right above the button hints; ▲ / ▼ stay the
+                // same: the icons are still above the tiles and the hints still under them.)
+                Spacer(Modifier.weight(1f))
+                SpotMenuTiles(c, pulse, compact)
+                Spacer(Modifier.height(if (compact) 6.dp else 12.dp))
             } else {
                 SpotMenuTiles(c, pulse, compact)
                 Spacer(Modifier.weight(1f))

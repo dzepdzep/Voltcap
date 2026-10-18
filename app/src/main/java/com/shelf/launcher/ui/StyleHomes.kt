@@ -358,7 +358,10 @@ internal fun styleHomeKey(
             // Tiles at the bottom: Play, the dots and the cards sit above them, so ▲ goes there and ▼ is the end of the screen.
             // Tiles on top: ▲ goes up to the category names (or past them).
             // (Update 125: the Row & menu look always has its tiles on top.)
-            val bottom = Features.spotTilesAt.state.value == Features.SpotSide.BOTTOM && Features.spotLook.value == Features.SpotLook.CINEMA
+            // (Update 219, #08: with nothing above the tiles to go to — Title & Play hidden, no cards — ▲ goes up to the
+            // category names as with the tiles on top, instead of doing nothing.)
+            val bottom = Features.spotTilesAt.state.value == Features.SpotSide.BOTTOM && Features.spotLook.value == Features.SpotLook.CINEMA &&
+                StyleNav.bar.isNotEmpty()
             return when (k) {
                 if (bottom) Key.DirectionUp else Key.DirectionDown -> enter(StyleNav.Zone.BAR)
                 if (bottom) Key.DirectionDown else Key.DirectionUp -> {
@@ -770,7 +773,9 @@ internal class StyleCtx(
 
 /** The category cycle (what L2 / R2 step through), the same order the view model uses. */
 internal fun styleStops(state: LauncherUiState, titles: TitleOptions): Pair<List<StyleStop>, Int> {
-    val stops = state.categoryOrder.flatMap { key ->
+    // (Update 219, #04: in your own tile order too — CategoryTileOrder — exactly as LauncherViewModel.categoryStops
+    // steps; before, a reordered tile list made a tapped tab open a different category.)
+    val stops = com.shelf.launcher.data.CategoryTileOrder.sort(state.categoryOrder.flatMap { key ->
         when (key) {
             CategorySettings.ALL -> listOf(StyleStop(null, null, "All", null))
             // (Update 208: in your own console order, as L2 / R2 step.)
@@ -781,7 +786,7 @@ internal fun styleStops(state: LauncherUiState, titles: TitleOptions): Pair<List
             CategorySettings.COLLECTIONS -> state.collections.map { StyleStop(null, it.key, it.name, null) }
             else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(StyleStop(it, null, it.label, null)) }.orEmpty()
         }
-    }
+    }) { it.special?.name ?: it.platform?.let { p -> "p:$p" } ?: "ALL" }
     val current = stops.indexOfFirst { it.special == state.specialFilter && it.platform == state.platformFilter }
     return stops to current
 }
@@ -1039,7 +1044,8 @@ internal fun StyleHome(
     val focus = state.focusedIndex.coerceIn(0, (games.size - 1).coerceAtLeast(0))
     val type = state.appearance.cardArtFor(layout)
     val mixed = remember(games) { mixedConsoles(games) }
-    val stopsPair = remember(state.categoryOrder, state.availablePlatforms, state.collections, state.specialFilter, state.platformFilter, titles) {
+    val stopsPair = remember(state.categoryOrder, state.availablePlatforms, state.collections, state.specialFilter, state.platformFilter, titles,
+        com.shelf.launcher.data.CategoryTileOrder.version.value) { // (Update 219: your tile order, as styleStops uses it)
         styleStops(state, titles)
     }
     val label = state.specialFilter?.label ?: state.platformFilter?.let { titles.console(it) } ?: "All"

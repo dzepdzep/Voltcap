@@ -141,10 +141,14 @@ object RunningGames {
 
     /**
      * How long [pkg] was really in front between [from] and [to] (ms), from Android's usage record;
-     * null without usage access (the caller counts the whole time then).
+     * null without usage access (the caller counts the whole time then). 0 when [pkg] never came to the front.
      */
     fun foregroundMs(c: Context, pkg: String?, from: Long, to: Long): Long? {
-        if (pkg == null || !hasUsageAccess(c)) return null
+        if (!hasUsageAccess(c)) return null
+        // (Update 219, #01: the game's app wasn't known any more — Voltcap restarted and the entry had gone — so the
+        // whole time from launch to coming back counted, sleep included, up to 8 h. Now: the time any other app was
+        // really in front, which leaves out the screen being off and time spent in Voltcap.)
+        if (pkg == null) return anyOtherForegroundMs(c, from, to)
         return runCatching {
             val usm = c.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             // Update 200: a little before [from]: the game's first "resumed" can be stamped a moment before the launch
@@ -183,9 +187,43 @@ object RunningGames {
                 }
             }
             if (since >= 0) total += maxOf(0L, to - since)
-            if (!seen) null else total
+            // (Update 219, #01: with usage access, no record at all of the game's app in that time means it never came
+            // to the front — a launch that failed or bounced straight back. That used to count the whole wall-clock time
+            // until Voltcap was next opened (up to 8 h). Now it counts nothing, so it isn't a session.)
+            if (!seen) 0L else total
         }.getOrNull()
     }
+
+    /** Update 219: how long any app other than Voltcap (and the system bars) was in front between [from] and [to]. */
+    private fun anyOtherForegroundMs(c: Context, from: Long, to: Long): Long? = runCatching {
+        val usm = c.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val events = usm.queryEvents(from - 2_000L, to)
+        val ev = UsageEvents.Event()
+        val own = c.packageName
+        val open = HashSet<String>()
+        var since = -1L
+        var total = 0L
+        while (events.hasNextEvent()) {
+            events.getNextEvent(ev)
+            val pkg = ev.packageName ?: continue
+            if (pkg == own || pkg == "com.android.systemui") continue
+            val id = pkg + "/" + (ev.className ?: "")
+            when (ev.eventType) {
+                UsageEvents.Event.ACTIVITY_RESUMED -> {
+                    if (open.isEmpty()) since = maxOf(ev.timeStamp, from)
+                    open += id
+                }
+                UsageEvents.Event.ACTIVITY_PAUSED, UsageEvents.Event.ACTIVITY_STOPPED, 24 -> {
+                    if (open.remove(id) && open.isEmpty() && since >= 0) {
+                        total += maxOf(0L, ev.timeStamp - since)
+                        since = -1L
+                    }
+                }
+            }
+        }
+        if (since >= 0) total += maxOf(0L, to - since)
+        total
+    }.getOrNull()
 
     /**
      * Closes [key]'s game. With enhanced access it's ended for real (force stop); otherwise Android is

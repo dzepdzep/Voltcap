@@ -149,7 +149,10 @@ internal fun pocketStopKey(s: StyleStop): String = s.platform ?: s.special?.name
 /** The category steps (L2 / R2 presses) from the one you're in to [target], the short way round. */
 internal fun pocketStepsTo(c: StyleCtx, target: Int): Int {
     val n = c.stops.size
-    if (n == 0 || c.stop < 0) return 0
+    if (n == 0) return 0
+    // (Update 219, #04: in a category that isn't in the list — a hidden start category — a tap did nothing; now it
+    // counts from "before the first", as LauncherViewModel.jumpCategory does.)
+    if (c.stop < 0) return target + 1
     var d = (target - c.stop).mod(n)
     if (d > n / 2) d -= n
     return d

@@ -1339,6 +1339,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         val filter = runCatching { SpecialFilter.valueOf(start) }.getOrNull() ?: return null
         if (filter == SpecialFilter.RECENT && recentlyPlayedStore.loadAll().isEmpty()) return null
+        // (Update 219, #04: a start category you hid (Choose a category › Options) isn't in the L2 / R2 list or the
+        // tabs, so the looks couldn't step out of it properly: start in All instead.)
+        if (runCatching { filter.name in categoryStore.load().hidden }.getOrDefault(false)) return null
         return filter
     }
 
@@ -2741,17 +2744,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val state = _uiState.value
         // (Update 208: debug builds — how long the switch takes to settle, logged as "VoltcapPerf".)
         com.shelf.launcher.ui.PerfDiag.mark(if (forward) "Category switch (R2)" else "Category switch (L2)")
-        // Flatten the order into stops: ALL, each special, each console.
-        // (Update 214: in your own order of the tiles too — CategoryTileOrder — as the category screen shows them.)
-        val stops = com.shelf.launcher.data.CategoryTileOrder.sort(state.categoryOrder.flatMap { key ->
-            when (key) {
-                CategorySettings.ALL -> listOf<Pair<SpecialFilter?, String?>>(null to null)
-                // (Update 208: in your own console order — Choose a category › Reorder — as the category screen shows them.)
-                CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).map { null to it }
-                CategorySettings.COLLECTIONS -> state.collections.map { null to it.key }
-                else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
-            }
-        }) { (special, platform) -> special?.name ?: platform?.let { "p:$it" } ?: "ALL" }
+        val stops = categoryStops(state)
         if (stops.isEmpty()) return
         val current = stops.indexOfFirst { (special, platform) ->
             special == state.specialFilter && platform == state.platformFilter
@@ -2772,6 +2765,42 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             else -> setPlatformFilter(platform)
         }
     }
+
+    /**
+     * Update 219 (#04): goes straight to the category [steps] places from the one you're in, in the same list the
+     * style homes draw as tabs (styleStops). Tapping a tab used to repeat [cycleCategory] [steps] times, and that
+     * skips empty categories, so a tap two or more tabs away (e.g. on "Continue playing") could open a different
+     * category. One step (L2 / R2 or the tab next door) still goes through [cycleCategory].
+     */
+    fun jumpCategory(steps: Int) {
+        if (steps == 0) return
+        val state = _uiState.value
+        val stops = categoryStops(state)
+        if (stops.isEmpty()) return
+        // (Outside the list, e.g. a hidden start category: -1, as styleStops counts it too.)
+        val current = stops.indexOfFirst { (special, platform) -> special == state.specialFilter && platform == state.platformFilter }
+        if (kotlin.math.abs(steps) == 1 && current >= 0) { cycleCategory(steps > 0); return }
+        com.shelf.launcher.ui.PerfDiag.mark("Category switch (tab)")
+        val (special, platform) = stops[(current + steps).mod(stops.size)]
+        when {
+            special != null -> setSpecialFilter(special)
+            else -> setPlatformFilter(platform)
+        }
+    }
+
+    /** The category stops L2 / R2 and the style homes' tabs go through: ALL, each special, each console, each list. */
+    private fun categoryStops(state: LauncherUiState): List<Pair<SpecialFilter?, String?>> =
+        // Flatten the order into stops: ALL, each special, each console.
+        // (Update 214: in your own order of the tiles too — CategoryTileOrder — as the category screen shows them.)
+        com.shelf.launcher.data.CategoryTileOrder.sort(state.categoryOrder.flatMap { key ->
+            when (key) {
+                CategorySettings.ALL -> listOf<Pair<SpecialFilter?, String?>>(null to null)
+                // (Update 208: in your own console order — Choose a category › Reorder — as the category screen shows them.)
+                CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).map { null to it }
+                CategorySettings.COLLECTIONS -> state.collections.map { null to it.key }
+                else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
+            }
+        }) { (special, platform) -> special?.name ?: platform?.let { "p:$it" } ?: "ALL" }
 
     // ---- Category order, and where you left off ----
 

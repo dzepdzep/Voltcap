@@ -139,6 +139,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.ui.theme.ShelfTheme
 
+/** Update 219: the controller lights found last time this run (null = not looked yet) — see foundLightsOrNull. */
+@Volatile private var r1LightsCache: List<String>? = null
+
 /**
  * The quick-settings strip at the top of the R1 panel, like Android's own
  * pull-down: Wi-Fi, Bluetooth, Do Not Disturb, single/dual screen, Android
@@ -196,12 +199,25 @@ fun QuickSettingsCard(
 
     // Whether any controller lights exist is a binder / sysfs probe, so it runs
     // off the main thread and only again on resume — never per recomposition.
-    val foundLights by produceState(initialValue = emptyList<String>(), refresh) {
+    // (Update 219: the panel used to start with "no lights" and add the RGB tile a moment later, which moved every
+    // tile after it under your finger. The last answer is kept — for this run and, as found / not found, across
+    // restarts — so the tile list is right from the first frame.)
+    val lightsSaved = remember { context.getSharedPreferences("r1_tiles", android.content.Context.MODE_PRIVATE).getBoolean("lights_found", false) }
+    val foundLightsOrNull by produceState(initialValue = r1LightsCache, refresh) {
         value = withContext(Dispatchers.IO) {
-            runCatching { com.shelf.launcher.data.ControllerLights.describe(context) }.getOrDefault(emptyList())
+            runCatching { com.shelf.launcher.data.ControllerLights.describe(context) }.getOrDefault(emptyList()).let { found ->
+                // (The handheld's light service can answer "none" for a moment after Voltcap starts — seen on the Thor —
+                // so lights once found stay found: a "none" never takes the tile away again.)
+                if (found.isEmpty() && !r1LightsCache.isNullOrEmpty()) return@let r1LightsCache!!
+                r1LightsCache = found
+                if (found.isNotEmpty() && !lightsSaved) context.getSharedPreferences("r1_tiles", android.content.Context.MODE_PRIVATE)
+                    .edit().putBoolean("lights_found", true).apply()
+                found
+            }
         }
     }
-    val hasLights = foundLights.isNotEmpty()
+    val foundLights = foundLightsOrNull.orEmpty()
+    val hasLights = foundLights.isNotEmpty() || lightsSaved
     var showLights by remember { mutableStateOf(false) }
     var showOverlayLayout by remember { mutableStateOf(false) }
     var showGameSize by remember { mutableStateOf(false) }

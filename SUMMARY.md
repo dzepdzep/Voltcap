@@ -4,6 +4,33 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (219): R1 panel tiles no longer jump under your finger, tapped category tabs open the right category (#04), Spotlight's tiles really move to the bottom (#08), failed launches no longer add play time (#01)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (8): `src_copy\ui\QuickSettings.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\ui\StyleHomes.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\PocketClassic.kt`, `src_copy\ui\StyleSpotlight.kt`, `src_copy\ui\StyleHomeSettings.kt`, `src_copy\data\RunningGames.kt`. **Files to delete:** none.
+
+### What changed
+1. **R1 panel: tiles stay where they are when it opens.** The panel started with "no controller lights" and added the RGB tile a moment later (the light service even answers "none" for a while after Voltcap starts), so every tile after it moved one place — on the RP Classic a tap meant for Endless landed on Player, and one meant for Layout on Play Spotify. Lights once found are now remembered (this run, and as `lights_found` in the R1 tile settings of this device), so the tile list is right from the first frame. (`QuickSettings.kt`)
+2. **Category tabs in the style looks open the category you tap (#04).** Library panel, Live tiles, Console stack, Pocket Classic / Quest and Green Core turned a tap on a tab into "press R2 N times". R2 skips empty categories and follows your own tile order (Choose a category › Reorder) while the tabs were drawn in the plain order — so a tap on e.g. "Continue playing" could open another category. Now the tabs use the same order as L2 / R2 (`styleStops` sorted by `CategoryTileOrder`) and a tap goes straight to that category (`LauncherViewModel.jumpCategory`); one step (L2 / R2, or the tab next door) works as before. In a category that isn't in the list, taps on the Pocket looks did nothing; they now count from the start of the list.
+3. **A start category you hid isn't used any more (#04).** With "Continue playing" (or another special category) hidden but still set as the start category, Voltcap started inside it, outside the L2 / R2 list; it now starts in All instead.
+4. **Spotlight: "Tiles sit at the bottom" works on the Home menu (#08)** — the default Spotlight look, where the R1 Spotlight tile and the option did nothing. The tiles now sit low, right above the button hints (▲ / ▼ unchanged: icons above, hints below). Spotlight options shows the choice for Home menu and Big picture, no longer for Row & menu (which keeps its tiles on top since update 125). Big picture with the tiles at the bottom and nothing above them (Title & Play hidden, no cards): ▲ now goes up to the category names instead of doing nothing.
+5. **Play time: a launch that never reached the front adds nothing (#01).** With usage access, if Android's usage record shows the game's app never came to the front (a launch that failed or bounced straight back), the whole time until Voltcap was next opened used to count — up to 8 h, screen-off time included. It now counts nothing (no session). And when the game's app was no longer known (Voltcap restarted while the game ran), only the time some other app was really in front counts, not the wall clock. Existing totals are not touched. (`RunningGames.foregroundMs`)
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed with `adb install -r` on both (data kept); no crashes in either crash log.
+- R1 panel, screenshot 0.3 s after R1: Thor right after the update (fresh process) and RP Classic on the second open — the RGB tile is there from the first frame; the old build showed it missing at that moment on the Thor.
+- Thor, Spotlight (Home menu): R1 Spotlight tile Bottom ↔ Top moves the tile row between the middle-low and the top; your setting (Bottom) put back.
+- Thor, Channel grid ("TV grid"?): "Continue playing" shows its 12 games; R2 → 3DS, L2 → Continue playing, L2 → Smart Continue. Layout put back to Case stacks with the layout list.
+- **Not tested on a device:** a tab tap in Library panel / Live tiles / Pocket looks (neither handheld uses them), a failed launch (#01), Big picture's ▲.
+
+### Still open (needs a decision or more work)
+- #04: TV room has no category control on screen (only L2 / R2, the legend or the category screen); the Grid / Voltcap row pill bar is in the plain category order, not your tile order. Adding a category bar to TV room is a visual change — say if you want it.
+- #01: why Donald Duck shows ~3.2 h is not proven. Likely sources: old totals from the pre-202 summing sync kept as "legacy", or wall-clock sessions from failed launches (fixed above for the future). Nothing was deleted. A per-game "where this time came from" line (this device / other devices / older total) would show it — a small visual addition, say if you want it.
+- #08: Icon bar has no top/bottom option at all (it would be a new option).
+- R1 panel: the Undo bar pushes all tiles down while it shows (and stays for a while after reopening) — another "tiles move under the finger" case; fixing it means placing the bar over the Quick / Device tabs instead, a small visual change.
+- #94 seen on the Thor: Spotlight's category chip ("Continue playing") is drawn over the profile picture in the top-left corner.
+
 ## Update — 18 Oct 2026 (218): Endless shows each game once on short lists (#105), Claude can publish a release after a batch
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

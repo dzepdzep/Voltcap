@@ -286,9 +286,13 @@ private fun SpotSettings() {
         Toggle(Icons.Filled.Label, "Status bar", "The status bar along the top too. Off: the menu's own profile, battery and clock (the very top is the menu's).", Features.spotStatusBar)
     }
     StyleChoice("Tiles along the top", Features.TileShape.values(), Features.spotShape.state.value, { it.label }) { Features.spotShape.value = it }
+    // (Update 219, #08: top / bottom works on the Home menu and Big picture; Row & menu keeps its tiles on top
+    // (update 125), so it isn't offered there.)
+    if (Features.spotLook.state.value != Features.SpotLook.ROW_MENU) {
+        StyleChoice("Tiles sit at the", Features.SpotSide.values(), Features.spotTilesAt.state.value, { it.label }) { Features.spotTilesAt.value = it }
+    }
     // (Update 132: these are the other looks' own; the Home menu has its own layout.)
     if (Features.spotLook.state.value != Features.SpotLook.HOME_MENU) {
-        StyleChoice("Tiles sit at the", Features.SpotSide.values(), Features.spotTilesAt.state.value, { it.label }) { Features.spotTilesAt.value = it }
         StyleChoice("Name of the game", Features.SpotName.values(), Features.spotNameAt.state.value, { it.label }) { Features.spotNameAt.value = it }
         StyleChoice("Big title across", Features.SpotAcross.values(), Features.spotTitleAt.state.value, { it.label }) { Features.spotTitleAt.value = it }
         StyleChoice("Big title sits", Features.SpotAlong.values(), Features.spotTitleRow.state.value, { it.label }) { Features.spotTitleRow.value = it }
