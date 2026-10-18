@@ -66,6 +66,15 @@ fun RaIdDialog(
                 match.kind == RaMatchSource.CUSTOM_HASH -> Triple(
                     "Matched by your hash", "${match.raTitle ?: "Game"} (ID ${match.gameId}).", true
                 )
+                // (Update 238, #111: a title match the library doesn't use — a ROM hack, a "~Hack~" set by name, or a
+                // modified cartridge RA doesn't know — says so instead of reading as linked. RaMatchStore.isAcceptedLink.)
+                match.kind == RaMatchSource.TITLE && match.gameId != null &&
+                    !com.shelf.launcher.data.RaMatchStore.isAcceptedLink(game.stableKey, match) -> Triple(
+                    "Not linked (unverified)",
+                    "Its name resembles ${match.raTitle ?: "a game"} (ID ${match.gameId}), but RetroAchievements doesn't " +
+                        "know this file's hash — a ROM hack or modified file gets no achievements from the base game. " +
+                        "If RetroAchievements has a set for this exact file, set its hash or ID below.", false
+                )
                 match.kind == RaMatchSource.TITLE -> Triple(
                     "Matched by title",
                     "${match.raTitle ?: "Game"} (ID ${match.gameId}). Not verified by hash — if achievements " +

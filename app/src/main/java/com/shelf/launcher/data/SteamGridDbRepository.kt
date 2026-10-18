@@ -144,9 +144,20 @@ class SteamGridDbRepository(private val api: SteamGridDbApi) {
     suspend fun resolveGameId(game: Game): Int? = try {
         game.sgdbGameId
             ?: game.steamAppId?.let { api.gameBySteamId(it).data?.id }
-            ?: bestMatch(game.name, TitleMatch.strictFor(game))?.id
+            ?: searchTerm(game)?.let { (term, strict) -> bestMatch(term, strict)?.id }
     } catch (e: Exception) {
         null
+    }
+
+    /**
+     * (Update 238, #111) What a name search for [game] asks SteamGridDB: its name (as before) — or, for a ROM hack
+     * (RomHacks), the hack's own title, exact titles only, so "Pokemon Radical Red" finds Radical Red's entry and never
+     * FireRed's; null for a hack known only by a "(Hack)" tag, whose title is the base game's (it keeps the placeholder
+     * or another source's own art rather than the base game's). A SteamGridDB ID set by hand is used before this.
+     */
+    private fun searchTerm(game: Game): Pair<String, Boolean>? {
+        val hack = RomHacks.fanHack(game) ?: return game.name to TitleMatch.strictFor(game)
+        return if (hack.distinctive) hack.ownTitle to true else null
     }
 
     /**
@@ -170,7 +181,8 @@ class SteamGridDbRepository(private val api: SteamGridDbApi) {
         return when {
             manualId != null -> fetchArtById(manualId)
             game.sourceType == SourceType.STEAM && steamAppId != null -> fetchArtBySteamAppId(steamAppId)
-            else -> fetchArtByName(game.name, TitleMatch.strictFor(game))
+            // (Update 238, #111: a ROM hack by its own title, or not by name at all — searchTerm.)
+            else -> searchTerm(game)?.let { (term, strict) -> fetchArtByName(term, strict) }
         }
     }
 

@@ -31,7 +31,12 @@ object PhysicalOverrides {
             val (game, label) = k.split('\t', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } ?: continue
             map[game] = (map[game] ?: emptyMap()) + (label to s)
         }
+        // (Update 238, #111: which games' RetroAchievements links are refused, read before the first [apply].)
+        runCatching { RaMatchStore(c.applicationContext).refusedLinks() }
     }
+
+    /** (Update 238, #111) The pictures the details' scans list got from RetroAchievements (LauncherViewModel). */
+    private val FROM_RA = setOf("Box (RetroAchievements)", "Title screen")
 
     /** This game's picks (label → address). */
     fun of(key: String): Map<String, String> = map[key] ?: emptyMap()
@@ -49,7 +54,10 @@ object PhysicalOverrides {
     }
 
     /** [list] (the scraped pictures) with this game's picks in place of the scraped ones of the same name. */
-    fun apply(key: String, list: List<Pair<String, String>>): List<Pair<String, String>> {
+    fun apply(key: String, scraped: List<Pair<String, String>>): List<Pair<String, String>> {
+        // (Update 238, #111: a game whose RetroAchievements link was refused — a ROM hack matched to the base game by
+        // its title — no longer shows that game's RA box and title screen saved with its scans.)
+        val list = if (key in RaMatchStore.refusedKeys) scraped.filter { it.first !in FROM_RA } else scraped
         val own = of(key)
         if (own.isEmpty()) return list
         val out = list.map { (label, url) -> label to (own[label] ?: url) }

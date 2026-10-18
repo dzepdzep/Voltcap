@@ -69,9 +69,22 @@ class RaMatchStore(context: Context) {
             .apply()
     }
 
-    /** Linked game IDs only — what the library applies to each Game. */
-    fun loadAll(): Map<String, Int> =
-        loadEntries().mapNotNull { (key, entry) -> entry.gameId?.let { key to it } }.toMap()
+    /** Linked game IDs only — what the library applies to each Game.
+     * (Update 238, #111: only links [isAcceptedLink] accepts; the refused ones are published in [refusedKeys].) */
+    fun loadAll(): Map<String, Int> {
+        val entries = loadEntries()
+        val refused = HashSet<String>()
+        val out = entries.mapNotNull { (key, entry) ->
+            val id = entry.gameId ?: return@mapNotNull null
+            if (isAcceptedLink(key, entry)) key to id else { refused += key; null }
+        }.toMap()
+        refusedKeys = refused
+        return out
+    }
+
+    /** (Update 238, #111) The saved auto-matches [isAcceptedLink] refuses (they keep their entry, for the per-game dialog). */
+    fun refusedLinks(): Set<String> =
+        loadEntries().filter { (key, entry) -> entry.gameId != null && !isAcceptedLink(key, entry) }.keys.also { refusedKeys = it }
 
     fun clear() = prefs.edit().remove(KEY_ENTRIES).remove(KEY_LEGACY).apply()
 
@@ -90,6 +103,38 @@ class RaMatchStore(context: Context) {
         private const val KEY_LEGACY = "matches_json"
         private const val KEY_ENTRIES = "entries_v2_json"
         private const val KEY_CUSTOM = "custom_hashes_json"
+
+        /**
+         * (Update 238, #111) Library keys (ROM paths) whose saved auto-match was refused by [isAcceptedLink] the last
+         * time the matches were read — for what is keyed by the game rather than its RA ID (PhysicalOverrides' RA box
+         * and title screen, RaDataCache's saved progress).
+         */
+        @Volatile var refusedKeys: Set<String> = emptySet()
+            private set
+
+        /** RetroAchievements consoles whose hash is the whole cartridge file's MD5 (rcheevos: no header to strip), so a
+         * hash RA doesn't know means a modified file — a hack, a translation patch or a bad dump — not just a format the
+         * hasher can't read. Where most fan hacks (Pokémon's) live. */
+        private val WHOLE_FILE_HASH_CONSOLES = setOf("Game Boy", "Game Boy Color", "Game Boy Advance")
+
+        /**
+         * (Update 238, #111) Whether a saved auto-match may link [stableKey]'s game to RetroAchievements. A hash match
+         * (RA's own list of accepted hashes for that set, incl. its "~Hack~" sets) always may. A title-only match may not
+         * when: the file looks like a ROM hack (RomHacks — the tag-stripped name was the base game's); the title it was
+         * matched to is one of RA's "~Hack~" sets (only the exact patched file fits one, and its hash didn't); or the
+         * file was hashed on a whole-file-hash console and RA doesn't know that hash (a modified ROM: the emulator would
+         * report it as unknown, so its badges, progress and icon would be the base game's). Title links stay for files
+         * that couldn't be hashed at all (CHD, CSO…), marked unverified as before. A hand-typed ID (GameOverridesStore)
+         * isn't an auto-match and isn't judged here.
+         */
+        fun isAcceptedLink(stableKey: String, entry: RaMatchEntry): Boolean {
+            if (entry.gameId == null) return false
+            if (entry.isHashVerified) return true
+            if (RomHacks.isModified(null, stableKey)) return false
+            if (entry.raTitle?.contains("~hack~", ignoreCase = true) == true) return false
+            if (entry.hash != null && entry.raConsole in WHOLE_FILE_HASH_CONSOLES) return false
+            return true
+        }
 
         /** Shelf platform names mapped to RetroAchievements console names, so
          * the right game list gets pulled per system. RA's names are verbose

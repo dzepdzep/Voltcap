@@ -568,7 +568,8 @@ object SaveCapsules {
             }.toMap()
         }
         /** The consoles (of [among]) whose list has [title]; empty when none of their lists is here. */
-        fun onWhich(title: String, among: List<String>): List<String> = among.filter { k -> lists[k]?.let { RaTitleMatcher.match(title, it) } != null }
+        // (Update 238, #111: allowHacks — only the console is asked here, never an achievements link.)
+        fun onWhich(title: String, among: List<String>): List<String> = among.filter { k -> lists[k]?.let { RaTitleMatcher.match(title, it, allowHacks = true) } != null }
     }
 
     /**

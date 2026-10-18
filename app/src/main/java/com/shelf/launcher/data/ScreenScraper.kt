@@ -192,6 +192,27 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
      */
     val lookupOutcome = java.util.concurrent.ConcurrentHashMap<String, String>()
 
+    /** (Update 238, #111) The checksum each lookup sent ([isHacksOwn]). */
+    private val sentMd5 = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /**
+     * (Update 238, #111) Whether ScreenScraper's [jeu] really is ROM hack [game]'s own entry (ScreenScraper lists many
+     * hacks as games of their own): the rom it answered with has the file's own checksum, or — for a hack whose title
+     * names it — one of its names is that title. Otherwise (a checksum it doesn't know, matched by file name) it is the
+     * base game's, whose box, logo, scans and clips aren't the hack's: the hack keeps the placeholder / other art.
+     * Anything that isn't a fan hack is unaffected.
+     */
+    private fun isHacksOwn(jeu: JsonObject, game: Game): Boolean {
+        val hack = RomHacks.fanHack(game) ?: return true
+        val ours = sentMd5[game.stableKey]
+        if (ours != null) {
+            val roms = listOfNotNull(jeu.obj("rom")) + jeu.arr("roms")?.mapNotNull { it as? JsonObject }.orEmpty()
+            if (roms.any { it.str("rommd5")?.equals(ours, ignoreCase = true) == true }) return true
+        }
+        val names = jeu.arr("noms")?.mapNotNull { (it as? JsonObject)?.str("text") }.orEmpty()
+        return RomHacks.namesTheHack(hack, names)
+    }
+
     private suspend fun lookup(c: ScreenScraperCredentials, game: Game): JsonObject? {
         if (game.sourceType != SourceType.ROM) return null
         synchronized(recent) { if (recent.containsKey(game.stableKey)) return recent[game.stableKey] }
@@ -207,7 +228,7 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
             // where reading gigabytes per game would make scraping crawl —
             // name + size already identify those well.
             if (length <= MAX_HASH_BYTES) {
-                md5Of(file)?.let { put("md5", it) }
+                md5Of(file)?.let { put("md5", it); sentMd5[game.stableKey] = it }
             }
         }
 
@@ -270,7 +291,8 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     /** Art for one ROM, or null if ScreenScraper doesn't know it (or it's not a ROM). */
     suspend fun fetchArt(c: ScreenScraperCredentials, game: Game): GameArt? {
         // (Update 231, #39: the cover too never from another console's game — it's the case front's and the label's fallback.)
-        val jeu = lookup(c, game)?.takeIf { sameSystem(it, game) } ?: return null
+        // (Update 238, #111: a ROM hack only from its own entry — isHacksOwn.)
+        val jeu = lookup(c, game)?.takeIf { sameSystem(it, game) && isHacksOwn(it, game) } ?: return null
         val medias = jeu.arr("medias")?.mapNotNull { it as? JsonObject } ?: return null
 
         fun pick(vararg types: String, maxWidth: Int): String? {
@@ -445,6 +467,8 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     private suspend fun isConfidentMatch(jeu: JsonObject, game: Game): Boolean {
         // (Update 231, #39: never another console's release of the same name.)
         if (!sameSystem(jeu, game)) return false
+        // (Update 238, #111: a ROM hack's scans, clips and manual only from its own entry, never the base game's.)
+        if (!isHacksOwn(jeu, game)) return false
         // File checks off the main thread (update 91).
         val length = withContext(Dispatchers.IO) { romFileFor(game)?.length() } ?: return false
         if (length <= MAX_HASH_BYTES) return true

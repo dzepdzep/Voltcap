@@ -1083,6 +1083,16 @@ object Features {
     val secondOpenCase = BoolPref("second_open_case", true)
     /** Update 198: an opening case starts opened — the case aside, its disc / cartridge out next to it. */
     val inspectOpenAtStart = BoolPref("inspect_open_at_start", false)
+    // (Update 238, #116/#117: a piece turned in the game window stays at its angle for a while after you let go, then
+    // turns back slowly to face you — or stays where you left it. ui/MediaInspectView.kt, InspectMotion.release.)
+    /** Update 238 (#116): a turned piece turns back to face you by itself once you let go. Off: it stays as you left it. */
+    val inspectAutoReturn = BoolPref("inspect_auto_return", true)
+    enum class InspectHold(val label: String, val ms: Long) { S1("1 s", 1_000), S2("2 s", 2_000), S3("3 s", 3_000), S5("5 s", 5_000), S10("10 s", 10_000) }
+    /** Update 238 (#116): how long it stays at its angle before turning back. */
+    val inspectHold = EnumPref("inspect_hold", InspectHold.S2, InspectHold.values())
+    enum class InspectReturnSpeed(val label: String, val ms: Int) { SLOW("Slow", 2_500), NORMAL("Normal", 1_200), QUICK("Quick", 600) }
+    /** Update 238 (#116): how long its turn back takes. */
+    val inspectReturnSpeed = EnumPref("inspect_return_speed", InspectReturnSpeed.NORMAL, InspectReturnSpeed.values())
     /** Update 147, Disc station: the loaded disc turns slowly. */
     val discSpin = BoolPref("disc_spin", true)
     /** Update 147, Disc station: a few lines about the game under its name. */

@@ -4,6 +4,19 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (238): Inspect view holds then returns slowly, tilt up/down (#116 / #117), screensaver can show only animated heroes (#87), ROM hacks no longer matched to the original game's achievements or art (#111), new "Pull-out stack" carousel (#21)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied and compiled** by Claude (device checks at the end), committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (21): **new** `src_copy\data\RomHacks.kt`; changed `src_copy\data\AnimatedArt.kt`, `src_copy\data\Features.kt`, `src_copy\data\IgdbApi.kt`, `src_copy\data\PhysicalOverrides.kt`, `src_copy\data\RaMatchStore.kt`, `src_copy\data\RaMatching.kt`, `src_copy\data\RaProfile.kt`, `src_copy\data\RawgApi.kt`, `src_copy\data\SaveCapsules.kt`, `src_copy\data\ScreenScraper.kt`, `src_copy\data\ScreensaverStore.kt`, `src_copy\data\SteamGridDbRepository.kt`, `src_copy\data\TheGamesDbApi.kt`, `src_copy\ui\AnimationPreviews.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\RaIdDialog.kt`, `src_copy\ui\ScreenSaver.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`. **Files to delete:** none.
+
+1. **Inspect view (#116 / #117).** After you let go, a turned case/cart/disc now waits, then glides back slowly. Game look › More look options: **Hold before returning** 1 / 2 / 3 / 5 / 10 s (default 2) and **Return speed** Slow / Normal / Quick. You can now also tilt the piece up and down (drag or stick ▲▼), not only turn it; Y or a long press puts it straight. Cases tilt up to just short of upside down because the 3D case has no bottom face yet.
+2. **Screensaver (#87).** The hero screensaver has a **Show** choice: All games / Only animated heroes (games with a moving hero or clip). Falls back to all games when none are animated.
+3. **ROM hacks (#111).** A new hack detector (title tags like "[Hack]", "~Hack~", "(… Hack)", known hack names and patched-file markers). RetroAchievements matching no longer links a hack to the original game by title; earlier automatic links of that kind are dropped (links you picked yourself stay). Art searches (SteamGridDB, TheGamesDB, IGDB, RAWG, ScreenScraper) look for the hack's own name first. The RA ID dialog shows "Not linked (unverified)" for such games.
+4. **Pull-out stack carousel (#21).** New carousel view: cases packed side by side, spines facing you; the one you're on slides straight out toward you and turns to face you. With a case look the real 3D cases are used; other looks stand as in Spine wall, the Tiles carousel as in Record flip. Preview in the carousel picker.
+
+---
+
 ## Update — 18 Oct 2026 (236): Save Vault colours per save or console from the Voltcap memory cards (#41–#48), app drawer in the layout's look (#13), Voltcap row "Other games in the row" (#30), AutoTDP moves the underclock and a gentler Light underclock (#85 / #86)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied and compiled** by Claude (device checks at the end), committed and pushed by Claude.

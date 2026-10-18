@@ -296,7 +296,15 @@ enum class CarouselView(val label: String, /** Update 134: always drawn as 3D ca
      * middle, the others as 3D boxes packed tight either side and turned to their spines, the stacks growing slightly
      * toward the screen's edges; moving, the next box slides out of its stack and turns to face you.
      */
-    BOX_FLOW("Box flow", true)
+    BOX_FLOW("Box flow", true),
+    /**
+     * (Update 238, #21: pull-out stack.) The cases stand edge-on in one tight row, side by side at their real thickness,
+     * so only their spines (the real spine scans, else the console's spine) face you. The one you're on slides straight
+     * out of the row toward you — the same case, only nearer (its size is the camera's perspective, not a zoom) — and
+     * once clear of its neighbours turns to face you; moving on, it pushes back into its slot while the next one comes
+     * out. The rest of the row stays put. 3D cases with the case looks; the other looks stand as in Spine wall.
+     */
+    SPINE_PULL("Pull-out stack", true)
 }
 
 internal object Carousel {
@@ -365,7 +373,11 @@ internal object Carousel {
     /** How many games show each side for the [shown] view: the Spine wall packs three times as many (its spines are slim). */
     fun reach(side: Int, shown: CarouselView = view): Int =
         // (Update 182: with To the edge too — slim spines and boxes need three times as many to reach the edges.)
-        if (shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) side * 3 else side
+        if (shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) side * 3
+        // (Update 238, #21: the pull-out stack's spines are slimmer still, and the first few each side stand behind the
+        // case pulled out in front of them — that many more, so the row still shows past it.)
+        else if (shown == CarouselView.SPINE_PULL) side * 3 + PULL_HIDDEN
+        else side
     /** Spacing between the games (Settings, 60–160 %), times [spread]. */
     val gap: Float get() = Features.carouselGap.state.value / 100f * spread
     /**
@@ -435,6 +447,8 @@ internal object Carousel {
         CarouselView.SPINE_WALL -> CarouselView.FLIP
         CarouselView.TURNED -> CarouselView.FLAT
         CarouselView.BOX_FLOW -> CarouselView.FLIP
+        // (Update 238, #21: flat covers can't be pulled out edge-on — as the Spine wall, Record flip.)
+        CarouselView.SPINE_PULL -> CarouselView.FLIP
         else -> view
     }
 
@@ -580,7 +594,55 @@ internal object Carousel {
                     alpha(d, reach(side, shown)), shade(d) * 0.45f, stackZ(rel)
                 )
             }
+            // (Update 238, #21) The pull-out stack — see [pullOut].
+            CarouselView.SPINE_PULL -> pullOut(out, rel, side, shown)
         }
+    }
+
+    /**
+     * (Update 238, #21) Pull-out stack: the cases' thickness against their height, the usual one among the carousel's
+     * games (set by the carousel from its list — [typicalCaseDepth]; the slots of the row are this far apart).
+     */
+    @Volatile var pullDepth = 0.085f
+    /** (Update 238, #21) The camera's focal length and how far behind the case you're on the row stands (case heights). */
+    const val PULL_FOCAL = 4f
+    const val PULL_BACK = 1.4f
+    /**
+     * (Update 238, #21) A case's spine on screen against its thickness ([pullDepth]), in middle-game widths: the slot is
+     * the middle game's height (1 / 0.72 widths), Case3D draws the front at 94 % of it and, turned spine-on, its spine
+     * sits half the case's width nearer its own camera (focal 3.4 heights: ×1.12).
+     */
+    private const val PULL_SPINE_K = 1.46f
+    /** (Update 238, #21) Extra spines each side for the ones hidden behind the case pulled out ([reach]). */
+    const val PULL_HIDDEN = 8
+
+    /**
+     * (Update 238, #21) Pull-out stack: every case stands edge-on (turned 90°, its spine facing you) in one rigid row,
+     * each slot one spine thick ([pullDepth], a hair more with Spacing), so the row moves with the carousel's own glide
+     * and never squeezes or spreads. The case at [rel] within one game of the middle is drawn pulled out of its slot
+     * straight toward you: it keeps its slot's place along the row and only comes nearer (z), so its size — and its
+     * place on screen, a little out from the middle when it isn't centred — is the camera's perspective, scale =
+     * f / (f − z); its feet stay on the floor line (the eye at floor height, as the other views stand their games).
+     * Only once it has cleared the row (35 % of the way out) does it turn from its spine to face you. Moving on, the one
+     * you leave pushes back in along the same path as the next one comes out — both read from the same glide place.
+     * (The slot it leaves stays open behind it, covered by it: closing it would have the two cases half-way out in the
+     * same space at mid-step.)
+     */
+    private fun pullOut(out: Place, rel: Float, side: Int, shown: CarouselView): Place {
+        val d = kotlin.math.abs(rel)
+        val u = (1f - d).coerceIn(0f, 1f)
+        // How far out (0 in the row … 1 all the way), eased so it starts and settles gently.
+        val t = u * u * (3f - 2f * u)
+        val z = -PULL_BACK * (1f - t)
+        val sc = PULL_FOCAL / (PULL_FOCAL - z)
+        val r = ((t - 0.35f) / 0.65f).coerceIn(0f, 1f)
+        val turn = 90f * (1f - r * r * (3f - 2f * r))
+        val step = PULL_SPINE_K * pullDepth.coerceIn(0.04f, 0.25f) * (0.97f + 0.05f * gap / spread.coerceAtLeast(0.01f))
+        val far = (d - 1f).coerceAtLeast(0f)
+        return out.set(
+            rel * step * sc, (1f - sc) * 0.5f, sc, turn, 0f,
+            alpha(d, reach(side, shown)), (0.18f * (1f - t) + 0.008f * far).coerceAtMost(0.3f), stackZ(rel)
+        )
     }
 
     /** Update 146, Receding row: the first game after the one you're on, against it. */
@@ -652,7 +714,7 @@ internal fun GameCarousel(
         }
     }
     val spines = spinesOn(cardArtType)
-    val view = Carousel.view
+    val chosenView = Carousel.view
     // Update 141: every carousel view works with every look. The views made for 3D cases (Arc, Spine wall, Turned row)
     // draw the 3D cases only for the case looks (covers, real cases); with cartridges, discs, wide capsules, pictures or
     // spines they lay out that look itself, turned the same way.
@@ -660,6 +722,12 @@ internal fun GameCarousel(
     val caseLook = !spines && !(cardArtType == com.shelf.launcher.data.CardArtType.COVER && carouselTiles()) &&
         (cardArtType == com.shelf.launcher.data.CardArtType.COVER || cardArtType == com.shelf.launcher.data.CardArtType.CASE ||
         cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL)
+    // (Update 238, #21: the pull-out stack is made of real cases; the other looks — cartridges, discs, spines, wide
+    // capsules, tiles — stand as in the Spine wall, their pieces turned toward their edges and packed each side.)
+    val view = if (chosenView == CarouselView.SPINE_PULL && !caseLook) CarouselView.SPINE_WALL else chosenView
+    // (Update 238, #21: the pull-out stack's slots are its games' usual case thickness apart.)
+    val pullDepthNow = androidx.compose.runtime.remember(games, view) { if (view == CarouselView.SPINE_PULL) typicalCaseDepth(games) else 0.085f }
+    androidx.compose.runtime.SideEffect { Carousel.pullDepth = pullDepthNow }
     // Update 162: the "3D cases" switch too turns only the case looks into 3D cases (it boxed cartridges, cards and discs
     // into cases); every other look shows each game as its own piece in every view, a turned flat piece with its edge.
     val cases3d = caseLook && (Features.carousel3d.state.value || view.cases)
@@ -1013,6 +1081,26 @@ internal fun GameCarousel(
         RecedeName(g, playtime[g.stableKey]?.takeIf { it > 0L && look.playtimeOnHome }, Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp))
     } else if (showName && !nameAbove) games.getOrNull(focus)?.let { g -> CarouselName(g, Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp)) }
     }
+}
+
+/**
+ * (Update 238, #21) The usual 3D case thickness (against its height) among [games], as Case3D draws one without its
+ * spine scan: Voltcap's own Steam / Android case, else the real case for the game's region (CaseCatalog), else its
+ * console's, else a DVD case's. The middle one by count of games (one look-up per console).
+ */
+internal fun typicalCaseDepth(games: List<Game>): Float {
+    if (games.isEmpty()) return 0.085f
+    val forAll = LookStyles.spineForAll()
+    val byPlatform = games.groupBy { it.platform }
+    val depths = byPlatform.map { (platform, list) ->
+        val g = list.first()
+        val dep = if (!forAll && MediaCovers.own(platform) != null) OWN_CASE_DEPTH
+            else (CaseCatalog.forGame(g)?.depth ?: realCaseDepth(platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
+        dep to list.size
+    }.sortedBy { it.first }
+    var left = games.size / 2
+    for ((dep, count) in depths) { if (left < count) return dep; left -= count }
+    return depths.last().first
 }
 
 /** Update 162: the carousel's one moving place (in games), and the place and game it last went to. */

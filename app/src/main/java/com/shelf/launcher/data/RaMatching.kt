@@ -68,10 +68,18 @@ object RaTitleMatcher {
         return Index(byKey)
     }
 
-    fun match(localTitle: String, index: Index): RaListedGame? {
+    /**
+     * (Update 238, #111) [allowHacks] false (linking a game to its achievements): a local title that looks like a ROM
+     * hack is never linked by title — stripping its "(Hack)" tag left the base game's name, so Radical Red, "Emerald
+     * (Hack)" and the like showed the base game's achievements, icon and box. Nor is any title linked to one of RA's own
+     * "~Hack~" sets by name: such a set only fits the exact patched file, which RA's hash list (the hash pass) confirms.
+     * True only where the console a title belongs to is all that's asked (SaveCapsules' Game Boy family guess).
+     */
+    fun match(localTitle: String, index: Index, allowHacks: Boolean = false): RaListedGame? {
+        if (!allowHacks && RomHacks.isModified(localTitle, null)) return null
         val key = normalise(localTitle)
         if (key.isEmpty()) return null
-        index.byKey[key]?.let { return it.first }
+        index.byKey[key]?.let { if (!allowHacks && it.second == 2) return null; return it.first }
 
         // Fuzzy pass: compare with spaces removed, only against main entries.
         val compact = key.replace(" ", "")

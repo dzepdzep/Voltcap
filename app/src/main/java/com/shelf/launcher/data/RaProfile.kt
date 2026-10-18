@@ -51,6 +51,7 @@ data class RaProfileStats(
  */
 class RaDataCache(context: Context) {
     private val file = AppStorage.file(context, "Data", "ra_data.json", File(context.filesDir, "ra_data.json"))
+    private val appContext = context.applicationContext
     private val gson = Gson()
 
     /** When one game's achievement list was fetched, and for which RA game.
@@ -73,8 +74,27 @@ class RaDataCache(context: Context) {
         // Lists saved by an older build (before the `type` field / fetch times
         // existed) have no missable info; keeping them would hide missables until
         // a refresh happened to succeed. Drop them so they're fetched again.
-        return if (saved.schemaVersion == SCHEMA) saved
+        val current = if (saved.schemaVersion == SCHEMA) saved
         else saved.copy(details = null, detailsMeta = null, schemaVersion = SCHEMA)
+        return withoutRefusedLinks(current)
+    }
+
+    /**
+     * (Update 238, #111) Progress and achievement lists saved for games whose RetroAchievements link is no longer
+     * accepted (RaMatchStore.isAcceptedLink — e.g. a ROM hack linked to the base game by its title) are dropped, so no
+     * card, details page or vault shows the base game's trophies for it from the saved copy. A hand-typed ID keeps its own.
+     */
+    private fun withoutRefusedLinks(saved: Saved): Saved {
+        val refused = runCatching {
+            val manual = GameOverridesStore(appContext).loadAll().filterValues { it.raGameId != null }.keys
+            RaMatchStore(appContext).refusedLinks() - manual
+        }.getOrNull().orEmpty()
+        if (refused.isEmpty()) return saved
+        return saved.copy(
+            progress = saved.progress?.minus(refused),
+            details = saved.details?.minus(refused),
+            detailsMeta = saved.detailsMeta?.minus(refused)
+        )
     }
 
     @Synchronized

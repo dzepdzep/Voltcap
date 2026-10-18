@@ -39,6 +39,12 @@ object AnimatedArt {
     const val PARAM_STILL = "voltcap.still"
     /** Update 181: request parameter: the address the picture was asked for by (written by [SourceTag]). */
     const val PARAM_SRC = "voltcap.src"
+    /**
+     * (Update 238, #87: request parameter: a hero of the screensaver's slideshow. The screensaver runs while the home is
+     * idle (asleep, [setSleeping]), so its pictures may play while a screensaver is shown ([setSaverShowing]); the
+     * battery saver's rest still holds them.)
+     */
+    const val PARAM_SAVER = "voltcap.saver"
 
     /** Update 181: only the game you're on moves (the others hold their first frame). */
     @Volatile var focusOnly = true
@@ -71,6 +77,18 @@ object AnimatedArt {
     @Volatile private var sleeping = false
     /** Update 187: the battery saver's rest (BatterySaver): held still, like sleeping, but set apart from the idle timer. */
     @Volatile private var resting = false
+    /** (Update 238, #87: how many screensavers show their slideshow now — main and second screen.) Main thread. */
+    private var saverShowing = 0
+
+    /** (Update 238, #87: a screensaver's slideshow appeared (true) / went (false). Any thread.) */
+    fun setSaverShowing(on: Boolean) {
+        if (Build.VERSION.SDK_INT < 28) return
+        main.post {
+            saverShowing = (saverShowing + if (on) 1 else -1).coerceAtLeast(0)
+            gates().forEach { it.apply() }
+        }
+    }
+
     private val resume = Runnable { moving = false; if (!sleeping && !resting) restartHeld() }
 
     private fun register(g: Gate) { synchronized(live) { live += g } }
@@ -131,11 +149,13 @@ object AnimatedArt {
     class Gate internal constructor(
         private val inner: AnimatedImageDrawable,
         private val src: String?,
-        private val forced: Boolean
+        private val forced: Boolean,
+        /** (Update 238, #87: a screensaver hero — plays while the home sleeps, as long as a screensaver is shown.) */
+        private val saver: Boolean = false
     ) : android.graphics.drawable.DrawableWrapper(inner), android.graphics.drawable.Animatable {
         private var wanted = false
 
-        private fun may(): Boolean = wanted && !moving && !sleeping && !resting &&
+        private fun may(): Boolean = wanted && !moving && (!sleeping || (saver && saverShowing > 0)) && !resting &&
             (forced || !focusOnly || src == null || src in focusUrls)
 
         /** Start or stop the picture to match [may]. Main thread. */
@@ -201,7 +221,10 @@ object AnimatedArt {
             val h = (options.size.height as? Dimension.Pixels)?.px ?: Int.MAX_VALUE
             if (w <= 160 && h <= 160) return null
             if (!isAnimated(result.source)) return null
-            return AnimatedDecoder(result.source, options, options.parameters.value<String>(PARAM_SRC), forced, imageLoader.memoryCache)
+            return AnimatedDecoder(
+                result.source, options, options.parameters.value<String>(PARAM_SRC), forced, imageLoader.memoryCache,
+                saver = options.parameters.value<Boolean>(PARAM_SAVER) == true // (Update 238, #87)
+            )
         }
 
         private fun isAnimated(source: ImageSource): Boolean = runCatching {
@@ -230,7 +253,8 @@ object AnimatedArt {
         private val options: Options,
         private val src: String?,
         private val forced: Boolean,
-        private val memory: coil.memory.MemoryCache? = null
+        private val memory: coil.memory.MemoryCache? = null,
+        private val saver: Boolean = false // (Update 238, #87)
     ) : Decoder {
         override suspend fun decode(): DecodeResult {
             var sampled = false
@@ -269,7 +293,7 @@ object AnimatedArt {
                     it.setBounds(0, 0, bw, bh); it.draw(c); it.bounds = was
                     mem[stillKey(from)] = coil.memory.MemoryCache.Value(still)
                 }
-                Gate(it, src, forced).also { g -> register(g) }
+                Gate(it, src, forced, saver).also { g -> register(g) }
             } ?: drawable
             return DecodeResult(out, sampled)
         }

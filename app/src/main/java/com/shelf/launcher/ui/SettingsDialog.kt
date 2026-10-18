@@ -2004,6 +2004,17 @@ private fun ScreensaverCard(
                     Chip("Theme: $name…", accent = false) { pickFor = "theme" }
                 }
             }
+            // (Update 238, #87: the slideshow's heroes — every one, or only games with an animated (scraped) hero.)
+            if (settings.style == com.shelf.launcher.data.SaverStyle.SLIDESHOW) {
+                Spacer(Modifier.height(8.dp))
+                SectionLabel("Heroes")
+                ChipFlow {
+                    com.shelf.launcher.data.SaverHeroes.values().forEach { hv ->
+                        Chip(hv.label, accent = settings.heroes == hv) { onChange(settings.copy(heroes = hv)) }
+                    }
+                }
+                MutedNote("Animated heroes play in the slideshow. Only animated heroes: just the games with one (SteamGridDB's animated heroes); none yet, and every hero shows.")
+            }
             Spacer(Modifier.height(8.dp))
             SectionLabel("With music")
             ChipFlow {
@@ -3860,6 +3871,25 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.secondOpenCase.state.value,
             onChange = { com.shelf.launcher.data.Features.secondOpenCase.value = it }
         )
+        // Update 238 (#116/#117): a piece turned in the game window stays turned a while, then turns back slowly.
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Turned pieces turn back by themselves",
+            subtitle = "On (default): a case, cartridge or disc you've turned or tilted in the game window stays at its angle for a moment once you let go, then turns back slowly to face you. Off: it stays as you left it. Drag (or the right stick) sideways to turn it, up / down to look over its top or under it; press Y or hold a finger on it to put it straight again.",
+            checked = com.shelf.launcher.data.Features.inspectAutoReturn.state.value,
+            onChange = { com.shelf.launcher.data.Features.inspectAutoReturn.value = it }
+        )
+        if (com.shelf.launcher.data.Features.inspectAutoReturn.state.value) {
+            Spacer(Modifier.height(8.dp))
+            StyleChoice(
+                "Stay turned for", com.shelf.launcher.data.Features.InspectHold.values(),
+                com.shelf.launcher.data.Features.inspectHold.state.value, { it.label }
+            ) { com.shelf.launcher.data.Features.inspectHold.value = it }
+            StyleChoice(
+                "Turning back", com.shelf.launcher.data.Features.InspectReturnSpeed.values(),
+                com.shelf.launcher.data.Features.inspectReturnSpeed.state.value, { "${it.label} (${it.ms / 100 / 10f} s)" }
+            ) { com.shelf.launcher.data.Features.inspectReturnSpeed.value = it }
+        }
         // Update 191: real cases per region (CaseCatalog.kt).
         Spacer(Modifier.height(8.dp))
         StyleChoice(
@@ -5471,6 +5501,8 @@ private fun CarouselTiltChoices() {
     MutedNote(
         when {
             // (Update 149: the Voltcap row has used the full carousel since update 141.)
+            // (Update 238, #21)
+            v == com.shelf.launcher.ui.CarouselView.SPINE_PULL -> "${v.label}: the cases packed side by side, spines facing you; the one you're on slides straight out toward you and turns to face you. Real 3D cases with a case look; other looks stand as in Spine wall, the Tiles carousel as in Record flip."
             v.cases -> "${v.label}: real 3D cases in the Voltcap row, Grid, Side menu and TV room carousels. In the Tiles carousel the covers stand as in ${com.shelf.launcher.ui.Carousel.flatView.label}."
             v == com.shelf.launcher.ui.CarouselView.TUCKED || v == com.shelf.launcher.ui.CarouselView.FLIP || v == com.shelf.launcher.ui.CarouselView.FLAT || v == com.shelf.launcher.ui.CarouselView.POP ->
                 "${v.label}: every carousel (Voltcap row, Tiles, Grid, Side menu, TV room). With Spines aside (Covers look) the games beside the middle one are slim spines in Grid, Side menu and TV room."

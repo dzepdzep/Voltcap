@@ -150,7 +150,10 @@ class RawgRepository(private val api: RawgApi) {
     /** Background art from RAWG. It has no box covers — only wide images —
      * so this fills the wide capsule and background. */
     suspend fun fetchArt(apiKey: String, gameName: String, platform: String?): GameArt? = try {
-        val match = find(apiKey, gameName, platform)
+        // (Update 238, #111: a ROM hack by its own title, and only an entry with that title — RomHacks.)
+        val hack = RomHacks.fanHack(gameName, null)
+        val match = RomHacks.artSearchName(gameName)?.let { term -> find(apiKey, term, platform) }
+            ?.takeIf { m -> hack == null || RomHacks.namesTheHack(hack, listOfNotNull(m.name)) }
         val detail = match?.id?.let { runCatching { api.details(it, apiKey) }.getOrNull() }
         val bg = detail?.background_image ?: match?.background_image
         val extra = detail?.background_image_additional ?: match?.short_screenshots?.drop(1)?.firstOrNull()?.image

@@ -268,6 +268,8 @@ internal fun CarouselViewPreview(view: CarouselView) {
     val pos = (if (i % 6 < 3) (i % 3) + f else 3f - ((i % 3) + f)).coerceIn(0f, 3f) + 1.5f
     val a = ShelfTheme.accent
     val s = ShelfTheme.colors.secondary
+    // (Update 238, #21: the pull-out stack is drawn as boxes of their own — see PullOutPreview.)
+    if (view == CarouselView.SPINE_PULL) { PullOutPreview(view, pos - 1.5f, a, s); return }
     PreviewFrame(view.label, width = 210.dp) {
         val bigW = 36.dp
         val bigH = 50.dp
@@ -287,6 +289,35 @@ internal fun CarouselViewPreview(view: CarouselView) {
                     }
                     .clip(RoundedCornerShape(4.dp))
                     .background(Brush.verticalGradient(if (n % 2 == 0) listOf(a, Color(0xFF1A1F2B)) else listOf(s, Color(0xFF221A26))))
+            ) { if (p.shade > 0.01f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = p.shade))) }
+        }
+    }
+}
+
+/**
+ * (Update 238, #21) Pull-out stack's preview: a long row of slim spines packed tight (a flat card turned 90° would
+ * vanish), the one in the middle sliding out toward you and widening to its front as it turns. [pos]: 0…3, resting on
+ * whole steps. Each box's width is what a case shows turned that far: its front × cos + its spine × sin.
+ */
+@Composable
+private fun PullOutPreview(view: CarouselView, pos: Float, a: Color, s: Color) {
+    PreviewFrame(view.label, width = 210.dp) {
+        val bigW = 36.dp
+        val bigH = 50.dp
+        val spineW = bigH * 0.94f * Carousel.pullDepth.coerceIn(0.04f, 0.25f) * 1.12f
+        for (n in 0 until 31) {
+            val rel = n - 14f - pos
+            val p = Carousel.place(rel, 2, view)
+            if (p.alpha <= 0f) continue
+            val rad = Math.toRadians(p.turnY.toDouble())
+            val w = bigW * kotlin.math.abs(kotlin.math.cos(rad)).toFloat() + spineW * kotlin.math.sin(rad).toFloat()
+            Box(
+                Modifier.align(Alignment.Center).zIndex(p.z)
+                    .offset(x = bigW * p.x, y = bigH * p.y)
+                    .size(w, bigH)
+                    .graphicsLayer { scaleX = p.scale; scaleY = p.scale; alpha = p.alpha }
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Brush.verticalGradient(if (n % 3 == 0) listOf(a, Color(0xFF1A1F2B)) else if (n % 3 == 1) listOf(s, Color(0xFF221A26)) else listOf(Color(0xFF59606E), Color(0xFF1C1F26))))
             ) { if (p.shade > 0.01f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = p.shade))) }
         }
     }

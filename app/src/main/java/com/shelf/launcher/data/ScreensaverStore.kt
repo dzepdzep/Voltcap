@@ -45,11 +45,15 @@ data class ScreensaverSettings(
     /** The music theme for that (AppTheme name); null = "Now playing". */
     val musicTheme: String? = null,
     /** While music plays the screensaver stays: no fade to black and the screen doesn't switch off. */
-    val stayWithMusic: Boolean = true
+    val stayWithMusic: Boolean = true,
+    /** (Update 238, #87: which games' heroes the slideshow shows — every hero, or only the animated ones.) */
+    val heroes: SaverHeroes = SaverHeroes.ALL
 )
 
 enum class SaverStyle(val label: String) { SLIDESHOW("Library art"), THEME("A theme or visualizer") }
 enum class SaverMusicStyle(val label: String) { CARD("Song card"), THEME("Music theme") }
+// (Update 238, #87: the slideshow's heroes — all of them (as before), or only games with an animated hero.)
+enum class SaverHeroes(val label: String) { ALL("All heroes"), ANIMATED("Only animated heroes") }
 
 class ScreensaverStore(context: Context) {
     private val prefs = context.getSharedPreferences("screensaver", Context.MODE_PRIVATE)
@@ -66,7 +70,9 @@ class ScreensaverStore(context: Context) {
         theme = prefs.getString("theme", null),
         musicStyle = runCatching { SaverMusicStyle.valueOf(prefs.getString("music_style", null) ?: "") }.getOrDefault(SaverMusicStyle.CARD),
         musicTheme = prefs.getString("music_theme", null),
-        stayWithMusic = prefs.getBoolean("stay_with_music", true)
+        stayWithMusic = prefs.getBoolean("stay_with_music", true),
+        // (Update 238, #87)
+        heroes = runCatching { SaverHeroes.valueOf(prefs.getString("heroes", null) ?: "") }.getOrDefault(SaverHeroes.ALL)
     )
 
     fun save(s: ScreensaverSettings) = prefs.edit()
@@ -81,5 +87,6 @@ class ScreensaverStore(context: Context) {
         .putString("music_style", s.musicStyle.name)
         .putString("music_theme", s.musicTheme)
         .putBoolean("stay_with_music", s.stayWithMusic)
+        .putString("heroes", s.heroes.name) // (Update 238, #87)
         .apply()
 }

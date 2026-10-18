@@ -102,6 +102,8 @@ internal object SettingsIndex {
         E("Circuit board layout (green board, current, chip labels)", "Home", "Layout options", null, null),
         E("Game size in % (every layout)", "Home", "Layout options", null, null),
         E("Carousel view (Tucked, Record flip, Wheel, Deck, Flat row, Arc, Spine wall, Turned row)", "Home", "Layout options", null, null),
+        // (Update 238, #21: the pull-out stack view.)
+        E("Carousel view: Pull-out stack (cases packed spine-on, the one you're on slides out toward you)", "Home", "Layout options", null, null),
         E("Carousel 3D cases", "Home", "Layout options", null, null),
         E("Carousel spacing", "Home", "Layout options", null, null),
         E("Carousel reflection", "Home", "Layout options", null, null),
@@ -150,6 +152,10 @@ internal object SettingsIndex {
         E("Cartridge backs", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Open cases side by side", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Cases that open on the second screen", "Game look", "Covers, cases & discs", "look_more", "More look options"),
+        // (Update 238, #116/#117: a turned piece's return in the game window.)
+        E("Turned pieces turn back by themselves", "Game look", "Covers, cases & discs", "look_more", "More look options"),
+        E("Stay turned for", "Game look", "Covers, cases & discs", "look_more", "More look options"),
+        E("Turning back", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Case region", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         // (Update 226, #109: "Card artwork" removed — it's "Main look" now, above.)
         E("Effects & battery", "Theme", "Effects & battery", null, null),
@@ -410,6 +416,9 @@ internal object SettingsIndex {
         E("Show music while playing", "Screensaver", null, null, null),
         E("Start after", "Screensaver", null, null, null),
         E("Without music", "Screensaver", null, null, null),
+        // (Update 238, #87)
+        E("Heroes: All heroes / Only animated heroes (screensaver slideshow)", "Screensaver", null, null, null),
+        E("Animated heroes in the screensaver", "Screensaver", null, null, null),
         E("With music", "Screensaver", null, null, null),
         E("Music theme for the screensaver", "Screensaver", null, null, null),
         E("Second screen while it runs", "Screensaver", null, null, null),

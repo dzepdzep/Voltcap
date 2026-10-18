@@ -66,8 +66,70 @@ data class ScreensaverSlide(
     val title: String,
     val subtitle: String?,
     val imageUrl: String,
-    val logoUrl: String?
+    val logoUrl: String?,
+    /**
+     * (Update 238, #87: the game's animated hero, played over [imageUrl] (its still hero) once the slide is in. Null:
+     * a still slide, as before. Filled in by [heroSlides] from the library, so the callers stay as they are.)
+     */
+    val animatedUrl: String? = null
 )
+
+/**
+ * (Update 238, #87: the slideshow's slides with their animated heroes — Settings › Screensaver › Heroes.)
+ *  - All heroes: [given] as they are; a game whose hero is animated (SteamGridDB's animated hero, scraped beside the
+ *    still one, or an animated hero picture) plays it, when animated artwork plays for that game.
+ *  - Only animated heroes: only the games with an animated hero (heroes only — never covers or wide capsules), unless
+ *    the game is set to "Still". None at all: [given], so the screen is never empty.
+ */
+private fun heroSlides(context: android.content.Context, given: List<ScreensaverSlide>): List<ScreensaverSlide> = runCatching {
+    val onlyAnimated = com.shelf.launcher.data.ScreensaverStore(context).load().heroes == com.shelf.launcher.data.SaverHeroes.ANIMATED
+    val state = CompanionBridge.vm?.get()?.uiState?.value
+    if (state == null) {
+        // (No library at hand: an animated hero picture in the slides themselves still plays.)
+        return@runCatching given.map { s ->
+            if (com.shelf.launcher.data.AnimatedArt.enabled && com.shelf.launcher.data.AnimatedArt.looksAnimated(s.imageUrl)) s.copy(animatedUrl = s.imageUrl) else s
+        }
+    }
+    val byStill = HashMap<String, String>()
+    val pool = ArrayList<ScreensaverSlide>()
+    for (g in state.games) {
+        val k = g.stableKey
+        val look = com.shelf.launcher.data.GameLooks.of(k).animateArt
+        // Only animated heroes: everything but "Still"; All heroes: as animated artwork plays for this game (ArtPick.animates).
+        if (if (onlyAnimated) look == false else (look ?: com.shelf.launcher.data.AnimatedArt.enabled).not()) continue
+        val o = state.artOverrides[k]
+        val a = state.art[k]
+        val ownHero = o?.hero
+        val anim = if (ownHero != null) ownHero.takeIf { com.shelf.launcher.data.AnimatedArt.looksAnimated(it) }
+            else a?.animatedHeroUrl ?: a?.heroUrl?.takeIf { com.shelf.launcher.data.AnimatedArt.looksAnimated(it) }
+        if (anim == null) continue
+        val still = ownHero ?: a?.heroUrl ?: anim
+        byStill[still] = anim
+        if (onlyAnimated) pool += ScreensaverSlide(g.name, g.platform, still, o?.logo ?: a?.logoUrl, animatedUrl = anim)
+    }
+    if (onlyAnimated && pool.isNotEmpty()) pool.shuffled().take(80)
+    else given.map { s -> byStill[s.imageUrl]?.let { s.copy(animatedUrl = it) } ?: s }
+}.getOrDefault(given)
+
+/**
+ * (Update 238, #87) The slideshow's still picture for [url] at [w]×[h] — the same request as before, kept still
+ * ([AnimatedArt.PARAM_STILL]) when the slide's animated hero plays over it (its first frame, a bitmap in memory).
+ */
+private fun saverStillRequest(
+    context: android.content.Context, url: String, still: Boolean, w: Int, h: Int,
+    sharpen: Boolean, lite: Boolean, small: Boolean, low: Boolean
+): coil.request.ImageRequest = coil.request.ImageRequest.Builder(context)
+    .data(url)
+    .size(w, h)
+    .scale(coil.size.Scale.FILL)
+    .precision(coil.size.Precision.INEXACT)
+    .memoryCacheKey("saver|$url|${w}x$h")
+    .apply {
+        if (still) setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true, memoryCacheKey = null)
+        if (small || low) bitmapConfig(android.graphics.Bitmap.Config.RGB_565)
+        if (sharpen && !lite && !small && !low) transformations(SharpUpscale())
+    }
+    .build()
 
 /**
  * Idle screen. Shows the playing track when music is on (and allowed),
@@ -230,8 +292,16 @@ private fun rememberSaverClock(frameMs: Int): androidx.compose.runtime.State<Flo
 }
 
 @Composable
-private fun SlideshowScene(slides: List<ScreensaverSlide>, dx: Dp, dy: Dp, sharpen: Boolean = true) {
+private fun SlideshowScene(given: List<ScreensaverSlide>, dx: Dp, dy: Dp, sharpen: Boolean = true) {
     com.shelf.launcher.Breadcrumbs.mark("SlideshowScene")
+    // (Update 238, #87: the slides with their animated heroes, or only the animated ones — Settings › Screensaver › Heroes.)
+    val outerContext = LocalContext.current
+    val slides = remember(given) { heroSlides(outerContext, given) }
+    // (Update 238, #87: its heroes may play while the home sleeps behind it — AnimatedArt.Gate.)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        com.shelf.launcher.data.AnimatedArt.setSaverShowing(true)
+        onDispose { com.shelf.launcher.data.AnimatedArt.setSaverShowing(false) }
+    }
     var index by remember { mutableStateOf(0) }
     val low = rememberSaverLow()
     // Pictures that failed in a row: after a few the slideshow stops hammering the network / decoder
@@ -240,7 +310,9 @@ private fun SlideshowScene(slides: List<ScreensaverSlide>, dx: Dp, dy: Dp, sharp
     LaunchedWhileActive(slides.size, failures) {
         if (slides.size > 1) {
             while (true) {
-                delay(if (failures >= 3) 30_000 else if (low) 15_000 else 12_000)
+                // (Update 238, #87: an animated hero gets its full slide once it moves — a few seconds more.)
+                val moving = slides.getOrNull(index % slides.size)?.animatedUrl != null && failures < 3
+                delay((if (failures >= 3) 30_000L else if (low) 15_000L else 12_000L) + if (moving) 6_000L else 0L)
                 index = (index + 1) % slides.size
             }
         }
@@ -253,36 +325,40 @@ private fun SlideshowScene(slides: List<ScreensaverSlide>, dx: Dp, dy: Dp, sharp
     }
     val slide = slides.getOrNull(index % maxOf(1, slides.size))
     val clock = rememberSaverClock(if (low) 50 else 16)
+    val fadeMs = if (low) 900 else 1800
+    // (Update 238, #87: the pictures' size, worked out once here — the slide and the next one's still share it.)
+    val lite = LocalLiteEffects.current
+    val small = remember { com.shelf.launcher.device.MemoryBudget.small(outerContext) }
+    val maxW = remember(low) { if (low) 1280 else com.shelf.launcher.device.MemoryBudget.heroMaxWidth(outerContext) }
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    val screen = screenSizeDp()
+    val screenW = (screen.width.value * density).toInt().coerceAtLeast(1)
+    val screenH = (screen.height.value * density).toInt().coerceAtLeast(1)
+    // The zoom ends at 1.12×: decoding at screen size is enough (more only costs memory).
+    val w = minOf(screenW, maxW)
+    val h = (screenH.toLong() * w / screenW).toInt().coerceAtLeast(1)
+    // (Update 238, #87: the next slide's still picture readied a few seconds in, so it's there when it fades up — only
+    // the still: its animated hero loads once it's on screen, so one animated picture plays at a time.)
+    LaunchedEffect(index, slides, w, h, sharpen, lite, low) {
+        if (slides.size < 2) return@LaunchedEffect
+        delay(4_000)
+        val next = slides[(index + 1) % slides.size]
+        runCatching {
+            coil.Coil.imageLoader(outerContext).enqueue(
+                saverStillRequest(outerContext, next.imageUrl, next.animatedUrl != null, w, h, sharpen, lite, small, low)
+            )
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         if (slide != null) {
             // Weaker devices: no cross-fade (two full-screen pictures decoded and drawn at once) — the
             // next one fades up from black instead.
-            Crossfade(targetState = slide, animationSpec = tween(if (low) 900 else 1800), label = "slide") { current ->
+            Crossfade(targetState = slide, animationSpec = tween(fadeMs), label = "slide") { current ->
                 val shownAt = remember(current) { clock.value }
                 val context = androidx.compose.ui.platform.LocalContext.current
-                val lite = LocalLiteEffects.current
-                val small = remember { com.shelf.launcher.device.MemoryBudget.small(context) }
-                val maxW = remember(low) { if (low) 1280 else com.shelf.launcher.device.MemoryBudget.heroMaxWidth(context) }
-                val density = androidx.compose.ui.platform.LocalDensity.current.density
-                val screen = screenSizeDp()
-                val screenW = (screen.width.value * density).toInt().coerceAtLeast(1)
-                val screenH = (screen.height.value * density).toInt().coerceAtLeast(1)
-                // The zoom ends at 1.12×: decoding at screen size is enough (more only costs memory).
-                val w = minOf(screenW, maxW)
-                val h = (screenH.toLong() * w / screenW).toInt().coerceAtLeast(1)
-                val request = remember(current.imageUrl, sharpen, lite, low, w, h) {
-                    coil.request.ImageRequest.Builder(context)
-                        .data(current.imageUrl)
-                        .size(w, h)
-                        .scale(coil.size.Scale.FILL)
-                        .precision(coil.size.Precision.INEXACT)
-                        .memoryCacheKey("saver|${current.imageUrl}|${w}x$h")
-                        .apply {
-                            if (small || low) bitmapConfig(android.graphics.Bitmap.Config.RGB_565)
-                            if (sharpen && !lite && !small && !low) transformations(SharpUpscale())
-                        }
-                        .build()
+                val request = remember(current.imageUrl, current.animatedUrl, sharpen, lite, low, w, h) {
+                    saverStillRequest(context, current.imageUrl, current.animatedUrl != null, w, h, sharpen, lite, small, low)
                 }
                 AsyncImage(
                     model = request,
@@ -304,6 +380,46 @@ private fun SlideshowScene(slides: List<ScreensaverSlide>, dx: Dp, dy: Dp, sharp
                             scaleY = scaleX
                         }
                 )
+                // (Update 238, #87: the animated hero over its still, faded in once the slide has faded up — so only one
+                // animated picture is decoded at a time — and once it's ready; if it can't load, the still stays.)
+                val anim = current.animatedUrl
+                if (anim != null && android.os.Build.VERSION.SDK_INT >= 28) {
+                    var play by remember(current) { mutableStateOf(false) }
+                    var ready by remember(current) { mutableStateOf(false) }
+                    LaunchedEffect(current) { delay(fadeMs + 300L); play = true }
+                    val shown by animateFloatAsState(if (ready) 1f else 0f, tween(1200), label = "heroMotion")
+                    if (play) {
+                        val moving = remember(anim, w, h) {
+                            coil.request.ImageRequest.Builder(context)
+                                .data(anim)
+                                .size(w, h)
+                                .scale(coil.size.Scale.FILL)
+                                .precision(coil.size.Precision.INEXACT)
+                                // Forced to play (even with Animated artwork off: "Only animated heroes" asked for it) and
+                                // marked as the screensaver's, so it plays while the home sleeps. Its address tags it, so
+                                // its first frame is kept as the still-first stand-in (AnimatedArt.StillFirst).
+                                .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_ANIMATE, true, memoryCacheKey = null)
+                                .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_SAVER, true, memoryCacheKey = null)
+                                .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_SRC, anim, memoryCacheKey = null)
+                                .build()
+                        }
+                        AsyncImage(
+                            model = moving,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            alpha = 0.75f * shown,
+                            filterQuality = if (low) androidx.compose.ui.graphics.FilterQuality.Low else androidx.compose.ui.graphics.FilterQuality.High,
+                            onSuccess = { ready = true },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    val p = ((clock.value - shownAt) / 14f).coerceIn(0f, 1f)
+                                    scaleX = 1f + 0.12f * p
+                                    scaleY = scaleX
+                                }
+                        )
+                    }
+                }
             }
             if (failures >= 3) {
                 // Nothing loads (offline?): a slow gradient so the screen isn't just black, and the clock.

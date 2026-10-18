@@ -6,6 +6,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.animation.core.animateFloat
@@ -165,6 +166,14 @@ private fun contentPieceFor(g: Game, state: LauncherUiState): InspectPiece? {
 /** Update 198: how far an opened case moves aside (share of its width) and shrinks, beside what came out of it. */
 internal const val CASE_ASIDE_SHIFT = 0.25f
 internal const val CASE_ASIDE_SHRINK = 0.48f
+
+/** (Update 238, #116/#117: the case's own slight tilt (Case3D's default pitch), and how far a case may be tilted on top of it.) */
+internal const val CASE_PITCH = 4f
+/** (Update 238, #117: 0° … 176° all told — never past upside down, where its missing bottom face would show.) */
+internal const val BOX_PITCH_MIN = -CASE_PITCH
+internal const val BOX_PITCH_MAX = 176f - CASE_PITCH
+/** (Update 238, #116: the slow return's curve — a gentle start, a long soft landing.) */
+private val RETURN_EASE = CubicBezierEasing(0.45f, 0f, 0.25f, 1f)
 
 /**
  * Update 198: [g]'s case for the second screen's Details page — always its case (scanned front, printed back), with what's
@@ -534,14 +543,82 @@ internal class InspectMotion {
     /** Update 189: turns what came out of the case [deg] more by hand. */
     fun nudgeContent(deg: Float) { contentEase?.cancel(); contentTurn.floatValue += deg }
 
-    /** Update 189: let go: it turns back to face you (the short way). */
+    /**
+     * Update 189: let go: it turns back to face you (the short way). (Update 238, #116: after the hold you picked, slowly
+     * — or not at all with "Turned pieces turn back by themselves" off; turning it again stops the return at once.)
+     */
     fun releaseContent(scope: CoroutineScope) {
         contentEase?.cancel()
+        if (!Features.inspectAutoReturn.state.value) return
+        val hold = Features.inspectHold.state.value.ms
+        val dur = Features.inspectReturnSpeed.state.value.ms
         contentEase = scope.launch {
+            delay(hold)
             val now = contentTurn.floatValue
             val to = (now / 360f).roundToInt() * 360f
-            animate(now, to, animationSpec = tween(620, easing = FastOutSlowInEasing)) { v, _ -> contentTurn.floatValue = v }
+            animate(now, to, animationSpec = tween(dur, easing = RETURN_EASE)) { v, _ -> contentTurn.floatValue = v }
             contentTurn.floatValue = 0f
+        }
+    }
+
+    /** Update 238 (#117): your tilt over its top / under its bottom, degrees (positive: its top comes towards you). */
+    val pitch = mutableFloatStateOf(0f)
+    /** Update 238 (#117): the right stick's up / down (−1…1), 0 at rest. */
+    val stickY = mutableFloatStateOf(0f)
+    /**
+     * Update 238 (#117): a case (Case3D draws no bottom face) tilts only over its top — from upright to just shy of
+     * upside down, its back seen from above; a cartridge / card / disc tilts all the way round (−180…180, wrapped).
+     */
+    var boxPitch = false
+
+    /** Update 238 (#117): tilts it [deg] more by hand (stops the showcase turn and any return). Not while a case is open. */
+    fun nudgePitch(deg: Float) {
+        if (closing || !started) return
+        // (The open book — CaseOpenDraw — is drawn only from the front.)
+        if (opened || lid.floatValue > 0.001f || out.floatValue > 0.001f) return
+        spinJob?.cancel(); easeJob?.cancel()
+        var p = pitch.floatValue + deg
+        if (boxPitch) p = p.coerceIn(BOX_PITCH_MIN, BOX_PITCH_MAX)
+        else { if (p > 180f) p -= 360f else if (p < -180f) p += 360f }
+        pitch.floatValue = p
+    }
+
+    /**
+     * Update 238 (#117): −1 while it's tilted past upright (upside down), else 1 — a sideways drag / stick turns it the
+     * way your finger goes even then.
+     */
+    fun yawSign(): Float {
+        val total = pitch.floatValue + (if (boxPitch) CASE_PITCH else 0f)
+        return if (cos(Math.toRadians(total.toDouble())) < 0.0) -1f else 1f
+    }
+
+    /** Update 238 (#117): its tilt back to upright (the short way), over [ms]. */
+    private suspend fun levelPitch(ms: Int) {
+        val p0 = pitch.floatValue
+        if (abs(p0) > 0.1f) animate(p0, 0f, animationSpec = tween(ms, easing = FastOutSlowInEasing)) { v, _ -> pitch.floatValue = v }
+        pitch.floatValue = 0f
+    }
+
+    /**
+     * Update 238 (#117): back to how it first stood — facing you, upright (Y, or a long press on it). At once,
+     * whatever the return settings say.
+     */
+    fun resetPose(scope: CoroutineScope) {
+        if (closing || !started) return
+        spinJob?.cancel(); easeJob?.cancel(); contentEase?.cancel()
+        easeJob = scope.launch {
+            val total = turn.floatValue + manual.floatValue
+            val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
+            turn.floatValue = total; manual.floatValue = 0f
+            val p0 = pitch.floatValue
+            val c0 = contentTurn.floatValue
+            val cTo = (c0 / 360f).roundToInt() * 360f
+            animate(0f, 1f, animationSpec = tween(480, easing = FastOutSlowInEasing)) { v, _ ->
+                turn.floatValue = total + (front - total) * v
+                pitch.floatValue = p0 * (1f - v)
+                contentTurn.floatValue = c0 + (cTo - c0) * v
+            }
+            turn.floatValue = 0f; pitch.floatValue = 0f; contentTurn.floatValue = 0f
         }
     }
     private var caseJob: Job? = null
@@ -557,6 +634,7 @@ internal class InspectMotion {
         caseJob = scope.launch {
             if (opened) {
                 spinJob?.cancel(); easeJob?.cancel()
+                levelPitch(300) // (Update 238, #117: upright first — the open book is drawn from the front only.)
                 val total = turn.floatValue + manual.floatValue
                 val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
                 turn.floatValue = total
@@ -585,6 +663,7 @@ internal class InspectMotion {
         opened = true
         caseJob = scope.launch {
             spinJob?.cancel(); easeJob?.cancel()
+            levelPitch(300) // (Update 238, #117: upright first.)
             val total = turn.floatValue + manual.floatValue
             val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
             turn.floatValue = total
@@ -601,6 +680,8 @@ internal class InspectMotion {
         opened = true
         caseJob = scope.launch {
             // (Turned to face you first, so it lifts out of where it's seen lying.)
+            spinJob?.cancel(); easeJob?.cancel()
+            levelPitch(300) // (Update 238, #117: upright too.)
             val total = turn.floatValue + manual.floatValue
             val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
             turn.floatValue = total; manual.floatValue = 0f
@@ -683,22 +764,41 @@ internal class InspectMotion {
             val total = turn.floatValue + manual.floatValue
             val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
             turn.floatValue = 0f
-            animate(total, front, animationSpec = tween(220, easing = FastOutSlowInEasing)) { v, _ -> manual.floatValue = v }
-            manual.floatValue = 0f
+            // (Update 238, #117: upright again too, in the same move.)
+            val p0 = pitch.floatValue
+            animate(0f, 1f, animationSpec = tween(220, easing = FastOutSlowInEasing)) { v, _ ->
+                manual.floatValue = total + (front - total) * v
+                pitch.floatValue = p0 * (1f - v)
+            }
+            manual.floatValue = 0f; pitch.floatValue = 0f
             showcase()
         }
     }
 
-    /** Let go: it eases back to facing you. */
+    /**
+     * Let go: it eases back to facing you. (Update 238, #116/#117: it stays at its angle — turned and tilted — for the
+     * hold you picked (Settings › Game look › More look options › "Stay turned for" / "Turning back"), then turns back
+     * slowly and gently, upright as well; with "Turned pieces turn back by themselves" off it stays as you left it. A
+     * drag, the stick, a tap or Y stops the return at once — nudge / nudgePitch / spinOnce / resetPose cancel it.)
+     */
     fun release(scope: CoroutineScope) {
         if (closing) return
         easeJob?.cancel()
+        if (!Features.inspectAutoReturn.state.value) return
+        val hold = Features.inspectHold.state.value.ms
+        val dur = Features.inspectReturnSpeed.state.value.ms
         easeJob = scope.launch {
+            delay(hold)
             val total = turn.floatValue + manual.floatValue
             val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
-            animate(manual.floatValue, front - turn.floatValue, animationSpec = tween(560, easing = FastOutSlowInEasing)) { v, _ ->
-                manual.floatValue = v
+            val m0 = manual.floatValue
+            val mTo = front - turn.floatValue
+            val p0 = pitch.floatValue
+            animate(0f, 1f, animationSpec = tween(dur, easing = RETURN_EASE)) { v, _ ->
+                manual.floatValue = m0 + (mTo - m0) * v
+                pitch.floatValue = p0 * (1f - v)
             }
+            pitch.floatValue = 0f
         }
     }
 
@@ -761,6 +861,7 @@ internal class InspectMotion {
             turn.floatValue = total
             manual.floatValue = 0f
             launch { animate(total, front, animationSpec = tween(420, easing = FastOutSlowInEasing)) { v, _ -> turn.floatValue = v } }
+            launch { levelPitch(420) } // (Update 238, #117: upright again on its way back.)
             animate(lift.floatValue, 0f, animationSpec = tween(520, easing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f))) { v, _ ->
                 lift.floatValue = v
                 MediaInspect.amount.floatValue = v
@@ -777,11 +878,15 @@ internal class InspectMotion {
 @Composable
 internal fun InspectStick(motion: InspectMotion) {
     val view = LocalView.current
+    val resetScope = rememberCoroutineScope() // (Update 238, #117: Y's reset)
     DisposableEffect(view, motion) {
         view.setOnGenericMotionListener { _, ev ->
             if (ev.isFromSource(InputDevice.SOURCE_JOYSTICK) && ev.action == MotionEvent.ACTION_MOVE) {
                 val rx = ev.getAxisValue(MotionEvent.AXIS_Z)
                 motion.stick.floatValue = if (abs(rx) > 0.25f) rx else 0f
+                // (Update 238, #117: its up / down tilts it.)
+                val ry = ev.getAxisValue(MotionEvent.AXIS_RZ)
+                motion.stickY.floatValue = if (abs(ry) > 0.25f) ry else 0f
             }
             // (Update 162 (review): never taken — the same event carries the left stick, which Android turns into D-pad
             // presses for the window's buttons only when nobody handles it.)
@@ -805,12 +910,20 @@ internal fun InspectStick(motion: InspectMotion) {
                     if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) hook()
                     return true
                 }
+                // Update 238 (#117): Y puts the piece back as it first stood (facing you, upright) — only while it's out
+                // and nothing in the window takes Y (the stick clicks stay the case's / the turn's).
+                if (code == android.view.KeyEvent.KEYCODE_BUTTON_Y && motion.started && !motion.closing && motion.lift.floatValue >= 0.999f) {
+                    if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) motion.resetPose(resetScope)
+                    return true
+                }
                 return original.dispatchKeyEvent(event)
             }
             override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
                 if (event.isFromSource(InputDevice.SOURCE_JOYSTICK) && event.action == MotionEvent.ACTION_MOVE) {
                     val rx = event.getAxisValue(MotionEvent.AXIS_Z)
                     motion.stick.floatValue = if (abs(rx) > 0.25f) rx else 0f
+                    val ry = event.getAxisValue(MotionEvent.AXIS_RZ) // (Update 238, #117: the tilt)
+                    motion.stickY.floatValue = if (abs(ry) > 0.25f) ry else 0f
                 }
                 // (Never taken here either: the left stick still moves through the window's buttons.)
                 return original.dispatchGenericMotionEvent(event)
@@ -821,18 +934,26 @@ internal fun InspectStick(motion: InspectMotion) {
     }
     LaunchedEffect(motion) {
         // (Update 162 (review): ends once it's closing — held stick and closing made this loop spin without ever waiting.)
+        // (Update 238, #117: the stick's up / down tilts it too — over its top, under its bottom.)
+        val held = { abs(motion.stick.floatValue) > 0.25f || abs(motion.stickY.floatValue) > 0.25f }
         while (!motion.closing) {
-            snapshotFlow { abs(motion.stick.floatValue) > 0.25f }.first { it }
+            snapshotFlow { held() }.first { it }
             if (motion.closing) break
             var last = -1L
             // (Update 198: with the disc / cartridge out of its case, the stick turns that — it used to flip the case
             // aside behind it.)
             val content = motion.out.floatValue > 0.5f
-            while (abs(motion.stick.floatValue) > 0.25f && !motion.closing) {
+            while (held() && !motion.closing) {
                 val now = withFrameNanos { it }
                 if (last > 0L) {
-                    val deg = motion.stick.floatValue * 200f * ((now - last) / 1_000_000_000f).coerceAtMost(0.05f)
-                    if (content) motion.nudgeContent(deg) else motion.nudge(deg)
+                    val dt = ((now - last) / 1_000_000_000f).coerceAtMost(0.05f)
+                    val deg = motion.stick.floatValue * 200f * dt
+                    if (content) motion.nudgeContent(deg)
+                    else {
+                        if (deg != 0f) motion.nudge(deg * motion.yawSign())
+                        val tilt = motion.stickY.floatValue * 160f * dt
+                        if (tilt != 0f) motion.nudgePitch(tilt)
+                    }
                 }
                 last = now
             }
@@ -857,6 +978,9 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
     val openOf: () -> Float = remember(motion) { { motion.lid.floatValue } }
     val itemInCase: () -> Boolean = remember(motion) { { motion.out.floatValue <= 0.001f } }
     val caseItem = remember(piece) { caseItemOf(piece.content) }
+    // Update 238 (#117): its tilt, read while drawing; a case tilts only over its top (InspectMotion.boxPitch).
+    val pitchOf: () -> Float = remember(motion) { { motion.pitch.floatValue } }
+    SideEffect { motion.boxPitch = piece.kind == InspectKind.BOX }
     // Update 198: Settings › Game look › "Open cases side by side": once it has landed, it opens by itself.
     val startOpen = Features.inspectOpenAtStart.state.value
     LaunchedEffect(piece.game.stableKey, startOpen) {
@@ -934,7 +1058,8 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                     }
                     // Update 189: a tap on a case opens it (and closes it again).
                     .pointerInput(piece.kind, piece.content, itemPlace, bookPlace) {
-                        detectTapGestures(onTap = { at ->
+                        // (Update 238, #117: a long press puts it back as it first stood — facing you, upright.)
+                        detectTapGestures(onLongPress = { motion.resetPose(scope) }, onTap = { at ->
                             val sw = size.width.toFloat(); val sh = size.height.toFloat()
                             val onItem = itemPlace?.hit(at.x, at.y, sw, sh) == true
                             // (Update 191: a cardboard box opens too — its top flap.)
@@ -947,27 +1072,26 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                         })
                     }
                     // A horizontal drag turns it yourself; let go and it eases back.
+                    // (Update 238, #116/#117: a drag up / down tilts it over its top or under its bottom; let go and it
+                    // stays a while, then turns back slowly — InspectMotion.release.)
                     .pointerInput(piece.kind) {
-                        detectHorizontalDragGestures(
+                        detectDragGestures(
                             onDragEnd = { motion.release(scope) },
                             onDragCancel = { motion.release(scope) }
-                        ) { change, dx ->
+                        ) { change, drag ->
                             change.consume()
-                            if (!motion.closing) motion.nudge(dx * 0.42f)
+                            if (!motion.closing) {
+                                if (drag.x != 0f) motion.nudge(drag.x * 0.42f * motion.yawSign())
+                                if (drag.y != 0f) motion.nudgePitch(drag.y * 0.42f)
+                            }
                         }
                     }
             ) {
                 InspectShadow(motion)
                 when (piece.kind) {
-                    InspectKind.BOX -> Case3D(
-                        piece.game, piece.front, piece.physical, 0f, aspect, Modifier.fillMaxSize(),
-                        // (Update 162: Case3D's back face and its angle read while drawing.)
-                        back = piece.back, yawOf = yawOf, fill = 0.97f,
-                        // (Update 189: it opens.)
-                        openOf = openOf, inside = caseItem, showItemOf = itemInCase
-                    )
-                    InspectKind.SLAB -> InspectSlab(piece, yawOf)
-                    InspectKind.DISC -> InspectDisc(piece, yawOf)
+                    InspectKind.BOX -> InspectCase(piece, aspect, motion, yawOf, openOf, caseItem, itemInCase)
+                    InspectKind.SLAB -> InspectSlab(piece, yawOf, pitchOf)
+                    InspectKind.DISC -> InspectDisc(piece, yawOf, pitchOf)
                     // (Update 200: no MODEL any more — InspectModel's pre-rendered pictures are retired.)
                 }
             }
@@ -982,6 +1106,28 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
             )
         }
     }
+}
+
+/**
+ * Update 238 (#117): the inspected case, tilted by [InspectMotion.pitch] on top of its own slight tilt. Its own
+ * composable, so only it follows the tilt (Case3D takes its pitch as a plain value). Case3D (CaseDraw) culls each face
+ * by its winding, so the front, spine, edge, top and back show correctly at any tilt from 0° to 176°; it has no bottom
+ * face, so the tilt never goes under it (BOX_PITCH_MIN / MAX).
+ */
+@Composable
+private fun InspectCase(
+    piece: InspectPiece, aspect: Float, motion: InspectMotion, yawOf: () -> Float, openOf: () -> Float,
+    caseItem: CaseItem?, itemInCase: () -> Boolean
+) {
+    val tilt = motion.pitch.floatValue.coerceIn(BOX_PITCH_MIN, BOX_PITCH_MAX)
+    Case3D(
+        piece.game, piece.front, piece.physical, 0f, aspect, Modifier.fillMaxSize(),
+        pitch = CASE_PITCH + tilt,
+        // (Update 162: Case3D's back face and its angle read while drawing.)
+        back = piece.back, yawOf = yawOf, fill = 0.97f,
+        // (Update 189: it opens.)
+        openOf = openOf, inside = caseItem, showItemOf = itemInCase
+    )
 }
 
 /**
@@ -1147,17 +1293,58 @@ private fun PieceFace(p: InspectPiece, modifier: Modifier) {
     }
 }
 
-/** Turned by [yawOf]: the face squeezed as it turns and shaded, moved as a slab of [depth] would. */
-private fun Modifier.slabFace(yawOf: () -> Float, depth: Float): Modifier = this.graphicsLayer {
-    val t = Math.toRadians(yawOf().toDouble())
-    val c = cos(t).toFloat()
-    val s = sin(t).toFloat()
-    val d = depth * maxOf(size.width, size.height)
-    // (Never quite 0 wide: a layer scaled to nothing can drop its content for a frame.)
-    scaleX = if (abs(c) < 0.01f) (if (c < 0f) -0.01f else 0.01f) else c
-    // The front is in front of the middle, the back behind it.
-    translationX = (if (c >= 0f) 1f else -1f) * d / 2f * s
-    compositingStrategy = CompositingStrategy.Offscreen
+/**
+ * Turned by [yawOf]: the face squeezed as it turns and shaded, moved as a slab of [depth] would. (Update 238, #117: and
+ * tilted by [pitchOf] — drawn through [pieceMatrix] instead of the layer's own scale, which can't tilt.)
+ */
+private fun Modifier.slabFace(yawOf: () -> Float, depth: Float, pitchOf: () -> Float = { 0f }): Modifier =
+    this.graphicsLayer {
+        val pose = PiecePose(yawOf(), pitchOf())
+        val d = depth * maxOf(size.width, size.height)
+        // The front is in front of the middle, the back behind it. (Moved as a layer, so its offscreen picture — the
+        // face's own size — never cuts it.)
+        val z = if (pose.facing >= 0f) d / 2f else -d / 2f
+        translationX = z * pose.sy
+        translationY = z * pose.cy * pose.sp
+        compositingStrategy = CompositingStrategy.Offscreen
+    }.drawWithCache {
+        val m = androidx.compose.ui.graphics.Matrix()
+        onDrawWithContent {
+            // (Squeezed and tilted round its middle: a round face stays inside its own box at any angle.)
+            PiecePose(yawOf(), pitchOf()).matrix(m, center, 0f)
+            withTransform({ transform(m) }) { this@onDrawWithContent.drawContent() }
+        }
+    }
+
+/**
+ * Update 238 (#117): a piece turned [yaw]° round its upright, then tilted [pitch]° round the screen's level (positive:
+ * its top comes towards you) — the same order as Case3D's CaseDraw, seen straight on (no perspective, as the cartridges
+ * and discs always were). A point (x, y) of its face at depth z (towards you) lands at
+ * (x·cos yaw + z·sin yaw, y·cos pitch − x·sin yaw·sin pitch + z·cos yaw·sin pitch), and faces you by cos yaw·cos pitch.
+ * At pitch 0 it's exactly the old turn (squeezed by cos yaw, moved by z·sin yaw).
+ */
+private class PiecePose(yaw: Float, pitch: Float) {
+    val cy: Float; val sy: Float; val cp: Float; val sp: Float
+    init {
+        val ty = Math.toRadians(yaw.toDouble()); val tp = Math.toRadians(pitch.toDouble())
+        cy = cos(ty).toFloat(); sy = sin(ty).toFloat(); cp = cos(tp).toFloat(); sp = sin(tp).toFloat()
+    }
+    /** How much the front faces you (−1 its back, full on). */
+    val facing: Float get() = cy * cp
+    /** How much of its thickness shows (0 face on … 1 edge on); at pitch 0 it's |sin yaw|. */
+    val spread: Float get() = kotlin.math.sqrt((1f - facing * facing).coerceAtLeast(0f))
+    /** Sets [m] to draw its face (laid out round [pivot]) at depth [z]. */
+    fun matrix(m: androidx.compose.ui.graphics.Matrix, pivot: Offset, z: Float) {
+        // (Never quite 0 wide / tall: a face squeezed to nothing drops out — the slices of its sides go with it.)
+        val a = if (abs(cy) < 0.01f) (if (cy < 0f) -0.01f else 0.01f) else cy
+        val dd = if (abs(cp) < 0.01f) (if (cp < 0f) -0.01f else 0.01f) else cp
+        val c = -sy * sp
+        m.reset()
+        val v = m.values
+        v[0] = a; v[1] = c; v[4] = 0f; v[5] = dd
+        v[12] = pivot.x - a * pivot.x + z * sy
+        v[13] = pivot.y - c * pivot.x - dd * pivot.y + z * cy * sp
+    }
 }
 
 /**
@@ -1168,7 +1355,7 @@ private fun Modifier.slabFace(yawOf: () -> Float, depth: Float): Modifier = this
  * squeezed beside a grey strip that floated apart from it.
  */
 @Composable
-private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
+private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Float = { 0f }) {
     val holder = remember { arrayOfNulls<androidx.compose.ui.graphics.layer.GraphicsLayer>(1) }
     // Update 195: a library shell's own back (seam, screws, contacts), shown when it's turned round.
     // (Update 200: its researched back; plain — no maker's markings — on another console's shell, or as set.)
@@ -1235,17 +1422,23 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
                 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 4f, -24f
             )))
             val sheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))
+            val mx = androidx.compose.ui.graphics.Matrix()
             onDrawWithContent {
                 face.record { this@onDrawWithContent.drawContent() }
-                val t = Math.toRadians(yawOf().toDouble())
-                val c = cos(t).toFloat()
-                val sn = sin(t).toFloat()
+                // Update 238 (#117): turned and tilted (PiecePose) — over its top and under its bottom the same slices
+                // through its thickness make its top / bottom edge (the shell's outline in its plastic colour, a
+                // connector edge included), and tilted past upright the back shows the right way up for that angle.
+                // [c] says which side faces you, [sn] how much of its thickness shows (both as before at no tilt).
+                val pose = PiecePose(yawOf(), pitchOf())
+                val c = pose.facing
+                val sn = pose.spread
                 val w = size.width
                 val h = size.height
                 val depth = p.depth * maxOf(w, h)
-                val sx = if (abs(c) < 0.01f) (if (c < 0f) -0.01f else 0.01f) else c
-                fun at(z: Float, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) =
-                    withTransform({ translate(z * sn, 0f); scale(sx, 1f, pivot = center) }) { block() }
+                fun at(z: Float, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
+                    pose.matrix(mx, center, z)
+                    withTransform({ transform(mx) }) { block() }
+                }
                 // The sides: the face's outline, darker, lit a little as they face you. Update 205: in the shell's plastic
                 // colour — copies of the whole face showed its label in stripes along the side as it turned.
                 val sideTone = (saved ?: shell ?: PhotoTones.of(p.realScan) ?: p.tone).copy(alpha = 1f)
@@ -1327,7 +1520,7 @@ private object SlabLight {
 
 /** A disc turning: its label, a thin edge, its data side. */
 @Composable
-private fun InspectDisc(p: InspectPiece, yawOf: () -> Float) {
+private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Float = { 0f }) {
     // (Update 162 (review): both sides stay composed and the one facing you is picked while drawing — swapping them in
     // composition dropped the label's picture each time it turned over, and recomposed mid-turn.)
     // (Update 189: a mini disc at its real 8 cm against 12 cm.)
@@ -1337,16 +1530,34 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { DiscFormats.of(p.game) }.getOrDefault(value) }
     }
     val rim = remember { Color(0xFFA9ADB6) }
+    // (Update 238, #117: the edge as drawn below, darkened once — for the tilted edge's slices.)
+    val rimDark = remember { androidx.compose.ui.graphics.lerp(Color(0xFFA9ADB6), Color.Black, 0.3f) }
     Box(Modifier.fillMaxSize()) {
         Spacer(
-            Modifier.matchParentSize().drawBehind {
+            Modifier.matchParentSize().drawWithCache {
+                val mx = androidx.compose.ui.graphics.Matrix()
+                onDrawBehind {
                 val t = Math.toRadians(yawOf().toDouble())
                 val c = cos(t).toFloat()
                 val s = sin(t).toFloat()
                 val dia = minOf(size.width, size.height) * k * 0.98f
                 val d = maxOf(p.depth * dia, 2f)
                 val half = d / 2f * abs(s)
-                if (half > 0.3f) {
+                val pose = PiecePose(yawOf(), pitchOf())
+                if (abs(pose.sp) >= 0.02f) {
+                    // Update 238 (#117): tilted over or under: its edge is the ring (not through the hole) at each depth
+                    // through its thickness, turned and tilted with the faces — seen from above / below it's the band
+                    // round the disc's top / bottom.
+                    val n = kotlin.math.ceil(d * pose.spread / 1.2f).toInt().coerceIn(1, 24)
+                    val outer = dia / 2f; val inner = dia * 0.075f
+                    for (i in 0..n) {
+                        val z = -d / 2f + d * i / n
+                        pose.matrix(mx, center, z)
+                        withTransform({ transform(mx) }) {
+                            drawCircle(rimDark, radius = (outer + inner) / 2f, center = center, style = Stroke(width = outer - inner))
+                        }
+                    }
+                } else if (half > 0.3f) {
                     val cx = size.width / 2f
                     val cy = size.height / 2f
                     // (Update 189: not through the hole — the edge and the far face showed in the middle of the disc.)
@@ -1363,18 +1574,20 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float) {
                         drawRoundRect(Color.Black, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia), cornerRadius = cr, alpha = 0.3f)
                     }
                 }
+                }
             }
         )
+        // (Update 238, #117: label or data side by which one faces you, tilted too — cos yaw · cos pitch, PiecePose.)
         Box(
-            Modifier.matchParentSize().slabFace(yawOf, p.depth * k).drawWithContent {
+            Modifier.matchParentSize().slabFace(yawOf, p.depth * k, pitchOf).drawWithContent {
                 drawContent()
-                val dark = 0.35f * abs(sin(Math.toRadians(yawOf().toDouble())).toFloat())
+                val dark = 0.35f * PiecePose(yawOf(), pitchOf()).spread
                 if (dark > 0.01f) drawRect(Color.Black, alpha = dark, blendMode = BlendMode.SrcAtop)
             },
             contentAlignment = Alignment.Center
         ) {
-            PieceFace(p, Modifier.fillMaxSize().graphicsLayer { alpha = if (cos(Math.toRadians(yawOf().toDouble())) >= 0.0) 1f else 0f })
-            DiscDataSide(format, yawOf, Modifier.fillMaxSize(k * 0.98f).graphicsLayer { alpha = if (cos(Math.toRadians(yawOf().toDouble())) >= 0.0) 0f else 1f })
+            PieceFace(p, Modifier.fillMaxSize().graphicsLayer { alpha = if (PiecePose(yawOf(), pitchOf()).facing >= 0f) 1f else 0f })
+            DiscDataSide(format, yawOf, Modifier.fillMaxSize(k * 0.98f).graphicsLayer { alpha = if (PiecePose(yawOf(), pitchOf()).facing >= 0f) 0f else 1f })
         }
     }
 }

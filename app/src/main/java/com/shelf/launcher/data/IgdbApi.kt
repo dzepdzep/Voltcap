@@ -260,12 +260,15 @@ class IgdbRepository(private val api: IgdbApi) {
 
     /** Cover, background (official artwork, else a screenshot) for one game. */
     suspend fun fetchArt(clientId: String, clientSecret: String, gameName: String, platform: String?): GameArt? {
+        // (Update 238, #111: a ROM hack by its own title, and only an entry with that title — RomHacks.)
+        val term = RomHacks.artSearchName(gameName) ?: return null
+        val hack = RomHacks.fanHack(gameName, null)
         val token = bearerToken(clientId, clientSecret) ?: return null
         return try {
             val game = findGame(
-                clientId, "Bearer $token", gameName, platform,
+                clientId, "Bearer $token", term, platform,
                 "name, cover.image_id, artworks.image_id, screenshots.image_id"
-            ) ?: return null
+            )?.takeIf { g -> hack == null || RomHacks.namesTheHack(hack, listOfNotNull(g.name)) } ?: return null
             val cover = game.cover?.image_id?.let { image(it, "t_cover_big_2x") }
             val wide = (game.artworks.orEmpty() + game.screenshots.orEmpty()).firstNotNullOfOrNull { it.image_id }
             GameArt(

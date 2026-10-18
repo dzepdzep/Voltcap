@@ -71,12 +71,17 @@ class TheGamesDbRepository(private val api: TheGamesDbApi) {
     suspend fun fetchArt(apiKey: String, game: Game): GameArt? {
         cache[game.stableKey]?.let { return it }
         return try {
-            val cleaned = cleanTitle(game.name)
-            val strict = TitleMatch.strictFor(game)
+            // (Update 238, #111: a ROM hack is searched by its own title, exact titles only — never the base game's
+            // entry; one known only by a "(Hack)" tag isn't searched by name at all. RomHacks.)
+            val hack = RomHacks.fanHack(game)
+            if (hack != null && !hack.distinctive) return null
+            val searchName = hack?.ownTitle ?: game.name
+            val cleaned = cleanTitle(searchName)
+            val strict = hack != null || TitleMatch.strictFor(game)
             fun pick(list: List<TgdbGame>?): TgdbGame? =
                 list?.let { l -> TitleMatch.best(cleaned, l.map { it.game_title.orEmpty() }, strict)?.let { l[it] } }
             val match = pick(api.searchByName(apiKey, cleaned).data?.games)
-                ?: pick(api.searchByName(apiKey, game.name).data?.games)
+                ?: pick(api.searchByName(apiKey, searchName).data?.games)
                 ?: return null
             val id = match.id ?: return null
 
