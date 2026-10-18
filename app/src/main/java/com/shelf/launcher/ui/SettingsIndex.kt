@@ -288,6 +288,7 @@ internal object SettingsIndex {
         E("Dual screen layouts", "Home", "Layout & presets", null, null),
         E("Twin desk: clock style (analogue / digital)", "Home", "Layout options", null, null),
         E("Twin desk: calendar", "Home", "Layout options", null, null),
+        E("Twin desk: extras on the game you're on (▶ icon, corner handles)", "Home", "Layout options", null, null), // (Update 243, #55)
         E("Twin icons: icons per row (4 to 7)", "Home", "Layout options", null, null),
         // Update 158: Hero tiles.
         E("Hero tiles (big picture, rows of tiles, app dock)", "Home", "Layout & presets", null, null),

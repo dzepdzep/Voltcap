@@ -711,6 +711,7 @@ private fun SpotMenuTiles(c: StyleCtx, pulse: Float, compact: Boolean) {
         else -> styleAspect(c.type).coerceAtMost(1.8f)
     }
     // Two lines for the name under the tile you're on.
+    val spotView = androidx.compose.ui.platform.LocalView.current // (Update 243, #94: the screen's width, for the name's edges)
     val lineRoom = if (compact) 38.dp else 50.dp
     AnchoredStrip(
         count = c.games.size, focus = rememberLoopFocus(c), keyOf = { keys[it] }, small = small, big = big,
@@ -720,7 +721,12 @@ private fun SpotMenuTiles(c: StyleCtx, pulse: Float, compact: Boolean) {
     ) { i, grow, w, h, here ->
         val g = c.games[i]
         val sel = here && StyleNav.zone == StyleNav.Zone.GAMES
-        Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true)) {
+        // (Update 243, #94: where the tile sits on screen, read only while placing its name — see below.)
+        val tileX = androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+        Box(
+            Modifier.wrapContentSize(Alignment.TopStart, unbounded = true)
+                .onGloballyPositioned { tileX.floatValue = it.positionInWindow().x }
+        ) {
             StyleArt(
                 c, g,
                 Modifier
@@ -749,7 +755,14 @@ private fun SpotMenuTiles(c: StyleCtx, pulse: Float, compact: Boolean) {
                         .layout { m, _ ->
                             val wPx = nameW.roundToPx()
                             val pl = m.measure(androidx.compose.ui.unit.Constraints(minWidth = wPx, maxWidth = wPx))
-                            layout(0, 0) { pl.placeWithLayer(((w.toPx() - wPx) / 2f).toInt(), (h + 8.dp).roundToPx()) { alpha = grow.coerceIn(0f, 1f) } }
+                            // (Update 243, #94: centred under the tile, but kept 8 dp inside the screen — on the first game the
+                            // name ran past the screen's left edge on the Thor.)
+                            val centred = (w.toPx() - wPx) / 2f
+                            val margin = 8.dp.toPx()
+                            val lo = margin - tileX.floatValue
+                            val hi = spotView.width - margin - tileX.floatValue - wPx
+                            val x = if (spotView.width > 0 && hi >= lo) centred.coerceIn(lo, hi) else centred
+                            layout(0, 0) { pl.placeWithLayer(x.toInt(), (h + 8.dp).roundToPx()) { alpha = grow.coerceIn(0f, 1f) } }
                         }
                 )
             }

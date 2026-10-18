@@ -109,6 +109,12 @@ object Features {
         runCatching { com.shelf.launcher.ui.CartShellStore.warmUp() }
         migrate158(p) // Update 158
         migrate166(p) // Update 166
+        // Update 243 (#55): Twin desk's extras start off on a new setup; an install that already had them keeps them.
+        run {
+            val existing = FirstRun.isDone(context.applicationContext)
+            if (!p.contains("twin_desk_play_icon")) twinDeskPlayIcon.value = existing
+            if (!p.contains("twin_desk_handles")) twinDeskHandles.value = existing
+        }
         // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
         // default; it now starts on the games' own art (still pickable).
         if (!p.contains("category_art")) {
@@ -1129,6 +1135,12 @@ object Features {
     val twinDeskClock = BoolPref("twin_desk_clock", true)
     val twinDeskArt = BoolPref("twin_desk_art", false)
     val twinDeskGame = BoolPref("twin_desk_game", true)
+    /**
+     * Update 243 (#55): Twin desk's optional extras on the game you're on — the ▶ icon at the panel's end and the four
+     * corner handles round it. Off for new setups; an existing install keeps them on (migrate243) until switched off.
+     */
+    val twinDeskPlayIcon = BoolPref("twin_desk_play_icon", false)
+    val twinDeskHandles = BoolPref("twin_desk_handles", false)
     /** Update 180: on two screens, the two-screen layouts fill the whole top screen with their own background (theme off). */
     val twinFullTop = BoolPref("twin_full_top", true)
     // ---- Update 181: the two Pocket layouts (PocketClassic.kt, PocketRibbon.kt) ----

@@ -4,6 +4,21 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (243): Twin desk's extras are optional (#55), Spotlight's game name stays on screen (#94); 3DS back on Azahar, RetroArch GL test on the RP Classic
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (4): `src_copy\data\Features.kt`, `src_copy\ui\TwinDesk.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\StyleSpotlight.kt`. **Files to delete:** none.
+
+1. **Twin desk extras (#55).** Home › Layout options (Twin desk) › **Extras on the game you're on**: **▶ icon** and **Corner handles**. Off on a new setup; an install that already had them keeps them on (checked on the Thor: both still shown). Without the corner handles the game you're on gets a stronger outline in the theme's colour, so where you are still shows. Game panels and the round buttons are unchanged.
+2. **Spotlight (#94).** The two-line name under the game you're on is still centred under the tile, but kept 8 dp inside the screen — on the first game it ran past the screen's left edge on the Thor.
+3. **Not code — device settings:**
+   - Thor: 3DS emulator back on **Azahar** (org.azahar_emu.azahar 2125.1.1), as you asked. Note: Azahar has never been opened on the Thor, so it stops on launch ("DirectoryInitialization has to run at least once") until it's opened once and given a folder; your existing 3DS data is in Citra's folder (`/sdcard/citra-emu`, sdmc 2.5 MB) and was not touched or copied. The quick Citra test (Adventure Time, never played) left that game at the front of Continue playing.
+   - RP Classic: RetroArch's video driver switched from Vulkan to **GL** to avoid the Adreno Vulkan crash in its notification widgets. Backup of the untouched config: `/sdcard/Download/VoltcapTestBackups/retroarch.cfg.before-gl-2026-10-19` on the handheld and `Claude outputs\evidence\rpclassic_retroarch.cfg.before-gl-2026-10-19` on the PC (md5 9ec9639c…). Only the `video_driver` line changed; RetroArch's notifications, Android's and Voltcap's are unchanged. Test: Super Mario Land (no battery save) ran at a steady 60 fps (126 frames in 5 s, average 16.67 ms, none over 25 ms); RetroArch closed with no save written. To undo: copy the backup over `Android/data/com.retroarch.aarch64/files/retroarch.cfg` while RetroArch is closed (or set Settings › Drivers › Video back to vulkan). Thor's RetroArch not touched.
+   - Dr. Mario test save: both handhelds' `RetroArch/saves/Gambatte/Dr. Mario (World).srm` are the test file (8192 bytes, md5 44ca00a4…, written 18 Oct 16:54 — Dr. Mario on Game Boy has no battery save, so it can't be real progress). Backed up to `Claude outputs\evidence\drmario_test_backup\`. **Not deleted yet**: Voltcap brings a locally deleted save back from Drive, so the Drive copy has to go first (see questions).
+
+---
+
 ## Update — 18 Oct 2026 (242): device checks of 239–241 on the Thor; Cube menu's games no longer slide over the docked cube
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds** by Claude, committed and pushed by Claude.

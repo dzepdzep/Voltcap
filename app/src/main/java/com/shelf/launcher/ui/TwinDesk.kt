@@ -168,6 +168,16 @@ internal fun TwinDeskSettings() {
     // Update 179.
     StyleChoice("Gap between panels", TWIN_GAPS.filter { it <= 24 }.toTypedArray(), Features.twinDeskGap.state.value, { gapLabel(it) }) { Features.twinDeskGap.value = it }
     TwinFullTopSwitch()
+    // Update 243 (#55): the optional extras on the game you're on.
+    Spacer(Modifier.height(8.dp))
+    SectionLabel("Extras on the game you're on")
+    ChipFlow {
+        listOf("▶ icon" to Features.twinDeskPlayIcon, "Corner handles" to Features.twinDeskHandles).forEach { (label, pref) ->
+            val on = pref.state.value
+            Chip((if (on) "✓ " else "") + label, accent = on) { pref.value = !on }
+        }
+    }
+    MutedNote("Off on a new setup. Without the corner handles the game you're on gets a stronger outline instead.")
     Spacer(Modifier.height(8.dp))
     MutedNote("The bottom half goes to the second screen when Settings › Screens › Use the second screen is on.")
 }
@@ -609,13 +619,17 @@ private fun DeskPanel(c: StyleCtx, i: Int, on: Boolean, inGames: Boolean, compac
     val accent = ShelfTheme.accent
     val shape = RoundedCornerShape(if (compact) 8.dp else 11.dp)
     val lift = styleLift(on && inGames)
+    val handles = Features.twinDeskHandles.state.value
+    val playIcon = Features.twinDeskPlayIcon.state.value
     Row(
         modifier
             .graphicsLayer { val k = 1f + 0.025f * lift; scaleX = k; scaleY = k }
-            .deskBrackets(on, accent.copy(alpha = if (inGames) 1f else 0.45f))
+            // (Update 243, #55: the corner handles are an extra now — Layout options › Extras; without them the panel
+            // you're on keeps a stronger outline in the theme's colour, so where you are still shows.)
+            .deskBrackets(on && handles, accent.copy(alpha = if (inGames) 1f else 0.45f))
             .clip(shape)
             .background(if (on) Color.White else Color(0xFFF8F9FA))
-            .border(1.dp, if (on) accent.copy(alpha = 0.5f) else DeskEdge, shape)
+            .border(if (on && !handles) 2.dp else 1.dp, if (on) accent.copy(alpha = if (handles) 0.5f else if (inGames) 1f else 0.55f) else DeskEdge, shape)
             .tapOnly(onTap)
             .padding(if (compact) 4.dp else 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -629,7 +643,7 @@ private fun DeskPanel(c: StyleCtx, i: Int, on: Boolean, inGames: Boolean, compac
             )
             Text(titles.console(g.platform), color = DeskMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (on) Icon(Icons.Filled.PlayArrow, null, tint = accent, modifier = Modifier.size(if (compact) 16.dp else 20.dp))
+        if (on && playIcon) Icon(Icons.Filled.PlayArrow, null, tint = accent, modifier = Modifier.size(if (compact) 16.dp else 20.dp)) // (Update 243, #55: an extra)
     }
 }
 
