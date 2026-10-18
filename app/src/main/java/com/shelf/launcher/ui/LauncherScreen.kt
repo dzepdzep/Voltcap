@@ -3776,7 +3776,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             // game; clear when it changes, then dimmed (Settings › Home › Category title).)
                             if (part == HomeWidgets.CATEGORY && state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.FULL) {
                                 val key = state.sortCategoryKey + "|" + state.searchQuery
-                                Box(Modifier.categoryTitleFade(key)) {
+                                // Update 220 (#04): a tap on the category's name opens Choose a category (every category,
+                                // Continue playing too) — TV room and the other layouts showing just the name had no way to
+                                // change category by touch. (Not while Edit Home moves it; no focus, so the D-pad is unchanged.)
+                                Box(Modifier.categoryTitleFade(key).then(
+                                    if (HomeEditState.active) Modifier
+                                    else Modifier.pointerInput(Unit) { detectTapGestures { openCategoryScreen() } }
+                                )) {
                                     PartBackingBox(state.appearance.homeLayout) {
                                         CategoryNamePart(CategoryTitle.text(state.sortCategoryKey, state.searchQuery), state.appearance.nameBackdrop)
                                     }

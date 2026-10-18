@@ -200,8 +200,8 @@ fun QuickSettingsCard(
     // Whether any controller lights exist is a binder / sysfs probe, so it runs
     // off the main thread and only again on resume — never per recomposition.
     // (Update 219: the panel used to start with "no lights" and add the RGB tile a moment later, which moved every
-    // tile after it under your finger. The last answer is kept — for this run and, as found / not found, across
-    // restarts — so the tile list is right from the first frame.)
+    // tile after it under your finger. Lights once found are kept — for this run, and across restarts as
+    // "lights_found" — so the tile list is right from the first frame.)
     val lightsSaved = remember { context.getSharedPreferences("r1_tiles", android.content.Context.MODE_PRIVATE).getBoolean("lights_found", false) }
     val foundLightsOrNull by produceState(initialValue = r1LightsCache, refresh) {
         value = withContext(Dispatchers.IO) {
@@ -960,15 +960,26 @@ fun QuickSettingsCard(
             volume = setMediaVolumePercent(context, v)
         }, onKeyStep = { d -> volume = stepMediaVolume(context, d) })
         Spacer(Modifier.height(8.dp))
+        // Update 185: Undo for the last change made here (a few seconds).
+        val undoLabel = R1Undo.label
+        LaunchedEffect(R1Undo.at) {
+            val at0 = R1Undo.at
+            kotlinx.coroutines.delay(R1Undo.SHOWN_MS)
+            if (R1Undo.at == at0) R1Undo.clear()
+        }
+        val undoShown = undoLabel != null && home != null
         // The two pages: L1 / R1 flip them (or tap a tab).
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // (Update 220: the Undo bar now sits over this row while it shows, in the tabs' own height, instead of being
+        // added above the tiles — that pushed every tile down under your finger and back up when it went.)
+        Box {
+        Row(Modifier.graphicsLayer { alpha = if (undoShown) 0f else 1f }, verticalAlignment = Alignment.CenterVertically) {
             listOf("Quick", "Device").forEachIndexed { i, name ->
                 val on = page == i
                 Box(
                     Modifier
                         .clip(uiRounded(50))
                         .background(if (on) ShelfTheme.accent.copy(alpha = 0.22f) else Color.Transparent)
-                        .shelfClickable(uiRounded(50)) { if (!on) { R1Pages.page = i; picked = null } }
+                        .shelfClickable(uiRounded(50), enabled = !undoShown) { if (!on) { R1Pages.page = i; picked = null } }
                         .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Text(name, color = if (on) ShelfTheme.accent else ShelfTheme.textMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -977,6 +988,31 @@ fun QuickSettingsCard(
             }
             Spacer(Modifier.weight(1f))
             Text("L1 / R1", color = ShelfTheme.textMuted.copy(alpha = 0.7f), fontSize = 11.sp)
+        }
+        if (undoShown) {
+            // (Update 186: swipe it away sideways — or ✕ — when you don't need it.)
+            var swipe by remember(R1Undo.at) { mutableStateOf(0f) }
+            val swipeOut = with(androidx.compose.ui.platform.LocalDensity.current) { 64.dp.toPx() }
+            Row(
+                Modifier.matchParentSize()
+                    .graphicsLayer { translationX = swipe; alpha = (1f - kotlin.math.abs(swipe) / (swipeOut * 2.5f)).coerceIn(0f, 1f) }
+                    .pointerInput(R1Undo.at) {
+                        detectHorizontalDragGestures(
+                            onDragEnd = { if (kotlin.math.abs(swipe) > swipeOut) R1Undo.clear() else swipe = 0f },
+                            onDragCancel = { swipe = 0f }
+                        ) { ch, dx -> ch.consume(); swipe += dx }
+                    },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Changed: $undoLabel", color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                )
+                R1UndoPill("↶ Undo", accent = true) { R1Undo.undo { liveHome.value?.setAppearance?.invoke(it) } }
+                Spacer(Modifier.width(6.dp))
+                R1UndoPill("✕", accent = false) { R1Undo.clear() }
+            }
+        }
         }
         Spacer(Modifier.height(6.dp))
         // Rows of five tiles; a small arrow beside the first row opens the rest (it takes no tile spot).
@@ -1049,37 +1085,6 @@ fun QuickSettingsCard(
             if (!com.shelf.launcher.data.Features.animPageSlide.value) return@LaunchedEffect
             pageSlide.snapTo(dir)
             pageSlide.animateTo(0f, androidx.compose.animation.core.tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing))
-        }
-        // Update 185: Undo for the last change made here (a few seconds).
-        val undoLabel = R1Undo.label
-        LaunchedEffect(R1Undo.at) {
-            val at0 = R1Undo.at
-            kotlinx.coroutines.delay(R1Undo.SHOWN_MS)
-            if (R1Undo.at == at0) R1Undo.clear()
-        }
-        if (undoLabel != null && home != null) {
-            // (Update 186: swipe it away sideways — or ✕ — when you don't need it.)
-            var swipe by remember(R1Undo.at) { mutableStateOf(0f) }
-            val swipeOut = with(androidx.compose.ui.platform.LocalDensity.current) { 64.dp.toPx() }
-            Row(
-                Modifier.fillMaxWidth().padding(bottom = 6.dp)
-                    .graphicsLayer { translationX = swipe; alpha = (1f - kotlin.math.abs(swipe) / (swipeOut * 2.5f)).coerceIn(0f, 1f) }
-                    .pointerInput(R1Undo.at) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = { if (kotlin.math.abs(swipe) > swipeOut) R1Undo.clear() else swipe = 0f },
-                            onDragCancel = { swipe = 0f }
-                        ) { ch, dx -> ch.consume(); swipe += dx }
-                    },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Changed: $undoLabel", color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
-                )
-                Chip("↶ Undo") { R1Undo.undo { liveHome.value?.setAppearance?.invoke(it) } }
-                Spacer(Modifier.width(6.dp))
-                Chip("✕", accent = false) { R1Undo.clear() }
-            }
         }
         Column(
             Modifier.fillMaxWidth().onSizeChanged { rowWidthPx = it.width }
@@ -1768,3 +1773,16 @@ internal fun carouselApplies(layout: com.shelf.launcher.data.HomeLayout): Boolea
 // (Update 182's LOOK_SUB_TILES — the look's own tiles, greyed out in a layout with its own look — stood here. Update 202:
 // gone; r1TileFit (R1TileRules.kt) hides each where it does nothing, and shows the disc / case / spine ones in the
 // layouts that always draw discs, cases or spines.)
+
+/** Update 220: the R1 panel's Undo / ✕ — in the height of the Quick / Device tabs they sit over (Chip is taller). */
+@Composable
+private fun R1UndoPill(label: String, accent: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier.clip(uiRounded(50))
+            .background(if (accent) ShelfTheme.accent else Color.White.copy(alpha = 0.08f))
+            .shelfClickable(uiRounded(50)) { onClick() }
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+    ) {
+        Text(label, color = if (accent) onAccentColor() else ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    }
+}

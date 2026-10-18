@@ -4,6 +4,26 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (220): tap the category name to change category (#04), where a game's play time comes from (#01), R1's Undo no longer moves the tiles, Spotlight's category name clear of the profile (#94)
+
+You OK'd these four small visual changes on 18 Oct ("Do all and continue"). All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (6): `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\HomeParts.kt`, `src_copy\ui\GamePlayStats.kt`, `src_copy\data\CloudSync.kt`, `src_copy\data\OtherDevices.kt`. **Files to delete:** none.
+
+### What changed
+1. **Tap the category's name to change category (#04).** The category name part (TV room, Case stacks, Card binder, Console hub, Hero tiles… and wherever it was added in Edit Home) now opens **Choose a category** on a tap — every category, Continue playing included. TV room and the other layouts showing just the name had no way to change category by touch (only L2 / R2). No focus is added, so the D-pad works as before; in Edit Home it still just moves. (With Settings › Home › Categories on "All categories" that part already is the tappable pill bar.)
+2. **Play stats: where the total comes from (#01).** Details › the Played box › Play stats now has a line "Time from: this device … · <other handheld> … · older total (before per-device counting) …", from this device's own counter and the last shared play data (Save Vault sync). Without sync it shows this device and "from before or other devices". Nothing is changed or deleted; it only shows where a total you don't recognise came from.
+3. **R1 panel: the Undo bar sits over the Quick / Device tabs** while it shows (in their height), instead of being added above the tiles — that pushed every tile down under your finger and back up when it went. Swipe it away or ✕ as before; the tabs come back when it goes.
+4. **Spotlight: the category name starts clear of the profile picture (#94).** With the Category part on Spotlight it started in the top-left corner, over the Home menu's profile picture. Its default spot is now on the left in the free band — under the tiles' names with the tiles on top, above the tiles with them at the bottom. A spot you moved it to yourself in Edit Home is kept.
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed with `adb install -r` on both (data kept); no new crashes.
+- Thor, R1: Badges tile → "Changed: Badges · Undo · ✕" in the tabs' row, tiles did not move; Undo put Badges back off.
+- Thor, TV room: a tap on "Continue playing" (top left) opened Choose a category; layout put back to Case stacks.
+- RP Classic, Dr. Mario › Details › Played: "Time from: this device <1 min · older total (before per-device counting) 1 min".
+- **Not tested on a device:** Spotlight's new default spot (the Thor's chip came from an earlier position; it moves only where no position was saved).
+- Note for the bridge: a file copied into outputs and committed to the PC in the same step can go over before the copy ends — the first LauncherScreen.kt commit carried an older draft; caught by comparing the PC copy, fixed before building.
+
 ## Update — 18 Oct 2026 (219): R1 panel tiles no longer jump under your finger, tapped category tabs open the right category (#04), Spotlight's tiles really move to the bottom (#08), failed launches no longer add play time (#01)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

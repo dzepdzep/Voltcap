@@ -108,6 +108,14 @@ object OtherDevices {
         return out
     }
 
+    /** Update 220: each other device's name (its model), by its id. */
+    fun labels(context: Context): Map<String, String> {
+        val o = read(context)
+        val out = HashMap<String, String>()
+        o.keys().forEach { id -> out[id] = o.optJSONObject(id)?.optString("label").orEmpty().ifBlank { "Another device" } }
+        return out
+    }
+
     /** Name, console and device of each game played on the other devices (by this device's key). */
     fun info(context: Context): Map<String, Info> {
         val o = read(context)

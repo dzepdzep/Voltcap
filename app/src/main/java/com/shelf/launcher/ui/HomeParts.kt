@@ -107,6 +107,10 @@ internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (la
     HomeLayout.RESUME -> 0.5f to 0f
     // Hero carousel: along the top, right of the covers down the left and clear of the status bar at the right.
     HomeLayout.HERO -> 0.35f to 0f
+    // Update 220 (#94): Spotlight — its own profile, icons and clock fill the top row, so the top-left corner put the
+    // name over the profile picture. Left, in the free band: under the tiles' names (tiles on top) or above the tiles
+    // (tiles at the bottom).
+    HomeLayout.SPOT -> 0f to (if (com.shelf.launcher.data.Features.spotTilesAt.state.value == com.shelf.launcher.data.Features.SpotSide.BOTTOM) 0.25f else 0.75f)
     // Anywhere else it's added by hand: the top-left corner.
     else -> 0f to 0f
 }

@@ -1654,6 +1654,22 @@ object CloudSync {
         }
     }
 
+    /**
+     * Update 220 (#01): where [key]'s total comes from, as (where, ms): the other handhelds' counters and the older total
+     * carried over from before play time was counted per device (update 202), from this device's last copy of the
+     * shared play data. Empty without one (Save Vault sync off). This device's own part is PlaytimeStore.loadOwn.
+     */
+    fun playSources(context: Context, key: String): List<Pair<String, Long>> = runCatching {
+        val pt = loadPlaytimeCopy(context) ?: return emptyList()
+        val sk = syncKeyOf(key, romRoot(context))
+        val me = OtherDevices.deviceId(context)
+        val labels = OtherDevices.labels(context)
+        val out = ArrayList<Pair<String, Long>>()
+        pt.devices.forEach { (id, m) -> if (id != me) m[sk]?.takeIf { it > 0L }?.let { out += (labels[id] ?: "Another device") to it } }
+        pt.legacy[sk]?.takeIf { it > 0L }?.let { out += "Older total" to it }
+        out
+    }.getOrDefault(emptyList())
+
     /** Update 202: the "playtimeV2" object (null when missing, or written by a newer, unknown version of it). */
     private fun playtimeV2From(o: JSONObject): PlaytimeV2? {
         val p = o.optJSONObject("playtimeV2") ?: return null

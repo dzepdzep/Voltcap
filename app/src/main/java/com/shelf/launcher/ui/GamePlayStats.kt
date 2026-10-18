@@ -48,6 +48,16 @@ internal fun GamePlayStatsDialog(
                 .getOrDefault(emptyList())
         }
     }
+    // Update 220 (#01): where the total comes from — this handheld, each other one, and an older total from before play
+    // time was counted per device — so a total you don't recognise can be traced.
+    val sources by produceState<Pair<Long, List<Pair<String, Long>>>?>(null, game.stableKey) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val own = PlaytimeStore(context.applicationContext).loadOwn()[game.stableKey] ?: 0L
+                own to com.shelf.launcher.data.CloudSync.playSources(context.applicationContext, game.stableKey)
+            }.getOrNull()
+        }
+    }
     val now = System.currentTimeMillis()
     val day = 24L * 60 * 60 * 1000
     val total = totalMs ?: sessions.sumOf { it.ms }
@@ -83,6 +93,19 @@ internal fun GamePlayStatsDialog(
             if (possible != null && possible > 0) {
                 val got = raProgress?.NumAchieved ?: 0
                 MutedNote("Achievements $got / $possible (${got * 100 / possible}%)")
+            }
+            // (Plain if, never an early return inside a composable — see AppIcons.kt.)
+            val src = sources
+            if (src != null && total > 0L) {
+                val (own, others) = src
+                val parts = buildList {
+                    if (own > 0L) add("this device ${PlaytimeStore.format(own)}")
+                    others.forEach { (where, ms) -> add((if (where == "Older total") "older total (before per-device counting)" else where) + " " + PlaytimeStore.format(ms)) }
+                    // Without the shared copy (sync off), the rest of the total just isn't from this device.
+                    val rest = total - own - others.sumOf { it.second }
+                    if (others.isEmpty() && rest >= 60_000L) add("from before or other devices ${PlaytimeStore.format(rest)}")
+                }
+                if (parts.isNotEmpty()) MutedNote("Time from: " + parts.joinToString(" · "))
             }
         }
         if (sessions.isNotEmpty()) {
