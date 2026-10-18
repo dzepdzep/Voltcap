@@ -4,6 +4,28 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (224): overlay controls fade when untouched and stay tappable (#107 / #108 / #84), achievement list ▲ ▼ modes (#83), rename your own layouts (#11), This week / Last week stand out (#02), swipe up for all apps works with gesture navigation (#12)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (9): `src_copy\ui\IdleFade.kt` (**new**), `src_copy\data\perf\PerfSettings.kt`, `src_copy\ui\OverlayShell.kt`, `src_copy\ui\RaOverlayView.kt`, `src_copy\ui\PerfSettingsCard.kt`, `src_copy\data\CustomLayouts.kt`, `src_copy\ui\CustomLayoutSettings.kt`, `src_copy\ui\StatsContent.kt`, `src_copy\ui\LauncherScreen.kt`. **Files to delete:** none.
+
+### What changed
+1. **Overlay controls fade when untouched (#107 / #108 / #84).** Found first: nothing in the overlays faded before (no 10 s timer existed; only the music panel closes itself after 8 s, left as it is). Now the overlays' own controls — the fold arrow / folded tab and the achievements list's new ▲ ▼ — go: normal for 5 s after your last touch, then 15 %, then **invisible at 15 s (total, not 5 + 15)**. Only their opacity changes: they stay where they are, the same size and **tappable** — the first tap both shows them and does what it does (one tap unfolded the overlay in the test). A folded overlay's tab only fades (never fully hides, or the overlay would be lost). Readouts, music and achievements themselves never fade. Two posted callbacks per touch, no loop; Android's "remove animations" makes the change instant.
+   **Settings › Performance / Overlay › "Overlay controls · Auto-hide"**: Auto-fade controls (on), Fade after (1–60 s + chips 2/3/5/10/15/30), Faded visibility (0–100 %), Fully hide after (Never / up to 120 s + chips), Reset (5 s / 15 % / 15 s); fully hiding always comes after fading (moved along visibly). Stored per device with the other overlay settings (`perf_settings`).
+2. **Achievements overlay: ▲ ▼ change what the list shows (#83).** In the open panel, at the right of the tabs: Recommended (missables still to get first, then the most commonly unlocked — players' unlock % as a hint, not a promise — then set order), Easiest (by unlock %), Left, Missable / Unlocked (when those tabs are on), Set list (every achievement in the set's own order, unlocked ones marked). The mode shows as a highlighted tab; the old tabs work as before.
+3. **Rename your own custom layouts (#11):** Settings › Custom layout › a layout of yours › Rename — only the name in its layout.json changes; its folder (what the home screen and screen rules point at), parts and pictures stay. Built-in ones can't be renamed.
+4. **Stats › Last 8 weeks (#02):** the bars read "This week" (full accent, bold) and "Last week" (a step lighter, bold), earlier weeks quieter; last week's time shows too, to compare.
+5. **Swipe up for all apps (#12):** it had to start in the bottom 56 dp — exactly where Android's gesture navigation takes the swipe for itself, so it rarely worked. It now starts in an 80 dp band just above Android's gesture area (or the bottom 56 dp without gesture navigation) and must go mostly upwards (a sideways swipe through the row isn't one).
+- #07 (News in Edit Home) was already there (Edit Home › + Add › News).
+
+### Check (RP Classic, Dr. Mario running from Voltcap)
+- Folded achievements tab faded at idle; one tap unfolded the overlay; its arrow faded by 6 s and was invisible at 17 s.
+- Opened the panel (tap on the summary): ▲ ▼ at the right; ▼ went Left → Set list → Recommended → Easiest (Laceration 100 %, Doctor, I Have a Problem 85 %, …); the arrows faded 7 s later. Panel closed and the overlay folded again as it was.
+- Swipe up from 80 px above the bottom edge on the home screen → All apps opened.
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed on both; no crashes. Side effect: ~3 min of Dr. Mario play time (its demo ran while testing).
+- **Not tested on a device:** the settings card itself, rename, the stats bars, the Thor.
+
 ## Update — 18 Oct 2026 (223): Nintendo 3DS saves show in the Save Vault and sync around 3DS games (#67 / #72)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

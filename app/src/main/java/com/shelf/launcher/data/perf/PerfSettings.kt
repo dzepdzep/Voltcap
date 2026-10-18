@@ -71,7 +71,16 @@ data class PerfConfig(
     /** Size of every overlay over games, 50–200 % (Settings › Overlay, R1 › Overlay, the overlay notification). */
     val overlayScale: Int = 100,
     /** How solid the overlays are, 20–100 % (lower = more see-through). */
-    val overlayOpacity: Int = 100
+    val overlayOpacity: Int = 100,
+    /**
+     * Update 224 (#107 / #108): the overlays' controls (fold arrows, the achievements list ▲ ▼) fade when untouched —
+     * to [ctrlFadedPct] % after [ctrlFadeAfterS] s, invisible after [ctrlHideAfterS] s (0 = never), always still
+     * tappable. Off: they stay as they are.
+     */
+    val ctrlFade: Boolean = true,
+    val ctrlFadeAfterS: Int = 5,
+    val ctrlFadedPct: Int = 15,
+    val ctrlHideAfterS: Int = 15
 ) {
     /**
      * Where each overlay really goes: alone, it sits top left; together, each keeps its own corner and
@@ -149,6 +158,10 @@ object PerfSettings {
                 .putBoolean("overlays_movable", next.overlaysMovable)
                 .putInt("overlay_scale", next.overlayScale.coerceIn(50, 200))
                 .putInt("overlay_opacity", next.overlayOpacity.coerceIn(20, 100))
+                .putBoolean("ctrl_fade", next.ctrlFade)
+                .putInt("ctrl_fade_after", next.ctrlFadeAfterS.coerceIn(1, 120))
+                .putInt("ctrl_faded_pct", next.ctrlFadedPct.coerceIn(0, 100))
+                .putInt("ctrl_hide_after", next.ctrlHideAfterS.coerceIn(0, 600))
                 .apply()
         }
     }
@@ -191,7 +204,11 @@ object PerfSettings {
                     raThemed = p.getBoolean("ra_themed", d.raThemed),
                     overlaysMovable = p.getBoolean("overlays_movable", d.overlaysMovable),
                     overlayScale = p.getInt("overlay_scale", d.overlayScale).coerceIn(50, 200),
-                    overlayOpacity = p.getInt("overlay_opacity", d.overlayOpacity).coerceIn(20, 100)
+                    overlayOpacity = p.getInt("overlay_opacity", d.overlayOpacity).coerceIn(20, 100),
+                    ctrlFade = p.getBoolean("ctrl_fade", d.ctrlFade),
+                    ctrlFadeAfterS = p.getInt("ctrl_fade_after", d.ctrlFadeAfterS).coerceIn(1, 120),
+                    ctrlFadedPct = p.getInt("ctrl_faded_pct", d.ctrlFadedPct).coerceIn(0, 100),
+                    ctrlHideAfterS = p.getInt("ctrl_hide_after", d.ctrlHideAfterS).coerceIn(0, 600)
                 )
                 // Update 202: once, everyone's small achievements overlay goes to the new clean default (asked for: it was
                 // too cluttered) — the featured badge and the progress bar only. Each other part can be switched back on.

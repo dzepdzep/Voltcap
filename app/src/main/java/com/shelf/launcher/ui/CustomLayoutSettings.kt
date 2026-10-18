@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +42,8 @@ internal fun CustomLayoutSettings() {
     var layouts by remember { mutableStateOf<List<CustomScene>>(emptyList()) }
     var status by remember { mutableStateOf<String?>(null) }
     var guide by remember { mutableStateOf(false) }
+    // Update 224 (#11): the layout being renamed (its id).
+    var renaming by remember { mutableStateOf<String?>(null) }
     val version = CustomSceneNow.version
     LaunchedEffect(version) { layouts = withContext(Dispatchers.IO) { CustomLayouts.list(context) } }
     val picked = Features.customLayout.state.value.ifBlank { CustomLayouts.EXAMPLE_ID }
@@ -79,6 +83,7 @@ internal fun CustomLayoutSettings() {
         if (!CustomLayouts.builtIn(l.id)) {
             Spacer(Modifier.height(6.dp))
             ChipFlow {
+                Chip("Rename", accent = false) { renaming = l.id }
                 Chip("Delete “${l.name}”", accent = false) {
                     scope.launch {
                         withContext(Dispatchers.IO) { CustomLayouts.delete(context, l.id) }
@@ -88,6 +93,29 @@ internal fun CustomLayoutSettings() {
                     }
                 }
             }
+        }
+    }
+    renaming?.let { id ->
+        var name by remember(id) { mutableStateOf(layouts.firstOrNull { it.id == id }?.name ?: "") }
+        val apply = {
+            scope.launch {
+                val ok = withContext(Dispatchers.IO) { CustomLayouts.rename(context, id, name) }
+                status = if (ok) "Renamed to “${name.trim()}”." else "Couldn't rename it."
+                renaming = null
+                CustomSceneNow.version++
+            }
+            Unit
+        }
+        ShelfDialog(
+            icon = Icons.Filled.Edit,
+            title = "Rename layout",
+            subtitle = "Only its name changes — the layout, its pictures and where it's used stay the same.",
+            onDismiss = { renaming = null },
+            maxContentHeightFraction = 0.5f
+        ) {
+            ShelfTextField(name, { name = it.take(40) }, "Layout name", onSubmit = { if (name.isNotBlank()) apply() })
+            Spacer(Modifier.height(12.dp))
+            Chip("Rename", enabled = name.isNotBlank()) { apply() }
         }
     }
     Spacer(Modifier.height(10.dp))

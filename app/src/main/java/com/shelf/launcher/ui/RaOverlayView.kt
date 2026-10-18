@@ -53,7 +53,14 @@ internal class RaOverlayView(
         private set
     private var state: RaOverlayData.State? = null
     private var cfg: PerfConfig? = null
-    private var tab = 0 // 0 = left, 1 = missables, 2 = unlocked
+    private var tab = 0 // 0 = left, 1 = missables, 2 = unlocked; update 224: 3 = recommended, 4 = easiest, 5 = set list
+    /**
+     * Update 224 (#83): the open panel's ▲ ▼ step through what the list shows (one tap = another kind of list, not a
+     * scroll). (#84 / #107) They quiet down when untouched (IdleFade, Settings › Overlay › Auto-fade controls) and stay
+     * tappable.
+     */
+    private val modeArrows = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+    private val modeFade = IdleFade(modeArrows)
     /** Rows with their comments open: "pin:<id>" for the pinned row, "<id>" in the list (update 91: they shared one
      *  id, so after opening the pinned one's comments the same achievement's list row needed two taps). */
     private val openComments = mutableSetOf<String>()
@@ -137,7 +144,27 @@ internal class RaOverlayView(
         panel.addView(headerBar, LinearLayout.LayoutParams(px(320f), px(8f)).apply { topMargin = px(6f) })
         panel.addView(headerStats, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(4f) })
         panel.addView(pinnedBox, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
-        panel.addView(tabs, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
+        // (Update 224: the tabs on the left, the ▲ ▼ list switch at the right of the same row.)
+        val tabRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(android.widget.HorizontalScrollView(context).apply {
+                isHorizontalScrollBarEnabled = false
+                addView(tabs)
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(modeArrows)
+        }
+        listOf("▲" to -1, "▼" to 1).forEach { (label, step) ->
+            modeArrows.addView(TextView(context).apply {
+                text = label
+                setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                gravity = Gravity.CENTER
+                contentDescription = if (step < 0) "Previous list" else "Next list"
+                background = GradientDrawable().apply { setColor(0x33FFFFFF); cornerRadius = 8 * d }
+                setOnClickListener { stepMode(step) }
+            }, LinearLayout.LayoutParams(px(34f), px(30f)).apply { marginStart = px(4f) })
+        }
+        panel.addView(tabRow, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
         panel.addView(scroll, LinearLayout.LayoutParams(px(320f), (context.resources.displayMetrics.heightPixels * 0.5f).toInt()).apply { topMargin = px(6f) })
         addView(panel)
         summaryBox.setOnClickListener { if (!moved) expand() }
@@ -266,7 +293,33 @@ internal class RaOverlayView(
         summaryBox.visibility = View.GONE
         panel.visibility = View.VISIBLE
         rebuild()
+        modeFade.poke()
         onExpandedChange(true)
+    }
+
+    /** Update 224 (#83): the lists the ▲ ▼ go through, in order (only those this overlay shows). */
+    private fun modes(): List<Int> {
+        val c = cfg
+        val st = state
+        return buildList {
+            add(3); add(4); add(0)
+            if (c?.raMissables == true || st?.left?.any { it.missable } == true) add(1)
+            if (c?.raUnlockedTab != false) add(2)
+            add(5)
+        }
+    }
+
+    private fun stepMode(step: Int) {
+        val m = modes()
+        val i = m.indexOf(tab).let { if (it < 0) 0 else it }
+        tab = m[(i + step).mod(m.size)]
+        rebuild()
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        // (Update 224: any touch on the open panel brings the ▲ ▼ back; the touch still does what it does.)
+        if (expanded && ev.actionMasked == MotionEvent.ACTION_DOWN) modeFade.poke()
+        return super.dispatchTouchEvent(ev)
     }
 
     fun collapse() {
@@ -326,10 +379,19 @@ internal class RaOverlayView(
         } else pinnedBox.visibility = View.GONE
         tabs.removeAllViews()
         val missables = st.left.filter { it.missable }
+        // Update 224 (#83): the lists made from the same data — Recommended: missables still to get first, then the most
+        // commonly unlocked (players' unlock % — a hint of how easy, not a promise), then set order; Easiest: by that
+        // unlock %; Set list: every achievement in the set's own order, unlocked ones marked.
+        val byPercent = compareByDescending<RaOverlayData.Item> { it.percent ?: -1f }
+        val recommended = missables + st.left.filter { !it.missable }.sortedWith(byPercent)
+        val easiest = st.left.filter { it.percent != null }.sortedWith(byPercent)
         val labels = buildList {
+            if (tab == 3) add(3 to "Recommended ${recommended.size}")
+            if (tab == 4) add(4 to "Easiest ${easiest.size}")
             add(0 to "Left ${st.left.size}")
             if (c.raMissables || missables.isNotEmpty()) add(1 to "Missable ${missables.size}")
             if (c.raUnlockedTab) add(2 to "Unlocked ${st.unlockedList.size}")
+            if (tab == 5) add(5 to "Set list ${st.all.size}")
         }
         labels.forEach { (i, label) ->
             val on = tab == i
@@ -346,14 +408,19 @@ internal class RaOverlayView(
             }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = px(6f) })
         }
         list.removeAllViews()
-        val items = when (tab) { 1 -> missables; 2 -> st.unlockedList; else -> st.left }
+        val items = when (tab) { 1 -> missables; 2 -> st.unlockedList; 3 -> recommended; 4 -> easiest; 5 -> st.all; else -> st.left }
         if (items.isEmpty()) {
             list.addView(TextView(context).apply {
-                text = when (tab) { 1 -> "No missables left to get."; 2 -> "Nothing unlocked yet - the first one is waiting."; else -> "Nothing left - mastered!" }
+                text = when (tab) {
+                    1 -> "No missables left to get."
+                    2 -> "Nothing unlocked yet - the first one is waiting."
+                    4 -> "No unlock rates for what's left."
+                    else -> "Nothing left - mastered!"
+                }
                 setTextColor(0xCCFFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             })
         }
-        items.forEach { item -> list.addView(row(item, unlocked = tab == 2, c)) }
+        items.forEach { item -> list.addView(row(item, unlocked = tab == 2 || (tab == 5 && item.id in st.unlockedIds), c)) }
     }
 
     private fun row(item: RaOverlayData.Item, unlocked: Boolean, c: PerfConfig, pinnedRow: Boolean = false): View {

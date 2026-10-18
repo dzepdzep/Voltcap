@@ -89,6 +89,50 @@ fun PerfSettingsCard() {
         MutedNote("Applies to the performance readout, the music player and the achievements overlay, live while a game runs. While playing, one quiet notification covers the overlays and the power tuner together, with Size, Opacity and Power buttons; the Quick Settings tiles (Overlay, Power tier) do the same from Android's shade.")
     }
     Spacer(Modifier.height(12.dp))
+    // Update 224 (#107 / #108): the overlays' own controls (fold arrows, the achievements list ▲ ▼) quiet down when untouched.
+    SettingsHeading("Overlay controls · Auto-hide")
+    ShelfCard {
+        SwitchRow(
+            Icons.Filled.Smartphone, "Auto-fade controls",
+            "The overlays' arrows fade when you don't touch them, and come back at the next touch. They always stay where they are and keep working, even when invisible. Readouts, music and achievements themselves never fade.",
+            cfg.ctrlFade,
+            onChange = { v -> PerfSettings.update(context) { it.copy(ctrlFade = v) } }
+        )
+        if (cfg.ctrlFade) {
+            PercentSlider("Fade after", cfg.ctrlFadeAfterS, { v ->
+                // Fully hiding comes after fading: a hide time at or before the new fade time moves along with it.
+                PerfSettings.update(context) { it.copy(ctrlFadeAfterS = v, ctrlHideAfterS = if (it.ctrlHideAfterS in 1..v) v + 1 else it.ctrlHideAfterS) }
+            }, min = 1, max = 60, valueText = { "$it s" })
+            ChipFlow {
+                listOf(2, 3, 5, 10, 15, 30).forEach { sec ->
+                    Chip((if (cfg.ctrlFadeAfterS == sec) "✓ " else "") + "$sec s", accent = cfg.ctrlFadeAfterS == sec) {
+                        PerfSettings.update(context) { it.copy(ctrlFadeAfterS = sec, ctrlHideAfterS = if (it.ctrlHideAfterS in 1..sec) sec + 1 else it.ctrlHideAfterS) }
+                    }
+                }
+            }
+            PercentSlider("Faded visibility", cfg.ctrlFadedPct, { v -> PerfSettings.update(context) { it.copy(ctrlFadedPct = v) } }, min = 0, max = 100)
+            PercentSlider("Fully hide after", cfg.ctrlHideAfterS, { v ->
+                PerfSettings.update(context) { it.copy(ctrlHideAfterS = if (v == 0) 0 else maxOf(v, it.ctrlFadeAfterS + 1)) }
+            }, min = 0, max = 120, valueText = { if (it == 0) "Never" else "$it s" })
+            ChipFlow {
+                listOf(0, 10, 15, 30, 60).forEach { sec ->
+                    val on = cfg.ctrlHideAfterS == sec
+                    Chip((if (on) "✓ " else "") + (if (sec == 0) "Never" else "$sec s"), accent = on, enabled = sec == 0 || sec > cfg.ctrlFadeAfterS) {
+                        PerfSettings.update(context) { it.copy(ctrlHideAfterS = sec) }
+                    }
+                }
+                Chip("Reset (5 s / 15 % / 15 s)", accent = false) {
+                    PerfSettings.update(context) { it.copy(ctrlFade = true, ctrlFadeAfterS = 5, ctrlFadedPct = 15, ctrlHideAfterS = 15) }
+                }
+            }
+            MutedNote(
+                "0–${cfg.ctrlFadeAfterS} s: normal · then ${cfg.ctrlFadedPct} % · " +
+                    (if (cfg.ctrlHideAfterS == 0) "never fully hidden" else "invisible from ${cfg.ctrlHideAfterS} s (still tappable)") +
+                    ". Counted from your last touch; fully hiding always comes after fading. A folded overlay's tab only fades."
+            )
+        }
+    }
+    Spacer(Modifier.height(12.dp))
     SettingsHeading("Performance overlay")
     ShelfCard {
         SwitchRow(

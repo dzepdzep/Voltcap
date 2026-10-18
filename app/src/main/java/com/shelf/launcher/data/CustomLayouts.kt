@@ -154,6 +154,25 @@ object CustomLayouts {
         synchronized(cache) { cache.remove(id) }
     }
 
+    /**
+     * Update 224 (#11): renames layout [id] — only the "name" in its layout.json changes; its folder (the id the home
+     * screen and screen rules point at), parts and pictures stay as they are. Built-in ones can't be renamed.
+     */
+    fun rename(context: Context, id: String, newName: String): Boolean {
+        if (builtIn(id)) return false
+        val clean = newName.trim().take(40).ifBlank { return false }
+        return runCatching {
+            val json = File(File(root(context), File(id).name), "layout.json")
+            val o = org.json.JSONObject(json.readText())
+            o.put("name", clean)
+            val tmp = File(json.path + ".tmp")
+            tmp.writeText(o.toString(2))
+            if (!tmp.renameTo(json)) { json.delete(); tmp.renameTo(json) }
+            synchronized(cache) { cache.remove(id) }
+            true
+        }.getOrDefault(false)
+    }
+
     /** What an import did: the layout's id, or a message saying what's wrong. */
     class Result(val id: String?, val message: String)
 

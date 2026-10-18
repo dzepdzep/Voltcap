@@ -1970,6 +1970,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     }
 
     val drawerAllowed by rememberUpdatedState(!aDialogIsOpen && !showDetails && !screensaverOn)
+    // Update 224 (#12): Android's own swipe-from-the-bottom area (gesture navigation) — a swipe for all apps starts just
+    // above it, where Android lets the app have it (from the very edge Android took it, so it rarely worked).
+    val gestureBottomPx by rememberUpdatedState(
+        androidx.compose.foundation.layout.WindowInsets.systemGestures.getBottom(androidx.compose.ui.platform.LocalDensity.current)
+    )
     // Tile-style home: the round buttons under the tiles.
     val tileLayout = state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES
     val heroLayout = state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.HERO
@@ -5299,13 +5304,18 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     while (true) {
                         val down = awaitPointerEvent(PointerEventPass.Initial).changes
                             .firstOrNull { it.pressed && !it.previousPressed } ?: continue
-                        if (down.position.y < size.height - 56.dp.toPx()) continue
+                        // (Update 224, #12: a band just above Android's gesture area — or the bottom 56 dp without one.)
+                        val edge = size.height - gestureBottomPx
+                        if (down.position.y < edge - (if (gestureBottomPx > 0) 80.dp.toPx() else 56.dp.toPx())) continue
                         val startY = down.position.y
+                        val startX = down.position.x
                         while (true) {
                             val change = awaitPointerEvent(PointerEventPass.Initial).changes
                                 .firstOrNull { it.id == down.id } ?: break
                             if (!change.pressed) break
-                            if (startY - change.position.y > 90.dp.toPx()) {
+                            val up = startY - change.position.y
+                            // Mostly upwards (a sideways swipe through the row isn't one).
+                            if (up > 90.dp.toPx() && kotlin.math.abs(change.position.x - startX) < up) {
                                 if (drawerAllowed) showAppDrawer = true
                                 break
                             }

@@ -252,7 +252,8 @@ private fun WeekBars(weeks: List<Pair<String, Long>>) {
     ) {
         weeks.forEachIndexed { i, (_, ms) ->
             Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
-                if (ms > 0 && (i == weeks.lastIndex || i == best)) {
+                // (Update 224, #02: last week's time shows too, to compare with this week's.)
+                if (ms > 0 && (i >= weeks.lastIndex - 1 || i == best)) {
                     Text(PlaytimeStore.format(ms), color = ShelfTheme.colors.textPrimary, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     Spacer(Modifier.height(2.dp))
                 }
@@ -261,15 +262,28 @@ private fun WeekBars(weeks: List<Pair<String, Long>>) {
                         .fillMaxWidth()
                         .fillMaxHeight((ms.toFloat() / max).coerceIn(if (ms > 0) 0.03f else 0.01f, 1f))
                         .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                        .background(if (ms > 0) ShelfTheme.accent else Color.White.copy(alpha = 0.08f))
+                        // Update 224 (#02): this week in the full accent, last week a step lighter, earlier weeks quieter —
+                        // the current comparison stands out at a glance.
+                        .background(
+                            if (ms > 0) ShelfTheme.accent.copy(alpha = when (i) { weeks.lastIndex -> 1f; weeks.lastIndex - 1 -> 0.7f; else -> 0.42f })
+                            else Color.White.copy(alpha = 0.08f)
+                        )
                 )
             }
         }
     }
     Spacer(Modifier.height(4.dp))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        weeks.forEach { (label, _) ->
-            Text(label, color = ShelfTheme.textMuted, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        weeks.forEachIndexed { i, (label, _) ->
+            // (Update 224, #02: "This week" / "Last week" by name, in their bars' colours.)
+            val text = when (i) { weeks.lastIndex -> "This week"; weeks.lastIndex - 1 -> "Last week"; else -> label }
+            Text(
+                text,
+                color = when (i) { weeks.lastIndex -> ShelfTheme.accent; weeks.lastIndex - 1 -> ShelfTheme.colors.textPrimary; else -> ShelfTheme.textMuted },
+                fontWeight = if (i >= weeks.lastIndex - 1) androidx.compose.ui.text.font.FontWeight.Bold else null,
+                fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(8.sp), maxFontSize = 10.sp),
+                maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+            )
         }
     }
 }

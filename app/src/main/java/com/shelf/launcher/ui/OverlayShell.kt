@@ -48,6 +48,11 @@ internal class OverlayShell(
     }
     private val holder = FrameLayout(context)
     private val arrow = Chevron(context)
+    /**
+     * Update 224 (#107): the fold arrow quiets down when untouched (Settings › Overlay › Auto-fade controls). Folded, the
+     * tab is the only thing left of the overlay: it fades, but never goes fully invisible.
+     */
+    private val arrowFade = IdleFade(arrow, canHide = { !folded })
 
     /** Folded away: only the arrow tab shows. */
     var folded = false
@@ -123,6 +128,7 @@ internal class OverlayShell(
             folded = false
             holder.visibility = View.VISIBLE
             arrange()
+            arrowFade.poke()
             if (animate) {
                 holder.alpha = 0f; holder.scaleX = 0.2f; holder.scaleY = 0.2f
                 // Grows out of the corner once it has its size again.
@@ -141,6 +147,7 @@ internal class OverlayShell(
         holder.visibility = View.GONE
         holder.alpha = 1f; holder.scaleX = 1f; holder.scaleY = 1f
         arrange()
+        arrowFade.poke()
         if (tell) onFoldChanged(true)
     }
 
@@ -217,8 +224,13 @@ internal class OverlayShell(
     // The music / achievements panels close on a touch outside: the window hears it, the panel acts on it.
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (ev.actionMasked == MotionEvent.ACTION_OUTSIDE) { content.dispatchTouchEvent(ev); return true }
+        // (Update 224: any touch on the overlay brings its arrow back — and the touch still does what it does.)
+        if (ev.actionMasked == MotionEvent.ACTION_DOWN) arrowFade.poke()
         return super.dispatchTouchEvent(ev)
     }
+
+    /** Update 224: the fade timings changed (settings): start their countdown again with the new values. */
+    fun pokeControls() = arrowFade.poke()
 
     // ---- Resize: drag from a corner, or pinch with two fingers ----
     private val slop = 8 * d
