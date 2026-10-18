@@ -45,6 +45,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
@@ -556,6 +558,10 @@ internal fun StyleCube(c: StyleCtx, modifier: Modifier = Modifier) {
             }
             Box(
                 Modifier.offset(x = libX, y = libY).width(w - libX).height(h - libY)
+                    // (Update 242, #93 device check: the game before the one you're on slid out over the docked cube and its
+                    // caption on the Thor — the row is cut at its own left / right edges; above and below stay free for the
+                    // focused game's lift.)
+                    .drawWithContent { clipRect(0f, -size.height, size.width, size.height * 2f) { this@drawWithContent.drawContent() } }
                     .graphicsLayer {
                         val e = pageAnim.value
                         alpha = e

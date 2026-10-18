@@ -4,6 +4,17 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (242): device checks of 239–241 on the Thor; Cube menu's games no longer slide over the docked cube
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (1): `src_copy\ui\StyleCube.kt`. **Files to delete:** none.
+
+1. **Fix (Cube menu, #93):** in the library page the game before the one you're on slid out to the left over the docked cube and its caption (seen on the Thor). The games row is now cut at its own left / right edges (above and below stay free for the focused game's lift).
+2. **Checked on the Thor (0.6.11 build with 239–241):** Cube menu in the layout list, its home page (cube turns with ◀ ▶ to Nintendo 3DS etc., caption and keys right of it), A opens the face → library with the docked cube, ▲ to the dock, ▼ changes category there; Settings › Layout › Case stacks put back afterwards. Save Vault: 16 games (a Wii save now listed), save details with the new **Inspect** chip, the Inspect viewer (Pokémon Silver's 3D card, drag turns and tilts it, colour strip, Apply / Revert / Reset), **PS2 browser style** shows WWE SmackDown! vs. RAW's own 3D save icon turning with its two-line title and 493 KB, then put back off. No Voltcap crash on either handheld (only Google Play services' own crashes in the log).
+
+---
+
 ## Update — 18 Oct 2026 (241): Save Vault Inspect viewer and engravings (#44–#46, #49–#52), 3DS / Wii save detection, safer matching, faster first sync (#53, #68, #70–#76), preset audit and fixes (#110), Edit Home grid / resize / parts inside the hero picture (#05 / #06), Quick Settings overlay tile works mid-game (#82)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied and compiled** by Claude (device checks at the end), committed and pushed by Claude.
