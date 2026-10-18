@@ -24,6 +24,17 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
+/**
+ * (Update 217) The whole body, but only up to [max] bytes: null when it's bigger. Unlike `bytes()` + a size check
+ * afterwards, at most [max] + 1 bytes are ever held in memory, also when the server doesn't send a length.
+ */
+internal fun okhttp3.ResponseBody.bytesCapped(max: Long): ByteArray? {
+    if (contentLength() > max) return null
+    val src = source()
+    if (src.request(max + 1)) return null
+    return src.buffer.readByteArray()
+}
+
 /** Google hasn't granted Drive access (yet), or took it back: the player has to
  * press "Connect Google Drive" again. */
 open class DriveSignInNeeded(message: String = "Google Drive needs to be connected again.") : Exception(message)
@@ -423,11 +434,14 @@ class DriveClient(private val context: Context) {
     fun downloadBytes(id: String): ByteArray =
         execute { Request.Builder().url("$API/files/$id?alt=media").get() }.use { it.body?.bytes() ?: ByteArray(0) }
 
-    /** Update 110: like [downloadBytes], but an empty array (nothing read) when Drive says the file is bigger than [maxBytes]. */
+    /**
+     * Update 110: like [downloadBytes], but an empty array (nothing read) when Drive says the file is bigger than [maxBytes].
+     * (Update 217: also when Drive doesn't say — a compressed or chunked reply — reading stops past [maxBytes] instead
+     * of holding the whole file in memory.)
+     */
     fun downloadBytes(id: String, maxBytes: Long): ByteArray =
         execute { Request.Builder().url("$API/files/$id?alt=media").get() }.use { r ->
-            val body = r.body ?: return@use ByteArray(0)
-            if (body.contentLength() > maxBytes) ByteArray(0) else body.bytes()
+            r.body?.bytesCapped(maxBytes) ?: ByteArray(0)
         }
 
     /** Where Drive's change feed starts from now. */

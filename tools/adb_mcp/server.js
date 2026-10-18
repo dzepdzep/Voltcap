@@ -13,7 +13,9 @@
 //   gradle_status / gradle_stop
 //   install_build  adb install -r of the newest built APK (update in place: app data kept; never -d, never uninstall)
 //   git_status     read-only: branch, uncommitted files, last commits
-// Nothing here commits, pushes, publishes a release, uninstalls or deletes.
+//   git_commit_push (update 217, user-approved 18 Oct): git add -A, commit, push origin main — only on main, never
+//                  --force, refuses while Gradle runs or when nothing changed.
+// Nothing here publishes a release, uninstalls or deletes.
 'use strict';
 const { execFile, spawn } = require('child_process');
 const fs = require('fs');
@@ -181,13 +183,24 @@ const TOOLS = [
   { name: 'gradle_stop', description: 'Stop the running Gradle build.', inputSchema: { type: 'object', properties: {} } },
   { name: 'install_build', description: 'Install the newest built Voltcap APK (variant release or debug) on a handheld with adb install -r: an update in place, app data and settings kept. Never downgrades or uninstalls.',
     inputSchema: { type: 'object', properties: { serial: SERIAL, variant: { type: 'string', enum: ['release', 'debug'] } } } },
-  { name: 'git_status', description: 'Read-only: current branch, uncommitted files and the last commits of the project.', inputSchema: { type: 'object', properties: {} } }
+  { name: 'git_status', description: 'Read-only: current branch, uncommitted files and the last commits of the project.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'git_commit_push', description: 'Commit everything (git add -A) with the given message and push to origin main. Only on branch main, never force; refuses while Gradle runs or when nothing changed.',
+    inputSchema: { type: 'object', properties: { message: { type: 'string', description: 'Commit title, e.g. "Update 217: ..."' }, body: { type: 'string', description: 'Optional second paragraph (e.g. Co-Authored-By lines)' } }, required: ['message'] } }
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const text = (t) => ({ content: [{ type: 'text', text: t }] });
 
+// git / robocopy steps one after another (two at once collide on git's index lock).
+let serial = Promise.resolve();
+function queued(fn) { const run = serial.then(fn, fn); serial = run.catch(() => {}); return run; }
+
 async function call(name, a) {
+  if (name === 'git_commit_push' || name === 'sync_sources' || name === 'git_status') return queued(() => call2(name, a));
+  return call2(name, a);
+}
+
+async function call2(name, a) {
   const s = a.serial;
   switch (name) {
     case 'list_handhelds': {
@@ -298,6 +311,24 @@ async function call(name, a) {
       const lg = await runCapture('git', ['-C', ROOT, 'log', '-5', '--oneline']);
       return text(`Branch: ${b.out.trim()}\nUncommitted:\n${st.out.trim() || '(none)'}\nLast commits:\n${lg.out.trim()}`);
     }
+    case 'git_commit_push': {
+      if (job && job.code === null) throw new Error('Gradle is running - wait for it first.');
+      const msg = String(a.message || '').trim();
+      if (!msg) throw new Error('A commit message is needed.');
+      const br = (await runCapture('git', ['-C', ROOT, 'rev-parse', '--abbrev-ref', 'HEAD'])).out.trim();
+      if (br !== 'main') throw new Error('Not on main (on ' + br + ') - nothing done.');
+      const st = await runCapture('git', ['-C', ROOT, 'status', '--porcelain']);
+      if (!st.out.trim()) return text('Nothing to commit.');
+      const add = await runCapture('git', ['-C', ROOT, 'add', '-A']);
+      if (add.code !== 0) throw new Error('git add failed:\n' + add.out);
+      const cargs = ['-C', ROOT, 'commit', '-q', '-m', msg];
+      if (a.body) cargs.push('-m', String(a.body));
+      const c = await runCapture('git', cargs);
+      if (c.code !== 0) throw new Error('git commit failed:\n' + c.out);
+      const p = await runCapture('git', ['-C', ROOT, 'push', 'origin', 'main']);
+      const lg = await runCapture('git', ['-C', ROOT, 'log', '-1', '--oneline']);
+      return text(`Committed: ${lg.out.trim()}\nChanged:\n${st.out.trim()}\nPush: ${p.code === 0 ? 'OK' : 'FAILED (exit ' + p.code + ')'}\n${tail(p.out, 10)}`);
+    }
     default: throw new Error('Unknown tool ' + name);
   }
 }
@@ -308,7 +339,7 @@ async function handle(m) {
   if (m.id === undefined || m.id === null) return; // notifications
   try {
     if (m.method === 'initialize') {
-      send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: (m.params && m.params.protocolVersion) || '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'voltcap-adb', version: '1.1.0' } } });
+      send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: (m.params && m.params.protocolVersion) || '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'voltcap-adb', version: '1.2.0' } } });
     } else if (m.method === 'tools/list') {
       send({ jsonrpc: '2.0', id: m.id, result: { tools: TOOLS } });
     } else if (m.method === 'tools/call') {

@@ -4,6 +4,24 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (217): downloads never fill memory past their limit, Claude can commit and push finished fixes
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude; Claude commits and pushes it itself (you allowed that for successful fixes on 18 Oct).
+
+**Copy `src_copy`**, changed (2): `src_copy\data\DriveClient.kt`, `src_copy\data\guide\GuideProviders.kt`.
+
+**Copy `project_copy`:** `project_copy\tools\adb_mcp\server.js` (also `tools\adb_mcp\server.js`). **Files to delete:** none.
+
+### What changed
+1. **Memory safety of downloads** (towards the Thor's OutOfMemoryError of 15 Oct during a download): guide pages (RetroAchievements guides, StrategyWiki, Fandom) and Drive files read with a size limit (Save Vault's memory cards / PSP saves from other devices, up to 16 MB) used to read the WHOLE reply first and check the size afterwards — and a Drive reply without a length was read in full. Now reading stops one byte past the limit (`bytesCapped` in DriveClient.kt): at most the limit is ever held in memory. Same results as before for everything under the limit; too-big files still count as "too big". This is a hardening, **not a proven cause** of that crash (the crash log only shows where memory ran out).
+2. **ADB bridge:** `git_commit_push` — `git add -A`, commit, `git push origin main`; only on main, never force, refuses while Gradle runs or when nothing changed. git / robocopy steps now run one after another (two at once collided on git's lock in a test). Needs a restart of the Claude app to load.
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed with `adb install -r` on both (data kept). Save Vault opens and draws its pieces on the RP Classic; no crashes on either handheld after the update.
+- Bridge: tested against a copy repo — commit + push OK, second call "Nothing to commit", parallel calls no longer collide.
+- **Not tested:** a real oversized guide / Drive reply (none to trigger on demand).
+- **#97 (navigation bar after the Android shade, RP Classic): NOT REPRODUCED** with Voltcap in front — pulled down by `cmd statusbar` and by a real finger swipe, Quick Settings expanded, closed by swipe: no pill afterwards, still hidden 9 s later, `hide_nav_bar` stays 1. Still to try: from inside a game (#100).
+
 ## Update — 18 Oct 2026 (216): the overlay no longer crashes Voltcap when a game ends at once, Claude can build / install / test on the handhelds itself
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Already copied, built and installed** on the AYN Thor and the RP Classic by Claude (you authorised that on 18 Oct) — the block below only commits.

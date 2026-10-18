@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import com.shelf.launcher.data.bytesCapped
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
@@ -107,7 +108,7 @@ class RetroAchievementsGuideProvider(
     private fun fetch(url: String): String? = try {
         client.newCall(Request.Builder().url(url).header("User-Agent", "VoltCap").build()).execute().use { r ->
             if (!r.isSuccessful) null
-            else r.body?.bytes()?.takeIf { it.size <= MAX_BYTES }?.toString(Charsets.UTF_8)
+            else r.body?.bytesCapped(MAX_BYTES.toLong())?.toString(Charsets.UTF_8)
         }
     } catch (e: Exception) { null }
 
@@ -353,7 +354,7 @@ class StrategyWikiGuideProvider(
 
     private fun get(url: String): String? = try {
         client.newCall(Request.Builder().url(url).header("User-Agent", "VoltCap guide reader").build()).execute().use { r ->
-            if (!r.isSuccessful) null else r.body?.bytes()?.takeIf { it.size <= 4 * 1024 * 1024 }?.toString(Charsets.UTF_8)
+            if (!r.isSuccessful) null else r.body?.bytesCapped(4L * 1024 * 1024)?.toString(Charsets.UTF_8)
         }
     } catch (e: Exception) { null }
 
@@ -446,7 +447,7 @@ class FandomGuideProvider(
 
     private fun get(url: String): String? = try {
         client.newCall(Request.Builder().url(url).header("User-Agent", "VoltCap guide reader").build()).execute().use { r ->
-            if (!r.isSuccessful) null else r.body?.bytes()?.takeIf { it.size <= 4 * 1024 * 1024 }?.toString(Charsets.UTF_8)
+            if (!r.isSuccessful) null else r.body?.bytesCapped(4L * 1024 * 1024)?.toString(Charsets.UTF_8)
         }
     } catch (e: Exception) { null }
 
