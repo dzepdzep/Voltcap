@@ -4,6 +4,41 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (228): Game shelf puts games back smoothly (#17) and shows the case picked for all (#18), custom cartridges keep their colour when turned (#36), no line across disc backs (#37)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (5): `src_copy\ui\ShelfHome.kt`, `src_copy\ui\DiscUnderside.kt`, `src_copy\ui\SolidPiece.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\PhysicalMedia.kt`. **Files to delete:** none.
+
+### Found → fixed
+1. **Game shelf, putting a game back (#17).** The "going back" motion was one shared animation started inside the pull-out's own step, so the next step (holding the D-pad, or any press within ~0.3 s) cancelled it: the game going back vanished in one frame and its spine snapped back into the shelf. Also: the same position looked up after a category change lifted a random spine there; going back to a game still on its way in snapped it in and pulled it out from nothing; it went back in 320 ms eased against 620 ms out; and its gentle bob stopped dead (a jump of up to 14°). Now every game going back has its own motion that's never cut off, at the pull-out's pace the other way round, a game you return to comes out again from where it is, and the bob fades out with the turn.
+2. **Game shelf, R1 › Case did nothing (#18).** The shelf drew every game in its own console's case and its own scan. Now, like every other case view, the case picked for all games (with the game's cover in it, never its own scan, the case's branding left off), the shelf re-laid out when you pick a case or a spine for all, and the spine slots follow the picked spine's shape.
+3. **Custom cartridges turned grey (#36).** Every custom piece (your pack's cartridges and the library shells) had the same grey sides and back when turned on the home rows and in the game window's all-sides view; the inspect view's one-pixel colour read failed while the pack picture was still loading or on clear plastic and never tried again. Now the plastic comes from what you picked: a library shell's colour as set, or your pack picture's own plastic (read once off a small copy, off the main thread). Also: photo cartridges' backs were cached under one key, so a back could come out in another photo's colour.
+4. **Line across disc backs (#37).** The mirror's light lobes were 9 colour stops 45° apart joined by straight blends: each bright / dark stop and the one opposite made a hard crease across the disc through the centre, showing through the clear hub; the light band peaked in a sharp point (a thin bright line). Now the same two bright and two dark lobes rise and fall smoothly, the light band is a soft rise and fall, and neither is drawn on the clear hub. The hub, stacking ring and hole are unchanged.
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed on both.
+- Thor, Game shelf, 3DS (224 games): fast ◀ ▶ ▲ ▼ presses (100 ms apart) — one game out at the end, no game left half out, nothing stuck; no crash. Your layout put back with R1 › Undo (Case stacks, Tintin).
+- **Not tested on a device**: #18 with a case picked for all, #36 (needs a custom cartridge pack), #37 (needs a disc turned over in the inspect view) — code-reviewed only.
+
+## Update — 18 Oct 2026 (227): Settings search lands on the setting itself again (#109)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (2): `src_copy\ui\SettingsJump.kt`, `src_copy\ui\SettingsIndex.kt`. **Files to delete:** none.
+
+### Found (#109 audit of every setting)
+- **No switch that does nothing**: every setting with a control in Settings is read where it changes something (checked all Features, Appearance and Overlay settings, incl. indirect reads). Left alone for now, no visible effect: a dozen old preferences with no control any more (e.g. the removed platform-browser "Drag-and-drop reorder", "3D models" switches retired in update 200) — they just keep their stored value.
+- **Settings search: 111 of 613 results stopped at the top of the page** instead of scrolling to and lighting up the setting, because the result's name wasn't exactly the control's name (e.g. "Card binder fan angle" for "Fan angle", "Startup category" for "Start in").
+
+### What changed
+1. When no control on the page has the result's exact name, the jump now lights the control whose own name stands in the result's name (whole words, the longest one wins) — covers the layout-named and explained entries in one go.
+2. Stale entries fixed: renamed to the control's real name where it had changed (old words kept in brackets so they're still found: "Start in (startup category)", "Category order (hide or show categories)", "Games slide in (slide between categories)", "Position (move the music player)", …), moved to the page they're really on (Real media → Metadata › Saved on this device), and removed where the setting no longer exists (Drag-and-drop reorder, Loop video quality, Card artwork, Report a problem, Scrape manuals / progress, …). Two group keys that don't exist any more were dropped (the page still opens).
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed on both.
+- Thor: Settings › search "startup" → "Start in (startup category)" → Categories opens and scrolls down to "Start in" (before: stopped at the top of Categories).
+
 ## Update — 18 Oct 2026 (226): R1 tiles that changed nothing on some layouts (#98), Endless shows each game once on every layout (#105)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

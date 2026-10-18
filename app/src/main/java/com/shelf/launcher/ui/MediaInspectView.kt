@@ -484,7 +484,9 @@ private fun mediaPiece(
             else slabDepth(if (custom) null else pick.shell), pick, label, isScan, null,
             cover, null, null, physical, null,
             // (Update 202: Voltcap's Android cartridge is green — its edge and the card lying in the case too.)
-            if (custom) CUSTOM_SHELL else if (pick.platform == ANDROID_CART) ANDROID_SHELL else shellTone(pick.shell), false
+            // (Update 228, #36: a custom piece in its own plastic — the library shell's colour, the pack picture's once
+            // read — not grey.)
+            if (custom) CustomPieceTones.of(pick.platform) ?: CUSTOM_SHELL else if (pick.platform == ANDROID_CART) ANDROID_SHELL else shellTone(pick.shell), false
         )
     }
 }
@@ -1177,7 +1179,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
         if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
             // (Update 207: in the photo's own plastic colour when it's been read.)
             val own = ownShellColour(sh, p.game.platform, p.game.stableKey) // (Update 210: its edition's plastic)
-            val colour = PhotoTones.of(p.realScan)?.let { t -> ShellColour("photo", own.name, t.copy(alpha = 1f).toArgb(), own.opacity) } ?: own
+            // (Update 228, #36: keyed by the colour — one "photo" key for every photo's back in the cache.)
+            val colour = PhotoTones.of(p.realScan)?.let { t -> t.copy(alpha = 1f).toArgb().let { c -> ShellColour("photo:$c", own.name, c, own.opacity) } } ?: own
             runCatching { CartShells.back(sh, colour, 640, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
         }
         else p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
@@ -1192,6 +1195,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
             }
         }
     }
+    // Update 228 (#36): a custom piece's own plastic from what was picked (CustomPieceTones) wins over the pixel read
+    // below — that read failed while the pack picture was still loading (or on a clear shell's faint edge) and was never
+    // tried again, so a custom cartridge turned grey here.
+    val customPlatform = p.pick?.platform?.takeIf { isCustomPiece(it) }
+    val saved = if (customPlatform != null) rememberCustomPieceTone(customPlatform) else null
     var shell by androidx.compose.runtime.remember(p) { androidx.compose.runtime.mutableStateOf<Color?>(null) }
     // Its shell colour, from the face's own pixels (the edge, half-way down), once it's drawn.
     LaunchedEffect(p) {
@@ -1240,7 +1248,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
                     withTransform({ translate(z * sn, 0f); scale(sx, 1f, pivot = center) }) { block() }
                 // The sides: the face's outline, darker, lit a little as they face you. Update 205: in the shell's plastic
                 // colour — copies of the whole face showed its label in stripes along the side as it turned.
-                val sideTone = (shell ?: PhotoTones.of(p.realScan) ?: p.tone).copy(alpha = 1f)
+                val sideTone = (saved ?: shell ?: PhotoTones.of(p.realScan) ?: p.tone).copy(alpha = 1f)
                 solid.record { drawLayer(face) }
                 edge.colorFilter = SlabLight.of(0.42f + 0.22f * abs(sn))
                 edge.record {
@@ -1263,7 +1271,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float) {
                     at(depth / 2f) { drawLayer(lit) }
                 } else {
                     // (Update 201: opaque — a clear shell's sampled colour is see-through.)
-                    val tone = (shell ?: PhotoTones.of(p.realScan) ?: p.tone).copy(alpha = 1f)
+                    val tone = (saved ?: shell ?: PhotoTones.of(p.realScan) ?: p.tone).copy(alpha = 1f)
                     back.record {
                         val sb = shellBack
                         if (sb != null && p.pick == null && p.realScan != null) {

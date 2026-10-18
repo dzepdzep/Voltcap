@@ -573,9 +573,11 @@ internal fun PhysicalMedia(
         // shell's own shape, and moving as a cartridge does: rocking slowly left and right. Update 203 gave it the disc's
         // motion, so with Moving discs on it went round and round like a clock's hands.)
         val packShell = discShellFor(platform.removePrefix(CUSTOM_CART))
+        // (Update 228, #36: its sides and back in the pack picture's own plastic, not grey — rememberCustomPieceTone.)
+        val packTone = rememberCustomPieceTone(platform)
         CustomCart(
             platform.removePrefix(CUSTOM_CART), caseCover ?: label,
-            modifier.solidPiece(cartSolid(null, platform, packShell?.aspect ?: Features.cartLook.state.value.aspect, custom = true))
+            modifier.solidPiece(cartSolid(null, platform, packShell?.aspect ?: Features.cartLook.state.value.aspect, custom = true, tone = packTone))
                 .mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode())
         )
         return

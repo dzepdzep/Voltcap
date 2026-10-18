@@ -102,13 +102,13 @@ private class ShelfPlan(val slots: List<ShelfSlot>, val rows: Int, val rowH: Dp,
  * a tenth of its height (the cartridge consoles' cardboard spines stood out as chunky blocks; update 126: up to
  * SPINE_MAX_ASPECT, your pack's chunkiest).
  */
-private fun spineAspect(platform: String): Float =
+private fun spineAspect(platform0: String): Float = (LookStyles.spinePlatform(platform0) ?: platform0).let { platform -> // (Update 228, #18: the spine picked for all)
     // (Update 126: your own console spine's shape first, so its picture fills the slot as it is.)
-    (if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect ?: MediaCovers.of(platform)?.shelfSpineAspect() else null)?.coerceIn(0.05f, SPINE_MAX_ASPECT) ?: 0.085f
+    (if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect ?: MediaCovers.of(platform)?.shelfSpineAspect() else null)?.coerceIn(0.05f, SPINE_MAX_ASPECT) ?: 0.085f }
 
 /** Update 126: the shape of [platform]'s own console spine (null: none), for the same-height shelves too. */
-private fun customSpineAspect(platform: String): Float? =
-    if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect?.coerceIn(0.05f, SPINE_MAX_ASPECT) else null
+private fun customSpineAspect(platform0: String): Float? = (LookStyles.spinePlatform(platform0) ?: platform0).let { platform ->
+    if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect?.coerceIn(0.05f, SPINE_MAX_ASPECT) else null }
 
 /**
  * Lays the games out on shelves [width] wide: tries one shelf, then two, then three (each shorter, so more spines fit),
@@ -172,7 +172,9 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         val games = c.games
         val templates = Features.coverTemplates.state.value // the spine widths follow the cover templates
         val stand = Features.shelfStand.state.value
-        val plan = remember(games, real, areaW, areaH, templates, stand, Features.layoutScale.state.value, com.shelf.launcher.data.Packs.version.intValue) { planShelves(games, areaW, areaH, real, stand) }
+        // (Update 228, #18: laid out again when one case or spine is picked for every game — their shapes set the slots.)
+        val plan = remember(games, real, areaW, areaH, templates, stand, Features.layoutScale.state.value, com.shelf.launcher.data.Packs.version.intValue,
+            Features.caseStyle.state.value, Features.spineStyle.state.value) { planShelves(games, areaW, areaH, real, stand) }
         // (Update 130: worked out once per plan, not on every redraw — with hundreds of games that added up.)
         val rowOf = remember(plan) { IntArray(plan.slots.size) { plan.slots[it].row } }
         // Each shelf is centred in the room: the keys ▲ / ▼ look for the neighbour above / below with that offset.
@@ -234,37 +236,55 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         // and facing you. First it slides up out of its gap, then it turns from its spine to its front while it comes
         // forward. The game you left goes back the same way, the other way round, at the same time.
         val pull = remember { Animatable(0f) }
-        val back = remember { Animatable(0f) }
-        var backIndex by remember { mutableStateOf(-1) }
-        var shownIndex by remember { mutableStateOf(-1) }
-        // Update 156: which lap of the endless bookcase the game coming out / going back is on (always 0 without it).
-        var backLap by remember { mutableStateOf(0) }
+        // Update 156: which lap of the endless bookcase the game coming out is on (always 0 without it).
+        var shownKey by remember { mutableStateOf<String?>(null) }
         var shownLap by remember { mutableStateOf(0) }
+        // Update 228 (#17): the games going back, each with its own motion, run apart from the pull-out. One shared
+        // "going back" was started inside the pull-out's effect, so the next step (within ~0.3 s, e.g. holding the D-pad)
+        // cancelled it: the game going back vanished in one frame and its spine stood back in the shelf at once; the same
+        // index looked up in a new category made a random spine there lift; going back to a game still on its way in
+        // snapped it in and pulled it out from nothing again; and it went back in 320 ms eased, against 620 ms out.
+        // Now: by game, never cut off, at the pull-out's own pace the other way round, and a game you come back to while
+        // it's going in comes out again from where it is.
+        val backs = remember { androidx.compose.runtime.mutableStateListOf<ShelfBack>() }
+        val backScope = androidx.compose.runtime.rememberCoroutineScope()
+        val indexOf = remember(games) { HashMap<String, Int>(games.size * 2).also { m -> games.forEachIndexed { i, g -> m.putIfAbsent(g.stableKey, i) } } }
         LaunchedEffect(c.focus, games) {
-            val leaving = shownIndex
-            if (leaving >= 0 && leaving != c.focus && leaving in games.indices && pull.value > 0f) {
-                backIndex = leaving
-                backLap = shownLap
-                back.snapTo(pull.value)
-                launch { back.animateTo(0f, tween(320, easing = FastOutSlowInEasing)); backIndex = -1 }
-            } else {
-                // Moving on before it was out (holding the D-pad): nothing to put back, and no game left half out.
-                backIndex = -1
-                back.snapTo(0f)
+            val focusKey = games.getOrNull(c.focus)?.stableKey
+            val leaving = shownKey
+            var from = 0f
+            if (leaving == null || leaving !in indexOf) {
+                // A new category or list: nothing of it is out yet.
+                backs.clear()
+            } else if (leaving == focusKey && shownLap == lap) {
+                // The same game (its art came in, the list was redone): it stays where it is.
+                from = pull.value
+            } else if (pull.value > 0f) {
+                backs.removeAll { it.key == leaving }
+                val b = ShelfBack(leaving, shownLap, Animatable(pull.value))
+                backs += b
+                backScope.launch {
+                    b.a.animateTo(0f, tween((620 * b.a.value).toInt().coerceAtLeast(80), easing = LinearEasing))
+                    backs.remove(b)
+                }
             }
-            shownIndex = c.focus
+            // Back to a game that's still on its way in: it comes out again from there.
+            backs.firstOrNull { it.key == focusKey && it.lap == lap }?.let { b -> from = b.a.value; backs.remove(b) }
+            shownKey = focusKey
             shownLap = lap
-            pull.snapTo(0f)
-            kotlinx.coroutines.delay(40)
-            pull.animateTo(1f, tween(620, easing = LinearEasing))
+            pull.snapTo(from)
+            if (from <= 0f) kotlinx.coroutines.delay(40)
+            if (from < 1f) pull.animateTo(1f, tween((620 * (1f - from)).toInt().coerceAtLeast(1), easing = LinearEasing))
         }
-        // Update 156: the shelf (counted on round the endless bookcase) the game going back stands on.
-        val backVRow = (plan.slots.getOrNull(backIndex)?.row ?: -1) + backLap * plan.rows
+        // Update 156: the shelf (counted on round the endless bookcase) a game going back stands on.
+        fun backVRow(b: ShelfBack): Int = (indexOf[b.key]?.let { plan.slots.getOrNull(it)?.row } ?: -1) + b.lap * plan.rows
         /** How far [i], on shelf [r] (counted on round the endless bookcase), is pulled out right now. */
-        fun pulled(i: Int, r: Int): Float = when {
-            i == c.focus && r == focusVRow -> pull.value
-            i == backIndex && r == backVRow -> back.value
-            else -> 0f
+        fun pulled(i: Int, r: Int): Float {
+            if (i == c.focus && r == focusVRow) return pull.value
+            if (backs.isEmpty()) return 0f
+            val k = games.getOrNull(i)?.stableKey ?: return 0f
+            for (b in backs) if (b.key == k && r == backVRow(b)) return b.a.value
+            return 0f
         }
         // Update 136: the games either side make room for the one pulled out (half its front's width each way), so its
         // front no longer hides the spines next to it; they close up again as it goes back.
@@ -303,7 +323,9 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                 // a front / turned case hands over to the pulled-out one as that comes forward.
                                 .graphicsLayer {
                                     val pv = pulled(i, r)
-                                    translationX = (makeRoom(i, r, c.focus, focusVRow, pull.value) + makeRoom(i, r, backIndex, backVRow, back.value)).toPx()
+                                    var room = makeRoom(i, r, c.focus, focusVRow, pull.value)
+                                    for (b in backs) room += makeRoom(i, r, indexOf[b.key] ?: -1, backVRow(b), b.a.value)
+                                    translationX = room.toPx()
                                     if (pv > 0f) {
                                         translationY = -size.height * PULL_LIFT * shelfSlide(pv)
                                         if (stand == Features.ShelfStand.SPINES) {
@@ -363,7 +385,10 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 val endY = (rowTop + plan.rowH * 0.9f - bigH - plan.rowH * 0.06f).coerceIn(top - 10.dp, (fullH - footerH - bigH).coerceAtLeast(0.dp))
                 val w = startW + (bigW - startW) * turn
                 val h = startH + (bigH - startH) * turn
-                val bob = if (resting && Features.shelfBob.state.value && p >= 0.999f) rememberShelfBob() else null
+                // (Update 228, #17: the bob carries on, fading out with the turn, while the game goes back — it stopped
+                // dead the moment you moved on, a jump of up to 14° and 3 % of its height.)
+                val bob = if (Features.shelfBob.state.value && (!resting || p >= 0.999f)) rememberShelfBob() else null
+                val bobK = if (resting) 1f else turn
                 Box(
                     Modifier
                         .offset { IntOffset((startX + (endX - startX) * turn).roundToPx(), (startY + (endY - startY) * turn).roundToPx()) }
@@ -371,8 +396,8 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                         .then(if (resting) Modifier.focusedCard() else Modifier)
                         .graphicsLayer {
                             // Comes round from edge-on (its spine side) to facing you, then (resting) bobs and turns gently.
-                            rotationY = fromAngle * (1f - turn) + (bob?.let { 14f * kotlin.math.sin(it.second.value * 2f * Math.PI.toFloat()) } ?: 0f)
-                            translationY = bob?.let { -size.height * 0.03f * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
+                            rotationY = fromAngle * (1f - turn) + (bob?.let { 14f * bobK * kotlin.math.sin(it.second.value * 2f * Math.PI.toFloat()) } ?: 0f)
+                            translationY = bob?.let { -size.height * 0.03f * bobK * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
                             cameraDistance = 14f * density
                             // A soft shadow grows under it as it comes off the shelf.
                             shadowElevation = 14f * density * turn
@@ -386,13 +411,20 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
             }
             // Update 112: one keyed list (by game) for the one going back and the one coming out, so the game you leave keeps
             // its own picture on the way back — it used to be drawn afresh, flashing its plain cover for a moment.
-            val shown = buildList {
-                if (backIndex >= 0 && backIndex != c.focus && backIndex in games.indices) add(backIndex)
-                if (c.game != null && c.focus in games.indices) add(c.focus)
+            // (Update 228, #17: every game still going back, then the one coming out — drawn last, in front.)
+            // (One keyed loop, as update 112 made it, so a game keeps its own picture from coming out to going back.)
+            val focusKey = games.getOrNull(c.focus)?.stableKey
+            val shown = buildList<ShelfBack?> {
+                val seenKeys = HashSet<String>()
+                for (b in backs) if (b.key != focusKey && b.key in indexOf && seenKeys.add(b.key)) add(b)
+                if (c.game != null && focusKey != null) add(null)
             }
-            for (idx in shown) key(games[idx].stableKey) {
-                val on = idx == c.focus
-                Pulled(idx, if (on) ({ pull.value }) else ({ back.value }), resting = on, vrow = if (on) focusVRow else backVRow)
+            for (b in shown) {
+                val k = b?.key ?: focusKey ?: continue
+                val idx = if (b == null) c.focus else indexOf[k] ?: continue
+                key(k) {
+                    Pulled(idx, if (b == null) ({ pull.value }) else ({ b.a.value }), resting = b == null, vrow = if (b == null) focusVRow else backVRow(b))
+                }
             }
         }
 
@@ -464,7 +496,9 @@ private fun shelfFront(p: Float): Float = ease((p - 0.45f) / 0.55f)
 private fun Arrangement_Center() = androidx.compose.foundation.layout.Arrangement.Center
 
 /** Width / height of the pulled-out game: its front (the console's cover frame) or its 3D box seen from the side. */
-private fun pulledAspect(platform: String, side: Boolean): Float {
+private fun pulledAspect(platform0: String, side: Boolean): Float {
+    // (Update 228, #18: in the case picked for every game — R1 › Case — when there is one.)
+    val platform = LookStyles.casePlatform(platform0) ?: platform0
     val box = MediaTemplates.of(platform)?.box
     if (side && box != null) return box.aspect * 1.12f
     val cov = MediaCovers.used(platform)
@@ -506,16 +540,22 @@ internal fun PulledOutCase(
     waitForCase: Boolean = false
 ) {
     val mode = Features.shelfPulled.state.value
-    val box = MediaTemplates.of(g.platform)?.box
+    // Update 228 (#18): R1 › Case (one console's case for every game) did nothing here — the shelf drew each game in its
+    // own console's case, and its own scan. Now as every other case view (RealMedia.kt): the picked case, with the
+    // game's cover in it and never its own scan, the case's own branding left off (LocalCaseOwner).
+    val cp = LookStyles.casePlatform(g.platform) ?: g.platform
+    val forAll = LookStyles.caseForAll() && cp != g.platform
+    val phys = if (forAll) emptyList() else physical
+    val box = MediaTemplates.of(cp)?.box
     // The game's own scanned case and spine (update 101). Update 129: "Real case" always looks for the scan first.
     val original = Features.originalCases.state.value || mode == Features.ShelfPulled.FRONT
-    val scan = if (original) BoxTexture.front(physical, g.platform) else physical?.firstOrNull { it.first == "Box" }?.second
-    val ownSpine = if (original) BoxTexture.spine(physical, g.platform) else null
+    val scan = if (original) BoxTexture.front(phys, g.platform) else phys?.firstOrNull { it.first == "Box" }?.second
+    val ownSpine = if (original) BoxTexture.spine(phys, g.platform) else null
     // Update 151: not known yet → the plain case shape (only where a scan would win over the cover).
-    val waiting = waitForCase && physical == null && ((side && box != null) || mode == Features.ShelfPulled.FRONT)
+    val waiting = waitForCase && phys == null && ((side && box != null) || mode == Features.ShelfPulled.FRONT)
     if (waiting) {
         val aspect = if (side && box != null) box.aspect * 1.12f
-            else MediaCovers.used(g.platform)?.frontAspect ?: realCaseMm(g.platform)?.let { it.first / it.second } ?: 0.7f
+            else MediaCovers.used(cp)?.frontAspect ?: realCaseMm(cp)?.let { it.first / it.second } ?: 0.7f
         BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
             val w = minOf(maxWidth, maxHeight * aspect)
             Box(Modifier.size(w, w / aspect).clip(RoundedCornerShape(3.dp)).background(CaseArtPlaceholder).border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(3.dp)))
@@ -527,16 +567,18 @@ internal fun PulledOutCase(
         Box3D(box, front, isBox, gameDisplayName(g.name), modifier, spin = false, detail = detail, realSpine = ownSpine)
         return
     }
-    val cov = if (mode != Features.ShelfPulled.COVER) MediaCovers.used(g.platform) else null
+    val cov = if (mode != Features.ShelfPulled.COVER) MediaCovers.used(cp) else null
     var scanFailed by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
     // (Update 202: never for an Android game — its case is Voltcap's own with the Android band, androidOwnCase.)
     if (mode == Features.ShelfPulled.FRONT && scan != null && !scanFailed && !androidOwnCase(g.platform)) {
         // (Update 151: on the shelf the scan fades in over the plain case, not over the cover.)
-        ScanCase(scan, cov?.frontAspect ?: realCaseMm(g.platform)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = if (waitForCase) null else cover)
+        ScanCase(scan, cov?.frontAspect ?: realCaseMm(cp)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = if (waitForCase) null else cover)
         return
     }
     // (Update 173: an app without art: its icon in the case's window.)
-    if (cov != null) CoverCase(cov, coverOrAppIcon(g, cover), placeholderBrush(g.hue), modifier)
+    if (cov != null) androidx.compose.runtime.CompositionLocalProvider(LocalCaseOwner provides if (forAll) g.platform else null) {
+        CoverCase(cov, coverOrAppIcon(g, cover), placeholderBrush(g.hue), modifier)
+    }
     else Box(modifier.clip(RoundedCornerShape(4.dp)).background(placeholderBrush(g.hue))) {
         // (Update 202: the cover's file's flat strips trimmed — coverModel / TrimMargins.kt; Crop fills the front.)
         if (cover != null) AsyncImage(coverModel(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
@@ -788,3 +830,11 @@ internal fun ShelfBackdrop(look: Features.ShelfLook, modifier: Modifier) {
         drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.4f), Color.Transparent), startY = crown, endY = crown + 14.dp.toPx()), topLeft = androidx.compose.ui.geometry.Offset(0f, crown), size = androidx.compose.ui.geometry.Size(w, 14.dp.toPx()))
     }
 }
+
+
+/** Update 228 (#17): a game going back onto the shelf: which one, its lap round the endless bookcase, its own motion. */
+private class ShelfBack(
+    val key: String,
+    val lap: Int,
+    val a: Animatable<Float, androidx.compose.animation.core.AnimationVector1D>
+)

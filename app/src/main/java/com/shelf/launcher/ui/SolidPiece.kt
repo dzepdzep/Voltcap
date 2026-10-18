@@ -2,7 +2,9 @@ package com.shelf.launcher.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -20,6 +22,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.shelf.launcher.data.Features
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -89,12 +93,15 @@ internal class SolidSpec(
 @Composable
 internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
     val backStyle = Features.cartBackStyle.state.value
-    return remember(pickPlatform, backStyle) {
+    // (Update 228, #36: a pack shape picked in the shell picker turned with the pack picture's own plastic on its sides
+    // and back — it was grey, whatever its colour.)
+    val packTone = rememberCustomPieceTone(pickPlatform)
+    return remember(pickPlatform, backStyle, packTone) {
         val (choice, console) = CartShells.split(pickPlatform)
         val sh = choice?.shell
         when {
             choice == null -> null
-            sh == null -> SolidSpec(choice.aspect, 0.12f, CUSTOM_SHELL)
+            sh == null -> SolidSpec(choice.aspect, 0.12f, packTone ?: CUSTOM_SHELL)
             else -> {
                 val colour = CartShells.colourOf(sh, choice.colourKey)
                 // (Update 210: a see-through plastic stays see-through turned — SolidSpec.clear.)
@@ -150,18 +157,118 @@ internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Flo
             // (Update 207: in the photo's own plastic colour — a black or gold cartridge photo had the grey shell's back —
             // and cut to the photo's outline when drawn: fitBackToFace.)
             val own = ownShellColour(sh, platform, gameKey)
-            val colour = tone?.let { t -> ShellColour("photo", own.name, t.copy(alpha = 1f).toArgb(), own.opacity) } ?: own
+            // (Update 228, #36: keyed by the colour — every photo's back was cached under one "photo" key, so a
+            // cartridge's back could come out in another photo's plastic.)
+            val colour = tone?.let { t -> t.copy(alpha = 1f).toArgb().let { c -> ShellColour("photo:$c", own.name, c, own.opacity) } } ?: own
             runCatching { CartShells.back(sh, colour, 480, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
         }, fitBackToFace = true)
     }
 }
 
-/** [spec] for a drawn / template / pack cartridge of [shell] on [platform], at [aspect]. */
-internal fun cartSolid(shell: MediaShell?, platform: String?, aspect: Float?, custom: Boolean = false): SolidSpec =
+/**
+ * [spec] for a drawn / template / pack cartridge of [shell] on [platform], at [aspect]. [tone]: a [custom] piece's own
+ * plastic (rememberCustomPieceTone), else the plain custom grey.
+ */
+internal fun cartSolid(shell: MediaShell?, platform: String?, aspect: Float?, custom: Boolean = false, tone: Color? = null): SolidSpec =
     SolidSpec(
         aspect, slabDepth(if (custom) null else shell),
-        if (custom) CUSTOM_SHELL else if (platform == ANDROID_CART) ANDROID_SHELL else shellTone(shell)
+        if (custom) tone ?: CUSTOM_SHELL else if (platform == ANDROID_CART) ANDROID_SHELL else shellTone(shell)
     )
+
+/**
+ * Update 228 (#36): a custom piece's plastic — your pack's cartridge ("~cc:<console>") or a shell picked from the
+ * cartridge library ("~sh:<choice>|<console>", the pack's shapes too) — from what was picked: a library shell's colour
+ * as set, else the pack picture's own plastic, read once off a small copy of it. Every custom cartridge turned (and in
+ * the game window's all-sides view) had the same grey sides and back, whatever colour it was.
+ */
+internal object CustomPieceTones {
+    /** A pack picture's path → its plastic (0: none could be read off it). */
+    private val packs = java.util.concurrent.ConcurrentHashMap<String, Int>()
+
+    /** The pack picture [pickPlatform] is drawn with (as CustomCart / PackCart pick it), or null. */
+    fun packFile(pickPlatform: String): java.io.File? = when {
+        pickPlatform.startsWith(SHELL_PREFIX) -> {
+            val (choice, console) = CartShells.split(pickPlatform)
+            val look = choice?.pack
+            if (choice == null || look == null) null
+            else CustomCarts.idFor(console ?: "")?.let { CustomCarts.asset(look, choice.clear, it) }
+        }
+        pickPlatform.startsWith(CUSTOM_CART) -> {
+            val console = pickPlatform.removePrefix(CUSTOM_CART)
+            val disc = discShellFor(console)
+            if (disc != null) com.shelf.launcher.data.Packs.discFile(disc.file)
+            else {
+                val finish = Features.modelFinish.state.value
+                val clear = Features.cartClear.state.value && (finish == ModelFinish.CLEAR || finish == ModelFinish.OFF)
+                CustomCarts.idFor(console)?.let { CustomCarts.asset(Features.cartLook.state.value, clear, it) }
+            }
+        }
+        else -> null
+    }
+
+    /** [pickPlatform]'s plastic when it's known without reading a picture (or its pack picture was read); else null. */
+    fun of(pickPlatform: String): Color? {
+        if (pickPlatform.startsWith(SHELL_PREFIX)) {
+            val choice = CartShells.split(pickPlatform).first
+            val sh = choice?.shell
+            if (choice != null && sh != null) return Color(CartShells.colourOf(sh, choice.colourKey).argb).copy(alpha = 1f)
+        }
+        val f = packFile(pickPlatform) ?: return null
+        return packs[f.path]?.takeIf { it != 0 }?.let { Color(it) }
+    }
+
+    /** [of], reading the pack picture (at 1/8 size, once per picture) when it hasn't been read. Off the main thread. */
+    fun load(pickPlatform: String): Color? {
+        of(pickPlatform)?.let { return it }
+        val f = packFile(pickPlatform) ?: return null
+        synchronized(this) {
+            packs[f.path]?.let { c -> return if (c != 0) Color(c) else null }
+            val b = runCatching {
+                android.graphics.BitmapFactory.decodeFile(f.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = 8 })
+            }.getOrNull() ?: return null
+            val t = runCatching { pictureTone(b) }.getOrNull()
+            b.recycle()
+            if (packs.size < 512) packs[f.path] = t?.toArgb() ?: 0
+            return t
+        }
+    }
+
+    /**
+     * The plastic in a pack picture [b]: the first solid pixel in from its left edge (a little further in, past the
+     * outline) on three rows round the middle, averaged; a clear shell's fainter pixels when none is solid.
+     */
+    private fun pictureTone(b: android.graphics.Bitmap): Color? {
+        var r = 0; var g = 0; var bl = 0; var n = 0
+        for (minAlpha in intArrayOf(200, 64)) {
+            for (row in floatArrayOf(0.4f, 0.5f, 0.6f)) {
+                val y = (b.height * row).toInt().coerceIn(0, b.height - 1)
+                for (x in 0 until b.width / 3) {
+                    if ((b.getPixel(x, y) ushr 24) <= minAlpha) continue
+                    val px = b.getPixel((x + maxOf(1, b.width / 40)).coerceAtMost(b.width - 1), y)
+                    if ((px ushr 24) > minAlpha) { r += (px shr 16) and 0xFF; g += (px shr 8) and 0xFF; bl += px and 0xFF; n++ }
+                    break
+                }
+            }
+            if (n > 0) break
+        }
+        return if (n == 0) null else Color(r / n, g / n, bl / n)
+    }
+}
+
+/**
+ * Update 228 (#36): [CustomPieceTones] for [pickPlatform] in composition — a pack picture read off the main thread the
+ * first time it's needed; null until it's known (or for a piece that isn't a custom one).
+ */
+@Composable
+internal fun rememberCustomPieceTone(pickPlatform: String): Color? {
+    val path = CustomPieceTones.packFile(pickPlatform)?.path
+    val tone = remember(pickPlatform, path) { mutableStateOf(CustomPieceTones.of(pickPlatform)) }
+    LaunchedEffect(pickPlatform, path) {
+        if (tone.value != null || path == null) return@LaunchedEffect
+        withContext(Dispatchers.IO) { CustomPieceTones.load(pickPlatform) }?.let { tone.value = it }
+    }
+    return tone.value
+}
 
 /** The cartridge's own slow turn on its stand (Settings › Game look › Moving cartridges), or null when it stands still. */
 @Composable

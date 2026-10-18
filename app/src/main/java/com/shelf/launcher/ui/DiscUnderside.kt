@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import com.shelf.launcher.data.Game
@@ -161,8 +162,19 @@ internal fun DrawScope.drawDiscUnderside(c: Offset, r: Float, format: DiscFormat
     // catches the light), turning round as the disc turns.
     drawCircle(Brush.radialGradient(look.metal, center = c, radius = r), radius = r * dataOut, center = c)
     val m0 = look.metal[0]; val m1 = look.metal[1]; val m2 = look.metal[2]
-    rotate(view * 0.9f, c) {
-        drawCircle(Brush.sweepGradient(listOf(m1, m0, m1, m2, m1, m0, m1, m2, m1), c), radius = r * dataOut, center = c, alpha = 0.8f)
+    // Update 228 (#37): the line across the middle of disc backs. The lobes were 9 colour stops 45° apart, blended in
+    // straight lines: each bright / dark stop and the one opposite it made a hard crease from edge to edge through the
+    // centre, and they showed through the clear hub. Now the same two bright and two dark lobes, rising and falling
+    // smoothly (33 stops along a cosine), and kept off the clear hub (no metal there on a real disc).
+    val hubCut = androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(c, r * clamp)) }
+    val lobes = List(33) { i ->
+        val k = cos(4.0 * Math.PI * i / 32).toFloat() // +1: bright (0°, 180°), -1: dark (90°, 270°)
+        if (k >= 0f) androidx.compose.ui.graphics.lerp(m1, m0, k) else androidx.compose.ui.graphics.lerp(m1, m2, -k)
+    }
+    clipPath(hubCut, androidx.compose.ui.graphics.ClipOp.Difference) {
+        rotate(view * 0.9f + 45f, c) {
+            drawCircle(Brush.sweepGradient(lobes, c), radius = r * dataOut, center = c, alpha = 0.8f)
+        }
     }
     // The fine tracks: faint concentric lines across the data area.
     val dataMid = r * (dataIn + dataOut) / 2f
@@ -200,13 +212,20 @@ internal fun DrawScope.drawDiscUnderside(c: Offset, r: Float, format: DiscFormat
     val dir = Offset(cos(a + 0.6).toFloat(), sin(a + 0.6).toFloat())
     val shift = sin(a * 1.3).toFloat() * r * 0.5f
     val mid = Offset(c.x + dir.x * shift, c.y + dir.y * shift)
+    // (Update 228, #37: a soft rise and fall — the band peaked in a sharp point, which showed as a thin line across the
+    // disc — and kept off the clear hub.)
+    val g = look.glossColor
+    val k = look.gloss
     val band = Brush.linearGradient(
-        0f to Color.Transparent, 0.42f to Color.Transparent, 0.5f to look.glossColor.copy(alpha = look.gloss),
-        0.58f to Color.Transparent, 1f to Color.Transparent,
+        0f to Color.Transparent, 0.38f to Color.Transparent, 0.42f to g.copy(alpha = k * 0.2f), 0.46f to g.copy(alpha = k * 0.7f),
+        0.5f to g.copy(alpha = k), 0.54f to g.copy(alpha = k * 0.7f), 0.58f to g.copy(alpha = k * 0.2f), 0.62f to Color.Transparent,
+        1f to Color.Transparent,
         start = Offset(mid.x - dir.x * r, mid.y - dir.y * r), end = Offset(mid.x + dir.x * r, mid.y + dir.y * r)
     )
-    drawCircle(band, radius = r * dataOut, center = c)
-    if (look.tint.alpha > 0f) drawCircle(look.tint, radius = r * dataOut, center = c)
+    clipPath(hubCut, androidx.compose.ui.graphics.ClipOp.Difference) {
+        drawCircle(band, radius = r * dataOut, center = c)
+        if (look.tint.alpha > 0f) drawCircle(look.tint, radius = r * dataOut, center = c)
+    }
     // The mirror band inside the data (no tracks) and the lead-in edge.
     drawCircle(Brush.radialGradient(look.metal.reversed(), center = c, radius = r * dataIn), radius = (r * (dataIn + clamp) / 2f), center = c, style = Stroke(r * (dataIn - clamp)))
     drawCircle(Color.Black, radius = r * dataIn, center = c, alpha = 0.12f, style = Stroke(r * 0.006f))
