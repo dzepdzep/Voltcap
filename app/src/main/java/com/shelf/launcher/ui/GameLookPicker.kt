@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -535,6 +537,11 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
         Chip((if (logos) "✓ " else "") + "Big logo", accent = logos) { F.consoleBadges.value = true; F.consoleBadgeLogos.value = true }
     }
     MutedNote("A small badge in the corner of each game's tile: the console's logo in white on the console's own colour (or your theme's). On every look: covers, cases, cartridges (3D ones too) and discs (not on a spine too slim for it).")
+    // (Update 240, #32/#57: the strip under round discs that carries the trophy count and game status.)
+    if (now == CardArtType.DISC || now == CardArtType.CARTRIDGE_DISC) {
+        Spacer(Modifier.height(8.dp))
+        SwitchRow(Icons.Filled.Album, "Counts under the disc", "On a round disc's tile the trophy count and the game's status sit on a strip under the disc instead of over its edge.", F.discTileChips.state.value, { F.discTileChips.value = it })
+    }
 }
 
 /** Update 128: Original / Custom, Opaque / Clear and the 14 cartridge shapes of your pack (Settings › Game look). */

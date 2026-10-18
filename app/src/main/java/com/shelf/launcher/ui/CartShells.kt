@@ -93,7 +93,12 @@ internal class CartShell(
     /** The label's bottom corners' radius (mm); below 0: as [labelRadius]. */
     val labelRadiusBottom: Float = -1f,
     /** The label's top edge arched up on a circle of this diameter (mm), its middle at the label's top; 0: straight. */
-    val labelTopArc: Float = 0f
+    val labelTopArc: Float = 0f,
+    // (Update 240, #90: a sticker that folds over the top edge — NES and SNES, 7 mm by ConsoleMods' Cart Labels table.
+    // [label] is only the part on the front; a label scan of the whole sticker has this much cut off its top (it's on
+    // the top face) instead of being squashed into the front window. 0: no fold.)
+    /** How much of the sticker (mm) folds over the top edge, beyond the front part [label]. */
+    val labelFold: Float = 0f
 ) {
     val aspect: Float get() = w / h
     /** Thickness against the longest side (the solid piece's depth). */
@@ -117,16 +122,27 @@ internal object CartShells {
         CartShell("nes", "NES Game Pak", ShellGroup.NINTENDO, 120f, 134f, 17f, rect(120f, 134f, 2f, 1f), lab(11.5f, 1f, 97f, 48f),
             listOf(rid(8f, 70f, 104f, 58f, 12)), listOf(sc(20f, 22f), sc(100f, 22f), sc(60f, 62f), sc(20f, 112f), sc(100f, 112f)),
             listOf(c("Grey", GREY), c("Gold", 0xFFC9A548)), check = CaseCheck.ESTIMATED,
+            // (Update 240, #90: checked, not an axis bug — the 55 × 97 sticker is 97 wide and 55 tall, 7 mm of it over the
+            // top edge, so 97 × 48 on the front, centred ((120 − 97) / 2 = 11.5). Only the fold is new: a scan of the whole
+            // sticker loses its top 7 mm to the top face instead of being squashed. ConsoleMods doesn't mark it test-fitted.)
+            labelFold = 7f,
             note = "Size and label (55×97 mm with 7 mm over the top) measured (NESdev, ConsoleMods); ridges, screw places and radii estimated."),
         CartShell("famicom", "Famicom cassette", ShellGroup.NINTENDO, 108f, 71f, 17f, rect(108f, 71f, 3f, 1f), lab(9f, 5f, 90f, 45.5f),
             listOf(rid(3f, 52f, 102f, 14f, 5)), emptyList(),
             listOf(c("Grey", 0xFFC8C8C8), c("Black", BLACK), c("Red", 0xFFB3262E), c("Yellow", 0xFFE8C51E), c("Blue", 0xFF2D4FA0)),
             check = CaseCheck.ESTIMATED, note = "Size from ConsoleMods (landscape), sticker 90×45.5 mm measured; outline estimated. Shell colours vary by game."),
-        CartShell("snes_na", "SNES Game Pak (North America)", ShellGroup.NINTENDO, 135.85f, 87.7f, 19.7f, rect(135.85f, 87.7f, 3f, 1.5f), lab(12f, 6f, 112f, 46f),
+        CartShell("snes_na", "SNES Game Pak (North America)", ShellGroup.NINTENDO, 135.85f, 87.7f, 19.7f, rect(135.85f, 87.7f, 3f, 1.5f),
+            // (Update 240, #90: the sticker as ConsoleMods' Cart Labels table gives it, test-fitted on an OEM cartridge —
+            // 82.5 × 44 mm with 7 mm folded over the top and 3 mm corners: 82.5 × 37 on the front from the top edge,
+            // centred ((135.85 − 82.5) / 2), square along the fold, round at the bottom. It was 112 × 46 from 6 mm down,
+            // nearly the whole front. Read like the NES row (the fold inside the 44, as the NES's 7 is inside its 55);
+            // whether the 44 includes the fold isn't stated on the page.)
+            lab(26.675f, 0f, 82.5f, 37f),
             listOf(rid(4f, 0.5f, 128f, 3f, 10, false)), listOf(sc(38f, 20f), sc(98f, 20f)),
             listOf(c("Grey", 0xFFA9A8AE), c("Black", 0xFF1E1E1F)),
             extras = listOf(ShellExtra(ShellExtra.SLOT, 11f, 62f, 8f, 14f), ShellExtra(ShellExtra.SLOT, 116.85f, 62f, 8f, 14f)),
-            check = CaseCheck.ESTIMATED, note = "Size measured (135.85×87.7×19.7); label, ridges and the early lock slots' places estimated."),
+            check = CaseCheck.ESTIMATED, labelRadius = 0f, labelRadiusBottom = 3f, labelFold = 7f,
+            note = "Size measured (135.85×87.7×19.7); sticker 82.5×44 with 7 mm over the top (ConsoleMods, test-fitted); ridges and the early lock slots' places estimated."),
         CartShell("sfc", "Super Famicom / SNES PAL cassette", ShellGroup.NINTENDO, 130f, 86f, 20f, rect(130f, 86f, 12f, 1.5f), lab(17f, 8f, 96f, 52f),
             listOf(rid(3f, 18f, 9f, 44f, 7), rid(118f, 18f, 9f, 44f, 7)), listOf(sc(32f, 24f), sc(98f, 24f)),
             listOf(c("Grey", 0xFF9E9DA3)), check = CaseCheck.ESTIMATED,
@@ -166,10 +182,16 @@ internal object CartShells {
             listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Clear", 0xFFE6E8EA, 0.45f)),
             contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, note = "Clear shell, the board shows through; size measured, layout estimated."),
         CartShell("gba", "Game Boy Advance Game Pak", ShellGroup.NINTENDO, 60f, 35f, 8f,
-            o(0f, 0f, 3f, 60f, 0f, 3f, 60f, 8f, 0.5f, 58.5f, 8f, 0.5f, 58.5f, 35f, 1f, 1.5f, 35f, 1f, 1.5f, 8f, 0.5f, 0f, 8f, 0.5f), lab(5f, 9f, 50f, 22f),
+            o(0f, 0f, 3f, 60f, 0f, 3f, 60f, 8f, 0.5f, 58.5f, 8f, 0.5f, 58.5f, 35f, 1f, 1.5f, 35f, 1f, 1.5f, 8f, 0.5f, 0f, 8f, 0.5f),
+            // (Update 240, #90: the sticker 43 × 22 mm with 1 mm corners — ConsoleMods' Cart Labels table, test-fitted on an
+            // OEM cartridge — centred on the shell ((60 − 43) / 2 = 8.5); it was 50 wide, past the sticker. Its 9 mm from
+            // the top stays (estimated). The 8 mm thickness stays too: ConsoleMods gives 9, Wikipedia's Game Boy Game Pak
+            // 6–9 (body vs top lip); the piece has one thickness, so neither is "the" value until it's measured.)
+            lab(8.5f, 9f, 43f, 22f),
             listOf(rid(4f, 1f, 52f, 5f, 4)), listOf(sc(30f, 12f)),
             listOf(c("Dark grey", 0xFF4A4A50), c("Ruby red", 0xFFC0202A, 0.7f), c("Sapphire blue", 0xFF2850B0, 0.7f), c("Emerald green", 0xFF2E9A48, 0.7f)),
-            contactsBack = floatArrayOf(5f, 30f, 50f, 4.5f), check = CaseCheck.ESTIMATED, note = "Width 60 / 57.5 and height 35 measured; the wide top's height estimated."),
+            contactsBack = floatArrayOf(5f, 30f, 50f, 4.5f), check = CaseCheck.ESTIMATED, labelRadius = 1f,
+            note = "Width 60 / 57.5 and height 35 measured; sticker 43×22 (ConsoleMods, test-fitted); the wide top's height and the 8 mm thickness estimated (ConsoleMods 9, Wikipedia 6–9)."),
         CartShell("vb", "Virtual Boy Game Pak", ShellGroup.NINTENDO, 75.8f, 73.74f, 6.61f, rect(75.8f, 73.74f, 3f, 1f), lab(11.9f, 6f, 52f, 42f),
             colours = listOf(c("Black", 0xFF232325)), extras = listOf(ShellExtra(ShellExtra.FLAP, 1.5f, 68.36f, 72.8f, 5.38f, 0xFF3A3A3D.toInt())),
             check = CaseCheck.ESTIMATED,
@@ -749,7 +771,9 @@ internal object CartShells {
         if (art != null) {
             // (Update 206: the picture fills the label exactly — stretched to it, never cut — the label keeps the shell's
             // real size and place, the art adapts to it; a label scan is the sticker itself.)
-            if (scan) c.drawBitmap(art, null, artRect, p)
+            // (Update 240, #90: a scan of the whole sticker of a label that folds over the top has its fold cut off its
+            // top — that part is on the top face — rather than the whole sticker squashed into the front: foldCrop.)
+            if (scan) c.drawBitmap(art, foldCrop(s, art), artRect, p)
             else {
                 // (Update 215: a cover keeps its own shape — fitted inside the label, never stretched to it — and the
                 // rest of the label is the colour along the cover's own edge, so it reads as one printed sticker. A real
@@ -1077,6 +1101,23 @@ internal object CartShells {
                 }
             }
         }
+    }
+
+    /**
+     * Update 240 (#90): the part of a label scan [b] that's on [s]'s front, for a sticker that folds over the top
+     * ([CartShell.labelFold]): when [b]'s shape is nearer the whole sticker's (front + fold) than the front window's, its
+     * top fold / (front + fold) is left off. Null (all of it) otherwise — a scan of just the front, or no fold.
+     */
+    private fun foldCrop(s: CartShell, b: Bitmap): android.graphics.Rect? {
+        val fold = s.labelFold
+        val lw = s.label[2]; val lh = s.label[3]
+        if (fold <= 0f || lw <= 0f || lh <= 0f || b.width < 8 || b.height < 8) return null
+        val a = b.width.toFloat() / b.height
+        val front = lw / lh
+        val whole = lw / (lh + fold)
+        if (kotlin.math.abs(a / whole - 1f) >= kotlin.math.abs(a / front - 1f)) return null
+        val cut = (b.height * fold / (lh + fold)).toInt().coerceIn(0, b.height - 4)
+        return android.graphics.Rect(0, cut, b.width, b.height)
     }
 
     /** The middle of [b] at [aspect] (width / height). */

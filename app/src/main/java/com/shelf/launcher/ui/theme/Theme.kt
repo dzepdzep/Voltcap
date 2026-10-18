@@ -72,16 +72,35 @@ fun ShelfLauncherTheme(
     // (Update 231, #59: the cover only goes to the palette once you've stayed on a game ~220 ms, so holding ◀ / ▶
     // or stepping quickly no longer starts a colour glide for every game passed; the palette's own wait is shortened
     // by the same amount, so the colours still arrive at the same moment after you stop on an unseen game.)
+    // (Update 240, #23: ~300 ms now — ART_SETTLE_MS; a game seen before reuses its cached palette, no decode.)
     var settledArtUrl by remember { mutableStateOf(dynamicArtUrl) }
     LaunchedEffect(dynamicArtUrl, useGame) {
         if (useGame && settledArtUrl != dynamicArtUrl) delay(ART_SETTLE_MS)
         settledArtUrl = dynamicArtUrl
     }
     val gamePalette = com.shelf.launcher.ui.rememberArtPalette(settledArtUrl, useGame, waitMs = 450L - ART_SETTLE_MS).takeIf { useGame }
-    val base = when {
+    val base0 = when {
         useAlbum -> album?.copy(textPrimary = appTheme.colors.textPrimary, textMuted = appTheme.colors.textMuted)?.takeIf { !music } ?: album ?: appTheme.colors
         else -> gamePalette?.copy(textPrimary = appTheme.colors.textPrimary, textMuted = appTheme.colors.textMuted) ?: (if (music) album else null) ?: appTheme.colors
     }
+    // (Update 240, #23: colours from art stay readable. The art palette's own dark background with the theme's writing:
+    // a light theme's dark writing went dark-on-dark, so the palette's own light writing is used where the theme's doesn't
+    // reach 4.5:1 (muted 3:1). A near-grey cover's accent (a grey or black-and-white cover) keeps the theme's accent
+    // instead of a washed-out grey. Remembered per palette, not worked out on every frame of a colour glide.)
+    val artDriven = base0 !== appTheme.colors
+    val artSource = if (useAlbum || (music && gamePalette == null)) album else gamePalette
+    val base = remember(base0, artDriven, artSource, appTheme) {
+        if (!artDriven) base0 else {
+            val text = if (contrastRatio(base0.textPrimary, base0.background) >= 4.5f) base0.textPrimary else artSource?.textPrimary ?: base0.textPrimary
+            val muted = if (contrastRatio(base0.textMuted, base0.background) >= 3f) base0.textMuted else artSource?.textMuted ?: base0.textMuted
+            val acc = if (saturationOf(base0.accent) < 0.15f) appTheme.colors.accent else base0.accent
+            base0.copy(textPrimary = text, textMuted = muted, accent = acc, accentGlow = acc.copy(alpha = 0.45f))
+        }
+    }
+    // (Update 240, #23: Theme › Colours follow › "Keep my accent": the background and panels follow the art, the accent
+    // stays yours — your Custom accent when you picked one, else the theme's — and it is never recoloured by the art.)
+    val keepAccent = artDriven && appTheme.recolorable && com.shelf.launcher.data.Features.artKeepAccent.state.value
+    val manualAccent: Int? = if (keepAccent) look.accent else null
     val customBackground = if (custom && !music) look.background else null
     val sat = if (custom) look.saturation / 100f else 1f
     val bri = if (custom) look.brightness / 100f else 1f
@@ -89,10 +108,20 @@ fun ShelfLauncherTheme(
     // Surfaces are derived from a custom background, so popups still stand out from it.
     val surface = (if (customBackground != null) lerp(background, Color.White, 0.07f) else base.surface.tuned(sat, bri))
     val surfaceRaised = (if (customBackground != null) lerp(background, Color.White, 0.12f) else base.surfaceRaised.tuned(sat, bri))
-    val fixedAccent = ((if (custom && !music) look.accent else null)?.let { Color(it) } ?: base.accent).tuned(sat, bri)
+    val chosenAccent = ((if (custom && !music) look.accent else manualAccent)?.let { Color(it) }
+        ?: (if (keepAccent) appTheme.colors.accent else base.accent)).tuned(sat, bri)
+    // (Update 240, #23: an accent from the art reaches 3:1 on the background and the raised panels, and white or black
+    // writing on it 4.5:1 — only its lightness moves, the hue stays the art's. Your own accent (Custom, or kept with
+    // "Keep my accent") is used exactly as you picked it.)
+    val adjustAccent = artDriven && manualAccent == null && !(custom && !music)
+    val fixedAccent = remember(chosenAccent, background, surfaceRaised, adjustAccent) {
+        if (adjustAccent) legibleArtAccent(chosenAccent, background, surfaceRaised) else chosenAccent
+    }
     val secondaryTuned = base.secondary.tuned(sat, bri)
 
-    val accent by animateColorAsState(fixedAccent, tween(if (music) 900 else 220), label = "accent")
+    // (Update 240, #23: the accent glides as long as the background does when it follows the art — it used to jump in
+    // 220 ms while the background took 600 / 900, so the two visibly came apart on every game change.)
+    val accent by animateColorAsState(fixedAccent, tween(if (music || useAlbum) 900 else if (useGame) 600 else 220), label = "accent")
     val fade: AnimationSpec<Color> = if (music || useAlbum) tween(900) else if (useGame) tween(600) else snap()
     val backgroundA by animateColorAsState(background, fade, label = "background")
     val surfaceA by animateColorAsState(surface, fade, label = "surface")
@@ -135,7 +164,8 @@ fun ShelfLauncherTheme(
             onBackground = targetText,
             onSurface = targetText,
             onSurfaceVariant = targetMuted,
-            onPrimary = Color.White
+            // (Update 240, #23: white unless that doesn't reach 4.5:1 on the accent — then black.)
+            onPrimary = textOn(fixedAccent, Color.White)
         ) else darkColorScheme(
             background = background,
             surface = surface,
@@ -144,7 +174,8 @@ fun ShelfLauncherTheme(
             secondary = secondaryTuned,
             onBackground = targetText,
             onSurface = targetText,
-            onPrimary = background
+            // (Update 240, #23: the background colour on the accent unless that doesn't reach 4.5:1 — then white / black.)
+            onPrimary = textOn(fixedAccent, background)
         )
     }
 
@@ -181,8 +212,12 @@ fun ShelfLauncherTheme(
     }
 }
 
-/** (Update 231, #59) How long the focus must rest on a game before its cover colours start to load. */
-private const val ART_SETTLE_MS = 220L
+/**
+ * (Update 231, #59) How long the focus must rest on a game before its cover colours start to load.
+ * (Update 240, #23: 300 ms, was 220 — a quick tap-tap-tap through games no longer starts a glide on each one it rests on
+ * for a moment; the palette's own wait is shortened by the same amount, so the colours still arrive ~450 ms after you stop.)
+ */
+private const val ART_SETTLE_MS = 300L
 
 /**
  * A lively accent from a cover image: its average colour, pushed to a bright,

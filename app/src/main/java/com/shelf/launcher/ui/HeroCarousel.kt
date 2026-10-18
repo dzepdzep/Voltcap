@@ -492,7 +492,9 @@ private fun CoverWheel(
                         else if (pick != null) MediaFocus(v == loopFocus) { PhysicalMedia(pick.shell, typed ?: labelScan ?: art, Modifier.fillMaxSize().padding(2.dp), platform = pick.platform, labelIsScan = typed != null || labelScan != null, caseCover = art, title = g.name) }
                         else MediaFocus(v == loopFocus) { CaseArt(
                             g.platform, art, typed, Modifier.fillMaxSize().padding(2.dp), title = gameDisplayName(g.name), detail = 240, real = realRef,
-                            caseModifier = if (sel > 0.6f && frameOn) Modifier.border(2.dp, ShelfTheme.accent.copy(alpha = 0.85f * sel), RoundedCornerShape(2.dp)) else Modifier
+                            caseModifier = if (sel > 0.6f && frameOn) Modifier.border(2.dp, ShelfTheme.accent.copy(alpha = 0.85f * sel), RoundedCornerShape(2.dp)) else Modifier,
+                            // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
+                            spine = BoxTexture.realSpine(physicalMedia[g.stableKey], g.platform), game = g, physical = physicalMedia[g.stableKey]
                         ) }
                     } }
                 } else if (cover != null) {

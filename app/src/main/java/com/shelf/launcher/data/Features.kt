@@ -680,6 +680,12 @@ object Features {
     }
     val achPlace = EnumPref("ach_place", AchPlace.CORNER, AchPlace.values())
     /**
+     * (Update 240, #32/#57) On a disc in the game row (Discs, Continue playing…): the trophy count and the game's state on
+     * a chip strip below the disc, at the tile's bottom right, instead of over the disc's curve. Off: where Trophy count
+     * puts them, as on covers.
+     */
+    val discTileChips = BoolPref("disc_tile_chips", true)
+    /**
      * How discs and cartridges move (update 87). Discs: spin = turning like it's playing, bounce = a slow soft bob.
      * Cartridges: spin = turning slowly left and right, bounce = a little hop and settle. Either, both, or still.
      */
@@ -848,6 +854,12 @@ object Features {
      */
     enum class ArtColorSource(val label: String) { AUTO("Automatic"), GAME("Game art"), ALBUM("Album cover") }
     val artColorSource = EnumPref("art_color_source", ArtColorSource.AUTO, ArtColorSource.values())
+    /**
+     * (Update 240, #23) While a theme's colours follow the game / the music: keep the accent you picked yourself (Colours &
+     * look › Custom › Accent; the theme's own accent when you never picked one) — only the background and panels follow
+     * the art. Off: the art's accent, as before.
+     */
+    val artKeepAccent = BoolPref("art_keep_accent", false)
 
     // ---- Music themes: what sits under the visualizer ----
     val musicShowControls = BoolPref("music_show_controls", true)

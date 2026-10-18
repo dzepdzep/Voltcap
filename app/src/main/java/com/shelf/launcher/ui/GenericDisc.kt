@@ -147,7 +147,12 @@ internal fun GenericDisc(console: String, art: Any?, modifier: Modifier = Modifi
             }
             // The printed ring: the game's art, the console's band on top and its name below.
             Box(Modifier.fillMaxSize().clip(DiscRingShape(0.30f, 0.965f)).background(Color(0xFFE9E6DF))) {
-                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
+                // (Update 240, #32/#57: an app / Android game without art of its own wears its icon on the disc — the icon
+                // was blown up to the whole disc and cut by the hub, so only a smeared corner of it showed. Now a soft wash
+                // of its colours across the print and the icon itself whole, under the hub, like a printed logo.)
+                val icon = appIconArt(art)
+                if (icon != null) DiscIconPrint(icon, side)
+                else if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
                 // Top band with the logo (or the console's name while it loads / where there's none).
                 Box(
                     Modifier.fillMaxWidth().height(side * 0.33f).align(Alignment.TopCenter).background(bandColor),
@@ -197,6 +202,29 @@ internal fun GenericDisc(console: String, art: Any?, modifier: Modifier = Modifi
     }
 }
 
+
+/**
+ * (Update 240, #32/#57) [art] when it's an app's icon (the square ≤ 192 px bitmap AppIconCache hands out for an app
+ * without art of its own) rather than a cover or label, as an ImageBitmap; else null.
+ */
+@Composable
+private fun appIconArt(art: Any?): ImageBitmap? {
+    val bmp = (art as? android.graphics.Bitmap)?.takeIf { it.width == it.height && it.width <= 192 } ?: return null
+    return androidx.compose.runtime.remember(bmp) { bmp.asImageBitmap() }
+}
+
+/** (Update 240, #32/#57) An app icon printed on the plain CD: its colours washed across the ring, the icon whole below the hub. */
+@Composable
+private fun DiscIconPrint(icon: ImageBitmap, side: androidx.compose.ui.unit.Dp) {
+    Box(Modifier.fillMaxSize()) {
+        Image(icon, null, contentScale = ContentScale.Crop, alpha = 0.32f, modifier = Modifier.fillMaxSize())
+        // Between the hub (to 0.65 of the side) and the bottom band (from 0.8).
+        Image(
+            icon, null, contentScale = ContentScale.Fit,
+            modifier = Modifier.align(Alignment.Center).offset(y = side * 0.225f).size(side * 0.15f)
+        )
+    }
+}
 
 private val discTplCache = java.util.concurrent.ConcurrentHashMap<String, ImageBitmap>()
 

@@ -942,7 +942,9 @@ internal fun StyleArt(
             pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, labelScan ?: url ?: appIcon, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = labelScan != null || (typed != null && url == typed), caseCover = cover ?: appIcon, title = g.name) }
             box3d != null -> MediaFocus(g.stableKey == c.game?.stableKey) { CaseArt(
                 g.platform, cover ?: appIcon, typed, Modifier.fillMaxSize().padding(2.dp).awardShine(k, focused), title = gameDisplayName(g.name),
-                caseModifier = if (focused) Modifier.border(2.dp, ring, RoundedCornerShape(2.dp)) else Modifier
+                caseModifier = if (focused) Modifier.border(2.dp, ring, RoundedCornerShape(2.dp)) else Modifier,
+                // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
+                spine = BoxTexture.realSpine(c.state.physicalMedia[k], g.platform), game = g, physical = c.state.physicalMedia[k]
             ) }
             // Update 129: "Real discs": the game's own scan, standing free.
             realScanOf(gArt, typed) != null -> MediaFocus(g.stableKey == c.game?.stableKey) {

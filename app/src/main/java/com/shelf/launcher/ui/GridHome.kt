@@ -209,7 +209,14 @@ internal fun HomeGameGrid(
                 // (Update 119: a real scraped cartridge / disc picture stands free too, whole — it used to be cut to the
                 // card's shape, so the Cartridges & discs look looked like covers in the Grid.)
                 val realScan = gArt == CardArtType.CARTRIDGE_DISC && !mediaShellsOn && typed != null && url == typed
-                val free = isFreeMedia(gArt, g.platform) || realScan || (drawnMediaWanted(gArt, typed) && MediaShell.of(g.platform) != null)
+                // (Update 240, #24/#27/#58: in the Cases look a game whose console has no template case (Cover templates off:
+                // PS3 / PS4 / PS5, the Xboxes, Neo Geo CD…) but its own scanned case front (Original cases) stands as that
+                // scanned case — CaseArt's ScanCase at its real case's shape — as every other console's scan does; it was the
+                // scan cut to the cell like a flat cover, so one grid mixed cases and covers.)
+                val scanCaseOnly = gArt == CardArtType.CASE && typed != null && caseMarker(g.platform) == null &&
+                    com.shelf.launcher.data.Features.originalCases.state.value && !androidOwnCase(g.platform) &&
+                    !LookStyles.caseForAll() && CaseCatalog.of(LookStyles.casePlatform(g.platform), CaseRegion.US) != null
+                val free = isFreeMedia(gArt, g.platform) || realScan || scanCaseOnly || (drawnMediaWanted(gArt, typed) && MediaShell.of(g.platform) != null)
                 // Update 203: a drawn cartridge turns as a solid piece (its thickness showing) — the slot hands it the turn
                 // instead of turning the flat picture (SolidPiece.kt).
                 val solidCart = spin != null && !spines && gArt == CardArtType.CARTRIDGE_DISC && !realScan && drawnMediaWanted(gArt, typed)
@@ -252,7 +259,7 @@ internal fun HomeGameGrid(
                         val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC && !(mixed && com.shelf.launcher.data.Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey) else null // (Update 229, #31: "All cartridges" in a mixed list no longer forced to a CD by Discs only)
                         // (Update 235, #27/#38: consoles without a template case too — Voltcap's plain case, caseMarker /
                         // plainCaseSpec — instead of the flat cover / turned "Box (3D)" picture cropped to the cell below.)
-                        val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null
+                        val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) ?: (if (scanCaseOnly) Unit else null) else null
                         // (Update 173: an app without art: its icon on the label / in the case.)
                         val artOrIcon = if (pick != null || box3d != null) coverOrAppIcon(g, url ?: cover) else null
                         when {
@@ -263,7 +270,15 @@ internal fun HomeGameGrid(
                             // Box art as the real box, straight from the front.
                             box3d != null -> MediaFocus(on) { CaseArt(
                                 g.platform, cover ?: artOrIcon, typed, Modifier.fillMaxSize().padding(4.dp).awardShine(g.stableKey, on), title = gameDisplayName(g.name), real = realRef,
-                                caseModifier = if (on && look.focusBorder) Modifier.border(2.dp, ShelfTheme.accent, androidx.compose.foundation.shape.RoundedCornerShape(2.dp)) else Modifier
+                                caseModifier = if (on && look.focusBorder) Modifier.border(2.dp, ShelfTheme.accent, androidx.compose.foundation.shape.RoundedCornerShape(2.dp)) else Modifier,
+                                // (Update 240, #26: the game's real spine for a box turned to its side — its spine scan, else (Original
+                                // cases) the strip cut from its box scans — as the carousels and the Spines look ask for it. It was
+                                // only found through the front scan handed in (BoxTexture.spineFor), so a game whose cover you picked,
+                                // or one without a front scan, showed the plain spine though its spine scan was there.)
+                                spine = BoxTexture.realSpine(physicalMedia[k], g.platform),
+                                // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES)
+                                // stands as its real 3D case when turned to its spine — CaseArt.)
+                                game = g, physical = physicalMedia[k]
                             ) }
                             // Filled edge to edge (cropped, never letterboxed): no empty bands round the picture. (A real
                             // cartridge / disc scan stands free and whole — media, not a cover; no card behind it.)

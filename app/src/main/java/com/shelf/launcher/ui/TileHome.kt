@@ -697,7 +697,9 @@ private fun HomeTile(
                 MediaFocus(focused) { CaseArt(
                     game.platform, artOrIcon, typedArtUrl, Modifier.fillMaxSize().padding(6.dp), title = gameDisplayName(game.name), real = realCase,
                     // The coloured frame hugs the case itself.
-                    caseModifier = if (focused && !dimmed && look.focusBorder) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier
+                    caseModifier = if (focused && !dimmed && look.focusBorder) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier,
+                    // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
+                    spine = BoxTexture.realSpine(HomeScans.map[game.stableKey], game.platform), game = game, physical = HomeScans.map[game.stableKey]
                 ) }
             }
         } else if (realScanOf(cardArtType, typedArtUrl) != null) {

@@ -169,9 +169,13 @@ internal const val CASE_ASIDE_SHRINK = 0.48f
 
 /** (Update 238, #116/#117: the case's own slight tilt (Case3D's default pitch), and how far a case may be tilted on top of it.) */
 internal const val CASE_PITCH = 4f
-/** (Update 238, #117: 0° … 176° all told — never past upside down, where its missing bottom face would show.) */
-internal const val BOX_PITCH_MIN = -CASE_PITCH
-internal const val BOX_PITCH_MAX = 176f - CASE_PITCH
+/**
+ * (Update 238, #117: 0° … 176° all told — never past upside down, where its missing bottom face would show.)
+ * (Update 240, #117: Case3D draws its bottom now, so a case tilts all the way round like the other pieces, over its top
+ * and under its bottom: −180° … 180°, wrapped.)
+ */
+internal const val BOX_PITCH_MIN = -180f
+internal const val BOX_PITCH_MAX = 180f
 /** (Update 238, #116: the slow return's curve — a gentle start, a long soft landing.) */
 private val RETURN_EASE = CubicBezierEasing(0.45f, 0f, 0.25f, 1f)
 
@@ -566,8 +570,8 @@ internal class InspectMotion {
     /** Update 238 (#117): the right stick's up / down (−1…1), 0 at rest. */
     val stickY = mutableFloatStateOf(0f)
     /**
-     * Update 238 (#117): a case (Case3D draws no bottom face) tilts only over its top — from upright to just shy of
-     * upside down, its back seen from above; a cartridge / card / disc tilts all the way round (−180…180, wrapped).
+     * Update 238 (#117): a case — its own slight tilt (CASE_PITCH) added in yawSign. (Update 240, #117: it tilts all the
+     * way round now too, as a cartridge / card / disc does (−180…180, wrapped): Case3D has its bottom face.)
      */
     var boxPitch = false
 
@@ -578,8 +582,8 @@ internal class InspectMotion {
         if (opened || lid.floatValue > 0.001f || out.floatValue > 0.001f) return
         spinJob?.cancel(); easeJob?.cancel()
         var p = pitch.floatValue + deg
-        if (boxPitch) p = p.coerceIn(BOX_PITCH_MIN, BOX_PITCH_MAX)
-        else { if (p > 180f) p -= 360f else if (p < -180f) p += 360f }
+        // (Update 240, #117: wrapped for a case too — it was held to 0…176° all told.)
+        if (p > 180f) p -= 360f else if (p < -180f) p += 360f
         pitch.floatValue = p
     }
 
@@ -1112,7 +1116,8 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
  * Update 238 (#117): the inspected case, tilted by [InspectMotion.pitch] on top of its own slight tilt. Its own
  * composable, so only it follows the tilt (Case3D takes its pitch as a plain value). Case3D (CaseDraw) culls each face
  * by its winding, so the front, spine, edge, top and back show correctly at any tilt from 0° to 176°; it has no bottom
- * face, so the tilt never goes under it (BOX_PITCH_MIN / MAX).
+ * face, so the tilt never goes under it (BOX_PITCH_MIN / MAX). (Update 240, #117: it has its bottom now — the whole way
+ * round, −180° … 180°.)
  */
 @Composable
 private fun InspectCase(
@@ -1385,6 +1390,16 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // Update 228 (#36): a custom piece's own plastic from what was picked (CustomPieceTones) wins over the pixel read
     // below — that read failed while the pack picture was still loading (or on a clear shell's faint edge) and was never
     // tried again, so a custom cartridge turned grey here.
+    // (Update 240, #92: a library shell's researched bottom — its insertion edge, connector opening and board — drawn
+    // on its bottom plane when it's tilted to show it; shells without researched data keep the plain edge.)
+    val under = remember(p.pick?.platform) {
+        p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
+            val ch = CartShells.split(pp).first
+            ch?.shell?.let { sh ->
+                runCatching { CartUndersides.picture(sh, CartShells.colourOf(sh, ch.colourKey), 8f)?.asImageBitmap() }.getOrNull()?.let { sh to it }
+            }
+        }
+    }
     val customPlatform = p.pick?.platform?.takeIf { isCustomPiece(it) }
     val saved = if (customPlatform != null) rememberCustomPieceTone(customPlatform) else null
     var shell by androidx.compose.runtime.remember(p) { androidx.compose.runtime.mutableStateOf<Color?>(null) }
@@ -1457,6 +1472,10 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                         val z = if (c >= 0f) -depth / 2f + depth * f else depth / 2f - depth * f
                         at(z) { drawLayer(edge) }
                     }
+                }
+                under?.let { (ush, upic) ->
+                    if (CartUndersides.bottomMatrix(mx, ush, upic.width, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp))
+                        withTransform({ transform(mx) }) { drawImage(upic) }
                 }
                 if (c >= 0f) {
                     lit.colorFilter = SlabLight.of(1f - 0.4f * abs(sn))

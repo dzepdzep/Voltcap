@@ -564,7 +564,9 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                 CaseArt(
                     // (Update 173: an app without art: its icon in the case.)
                     g.platform, coverOrAppIcon(g, c.cover(g)), scan, Modifier.fillMaxSize().awardShine(k, focused), title = gameDisplayName(g.name),
-                    caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier
+                    caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier,
+                    // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
+                    spine = BoxTexture.realSpine(c.state.physicalMedia[k], g.platform), game = g, physical = c.state.physicalMedia[k]
                 )
             }
             // (Update 202: the case's printed band shows the console already.)

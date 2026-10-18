@@ -285,6 +285,19 @@ internal object CaseCatalog {
         return spec
     }
 
+    /**
+     * (Update 240, #27/#58: the front's width / height of [platform]'s real case (R1 › Case's when one is picked for all) in
+     * the region you set (Settings › Game look › Case region; where only a platform is known, a file's own region tags
+     * can't be read), for the flat cases drawn from a scan: the case's shape comes from here and the scan is fitted into
+     * it, so a scan of the wrong shape can't make a flattened case. Null for a jewel case (its scanned "front" is the
+     * booklet, not the case's outline) and for consoles without a retail case.)
+     */
+    fun frontAspect(platform: String?): Float? {
+        val p = LookStyles.casePlatform(platform) ?: return null
+        val region = when (Features.caseRegion.state.value.code) { "EU" -> CaseRegion.EU; "JP" -> CaseRegion.JP; else -> CaseRegion.US }
+        return of(p, region)?.takeIf { it.shell != CaseShell.JEWEL }?.aspect
+    }
+
     private val TAG = Regex("""[(\[]([^)\]]*)[)\]]""")
     private val US_WORDS = setOf("usa", "us", "u", "america", "canada", "ntsc-u", "brazil")
     private val EU_WORDS = setOf("europe", "eu", "eur", "e", "pal", "pal-e", "uk", "germany", "france", "spain", "italy", "netherlands",

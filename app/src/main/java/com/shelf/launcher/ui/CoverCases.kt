@@ -467,7 +467,10 @@ internal fun caseFitFor(cov: CoverTpl, art: Any?): CaseFit? {
     else if (!com.shelf.launcher.data.Features.allCaseFit.state.value) return null
     val url = art as? String ?: return null
     val ca = CoverAspects.of(url) ?: if (own) SGDB_COVER else return null
-    return cov.fitTo(ca)
+    // (Update 240, #27/#58: a console's case is reshaped to its cover only a little — within about a sixth of its real
+    // shape. A wide picture handed in as the cover (a landscape PAL / Japanese box, a side scan) made the case take its
+    // shape outright: an N64 box went half as wide again, flattened. Past that the cover is cut to the case's window.)
+    return cov.fitTo(ca)?.takeIf { f -> own || (f.aspect / cov.frontAspect) in 0.85f..1.18f }
 }
 
 /** The front's width / height for [art]: reshaped to its cover ([caseFitFor]) or as drawn. */
@@ -734,25 +737,41 @@ internal fun CoverCase(
 internal fun ScanCase(
     scan: Any, aspect: Float, modifier: Modifier = Modifier, caseModifier: Modifier = Modifier, onFail: () -> Unit = {}, cover: Any? = null,
     /** Update 143: this share of the scan's width is cut off its left side (a PlayStation cover's band, see [PS1_BAND]). */
-    cutLeft: Float = 0f
+    cutLeft: Float = 0f,
+    /** (Update 240, #27/#58: the game's console, for its real case's shape (CaseCatalog.frontAspect) and the full-scan cut.) */
+    platform: String? = null
 ) {
     // Update 186: the scan's own shape once it's known (CoverAspects), so nothing of it is cut off — a GoldenEye box lost
     // the "G" when drawn at the template's shape. Kept near the template's (a wrong scan can't make a strange case).
+    // (Update 240, #27/#58: kept near the real case's shape — CaseCatalog, the console in your region, and the template's —
+    // within 8 %, no longer a third, where that shape is known (not a jewel case): a wide or wrong "box" scan (a PAL / Japanese box, a side or a whole unfolded scan) made
+    // GoldenEye's N64 box up to 1.82 wide for 1.37, a flattened case among the others. The scan is cut to that shape.
+    // A scan far wider than the case — the whole unfolded box, back | spine | front — has its front cut out (BoxTexture).)
     val key = scan.toString()
-    val own = CoverAspects.rawOf(key)?.let { r -> (r * (1f - cutLeft.coerceIn(0f, 0.5f))).coerceIn(aspect * 0.75f, aspect * 1.33f) }
+    val raw = CoverAspects.rawOf(key)
+    val real = if (cutLeft > 0f) null else CaseCatalog.frontAspect(platform)
+    // (A jewel case's front scan, or a PlayStation one cut at its band, keeps the old leeway: a booklet or the whole case.)
+    val lo = if (real != null) minOf(aspect, real) * 0.92f else aspect * 0.75f
+    val hi = if (real != null) maxOf(aspect, real) * 1.08f else aspect * 1.33f
+    val unfolded = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null &&
+        raw != null && raw > hi * UNFOLDED_SCAN
+    val shown: Any = if (unfolded) BoxTexture.model(scan as String, BoxPart.FRONT, platform) else scan
+    val shownKey = shown.toString()
+    val own = (if (unfolded) CoverAspects.rawOf(shownKey) else raw)?.let { r -> (r * (1f - cutLeft.coerceIn(0f, 0.5f))).coerceIn(lo, hi) }
     val shape = own ?: aspect
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * shape)
         val h = w / shape
         // Update 119: the game's cover (usually already loaded) while its case scan comes in — never a dark box first.
-        var scanIn by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
+        var scanIn by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(false) }
         // Update 202: the grey placeholder only until the scan is in: a scan with see-through corners (or one a hair off
         // the box's shape) never shows grey round it once drawn — the scan itself fills the box (Crop, centred).
         Box(Modifier.size(w, h).caseShadow().then(caseModifier).then(if (scanIn) Modifier else Modifier.background(CaseArtPlaceholder)).then(if (cutLeft > 0f) Modifier.clipToBounds() else Modifier)) {
             if (cover != null && !scanIn) AsyncImage(cardArtModel(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             AsyncImage(
-                cardArtModel(scan), null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
-                onSuccess = { r -> scanIn = true; r.painter.intrinsicSize.let { sz -> CoverAspects.note(key, sz.width, sz.height) } },
+                cardArtModel(shown), null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
+                // (Update 240: the front cut's own shape under its own address — the scan's stays the whole scan's.)
+                onSuccess = { r -> scanIn = true; r.painter.intrinsicSize.let { sz -> CoverAspects.note(shownKey, sz.width, sz.height) } },
                 onError = { onFail() },
                 modifier = if (cutLeft > 0f) Modifier.fillMaxHeight().wrapContentWidth(Alignment.End, unbounded = true).width(w / (1f - cutLeft.coerceIn(0f, 0.5f)))
                 else Modifier.fillMaxSize()

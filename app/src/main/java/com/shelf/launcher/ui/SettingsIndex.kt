@@ -56,6 +56,9 @@ internal object SettingsIndex {
         E("Theme", "Theme", "Themes & colours", null, null),
         E("Themes", "Theme", "Themes & colours", "theme_browser", "Themes"),
         E("Colours follow (theme, game or music)", "Theme", "Themes & colours", "theme_browser", "Themes"),
+        // (Update 240, #23)
+        E("Keep my accent (colours follow the game)", "Theme", "Themes & colours", "theme_browser", "Themes"),
+        E("Your colours (colours follow)", "Theme", "Themes & colours", "theme_browser", "Themes"),
         // (Update 226, #109: "Loop video quality" removed (the video loop themes went in update 119); "Best on" is a note
         // under the theme preview in Themes.)
         E("Themes (best on which devices)", "Theme", "Themes & colours", "theme_browser", "Themes"),

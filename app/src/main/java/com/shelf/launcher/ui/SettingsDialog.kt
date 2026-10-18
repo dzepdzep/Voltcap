@@ -5691,6 +5691,8 @@ private fun ColorsFollowRow(theme: AppTheme) {
     val look = f.lookFor(theme.name)
     val now = when {
         !theme.recolorable -> null
+        // (Update 240, #23: your own Custom colours show as their own choice — they read as "Its own colours" before.)
+        look.colorSource == com.shelf.launcher.data.Features.ColorSource.CUSTOM -> "custom"
         look.colorSource != com.shelf.launcher.data.Features.ColorSource.GAME -> "theme"
         f.artColorSource.state.value == com.shelf.launcher.data.Features.ArtColorSource.ALBUM -> "music"
         else -> "game"
@@ -5706,8 +5708,15 @@ private fun ColorsFollowRow(theme: AppTheme) {
         val targets = if (allThemes) AppTheme.values().filter { it.recolorable } else listOf(theme)
         targets.forEach { t ->
             val l = f.lookFor(t.name)
-            val src = if (choice == "theme") com.shelf.launcher.data.Features.ColorSource.THEME else com.shelf.launcher.data.Features.ColorSource.GAME
-            if (l.colorSource != com.shelf.launcher.data.Features.ColorSource.CUSTOM || choice != "theme") f.setLook(t.name, l.copy(colorSource = src))
+            // (Update 240, #23: "Your colours" puts back the accent / background you picked (Colours & look › Custom) —
+            // following the game or the music never erases them, they're kept in the theme's look and come back here.)
+            val src = when (choice) {
+                "theme" -> com.shelf.launcher.data.Features.ColorSource.THEME
+                "custom" -> if (l.accent != null || l.background != null) com.shelf.launcher.data.Features.ColorSource.CUSTOM else return@forEach
+                else -> com.shelf.launcher.data.Features.ColorSource.GAME
+            }
+            // (Another theme's Custom colours stay as they are with "Every theme"; this theme can go back to its own.)
+            if (t == theme || l.colorSource != com.shelf.launcher.data.Features.ColorSource.CUSTOM || choice != "theme") f.setLook(t.name, l.copy(colorSource = src))
         }
         when (choice) {
             "game" -> f.artColorSource.value = com.shelf.launcher.data.Features.ArtColorSource.GAME
@@ -5716,15 +5725,31 @@ private fun ColorsFollowRow(theme: AppTheme) {
     }
     ChipFlow {
         Chip((if (now == "theme") "✓ " else "") + "Its own colours", accent = now == "theme") { apply("theme") }
+        // (Update 240, #23) Only when you've picked colours of your own for this theme.
+        if (look.accent != null || look.background != null) {
+            Chip((if (now == "custom") "✓ " else "") + "Your colours", accent = now == "custom") { apply("custom") }
+        }
         Chip((if (now == "game") "✓ " else "") + "The game you're on", accent = now == "game") { apply("game") }
         Chip((if (now == "music") "✓ " else "") + "The music playing", accent = now == "music") { apply("music") }
         Chip(if (allThemes) "✓ Every theme" else "Only this theme", accent = false) { allThemes = !allThemes }
     }
     Spacer(Modifier.height(4.dp))
+    // (Update 240, #23: following the art, the accent can stay yours — Features.artKeepAccent.)
+    if (now == "game" || now == "music") {
+        Spacer(Modifier.height(4.dp))
+        val keep = f.artKeepAccent.state.value
+        ChipFlow {
+            Chip((if (keep) "✓ " else "") + "Keep my accent", accent = keep) { f.artKeepAccent.toggle() }
+        }
+    }
+    Spacer(Modifier.height(4.dp))
     MutedNote(
         when (now) {
-            "game" -> "Background, panels and accent take the colours of the game you're on, gliding as you move."
-            "music" -> "The colours of the album cover while music plays; the game's when nothing plays."
+            "game" -> (if (f.artKeepAccent.state.value) "Background and panels" else "Background, panels and accent") +
+                " take the colours of the game you're on, once you stop on it, gliding over. Colours are kept readable."
+            "music" -> "The colours of the album cover while music plays; the game's when nothing plays." +
+                (if (f.artKeepAccent.state.value) " The accent stays yours (the theme's, if you never picked one)." else "")
+            "custom" -> "The accent and background you picked (Colours & look › Colours)."
             else -> "The theme as it was made."
         }
     )

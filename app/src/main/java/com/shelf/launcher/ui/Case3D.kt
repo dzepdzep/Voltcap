@@ -50,6 +50,7 @@ internal fun Case3D(
     showItemOf: (() -> Boolean)? = null
 ) {
     val title = gameDisplayName(g.name)
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     // Update 191: the real case this game came in (its console and region; CaseCatalog.kt).
     val regionPref = Features.caseRegion.state.value
     val casePlatformNow = LookStyles.casePlatform(g.platform)
@@ -68,7 +69,16 @@ internal fun Case3D(
     } else null
     // (Update 202: flat strips that are part of the cover's / front scan's file trimmed off, TrimMargins.kt — the
     // carousel's warmSoft for 3D cases asks the same way.)
-    val front = rememberSoftBitmap(ownFront ?: cover, 480, trim = true)
+    val front0 = rememberSoftBitmap(ownFront ?: cover, 480, trim = true)
+    // (Update 240, #27/#58: a "Box" scan that is really the whole unfolded box — back | spine | front side by side, far wider
+    // than the real case's front (CaseCatalog) — has its front cut out of it (BoxTexture), not its middle cut to the case's
+    // shape: that showed the spine and the back's edge as the front. The case's shape stays the catalog's whatever the scan.)
+    val unfoldedFront = (ownFront as? String)?.takeIf { s ->
+        spec != null && spec.shell != CaseShell.JEWEL && BoxTexture.parse(s) == null && front0 != null &&
+            front0.width.toFloat() / front0.height.coerceAtLeast(1) > spec.aspect * UNFOLDED_SCAN
+    }?.let { BoxTexture.model(it, BoxPart.FRONT, g.platform) }
+    val frontCut = rememberSoftBitmap(unfoldedFront, 480, trim = true)
+    val front = frontCut ?: front0
     // Not looked up yet (far along the Spine wall): ask once it has stayed on screen a moment, as the Spines look does.
     val scansKnown = physical != null || HomeScans.knownHere(g.stableKey)
     if (!scansKnown) {
@@ -89,18 +99,16 @@ internal fun Case3D(
     val tpl = if (Features.coverTemplates.state.value || forAll || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     // (Made once per game, away from the screen's thread: SpineCache.)
     val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false)
-    val spine: android.graphics.Bitmap = remember(ownBmp, tplSpine, title, spinePending) {
-        ownBmp?.let { b -> DerivedArt.of(b, "spine|0") { orientSpine(b, landscape = false) } }
-            ?: (if (spinePending) SpineCache.WAITING else null)
-            ?: tplSpine.bitmap
-            // (A plain dark strip for the moment your console spine is being made, then the plain one with the name.)
-            ?: if (!tplSpine.done) SpineCache.WAITING else DerivedArt.named("plainSpine|$title") { plainSpine(title) }
-    }
-    // How thick the case is (its spine's width against its height): the spine picture's own shape, kept to real cases'.
-    val depth = remember(spine, tpl, ownBmp, ownCase, spec) {
-        val own = spine.width.toFloat() / spine.height.coerceAtLeast(1)
+    // The game's own spine stood up (reading top to bottom), when it has one.
+    val ownUpright = remember(ownBmp) { ownBmp?.let { b -> DerivedArt.of(b, "spine|0") { orientSpine(b, landscape = false) } } }
+    // How thick the case is (its spine's width against its height), kept to real cases'.
+    // (Update 240, #26: the real case's thickness (CaseCatalog, the console and region) wins over the spine scan's own shape
+    // when the two are far apart — a scan of the long edge of a landscape box (N64 / SNES "box-2D-side"), or one cut a little
+    // wide, made the box half as thick or a third too thick; within a quarter the scan's own shape still says (a release's
+    // own box can differ). Up to 0.26 of its height: an N64 / SNES box is 32 mm deep on 127 (0.22 cut it to 28 mm).)
+    val depth = remember(ownUpright, tpl, ownCase, spec, g.platform) {
         // Update 171: Voltcap's own Steam / Android cases slim, like a game card's case (they were as thick as a DVD case).
-        if (ownCase != null && ownBmp == null) return@remember OWN_CASE_DEPTH
+        if (ownCase != null && ownUpright == null) return@remember OWN_CASE_DEPTH
         // (Update 166: without a spine picture, the console's real case thickness — a Game Boy box is far thicker for its
         // size than a DVD case — not always a DVD case's.)
         // (Update 191: the real case's thickness for its region — a PAL PlayStation case is deeper.)
@@ -108,7 +116,24 @@ internal fun Case3D(
         // multi-disc case 25 mm — whatever shape its spine scan is; the scan is drawn onto that side. A trimmed or
         // single-case spine scan made a multi-disc case as slim as a single one.)
         val physical = spec?.takeIf { it.platform == "PS1" && it.shell == CaseShell.JEWEL }?.depth
-        (physical ?: if (ownBmp != null) own else spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.22f)
+        val own = ownUpright?.let { it.width.toFloat() / it.height.coerceAtLeast(1) }
+        val known = spec?.takeIf { it.check != CaseCheck.PLACEHOLDER }?.depth
+        val scanned = own?.takeIf { known == null || kotlin.math.abs(it / known - 1f) <= 0.25f }
+        (physical ?: scanned ?: spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.26f)
+    }
+    // (Update 240, #26: no spine picture of the game's own: the console's colour with the name down it and the console's
+    // logo at its foot, made at the side's own shape — the plain dark strip was the same for every console and, made for a
+    // DVD case's thin side, came out stretched two and a half times wide on a cartridge box.)
+    val spinePlatform = LookStyles.spinePlatform(g.platform) ?: g.platform
+    val spine: android.graphics.Bitmap = remember(ownUpright, tplSpine, title, spinePending, depth, spinePlatform) {
+        // (Update 240, #26: the game's own spine fitted to the side — cut in the middle only as much as its shape is off the
+        // side's, never squeezed onto it: the long-edge print of a landscape box was squashed onto its short end.)
+        ownUpright?.let { b -> DerivedArt.of(b, "spineFit|$depth") { fillCrop(b, depth, 0.1f) } }
+            ?: (if (spinePending) SpineCache.WAITING else null)
+            ?: tplSpine.bitmap
+            // (A plain dark strip for the moment your console spine is being made, then the console's own with the name.)
+            ?: if (!tplSpine.done) SpineCache.WAITING
+            else consoleSpine(ctx, spinePlatform, title, depth)
     }
     // Update 166: a Steam / Android game's case front is Voltcap's own: the game's art in its window, the band on top.
     // Update 169: and with Settings › Cover templates on, every console's case front is its template too (the band, the
@@ -120,7 +145,6 @@ internal fun Case3D(
     val tplFront = caseTpl.takeIf { ownFront == null }
     // (Update 169: Steam / Android cases at a SteamGridDB cover's shape — case3dAspect — so the cover fills the window.)
     val fit = tplFront?.takeIf { it.isOwn() && Features.ownCaseFit.state.value }?.fitTo(SGDB_COVER_ASPECT)
-    val ctx = androidx.compose.ui.platform.LocalContext.current
     val band = remember(tplFront?.frontRes, fit?.aspect) {
         tplFront?.let { t ->
             // (Update 232, #60: the template front decoded once per template and fit, not again on the screen's thread for
@@ -389,6 +413,9 @@ internal const val EDGE_CLAM = 4
 /** Update 171: Steam / Android 3D cases' thickness against their height. */
 internal const val OWN_CASE_DEPTH = 0.05f
 
+/** (Update 240, #27/#58: how far a case standing turned to show its spine is turned — CaseArt's "Box turned to show its spine".) */
+internal const val TURNED_CASE_YAW = 28f
+
 /**
  * Width / height of a game's 3D case: its console's real case shape (update 166: also with the cover templates off — a
  * Game Boy Advance game opened as a DVD-shaped box), else a game case's.
@@ -549,9 +576,10 @@ private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphi
  * of cutting them. The face is then drawn onto a front of exactly [aspect], so nothing is stretched. Within half a
  * percent (a pixel or so) it is left as it is.
  */
-private fun fillCrop(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+private fun fillCrop(src: android.graphics.Bitmap, aspect: Float, slack: Float = 0.005f): android.graphics.Bitmap {
     val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
-    if (aspect <= 0f || kotlin.math.abs(cur / aspect - 1f) < 0.005f) return src
+    // (Update 240, #26: [slack] — how far off it may be and be left as it is; a spine scan is let off by a tenth.)
+    if (aspect <= 0f || kotlin.math.abs(cur / aspect - 1f) < slack) return src
     val w = if (cur > aspect) (src.height * aspect).toInt().coerceIn(1, src.width) else src.width
     val h = if (cur > aspect) src.height else (src.width / aspect).toInt().coerceIn(1, src.height)
     return runCatching { android.graphics.Bitmap.createBitmap(src, (src.width - w) / 2, (src.height - h) / 2, w, h) }.getOrDefault(src)
@@ -586,23 +614,62 @@ private fun cropTo(src: android.graphics.Bitmap, aspect: Float): android.graphic
     return runCatching { android.graphics.Bitmap.createBitmap(src, (src.width - w) / 2, (src.height - h) / 2, w, h) }.getOrDefault(src)
 }
 
-/** A plain dark spine with the name up it (reads top to bottom), for a game without any spine picture. */
-private fun plainSpine(title: String): android.graphics.Bitmap {
-    val b = android.graphics.Bitmap.createBitmap(56, 600, android.graphics.Bitmap.Config.ARGB_8888)
+/**
+ * (Update 240, #26: the spine for a game without any spine picture — no scan of its own, no console spine of yours: a band
+ * in the console's colour (consoleColor, as its badge), the name down it (reading top to bottom) and the console's logo at
+ * its foot, in one ink (light on a dark band, dark on a light one), made at the side's shape [aspect] (its width against
+ * its height), so a thick cartridge box's spine isn't a thin strip stretched wide. Made once per console, name and shape
+ * (DerivedArt). It replaces the plain dark strip with the name, which was the same for every console.)
+ */
+internal fun consoleSpine(context: android.content.Context, platform: String?, title: String, aspect: Float): android.graphics.Bitmap {
+    val h = 600
+    val w = (h * aspect.coerceIn(0.04f, 0.3f)).toInt().coerceIn(28, 180)
+    return DerivedArt.named("consoleSpine|${platform ?: ""}|$title|$w") { consoleSpineNow(context, platform, title, w, h) }
+}
+
+private fun consoleSpineNow(context: android.content.Context, platform: String?, title: String, w: Int, h: Int): android.graphics.Bitmap {
+    val b = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
     val c = android.graphics.Canvas(b)
-    c.drawColor(0xFF1C1E26.toInt())
-    val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFE8E8EE.toInt(); textSize = 32f; isFakeBoldText = true
+    val band = if (platform != null) consoleColor(platform).toArgb() else 0xFF1C1E26.toInt()
+    c.drawColor(band)
+    val lum = (android.graphics.Color.red(band) * 299 + android.graphics.Color.green(band) * 587 + android.graphics.Color.blue(band) * 114) / 1000
+    val ink = if (lum > 150) 0xFF16161A.toInt() else 0xFFF2F2F6.toInt()
+    // The folds down both long edges, a touch darker.
+    val fold = android.graphics.Paint().apply { color = CaseInside.mix(band, 0xFF000000.toInt(), 0.35f) }
+    val edge = (w * 0.05f).coerceAtLeast(1f)
+    c.drawRect(0f, 0f, edge, h.toFloat(), fold); c.drawRect(w - edge, 0f, w.toFloat(), h.toFloat(), fold)
+    val pad = h * 0.035f
+    // The console's logo at the foot, turned to read along the spine like the name, as a cut-out in the ink.
+    val logo = platform?.let { p -> runCatching { PlatformLogos.baked(context, p)?.asAndroidBitmap() }.getOrNull() }
+        ?.takeIf { it.width > 1 && it.height > 1 }
+    var logoLen = 0f
+    if (logo != null) {
+        val s = minOf(w * 0.62f / logo.height, h * 0.2f / logo.width)
+        logoLen = logo.width * s
+        val thick = logo.height * s
+        val lp = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            colorFilter = android.graphics.PorterDuffColorFilter(ink, android.graphics.PorterDuff.Mode.SRC_IN)
+        }
+        c.save(); c.translate(w / 2f, h - pad - logoLen / 2f); c.rotate(90f)
+        c.drawBitmap(logo, null, android.graphics.RectF(-logoLen / 2f, -thick / 2f, logoLen / 2f, thick / 2f), lp)
+        c.restore()
     }
-    val room = 560f
-    while (p.measureText(title) > room && p.textSize > 16f) p.textSize -= 1f
+    // The name, down the rest of it (centred there), smaller for a long one, "…" only past that.
+    val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = ink; textSize = (w * 0.5f).coerceAtMost(40f); isFakeBoldText = true
+    }
+    val room = h - 2f * pad - (if (logoLen > 0f) logoLen + pad else 0f)
+    val min = (w * 0.26f).coerceAtLeast(12f)
+    while (p.measureText(title) > room && p.textSize > min) p.textSize -= 1f
     var t = title
     if (p.measureText(t) > room) {
         while (t.length > 2 && p.measureText("$t…") > room) t = t.dropLast(1)
         t = t.trimEnd() + "…"
     }
-    c.save(); c.rotate(90f); c.translate(20f, -(28f - 0.36f * p.textSize))
-    c.drawText(t, 0f, 0f, p); c.restore()
+    val tw = p.measureText(t)
+    c.save(); c.translate(w / 2f, pad + ((room - tw) / 2f).coerceAtLeast(0f)); c.rotate(90f)
+    c.drawText(t, 0f, -(p.ascent() + p.descent()) / 2f, p)
+    c.restore()
     return b
 }
 
@@ -673,9 +740,12 @@ private object CaseDraw {
     private val EDGE = floatArrayOf(1f, -1f, 1f, 1f, -1f, -1f, 1f, 1f, -1f, 1f, 1f, 1f)
     private val TOP = floatArrayOf(-1f, -1f, -1f, 1f, -1f, -1f, 1f, -1f, 1f, -1f, -1f, 1f)
     private val BACK = floatArrayOf(1f, -1f, -1f, -1f, -1f, -1f, -1f, 1f, -1f, 1f, 1f, -1f)
+    // (Update 240, #117: the bottom, seen from below — front edge at its top, the spine's side at its left — so the case
+    // can be tipped all the way over in the game window's inspect view; it had none, and the tilt stopped short of it.)
+    private val BOTTOM = floatArrayOf(-1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, -1f, -1f, 1f, -1f)
     // Each face's outward direction (for its light).
-    private val NORMALS = arrayOf(floatArrayOf(0f, 0f, 1f), floatArrayOf(-1f, 0f, 0f), floatArrayOf(1f, 0f, 0f), floatArrayOf(0f, -1f, 0f), floatArrayOf(0f, 0f, -1f))
-    private val FACES = arrayOf(FRONT, SPINE, EDGE, TOP, BACK)
+    private val NORMALS = arrayOf(floatArrayOf(0f, 0f, 1f), floatArrayOf(-1f, 0f, 0f), floatArrayOf(1f, 0f, 0f), floatArrayOf(0f, -1f, 0f), floatArrayOf(0f, 0f, -1f), floatArrayOf(0f, 1f, 0f))
+    private val FACES = arrayOf(FRONT, SPINE, EDGE, TOP, BACK, BOTTOM)
 
     @Synchronized
     fun draw(
@@ -818,7 +888,9 @@ private object CaseDraw {
             fill.shader = null
             // (Update 191: a box with its flap open shows its dark inside on top.)
             val opening = f == 3 && !mirror && flap > 0.001f && look.flap
-            val base = if (opening) 0xFF141210.toInt() else if (f == 3) look.top else look.edge
+            // (Update 240, #117: the bottom (5) the same plastic / print as the top — CaseLook.top: a keep case's shell, a
+            // jewel case's tray seen through it, a box's print colour — lit from below by the face light.)
+            val base = if (opening) 0xFF141210.toInt() else if (f == 3 || f == 5) look.top else look.edge
             fill.color = scaled(base, l)
             c.drawPath(pathOf(), fill)
             // Update 189: a keep case's opening edge has its thumb grip — a recess in the middle third,
@@ -841,6 +913,8 @@ private object CaseDraw {
             for (f in FACES.indices) {
                 val face = FACES[f]
                 var ok = true
+                // (Update 240: the bottom stands on the glossy floor — its mirror image is where it touches, never seen.)
+                if (mirror && f == 5) continue
                 for (i in 0 until 4) if (!project(face, i, mirror)) { ok = false; break }
                 if (!ok) continue
                 val a = area()

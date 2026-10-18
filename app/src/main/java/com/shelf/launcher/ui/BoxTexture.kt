@@ -20,6 +20,13 @@ import coil.transform.Transformation
 /** Which part of the full box scan. */
 internal enum class BoxPart { SPINE, FRONT, BACK, SPINE3D }
 
+/**
+ * (Update 240, #27/#58: a front scan this much wider than its real case's front (CaseCatalog / the cover template) is the
+ * whole unfolded box — back | spine | front, about 2.1× a DVD case's front and 2.2× an N64 box's — handed in as the
+ * "Box" picture; its front is cut out of it (a FRONT cut) instead of the case taking the scan's shape or its middle.)
+ */
+internal const val UNFOLDED_SCAN = 1.7f
+
 internal object BoxTexture {
     private const val PREFIX = "voltcrop:"
 

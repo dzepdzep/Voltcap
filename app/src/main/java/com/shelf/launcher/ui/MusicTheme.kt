@@ -267,6 +267,8 @@ object MusicTheme {
         small.getPixels(px, 0, 24, 0, 0, 24, 24)
         val bins = 18
         val weight = FloatArray(bins)
+        // (Update 240, #23: how many pixels each hue has — a swatch must cover enough of the picture to be its colour.)
+        val count = IntArray(bins)
         val sumR = FloatArray(bins); val sumG = FloatArray(bins); val sumB = FloatArray(bins)
         var allR = 0f; var allG = 0f; var allB = 0f
         val hsv = FloatArray(3)
@@ -279,17 +281,26 @@ object MusicTheme {
             val w = s * s * (0.3f + v)
             val i = ((hsv[0] / 360f) * bins).toInt().coerceIn(0, bins - 1)
             weight[i] += w; sumR[i] += r * w; sumG[i] += g * w; sumB[i] += b * w
+            count[i]++
         }
         val n = px.size.toFloat()
         val overall = Color(allR / n, allG / n, allB / n)
         // Smooth neighbouring bins so a hue split across two bins still wins.
         val score = FloatArray(bins) { weight[it] + 0.5f * (weight[(it + 1) % bins] + weight[(it + bins - 1) % bins]) }
-        val first = score.indices.maxByOrNull { score[it] } ?: return null
-        val accentBase = if (weight[first] > 0f) binColor(first, weight, sumR, sumG, sumB) else null
+        // (Update 240, #23: a vibrant hue wins only with a minimum population — about 4 % of the picture for the accent
+        // (with its neighbouring hue bins), 2 % for the second colour — so a small red logo or a speck of blue sky on a
+        // grey cover no longer becomes the whole app's colour; with no hue that big, the cover's overall colour is used.)
+        fun pop(i: Int) = count[i] + (count[(i + 1) % bins] + count[(i + bins - 1) % bins]) / 2
+        val minAccent = (n * 0.04f).toInt().coerceAtLeast(1)
+        val minSecond = (n * 0.02f).toInt().coerceAtLeast(1)
+        val first = score.indices.filter { pop(it) >= minAccent }.maxByOrNull { score[it] }
+            ?: score.indices.maxByOrNull { score[it] } ?: return null
+        val firstBig = pop(first) >= minAccent
+        val accentBase = if (weight[first] > 0f && firstBig) binColor(first, weight, sumR, sumG, sumB) else null
         var second = -1
         for (i in score.indices) {
             val dist = min(abs(i - first), bins - abs(i - first))
-            if (dist >= 3 && weight[i] > 0f && (second < 0 || score[i] > score[second])) second = i
+            if (dist >= 3 && weight[i] > 0f && count[i] >= minSecond && (second < 0 || score[i] > score[second])) second = i
         }
         val accent = vivid(accentBase ?: overall, minSat = if (accentBase == null) 0f else 0.5f)
         val secondary = if (second >= 0 && score[second] > score[first] * 0.12f) {

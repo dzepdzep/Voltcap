@@ -117,7 +117,8 @@ internal fun screenSizeDp(): DpSize {
  */
 @Composable
 internal fun onAccentColor(): Color =
-    if (ShelfTheme.accent.luminance() > 0.5f) Color.Black else Color.White
+    // (Update 240, #23: whichever of black / white contrasts more — the 0.5 brightness cut failed 4.5:1 on mid-tone accents.)
+    ShelfTheme.accent.let { a -> if (com.shelf.launcher.ui.theme.contrastRatio(Color.White, a) >= com.shelf.launcher.ui.theme.contrastRatio(Color.Black, a)) Color.White else Color.Black }
 
 /**
  * The D-pad focus outline: a light ring with a dark inner edge, so it shows

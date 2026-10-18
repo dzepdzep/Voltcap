@@ -130,7 +130,11 @@ internal fun ShelfGameArt(
             }
             else MediaFocus(on) { CaseArt(
                 g.platform, cover ?: appIcon, typed, Modifier.fillMaxSize().padding(4.dp), title = gameDisplayName(g.name),
-                real = realRef, caseModifier = if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier
+                real = realRef, caseModifier = if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier,
+                // (Update 240, #26/#27: the game's real spine for a box turned to its side, and the game itself, so a box whose
+                // template lies on its back (N64 / SNES) stands as its real 3D case — as in the Grid, CaseArt.)
+                spine = BoxTexture.realSpine(physicalMedia[g.stableKey], g.platform),
+                game = g, physical = physicalMedia[g.stableKey]
             ) }
             // Update 141: the console's badge on cartridges, discs, cases and 3D models too.
             // (Update 202: not on a case — its printed band shows the console already, it read twice.)

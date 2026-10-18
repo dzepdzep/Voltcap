@@ -90,7 +90,10 @@ internal object CartBacks {
             fa(), ia(),
             fa(0f, 55f, 57f, 55f),
             fa(4f, 60.5f, 49f, 4.5f, 0f, 32f, 0f),
-            fa(0f, 0f, 0f, 5f, 3f), true),
+            // (Update 240, #90: no power-lock notch — the Color-only clear Game Pak lacks the top notch the original Game
+            // Boy's lock tab slides into (Wikipedia, Game Boy Game Pak); it was the grey Game Boy's notch copied over. The
+            // black dual-mode Game Pak, which runs on a Game Boy, keeps it.)
+            fa(), true),
         CartBack("gba", "photo",
             fa(30.5f, 3.8f, 3f, 4.2f, 1f),
             fa(30.5f, 10.5f, 2f, 0f, 1f, 30.5f, 14.5f, 1.6f, 0f, 1f, 30.5f, 17f, 1.6f, 0f, 1f), arrayOf("Nintendo", "MODEL NO. AGB-002", "MADE IN JAPAN"),

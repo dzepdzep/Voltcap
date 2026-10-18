@@ -333,18 +333,33 @@ fun GameCard(
             )
             else reveal.snapTo(0f)
         }
+        // Cartridge / disc art, drawn: the console's cartridge or a disc with the game's label on it.
+        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
+        // (Update 240, #32/#57: a round disc — drawn (its console's, the plain CD, an Android game as a disc) or the game's
+        // own disc photo — not a cartridge, a UMD, a pack shell or a disc in its case. On these the trophy count and the
+        // game state go on a chip strip under the disc (Features.discTileChips), so they're never drawn over its curve.)
+        val roundDisc = freeMedia && !banner && !(look.spines && !focused && !pinnedWide) && (
+            if (pick != null) pick.shell.isDisc && !isCustomPiece(pick.platform) && !discCaseOn(MediaTemplates.of(pick.platform))
+            else realScanOf(cardArtType, typedArtUrl) != null && mediaRound(game.platform))
+        val discChips = roundDisc && com.shelf.launcher.data.Features.discTileChips.state.value
+        // The strip: room for the chip (it sits 2 dp in) under the disc. On a 2:3 tile the space under the disc (and its
+        // 6 dp margin) already is that big, so nothing changes there; on a square tile the disc is made just
+        // small enough, with the same room above, so it stays centred next to cartridges and covers.
+        val discChipNeed = if (focused) 26.dp else 20.dp
+        // (A wide tile — Wide capsules — has room for the chip beside the disc: nothing changes there either.)
+        val discChipRoom = if (!discChips || width - height >= 80.dp) 0.dp
+            else (discChipNeed - (height - width).coerceAtLeast(0.dp) / 2 - 6.dp).coerceAtLeast(0.dp)
         // Update 144: a case, cartridge or disc fills its place now — room is kept at its top for the trophy count when
         // that sits at the top (it used to be drawn over the case's banner). The same room on every such card, with
         // or without a count, so they all stay one size.
         val pillTopRoom = if (freeMedia && !banner && look.achievementsOnCards && titles.coverAchievements) {
             val place = com.shelf.launcher.data.Features.achPlace.state.value
             val atTop = place == com.shelf.launcher.data.Features.AchPlace.ABOVE ||
-                (place == com.shelf.launcher.data.Features.AchPlace.CORNER &&
+                (!discChips && place == com.shelf.launcher.data.Features.AchPlace.CORNER &&
                     (look.trophyCorner == com.shelf.launcher.data.CardCorner.TOP_LEFT || look.trophyCorner == com.shelf.launcher.data.CardCorner.TOP_RIGHT))
             if (atTop) (if (focused) 28.dp else 18.dp) else 0.dp
         } else 0.dp
-        // Cartridge / disc art, drawn: the console's cartridge or a disc with the game's label on it.
-        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
+        val mediaTopRoom = maxOf(pillTopRoom, discChipRoom)
         val box3d = if (cardArtType == CardArtType.CASE && !banner) caseMarker(game.platform) else null
         // Update 147: an app without art of its own wears its icon on its cartridge's label, disc or case front (the
         // icon used to be laid over the whole card, hiding the cartridge / case under it).
@@ -367,7 +382,7 @@ fun GameCard(
                 // (Update 205: its real label scan on the drawn piece when it has one — HomeScans holds every game's scans.)
                 val labelScan = if (typedArtUrl == null) drawnLabelScan(HomeScans.map[game.stableKey], game.platform) else null
                 MediaFocus(focused) { PhysicalMedia(
-                    pick.shell, labelScan ?: baseUrl ?: artUrl ?: appIcon, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (pick.shell.isDisc) 6.dp else 10.dp),
+                    pick.shell, labelScan ?: baseUrl ?: artUrl ?: appIcon, Modifier.fillMaxSize().padding(top = if (roundDisc) mediaTopRoom else pillTopRoom, bottom = discChipRoom).padding(if (pick.shell.isDisc) 6.dp else 10.dp),
                     platform = pick.platform, labelIsScan = labelScan != null || (typedArtUrl != null && (baseUrl ?: artUrl) == typedArtUrl),
                     caseCover = coverUrl ?: appIcon, title = game.name
                 ) }
@@ -383,7 +398,9 @@ fun GameCard(
                 MediaFocus(focused) { CaseArt(
                     game.platform, coverUrl ?: appIcon, typedArtUrl, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(4.dp), title = gameDisplayName(game.name), real = realCase,
                     // The coloured frame hugs the case itself (Settings › Cards & frames › Coloured frame).
-                    caseModifier = if (focused && look.focusBorder) Modifier.border(2.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier
+                    caseModifier = if (focused && look.focusBorder) Modifier.border(2.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier,
+                    // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
+                    spine = BoxTexture.realSpine(HomeScans.map[game.stableKey], game.platform), game = game, physical = HomeScans.map[game.stableKey]
                 ) }
             }
         } else if (realScanOf(cardArtType, typedArtUrl) != null) {
@@ -396,7 +413,7 @@ fun GameCard(
                     .artPosition(if (mediaRound(game.platform)) ArtPlace.Look.DISC else ArtPlace.Look.CART)
             ) {
                 MediaFocus(focused) {
-                    RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(top = pillTopRoom).padding(if (mediaRound(game.platform)) 6.dp else 10.dp), platform = game.platform, gameKey = game.stableKey)
+                    RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(top = if (roundDisc) mediaTopRoom else pillTopRoom, bottom = discChipRoom).padding(if (mediaRound(game.platform)) 6.dp else 10.dp), platform = game.platform, gameKey = game.stableKey)
                 }
             }
         } else (baseUrl ?: artUrl)?.let { url ->
@@ -521,7 +538,10 @@ fun GameCard(
         val badgeCorner: Alignment? = run {
             // (Update 129: also clear of the count when it sits above the name.)
             val coverPlace = com.shelf.launcher.data.Features.achPlace.state.value
-            val badgeLow = if (!banner && coverPlace != com.shelf.launcher.data.Features.AchPlace.CORNER) coverPlace == com.shelf.launcher.data.Features.AchPlace.ABOVE
+            // (Update 240, #32/#57: on a disc with the chip strip the count is at the bottom right, so the badge keeps the top
+            // left — over the free space above the disc — unless the count sits above.)
+            val badgeLow = if (discChips) coverPlace == com.shelf.launcher.data.Features.AchPlace.ABOVE
+            else if (!banner && coverPlace != com.shelf.launcher.data.Features.AchPlace.CORNER) coverPlace == com.shelf.launcher.data.Features.AchPlace.ABOVE
             else look.trophyCorner == com.shelf.launcher.data.CardCorner.TOP_LEFT
             val corner = if (badgeLow) Alignment.BottomStart else Alignment.TopStart
             // (Update 202: not over a case — its printed band shows the console already; the corner stays free then.)
@@ -574,6 +594,8 @@ fun GameCard(
             (if (banner) look.trophyOnBanner && !bannerShowsProgress
             else titles.coverAchievements && !showNewUnlock && achPlace != com.shelf.launcher.data.Features.AchPlace.OFF)
         val trophyAlign = if (!banner && achPlace == com.shelf.launcher.data.Features.AchPlace.ABOVE) Alignment.TopCenter
+        // (Update 240, #32/#57: a disc's count on the strip under it, at the tile's bottom right — never over its curve.)
+        else if (discChips) Alignment.BottomEnd
         else if (!banner && achPlace == com.shelf.launcher.data.Features.AchPlace.NAME) Alignment.BottomStart
         else if (!banner && achPlace == com.shelf.launcher.data.Features.AchPlace.UNDER) Alignment.BottomCenter
         else when (look.trophyCorner) {
@@ -597,9 +619,11 @@ fun GameCard(
                 Box(
                     Modifier
                         .align(trophyAlign)
-                        .padding(if (focused) 8.dp else 4.dp)
+                        // (Update 240, #32/#57: on a disc's strip, 2 dp in, and at most half the tile when the game's state
+                        // shares the strip.)
+                        .padding(if (discChips && trophyAlign == Alignment.BottomEnd) 2.dp else if (focused) 8.dp else 4.dp)
                         // (Update 211: never wider than the card — the text shrinks / ends with … instead of being cut off.)
-                        .widthIn(max = (width - 12.dp).coerceAtLeast(24.dp))
+                        .widthIn(max = (if (discChips && GameStates.byKey[game.stableKey] != null) width / 2 - 4.dp else width - 12.dp).coerceAtLeast(24.dp))
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.65f))
                         .padding(horizontal = if (focused) 8.dp else 5.dp, vertical = if (focused) 4.dp else 2.dp)
@@ -691,12 +715,27 @@ fun GameCard(
                 badgeCorner == Alignment.BottomStart
             val topBusy = pillAlign == Alignment.TopStart || pillAlign == Alignment.TopCenter || starTopLeft || badgeTop ||
                 game.stableKey in com.shelf.launcher.data.RunningGames.keys
-            val stateAlign = when {
+            val stateAlign = if (discChips) {
+                // (Update 240, #32/#57: on a disc, on the strip under it — the bottom right, or the bottom left beside the
+                // trophy count / award there.)
+                val endTaken = pillAlign == Alignment.BottomEnd || (cornerAward != null && !awardInPill)
+                when {
+                    !endTaken -> Alignment.BottomEnd
+                    badgeCorner != Alignment.BottomStart -> Alignment.BottomStart
+                    !topBusy -> Alignment.TopStart
+                    else -> null
+                }
+            } else when {
                 !bottomBusy -> Alignment.BottomStart
                 !topBusy -> Alignment.TopStart
                 else -> null
             }
-            if (stateAlign != null) GameStateTag(gs, Modifier.align(stateAlign).padding(if (focused) 8.dp else 4.dp), compact = !focused)
+            val onStrip = discChips && (stateAlign == Alignment.BottomEnd || stateAlign == Alignment.BottomStart)
+            if (stateAlign != null) GameStateTag(
+                gs, Modifier.align(stateAlign).padding(if (onStrip) 2.dp else if (focused) 8.dp else 4.dp)
+                    .then(if (onStrip) Modifier.widthIn(max = (width / 2 - 4.dp).coerceAtLeast(24.dp)) else Modifier),
+                compact = !focused
+            )
         }
 
         // Other games show no name — except when there's no art at all yet,

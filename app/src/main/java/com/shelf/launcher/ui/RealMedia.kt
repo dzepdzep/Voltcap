@@ -334,7 +334,9 @@ internal fun Box3D(
     /** Decode size of the front picture: small for cards in a row / grid, bigger for the details page. */
     detail: Int = 360,
     /** The game's own spine (its spine scan or the strip cut from its full box scan, BoxTexture.kt); null: the system's. */
-    realSpine: Any? = null
+    realSpine: Any? = null,
+    /** (Update 240, #26: the game's console, for the spine drawn when there's no picture of one: its colour and logo.) */
+    platform: String? = null
 ): Boolean {
     val overlay = ImageBitmap.imageResource(tpl.res)
     val spineRes = tpl.spineRes
@@ -342,34 +344,29 @@ internal fun Box3D(
     // (Update 134: the console's spine with the name made once, away from the screen's thread — SpineCache.)
     val tplSpine = rememberTitledSpine(spineRes, title, landscape = tpl.hSpine)
     val face = rememberBoxFace(tpl, front, frontIsBox, detail)
-    val ownSpine = rememberSoftBitmap(realSpine, 720)
+    // (Update 240, #26: loaded with its state, as Case3D's: while the game's real spine is on its way a neutral strip shows,
+    // not the console's / plain one that then popped to the real one; one that can't load falls back to those.)
+    val ownLoad = rememberSoftLoad(realSpine, 720)
+    val ownSpine = ownLoad.bitmap
+    val spinePending = realSpine != null && !ownLoad.done
     val density = LocalDensity.current
-    // The spine picture (the game's own, else the system's strip, else a plain dark one with the name), turned for landscape boxes.
-    val spineBmp: android.graphics.Bitmap = remember(ownSpine, tplSpine, title, tpl.hSpine) {
+    val context = LocalContext.current
+    // The spine picture (the game's own, else the system's strip, else Voltcap's console spine with the name), turned for
+    // landscape boxes.
+    val spineBmp: android.graphics.Bitmap = remember(ownSpine, tplSpine, title, tpl.hSpine, spinePending, platform) {
         // (Update 125: your own console spine gets the game's name written into the box you left for it.)
-        if (ownSpine == null && tplSpine.bitmap != null) tplSpine.bitmap
+        if (ownSpine == null && spinePending) SpineCache.WAITING
+        else if (ownSpine == null && tplSpine.bitmap != null) tplSpine.bitmap
         // (Update 134: a plain dark strip, no name, for the moment the console's spine is being made.)
         else if (ownSpine == null && !tplSpine.done) SpineCache.WAITING
-        else orientSpine(ownSpine ?: run {
-            val b = android.graphics.Bitmap.createBitmap(64, 600, android.graphics.Bitmap.Config.ARGB_8888)
-            val c = android.graphics.Canvas(b)
-            c.drawColor(0xFF1C1E26.toInt())
-            val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xFFE8E8EE.toInt(); textSize = 34f; isFakeBoldText = true
-            }
-            // Update 125: the name always fits the spine — smaller type for long names (down to 18 px), "…" only past that.
-            val room = 560f
-            while (p.measureText(title) > room && p.textSize > 18f) p.textSize -= 1f
-            var t = title
-            if (p.measureText(t) > room) {
-                while (t.length > 2 && p.measureText("$t…") > room) t = t.dropLast(1)
-                t = t.trimEnd() + "…"
-            }
-            c.save(); c.rotate(90f); c.translate(20f, -(32f - 0.36f * p.textSize))
-            c.drawText(t, 0f, 0f, p); c.restore()
-            b
-        // Landscape boxes want a lying spine, the others a standing one: turn the picture whichever way it needs.
-        }, landscape = tpl.hSpine)
+        // (Update 240, #26: no spine picture: the console's colour, the name down it and its logo at the foot (Case3D's
+        // consoleSpine) — it was a plain dark strip with the name, the same for every console. Drawn standing at a
+        // template box's usual spine shape, then turned to lie for a landscape box.)
+        else (ownSpine ?: consoleSpine(context, platform?.let { LookStyles.spinePlatform(it) ?: it }, title, 0.1f)).let { b ->
+            // Landscape boxes want a lying spine, the others a standing one: turn the picture whichever way it needs.
+            // (Update 240: turned once per picture — DerivedArt — not again for every box showing it.)
+            DerivedArt.of(b, "orient|${tpl.hSpine}") { orientSpine(b, landscape = tpl.hSpine) }
+        }
     }
     val spinAnim = if (spin && !LocalLiteEffects.current) androidx.compose.animation.core.rememberInfiniteTransition(label = "box3d") else null
     val angle = spinAnim?.animateFloat(
@@ -554,6 +551,14 @@ internal fun CaseArt(
     /** The game's own spine (BoxTexture.spine), for the box turned to its side. */
     spine: Any? = null,
     /**
+     * (Update 240, #27/#58: the game itself and its scans, where the caller has them (the Grid, the carousels): a box whose
+     * template is drawn lying on its back (N64 / SNES: the pack's 3D box seen from above, its spine the long edge in front)
+     * stands as a real 3D case of its catalog shape instead, turned to show its real spine, with "Box turned to show its
+     * spine" on. Without them the template's box is drawn as before.)
+     */
+    game: com.shelf.launcher.data.Game? = null,
+    physical: List<Pair<String, String>>? = null,
+    /**
      * Update 151: draw the game in its 3D case from your shape library (where there's one). Off for every caller now: Real
      * cases and Cases · real sizes are flat for every console (a PS2 game stood as a 3D case among flat ones); the 3D
      * cases belong to the 3D models look (mediaFor); 3D case + disc draws the template's 3D box for every console.
@@ -578,11 +583,11 @@ internal fun CaseArt(
     // models or R1 › 3D on. Update 200: retired — the case looks always draw the drawn cases below.)
     var drawn = true
     androidx.compose.runtime.CompositionLocalProvider(LocalCaseOwner provides owner) {
-        if (real == null || mm == null) drawn = CaseArtBody(casePlatform, cover, caseScan, modifier, title, detail, caseModifier, caseSpine)
+        if (real == null || mm == null) drawn = CaseArtBody(casePlatform, cover, caseScan, modifier, title, detail, caseModifier, caseSpine, game, physical)
         else BoxWithConstraints(modifier, contentAlignment = Alignment.BottomCenter) {
             // Dp per mm: the biggest case shown just fits the slot; this one is its real size against it.
             val k = minOf(maxWidth / real.wMm, maxHeight / real.hMm)
-            CaseArtBody(casePlatform, cover, caseScan, Modifier.size(k * mm.first, k * mm.second), title, detail, caseModifier, caseSpine)
+            CaseArtBody(casePlatform, cover, caseScan, Modifier.size(k * mm.first, k * mm.second), title, detail, caseModifier, caseSpine, game, physical)
         }
     }
     return drawn
@@ -591,7 +596,7 @@ internal fun CaseArt(
 @Composable
 private fun CaseArtBody(
     platform: String?, cover: Any?, scan: Any?, modifier0: Modifier, title: String, detail: Int, caseModifier: Modifier,
-    spine: Any? = null
+    spine: Any? = null, game: com.shelf.launcher.data.Game? = null, physical: List<Pair<String, String>>? = null
 ): Boolean {
     // Settings › Game look › "Case with its cartridge / disc" (update 93): the case standing still, its cartridge or disc
     // leaning against its lower right; only the cartridge / disc moves (spin / bounce as set).
@@ -620,7 +625,7 @@ private fun CaseArtBody(
                     .offset(x = (maxWidth - caseW) / 2).size(caseW + mW * out, h)
             ) {
                 Box(Modifier.align(Alignment.TopStart).size(caseW, h)) {
-                    CaseArtFace(platform, cover, scan, Modifier.fillMaxSize(), title, detail, caseModifier, allowDiscCase = false, spine = spine)
+                    CaseArtFace(platform, cover, scan, Modifier.fillMaxSize(), title, detail, caseModifier, allowDiscCase = false, spine = spine, game = game, physical = physical)
                 }
                 // The game's own cartridge / disc picture when it has one (update 104), else Voltcap's drawn one.
                 // Update 173: matched to the case — the real cartridge / disc beside the game's real (scanned) case, Voltcap's
@@ -639,14 +644,14 @@ private fun CaseArtBody(
     }
     // Settings › Game look › Moving discs, cartridges & cases: the box turns left and right and/or hops.
     val modifier = modifier0.caseMotion((cover?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0))
-    return CaseArtFace(platform, cover, scan, modifier, title, detail, caseModifier, allowDiscCase = true, spine = spine)
+    return CaseArtFace(platform, cover, scan, modifier, title, detail, caseModifier, allowDiscCase = true, spine = spine, game = game, physical = physical)
 }
 
 /** The case alone (as set: flat official case, 3D box, box turned to its spine, disc in its case). */
 @Composable
 private fun CaseArtFace(
     platform: String?, cover: Any?, scan: Any?, modifier: Modifier, title: String, detail: Int, caseModifier: Modifier,
-    allowDiscCase: Boolean, spine: Any? = null
+    allowDiscCase: Boolean, spine: Any? = null, game: com.shelf.launcher.data.Game? = null, physical: List<Pair<String, String>>? = null
 ): Boolean {
     val tpl = MediaTemplates.of(platform)
     val cov = MediaCovers.used(platform)
@@ -660,7 +665,9 @@ private fun CaseArtFace(
     // The game's own scanned case (update 101, Settings › Game look › "Original cases"): the scan is the case, with its
     // own spine on the box turned to its side. Falls back to the template case when the scan can't be loaded or cut.
     var scanFailed by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
-    val ownSpine = spine ?: BoxTexture.spineFor(scan)
+    // (Update 240, #26: never the game's own with one console's spine picked for all, R1 › Spine — the scanned case's
+    // turned box below was handed it then.)
+    val ownSpine = if (LookStyles.spineForAll()) null else spine ?: BoxTexture.spineFor(scan)
     // (Update 235, #27/#38: a console with no template case (no cover template, no template box) — PS3 / PS4 / PS5, the
     // Xboxes, Neo Geo CD… — in Voltcap's plain case of its real shape and plastic (PlainCase): its scanned front under the
     // sleeve with Original cases on, else its cover. Here CaseArt drew nothing (false), so the cards fell back to a flat
@@ -671,16 +678,25 @@ private fun CaseArtFace(
         PlainCase(plain, if (useScan) scan else cover ?: scan, CaseArtPlaceholder, modifier, caseModifier, fallback = cover)
         return true
     }
+    // (Update 240, #27/#58: "Box turned to show its spine" on a console whose template box lies on its back (BoxTpl.hSpine:
+    // N64, SNES — the pack's box seen from above, its long edge in front): in a Grid of standing cases GoldenEye's N64 box
+    // lay flat, squashed to a strip half its height. With the game known it stands as Case3D — its catalog shape (181 ×
+    // 127 × 32 mm for an N64 box) and region, its scanned front (or cover) fitted in, its real spine on its side — turned
+    // as the other boxes are. The scan is used only where this case look would use it (the [scan] handed in).)
+    if (side && box != null && box.hSpine && game != null && !discCase) {
+        Case3D(game, cover ?: scan, physical, TURNED_CASE_YAW, case3dAspect(game, false), modifier, pitch = 4f, realFront = scan != null, fill = 0.9f)
+        return true
+    }
     // Update 202: never for an Android game — its case is Voltcap's own (androidOwnCase): WWE All Stars' scraped store
     // art stood in the Thor's case stacks as a plain white "scanned case", without the Android band.
     if (com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !scanFailed && !discCase && !androidOwnCase(platform)) {
         if (side && box != null) {
-            Box3D(box, scan, true, title, modifier, spin = false, detail = detail, realSpine = ownSpine)
+            Box3D(box, scan, true, title, modifier, spin = false, detail = detail, realSpine = ownSpine, platform = platform)
             return true
         }
         // (Update 104: no drawn 3D box round the scan any more — the scan itself, as the case.)
         val aspect = cov?.frontAspect ?: box?.let { if (it.frameRes != null) it.frameAspect else null } ?: realCaseMm(platform)?.let { it.first / it.second } ?: 0.7f
-        ScanCase(scan, aspect, modifier, caseModifier, onFail = { scanFailed = true }, cover = cover, cutLeft = if (noBand) PS1_BAND else 0f)
+        ScanCase(scan, aspect, modifier, caseModifier, onFail = { scanFailed = true }, cover = cover, cutLeft = if (noBand) PS1_BAND else 0f, platform = platform)
         return true
     }
     // The official case, as on a shelf, facing you: the console's printed cover frame (its banner and logo) with the
@@ -705,7 +721,7 @@ private fun CaseArtFace(
     )
     // (Update 202: the game's real spine whatever Original cases says, as its closed case and the Spines look show it —
     // not with one console's spine picked for all.)
-    else if (side) Box3D(box, front, isBox, title, modifier, spin = false, detail = detail, realSpine = if (!LookStyles.spineForAll()) ownSpine else null)
+    else if (side) Box3D(box, front, isBox, title, modifier, spin = false, detail = detail, realSpine = if (!LookStyles.spineForAll()) ownSpine else null, platform = platform)
     else FrontBox(box, front, isBox, modifier, detail, platform = platform) // (Update 229, #27)
     return true
 }
