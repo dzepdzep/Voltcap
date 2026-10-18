@@ -31,11 +31,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -75,6 +77,7 @@ import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 import kotlin.math.sign
+import kotlinx.coroutines.launch
 
 /*
  * Update 146: Console stack (Home layout › Console stack).
@@ -141,12 +144,29 @@ private fun ConsolePile(c: StyleCtx, pileW: Dp, unitH: Dp, pull: Dp, centreY: Dp
     val glide = Features.rowGlide.state.value
     val step = unitH + 12.dp
     val pos = remember { Animatable(here.toFloat()) }
-    LaunchedEffect(here) {
+    // (Update 230, #20: holding L2 / R2 glides the pile on smoothly — each step carries the glide's speed on (it runs in its
+    // own scope) instead of stopping and starting, and a quick run of steps no longer jumps; the place and console it last
+    // went to tell a long jump or a changed pile from a step.)
+    val scope = rememberCoroutineScope()
+    val lastTo = remember { intArrayOf(here) }
+    val lastStop = remember { arrayOfNulls<String>(1) }
+    val stopKey = c.stops.getOrNull(here)?.let { "${it.special}|${it.platform}|${it.label}" }
+    LaunchedEffect(here, stopKey) {
         val t = here.toFloat()
-        // A long jump (L2 / R2 from the last stop round to the first): start right next to it, not a race up the pile.
-        if (abs(pos.value - t) > 3f) pos.snapTo(t + if (pos.value < t) -1f else 1f)
-        pos.animateTo(t, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = glide.stiffness))
+        val from = lastTo[0]
+        lastTo[0] = here
+        val same = stopKey != null && stopKey == lastStop[0]
+        lastStop[0] = stopKey
+        // The same console at a new place in the pile (a console added / gone): it stays where it is.
+        if (here != from && same) pos.snapTo(pos.value + (here - from))
+        // A long jump (L2 / R2 from the last stop round to the first): start two units short of it, not a race up the pile.
+        else if (abs(here - from) > 3) pos.snapTo(t + if (here > from) -2f else 2f)
+        if (pos.value != t || pos.targetValue != t) scope.launch {
+            pos.animateTo(t, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = glide.stiffness))
+        }
     }
+    // (Update 230, #20: the unit the glide is at, so the units round it are there even while it trails a quick run of steps.)
+    val glideAt by remember { derivedStateOf { pos.value.roundToInt() } }
     val category by rememberUpdatedState(c.actions.category)
     val currentStop by rememberUpdatedState(c.stop)
     val stopCount by rememberUpdatedState(n)
@@ -161,9 +181,9 @@ private fun ConsolePile(c: StyleCtx, pileW: Dp, unitH: Dp, pull: Dp, centreY: Dp
     }
     val above = ceil(centreY / step).toInt() + 1
     val below = ceil((height - centreY) / step).toInt() + 1
-    // (A glide is never more than 3 units long, see above: that's the margin.)
-    val lo = (here - above - 3).coerceAtLeast(0)
-    val hi = (here + below + 3).coerceAtMost(n - 1)
+    // (A jump glides at most 2 units, see above; with the glide's own unit [glideAt] that's the margin.)
+    val lo = (minOf(here, glideAt) - above - 3).coerceAtLeast(0)
+    val hi = (maxOf(here, glideAt) + below + 3).coerceAtMost(n - 1)
     val accent = ShelfTheme.accent
     val density = LocalDensity.current
     val centrePx = with(density) { centreY.toPx() }
@@ -370,17 +390,36 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
     val latestV by rememberUpdatedState(vFocus)
     val pos = remember { Animatable(vFocus.toFloat()) }
     val lastCat = remember { arrayOf<Any?>(catKey) }
+    // (Update 230, #20: holding the D-pad glides the row on smoothly — each step carries the glide's speed on (it runs in
+    // its own scope) instead of stopping and starting, and a fast hold no longer jumps; the place and game it last went to
+    // tell a long jump or a re-sorted list from a step.)
+    val scope = rememberCoroutineScope()
+    val lastTo = remember { intArrayOf(vFocus) }
+    val lastGame = remember { arrayOfNulls<String>(1) }
     LaunchedEffect(vFocus, catKey) {
         val t = vFocus.toFloat()
+        val from = lastTo[0]
+        lastTo[0] = vFocus
+        val gameKey = if (count > 0) keys.getOrNull(if (loop) vFocus.mod(count) else vFocus) else null
+        val same = gameKey != null && gameKey == lastGame[0]
+        lastGame[0] = gameKey
         if (lastCat[0] != catKey) {
             // A new console: its games are placed at once (they slide out of the slot instead, below).
             lastCat[0] = catKey
             pos.snapTo(t)
         } else {
-            if (abs(pos.value - t) > 3f) pos.snapTo(t + if (pos.value < t) -1f else 1f)
-            pos.animateTo(t, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = glide.stiffness))
+            // The same game at a new place (the list re-sorted, art came in): it stays where it is.
+            if (vFocus != from && same) pos.snapTo(pos.value + (vFocus - from))
+            // A long jump (the first / last game, a far tap): only the last two steps glide.
+            else if (abs(vFocus - from) > 3) pos.snapTo(t + if (vFocus > from) -2f else 2f)
+            if (pos.value != t || pos.targetValue != t) scope.launch {
+                pos.animateTo(t, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = glide.stiffness))
+            }
         }
     }
+    // (Update 230, #20: the game the glide is at — the games nearer it are drawn on top, and the ones round it are there
+    // even while it trails a fast hold.)
+    val glideAt by remember { derivedStateOf { pos.value.roundToInt() } }
     // 0 → 1: the games coming out of the slot (each one a little after the one before).
     val out = remember { Animatable(0f) }
     LaunchedEffect(catKey) {
@@ -436,8 +475,11 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
         // (Update 156: on the endless row these are places on it, not games; [before] games always stand before yours.)
         val focusT = vFocus
         val windowLo = if (loop) focusT - before else (focusT - before).coerceAtLeast(0)
-        val lo = if (loop) windowLo - 4 else (windowLo - 4).coerceAtLeast(0)
-        val hi = if (loop) windowLo + shown + 3 else (windowLo + shown + 3).coerceAtMost(count - 1)
+        // (Update 230, #20: reaching round the glide's own place [glideAt] too, for while it trails a fast hold.)
+        val reachLo = minOf(windowLo, glideAt - before)
+        val reachHi = maxOf(windowLo, glideAt - before)
+        val lo = if (loop) reachLo - 4 else (reachLo - 4).coerceAtLeast(0)
+        val hi = if (loop) reachHi + shown + 3 else (reachHi + shown + 3).coerceAtMost(count - 1)
         // Caption over the row: the category and how many games it has (where there's room above the big card).
         val captionY = centreY - bigH / 2 - 26.dp
         if (captionY >= 0.dp) Row(
@@ -471,7 +513,9 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
                     Modifier
                         .offset(y = centreY - bigH / 2)
                         .size(bigW, bigH)
-                        .zIndex(if (on) 20f else 10f - abs(i - focusT).coerceAtMost(9))
+                        // (Update 230, #20: the game nearest where the row is right now on top, so mid-glide the bigger card
+                        // isn't hidden behind smaller ones.)
+                        .zIndex(20f - abs(i - glideAt).coerceAtMost(19))
                         .graphicsLayer {
                             val p = pos.value
                             val d = i - p

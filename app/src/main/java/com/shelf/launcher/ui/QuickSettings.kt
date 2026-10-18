@@ -684,6 +684,14 @@ fun QuickSettingsCard(
             })
             // Where the game row sits (Voltcap row and Tile home): Top → Middle → Bottom. (Update 202: r1TileFit.)
             run {
+                // (Update 230, #09: Hero carousel had no tile for its cover side — there this tile puts the covers on the
+                // left / right (Hero settings › Covers); the Voltcap row and Tile home keep Top → Middle → Bottom.)
+                if (a.homeLayout == com.shelf.launcher.data.HomeLayout.HERO) {
+                    val coversRight = com.shelf.launcher.data.Features.heroCoversRight.state.value
+                    add(R1Tile("rowpos", Icons.Filled.SwapVert, "Covers\n" + if (coversRight) "Right" else "Left", false) {
+                        com.shelf.launcher.data.Features.heroCoversRight.toggle()
+                    })
+                } else
                 add(R1Tile("rowpos", Icons.Filled.SwapVert, "Row\n" + a.dockPosition.label, false) {
                     val all = com.shelf.launcher.data.DockPosition.values()
                     home.setAppearance(a.copy(dockPosition = all[(a.dockPosition.ordinal + 1) % all.size]))

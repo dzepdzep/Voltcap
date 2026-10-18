@@ -4,6 +4,31 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (230): Case stacks / Console stack glide without stalls (#20), Hero carousel's covers on the right look right and have an R1 tile (#09), Library panel shows your game look (#25)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (7): `src_copy\ui\StyleCaseStacks.kt`, `src_copy\ui\StyleConsoleStack.kt`, `src_copy\ui\HeroCarousel.kt`, `src_copy\ui\StyleLibrary.kt`, `src_copy\ui\R1TileRules.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\LauncherScreen.kt`. **Files to delete:** none.
+
+### Case stacks and Console stack (#20) — the stacks of spines (not the carousel view)
+1. Each press restarted the glide from standstill (holding the D-pad moved in stops and starts) and a fast hold more than 12 games ahead made the stack jump: the glide now keeps its speed from step to step, a long jump lands 2 short and glides the rest, and the same game at a new place (re-sort, art arriving) doesn't glide through the stack.
+2. The case front was built only when a game reached the middle (picture decoding mid-glide, front popping in): the fronts of the games around it are now ready before they arrive.
+3. Swiping stopped at the ends with Endless on while the D-pad went round: now both go round.
+4. Console stack: the incoming card jumped on top and the outgoing big one dropped behind its neighbours mid-glide: depth now follows the glide; same steady glide as 1.
+
+### Hero carousel with its covers on the right (#09)
+- The info text stayed right-aligned (hugging the covers) with an empty left edge → it now lines up on the left; the dark shade behind it moved to the side the covers are on; the floating parts (Edit Home) start on the left instead of on the cover column.
+- **R1:** Hero had no tile for its side → the "Row" tile shows on Hero as **Covers Left / Right** (the Voltcap row keeps Top / Middle / Bottom).
+- Not done (new feature): covers along the top or bottom — the cover wheel only lays out vertically.
+
+### Library (#25)
+- Its grid already drew your game look; the side panel didn't (a cropped plain cover for the spine and wide looks) → it now draws the same as the grid.
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed on both, no crashes.
+- **Not tested on a device**: your Thor's Case stacks uses the carousel view (Box flow), not the stacks of spines, so 1–4 above don't touch it; Hero and Library weren't switched to (code-reviewed only).
+- **Found while testing (fixed in 231):** on your Thor's home (Case stacks + Box flow, background "Art + videos", colours following the game), moving one game every 0.6 s ran at 44 ms per frame (p50) — measured: colours following the game ≈ half of it, the game's art behind the home most of the rest (12 ms with the theme's own animation). All your settings were put back (Colours: Game, Art + videos).
+
 ## Update — 18 Oct 2026 (229): music on the Pocket layouts follows track changes at once (#03), cases and discs keep their shape and art (#24 / #27 / #31), Game shelf ends above its footer (#94)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

@@ -153,7 +153,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // Green Core's own "carousel" is its Layout options › Browse, not this.
         "carousel" -> on(carouselApplies(l))
         // Row position: the Voltcap row (and the old Tile home).
-        "rowpos" -> on(classic)
+        // (Update 230, #09: on Hero carousel it puts the covers on the left / right — QuickSettings.kt.)
+        "rowpos" -> on(classic || l == HomeLayout.HERO)
         // Game header tight / roomy: the Voltcap row with its game header on (Settings › Home › Game header).
         "headertight" -> on(classic && Features.homeHeader.state.value)
         // Gaps: the two Twin layouts (their own gap each).

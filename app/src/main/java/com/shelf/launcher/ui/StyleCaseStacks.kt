@@ -39,6 +39,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,6 +83,7 @@ import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlinx.coroutines.launch
 
 /*
  * Update 146: Case stacks — a disc-picker style home in Voltcap's own look.
@@ -284,6 +286,7 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
     // Update 156: with Endless on the games repeat in both stacks and the place you're on counts on (EndlessRow.kt), so
     // going past the last game to the first slides the next spine out like any step. Off: just the game you're on.
     val loop = loopRowOn(c)
+    val latestLoop by rememberUpdatedState(loop)
     val vFocus = rememberLoopFocus(c)
     // Where the stage is (in games): glides from game to game at the Moving between games speed, so the spine coming out,
     // its turn and its growing all follow one smooth motion (a held D-pad carries on from where it is, no restarts).
@@ -292,14 +295,34 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
     // the old place) jumps straight to its game instead of gliding through the new list's spines.
     val firstKey = keys.firstOrNull()
     val shownList = remember { arrayOfNulls<Any>(2) }
+    // (Update 230, #20: holding the D-pad glides on in one smooth motion — each step carries the glide's speed on instead of
+    // stopping and starting again, and a fast hold no longer jumps ahead. The glide runs in its own scope, so a new step
+    // takes it over at its current speed; the place and game it last went to tell a re-sort from a move.)
+    val scope = rememberCoroutineScope()
+    val lastTo = remember { intArrayOf(vFocus) }
+    val lastGame = remember { arrayOfNulls<String>(1) }
     LaunchedEffect(vFocus, count, firstKey) {
         val target = vFocus.toFloat()
         val newList = shownList[0] != firstKey || shownList[1] != count
         shownList[0] = firstKey
         shownList[1] = count
-        // A long jump (a new category, the first / last game) goes straight there instead of racing past dozens of spines.
-        if (!animate || newList || abs(pos.value - target) > 12f) pos.snapTo(target)
-        else pos.animateTo(target, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = glide.stiffness))
+        val from = lastTo[0]
+        lastTo[0] = vFocus
+        val gameKey = if (count > 0) keys.getOrNull(if (loop) vFocus.mod(count) else vFocus) else null
+        val same = gameKey != null && gameKey == lastGame[0]
+        lastGame[0] = gameKey
+        // A new category goes straight to its game instead of racing past dozens of spines.
+        if (!animate || newList) pos.snapTo(target)
+        else {
+            // (Update 230, #20: the same game at a new place (the list re-sorted, art came in) stays where it is, no glide
+            // through other spines.)
+            if (vFocus != from && same) pos.snapTo(pos.value + (vFocus - from))
+            // A long jump (the first / last game, a letter, a far tap): only the last two steps glide.
+            else if (abs(vFocus - from) > 12) pos.snapTo(target + if (vFocus > from) -2f else 2f)
+            if (pos.value != target || pos.targetValue != target) scope.launch {
+                pos.animateTo(target, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = glide.stiffness))
+            }
+        }
     }
     // Read where things are drawn, not while composing: a glide moves the spines without rebuilding them every frame.
     // Only these change during a glide: the game left of the middle, whether it is between two games, and which of the
@@ -307,6 +330,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
     val lo by remember { derivedStateOf { floor(pos.value).toInt() } }
     val between by remember { derivedStateOf { pos.value - floor(pos.value) > 0.001f } }
     val past by remember { derivedStateOf { pos.value - floor(pos.value) > 0.5f } }
+    // (Update 230, #20: one reader of the glide for all the games, so a step doesn't rebuild every game on the stage.)
+    val posFn: () -> Float = remember(pos) { { pos.value } }
     // A tap brings the D-pad back to the games too (as on the Library), then picks / opens the game.
     val tap: (Int) -> Unit = remember {
         { i: Int ->
@@ -366,8 +391,10 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
                     val n = latestCount
                     if (n > 0) {
                         var target = latestFocus
-                        while (acc <= -stepPx) { acc += stepPx; target = (target + 1).coerceAtMost(n - 1) }
-                        while (acc >= stepPx) { acc -= stepPx; target = (target - 1).coerceAtLeast(0) }
+                        // (Update 230, #20: with Endless on a swipe goes round past the last / first game too, like the D-pad.)
+                        val wrap = latestLoop
+                        while (acc <= -stepPx) { acc += stepPx; target = if (wrap) (target + 1).mod(n) else (target + 1).coerceAtMost(n - 1) }
+                        while (acc >= stepPx) { acc -= stepPx; target = if (wrap) (target - 1).mod(n) else (target - 1).coerceAtLeast(0) }
                         if (target != latestFocus) {
                             if (StyleNav.zone != StyleNav.Zone.GAMES) StyleNav.leave()
                             select(target)
@@ -389,8 +416,11 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
                     val near = i == lo || (between && i == lo + 1)
                     // In the middle the nearer of the two (going / coming) is on top; the stacks behind, the far spines last.
                     val dist = if (near) (if ((i == lo) == !past) 0 else 1) else abs(i - lo)
+                    // (Update 230, #20: the fronts of the games a step or two from the middle are made ahead (hidden while
+                    // edge-on), so a game coming in doesn't stall the glide or pop in while its front is built.)
+                    val front = near || abs(i - lo) <= 2
                     StacksItem(
-                        c, i, geo, { pos.value }, near = near,
+                        c, i, geo, posFn, near = near, front = front,
                         // Edge-on exactly in the middle the spine is a sliver: it takes no taps then (the case does).
                         spineTaps = !(i == lo && !between),
                         mirror = mirror && (near || (!lite && dist <= 12) || (lite && dist <= 3)),
@@ -414,7 +444,7 @@ internal fun stacksCaseLook(type: CardArtType): Boolean =
  */
 @Composable
 private fun StacksItem(
-    c: StyleCtx, i: Int, geo: StacksGeo, pos: () -> Float, near: Boolean, spineTaps: Boolean, mirror: Boolean,
+    c: StyleCtx, i: Int, geo: StacksGeo, pos: () -> Float, near: Boolean, front: Boolean, spineTaps: Boolean, mirror: Boolean,
     focused: Boolean, tap: (Int) -> Unit, modifier: Modifier,
     // Update 156: [i] is the place on the stage (it keeps counting on the endless row), [game] the game standing there,
     // [centre] whether it is the place you're on.
@@ -469,8 +499,9 @@ private fun StacksItem(
         ) {
             GameSpine(g, c.state.physicalMedia[g.stableKey], Modifier.fillMaxSize())
         }
-        // The front face: only while it is in (or coming into / leaving) the middle.
-        if (near) Box(
+        // The front face: shown only while it is in (or coming into / leaving) the middle (edge-on its alpha is 0 below).
+        // (Update 230, #20: made a step or two ahead ([front]); it takes taps and reports itself only once [near].)
+        if (front) Box(
             Modifier
                 .size(geo.caseW, geo.caseH)
                 .graphicsLayer {
@@ -493,8 +524,8 @@ private fun StacksItem(
                     alpha = if (th > 89f) 0f else 1f
                     flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
                 }
-                .then(if (centre) Modifier.focusedCard() else Modifier)
-                .pointerInput(game) { detectTapGestures { onTap(game) } }
+                .then(if (centre && near) Modifier.focusedCard() else Modifier)
+                .then(if (near) Modifier.pointerInput(game) { detectTapGestures { onTap(game) } } else Modifier)
         ) {
             StacksFront(c, g, focused, Modifier.fillMaxSize())
         }

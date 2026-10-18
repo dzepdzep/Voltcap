@@ -3779,7 +3779,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             // (Update 204: the category name at its layout's free spot, categoryPartSpot.)
                             defaultFrac = if (part == HomeWidgets.CATEGORY) categoryPartSpot(overlayLayout)
                                 else if (part == HomeWidgets.LOGO || part == HomeWidgets.LOGO_SGDB || part == HomeWidgets.LOGO_RA) 0f to 0.1f
-                                else 1f to (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w
+                                // (Update 230, #09: Hero carousel with its covers on the right — the stack starts on the
+                                // left, it sat on the cover column.)
+                                else (if (overlayLayout == com.shelf.launcher.data.HomeLayout.HERO && com.shelf.launcher.data.Features.heroCoversRight.state.value) 0f else 1f) to
+                                    (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w
                         ) {
                             // Update 204: the category's name on its own (all the categories with "All categories").
                             // (Update 212: the category title — the category or filter you're in, with or without a

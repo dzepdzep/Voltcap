@@ -329,31 +329,13 @@ private fun LibraryPanelInfo(c: StyleCtx, g: Game, compact: Boolean, roomy: Bool
                 Modifier.weight(1f).fillMaxWidth().pointerInput(g.stableKey) { detectTapGestures { open() } },
                 contentAlignment = Alignment.Center
             ) {
-                // Portrait looks (covers, cases, cartridges, discs) show in the layout's own artwork; wide ones and the
-                // spines show the cover instead, which fills a narrow panel better.
-                val ownArt = !spinesOn(c.type) && styleAspect(c.type) < 1.2f
-                val hasCover = c.cover(g) != null
-                val aspect = if (ownArt) styleAspect(c.type) else if (hasCover) 0.72f else 1.78f
+                // The picture in the layout's own artwork, as the grid draws it.
+                // (Update 230, #25: Spines and the wide looks showed a plain cropped cover here, unlike the grid — now
+                // StyleArt for every look: wide art at its own shape, a spine standing in a cover-shaped slot.)
+                val aspect = if (spinesOn(c.type)) 0.72f else styleAspect(c.type)
                 val w = minOf(maxWidth, maxHeight * aspect)
                 val h = w / aspect
-                if (ownArt) {
-                    StyleArt(c, g, Modifier.size(w, h), corner = 10.dp)
-                } else {
-                    Box(Modifier.size(w, h).clip(uiRounded(10.dp)).background(placeholderBrush(g.hue))) {
-                        val url = if (hasCover) c.cover(g) else c.wide(g)
-                        if (url != null) {
-                            AsyncImage(url, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
-                        } else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) {
-                            AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
-                        } else {
-                            Text(
-                                titles.display(g.name), color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, textAlign = TextAlign.Center,
-                                maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(8.dp)
-                            )
-                        }
-                        ConsoleBadge(g.platform, packageName = g.packageName)
-                    }
-                }
+                StyleArt(c, g, Modifier.size(w, h), corner = 10.dp)
             }
             Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
             FitText(

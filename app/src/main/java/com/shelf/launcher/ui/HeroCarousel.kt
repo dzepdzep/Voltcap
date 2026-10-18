@@ -185,9 +185,12 @@ internal fun HeroCarouselBackdrop(heroUrl: String?, fallbackUrl: String?, modifi
             }
         }
         // Readability: the left (covers) and bottom-right (info) fall to dark; the middle stays clear.
+        // (Update 230, #09: covers on the right sat on bright art — the side that darkens follows the covers.)
+        val edge = Color.Black.copy(alpha = if (dim) 0.62f else 0.45f)
         Box(
             Modifier.fillMaxSize().background(
-                Brush.horizontalGradient(0f to Color.Black.copy(alpha = if (dim) 0.62f else 0.45f), 0.38f to Color.Transparent)
+                if (Features.heroCoversRight.state.value) Brush.horizontalGradient(0.62f to Color.Transparent, 1f to edge)
+                else Brush.horizontalGradient(0f to edge, 0.38f to Color.Transparent)
             )
         )
         Box(
@@ -271,7 +274,8 @@ internal fun BoxScope.HeroCarouselLayer(
             InfoRegion(
                 info, page, categoryLabel, onPage, onOpenAchievements, onOpenScreenshot, onOpenGuide, onLoadMedia,
                 coverFor(info.game), videoUrl,
-                Modifier.align(align)
+                right = right,
+                modifier = Modifier.align(align)
                     .padding(
                         start = if (right) maxOf(28.dp, zone.left) else 0.dp, end = if (right) 0.dp else maxOf(28.dp, zone.right),
                         top = if (infoAtTop) maxOf(46.dp, zone.top) else 0.dp,
@@ -518,8 +522,12 @@ private fun InfoRegion(
     onLoadMedia: (Game) -> Unit,
     cover: String?,
     videoUrl: String?,
+    /** (Update 230, #09) Covers on the right: the info sits on the left, so its text lines up on the left. */
+    right: Boolean = false,
     modifier: Modifier
 ) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalInfoOnLeft provides right) {
+    val hEnd = infoHAlign()
     val p = HeroPage.values()[page.mod(HeroPage.values().size)]
     LaunchedEffect(info.game.stableKey, p) {
         if (p == HeroPage.SCREENSHOTS || p == HeroPage.OVERVIEW) { kotlinx.coroutines.delay(400); onLoadMedia(info.game) }
@@ -529,7 +537,7 @@ private fun InfoRegion(
     val layered = Features.detailLayerCover.state.value && cover != null ||
         Features.detailLayerScreenshots.state.value && info.screenshots.isNotEmpty() ||
         Features.detailLayerVideo.state.value && videoUrl != null
-    Column(Modifier.fillMaxWidth().padding(if (layered) 14.dp else 0.dp), horizontalAlignment = Alignment.End) {
+    Column(Modifier.fillMaxWidth().padding(if (layered) 14.dp else 0.dp), horizontalAlignment = hEnd) {
         // The page: only this part changes when ◀ ▶ are pressed.
         AnimatedContent(
             targetState = p,
@@ -540,7 +548,7 @@ private fun InfoRegion(
             },
             label = "heroPage"
         ) { pg ->
-            Box(Modifier.fillMaxWidth().widthIn(max = 620.dp), contentAlignment = Alignment.BottomEnd) {
+            Box(Modifier.fillMaxWidth().widthIn(max = 620.dp), contentAlignment = if (right) Alignment.BottomStart else Alignment.BottomEnd) {
                 when (pg) {
                     HeroPage.OVERVIEW -> OverviewPage(info)
                     HeroPage.ACHIEVEMENTS -> AchievementsPage(info) { onOpenAchievements(info.game) }
@@ -577,13 +585,13 @@ private fun InfoRegion(
         if (info.logo != null && Features.detailLayerLogo.state.value) {
             FadeInImage(
                 model = info.logo, contentDescription = info.title, contentScale = ContentScale.Fit,
-                alignment = Alignment.CenterEnd,
+                alignment = if (right) Alignment.CenterStart else Alignment.CenterEnd,
                 modifier = Modifier.height(54.dp).widthIn(max = 320.dp)
             )
         } else {
             Text(
                 info.title, color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), fontWeight = FontWeight.Bold, maxLines = 2,
-                overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em)
+                overflow = TextOverflow.Ellipsis, textAlign = infoTextAlign(), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em)
             )
         }
         if (categoryLabel.isNotBlank()) {
@@ -594,7 +602,7 @@ private fun InfoRegion(
         val pageTap by rememberUpdatedState(onPage)
         // All six names need ~430 dp: on a narrower info region only the page you're on shows between the
         // arrows (the names used to run off the edge and get cut).
-        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = if (right) Alignment.CenterStart else Alignment.CenterEnd) {
         if (maxWidth < 440.dp) Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             val count = HeroPage.values().size
             Text("◀", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp,
@@ -628,7 +636,18 @@ private fun InfoRegion(
         }
     }
     }
+    }
 }
+
+// (Update 230, #09: with the covers on the right the info region is on the left, but its text hugged the
+// cover column — the region and its pages line up on the side away from the covers.)
+private val LocalInfoOnLeft = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+@Composable
+private fun infoHAlign(): Alignment.Horizontal = if (LocalInfoOnLeft.current) Alignment.Start else Alignment.End
+
+@Composable
+private fun infoTextAlign(): TextAlign = if (LocalInfoOnLeft.current) TextAlign.Start else TextAlign.End
 
 // ---- Pages (one clean region each: text and thin rules, no stacks of cards) ----
 
@@ -639,12 +658,12 @@ private fun PageText(text: String, muted: Boolean = false, size: Int = 13, maxLi
         // (Update 136: a paragraph is never shrunk to fit — it ends in "…" — and its line height follows its font:
         // the shrunk text kept the full size's spacing, with the "…" alone on a line of its own.)
         fontSize = size.sp, autoSize = if (maxLines <= 2) androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = (size.sp) * 0.75f, maxFontSize = size.sp) else null,
-        lineHeight = androidx.compose.ui.unit.TextUnit(1.38f, androidx.compose.ui.unit.TextUnitType.Em), maxLines = maxLines, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End
+        lineHeight = androidx.compose.ui.unit.TextUnit(1.38f, androidx.compose.ui.unit.TextUnitType.Em), maxLines = maxLines, overflow = TextOverflow.Ellipsis, textAlign = infoTextAlign()
     )
 
 @Composable
 private fun OverviewPage(info: HeroInfo) {
-    Column(horizontalAlignment = Alignment.End) {
+    Column(horizontalAlignment = infoHAlign()) {
         // The one contextual milestone (journey-aware), else the simple one.
         val m = rememberContextMilestone(info.game.stableKey, info.earned, info.total, info.completion, info.lastPlayed) ?: info.milestone
         m?.let {
@@ -677,7 +696,7 @@ private val greyscale = ColorFilter.colorMatrix(ColorMatrix().apply { setToSatur
 private fun AchievementsPage(info: HeroInfo, onOpen: () -> Unit) {
     // The page stays composed while the game changes: a tap must open the game on screen now.
     val open by rememberUpdatedState(onOpen)
-    Column(horizontalAlignment = Alignment.End, modifier = Modifier.pointerInput(Unit) { detectTapGestures { open() } }) {
+    Column(horizontalAlignment = infoHAlign(), modifier = Modifier.pointerInput(Unit) { detectTapGestures { open() } }) {
         if (info.achievements.isEmpty()) {
             PageText(if (info.total > 0) achievementProgress(info.earned, info.total) else "No achievement set linked.", muted = true)
         } else {
@@ -693,7 +712,7 @@ private fun AchievementsPage(info: HeroInfo, onOpen: () -> Unit) {
         val unlocked = info.achievements.filter { it.isUnlocked }.sortedByDescending { it.dateEarnedHardcore ?: it.dateEarned ?: "" }
         val locked = info.achievements.filter { !it.isUnlocked }.sortedWith(com.shelf.launcher.data.RA_DISPLAY_ORDER)
         // As many badges as fit the info region (twelve needed ~520 dp; the rest were cut off).
-        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = if (LocalInfoOnLeft.current) Alignment.CenterStart else Alignment.CenterEnd) {
         val fits = ((maxWidth.value + 6f) / 44f).toInt().coerceIn(1, 12)
         val strip = (unlocked + locked).take(fits)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -732,7 +751,7 @@ private fun HistoryPage(info: HeroInfo) {
         }
     }
     val journey = if (Features.gameJourney.state.value) rememberGameJourney(info.game, info.achievements, info.completion) else emptyList()
-    Column(horizontalAlignment = Alignment.End) {
+    Column(horizontalAlignment = infoHAlign()) {
         if (sessions.isEmpty() && journey.isEmpty()) {
             PageText("No sessions recorded yet.", muted = true)
         } else {
@@ -797,7 +816,7 @@ private fun StatsPage(info: HeroInfo) {
         val counts = info.achievements.mapNotNull { (it.dateEarnedHardcore ?: it.dateEarned)?.take(7) }.groupingBy { it }.eachCount()
         keys.map { it to (counts[it] ?: 0) }
     }
-    Column(horizontalAlignment = Alignment.End) {
+    Column(horizontalAlignment = infoHAlign()) {
         val avg = if (sessions.isNotEmpty()) sessions.sumOf { it.ms } / sessions.size else 0L
         val longest = sessions.maxOfOrNull { it.ms } ?: 0L
         PageText(
@@ -839,7 +858,7 @@ private fun monthShort(key: String): String = runCatching {
 @Composable
 private fun GuidePage(info: HeroInfo, onOpen: () -> Unit) {
     val open by rememberUpdatedState(onOpen)
-    Column(horizontalAlignment = Alignment.End, modifier = Modifier.pointerInput(Unit) { detectTapGestures { open() } }) {
+    Column(horizontalAlignment = infoHAlign(), modifier = Modifier.pointerInput(Unit) { detectTapGestures { open() } }) {
         val missables = info.achievements.count { it.isMissable && !it.isUnlocked }
         PageText(
             when {
