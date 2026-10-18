@@ -86,6 +86,21 @@ class PerfOverlayService : Service() {
             if (view == null && musicView == null && raView == null) stopSelf(startId)
             return START_NOT_STICKY
         }
+        // (Update 216) A start() intent came through startForegroundService: go foreground FIRST, before any other
+        // return. Android kills the whole app ("did not then call Service.startForeground()") when such a service is
+        // stopped before startForeground ran — by stop() racing ahead of this call (a launch that failed, Voltcap
+        // paused and resumed at once: seen on the RP Classic) or by a stopSelf below. stopSelf(startId) everywhere
+        // here, so a newer start() still queued keeps the service until it has gone foreground too.
+        if (intent?.hasExtra(EXTRA_DISPLAY) == true) {
+            val fg = goForeground()
+            val left = pendingStarts.decrementAndGet().also { if (it < 0) pendingStarts.set(0) }
+            if (stopAfterStart) {
+                if (left <= 0) stopAfterStart = false
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
+            if (!fg && view == null && musicView == null && raView == null) { stopSelf(startId); return START_NOT_STICKY }
+        }
         val running = view != null || musicView != null || raView != null
         // Overlays switched mid-game (Quick Settings tile): rebuild with the new choice, same screen.
         val reconfigure = intent?.getBooleanExtra(EXTRA_RECONFIGURE, false) == true
@@ -109,14 +124,14 @@ class PerfOverlayService : Service() {
         // A foreground service, so Android's background limits don't stop the overlay a minute
         // into the game (a plain started service is killed once Voltcap is in the background).
         com.shelf.launcher.data.Features.init(this) // the pinned achievement and overlay options
-        if (!goForeground()) { stopSelf(); return START_NOT_STICKY }
-        if (!canDraw(this)) { stopSelf(); return START_NOT_STICKY }
+        if (!goForeground()) { stopSelf(startId); return START_NOT_STICKY }
+        if (!canDraw(this)) { stopSelf(startId); return START_NOT_STICKY }
         val s = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         scope = s
         val perfShown = wantPerf && show()
         val musicShown = wantMusic && showMusic()
         val raShown = wantRa && showRa()
-        if (!perfShown && !musicShown && !raShown) { stopSelf(); return START_NOT_STICKY }
+        if (!perfShown && !musicShown && !raShown) { stopSelf(startId); return START_NOT_STICKY }
         if (raShown) {
             // Redrawn only when the achievement data or the settings change (no timer).
             s.launch {
@@ -701,6 +716,10 @@ class PerfOverlayService : Service() {
 
         /** The service exists (created and not yet destroyed). */
         @Volatile private var alive = false
+        /** (Update 216) startForegroundService calls not yet answered with startForeground by the service. */
+        private val pendingStarts = java.util.concurrent.atomic.AtomicInteger(0)
+        /** (Update 216) stop() came while starts were pending: the service stops itself once it has gone foreground. */
+        @Volatile private var stopAfterStart = false
         /** The screen the overlays last went on. */
         @Volatile private var lastDisplay: Int? = null
         private const val EXTRA_DISPLAY = "display"
@@ -715,6 +734,8 @@ class PerfOverlayService : Service() {
             if (!canDraw(context)) return
             lastDisplay = displayId
             if (newSession) OverlayClock.sessionStart = System.currentTimeMillis()
+            stopAfterStart = false
+            pendingStarts.incrementAndGet()
             runCatching {
                 androidx.core.content.ContextCompat.startForegroundService(
                     context,
@@ -724,10 +745,13 @@ class PerfOverlayService : Service() {
                         .putExtra(EXTRA_MUSIC, music)
                         .putExtra(EXTRA_RA, ra)
                 )
-            }
+            }.onFailure { pendingStarts.decrementAndGet() }
         }
 
         fun stop(context: Context) {
+            // (Update 216) Not foreground yet for a start(): stopping now would make Android kill Voltcap.
+            // The service stops itself as soon as it has gone foreground instead.
+            if (pendingStarts.get() > 0) { stopAfterStart = true; return }
             runCatching { context.stopService(Intent(context, PerfOverlayService::class.java)) }
         }
 

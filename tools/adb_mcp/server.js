@@ -6,8 +6,16 @@
 // Env (all optional):
 //   ADB        full path to adb.exe (default: %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe, else "adb" on PATH)
 //   SHOTS_DIR  where screenshots are saved (default: <this folder>\..\..\screens)
+//
+// Update 216: a few FIXED build tools for the project's own workflow (no general shell):
+//   sync_sources   exactly the two robocopy lines of HANDOVER rule 13 (src_copy -> app source, project_copy -> root)
+//   gradle_start   runs gradlew.bat with ONE task from an allow-list, in the background (log in Claude outputs\builds)
+//   gradle_status / gradle_stop
+//   install_build  adb install -r of the newest built APK (update in place: app data kept; never -d, never uninstall)
+//   git_status     read-only: branch, uncommitted files, last commits
+// Nothing here commits, pushes, publishes a release, uninstalls or deletes.
 'use strict';
-const { execFile } = require('child_process');
+const { execFile, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -20,6 +28,49 @@ function findAdb() {
 }
 const ADB = findAdb();
 const SHOTS = process.env.SHOTS_DIR || path.resolve(__dirname, '..', '..', 'screens');
+const ROOT = path.resolve(__dirname, '..', '..');                       // the ShelfLauncher project folder
+const BUILDS = path.join(ROOT, 'Claude outputs', 'builds');             // git-ignored
+const GRADLE_TASKS = ['assembleRelease', 'assembleDebug', ':app:compileReleaseKotlin', ':app:compileDebugKotlin', 'lintRelease', 'testDebugUnitTest'];
+let job = null;                                                          // the one Gradle run at a time
+
+function buildEnv() {
+  const env = Object.assign({}, process.env);
+  if (!env.JAVA_HOME) {
+    // Gradle needs a JDK: Android Studio's own one when JAVA_HOME isn't set for this app.
+    const cands = ['C:\\Program Files\\Android\\Android Studio\\jbr', path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Android Studio', 'jbr')];
+    for (const c of cands) if (fs.existsSync(path.join(c, 'bin', 'java.exe'))) { env.JAVA_HOME = c; break; }
+  }
+  return env;
+}
+function runCapture(cmd, args, opts = {}) {
+  return new Promise((resolve) => {
+    const p = spawn(cmd, args, { cwd: opts.cwd || ROOT, env: opts.env || process.env, windowsHide: true });
+    let out = '';
+    p.stdout.on('data', (d) => { out += d; }); p.stderr.on('data', (d) => { out += d; });
+    p.on('error', (e) => resolve({ code: -1, out: out + '\n' + e.message }));
+    p.on('close', (code) => resolve({ code, out }));
+  });
+}
+const tail = (t, n) => t.split(/\r?\n/).filter((l) => l.trim() !== '').slice(-n).join('\n');
+function newestApk(variant) {
+  const dir = path.join(ROOT, 'app', 'build', 'outputs', 'apk', variant);
+  if (!fs.existsSync(dir)) return null;
+  const apks = fs.readdirSync(dir).filter((f) => f.endsWith('.apk')).map((f) => path.join(dir, f));
+  apks.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+  return apks[0] || null;
+}
+function jobStatus(lines) {
+  if (!job) return 'No Gradle run yet.';
+  const log = fs.existsSync(job.log) ? fs.readFileSync(job.log, 'utf8') : '';
+  const secs = Math.round(((job.ended || Date.now()) - job.started) / 1000);
+  const state = job.code === null ? 'RUNNING' : (job.code === 0 ? 'SUCCESS' : 'FAILED (exit ' + job.code + ')');
+  const errs = log.split(/\r?\n/).filter((l) => /^e: |^w: .*(error)|FAILURE:|What went wrong|> Task .*FAILED|BUILD (SUCCESSFUL|FAILED)/.test(l)).slice(0, 40);
+  let s = `Gradle ${job.task}: ${state} after ${secs} s\nLog: ${job.log}`;
+  if (errs.length) s += '\n--- key lines ---\n' + errs.join('\n');
+  s += '\n--- last lines ---\n' + tail(log, lines || 30);
+  if (job.code === 0 && /^assemble/.test(job.task)) { const v = job.task === 'assembleDebug' ? 'debug' : 'release'; const a = newestApk(v); if (a) s += `\nAPK: ${a} (${new Date(fs.statSync(a).mtimeMs).toISOString()})`; }
+  return s;
+}
 
 function adb(args, serial, opts = {}) {
   const full = (serial ? ['-s', serial] : []).concat(args);
@@ -122,7 +173,15 @@ const TOOLS = [
   { name: 'install_apk', description: 'Install an APK from this PC on the handheld (adb install -r; "downgrade" also allows an older version).',
     inputSchema: { type: 'object', properties: { serial: SERIAL, path: { type: 'string', description: 'Full path of the .apk on this PC' }, downgrade: { type: 'boolean' } }, required: ['path'] } },
   { name: 'push', description: 'Copy a file from this PC to the handheld.', inputSchema: { type: 'object', properties: { serial: SERIAL, pc_path: { type: 'string' }, handheld_path: { type: 'string' } }, required: ['pc_path', 'handheld_path'] } },
-  { name: 'pull', description: 'Copy a file from the handheld to this PC.', inputSchema: { type: 'object', properties: { serial: SERIAL, handheld_path: { type: 'string' }, pc_path: { type: 'string' } }, required: ['handheld_path', 'pc_path'] } }
+  { name: 'pull', description: 'Copy a file from the handheld to this PC.', inputSchema: { type: 'object', properties: { serial: SERIAL, handheld_path: { type: 'string' }, pc_path: { type: 'string' } }, required: ['handheld_path', 'pc_path'] } },
+  { name: 'sync_sources', description: 'The project\'s own copy step (HANDOVER rule 13): robocopy src_copy into app\\src\\main\\java\\com\\shelf\\launcher, then project_copy over the project root (/E /NJH /NP). Nothing is deleted.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'gradle_start', description: 'Start gradlew.bat with one allowed task in the project folder, in the background: ' + GRADLE_TASKS.join(', ') + '. Check with gradle_status.',
+    inputSchema: { type: 'object', properties: { task: { type: 'string', enum: GRADLE_TASKS } }, required: ['task'] } },
+  { name: 'gradle_status', description: 'State of the current/last Gradle run: running/success/failed, compile errors, last log lines, built APK.', inputSchema: { type: 'object', properties: { lines: { type: 'integer', description: 'Last log lines to show (default 30)' } } } },
+  { name: 'gradle_stop', description: 'Stop the running Gradle build.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'install_build', description: 'Install the newest built Voltcap APK (variant release or debug) on a handheld with adb install -r: an update in place, app data and settings kept. Never downgrades or uninstalls.',
+    inputSchema: { type: 'object', properties: { serial: SERIAL, variant: { type: 'string', enum: ['release', 'debug'] } } } },
+  { name: 'git_status', description: 'Read-only: current branch, uncommitted files and the last commits of the project.', inputSchema: { type: 'object', properties: {} } }
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -192,6 +251,53 @@ async function call(name, a) {
       fs.mkdirSync(path.dirname(a.pc_path), { recursive: true });
       return text((await adb(['pull', a.handheld_path, a.pc_path], s, { timeout: 180000 })).trim());
     }
+    case 'sync_sources': {
+      if (job && job.code === null) throw new Error('A Gradle run is in progress - wait for it (gradle_status) before copying sources.');
+      const src = path.join(ROOT, 'src_copy'), dst = path.join(ROOT, 'app', 'src', 'main', 'java', 'com', 'shelf', 'launcher'), prj = path.join(ROOT, 'project_copy');
+      const out = [];
+      for (const [from, to] of [[src, dst], [prj, ROOT]]) {
+        if (!fs.existsSync(from)) { out.push(`(no ${from})`); continue; }
+        const r = await runCapture('robocopy', [from, to, '/E', '/NJH', '/NP']);
+        // robocopy: 0-7 = success (1 = files copied), 8+ = failure
+        out.push(`robocopy ${path.basename(from)} -> exit ${r.code}${r.code >= 8 ? ' FAILED' : ''}\n` + tail(r.out, 25));
+        if (r.code >= 8) break;
+      }
+      return text(out.join('\n\n'));
+    }
+    case 'gradle_start': {
+      if (!GRADLE_TASKS.includes(a.task)) throw new Error('Task not allowed: ' + a.task);
+      if (job && job.code === null) throw new Error('Gradle is already running ' + job.task + ' (gradle_status / gradle_stop).');
+      fs.mkdirSync(BUILDS, { recursive: true });
+      const log = path.join(BUILDS, 'gradle_' + a.task.replace(/[^A-Za-z]/g, '') + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.log');
+      const ws = fs.createWriteStream(log);
+      const p = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/c', 'gradlew.bat', a.task, '--console=plain'], { cwd: ROOT, env: buildEnv(), windowsHide: true });
+      job = { task: a.task, started: Date.now(), ended: null, code: null, log, pid: p.pid };
+      const j = job;
+      p.stdout.pipe(ws, { end: false }); p.stderr.pipe(ws, { end: false });
+      p.on('error', (e) => { ws.write('\n' + e.message + '\n'); });
+      p.on('close', (code) => { j.code = code === null ? -1 : code; j.ended = Date.now(); ws.end(); });
+      return text(`Started gradlew ${a.task} (pid ${p.pid}). Log: ${log}\nCheck with gradle_status.`);
+    }
+    case 'gradle_status': return text(jobStatus(a.lines));
+    case 'gradle_stop': {
+      if (!job || job.code !== null) return text('No Gradle run in progress.');
+      await runCapture('taskkill', ['/PID', String(job.pid), '/T', '/F']);
+      return text('Stopped ' + job.task + '.');
+    }
+    case 'install_build': {
+      const variant = a.variant || 'release';
+      if (job && job.code === null) throw new Error('Gradle is still running - wait for it first.');
+      const apk = newestApk(variant);
+      if (!apk) throw new Error('No built ' + variant + ' APK in app\\build\\outputs\\apk\\' + variant);
+      const out = await adb(['install', '-r', apk], s, { timeout: 300000 });
+      return text(`${apk} (${new Date(fs.statSync(apk).mtimeMs).toISOString()})\n` + out.trim());
+    }
+    case 'git_status': {
+      const b = await runCapture('git', ['-C', ROOT, 'rev-parse', '--abbrev-ref', 'HEAD']);
+      const st = await runCapture('git', ['-C', ROOT, 'status', '--porcelain']);
+      const lg = await runCapture('git', ['-C', ROOT, 'log', '-5', '--oneline']);
+      return text(`Branch: ${b.out.trim()}\nUncommitted:\n${st.out.trim() || '(none)'}\nLast commits:\n${lg.out.trim()}`);
+    }
     default: throw new Error('Unknown tool ' + name);
   }
 }
@@ -202,7 +308,7 @@ async function handle(m) {
   if (m.id === undefined || m.id === null) return; // notifications
   try {
     if (m.method === 'initialize') {
-      send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: (m.params && m.params.protocolVersion) || '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'voltcap-adb', version: '1.0.0' } } });
+      send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: (m.params && m.params.protocolVersion) || '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'voltcap-adb', version: '1.1.0' } } });
     } else if (m.method === 'tools/list') {
       send({ jsonrpc: '2.0', id: m.id, result: { tools: TOOLS } });
     } else if (m.method === 'tools/call') {

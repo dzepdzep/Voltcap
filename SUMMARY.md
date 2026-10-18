@@ -4,6 +4,41 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (216): the overlay no longer crashes Voltcap when a game ends at once, Claude can build / install / test on the handhelds itself
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Already copied, built and installed** on the AYN Thor and the RP Classic by Claude (you authorised that on 18 Oct) — the block below only commits.
+
+**Copy `src_copy`** (into `app\src\main\java\com\shelf\launcher\`), changed (1): `src_copy\ui\PerfOverlayService.kt`.
+
+**Copy `project_copy`:** `project_copy\tools\adb_mcp\server.js` (also in `tools\adb_mcp\server.js`). **Files to delete:** none.
+
+```powershell
+$P = "C:\Users\User\AndroidStudioProjects\ShelfLauncher"
+robocopy "$P\src_copy" "$P\app\src\main\java\com\shelf\launcher" /E /NJH /NP
+robocopy "$P\project_copy" "$P" /E /NJH /NP
+cd $P
+git add -A
+git commit -q -m "Update 216: overlay service no longer crashes Voltcap on a quick stop; build/install tools in the ADB bridge" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01LC1r679JUAKbPhbGwHtt4Z"
+git push origin main
+```
+(No release published, no reinstall needed — both handhelds already run this build. When you want a release: `& "$P\tools\release\release.ps1" 0.6.9 "<notes>"`.)
+
+### What changed
+1. **Crash: "Voltcap keeps stopping" right after a game** (RP Classic, 3× on 17 Oct, `ForegroundServiceDidNotStartInTimeException` in the in-game overlay). The overlay is started as a foreground service; when it was stopped again before it had shown its notification — a launch that didn't start, or Voltcap paused and resumed at once — Android killed the whole app. Now a stop that comes too early waits until the service has gone foreground and then ends it, every start goes foreground first, and a newer start still on its way is never torn down by an older one. Nothing changes in how the overlays look or when they show. (#81–86 overlay family, P1 crash.)
+2. **Build tools for Claude** (`tools\adb_mcp\server.js`, the `voltcap-adb` bridge Claude already used for adb): `sync_sources` (exactly the two robocopy lines above), `gradle_start` / `gradle_status` / `gradle_stop` (one task from a fixed list: assembleRelease, assembleDebug, compile checks, lint, unit tests; log in `Claude outputs\builds`), `install_build` (`adb install -r` of the newest APK on one handheld — update in place, app data kept; never downgrades or uninstalls), `git_status` (read only). Nothing in it commits, pushes, publishes or deletes. Loaded after a restart of the Claude app. (#113, #114.)
+
+### Check
+- `gradlew assembleRelease`: **BUILD SUCCESSFUL** (Kotlin compile, R8, dex, lint-vital). Installed with `adb install -r` on both: same first-install date (data, settings, layouts kept), home screens unchanged.
+- RP Classic, real game: Yu-Gi-Oh! The Duelists of the Roses (AetherSX2) → overlay service went foreground, overlay arrow shown; Home → overlay and tuner services ended, **no crash**, Voltcap's process didn't restart.
+- Thor: Voltcap back as home after the update (RetroHrai was only the app under it until Home was pressed).
+- Read through all callers: `LauncherViewModel` launch / failed launch / resume / overlay restore, `reconfigure` paths (Quick Settings, tile, overlay panel) — those use `startService`, unaffected.
+- **Not tested:** the exact race itself (a launch that fails within the same moment) could not be triggered on purpose — the service isn't reachable from adb (good: it isn't exported); fixed by code analysis. The Thor's OutOfMemoryError (15 Oct, during a download) is still open.
+
+### Also found today (diagnosis only, see `Claude outputs\evidence\AGENT_LOG_2026-10-18.md`)
+- **#99 RP Classic charge limit:** switches at 80 % (restrict_chg 1 + restrict_cur 1000), current goes from +1.5 A to −0.16 A and temperatures fall; switching it off puts both nodes back to their original values (0 / 1000000) and charging resumes. No heat at idle with the data cable; the hot case (65 W charger) is still to be watched.
+- **#101 Pokémon Silver:** all saves on both handhelds copied untouched to `Claude outputs\evidence\101_pokemon_silver\`; timeline of Voltcap's backups/conflicts recorded. Cause not proven yet.
+- RP Classic misses frame deadlines on the idle art screen (51 % janky, p50 19 ms); Thor 0.6 %.
+
 ## Update — 16 Oct 2026 (215): no second disc behind the discs, the Switch card shows in its case, real case insides for Switch / Xbox 360, covers never stretched on cartridges, flush N64 panel lines, the carousel's dark stage over the whole screen
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. (Run 214's block first if you haven't yet.)
