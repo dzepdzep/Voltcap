@@ -120,6 +120,8 @@ internal fun StylePocketClassic(c: StyleCtx, modifier: Modifier = Modifier) {
     SideEffect {
         PocketNav.ctx = c
         StyleNav.side = emptyList(); StyleNav.top = emptyList(); StyleNav.bar = emptyList()
+        // (Update 226, #98: Endless read whatever the layout before had set — the R1 tile and Settings changed nothing.)
+        StyleLoop.on = loopRowOn(c)
     }
     PocketStartCategory(c)
     TwinHost(

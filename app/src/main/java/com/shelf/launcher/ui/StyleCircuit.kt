@@ -274,7 +274,8 @@ private fun CircuitBoard(c: StyleCtx, ink: Color, modifier: Modifier) {
         // The chips.
         for (i in first..last) {
             // (Update 174: each game once in a short category.)
-            if (loop && !drawnOnce(i - vf, count)) continue
+            // (Update 226, #105: as many before yours as fit left of it — the rest go after it, on screen.)
+            if (loop && !drawnOnce(i - vf, count, minOf(kotlin.math.ceil(anchorX / step).toInt(), (count - 1) / 2))) continue
             val real = if (loop) i.mod(count) else i
             val g = c.games[real]
             val up = Math.floorMod(i, 2) == 0

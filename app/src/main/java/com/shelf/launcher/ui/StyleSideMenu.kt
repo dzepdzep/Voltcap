@@ -324,7 +324,8 @@ private fun SideCapsule(trim: Color) {
 private fun SideRow(c: StyleCtx, pulse: Float, modifier: Modifier) {
     val trim = sideTrim()
     // Update 125: the row goes round with Endless on (EndlessRow.kt) — the last game slides on to the first.
-    val row = rememberLoopRow(c)
+    val fits = remember { RowFits() }
+    val row = rememberLoopRow(c, fits.value)
     val list = rememberLazyListState(initialFirstVisibleItemIndex = (row.focusItem - 1).coerceAtLeast(0))
     FollowFocus(list, row)
     val keys = remember(c.games) { gameKeys(c.games) }
@@ -333,6 +334,7 @@ private fun SideRow(c: StyleCtx, pulse: Float, modifier: Modifier) {
     BoxWithConstraints(modifier) {
         val h = maxHeight - 14.dp
         val w = h * styleAspect(c.type)
+        SideEffect { fits.report(maxWidth, w, 10.dp) } // (Update 226, #105)
         val corner = LocalCardLook.current.cornerDp.coerceAtMost(8).dp
         LazyRow(
             state = list, horizontalArrangement = Arrangement.spacedBy(10.dp),

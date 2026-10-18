@@ -89,7 +89,10 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         "layout", "sort", "edithome" -> R1Fit.Show
         // Music player position and Round shortcuts: every layout (style homes: in the status bar / moved in Edit Home /
         // off; the shortcuts' corner ☰ or Edit Home spot).
-        "musicspot", "roundshort" -> R1Fit.Show
+        "musicspot" -> R1Fit.Show
+        // (Update 226, #98: not on a style home that has the shortcuts in its own menu — the corner ☰ copy stays out
+        // there, so the tile switched something you couldn't see.)
+        "roundshort" -> on(!(l.styleHome && styleHasShortcuts(l)))
         // Corners: every layout — the covers and tiles where the layout uses your corners, and the category screen's
         // tiles (Categories, reached from every layout) everywhere.
         "corners" -> R1Fit.Show
@@ -125,7 +128,9 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
 
         // Console badges: every layout that puts them on its games — not Disc station, Card binder, Arcade, Game shelf or
         // Hero carousel (they draw no badges); RomM's browser shows them on every layout once RomM is set up.
-        "badges" -> on(x.romm || l !in setOf(HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.ARCADE, HomeLayout.SHELF, HomeLayout.HERO))
+        "badges" -> on(x.romm || l !in setOf(HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.ARCADE, HomeLayout.SHELF, HomeLayout.HERO,
+            // (Update 226, #98: the Pocket layouts draw no console badges either.)
+            HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON))
         // Achievements place (the chip on the game you're on): the Voltcap row, Grid, Arcade, Case stacks and the style
         // homes drawn with StyleArt — not Game shelf, Disc station, Card binder, Record crate, Hero carousel, TV room,
         // Circuit board (its readout has the charge bar) or the two Pocket layouts; Pocket Quest only with your look.
@@ -156,7 +161,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // Each layout's own option: Game shelf, Spotlight, Icon bar, Cross menu, Pocket Quest (theme).
         "shelflook" -> on(l == HomeLayout.SHELF)
         "spotlight" -> on(l == HomeLayout.SPOT)
-        "bartabs" -> on(l == HomeLayout.BAR)
+        // (Update 226, #98: Icon bar's tabs only show with its icons on.)
+        "bartabs" -> on(l == HomeLayout.BAR && Features.barIcons.state.value)
         "crosscut" -> on(l == HomeLayout.CROSS)
         "pqtheme" -> on(l == HomeLayout.POCKET)
         // Magnifier (second screen page): with a second display and the Magnifier page switched on (Settings › Screens);

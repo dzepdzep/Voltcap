@@ -363,7 +363,12 @@ internal fun TwinIconsBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
         SideEffect { TwinNav.cols = cols }
         // Endless (more than one row): the games repeat down the grid, each round on a new row, and the place you're on
         // counts on round (twinIconsKey's steps), so the last game to the first is one more step, like any ▶.
-        val loop = loopRowOn(c) && n > cols
+        // (Update 226, #105: only with more rows of games than the tray shows — with fewer, the next round's rows stood
+        // in view under the first ones, the same icons twice. Counted as TrayGrid sizes its cells.)
+        val trayGap = Features.twinGap.state.value.dp
+        val trayCell = minOf((maxWidth - pad * 2 - 10.dp - trayGap * (cols - 1)) / cols, gridH - 10.dp).coerceAtLeast(16.dp)
+        val trayRows = ((gridH - 10.dp + trayGap) / (trayCell + trayGap)).toInt().coerceAtLeast(1)
+        val loop = loopRowOn(c) && n > cols && (n + cols - 1) / cols >= trayRows + 2
         val v = rememberWalkedPlace(c.focus, n, loop, StyleLoop.walked, c.games, tap)
         Column(Modifier.fillMaxSize().padding(pad), verticalArrangement = Arrangement.spacedBy(gap)) {
             TrayTools(tools, toolH, Modifier.fillMaxWidth().height(toolH))

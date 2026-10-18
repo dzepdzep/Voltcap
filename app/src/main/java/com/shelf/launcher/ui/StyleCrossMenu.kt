@@ -329,7 +329,9 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
     val from = if (loop) vf - 4 else (c.focus - 4).coerceAtLeast(0)
     val to = if (loop) vf + 9 else (c.focus + 9).coerceAtMost(c.games.lastIndex)
     // (Update 174: each game once in a short list — the ones before above only when there are enough.)
-    for (v in from..to) if (!loop || drawnOnce(v - vf, c.games.size, minOf(4, (c.games.size - 1) / 2))) androidx.compose.runtime.key(v) {
+    // (Update 226, #105: the games above yours aren't drawn once it has settled — rel > -0.7 below — so only the one
+    // just left counts as "before"; with four, up to four games of a short list were missing from the list below.)
+    for (v in from..to) if (!loop || drawnOnce(v - vf, c.games.size, minOf(1, (c.games.size - 1) / 2))) androidx.compose.runtime.key(v) {
         val i = if (loop) v.mod(c.games.size) else v
         val g = c.games[i]
         val rel = v - pos

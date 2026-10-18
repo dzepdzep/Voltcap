@@ -170,7 +170,9 @@ internal fun TimelineHistory(c: StyleCtx, data: TimelineData, mode: Features.Tim
     // on round, so ▶ on the last game glides on down to the first period like any step into the next one.
     val n = data.order.size
     // (Update 173: not with a single period — the same heading and games stood three times down the screen.)
-    val loop = loopRowOn(c) && n == c.games.size && rows.size >= 2
+    // (Update 226, #105: not with fewer periods than the screen shows — the period you're on sits at the top with about
+    // three or four smaller ones under it, so two to four periods showed again under themselves.)
+    val loop = loopRowOn(c) && n == c.games.size && rows.size >= 5
     SideEffect { StyleLoop.on = loopRowOn(c) }
     val tap = remember { LoopTap() }
     val v = rememberWalkedPlace(place, n, loop, StyleLoop.walked, data, tap)

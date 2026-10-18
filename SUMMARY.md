@@ -4,6 +4,33 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (226): R1 tiles that changed nothing on some layouts (#98), Endless shows each game once on every layout (#105)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (19): `src_copy\ui\QuickSettings.kt`, `src_copy\ui\R1TileRules.kt`, `src_copy\ui\R1Extras.kt`, `src_copy\ui\PocketClassic.kt`, `src_copy\ui\PocketRibbon.kt`, `src_copy\ui\TileHome.kt`, `src_copy\ui\TvRoomHome.kt`, `src_copy\ui\StyleLibrary.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\StyleCrossMenu.kt`, `src_copy\ui\GameDock.kt`, `src_copy\ui\StyleCircuit.kt`, `src_copy\ui\StyleConsoleStack.kt`, `src_copy\ui\TwinIcons.kt`, `src_copy\ui\ShelfHome.kt`, `src_copy\ui\StyleTimelineHistory.kt`, `src_copy\ui\EndlessRow.kt`, `src_copy\ui\StyleSideMenu.kt`, `src_copy\ui\StyleDashboard.kt`. **Files to delete:** none.
+
+### R1 tiles (#98) — found by checking every tile against what the layout on screen reads
+1. **Player tile on style homes** (Dashboard, Spotlight, Case stacks, …): it stepped through Top left → Top right → Bottom left → Bottom right, but a style home only shows the player in the status bar (or where you moved it in Edit Home) — three of the four steps showed nothing. There it's now **Status bar ↔ Off** (hold: In the status bar / Anywhere (Edit Home) / Off). The Voltcap row and the other layouts keep the four corners.
+2. **Spotlight tile** read only by some looks: Home menu reads only where the tiles sit (its hold sheet now offers just Tiles: Top / Bottom); Row & menu never reads "tiles top / bottom", so there the tile is **Names** (beside / under / above / hidden — the one thing that look reads); Big picture keeps everything.
+3. **Round shortcuts tile** hidden on a style home that already has the shortcuts in its own menu (they're never drawn there, update 78).
+4. **Icon bar's Tabs tile** hidden while Icon bar's icons are off (no tabs then).
+5. **Endless on Pocket Classic / Pocket Ribbon** used whatever the previous layout had set — the R1 tile and the setting did nothing until you'd visited another layout. Now each sets it itself.
+6. **Badges tile** hidden on the Pocket layouts (they draw no console badges).
+7. Holding the **RomM** tile opened Settings at the top of Accounts instead of RomM (its search name had changed).
+
+### Endless (#105) — each game once, last ↔ first, no copies you can't select
+With Endless on and a short category, several layouts drew the same games two or three times side by side (copies the D-pad never lands on), others left games out:
+- **Tile row**: copies of every game across the row → each game once (the ones before yours as far as they're seen, depending on where the game you're on is held); swiping now goes round too.
+- **Grid, Library, TV room grid and shelf, Twin icons, Game shelf, Timeline, Side menu and Dashboard rows**: they went round as soon as there were more games than one row / 8 games, so the next round showed under or beside the first. They now go round only with more games than the screen really shows (measured from the screen and the game size); with fewer, ◀ / ▶ still wrap from last to first, without copies.
+- **Cross menu, Voltcap row (focus at the left), Circuit board, Console stack**: up to four games of a short list were placed off-screen "before" the one you're on and missing after it → now as many before as are really seen, the rest after.
+- Voltcap row: swiping goes round with Endless on.
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL (first attempt failed on a missing import, fixed); installed on both handhelds.
+- Thor: Player tile on Case stacks: Off → "Status bar" → Off (restored). Endless on, Other apps (3 apps): Case stacks and Spotlight each show the three once; ▶ ×4 wraps PS Plus → PXPlay. Spotlight Home menu: hold the tile → only "Tiles: Top / Bottom". Your Endless (off), layout (Case stacks) and category (3DS) were put back.
+- **Not tested on a device**: the Tile row, Grid/Library/TV room/Twin icons/Shelf/Timeline thresholds, the Pocket layouts' Endless (the RP Classic was in use — SaveQuest open — so I didn't touch it beyond installing).
+
 ## Update — 18 Oct 2026 (225): a game that doesn't start now says why on every layout (#102), the save line of an app opens nothing
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

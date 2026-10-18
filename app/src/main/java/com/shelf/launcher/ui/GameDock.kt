@@ -396,7 +396,7 @@ internal fun GameDock(
                 // Swiping still works on touch: every card-width of drag moves the
                 // focus by one, same as a D-pad press.
                 // Keyed on the step so a new card size (Appearance) takes effect at once.
-                .pointerInput(stride) {
+                .pointerInput(stride, loop) {
                     val stepPx = stride.toPx().coerceAtLeast(1f)
                     var accumulated = 0f
                     var target = 0
@@ -410,12 +410,13 @@ internal fun GameDock(
                             accumulated += dragAmount
                             while (accumulated <= -stepPx) {
                                 accumulated += stepPx
-                                target = (target + 1).coerceAtMost(currentLastIndex)
+                                // (Update 226, #105: with Endless on, a swipe goes round past the last game too.)
+                                target = if (loop) (target + 1).mod(currentLastIndex + 1) else (target + 1).coerceAtMost(currentLastIndex)
                                 currentOnFocus(target)
                             }
                             while (accumulated >= stepPx) {
                                 accumulated -= stepPx
-                                target = (target - 1).coerceAtLeast(0)
+                                target = if (loop) (target - 1).mod(currentLastIndex + 1) else (target - 1).coerceAtLeast(0)
                                 currentOnFocus(target)
                             }
                         }
@@ -424,7 +425,10 @@ internal fun GameDock(
         ) {
             // The fixed first capsule is always there, however far along the row you are.
             // (Update 218, #105: going round a short list, each game once — no copies of the same game along the row.)
-            val slots = (firstIndex..lastIndex).filter { !loop || drawnOnce(it - virtualFocus, games.size, minOf(coversBefore, (games.size - 1) / 2)) }
+            // (Update 226, #105: "before" = the covers really seen left of yours — held at the left that's none, and the
+            // two spare ones counted in [coversBefore] stood off-screen while a short list's games were missing on the right.)
+            val seenBefore = if (carousel) coversBefore else kotlin.math.ceil(focusX / stride).toInt()
+            val slots = (firstIndex..lastIndex).filter { !loop || drawnOnce(it - virtualFocus, games.size, minOf(seenBefore, (games.size - 1) / 2)) }
             // Update 136: the fixed wide place (see [fixedSlot]) holds the game you're on; the row only draws the ones after it.
             if (fixedSlot) key("fixedSlot") {
                 // Update 137: moving on, the next game slides into the wide place from the right (back: from the left)

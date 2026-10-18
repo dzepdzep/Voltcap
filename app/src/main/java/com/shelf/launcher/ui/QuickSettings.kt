@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.statusOn
 import android.app.NotificationManager
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.AspectRatio
@@ -450,11 +451,27 @@ fun QuickSettingsCard(
                         val all = com.shelf.launcher.data.Features.ShelfLook.values()
                         f.shelfLook.value = all[(f.shelfLook.value.ordinal + 1) % all.size]
                     })
-                    add(R1Tile("spotlight", Icons.Filled.ViewModule, "Tiles\n" + f.spotTilesAt.state.value.label, false,
+                    // (Update 226, #98: each Spotlight look reads different options — Big picture: where the tiles sit, the
+                    // tile names and the title; Home menu: where the tiles sit only; Row & menu: the tile names only (its
+                    // tiles always sit on top). The tile and its hold sheet offer only what the look on screen reads.)
+                    val spotLookNow = f.spotLook.state.value
+                    if (spotLookNow == com.shelf.launcher.data.Features.SpotLook.ROW_MENU) {
+                        add(R1Tile("spotlight", Icons.Filled.ViewModule, "Names\n" + when (f.spotNameAt.state.value) { com.shelf.launcher.data.Features.SpotName.RIGHT -> "beside"; com.shelf.launcher.data.Features.SpotName.BELOW -> "under"; com.shelf.launcher.data.Features.SpotName.ABOVE -> "above"; else -> "hidden" }, false,
+                            longAction = {
+                                choiceSheet = "Spotlight · tile names" to com.shelf.launcher.data.Features.SpotName.values().map { n ->
+                                    R1Choice("Tile name: " + n.label, f.spotNameAt.value == n) { f.spotNameAt.value = n }
+                                }
+                            }) {
+                            val all = com.shelf.launcher.data.Features.SpotName.values()
+                            f.spotNameAt.value = all[(f.spotNameAt.value.ordinal + 1) % all.size]
+                        })
+                    } else add(R1Tile("spotlight", Icons.Filled.ViewModule, "Tiles\n" + f.spotTilesAt.state.value.label, false,
                         // Hold (update 104): where the names go — the tile's name and the big title.
                         longAction = {
                             val F = com.shelf.launcher.data.Features
-                            choiceSheet = "Spotlight · names" to (
+                            val sides = com.shelf.launcher.data.Features.SpotSide.values().map { n -> R1Choice("Tiles: " + n.label, F.spotTilesAt.value == n) { F.spotTilesAt.value = n } }
+                            choiceSheet = if (spotLookNow == com.shelf.launcher.data.Features.SpotLook.HOME_MENU) "Spotlight · tiles" to sides
+                            else "Spotlight · tiles & names" to (sides +
                                 com.shelf.launcher.data.Features.SpotName.values().map { n -> R1Choice("Tile name: " + n.label, F.spotNameAt.value == n) { F.spotNameAt.value = n } } +
                                     com.shelf.launcher.data.Features.SpotAcross.values().map { n -> R1Choice("Title: " + n.label, F.spotTitleAt.value == n) { F.spotTitleAt.value = n } } +
                                     com.shelf.launcher.data.Features.SpotAlong.values().map { n -> R1Choice("Title: " + n.label, F.spotTitleRow.value == n) { F.spotTitleRow.value = n } }
@@ -511,7 +528,43 @@ fun QuickSettingsCard(
                 })
             }
             // Where the music player sits: tap = next corner, hold = move it anywhere (Edit Home).
-            run {
+            // (Update 226, #98: a style home shows the player only in the status bar or where it was moved in Edit Home —
+            // the other corners drew nothing there, so the tile stepped through places that changed nothing. On style
+            // homes it's status bar → Off; hold: status bar, anywhere or off.)
+            if (a.homeLayout.styleHome) run {
+                val moved = HomeWidgets.position(HomeWidgets.MUSIC) != null
+                val off = !a.miniPlayer
+                val top = com.shelf.launcher.data.MusicPlayerPosition.TOP_LEFT
+                val inBar = !off && !moved && a.musicPlayerPosition == top
+                val where = when {
+                    off -> "Off"
+                    moved -> "Free"
+                    a.musicPlayerPosition != top -> "Hidden"
+                    !a.statusOn -> "No bar"
+                    else -> "Status bar"
+                }
+                add(R1Tile("musicspot", Icons.Filled.MusicNote, "Player\n" + where, a.miniPlayer,
+                    longAction = {
+                        choiceSheet = "Music player" to listOf(
+                            R1Choice(if (a.statusOn) "In the status bar" else "In the status bar (turn the status bar on)", inBar) {
+                                if (moved) HomeWidgets.reset(HomeWidgets.MUSIC)
+                                home.setAppearance(a.copy(musicPlayerPosition = top, miniPlayer = true))
+                            },
+                            R1Choice("Anywhere (move in Edit Home)", !off && moved) {
+                                if (off) home.setAppearance(a.copy(miniPlayer = true))
+                                HomeEditState.open()
+                            },
+                            R1Choice("Off", off) { home.setAppearance(a.copy(miniPlayer = false)) }
+                        )
+                    }) {
+                    when {
+                        off -> home.setAppearance(a.copy(musicPlayerPosition = top, miniPlayer = true))
+                        moved -> { HomeWidgets.reset(HomeWidgets.MUSIC); home.setAppearance(a.copy(musicPlayerPosition = top, miniPlayer = true)) }
+                        a.musicPlayerPosition != top -> home.setAppearance(a.copy(musicPlayerPosition = top, miniPlayer = true))
+                        else -> home.setAppearance(a.copy(miniPlayer = false))
+                    }
+                })
+            } else run {
                 val moved = HomeWidgets.position(HomeWidgets.MUSIC) != null
                 val where = if (moved) "Free" else a.musicPlayerPosition.label
                 val off = !a.miniPlayer

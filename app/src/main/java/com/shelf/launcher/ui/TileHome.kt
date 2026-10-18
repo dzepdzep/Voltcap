@@ -441,7 +441,7 @@ internal fun TileHomeRow(
                             onTilesTop(it.positionInRoot().y + ringPx)
                         } else Modifier
                     )
-                    .pointerInput(strideDpValue) {
+                    .pointerInput(strideDpValue, looping) {
                         val stepPx = m.stride.toPx()
                         var accumulated = 0f
                         var target = 0
@@ -452,12 +452,13 @@ internal fun TileHomeRow(
                                 accumulated += dragAmount
                                 while (accumulated <= -stepPx) {
                                     accumulated += stepPx
-                                    target = (target + 1).coerceAtMost(currentCount - 1)
+                                    // (Update 226, #105: with Endless on, a swipe goes round past the last game too.)
+                                    target = if (looping) (target + 1).mod(currentCount) else (target + 1).coerceAtMost(currentCount - 1)
                                     currentOnFocus(target)
                                 }
                                 while (accumulated >= stepPx) {
                                     accumulated -= stepPx
-                                    target = (target - 1).coerceAtLeast(0)
+                                    target = if (looping) (target - 1).mod(currentCount) else (target - 1).coerceAtLeast(0)
                                     currentOnFocus(target)
                                 }
                             }
@@ -471,7 +472,18 @@ internal fun TileHomeRow(
                 // (Update 156: going round, [i] is a place on the endless row: game i mod n, each copy its own key.)
                 val from = minOf(first - m.visible, vFocus - reach).let { if (looping) it else it.coerceAtLeast(0) }
                 val to = maxOf(first + m.visible * 2, vFocus + reach).let { if (looping) it else it.coerceAtMost(n - 1) }
+                // (Update 226, #105: each game once. With fewer games than the row holds, going round drew every game
+                // two or three times side by side — copies the D-pad never lands on. Kept: the games before the one you're
+                // on as far as they're seen on that side (none when it's held at the left: those slide away behind the
+                // edge; all the others when held at the right), the rest after it.)
+                val loopBefore = when (focusAnchor) {
+                    com.shelf.launcher.data.TileFocus.LEFT -> 0
+                    com.shelf.launcher.data.TileFocus.RIGHT -> n - 1
+                    com.shelf.launcher.data.TileFocus.CENTER -> (n - 1) / 2
+                    com.shelf.launcher.data.TileFocus.EDGES -> vFocus - window[0]
+                }
                 for (i in from..to) {
+                    if (looping && !drawnOnce(i - vFocus, n, loopBefore)) continue
                     val game = games[if (looping) i.mod(n) else i]
                     key(game.stableKey, if (looping) i.floorDiv(n) else 0) {
                         // Update 203: a cartridge turns as a solid piece (its thickness showing) — the tile hands it the

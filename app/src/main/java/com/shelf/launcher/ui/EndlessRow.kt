@@ -89,11 +89,28 @@ internal class LoopRow(val loop: Boolean, val n: Int, virtual: Int) {
 }
 
 @Composable
-internal fun rememberLoopRow(c: StyleCtx): LoopRow {
+internal fun rememberLoopRow(c: StyleCtx, fits: Int = LAZY_LOOP_MIN): LoopRow {
     val v = rememberLoopFocus(c)
     // (Update 174: a lazy row goes round only with more games than fit, else its copies show side by side.)
-    val loop = loopRowOn(c) && c.games.size > LAZY_LOOP_MIN
+    // (Update 226, #105: [fits] = how many the row really shows, measured by its owner — eight was too few for slim art
+    // on a wide screen.)
+    val loop = loopRowOn(c) && c.games.size > maxOf(LAZY_LOOP_MIN, fits)
     return remember(loop, c.games.size, v, c.focus) { LoopRow(loop, c.games.size, if (loop) v else c.focus) }
+}
+
+/**
+ * Update 226 (#105): a lazy row's owner measures how many games it shows ([report] from inside its BoxWithConstraints:
+ * the width over one game and its gap, plus the two part-shown ones) and passes [value] to [rememberLoopRow] — read on the
+ * next frame, changed only when the room or the game size does.
+ */
+internal class RowFits {
+    private val n = androidx.compose.runtime.mutableIntStateOf(LAZY_LOOP_MIN)
+    val value: Int get() = n.intValue
+    fun report(width: androidx.compose.ui.unit.Dp, item: androidx.compose.ui.unit.Dp, gap: androidx.compose.ui.unit.Dp) {
+        if (item <= androidx.compose.ui.unit.Dp(0f)) return
+        val k = ((width + gap) / (item + gap)).toInt() + 2
+        if (k != n.intValue) n.intValue = k
+    }
 }
 
 /** Update 174: the fewest games a lazy row / list needs to go round (fewer fit on screen, so copies would show). */

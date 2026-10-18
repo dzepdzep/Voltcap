@@ -199,7 +199,9 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         // on the endless row), so going past the last game to the first scrolls on by one shelf like any step instead of
         // racing back to the top. When every shelf fits there's nothing to scroll: going round is just the next pull-out.
         val loopV = rememberLoopFocus(c)
-        val scrolls = loopRowOn(c) && plan.rows > visibleRows
+        // (Update 226, #105: with just one shelf more than fit, a part-shown shelf at the top and the bottom could be the
+        // same one — two more than fit means every shelf in view is a different one.)
+        val scrolls = loopRowOn(c) && plan.rows >= visibleRows + 2
         val lap = if (scrolls) Math.floorDiv(loopV, games.size) else 0
         val focusVRow = focusRow + lap * plan.rows
         // Scrolls so the shelf you're on stays in view (in the middle once there are more shelves than fit).

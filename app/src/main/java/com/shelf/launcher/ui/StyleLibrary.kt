@@ -514,7 +514,11 @@ private fun LibraryGrid(c: StyleCtx, modifier: Modifier) {
         // on a new row, and the place you're on counts on round (libraryKey's steps, the ends included),
         // so going from the last game to the first just carries on a row down, like any ▶ — nothing jumps back up.
         val n = c.games.size
-        val loop = loopRowOn(c) && n > cols
+        // (Update 226, #105: only with more games than the screen shows at once — with more than one row but fewer than
+        // a screenful, the next round's rows showed the same games again under the first ones.)
+        val cellH = (maxWidth - pad * 2 - 10.dp * (cols - 1)) / cols / aspect + 20.dp
+        val shownRows = ((maxHeight + vGap) / (cellH + vGap)).toInt() + 2
+        val loop = loopRowOn(c) && n > cols * shownRows
         val tap = remember { LoopTap() }
         // (Update 156, review: counted by the exact steps libraryKey made, StyleLoop.walked.)
         val v = rememberWalkedPlace(c.focus, n, loop, StyleLoop.walked, c.games, tap)

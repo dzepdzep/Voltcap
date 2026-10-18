@@ -502,7 +502,9 @@ private fun CaseGrid(
     loopStep: Int = 0
 ) {
     // (Update 174: only with more games than fit — two games filled the list again and again.)
-    val looping = loop && games.size > LAZY_LOOP_MIN
+    // (Update 226, #105: "fit" counted from the screen — the rows above and below the one you're on as well; eight
+    // games were fewer than three columns × three rows hold, so copies showed.)
+    val looping = loop && games.size > maxOf(LAZY_LOOP_MIN, caseGridShown(cols))
     // Cartridge / disc / box art: the label scans and box scans of the games around the one you're on.
     LaunchedEffect(focus, cardArtType, games.size) {
         if (!cardArtType.wantsMedia()) return@LaunchedEffect
@@ -627,7 +629,9 @@ private fun SpineShelf(
     // Update 156: going round, the spines repeat as copies (the shelf starts in the middle copy) and the selection is on
     // its endless virtual place: last -> first slides one spine on, like any step.
     // (Update 174: only with more games than fit — two games filled the list again and again.)
-    val looping = loop && games.size > LAZY_LOOP_MIN
+    // (Update 226, #105: "fit" counted from the screen's width — about 30 spines stand side by side on a handheld, so
+    // a shelf of 9 to 30 games showed each one two or three times.)
+    val looping = loop && games.size > maxOf(LAZY_LOOP_MIN, (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp / 17) + 2)
     val n = games.size
     val loopTap = remember { LoopTap() }
     val vFocus = rememberLoopPlace(focus, n, looping, loopTick, loopStep, games, loopTap)
@@ -785,3 +789,21 @@ private fun TvInfoBar(game: Game, metaAll: GameMetadata?, playtimeMs: Long?, las
 
 /** Update 125: achievements still to get, in grey. */
 private val TvLockedGrey = androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) })
+
+
+/**
+ * Update 226 (#105): how many cases the TV room's grid can show at once (part-shown ones too) on this screen, so Endless
+ * goes round only with more games than that: the row you're on sits in the middle with as many rows above and below as
+ * the room leaves. Counted with the shortest cells (square tiles), so it never says fewer than are seen.
+ */
+@Composable
+private fun caseGridShown(cols: Int): Int {
+    val conf = androidx.compose.ui.platform.LocalConfiguration.current
+    val w = conf.screenWidthDp.toFloat()
+    val h = conf.screenHeightDp.toFloat()
+    val c = cols.coerceAtLeast(1)
+    val cell = if (c == 1) minOf(w - 16f, h * 0.58f * 0.78f) else (w - 16f - 6f * (c - 1)) / c
+    if (cell <= 0f) return LAZY_LOOP_MIN
+    val aside = kotlin.math.ceil(((h - cell) / 2f).coerceAtLeast(0f) / (cell + 6f)).toInt()
+    return (1 + 2 * aside) * c
+}
