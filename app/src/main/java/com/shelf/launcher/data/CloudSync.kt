@@ -600,7 +600,8 @@ object CloudSync {
         load(context)
         val out = mutableListOf<LooseSave>()
         // Update 151: Dolphin Wii too (the Save Vault matches its saves by the game code in their folder's name).
-        val kinds = PER_GAME_KINDS + SaveKind.N64 + SaveKind.DOLPHIN_GC + SaveKind.DOLPHIN_WII
+        // (Update 223: and Citra / Azahar 3DS saves, matched by the title id in their folder's name.)
+        val kinds = PER_GAME_KINDS + SaveKind.N64 + SaveKind.DOLPHIN_GC + SaveKind.DOLPHIN_WII + SaveKind.CITRA
         _state.value.settings.folders.filter { it.enabled && it.saveKind in kinds && !isStateFolder(it.path) }.forEach { folder ->
             val kind = folder.saveKind
             fun titleOf(rel: String): String {
@@ -1080,7 +1081,9 @@ object CloudSync {
             p == "ps1" || p == "psx" || p == "playstation" -> setOf(SaveKind.PS1_MEMCARDS)
             p == "gc" || p == "ngc" || p.contains("gamecube") -> setOf(SaveKind.DOLPHIN_GC)
             p == "wii" -> setOf(SaveKind.DOLPHIN_WII)
-            p == "3ds" -> setOf(SaveKind.CITRA)
+            // (Update 223, #67: the library calls the 3DS "n3ds" (ES-DE's name) — it matched only "3ds", so a 3DS game
+            // never had a save folder: no sync around it, no watcher, nothing in the Save Vault.)
+            p == "3ds" || p == "n3ds" || p.contains("3ds") -> setOf(SaveKind.CITRA)
             p == "dc" || p.contains("dreamcast") -> setOf(SaveKind.DREAMCAST_VMU)
             p == "n64" -> setOf(SaveKind.N64)
             p == "nds" || p == "ds" -> setOf(SaveKind.NDS)

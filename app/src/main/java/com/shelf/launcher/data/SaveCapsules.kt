@@ -394,6 +394,37 @@ object SaveCapsules {
             }
         }
 
+        // 2d. Nintendo 3DS (update 223, #67 / #72): Citra / Azahar keep each game's save in
+        //     ".../title/<high>/<low>/data/<id>/…" (files often called "main", or savedata0.dat…). One save per title
+        //     folder, matched by the title id in the game's ROM header (MemoryCards.n3dsTitleLow); one that isn't in the
+        //     library shows as that title id's 3DS save. Extra data (extdata) isn't a game save and isn't listed.
+        val n3dsFiles = loose.filter { it.kind == SaveKind.CITRA }
+        if (n3dsFiles.isNotEmpty()) {
+            val n3dsLib = roms.filter { it.platform.lowercase().let { p -> p == "3ds" || p == "n3ds" || p.contains("3ds") } }
+            val byTitle = HashMap<String, Game>()
+            n3dsLib.forEach { g -> MemoryCards.n3dsTitleLow(g.romPath!!)?.let { byTitle.putIfAbsent(it, g) } }
+            n3dsFiles.mapNotNull { f ->
+                val parts = f.path.split('/')
+                val t = parts.indexOf("title")
+                if (t < 0 || parts.size < t + 4 || parts[t + 3] != "data") null else Triple(f, parts[t + 1].lowercase(), parts[t + 2].lowercase())
+            }.groupBy { (f, high, low) -> Triple(f.folder, high, low) }.forEach { (key, list) ->
+                val files = list.map { it.first }
+                val low = key.third
+                val first = files.first()
+                val item = SaveItem(
+                    title = "Save data (${files.size} file${if (files.size == 1) "" else "s"})",
+                    where = key.first + " · ${key.second}${low}" + if (!first.onDevice) " · synced from ${first.fromDevice ?: "another device"}" else "",
+                    sizeBytes = files.sumOf { it.size }, modified = files.maxOf { it.modified },
+                    kind = if (files.all { it.onDevice }) Kind.SAVE_FILE else Kind.SYNCED_FROM_OTHER_DEVICE
+                )
+                val g = byTitle[low] ?: strayGames.getOrPut("N3DS:$low") {
+                    Game(name = "3DS save (${(key.second + low).uppercase()})", platform = "3DS", hue = (low.hashCode() and 0x7FFFFFFF) % 360,
+                        sourceType = SourceType.ROM, romPath = "save:3ds:$low")
+                }
+                add(g, item)
+            }
+        }
+
         // 3. Google Drive moved saves for it (other shared kinds: GameCube, Wii, 3DS, Dreamcast, N64) —
         //    only games played through Voltcap, since those folders hold every game's saves.
         roms.forEach { g ->
@@ -464,8 +495,9 @@ object SaveCapsules {
                 add(stray, item)
                 return@forEach
             }
-            // Update 119: GameCube saves are only ever read in step 2b (by their content); update 151: Wii saves in 2c.
-            if (ext == "gci" || f.kind == SaveKind.DOLPHIN_GC || f.kind == SaveKind.DOLPHIN_WII) return@forEach
+            // Update 119: GameCube saves are only ever read in step 2b (by their content); update 151: Wii saves in 2c;
+            // update 223: 3DS saves in 2d.
+            if (ext == "gci" || f.kind == SaveKind.DOLPHIN_GC || f.kind == SaveKind.DOLPHIN_WII || f.kind == SaveKind.CITRA) return@forEach
             // Update 151: the emulator core in front of the name ("Gambatte_Pokemon - Red…") is not part of the game's name.
             val (core, bare) = SaveMatch.splitCore(f.title)
             val stripped = com.shelf.launcher.ui.stripRegionTags(bare)

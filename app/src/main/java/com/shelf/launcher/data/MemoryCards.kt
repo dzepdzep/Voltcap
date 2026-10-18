@@ -322,6 +322,32 @@ object MemoryCards {
      * A GameCube disc's game code ("GZLE01") from its header: plain .iso / .gcm / NKit (at 0), RVZ / WIA (in their own
      * header, at 0x58) and CISO (at 0x8000). Remembered per file; null when it can't be read.
      */
+    private val n3dsIdCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /**
+     * Update 223 (#67 / #72): a 3DS game's title id, low half ("0011c500") — Citra / Azahar keep its save in
+     * ".../title/00040000/<this>/data/". Read from the ROM's header: an NCSD image (.3ds / .cci) has it at 0x108, an
+     * NCCH (.cxi / .app) at 0x118; else from "[000400000011C500]" in the file name (.cia). Null when unknown.
+     */
+    fun n3dsTitleLow(romPath: String): String? {
+        n3dsIdCache[romPath]?.let { return it.ifEmpty { null } }
+        val fromName = Regex("\\[?0004000[0-9A-Fa-f]([0-9A-Fa-f]{8})]?").find(romPath.substringAfterLast('/'))?.groupValues?.get(1)?.lowercase()
+        val id = fromName ?: runCatching {
+            val f = File(romPath)
+            if (!f.isFile || f.length() < 0x200) return@runCatching null
+            java.io.RandomAccessFile(f, "r").use { r ->
+                val head = ByteArray(0x120)
+                r.readFully(head)
+                val magic = String(head, 0x100, 4, Charsets.ISO_8859_1)
+                val at = when (magic) { "NCSD" -> 0x108; "NCCH" -> 0x118; else -> return@use null }
+                // Little-endian u64: bytes at..at+3 are the low half.
+                "%02x%02x%02x%02x".format(head[at + 3], head[at + 2], head[at + 1], head[at])
+            }
+        }.getOrNull()
+        n3dsIdCache[romPath] = id ?: ""
+        return id
+    }
+
     fun gcGameId(romPath: String): String? {
         gcIdCache[romPath]?.let { return it.ifEmpty { null } }
         val id = runCatching {

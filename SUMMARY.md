@@ -4,6 +4,27 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (223): Nintendo 3DS saves show in the Save Vault and sync around 3DS games (#67 / #72)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (3): `src_copy\data\CloudSync.kt`, `src_copy\data\MemoryCards.kt`, `src_copy\data\SaveCapsules.kt`. **Files to delete:** none.
+
+### Found (Thor)
+Citra keeps 3 game saves in `citra-emu/sdmc/Nintendo 3DS/…/title/00040000/<title id>/data/` (0011c500, 00175e00, 0015c000 — files called `main` or `savedata0–3.dat`). The Save Vault had **no Nintendo 3DS page at all**. Two causes:
+1. The library calls the 3DS **"n3ds"** (ES-DE's name); the code only knew **"3ds"** — so a 3DS game had no save folder: no sync before / after it, no watcher, nothing in the vault.
+2. The vault never read the Citra folder on the device; 3DS saves could only appear after a sync job had recorded them for a game played through Voltcap.
+
+### What changed
+1. "n3ds" (and any platform name with "3ds") is the 3DS for save sync (`CloudSync.kindsForPlatform`). 3DS games now get the same sync around them as PS2 / GameCube (the whole Citra folder: before a game Drive's newer saves come down — never while the emulator may run — and after it changes go up; upload-only with the new watcher while it runs).
+2. Save Vault step 2d: each `title/<high>/<low>/data/` folder is one save (file count, size, newest date), matched to your game by the **title id in the ROM's header** (`MemoryCards.n3dsTitleLow`: NCSD .3ds / .cci at 0x108, NCCH .cxi at 0x118, or "[0004000000…]" in a .cia's name; read once, kept in memory). A save of a game that isn't in the library shows as "3DS save (<title id>)". Extra data (extdata) isn't a game save and isn't listed. Saves synced from another device count the same way.
+
+### Check
+- Header read checked on the Thor's ROMs: Pokémon Alpha Sapphire → 0011c500, Pokémon Moon → 00175e00 (matches the save folders).
+- Thor Save Vault after the update: **16 games with saves (was 13)**, a **Nintendo 3DS 3** page: Pokémon Moon (Nov 6, 2025), Pokémon Alpha Sapphire, and "3DS save" (0015c000 — not in the library). No save file was read for its content, moved or changed.
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed with `adb install -r` on both; no crashes.
+- **Not tested:** Azahar / Lime3DS folders (not set up as sync folders here), .cia ROMs, a 3DS save synced from another device.
+
 ## Update — 18 Oct 2026 (222): saves go to Drive seconds after the emulator writes them (#103), an upload never replaces a newer Drive save (#77), the game's save status says when a newer save hasn't gone up yet (#106)
 
 You OK'd save / sync work on 18 Oct ("Keep em all coming"). All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic (Voltcap 0.6.9 + this) by Claude, committed and pushed by Claude.
