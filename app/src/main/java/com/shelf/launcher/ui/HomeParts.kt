@@ -113,7 +113,8 @@ internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (la
     HomeLayout.SPOT -> 0f to (if (com.shelf.launcher.data.Features.spotTilesAt.state.value == com.shelf.launcher.data.Features.SpotSide.BOTTOM) 0.25f else 0.75f)
     // Update 220 (#94, the RP Classic video): Icon bar with its shortcut tabs — the name sat in the top-left corner over
     // "All apps · Search · …" under the status bar. Left, between the row of tiles and the game's title.
-    HomeLayout.BAR -> 0f to 0.42f
+    // (Update 235, #08: with the games at the bottom the free band is high up, under the tabs, above the title.)
+    HomeLayout.BAR -> 0f to (if (com.shelf.launcher.data.Features.barGamesAt.state.value == com.shelf.launcher.data.Features.SpotSide.BOTTOM) 0.18f else 0.42f)
     // Anywhere else it's added by hand: the top-left corner.
     else -> 0f to 0f
 }

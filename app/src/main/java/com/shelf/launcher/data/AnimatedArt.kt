@@ -62,7 +62,7 @@ object AnimatedArt {
     // Measured on the Retroid Pocket Classic: every playing cover is decoded and uploaded to the GPU frame by frame, on
     // the same render thread that draws the home screen, so scrolling through animated covers stuttered, and with the
     // screen left alone they still took most of a CPU core. While you move (and for a moment after) they hold still;
-    // after three minutes without input (HomeIdle.deep) they stop until the next press.
+    // after 30 s without input (HomeIdle.idle — Update 235; it was the 3-minute HomeIdle.deep) they stop until the next press.
 
     /** Every animated picture decoded (weak: gone with its card). */
     private val live = java.util.Collections.newSetFromMap(java.util.WeakHashMap<Gate, Boolean>())
@@ -96,7 +96,7 @@ object AnimatedArt {
         main.postDelayed(resume, 450L)
     }
 
-    /** No input for a long while (true) / input again (false). */
+    /** No input for 30 s (true; Update 235, was 3 min) / input again (false). Stopped pictures keep the frame they were on. */
     fun setSleeping(sleep: Boolean) {
         if (Build.VERSION.SDK_INT < 28) return
         main.post {

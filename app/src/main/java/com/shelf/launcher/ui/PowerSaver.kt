@@ -49,23 +49,24 @@ object HomeIdle {
     fun poke() {
         lastInput = SystemClock.elapsedRealtime()
         if (focusHide) focusHide = false
-        if (idle) idle = false
-        if (deep) { deep = false; com.shelf.launcher.data.AnimatedArt.setSleeping(false) } // (Update 152)
+        if (idle) { idle = false; com.shelf.launcher.data.AnimatedArt.setSleeping(false) } // (Update 235: wakes with the idle flag, not the deep one)
+        if (deep) deep = false
     }
 
     /** Keeps [idle] / [deep] up to date; runs while the home screen is on screen (one wake-up per step). */
     suspend fun watch() {
         while (true) {
             if (!enabled) {
-                if (idle) idle = false
+                if (idle) { idle = false; com.shelf.launcher.data.AnimatedArt.setSleeping(false) } // (Update 235)
                 if (deep) deep = false
                 delay(IDLE_MS)
                 continue
             }
             val since = SystemClock.elapsedRealtime() - lastInput
-            if (since >= IDLE_MS && !idle) idle = true
-            // Update 152: a few minutes without input: animated covers stop too (they kept a CPU core busy).
-            if (since >= DEEP_MS && !deep) { deep = true; com.shelf.launcher.data.AnimatedArt.setSleeping(true) }
+            // Update 152: animated covers stop too without input (they kept a CPU core busy). (Update 235: at the 30 s
+            // idle, like the background clip, instead of the 3-minute deep idle; each holds the frame it was on.)
+            if (since >= IDLE_MS && !idle) { idle = true; com.shelf.launcher.data.AnimatedArt.setSleeping(true) }
+            if (since >= DEEP_MS && !deep) deep = true
             val next = when {
                 since < IDLE_MS -> IDLE_MS - since
                 since < DEEP_MS -> DEEP_MS - since
@@ -132,8 +133,8 @@ object SecondIdle {
  */
 object EffectClock {
     val seconds = mutableFloatStateOf(0f)
-    /** Update 144: the mastered shimmer's own clock: it keeps going when the home screen goes idle (30 s without a
-     *  button) and only stops at the deep idle (3 minutes) — the shine used to freeze after half a minute. */
+    /** Update 144: the mastered shimmer's own clock. (Update 235: it rests at the 30 s idle again, like the background
+     *  clip — HomeIdle.calm — holding the band where it was, and moves on from there with the next press.) */
     val shimmer = mutableFloatStateOf(0f)
 }
 
@@ -142,17 +143,16 @@ object EffectClock {
 internal fun EffectClockDriver() {
     val active = rememberIsActive() && rememberAnimationsEnabled()
     val on = active && !HomeIdle.calm
-    // Update 144: the shimmer's clock (see EffectClock.shimmer), slower while idle (~12 a second instead of ~24).
-    val shimmerOn = active && !HomeIdle.still
-    val idleNow = HomeIdle.idle
-    LaunchedEffect(shimmerOn, idleNow) {
+    // Update 144: the shimmer's clock (see EffectClock.shimmer). (Update 235: stops at HomeIdle.calm, the same signal
+    // as the background clip; the value is left as it was, so every shining card keeps a still frame.)
+    val shimmerOn = active && !HomeIdle.calm
+    LaunchedEffect(shimmerOn) {
         if (!shimmerOn) return@LaunchedEffect
         val base = EffectClock.shimmer.floatValue
         val start = SystemClock.uptimeMillis()
-        val step = if (idleNow) 84L else 42L
         while (true) {
             EffectClock.shimmer.floatValue = (base + (SystemClock.uptimeMillis() - start) / 1000f) % 3600f
-            delay(step)
+            delay(42)
         }
     }
     LaunchedEffect(on) {

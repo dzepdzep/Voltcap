@@ -436,6 +436,11 @@ internal fun realCaseMm(platform0: String?): Pair<Float, Float>? {
     // case's outline, and the box scan cuts — BoxTexture — go by the cover templates' shapes there.)
     if (platform != null) CaseCatalog.of(platform, CaseRegion.US)?.takeIf { it.shell == CaseShell.KEEP || it.shell == CaseShell.CARDCASE }
         ?.let { return it.wMm to it.hMm }
+    // (Update 235, #27/#38: a console in a CD jewel case with no cover template or template box — Neo Geo CD, PC Engine CD,
+    // CD-i — is drawn in Voltcap's plain jewel case (PlainCase): the jewel case's standard 142 × 125 mm. It was 142 mm tall
+    // at a made-up 0.7 shape, so the plain case came out a third too small in "Cases · real sizes".)
+    if (platform != null && MediaCovers.of(platform) == null && MediaTemplates.of(platform)?.box == null)
+        CaseCatalog.of(platform, CaseRegion.US)?.takeIf { it.shell == CaseShell.JEWEL }?.let { return it.wMm to it.hMm }
     val longest = when (platform) {
         "NES", "Genesis", "MasterSystem", "32X", "Intellivision", "Vectrex", "C64", "Pico8" -> 184f
         "SNES", "N64" -> 185f
@@ -482,7 +487,9 @@ internal fun isFreeMedia(type: com.shelf.launcher.data.CardArtType, platform: St
     // Box art always uses the template pack's case when there's one for the console.
     // (Update 129: the case picked for all on R1 › Case, when there is one.)
     com.shelf.launcher.data.CardArtType.CASE -> LookStyles.casePlatform(platform).let { p ->
-        MediaTemplates.of(p)?.box != null || MediaCovers.used(p) != null
+        // (Update 235, #27/#38: or Voltcap's plain case for a console without a template case — PS3 / PS4 / PS5, the Xboxes,
+        // Neo Geo CD, PC Engine CD… (plainCaseSpec): they were flat covers cut to the cell, in the Grid too.)
+        MediaTemplates.of(p)?.box != null || MediaCovers.used(p) != null || plainCaseSpec(p) != null
     }
     else -> false
 }

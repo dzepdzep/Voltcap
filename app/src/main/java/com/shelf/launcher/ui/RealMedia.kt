@@ -298,7 +298,8 @@ internal fun prepareSoft(b: android.graphics.Bitmap?) {
 internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans0: List<Pair<String, String>>?, realFront: Boolean): Triple<String?, String?, String?> {
     val f = com.shelf.launcher.data.Features
     val scans = scans0.withoutFlat()
-    val front = (if (realFront && f.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform))
+    // (Update 235, #24: not with a cover you picked for the game — its cover is the case front, see UserCovers.)
+    val front = (if (realFront && UserCovers.of(g.stableKey) == null && f.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform))
         BoxTexture.front(scans, g.platform) else null) ?: cover
     val spine = if (LookStyles.spineForAll()) null
         else scans?.firstOrNull { it.first == "Spine" }?.second ?: if (f.originalCases.state.value) BoxTexture.spine(scans, g.platform) else null
@@ -564,7 +565,11 @@ internal fun CaseArt(
     // Update 129: one console's case picked for all (R1 › Case): every game's cover in that case, never its own scan.
     val casePlatform = LookStyles.casePlatform(platform)
     val forAll = LookStyles.caseForAll()
-    val caseScan = if (forAll) null else scan
+    // (Update 235, #24: a cover you picked for the game (UserCovers) goes into the case template, never under its box scan:
+    // with Original cases on the scan won and your cover showed only while the scan loaded. Every case look comes here —
+    // the cards of every layout, the Grid, the TV room, the style homes — so the callers needn't be told.)
+    EnsureUserCovers()
+    val caseScan = if (forAll || UserCovers.isPicked(cover)) null else scan
     val caseSpine = if (forAll) null else spine
     val mm = if (real != null) realCaseMm(casePlatform) else null
     // Update 141: in another console's case, only its shape — no branding — and the game's own console's logo.
@@ -594,8 +599,10 @@ private fun CaseArtBody(
     if (com.shelf.launcher.data.Features.caseWithMedia.state.value && shell != null) {
         val cov0 = MediaCovers.used(platform)
         val box0 = MediaTemplates.of(platform)?.box
-        if (cov0 == null && box0 == null) return false
-        val aspect = cov0?.frontAspectFor(cover ?: scan) ?: box0?.let { if (it.frameRes != null) it.frameAspect else it.aspect } ?: 0.7f
+        // (Update 235, #27/#38: Voltcap's plain case too, for a console without a template case.)
+        val plain0 = if (cov0 == null && box0 == null) plainCaseSpec(platform) else null
+        if (cov0 == null && box0 == null && plain0 == null) return false
+        val aspect = cov0?.frontAspectFor(cover ?: scan) ?: box0?.let { if (it.frameRes != null) it.frameAspect else it.aspect } ?: plain0?.aspect ?: 0.7f
         val round = shell.disc || shell == MediaShell.UMD
         // The cartridge / disc's height as a share of the case's, and its own width / height.
         val mFrac = if (round) 0.6f else 0.5f
@@ -654,6 +661,16 @@ private fun CaseArtFace(
     // own spine on the box turned to its side. Falls back to the template case when the scan can't be loaded or cut.
     var scanFailed by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }
     val ownSpine = spine ?: BoxTexture.spineFor(scan)
+    // (Update 235, #27/#38: a console with no template case (no cover template, no template box) — PS3 / PS4 / PS5, the
+    // Xboxes, Neo Geo CD… — in Voltcap's plain case of its real shape and plastic (PlainCase): its scanned front under the
+    // sleeve with Original cases on, else its cover. Here CaseArt drew nothing (false), so the cards fell back to a flat
+    // cover — or the turned "Box (3D)" picture — cut to the slot.)
+    val plain = if (box == null && cov == null) plainCaseSpec(platform) else null
+    if (plain != null) {
+        val useScan = com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !androidOwnCase(platform)
+        PlainCase(plain, if (useScan) scan else cover ?: scan, CaseArtPlaceholder, modifier, caseModifier, fallback = cover)
+        return true
+    }
     // Update 202: never for an Android game — its case is Voltcap's own (androidOwnCase): WWE All Stars' scraped store
     // art stood in the Thor's case stacks as a plain white "scanned case", without the Android band.
     if (com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !scanFailed && !discCase && !androidOwnCase(platform)) {

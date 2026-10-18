@@ -249,6 +249,8 @@ object LayoutPresets {
                 focusEffect = FocusEffect.GLOW)
         },
         // Update 162: Tile home is no longer a layout (update 112): its presets are the Voltcap row with the Tile look.
+        // (Update 235, #15/#16: Tile home is a layout again — its own presets are further down; these stay the row
+        // with the Square tile look.)
         preset("l_tiles", HomeLayout.CLASSIC, "Tile row",
             "Big rounded square covers in one row, the name above the one you're on.", look = PresetLook(tiles = true), carousel = false) { s ->
             s.copy(cardCorners = CardCorners.ROUND, focusEffect = FocusEffect.GLOW)
@@ -272,6 +274,16 @@ object LayoutPresets {
             "The game you're on big near the left edge, the next ones smaller and turned a little away, stepping back into the distance.",
             options = view(com.shelf.launcher.ui.CarouselView.RECEDE), carousel = true) { s ->
             s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        // (Update 235, #15/#16: Tile home's own presets. It draws its games as square tiles itself, so your game look
+        // and the Square tile look stay as they are; the carousel off.)
+        preset("tile_home", HomeLayout.TILES, "Tile home",
+            "Big square tiles in one row, the name above the one you're on with a ring round it, round shortcut buttons under the row.",
+            look = null, carousel = false),
+        preset("tile_home_big", HomeLayout.TILES, "Big tile home",
+            "The same tiles a good deal bigger, in the middle of the screen — easy to read on a small handheld.",
+            look = null, carousel = false) { s ->
+            s.copy(tileScale = 130, dockPosition = DockPosition.MIDDLE)
         },
         // Hero carousel (update 162: the whole column of covers, the column standing still).
         preset("l_hero", HomeLayout.HERO, "Hero carousel",

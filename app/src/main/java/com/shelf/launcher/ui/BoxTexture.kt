@@ -102,13 +102,15 @@ internal object BoxTexture {
     fun spineFor(front: Any?): String? = (front as? String)?.let { spines[it] }
 
     /**
-     * The best picture of the game's case for a card: the front scan (or the front cut from the full scan), else the
-     * 3D box, else any other box picture (never the whole unfolded scan).
+     * The best picture of the game's case for a card: the front scan (or the front cut from the full scan) — never the
+     * whole unfolded scan.
+     * (Update 235, #27/#38: no longer ScreenScraper's "Box (3D)" picture after it — a box already drawn turned, on a
+     * see-through background — which a flat case front, or a card filled with it, showed cut square: the consoles without
+     * a template case (PS3, Xbox 360…) stood as a cropped turned box. The last "any Box…" fallback only ever found that same
+     * picture, so it went too. Without a front scan the cover goes into the case.)
      */
     fun caseScan(physical: List<Pair<String, String>>?, platform: String?): String? =
         front(physical, platform)
-            ?: physical?.firstOrNull { it.first == "Box (3D)" }?.second
-            ?: physical?.firstOrNull { it.first.startsWith("Box") && it.first != LABEL }?.second
 
     /**
      * Where the spine sits in a full box scan: its left and right edge (pixels), or null when this doesn't look like a

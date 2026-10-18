@@ -174,11 +174,12 @@ enum class HomeLayout(val label: String) {
 
     companion object {
         /**
-         * Update 112: the layouts you can pick. Tile home is gone as a layout (its look stays: Game look › Tiles on the
-         * Voltcap row); a saved Tile home is moved to the Voltcap row with the tile look (LauncherScreen).
+         * The layouts you can pick. (Update 112 took Tile home out and moved a saved one to the Voltcap row with the
+         * square tile look.)
          */
         // (Update 205: Arcade cabinets removed — no longer offered; a home still set to it opens as the Voltcap row.)
-        val pickable: List<HomeLayout> get() = values().filter { it != TILES && it != ARCADE }
+        // (Update 235, #15/#16: Tile home is a layout again — and the Square tile look stays a look of its own.)
+        val pickable: List<HomeLayout> get() = values().filter { it != ARCADE }
     }
 }
 

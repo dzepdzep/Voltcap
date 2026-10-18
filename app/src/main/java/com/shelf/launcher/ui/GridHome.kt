@@ -104,6 +104,8 @@ internal fun HomeGameGrid(
     loopStep: Int = 0
 ) {
     val look = LocalCardLook.current
+    // (Update 235, #24: the covers you picked, so typedArtFor below hands their case the cover instead of its scan.)
+    EnsureUserCovers()
     // Update 156: going round needs two games at least.
     val looping = loop && games.size >= 2
     val loopTap = androidx.compose.runtime.remember { LoopTap() }
@@ -248,6 +250,8 @@ internal fun HomeGameGrid(
                             .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (drawLoop) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } }
                     ) { ProvidePieceTurn(if (solidCart) PieceTurn({ (spin?.value ?: 0f) * lift }, 12f) else null) {
                         val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC && !(mixed && com.shelf.launcher.data.Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey) else null // (Update 229, #31: "All cartridges" in a mixed list no longer forced to a CD by Discs only)
+                        // (Update 235, #27/#38: consoles without a template case too — Voltcap's plain case, caseMarker /
+                        // plainCaseSpec — instead of the flat cover / turned "Box (3D)" picture cropped to the cell below.)
                         val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null
                         // (Update 173: an app without art: its icon on the label / in the case.)
                         val artOrIcon = if (pick != null || box3d != null) coverOrAppIcon(g, url ?: cover) else null

@@ -293,7 +293,166 @@ internal fun androidOwnCase(platform: String?): Boolean = platform == "App" || p
  * Update 202: whether [platform]'s case (as drawn, R1 › Case included) prints its console's band and logo — every case
  * but the PlayStation's, which is drawn without its black band (update 141 / 143). The console badge stays off it then.
  */
-internal fun caseShowsConsole(platform: String?): Boolean = LookStyles.casePlatform(platform) != "PS1"
+internal fun caseShowsConsole(platform: String?): Boolean =
+    LookStyles.casePlatform(platform) != "PS1" &&
+        // (Update 235, #27/#38: Voltcap's plain case (PlainCase) has no console band printed on it: the badge stays.)
+        plainCaseSpec(platform) == null
+
+/**
+ * (Update 235, #24: the covers you picked yourself — Game settings › Artwork, a SteamGridDB pick, a scraper's alternative
+ * or a picture of yours: ArtOverride.cover, which only those picks write — by game. A picked cover is your media choice
+ * for the game, so in the case looks it goes into the case template (CoverCase / the template box / PlainCase) instead
+ * of the game's scraped box scan; with Original cases on the scan always won and your cover only showed while the scan
+ * loaded. Read from ArtOverridesStore's own file and kept up to date as it changes, so every look that draws a case can
+ * ask by the game's key (typedArtFor) or by the cover itself (CaseArt) without being handed the overrides.)
+ */
+internal object UserCovers {
+    /** ArtOverridesStore's preferences file (its overrides_json). */
+    private const val PREFS = "art_overrides"
+
+    private class Picks(val byKey: Map<String, String>, val keysOf: Map<String, List<String>>)
+
+    private val picks = androidx.compose.runtime.mutableStateOf(Picks(emptyMap(), emptyMap()))
+    @Volatile private var started = false
+    /** Held here: SharedPreferences keeps its listeners only weakly. */
+    private var listener: android.content.SharedPreferences.OnSharedPreferenceChangeListener? = null
+
+    /** Reads the picks once (then follows every change to them). Cheap after the first call. */
+    fun ensure(context: android.content.Context) {
+        if (started) return
+        synchronized(this) {
+            if (started) return
+            started = true
+            val app = context.applicationContext
+            val store = com.shelf.launcher.data.ArtOverridesStore(app)
+            fun load() {
+                val byKey = runCatching { store.loadAll().mapNotNull { (k, o) -> o.cover?.takeIf { it.isNotBlank() }?.let { k to it } }.toMap() }
+                    .getOrDefault(emptyMap())
+                picks.value = Picks(byKey, byKey.entries.groupBy({ it.value }, { it.key }))
+            }
+            load()
+            val l = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> load() }
+            listener = l
+            runCatching { app.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(l) }
+        }
+    }
+
+    /**
+     * The cover you picked for game [gameKey], or null (none picked — or a box front picked for it too, Game settings ›
+     * Artwork › Box front: that pick is made for the case looks, so its scan stays the case front).
+     */
+    fun of(gameKey: String?): String? {
+        if (gameKey == null) return null
+        val c = picks.value.byKey[gameKey] ?: return null
+        return c.takeIf { com.shelf.launcher.data.PhysicalOverrides.of(gameKey)["Box"] == null }
+    }
+
+    /** Whether [art] is a cover you picked (for a game without its own box front pick, see [of]). */
+    fun isPicked(art: Any?): Boolean {
+        val s = art as? String ?: return false
+        val keys = picks.value.keysOf[s] ?: return false
+        return keys.any { com.shelf.launcher.data.PhysicalOverrides.of(it)["Box"] == null }
+    }
+}
+
+/** (Update 235, #24: [UserCovers] read from this screen's context.) */
+@Composable
+internal fun EnsureUserCovers() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    UserCovers.ensure(ctx)
+}
+
+/*
+ * (Update 235, #27/#38: Voltcap's plain case. The consoles without a cover template (MediaCovers) or a template pack box
+ * (MediaTemplates) — PlayStation 3 / 4 / 5, Xbox, Xbox 360, Xbox One, Xbox Series, Switch 2 (keep / card cases), Neo Geo CD,
+ * PC Engine CD and CD-i (CD jewel cases) — showed a flat cover (or ScreenScraper's already turned "Box (3D)" picture, cut
+ * square) in the case looks. They're drawn in a plain case of their real case's shape and plastic instead (CaseCatalog:
+ * the standard keep case sizes — Blu-ray 135 × 171.5 mm, DVD 135 × 190 mm — and the CD jewel case's 142 × 125 mm), the
+ * cover (or with Original cases its scanned front) under the case's clear sleeve. With Cover templates off they stay
+ * plain covers, as every console's case does then.)
+ */
+
+private val plainCatalog = java.util.concurrent.ConcurrentHashMap<String, Any>()
+private val NO_PLAIN = Any()
+
+/** [platform]'s plain case (its real case, CaseCatalog), or null when it has a template case, no retail case, or Cover templates are off. */
+internal fun plainCaseSpec(platform: String?): CaseSpec? {
+    if (platform == null || !Features.coverTemplates.state.value) return null
+    val p = LookStyles.casePlatform(platform) ?: return null
+    if (MediaTemplates.of(p)?.box != null || MediaCovers.of(p) != null) return null
+    val found = plainCatalog.getOrPut(p) {
+        CaseCatalog.of(p, CaseRegion.US)?.takeIf { it.shell == CaseShell.KEEP || it.shell == CaseShell.CARDCASE || it.shell == CaseShell.JEWEL } ?: NO_PLAIN
+    }
+    return found as? CaseSpec
+}
+
+/** The art window under the clear sleeve (l, t, r, b): a keep / card case's sleeve is nearly its whole front, the hinge on the left. */
+private val KEEP_WINDOW = floatArrayOf(0.035f, 0.018f, 0.988f, 0.982f)
+/** A jewel case: the booklet under the clear lid, the ridged hinge down the left. */
+private val JEWEL_WINDOW = floatArrayOf(0.085f, 0.03f, 0.975f, 0.97f)
+
+/** The plastic as seen from the front: a see-through case darker and deeper in its colour, a jewel case its tray through the lid. */
+private fun plainRim(spec: CaseSpec): Int =
+    if (spec.shell == CaseShell.JEWEL) {
+        val light = (android.graphics.Color.red(spec.tray) * 299 + android.graphics.Color.green(spec.tray) * 587 + android.graphics.Color.blue(spec.tray) * 114) / 1000 > 150
+        if (light) CaseInside.mix(spec.tray, 0xFF8E949E.toInt(), 0.35f) else CaseInside.mix(spec.tray, 0xFF5A5F68.toInt(), 0.18f)
+    } else CaseInside.mix(0xFF2A2C30.toInt(), spec.plastic, 0.45f + 0.5f * spec.opacity)
+
+/**
+ * (Update 235, #27/#38: Voltcap's plain case seen from the front, for a console with no template case ([plainCaseSpec]):
+ * its real case's shape and plastic, [art] filling the window under the clear sleeve (CSS object-fit: cover, as in the
+ * template cases), the hinge down the left, the plastic sheen and shadow the other flat cases have. [fallback] (the
+ * cover) shows when [art] (a scan) can't be loaded.)
+ */
+@Composable
+internal fun PlainCase(
+    spec: CaseSpec, art: Any?, placeholder: Brush, modifier: Modifier = Modifier, caseModifier: Modifier = Modifier,
+    fallback: Any? = null
+) {
+    val aspect = spec.aspect.coerceIn(0.4f, 2.5f)
+    val jewel = spec.shell == CaseShell.JEWEL
+    val rim = remember(spec) { Color(plainRim(spec)) }
+    val win = if (jewel) JEWEL_WINDOW else KEEP_WINDOW
+    var failed by remember(art) { androidx.compose.runtime.mutableStateOf(false) }
+    val shown = if (failed) fallback else art ?: fallback
+    var shownIn by remember(shown) { androidx.compose.runtime.mutableStateOf(false) }
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val w = minOf(maxWidth, maxHeight * aspect)
+        val h = w / aspect
+        Box(Modifier.size(w, h).caseShadow().then(caseModifier)) {
+            // The shell: its plastic, the hinge groove down the left (a jewel case's ridged hinge).
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                val r = androidx.compose.ui.geometry.CornerRadius(size.width * (if (jewel) 0.012f else 0.022f))
+                drawRoundRect(rim, cornerRadius = r)
+                val hinge = size.width * win[0]
+                val stroke = 1.dp.toPx().coerceAtLeast(1f)
+                if (jewel) {
+                    for (i in 1..4) {
+                        val x = hinge * i / 5f
+                        drawLine(Color.White.copy(alpha = 0.16f), Offset(x, size.height * 0.02f), Offset(x, size.height * 0.98f), stroke)
+                        drawLine(Color.Black.copy(alpha = 0.35f), Offset(x + stroke, size.height * 0.02f), Offset(x + stroke, size.height * 0.98f), stroke)
+                    }
+                } else {
+                    val x = hinge * 0.55f
+                    drawLine(Color.Black.copy(alpha = 0.38f), Offset(x, 0f), Offset(x, size.height), stroke)
+                    drawLine(Color.White.copy(alpha = 0.14f), Offset(x + stroke, 0f), Offset(x + stroke, size.height), stroke)
+                }
+            }
+            Box(
+                Modifier.offset(w * win[0], h * win[1]).size(w * (win[2] - win[0]), h * (win[3] - win[1]))
+                    .clipToBounds().then(if (shown != null && shownIn) Modifier else Modifier.background(placeholder))
+            ) {
+                if (shown != null) AsyncImage(
+                    cardArtModel(shown), null, contentScale = ContentScale.Crop, alignment = Alignment.Center,
+                    onSuccess = { r -> shownIn = true; (shown as? String)?.let { s -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(s, sz.width, sz.height) } } },
+                    onError = { if (shown == art && fallback != null && fallback != art) failed = true },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            CaseSheen(Modifier.fillMaxSize())
+        }
+    }
+}
 
 /**
  * Update 169: how [cov] is reshaped for [art] (Settings › Game look › Covers, cases & discs): Voltcap's own Steam /

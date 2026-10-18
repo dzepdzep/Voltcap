@@ -480,7 +480,12 @@ fun QuickSettingsCard(
                         f.spotTilesAt.value = if (f.spotTilesAt.value == com.shelf.launcher.data.Features.SpotSide.TOP) com.shelf.launcher.data.Features.SpotSide.BOTTOM else com.shelf.launcher.data.Features.SpotSide.TOP
                     })
                     add(R1Tile("bartabs", Icons.Filled.Label, if (f.barTabsCurrent.state.value) "Tab\ncategory" else "Tabs\nshortcuts", f.barTabsCurrent.state.value,
-                        longAction = { f.barArtCut.value = !f.barArtCut.value }) {
+                        // (Update 235, #08: hold — where the games sit, and the art's cut at the middle, in one sheet.)
+                        longAction = {
+                            val F = com.shelf.launcher.data.Features
+                            choiceSheet = "Icon bar · games & art" to (com.shelf.launcher.data.Features.SpotSide.values().map { n -> R1Choice("Games: " + n.label, F.barGamesAt.value == n) { F.barGamesAt.value = n } } +
+                                R1Choice("Art cut at the middle", F.barArtCut.value) { F.barArtCut.value = !F.barArtCut.value })
+                        }) {
                         f.barTabsCurrent.value = !f.barTabsCurrent.value
                     })
                     // Folders → logos on tiles → logos cut out (update 104).

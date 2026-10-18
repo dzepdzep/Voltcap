@@ -56,6 +56,8 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  * a line about it, "Play Game" and ••• lower down at the left, the time played at the right.
  * ◀ ▶ move along the tiles; ▲ goes up to the tabs (◀ ▶ there), ▼ / B come back. ▼ from the tiles: Play / Continue and
  * the round buttons (◀ ▶ along them, ▲ / B back); past them the round shortcuts / music player (HomeReach).
+ * (Update 235, #08: with Games sit at the Bottom the tiles go along the bottom and the title & Start sit just above them,
+ * so ▲ from the tiles is Play and ▲ again the tabs; see StyleHomes.kt's BAR keys.)
  * Options: Settings › Home › Layout options (Icon bar).
  */
 @Composable
@@ -95,11 +97,20 @@ internal fun StyleIconBar(c: StyleCtx, modifier: Modifier) {
                 val k = Features.barTile.state.value / 100f * if (compact) 0.82f else 1f
                 val small = 50.dp * k
                 val pop = Features.barGrow.state.value / 100f
-                BarTiles(c, small, pop)
-                Spacer(Modifier.weight(1f))
+                // (Update 235, #08: Games sit at the Bottom — free room under the tabs, then the title & Start, then the
+                // tiles along the bottom; Top keeps the tiles under the tabs and the title lower down, as before.)
+                val gamesLow = Features.barGamesAt.state.value == Features.SpotSide.BOTTOM
+                if (!gamesLow) {
+                    BarTiles(c, small, pop)
+                    Spacer(Modifier.weight(1f))
+                } else Spacer(Modifier.weight(1f))
                 // The next game's title rises into place (update 104).
                 if (Features.barStart.state.value) androidx.compose.animation.AnimatedContent(targetState = g, label = "barTitle", transitionSpec = { gameSwap() }) { shown ->
                     BarTitle(c, shown, compact, roomy)
+                }
+                if (gamesLow) {
+                    BarTiles(c, small, pop)
+                    Spacer(Modifier.height(if (compact) 6.dp else 12.dp))
                 }
             }
         }

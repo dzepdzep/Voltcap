@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (235): Tile home is back (#15 / #16), your own picked covers win in the case looks (#24), plain cases for consoles without a case template (#27 / #38), Icon bar games top or bottom (#08), shimmer and animated covers rest at 30 s (idle)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied and compiled** by Claude (device checks are kept for the end, as you asked), committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (20): `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\data\LayoutPresets.kt`, `src_copy\data\AnimatedArt.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\R1TileRules.kt`, `src_copy\ui\QuickSettings.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\CoverCases.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\BoxTexture.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\StyleHomes.kt`, `src_copy\ui\StyleIconBar.kt`, `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\HomeParts.kt`, `src_copy\ui\PowerSaver.kt`. **Files to delete:** none.
+
+1. **Tile home (the Switch-style home) can be picked again** — Settings, R1 Layout tile, and two new presets (Tile home, Big tile home). It opens as itself again (update 112 turned it into the Voltcap row). The **Square tile look stays a separate look** for every layout and is no longer switched on by itself. If you were moved to the Voltcap row back then, you stay there until you pick Tile home. Tile home's tiles are an Edit Home part; the R1 "header tight" tile no longer shows there (it has no header).
+2. **A cover you picked yourself (SteamGridDB, another scraper's picture, a file) now wins over the scanned box front in the Cases looks** — on every layout, the 3D cases and the Grid. If you also picked a box front for that game, that pick stays.
+3. **PS3, PS4, PS5, Xbox, Xbox 360, Xbox One / Series, Switch 2, Neo Geo CD, PC Engine CD, CD-i** had no case template, so the Cases looks showed a flat cover (or ScreenScraper's already-turned 3D box picture, cropped). They now get a plain case of the real size (Blu-ray keep case 135 × 171.5 mm, DVD keep case 135 × 190, card case 104 × 170, CD jewel case 142 × 125 — the sizes already in the case catalogue), in its plastic colour (clear PS3, blue PS4/PS5, Xbox greens…), the cover under the sleeve and the console badge. ScreenScraper's turned 3D box is no longer used as a flat front anywhere.
+4. **Icon bar: "Games sit at the" Top / Bottom** (Settings › Icon bar options, and R1 › hold the Tabs tile). Top = as before. Bottom: tabs, then the game's name/Play/buttons, then the tiles at the bottom; ▲ / ▼ follow what's above / below on screen.
+5. **The mastered shimmer and animated covers rest after 30 s without input**, like the background clip (they ran until 3 min). They stop on their current frame and carry on with the next press.
+
 ## Update — 18 Oct 2026 (234): Side menu and Cross menu D-pad fixes (#14), animated covers keep the sharp cover while loading (#22), Hero's R1 tile names what it moves (#30)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

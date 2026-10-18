@@ -3589,7 +3589,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
         )
         if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.GRID) SwitchRow(
             Icons.Filled.Apps, "Games as square tiles",
-            "Every game is its cover as a rounded square tile (what used to be the Tile home), whatever the game look is set to (the focused one grows with a ring).",
+            // (Update 235, #15/#16: Tile home is a layout again — "like", no longer "what used to be".)
+            "Every game is its cover as a rounded square tile (like the Tile home), whatever the game look is set to (the focused one grows with a ring).",
             com.shelf.launcher.data.Features.gridTiles.state.value, { com.shelf.launcher.data.Features.gridTiles.value = it }
         )
         if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.GRID) {

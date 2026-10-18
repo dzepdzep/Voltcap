@@ -1369,6 +1369,9 @@ object Features {
     val barArtCut = BoolPref("bar_art_cut", true)
     /** Icon bar: the tabs along the top show only the category you're in (◀ ▶ step through the categories) instead of your shortcuts. */
     val barTabsCurrent = BoolPref("bar_tabs_current", true)
+    /** (Update 235, #08: Icon bar — the row of tiles right under the tabs (TOP, as before) or along the bottom with the
+     *  title, Start and time played just above it (BOTTOM). The tabs stay along the top either way.) */
+    val barGamesAt = EnumPref("bar_games_at", SpotSide.TOP, SpotSide.values())
     /** Console hub: shortcut icons along the top, and the game's art behind. */
     val hubIcons = BoolPref("hub_icons", true)
     val hubArt = BoolPref("hub_art", true)

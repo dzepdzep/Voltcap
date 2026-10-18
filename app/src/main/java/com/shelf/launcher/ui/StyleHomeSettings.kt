@@ -312,6 +312,8 @@ private fun BarSettings() {
     Spacer(Modifier.height(10.dp))
     Toggle(Icons.Filled.Apps, "Tabs along the top", "A text tab along the top, like the console's Games / Media.", Features.barIcons)
     Toggle(Icons.Filled.Label, "Only the category you're in", "The tab is the category you're on, with ◀ ▶ to step through the categories. Off: your shortcuts as tabs.", Features.barTabsCurrent)
+    // (Update 235, #08: the row of tiles under the tabs, or along the bottom with the title & Start above it.)
+    StyleChoice("Games sit at the", Features.SpotSide.values(), Features.barGamesAt.state.value, { it.label }) { Features.barGamesAt.value = it }
     Slider("Tile size", Features.barTile, 70, 150) { "$it%" }
     Slider("The game you're on pops out", Features.barGrow, 100, 200) { "$it%" }
     Toggle(Icons.Filled.ViewModule, "Square tiles", "Off: the game look's own shape (Settings › Game look).", Features.barSquares)

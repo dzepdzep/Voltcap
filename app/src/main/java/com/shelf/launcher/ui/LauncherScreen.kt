@@ -729,14 +729,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         HomeScans.cover = { k -> state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl }
         HomeScans.keyOfCover = coverKeys
     }
-    // Update 112: Tile home is no longer a layout — a saved one becomes the Voltcap row with the tile look (same tiles,
-    // same row), and a preset that still names it lands there too.
-    LaunchedEffect(state.appearance.homeLayout) {
-        if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) {
-            com.shelf.launcher.data.Features.squareTiles.value = true
-            viewModel.setAppearance(state.appearance.copy(homeLayout = com.shelf.launcher.data.HomeLayout.CLASSIC))
-        }
-    }
+    // (Update 235, #15/#16: Update 112's redirect stood here — a saved Tile home became the Voltcap row and switched the
+    // Square tile look on for everyone. Tile home is a layout again and opens as itself; homes already moved stay as
+    // they are, and the Square tile look is only on when you pick it.)
     // "Who is playing?" once per run, after the intro, when two RetroAchievements accounts are saved and it is switched on.
     var whoAsk by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -3480,6 +3475,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)
                     )
                 } else {
+                    // (Update 235, #15/#16: the tiles are moved / resized / taken off in Edit Home like the Voltcap row's
+                    // Game row (update 202) — Tile home was out of the list when that came.)
+                    Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"), "Game row")) {
                     TileHomeRow(
                         lastPlayedAt = state.lastPlayedAt,
                         onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
@@ -3506,6 +3504,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // Update 156: going round at the end is one step (TileHome.kt).
                         loopTick = state.loopTick, loopStep = state.loopStep
                     )
+                    }
                 }
                 if (tileCategoryBelow && showCats) {
                     Spacer(Modifier.height(4.dp))

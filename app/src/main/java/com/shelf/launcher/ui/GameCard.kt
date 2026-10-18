@@ -157,6 +157,7 @@ fun GameCard(
     modifier: Modifier = Modifier
 ) {
     com.shelf.launcher.Breadcrumbs.mark("GameCard " + game.name)
+    EnsureUserCovers() // (Update 235, #24: the covers you picked, for typedArtFor / CaseArt)
     val look = LocalCardLook.current
     val sizes = cardSizes()
     // The wide banner layout (name, badges on the art) only when the game
@@ -1230,7 +1231,11 @@ internal fun typedArtFor(
 ): String? = when (type) {
     // The case's own scanned front (or the front cut from the full box scan, BoxTexture.kt).
     CardArtType.CASE ->
-        if (MediaTemplates.of(platform)?.box != null) BoxTexture.front(physical, platform)
+        // (Update 235, #24: a cover you picked for this game (UserCovers: SteamGridDB, an alternative, your own picture) is
+        // its case front in every case look — Cases, Cases · real sizes — so its box scan isn't handed on: the case template
+        // gets the cover. Games without a picked cover keep their scan as before.)
+        if (UserCovers.of(gameKey) != null) null
+        else if (MediaTemplates.of(platform)?.box != null) BoxTexture.front(physical, platform)
         else BoxTexture.caseScan(physical, platform)
     // Drawn cartridge / disc: its label (else the cover, as the card's fallback); otherwise the scraped picture.
     CardArtType.CARTRIDGE_DISC ->

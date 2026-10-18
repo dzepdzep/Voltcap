@@ -281,7 +281,8 @@ internal fun styleHomeKey(
                 val back = when (zone) {
                     StyleNav.Zone.SIDE -> k == Key.DirectionRight
                     // Spotlight with its tiles at the bottom has Play and the cards above them: back is ▼ there.
-                    StyleNav.Zone.BAR -> if (layout == HomeLayout.SPOT && Features.spotTilesAt.state.value == Features.SpotSide.BOTTOM && Features.spotLook.value == Features.SpotLook.CINEMA) k == Key.DirectionDown else k == Key.DirectionUp
+                    StyleNav.Zone.BAR -> if ((layout == HomeLayout.SPOT && Features.spotTilesAt.state.value == Features.SpotSide.BOTTOM && Features.spotLook.value == Features.SpotLook.CINEMA) ||
+                        (layout == HomeLayout.BAR && Features.barGamesAt.state.value == Features.SpotSide.BOTTOM)) k == Key.DirectionDown else k == Key.DirectionUp
                     StyleNav.Zone.TOP -> k == Key.DirectionDown
                     StyleNav.Zone.GAMES -> false
                 }
@@ -290,7 +291,8 @@ internal fun styleHomeKey(
                     sound(UiSound.MOVE)
                 } else if (k == Key.DirectionUp || k == Key.DirectionDown) {
                     val goingUp = k == Key.DirectionUp
-                    if (layout == HomeLayout.SPOT && zone == StyleNav.Zone.BAR && goingUp && StyleNav.top.isNotEmpty()) {
+                    if ((layout == HomeLayout.SPOT || (layout == HomeLayout.BAR && Features.barGamesAt.state.value == Features.SpotSide.BOTTOM)) &&
+                        zone == StyleNav.Zone.BAR && goingUp && StyleNav.top.isNotEmpty()) {
                         // Spotlight with the tiles at the bottom: from Play & the cards ▲ goes on up to the category names.
                         StyleNav.leave()
                         if (StyleNav.enter(StyleNav.Zone.TOP, event.nativeKeyEvent.eventTime)) sound(UiSound.MOVE)
@@ -376,11 +378,17 @@ internal fun styleHomeKey(
                 else -> false
             }
         }
-        HomeLayout.BAR -> return when (k) {
-            Key.DirectionUp -> { if (first && !StyleNav.enter(StyleNav.Zone.TOP, at).also { if (it) sound(UiSound.MOVE) }) reach(true); take() }
-            // ▼: Play / Continue and the round buttons under the game's name (update 101), then past them.
-            Key.DirectionDown -> { if (first && !StyleNav.enter(StyleNav.Zone.BAR, at).also { if (it) sound(UiSound.MOVE) }) reach(false); take() }
-            else -> false
+        HomeLayout.BAR -> {
+            // (Update 235, #08: games at the bottom — Play & the round buttons sit above the tiles, so ▲ goes to them.)
+            val low = Features.barGamesAt.state.value == Features.SpotSide.BOTTOM && StyleNav.bar.isNotEmpty()
+            val toBar = if (low) Key.DirectionUp else Key.DirectionDown
+            return when (k) {
+                // ▼ (▲ with the games at the bottom): Play / Continue and the round buttons under the game's name (update 101), then past them.
+                toBar -> { if (first && !StyleNav.enter(StyleNav.Zone.BAR, at).also { if (it) sound(UiSound.MOVE) }) reach(k == Key.DirectionUp); take() }
+                Key.DirectionUp -> { if (first && !StyleNav.enter(StyleNav.Zone.TOP, at).also { if (it) sound(UiSound.MOVE) }) reach(true); take() }
+                Key.DirectionDown -> { if (first) reach(false); take() }
+                else -> false
+            }
         }
         HomeLayout.HUB -> return when (k) {
             Key.DirectionUp -> if (StyleNav.top.isNotEmpty()) enter(StyleNav.Zone.TOP) else { if (first) reach(true); take() }
@@ -881,6 +889,7 @@ internal fun StyleArt(
     outline: Dp = 2.dp
 ) {
     val titles = LocalTitleOptions.current
+    EnsureUserCovers() // (Update 235, #24: the covers you picked — typedArtFor / CaseArt put them in the case, not the scan)
     val k = g.stableKey
     val o = c.state.artOverrides[k]
     val a = c.art[k]

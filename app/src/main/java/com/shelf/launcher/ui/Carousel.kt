@@ -101,6 +101,7 @@ internal fun ShelfGameArt(
     spines: Boolean, mixed: Boolean, realRef: RealCaseRef?, pulse: Float, modifier: Modifier
 ) {
     val look = LocalCardLook.current
+    EnsureUserCovers() // (Update 235, #24: the covers you picked, for typedArtFor / CaseArt)
     val frameOn = on && look.focusBorder
     val glowOn = on && look.focusEffect != com.shelf.launcher.data.FocusEffect.NONE
     val cover = overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
@@ -215,7 +216,8 @@ internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardAr
     val gArt = artForGame(cardArtType, g.platform, hidden, mixed, gameKey = g.stableKey)
     if (isFreeMedia(gArt, g.platform)) {
         if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey)?.aspect ?: 0.7f // (Update 229, #31)
-        return MediaCovers.of(g.platform)?.frontAspect ?: 0.7f
+        // (Update 235, #27/#38: Voltcap's plain case at its real case's shape.)
+        return MediaCovers.of(g.platform)?.frontAspect ?: plainCaseSpec(g.platform)?.aspect ?: 0.7f
     }
     // (Update 169: a Steam / Android case reshaped to its cover — CoverCase.)
     MediaCovers.used(g.platform, mixed)?.let { return it.frontAspectFor(cover) }
@@ -1315,7 +1317,9 @@ private fun CarouselItem(
             else if (c.cases3d) Case3D(
                 g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
                 frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf,
-                realFront = c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
+                // (Update 235, #24: not with a cover you picked for the game — it's the case front, UserCovers.)
+                realFront = (c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL) &&
+                    UserCovers.of(g.stableKey) == null
             ) else CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn)
         } }
     }
@@ -1366,7 +1370,9 @@ private fun CaseWithMedia3D(
     // Update 173: the media matched to the case: the real cartridge / disc beside the game's real (scanned) case, Voltcap's
     // own drawn one (with the game's label scan, else its cover) beside a template case — whatever the drawn-media setting.
     val scans = physical ?: HomeScans.map[g.stableKey]
-    val caseReal = Features.originalCases.state.value && !LookStyles.caseForAll() && BoxTexture.front(scans, g.platform) != null
+    // (Update 235, #24: a cover you picked is the case front — UserCovers — so the drawn media goes beside it.)
+    val userCover = UserCovers.of(g.stableKey) != null
+    val caseReal = Features.originalCases.state.value && !LookStyles.caseForAll() && !userCover && BoxTexture.front(scans, g.platform) != null
     val realMedia = if (caseReal) BoxTexture.media(scans) else null
     val label = scans?.firstOrNull { it.first == "Disc label" }?.second
     // (Update 173: an app without art wears its icon on its cartridge's label, as the cards do — it was blank.)
@@ -1396,7 +1402,7 @@ private fun CaseWithMedia3D(
         Box(Modifier.size(caseW, h)) {
             Case3D(
                 g, cover, physical, 0f, caseAspect, Modifier.fillMaxSize(), reflect = c.reflect,
-                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf, realFront = true
+                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf, realFront = !userCover
             )
         }
         // The cartridge / disc leaning against the case's lower right, in front.
