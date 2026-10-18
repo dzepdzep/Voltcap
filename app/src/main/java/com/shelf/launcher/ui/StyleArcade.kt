@@ -704,6 +704,8 @@ private fun ArcadeRow(c: StyleCtx, ink: ArcadeInk, miniW: Dp, miniH: Dp, modifie
             )
         }
         for (i in first..last) {
+            // (Update 218, #105: going round a short list, each game once — no copies of the same game at the sides.)
+            if (loop && !drawnOnce(i - whole, count, minOf(before, (count - 1) / 2))) continue
             val real = if (loop) i.mod(count) else i
             val g = c.games[real]
             val on = i == vf

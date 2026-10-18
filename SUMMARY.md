@@ -4,6 +4,24 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (218): Endless shows each game once on short lists (#105), Claude can publish a release after a batch
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (10): `src_copy\ui\StyleCardBinder.kt`, `src_copy\ui\StyleCaseStacks.kt`, `src_copy\ui\StyleRecordCrate.kt`, `src_copy\ui\StyleArcade.kt`, `src_copy\ui\StyleConsoleStack.kt`, `src_copy\ui\StylePocketQuest.kt`, `src_copy\ui\TwinDesk.kt`, `src_copy\ui\GameDock.kt`, `src_copy\ui\HeroCarousel.kt`, `src_copy\ui\GridHome.kt`.
+
+**Copy `project_copy`:** `project_copy\tools\adb_mcp\server.js` (also `tools\adb_mcp\server.js`). **Files to delete:** none.
+
+### What changed
+1. **Endless on a short category (#105):** with Endless on and fewer games than fit on screen, the looks drew the same game again at the sides (a phantom copy you couldn't select, or two of one game next to each other). Every looping row now draws each game at most once around the one you're on (`drawnOnce` from EndlessRow.kt): the card binder, case stacks, record crate, arcade, console stack, Pocket Quest, TwinDesk's list and small cards, the game dock, the hero carousel's column; the grid only loops once a category has more games than three rows and at least 8. Navigation still wraps round; long categories look exactly as before.
+2. **ADB bridge 1.3.0 — `publish_release`:** runs `tools\release\release.ps1 <version> "<notes>"` in the background (version bump, release build, commit + push, GitHub release that Settings › Updates offers). It refuses unless you're on main with everything committed, `gh` is signed in, and the version is higher than the current one. Watch it with `gradle_status`. Needs a restart of the Claude app to load. You OK'd it on 18 Oct: "always push as an update … after a larger batch".
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL in 2 m 48 s; installed with `adb install -r` on both handhelds (data kept).
+- Thor, Case stack look, "Other apps" (3 games), Endless switched on for the test: RetroArch | PlayStation Plus | PXPlay, each once; two presses right wrap round to PXPlay | RetroArch | PlayStation Plus, still each once. Endless switched back off with the panel's Undo (your setting). No crashes on either handheld.
+- **Not tested on the device:** the other nine looks with Endless on (code path is the same helper).
+- Test side effect, put back: on the RP Classic a tap meant for the R1 panel's Endless tile landed on Player and Play Spotify because the tiles moved under the finger (see 219); the music was paused again and Player stepped round back to Off.
+
 ## Update — 18 Oct 2026 (217): downloads never fill memory past their limit, Claude can commit and push finished fixes
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude; Claude commits and pushes it itself (you allowed that for successful fixes on 18 Oct).

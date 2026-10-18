@@ -384,6 +384,8 @@ private fun CrateStage(c: StyleCtx, wood: CrateColours, modifier: Modifier) {
             val front = if (between && past) lo + 1 else lo
             val inGames = StyleNav.zone == StyleNav.Zone.GAMES
             for (i in first..last) {
+                // (Update 218, #105: going round a short list, each game once — no copies of the same game behind the front one.)
+                if (loop && !drawnOnce(i - lo, count, before = 0)) continue
                 val real = if (loop) i.mod(count) else i
                 key(if (loop) "${keys[real]}#${Math.floorDiv(i, count)}" else keys[i]) {
                     // The record only for the sleeve(s) out of the crate: the one there, and the one coming / going.

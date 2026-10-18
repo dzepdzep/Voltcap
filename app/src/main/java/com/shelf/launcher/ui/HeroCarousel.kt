@@ -388,7 +388,8 @@ private fun CoverWheel(
         val first = if (looping) loopFocus - range else (focused - range).coerceAtLeast(0)
         val last = if (looping) loopFocus + range else (focused + range).coerceAtMost(games.lastIndex)
         // Far ones first so the selected cover is drawn on top.
-        val order = (first..last).sortedByDescending { abs(it - pos) }
+        // (Update 218, #105: going round a short list, each game once — no copies of the same game in the arc.)
+        val order = (first..last).filter { !looping || drawnOnce(it - loopFocus, games.size) }.sortedByDescending { abs(it - pos) }
         // One decode size for every cover in the arc (the selected one's), so a cover keeps its bitmap while it
         // grows / shrinks and a cover already decoded shows at once when this screen comes back.
         val coverPx = with(density) { androidx.compose.ui.unit.IntSize((baseW * 1.6f).roundToPx(), (baseH * 1.6f).roundToPx()) }

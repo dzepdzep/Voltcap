@@ -142,7 +142,8 @@ internal fun HomeGameGrid(
             else ((maxWidth + gap) / (gridCellWidth(cardArtType, secondScreen, tiles, spines) * sizeScale + gap)).toInt().coerceIn(2, if (spines) 40 else 10)
         GridHome.columns = cols
         // (Update 173: the games repeat only when there are more than fit in a row — two Android games stood fifteen times.)
-        val drawLoop = looping && games.size > cols
+        // (Update 218, #105: only with more games than about three rows hold, else copies showed in the rows below.)
+        val drawLoop = looping && games.size > maxOf(cols * 3, LAZY_LOOP_MIN)
         // Update 156: going round, the games repeat as copies and the grid starts in the middle copy; the selection is
         // on its endless virtual place, so last -> first is one more step (the grid scrolls on a row at most).
         val n = games.size

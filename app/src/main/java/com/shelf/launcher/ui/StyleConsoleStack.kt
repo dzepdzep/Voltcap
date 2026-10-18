@@ -457,6 +457,8 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
         }
         for (i in lo..hi) {
             // Update 156: [i] is the place on the row, [real] the game standing there (one key per copy).
+            // (Update 218, #105: going round a short list, each game once — no copies of the same game at the sides.)
+            if (loop && !drawnOnce(i - focusT, count)) continue
             val real = if (loop) i.mod(count) else i
             val g = c.games[real]
             key(if (loop) "${keys[real]}#${Math.floorDiv(i, count)}" else keys[i]) {

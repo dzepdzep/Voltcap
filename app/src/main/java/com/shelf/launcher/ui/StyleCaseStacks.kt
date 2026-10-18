@@ -381,6 +381,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
             val last = if (loop) lo + geo.nSide + 2 else (lo + geo.nSide + 2).coerceAtMost(count - 1)
             val inGames = StyleNav.zone == StyleNav.Zone.GAMES
             for (i in first..last) {
+                // (Update 218, #105: going round a short list, each game once — no copies of the same game at the sides.)
+                if (loop && !drawnOnce(i - lo, count)) continue
                 val real = if (loop) i.mod(count) else i
                 key(if (loop) "${keys[real]}#${Math.floorDiv(i, count)}" else keys[i]) {
                     // The front only for the game(s) in the middle: the one there, and the one coming in while it glides.

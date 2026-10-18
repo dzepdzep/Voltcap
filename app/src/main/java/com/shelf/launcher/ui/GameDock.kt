@@ -423,7 +423,8 @@ internal fun GameDock(
                 }
         ) {
             // The fixed first capsule is always there, however far along the row you are.
-            val slots = (firstIndex..lastIndex).toList()
+            // (Update 218, #105: going round a short list, each game once — no copies of the same game along the row.)
+            val slots = (firstIndex..lastIndex).filter { !loop || drawnOnce(it - virtualFocus, games.size, minOf(coversBefore, (games.size - 1) / 2)) }
             // Update 136: the fixed wide place (see [fixedSlot]) holds the game you're on; the row only draws the ones after it.
             if (fixedSlot) key("fixedSlot") {
                 // Update 137: moving on, the next game slides into the wide place from the right (back: from the left)

@@ -888,6 +888,8 @@ private fun PqCollection(
                 val last = if (loop) lo + side + 1 else (lo + side + 1).coerceAtMost(n - 1)
                 // (The range is clamped to the games without Endless; with it, every place stands for a game.)
                 for (i in first..last) {
+                    // (Update 218, #105: going round a short list, each game once — no copies of the same game at the sides.)
+                    if (loop && !drawnOnce(i - lo, n)) continue
                     val real = if (loop) i.mod(n) else i
                     key(if (loop) "${keys[real]}#${Math.floorDiv(i, n)}" else keys[real]) {
                         PqSlot(

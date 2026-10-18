@@ -536,7 +536,8 @@ internal fun TwinDeskBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
                     val vi = topRow + rows + k
                     val real = if (loop && n > 0) vi.mod(n) else vi
                     val slot = Modifier.weight(1f).fillMaxHeight()
-                    if (n > 0 && real in 0 until n) {
+                    // (Update 218, #105: on a short list going round, not a game the list above already shows.)
+                    if (n > 0 && real in 0 until n && (!loop || vi - topRow < n)) {
                         DeskSmall(c, real, compact, slot) {
                             if (loop) tap.virtual = vi
                             c.actions.select(real)
@@ -563,6 +564,8 @@ private fun DeskList(
     val pitchPx = with(LocalDensity.current) { (panelH + gap).toPx() }
     Box(modifier.clipToBounds().deskSwipe(c, loop, pitchPx).padding(4.dp)) {
         for (i in first..first + rows + 1) {
+            // (Update 218, #105: going round a short list, each game once — no copies of the same game further down the list.)
+            if (loop && !drawnOnce(i - first, n, before = 0)) continue
             if (loop || i in 0 until n) {
                 val real = if (loop) i.mod(n) else i
                 key(if (loop) "${keys[real]}#${Math.floorDiv(i, n)}" else keys[real]) {

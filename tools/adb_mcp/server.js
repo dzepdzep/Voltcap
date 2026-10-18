@@ -15,7 +15,10 @@
 //   git_status     read-only: branch, uncommitted files, last commits
 //   git_commit_push (update 217, user-approved 18 Oct): git add -A, commit, push origin main — only on main, never
 //                  --force, refuses while Gradle runs or when nothing changed.
-// Nothing here publishes a release, uninstalls or deletes.
+//   publish_release (update 218, user-approved 18 Oct "after a larger batch"): runs tools\release\release.ps1
+//                  <version> "<notes>" in the background (version bump, release build, commit + push, GitHub release
+//                  that the in-app updater offers). Only with everything committed, gh signed in and a higher version.
+// Nothing here uninstalls or deletes.
 'use strict';
 const { execFile, spawn } = require('child_process');
 const fs = require('fs');
@@ -184,6 +187,8 @@ const TOOLS = [
   { name: 'install_build', description: 'Install the newest built Voltcap APK (variant release or debug) on a handheld with adb install -r: an update in place, app data and settings kept. Never downgrades or uninstalls.',
     inputSchema: { type: 'object', properties: { serial: SERIAL, variant: { type: 'string', enum: ['release', 'debug'] } } } },
   { name: 'git_status', description: 'Read-only: current branch, uncommitted files and the last commits of the project.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'publish_release', description: 'Publish a Voltcap release with tools\\release\\release.ps1: bumps versionName/versionCode, builds the release APK, commits + pushes, and creates the GitHub release the in-app updater offers. Needs everything committed first and a version higher than the current one. Runs in the background: check with gradle_status.',
+    inputSchema: { type: 'object', properties: { version: { type: 'string', description: 'e.g. 0.6.9' }, notes: { type: 'string', description: 'Release notes (plain text)' } }, required: ['version', 'notes'] } },
   { name: 'git_commit_push', description: 'Commit everything (git add -A) with the given message and push to origin main. Only on branch main, never force; refuses while Gradle runs or when nothing changed.',
     inputSchema: { type: 'object', properties: { message: { type: 'string', description: 'Commit title, e.g. "Update 217: ..."' }, body: { type: 'string', description: 'Optional second paragraph (e.g. Co-Authored-By lines)' } }, required: ['message'] } }
 ];
@@ -196,7 +201,7 @@ let serial = Promise.resolve();
 function queued(fn) { const run = serial.then(fn, fn); serial = run.catch(() => {}); return run; }
 
 async function call(name, a) {
-  if (name === 'git_commit_push' || name === 'sync_sources' || name === 'git_status') return queued(() => call2(name, a));
+  if (name === 'git_commit_push' || name === 'sync_sources' || name === 'git_status' || name === 'publish_release') return queued(() => call2(name, a));
   return call2(name, a);
 }
 
@@ -311,6 +316,40 @@ async function call2(name, a) {
       const lg = await runCapture('git', ['-C', ROOT, 'log', '-5', '--oneline']);
       return text(`Branch: ${b.out.trim()}\nUncommitted:\n${st.out.trim() || '(none)'}\nLast commits:\n${lg.out.trim()}`);
     }
+    case 'publish_release': {
+      if (job && job.code === null) throw new Error('A build is running - wait for it first.');
+      const v = String(a.version || '').trim();
+      if (!/^\d+\.\d+\.\d+$/.test(v)) throw new Error('Version must look like 0.6.9');
+      const notes = String(a.notes || '').replace(/["`$]/g, "'").trim();
+      if (!notes) throw new Error('Release notes are needed.');
+      const gradleFile = fs.readFileSync(path.join(ROOT, 'app', 'build.gradle.kts'), 'utf8');
+      const cur = (gradleFile.match(/versionName\s*=\s*"([^"]+)"/) || [])[1] || '0.0.0';
+      const num = (x) => x.split('.').map((n) => parseInt(n, 10) || 0);
+      const [a1, a2, a3] = num(v), [b1, b2, b3] = num(cur);
+      if (a1 < b1 || (a1 === b1 && (a2 < b2 || (a2 === b2 && a3 <= b3)))) throw new Error(`Version ${v} isn't higher than the current ${cur}.`);
+      const br = (await runCapture('git', ['-C', ROOT, 'rev-parse', '--abbrev-ref', 'HEAD'])).out.trim();
+      if (br !== 'main') throw new Error('Not on main - nothing done.');
+      const st = (await runCapture('git', ['-C', ROOT, 'status', '--porcelain'])).out.trim();
+      if (st) throw new Error('Commit everything first (git_commit_push) - the release must match what is on GitHub:\n' + st);
+      const ghDir = 'C:\\Program Files\\GitHub CLI';
+      const env = buildEnv();
+      if (fs.existsSync(path.join(ghDir, 'gh.exe')) && !String(env.Path || env.PATH || '').toLowerCase().includes('github cli')) {
+        const k = env.Path !== undefined ? 'Path' : 'PATH'; env[k] = (env[k] || '') + ';' + ghDir;
+      }
+      const gh = await runCapture(fs.existsSync(path.join(ghDir, 'gh.exe')) ? path.join(ghDir, 'gh.exe') : 'gh', ['auth', 'status'], { env });
+      if (gh.code !== 0) throw new Error('GitHub CLI (gh) is missing or not signed in: run tools\\release\\release.ps1 once by hand (it installs gh and signs in) - nothing done.');
+      fs.mkdirSync(BUILDS, { recursive: true });
+      const log = path.join(BUILDS, 'release_' + v + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.log');
+      const ws = fs.createWriteStream(log);
+      const p = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(ROOT, 'tools', 'release', 'release.ps1'), v, notes],
+        { cwd: ROOT, env, windowsHide: true });
+      job = { task: 'release ' + v, started: Date.now(), ended: null, code: null, log, pid: p.pid };
+      const j = job;
+      p.stdout.pipe(ws, { end: false }); p.stderr.pipe(ws, { end: false });
+      p.on('error', (e) => { ws.write('\n' + e.message + '\n'); });
+      p.on('close', (code) => { j.code = code === null ? -1 : code; j.ended = Date.now(); ws.end(); });
+      return text(`Publishing Voltcap ${v} (was ${cur}). Log: ${log}\nCheck with gradle_status.`);
+    }
     case 'git_commit_push': {
       if (job && job.code === null) throw new Error('Gradle is running - wait for it first.');
       const msg = String(a.message || '').trim();
@@ -339,7 +378,7 @@ async function handle(m) {
   if (m.id === undefined || m.id === null) return; // notifications
   try {
     if (m.method === 'initialize') {
-      send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: (m.params && m.params.protocolVersion) || '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'voltcap-adb', version: '1.2.0' } } });
+      send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: (m.params && m.params.protocolVersion) || '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'voltcap-adb', version: '1.3.0' } } });
     } else if (m.method === 'tools/list') {
       send({ jsonrpc: '2.0', id: m.id, result: { tools: TOOLS } });
     } else if (m.method === 'tools/call') {
