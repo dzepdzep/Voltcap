@@ -8,6 +8,22 @@ import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.shelf.launcher.ui.theme.ShelfTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -168,6 +184,61 @@ internal fun rememberHasFan(): Boolean? {
         value = withContext(Dispatchers.IO) { runCatching { com.shelf.launcher.device.tune.TuneHardware.fanMode() != null }.getOrDefault(false) }
     }
     return v
+}
+
+// (Update 231, #81: the classic details window has a Performance button — it opens this game's own quick power settings.)
+/**
+ * Update 231: this game's quick performance settings as a small popup — the same rows as the game popup's Performance
+ * page ([perfRows]: power mode, AutoTDP, underclock, fan, Advanced…), saved into this game's own profile. Opened from
+ * the classic details window (GameDetailsOverlay, [DetailsAction.PERFORMANCE]); [onAdvanced] opens the game's settings.
+ */
+@Composable
+fun GamePerfQuickDialog(game: Game, perfPackage: String?, onAdvanced: () -> Unit, onDismiss: () -> Unit) {
+    val s = rememberGamePerf(game, perfPackage)
+    val hasFan = if (s != null) rememberHasFan() else null
+    val firstFocus = remember { FocusRequester() }
+    ShelfMenuDialog(
+        title = gameDisplayName(game.name),
+        subtitle = if (s != null) "Performance · now " + s.perf.summary else "Performance",
+        onDismiss = onDismiss,
+        icon = Icons.Filled.Speed
+    ) {
+        if (s == null) {
+            MutedNote("Performance settings aren't available on this handheld.")
+        } else {
+            perfRows(s, hasFan, onAdvanced).forEachIndexed { i, row ->
+                key(row.label) { PerfQuickRow(row, if (i == 0) Modifier.focusRequester(firstFocus) else Modifier) }
+            }
+            MutedNote(perfNote(s))
+            // The first row takes the D-pad (the dialog's window may need a frame before it can).
+            LaunchedEffect(Unit) {
+                repeat(5) {
+                    if (runCatching { firstFocus.requestFocus() }.isSuccess) return@LaunchedEffect
+                    kotlinx.coroutines.delay(32)
+                }
+            }
+        }
+    }
+}
+
+/** One row of [GamePerfQuickDialog]: its name and what it is now; A / a tap changes it (a row without an action can still be reached). */
+@Composable
+private fun PerfQuickRow(row: PerfRow, modifier: Modifier) {
+    val shape = uiRounded(16.dp)
+    val click = row.onClick
+    Column(
+        modifier
+            .fillMaxWidth()
+            .voltSurface(shape)
+            .then(if (click != null) Modifier.shelfClickable(shape) { click() } else Modifier.shelfFocusable(shape))
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Text(
+            row.label, color = if (row.destructive) Color(0xFFFF8A80) else ShelfTheme.colors.textPrimary, fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+        Text(row.value, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
 }
 
 /** How a game's save-sync state reads in the popup. */

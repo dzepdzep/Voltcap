@@ -4,6 +4,39 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (231): the home moves 3–4× smoother with the game's art and colours behind it (#59 / #60), Performance in the classic details window (#81), Switch boxes no longer from another console (#39), Twin desk without the two repeated games (#54)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (12): `src_copy\ui\theme\Theme.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\SceneStyle.kt`, `src_copy\ui\SharpUpscale.kt`, `src_copy\ui\VideoPreview.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\GameDetailsOverlay.kt`, `src_copy\ui\GamePopupStatus.kt`, `src_copy\data\ScreenScraper.kt`, `src_copy\ui\CompanionHub.kt`, `src_copy\ui\TwinDesk.kt`. **Files to delete:** none.
+
+### Smoother home (#59 / #60) — found on your Thor's setup (Case stacks with the Box flow carousel, background "Art + videos", colours following the game)
+1. Every frame of the colour glide (about 70 frames per game step) built a new Material colour scheme, which rebuilt the whole home screen → the scheme is now built once per colour change; Voltcap's own colours still glide.
+2. The carousel rebuilt every game on each of those frames (it was keyed on the accent colour) → only the game you're on reads it now.
+3. The game's art behind the home came out as a software bitmap (the sharpening step turned the GPU copy off), uploaded on the UI thread at every step → handed over as a GPU bitmap.
+4. The video clip lookup (file hash, file checks, encrypted login read) ran on the UI thread at every step → it waits until you've stopped for 0.4 s and runs in the background; the clip still shows ~2 s after you stop. The clip player is released in the background.
+5. The art colours start once you've stopped on a game for ~0.2 s (they only re-glided while moving).
+
+**Measured on the Thor, same settings as yours, before → after:**
+- one game every 0.6 s: frame time p50 44 → 11 ms, p90 105 → 14 ms, slow-UI-thread frames 286 → 18 (games seen before); 18 ms p50 on games not seen yet;
+- holding ◀ (25 fast steps): p50 65 → 12 ms, janky frames 72 % → 19 %.
+Nothing looks different once you stop on a game (colours, art and clip as before). Only stock Android switches/sliders now change colour at once instead of gliding.
+
+### Performance in the classic details window (#81)
+- "Classic details window" (Settings › … › Game window style) had no way to the game's own power settings (Options › menu › Game settings, three levels down). It now has a **Performance** button after Favourite (on handhelds Voltcap can tune), opening the same quick rows as the Banner page's Performance tab (power mode, AutoTDP, underclock, fan…, Advanced… → the full game settings).
+
+### Switch games' boxes and cartridges (#39)
+- ScreenScraper wasn't told the console for Switch and Wii U games, and big Switch files send no checksum, so it matched by name across every console: a 3DS / Wii U release with the same name was taken and its box, cartridge and label drawn on the Switch game → Switch (225) and Wii U (18) are now sent, and a match on another console is refused (covers too).
+- The second screen's case could show ScreenScraper's turned 3D box picture drawn flat → the flat front scan only (like the home cards).
+- With no scan at all, the Switch case shows the cover in the Switch case (as before).
+
+### Twin desk (#54)
+- The two small panels under the game list repeated "the next two games" further down the list → removed; the list gets the room (4 games instead of 3 on a small screen). D-pad unchanged (it never reached them).
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed on both; no crashes; the clip still plays after stopping (Thor).
+- **Not tested on a device**: #81 (your layouts use their own window, which already had Performance), #39 (needs a rescrape), #54 (Twin desk not in use).
+
 ## Update — 18 Oct 2026 (230): Case stacks / Console stack glide without stalls (#20), Hero carousel's covers on the right look right and have an R1 tile (#09), Library panel shows your game look (#25)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

@@ -944,17 +944,19 @@ internal fun GameCarousel(
         // (Update 162 (review): kept while nothing in it changes, so the games skip recomposing when the carousel passes
         // a game — a new one each time made every game in it rebuild.)
         val reflectOn = Features.carouselReflect.state.value
-        val accentNow = ShelfTheme.accent
+        // (Update 231, #59: the accent is no longer a reason for a new ctx — while the colours glide to the focused game's
+        // it changed every frame and rebuilt every game in the carousel; only the focused frame reads it now, via accentOf.)
+        val accentNow = rememberUpdatedState(ShelfTheme.accent)
         val ctx = remember(
             view, side, bigW, bigH, recede, recedeLeft, maxWidth, unitState, cases3d, modelLook, spines, spinesAside, spinesRight,
             // (Update 208: not the scans' map — each scan looked up made a new one and rebuilt every game in the row; each
             // game reads its own scans instead, HomeScans.of.)
-            reflectOn, dens, cardArtType, art, overrides, screenshots, mixed, realRef, hidden, look.focusBorder, accentNow, pulseOn
+            reflectOn, dens, cardArtType, art, overrides, screenshots, mixed, realRef, hidden, look.focusBorder, pulseOn
         ) {
             CarouselCtx(
                 view, side, bigW, bigH, if (recede) -maxWidth / 2 + recedeLeft else null, unitState, recede, cases3d, modelLook,
                 spines, spinesAside, spinesRight, recede, reflectOn, dens, cardArtType, art, overrides,
-                physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, accentNow, pulseOn
+                physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, { accentNow.value }, pulseOn
             )
         }
         ctx.caseRefMm = caseRefMm
@@ -1101,7 +1103,9 @@ private class CarouselCtx(
     /** (Update 208: set each composition, not a reason to make a new one — see CarouselItem's scans.) */
     var physicalMedia: Map<String, List<Pair<String, String>>>,
     val screenshots: Map<String, List<String>>, val mixed: Boolean, val realRef: RealCaseRef?, val hidden: Set<String>,
-    val focusBorder: Boolean, val accent: Color, val pulseOn: Boolean
+    val focusBorder: Boolean,
+    /** (Update 231, #59) The theme's accent right now — read only where the focused frame is drawn. */
+    val accentOf: () -> Color, val pulseOn: Boolean
 ) {
     /**
      * Update 166: the biggest case among the games (its longest side, mm) when the 3D cases stand at their real sizes
@@ -1306,7 +1310,7 @@ private fun CarouselItem(
             )
             else if (c.cases3d) Case3D(
                 g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
-                frame = on && c.focusBorder, frameColor = c.accent, yawOf = yawOf, shadeOf = shadeOf,
+                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf,
                 realFront = c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
             ) else CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn)
         } }
@@ -1388,7 +1392,7 @@ private fun CaseWithMedia3D(
         Box(Modifier.size(caseW, h)) {
             Case3D(
                 g, cover, physical, 0f, caseAspect, Modifier.fillMaxSize(), reflect = c.reflect,
-                frame = on && c.focusBorder, frameColor = c.accent, yawOf = yawOf, shadeOf = shadeOf, realFront = true
+                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf, realFront = true
             )
         }
         // The cartridge / disc leaning against the case's lower right, in front.

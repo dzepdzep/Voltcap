@@ -680,6 +680,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // the first-start setup they return to the setup instead.
     LaunchedEffect(showFirstRun, showMenu) { if (showFirstRun && showMenu) showMenu = false }
 
+    // (Update 231, #81: the classic details window's Performance button: this game's quick power settings.)
+    var perfForGame by remember { mutableStateOf<com.shelf.launcher.data.Game?>(null) }
     // ONE list of every overlay that takes the controller from the root, so
     // "is a dialog open?" and "B closes them all" can never drift apart.
     // (The details window is deliberately absent: it lives inside the root.)
@@ -693,7 +695,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     pbState.options != null || musicOverrideFor != null ||
                     collectionsForGame != null || statusForGame != null || playStatsForGame != null || tipsForGame != null || guideForGame != null || viewingShots != null || artViewer != null ||
                     screensForGame != null || profileForGame != null || showControlsHelp || showSortDialog || showWhatToPlay || manualFor != null || steamAchFor != null || leaderboardsFor != null || uiState.syncOfflinePrompt != null ||
-                    saveSyncForGame != null || runningAsk != null || yearRecap != null || manualMissing != null || hubScreen != null
+                    saveSyncForGame != null || runningAsk != null || yearRecap != null || manualMissing != null || hubScreen != null ||
+                    perfForGame != null
     // Google Drive sync conflicts: always shown while a game waits on them,
     // otherwise only when nothing else is open (and not snoozed).
     val cloudSync by com.shelf.launcher.data.CloudSync.state.collectAsState()
@@ -818,6 +821,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         viewingShots = null
         artViewer = null
         saveSyncForGame = null
+        perfForGame = null
     }
 
     fun runDetailsAction(action: DetailsAction, game: com.shelf.launcher.data.Game) {
@@ -861,6 +865,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // More: the secondary actions open as a row under the buttons (▼ goes into it, B closes it).
             DetailsAction.MORE -> DetailsMore.open.value = !DetailsMore.open.value
             DetailsAction.STATS -> playStatsForGame = game
+            // (Update 231, #81: this game's own quick performance settings, over the window.)
+            DetailsAction.PERFORMANCE -> perfForGame = game
             DetailsAction.CLOSE -> showDetails = false
         }
     }
@@ -1791,7 +1797,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     videoUrl = key?.let { state.videoUrls[it] },
                     recentUnlocks = game?.raGameId?.let { id -> state.raRecentAchievements.filter { it.GameID == id } }.orEmpty(),
                     achievements = key?.let { state.raAchievementDetails[it] }.orEmpty(),
-                    caseUrl = key?.let { k -> BoxTexture.caseScan(state.physicalMedia[k], game?.platform) },
+                    caseUrl = key?.let { k -> typedArtFor(com.shelf.launcher.data.CardArtType.CASE, state.physicalMedia[k], null, game?.platform) }, // (Update 231, #39: never ScreenScraper's turned 3D box drawn flat as the case front)
                     discUrl = key?.let { k -> state.physicalMedia[k].orEmpty().firstOrNull { it.first == "Disc / cartridge" }?.second },
                     labelUrl = key?.let { k -> state.physicalMedia[k].orEmpty().firstOrNull { it.first == "Disc label" }?.second },
                     box2dUrl = key?.let { k -> BoxTexture.front(state.physicalMedia[k], game?.platform) },
@@ -2719,8 +2725,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             videoReadyFor = null
             val game = focusedGame ?: return@LaunchedEffect
             if (!state.appearance.videoPreviews || videoRest || com.shelf.launcher.CrashGuard.safeMode) return@LaunchedEffect
+            // (Update 231, #59: the clip is looked up only once you've stayed on the game 0.4 s, not on every game passed —
+            // the look-up and the state change it makes cost a frame each step. Still fades in 2 s after you stop.)
+            kotlinx.coroutines.delay(400)
             viewModel.loadVideoUrl(game)
-            kotlinx.coroutines.delay(2000)
+            kotlinx.coroutines.delay(1600)
             videoReadyFor = game.stableKey
         }
         val videoUrl = focusedGame?.stableKey?.let { key -> state.videoUrls[key]?.takeIf { videoReadyFor == key } }
@@ -4480,6 +4489,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             lastPlayedAt = state.lastPlayedAt[g.stableKey],
             raProgress = state.raProgress[g.stableKey],
             onDismiss = { playStatsForGame = null }
+        )
+    }
+
+    // (Update 231, #81: the classic details window's quick performance settings for this game — the same rows as the
+    // game popup's Performance page; Advanced… opens the game's settings on top, closing them comes back here.)
+    perfForGame?.let { g ->
+        GamePerfQuickDialog(
+            game = g,
+            perfPackage = remember(g.stableKey) { if (g.sourceType == com.shelf.launcher.data.SourceType.APP) g.packageName else viewModel.emulatorFor(g) },
+            onAdvanced = { profileForGame = g },
+            onDismiss = { perfForGame = null }
         )
     }
 

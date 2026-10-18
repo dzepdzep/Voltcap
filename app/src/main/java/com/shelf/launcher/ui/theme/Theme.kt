@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
+import kotlinx.coroutines.delay
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
@@ -68,7 +69,15 @@ fun ShelfLauncherTheme(
         com.shelf.launcher.data.Features.ArtColorSource.ALBUM -> music || (fromGame && album != null)
     }
     // Current game: the cover's palette replaces the theme's (background, panels, accent), gliding over.
-    val gamePalette = com.shelf.launcher.ui.rememberArtPalette(dynamicArtUrl, useGame).takeIf { useGame }
+    // (Update 231, #59: the cover only goes to the palette once you've stayed on a game ~220 ms, so holding ◀ / ▶
+    // or stepping quickly no longer starts a colour glide for every game passed; the palette's own wait is shortened
+    // by the same amount, so the colours still arrive at the same moment after you stop on an unseen game.)
+    var settledArtUrl by remember { mutableStateOf(dynamicArtUrl) }
+    LaunchedEffect(dynamicArtUrl, useGame) {
+        if (useGame && settledArtUrl != dynamicArtUrl) delay(ART_SETTLE_MS)
+        settledArtUrl = dynamicArtUrl
+    }
+    val gamePalette = com.shelf.launcher.ui.rememberArtPalette(settledArtUrl, useGame, waitMs = 450L - ART_SETTLE_MS).takeIf { useGame }
     val base = when {
         useAlbum -> album?.copy(textPrimary = appTheme.colors.textPrimary, textMuted = appTheme.colors.textMuted)?.takeIf { !music } ?: album ?: appTheme.colors
         else -> gamePalette?.copy(textPrimary = appTheme.colors.textPrimary, textMuted = appTheme.colors.textMuted) ?: (if (music) album else null) ?: appTheme.colors
@@ -108,29 +117,36 @@ fun ShelfLauncherTheme(
     // its writing stays the theme's light text.)
     // (The theme's own background decides, so a light game cover or album palette on a dark theme can't flip it.)
     val lightTheme = appTheme.colors.background.luminance() > 0.5f && !useGame && !useAlbum
-    val scheme = if (lightTheme) androidx.compose.material3.lightColorScheme(
-        background = colors.background,
-        surface = colors.surface,
-        surfaceVariant = colors.surfaceRaised,
-        surfaceContainer = colors.surface,
-        surfaceContainerHigh = colors.surfaceRaised,
-        surfaceContainerHighest = colors.surfaceRaised,
-        primary = colors.accent,
-        secondary = colors.secondary,
-        onBackground = colors.textPrimary,
-        onSurface = colors.textPrimary,
-        onSurfaceVariant = colors.textMuted,
-        onPrimary = Color.White
-    ) else darkColorScheme(
-        background = colors.background,
-        surface = colors.surface,
-        surfaceVariant = colors.surfaceRaised,
-        primary = colors.accent,
-        secondary = colors.secondary,
-        onBackground = colors.textPrimary,
-        onSurface = colors.textPrimary,
-        onPrimary = colors.background
-    )
+    // (Update 231, #59: Material's scheme is built from the colours being glided TO, once per change, instead of a new
+    // scheme every frame of the glide — that re-composed the whole home screen ~70 times per D-pad step while the
+    // colours followed the game. Voltcap's own colours (LocalShelfColors) still glide; Material's controls switch.)
+    val targetText = base.textPrimary
+    val targetMuted = base.textMuted
+    val scheme = remember(lightTheme, background, surface, surfaceRaised, fixedAccent, secondaryTuned, targetText, targetMuted) {
+        if (lightTheme) androidx.compose.material3.lightColorScheme(
+            background = background,
+            surface = surface,
+            surfaceVariant = surfaceRaised,
+            surfaceContainer = surface,
+            surfaceContainerHigh = surfaceRaised,
+            surfaceContainerHighest = surfaceRaised,
+            primary = fixedAccent,
+            secondary = secondaryTuned,
+            onBackground = targetText,
+            onSurface = targetText,
+            onSurfaceVariant = targetMuted,
+            onPrimary = Color.White
+        ) else darkColorScheme(
+            background = background,
+            surface = surface,
+            surfaceVariant = surfaceRaised,
+            primary = fixedAccent,
+            secondary = secondaryTuned,
+            onBackground = targetText,
+            onSurface = targetText,
+            onPrimary = background
+        )
+    }
 
     val density = LocalDensity.current
     // "32-bit everywhere": the pixel font's glyphs are wide, so all text is a step smaller (names used to be cut
@@ -140,13 +156,14 @@ fun ShelfLauncherTheme(
         Density(density.density * appearance.density.scale, density.fontScale * appearance.textScale / 100f * (if (pixelAll) 0.84f else 1f))
     }
 
-    CompositionLocalProvider(LocalShelfColors provides colors, LocalDensity provides scaled) {
+    // Headings only: the 32-bit console style with the normal font (the pixel type where it fits).
+    val headings = !pixelAll && com.shelf.launcher.data.Features.uiStyle.value == com.shelf.launcher.data.Features.UiStyle.PIXEL
+    // (Update 231, #59: the type styles are made once per font setting, not again on every recomposition of the theme.)
+    val typography = remember(pixelAll, headings) {
         val normal = androidx.compose.material3.Typography()
         val mono = androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.shelf.launcher.R.font.volt_pixel))
-        // Headings only: the 32-bit console style with the normal font (the pixel type where it fits).
-        val headings = !pixelAll && com.shelf.launcher.data.Features.uiStyle.value == com.shelf.launcher.data.Features.UiStyle.PIXEL
         fun androidx.compose.ui.text.TextStyle.px(k: Float = 1f) = copy(fontFamily = mono, fontSize = fontSize * k, lineHeight = lineHeight * k)
-        val typography = if (pixelAll) normal.copy(
+        if (pixelAll) normal.copy(
             displayLarge = normal.displayLarge.px(), displayMedium = normal.displayMedium.px(), displaySmall = normal.displaySmall.px(),
             headlineLarge = normal.headlineLarge.px(), headlineMedium = normal.headlineMedium.px(), headlineSmall = normal.headlineSmall.px(),
             titleLarge = normal.titleLarge.px(), titleMedium = normal.titleMedium.px(), titleSmall = normal.titleSmall.px(),
@@ -157,9 +174,15 @@ fun ShelfLauncherTheme(
             headlineLarge = normal.headlineLarge.px(0.86f), headlineMedium = normal.headlineMedium.px(0.86f), headlineSmall = normal.headlineSmall.px(0.86f),
             titleLarge = normal.titleLarge.px(0.86f), titleMedium = normal.titleMedium.px(0.86f), titleSmall = normal.titleSmall.px(0.86f)
         ) else normal
+    }
+
+    CompositionLocalProvider(LocalShelfColors provides colors, LocalDensity provides scaled) {
         MaterialTheme(colorScheme = scheme, typography = typography, content = content)
     }
 }
+
+/** (Update 231, #59) How long the focus must rest on a game before its cover colours start to load. */
+private const val ART_SETTLE_MS = 220L
 
 /**
  * A lively accent from a cover image: its average colour, pushed to a bright,

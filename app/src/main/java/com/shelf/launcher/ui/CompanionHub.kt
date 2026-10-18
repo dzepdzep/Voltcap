@@ -136,7 +136,7 @@ internal fun CompanionHub(vm: LauncherViewModel, info: CompanionInfo, onBack: ()
                     videoUrl = state.videoUrls[key],
                     recentUnlocks = game.raGameId?.let { id -> state.raRecentAchievements.filter { it.GameID == id } }.orEmpty(),
                     achievements = state.raAchievementDetails[key].orEmpty(),
-                    caseUrl = BoxTexture.caseScan(state.physicalMedia[key], game.platform),
+                    caseUrl = typedArtFor(com.shelf.launcher.data.CardArtType.CASE, state.physicalMedia[key], null, game.platform), // (Update 231, #39)
                     discUrl = state.physicalMedia[key].orEmpty().firstOrNull { it.first == "Disc / cartridge" }?.second,
                     labelUrl = state.physicalMedia[key].orEmpty().firstOrNull { it.first == "Disc label" }?.second,
                     box2dUrl = BoxTexture.front(state.physicalMedia[key], game.platform),

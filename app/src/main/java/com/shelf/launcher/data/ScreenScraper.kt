@@ -269,7 +269,8 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
 
     /** Art for one ROM, or null if ScreenScraper doesn't know it (or it's not a ROM). */
     suspend fun fetchArt(c: ScreenScraperCredentials, game: Game): GameArt? {
-        val jeu = lookup(c, game) ?: return null
+        // (Update 231, #39: the cover too never from another console's game — it's the case front's and the label's fallback.)
+        val jeu = lookup(c, game)?.takeIf { sameSystem(it, game) } ?: return null
         val medias = jeu.arr("medias")?.mapNotNull { it as? JsonObject } ?: return null
 
         fun pick(vararg types: String, maxWidth: Int): String? {
@@ -434,7 +435,16 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
      * matched by file name and size only, which often lands on the wrong game
      * — there the game's name has to agree with the file's too.
      */
+    /** Update 231 (#39): false when ScreenScraper's game is on another console than [game]'s (when both are known). */
+    private fun sameSystem(jeu: JsonObject, game: Game): Boolean {
+        val wanted = SYSTEM_IDS[game.platform] ?: return true
+        val theirs = jeu.obj("systeme")?.str("id")?.toIntOrNull() ?: return true
+        return theirs == wanted
+    }
+
     private suspend fun isConfidentMatch(jeu: JsonObject, game: Game): Boolean {
+        // (Update 231, #39: never another console's release of the same name.)
+        if (!sameSystem(jeu, game)) return false
         // File checks off the main thread (update 91).
         val length = withContext(Dispatchers.IO) { romFileFor(game)?.length() } ?: return false
         if (length <= MAX_HASH_BYTES) return true
@@ -541,7 +551,11 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
             "SegaCD" to 20, "Saturn" to 22, "Dreamcast" to 23,
             "NeoGeoPocket" to 25, "Atari2600" to 26, "PCEngine" to 31,
             "WonderSwan" to 45, "PS1" to 57, "PS2" to 58, "PSP" to 61,
-            "Arcade" to 75, "NeoGeo" to 142
+            "Arcade" to 75, "NeoGeo" to 142,
+            // (Update 231, #39: Switch and Wii U games were searched by name across every console — big ROMs send no
+            // checksum — so a Wii U / 3DS release with the same name was taken, and its box, cartridge and label were drawn
+            // on the Switch game.)
+            "Switch" to 225, "WiiU" to 18
         )
     }
 }

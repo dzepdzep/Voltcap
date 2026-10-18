@@ -27,7 +27,9 @@ class SharpUpscale(
 ) : Transformation {
     override val cacheKey: String = "sharp-upscale-$targetWidth-${factor ?: "auto"}"
 
-    override suspend fun transform(input: Bitmap, size: Size): Bitmap {
+    override suspend fun transform(input: Bitmap, size: Size): Bitmap = toHardware(upscaled(input))
+
+    private fun upscaled(input: Bitmap): Bitmap {
         if (input.width <= 0 || input.height <= 0) return input
         val wanted = factor ?: run {
             if (input.width >= targetWidth * 2 / 3) return input
@@ -37,6 +39,17 @@ class SharpUpscale(
         val applied = minOf(wanted, MAX_SIDE / largestSide)
         if (applied < 2) return input
         return Bitmap.createScaledBitmap(input, input.width * applied, input.height * applied, false)
+    }
+
+    /**
+     * (Update 231, #59: a transformation makes Coil decode into an ordinary (software) bitmap, which the screen then had
+     * to upload to the GPU on the UI thread the first time each new background was drawn — a hitch on every game passed.
+     * The finished picture is now copied to a GPU (hardware) bitmap here, on Coil's worker thread. It looks the same.)
+     * Android 8+; on older versions, or if the copy fails, the software bitmap is kept.
+     */
+    private fun toHardware(bitmap: Bitmap): Bitmap {
+        if (android.os.Build.VERSION.SDK_INT < 26 || bitmap.config == Bitmap.Config.HARDWARE) return bitmap
+        return runCatching { bitmap.copy(Bitmap.Config.HARDWARE, false) }.getOrNull() ?: bitmap
     }
 
     companion object {

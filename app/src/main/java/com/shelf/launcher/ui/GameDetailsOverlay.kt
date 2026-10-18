@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
@@ -91,6 +92,9 @@ fun detailsHasMore(metadata: GameMetadata?, sections: Set<com.shelf.launcher.dat
 enum class DetailsAction(val glyph: String, val label: String) {
     PLAY("▶", "Play"),
     FAVORITE("X", "Favorite"),
+    // (Update 231, #81: the classic details window opens this game's own quick performance settings from here.)
+    /** This game's quick performance settings (only on a handheld that can be tuned: Tuner.supported). */
+    PERFORMANCE("⚡", "Performance"),
     ADD_MISSING("＋", "Add missing"),
     /** The Google Drive save-sync badge under the play time. */
     SYNC("☁", "Save sync"),
@@ -158,6 +162,8 @@ private fun detailsActionsAll(game: Game, hasMissing: Boolean, hasTips: Boolean,
             DetailsAction.SUMMARY -> hasMore
             DetailsAction.FIX_RA_LINK -> hasFixRaLink
             DetailsAction.STATS -> hasStats
+            // (Update 231, #81: only where the tuner works — elsewhere there's nothing to set.)
+            DetailsAction.PERFORMANCE -> com.shelf.launcher.device.tune.Tuner.supported
             DetailsAction.CLOSE, DetailsAction.MORE -> false
             else -> true
         }
@@ -506,6 +512,15 @@ fun GameDetailsOverlay(
                             tint = if (isFavorite) com.shelf.launcher.ui.theme.Ds.gold else null,
                             size = buttonSize
                         ) { onAction(DetailsAction.FAVORITE) }
+                        // (Update 231, #81: this game's quick performance settings, right beside Favorite.)
+                        if (DetailsAction.PERFORMANCE in actions) {
+                            SquareButton(
+                                icon = androidx.compose.material.icons.Icons.Filled.Speed,
+                                label = "Performance",
+                                selected = selectedAction == DetailsAction.PERFORMANCE,
+                                size = buttonSize
+                            ) { onAction(DetailsAction.PERFORMANCE) }
+                        }
                         if (syncAvailable) {
                             SyncIconButton(
                                 status = syncStatus,
@@ -841,6 +856,10 @@ private fun DetailsShowcaseRow(
             DetailsAction.FAVORITE, if (isFavorite) icons.Star else icons.StarBorder,
             if (isFavorite) "Favorited" else "Favorite", if (isFavorite) com.shelf.launcher.ui.theme.Ds.gold else null
         ) { onAction(DetailsAction.FAVORITE) },
+        // (Update 231, #81: this game's quick performance settings, right beside Favorite.)
+        if (DetailsAction.PERFORMANCE in actions) HeaderButton(
+            DetailsAction.PERFORMANCE, icons.Speed, "Performance"
+        ) { onAction(DetailsAction.PERFORMANCE) } else null,
         if (syncAvailable) HeaderButton(
             DetailsAction.SYNC,
             when (syncState) {
@@ -1032,9 +1051,10 @@ val DetailsRows: List<List<DetailsAction>> get() =
     if (com.shelf.launcher.data.Features.headerStyle.value == com.shelf.launcher.data.Features.HeaderStyle.SHOWCASE) listOf(
         // Showcase: the PLAYED box sits above Play; Play and its round buttons share one row.
         listOf(DetailsAction.STATS),
-        listOf(DetailsAction.PLAY, DetailsAction.FAVORITE, DetailsAction.SYNC, DetailsAction.MORE, DetailsAction.OPTIONS)
+        // (Update 231, #81: Performance sits right after Favorite.)
+        listOf(DetailsAction.PLAY, DetailsAction.FAVORITE, DetailsAction.PERFORMANCE, DetailsAction.SYNC, DetailsAction.MORE, DetailsAction.OPTIONS)
     ) + DetailsRowsBelow
-    else listOf(listOf(DetailsAction.PLAY, DetailsAction.STATS, DetailsAction.FAVORITE, DetailsAction.SYNC, DetailsAction.MORE, DetailsAction.OPTIONS)) +
+    else listOf(listOf(DetailsAction.PLAY, DetailsAction.STATS, DetailsAction.FAVORITE, DetailsAction.PERFORMANCE, DetailsAction.SYNC, DetailsAction.MORE, DetailsAction.OPTIONS)) +
         DetailsRowsBelow
 
 /** Everything under the Play row, the same in both layouts. */

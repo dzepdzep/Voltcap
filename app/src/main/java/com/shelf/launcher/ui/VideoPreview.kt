@@ -77,9 +77,11 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
                     }
 
                     override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean {
-                        (view.tag as? MediaPlayer)?.let { runCatching { it.release() } }
+                        // (Update 231, #59: released on a background thread — see releaseInBackground.)
+                        val player = view.tag as? MediaPlayer
                         view.tag = null
-                        surface?.let { runCatching { it.release() } }
+                        if (player != null) releaseInBackground(player, surface)
+                        else surface?.let { runCatching { it.release() } }
                         surface = null
                         return true
                     }
@@ -97,8 +99,9 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
                 }
             },
             onRelease = { view ->
-                (view.tag as? MediaPlayer)?.let { runCatching { it.release() } }
+                val player = view.tag as? MediaPlayer
                 view.tag = null
+                if (player != null) releaseInBackground(player, null)
             },
             modifier = Modifier.fillMaxSize()
         )
@@ -118,6 +121,29 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
         )
     }
 }
+
+/**
+ * (Update 231, #59: leaving a game whose clip had started no longer stalls the screen — MediaPlayer.release() waits for
+ * the decoder to shut down, which took a frame or more on the main thread; it now happens on a background thread.)
+ * The player is already forgotten by the view (its tag is cleared first) and its listeners are removed here, on the main
+ * thread, so nothing — no late "prepared" or "rendering started" event — touches it afterwards.
+ */
+private fun releaseInBackground(player: MediaPlayer, surface: Surface?) {
+    runCatching {
+        player.setOnPreparedListener(null)
+        player.setOnInfoListener(null)
+        player.setOnVideoSizeChangedListener(null)
+        player.setOnErrorListener(null)
+    }
+    ClipReleaser.execute {
+        runCatching { player.release() }
+        surface?.let { runCatching { it.release() } }
+    }
+}
+
+/** (Update 231, #59) One background thread that releases finished clip players, one after another. */
+private val ClipReleaser: java.util.concurrent.ExecutorService =
+    java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "voltcap-clip-release").apply { isDaemon = true } }
 
 /** TextureView stretches video to its bounds; scale it back so it covers the
  * view while keeping its shape, cropping the overflow evenly. */

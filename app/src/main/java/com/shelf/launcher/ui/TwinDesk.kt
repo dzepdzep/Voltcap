@@ -77,8 +77,8 @@ import kotlin.math.sin
  *   digits) and this month's calendar (weekends tinted, today ringed), the game you're on named under them with its
  *   console and time played;
  * - bottom (second) screen: your games as wide rounded panels in a list (picture on the left, name and console on the
- *   right, the one you're on framed by corner brackets in the theme's colour), two smaller panels under the list for
- *   the next two games, and a slim bar of round buttons (quick settings, Settings, screensaver).
+ *   right, the one you're on framed by corner brackets in the theme's colour) and a slim bar of round buttons (quick
+ *   settings, Settings, screensaver). (Update 231, #54: the two smaller "next games" panels under the list are gone.)
  * ▲ ▼ move through the games (round at the end with Endless), ▶ the round buttons (◀ ▶ along them, ▲ or B back).
  * Touch: tap a panel to pick it, tap the one you're on to open it, swipe the list up / down.
  */
@@ -149,7 +149,7 @@ internal fun twinDeskKey(ctx: StyleKeyCtx): Boolean {
 
 @Composable
 internal fun TwinDeskSettings() {
-    MutedNote("Made for handhelds with two screens. The top screen is a desk: a clock and this month's calendar on squared paper, with the game you're on under them. The bottom screen lists your games as wide panels, the next two under them, and round buttons for quick settings, Settings and the screensaver. ▲ ▼ move through the games, ▶ goes to the round buttons. With one screen, both halves show together.")
+    MutedNote("Made for handhelds with two screens. The top screen is a desk: a clock and this month's calendar on squared paper, with the game you're on under them. The bottom screen lists your games as wide panels, with round buttons for quick settings, Settings and the screensaver. ▲ ▼ move through the games, ▶ goes to the round buttons. With one screen, both halves show together.")
     Spacer(Modifier.height(10.dp))
     // Update 180: what the top screen shows (one thing alone sits in the middle, bigger).
     SectionLabel("Top screen shows")
@@ -511,10 +511,10 @@ internal fun TwinDeskBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
         val pad = if (compact) 6.dp else 10.dp
         // (Update 179: Layout options › Gap between panels, and the R1 Gaps tile; smaller on a small screen.)
         val gap = (Features.twinDeskGap.state.value * if (compact) 0.7f else 1f).dp
-        val smallH = if (compact) 34.dp else 46.dp
         val barH = if (compact) 34.dp else 42.dp
         // The list keeps 4 dp round its panels for the corner brackets.
-        val listH = (maxHeight - pad * 2 - smallH - barH - gap * 2).coerceAtLeast(48.dp)
+        // (Update 231, #54: the list gets the room of the two small panels that sat under it — one gap less too.)
+        val listH = (maxHeight - pad * 2 - barH - gap).coerceAtLeast(48.dp)
         // Update 159: whole panels only (up to 4) — the list used to show a cut-off part of a 4th one at its bottom edge.
         val avail = listH - 8.dp
         val rows = ((avail + gap) / (38.dp + gap)).toInt().coerceIn(1, 4)
@@ -530,23 +530,8 @@ internal fun TwinDeskBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             } else {
                 DeskList(c, keys, tap, loop, at, topRow, rows, panelH, gap, inGames, compact, Modifier.fillMaxWidth().height(listH))
             }
-            // The next two games after the list.
-            Row(Modifier.fillMaxWidth().height(smallH), horizontalArrangement = Arrangement.spacedBy(gap)) {
-                for (k in 0..1) {
-                    val vi = topRow + rows + k
-                    val real = if (loop && n > 0) vi.mod(n) else vi
-                    val slot = Modifier.weight(1f).fillMaxHeight()
-                    // (Update 218, #105: on a short list going round, not a game the list above already shows.)
-                    if (n > 0 && real in 0 until n && (!loop || vi - topRow < n)) {
-                        DeskSmall(c, real, compact, slot) {
-                            if (loop) tap.virtual = vi
-                            c.actions.select(real)
-                        }
-                    } else {
-                        Box(slot.clip(RoundedCornerShape(8.dp)).border(1.dp, DeskEdge.copy(alpha = 0.6f), RoundedCornerShape(8.dp)))
-                    }
-                }
-            }
+            // (Update 231, #54: the two small "next games" panels under the list are gone — they only repeated games
+            // further down the list. They were tap-only, never reached by ▲ ▼ ◀ ▶, so the keys are unchanged.)
             DeskBar(c, barH, Modifier.fillMaxWidth().height(barH))
         }
     }
@@ -667,25 +652,6 @@ private fun Modifier.deskBrackets(on: Boolean, color: Color): Modifier = if (!on
         drawLine(color, Offset(l, b), Offset(l, b - len), w, StrokeCap.Square)
         drawLine(color, Offset(r, b), Offset(r - len, b), w, StrokeCap.Square)
         drawLine(color, Offset(r, b), Offset(r, b - len), w, StrokeCap.Square)
-    }
-}
-
-/** One of the two smaller panels under the list. */
-@Composable
-private fun DeskSmall(c: StyleCtx, i: Int, compact: Boolean, modifier: Modifier, onTap: () -> Unit) {
-    val g = c.games[i]
-    val titles = LocalTitleOptions.current
-    val shape = RoundedCornerShape(8.dp)
-    Row(
-        modifier.clip(shape).background(Color(0xFFF8F9FA)).border(1.dp, DeskEdge, shape).tapOnly(onTap).padding(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        StyleArt(c, g, Modifier.fillMaxHeight().aspectRatio(1f), square = true, corner = 5.dp)
-        Spacer(Modifier.width(6.dp))
-        Text(
-            titles.display(g.name), color = DeskInk, fontSize = if (compact) 10.sp else 12.sp, fontWeight = FontWeight.SemiBold,
-            maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis, lineHeight = if (compact) 12.sp else 14.sp
-        )
     }
 }
 

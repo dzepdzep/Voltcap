@@ -117,14 +117,19 @@ private fun currentHour(): Float {
  * for every game you scroll past). Null until one is ready.
  */
 @Composable
-internal fun rememberArtPalette(model: Any?, enabled: Boolean): ShelfColors? {
+internal fun rememberArtPalette(
+    model: Any?,
+    enabled: Boolean,
+    /** (Update 231, #59) The wait before an unseen picture is loaded; the app theme passes less, as it already waited for the focus to settle. */
+    waitMs: Long = 450L
+): ShelfColors? {
     val context = LocalContext.current
     var palette by remember { mutableStateOf<ShelfColors?>(model?.let { ArtPaletteCache[it] }) }
     LaunchedEffect(model, enabled) {
         if (!enabled || model == null) return@LaunchedEffect
         // Seen before this session: no decode, no wait.
         ArtPaletteCache[model]?.let { palette = it; return@LaunchedEffect }
-        delay(450)
+        if (waitMs > 0) delay(waitMs)
         val result = withContext(Dispatchers.IO) {
             runCatching {
                 val request = coil.request.ImageRequest.Builder(context)

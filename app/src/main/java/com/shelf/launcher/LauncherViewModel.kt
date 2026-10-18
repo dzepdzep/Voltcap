@@ -1596,29 +1596,44 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun loadVideoUrl(game: Game, force: Boolean = false) {
         if (!force && !_uiState.value.appearance.videoPreviews) return
         if (_uiState.value.videoUrls.containsKey(game.stableKey)) return
-        // Update 148: a clip saved on the device plays from there (no Wi-Fi needed, starts at once).
-        com.shelf.launcher.data.ClipStore.init(getApplication())
-        com.shelf.launcher.data.ClipStore.local(game.stableKey)?.let { local ->
-            _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to local)) }
-            return
-        }
-        val saved = videoUrlStore.get(game.stableKey)
-        if (saved != null) {
-            if (saved.isNotEmpty()) {
-                _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to saved)) }
-                if (com.shelf.launcher.data.Features.clipsOffline.value) saveClipLater(game.stableKey, saved)
-            }
-            return
-        }
-        val creds = screenScraperStore.load() ?: return
-        if (game.sourceType != SourceType.ROM) return
+        // (Update 231, #59: the look-ups below — the saved clip's file (a SHA-1 of the name and a file check), the saved
+        // address and the encrypted ScreenScraper login — now run off the main thread, so stepping onto a game no longer
+        // stalls the UI for them. The answer reaches the screen exactly as before.)
+        if (!videoLookups.add(game.stableKey)) return
         viewModelScope.launch {
-            val url = runCatching { screenScraperRepository.videoUrl(creds, game) }.getOrNull()
-            videoUrlStore.put(game.stableKey, url)
-            if (url != null) _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to url)) }
-            if (url != null && com.shelf.launcher.data.Features.clipsOffline.value) saveClipLater(game.stableKey, url)
+            try {
+                val app = getApplication<Application>()
+                // Update 148: a clip saved on the device plays from there (no Wi-Fi needed, starts at once).
+                val local = withContext(Dispatchers.IO) {
+                    com.shelf.launcher.data.ClipStore.init(app)
+                    com.shelf.launcher.data.ClipStore.local(game.stableKey)
+                }
+                if (local != null) {
+                    _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to local)) }
+                    return@launch
+                }
+                val saved = withContext(Dispatchers.IO) { videoUrlStore.get(game.stableKey) }
+                if (saved != null) {
+                    if (saved.isNotEmpty()) {
+                        _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to saved)) }
+                        if (com.shelf.launcher.data.Features.clipsOffline.value) saveClipLater(game.stableKey, saved)
+                    }
+                    return@launch
+                }
+                if (game.sourceType != SourceType.ROM) return@launch
+                val creds = withContext(Dispatchers.IO) { screenScraperStore.load() } ?: return@launch
+                val url = runCatching { screenScraperRepository.videoUrl(creds, game) }.getOrNull()
+                videoUrlStore.put(game.stableKey, url)
+                if (url != null) _uiState.update { it.copy(videoUrls = it.videoUrls + (game.stableKey to url)) }
+                if (url != null && com.shelf.launcher.data.Features.clipsOffline.value) saveClipLater(game.stableKey, url)
+            } finally {
+                videoLookups -= game.stableKey
+            }
         }
     }
+
+    /** (Update 231, #59) Games whose clip is being looked up right now (main thread only), so a look-up isn't started twice. */
+    private val videoLookups = mutableSetOf<String>()
 
     /** Update 148: clips waiting to be saved on the device, one at a time in the background. */
     private val clipQueue = kotlinx.coroutines.channels.Channel<Pair<String, String>>(kotlinx.coroutines.channels.Channel.UNLIMITED)
