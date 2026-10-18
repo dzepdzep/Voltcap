@@ -171,6 +171,9 @@ internal object SettingsIndex {
         E("Round shortcuts: which buttons", "Home", "Round shortcuts", null, null),
         E("Round shortcut button size", "Home", "Round shortcuts", null, null),
         E("Where the row sits", "Home", "Layout options", null, null),
+        // (Update 237, #30: the Voltcap row's no-tiles look.)
+        E("Other games in the row", "Home", "Layout options", null, null),
+        E("Other games in the row (no tiles, hide the covers)", "Home", "Layout options", null, null),
         E("Games across the screen (games per row)", "Home", "Layout options", null, null),
         E("App icons in the L1 shortcuts (theme colours)", "Home", "Round shortcuts", null, null),
         E("It shows as", "Home", "Layout options", null, null),

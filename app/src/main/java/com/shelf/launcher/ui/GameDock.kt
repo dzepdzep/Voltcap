@@ -121,6 +121,13 @@ internal fun GameDock(
         // "Carousel look" (Appearance › Game row): the game you're on big in the middle (a cover, never the wide
         // capsule), the next ones each side smaller, behind it and optionally turned away (Carousel).
         val carousel = com.shelf.launcher.data.HomeLayout.CLASSIC.name in com.shelf.launcher.data.Features.carouselLayouts.state.value
+        // (Update 237, #30: Layout options › Other games in the row — All (the row as always), only the game you're on
+        // (its card alone, in its usual place and size), or None (no cards: the name line, the info and the background art;
+        // the row keeps its height so nothing above / under it moves, and ◀ ▶ / swiping still go through the games).
+        // The carousel look keeps its own "games each side" for Only the game you're on; None hides it too.)
+        val otherGames = com.shelf.launcher.data.Features.dockOtherGames.state.value
+        val noCards = otherGames == com.shelf.launcher.data.Features.DockOtherGames.NONE
+        val onlyFocused = !carousel && otherGames == com.shelf.launcher.data.Features.DockOtherGames.FOCUSED
         MotionPrefs.observe()
         val popNow = MotionPrefs.pop(com.shelf.launcher.data.HomeLayout.CLASSIC)
         // (Update 141: whatever Endless and "Game you're on" say — always at the left end, never looping.)
@@ -340,7 +347,8 @@ internal fun GameDock(
         // the row up or down.
         val placement = LocalTitleOptions.current.placement
         val nameOnLine = placement != com.shelf.launcher.data.TitlePlacement.HIDDEN &&
-            (placement != com.shelf.launcher.data.TitlePlacement.INSIDE || !look.focusedWide || (bannerFree && !pinnedFirst) || (pinnedFirst && focus > 0))
+            // (Update 237, #30: with no cards the name can't sit inside the capsule — it goes on the line.)
+            (placement != com.shelf.launcher.data.TitlePlacement.INSIDE || noCards || !look.focusedWide || (bannerFree && !pinnedFirst) || (pinnedFirst && focus > 0))
         val lineShown = nameOnLine || look.playtimeOnHome
         // Right on top of the capsule — or under the row (Game names › Side).
         val lineAbove = !look.nameBelow
@@ -377,10 +385,11 @@ internal fun GameDock(
         // 3D models turned to their side, cases), and moving between games glides. It used to be this row's own
         // approximation: spines aside blown up to many times their size, the middle game small, and the game you
         // moved to just swapping in.
-        if (carousel) {
-            // Its middle game as big as the row's game you're on (the carousel makes it 84 % of its height × Game size).
-            val sizeK = (com.shelf.launcher.data.Features.carouselSize.state.value / 100f).coerceAtLeast(0.3f)
-            val boxH = sizes.bigCover.height / (0.84f * sizeK)
+        // Its middle game as big as the row's game you're on (the carousel makes it 84 % of its height × Game size).
+        val sizeK = (com.shelf.launcher.data.Features.carouselSize.state.value / 100f).coerceAtLeast(0.3f)
+        val boxH = sizes.bigCover.height / (0.84f * sizeK)
+        // (Update 237, #30: Other games in the row › None — the carousel's place stays, empty, as the swipe area below.)
+        if (carousel && !noCards) {
             GameCarousel(
                 games = games, focus = focus, art = art, overrides = artOverrides,
                 onSelect = { onFocus(it) }, onOpen = { games.getOrNull(focus)?.let(onLaunch) },
@@ -392,7 +401,8 @@ internal fun GameDock(
         } else Box(
             Modifier
                 .fillMaxWidth()
-                .height(rowHeight)
+                // (Update 237, #30: the carousel look with None keeps the carousel's height, so nothing jumps.)
+                .height(if (carousel) boxH else rowHeight)
                 // Swiping still works on touch: every card-width of drag moves the
                 // focus by one, same as a D-pad press.
                 // Keyed on the step so a new card size (Appearance) takes effect at once.
@@ -430,7 +440,8 @@ internal fun GameDock(
             val seenBefore = if (carousel) coversBefore else kotlin.math.ceil(focusX / stride).toInt()
             val slots = (firstIndex..lastIndex).filter { !loop || drawnOnce(it - virtualFocus, games.size, minOf(seenBefore, (games.size - 1) / 2)) }
             // Update 136: the fixed wide place (see [fixedSlot]) holds the game you're on; the row only draws the ones after it.
-            if (fixedSlot) key("fixedSlot") {
+            // (Update 237, #30: Other games in the row › None — not even the game you're on.)
+            if (fixedSlot && !noCards) key("fixedSlot") {
                 // Update 137: moving on, the next game slides into the wide place from the right (back: from the left)
                 // while the one you were on slides out — it used to just appear (Settings › Home › Animations › Moving between games).
                 val swap = com.shelf.launcher.data.Features.capsuleSwap.state.value
@@ -514,7 +525,13 @@ internal fun GameDock(
                 val game = games[index]
                 val rel = slot - (if (loop) virtualFocus else focus)
                 if (fixedSlot && rel <= 0) continue
+                // (Update 237, #30: None draws no cards; Only the game you're on draws just that one.)
+                if (noCards || (onlyFocused && rel != 0)) continue
                 key(if (loop) "loop:$slot" else game.stableKey) {
+                    // (Update 237, #30: alone in the row, the game you're on stays in its place and fades in as you move,
+                    // instead of sliding in across an empty row.)
+                    val appear = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(if (onlyFocused) 0f else 1f) }
+                    if (onlyFocused) LaunchedEffect(Unit) { appear.animateTo(1f, tween(160)) }
                     val carouselSide = Carousel.side
                     // Update 144: where a card stands [r] places from the game you're on; the row glides between them with
                     // one shared position (rowPos, like the carousel) instead of a spring per card — the per-card springs
@@ -608,7 +625,8 @@ internal fun GameDock(
                             .zIndex(if (carousel) Carousel.placeFlat(relAnim, Carousel.side).z else if (rel == 0) 1f else 0f)
                             .offset {
                                 // The card's place for where the row is now (between two games while it glides).
-                                val xd = if (pinnedFirst) {
+                                // (Update 237, #30: alone in the row it sits where the game you're on always settles.)
+                                val xd = if (onlyFocused) focusX else if (pinnedFirst) {
                                     val p = rowPos.value
                                     val a0 = kotlin.math.floor(p).toInt()
                                     lerp(pinX(index, a0), pinX(index, a0 + 1), p - a0)
@@ -619,6 +637,8 @@ internal fun GameDock(
                                 }
                                 IntOffset(xd.roundToPx(), 0)
                             }
+                            // (Update 237, #30: the fade-in of the game you're on alone in the row.)
+                            .then(if (onlyFocused) Modifier.graphicsLayer { alpha = appear.value } else Modifier)
                             // The game you're on reports where it is (cover light, game window; no layout change).
                             .then(if (rel == 0) Modifier.focusedCard() else Modifier)
                             // Update 202: the game you're on (its cover, box, cartridge or disc) moved / resized in Edit Home.

@@ -383,11 +383,16 @@ internal object Models3D {
      * cartridges, else its console's (and that console's logo). Null for pieces that aren't paintable, or while neither
      * a colour of yours nor the logos piece is here (then the piece shows as the library has it).
      */
-    fun tintFor(id: String, platform: String?, name: String?): Tint? {
+    fun tintFor(
+        id: String, platform: String?, name: String?,
+        /** (Update 236, #42: a Save Vault card in the colours picked for that save — its shell, its badge; null: its own.) */
+        shellOverride: Int? = null, badgeOverride: Int? = null
+    ): Tint? {
         val t = meta(id)?.tint ?: return null
         val logoOf = { s: String? -> s?.takeIf { it in logoIds() } }
         // A Save Vault card: its own colours, the save's console logo (none when that's unknown).
-        t.own?.let { (sh, bd) -> return Tint(sh, bd, logoOf(systemOf(platform))) }
+        // (Update 236, #42: or the save's picked ones — painted from the grey levels, see [paint].)
+        t.own?.let { (sh, bd) -> return Tint(shellOverride ?: sh, badgeOverride ?: bd, logoOf(systemOf(platform))) }
         val sys = systemOf(platform) ?: t.sys
         val own = systemColors()[sys] ?: systemColors()[t.sys]
         val mine = (if (platform != null && name != null) ModelColors.game(platform, name) else null) ?: ModelColors.all()
@@ -706,7 +711,10 @@ internal fun Model3DArt(
     platform: String? = null,
     /** Update 151: a game's piece in a row, grid or carousel: drawn with more life (Models3DLife.kt); [focused]: the one you're on. */
     life: Boolean = false,
-    focused: Boolean = false
+    focused: Boolean = false,
+    /** (Update 236, #42: a Save Vault card's picked shell / badge colours; null: its own.) */
+    shellOverride: Int? = null,
+    badgeOverride: Int? = null
 ) {
     // Update 159: a 3D case wears the game's own scanned case front when there is one (Original cases, on by default) —
     // the PS2 case showed only the cover, never the real case's printed front with its banner.
@@ -728,7 +736,7 @@ internal fun Model3DArt(
     val pos = ArtPlace.of(model = true)
     // Update 137: a custom piece in the game's console colours (or yours, R1 › Cartridge colour), its logo on the badge.
     ModelColors.version.intValue
-    val tint = Models3D.tintFor(id, platform, name?.let { gameDisplayName(it) })
+    val tint = Models3D.tintFor(id, platform, name?.let { gameDisplayName(it) }, shellOverride, badgeOverride)
     val tk = tint?.key
     // (Update 151: while its cover is still loading, the piece made before with that cover — never an empty case first.)
     val waiting = cover != null && coverBmp == null

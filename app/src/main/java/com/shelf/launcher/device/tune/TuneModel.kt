@@ -23,15 +23,25 @@ enum class PowerTier(val label: String, val blurb: String, val cpu: Int, val gpu
  * GPU's), whatever the power tier, governor or AutoTDP does underneath. Percentages are of each part's own
  * top speed, snapped to a speed it really has; the slower clusters are trimmed least, the prime core most
  * (it's where the heat comes from). CUSTOM uses exact speeds per cluster ([TuneProfile.underclockKhz]).
+ *
+ * (Update 237, #86: Light was too aggressive — it took the prime core to 80 %, which on a coarse frequency table snapped
+ * down to ~75 %. Interim rule, pending on-device measurement: every preset is resolved against each part's own available
+ * frequency table ([TuneHardware.presetKhz] / [TuneHardware.presetGpuLevel]): the highest real step within
+ * [TuneHardware.PRESET_TOLERANCE] points below the preset's percentage, else the step nearest to it — which can be the
+ * top speed itself, i.e. no ceiling for that part. Light now = big and prime at 85–90 % of their own top speed (only the
+ * top boost steps go), little cores untouched, GPU at 85–90 %. Medium / Heavy keep their percentages; on fine tables they
+ * resolve exactly as before. The enum names are unchanged, so saved choices stay valid.)
  */
 enum class Underclock(
     val label: String, val blurb: String,
     val little: Int, val big: Int, val prime: Int, val gpu: Int
 ) {
     /** Set by the power tier (or AutoTDP's style): Stock / Max off, Balanced light, Power saving medium, Eco heavy. */
-    AUTO("With power", "Follows the power tier (or AutoTDP): Max and Stock none, Balanced light, Power saving medium, Eco heavy", 100, 100, 100, 100),
+    // (Update 237, #85: with AutoTDP on, "With power" is moved by AutoTDP itself between Off and its style's deepest preset.)
+    AUTO("With power", "Follows the power tier (Max and Stock none, Balanced light, Power saving medium, Eco heavy), or with AutoTDP on, AutoTDP moves it with the game", 100, 100, 100, 100),
     OFF("Off", "Every core and the GPU can reach their own top speed", 100, 100, 100, 100),
-    LIGHT("Light", "Prime core trimmed: cooler, feels the same", 100, 90, 80, 90),
+    // (Update 237, #86: was 100 / 90 / 80 / 90 — the prime core now loses only its top boost steps, like big.)
+    LIGHT("Light", "Only the top boost steps of the big and prime cores and the GPU: cooler, feels the same", 100, 90, 90, 90),
     MEDIUM("Medium", "Big and prime cores lower: most emulation up to PS2 / GameCube", 90, 80, 65, 80),
     HEAVY("Heavy", "Everything lower: 2D, handhelds and PS1-era systems, longest battery", 80, 65, 50, 65),
     CUSTOM("Custom", "Your own top speed per cluster", 100, 100, 100, 100)
@@ -41,11 +51,15 @@ enum class GovernorChoice(val label: String) {
     SYSTEM("System"), PERFORMANCE("Performance"), BALANCED("Balanced"), POWERSAVE("Power save")
 }
 
-/** AutoTDP styles: the wattage it stays under while holding the target frame rate. */
-enum class AutoTdpMode(val label: String, val ceilingW: Float, val blurb: String) {
-    EFFICIENT("Efficient", 7f, "Lowest power, quietest"),
-    BALANCED("Balanced", 9f, "Middle ground"),
-    SMOOTH("Smooth", 12f, "Steadiest frame rate")
+/**
+ * AutoTDP styles: the wattage it stays under while holding the target frame rate.
+ * (Update 237, #85: [ucDeepest] = the deepest underclock AutoTDP may step to by itself when the underclock is
+ * "With power"; it starts at the style's own preset ([TuneProfile.effectiveUnderclock]) and never goes past Off.)
+ */
+enum class AutoTdpMode(val label: String, val ceilingW: Float, val blurb: String, val ucDeepest: Underclock) {
+    EFFICIENT("Efficient", 7f, "Lowest power, quietest", Underclock.HEAVY),
+    BALANCED("Balanced", 9f, "Middle ground", Underclock.MEDIUM),
+    SMOOTH("Smooth", 12f, "Steadiest frame rate", Underclock.LIGHT)
 }
 
 enum class FanMode(val label: String, val vendorMode: Int?) {

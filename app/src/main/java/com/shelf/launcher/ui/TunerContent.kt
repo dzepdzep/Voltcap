@@ -179,7 +179,10 @@ private fun TunerLiveCard(s: com.shelf.launcher.device.tune.TunerStatus) {
         val parts = buildList {
             add(if (s.sleeping) "Screen-off profile" else "${p.tier.label} · from ${s.source}")
             if (p.autoTdp) add("AutoTDP ${p.autoMode.label}, level ${(s.level * 100).toInt()} %")
-            if (p.underclocked) add("Underclock ${p.effectiveUnderclock.label}")
+            // (Update 237, #85: with AutoTDP moving the underclock, the preset it is on right now.)
+            val auc = s.autoUnderclock
+            if (auc != null && !s.sleeping) add("Underclock ${auc.label} (set by AutoTDP)")
+            else if (p.underclocked) add("Underclock ${p.effectiveUnderclock.label}")
             if (s.heatStep > 0) add("heat guard: ${s.heatStep} step${if (s.heatStep == 1) "" else "s"} lower")
             s.targetFps?.let { add("target $it fps") }
         }
@@ -352,7 +355,12 @@ private fun UnderclockCard(p: TuneProfile, h: TuneHw?, onChange: (TuneProfile) -
         SectionLabel("Underclock")
         MutedNote(
             p.underclock.blurb + ". A ceiling on top of the power tier: nothing goes faster than this." +
-                (if (p.underclock == com.shelf.launcher.device.tune.Underclock.AUTO) " Right now: ${p.effectiveUnderclock.label}." else "")
+                // (Update 237, #85: with AutoTDP on, "With power" is AutoTDP's to move within its style's range.)
+                (if (p.underclock == com.shelf.launcher.device.tune.Underclock.AUTO && p.autoTdp)
+                    " AutoTDP ${p.autoMode.label} moves it between Off and ${p.autoMode.ucDeepest.label} with the game, starting at ${p.effectiveUnderclock.label}."
+                else if (p.underclock == com.shelf.launcher.device.tune.Underclock.AUTO) " Right now: ${p.effectiveUnderclock.label}."
+                else if (p.autoTdp && p.underclock != com.shelf.launcher.device.tune.Underclock.OFF) " AutoTDP stays under it."
+                else "")
         )
         Spacer(Modifier.height(8.dp))
         ChipFlow {

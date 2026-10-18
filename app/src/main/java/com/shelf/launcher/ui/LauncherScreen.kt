@@ -2560,7 +2560,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     // A lone game leaves the row mostly empty — then the picture
                     // fills the whole screen instead of stopping at the capsule.
                     // Tiles at the bottom: the picture ends right above the tiles too.
-                    rowFilled = visibleGames.size > 1
+                    rowFilled = visibleGames.size > 1 &&
+                        // (Update 237, #30: the Voltcap row with Other games in the row › None has no cards to end at.)
+                        !(state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CLASSIC &&
+                            com.shelf.launcher.data.Features.dockOtherGames.state.value == com.shelf.launcher.data.Features.DockOtherGames.NONE)
                     )
                 }
             }

@@ -780,6 +780,13 @@ object Features {
     /** Update 112: the covers beside the hero — the whole arc, only the game you're on, or none (just the hero and its info). */
     enum class HeroSideCovers(val label: String) { ALL("The whole column"), FOCUSED("Only the game you're on"), NONE("None") }
     val heroSideCovers = EnumPref("hero_side_covers", HeroSideCovers.ALL, HeroSideCovers.values())
+    /**
+     * (Update 237, #30: the Voltcap row's "no tiles" look, like [heroSideCovers]: the other games in the row — all of
+     * them (the row as it always was), only the game you're on, or none (just its name, info and background art; ◀ ▶
+     * and swiping still move through the games). GameDock.kt.)
+     */
+    enum class DockOtherGames(val label: String) { ALL("All"), FOCUSED("Only the game you're on"), NONE("None") }
+    val dockOtherGames = EnumPref("dock_other_games", DockOtherGames.ALL, DockOtherGames.values())
 
     // ---- Save Vault ----
     enum class SaveVaultStyle(val label: String) {
@@ -1053,6 +1060,11 @@ object Features {
     val caseRegion = EnumPref("case_region", CaseRegionChoice.AUTO_US, CaseRegionChoice.values())
     /** Update 195: the cartridge shell picked per game / per console ("key\tchoice" lines; ui/CartShells.kt). */
     val cartShellChoices = StringPref("cart_shell_choices", "")
+    /**
+     * (Update 236, #42/#43/#47: each Save Vault object's colour, per save or per console — "key\tvalue" lines, keys
+     * "g:<stableKey>" / "console:<platform>", values "p=<preset>;shell=#RRGGBB;trim=#RRGGBB"; ui/SaveVaultLooks.kt.)
+     */
+    val saveObjectLooks = StringPref("save_object_looks", "")
     /** Update 195: every cartridge console on its own drawn authentic shell (Settings › Game look). */
     val authenticCarts = BoolPref("authentic_carts", false)
     /**

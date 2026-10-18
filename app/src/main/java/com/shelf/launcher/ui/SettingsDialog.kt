@@ -3699,6 +3699,19 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             RowChoice("Where the row sits", com.shelf.launcher.data.DockPosition.values(), appearance.dockPosition, { it.label }) {
                 onChange(appearance.copy(dockPosition = it))
             }
+            // (Update 237, #30: the Voltcap row's no-tiles look, like Hero carousel's Covers beside the hero.)
+            if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CLASSIC) {
+                val otherGames = com.shelf.launcher.data.Features.dockOtherGames.state.value
+                RowChoice("Other games in the row", com.shelf.launcher.data.Features.DockOtherGames.values(), otherGames, { it.label }) {
+                    com.shelf.launcher.data.Features.dockOtherGames.value = it
+                }
+                if (otherGames != com.shelf.launcher.data.Features.DockOtherGames.ALL) MutedNote(
+                    if (otherGames == com.shelf.launcher.data.Features.DockOtherGames.NONE)
+                        "No cards: just the game's name, its info and the background art. ◀ ▶ (or a swipe where the row was) still moves through the games."
+                    else "Only the card of the game you're on, in its usual place; ◀ ▶ still moves through the games. " +
+                        "(With the carousel look on, the carousel's own games each side apply.)"
+                )
+            }
             RowChoice("Game you're on", com.shelf.launcher.data.FocusPosition.values(), appearance.focusPosition, { it.label }) {
                 onChange(appearance.copy(focusPosition = it))
             }

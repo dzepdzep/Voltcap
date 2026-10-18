@@ -140,6 +140,39 @@ object TuneHardware {
     /** The real speed at or below [khz] (the slowest one if none is). */
     fun snap(c: Cluster, khz: Int): Int = c.freqs.filter { it <= khz }.maxOrNull() ?: c.freqs.firstOrNull() ?: khz
 
+    /**
+     * (Update 237, #86: an underclock preset's ceiling for [c], resolved against this cluster's own
+     * scaling_available_frequencies. Interim rule pending on-device measurement: the highest real speed in the band
+     * [percent − tolerance, percent] % of its top speed (on the usual fine tables that is exactly what [snap] gave);
+     * when the table is too coarse to have one there, the real speed nearest to the target — which may be the top speed
+     * itself, meaning no ceiling for this cluster. It used to snap down whatever the gap, so on a table like
+     * …2.4, 3.2 GHz a 90 % cap became 75 %. Null = no ceiling. The result is always an entry of [Cluster.freqs].)
+     */
+    fun presetKhz(c: Cluster, percent: Int, tolerance: Int = PRESET_TOLERANCE): Int? {
+        if (percent >= 100 || c.freqs.isEmpty()) return null
+        val want = c.maxKhz.toLong() * percent / 100
+        val lo = c.maxKhz.toLong() * (percent - tolerance) / 100
+        val inBand = c.freqs.filter { it <= want && it >= lo }.maxOrNull()
+        // Fastest first, so a tie goes to the gentler (faster) speed.
+        val pick = inBand ?: c.freqs.sortedDescending().minByOrNull { kotlin.math.abs(it - want) } ?: return null
+        return if (pick >= c.maxKhz) null else pick
+    }
+
+    /** (Update 237, #86: the same rule as [presetKhz] for the GPU's level table; null = no ceiling, else a real level.) */
+    fun presetGpuLevel(g: Gpu, percent: Int, tolerance: Int = PRESET_TOLERANCE): Int? {
+        val top = g.levelMhz.firstOrNull() ?: return null
+        if (percent >= 100) return null
+        val want = top.toLong() * percent / 100
+        val lo = top.toLong() * (percent - tolerance) / 100
+        // levelMhz is fastest first: the first level in the band is the fastest one there.
+        val inBand = g.levelMhz.indexOfFirst { it <= want && it >= lo }
+        val pick = if (inBand >= 0) inBand else g.levelMhz.indices.minByOrNull { kotlin.math.abs(g.levelMhz[it] - want) } ?: return null
+        return pick.takeIf { it > 0 && g.levelMhz[it] < top }
+    }
+
+    /** (Update 237, #86: how far below a preset's percentage a real step may sit and still count as "at" it.) */
+    const val PRESET_TOLERANCE = 5
+
     fun currentMax(c: Cluster): Int? = read("${c.policy}/scaling_max_freq")?.toIntOrNull()
     fun currentMin(c: Cluster): Int? = read("${c.policy}/scaling_min_freq")?.toIntOrNull()
     fun currentGovernor(c: Cluster): String? = read("${c.policy}/scaling_governor")

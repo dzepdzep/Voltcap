@@ -155,14 +155,18 @@ private val MemCardShape: Shape = GenericShape { size, _ ->
  * angle, turned the last few degrees to where the clock [angle] (degrees, read while drawing) is, so it moves smoothly.
  */
 @Composable
-internal fun SwayingModel(card: String, icon: Any?, name: String, platform: String?, angle: () -> Float, modifier: Modifier = Modifier) {
+internal fun SwayingModel(
+    card: String, icon: Any?, name: String, platform: String?, angle: () -> Float, modifier: Modifier = Modifier,
+    /** (Update 236, #42: the save's picked shell / badge colours; null: the card's own.) */
+    shell: Int? = null, badge: Int? = null
+) {
     // Update 207: all the way round and smoothly. It swayed ±60° by swapping the pack's pictures every 20° (a slide show)
     // and never showed its back. Now its front picture (0°) is the face of a solid piece (SolidPiece.kt) turned by the
     // clock itself — any angle, its sides in the card's plastic — and the pack's own back picture (180°) is its back.
     val latest by androidx.compose.runtime.rememberUpdatedState(angle)
     val version = com.shelf.launcher.data.Packs.version.intValue
     val meta = remember(card, version) { Models3D.meta(card) }
-    val tint = Models3D.tintFor(card, platform, name)
+    val tint = Models3D.tintFor(card, platform, name, shell, badge)
     val backBmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, card, version, tint?.key) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             runCatching {
@@ -176,7 +180,8 @@ internal fun SwayingModel(card: String, icon: Any?, name: String, platform: Stri
             }.getOrNull()
         }
     }
-    val tone = remember(meta) { meta?.tint?.own?.first?.let { Color(it) } ?: Color(0xFF9EA2A8) }
+    // (Update 236, #42: its sides in the picked shell colour too.)
+    val tone = remember(meta, shell) { (shell ?: meta?.tint?.own?.first)?.let { Color(it) } ?: Color(0xFF9EA2A8) }
     val spec = remember(meta, backBmp, tone) {
         val b = backBmp?.asImageBitmap()
         // (Update 209: a translucent card stays see-through — SolidSpec.clear.)
@@ -184,7 +189,7 @@ internal fun SwayingModel(card: String, icon: Any?, name: String, platform: Stri
     }
     ProvidePieceTurn(PieceTurn({ ((latest() % 360f) + 360f) % 360f }, 14f)) {
         Box(modifier.solidPiece(spec, withCartSpin = false)) {
-            Model3DArt(card, icon, 0f, Modifier.fillMaxSize(), name = name, alwaysName = true, platform = platform)
+            Model3DArt(card, icon, 0f, Modifier.fillMaxSize(), name = name, alwaysName = true, platform = platform, shellOverride = shell, badgeOverride = badge)
         }
     }
 }
@@ -221,7 +226,9 @@ internal fun StyledSaveCard(
     /** Update 137: the save's console (its logo on the 3D card's badge). */
     platform: String? = null,
     /** Update 141: the turning clock (degrees, read while drawing); with "3D turn" the picked 3D card sways on it. */
-    spin: (() -> Float)? = null
+    spin: (() -> Float)? = null,
+    /** (Update 236, #42: this save's colours — SaveLookStore; null: the original look, exactly.) */
+    look: SaveLook? = null
 ) {
     // Update 136: your 3D shape library's card, the cover on its label and the name under it (the drawn memory card
     // while the "3D models" pack isn't on the device).
@@ -242,14 +249,14 @@ internal fun StyledSaveCard(
                     }
             ) {
                 // (Update 141: the picked one turns as a whole, with "3D turn" on — not just its picture.)
-                if (selected && spin != null && Features.saveTurn.state.value) SwayingModel(card, icon, name, platform, spin, Modifier.fillMaxSize())
-                else Model3DArt(card, icon, if (selected) 0f else 20f, Modifier.fillMaxSize(), name = name, alwaysName = true, platform = platform)
+                if (selected && spin != null && Features.saveTurn.state.value) SwayingModel(card, icon, name, platform, spin, Modifier.fillMaxSize(), shell = look?.shell, badge = look?.trim)
+                else Model3DArt(card, icon, if (selected) 0f else 20f, Modifier.fillMaxSize(), name = name, alwaysName = true, platform = platform, shellOverride = look?.shell, badgeOverride = look?.trim)
                 if (selected) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.5f).height(3.dp).clip(RoundedCornerShape(50)).background(ShelfTheme.accent))
                 SyncBadge(state, 18.dp, Modifier.align(Alignment.BottomEnd).padding(4.dp))
             }
             return
         }
-        StyledSaveCard(SaveVaultStyle.MEMORY_CARD, icon, name, state, selected, lift, bob, hidden, onIconPlaced)
+        StyledSaveCard(SaveVaultStyle.MEMORY_CARD, icon, name, state, selected, lift, bob, hidden, onIconPlaced, look = look)
         return
     }
     val accent = ShelfTheme.accent
@@ -258,11 +265,13 @@ internal fun StyledSaveCard(
         SaveVaultStyle.MEMORY_CARD -> MemCardShape
         else -> RoundedCornerShape(5.dp)
     }
+    // (Update 236, #42: the body and its details in the save's colours — SaveVaultLooks.kt; with none, the originals below.)
+    val mem = memCardTones(look)
     val body = when (style) {
-        SaveVaultStyle.SD_CARD -> listOf(Color(0xFF2B2F3A), Color(0xFF16181F))
-        // Light grey plastic, lit from above.
-        SaveVaultStyle.MEMORY_CARD -> listOf(Color(0xFFC7C9CC), Color(0xFFA9ABAF))
-        else -> listOf(Color(0xFF22252E), Color(0xFF111318))
+        SaveVaultStyle.SD_CARD -> sdBody(look) // (originally 2B2F3A → 16181F)
+        // Light grey plastic, lit from above (originally C7C9CC → A9ABAF).
+        SaveVaultStyle.MEMORY_CARD -> mem.body
+        else -> floppyBody(look) // (originally 22252E → 111318)
     }
     Box(
         Modifier
@@ -285,7 +294,7 @@ internal fun StyledSaveCard(
                 // The metal shutter on top with its window, a write-protect notch.
                 Box(
                     Modifier.align(Alignment.TopCenter).fillMaxWidth(0.56f).fillMaxHeight(0.3f)
-                        .background(Brush.horizontalGradient(listOf(Color(0xFF9EA4AE), Color(0xFFD9DDE3), Color(0xFF8E949E))))
+                        .background(Brush.horizontalGradient(floppyShutter(look)))
                 ) {
                     Box(Modifier.align(Alignment.Center).padding(start = 18.dp).fillMaxWidth(0.22f).fillMaxHeight(0.7f).background(Color(0xFF15171C)))
                 }
@@ -299,24 +308,24 @@ internal fun StyledSaveCard(
                     val w = size.width; val h = size.height
                     drawRect(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Black.copy(alpha = 0.08f))))
                     for (x in floatArrayOf(w * 0.08f, w * 0.92f)) {
-                        drawCircle(Color(0xFF8F9195), w * 0.028f, Offset(x, h * 0.05f))
-                        drawCircle(Color(0xFF6E7074), w * 0.016f, Offset(x, h * 0.05f))
+                        drawCircle(mem.screwOuter, w * 0.028f, Offset(x, h * 0.05f))
+                        drawCircle(mem.screwInner, w * 0.016f, Offset(x, h * 0.05f))
                     }
                     val tri = androidx.compose.ui.graphics.Path().apply {
                         moveTo(w * 0.5f, h * 0.012f); lineTo(w * 0.63f, h * 0.075f); lineTo(w * 0.37f, h * 0.075f); close()
                     }
-                    drawPath(tri, Brush.verticalGradient(listOf(Color(0xFFDADCDF), Color(0xFFB4B6BA)), 0f, h * 0.075f))
-                    drawPath(tri, Color(0xFF8C8E92), style = androidx.compose.ui.graphics.drawscope.Stroke(w * 0.006f))
+                    drawPath(tri, Brush.verticalGradient(mem.tri, 0f, h * 0.075f))
+                    drawPath(tri, mem.triEdge, style = androidx.compose.ui.graphics.drawscope.Stroke(w * 0.006f))
                     // The label's recess: a darker edge below, a lighter one above.
                     val lt = h * 0.47f; val lb = h * 0.82f; val ll = w * 0.11f; val lr = w * 0.89f
-                    drawRoundRect(Color(0xFF8C8E92), Offset(ll - 2f, lt - 2f), Size(lr - ll + 4f, lb - lt + 4f), androidx.compose.ui.geometry.CornerRadius(w * 0.02f))
-                    drawRoundRect(Color(0xFFB6B8BC), Offset(ll, lt), Size(lr - ll, lb - lt), androidx.compose.ui.geometry.CornerRadius(w * 0.02f))
+                    drawRoundRect(mem.recessEdge, Offset(ll - 2f, lt - 2f), Size(lr - ll + 4f, lb - lt + 4f), androidx.compose.ui.geometry.CornerRadius(w * 0.02f))
+                    drawRoundRect(mem.recess, Offset(ll, lt), Size(lr - ll, lb - lt), androidx.compose.ui.geometry.CornerRadius(w * 0.02f))
                     // A pressed-in band near the bottom.
                     drawRoundRect(Color.Black.copy(alpha = 0.08f), Offset(w * 0.3f, h * 0.87f), Size(w * 0.4f, h * 0.035f), androidx.compose.ui.geometry.CornerRadius(h * 0.02f))
                 }
                 Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Spacer(Modifier.fillMaxHeight(0.3f))
-                    FitText("MEMORY CARD", Color(0xFF5F6165), maxSize = 9.sp, minSize = 5.sp, maxLines = 1, fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    FitText("MEMORY CARD", mem.text, maxSize = 9.sp, minSize = 5.sp, maxLines = 1, fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(0.7f))
                 }
             }
@@ -325,7 +334,7 @@ internal fun StyledSaveCard(
                 Row(
                     Modifier.align(Alignment.TopStart).padding(start = 6.dp, top = 4.dp).fillMaxWidth(0.6f).height(9.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) { repeat(6) { Box(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(1.dp)).background(Color(0xFFD7B355).copy(alpha = 0.8f))) } }
+                ) { repeat(6) { Box(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(1.dp)).background(sdContacts(look).copy(alpha = 0.8f))) } }
             }
             else -> Unit
         }
@@ -360,13 +369,21 @@ internal fun StyledSaveCard(
  * blinks, the capsule cracks open with a flash. About a second; [onDone] when it's over.
  */
 @Composable
-internal fun SaveOpenAnimation(style: SaveVaultStyle, icon: String?, modifier: Modifier = Modifier, onDone: () -> Unit) {
+internal fun SaveOpenAnimation(
+    style: SaveVaultStyle, icon: String?, modifier: Modifier = Modifier,
+    /** (Update 236, #43: the save's colours — the theme's accent no longer paints the object.) */
+    look: SaveLook? = null,
+    onDone: () -> Unit
+) {
     val p = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         p.animateTo(1f, tween(if (style == SaveVaultStyle.CAPSULE) 650 else 1000, easing = FastOutSlowInEasing))
         onDone()
     }
     val accent = ShelfTheme.accent
+    // (Update 236, #43: the capsule's halves and burst in its own glass colour (the save's look, else clear white) —
+    // they were the theme's accent.)
+    val glass = capsuleGlass(look)
     val t = p.value
     Box(modifier, contentAlignment = Alignment.Center) {
         when (style) {
@@ -378,9 +395,9 @@ internal fun SaveOpenAnimation(style: SaveVaultStyle, icon: String?, modifier: M
                     val cx = size.width / 2
                     val cy = size.height / 2
                     val gap = h * 0.45f * t
-                    drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = 0.9f * (1 - t)), Color.Transparent), Offset(cx, cy), size.minDimension * (0.2f + 0.6f * t)), size.minDimension * (0.2f + 0.6f * t), Offset(cx, cy))
-                    drawRoundRect(Color.White.copy(alpha = 0.85f * (1 - t * 0.7f)), Offset(cx - w / 2, cy - h / 2 - gap), Size(w, h / 2), androidx.compose.ui.geometry.CornerRadius(w / 2))
-                    drawRoundRect(accent.copy(alpha = 0.9f * (1 - t * 0.7f)), Offset(cx - w / 2, cy + gap), Size(w, h / 2), androidx.compose.ui.geometry.CornerRadius(w / 2))
+                    drawCircle(Brush.radialGradient(listOf(glass.copy(alpha = 0.9f * (1 - t)), Color.Transparent), Offset(cx, cy), size.minDimension * (0.2f + 0.6f * t)), size.minDimension * (0.2f + 0.6f * t), Offset(cx, cy))
+                    drawRoundRect(glass.copy(alpha = 0.85f * (1 - t * 0.7f)), Offset(cx - w / 2, cy - h / 2 - gap), Size(w, h / 2), androidx.compose.ui.geometry.CornerRadius(w / 2))
+                    drawRoundRect(glass.copy(alpha = 0.9f * (1 - t * 0.7f)), Offset(cx - w / 2, cy + gap), Size(w, h / 2), androidx.compose.ui.geometry.CornerRadius(w / 2))
                 }
             }
             SaveVaultStyle.CLASSIC -> Unit
@@ -393,7 +410,8 @@ internal fun SaveOpenAnimation(style: SaveVaultStyle, icon: String?, modifier: M
                         Box(
                             Modifier.padding(top = (8 + 60 * insert).dp).size(if (style == SaveVaultStyle.FLOPPY) 74.dp else 58.dp, 70.dp)
                                 .clip(RoundedCornerShape(if (style == SaveVaultStyle.FLOPPY) 4.dp else 8.dp))
-                                .background(Brush.verticalGradient(listOf(Color(0xFF4A4F5C), Color(0xFF22252E))))
+                                // (Update 236, #42: the card going in, in the save's shell colour.)
+                                .background(Brush.verticalGradient(look?.shell?.let { Color(it) }?.let { listOf(androidx.compose.ui.graphics.lerp(it, Color.White, 0.08f), androidx.compose.ui.graphics.lerp(it, Color.Black, 0.3f)) } ?: listOf(Color(0xFF4A4F5C), Color(0xFF22252E))))
                                 .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(6.dp)),
                             contentAlignment = Alignment.Center
                         ) {

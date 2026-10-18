@@ -30,7 +30,9 @@ data class TunerStatus(
      * root service does it every 10 s while its performance mode is Standard / Performance / High), and Voltcap
      * wrote them again. Shown on the tuner page so the fight isn't hidden.
      */
-    val resets: Int = 0
+    val resets: Int = 0,
+    /** (Update 237, #85: the underclock AutoTDP has stepped to right now, or null when it isn't AutoTDP's to move.) */
+    val autoUnderclock: Underclock? = null
 )
 
 /**
@@ -144,6 +146,8 @@ object Tuner {
         heatReset()
         val (profile, sourceKey, label) = resolve(store, g)
         level = if (profile.autoTdp) (store.learnedLevel(key) ?: 0.85f).coerceIn(AutoTdpController.MIN_LEVEL, 1f) else 1f
+        // (Update 237, #85: AutoTDP's underclock starts from what this game learned (read in apply → ucBegin).)
+        ucStep = -1
         currentSourceKey = sourceKey
         apply(context, profile, key = key, source = label)
         // Screen rate, button layout, charge limit: a game's own or its console's profile changes those.
@@ -158,6 +162,9 @@ object Tuner {
         // have to go back.
         val key = currentKey ?: run { GameExtras.restore(context); return }
         if (current.autoTdp) TuneStore(context).setLearnedLevel(key, level)
+        // (Update 237, #85: and the underclock step AutoTDP ended on, under "uc:<key>" in the same map.)
+        if (ucStep >= 0) TuneStore(context).setLearnedLevel("uc:$key", ucStep.toFloat())
+        ucStep = -1
         measureEnd(context)
         currentKey = null
         currentSourceKey = null
@@ -210,12 +217,14 @@ object Tuner {
         measuring = key != null && store.measure
         // Heat guard switched off, or no game: its extra steps end with it.
         if (!heatGuardOn || key == null) heatReset()
+        // (Update 237, #85: AutoTDP's own underclock, when the profile leaves it to AutoTDP.)
+        ucBegin(store, p, key)
         val t = compute(p, level)
         // Update 201: the count of the handheld's resets starts again with each profile.
         resets = 0
         lastResetAt = 0L
         write(t)
-        _status.value = _status.value.copy(supported = true, source = source, profile = p, level = level, heatStep = heatStep, resets = 0)
+        _status.value = _status.value.copy(supported = true, source = source, profile = p, level = level, heatStep = heatStep, resets = 0, autoUnderclock = liveUcLabel())
         // Any active profile needs the loop: the vendor's daemon lifts caps within seconds, also
         // outside games (the device-wide tier used to be written once and then quietly undone).
         // During a game the heat guard and the measurements need it too.
@@ -233,12 +242,73 @@ object Tuner {
     fun setLevel(newLevel: Float) {
         val l = newLevel.coerceIn(AutoTdpController.MIN_LEVEL, 1f)
         if (kotlin.math.abs(l - level) < 0.015f) return
+        // (Update 237, #85: when a ceiling — your own underclock, or the one AutoTDP stepped to — already holds every
+        // clock, a higher level changes nothing: it isn't raised, so AutoTDP doesn't wind up to 100 % against a manual
+        // underclock (it respects it as the upper bound) and can come down at once when the game gets easier. A miss
+        // then shows up as "no room" for autoUnderclockTick, which lifts its own ceiling instead.)
+        if (l > level && !sleeping && compute(current, level) == compute(current, 1f)) return
         level = l
         if (!sleeping) write(compute(current, level))
         _status.value = _status.value.copy(level = level)
     }
 
     fun currentProfile(): TuneProfile = current
+
+    // ---- AutoTDP's own underclock (Update 237, #85) ----
+
+    /**
+     * (Update 237, #85: with AutoTDP on and the underclock "With power", the underclock is AutoTDP's to move: [ucStep]
+     * indexes [UC_LADDER] (0 = Off), within 0 .. the style's [AutoTdpMode.ucDeepest], starting at the style's own preset
+     * (or what this game learned last time). -1 = not adaptive: the profile's own underclock, unchanged — a manual pick
+     * (Off, Light…Custom) is never moved by AutoTDP and stays the upper bound for its level.)
+     */
+    @Volatile private var ucStep = -1
+    @Volatile private var ucMode: AutoTdpMode? = null
+    private val ucCtl = AutoUnderclock()
+    private val UC_LADDER = listOf(Underclock.OFF, Underclock.LIGHT, Underclock.MEDIUM, Underclock.HEAVY)
+
+    private fun adaptiveUc(p: TuneProfile): Boolean = p.autoTdp && p.underclock == Underclock.AUTO
+    private fun ucRange(p: TuneProfile): IntRange = 0..UC_LADDER.indexOf(p.autoMode.ucDeepest).coerceAtLeast(0)
+    private fun ucDefault(p: TuneProfile): Int = UC_LADDER.indexOf(p.effectiveUnderclock).coerceIn(ucRange(p))
+
+    /** [p] with the preset AutoTDP has stepped to in place of "With power"; [p] itself otherwise. */
+    private fun liveUc(p: TuneProfile, step: Int): TuneProfile =
+        if (adaptiveUc(p) && step >= 0) p.copy(underclock = UC_LADDER[step.coerceIn(ucRange(p))]) else p
+
+    private fun liveUcLabel(): Underclock? = if (ucStep >= 0 && adaptiveUc(current)) UC_LADDER[ucStep.coerceIn(ucRange(current))] else null
+
+    /** Sets [ucStep] up for a newly applied profile: kept while AutoTDP's style stays, else its start (or the learned one). */
+    private fun ucBegin(store: TuneStore, p: TuneProfile, key: String?) {
+        if (!adaptiveUc(p)) { ucStep = -1; ucMode = null; return }
+        if (ucStep >= 0 && ucMode == p.autoMode) { ucStep = ucStep.coerceIn(ucRange(p)); return }
+        val learned = key?.let { store.learnedLevel("uc:$it") }?.toInt()
+        ucStep = (learned ?: ucDefault(p)).coerceIn(ucRange(p))
+        ucMode = p.autoMode
+        ucCtl.reset()
+    }
+
+    /**
+     * (Update 237, #85: called by the service after each AutoTDP tick. Steps AutoTDP's own underclock one preset
+     * shallower when frames are missed (or the load is saturated) and the level has no room left, one deeper when the
+     * target has held at low load and the deeper preset would really lower a clock; see [AutoUnderclock] for the
+     * dwell times and hysteresis. Uses only what the sampler reads: frame rate, CPU / GPU busy %, power.)
+     */
+    @Synchronized
+    fun autoUnderclockTick(fps: Float?, target: Int?, cpuPct: Int?, gpuPct: Int?, powerW: Float?, dtMs: Long) {
+        val p = current
+        if (!adaptiveUc(p) || ucStep < 0 || sleeping) return
+        val now = compute(p, level)
+        val levelHasRoom = compute(p, 1f) != now
+        val range = ucRange(p)
+        val deeperLowers = ucStep < range.last && computeAt(p, level, ucStep + 1) != now
+        val over = powerW != null && powerW > p.autoMode.ceilingW
+        val next = ucCtl.tick(ucStep, range, fps, target, cpuPct, gpuPct, over, levelHasRoom, deeperLowers, dtMs)
+        if (next != ucStep) {
+            ucStep = next
+            write(compute(p, level))
+            _status.value = _status.value.copy(autoUnderclock = liveUcLabel())
+        }
+    }
 
     fun updateLive(fps: Float?, target: Int?, powerW: Float?, tempC: Float?, fan: Int?) {
         _status.value = _status.value.copy(fps = fps, targetFps = target, powerW = powerW, tempC = tempC, fanPercent = fan)
@@ -356,7 +426,12 @@ object Tuner {
 
     // ---- the maths: profile → targets ----
 
-    fun compute(p: TuneProfile, lvl: Float): Target {
+    fun compute(profile: TuneProfile, lvl: Float): Target = computeAt(profile, lvl, ucStep)
+
+    private fun computeAt(profile: TuneProfile, lvl: Float, step: Int): Target {
+        // (Update 237, #85: with AutoTDP on and the underclock "With power", the preset AutoTDP has stepped to.)
+        val adaptive = adaptiveUc(profile) && step >= 0
+        val p = liveUc(profile, step)
         val s = stock
         val clusters = TuneHardware.clusters()
         val max = HashMap<String, Int>()
@@ -378,7 +453,11 @@ object Tuner {
             var khz = if (pct >= 99.5f) stockMax else TuneHardware.snap(c, (c.maxKhz * pct / 100f).toInt())
             // Underclock: a hard ceiling on top of whatever the tier / AutoTDP chose; the heat guard's
             // extra steps on top of that while the chip runs hot.
-            underclockKhz(p, c, i, clusters.size)?.let { khz = minOf(khz, it) }
+            underclockKhz(p, c, i, clusters.size)?.let { uc ->
+                // (Update 237, #85: AutoTDP's own underclock never goes below the profile's CPU floor.)
+                val bounded = if (adaptive && p.cpuFloor > 0) maxOf(uc, TuneHardware.snap(c, (c.maxKhz * p.cpuFloor / 100f).toInt())) else uc
+                khz = minOf(khz, bounded)
+            }
             heatCeiling(p)?.let { h -> underclockKhz(h, c, i, clusters.size)?.let { khz = minOf(khz, it) } }
             max[c.policy] = khz
             // Update 200: with a limit the floor is the chip's own lowest speed, not the "stock" one. On AYN handhelds the
@@ -401,7 +480,9 @@ object Tuner {
             val pct = base * (if (p.cpuOnly) lvl else scale)
             val tierMax = if (pct >= 99.5f) (s?.gpuMax ?: 0) else TuneHardware.gpuLevelFor(g, pct.toInt())
             // Higher level = slower: the underclock wins when it's the slower of the two.
-            val ucLevel = listOfNotNull(underclockGpuLevel(p, g), heatCeiling(p)?.let { underclockGpuLevel(it, g) }).maxOrNull()
+            // (Update 237, #85: AutoTDP's own GPU underclock never goes below the profile's GPU floor; lower level = faster.)
+            val ownUc = underclockGpuLevel(p, g)?.let { if (adaptive && p.gpuFloor > 0) minOf(it, TuneHardware.gpuLevelFor(g, p.gpuFloor)) else it }
+            val ucLevel = listOfNotNull(ownUc, heatCeiling(p)?.let { underclockGpuLevel(it, g) }).maxOrNull()
             gpuMax = if (ucLevel != null) maxOf(tierMax, ucLevel) else tierMax
             // Update 200: same for the GPU — AYN's performance mode sets min_pwrlevel 2 (550 MHz) as its floor; with a limit
             // the floor is the slowest level, and never faster than the cap (a min level below the max level is invalid).
@@ -549,7 +630,8 @@ object Tuner {
             index == count - 1 && count >= 3 -> u.prime
             else -> u.big
         }
-        return if (pct >= 100) null else TuneHardware.snap(c, c.maxKhz * pct / 100)
+        // (Update 237, #86: resolved against this cluster's own frequency table, see TuneHardware.presetKhz.)
+        return TuneHardware.presetKhz(c, pct)
     }
 
     /** The underclock's GPU ceiling as a power level (0 = fastest); null = no ceiling. */
@@ -560,7 +642,8 @@ object Tuner {
             if (mhz >= (g.levelMhz.firstOrNull() ?: 0)) return null
             return g.levelMhz.indexOfFirst { it <= mhz }.let { if (it < 0) g.slowest else it }
         }
-        return if (p.effectiveUnderclock.gpu >= 100) null else TuneHardware.gpuLevelFor(g, p.effectiveUnderclock.gpu)
+        // (Update 237, #86: same rule for the GPU's level table, see TuneHardware.presetGpuLevel.)
+        return TuneHardware.presetGpuLevel(g, p.effectiveUnderclock.gpu)
     }
 
     /** "1.8 / 2.2 / 2.4 GHz · GPU 600 MHz": the underclock's real ceilings on this chip (blocking, cached reads). */
@@ -762,8 +845,9 @@ object Tuner {
         currentKey = null
         currentSourceKey = null
         level = 1f
+        ucStep = -1; ucMode = null
         TuneService.stop(context)
-        _status.value = _status.value.copy(source = "Device", profile = current, level = 1f)
+        _status.value = _status.value.copy(source = "Device", profile = current, level = 1f, autoUnderclock = null)
     }
 
     // ---- quick controls (R1 tiles, Quick Settings tile) ----

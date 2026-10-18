@@ -101,6 +101,8 @@ class TuneService : Service() {
                 val c = controller!!
                 Tuner.setLevel(c.tick(Tuner.autoTdpLevel(), snap?.fps, snap?.powerW))
                 target = c.target
+                // (Update 237, #85: then AutoTDP's own underclock, from the same readings plus the CPU / GPU busy %.)
+                runCatching { Tuner.autoUnderclockTick(snap?.fps, target, snap?.cpuPercent, snap?.gpuPercent, snap?.powerW, dt) }
             } else { controller = null; controllerFor = null }
 
             // Fan

@@ -154,6 +154,7 @@ private fun AppRow(
 ) {
     com.shelf.launcher.Breadcrumbs.mark("AppRow")
     val icon = rememberAppIcon(app.packageName)
+    val iconShape = appIconShape(38.dp) // (Update 237, #13: the game look's corners, as in the app drawer)
     Row(
         Modifier
             .fillMaxWidth()
@@ -163,9 +164,9 @@ private fun AppRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
-            Image(icon, null, modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)))
+            Image(icon, null, modifier = Modifier.size(38.dp).clip(iconShape))
         } else {
-            Box(Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)).background(ShelfTheme.accent.copy(alpha = 0.25f)))
+            Box(Modifier.size(38.dp).clip(iconShape).background(ShelfTheme.accent.copy(alpha = 0.25f)))
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {

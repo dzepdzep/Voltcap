@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material3.Text
@@ -23,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,7 +46,6 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
-import com.shelf.launcher.ui.theme.ShelfTheme
 
 /**
  * Every installed app, A–Z — opened by swiping up from the bottom edge of
@@ -80,7 +77,12 @@ internal fun AppDrawer(
         if (sorted.isEmpty()) {
             EmptyState("No apps found yet — they appear once Voltcap has looked through the installed apps.")
         } else {
-            BoxWithConstraints(Modifier.fillMaxWidth().weight(1f, fill = false)) {
+            // (Update 237, #13: the grid sits on the active layout's panel — DrawerLook.kt; no panel on the plain layouts.)
+            val look = drawerLook()
+            BoxWithConstraints(
+                Modifier.fillMaxWidth().weight(1f, fill = false).drawerPanel(look)
+                    .then(if (look.panelShape != null) Modifier.padding(8.dp) else Modifier)
+            ) {
                 val perRow = maxOf(1, (maxWidth / 96.dp).toInt())
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(perRow),
@@ -88,7 +90,7 @@ internal fun AppDrawer(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(sorted) { app ->
-                        DrawerTile(app, Modifier.fillMaxWidth(), onMenu = { menuFor = app }) { onLaunch(app) }
+                        DrawerTile(app, look, Modifier.fillMaxWidth(), onMenu = { menuFor = app }) { onLaunch(app) }
                     }
                 }
             }
@@ -144,17 +146,21 @@ private fun AppOptionsMenu(
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun DrawerTile(app: Game, modifier: Modifier, onMenu: () -> Unit, onClick: () -> Unit) {
+private fun DrawerTile(app: Game, look: DrawerLook, modifier: Modifier, onMenu: () -> Unit, onClick: () -> Unit) {
     val icon = rememberAppIcon(app.packageName)
-    val shape = RoundedCornerShape(14.dp)
+    // (Update 237, #13: the tile's shape and focus follow the layout; the icon takes the game look's corners.)
+    val shape = look.tileShape
+    val iconShape = appIconShape(52.dp)
+    val themed = look.kind == DrawerKind.THEME
     val source = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
     Column(
         modifier
             .padTarget("drawer-" + app.stableKey) { onClick() }
+            .drawerFocus(look, focused)
             .clip(shape)
-            .focusRing(focused, shape)
+            .then(if (themed) Modifier.focusRing(focused, shape) else Modifier)
             .onPreviewKeyEvent { e ->
                 if (e.type == KeyEventType.KeyDown && (e.key == Key.ButtonStart || e.key == Key.Menu)) { onMenu(); true } else false
             }
@@ -168,14 +174,14 @@ private fun DrawerTile(app: Game, modifier: Modifier, onMenu: () -> Unit, onClic
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (icon != null) {
-            Image(icon, app.name, modifier = Modifier.size(52.dp).clip(RoundedCornerShape(13.dp)))
+            Image(icon, app.name, modifier = Modifier.size(52.dp).clip(iconShape))
         } else {
-            Box(Modifier.size(52.dp).clip(RoundedCornerShape(13.dp)).background(ShelfTheme.accent.copy(alpha = 0.25f)))
+            Box(Modifier.size(52.dp).clip(iconShape).background(look.placeholder))
         }
         Spacer(Modifier.height(6.dp))
         Text(
             app.name,
-            color = Color.White,
+            color = look.ink, // (Update 237, #13: the panel's ink — dark on light glass / the pale Live backdrop)
             fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

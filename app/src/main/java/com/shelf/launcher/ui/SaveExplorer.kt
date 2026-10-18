@@ -572,7 +572,14 @@ internal fun SaveExplorerDialog(
             // The capsule cracking open in its slot.
             val crackRect = flightFrom
             if (crackFor != null && crackRect != null) {
-                CapsuleCrack(crackRect, hostOffset, { crack.value }, ShelfTheme.accent, detailOrNull(entries, crackFor)?.let { iconFor(it) }, Modifier.matchParentSize())
+                // (Update 236, #43: its halves in its own colours — the glass in the save's look (else clear), the charge half
+                // in its sync state — no longer the theme's accent.)
+                val crackGame = detailOrNull(entries, crackFor)
+                val crackState = entries.firstOrNull { it.first.stableKey == crackFor }?.second?.state ?: SyncState.PENDING
+                CapsuleCrack(
+                    crackRect, hostOffset, { crack.value }, capsuleGlass(SaveLookStore.look(crackGame?.stableKey, crackGame?.platform)), stateColor(crackState),
+                    crackGame?.let { iconFor(it) }, Modifier.matchParentSize()
+                )
             }
             // The icon in flight: from its slot to the details window (or back), in an arc, turning once.
             val f = flying
@@ -715,77 +722,15 @@ private fun SaveSlot(
         Spacer(Modifier.height(22.dp))
         val turnOn = Features.saveTurn.state.value
         val vaultStyle = Features.saveVaultStyle.state.value
+        // (Update 236, #42: this save's colours — its own, else its console's; none = the original look.)
+        val look = SaveLookStore.look(game.stableKey, game.platform)
         if (vaultStyle == Features.SaveVaultStyle.SD_CARD || vaultStyle == Features.SaveVaultStyle.MEMORY_CARD || vaultStyle == Features.SaveVaultStyle.FLOPPY || vaultStyle == Features.SaveVaultStyle.CARD_3D) {
             StyledSaveCard(
                 vaultStyle, icon, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, platform = game.platform,
-                spin = spin
+                spin = spin, look = look
             )
         } else if (vaultStyle == Features.SaveVaultStyle.CAPSULE) {
-            Box(
-                Modifier
-                    .fillMaxWidth(0.82f)
-                    .aspectRatio(0.62f)
-                    .graphicsLayer {
-                        translationY = -(3.dp.toPx() * bob()) - 10.dp.toPx() * lift
-                        val s = 1f + 0.10f * lift
-                        scaleX = s; scaleY = s
-                        alpha = if (hidden) 0.25f else 1f
-                    }
-                    .clip(shape)
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.White.copy(alpha = 0.07f + 0.05f * lift),
-                            0.6f to Color.White.copy(alpha = 0.04f),
-                            0.6f to charge.copy(alpha = 0.22f + 0.14f * lift),
-                            1f to charge.copy(alpha = 0.42f + 0.2f * lift)
-                        )
-                    )
-                    .border(1.dp + 1.5.dp * lift, if (selected) ShelfTheme.accent else Color.White.copy(alpha = 0.16f), shape),
-            ) {
-                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Spacer(Modifier.fillMaxHeight(0.07f))
-                    // The icon's spot (measured for the flight into the details window).
-                    Box(
-                        Modifier
-                            .fillMaxWidth(0.80f)
-                            .aspectRatio(1f)
-                            .onGloballyPositioned { onIconPlaced(it.boundsInRoot()) }
-                            .graphicsLayer { alpha = if (hidden) 0f else 1f }
-                            .clip(CapsuleIconShape)
-                            .background(Color.Black.copy(alpha = 0.25f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (icon != null) {
-                            AsyncImage(model = icon, contentDescription = game.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                        } else {
-                            Text(
-                                gameDisplayName(game.name).take(2).uppercase(),
-                                color = Color.White.copy(alpha = 0.8f), fontSize = 20.sp, fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                    Spacer(Modifier.weight(1f))
-                    // The sync state in the charge half: its icon, not just a colour.
-                    SyncBadge(status.state, 16.dp + 2.dp * lift)
-                    Spacer(Modifier.fillMaxHeight(0.16f))
-                }
-                // The seam where the two halves of the capsule meet.
-                Box(
-                    Modifier.fillMaxWidth().fillMaxHeight(0.6f).align(Alignment.TopCenter)
-                ) {
-                    Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.22f)))
-                }
-                // Glass highlight down the left side.
-                Box(
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 5.dp)
-                        .width(4.dp)
-                        .fillMaxHeight(0.62f)
-                        .clip(RoundedCornerShape(50))
-                        .background(Color.White.copy(alpha = 0.10f + 0.08f * lift))
-                )
-            }
+            CapsuleSaveCard(icon, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, look)
         } else Box(
             // The square save icon, as it always was: idle it bobs, picked it lifts and grows (and,
             // with "3D turn", tilts while bobbing and turns slowly like a 3D save icon).
@@ -837,6 +782,94 @@ private fun SaveSlot(
     }
 }
 
+/**
+ * (Update 236, #42: the capsule — one save as an upright pill, the icon in its clear top half and the sync state tinting
+ * the bottom one — on its own, so Appearance… can show it too. [look]: its glass colour.)
+ */
+@Composable
+internal fun CapsuleSaveCard(
+    icon: String?,
+    name: String,
+    state: SyncState,
+    selected: Boolean,
+    lift: Float,
+    bob: () -> Float,
+    hidden: Boolean,
+    onIconPlaced: (androidx.compose.ui.geometry.Rect) -> Unit,
+    look: SaveLook? = null
+) {
+    val shape = RoundedCornerShape(50)
+    val charge = stateColor(state)
+    val glass = look?.shell?.let { Color(it) }
+    Box(
+        Modifier
+            .fillMaxWidth(0.82f)
+            .aspectRatio(0.62f)
+            .graphicsLayer {
+                translationY = -(3.dp.toPx() * bob()) - 10.dp.toPx() * lift
+                val s = 1f + 0.10f * lift
+                scaleX = s; scaleY = s
+                alpha = if (hidden) 0.25f else 1f
+            }
+            .clip(shape)
+            .background(
+                Brush.verticalGradient(
+                    // (Update 236, #42: the glass in the save's shell colour; with none, clear as it was. The charge
+                    // half below keeps showing the sync state.)
+                    0f to (glass?.copy(alpha = 0.30f + 0.08f * lift) ?: Color.White.copy(alpha = 0.07f + 0.05f * lift)),
+                    0.6f to (glass?.copy(alpha = 0.16f) ?: Color.White.copy(alpha = 0.04f)),
+                    0.6f to charge.copy(alpha = 0.22f + 0.14f * lift),
+                    1f to charge.copy(alpha = 0.42f + 0.2f * lift)
+                )
+            )
+            .border(1.dp + 1.5.dp * lift, if (selected) ShelfTheme.accent else Color.White.copy(alpha = 0.16f), shape),
+    ) {
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.fillMaxHeight(0.07f))
+            // The icon's spot (measured for the flight into the details window).
+            Box(
+                Modifier
+                    .fillMaxWidth(0.80f)
+                    .aspectRatio(1f)
+                    .onGloballyPositioned { onIconPlaced(it.boundsInRoot()) }
+                    .graphicsLayer { alpha = if (hidden) 0f else 1f }
+                    .clip(CapsuleIconShape)
+                    .background(Color.Black.copy(alpha = 0.25f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (icon != null) {
+                    AsyncImage(model = icon, contentDescription = name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                } else {
+                    Text(
+                        name.take(2).uppercase(),
+                        color = Color.White.copy(alpha = 0.8f), fontSize = 20.sp, fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            // The sync state in the charge half: its icon, not just a colour.
+            SyncBadge(state, 16.dp + 2.dp * lift)
+            Spacer(Modifier.fillMaxHeight(0.16f))
+        }
+        // The seam where the two halves of the capsule meet.
+        Box(
+            Modifier.fillMaxWidth().fillMaxHeight(0.6f).align(Alignment.TopCenter)
+        ) {
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.22f)))
+        }
+        // Glass highlight down the left side.
+        Box(
+            Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 5.dp)
+                .width(4.dp)
+                .fillMaxHeight(0.62f)
+                .clip(RoundedCornerShape(50))
+                .background(Color.White.copy(alpha = 0.10f + 0.08f * lift))
+        )
+    }
+}
+
 /** One save up close: its icon, the details, and a way into its sync window. */
 @Composable
 private fun SaveDetail(
@@ -857,6 +890,9 @@ private fun SaveDetail(
 ) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(80); runCatching { focus.requestFocus() } }
+    // (Update 236, #47: Appearance… — this save's object colour; its look read here, so the icon up close follows it live.)
+    var showLook by remember { mutableStateOf(false) }
+    val look = SaveLookStore.look(game.stableKey, game.platform)
     val context = LocalContext.current
     val fmt = remember { android.text.format.DateFormat.getLongDateFormat(context) }
     val time = remember { android.text.format.DateFormat.getTimeFormat(context) }
@@ -914,7 +950,8 @@ private fun SaveDetail(
                         game, icon, { turn.value },
                         Modifier
                             .fillMaxSize()
-                            .graphicsLayer { translationY = -6.dp.toPx() * kotlin.math.sin(phase()) }
+                            .graphicsLayer { translationY = -6.dp.toPx() * kotlin.math.sin(phase()) },
+                        look = look
                     )
                 }
             }
@@ -960,6 +997,8 @@ private fun SaveDetail(
                 Spacer(Modifier.height(if (compact) 10.dp else 16.dp))
                 ChipFlow {
                     Box(Modifier.focusRequester(focus)) { Chip("Save options", accent = true, onClick = onOpenSave) }
+                    // (Update 236, #47: the object's colour — not for the Classic squares, which have none.)
+                    if (Features.saveVaultStyle.state.value != Features.SaveVaultStyle.CLASSIC) Chip("Appearance", accent = false) { showLook = true }
                     // Hides the capsule only; the save files are never touched.
                     Chip(if (hidden) "Show in the vault" else "Hide from the vault", accent = false) { onHide(!hidden) }
                     Chip("Back", accent = false, onClick = onBack)
@@ -967,6 +1006,7 @@ private fun SaveDetail(
             }
         }
     }
+    if (showLook) SaveLookDialog(game, icon, st.state) { showLook = false }
 }
 
 /**
@@ -975,13 +1015,17 @@ private fun SaveDetail(
  * memory-card mark, never mirrored); off, it stays upright and [angle] only sweeps a light across it.
  */
 @Composable
-private fun SaveIconCard(game: Game, icon: String?, angle: () -> Float, modifier: Modifier = Modifier) {
+private fun SaveIconCard(
+    game: Game, icon: String?, angle: () -> Float, modifier: Modifier = Modifier,
+    /** (Update 236, #42/#43: the save's colours — its rim and back, the 3D card's shell / badge; null: the original.) */
+    look: SaveLook? = null
+) {
     val turnOn = Features.saveTurn.state.value
     // Update 141: with the 3D card style, the whole 3D card turns (it used to be its picture turning on its own).
     val card = if (Features.saveVaultStyle.state.value == Features.SaveVaultStyle.CARD_3D) Models3D.saveCardId() else null
     if (card != null) {
-        if (turnOn) SwayingModel(card, icon, gameDisplayName(game.name), game.platform, angle, modifier)
-        else Model3DArt(card, icon, 0f, modifier, name = gameDisplayName(game.name), alwaysName = true, platform = game.platform)
+        if (turnOn) SwayingModel(card, icon, gameDisplayName(game.name), game.platform, angle, modifier, shell = look?.shell, badge = look?.trim)
+        else Model3DArt(card, icon, 0f, modifier, name = gameDisplayName(game.name), alwaysName = true, platform = game.platform, shellOverride = look?.shell, badgeOverride = look?.trim)
         return
     }
     val shape = saveIconShape()
@@ -998,7 +1042,8 @@ private fun SaveIconCard(game: Game, icon: String?, angle: () -> Float, modifier
             }
             .clip(shape)
             .background(Color.White.copy(alpha = 0.08f))
-            .border(1.5.dp, ShelfTheme.accent.copy(alpha = if (back) 0.9f else 0.5f), shape),
+            // (Update 236, #43: its rim in the save's colour, else a plain light rim — never the theme's accent.)
+            .border(1.5.dp, (look?.shell?.let { Color(it) } ?: Color.White).copy(alpha = if (back) 0.9f else if (look?.shell != null) 0.6f else 0.35f), shape),
         contentAlignment = Alignment.Center
     ) {
         // Undo the mirror on the back side, so the picture reads the right way round.
@@ -1009,7 +1054,8 @@ private fun SaveIconCard(game: Game, icon: String?, angle: () -> Float, modifier
                 Box(
                     Modifier
                         .matchParentSize()
-                        .background(Brush.linearGradient(listOf(ShelfTheme.accent.copy(alpha = 0.6f).compositeOverDark().copy(alpha = 0.82f), Color(0xD90A0B12)))),
+                        // (Update 236, #43: the back in the save's colour, else neutral grey — it was the theme's accent.)
+                        .background(Brush.linearGradient(listOf((look?.shell?.let { Color(it) } ?: Color.White).copy(alpha = if (look?.shell != null) 0.6f else 0.4f).compositeOverDark().copy(alpha = 0.82f), Color(0xD90A0B12)))),
                     contentAlignment = Alignment.Center
                 ) {
                     androidx.compose.material3.Icon(
@@ -1058,7 +1104,10 @@ private fun CapsuleCrack(
     iconRect: androidx.compose.ui.geometry.Rect,
     host: androidx.compose.ui.geometry.Offset,
     p: () -> Float,
-    accent: Color,
+    /** (Update 236, #43: the glass half's colour and the burst's — was the theme's accent.) */
+    glass: Color,
+    /** (Update 236, #43: the charge half's colour: the sync state's.) */
+    charge: Color,
     icon: String?,
     modifier: Modifier
 ) {
@@ -1078,13 +1127,13 @@ private fun CapsuleCrack(
             // The burst behind: grows with the leak, fades as the halves leave.
             val leak = ((t - 0.15f) / 0.35f).coerceIn(0f, 1f)
             val burstA = leak * (1f - open * 0.85f)
-            drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.75f * burstA), accent.copy(alpha = 0.45f * burstA), Color.Transparent), Offset(cx, seamY), cw * (0.6f + 1.6f * leak)), cw * (0.6f + 1.6f * leak), Offset(cx, seamY))
+            drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.75f * burstA), glass.copy(alpha = 0.45f * burstA), Color.Transparent), Offset(cx, seamY), cw * (0.6f + 1.6f * leak)), cw * (0.6f + 1.6f * leak), Offset(cx, seamY))
             // Rays fanning out of the seam.
             if (leak > 0f && open < 1f) {
                 for (k in 0 until 9) {
                     val ang = Math.toRadians((k * 40.0) + t * 60.0)
                     val len = cw * (0.4f + 0.9f * leak)
-                    drawLine(accent.copy(alpha = 0.35f * burstA), Offset(cx, seamY), Offset(cx + (kotlin.math.cos(ang) * len).toFloat(), seamY + (kotlin.math.sin(ang) * len * 0.6f).toFloat()), 2.dp.toPx())
+                    drawLine(glass.copy(alpha = 0.35f * burstA), Offset(cx, seamY), Offset(cx + (kotlin.math.cos(ang) * len).toFloat(), seamY + (kotlin.math.sin(ang) * len * 0.6f).toFloat()), 2.dp.toPx())
                 }
             }
             val r = androidx.compose.ui.geometry.CornerRadius(cw / 2f)
@@ -1095,7 +1144,7 @@ private fun CapsuleCrack(
                 rotate(-28f * ease, Offset(cx, seamY))
             }) {
                 clipRect(left - cw, top - ch, left + cw * 2f, seamY) {
-                    drawRoundRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.32f * fade), Color.White.copy(alpha = 0.12f * fade)), top, seamY), Offset(left, top), Size(cw, ch), r)
+                    drawRoundRect(Brush.verticalGradient(listOf(glass.copy(alpha = 0.32f * fade), glass.copy(alpha = 0.12f * fade)), top, seamY), Offset(left, top), Size(cw, ch), r)
                     drawRoundRect(Color.White.copy(alpha = 0.55f * fade), Offset(left, top), Size(cw, ch), r, style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx()))
                 }
             }
@@ -1105,7 +1154,7 @@ private fun CapsuleCrack(
                 rotate(24f * ease, Offset(cx, seamY))
             }) {
                 clipRect(left - cw, seamY, left + cw * 2f, top + ch * 2f) {
-                    drawRoundRect(Brush.verticalGradient(listOf(accent.copy(alpha = 0.75f * fade), accent.copy(alpha = 0.45f * fade)), seamY, top + ch), Offset(left, top), Size(cw, ch), r)
+                    drawRoundRect(Brush.verticalGradient(listOf(charge.copy(alpha = 0.75f * fade), charge.copy(alpha = 0.45f * fade)), seamY, top + ch), Offset(left, top), Size(cw, ch), r)
                     drawRoundRect(Color.White.copy(alpha = 0.35f * fade), Offset(left, top), Size(cw, ch), r, style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx()))
                 }
             }
@@ -1149,6 +1198,8 @@ private fun FlyingSaveIcon(
     val angle = if (outbound) 360f * p else -360f * (1f - p)
     val flightShape = saveIconShape()
     val card3d = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.CARD_3D && Models3D.saveCardId() != null
+    // (Update 236, #42: in the save's colours on the way too.)
+    val look = SaveLookStore.look(game.stableKey, game.platform)
     SaveIconCard(
         game, icon, { angle },
         Modifier
@@ -1161,7 +1212,8 @@ private fun FlyingSaveIcon(
                 // with it and stood behind it in the details window.)
                 shadowElevation = if (card3d) 0f else 18.dp.toPx() * kotlin.math.sin(Math.PI * p).toFloat()
                 shape = flightShape
-            }
+            },
+        look = look
     )
 }
 
