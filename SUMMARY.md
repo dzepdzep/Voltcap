@@ -4,6 +4,26 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 18 Oct 2026 (232): Spotlight's tiles sit right under the line (#10), less work the first time you reach a game (#60)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (6): `src_copy\ui\StyleSpotlight.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\ui\Carousel.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\Case3D.kt`. **Files to delete:** none.
+
+### Spotlight (#10)
+- Home menu look with the tiles on top: they sat 32 dp under the icons' line, leaving an empty band on bigger screens → 12 dp higher, right under the line. "Tiles at the bottom" unchanged. (Checked on the Thor with tiles on top, then put back to bottom as you had it.)
+
+### First visit of a game (#60)
+- The home's actions were rebuilt on every screen update, so the carousel could never skip work → kept once, each still doing the latest thing.
+- The RetroAchievements icon was read and the screen updated for every game passed → only once you rest on a game (0.45 s).
+- The carousel's look-ahead ran the 3D-case lookups on the UI thread and asked again for pictures still decoding → off the UI thread, and each picture asked for once.
+- Pictures for the 3D cases are sent to the GPU as soon as they're decoded (not on the frame that first draws them); the case template's band picture is decoded once and shared, not once per case.
+- Saving the same scans again no longer rebuilds the game list state.
+
+### Check
+- `gradlew assembleRelease`: BUILD SUCCESSFUL; installed on both; no crashes.
+- **Measurement not comparable:** right after this install the Thor's CPU big cores were capped (2.05 of 2.8 GHz / 2.34 of 3.19 GHz) and the GPU at 401 MHz, and even the idle home drew at 24 ms per frame (12 ms in the 231 test) — some power profile was active (nothing in Voltcap's log; I didn't touch it). To re-measure when the caps are off.
+
 ## Update — 18 Oct 2026 (231): the home moves 3–4× smoother with the game's art and colours behind it (#59 / #60), Performance in the classic details window (#81), Switch boxes no longer from another console (#39), Twin desk without the two repeated games (#54)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed** on the AYN Thor and the RP Classic by Claude, committed and pushed by Claude.

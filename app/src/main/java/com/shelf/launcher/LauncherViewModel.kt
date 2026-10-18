@@ -871,7 +871,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
             if (!refresh || (!force && list.any { it.first == com.shelf.launcher.ui.BoxTexture.LABEL }) || screenScraperStore.load() == null) {
                 physicalRaw[key] = list
-                _uiState.update { it.copy(physicalMedia = it.physicalMedia + (key to com.shelf.launcher.data.PhysicalOverrides.apply(key, list))) }
+                // (Update 232, #60: the state left as it is when the game's list is the one it already has — no new map.)
+                val shown = com.shelf.launcher.data.PhysicalOverrides.apply(key, list)
+                _uiState.update { if (it.physicalMedia[key] == shown) it else it.copy(physicalMedia = it.physicalMedia + (key to shown)) }
                 return
             }
             if (old == null) old = list
@@ -909,7 +911,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 ed.apply()
             }
             physicalRaw[key] = list
-            _uiState.update { it.copy(physicalMedia = it.physicalMedia + (key to com.shelf.launcher.data.PhysicalOverrides.apply(key, list))) }
+            // (Update 232, #60: the state left as it is when the look again found the list it already has — no new map.)
+            val shown = com.shelf.launcher.data.PhysicalOverrides.apply(key, list)
+            _uiState.update { if (it.physicalMedia[key] == shown) it else it.copy(physicalMedia = it.physicalMedia + (key to shown)) }
         }
     }
 

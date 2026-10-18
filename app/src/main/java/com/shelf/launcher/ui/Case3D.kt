@@ -119,10 +119,13 @@ internal fun Case3D(
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val band = remember(tplFront?.frontRes, fit?.aspect) {
         tplFront?.let { t ->
-            runCatching {
+            // (Update 232, #60: the template front decoded once per template and fit, not again on the screen's thread for
+            // every new 3D case — CaseBands.)
+            val bandKey = CaseBands.key(t, fit)
+            CaseBands.cache.get(bandKey) ?: runCatching {
                 val b = android.graphics.BitmapFactory.decodeResource(ctx.resources, t.frontRes)
                 if (fit != null && b != null) fittedFrameBitmap(b, t, fit, b.width.coerceAtMost(600)) else b
-            }.getOrNull()
+            }.getOrNull()?.also { CaseBands.cache.put(bandKey, it) }
         }
     }
     // Update 173: a game without a cover (an app) gets its plain front — its icon and name — in its case template too
@@ -428,6 +431,17 @@ internal fun realCaseDepth(platform0: String?): Float? {
 internal fun realCaseScale(platform: String?): Float =
     // (Update 166: softened — the small ones were hard to see; a Game Boy box about 80 % of a DVD case.)
     realCaseMm(platform)?.let { (w, h) -> Math.pow((maxOf(w, h) / 190f).toDouble(), 0.6).toFloat().coerceIn(0.8f, 1f) } ?: 1f
+
+/**
+ * (Update 232, #60: the 3D cases' decoded template fronts (the band) kept by template and fit — each new Case3D decoded
+ * its own from the resources on the screen's thread. Never changed once made; a few kept.)
+ */
+internal object CaseBands {
+    val cache = android.util.LruCache<String, android.graphics.Bitmap>(6)
+
+    fun key(t: CoverTpl, fit: CaseFit?): String =
+        "${t.frontRes}|${t.win.contentToString()}|" + (fit?.let { "${it.aspect}|${it.vertical}|${it.win.contentToString()}" } ?: "-")
+}
 
 /** Update 166: [art] cut to the template's window [win] (l, t, r, b fractions) and drawn under [frame] (its band on top). */
 private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap, win: FloatArray): android.graphics.Bitmap = runCatching {

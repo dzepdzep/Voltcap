@@ -506,6 +506,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     }
     val raLogoPart = HomeWidgets.LOGO_RA in com.shelf.launcher.data.Features.overlayPartsFor(state.appearance.homeLayout)
     LaunchedEffect(focusedGame?.stableKey, state.appearance.raLogos, raLogoPart) {
+        if (!(state.appearance.raLogos || raLogoPart) || focusedGame == null) return@LaunchedEffect
+        // (Update 232, #60: once you rest on the game — stepping fast along the shelf no longer reads its saved icon and
+        // updates the screen's state at every game passed.)
+        kotlinx.coroutines.delay(450)
         if (state.appearance.raLogos || raLogoPart) focusedGame?.let { viewModel.loadRaIcon(it) }
     }
 
@@ -3244,7 +3248,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             StyleHome(
                 layout = state.appearance.homeLayout, state = state, art = displayArt, shortcuts = tileShortcuts,
                 actions = run {
-                    StyleActions(
+                    val freshActions = StyleActions(
                         select = { viewModel.setFocus(it); StyleNav.reset() },
                         open = { StyleNav.reset(); sounds?.play(UiSound.SELECT); openGame() },
                         details = { StyleNav.reset(); GamePopup.game = null; openDetails() },
@@ -3288,6 +3292,43 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         sort = { StyleNav.reset(); sounds?.play(UiSound.OPEN); showSortDialog = true },
                         search = { StyleNav.reset(); sounds?.play(UiSound.OPEN); showSearchBar = true }
                     )
+                    // (Update 232, #60: one StyleActions kept for the home, each of its actions calling this pass's own —
+                    // a new one at every pass changed the carousel's onSelect / onNeedPhysical, so Case stacks' carousel
+                    // never skipped a recomposition. What each action does is unchanged: always the latest.)
+                    val latestActions = rememberUpdatedState(freshActions)
+                    remember {
+                        fun a() = latestActions.value
+                        StyleActions(
+                            select = { a().select(it) },
+                            open = { a().open() },
+                            play = { a().play(it) },
+                            category = { a().category(it) },
+                            achievements = { a().achievements(it) },
+                            favorite = { a().favorite(it) },
+                            needPhysical = { a().needPhysical(it) },
+                            needMedia = { a().needMedia(it) },
+                            needSpine = { a().needSpine(it) },
+                            mediaPlayPause = { a().mediaPlayPause() },
+                            mediaNext = { a().mediaNext() },
+                            mediaPrevious = { a().mediaPrevious() },
+                            mediaSeek = { a().mediaSeek(it) },
+                            options = { a().options(it) },
+                            sync = { a().sync(it) },
+                            profile = { a().profile() },
+                            settings = { a().settings() },
+                            notifications = { a().notifications() },
+                            cloud = { a().cloud() },
+                            details = { a().details() },
+                            needAchievements = { a().needAchievements(it) },
+                            quickMenu = { a().quickMenu() },
+                            screensaver = { a().screensaver() },
+                            stats = { a().stats() },
+                            achievementsHub = { a().achievementsHub() },
+                            needMetadata = { a().needMetadata(it) },
+                            sort = { a().sort() },
+                            search = { a().search() }
+                        )
+                    }
                 },
                 modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
                     .padding(

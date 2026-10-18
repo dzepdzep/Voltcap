@@ -593,7 +593,9 @@ private fun SpotHomeMenu(c: StyleCtx, modifier: Modifier) {
             Box(Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.SPOT, "tabs"), "Icons, profile & clock")) {
                 SpotMenuTop(c, icons, compact, ownStatus = !Features.spotStatusBar.state.value)
             }
-            Spacer(Modifier.height(if (compact) 10.dp else 24.dp))
+            // (Update 232, #10: with the tiles on top they sit a little higher, right under the line — 24 dp + their own
+            // 8 dp left a wide empty band under it on bigger screens.)
+            Spacer(Modifier.height(if (compact) 10.dp else if (Features.spotTilesAt.state.value == Features.SpotSide.BOTTOM) 24.dp else 12.dp))
             if (g == null) {
                 StyleEmpty(Modifier.weight(1f))
             } else if (Features.spotTilesAt.state.value == Features.SpotSide.BOTTOM) {

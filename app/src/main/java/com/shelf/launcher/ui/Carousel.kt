@@ -640,7 +640,11 @@ internal fun GameCarousel(
             // (Update 207: the 3D cases' own box scan fronts and spines, as Case3D picks them — case3dModels.)
             if (box3d) {
                 val realFront = cardArtType == com.shelf.launcher.data.CardArtType.CASE || cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL
-                warmCase3d(warmCtx, near.map { g -> case3dModels(g, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, physicalMedia[g.stableKey], realFront) })
+                // (Update 232, #60: the cases' pictures worked out away from the screen's thread — it reads settings only.)
+                val caseModels = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    near.map { g -> case3dModels(g, overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl, physicalMedia[g.stableKey], realFront) }
+                }
+                warmCase3d(warmCtx, caseModels)
             }
             if (models) warmSoft(warmCtx, more, 480)
         }

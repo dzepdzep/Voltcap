@@ -164,6 +164,8 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean =
                     ?.also { b -> (model as? String)?.let { Models3D.noteSource(b, it) } }
                     // (Update 208: a flat-colour stand-in is no picture.)
                     ?.takeUnless { b -> FlatArt.check(model, b) }
+                    // (Update 232, #60: its upload to the GPU started here, off the screen's thread, not in its first frame.)
+                    ?.also { b -> prepareSoft(b) }
             }.getOrNull()
         }
     }
@@ -232,6 +234,8 @@ internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
                 drawableBitmap((coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable, maxSide)
                     ?.also { bmp -> (model as? String)?.let { Models3D.noteSource(bmp, it) } }
                     ?.takeUnless { bmp -> FlatArt.check(model, bmp) }
+                    // (Update 232, #60: its upload to the GPU started here, off the screen's thread, not in its first frame.)
+                    ?.also { bmp -> prepareSoft(bmp) }
             }.getOrNull()
         }
         value = SoftLoad(b, true)
@@ -247,17 +251,43 @@ internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
 internal fun warmSoft(context: android.content.Context, urls: List<String>, maxSide: Int, trim: Boolean = false) {
     val loader = coil.Coil.imageLoader(context)
     for (u in urls) {
-        val key = coil.memory.MemoryCache.Key(softKey(maxSide, u, trim))
+        val flight = softKey(maxSide, u, trim)
+        val key = coil.memory.MemoryCache.Key(flight)
         if (loader.memoryCache?.get(key) != null) continue
-        loader.enqueue(
+        // (Update 232, #60: a picture still decoding from the step before isn't asked for again — each step re-sent the
+        // ones not in memory yet.)
+        if (!softInFlight.add(flight)) continue
+        try { loader.enqueue(
             coil.request.ImageRequest.Builder(context).data(u).size(maxSide, maxSide)
                 .precision(coil.size.Precision.INEXACT).allowHardware(false)
                 .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true)
                 // (Update 202: as rememberSoftBitmap with trim — same transformation, same key.)
                 .apply { if (trim) transformations(TrimUniformMargins) }
-                .memoryCacheKey(key).build()
-        )
+                .memoryCacheKey(key)
+                .listener(object : coil.request.ImageRequest.Listener {
+                    override fun onSuccess(request: coil.request.ImageRequest, result: coil.request.SuccessResult) {
+                        softInFlight.remove(flight)
+                        // (Update 232, #60: its GPU upload started now, not in the first frame that draws it.)
+                        prepareSoft((result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap)
+                    }
+                    override fun onError(request: coil.request.ImageRequest, result: coil.request.ErrorResult) { softInFlight.remove(flight) }
+                    override fun onCancel(request: coil.request.ImageRequest) { softInFlight.remove(flight) }
+                })
+                .build()
+        ) } catch (t: Throwable) { softInFlight.remove(flight); throw t }
     }
+}
+
+/** (Update 232, #60: the [warmSoft] memory keys being decoded now, so one isn't queued twice.) */
+private val softInFlight = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+/**
+ * (Update 232, #60: a plain bitmap's upload to the GPU started ahead (asynchronous from Android 7), so the 3D case drawing
+ * it first doesn't wait for it in that frame.)
+ */
+internal fun prepareSoft(b: android.graphics.Bitmap?) {
+    if (b == null || android.os.Build.VERSION.SDK_INT < 24) return
+    runCatching { if (!b.isRecycled) b.prepareToDraw() }
 }
 
 /**
