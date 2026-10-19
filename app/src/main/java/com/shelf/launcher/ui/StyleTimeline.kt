@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -248,7 +249,9 @@ internal fun StyleTimeline(c: StyleCtx, modifier: Modifier = Modifier) {
                 StyleEmpty(Modifier.weight(1f))
             } else {
                 // Update 151: the history (periods down the screen, each a row of games), not the line across it.
-                TimelineHistory(c, data, mode, compact, Modifier.weight(1f).fillMaxWidth())
+                // (Update 261, #120 Thor: cut to its own area — scrolled down a period, the year heading above slid up
+                // under the header's name and time and showed through it.)
+                TimelineHistory(c, data, mode, compact, Modifier.weight(1f).fillMaxWidth().clipToBounds())
             }
         }
     }

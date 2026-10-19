@@ -183,7 +183,8 @@ private fun PocketClassicTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             PocketText(this, user, 6f, 2.5f, 120f, 10f, 8f, Color.White, font, TextAlign.Start, screenX = true)
             val day = pocketDay(time.longValue, tz)
             val clock = "%d/%d  %d:%02d".format(day.month, day.dayOfMonth, day.hour, day.minute)
-            PocketText(this, clock, width - 24f - 90f, 2.5f, 90f, 10f, 8f, Color.White, font, TextAlign.End, screenX = true)
+            // (Update 261, #120 Thor: 104 wide — at 90 the pixel font's "10/19  17:33" lost its minutes: "17:…".)
+            PocketText(this, clock, width - 24f - 104f, 2.5f, 104f, 10f, 8f, Color.White, font, TextAlign.End, screenX = true)
             Canvas(Modifier.atScreen(width - 18f, 3f, 14f, 7f)) { pocketBattery(uPx, battery.percent, Color.White) }
             // Update 187: browsing a page of games or categories, the top screen shows the one you're on instead.
             if (Features.classicTopArt.state.value && PocketNav.page != PocketNav.Page.HOME) PocketTopBrowse(this, c, font)

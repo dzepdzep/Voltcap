@@ -437,7 +437,9 @@ internal fun SearchBar(
     /** Update 256: Enter / A / ▼ — the search stays, the bar closes and the controller is back on the games. */
     onDone: () -> Unit = {},
     /** Update 256: B / Esc — the bar closes and the whole category comes back. */
-    onCancel: () -> Unit = {}
+    onCancel: () -> Unit = {},
+    /** 0.6.15: over a layout's own top row — a darker pill so the row's icons don't show through the text. */
+    solid: Boolean = false
 ) {
     com.shelf.launcher.Breadcrumbs.mark("SearchBar")
     val focusRequester = remember { FocusRequester() }
@@ -452,7 +454,7 @@ internal fun SearchBar(
         modifier
             .padding(horizontal = 24.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(Color.Black.copy(alpha = 0.55f))
+            .background(if (solid) Color(0xF0101014) else Color.Black.copy(alpha = 0.55f))
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -473,7 +475,9 @@ internal fun SearchBar(
                 // out was touch; found on the Thor while launching games by search. The controller's own keys now leave it.)
                 .onPreviewKeyEvent { e ->
                     val k = e.key
-                    val isCancel = k == androidx.compose.ui.input.key.Key.ButtonB || k == androidx.compose.ui.input.key.Key.Escape
+                    // 0.6.15 (#120, Thor): Android's Back too, once the keyboard is down (it did nothing; only B left the bar).
+                    val isCancel = k == androidx.compose.ui.input.key.Key.ButtonB || k == androidx.compose.ui.input.key.Key.Escape ||
+                        k == androidx.compose.ui.input.key.Key.Back
                     val isDone = k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
                         k == androidx.compose.ui.input.key.Key.NumPadEnter || k == androidx.compose.ui.input.key.Key.DirectionDown
                     if (!isCancel && !isDone) return@onPreviewKeyEvent false

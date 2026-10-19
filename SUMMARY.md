@@ -4,6 +4,38 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (261): #120 UI walk on the Thor and RP Classic — game windows fit on handheld screens, Pocket clocks and "Play Game" fit, Timeline history stays under its header, Settings answers the first D-pad press on the Thor, search bar readable over Spotlight and closed by Android Back, the game you were on comes back after a search, synced play time in Play history; #95 checked on both handhelds
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the AYN Thor and the RP Classic**, committed and pushed by Claude. **Not published** (0.6.14 is still the latest release).
+
+**Copy `src_copy`**, changed (11) + new (1): `src_copy\MainActivity.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\data\GameJourney.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\StyleTimeline.kt`, `src_copy\ui\PocketClassic.kt`, `src_copy\ui\PocketShared.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\StylePocketQuest.kt`, `src_copy\ui\HomeChrome.kt`; new `src_copy\ui\TestHooks.kt`. **Files to delete:** none.
+
+- **#120 walk, both handhelds:** all 32 layouts with the controller (open, A, B, ▶▶), all 20 Settings pages, a touch pass (games, game window, top icons, R1 menu, Settings). PASS / FAIL / BLOCKED per layout and device: `Claude outputs\evidence\120_ui_walk_2026-10-19.md`. Screens: `Claude outputs\rec\t120\`. Only save-free SNES games used; no save written.
+- **Game window on a handheld screen** (Thor: Grid, Dashboard, Live tiles, Twin desk; RP Classic: Hero, Discs, Consoles, Twin desk, Circuit): the buttons share the width when the row doesn't fit (Performance becomes an icon, the round icons go under the buttons) instead of cutting their words or running off the window; the name / story / buttons column scrolls to the buttons when the picture is tall.
+- **Pocket classic / Pocket ribbon (Thor):** the clocks lost their minutes ("17:…") — wider boxes. **Pocket (Thor):** "Play Game" cut to "Play Ga…" next to the screenshots — the label shrinks to fit.
+- **Timeline (Thor):** scrolled down a period, the year heading slid under the header's name and showed through it — the history is clipped to its own area.
+- **Settings (Thor):** the first ▼ did nothing (the window got focus late, so no card was focused) — the page's first entry takes the focus as soon as it can, and a first D-pad press that arrives before that lands there.
+- **Search:** over a layout's own top row with the status bar off (RP Classic Spotlight) the layout was drawn over the bar and the typed text ran under its icons — the bar is drawn above the layout there, on a darker pill. Android's Back (gesture / button) now closes the bar (it only emptied it, or did nothing when empty); the game you were on when you opened the search is the one you're back on when it's cleared (it jumped to the category's first game).
+- **Hero › Play history (Thor):** said "Not played yet" under "Playtime 10 min" — that time came from the RP Classic through Drive sync and the session list is per handheld. It now says "Played on another device · 10 min in total", followed by the Mastery line.
+- **Test hooks (testing only):** with the file `Android/data/com.shelf.launcher/files/voltcap_test_hooks` present, adb can open a layout, a game, a Settings page or a session-only card look directly (`--es voltcap_test_layout / _game / _settings / _look`). Without the file nothing happens.
+- **#95, both handhelds:** all 32 layouts with the Cases look (session only, never saved): cases face front by default, real spine scans wherever a side shows. `Claude outputs\evidence\95_side_view_audit_2026-10-19.md` (part 2).
+- **Put back afterwards:** Thor on Classic, RP Classic on Spotlight, card looks as they were.
+
+---
+
+## Update — 19 Oct 2026 (260): ▼ no longer jumps to the Thor's lower screen before the end of a list; PSP UMDs drawn as UMDs; achievements card stays put after the keyboard; game window status line fits
+
+Committed and pushed by Claude (commit 9149aac); this entry was added with update 261. **Not published.**
+
+**Copy `src_copy`**, changed (10): `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\UmdBack.kt`, `src_copy\ui\CaseOpen.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\SafeZones.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\HomeEdit.kt`. **Files to delete:** none (your test folder `Claude outputs\rec\fr_wiz\BFBB` can go).
+
+- **▼ between the screens (Thor):** with something still to scroll on the top screen (categories, details), ▼ went to the lower screen first — it now scrolls to the end before moving.
+- **PSP UMD cases:** the open case shows a UMD-shaped recess (hub, notch) and the disc as a UMD with the cover filling its round window; games without a UMD picture no longer show as cartridges.
+- **Achievements card on Spotlight (RP Classic):** it moved after the on-screen keyboard had been open (the safe area counted the keyboard) — it stays where you placed it.
+- **Game window:** the status line under the buttons has its own room.
+
+---
+
 ## Update — 19 Oct 2026 (259): fresh-install check on the PC emulator (#68) — one window at a time on first start; an empty shelf says why
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and checked on the PC's Android 16 emulator** (no Google account; Voltcap installed there fresh, its data cleared between the two runs — nothing on the Thor or RP Classic touched), committed and pushed by Claude.

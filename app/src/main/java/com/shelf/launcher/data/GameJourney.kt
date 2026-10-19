@@ -51,6 +51,13 @@ object GameJourney {
                 "${PlaytimeStore.format(total)} in total · longest ${PlaytimeStore.format(longest)}"
             )
         }
+        // 0.6.15 (#120): play time synced from another handheld (Drive) has no session in this device's log — the
+        // Thor showed "Not played yet" under "Playtime 10 min". Say where the time came from instead.
+        val syncedMs = if (sessions.isEmpty()) runCatching { PlaytimeStore(app).loadTotals()[game.stableKey] ?: 0L }.getOrDefault(0L) else 0L
+        val playedElsewhere = syncedMs >= 60_000L
+        if (playedElsewhere && first == null) {
+            steps += Step(Kind.SESSIONS, null, "Played on another device", "${PlaytimeStore.format(syncedMs)} in total · sessions here are listed from the next one")
+        }
         unlocked.firstOrNull()?.let { (at, a) ->
             steps += Step(Kind.ACHIEVEMENT, at, "First achievement", a.title, listOfNotNull(RaBadges.url(a.badgeName)))
         }
@@ -85,8 +92,8 @@ object GameJourney {
                 steps += Step(Kind.COMPLETION, awardAt, if (award == "beaten-hardcore") "Beaten (hardcore)" else "Beaten")
                 if (total > 0) steps += Step(Kind.NEXT, null, "Mastery", "${achievementProgress(earned, total)} · ${total - earned} to go", done = false)
             }
-            total > 0 && first != null -> steps += Step(Kind.NEXT, null, "Mastery", "${achievementProgress(earned, total)} · ${total - earned} to go", done = false)
-            first == null -> steps += Step(Kind.NEXT, null, "Not played yet", "Your journey starts with the first session", done = false)
+            total > 0 && (first != null || playedElsewhere) -> steps += Step(Kind.NEXT, null, "Mastery", "${achievementProgress(earned, total)} · ${total - earned} to go", done = false)
+            first == null && !playedElsewhere -> steps += Step(Kind.NEXT, null, "Not played yet", "Your journey starts with the first session", done = false)
         }
         return steps.sortedWith(compareBy<Step> { it.at == null }.thenBy { it.at ?: 0L })
     }

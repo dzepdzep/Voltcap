@@ -70,6 +70,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -300,10 +302,24 @@ fun SettingsDialog(
     // Start with the current section focused: with nothing focused, the first press after opening
     // only moved focus into the menu, so every button seemed to need pressing twice.
     val openFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    // (Update 261, #120 Thor: opened straight at a page — Settings › Sync from a game, the Audio page… — the one try at
+    // 50 ms came before the dialog could take focus, so the first D-pad press lit Home at the top of the list and A
+    // opened Home instead of staying on the page. It tries again until the page's own entry has the focus.)
+    var openFocused by remember { mutableStateOf(false) }
+    val inputModes = androidx.compose.ui.platform.LocalInputModeManager.current
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(50) // the dialog window needs a frame before it can take focus
-        runCatching { openFocus.requestFocus() }
+        // (Measured on the Thor: the dialog's window takes focus only ~3 s after it opens there, so it keeps asking for
+        // a while; and the first D-pad press before that lands on the page's entry instead of the list's top — below.)
+        var t = 0L
+        while (!openFocused && t < 5_000L) {
+            kotlinx.coroutines.delay(if (t == 0L) 50L else 150L); t += 150L
+            if (openFocused) break
+            @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+            runCatching { inputModes.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard) }
+            runCatching { openFocus.requestFocus() }
+        }
     }
+    val openFocusMod = Modifier.onFocusChanged { if (it.hasFocus) openFocused = true }
     Dialog(
         // B / Back inside a sub-page goes back to the section's list first.
         onDismissRequest = {
@@ -323,6 +339,13 @@ fun SettingsDialog(
         val compact = maxWidth < 640.dp || maxHeight < 440.dp
         Box(
             Modifier
+                // (Update 261: a D-pad press before the page's entry has the focus goes to that entry, not the list's top.)
+                .onPreviewKeyEvent { e ->
+                    if (!openFocused && e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown &&
+                        e.key in setOf(androidx.compose.ui.input.key.Key.DirectionUp, androidx.compose.ui.input.key.Key.DirectionDown,
+                            androidx.compose.ui.input.key.Key.DirectionLeft, androidx.compose.ui.input.key.Key.DirectionRight)
+                    ) { runCatching { openFocus.requestFocus() }; openFocused = true; true } else false
+                }
                 .fillMaxWidth(if (compact) 0.98f else 0.94f)
                 .fillMaxHeight(if (compact) 0.96f else 0.94f)
                 .voltSurface(uiRounded(if (compact) 16.dp else 24.dp), base = ShelfTheme.colors.surface)
@@ -388,7 +411,7 @@ fun SettingsDialog(
                                 .padding(16.dp)
                         ) {
                             CATEGORIES.forEach { entry ->
-                                Box(if (entry == category) Modifier.focusRequester(openFocus) else Modifier) {
+                                Box(if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier) {
                                     NavItem(entry, selected = entry == category) { category = entry }
                                 }
                                 Spacer(Modifier.height(4.dp))
@@ -414,7 +437,7 @@ fun SettingsDialog(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 CATEGORIES.forEach { entry ->
-                                    Box(if (entry == category) Modifier.focusRequester(openFocus) else Modifier) {
+                                    Box(if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier) {
                                         // Update 202: the compact chips get the update dot as a "•" after the name.
                                         val dot = entry.label == "Updates & downloads" && com.shelf.launcher.data.AppUpdates.hasNews()
                                         Chip(entry.label + (if (dot) " •" else ""), accent = entry == category) { category = entry }

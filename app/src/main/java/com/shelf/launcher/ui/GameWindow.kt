@@ -1183,22 +1183,38 @@ private fun WindowBody(
             // (Update 119: the game's options, achievements and save sync under them.)
             if (!details) WinIcons(look, extras)
             WinStatusLine(look)
-        } else Column(if (fill) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(if (fill) Modifier.fillMaxWidth() else Modifier, horizontalArrangement = Arrangement.spacedBy(if (fill) 8.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                // [fill]: the buttons share the width (a narrow column).
-                all.forEach { (l, f, isPlay) ->
+        } else BoxWithConstraints(if (fill) Modifier.fillMaxWidth() else Modifier) {
+          // (Update 261, #120: a row wider than the window ran off its right edge — Twin desk / Twin icons' icons, the
+          // Disc station window's Details and Back on the RP Classic. Estimated from the words: when the buttons alone
+          // don't fit they share the width (Performance becomes its round icon); when the icons don't fit beside them
+          // they go to a row under them.)
+          fun est(items: List<Triple<String, () -> Unit, Boolean>>) = items.sumOf { (l, _, _) -> l.length * 9 + 60 } + (items.size - 1) * 12
+          val share = fill || maxWidth.value < est(all)
+          val items = if (share && !fill) winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, null) else all
+          val iconsBelow = !share && !details && maxWidth.value < est(all) + (if (extras.onManual != null) 4 else 3) * 52
+          Column(if (share) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(if (share) Modifier.fillMaxWidth() else Modifier, horizontalArrangement = Arrangement.spacedBy(if (share) 8.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                // [share]: the buttons share the width (a narrow column).
+                items.forEach { (l, f, isPlay) ->
                     WinButton(
                         look, if (look.caps) l.uppercase() else l,
-                        (if (fill) Modifier.weight(1f) else Modifier).then(btnMod(l, isPlay)),
-                        wideButton = false, stretch = fill, onClick = f
+                        (if (share) Modifier.weight(1f) else Modifier).then(btnMod(l, isPlay)),
+                        wideButton = false, stretch = share, onClick = f
                     )
                 }
-                if (!details && fill && perfHere) Box(Modifier.focusRequester(status!!.perfFocus)) {
+                if (!share && !details && !iconsBelow) WinIcons(look, extras, 44.dp)
+            }
+            if (iconsBelow) Box(Modifier.padding(top = 8.dp)) { WinIcons(look, extras, 40.dp) }
+            // (Update 261, #120 Thor: in a narrow window — the Grid's and the Dashboard's — the round icons shared the row
+            // with the three buttons and squeezed their words to "Conti", "Detail"; they get a row of their own under them.)
+            if (share && !details) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (perfHere) Box(Modifier.focusRequester(status!!.perfFocus)) {
                     WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Speed, PERF_LABEL, 38.dp, status.onPerf)
                 }
-                if (!details) WinIcons(look, extras, if (fill) 38.dp else 44.dp)
+                WinIcons(look, extras, 38.dp)
             }
             WinStatusLine(look)
+          }
         }
     }
     @Composable
@@ -1296,17 +1312,28 @@ private fun WindowBody(
         // The picture fills the window; the name and the buttons over its foot.
         Arrange.FULL -> {
             val w = minOf(maxW, maxH * 1.78f)
+            // (Update 261, #120 Thor: on a handheld the picture is ~380 dp tall — the name, facts, story, buttons and status
+            // line ran past it, cut at the top and the buttons cut in half at the bottom. The story only where there's
+            // room, and the column scrolls (the buttons in view) if it still doesn't fit.)
+            val roomy = w / 1.78f > 470.dp
+            // (Update 261, #120 RP Classic: the game's cartridge / disc drawn on the picture's lower right sat over the
+            // last buttons; the buttons stop short of it, sharing their width.)
+            val mediaOnPicture = !LocalWinInspect.current && extras.at(WinPart.MEDIA, WinSlot.PICTURE) && mediaFor(g.platform, gameKey = g.stableKey) != null
             Box(panelMod.width(w).height(w / 1.78f).clip(RoundedCornerShape(look.corner))) {
                 Media(Modifier.fillMaxSize(), showName = false)
                 if (!details) {
                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.25f), Color.Black.copy(alpha = 0.85f)))))
-                    Column(Modifier.align(Alignment.BottomStart).padding(22.dp)) {
-                        WinText(look, name, Color.White, 28, FontWeight.Bold, shadow = true)
+                    val scroll = rememberScrollState()
+                    LaunchedEffect(scroll.maxValue) { if (scroll.maxValue > 0) scroll.scrollTo(scroll.maxValue) }
+                    Column(Modifier.align(Alignment.BottomStart).verticalScroll(scroll).padding(if (roomy) 22.dp else 14.dp)) {
+                        WinText(look, name, Color.White, if (roomy) 28 else 22, FontWeight.Bold, shadow = true)
                         if (sub.isNotBlank()) WinText(look, sub, Color.White.copy(alpha = 0.85f), 14, FontWeight.Normal, shadow = true)
                         Spacer(Modifier.height(6.dp))
-                        Box(Modifier.fillMaxWidth(0.7f)) { WinInfo(look, g, state, extras, descLines = 2, ink = Color.White, muted = Color.White.copy(alpha = 0.8f)) }
+                        // (On a handheld the facts too would push the name off the top: the name, buttons and icons only.)
+                        if (roomy) Box(Modifier.fillMaxWidth(0.7f)) { WinInfo(look, g, state, extras, descLines = 2, ink = Color.White, muted = Color.White.copy(alpha = 0.8f)) }
                         Spacer(Modifier.height(14.dp))
-                        Buttons(vertical = false)
+                        if (!roomy) Box(Modifier.fillMaxWidth(if (mediaOnPicture) 0.6f else 0.82f)) { Buttons(vertical = false, fill = true) }
+                        else Buttons(vertical = false)
                         Box(Modifier.fillMaxWidth(0.7f)) { WinBottomPart(look, g, state, cover, extras, null) }
                     }
                 } else Box(Modifier.align(Alignment.BottomEnd).padding(14.dp)) { Buttons(vertical = false) }

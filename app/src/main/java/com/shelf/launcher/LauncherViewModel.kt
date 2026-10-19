@@ -704,6 +704,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Update 261 (#120 / #95 test walks, TestHooks.kt): shows [a] for this session only — nothing is saved, so a restart
+     * of Voltcap brings back your own settings exactly.
+     */
+    fun previewAppearance(a: AppearanceSettings) {
+        _uiState.update { it.copy(appearance = a) }
+    }
+
     /** Applies [transform] and keeps the focused game selected if it is still in the (re-sorted) list. */
     private fun updateKeepingFocus(transform: (LauncherUiState) -> LauncherUiState) {
         _uiState.update { s ->
@@ -1948,13 +1956,27 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setSearchQuery(query: String) {
+        // 0.6.15 (#120, Thor): closing the search without typing jumped back to the category's first game.
+        if (query == _uiState.value.searchQuery && searchFrom == null) return
         // (Update 258: a search that had to leave its category for All games goes back there once it's cleared.)
         val back = if (query.isBlank()) searchFrom.also { searchFrom = null } else null
+        // 0.6.15 (#120): the game you were on when the search started is the one you're back on when it's cleared
+        // (it went to the category's first game).
+        val before = _uiState.value
+        if (before.searchQuery.isBlank() && query.isNotBlank()) searchStartKey = before.visibleGames.getOrNull(before.focusedIndex)?.stableKey
+        val returnTo = if (query.isBlank()) searchStartKey.also { searchStartKey = null } else null
         _uiState.update { it.copy(searchQuery = query, focusedIndex = 0) }
         if (back != null) {
             if (back.second != null) setSpecialFilter(back.second) else setPlatformFilter(back.first)
         }
+        if (returnTo != null) {
+            val i = _uiState.value.visibleGames.indexOfFirst { it.stableKey == returnTo }
+            if (i > 0) _uiState.update { it.copy(focusedIndex = i) }
+        }
     }
+
+    /** 0.6.15: the game focused when the current search started (refocused when it's cleared). */
+    private var searchStartKey: String? = null
 
     /** Update 258: the category a confirmed search left for All games (platform filter, special filter). */
     private var searchFrom: Pair<String?, SpecialFilter?>? = null

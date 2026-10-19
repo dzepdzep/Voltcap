@@ -836,6 +836,50 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         saveSyncForGame = null
         perfForGame = null
     }
+    // (Update 261: the game a test walk starts from — its console's category, focused on it.)
+    val testGame = TestHooks.game.value
+    LaunchedEffect(testGame) {
+        val q = testGame ?: return@LaunchedEffect
+        val g = state.games.firstOrNull { it.name.contains(q, ignoreCase = true) } ?: run { TestHooks.game.value = null; return@LaunchedEffect }
+        closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
+        viewModel.setSearchQuery("")
+        viewModel.setPlatformFilter(g.platform)
+        kotlinx.coroutines.delay(400)
+        val i = viewModel.uiState.value.visibleGames.indexOfFirst { it.stableKey == g.stableKey }
+        if (i >= 0) viewModel.setFocus(i)
+        TestHooks.game.value = null
+    }
+    // (Update 261: a game look for this session only, for a test walk — nothing saved.)
+    val testLook = TestHooks.look.value
+    LaunchedEffect(testLook) {
+        val name = testLook ?: return@LaunchedEffect
+        com.shelf.launcher.data.CardArtType.values().firstOrNull { it.name == name }?.let { t ->
+            TestHooks.previewOnly = true
+            viewModel.previewAppearance(state.appearance.copy(cardArtType = t))
+        }
+        TestHooks.look.value = null
+    }
+    // (Update 261: a Settings page asked for by a test walk.)
+    val testSettings = TestHooks.settings.value
+    LaunchedEffect(testSettings) {
+        val cat = testSettings ?: return@LaunchedEffect
+        closeAllDialogs(); categoryScreenOpen = false; showDetails = false
+        kotlinx.coroutines.delay(200)
+        menuStartCategory = cat; showMenu = true
+        // (Cleared last: clearing it first restarted this effect and cancelled it in its delay.)
+        TestHooks.settings.value = null
+    }
+    // (Update 261: a layout asked for by a test walk over adb — TestHooks.kt, off without its flag file.)
+    val testLayout = TestHooks.layout.value
+    LaunchedEffect(testLayout) {
+        val name = testLayout ?: return@LaunchedEffect
+        TestHooks.layout.value = null
+        com.shelf.launcher.data.HomeLayout.values().firstOrNull { it.name == name }?.let { l ->
+            closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
+            if (TestHooks.previewOnly) viewModel.previewAppearance(state.appearance.copy(homeLayout = l))
+            else viewModel.setAppearance(state.appearance.copy(homeLayout = l))
+        }
+    }
 
     fun runDetailsAction(action: DetailsAction, game: com.shelf.launcher.data.Game) {
         when (action) {
@@ -3085,10 +3129,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 },
                 // With the games at the top it goes to the bottom (it used to sit on the row), clear of the
                 // status bar and legend there; else under the status bar.
+                // 0.6.15 (#120, RP Classic Spotlight): over a layout's own top row (status bar off) the layout was drawn
+                // over the bar — the typed text ran under its icons. The bar now sits above the layout, solid enough to read.
+                solid = styleLayout && !state.appearance.statusOn,
                 modifier = if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP) Modifier
+                    .zIndex(5.5f)
                     .align(Alignment.BottomCenter)
                     .padding(bottom = (if (state.appearance.statusOn) 44.dp else 12.dp) + (if (state.appearance.legendOn) 30.dp else 0.dp))
                 else Modifier
+                    .zIndex(5.5f)
                     .align(Alignment.TopCenter)
                     .padding(top = if (state.appearance.statusOn) 64.dp else 20.dp)
             )
@@ -6177,8 +6226,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         // Touch back (the back gesture / button with no controller key: Android 13+ doesn't send one) closes
         // what's on top of the home screen, like B. Popups handle their own back.
-        androidx.activity.compose.BackHandler(enabled = !aDialogIsOpen && (showDetails || categoryScreenOpen || (state.searchQuery.isNotBlank() && !HomeEditState.active))) {
+        // (0.6.15, #120: the open search bar too — touch Back only emptied it (RP Classic) or did nothing with it empty
+        // (Thor); the bar stayed up until B.)
+        androidx.activity.compose.BackHandler(enabled = !aDialogIsOpen && (showDetails || categoryScreenOpen || showSearchBar || (state.searchQuery.isNotBlank() && !HomeEditState.active))) {
             when {
+                showSearchBar && !showDetails && !categoryScreenOpen -> {
+                    showSearchBar = false
+                    StyleNav.reset()
+                    viewModel.setSearchQuery("")
+                    runCatching { rootFocusRequester.requestFocus() }
+                }
                 categoryScreenOpen && pbState.editing -> { pbState.saveLayout(); pbState.editing = false }
                 categoryScreenOpen && pbState.grabbed >= 0 -> pbState.grabbed = -1
                 showDetails -> if (DetailsMore.open.value) DetailsMore.open.value = false else showDetails = false

@@ -613,10 +613,10 @@ internal fun PocketHomeStrip(
                         }
                     }
                 }
-        } else com.shelf.launcher.ui.PocketText(s, "No music playing", 90f, top, 108f, 18f, 6.5f, muted, font, androidx.compose.ui.text.style.TextAlign.Start)
-        // The time and the battery.
+        } else com.shelf.launcher.ui.PocketText(s, "No music playing", 90f, top, 100f, 18f, 6.5f, muted, font, androidx.compose.ui.text.style.TextAlign.Start)
+        // The time and the battery. (Update 261, #120 Thor: 42 wide — at 32 the pixel font showed "17:…".)
         val day = com.shelf.launcher.ui.pocketDay(time.longValue, java.util.TimeZone.getDefault())
-        com.shelf.launcher.ui.PocketText(s, "%d:%02d".format(day.hour, day.minute), 202f, top, 32f, 18f, 8f, ink, font, androidx.compose.ui.text.style.TextAlign.End)
+        com.shelf.launcher.ui.PocketText(s, "%d:%02d".format(day.hour, day.minute), 192f, top, 42f, 18f, 8f, ink, font, androidx.compose.ui.text.style.TextAlign.End)
         Canvas(Modifier.at(237f, top + 5.5f, 14f, 7f)) { pocketBattery(uPx, battery.percent, ink) }
     }
 }

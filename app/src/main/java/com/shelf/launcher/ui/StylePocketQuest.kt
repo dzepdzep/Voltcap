@@ -727,6 +727,8 @@ private fun PqPanelButtons(c: StyleCtx, g: Game, pal: PqPalette, compact: Boolea
                 Spacer(Modifier.width(9.dp))
                 Text(
                     if (resumed) "Continue" else "Play Game", color = pal.onAccent, fontSize = if (compact) 14.sp else 19.sp,
+                    // 0.6.15: shrinks to fit when the screenshots column takes room (Thor top screen cut it to "Play Ga…").
+                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = if (compact) 14.sp else 19.sp),
                     fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis
                 )
             }
