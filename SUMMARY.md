@@ -6,7 +6,9 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ## Update — 19 Oct 2026 (264): sort by Metacritic score with your own scores file; Cards smooth going sideways; Game shelf builds a new shelf over a few frames — after release 0.6.15
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Odin 2 Portal**, committed and pushed by Claude. **Not published** (0.6.15 is the latest release, published today with updates 260–263).
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Odin 2 Portal**, committed and pushed by Claude. **Published as Voltcap 0.6.16** (0.6.15 = updates 260–263, also published today). The Odin updated itself from 0.6.15 to 0.6.16 through Voltcap's own updater: it fetched the profile file with the APK and Android compiled Voltcap during the install (`speed-profile, install-dm`).
+
+- **Game shelf, after warming up:** going up and down through shelves already seen, 6.7 % janky frames; the long frame only comes the first time a shelf is shown (its spines drawn for the first time).
 
 **Copy `src_copy`**, changed (8) + new (1): `src_copy\LauncherUiState.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\ui\SortDialog.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\StyleCardBinder.kt`, `src_copy\ui\ShelfHome.kt`, `src_copy\ui\TestHooks.kt`, `src_copy\ui\LauncherScreen.kt`; new `src_copy\data\MetacriticFile.kt`. **Files to delete:** none.
 
