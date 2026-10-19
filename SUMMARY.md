@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (259): fresh-install check on the PC emulator (#68) — one window at a time on first start; an empty shelf says why
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and checked on the PC's Android 16 emulator** (no Google account; Voltcap installed there fresh, its data cleared between the two runs — nothing on the Thor or RP Classic touched), committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (7): `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\PacksUi.kt`, `src_copy\ui\StyleHomes.kt`, `src_copy\ui\StyleCrossMenu.kt`, `src_copy\ui\StyleHeroTiles.kt`, `src_copy\ui\TwinDesk.kt`, `src_copy\ui\TwinIcons.kt`. **Files to delete:** none.
+
+- **#68 first start, checked:** intro → the 8-step setup (other device / permissions / your games / artwork / extra art / game details / achievements / finishing touches) → home. Screens: `Claude outputs\rec\fr_wiz\w*.png`, `rec\fr_home*.png`, `rec\f2_*.png`. Drive sync itself: BLOCKED — needs a Google sign-in, which I can't do.
+- **Two windows at once after the setup:** "Download extra art?" came straight back (though the setup's step 5 asks it) and "Voltcap saves your battery" opened on top of it. Going on past step 5 now counts as "Not now" (changeable in Settings › Game look › Extra art packs), and the battery note waits until no other question is open.
+- **An empty shelf says why.** It said "No games match." with no search and no games at all. Now: "No games yet — add your ROM folder in Settings › Library › ROM folders." / "Nothing in this category yet." / "No games match “…”." — on every layout.
+
+---
+
 ## Update — 19 Oct 2026 (258): Power saving and Eco really reach their caps (#85/#86, measured); search finds games outside the category; the controller back on the games after a search; a game starts once its emulator is picked; category name steps clear of a card
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the RP Classic (and installed on the Thor)** by Claude, committed and pushed by Claude.

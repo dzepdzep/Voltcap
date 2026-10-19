@@ -485,7 +485,7 @@ private fun DeskNameStrip(c: StyleCtx, compact: Boolean, modifier: Modifier) {
         Box(Modifier.width(4.dp).fillMaxHeight(0.62f).clip(RoundedCornerShape(2.dp)).background(accent))
         Spacer(Modifier.width(10.dp))
         if (g == null) {
-            Text("No games match.", color = DeskMuted, fontSize = if (compact) 12.sp else 14.sp, modifier = Modifier.weight(1f))
+            Text(EmptyShelf.text, color = DeskMuted, fontSize = if (compact) 12.sp else 14.sp, modifier = Modifier.weight(1f))
         } else {
             Column(Modifier.weight(1f)) {
                 Text(
@@ -536,7 +536,7 @@ internal fun TwinDeskBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
         Column(Modifier.fillMaxSize().padding(pad), verticalArrangement = Arrangement.spacedBy(gap)) {
             if (n == 0) {
                 Box(Modifier.fillMaxWidth().height(listH), contentAlignment = Alignment.Center) {
-                    Text("No games match.", color = DeskMuted, fontSize = 13.sp)
+                    Text(EmptyShelf.text, color = DeskMuted, fontSize = 13.sp)
                 }
             } else {
                 DeskList(c, keys, tap, loop, at, topRow, rows, panelH, gap, inGames, compact, Modifier.fillMaxWidth().height(listH))

@@ -110,7 +110,7 @@ internal fun StyleCrossMenu(c: StyleCtx, modifier: Modifier) {
             CrossIcons(c, baseX, iconTop, spacing, iconBig, iconSmall, slideNow, labels, k, maxWidth)
             if (c.game == null) {
                 Text(
-                    "No games match.", color = Color.White.copy(alpha = 0.75f), fontSize = 14.sp,
+                    EmptyShelf.text, color = Color.White.copy(alpha = 0.75f), fontSize = 14.sp,
                     modifier = Modifier.offset(x = baseX - iconBig / 2, y = anchor)
                 )
             } else {

@@ -1328,10 +1328,24 @@ internal fun styleArtBehind(layout: HomeLayout): Boolean = when (layout) {
     else -> false
 }
 
-/** "No games match." in a style home. */
+/**
+ * Update 258 (#68, a fresh install on the PC emulator): what an empty shelf says. It said "No games match." with no
+ * search and no games at all — now it says why: the search, an empty library (where to add the ROM folder) or an
+ * empty category. Set by the home screen; every layout shows it.
+ */
+internal object EmptyShelf {
+    var text by androidx.compose.runtime.mutableStateOf("No games match.")
+    fun textFor(query: String, libraryEmpty: Boolean): String = when {
+        query.isNotBlank() -> "No games match “$query”."
+        libraryEmpty -> "No games yet — add your ROM folder in Settings › Library › ROM folders."
+        else -> "Nothing in this category yet."
+    }
+}
+
+/** The empty shelf's line in a style home. */
 @Composable
 internal fun StyleEmpty(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("No games match.", color = Color.White.copy(alpha = 0.75f), fontSize = 14.sp)
+        Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.75f), fontSize = 14.sp)
     }
 }

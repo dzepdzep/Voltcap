@@ -422,6 +422,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     }
 
     val visibleGames = state.visibleGames
+    // (Update 258: what an empty shelf says — StyleHomes.kt EmptyShelf.)
+    val emptyLine = EmptyShelf.textFor(state.searchQuery, state.games.none { it.sourceType != com.shelf.launcher.data.SourceType.APP })
+    SideEffect { if (EmptyShelf.text != emptyLine) EmptyShelf.text = emptyLine }
     val focusedGame = visibleGames.getOrNull(state.focusedIndex)
     // Update 181: only the game you're on moves (Settings › Artwork › Only the game you're on moves; on by default).
     val animFocusOnly = com.shelf.launcher.data.Features.animatedFocusOnly.state.value
@@ -779,7 +782,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             (state.appearance.homeLayout != com.shelf.launcher.data.HomeLayout.CROSS || !trophyCatOn)
         ) viewModel.setPlatformFilter(null)
     }
-    if (!com.shelf.launcher.data.Packs.asked.value && !showFirstRun && !whoAsk && state.games.isNotEmpty()) {
+    val packsAskOpen = !com.shelf.launcher.data.Packs.asked.value && !showFirstRun && !whoAsk && state.games.isNotEmpty()
+    if (packsAskOpen) {
         PacksFirstAsk(onDone = {})
     }
     // "Replay the Volt guide": the first-time setup with Volt again.
@@ -3369,7 +3373,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             )
         } else if (tvLayout) {
             // TV room (TvRoomHome.kt): the game on an old TV, the games beside it, its story under it.
-            if (visibleGames.isEmpty()) Text("No games match.", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.align(Alignment.Center))
+            if (visibleGames.isEmpty()) Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.align(Alignment.Center))
             else TvRoomHome(
                 games = visibleGames, focus = state.focusedIndex, art = displayArt, overrides = state.artOverrides,
                 screenshots = state.screenshots, videoUrls = state.videoUrls, metadata = state.metadata,
@@ -3416,7 +3420,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     Spacer(Modifier.height(4.dp))
                 }
                 if (visibleGames.isEmpty()) {
-                    Text("No games match.", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.padding(24.dp))
+                    Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.padding(24.dp))
                 } else if (com.shelf.launcher.data.HomeLayout.GRID.name in com.shelf.launcher.data.Features.carouselLayouts.state.value) GameCarousel(
                     // Grid › Carousel look: one game big in the middle, the next ones each side behind it, its name under it.
                     games = visibleGames, focus = state.focusedIndex, art = displayArt, overrides = state.artOverrides,
@@ -3504,7 +3508,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 }
                 if (visibleGames.isEmpty()) {
                     Text(
-                        "No games match.",
+                        EmptyShelf.text,
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 14.sp,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)
@@ -3622,7 +3626,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 }
                 if (visibleGames.isEmpty()) {
                     Text(
-                        "No games match.",
+                        EmptyShelf.text,
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 14.sp,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)
@@ -5311,7 +5315,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     var saverIntro by remember { mutableStateOf(runCatching { com.shelf.launcher.data.BatterySaver.introDue(firstRunContext) }.getOrDefault(false)) }
     var saverIntroReady by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(7_000); saverIntroReady = true }
-    if (saverIntro && saverIntroReady && !otherDialogOpen && WhatsNew.shown.value == null && !(showPermissionsPrompt && promptReady)) {
+    // (Update 258, first start on a fresh install: it opened on top of "Download extra art?" — one at a time now.)
+    if (saverIntro && saverIntroReady && !otherDialogOpen && !packsAskOpen && WhatsNew.shown.value == null && !(showPermissionsPrompt && promptReady)) {
         val done = {
             com.shelf.launcher.data.BatterySaver.introSeen(firstRunContext)
             saverIntro = false

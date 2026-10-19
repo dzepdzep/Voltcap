@@ -323,7 +323,7 @@ private fun IconsCard(c: StyleCtx, compact: Boolean, modifier: Modifier) {
         Box(Modifier.size(if (compact) 8.dp else 10.dp).clip(CircleShape).background(accent))
         Spacer(Modifier.width(10.dp))
         if (g == null) {
-            Text("No games match.", color = TrayMuted, fontSize = if (compact) 12.sp else 14.sp)
+            Text(EmptyShelf.text, color = TrayMuted, fontSize = if (compact) 12.sp else 14.sp)
         } else {
             Column(Modifier.weight(1f)) {
                 Text(
@@ -374,7 +374,7 @@ internal fun TwinIconsBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             TrayTools(tools, toolH, Modifier.fillMaxWidth().height(toolH))
             if (n == 0) {
                 Box(Modifier.fillMaxWidth().height(gridH), contentAlignment = Alignment.Center) {
-                    Text("No games match.", color = TrayMuted, fontSize = 13.sp)
+                    Text(EmptyShelf.text, color = TrayMuted, fontSize = 13.sp)
                 }
             } else {
                 TrayGrid(c, keys, tap, loop, v, cols, inGames, Modifier.fillMaxWidth().height(gridH))

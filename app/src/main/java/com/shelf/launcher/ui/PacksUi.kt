@@ -132,6 +132,12 @@ internal fun PacksSetupStep() {
         Packs.asked.value = true
         if (ch != Packs.Choice.NONE) Packs.download(context, ch, Packs.libraryConsoles)
     }
+    // (Update 258: going on past this step without an answer is "Not now", as the step says — the same question came
+    // straight back after the setup, as its own window.)
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose {
+        if (Packs.choice(context) == null) Packs.setChoice(context, Packs.Choice.NONE)
+        Packs.asked.value = true
+    } }
     ShelfCard {
         Text("Download extra art?", color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         MutedNote(

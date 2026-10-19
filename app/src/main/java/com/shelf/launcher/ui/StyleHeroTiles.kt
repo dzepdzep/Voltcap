@@ -138,7 +138,7 @@ internal fun StyleHeroTiles(c: StyleCtx, modifier: Modifier = Modifier) {
             // Plain if / else, never an early return out of an inline composable lambda.
             // Update 158 (review): on the pale backdrop the usual white "No games match." can't be read: dark grey there.
             if (g == null && lightUi) Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("No games match.", color = Color(0xFF2A313B).copy(alpha = 0.75f), fontSize = 14.sp)
+                Text(EmptyShelf.text, color = Color(0xFF2A313B).copy(alpha = 0.75f), fontSize = 14.sp)
             } else if (g == null) StyleEmpty(Modifier.weight(1f).fillMaxWidth())
             else HeroTileRows(c, rows, lightUi, Modifier.weight(1f).fillMaxWidth())
             Spacer(Modifier.height(gap * 0.6f))
