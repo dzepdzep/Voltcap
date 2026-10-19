@@ -4,6 +4,20 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (256): every console started once on the Thor (#102); missing emulators open the picker; the controller stays with Voltcap after a failed start; search bar works with the controller
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Thor** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (3): `src_copy\LauncherViewModel.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\HomeChrome.kt`. **Files to delete:** none.
+
+- **#102 launch test on the Thor:** one game per console from Voltcap's Play button (games without a save of their own, or title screen only; Pokémon Silver's save checked unchanged afterwards). GB, GBC, GBA, N64, GameCube, Wii, 3DS, PS1, PSP boot. NDS, SNES, NES, PS2 and Sega CD had **no emulator set** — set today: melonDS, RetroArch · Snes9x, RetroArch · Nestopia UE, ARMSX2, RetroArch · Genesis Plus GX; all boot except Sega CD (BIOS screen only, question 40). PS3 and Switch not started (question 41). Table: `Claude outputs\evidence\102_launch_matrix_thor_2026-10-19.md`.
+- **No emulator yet → the picker opens.** It said "press Start on the game", and Start's options had the emulator choice eight rows down. Now the emulator picker for that console opens at once (installed suggestions first), and the line says Start › Emulator changes it later.
+- **The controller stays with Voltcap after a game that didn't start.** On the Thor the other screen's own launcher came back when Voltcap's info page closed and took the controller: B and the D-pad did nothing until a touch. Voltcap now brings itself forward on its own screen (as itself, not as a Home press — that opened Choose a category over the picker).
+- **Search bar with the controller.** Its text field kept the controller once focused (B did nothing). Now A / Enter / ▼ confirm the search (results stay, the controller is back on the games), B cancels it, and the keyboard closes with the bar.
+- **B on a search that found nothing** gives the whole category back (the layout's empty bar took B and did nothing).
+
+---
+
 ## Update — 19 Oct 2026 (255): look-alike games keep their tag; case thickness from the real case; SD card thickness; tuner restart fix checked on the RP Classic
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Thor and the RP Classic** by Claude, committed and pushed by Claude.

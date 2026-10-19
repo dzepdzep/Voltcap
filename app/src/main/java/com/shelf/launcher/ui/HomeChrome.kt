@@ -432,11 +432,21 @@ internal fun rememberClockText(enabled: Boolean, hours: ClockHours, showDate: Bo
 }
 
 @Composable
-internal fun SearchBar(query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
+internal fun SearchBar(
+    query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier,
+    /** Update 256: Enter / A / ▼ — the search stays, the bar closes and the controller is back on the games. */
+    onDone: () -> Unit = {},
+    /** Update 256: B / Esc — the bar closes and the whole category comes back. */
+    onCancel: () -> Unit = {}
+) {
     com.shelf.launcher.Breadcrumbs.mark("SearchBar")
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
     TextInputActiveEffect(focusRequester)
+    // (Update 256: the keyboard goes with the bar — it stayed up on the other screen and took the next B.)
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val done: () -> Unit = { keyboard?.hide(); onDone() }
+    val cancel: () -> Unit = { keyboard?.hide(); onCancel() }
 
     Row(
         modifier
@@ -454,9 +464,22 @@ internal fun SearchBar(query: String, onQueryChange: (String) -> Unit, modifier:
             singleLine = true,
             textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
             cursorBrush = SolidColor(Color.White),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { done() }, onDone = { done() }),
             modifier = Modifier
                 .width(220.dp)
                 .focusRequester(focusRequester)
+                // (Update 256: the text field kept the controller once it had the focus — B did nothing and the only way
+                // out was touch; found on the Thor while launching games by search. The controller's own keys now leave it.)
+                .onPreviewKeyEvent { e ->
+                    val k = e.key
+                    val isCancel = k == androidx.compose.ui.input.key.Key.ButtonB || k == androidx.compose.ui.input.key.Key.Escape
+                    val isDone = k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
+                        k == androidx.compose.ui.input.key.Key.NumPadEnter || k == androidx.compose.ui.input.key.Key.DirectionDown
+                    if (!isCancel && !isDone) return@onPreviewKeyEvent false
+                    if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) { if (isCancel) cancel() else done() }
+                    true
+                }
         )
     }
 }

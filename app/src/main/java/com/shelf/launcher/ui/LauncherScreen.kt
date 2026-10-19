@@ -3062,6 +3062,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             SearchBar(
                 query = state.searchQuery,
                 onQueryChange = { viewModel.setSearchQuery(it) },
+                onDone = {
+                    showSearchBar = false
+                    sounds?.play(UiSound.SELECT)
+                    runCatching { rootFocusRequester.requestFocus() }
+                },
+                onCancel = {
+                    showSearchBar = false
+                    viewModel.setSearchQuery("")
+                    sounds?.play(UiSound.BACK)
+                    runCatching { rootFocusRequester.requestFocus() }
+                },
                 // With the games at the top it goes to the bottom (it used to sit on the row), clear of the
                 // status bar and legend there; else under the status bar.
                 modifier = if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP) Modifier
@@ -5090,6 +5101,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         )
     }
 
+    // (Update 256, #102: a game that couldn't start for want of an emulator opens the picker for its console.)
+    val needEmulator by viewModel.needEmulatorFor.collectAsState()
+    LaunchedEffect(needEmulator) {
+        needEmulator?.let { configuringPlatform = it; viewModel.needEmulatorFor.value = null }
+    }
     configuringPlatform?.let { platform ->
         EmulatorPickerDialog(
             platform = platform,
@@ -5657,6 +5673,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 if (reachFree && reachDown && reachKey && heroLayout && tileBarFocus == null && !state.appearance.loopRow) {
                     val edge = if (event.key == Key.DirectionUp) state.focusedIndex <= 0 else state.focusedIndex >= visibleGames.lastIndex
                     if (edge && reach(event.key == Key.DirectionUp)) return@onKeyEvent true
+                }
+                // (Update 256: a search that found nothing — B gives the whole category back. On the style homes the empty
+                // list left the controller in a bar that isn't drawn then, which took B and did nothing.)
+                if (!aDialogIsOpen && !showDetails && state.searchQuery.isNotBlank() && visibleGames.isEmpty() &&
+                    (event.key == Key.ButtonB || event.key == Key.Back)) {
+                    if (event.type == KeyEventType.KeyUp) {
+                        StyleNav.reset()
+                        viewModel.setSearchQuery("")
+                        sounds?.play(UiSound.BACK)
+                    }
+                    return@onKeyEvent true
                 }
                 // The style homes: their menus / bars and their own ◀ ▶ ▲ ▼ (StyleHomes.kt).
                 if (styleLayout && !aDialogIsOpen && !showDetails && quickJump == null && miniFocus == null &&

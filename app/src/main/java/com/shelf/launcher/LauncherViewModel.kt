@@ -5192,7 +5192,24 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             extras = if (game.sourceType == SourceType.ROM) extras else emptyList()
         )
         // The game didn't start: take down whatever went on the other screen for it.
-        if (outcome !is LaunchOutcome.Launched && displayId != null) com.shelf.launcher.ui.CompanionActivity.closeAll()
+        if (outcome !is LaunchOutcome.Launched && displayId != null) {
+            com.shelf.launcher.ui.CompanionActivity.closeAll()
+            // (Update 256, #102: with the info page gone Android starts the other screen's own launcher there, and that
+            // took the controller — B and the D-pad went to the other screen until a touch here. Found on the Thor with a
+            // console that had no emulator yet. Voltcap is brought back to the front on its own screen once it has settled.)
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(700)
+                runCatching {
+                    val app = getApplication<Application>()
+                    // (Voltcap's own activity, singleTask: the running one comes forward, no second copy. Not the home
+                    // intent — that counts as a Home press and opened Choose a category over the emulator picker.)
+                    val i = android.content.Intent(app, com.shelf.launcher.MainActivity::class.java)
+                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    val o = android.app.ActivityOptions.makeBasic().setLaunchDisplayId(android.view.Display.DEFAULT_DISPLAY)
+                    app.startActivity(i, o.toBundle())
+                }
+            }
+        }
         if (outcome !is LaunchOutcome.Launched) {
             com.shelf.launcher.ui.PerfOverlayService.stop(getApplication<Application>())
             com.shelf.launcher.data.perf.PerfSampler.gamePackage = null
@@ -5257,7 +5274,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 skippedExtras.takeIf { it.isNotEmpty() }?.let { "Skipped launch parameters: " + it.joinToString(", ") + "." }
             ).joinToString(" ").ifEmpty { null }
             is LaunchOutcome.NotConfigured ->
-                "No emulator set up for ${game.platform} yet — press Start on the game to configure one."
+                "No emulator set up for ${game.platform} yet — pick one (Start › Emulator changes it later)."
             is LaunchOutcome.EmulatorNotFound ->
                 "${outcome.packageName ?: "The emulator"} didn't accept the launch. Check the emulator set for " +
                     "${game.platform} (Start › Emulator), or try a different game path format there."
@@ -5266,8 +5283,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         // (Update 225: a launch that didn't start is in the log too — for crash / launch reports.)
         if (outcome !is LaunchOutcome.Launched) android.util.Log.w("VoltcapLaunch", "${game.platform} · ${game.name}: $message")
+        // (Update 256, #102: no emulator for the console yet — the emulator picker opens straight away, its installed
+        // suggestions on top. It used to say "press Start on the game", and Start opened the game's options with the
+        // emulator entry eight rows down.)
+        if (outcome is LaunchOutcome.NotConfigured) needEmulatorFor.value = game.platform
         _uiState.update { it.copy(statusMessage = message) }
     }
+
+    /** Update 256: a console whose game couldn't start for want of an emulator; the home screen opens the picker, then clears it. */
+    val needEmulatorFor = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 
     fun connect(apiKey: String) {
         if (apiKey.isBlank()) return
