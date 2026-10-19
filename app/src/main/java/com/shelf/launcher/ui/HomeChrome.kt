@@ -268,7 +268,15 @@ internal fun StatusBar(
                     fontSize = 13.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    style = uiFontStyle().merge(CenteredLine)
+                    // (0.6.17: a dark edge — in the theme's colour over a picture of the same colour it disappeared.)
+                    style = uiFontStyle().merge(CenteredLine).merge(
+                        androidx.compose.ui.text.TextStyle(
+                            shadow = androidx.compose.ui.graphics.Shadow(
+                                Color.Black.copy(alpha = 0.85f), androidx.compose.ui.geometry.Offset(0f, 1f),
+                                2.5f * androidx.compose.ui.platform.LocalDensity.current.density
+                            )
+                        )
+                    )
                 )
                 Spacer(Modifier.width(5.dp))
             }

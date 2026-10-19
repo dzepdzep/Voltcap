@@ -648,7 +648,12 @@ fun GameCard(
                             // (the game you're on) the percentage joins it: "12/120 · 10%".
                             // (Update 211: the percentage only where the card has room for it — on the RP Classic's
                             // small Continue playing tiles "38/75 · 51%" ran off the card's edge.)
-                            if (focused && width >= 132.dp) com.shelf.launcher.data.achievementProgress(earned, possible) else "$earned/$possible",
+                            // (0.6.17: on the smallest tiles — Twin icons, Twin desk's list, Pocket Quest's strip — "107/155"
+                            // was cut to "107/1": there the percentage instead, which always fits.)
+                            if (focused && width >= 132.dp) com.shelf.launcher.data.achievementProgress(earned, possible)
+                            else if ("$earned/$possible".length * 4.6f > (width - if (focused) 52.dp else 40.dp).value)
+                                "${(earned * 100 / possible).coerceIn(0, 100)}%"
+                            else "$earned/$possible",
                             color = Color.White,
                             fontSize = if (focused) 11.sp else 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (focused) 11.sp else 9.sp), maxFontSize = if (focused) 11.sp else 9.sp),
                             fontWeight = FontWeight.Bold,

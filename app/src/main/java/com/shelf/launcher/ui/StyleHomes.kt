@@ -1000,6 +1000,7 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
     // (the word was cut to "MASTE" on the Dashboard's covers).
     androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
     val compact = maxWidth < 112.dp
+    val chipW = maxWidth
     Row(
         Modifier.padding(5.dp).clip(RoundedCornerShape(50))
             .background(Color.Black.copy(alpha = 0.62f)).padding(horizontal = 7.dp, vertical = 3.dp),
@@ -1019,7 +1020,11 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
                 // Update 151: a small upright tick between the bar and "0/69", so they read as two parts.
                 ProgressTick()
             }
-            Text(if (compact) "$earned/$total" else "$earned/$total · $pct%", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+            // (0.6.17: on the smallest pictures — Twin icons, Pocket Quest's strip — "107/155" was cut to "107/1": the
+            // share alone there, which always fits.)
+            val count = "$earned/$total"
+            val tiny = count.length * 6f > (chipW - 24.dp).value
+            Text(if (tiny) "$pct%" else if (compact) count else "$count · $pct%", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
         }
     }
     }

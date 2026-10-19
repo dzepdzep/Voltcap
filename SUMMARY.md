@@ -4,9 +4,25 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (266): big visual check of all 32 layouts and every Settings page on the Odin 2 Portal — names and points readable over bright pictures, Icon bar's category name clear of the big cover, the Drive notice clear of TV channels' clock, achievement counts on the smallest tiles — after release 0.6.17
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal**, committed and pushed by Claude. Not published yet (0.6.17 is the current release; the in-app update 0.6.16 → 0.6.17 was checked on the Odin: installed with its profile, `speed-profile [reason=install-dm]`).
+
+**What was checked:** every home layout (32), each before and after a few D-pad moves, and all 20 Settings pages, screenshot by screenshot (`screens\vc_walk*.tar`). No crashes in the log.
+
+**Fixed:**
+- Game names over pictures (all layouts' "dark edge"): the edge round the letters is ~2.5 dp now on every screen (it was 4 px — a hair on sharp screens; Tile home's orange name over a yellow picture couldn't be read).
+- RetroAchievements points in the status bar: a dark edge too (theme colour over a picture of the same colour disappeared).
+- Icon bar: the category name sat over the bottom of the bigger cover of the game you're on — a little lower now.
+- TV channels / Hero tiles: the Drive notice ("RetroArch saves: comparing…") reached over the clock — it now stays in the gap between the category name and the clock.
+- Achievement count on the smallest tiles (Twin icons, Twin desk's list, Pocket Quest's strip): "107/155" was cut to "107/1"; there the share ("69%") now.
+- Diagnostics: "1 thing needs a look" (was "1 thing(s) need a look").
+
+Files (`src_copy\`): `ui\GameCard.kt`, `ui\GameDock.kt`, `ui\HomeChrome.kt`, `ui\HomeParts.kt`, `ui\LauncherScreen.kt`, `ui\StyleHomes.kt`, `ui\DiagnosticsContent.kt`.
+
 ## Update — 19 Oct 2026 (265): Metacritic scores filled in from RAWG on their own (no file needed); Settings tidied — duplicates gone, music switches under Audio, crash reports and Restart under Diagnostics — after release 0.6.16
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal and the Flip 2**, committed and pushed by Claude. To be published as Voltcap 0.6.17.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal and the Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.17.**
 
 **Metacritic sort without a file.** A bundled Metacritic file was left out on purpose (the scores are licensed, the data set has no licence). Instead: when a category is sorted by Metacritic or Critic score and a free RAWG key is connected (Settings › Accounts), Voltcap looks up the missing scores on RAWG by itself, one game every ~1 s in the background, and doesn't ask again for 30 days for a game RAWG doesn't know. The Sort window shows the progress ("Looking up missing scores on RAWG: 7 / 62…") or how to connect RAWG. Loading your own scores file still works as before.
 

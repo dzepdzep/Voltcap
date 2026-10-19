@@ -44,7 +44,7 @@ internal fun DiagnosticsContent(games: List<Game>, emulatorPlatforms: Set<String
     if (c == null) { ShelfCard { MutedNote("Checking…") }; return }
     ShelfCard {
         val bad = c.count { it.ok == false }
-        Text(if (bad == 0) "Everything checked out." else "$bad thing(s) need a look.", color = if (bad == 0) ShelfTheme.accent else ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Text(if (bad == 0) "Everything checked out." else if (bad == 1) "1 thing needs a look." else "$bad things need a look.", color = if (bad == 0) ShelfTheme.accent else ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         ChipFlow {
             Chip("Check again", accent = false) { run++ }

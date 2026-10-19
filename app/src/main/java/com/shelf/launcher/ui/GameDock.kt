@@ -845,7 +845,9 @@ private fun nameTextStyleOwn(backdrop: com.shelf.launcher.data.NameBackdrop): an
             shadow = androidx.compose.ui.graphics.Shadow(
                 color = androidx.compose.ui.graphics.Color.Black,
                 offset = androidx.compose.ui.geometry.Offset(0f, 1f),
-                blurRadius = 4f
+                // (0.6.17: 4 px was a hair on today's sharp screens — an orange name over a yellow picture in Tile
+                // home couldn't be read. About 2.5 dp now, the same on every screen.)
+                blurRadius = 2.5f * androidx.compose.ui.platform.LocalDensity.current.density
             )
         ) else androidx.compose.ui.text.TextStyle(
             shadow = androidx.compose.ui.graphics.Shadow(

@@ -4147,7 +4147,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (!state.appearance.statusOn) SyncCornerNotice(
             notice = uiState.syncNotice,
             kind = uiState.syncNoticeKind,
-            modifier = if (noticeTopMiddle) Modifier.align(Alignment.TopCenter).padding(top = 8.dp) else Modifier
+            // (0.6.17: in the gap between the category name on the left and the clock & round buttons on the right —
+            // centred on the screen it reached over TV channels' clock; it's narrower there when the gap is small.)
+            modifier = if (noticeTopMiddle) Modifier.align(Alignment.TopCenter).padding(top = 8.dp, start = 200.dp, end = 280.dp) else Modifier
                 .align(
                     if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP) Alignment.BottomEnd
                     else Alignment.TopEnd

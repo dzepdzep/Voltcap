@@ -128,7 +128,8 @@ internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (la
     // Update 220 (#94, the RP Classic video): Icon bar with its shortcut tabs — the name sat in the top-left corner over
     // "All apps · Search · …" under the status bar. Left, between the row of tiles and the game's title.
     // (Update 235, #08: with the games at the bottom the free band is high up, under the tabs, above the title.)
-    HomeLayout.BAR -> 0f to (if (com.shelf.launcher.data.Features.barGamesAt.state.value == com.shelf.launcher.data.Features.SpotSide.BOTTOM) 0.18f else 0.42f)
+    // (0.6.17, Odin 2 Portal: at 0.42 the game you're on — drawn bigger — reached down over the name; a little lower.)
+    HomeLayout.BAR -> 0f to (if (com.shelf.launcher.data.Features.barGamesAt.state.value == com.shelf.launcher.data.Features.SpotSide.BOTTOM) 0.18f else 0.5f)
     // Update 247 (#94, RP Classic): Green Core — its own "GREEN CORE" title and line of counts fill the top-left corner;
     // under them, above the globe.
     HomeLayout.GREENCORE -> 0f to 0.19f
