@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import kotlinx.coroutines.flow.flowOn
 import com.shelf.launcher.data.statusOn
 import com.shelf.launcher.data.legendOn
 import com.shelf.launcher.data.shownIn
@@ -100,6 +101,12 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
     val appearance by remember(viewModel) {
         viewModel.uiState.map { it.appearance }.distinctUntilChanged()
     }.collectAsState(viewModel.uiState.value.appearance)
+    // (Update 255, #74: look-alike names, worked out off the main thread whenever the library or the name setting changes.)
+    val lookAlike by remember(viewModel) {
+        viewModel.uiState.map { it.games to it.appearance.hideAllBrackets }.distinctUntilChanged()
+            .map { (games, all) -> lookAlikeNames(games, all) }
+            .flowOn(kotlinx.coroutines.Dispatchers.Default)
+    }.collectAsState(emptyMap())
     val rootTheme by remember(viewModel) {
         viewModel.uiState.map { it.appTheme }.distinctUntilChanged()
     }.collectAsState(viewModel.uiState.value.appTheme)
@@ -205,7 +212,8 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
             appearance.logoPlacement,
             appearance.fullConsoleNames,
             hideAllBrackets = appearance.hideAllBrackets,
-            shimmerStyle = appearance.shimmerStyle
+            shimmerStyle = appearance.shimmerStyle,
+            lookAlike = lookAlike
         ),
         // (Update 141: whatever Endless and "Game you're on" say — see pinnedFirstOn.)
         LocalPinnedFirstWide provides pinnedFirstOn(appearance),

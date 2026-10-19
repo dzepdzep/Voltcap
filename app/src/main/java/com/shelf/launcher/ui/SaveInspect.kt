@@ -578,7 +578,7 @@ private fun InspectStage(
                     translationX = pose.panX.floatValue
                     translationY = pose.panY.floatValue
                 }
-                .inspectSolid(pose, obj.depth, frac, aspect, tone, clear),
+                .inspectSolid(pose, if (card != null) saveCardDepth(card) else obj.depth, frac, aspect, tone, clear),
             contentAlignment = Alignment.Center
         ) {
             InspectFace(obj, back, game, icon, state, look)

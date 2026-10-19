@@ -21,7 +21,9 @@ data class TitleOptions(
     /** Everything in brackets goes, not just regions and patch tags. */
     val hideAllBrackets: Boolean = false,
     /** Colour of the light sweeping over mastered games. */
-    val shimmerStyle: com.shelf.launcher.data.ShimmerStyle = com.shelf.launcher.data.ShimmerStyle.GOLD
+    val shimmerStyle: com.shelf.launcher.data.ShimmerStyle = com.shelf.launcher.data.ShimmerStyle.GOLD,
+    /** Update 255: names that would look the same as another game's of the same console, with what tells them apart. */
+    val lookAlike: Map<String, String> = emptyMap()
 ) {
     fun console(platform: String): String = when {
         // Collections, franchises and play statuses (category label).
@@ -31,6 +33,9 @@ data class TitleOptions(
     }
 
     fun display(name: String): String = when {
+        // (Update 255, #74 / #101: two games of one console that would show the same name keep the tag that tells them
+        // apart — "Pokemon Silver Version (GB Compatible) [patched]" next to the plain one.)
+        (hideAllBrackets || hideRegions) && lookAlike.containsKey(name) -> lookAlike.getValue(name)
         hideAllBrackets -> stripAllBrackets(name)
         hideRegions -> stripRegionTags(name)
         else -> name
@@ -192,3 +197,30 @@ object TitleStrip {
 /** A game's name as shown: without region tags, or without anything in brackets when that's switched on. */
 fun gameDisplayName(name: String): String =
     if (TitleStrip.allBrackets.value) stripAllBrackets(name) else stripRegionTags(name)
+
+/**
+ * Update 255 (#74 / #101): for games whose shown names would be the same as another ROM's of the same console, the shown
+ * name plus the bracketed parts only that file has ("[patched]", "(Europe)", "(Rev 1)"). The RP Classic had two Pokémon
+ * Silver games both shown as "Pokemon Silver Version (GB Compatible)" — the real one and a patched copy with an empty save
+ * — side by side in Continue playing. Games without a look-alike aren't in the map (they show as before).
+ */
+fun lookAlikeNames(games: List<com.shelf.launcher.data.Game>, hideAll: Boolean): Map<String, String> {
+    fun shown(n: String) = if (hideAll) stripAllBrackets(n) else stripRegionTags(n)
+    val out = HashMap<String, String>()
+    games.asSequence()
+        .filter { it.sourceType == com.shelf.launcher.data.SourceType.ROM }
+        .groupBy { it.platform.lowercase() + "|" + shown(it.name).lowercase() }
+        .values.forEach { group ->
+            val names = group.map { it.name }.distinct()
+            if (names.size < 2) return@forEach
+            val tags = names.associateWith { n -> TAG.findAll(n).map { it.value.trim() }.toList() }
+            val common = tags.values.map { it.toSet() }.reduce { a, b -> a intersect b }
+            for (n in names) {
+                val base = shown(n)
+                val extra = tags.getValue(n).filter { it !in common && !base.contains(it) }
+                if (extra.isNotEmpty()) out[n] = base + " " + extra.joinToString(" ")
+            }
+        }
+    return out
+}
+

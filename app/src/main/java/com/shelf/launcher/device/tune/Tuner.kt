@@ -726,6 +726,11 @@ object Tuner {
                     vendorSaved = paths.indices.mapNotNull { i ->
                         now.getOrNull(i)?.takeIf { v -> v.matches(Regex("[0-9: ]+")) || v.matches(Regex("-?[0-9]+")) }?.let { paths[i] to it }
                     }.toMap()
+                    // (Update 255: kept with the stock clocks, for a Voltcap that restarts while its limits are on.)
+                    appCtx?.let { c -> runCatching {
+                        c.getSharedPreferences(STOCK_PREFS, Context.MODE_PRIVATE).edit()
+                            .putString("vendor", org.json.JSONObject().also { o -> vendorSaved?.forEach { (k, v) -> o.put(k, v) } }.toString()).apply()
+                    } }
                 }
                 o.msmMin?.let { writes += it to msmList(t.min) }
                 o.msmMax?.let { writes += it to msmList(t.max) }
@@ -790,7 +795,16 @@ object Tuner {
                 prefs.getString("stock", null)?.let { stockFromJson(it) }
             else null
         }.getOrNull()
-        if (kept != null && kept.max.isNotEmpty()) { stock = kept; dirtyWritten = true; return }
+        if (kept != null && kept.max.isNotEmpty()) {
+            stock = kept
+            dirtyWritten = true
+            // (The vendor values under Voltcap's limits too — msm_performance's caps, the boosts: read now they'd be
+            // Voltcap's own Balanced caps, and Stock put those back. Seen on the RP Classic in testing.)
+            vendorSaved = runCatching {
+                prefs.getString("vendor", null)?.let { t -> org.json.JSONObject(t).let { o -> o.keys().asSequence().associateWith { o.getString(it) } } }
+            }.getOrNull()
+            return
+        }
         readStock()
         runCatching {
             prefs.edit().putLong("boot", bootStamp()).putString("stock", stockToJson(stock!!)).putBoolean("dirty", false).apply()

@@ -115,11 +115,13 @@ internal fun Case3D(
         // (Update 239, #88: a PlayStation jewel case is as thick as its real case — CaseCatalog: 10.4 mm, PAL 17.4 mm, the
         // multi-disc case 25 mm — whatever shape its spine scan is; the scan is drawn onto that side. A trimmed or
         // single-case spine scan made a multi-disc case as slim as a single one.)
-        val physical = spec?.takeIf { it.platform == "PS1" && it.shell == CaseShell.JEWEL }?.depth
-        val own = ownUpright?.let { it.width.toFloat() / it.height.coerceAtLeast(1) }
+        // (Update 255, #89 finding 3 / Req 90.12, approved: every case takes its thickness from its spec (CaseCatalog: the
+        // console, the region, the multi-disc case) whenever the spec is measured or estimated — not only a PlayStation
+        // jewel. Two games of one console were different thicknesses when their spine scans were cut differently. The scan
+        // is fitted onto that side (spineFit below); its own shape decides only where no spec is known.)
         val known = spec?.takeIf { it.check != CaseCheck.PLACEHOLDER }?.depth
-        val scanned = own?.takeIf { known == null || kotlin.math.abs(it / known - 1f) <= 0.25f }
-        (physical ?: scanned ?: spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.26f)
+        val own = ownUpright?.let { it.width.toFloat() / it.height.coerceAtLeast(1) }
+        (known ?: own ?: spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.26f)
     }
     // (Update 240, #26: no spine picture of the game's own: the console's colour with the name down it and the console's
     // logo at its foot, made at the side's own shape — the plain dark strip was the same for every console and, made for a

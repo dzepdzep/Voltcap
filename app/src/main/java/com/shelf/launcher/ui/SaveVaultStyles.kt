@@ -178,7 +178,7 @@ internal fun SwayingModel(
     val spec = remember(meta, backBmp, tone) {
         val b = backBmp?.asImageBitmap()
         // (Update 209: a translucent card stays see-through — SolidSpec.clear.)
-        SolidSpec(meta?.aspect, SAVE_CARD_DEPTH, tone, back = b?.let { img -> { img } }, clear = if (meta?.tint?.clear == true) 0.55f else null)
+        SolidSpec(meta?.aspect, saveCardDepth(card), tone, back = b?.let { img -> { img } }, clear = if (meta?.tint?.clear == true) 0.55f else null)
     }
     ProvidePieceTurn(PieceTurn({ ((latest() % 360f) + 360f) % 360f }, 14f)) {
         Box(modifier.solidPiece(spec, withCartSpin = false)) {
@@ -189,6 +189,12 @@ internal fun SwayingModel(
 
 /** Update 207: a Save Vault 3D card's thickness against its longest side (a memory card is about 6 mm on 55). */
 internal const val SAVE_CARD_DEPTH = 0.1f
+
+/**
+ * (Update 255, #89 finding 12, approved: the card's own thickness — an SD card is 2.1 mm on its 32 mm, 0.066, as the
+ * inspector's drawn SD card already was; every 3D card was a memory card's 0.1, so the SD card turned half again too thick.)
+ */
+internal fun saveCardDepth(card: String): Float = if (card.startsWith("sd_card")) 0.066f else SAVE_CARD_DEPTH
 
 /** (Update 241, #44: the 3D cards' backs made so far — key: card, colours, engraved.) */
 private val cardBacks = object : android.util.LruCache<String, android.graphics.Bitmap>(12 * 1024 * 1024) {

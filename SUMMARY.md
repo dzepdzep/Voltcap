@@ -4,6 +4,21 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (255): look-alike games keep their tag; case thickness from the real case; SD card thickness; tuner restart fix checked on the RP Classic
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Thor and the RP Classic** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (6): `src_copy\ui\GameTitles.kt`, `LauncherScreen.kt`, `Case3D.kt`, `SaveVaultStyles.kt`, `SaveInspect.kt` (in `src_copy\ui\`), `src_copy\device\tune\Tuner.kt`. **`project_copy`**, new (1): `project_copy\app\src\test\java\com\shelf\launcher\ui\LookAlikeNamesTest.kt` (6 tests, all passing with the rest). **Files to delete:** none.
+
+- **Look-alike names (#74 / #101, question 36a):** when two games of one console would show the same name, each keeps the bracketed part only it has. On the RP Classic the patched Silver now reads **"Pokemon Silver Version (GB Compatible) [patched]"** next to the plain one (checked). Every other name is unchanged. Worked out off the main thread when the library changes.
+- **Case thickness (#89 finding 3, question 35a):** every 3D case takes its thickness from the real case for its console and region, whenever that size is measured or estimated (not only PS1 jewel cases). The spine scan is fitted onto that side. Checked on the Thor: N64 Case stacks spines all one width.
+- **Save Vault SD card (#89 finding 12, question 35b):** turns at an SD card's real thickness (0.066 of its length, about a third thinner).
+- **Tuner restart fix, finished and checked (#96 / #104):** the RP Classic was restarted (question 38). Real stock is 1.96 / 2.40 GHz, GPU 1010 MHz. Test: Balanced on → Voltcap force-stopped → started again → Max and Stock now give the full speeds back (before: stuck at the Balanced caps). It also keeps the vendor values that sat under Voltcap's limits. RP Classic left on **Stock**.
+- **GBC on the RP Classic (#96):** Mr. Driller (no save battery; no file made), Stock vs Balanced after the restart: both 60.0 fps, **100 % of frames at 16.7 ms**, none late; at Balanced the cores ran at about half the clock. No GBC stutter at either tier.
+- **Azahar frame pacing (question 31, your setting tried and put back):** Azahar's config was backed up, `use_vsync = true` tried — no change (46 % even frames vs 42 % before). Then the Thor's screen at 60 Hz (R1 › Screen tile): **93 % of frames on an even 16.7 ms** (was 42 %), at 55.7 fps average. The judder is the 120 Hz screen. Azahar's config is back byte for byte (md5 checked), the Thor back at 120 Hz.
+
+---
+
 ## Update — 19 Oct 2026 (254): the tuner's "stock" clocks survive a Voltcap restart (#96 / #104); RP Classic GBC frame check; Pokémon Silver copies compared (#101)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic** by Claude, committed and pushed by Claude.
