@@ -519,14 +519,18 @@ internal fun GameDock(
                 )
                 }
             }
-            for (slot in slots) {
+            // (Update 237, #30: None draws no cards; Only the game you're on draws just that one.)
+            // (Update 246, #60: the slots picked before the loop — a `continue` in it made Compose give each pass its own
+            // group, so a step that moved every card one slot along threw them all away and built them again.)
+            val drawn = slots.filter { slot ->
+                val rel = slot - (if (loop) virtualFocus else focus)
+                !(fixedSlot && rel <= 0) && !(noCards || (onlyFocused && rel != 0))
+            }
+            for (slot in drawn) {
                 // In a looping row [slot] runs past the ends and wraps around.
                 val index = if (loop) slot.mod(games.size) else slot
                 val game = games[index]
                 val rel = slot - (if (loop) virtualFocus else focus)
-                if (fixedSlot && rel <= 0) continue
-                // (Update 237, #30: None draws no cards; Only the game you're on draws just that one.)
-                if (noCards || (onlyFocused && rel != 0)) continue
                 key(if (loop) "loop:$slot" else game.stableKey) {
                     // (Update 237, #30: alone in the row, the game you're on stays in its place and fades in as you move,
                     // instead of sliding in across an empty row.)

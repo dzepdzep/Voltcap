@@ -482,8 +482,9 @@ internal fun TileHomeRow(
                     com.shelf.launcher.data.TileFocus.CENTER -> (n - 1) / 2
                     com.shelf.launcher.data.TileFocus.EDGES -> vFocus - window[0]
                 }
-                for (i in from..to) {
-                    if (looping && !drawnOnce(i - vFocus, n, loopBefore)) continue
+                // (Update 246, #60: the places picked before the loop — a `continue` in it made Compose give each pass its
+                // own group, so a step that moved every game one place along threw them all away and built them again.)
+                for (i in (from..to).filter { i -> !(looping && !drawnOnce(i - vFocus, n, loopBefore)) }) {
                     val game = games[if (looping) i.mod(n) else i]
                     key(game.stableKey, if (looping) i.floorDiv(n) else 0) {
                         // Update 203: a cartridge turns as a solid piece (its thickness showing) — the tile hands it the

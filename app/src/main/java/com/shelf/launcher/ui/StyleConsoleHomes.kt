@@ -627,9 +627,12 @@ internal fun ContinuousGrid(
         // on round; each keeps its own key so nothing already on screen is drawn anew.)
         val from = (kotlin.math.floor(scroll.value).toInt() - 1).let { if (looping) it else it.coerceAtLeast(0) }
         val to = (from + viewCols + 2).let { if (looping) it else it.coerceAtMost(shownCols - 1) }
-        for (col in from..to) for (r in 0 until rows) {
+        // (Update 246, #60: the cells picked before the loop — a `continue` in it made Compose give each pass its own
+        // group, so a scroll by a column threw every cell away and built it again.)
+        val cells = (from..to).flatMap { col -> (0 until rows).map { r -> col to r } }
+            .filter { (col, r) -> (if (looping) col.mod(totalCols) else col) * rows + r < count || fill }
+        for ((col, r) in cells) {
             val i = (if (looping) col.mod(totalCols) else col) * rows + r
-            if (i >= count && !fill) continue
             androidx.compose.runtime.key(col * rows + r) {
                 cell(
                     i,

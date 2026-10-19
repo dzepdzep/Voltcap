@@ -558,21 +558,21 @@ private fun DeskList(
     val first by remember(scroll) { derivedStateOf { kotlin.math.floor(scroll.value).toInt() } }
     val pitchPx = with(LocalDensity.current) { (panelH + gap).toPx() }
     Box(modifier.clipToBounds().deskSwipe(c, loop, pitchPx).padding(4.dp)) {
-        for (i in first..first + rows + 1) {
-            // (Update 218, #105: going round a short list, each game once — no copies of the same game further down the list.)
-            if (loop && !drawnOnce(i - first, n, before = 0)) continue
-            if (loop || i in 0 until n) {
-                val real = if (loop) i.mod(n) else i
-                key(if (loop) "${keys[real]}#${Math.floorDiv(i, n)}" else keys[real]) {
-                    DeskPanel(
-                        c, real, on = i == at, inGames = inGames, compact = compact,
-                        modifier = Modifier.fillMaxWidth().height(panelH).offset { IntOffset(0, ((i - scroll.value) * pitchPx).roundToInt()) }
-                    ) {
-                        if (i == at) c.actions.open()
-                        else {
-                            if (loop) tap.virtual = i
-                            c.actions.select(real)
-                        }
+        // (Update 218, #105: going round a short list, each game once — no copies of the same game further down the list.)
+        // (Update 246, #60: the places picked before the loop — a `continue` or an `if` round the panel gave each pass its
+        // own group, so scrolling a step threw every panel away and built it again.)
+        val places = (first..first + rows + 1).filter { i -> !(loop && !drawnOnce(i - first, n, before = 0)) && (loop || i in 0 until n) }
+        for (i in places) {
+            val real = if (loop) i.mod(n) else i
+            key(if (loop) "${keys[real]}#${Math.floorDiv(i, n)}" else keys[real]) {
+                DeskPanel(
+                    c, real, on = i == at, inGames = inGames, compact = compact,
+                    modifier = Modifier.fillMaxWidth().height(panelH).offset { IntOffset(0, ((i - scroll.value) * pitchPx).roundToInt()) }
+                ) {
+                    if (i == at) c.actions.open()
+                    else {
+                        if (loop) tap.virtual = i
+                        c.actions.select(real)
                     }
                 }
             }

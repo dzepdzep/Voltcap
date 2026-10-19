@@ -205,6 +205,10 @@ internal fun StacksPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modif
     val small = if (compact) 30.dp else 36.dp
     Box(
         modifier
+            // (Update 246, #60: drawn once into its own layer and reused while it stays the same. Its arched clip and lit
+            // edge are paths the GPU can't draw directly — each was made again as a 1862 × 287 and a 1862 × 61 mask and
+            // uploaded in every frame the carousel above it moved.)
+            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
             .clip(shape)
             .background(Brush.verticalGradient(listOf(ink.panel, lerp(ink.panel, ink.accent, 0.08f))))
             .drawArchEdge(ink.panelEdge),

@@ -703,9 +703,10 @@ private fun ArcadeRow(c: StyleCtx, ink: ArcadeInk, miniW: Dp, miniH: Dp, modifie
                 topLeft = Offset(0f, y), size = Size(size.width, size.height - y)
             )
         }
-        for (i in first..last) {
+        // (Update 246, #60: the places picked before the loop — a `continue` in it made Compose give each pass its
+        // own group, so a step that moved every game one place along threw them all away and built them again.)
+        for (i in (first..last).filter { i -> !(loop && !drawnOnce(i - whole, count, minOf(before, (count - 1) / 2))) }) {
             // (Update 218, #105: going round a short list, each game once — no copies of the same game at the sides.)
-            if (loop && !drawnOnce(i - whole, count, minOf(before, (count - 1) / 2))) continue
             val real = if (loop) i.mod(count) else i
             val g = c.games[real]
             val on = i == vf

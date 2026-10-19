@@ -189,13 +189,13 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, m
             // Update 159: Carousel (R1 › Carousel, hold for its views — Arch and Box flow among them) works here too: the
             // games as the carousel in the stage, in any game look; else the stacks of spines.
             val stage = Modifier.fillMaxWidth().height(stageH)
-            if (HomeLayout.STACKS.name in Features.carouselLayouts.state.value) GameCarousel(
+            if (HomeLayout.STACKS.name in Features.carouselLayouts.state.value) vcTrace("VC:GameCarousel") { GameCarousel(
                 games = c.games, focus = c.focus, art = c.art, overrides = c.state.artOverrides,
                 onSelect = c.actions.select, onOpen = c.actions.open, cardArtType = c.type,
                 physicalMedia = c.state.physicalMedia, screenshots = c.state.screenshots, onNeedPhysical = c.actions.needPhysical,
                 loop = loopRowOn(c), loopTick = c.state.loopTick, loopStep = c.state.loopStep,
                 modifier = stage
-            ) else StacksStage(c, stage)
+            ) } else vcTrace("VC:StacksStage") { StacksStage(c, stage) }
             if (barOn) Box(
                 Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Bottom panel")
             ) { StacksPanel(c, g, compact, Modifier.fillMaxSize()) }
@@ -407,9 +407,10 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
             val first = if (loop) lo - geo.nSide - 1 else (lo - geo.nSide - 1).coerceAtLeast(0)
             val last = if (loop) lo + geo.nSide + 2 else (lo + geo.nSide + 2).coerceAtMost(count - 1)
             val inGames = StyleNav.zone == StyleNav.Zone.GAMES
-            for (i in first..last) {
+            // (Update 246, #60: the places picked before the loop — a `continue` in it made Compose give each pass its
+            // own group, so a step that moved every game one place along threw them all away and built them again.)
+            for (i in (first..last).filter { i -> !(loop && !drawnOnce(i - lo, count)) }) {
                 // (Update 218, #105: going round a short list, each game once — no copies of the same game at the sides.)
-                if (loop && !drawnOnce(i - lo, count)) continue
                 val real = if (loop) i.mod(count) else i
                 key(if (loop) "${keys[real]}#${Math.floorDiv(i, count)}" else keys[i]) {
                     // The front only for the game(s) in the middle: the one there, and the one coming in while it glides.

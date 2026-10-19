@@ -1061,21 +1061,33 @@ internal fun GameCarousel(
             val lo = lBase - lReach - 1 - (if (showOld && ((!old && dirS > 0) || (old && dirS < 0))) shiftN else 0)
             val hi = lBase + lReach + 2 + (if (showOld && ((!old && dirS < 0) || (old && dirS > 0))) shiftN else 0)
             val focusIdx = if (old) kotlin.math.round(oldPos).toInt() else vFocus
-            for (i in lo..hi) {
+            // (Update 246, #60: the places worked out first, then one keyed group each with no `continue` between them. A
+            // `continue` in the loop made the Compose compiler put every pass of it in a group of its own, so the games'
+            // keys were looked up only within their pass: when a step moved them all one place along, every game in the
+            // carousel was thrown away and built again — about a hundred 3D cases per step in a big category.)
+            val places = (lo..hi).filter { i ->
                 // (Update 135: on an endless row item i is a place on the endless row; its game is i mod the count.)
                 // (Update 174: each game once when the row is shorter than the view.)
-                if (lLoop && !drawnOnce(i - focusIdx, ln)) continue
+                !(lLoop && !drawnOnce(i - focusIdx, ln)) && list.getOrNull(if (lLoop) i.mod(ln) else i) != null
+            }
+            for (i in places) {
                 val real = if (lLoop) i.mod(ln) else i
-                val g = list.getOrNull(real) ?: continue
-                val relOf: () -> Float = if (old) ({ i - oldPos - dirS * shiftK * kNow() })
-                    else if (showOld) ({ i - curPos() + dirS * shiftK * (1f - kNow()) })
-                    else ({ i - curPos() })
-                val fadeOf: () -> Float = if (old) ({ 1f - kNow() }) else if (showOld) kNow else CarouselSwap.FULL
+                val g = list[real]
                 androidx.compose.runtime.key(old, if (lLoop) i else g.stableKey) {
-                    CarouselItem(
+                    // (Update 246, #60: made inside the game's own group and kept while its place and the slide are the
+                    // same. Made before it at the loop's position, every step shifted each position's place by one, so
+                    // every game in the carousel got new ones and rebuilt — about a hundred 3D cases per step in a big
+                    // category, 200–300 ms frames.)
+                    val relOf: () -> Float = remember(i, old, showOld, oldPos, dirS, shiftK) {
+                        if (old) ({ i - oldPos - dirS * shiftK * kNow() })
+                        else if (showOld) ({ i - curPos() + dirS * shiftK * (1f - kNow()) })
+                        else ({ i - curPos() })
+                    }
+                    val fadeOf: () -> Float = if (old) remember { { 1f - kNow() } } else if (showOld) kNow else CarouselSwap.FULL
+                    vcTrace("VC:CarouselItem") { CarouselItem(
                         ctx, g, real, i, atFocus = i == focusIdx, on = !old && i == vFocus, interactive = !old,
                         relOf = relOf, fadeOf = fadeOf, onTap = tap, modifier = Modifier.align(Alignment.Center)
-                    )
+                    ) }
                 }
             }
         }
@@ -1406,13 +1418,13 @@ private fun CarouselItem(
             if (c.cases3d && withMedia != null) CaseWithMedia3D(
                 g, cover, physical, aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow
             )
-            else if (c.cases3d) Case3D(
+            else if (c.cases3d) vcTrace("VC:Case3D") { Case3D(
                 g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
                 frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf,
                 // (Update 235, #24: not with a cover you picked for the game — it's the case front, UserCovers.)
                 realFront = (c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL) &&
                     UserCovers.of(g.stableKey) == null
-            ) else CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn)
+            ) } else vcTrace("VC:CarouselArt") { CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn) }
         } }
     }
 }

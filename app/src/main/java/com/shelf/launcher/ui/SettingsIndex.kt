@@ -151,6 +151,11 @@ internal object SettingsIndex {
         E("Art (hero art, screenshots, wide capsules)", "Game look", "Covers, cases & discs", null, null),
         E("More look options", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Case stacks: cases in 3D", "Home", "Layout options", null, null),
+        // (Update 246, #89: the rest of Case stacks' own switches — "mirror" found nothing.)
+        E("Case stacks: stacks in perspective", "Home", "Layout options", null, null),
+        E("Case stacks: tool strip", "Home", "Layout options", null, null),
+        E("Case stacks: bottom panel", "Home", "Layout options", null, null),
+        E("Case stacks: mirror floor (reflection)", "Home", "Layout options", null, null),
         E("Carousel 3D cases: the one you're on faces you", "Home", "Layout options", null, null),
         E("Case stacks: the one you're on faces you", "Home", "Layout options", null, null),
         E("Cartridge games as discs too", "Game look", "Covers, cases & discs", "look_more", "More look options"),

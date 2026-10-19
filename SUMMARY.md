@@ -4,6 +4,32 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (246): big categories scroll smoothly again (#60) — rows no longer rebuilt every step; 3D cases drawn lighter
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds and measured on the Thor** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (19): `src_copy\ui\Carousel.kt`, `Case3D.kt`, `StacksArch.kt`, `StyleCaseStacks.kt`, `StyleHomes.kt`, `SettingsIndex.kt`, `GameDock.kt`, `TileHome.kt`, `StyleArcade.kt`, `StyleCardBinder.kt`, `StyleCircuit.kt`, `StyleConsoleStack.kt`, `StyleConsoleHomes.kt`, `StyleCrossMenu.kt`, `StylePocketQuest.kt`, `StyleRecordCrate.kt`, `ShelfHome.kt`, `TwinDesk.kt`, `AnchoredStrip.kt` (all in `src_copy\ui\`); new (1): `src_copy\ui\PerfTrace.kt`. **Files to delete:** none. Nothing looks different.
+
+Measured with system traces (atrace; the Thor's perfetto crashes in its own ftrace reader) on Case stacks › Box flow, Game Boy Advance (357 games), 30 quick presses ▶:
+
+| | before | after |
+|---|---|---|
+| frames drawn | 93–120 | 459–512 |
+| median frame | 200–300 ms | 19–25 ms |
+| 90 % of frames under | 400 ms | 80–90 ms |
+| textures re-uploaded per frame | ~25 (13 MB) | ~0 |
+
+1. **Every game in a row was thrown away and built again on each step** — in most layouts. A `continue` inside the loop that places the games made the Compose compiler give each pass of the loop a group of its own, so a game's key was only looked up inside its own pass; one step moved every game one place along, and all of them (about a hundred 3D cases in Box flow) were made from scratch. The places are now picked before the loop. Fixed in the carousel and in the same pattern in Case stacks, the classic dock row, Tiles, Arcade, Card binder, Circuit, Console stack, Console homes, Cross menu, Pocket Quest, Record crate, Shelf, Twin desk and the anchored strip.
+2. **3D cases at the sides drew their full 480 px pictures.** About sixty to a hundred cases (with reflections) needed more picture memory than the GPU keeps, so a dozen to fifty pictures were uploaded again every frame. A case seen small or turned (its front a tall sliver) now draws a half / quarter / eighth-size copy (across and down apart), kept in its own store — what the GPU showed there anyway. The reflection's off-screen layer is now only as deep as its fade reaches (nothing below it ever showed).
+3. **Case stacks' bottom panel** (arched top and lit edge) is drawn once into its own layer: its two path masks (1862 × 287 and 1862 × 61) were rebuilt and uploaded every frame the carousel moved.
+4. **Carousel**: each game's place function is kept inside its own group (a new one every step made every game rebuild).
+5. **Trace sections** (`VC:CaseStacks`, `VC:GameCarousel`, `VC:CarouselItem`, `VC:Case3D`, `VC:CarouselArt`) so slow frames can be read part by part with `atrace -a com.shelf.launcher view gfx`. Free when no trace runs.
+6. **#89 settings search**: Case stacks' own switches were missing — "mirror" found nothing. Added: stacks in perspective, tool strip, bottom panel, mirror floor (checked: "mirror" now finds it).
+
+Test notes: Mirror floor was switched off for one measurement and switched back on. RP Classic: installed, Dashboard home checked. Seen there for #94: the Dashboard's "Notifications" label runs into the panel beside it.
+
+---
+
 ## Update — 19 Oct 2026 (245): R1 "Popup" tile, fixture tests for the save / icon / hack parsers (#79), sequel saves no longer matched to the first game (#74)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, tested, built, installed on both handhelds and checked on the Thor** by Claude, committed and pushed by Claude.

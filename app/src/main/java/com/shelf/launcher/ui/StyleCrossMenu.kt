@@ -219,8 +219,10 @@ private fun CrossIcons(c: StyleCtx, baseX: Dp, top: Dp, spacing: Dp, big: Dp, sm
     val stripAlpha = 1f
     // From one before to five after (fewer when there are fewer categories), never the same one twice.
     val range = (-minOf(2, (n - 1) / 2))..minOf(5, n - 1 - minOf(2, (n - 1) / 2))
-    for (d in range) {
-        val stop = c.stopAt(d) ?: continue
+    // (Update 246, #60: the stops picked before the loop — a `continue` in it gave each pass its own group, so the icons
+    // weren't kept by their category as the strip slid but made again.)
+    val stops = range.mapNotNull { d -> c.stopAt(d)?.let { d to it } }
+    for ((d, stop) in stops) {
         // Each icon keeps its own state as the strip slides (keyed by its category, not its place), so a slot
         // never shows the previous category's logo or icon for a frame before the new one.
         androidx.compose.runtime.key(stop.special, stop.platform) {

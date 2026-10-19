@@ -425,9 +425,14 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 for (b in backs) if (b.key != focusKey && b.key in indexOf && seenKeys.add(b.key)) add(b)
                 if (c.game != null && focusKey != null) add(null)
             }
-            for (b in shown) {
-                val k = b?.key ?: focusKey ?: continue
-                val idx = if (b == null) c.focus else indexOf[k] ?: continue
+            // (Update 246, #60: picked before the loop — a `continue` in it gave each pass its own group, so the pulled
+            // games weren't kept by their key.)
+            val pulled = shown.mapNotNull { b ->
+                val k = b?.key ?: focusKey ?: return@mapNotNull null
+                val idx = if (b == null) c.focus else indexOf[k] ?: return@mapNotNull null
+                Triple(b, k, idx)
+            }
+            for ((b, k, idx) in pulled) {
                 key(k) {
                     Pulled(idx, if (b == null) ({ pull.value }) else ({ b.a.value }), resting = b == null, vrow = if (b == null) focusVRow else backVRow(b))
                 }

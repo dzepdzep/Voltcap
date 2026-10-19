@@ -272,10 +272,11 @@ private fun CircuitBoard(c: StyleCtx, ink: Color, modifier: Modifier) {
             }
         }
         // The chips.
-        for (i in first..last) {
+        // (Update 246, #60: the places picked before the loop — a `continue` in it made Compose give each pass its
+        // own group, so a step that moved every game one place along threw them all away and built them again.)
+        for (i in (first..last).filter { i -> !(loop && !drawnOnce(i - vf, count, minOf(kotlin.math.ceil(anchorX / step).toInt(), (count - 1) / 2))) }) {
             // (Update 174: each game once in a short category.)
             // (Update 226, #105: as many before yours as fit left of it — the rest go after it, on screen.)
-            if (loop && !drawnOnce(i - vf, count, minOf(kotlin.math.ceil(anchorX / step).toInt(), (count - 1) / 2))) continue
             val real = if (loop) i.mod(count) else i
             val g = c.games[real]
             val up = Math.floorMod(i, 2) == 0

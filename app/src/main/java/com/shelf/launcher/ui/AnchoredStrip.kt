@@ -83,12 +83,15 @@ internal fun AnchoredStrip(
         val frac = p - fl
         val anchor = startPad + (smallW + gap) * (if (looping) anchorSlots.toFloat() else minOf(p, anchorSlots.toFloat()))
         val shift = anchor - (flStart + (w(fl) + gap) * frac)
-        starts.toSortedMap().forEach { (idx, sx) ->
+        // (Update 174: each game once in a short category.)
+        // (Update 246, #60: picked before the loop — a `return@forEach` in it made Compose give each pass its own group,
+        // so a step that moved every game one place along threw them all away and built them again.)
+        starts.toSortedMap().filter { (idx, sx) ->
             val left = sx + shift
-            if (left + w(idx) < -big || left > maxWidth + big) return@forEach
+            !(left + w(idx) < -big || left > maxWidth + big) && !(looping && !drawnOnce(idx - kotlin.math.round(p).toInt(), count, anchorSlots))
+        }.forEach { (idx, sx) ->
+            val left = sx + shift
             val hh = h(idx)
-            // (Update 174: each game once in a short category.)
-            if (looping && !drawnOnce(idx - kotlin.math.round(p).toInt(), count, anchorSlots)) return@forEach
             val real = if (looping) idx.mod(count) else idx
             key(if (looping) "${keyOf(real)}#${Math.floorDiv(idx, count)}" else keyOf(idx)) {
                 Box(

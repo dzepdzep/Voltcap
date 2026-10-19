@@ -887,9 +887,10 @@ private fun PqCollection(
                 val first = if (loop) lo - side else (lo - side).coerceAtLeast(0)
                 val last = if (loop) lo + side + 1 else (lo + side + 1).coerceAtMost(n - 1)
                 // (The range is clamped to the games without Endless; with it, every place stands for a game.)
-                for (i in first..last) {
+                // (Update 246, #60: the places picked before the loop — a `continue` in it made Compose give each pass its
+                // own group, so a step that moved every game one place along threw them all away and built them again.)
+                for (i in (first..last).filter { i -> !(loop && !drawnOnce(i - lo, n)) }) {
                     // (Update 218, #105: going round a short list, each game once — no copies of the same game at the sides.)
-                    if (loop && !drawnOnce(i - lo, n)) continue
                     val real = if (loop) i.mod(n) else i
                     key(if (loop) "${keys[real]}#${Math.floorDiv(i, n)}" else keys[real]) {
                         PqSlot(

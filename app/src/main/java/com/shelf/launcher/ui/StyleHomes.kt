@@ -1181,7 +1181,7 @@ internal fun StyleHome(
         HomeLayout.CIRCUIT -> StyleCircuit(c, modifier)
         // Update 146.
         HomeLayout.LIBRARY -> StyleLibrary(c, modifier)
-        HomeLayout.STACKS -> StyleCaseStacks(c, modifier)
+        HomeLayout.STACKS -> vcTrace("VC:CaseStacks") { StyleCaseStacks(c, modifier) }
         HomeLayout.TIMELINE -> StyleTimeline(c, modifier)
         HomeLayout.ARCADE -> StyleArcade(c, modifier)
         HomeLayout.CONSOLES -> StyleConsoleStack(c, modifier)

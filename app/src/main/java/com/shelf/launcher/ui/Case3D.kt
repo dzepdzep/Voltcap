@@ -715,6 +715,58 @@ private fun plainFront(title: String, hue: Int, icon: android.graphics.Bitmap? =
 }
 
 /** The perspective drawing of one case (plain maths, no Compose): see [Case3D]. */
+/**
+ * Update 246 (#60): a smaller copy of a 3D case's picture for a face drawn much smaller than the picture — the cases at
+ * the sides of Box flow and the other case views stand small and turned, and each drew its full 480 px front and 600 px
+ * spine. In a big category (Box flow showed about sixty cases, each with its reflection) those pictures were more than
+ * the GPU keeps, so dozens of them were uploaded again every frame (Thor, GBA, 357 games: up to 50 MB a frame). A
+ * smaller copy is drawn instead when the face is under half / a quarter / an eighth of the picture's size on screen,
+ * across and down apart — what the GPU would have shown there anyway (it looks the same or smoother, no shimmer). Made
+ * once per picture and size and kept ([cache]).
+ */
+internal object CaseLod {
+    /**
+     * [full], or a smaller copy when the face just projected (corners TL, TR, BR, BL in [quad]) is that much smaller on
+     * screen — across and down apart: a case turned to its side shows its front as a tall sliver, so its picture is cut
+     * down across only (to a half, quarter or eighth) and keeps its full height.
+     */
+    fun pick(full: android.graphics.Bitmap, quad: FloatArray): android.graphics.Bitmap {
+        if (full.width < 48 || full.height < 48 || full.isRecycled || full.config == android.graphics.Bitmap.Config.HARDWARE) return full
+        fun len(a: Int, b: Int): Float = kotlin.math.hypot(quad[b * 2] - quad[a * 2], quad[b * 2 + 1] - quad[a * 2 + 1])
+        val nx = steps(maxOf(len(0, 1), len(3, 2)) / full.width)
+        val ny = steps(maxOf(len(0, 3), len(1, 2)) / full.height)
+        if (nx == 1 && ny == 1) return full
+        val key = "${System.identityHashCode(full)}|${full.width}x${full.height}|$nx|$ny"
+        val hit = cache.get(key)
+        if (hit != null && hit.src.get() === full && !hit.bmp.isRecycled) return hit.bmp
+        val made = runCatching {
+            android.graphics.Bitmap.createScaledBitmap(full, (full.width / nx).coerceAtLeast(4), (full.height / ny).coerceAtLeast(4), true)
+        }.getOrNull() ?: return full
+        cache.put(key, Entry(java.lang.ref.WeakReference(full), made))
+        return made
+    }
+
+    private class Entry(val src: java.lang.ref.WeakReference<android.graphics.Bitmap>, val bmp: android.graphics.Bitmap)
+
+    /**
+     * The copies made, kept by their picture and size — their own store, not DerivedArt's: about a hundred cases' copies
+     * didn't fit beside the cases' other pictures there, so they were made again (and uploaded again) every frame.
+     */
+    private val cache = object : android.util.LruCache<String, Entry>(
+        (Runtime.getRuntime().maxMemory() / 8).coerceIn(12L * 1024 * 1024, 64L * 1024 * 1024).toInt()
+    ) {
+        override fun sizeOf(key: String, value: Entry): Int = runCatching { value.bmp.allocationByteCount }.getOrDefault(64).coerceAtLeast(64)
+    }
+
+    /** How many times smaller the picture may be for a face [k] times its size on screen (1, 2, 4 or 8). */
+    private fun steps(k: Float): Int = when {
+        k < 0.11f -> 8
+        k < 0.22f -> 4
+        k < 0.45f -> 2
+        else -> 1
+    }
+}
+
 private object CaseDraw {
     private val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
     private val fill = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
@@ -830,7 +882,8 @@ private object CaseDraw {
             path.moveTo(out[0], out[1]); path.lineTo(out[2], out[3]); path.lineTo(out[4], out[5]); path.lineTo(out[6], out[7]); path.close()
             return path
         }
-        fun warp(bmp: android.graphics.Bitmap, filter: android.graphics.ColorFilter?) {
+        fun warp(full: android.graphics.Bitmap, filter: android.graphics.ColorFilter?) {
+            val bmp = CaseLod.pick(full, out)
             src[0] = 0f; src[1] = 0f; src[2] = bmp.width.toFloat(); src[3] = 0f
             src[4] = bmp.width.toFloat(); src[5] = bmp.height.toFloat(); src[6] = 0f; src[7] = bmp.height.toFloat()
             matrix.reset()
@@ -980,14 +1033,17 @@ private object CaseDraw {
             // The floor line (the case's foot) and the mirror image under it, fading out.
             project(FRONT, 2, false); project(FRONT, 3, false)
             val floorY = maxOf(out[5], out[7])
-            val l = c.saveLayerAlpha(cx - w * 2f, floorY - d, cx + w * 2f, floorY + h * 1.2f, 80)
+            // (Update 246, #60: the layer only as deep as the fade reaches — fadeDown is clear from 0.55 of the height under
+            // the floor line on, so nothing below it ever showed; it was 1.2 heights deep, for every case in the row.)
+            val reflBottom = floorY + h * 0.55f
+            val l = c.saveLayerAlpha(cx - w * 2f, floorY - d, cx + w * 2f, reflBottom, 80)
             drawFaces(true)
             shaderMatrix.reset()
             shaderMatrix.setScale(1f, h * 0.55f)
             shaderMatrix.postTranslate(0f, floorY)
             fadeDown.setLocalMatrix(shaderMatrix)
             fade.shader = fadeDown
-            c.drawRect(cx - w * 2f, floorY - d, cx + w * 2f, floorY + h * 1.2f, fade)
+            c.drawRect(cx - w * 2f, floorY - d, cx + w * 2f, reflBottom, fade)
             fade.shader = null
             c.restoreToCount(l)
         }
