@@ -31,6 +31,61 @@ internal enum class DiscFormat {
     val size: Float get() = if (this == GAMECUBE) 80f / 120f else 1f
 }
 
+/**
+ * Update 248 (#89 finding 11): what a disc image's own bytes say about the disc it came from, apart from the file
+ * handling, so it can be tested on made-up images (DiscImagesTest).
+ */
+internal object DiscImages {
+    enum class Kind { CD, DVD, UNKNOWN }
+
+    /**
+     * A CHD's unit size and full size: CD frames are stored as 2352 or 2448 bytes (a CD); 2048-byte sectors are a DVD's —
+     * or a CD's dumped as a plain ISO (seen on the Thor: PS2 CHDs of 101 MB to 6 GB, all 2048), so only one bigger than
+     * any CD can hold (80 minutes, 737 MB) counts as a DVD.
+     */
+    fun chdKind(unit: Long, bytes: Long = Long.MAX_VALUE): Kind = when (unit) {
+        2352L, 2448L -> Kind.CD
+        2048L -> if (bytes > CD_MAX) Kind.DVD else Kind.UNKNOWN
+        else -> Kind.UNKNOWN
+    }
+
+    /** The most an 80-minute CD holds in 2048-byte sectors (360 000 of them). */
+    const val CD_MAX = 737_280_000L
+
+    /**
+     * A plain image read through [read] (offset, length → bytes, or null past the end): UDF's descriptors ("BEA01",
+     * "NSR02" / "NSR03") in the sectors after the ISO 9660 one (from sector 17, 2048-byte sectors) → a DVD; the ISO 9660
+     * descriptor in a raw 2352-byte frame (sector 16, its data 16 bytes in) → a CD; the ISO 9660 descriptor alone in
+     * 2048-byte sectors → a CD (a PS2 DVD always has UDF too); nothing recognised → unknown.
+     */
+    fun plainKind(read: (Long, Int) -> ByteArray?): Kind {
+        fun idAt(at: Long): String? = read(at, 6)?.let { String(it, 1, 5, Charsets.US_ASCII) }
+        val iso2048 = idAt(16L * 2048) == "CD001"
+        for (sector in 17..24) {
+            val id = idAt(sector.toLong() * 2048) ?: break
+            if (id == "BEA01" || id == "NSR02" || id == "NSR03") return Kind.DVD
+            if (id == "TEA01") break
+        }
+        if (idAt(16L * 2352 + 16) == "CD001" || idAt(16L * 2352 + 24) == "CD001") return Kind.CD
+        return if (iso2048) Kind.CD else Kind.UNKNOWN
+    }
+
+    /** The format for [kind] and the image's full size [bytes] (0 unknown); [ps2]: a PS2 game, else a plain DVD console. */
+    fun format(kind: Kind, bytes: Long, ps2: Boolean, base: DiscFormat): DiscFormat {
+        val dual = bytes > 4_700_000_000L
+        return when (kind) {
+            Kind.CD -> if (ps2) DiscFormat.PS2_CD else base
+            Kind.DVD -> if (dual) (if (ps2) DiscFormat.PS2_DVD_DL else DiscFormat.DVD_DL) else base
+            // Nothing to read (compressed): a PS2 image that fits on a CD with room to spare is taken for one, as before.
+            Kind.UNKNOWN -> when {
+                ps2 && bytes in 1..DiscImages.CD_MAX -> DiscFormat.PS2_CD
+                dual -> if (ps2) DiscFormat.PS2_DVD_DL else DiscFormat.DVD_DL
+                else -> base
+            }
+        }
+    }
+}
+
 internal object DiscFormats {
     private val cache = java.util.concurrent.ConcurrentHashMap<String, DiscFormat>()
 
@@ -62,23 +117,32 @@ internal object DiscFormats {
 
     private const val GB = 1_000_000_000L
 
+    /**
+     * Update 248 (#89 finding 11): read from the image itself where it can say. Before, any PS2 image under 900 MB read as
+     * a CD-ROM (a small DVD game drew blue), a CHD of a DVD under 900 MB too, and every .img / .mds / .mdf as a CD. Now:
+     * a CHD says its sector size (CD frames 2352 / 2448 bytes; 2048-byte sectors past a CD's size are a DVD); a plain image (.iso, .img, .mdf, .bin)
+     * is a DVD when it carries UDF's volume descriptors after the ISO 9660 one (PS2 DVDs are UDF bridge discs, PS2 CDs
+     * plain ISO 9660), a CD when its sectors are raw 2352-byte frames; a .cue / .ccd / .mds sheet is read through its
+     * data file next to it. A compressed ISO (.cso / .zso) and anything unreadable still go by size.
+     */
     private fun detect(g: Game, base: DiscFormat): DiscFormat? {
         val path = g.romPath ?: return null
         val ext = path.substringAfterLast('.', "").substringBefore('?').lowercase()
         val ps2 = base == DiscFormat.PS2_DVD
-        if (ext in setOf("cue", "bin", "ccd", "img", "mds", "gdi")) return if (ps2) DiscFormat.PS2_CD else base
-        val f = if (path.startsWith("/")) File(path) else return null
+        val f0 = if (path.startsWith("/")) File(path) else return if (ps2 && ext in CD_SHEETS) DiscFormat.PS2_CD else null
+        // A cue / ccd / mds sheet: its data file beside it (same name), else what the sheet type usually holds.
+        val f = if (ext in CD_SHEETS) dataFileFor(f0) ?: return if (ps2 && ext != "mds") DiscFormat.PS2_CD else null else f0
         if (!f.isFile) return null
-        val bytes: Long = when (ext) {
-            "iso" -> f.length()
+        val dataExt = f.name.substringAfterLast('.', "").lowercase()
+        val kind: DiscImages.Kind
+        val bytes: Long
+        when (dataExt) {
             "chd" -> {
-                // A CHD (v5) says it itself: CD frames are 2448 bytes, DVD sectors 2048; and its full size.
                 val h = ByteArray(64)
                 RandomAccessFile(f, "r").use { it.readFully(h) }
                 if (String(h, 0, 8, Charsets.US_ASCII) != "MComprHD") return null
-                val unit = u32be(h, 60)
-                if (unit == 2448L || unit == 2352L) return if (ps2) DiscFormat.PS2_CD else base
-                u64be(h, 32)
+                bytes = u64be(h, 32)
+                kind = DiscImages.chdKind(u32be(h, 60), bytes)
             }
             "cso", "zso" -> {
                 // A compressed ISO keeps the full size at bytes 8…15 (little-endian).
@@ -86,16 +150,35 @@ internal object DiscFormats {
                 RandomAccessFile(f, "r").use { it.readFully(h) }
                 var v = 0L
                 for (i in 15 downTo 8) v = (v shl 8) or (h[i].toLong() and 0xFF)
-                v
+                kind = DiscImages.Kind.UNKNOWN
+                bytes = v
+            }
+            "iso", "img", "mdf", "bin", "nrg" -> {
+                kind = RandomAccessFile(f, "r").use { r -> DiscImages.plainKind { at, n -> readAt(r, at, n) } }
+                bytes = f.length()
             }
             else -> return null
         }
-        return when {
-            ps2 && bytes in 1 until 900_000_000L -> DiscFormat.PS2_CD
-            bytes > (4.7 * GB).toLong() -> if (ps2) DiscFormat.PS2_DVD_DL else DiscFormat.DVD_DL
-            else -> base
-        }
+        return DiscImages.format(kind, bytes, ps2, base)
     }
+
+    private val CD_SHEETS = setOf("cue", "ccd", "mds")
+
+    /** The data file a cue / ccd / mds sheet points at: the same name with a data extension, in the same folder. */
+    private fun dataFileFor(sheet: File): File? {
+        val stem = sheet.name.substringBeforeLast('.')
+        val dir = sheet.parentFile ?: return null
+        for (e in listOf("bin", "img", "mdf", "iso")) {
+            File(dir, "$stem.$e").takeIf { it.isFile }?.let { return it }
+            File(dir, "$stem.${e.uppercase()}").takeIf { it.isFile }?.let { return it }
+        }
+        return null
+    }
+
+    private fun readAt(r: RandomAccessFile, at: Long, n: Int): ByteArray? = runCatching {
+        if (at < 0 || at + n > r.length()) return@runCatching null
+        val b = ByteArray(n); r.seek(at); r.readFully(b); b
+    }.getOrNull()
 
     private fun u32be(b: ByteArray, o: Int): Long =
         ((b[o].toLong() and 0xFF) shl 24) or ((b[o + 1].toLong() and 0xFF) shl 16) or ((b[o + 2].toLong() and 0xFF) shl 8) or (b[o + 3].toLong() and 0xFF)

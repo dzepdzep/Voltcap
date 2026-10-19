@@ -4,6 +4,17 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (248): disc data side read from the image itself (#89 finding 11), case sizes in your case region (#89 finding 15)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, unit-tested and built** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (2): `src_copy\ui\DiscUnderside.kt`, `src_copy\ui\PhysicalMedia.kt`. **Copy `project_copy`** (new): `project_copy\app\src\test\java\com\shelf\launcher\ui\DiscImagesTest.kt` (11 tests). **Files to delete:** none.
+
+1. **Disc underside (the disc's data side when you turn it over)**: a PS2 game's disc was a CD-ROM (blue) whenever its image was under 900 MB, and every .img / .mds / .mdf counted as a CD. Now the image says it itself: a plain image (.iso, .img, .mdf, .bin) with UDF's descriptors is a DVD (PS2 DVDs always have them), raw 2352-byte frames are a CD; a .cue / .ccd / .mds is read through its data file; a CHD by its sector size (on the Thor all PS2 CHDs use 2048-byte sectors, so only ones bigger than an 80-minute CD — 737 MB — count as DVDs, smaller ones by size as before). Compressed .cso / .zso still go by size.
+2. **"Cases · real sizes"**: keep cases, card cases and the plain jewel case took North America's size whatever Settings › Game look › Case region said. They take that region now (a Japanese GameCube case is smaller). With the default "from the file name, else North America" nothing changes.
+
+---
+
 ## Update — 19 Oct 2026 (247): RP Classic layout check (#94) — parts placed off the layouts' own text, Twin desk's second line no longer cut
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds and checked on the RP Classic** by Claude, committed and pushed by Claude.

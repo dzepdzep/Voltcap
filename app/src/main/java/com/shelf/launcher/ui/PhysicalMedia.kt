@@ -435,13 +435,18 @@ internal fun realCaseMm(platform0: String?): Pair<Float, Float>? {
     // rest from the cover templates.
     // (Keep cases and card cases only: their sleeve is the whole front. A jewel case's or box's printed front isn't the
     // case's outline, and the box scan cuts — BoxTexture — go by the cover templates' shapes there.)
-    if (platform != null) CaseCatalog.of(platform, CaseRegion.US)?.takeIf { it.shell == CaseShell.KEEP || it.shell == CaseShell.CARDCASE }
+    // (Update 248, #89 finding 15: in the case region you set — Settings › Game look › Case region — not always North
+    // America's: a Japanese GameCube case is smaller than the US one. Only a platform is known here, so a file's own
+    // region tags can't count — the setting's own region does (the default, "from the file, else North America", keeps
+    // North America's as before).)
+    val region = when (Features.caseRegion.state.value.code) { "EU" -> CaseRegion.EU; "JP" -> CaseRegion.JP; else -> CaseRegion.US }
+    if (platform != null) CaseCatalog.of(platform, region)?.takeIf { it.shell == CaseShell.KEEP || it.shell == CaseShell.CARDCASE }
         ?.let { return it.wMm to it.hMm }
     // (Update 235, #27/#38: a console in a CD jewel case with no cover template or template box — Neo Geo CD, PC Engine CD,
     // CD-i — is drawn in Voltcap's plain jewel case (PlainCase): the jewel case's standard 142 × 125 mm. It was 142 mm tall
     // at a made-up 0.7 shape, so the plain case came out a third too small in "Cases · real sizes".)
     if (platform != null && MediaCovers.of(platform) == null && MediaTemplates.of(platform)?.box == null)
-        CaseCatalog.of(platform, CaseRegion.US)?.takeIf { it.shell == CaseShell.JEWEL }?.let { return it.wMm to it.hMm }
+        CaseCatalog.of(platform, region)?.takeIf { it.shell == CaseShell.JEWEL }?.let { return it.wMm to it.hMm }
     val longest = when (platform) {
         "NES", "Genesis", "MasterSystem", "32X", "Intellivision", "Vectrex", "C64", "Pico8" -> 184f
         "SNES", "N64" -> 185f
