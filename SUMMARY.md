@@ -23,16 +23,16 @@ All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfL
 
 ---
 
-## Update — 19 Oct 2026 (260): ▼ no longer jumps to the Thor's lower screen before the end of a list; PSP UMDs drawn as UMDs; achievements card stays put after the keyboard; game window status line fits
+## Update — 19 Oct 2026 (260): your reports — ▼ no longer skips to the Thor's lower screen; PSP UMDs look like UMDs in and out of the case; the achievements card stays where you put it; the game window's status line fits
 
-Committed and pushed by Claude (commit 9149aac); this entry was added with update 261. **Not published.**
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Thor and the RP Classic** by Claude, committed and pushed by Claude.
 
-**Copy `src_copy`**, changed (10): `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\UmdBack.kt`, `src_copy\ui\CaseOpen.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\SafeZones.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\HomeEdit.kt`. **Files to delete:** none (your test folder `Claude outputs\rec\fr_wiz\BFBB` can go).
+**Copy `src_copy`**, changed (10): `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\UmdBack.kt`, `src_copy\ui\CaseOpen.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\RealMedia.kt`, `src_copy\ui\PhysicalMedia.kt`, `src_copy\ui\MediaInspectView.kt`, `src_copy\ui\SafeZones.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\HomeEdit.kt`. **Files to delete:** none.
 
-- **▼ between the screens (Thor):** with something still to scroll on the top screen (categories, details), ▼ went to the lower screen first — it now scrolls to the end before moving.
-- **PSP UMD cases:** the open case shows a UMD-shaped recess (hub, notch) and the disc as a UMD with the cover filling its round window; games without a UMD picture no longer show as cartridges.
-- **Achievements card on Spotlight (RP Classic):** it moved after the on-screen keyboard had been open (the safe area counted the keyboard) — it stays where you placed it.
-- **Game window:** the status line under the buttons has its own room.
+- **▼ jumped to the second screen before the end (Thor, your report).** A ▼ that changes nothing on the top screen sends the controller to the lower one — but Choose a category's tile, the game window's row and its scrolling weren't counted as "something changed", so ▼ moved down the category grid *and* jumped to the lower screen 160 ms later. Now it only goes down there from the last row. Checked: Choose a category walked row by row to Smart Continue, then the lower screen (`Claude outputs\rec\u260_ff.tar`).
+- **PSP UMDs (your report).** In the open case a PSP game showed a grey square card with the cover squeezed into it, in a square slot. Now the case has a UMD-shaped recess with its hub and thumb notch, the UMD lies in it drawn as a UMD (the cover seen round through its window), and taken out the cover fills the UMD's round window instead of sitting in it as a narrow rectangle with grey bands. The hint says "Tap the UMD". (`rec\u260_h1.png`, `rec\u260_h2.png`)
+- **The achievements card you placed (RP Classic).** It stays where you put it. The cause: the screen's safe area counted the on-screen keyboard, so after a search (and on the RP Classic for a while after the keyboard went) the bottom lost 213 dp and every part placed by fractions jumped up over the games. The safe area now counts the system bars and the camera cut-out only.
+- **The game window's status line** ("Saves: …", the power mode) under the buttons had no room and showed as two cut-off slivers; it fits now (`rec\u260_window_status.png`).
 
 ---
 
