@@ -1884,6 +1884,7 @@ internal enum class PopupStyle(val label: String, val short: String) {
     // (Update 249, #119: Toni's two earlier designs, as styles of their own — Features.winMotion, RowRevealWindow.kt.)
     ROW_OPENS("The row opens up", "Opens"),
     ROW_REVEAL("Row reveal", "Reveal"),
+    SHARED("Shared move (Game Glance style)", "Shared"),
     CLASSIC("Classic details window", "Classic");
 
     companion object {
@@ -1893,6 +1894,7 @@ internal enum class PopupStyle(val label: String, val short: String) {
                 layout in F.classicWindowLayouts.value -> CLASSIC
                 F.winMotion.value == com.shelf.launcher.data.Features.WinMotion.ROW_OPENS -> ROW_OPENS
                 F.winMotion.value == com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL -> ROW_REVEAL
+                F.winMotion.value == com.shelf.launcher.data.Features.WinMotion.SHARED -> SHARED
                 F.winBanner.value -> BANNER
                 else -> OWN
             }
@@ -1903,13 +1905,14 @@ internal enum class PopupStyle(val label: String, val short: String) {
             val classicNow = layout in F.classicWindowLayouts.value
             when (style) {
                 CLASSIC -> if (!classicNow) F.classicWindowLayouts.toggle(layout)
-                OWN, BANNER, ROW_OPENS, ROW_REVEAL -> {
+                OWN, BANNER, ROW_OPENS, ROW_REVEAL, SHARED -> {
                     if (classicNow) F.classicWindowLayouts.toggle(layout)
                     // (The banner page stays as it was under a motion style: it's what shows where the motion can't.)
                     if (style == OWN || style == BANNER) F.winBanner.value = style == BANNER
                     F.winMotion.value = when (style) {
                         ROW_OPENS -> com.shelf.launcher.data.Features.WinMotion.ROW_OPENS
                         ROW_REVEAL -> com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL
+                        SHARED -> com.shelf.launcher.data.Features.WinMotion.SHARED
                         else -> com.shelf.launcher.data.Features.WinMotion.NONE
                     }
                 }

@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -99,14 +100,47 @@ internal object RowReveal {
      */
     val shade = mutableFloatStateOf(0f)
 
+    /**
+     * Update 250 (Shared move): the whole row leaves (the game you're on too), dropping by [drop] (0…1 of [DROP_DP]);
+     * the name line and the category are drawn by the window from where they were ([sharedHidden]).
+     */
+    val rowAll = mutableStateOf(false)
+    val drop = mutableFloatStateOf(0f)
+    val sharedHidden = mutableStateOf(false)
+    const val DROP_DP = 46f
+
     /** The alpha a row card multiplies by ([focused]: the game you're on). */
     fun alphaFor(focused: Boolean): Float =
-        if (focused) (if (focusHidden.value) 0f else 1f) else 1f - others.floatValue
+        if (focused && !rowAll.value) (if (focusHidden.value) 0f else 1f) else 1f - others.floatValue
 
-    /** The alpha of the row's name / category lines. */
+    /** The alpha of the parts the home screen adds (logo, info cards): they fade with the row. */
     fun textAlpha(): Float = 1f - others.floatValue
 
-    fun reset() { others.floatValue = 0f; focusHidden.value = false; shade.floatValue = 0f }
+    /** The alpha of the row's own name line and the category name: hidden at once while the window draws them. */
+    fun sharedAlpha(): Float = if (sharedHidden.value) 0f else 1f - others.floatValue
+
+    fun reset() {
+        others.floatValue = 0f; focusHidden.value = false; shade.floatValue = 0f
+        rowAll.value = false; drop.floatValue = 0f; sharedHidden.value = false
+    }
+}
+
+/**
+ * Update 250 (Shared move): where the Voltcap row's name line, its play time and the category name were last drawn
+ * (window px), so the game window's title, Played card and eyebrow start exactly there. Plain fields, written while
+ * laying out; [at] when (uptime ms), so an old place from another layout isn't used.
+ */
+internal object GlanceOrigin {
+    var name: Rect? = null
+    var chip: Rect? = null
+    var category: Rect? = null
+    var at: Long = 0L
+
+    /** [c]'s place on the screen (the game window is a window of its own: its corner isn't the home screen's). */
+    fun onScreen(c: androidx.compose.ui.layout.LayoutCoordinates): Rect {
+        val o = c.positionOnScreen()
+        return Rect(o.x, o.y, o.x + c.size.width, o.y + c.size.height)
+    }
 }
 
 private val RevealEase = CubicBezierEasing(0.22f, 0.8f, 0.24f, 1f)

@@ -1559,7 +1559,9 @@ object Features {
      * buttons slide down while the details appear. NONE: the window as before (each layout's own, or the banner page).
      */
     enum class WinMotion(val label: String, val short: String) {
-        NONE("Off", "Off"), ROW_OPENS("The row opens up", "Row opens"), ROW_REVEAL("Row reveal", "Reveal")
+        NONE("Off", "Off"), ROW_OPENS("The row opens up", "Row opens"), ROW_REVEAL("Row reveal", "Reveal"),
+        // (Update 250, #119: Game Glance's move — GlanceWindow.kt.)
+        SHARED("Shared move (Game Glance style)", "Shared")
     }
     val winMotion = EnumPref("win_motion", WinMotion.NONE, WinMotion.values())
 

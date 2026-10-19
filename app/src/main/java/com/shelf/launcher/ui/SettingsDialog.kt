@@ -3491,7 +3491,7 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             RowChoice("Its style (every layout)", arrayOf(false, true), F.winBanner.state.value, { if (it) "Banner page" else "The layout's own" }) { F.winBanner.value = it }
             // Update 249 (#119): the window as a move of the home screen itself (RowRevealWindow.kt).
             RowChoice("Its motion (every layout)", com.shelf.launcher.data.Features.WinMotion.values(), F.winMotion.state.value, { it.label }) { F.winMotion.value = it }
-            MutedNote("The row opens up: the row with the game you're on rises into its page, the cover growing to its left. Row reveal: the art and the game stay where they are; the other games fade, the name rises, Play / Continue and the buttons slide down and the details appear. Off: the style above.")
+            MutedNote("The row opens up: the row with the game you're on rises into its page, the cover growing to its left. Row reveal: the art and the game stay where they are; the other games fade, the name rises, Play / Continue and the buttons slide down and the details appear. Shared move: as Game Glance opens a game — the art stays, the row drops away, the category, the name and its play time travel to their places on the page and the rest fades in. Off: the style above.")
             RowChoice("Its colours (every layout)", com.shelf.launcher.data.Features.WinColors.values(), F.gameWindowColors.state.value, { it.label }) { F.gameWindowColors.value = it }
             MutedNote("The game's colours come from its cover; the layout's own keeps each layout's look as it was.")
             // Update 125: what the window shows and where, for this layout on its own.

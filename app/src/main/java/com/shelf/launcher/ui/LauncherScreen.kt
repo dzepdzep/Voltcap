@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.border
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
@@ -3180,7 +3181,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                 .fillMaxWidth()
                                 // (Update 249, #119: it fades as the row turns into the game window — RowReveal.)
                                 .then(if (com.shelf.launcher.data.Features.winMotion.state.value != com.shelf.launcher.data.Features.WinMotion.NONE)
-                                    Modifier.graphicsLayer { alpha = RowReveal.textAlpha() } else Modifier)
+                                    Modifier.graphicsLayer { alpha = RowReveal.sharedAlpha() } else Modifier)
                                 .then(
                                     // Tile home: exactly on the name's line — it follows the selected tile
                                     // (left edge / centre / right edge, like the name), not the screen edge.
@@ -3216,7 +3217,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             androidx.compose.runtime.CompositionLocalProvider(com.shelf.launcher.ui.theme.LocalShelfColors provides nameColors) {
                                 // L2 / R2: the name swaps, fades, slides or drops in (Appearance › Name & category).
                                 CategoryNameSwap(catLabel, state.appearance.categoryAnim) { label ->
-                                    Row(Modifier.nameBackdrop(backdrop), verticalAlignment = Alignment.CenterVertically) {
+                                    Row(Modifier.nameBackdrop(backdrop).onGloballyPositioned { c -> GlanceOrigin.category = GlanceOrigin.onScreen(c) }, verticalAlignment = Alignment.CenterVertically) {
                                         val logo = logos[label]
                                         if (logo != null) {
                                             coil.compose.AsyncImage(logo, null, Modifier.size(with(androidx.compose.ui.platform.LocalDensity.current) { catSize.toDp() } * 1.2f))
@@ -3844,7 +3845,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                 else if (part == HomeWidgets.LOGO || part == HomeWidgets.LOGO_SGDB || part == HomeWidgets.LOGO_RA) logoPartSpot(overlayLayout)
                                 // (Update 230, #09: Hero carousel with its covers on the right — the stack starts on the
                                 // left, it sat on the cover column.)
-                                else (if (overlayLayout == com.shelf.launcher.data.HomeLayout.HERO && com.shelf.launcher.data.Features.heroCoversRight.state.value) 0f else 1f) to
+                                // (Update 250, #94, RP Classic: TV room too — its games column is down the right, and an
+                                // added part such as the achievement bar lay across its top row of games.)
+                                else (if ((overlayLayout == com.shelf.launcher.data.HomeLayout.HERO && com.shelf.launcher.data.Features.heroCoversRight.state.value) ||
+                                    overlayLayout == com.shelf.launcher.data.HomeLayout.TV) 0f else 1f) to
                                     (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w
                         ) {
                             // Update 204: the category's name on its own (all the categories with "All categories").

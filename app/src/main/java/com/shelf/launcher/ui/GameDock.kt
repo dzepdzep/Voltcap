@@ -20,6 +20,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -356,7 +358,7 @@ internal fun GameDock(
         val captionLine: @Composable () -> Unit = {
             val focusedKey = games[focus].stableKey
             // (Update 249, #119: it fades as the row turns into the game window — RowReveal.)
-            androidx.compose.foundation.layout.Box(if (rowMotionOn) Modifier.graphicsLayer { alpha = RowReveal.textAlpha() } else Modifier) {
+            androidx.compose.foundation.layout.Box(if (rowMotionOn) Modifier.graphicsLayer { alpha = RowReveal.sharedAlpha() } else Modifier) {
             FocusedLine(
                 logoUrl = if (nameOnLine && LocalTitleOptions.current.showLogos) {
                     artOverrides[focusedKey]?.logo ?: art[focusedKey]?.logoUrl
@@ -648,7 +650,11 @@ internal fun GameDock(
                             // (Update 237, #30: the fade-in of the game you're on alone in the row.)
                             .then(if (onlyFocused) Modifier.graphicsLayer { alpha = appear.value } else Modifier)
                             // (Update 249, #119: the game window as a move of the row — the other games fade, RowReveal.)
-                            .then(if (rowMotionOn) Modifier.graphicsLayer { alpha = RowReveal.alphaFor(rel == 0) } else Modifier)
+                            .then(if (rowMotionOn) Modifier.graphicsLayer {
+                                alpha = RowReveal.alphaFor(rel == 0)
+                                // (Update 250, Shared move: the row drops a little as it leaves.)
+                                translationY = RowReveal.drop.floatValue * RowReveal.DROP_DP * density
+                            } else Modifier)
                             // The game you're on reports where it is (cover light, game window; no layout change).
                             .then(if (rel == 0) Modifier.focusedCard() else Modifier)
                             // Update 202: the game you're on (its cover, box, cartridge or disc) moved / resized in Edit Home.
@@ -967,13 +973,17 @@ private fun FocusedLine(
                     textAlign = if (centered) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     style = shadowStyle,
-                    modifier = m
+                    // (Update 250: where the name is, for the Shared move game window — GlanceOrigin.)
+                    modifier = m.onGloballyPositioned { c ->
+                        GlanceOrigin.name = GlanceOrigin.onScreen(c); GlanceOrigin.at = android.os.SystemClock.uptimeMillis()
+                    }
                 )
             }
         }
         if (playtimeMs != null) {
             androidx.compose.material3.Text(
                 (if (name != null) "   ⏱ " else "⏱ ") + com.shelf.launcher.data.PlaytimeStore.format(playtimeMs),
+                modifier = Modifier.onGloballyPositioned { c -> GlanceOrigin.chip = GlanceOrigin.onScreen(c) },
                 color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
                 fontSize = androidx.compose.ui.unit.TextUnit(13f, androidx.compose.ui.unit.TextUnitType.Sp),
                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,

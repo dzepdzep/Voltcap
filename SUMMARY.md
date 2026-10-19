@@ -4,6 +4,20 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (250): Shared move (Game Glance style) game window (#119 v3); TV room's added parts start on the left (#94)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic, recorded on the Thor** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, new (1): `src_copy\ui\GlanceWindow.kt`; changed (8): `src_copy\data\Features.kt`, `src_copy\ui\RowRevealWindow.kt`, `GameDock.kt`, `LauncherScreen.kt`, `GameWindow.kt`, `QuickSettings.kt`, `SettingsDialog.kt`, `SettingsIndex.kt` (in `src_copy\ui\`). **Files to delete:** none.
+
+- **Shared move (Game Glance style)** — the v3 you approved, a game window style of its own next to the others: A on a game — the row and the other games drop a little and fade, and the parts that already exist on Home *travel* to their places on the page instead of a new window popping up: the game's name line grows into the page title (with its icon), the category label becomes the eyebrow (category · TODAY), the play-time chip grows into the PLAYED card. The rest (Achievements, Last played, Time to beat, Score cards, Continue / Play pill with Info · Achievements · More, facts and description) fades in once the moving parts are nearly in place, so nothing overlaps mid-move. B plays it backwards and the row comes back up. 450 ms move, the row leaves in 220 ms.
+- The starting places are now taken in screen terms, so the title starts exactly on the row's name line (the game window is a window of its own; its corner isn't Home's).
+- Where: Settings › Home › Layout options › Game window › Its motion › **Shared move**, and R1 › Popup (hold = list). From layouts other than the Voltcap row it starts from the game's own card.
+- **TV room** (#94): the added parts stack (clock, battery, etc.) starts at the left now, clear of the room's right-side panel.
+- Checked on the Thor (Voltcap row, recorded): opens, rests, B reverses; Play focused. Your settings put back afterwards: Voltcap row → Classic details window, layout Case stacks. RP Classic: installed, Home opens normally.
+
+---
+
 ## Update — 19 Oct 2026 (249): your two earlier popup designs as game window styles of their own (#119)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and recorded there** by Claude, committed and pushed by Claude.
