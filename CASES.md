@@ -38,12 +38,12 @@ Sizes are width × height × thickness in mm, as the case stands.
 | GameCube | Japan | Keep case | 107 × 149 × 17 | Published size | Japan: compact clear case 149×107×17. An outer sleeve isn't confirmed, so not drawn. |
 | Wii | All | Keep case | 135 × 190 × 14 | Published size | White DVD-size case. |
 | WiiU | All | Keep case | 135 × 190 × 14 | Published size | Bright blue DVD-size case. |
-| NDS | North America | Card case | 122 × 135 × 15 | Published size | Black slim case (North America, Japan). Card at the top, Game Boy Advance slot under it (places not confirmed). |
-| NDS | Japan | Card case | 122 × 135 × 15 | Published size | As North America. |
-| NDS | Europe | Card case | 122 × 135 × 20 | Published size | Europe: clear and thicker (20 mm). |
-| 3DS | All | Card case | 122 × 135 × 12 | Published size | White in every region. The moulded cut-outs inside aren't confirmed, so only the card slot is drawn. |
+| NDS | North America | Card case | 135 × 122 × 15 | Published size | Black slim case (North America, Japan). Card at the top, Game Boy Advance slot under it (places not confirmed). |
+| NDS | Japan | Card case | 135 × 122 × 15 | Published size | As North America. |
+| NDS | Europe | Card case | 135 × 122 × 20 | Published size | Europe: clear and thicker (20 mm). |
+| 3DS | All | Card case | 135 × 122 × 12 | Published size | White in every region. The moulded cut-outs inside aren't confirmed, so only the card slot is drawn. |
 | Switch | All | Card case | 104 × 170 × 10 | Published size | Clear (the red is the paper insert). Card holder low on the right, tabs above it for paper. |
-| Switch2 | All | Card case | 104 × 170 × 10 | Estimated | Red, red inside too; same size as Switch. How see-through isn't confirmed. |
+| Switch2 | All | Card case | 104 × 170 × 10 | Published size | Red, red inside too; 170×104×10 like Switch (Wikipedia's keep-case table). How see-through isn't confirmed. |
 | NES | North America | Cardboard box | 127 × 180 × 24 | Estimated | From the inside of a protector made for it (the box is 1–2 mm smaller). Which end opens and the inner parts aren't confirmed; drawn with a top tuck flap. |
 | NES | Europe | Cardboard box | 127 × 180 × 24 | Estimated | As North America; PAL boxes differ slightly (exact size not found). |
 | NES | Japan | Cardboard box | 127 × 180 × 24 | **Placeholder** | Famicom boxes come in small, standard and large sizes; none measured. The NES box is drawn. |

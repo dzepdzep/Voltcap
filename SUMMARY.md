@@ -4,6 +4,19 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (251): game clips stop behind a running game (found in the Azahar / Citra comparison); case-size doc fixes (#89 finding 6)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic, measured on the Thor** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (1): `src_copy\ui\VideoPreview.kt`. Docs: `CASES.md` (and the project's copy). **Files to delete:** none.
+
+- **Clips hold behind a game.** A game clip (the second screen's Video page, the home background clip, a details window's clip) kept playing while a game was in front. On the Thor the second screen's clip went on under the emulator's lower screen for the whole session: Voltcap redrew that whole screen 30 times a second, ~30 % of a CPU core next to the game (measured with `top` and `dumpsys gfxinfo` while 3DS demos ran). Clips now hold their frame whenever Voltcap isn't the app you're using (a game in front, the screen off, or a game on the other screen holding the controller) and play on when you're back. Measured: Voltcap during a game 30 % → 0.6 % CPU, 151 → 0 frames in 5 s; back on Home the clip plays again (checked).
+- **CASES.md**: the DS and 3DS cases are 135 × 122 (as the code has had since update 207, they were listed 122 × 135), and Switch 2 is a published size (the code says SOURCED; the doc still said Estimated).
+- **Azahar vs Citra comparison** (asked, nothing changed): `Claude outputs\evidence\azahar_vs_citra_2026-10-19.md`. Both full speed on two demos at 4×; Azahar's frame pacing is uneven on the Thor's 120 Hz screen. Keep Azahar; questions 31–34 in `QUESTIONS_FOR_TONI.md`.
+- Not done (they change how models look, which needs your OK — question 35): #89 finding 3 (every case's thickness from its spec, not only PS1's) and finding 12 (the Save Vault SD card a third thinner, as drawn elsewhere).
+
+---
+
 ## Update — 19 Oct 2026 (250): Shared move (Game Glance style) game window (#119 v3); TV room's added parts start on the left (#94)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic, recorded on the Thor** by Claude, committed and pushed by Claude.

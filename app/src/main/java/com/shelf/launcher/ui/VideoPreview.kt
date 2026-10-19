@@ -35,7 +35,12 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
     // Update 221 (#60 / #96): [paused] — the home screen is idle (HomeIdle.calm: 30 s without input, or the battery
     // saver's rest). The clip holds its frame: a looping clip redrew the whole screen ~30 times a second forever (on the
     // RP Classic ~17 ms of GPU per frame, so it never reached 60 and kept the GPU busy). The first press plays it on.
-    val pausedNow = androidx.compose.runtime.rememberUpdatedState(paused)
+    // Update 251: also held while Voltcap isn't the app you're using (a game in front, the screen off, or a game on the other
+    // screen holding the controller): a clip left playing on the second screen behind a game redrew that whole screen
+    // 30 times a second the entire session (~30 % of a CPU core on the AYN Thor, measured while 3DS games ran).
+    val active = rememberIsActive()
+    val hold = paused || !active
+    val pausedNow = androidx.compose.runtime.rememberUpdatedState(hold)
     val prepared = remember(url) { java.util.concurrent.atomic.AtomicBoolean(false) }
     val alpha by animateFloatAsState(if (playing) 1f else 0f, tween(700), label = "video")
 
@@ -95,7 +100,7 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
                 (view.tag as? MediaPlayer)?.let { mp -> runCatching { val v = if (withSound) 1f else 0f; mp.setVolume(v, v) } }
                 // (Update 221: hold / play on with the home screen's idle state.)
                 (view.tag as? MediaPlayer)?.takeIf { prepared.get() }?.let { mp ->
-                    runCatching { if (paused && mp.isPlaying) mp.pause() else if (!paused && !mp.isPlaying) mp.start() }
+                    runCatching { if (hold && mp.isPlaying) mp.pause() else if (!hold && !mp.isPlaying) mp.start() }
                 }
             },
             onRelease = { view ->
