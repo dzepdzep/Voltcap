@@ -2,6 +2,7 @@ package com.shelf.launcher.ui
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ScreenShare
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Memory
@@ -76,7 +77,9 @@ fun GameOptionsDialog(
     /** Update 125: the emulator's package for the last row, "App settings" (Android games and apps use their own). */
     appSettingsPackage: String? = null,
     /** Update 195: "Cartridge shell…" (CartShellPicker.kt); null hides it. */
-    onCartShell: (() -> Unit)? = null
+    onCartShell: (() -> Unit)? = null,
+    /** Update 244: "Remove from Continue playing" (only for a game in it); null hides it. */
+    onRemoveFromContinue: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("GameOptionsDialog")
     ShelfMenuDialog(
@@ -92,6 +95,10 @@ fun GameOptionsDialog(
             onClick = onToggleFavorite
         )
         MenuRow(Icons.Filled.Info, "Details", "Score, summary, how long to beat", onClick = onShowDetails)
+        if (onRemoveFromContinue != null) {
+            // (Update 244: until it's played again; its play time stays.)
+            MenuRow(Icons.Filled.History, "Remove from Continue playing", "Until you play it again — play time stays", onClick = onRemoveFromContinue)
+        }
         if (onGuide != null) {
             MenuRow(Icons.Filled.Book, "Guide", "Walkthrough that follows where you are", onClick = onGuide)
         }

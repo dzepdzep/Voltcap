@@ -24,6 +24,28 @@ class RecentlyPlayedStore(context: Context) {
         return true
     }
 
+    /**
+     * Update 244: "Remove from Continue playing" — the time it was taken off, per game. The play time itself stays (it's
+     * also what sync merges), so playing the game again later brings it straight back. This device only.
+     */
+    fun hide(stableKey: String, at: Long = System.currentTimeMillis()) {
+        val updated = loadHidden() + (stableKey to at)
+        prefs.edit().putString(KEY_HIDDEN, gson.toJson(updated)).apply()
+    }
+
+    private fun loadHidden(): Map<String, Long> {
+        val json = prefs.getString(KEY_HIDDEN, null) ?: return emptyMap()
+        return runCatching { gson.fromJson<Map<String, Long>>(json, mapType) }.getOrDefault(emptyMap())
+    }
+
+    /** Update 244: [loadAll] without the games taken off Continue playing since they were last played (what the lists show). */
+    fun loadVisible(): Map<String, Long> {
+        val all = loadAll()
+        val hidden = loadHidden()
+        if (hidden.isEmpty()) return all
+        return all.filter { (k, t) -> (hidden[k] ?: Long.MIN_VALUE) < t }
+    }
+
     fun recordPlayed(stableKey: String, timestampMillis: Long) {
         val updated = loadAll() + (stableKey to timestampMillis)
         prefs.edit().putString(KEY, gson.toJson(updated)).apply()
@@ -31,5 +53,6 @@ class RecentlyPlayedStore(context: Context) {
 
     companion object {
         private const val KEY = "last_played_json"
+        private const val KEY_HIDDEN = "continue_hidden_json"
     }
 }

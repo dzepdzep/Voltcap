@@ -4,6 +4,17 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (244): "Remove from Continue playing"; physical-model audit (#89)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds and checked on the Thor** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (4): `src_copy\LauncherViewModel.kt`, `src_copy\data\RecentlyPlayedStore.kt`, `src_copy\ui\GameOptionsDialog.kt`, `src_copy\ui\LauncherScreen.kt`. New doc: `Claude outputs\VoltcapAgent\VOLTCAP_MODEL_AUDIT.md`. **Files to delete:** none.
+
+1. **Remove from Continue playing** (asked for). A game's options (START) show **Remove from Continue playing** when the game is in it. It disappears from Continue playing and the other "recently played" lists on this device until you play it again; its play time and the last-played time that sync merges are kept, so nothing is lost and other devices are unaffected. Used on the Thor to take off my Adventure Time test launch: Continue playing is back to 13 games with Pokémon Silver first.
+2. **#89 audit (documentation only).** `VOLTCAP_MODEL_AUDIT.md`: 314 rows — all 67 cartridge shells (1 sourced, 43 estimated, 23 placeholder per the code), 89 case specs, disc / UMD variants, 39 media templates, custom pack shapes, the 13 cartridge undersides and the Save Vault 3D objects — with sizes as in code, label windows, back / bottom details, source status, where each is drawn, and 15 findings with file:line to check next (e.g. PS1 EU case 125 vs 129 mm tall in the code's own source, NDS / 3DS case width and height swapped in the old audit JSON, three disc-pack shells with identical geometry). Nothing changed in code from it yet.
+
+---
+
 ## Update — 19 Oct 2026 (243): Twin desk's extras are optional (#55), Spotlight's game name stays on screen (#94); 3DS back on Azahar, RetroArch GL test on the RP Classic
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds** by Claude, committed and pushed by Claude.

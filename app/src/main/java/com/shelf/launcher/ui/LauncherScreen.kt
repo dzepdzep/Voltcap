@@ -4257,7 +4257,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 optionsForGame = null
                 musicOverrideFor = com.shelf.launcher.data.MusicOverrides.gameKey(game.stableKey) to com.shelf.launcher.ui.stripRegionTags(game.name)
             },
-            appSettingsPackage = viewModel.emulatorFor(game)
+            appSettingsPackage = viewModel.emulatorFor(game),
+            // (Update 244: a game in Continue playing can be taken off it — until it's played again.)
+            onRemoveFromContinue = if (state.lastPlayedAt.containsKey(game.stableKey)) {
+                { optionsForGame = null; viewModel.removeFromContinuePlaying(game) }
+            } else null
         )
     }
 

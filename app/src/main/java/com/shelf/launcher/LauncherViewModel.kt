@@ -549,7 +549,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             deepSearch = libraryStore.loadDeepSearch(),
             isArtKeyEncrypted = sgdbKeyStore.isEncrypted(),
             gameNativeConfig = gameNativeStore.load(),
-            lastPlayedAt = recentlyPlayedStore.loadAll(),
+            lastPlayedAt = recentlyPlayedStore.loadVisible(), // (Update 244: without games taken off Continue playing)
             playtime = playtimeStore.loadTotals(),
             screensaver = screensaverStore.load(),
             artStorage = artStorageStore.load(),
@@ -1320,7 +1320,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             // The saved category is gone (console removed, collection deleted): the start category instead.
             val start = appearanceStore.load().startCategory
             val special = runCatching { SpecialFilter.valueOf(start) }.getOrNull()
-                ?.takeUnless { it == SpecialFilter.RECENT && recentlyPlayedStore.loadAll().isEmpty() }
+                ?.takeUnless { it == SpecialFilter.RECENT && recentlyPlayedStore.loadVisible().isEmpty() }
             setSpecialFilter(special)
         }
         _uiState.update { s ->
@@ -1342,7 +1342,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             return preferencesStore.lastSpecialFilter()?.let { runCatching { SpecialFilter.valueOf(it) }.getOrNull() }
         }
         val filter = runCatching { SpecialFilter.valueOf(start) }.getOrNull() ?: return null
-        if (filter == SpecialFilter.RECENT && recentlyPlayedStore.loadAll().isEmpty()) return null
+        if (filter == SpecialFilter.RECENT && recentlyPlayedStore.loadVisible().isEmpty()) return null
         // (Update 219, #04: a start category you hid (Choose a category › Options) isn't in the L2 / R2 list or the
         // tabs, so the looks couldn't step out of it properly: start in All instead.)
         if (runCatching { filter.name in categoryStore.load().hidden }.getOrDefault(false)) return null
@@ -3561,6 +3561,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Update 244: takes [game] off Continue playing (and the other "recently played" lists) on this device until it's
+     * played again. Its play time and its last-played time for sync are kept.
+     */
+    fun removeFromContinuePlaying(game: Game) {
+        recentlyPlayedStore.hide(game.stableKey)
+        recombineGames()
+    }
+
     fun toggleFavorite(game: Game) {
         val updated = favoritesStore.toggle(game.stableKey)
         _uiState.update { it.copy(favorites = updated) }
@@ -4785,7 +4794,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun recombineGames() {
-        val lastPlayed = recentlyPlayedStore.loadAll()
+        val lastPlayed = recentlyPlayedStore.loadVisible() // (Update 244: without games taken off Continue playing)
         val merged = (applyOverrides(currentRomGames) + applyOverrides(currentAppGames) + applyOverrides(currentSteamGames) +
             applyOverrides(com.shelf.launcher.data.PinnedShortcuts.games(getApplication())))
             .sortedByDescending { lastPlayed[it.stableKey] ?: -1L }
