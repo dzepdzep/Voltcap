@@ -17,8 +17,9 @@ All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfL
 - TV channels / Hero tiles: the Drive notice ("RetroArch saves: comparing…") reached over the clock — it now stays in the gap between the category name and the clock.
 - Achievement count on the smallest tiles (Twin icons, Twin desk's list, Pocket Quest's strip): "107/155" was cut to "107/1"; there the share ("69%") now.
 - Diagnostics: "1 thing needs a look" (was "1 thing(s) need a look").
+- Theme › Controller lights: turning off "Lights in the theme colour" brings back the colour you had picked under R1 (it always went back to orange).
 
-Files (`src_copy\`): `ui\GameCard.kt`, `ui\GameDock.kt`, `ui\HomeChrome.kt`, `ui\HomeParts.kt`, `ui\LauncherScreen.kt`, `ui\StyleHomes.kt`, `ui\DiagnosticsContent.kt`.
+Files (`src_copy\`): `ui\SettingsDialog.kt`, `ui\GameCard.kt`, `ui\GameDock.kt`, `ui\HomeChrome.kt`, `ui\HomeParts.kt`, `ui\LauncherScreen.kt`, `ui\StyleHomes.kt`, `ui\DiagnosticsContent.kt`.
 
 ## Update — 19 Oct 2026 (265): Metacritic scores filled in from RAWG on their own (no file needed); Settings tidied — duplicates gone, music switches under Audio, crash reports and Restart under Diagnostics — after release 0.6.16
 

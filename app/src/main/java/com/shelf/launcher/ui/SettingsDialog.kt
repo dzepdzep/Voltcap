@@ -1543,13 +1543,21 @@ private fun ThemeContent(
                 )
             }
             item { m ->
+                val lightsCtx = androidx.compose.ui.platform.LocalContext.current
                 SwitchRow(
                     icon = Icons.Filled.Palette,
                     title = "Lights in the theme colour",
                     subtitle = "The lights follow the theme's accent colour (and change with it). Off: the colour picked under R1.",
                     checked = appearance.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR,
                     onChange = {
-                        onAppearanceChange(appearance.copy(lightsColor = if (it) com.shelf.launcher.data.LIGHTS_THEME_COLOR else 0xFFFF6A00.toInt()))
+                        // (0.6.17: turning it off brings back the colour you had picked under R1 — it always went back to
+                        // orange.) The picked colour is kept aside while the theme colour is used.
+                        val keep = lightsCtx.getSharedPreferences("voltcap_lights", android.content.Context.MODE_PRIVATE)
+                        val color = if (it) {
+                            if (appearance.lightsColor != com.shelf.launcher.data.LIGHTS_THEME_COLOR) keep.edit().putInt("picked", appearance.lightsColor).apply()
+                            com.shelf.launcher.data.LIGHTS_THEME_COLOR
+                        } else keep.getInt("picked", 0xFFFF6A00.toInt())
+                        onAppearanceChange(appearance.copy(lightsColor = color))
                     },
                     modifier = m
                 )
