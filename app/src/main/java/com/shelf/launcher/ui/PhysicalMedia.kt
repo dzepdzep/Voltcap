@@ -648,7 +648,8 @@ internal fun PhysicalMedia(
                         .androidx_background()
                 ) {
                     // (Update 215: a cover fitted at its own shape, never stretched; a label scan still fills the window.)
-                    if (label != null) AsyncImage(mediaArtModel(label), null, contentScale = if (labelIsScan) ContentScale.FillBounds else ContentScale.Fit, modifier = Modifier.fillMaxSize()) // (Update 157; 206: stretched to the label window)
+                    // (Update 260: in a UMD's round window the cover is cut square round its middle and fills it.)
+                    if (label != null) AsyncImage(mediaArtModel(label), null, contentScale = if (labelIsScan) ContentScale.FillBounds else if (shell == MediaShell.UMD) ContentScale.Crop else ContentScale.Fit, modifier = Modifier.fillMaxSize()) // (Update 157; 206: stretched to the label window)
                 }
             }
             Image(painterResource(shell.res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())

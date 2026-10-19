@@ -5494,7 +5494,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             HomeReach.zone, HomeReach.index, tileBarFocus, miniFocus, quickJump, showDetails,
                             categoryScreenOpen, GamePopup.game?.stableKey, PocketNav.signature(), GreenCoreNav.signature(),
                             PqNav.signature(), // (Update 202: Pocket Quest's own places)
-                            CubeNav.signature() // (Update 239, #93: the Cube menu's page and faces)
+                            CubeNav.signature(), // (Update 239, #93: the Cube menu's page and faces)
+                            // (Update 260, Thor: Choose a category's tile and the game window's row and scroll were missing
+                            // here, so a ▼ that moved down the category grid or scrolled the game window still sent the
+                            // controller to the second screen 160 ms later — it skipped what was left to scroll.)
+                            categoryIndex, detailsAction, detailsScroll.value, detailsScroll.isScrollInProgress
                         )
                     }
                     val before = padSnapshot()

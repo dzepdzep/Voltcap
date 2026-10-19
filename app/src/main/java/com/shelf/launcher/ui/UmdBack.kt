@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color as AColor
 import android.graphics.LinearGradient
+import android.graphics.Path
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.RectF
@@ -99,6 +100,85 @@ internal object UmdBack {
         c.drawRect(W - 1.5f, 41.5f, W, 45f, p) // (right as seen from behind)
 
         cache.put(key, b)
+        return b
+    }
+
+    /**
+     * Update 260: a UMD's outline fitted in [r] (64 × 65 mm): straight sides and bottom with small rounded corners, the
+     * top an arc of R 32 mm round the disc's middle (ECMA-365 §10.3.1) — the shape of the case's recess and of the UMD.
+     */
+    fun outline(r: RectF): Path {
+        val k = r.width() / W
+        val ky = r.height() / H
+        fun x(mm: Float) = r.left + mm * k
+        fun y(mm: Float) = r.top + mm * ky
+        val c = 3f // the bottom corners' radius, mm
+        return Path().apply {
+            moveTo(x(0f), y(CY))
+            // The top: half a circle of R 32 round the disc's middle, from the left side over to the right.
+            arcTo(RectF(x(CX - 32f), y(CY - 32f), x(CX + 32f), y(CY + 32f)), 180f, 180f, false)
+            lineTo(x(W), y(H - c))
+            quadTo(x(W), y(H), x(W - c), y(H))
+            lineTo(x(c), y(H))
+            quadTo(x(0f), y(H), x(0f), y(H - c))
+            close()
+        }
+    }
+
+    private val fronts = object : android.util.LruCache<String, Bitmap>(6 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: Bitmap) = value.byteCount
+    }
+
+    /**
+     * Update 260: a UMD seen from the front when the game has no photo of its own — the shell, the disc's label (the
+     * cover, cut round, not stretched) seen through it in a ring, the white middle with the hub, the clear window's rim:
+     * as Sony's drawn UMD (tpl_cartl_psp). Before, the open case held a grey card with the cover squeezed into it.
+     */
+    fun front(label: Bitmap?, px: Int = 512): Bitmap {
+        val key = "${label?.let { System.identityHashCode(it) } ?: 0}|$px"
+        fronts.get(key)?.let { return it }
+        val k = px / W
+        val b = Bitmap.createBitmap(px, (H * k).toInt(), Bitmap.Config.ARGB_8888)
+        val c = Canvas(b)
+        c.scale(k, k)
+        val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        val shape = outline(RectF(0f, 0f, W, H))
+        // The white shell, a little shaded towards the bottom.
+        p.shader = LinearGradient(0f, 0f, 0f, H, 0xFFFAFAFB.toInt(), 0xFFE3E5E9.toInt(), Shader.TileMode.CLAMP)
+        c.drawPath(shape, p)
+        p.shader = null
+        // The disc's label through the window: the cover cut square round its middle, filling the ring.
+        val discR = 29.4f
+        c.save()
+        c.clipPath(Path().apply { addCircle(CX, CY, discR, Path.Direction.CW) })
+        if (label != null && label.width > 0 && label.height > 0) {
+            val sq = minOf(label.width, label.height)
+            val src = android.graphics.Rect((label.width - sq) / 2, (label.height - sq) / 2, (label.width + sq) / 2, (label.height + sq) / 2)
+            c.drawBitmap(label, src, RectF(CX - discR, CY - discR, CX + discR, CY + discR), p)
+        } else {
+            p.shader = RadialGradient(CX, CY, discR, intArrayOf(0xFFC9CDD3.toInt(), 0xFF8E939B.toInt()), null, Shader.TileMode.CLAMP)
+            c.drawCircle(CX, CY, discR, p)
+            p.shader = null
+        }
+        // A soft gleam across the clear window.
+        p.shader = LinearGradient(CX - discR, CY - discR, CX + discR, CY + discR,
+            intArrayOf(0x33FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x22FFFFFF), floatArrayOf(0f, 0.35f, 0.7f, 1f), Shader.TileMode.CLAMP)
+        c.drawCircle(CX, CY, discR, p)
+        p.shader = null
+        c.restore()
+        // The window's dark rim, the white middle and the hub.
+        p.style = Paint.Style.STROKE; p.strokeWidth = 0.9f; p.color = 0xFF1C1E22.toInt()
+        c.drawCircle(CX, CY, discR + 0.2f, p)
+        p.style = Paint.Style.FILL; p.color = 0xFFF6F7F8.toInt()
+        c.drawCircle(CX, CY, 10.5f, p)
+        p.style = Paint.Style.STROKE; p.strokeWidth = 0.35f; p.color = 0x55000000
+        c.drawCircle(CX, CY, 10.5f, p)
+        p.style = Paint.Style.FILL
+        // The shell's edge.
+        p.style = Paint.Style.STROKE; p.strokeWidth = 0.5f; p.color = 0x44000000
+        c.drawPath(shape, p)
+        p.style = Paint.Style.FILL
+        fronts.put(key, b)
         return b
     }
 

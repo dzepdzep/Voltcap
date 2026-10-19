@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -96,7 +98,11 @@ fun safeZone(): SafeZone = LocalSafeZone.current ?: computeSafeZone()
 @Composable
 private fun computeSafeZone(): SafeZone {
     val size = screenSizeDp()
-    val insets = WindowInsets.safeDrawing.asPaddingValues()
+    // (Update 260, RP Classic: the system bars and the cut-out only — not the on-screen keyboard. safeDrawing counts the
+    // keyboard too, so while it was up for a search (and on the RP Classic for a while after it went) the zone lost
+    // 213 dp at the bottom and every part placed by fractions jumped up: the achievements card you put under the games
+    // sat over them.)
+    val insets = WindowInsets.systemBars.union(WindowInsets.displayCutout).asPaddingValues()
     val dir = LocalLayoutDirection.current
     val extra = Features.safeZoneExtra.state.value
     return remember(size, insets, dir, extra) {

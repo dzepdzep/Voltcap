@@ -1105,7 +1105,8 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
             // Update 189: how to open it, said once it's out.
             if (piece.kind == InspectKind.BOX && piece.content != null) OpenHint(
                 motion, left - win[0], top + h - win[1], w,
-                when (piece.content?.kind) { InspectKind.DISC -> "disc"; else -> if (piece.content?.game?.platform in setOf("NDS", "3DS", "Switch", "PSVita")) "card" else "cartridge" },
+                // (Update 260: a PSP game's is a UMD, not a cartridge.)
+                when (piece.content?.kind) { InspectKind.DISC -> "disc"; else -> if (piece.content?.game?.platform?.let { MediaShell.of(it) } == MediaShell.UMD) "UMD" else if (piece.content?.game?.platform in setOf("NDS", "3DS", "Switch", "PSVita")) "card" else "cartridge" },
                 manual = bookPlace != null
             )
         }

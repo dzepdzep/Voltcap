@@ -121,7 +121,10 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
                 ) {
                     // (Update 206: stretched to fill the label window exactly — the art adapts to the label, never cut.)
                     // (Update 215: a cover at its own shape, fitted in the window, never stretched; a label scan still fills it.)
-                    if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = if (labelScan != null) ContentScale.FillBounds else ContentScale.Fit, modifier = Modifier.fillMaxSize()) // (Update 157)
+                    // (Update 260: a UMD's window is round — its cover cut square round its middle fills it, as a disc's
+                    // label does; fitted, a tall cover left grey bands either side.)
+                    val roundWindow = cart.res == com.shelf.launcher.R.drawable.tpl_cart_psp || cart.res == com.shelf.launcher.R.drawable.tpl_cartl_psp
+                    if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = if (labelScan != null) ContentScale.FillBounds else if (roundWindow) ContentScale.Crop else ContentScale.Fit, modifier = Modifier.fillMaxSize()) // (Update 157)
                 }
                 Image(painterResource(cart.res), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }

@@ -138,10 +138,10 @@ internal object CaseInside {
     private fun specKey(spec: CaseSpec?): String = spec?.let { "${it.platform}.${it.region}.${it.shell}" } ?: "-"
 
     /** The tray side (the case's back half, seen from inside). */
-    fun tray(platform: String?, aspect: Float, itemAspect: Float, spec: CaseSpec? = null, kind0: Kind? = null): Bitmap {
+    fun tray(platform: String?, aspect: Float, itemAspect: Float, spec: CaseSpec? = null, kind0: Kind? = null, umd: Boolean = false): Bitmap {
         val kind = kind0 ?: kindFor(spec, platform, null)
         val col = plastic(spec, platform)
-        val key = "t|$kind|$col|${(aspect * 100).toInt()}|${(itemAspect * 100).toInt()}|${specKey(spec)}"
+        val key = "t|$kind|$col|${(aspect * 100).toInt()}|${(itemAspect * 100).toInt()}|${specKey(spec)}|$umd"
         cache.get(key)?.let { return it }
         val h = 512
         val w = (h * aspect).toInt().coerceIn(160, 1200)
@@ -154,7 +154,7 @@ internal object CaseInside {
             // Update 191 (Xbox One / Series): the disc is on the other side; this side only has its paper clips.
             tabs(c, w, h, shade(col, if (light) 0.85f else 1.5f), p, onLeft = true)
         } else {
-            mediaBed(c, w, h, kind, aspect, itemAspect, spec, col, p)
+            mediaBed(c, w, h, kind, aspect, itemAspect, spec, col, p, umd)
         }
         // Update 189: the opening edge's thumb grip (keep and card cases have one; jewel cases don't): a raised strip
         // along the right edge's middle with a dip in it for your thumb. (Update 191: where the real case has one.)
@@ -174,7 +174,7 @@ internal object CaseInside {
     }
 
     /** What holds the disc / card: the hub and its ridges, a jewel tray's seat, a card's recess and the case's other slots. */
-    private fun mediaBed(c: Canvas, w: Int, h: Int, kind: Kind, aspect: Float, itemAspect: Float, spec: CaseSpec?, col: Int, p: Paint) {
+    private fun mediaBed(c: Canvas, w: Int, h: Int, kind: Kind, aspect: Float, itemAspect: Float, spec: CaseSpec?, col: Int, p: Paint, umd: Boolean = false) {
         val light = isLight(col)
         val r = itemRect(kind, aspect, itemAspect, spec)
         val ir = RectF(r[0] * w, r[1] * h, r[2] * w, r[3] * h)
@@ -206,7 +206,29 @@ internal object CaseInside {
                 }
                 hub(c, cx, cy, rad * (if (spec?.media == CaseHeld.DISC80) 1.5f else 1f), col, p)
             }
-            Kind.SLOT -> {
+            Kind.SLOT -> if (umd) {
+                // Update 260: a PSP case holds its UMD in a recess of the UMD's own shape (round top, straight bottom), with
+                // the round hub in the middle that clips into the UMD's spindle window and a thumb notch under it — it was
+                // a square card slot.
+                p.style = Paint.Style.FILL
+                val m = h * 0.012f
+                val bed = RectF(ir.left - m, ir.top - m, ir.right + m, ir.bottom + m)
+                p.color = shade(col, if (light) 0.8f else 0.6f)
+                c.drawPath(UmdBack.outline(RectF(bed.left + h * 0.004f, bed.top + h * 0.006f, bed.right + h * 0.004f, bed.bottom + h * 0.006f)), p)
+                p.color = shade(col, if (light) 0.88f else 0.72f)
+                c.drawPath(UmdBack.outline(bed), p)
+                // The hub (the disc's middle is 32 mm down the 65 mm UMD).
+                val hx = ir.centerX(); val hy = ir.top + ir.height() * (32f / 65f); val hr = ir.width() * (9f / 64f)
+                p.color = shade(col, if (light) 0.7f else 0.5f)
+                c.drawCircle(hx + h * 0.004f, hy + h * 0.006f, hr, p)
+                p.color = shade(col, if (light) 0.97f else 1.35f)
+                c.drawCircle(hx, hy, hr, p)
+                p.color = shade(col, if (light) 0.85f else 1.1f)
+                c.drawCircle(hx, hy, hr * 0.55f, p)
+                // The thumb notch at the bottom edge.
+                p.color = shade(col, 0.5f)
+                c.drawCircle(ir.centerX(), ir.bottom + m, ir.width() * 0.12f, p)
+            } else {
                 // The card's recess with a thumb notch under it.
                 p.style = Paint.Style.FILL
                 p.color = shade(col, 0.62f)
@@ -357,11 +379,12 @@ internal object CaseInside {
      * The disc / card lying in the case: the game's own picture of it when there is one ([real]), else drawn — a disc
      * with the cover as its label, or a card with the cover on it.
      */
-    fun item(kind: Kind, real: Bitmap?, label: Bitmap?, itemAspect: Float, tone: Int): Bitmap? {
-        val key = "i|$kind|${real?.let { System.identityHashCode(it) } ?: 0}|${label?.let { System.identityHashCode(it) } ?: 0}|${(itemAspect * 100).toInt()}"
+    fun item(kind: Kind, real: Bitmap?, label: Bitmap?, itemAspect: Float, tone: Int, umd: Boolean = false): Bitmap? {
+        val key = "i|$kind|${real?.let { System.identityHashCode(it) } ?: 0}|${label?.let { System.identityHashCode(it) } ?: 0}|${(itemAspect * 100).toInt()}|$umd"
         cache.get(key)?.let { return it }
         val round = kind == Kind.HUB || kind == Kind.JEWEL
-        val out: Bitmap = if (real != null) real else if (round) {
+        // (Update 260: a PSP game without a photo of its UMD shows a drawn UMD, not a grey card with the cover squeezed in.)
+        val out: Bitmap = if (real != null) real else if (umd && !round) UmdBack.front(label) else if (round) {
             val s = 512
             val b = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888)
             val c = Canvas(b)

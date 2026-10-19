@@ -1253,7 +1253,9 @@ private fun WindowBody(
             // (Update 119: facts, achievements and two lines of the story under the picture, when chosen and there's room.)
             val info = extras.textAt(WinSlot.INFO) && maxH > 300.dp
             val bottom = (extras.textAt(WinSlot.BOTTOM) || extras.at(WinPart.MEDIA, WinSlot.BOTTOM) || extras.at(WinPart.ICONS, WinSlot.BOTTOM)) && !details
-            val btnRoom = 100.dp + (if (info) 74.dp else 0.dp) + (if (bottom) 82.dp else 0.dp)
+            // (Update 260: + the status line under the buttons — "Saves: …" and the power mode — which had no room and
+            // showed as two cut-off slivers at the window's bottom edge on the Thor and the RP Classic.)
+            val btnRoom = 100.dp + (if (info) 74.dp else 0.dp) + (if (bottom) 82.dp else 0.dp) + (if (status != null) 46.dp else 0.dp)
             val inner = (maxW - (if (look.panel != null) 28.dp else 0.dp)).coerceAtLeast(120.dp)
             val screenW = minOf(inner, (maxH - btnRoom - (if (look.panel != null) 28.dp else 0.dp)) * 1.78f).coerceAtLeast(120.dp)
             Column(panelMod, horizontalAlignment = Alignment.CenterHorizontally) {

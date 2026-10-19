@@ -241,7 +241,9 @@ internal fun Case3D(
     val itemReal = rememberSoftBitmap(if (canOpen) inside?.real else null, 480)
     val itemLabel = rememberSoftBitmap(if (canOpen && inside?.real == null) inside?.label else null, 480)
     val itemAspect = inside?.aspect ?: 1f
-    val trayBmp = remember(canOpen, g.platform, shape, itemAspect, spec, openKind) { if (canOpen) runCatching { CaseInside.tray(g.platform, shape, itemAspect, spec, openKind) }.getOrNull() else null }
+    // (Update 260: a PSP case — its UMD's own recess, and a drawn UMD in it when there's no photo.)
+    val umdCase = openKind == CaseInside.Kind.SLOT && MediaShell.of(g.platform) == MediaShell.UMD
+    val trayBmp = remember(canOpen, g.platform, shape, itemAspect, spec, openKind) { if (canOpen) runCatching { CaseInside.tray(g.platform, shape, itemAspect, spec, openKind, umdCase) }.getOrNull() else null }
     // Update 202: a game with a manual has it lying in the lid as a booklet (tap it to read; MediaInspectView), wearing
     // its first page once it's been downloaded.
     val hasBooklet = if (canOpen) rememberHasManual(g) else false
@@ -250,7 +252,7 @@ internal fun Case3D(
         if (canOpen) runCatching { CaseInside.lid(g.platform, shape, front, spec, openKind, itemAspect, hasBooklet, bookletPage) }.getOrNull() else null
     }
     val itemBmp = remember(canOpen, itemReal, itemLabel, itemAspect, openKind) {
-        if (canOpen && inside != null) runCatching { CaseInside.item(openKind, itemReal, itemLabel, itemAspect, inside.tone) }.getOrNull() else null
+        if (canOpen && inside != null) runCatching { CaseInside.item(openKind, itemReal, itemLabel, itemAspect, inside.tone, umdCase) }.getOrNull() else null
     }
     val itemRect = remember(openKind, shape, itemAspect, spec) { CaseInside.itemRect(openKind, shape, itemAspect, spec) }
     val plastic = remember(g.platform, spec) { CaseInside.plastic(spec, g.platform) }
