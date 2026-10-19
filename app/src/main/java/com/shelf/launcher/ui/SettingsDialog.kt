@@ -3489,6 +3489,9 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             }
             // Update 146: the banner page — one look for every layout (art banner, Play strip, tabs).
             RowChoice("Its style (every layout)", arrayOf(false, true), F.winBanner.state.value, { if (it) "Banner page" else "The layout's own" }) { F.winBanner.value = it }
+            // Update 249 (#119): the window as a move of the home screen itself (RowRevealWindow.kt).
+            RowChoice("Its motion (every layout)", com.shelf.launcher.data.Features.WinMotion.values(), F.winMotion.state.value, { it.label }) { F.winMotion.value = it }
+            MutedNote("The row opens up: the row with the game you're on rises into its page, the cover growing to its left. Row reveal: the art and the game stay where they are; the other games fade, the name rises, Play / Continue and the buttons slide down and the details appear. Off: the style above.")
             RowChoice("Its colours (every layout)", com.shelf.launcher.data.Features.WinColors.values(), F.gameWindowColors.state.value, { it.label }) { F.gameWindowColors.value = it }
             MutedNote("The game's colours come from its cover; the layout's own keeps each layout's look as it was.")
             // Update 125: what the window shows and where, for this layout on its own.

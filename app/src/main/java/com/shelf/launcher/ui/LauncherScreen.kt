@@ -41,6 +41,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.border
@@ -3177,6 +3178,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         if (pin != com.shelf.launcher.data.Features.ConsoleNamePin.HIDDEN) Row(
                             Modifier
                                 .fillMaxWidth()
+                                // (Update 249, #119: it fades as the row turns into the game window — RowReveal.)
+                                .then(if (com.shelf.launcher.data.Features.winMotion.state.value != com.shelf.launcher.data.Features.WinMotion.NONE)
+                                    Modifier.graphicsLayer { alpha = RowReveal.textAlpha() } else Modifier)
                                 .then(
                                     // Tile home: exactly on the name's line — it follows the selected tile
                                     // (left edge / centre / right edge, like the name), not the screen edge.
@@ -3757,7 +3761,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 videoUrl = hg?.stableKey?.let { state.videoUrls[it] },
                 loop = state.appearance.loopRow, loopTick = state.loopTick, loopStep = state.loopStep
             )
-        } else Box(Modifier.matchParentSize().edgeBump()) { GameRows() }
+        } else Box(Modifier.matchParentSize().edgeBump()) {
+            // (Update 249, #119: Row reveal's shade over the art, under the rows — RowRevealWindow.kt.)
+            if (com.shelf.launcher.data.Features.winMotion.state.value == com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL)
+                RowRevealShade(Modifier.matchParentSize())
+            GameRows()
+        }
         // Hero carousel / Spotlight / Icon bar (update 93): the game header's pieces, the category name and the game info
         // and news cards picked in that layout's options, each floating on its own (right side, stacked, until moved in
         // Edit Home). The same parts as the Voltcap row's, with their own place per layout.

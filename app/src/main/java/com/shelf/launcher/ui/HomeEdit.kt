@@ -552,7 +552,7 @@ internal fun BoxScope.MovableWidget(
     var origin by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
     if (stored == null && !editing && defaultFrac == null && nestedAt == null) {
         // (Update 125: the parts you add are always drawn over the games, never under them.)
-        Box(Modifier.align(defaultAlign).zIndex(PartsLayer.z).padding(defaultPadding).onSizeChanged { size = it; HomeEditState.sizes[id] = it }) {
+        Box(Modifier.align(defaultAlign).zIndex(PartsLayer.z).padding(defaultPadding).onSizeChanged { size = it; HomeEditState.sizes[id] = it }.rowRevealFade()) {
             Box(Modifier.stretched(sx, sy)) { ScaledWidget(scale) { StyledPart(id, content) } }
         }
         return
@@ -596,6 +596,7 @@ internal fun BoxScope.MovableWidget(
         Modifier
             .zIndex(if (PartsLayer.z > 0f && selected) PartsLayer.z + 2f else PartsLayer.z)
             .offset(pos.x, pos.y)
+            .then(if (editing) Modifier else Modifier.rowRevealFade())
             .onSizeChanged { size = it; HomeEditState.sizes[id] = it }
             .onGloballyPositioned { c ->
                 if (editing) HomeEditState.bounds[id] = c.boundsInRoot()

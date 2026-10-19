@@ -151,6 +151,8 @@ internal object SettingsIndex {
         E("Art (hero art, screenshots, wide capsules)", "Game look", "Covers, cases & discs", null, null),
         E("More look options", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Case stacks: cases in 3D", "Home", "Layout options", null, null),
+        // (Update 249, #119.)
+        E("Game window motion: the row opens up / row reveal", "Home", "Layout options", "lo_window", "Game window"),
         // (Update 246, #89: the rest of Case stacks' own switches — "mirror" found nothing.)
         E("Case stacks: stacks in perspective", "Home", "Layout options", null, null),
         E("Case stacks: tool strip", "Home", "Layout options", null, null),

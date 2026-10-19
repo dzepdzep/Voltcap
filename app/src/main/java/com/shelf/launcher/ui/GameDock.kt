@@ -352,8 +352,11 @@ internal fun GameDock(
         val lineShown = nameOnLine || look.playtimeOnHome
         // Right on top of the capsule — or under the row (Game names › Side).
         val lineAbove = !look.nameBelow
+        val rowMotionOn = com.shelf.launcher.data.Features.winMotion.state.value != com.shelf.launcher.data.Features.WinMotion.NONE
         val captionLine: @Composable () -> Unit = {
             val focusedKey = games[focus].stableKey
+            // (Update 249, #119: it fades as the row turns into the game window — RowReveal.)
+            androidx.compose.foundation.layout.Box(if (rowMotionOn) Modifier.graphicsLayer { alpha = RowReveal.textAlpha() } else Modifier) {
             FocusedLine(
                 logoUrl = if (nameOnLine && LocalTitleOptions.current.showLogos) {
                     artOverrides[focusedKey]?.logo ?: art[focusedKey]?.logoUrl
@@ -377,6 +380,7 @@ internal fun GameDock(
                     if (categoryBelow) androidx.compose.ui.Alignment.Bottom else androidx.compose.ui.Alignment.Top
                 }
             )
+            }
         }
         androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth().categorySlide()) {
         if (lineShown && lineAbove) captionLine()
@@ -643,6 +647,8 @@ internal fun GameDock(
                             }
                             // (Update 237, #30: the fade-in of the game you're on alone in the row.)
                             .then(if (onlyFocused) Modifier.graphicsLayer { alpha = appear.value } else Modifier)
+                            // (Update 249, #119: the game window as a move of the row — the other games fade, RowReveal.)
+                            .then(if (rowMotionOn) Modifier.graphicsLayer { alpha = RowReveal.alphaFor(rel == 0) } else Modifier)
                             // The game you're on reports where it is (cover light, game window; no layout change).
                             .then(if (rel == 0) Modifier.focusedCard() else Modifier)
                             // Update 202: the game you're on (its cover, box, cartridge or disc) moved / resized in Edit Home.

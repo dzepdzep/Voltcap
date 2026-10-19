@@ -4,6 +4,21 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (249): your two earlier popup designs as game window styles of their own (#119)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and recorded there** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, new (1): `src_copy\ui\RowRevealWindow.kt`; changed (8): `src_copy\data\Features.kt`, `src_copy\ui\GameWindow.kt`, `GameDock.kt`, `LauncherScreen.kt`, `HomeEdit.kt`, `QuickSettings.kt`, `SettingsDialog.kt`, `SettingsIndex.kt` (in `src_copy\ui\`). **Files to delete:** none.
+
+As you asked: the two designs from before I understood the Game Glance move are now **extra game window styles**, next to the ones there were (the layout's own window, Banner page, Classic details window). Nothing changes until you pick one; the Game Glance-style one (v3) waits for your approval.
+
+- **The row opens up**: A on a game — the row's band rises into a page over the whole screen, the game's cover grows out of its place in the row to the page's left, the name, description, facts, achievements and Play / Continue · Details · Achievements · Options come in beside it. B folds it back down into the row.
+- **Row reveal**: nothing grows. The art and the game you're on stay where they are; the other games, the name line and the category fade, the art darkens, the game's name rises to the top, the buttons slide down into the row beside the game and the description, facts and achievements appear in the room between. B plays it backwards.
+- Where: Settings › Home › Layout options › Game window › **Its motion** (Off / The row opens up / Row reveal), and **R1 › Popup** (tap = next, hold = list: Own · Banner · The row opens up · Row reveal · Classic). R1's Undo puts it back. Works on every layout whose game you're on has a place on the main screen; picked on the second screen, the usual window opens.
+- Checked on the Thor (Voltcap row and Case stacks, recorded with screenrecord): both open and close with B; Play focused on opening. Your settings put back afterwards: Voltcap row → Classic details window, Case stacks → the layout's own window, layout Case stacks.
+
+---
+
 ## Update — 19 Oct 2026 (248): disc data side read from the image itself (#89 finding 11), case sizes in your case region (#89 finding 15)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, unit-tested and built** by Claude, committed and pushed by Claude.

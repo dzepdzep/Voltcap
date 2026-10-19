@@ -502,6 +502,11 @@ internal fun GameWindow(
     val perfState = rememberGamePerf(g, perfPackage)
     val syncView = rememberGameSyncView(g, syncOn)
     val hasFan = if (perfState != null) rememberHasFan() else null
+    // Update 249 (#119): the game window as a move of the home screen itself (Game window › Its motion, R1 › Popup) —
+    // where the game you're on has a place on this screen; else the usual window below.
+    val rowMotion = Features.winMotion.state.value
+    if (rowMotion != Features.WinMotion.NONE &&
+        RowMotionWindow(rowMotion, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements)) return
     // Update 146: the banner page (Settings › Game window › Style), the same for every layout.
     if (Features.winBanner.state.value) {
         BannerGameWindow(

@@ -1552,6 +1552,16 @@ object Features {
      * Play, last played and play time, then tabs (L1 / R1): Activity, Achievements, Media, Game info. Off: each layout's own window.
      */
     val winBanner = BoolPref("win_banner", false)
+    /**
+     * Update 249 (#119, Toni's two earlier designs kept as styles of their own): the game window as a move of the home
+     * screen itself instead of a window over it — [WinMotion.ROW_OPENS]: the row with the game you're on opens up into its
+     * details; [WinMotion.ROW_REVEAL]: the art stays, the other games fade, the name rises and Play / Continue and the
+     * buttons slide down while the details appear. NONE: the window as before (each layout's own, or the banner page).
+     */
+    enum class WinMotion(val label: String, val short: String) {
+        NONE("Off", "Off"), ROW_OPENS("The row opens up", "Row opens"), ROW_REVEAL("Row reveal", "Reveal")
+    }
+    val winMotion = EnumPref("win_motion", WinMotion.NONE, WinMotion.values())
 
     /** Channel grid (update 104): profile, Settings, notifications and sync buttons in the top right corner. */
     val chanCorner = BoolPref("chan_corner", true)
