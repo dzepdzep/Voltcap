@@ -49,12 +49,31 @@ $apk = Get-ChildItem "$root\app\build\outputs\apk\release\*.apk" | Sort-Object L
 $out = Join-Path $env:TEMP "Voltcap-$Version.apk"
 Copy-Item $apk.FullName $out -Force
 
+# (0.6.15: the build's profile files go along — the in-app updater installs the APK with the one for its Android
+# version, so Android compiles Voltcap during the install instead of overnight. Named voltcap-profile-api31.dm /
+# voltcap-profile-api28.dm; missing ones are just left out.)
+$assets = @($out)
+$meta = Join-Path $root "app\build\outputs\apk\release\output-metadata.json"
+if (Test-Path $meta) {
+    $m = Get-Content $meta -Raw | ConvertFrom-Json
+    foreach ($bp in $m.baselineProfiles) {
+        $name = if ([int]$bp.minApi -ge 31) { "voltcap-profile-api31.dm" } else { "voltcap-profile-api28.dm" }
+        $src = Join-Path $root ("app\build\outputs\apk\release\" + ($bp.baselineProfiles[0] -replace '/', '\'))
+        if (Test-Path $src) {
+            $dst = Join-Path $env:TEMP $name
+            Copy-Item $src $dst -Force
+            $assets += $dst
+        }
+    }
+}
+Write-Host ("Attaching: " + (($assets | ForEach-Object { Split-Path $_ -Leaf }) -join ", "))
+
 # (Update 209: the new version number committed and pushed first, so the release's tag is on it.)
 git add app/build.gradle.kts
 git commit -q -m "Voltcap $Version" 2>$null
 git push -q origin main
 
 if ($Notes -eq "") { $Notes = "Voltcap $Version" }
-gh release create "v$Version" $out -R dzepdzep/Voltcap --target main --title "Voltcap $Version" --notes $Notes
+gh release create "v$Version" @assets -R dzepdzep/Voltcap --target main --title "Voltcap $Version" --notes $Notes
 if ($LASTEXITCODE -ne 0) { throw "GitHub didn't take the release (see above)." }
 Write-Host "Done: https://github.com/dzepdzep/Voltcap/releases/tag/v$Version"

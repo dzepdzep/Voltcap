@@ -849,6 +849,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (i >= 0) viewModel.setFocus(i)
         TestHooks.game.value = null
     }
+    // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
+    val testCategory = TestHooks.category.value
+    LaunchedEffect(testCategory) {
+        val c = testCategory ?: return@LaunchedEffect
+        closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
+        viewModel.setSearchQuery("")
+        viewModel.setPlatformFilter(if (c.equals("ALL", ignoreCase = true)) null else c)
+        kotlinx.coroutines.delay(300)
+        viewModel.setFocus(0)
+        TestHooks.category.value = null
+    }
     // (Update 261: a game look for this session only, for a test walk — nothing saved.)
     val testLook = TestHooks.look.value
     LaunchedEffect(testLook) {

@@ -22,15 +22,25 @@ internal object TestHooks {
      */
     val look = mutableStateOf<String?>(null)
     @Volatile var previewOnly = false
+    /** A category to show (`--es voltcap_test_category ALL`, or a console's name): for the scroll-stutter runs. */
+    val category = mutableStateOf<String?>(null)
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
         val want = intent?.getStringExtra("voltcap_test_layout")
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")
         val lk = intent?.getStringExtra("voltcap_test_look")
-        if (want == null && g == null && st == null && lk == null) return
+        val cat = intent?.getStringExtra("voltcap_test_category")
+        val inst = intent?.getStringExtra("voltcap_test_install")
+        // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
+        val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
+        if (pv) previewOnly = true
+        // 0.6.15: the updater's install path with a local voltcap.apk (+ voltcap.dm) — Android still asks first.
+        if (inst != null) com.shelf.launcher.data.AppUpdates.installForTest(context, java.io.File(inst))
+        if (cat != null) category.value = cat.replace('_', ' ')
         if (lk != null && com.shelf.launcher.data.CardArtType.values().any { it.name == lk }) look.value = lk
         if (st != null) settings.value = st.replace('_', ' ')
         if (g != null) game.value = g.replace('_', ' ') // (adb: "Contra_III")

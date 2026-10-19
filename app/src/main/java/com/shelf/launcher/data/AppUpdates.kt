@@ -19,7 +19,20 @@ object AppUpdates {
     const val REPO = "dzepdzep/Voltcap"
     private const val LATEST = "https://api.github.com/repos/$REPO/releases/latest"
 
-    class Release(val tag: String, val name: String, val notes: String, val apkUrl: String?, val apkBytes: Long, val published: String)
+    class Release(
+        val tag: String, val name: String, val notes: String, val apkUrl: String?, val apkBytes: Long, val published: String,
+        /** 0.6.15: the release's dex metadata (the baseline profile) for this Android version, when the release has one. */
+        val dmUrl: String? = null
+    )
+
+    /**
+     * 0.6.15: the release's profile files (made by the build next to the APK, uploaded by tools\release\release.ps1).
+     * Installed with the APK, Android compiles Voltcap's scrolling and start-up code during the install; an APK alone
+     * runs half-interpreted until Android's overnight optimisation (measured on the Odin 2 Portal: 14 % janky frames
+     * scrolling All games in Classic, 5 % once compiled).
+     */
+    const val DM_API31 = "voltcap-profile-api31.dm"
+    const val DM_API28 = "voltcap-profile-api28.dm"
 
     sealed class State {
         object Idle : State()
@@ -93,15 +106,24 @@ object AppUpdates {
                     val j = org.json.JSONObject(res.body?.string().orEmpty())
                     val assets = j.optJSONArray("assets")
                     var url: String? = null; var bytes = 0L
+                    val dmName = when {
+                        android.os.Build.VERSION.SDK_INT >= 31 -> DM_API31
+                        android.os.Build.VERSION.SDK_INT >= 28 -> DM_API28
+                        else -> null
+                    }
+                    var dm: String? = null
                     if (assets != null) for (i in 0 until assets.length()) {
                         val a = assets.getJSONObject(i)
-                        if (a.optString("name").endsWith(".apk", ignoreCase = true)) {
-                            url = a.optString("browser_download_url"); bytes = a.optLong("size"); break
+                        val n = a.optString("name")
+                        if (url == null && n.endsWith(".apk", ignoreCase = true)) {
+                            url = a.optString("browser_download_url"); bytes = a.optLong("size")
+                        } else if (dmName != null && n.equals(dmName, ignoreCase = true)) {
+                            dm = a.optString("browser_download_url")
                         }
                     }
                     val r = Release(
                         j.optString("tag_name"), j.optString("name").ifBlank { j.optString("tag_name") },
-                        j.optString("body"), url, bytes, j.optString("published_at").take(10)
+                        j.optString("body"), url, bytes, j.optString("published_at").take(10), dm
                     )
                     // Update 204: kept with its ETag for the next (conditional) ask.
                     if (r.tag.isNotBlank()) { lastRelease = r; etag = res.header("ETag") }
@@ -157,6 +179,16 @@ object AppUpdates {
                             }
                         }
                     }
+                    // 0.6.15: the profile next to it (small; without it the update still installs, compiled later).
+                    r.dmUrl?.let { du ->
+                        runCatching {
+                            client.newCall(okhttp3.Request.Builder().url(du).build()).execute().use { dres ->
+                                if (dres.isSuccessful) dres.body?.byteStream()?.use { input ->
+                                    File(dir, "voltcap-${r.tag.removePrefix("v")}.dm").outputStream().use { input.copyTo(it) }
+                                }
+                            }
+                        }
+                    }
                     State.Ready(r, out)
                 }
             }.getOrElse { out.delete(); State.Failed("Download stopped (${it.javaClass.simpleName}). Try again.") }
@@ -164,14 +196,99 @@ object AppUpdates {
         }
     }
 
-    /** Hands [apk] to Android's installer (which asks before installing). */
+    /**
+     * Hands [apk] to Android's installer (which asks before installing).
+     * 0.6.15: with its profile (`voltcap-x.dm` next to it) the install goes through an install session holding both, so
+     * Android compiles Voltcap while installing. It still asks first, the same way. Anything going wrong there falls back
+     * to the installer screen with the APK alone.
+     */
     fun install(c: Context, apk: File) {
+        val app = c.applicationContext
+        val dm = File(apk.parentFile, apk.name.removeSuffix(".apk") + ".dm")
+        if (!dm.isFile || dm.length() == 0L) { installScreen(app, apk); return }
+        // (Off the main thread: the session copies the whole APK.)
+        worker.execute {
+            if (!runCatching { installSession(app, apk, dm) }.getOrDefault(false)) installScreen(app, apk)
+        }
+    }
+
+    /** The APK alone, through Android's installer screen (as before 0.6.15). */
+    private fun installScreen(c: Context, apk: File) {
         runCatching {
             val uri = androidx.core.content.FileProvider.getUriForFile(c, c.packageName + ".fileprovider", apk)
             val i = Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             c.startActivity(i)
         }.onFailure { state.value = State.Failed("Couldn't open the installer (${it.javaClass.simpleName}).") }
+    }
+
+    private const val STATUS_ACTION = "com.shelf.launcher.UPDATE_INSTALL_STATUS"
+    @Volatile private var statusReceiver: android.content.BroadcastReceiver? = null
+    /** The APK of the session under way: what the fallback hands to the installer screen if the session fails. */
+    @Volatile private var sessionApk: File? = null
+
+    /** 0.6.15: APK + profile in one install session (Android 9+). False when it couldn't be started. */
+    private fun installSession(app: Context, apk: File, dm: File): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < 28) return false
+        val installer = app.packageManager.packageInstaller
+        val params = android.content.pm.PackageInstaller.SessionParams(android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+        params.setAppPackageName(app.packageName)
+        params.setSize(apk.length() + dm.length())
+        val id = installer.createSession(params)
+        try {
+            installer.openSession(id).use { s ->
+                // The profile is named after the APK it belongs to: base.apk + base.dm.
+                for ((name, f) in listOf("base.apk" to apk, "base.dm" to dm)) {
+                    s.openWrite(name, 0, f.length()).use { out -> f.inputStream().use { it.copyTo(out) }; s.fsync(out) }
+                }
+                registerStatusReceiver(app)
+                sessionApk = apk
+                val flags = android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                    (if (android.os.Build.VERSION.SDK_INT >= 31) android.app.PendingIntent.FLAG_MUTABLE else 0)
+                val pi = android.app.PendingIntent.getBroadcast(app, id, Intent(STATUS_ACTION).setPackage(app.packageName), flags)
+                s.commit(pi.intentSender)
+            }
+            return true
+        } catch (t: Throwable) {
+            runCatching { installer.abandonSession(id) }
+            return false
+        }
+    }
+
+    private fun registerStatusReceiver(app: Context) {
+        if (statusReceiver != null) return
+        val r = object : android.content.BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                val status = intent.getIntExtra(android.content.pm.PackageInstaller.EXTRA_STATUS, android.content.pm.PackageInstaller.STATUS_FAILURE)
+                when (status) {
+                    // Android's own question ("Do you want to update this app?"), as with the installer screen.
+                    android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                        @Suppress("DEPRECATION")
+                        val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                        if (confirm != null) runCatching { ctx.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                            .onFailure { sessionApk?.let { installScreen(ctx, it) } }
+                    }
+                    android.content.pm.PackageInstaller.STATUS_SUCCESS -> Unit // Voltcap restarts as the new version.
+                    // Cancelled: the download stays, Install tries again.
+                    android.content.pm.PackageInstaller.STATUS_FAILURE_ABORTED -> Unit
+                    // Anything else: the old way, the APK alone in Android's installer screen.
+                    else -> sessionApk?.let { installScreen(ctx, it) }
+                }
+            }
+        }
+        androidx.core.content.ContextCompat.registerReceiver(
+            app, r, android.content.IntentFilter(STATUS_ACTION), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        statusReceiver = r
+    }
+
+    /**
+     * 0.6.15, testing only (TestHooks, `--es voltcap_test_install <folder>`): installs `voltcap.apk` (+ `voltcap.dm`)
+     * from that folder through [install], the way a downloaded update goes.
+     */
+    fun installForTest(c: Context, folder: File) {
+        val apk = File(folder, "voltcap.apk")
+        if (apk.isFile) install(c, apk)
     }
 
     /** Whether Android lets Voltcap install apps (Android 8+ asks once, in its own settings screen). */

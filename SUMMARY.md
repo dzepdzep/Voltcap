@@ -4,6 +4,21 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (262): updates install already compiled (no stutter after an update); scroll-stutter measured on the Odin 2 Portal; screens of the Odin and Flip 2 checked
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Odin 2 Portal** (updated there from 0.6.8), committed and pushed by Claude. **Not published.**
+
+**Copy `src_copy`**, changed (3): `src_copy\data\AppUpdates.kt`, `src_copy\ui\TestHooks.kt`, `src_copy\ui\LauncherScreen.kt`. Also changed: `tools\release\release.ps1` (and its copy in `project_copy\tools\release\`). **Files to delete:** none.
+
+- **Why scrolling stuttered after an update:** an APK installed by itself (the in-app updater, USB) leaves Voltcap uncompiled until Android's overnight optimisation; until then it runs half-interpreted. On the Odin, scrolling All games (239) in Classic: 14 % janky frames uncompiled, 5 % compiled (worst frame 73 → 34 ms). All 32 layouts measured: `Claude outputs\evidence\stutter_odin_2026-10-19.md`.
+- **Updates now install compiled:** the updater downloads the release's profile file with the APK and installs both in one install session — Android compiles Voltcap during the install. Android still asks "Do you want to update this app?" as before; if anything goes wrong it falls back to the old installer screen with the APK alone. Checked on the Odin: `speed-profile (install-dm)` straight after the install (was `verify`). Works from the update after the one that brings this (that one is still installed the old way).
+- **Releases attach the profile files:** `release.ps1` adds `voltcap-profile-api31.dm` and `voltcap-profile-api28.dm` (made by the build next to the APK) to the GitHub release.
+- **Still stuttering once compiled (next):** Cards, GreenCore, Game shelf, Pocket, Twin icons (10–20 % janky frames); most layouts 1–6 %.
+- **Screens:** Odin 2 Portal and Flip 2 both 1920×1080 with 60 / 120 Hz modes (no 144 Hz on the Odin); the Odin is set to a fixed 120 Hz, the Flip 2 to 60 Hz.
+- **Test hooks (testing only, flag file needed):** `--es voltcap_test_category ALL`, `--ez voltcap_test_preview true` (layouts shown for the session only), `--es voltcap_test_install <folder>` (the updater's install path with a local voltcap.apk + voltcap.dm).
+
+---
+
 ## Update — 19 Oct 2026 (261): #120 UI walk on the Thor and RP Classic — game windows fit on handheld screens, Pocket clocks and "Play Game" fit, Timeline history stays under its header, Settings answers the first D-pad press on the Thor, search bar readable over Spotlight and closed by Android Back, the game you were on comes back after a search, synced play time in Play history; #95 checked on both handhelds
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the AYN Thor and the RP Classic**, committed and pushed by Claude. **Not published** (0.6.14 is still the latest release).
