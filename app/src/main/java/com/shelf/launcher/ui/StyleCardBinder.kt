@@ -521,21 +521,35 @@ private fun HandCard(
     ) {
         // The back is drawn mirrored, so it reads the right way round once the card has turned.
         if (showBack) CardBack(c, g, dims, Modifier.fillMaxSize().graphicsLayer { scaleX = -1f })
-        else CardFront(c, g, game, dims, centre, focused, sheen, Modifier.fillMaxSize())
+        else CardFront(cardFrontData(c, g), g, game, dims, centre, focused, sheen, Modifier.fillMaxSize())
     }
 }
+
+/**
+ * 0.6.15: what a card's front shows, as plain values. The cards only get this (not the whole home's context, which is new
+ * on every step), so moving along the hand recomposes and redraws just the cards whose own picture changed — every card
+ * of the hand was drawn again on each step (Odin 2 Portal: 16 % janky frames going sideways).
+ */
+@androidx.compose.runtime.Immutable
+private data class CardFrontData(
+    val cover: String?, val wide: String?, val progress: Pair<Int, Int>?, val played: Long?, val playtime: Long?, val count: Int
+)
+
+private fun cardFrontData(c: StyleCtx, g: Game) = CardFrontData(c.cover(g), c.wide(g), c.progress(g), c.lastPlayed(g), c.playtime(g), c.games.size)
 
 /** A card's colours: its frame (console / art, gold when mastered) and what reads on it. */
 private class CardPalette(val frame: Brush, val ink: Color, val muted: Color, val panel: Color, val rim: Color, val star: Color)
 
 @Composable
-private fun rememberCardPalette(c: StyleCtx, g: Game): CardPalette {
-    val progress = c.progress(g)
+private fun rememberCardPalette(c: StyleCtx, g: Game): CardPalette = rememberCardPalette(c.cover(g), c.progress(g), g)
+
+@Composable
+private fun rememberCardPalette(cover: String?, progress: Pair<Int, Int>?, g: Game): CardPalette {
     val gold = progress != null && progress.first >= progress.second
     val console = consoleColor(g.platform)
     val fromArt = Features.cardsFrame.state.value == Features.CardFrame.ART && !gold
     // (A small copy of the cover, only for its colour.)
-    val bmp = rememberSoftBitmap(if (fromArt) c.cover(g) else null, 96)
+    val bmp = rememberSoftBitmap(if (fromArt) cover else null, 96)
     val artTone = rememberArtColor(bmp, console)
     val base = if (fromArt && bmp != null) artTone.copy(alpha = 1f) else console
     return remember(base, gold) {
@@ -555,13 +569,13 @@ private fun rememberCardPalette(c: StyleCtx, g: Game): CardPalette {
 
 /** The front: title bar, the cover in its window, the type line and the stats. */
 @Composable
-private fun CardFront(c: StyleCtx, g: Game, game: Int, d: CardDims, centre: Boolean, focused: Boolean, sheen: (() -> Float)?, modifier: Modifier) {
+private fun CardFront(f: CardFrontData, g: Game, game: Int, d: CardDims, centre: Boolean, focused: Boolean, sheen: (() -> Float)?, modifier: Modifier) {
     val titles = LocalTitleOptions.current
-    val p = rememberCardPalette(c, g)
-    val progress = c.progress(g)
-    val played = c.lastPlayed(g)
+    val p = rememberCardPalette(f.cover, f.progress, g)
+    val progress = f.progress
+    val played = f.played
     val placeholder = remember(g.hue) { placeholderBrush(g.hue) }
-    val url = c.cover(g) ?: c.wide(g)
+    val url = f.cover ?: f.wide
     Box(modifier.clip(RoundedCornerShape(d.corner)).background(p.frame).cardShine(sheen)) {
         Column(Modifier.fillMaxSize().padding(d.pad)) {
             CardTitle(titles.display(g.name), g, p, d)
@@ -580,7 +594,7 @@ private fun CardFront(c: StyleCtx, g: Game, game: Int, d: CardDims, centre: Bool
                 // cover fills the window edge to edge, centred, cut only as much as its shape is off the window's
                 // (object-fit: cover) — no dimmed copy or strips beside it; its file's flat strips trimmed (TrimMargins.kt).
                 if (url != null) {
-                    val req = rememberStyleArtRequest(url, trim = url == c.cover(g))
+                    val req = rememberStyleArtRequest(url, trim = url == f.cover)
                     AsyncImage(req, g.name, contentScale = ContentScale.Crop, alignment = Alignment.Center, modifier = Modifier.fillMaxSize().pixelArtwork())
                 }
                 else if (g.sourceType == SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
@@ -598,14 +612,14 @@ private fun CardFront(c: StyleCtx, g: Game, game: Int, d: CardDims, centre: Bool
                     titles.console(g.platform), color = p.ink, fontSize = d.bodySp, fontWeight = FontWeight.SemiBold,
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
                 )
-                Text("No. ${game + 1} / ${c.games.size}", color = p.muted, fontSize = d.smallSp, maxLines = 1, softWrap = false)
+                Text("No. ${game + 1} / ${f.count}", color = p.muted, fontSize = d.smallSp, maxLines = 1, softWrap = false)
             }
             Spacer(Modifier.height(d.gap))
             Column(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(d.corner * 0.5f)).background(p.panel)
                     .padding(horizontal = d.pad, vertical = d.gap)
             ) {
-                StatLine(Icons.Filled.Schedule, "Played", stylePlaytime(c.playtime(g), played != null), p, d)
+                StatLine(Icons.Filled.Schedule, "Played", stylePlaytime(f.playtime, played != null), p, d)
                 StatLine(Icons.Filled.EmojiEvents, "Achievements", progress?.let { "${it.first} / ${it.second}" } ?: "None", p, d)
                 StatLine(Icons.Filled.History, "Last played", played?.let { lastPlayedLabel(it) } ?: "Never", p, d)
                 RarityStars(progress, p, d)

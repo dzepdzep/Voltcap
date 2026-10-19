@@ -567,6 +567,9 @@ fun SettingsDialog(
                                         val mode = (picked - appearance.sortMode).firstOrNull() ?: appearance.sortMode
                                         onAppearanceChange(appearance.copy(sortMode = mode))
                                     }
+                                    // 0.6.15: Metacritic scores from a file you load.
+                                    Spacer(Modifier.height(8.dp))
+                                    MetacriticFileRow()
                                 }
                                 }
                                 }

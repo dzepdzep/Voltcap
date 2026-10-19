@@ -316,14 +316,42 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 val pr = if (scrolls) r.mod(plan.rows) else r
                 val rowLeft = ((areaW - plan.rowW[pr]) / 2).coerceAtLeast(0.dp)
                 key(r) {
-                ShelfBoard(look, Modifier.offset { IntOffset(0, (top + plan.rowH * (r - scroll.value)).roundToPx()) }.fillMaxWidth().height(plan.rowH))
-                for (i in slotsByRow[pr]) {
+                // (0.6.15: each shelf — its board and its games — is one kept layer: the bookcase was ~150 separate
+                // pictures on every frame; now the shelves that don't change are one picture each. [lift] leaves room
+                // above for a game being pulled out, and below for the board's shadow.)
+                val lift = plan.rowH * 0.5f
+                Box(
+                    Modifier
+                        .offset { IntOffset(0, (top + plan.rowH * (r - scroll.value) - lift).roundToPx()) }
+                        .fillMaxWidth()
+                        .height(lift + plan.rowH + 10.dp)
+                        .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                ) {
+                ShelfBoard(look, Modifier.offset { IntOffset(0, lift.roundToPx()) }.fillMaxWidth().height(plan.rowH))
+                // (0.6.15: a shelf that comes in out of sight — the one past the edge, ready for the next move — puts its
+                // games up a few per frame instead of all in one: going to another shelf used to hold one frame for
+                // ~125 ms (Odin 2 Portal, All games) while a whole shelf of spines was built. Shelves on screen, as on
+                // opening the layout or a new category, still appear at once.)
+                val rowSlots = slotsByRow[pr]
+                var shown by remember(plan) {
+                    // (Read without subscribing: the scroll must not recompose the shelves on every frame — update 130.)
+                    val sc = androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { kotlin.math.floor(scroll.value).toInt() }
+                    val onScreen = r >= sc && r < sc + visibleRows + 1
+                    androidx.compose.runtime.mutableIntStateOf(if (onScreen) rowSlots.size else 0)
+                }
+                if (shown < rowSlots.size) LaunchedEffect(plan) {
+                    while (shown < rowSlots.size) {
+                        androidx.compose.runtime.withFrameNanos { }
+                        shown = (shown + 6).coerceAtMost(rowSlots.size)
+                    }
+                }
+                for (i in rowSlots.take(shown)) {
                     val s = plan.slots[i]
                     val g = games[i]
                     key(g.stableKey) {
                         Box(
                             Modifier
-                                .offset { IntOffset((rowLeft + s.x).roundToPx(), (top + plan.rowH * (r - scroll.value) + plan.rowH * 0.9f - s.h).roundToPx()) }
+                                .offset { IntOffset((rowLeft + s.x).roundToPx(), (lift + plan.rowH * 0.9f - s.h).roundToPx()) }
                                 .size(s.w, s.h)
                                 // Pulled out: it slides up out of its place; a spine then turns away as the front comes round,
                                 // a front / turned case hands over to the pulled-out one as that comes forward.
@@ -355,6 +383,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                             }
                         }
                     }
+                }
                 }
                 }
             }

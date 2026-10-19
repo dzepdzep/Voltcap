@@ -24,6 +24,8 @@ internal object TestHooks {
     @Volatile var previewOnly = false
     /** A category to show (`--es voltcap_test_category ALL`, or a console's name): for the scroll-stutter runs. */
     val category = mutableStateOf<String?>(null)
+    /** 0.6.15: open the Sort window (`--ez voltcap_test_sort true`). */
+    val sort = mutableStateOf(false)
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
         val want = intent?.getStringExtra("voltcap_test_layout")
@@ -32,12 +34,22 @@ internal object TestHooks {
         val lk = intent?.getStringExtra("voltcap_test_look")
         val cat = intent?.getStringExtra("voltcap_test_category")
         val inst = intent?.getStringExtra("voltcap_test_install")
+        val mc = intent?.getStringExtra("voltcap_test_metacritic")
+        val so = intent?.getBooleanExtra("voltcap_test_sort", false) == true
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
+        if (so) sort.value = true
+        // 0.6.15: load a Metacritic scores file from a path (the Sort window's file picker, without the picker).
+        if (mc != null) {
+            val app = context.applicationContext
+            Thread { runCatching { com.shelf.launcher.data.MetacriticFile.import(app, android.net.Uri.fromFile(java.io.File(mc))) }
+                .onFailure { android.util.Log.e("VoltcapTest", "metacritic: ${it.message}") }
+                .onSuccess { android.util.Log.e("VoltcapTest", "metacritic: $it scores") } }.start()
+        }
         // 0.6.15: the updater's install path with a local voltcap.apk (+ voltcap.dm) — Android still asks first.
         if (inst != null) com.shelf.launcher.data.AppUpdates.installForTest(context, java.io.File(inst))
         if (cat != null) category.value = cat.replace('_', ' ')

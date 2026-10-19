@@ -849,6 +849,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (i >= 0) viewModel.setFocus(i)
         TestHooks.game.value = null
     }
+    // (0.6.15: the Sort window for a test run.)
+    if (TestHooks.sort.value) LaunchedEffect(Unit) { closeAllDialogs(); showSortDialog = true; TestHooks.sort.value = false }
     // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
     val testCategory = TestHooks.category.value
     LaunchedEffect(testCategory) {

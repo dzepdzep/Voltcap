@@ -180,6 +180,8 @@ enum class MissingInfo(val label: String) {
 data class SyncOfflinePrompt(val game: Game, val reason: String)
 
 data class LauncherUiState(
+    /** 0.6.15: bumped when the Metacritic file's scores change, so the lists are sorted again (MetacriticFile). */
+    val scoresVersion: Int = 0,
     val games: List<Game> = emptyList(),
     val usingSampleLibrary: Boolean = false,
     val romRootPath: String = LibrarySettingsStore.DEFAULT_ROOT_PATH,
@@ -572,9 +574,12 @@ data class LauncherUiState(
             com.shelf.launcher.data.SortMode.MASTERED ->
                 list.sortedWith(compareBy<Game> { awardRank(it) }.thenByDescending { progress(it) }.then(byName))
             com.shelf.launcher.data.SortMode.METACRITIC ->
-                list.sortedWith(compareByDescending<Game> { meta(it)?.metacritic ?: -1 }.then(byName))
+                // (0.6.15: games without a score in their details take it from your Metacritic file, if you loaded one.)
+                list.sortedWith(compareByDescending<Game> { meta(it)?.metacritic ?: com.shelf.launcher.data.MetacriticFile.score(it) ?: -1 }.then(byName))
             com.shelf.launcher.data.SortMode.CRITIC ->
-                list.sortedWith(compareByDescending<Game> { meta(it)?.let { m -> m.metacritic ?: m.criticScore } ?: -1 }.then(byName))
+                list.sortedWith(compareByDescending<Game> {
+                    meta(it)?.let { m -> m.metacritic ?: m.criticScore } ?: com.shelf.launcher.data.MetacriticFile.score(it) ?: -1
+                }.then(byName))
             com.shelf.launcher.data.SortMode.NEWEST ->
                 list.sortedWith(compareByDescending<Game> { meta(it)?.releaseYear ?: Int.MIN_VALUE }.then(byName))
             com.shelf.launcher.data.SortMode.OLDEST ->

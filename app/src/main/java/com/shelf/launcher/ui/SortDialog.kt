@@ -6,6 +6,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -68,7 +73,43 @@ fun SortDialog(
                 "Everything sorted by ${active.label}"
             ) { onApplyToAll(active); onDismiss() }
         }
+        // 0.6.15: Metacritic scores from a file (MetacriticFile) for games whose details have none.
+        if (active == SortMode.METACRITIC || active == SortMode.CRITIC) {
+            Spacer(Modifier.height(4.dp))
+            MetacriticFileRow()
+        }
         Spacer(Modifier.height(4.dp))
         MutedNote("The default is set under Settings › Library › Sort games by.")
     }
+}
+
+/** 0.6.15: load / replace / remove the Metacritic scores file (a CSV with name, platform, metascore; or a .zip with one). */
+@Composable
+internal fun MetacriticFileRow() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val n = com.shelf.launcher.data.MetacriticFile.count.intValue
+    var status by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val pick = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        status = "Reading the file…"
+        scope.launch {
+            status = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { com.shelf.launcher.data.MetacriticFile.import(context, uri) }
+                    .fold({ "Loaded: $it games with a score. The list is sorted with them now." }, { "Couldn't read it: ${it.message}" })
+            }
+        }
+    }
+    MenuRow(
+        Icons.Filled.UploadFile,
+        if (n > 0) "Load another Metacritic file" else "Load a Metacritic scores file",
+        if (n > 0) "$n scores from your file fill in games whose details have none" else
+            "A .csv (or .zip) with name, platform and metascore — games whose details have no score get it from there"
+    ) { runCatching { pick.launch(arrayOf("text/*", "application/zip", "application/octet-stream", "*/*")) } }
+    if (n > 0) MenuRow(Icons.Filled.Delete, "Remove the scores file", "Only scores from game details count again") {
+        com.shelf.launcher.data.MetacriticFile.clear(context); status = null
+    }
+    status?.let { MutedNote(it) }
 }

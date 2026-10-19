@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (264): sort by Metacritic score with your own scores file; Cards smooth going sideways; Game shelf builds a new shelf over a few frames — after release 0.6.15
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Odin 2 Portal**, committed and pushed by Claude. **Not published** (0.6.15 is the latest release, published today with updates 260–263).
+
+**Copy `src_copy`**, changed (8) + new (1): `src_copy\LauncherUiState.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\ui\SortDialog.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\StyleCardBinder.kt`, `src_copy\ui\ShelfHome.kt`, `src_copy\ui\TestHooks.kt`, `src_copy\ui\LauncherScreen.kt`; new `src_copy\data\MetacriticFile.kt`. **Files to delete:** none.
+
+- **Metacritic scores from your file:** Sort › Metacritic score (or Critic score) › "Load a Metacritic scores file", also in Settings › Library › Sort games by. Takes a .csv with the columns name, platform, metascore, or a .zip with one (your `games.csv.zip`: 30,231 scores). Only name, console and score are kept in Voltcap's own storage. Games whose details have no score get it from the file, matched by name (tags like "(USA)" and "Title, The" ignored) on the same console: PS1–PS5, PSP, Vita, GameCube, Wii, Wii U, Switch, N64, GBA, DS, 3DS, Dreamcast, Xbox, Xbox 360 / One, PC for DOS, iOS / PC for Android games. The file has no NES / SNES / Genesis / Game Boy / GBC scores (Metacritic starts in 1995), so those stay unscored. Checked on the Odin: All games sorted Tekken 4 79, Day of Reckoning 79, X-Men Legends 79–81, … in order; the All category put back to its default sort afterwards. Your file is on the Odin in Download and on the PC in `Claude outputs\rec\games.csv.zip`.
+- **Cards going sideways:** each card gets only what its front shows, so a step redraws the cards that changed instead of the whole hand: ◀▶ 16 % → 5–6 % janky frames, ▼▲ 5 % → 1 % (Odin 2 Portal, All games).
+- **Game shelf:** each shelf (board and games) is one kept picture, and a shelf coming in from off screen puts its games up a few per frame. ◀▶ 14 % → 10–11 %. Still open: going to another shelf (▼▲) has one long frame (~100–125 ms) when the new shelf's picture is first made.
+
+---
+
 ## Update — 19 Oct 2026 (263): smoother busy layouts (Cards, Green Core, Game shelf, Pocket); Voltcap at the screen's fastest rate (new, Settings › Device › Screen rate); R1 menu keeps its ✕; ▶ from the Settings list lands on the first setting; the Drive notice stays off the games in TV channels / Hero tiles
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Odin 2 Portal and the Retroid Pocket Flip 2**, committed and pushed by Claude. **Not published.**

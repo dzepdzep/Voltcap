@@ -6289,6 +6289,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     init {
+        // 0.6.15: Metacritic scores from your file (Sort › Metacritic score): read once, and the lists sorted again when they change.
+        com.shelf.launcher.data.MetacriticFile.onChange = { _uiState.update { it.copy(scoresVersion = it.scoresVersion + 1) } }
+        run {
+            val app = getApplication<Application>()
+            Thread { runCatching { com.shelf.launcher.data.MetacriticFile.load(app) } }.start()
+        }
         // Last played from other devices, once a little after start.
         syncLastPlayed(afterGame = false)
         // Favourite-theme rotation: on start, and a check every minute for "after a set time".

@@ -610,6 +610,8 @@ internal object SettingsIndex {
         E("Gesture hint", "Device", null, "dev_gesture", "Gesture hint"),
         // 0.6.15.
         E("Screen rate", "Device", null, "dev_rate", "Screen rate"),
+        E("Metacritic scores file", "Library", null, "lib_sort", "Sorting & category order"),
+        E("Sort games by Metacritic", "Library", null, "lib_sort", "Sorting & category order"),
         E("Fastest rate in Voltcap", "Device", null, "dev_rate", "Screen rate"),
         E("120 Hz", "Device", null, "dev_rate", "Screen rate"),
         E("Gesture hint (navigation pill)", "Device", null, "dev_gesture", "Gesture hint"),
