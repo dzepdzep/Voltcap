@@ -81,11 +81,8 @@ fun DeviceInfoContent(scroll: androidx.compose.foundation.ScrollState? = null) {
             "Controllers and Bluetooth accessories with their battery levels."
         ) { showDevices = true }
         if (showDevices) ConnectedDevicesDialog { showDevices = false }
-        MutedNote("Permissions have their own section now: Settings › Permissions.")
         VendorProfileCard()
-        MutedNote("The performance and music overlays during games have their own section: Settings › Overlay.")
-        SettingsHeading("Diagnostics")
-        CrashReportsCard()
+        // (0.6.17: crash reports are on the Diagnostics page; the notes pointing at Permissions / Overlay went.)
     }
 }
 

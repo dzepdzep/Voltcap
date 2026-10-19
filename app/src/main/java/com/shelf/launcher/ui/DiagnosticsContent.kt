@@ -102,7 +102,7 @@ private fun collect(context: android.content.Context, games: List<Game>, emulato
     val out = ArrayList<Check>()
     val pi = runCatching { context.packageManager.getPackageInfo(context.packageName, 0) }.getOrNull()
     out += Check("Voltcap", "Version", null, "${pi?.versionName ?: "?"} on ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}, Android ${android.os.Build.VERSION.RELEASE}")
-    out += Check("Voltcap", "Safe mode", !com.shelf.launcher.CrashGuard.safeMode, if (com.shelf.launcher.CrashGuard.safeMode) "On after repeated crashes — see Settings › Device › Crash reports." else "Off")
+    out += Check("Voltcap", "Safe mode", !com.shelf.launcher.CrashGuard.safeMode, if (com.shelf.launcher.CrashGuard.safeMode) "On after repeated crashes — see Crash reports below." else "Off")
     out += Check("Voltcap", "Default home app", null, if (com.shelf.launcher.data.HomeLauncher.isDefault(context)) "Voltcap is the home app" else "Another app is the home app")
 
     // Device

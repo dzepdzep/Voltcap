@@ -164,7 +164,7 @@ object Features {
     }
 
     // ---- Look & feel ----
-    enum class Density(val label: String, val scale: Float) { COMFORTABLE("Comfortable", 1f), COMPACT("Compact", 0.82f) }
+    enum class Density(val label: String, val scale: Float) { COMFORTABLE("Roomy", 1f), COMPACT("Tight", 0.82f) } // (0.6.15: "Compact" was also a Size choice)
     val density = EnumPref("density", Density.COMFORTABLE, Density.values())
 
     enum class Intensity(val label: String, val speed: Float, val amount: Float) {

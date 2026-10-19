@@ -4,6 +4,22 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (265): Metacritic scores filled in from RAWG on their own (no file needed); Settings tidied — duplicates gone, music switches under Audio, crash reports and Restart under Diagnostics — after release 0.6.16
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal and the Flip 2**, committed and pushed by Claude. To be published as Voltcap 0.6.17.
+
+**Metacritic sort without a file.** A bundled Metacritic file was left out on purpose (the scores are licensed, the data set has no licence). Instead: when a category is sorted by Metacritic or Critic score and a free RAWG key is connected (Settings › Accounts), Voltcap looks up the missing scores on RAWG by itself, one game every ~1 s in the background, and doesn't ask again for 30 days for a game RAWG doesn't know. The Sort window shows the progress ("Looking up missing scores on RAWG: 7 / 62…") or how to connect RAWG. Loading your own scores file still works as before.
+
+**Settings, simpler.**
+- Audio › Background music now holds "Pause music when closed" and "Also pause when locking" (were under Device).
+- Diagnostics now holds Restart Voltcap and the crash reports (were at the end of Device › This device); "This device" starts folded with a one-line summary.
+- Duplicates removed: "Lights off with the screensaver" (stays in Theme › Controller lights), Overlay/Performance notification switches (stay in Device › Notifications), "Video previews" in Home › Extras (stays in Audio), the second "Use the second screen" switch on Screens (the fold is now just "Home app").
+- Clearer names: "Only the game you're on spins", "Only the cover you're on animates", Spacing "Roomy / Tight".
+- Pointers fixed: lyrics → Home › Music player, sounds → Audio, scraping → Accounts, RomM permissions → Settings › Permissions; Diagnostics has its own icon.
+- Settings search: 24 entries for pages that no longer exist removed; new ones for Permissions, Allow everything, Restart Voltcap, In-game Quick menu, Spacing.
+
+Files (`src_copy\`): `LauncherViewModel.kt`, `data\Features.kt`, `data\MetacriticFile.kt`, `ui\ArtworkPickerDialog.kt`, `ui\GreenCoreSettings.kt`, `ui\PerfSettingsCard.kt`, `ui\SettingsDialog.kt`, `ui\SettingsIndex.kt`, `ui\SortDialog.kt`, `ui\DeviceInfoContent.kt`, `ui\DiagnosticsContent.kt`, `ui\RommSettingsCard.kt`.
+
 ## Update — 19 Oct 2026 (264): sort by Metacritic score with your own scores file; Cards smooth going sideways; Game shelf builds a new shelf over a few frames — after release 0.6.15
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Odin 2 Portal**, committed and pushed by Claude. **Published as Voltcap 0.6.16** (0.6.15 = updates 260–263, also published today). The Odin updated itself from 0.6.15 to 0.6.16 through Voltcap's own updater: it fetched the profile file with the APK and Android compiled Voltcap during the install (`speed-profile, install-dm`).

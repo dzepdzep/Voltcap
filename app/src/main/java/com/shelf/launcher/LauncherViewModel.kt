@@ -692,6 +692,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // A new global sort re-orders the dock: stay on the same game.
         if (settings.sortMode != old.sortMode) updateKeepingFocus { it.copy(appearance = settings) }
         else _uiState.update { it.copy(appearance = settings) }
+        // 0.6.15: sorting by score: the missing Metacritic scores come in from RAWG on their own.
+        if (settings.sortMode != old.sortMode && (settings.sortMode == com.shelf.launcher.data.SortMode.METACRITIC ||
+                settings.sortMode == com.shelf.launcher.data.SortMode.CRITIC)) fillMetacriticScores()
         if (raLogosTurnedOn) viewModelScope.launch { fetchMissingRaIcons() }
         // Collections switched on/off: rebuild the categories.
         if (settings.userCollections != old.userCollections ||
@@ -726,6 +729,58 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun setCategorySort(key: String, mode: com.shelf.launcher.data.SortMode?) {
         updateKeepingFocus { it.copy(categorySort = if (mode == null) it.categorySort - key else it.categorySort + (key to mode)) }
         viewModelScope.launch(Dispatchers.IO) { categorySortStore.set(key, mode) }
+        if (mode == com.shelf.launcher.data.SortMode.METACRITIC || mode == com.shelf.launcher.data.SortMode.CRITIC) fillMetacriticScores()
+    }
+
+    // ---- 0.6.15: Metacritic scores filled in from RAWG on their own ----
+    // Sorting by Metacritic / Critic score with a RAWG key connected (Settings › Accounts): games whose details have no
+    // Metacritic score are looked up on RAWG in the background, one at a time, only that score is added. A game RAWG had
+    // nothing for isn't asked again for 30 days. RAWG's free key allows 20,000 requests a month; a library of a few
+    // hundred games uses a few hundred to a thousand once.
+    private val scorePrefs by lazy { getApplication<Application>().getSharedPreferences("metacritic_fill", android.content.Context.MODE_PRIVATE) }
+    private var scoreFillJob: kotlinx.coroutines.Job? = null
+    /** Progress of the fill-in for the Sort window: (done, total), or null when nothing runs. */
+
+    /** Looks up the missing Metacritic scores on RAWG (when connected). Safe to call again: one run at a time. */
+    fun fillMetacriticScores() {
+        if (scoreFillJob?.isActive == true) return
+        val key = rawgKeyStore.load() ?: return
+        scoreFillJob = viewModelScope.launch(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+            val s0 = _uiState.value
+            val todo = s0.games.filter { g ->
+                (g.sourceType == SourceType.ROM || s0.isAndroidGame(g)) &&
+                    s0.metadata[g.stableKey]?.metacritic == null &&
+                    now - scorePrefs.getLong(g.stableKey, 0L) > 30L * 24 * 3600_000L
+            }
+            if (todo.isEmpty()) return@launch
+            var done = 0
+            com.shelf.launcher.data.MetacriticFile.rawgProgress.value = 0 to todo.size
+            try {
+                for (g in todo) {
+                    val meta = runCatching { rawgRepository.fetchMetadata(key, g.name, g.platform) }.getOrNull()
+                    val score = meta?.metacritic
+                    if (score != null) {
+                        val before = _uiState.value.metadata[g.stableKey]
+                        val merged = (before ?: GameMetadata(
+                            title = g.name, summary = null, releaseYear = null, criticScore = null, criticCount = null,
+                            genres = emptyList(), developer = null, hastilyHours = null, normallyHours = null, completelyHours = null
+                        )).copy(
+                            metacritic = score,
+                            criticScore = before?.criticScore ?: score
+                        )
+                        metadataCacheStore.put(g.stableKey, merged)
+                        _uiState.update { it.copy(metadata = it.metadata + (g.stableKey to merged)) }
+                    } else scorePrefs.edit().putLong(g.stableKey, System.currentTimeMillis()).apply()
+                    done++
+                    com.shelf.launcher.data.MetacriticFile.rawgProgress.value = done to todo.size
+                    // Gentle on RAWG: about one game a second.
+                    kotlinx.coroutines.delay(900)
+                }
+            } finally {
+                com.shelf.launcher.data.MetacriticFile.rawgProgress.value = null
+            }
+        }
     }
 
     /** One sort for every category: becomes the global sort and clears the per-category picks. */
@@ -734,6 +789,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         appearanceStore.save(settings)
         updateKeepingFocus { it.copy(appearance = settings, categorySort = emptyMap()) }
         viewModelScope.launch(Dispatchers.IO) { categorySortStore.clearAll() }
+        if (mode == com.shelf.launcher.data.SortMode.METACRITIC || mode == com.shelf.launcher.data.SortMode.CRITIC) fillMetacriticScores()
     }
 
     private val firstSeenMutex = kotlinx.coroutines.sync.Mutex()
@@ -2272,6 +2328,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             val ok = rawgRepository.testConnection(key.trim())
             if (ok) {
                 rawgKeyStore.save(key.trim())
+                com.shelf.launcher.data.MetacriticFile.rawgConnected.value = true
                 rawgTried.clear()
             }
             _uiState.update {
@@ -2287,6 +2344,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun disconnectRawg() {
         rawgKeyStore.clear()
+        com.shelf.launcher.data.MetacriticFile.rawgConnected.value = false
         _uiState.update {
             it.copy(
                 rawgConnected = false,
@@ -6289,8 +6347,16 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     init {
+        // 0.6.15: sorting by score at start: the missing Metacritic scores come in from RAWG (a little later, once settled).
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(20_000)
+            val st = _uiState.value
+            val m = com.shelf.launcher.data.SortMode.METACRITIC; val c = com.shelf.launcher.data.SortMode.CRITIC
+            if (st.appearance.sortMode == m || st.appearance.sortMode == c || st.categorySort.values.any { it == m || it == c }) fillMetacriticScores()
+        }
         // 0.6.15: Metacritic scores from your file (Sort › Metacritic score): read once, and the lists sorted again when they change.
         com.shelf.launcher.data.MetacriticFile.onChange = { _uiState.update { it.copy(scoresVersion = it.scoresVersion + 1) } }
+        com.shelf.launcher.data.MetacriticFile.rawgConnected.value = rawgKeyStore.load() != null
         run {
             val app = getApplication<Application>()
             Thread { runCatching { com.shelf.launcher.data.MetacriticFile.load(app) } }.start()

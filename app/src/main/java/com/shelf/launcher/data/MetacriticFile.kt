@@ -35,6 +35,11 @@ object MetacriticFile {
 
     /** "platform|normalised name" → metascore. */
     @Volatile private var scores: Map<String, Int> = emptyMap()
+    /** 0.6.15: the RAWG fill-in's progress (done, total) for the Sort window; null when it isn't running. */
+    val rawgProgress = androidx.compose.runtime.mutableStateOf<Pair<Int, Int>?>(null)
+    /** 0.6.15: whether a RAWG key is connected (set by the view model). */
+    val rawgConnected = androidx.compose.runtime.mutableStateOf(false)
+
     /** How many scores are loaded (Compose state for the Sort window). */
     val count = mutableIntStateOf(0)
     /** Called after the scores change (the view model re-sorts). */

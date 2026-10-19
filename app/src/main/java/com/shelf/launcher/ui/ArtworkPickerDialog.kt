@@ -198,7 +198,7 @@ fun ArtworkPickerDialog(
                 MutedNote(
                     when {
                         isLoading -> "Looking for animated artwork…"
-                        animatedCount == 0 -> "No animated artwork found for this game. SteamGridDB has the most (needs its key in Settings › Scraping); try another search name."
+                        animatedCount == 0 -> "No animated artwork found for this game. SteamGridDB has the most (needs its key in Settings › Accounts); try another search name."
                         !com.shelf.launcher.data.AnimatedArt.enabled ->
                             "They play here. On the home screen they play once Animated artwork is on (Game look › Artwork), or for this game alone in Game settings › Look for this game."
                         else -> "Pick one to use it: it plays on the home screen, the hero carousel and the second screen."

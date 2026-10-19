@@ -102,6 +102,16 @@ internal fun MetacriticFileRow() {
             }
         }
     }
+    // 0.6.15: RAWG fills in the missing scores on its own (LauncherViewModel.fillMetacriticScores).
+    val rawg = com.shelf.launcher.data.MetacriticFile.rawgConnected.value
+    val prog = com.shelf.launcher.data.MetacriticFile.rawgProgress.value
+    MutedNote(
+        when {
+            prog != null -> "Looking up missing scores on RAWG: ${prog.first} / ${prog.second}…"
+            rawg -> "Games without a score get it from RAWG on their own (your RAWG key, Settings › Accounts)."
+            else -> "Connect a free RAWG key in Settings › Accounts and Voltcap fills in the missing scores on its own."
+        }
+    )
     MenuRow(
         Icons.Filled.UploadFile,
         if (n > 0) "Load another Metacritic file" else "Load a Metacritic scores file",

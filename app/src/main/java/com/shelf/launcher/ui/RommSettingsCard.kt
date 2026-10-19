@@ -68,7 +68,7 @@ internal fun RommSettingsCard() {
         Spacer(Modifier.height(6.dp))
         MutedNote(
             "A token: RomM › Administration › Client API Tokens. A server at http:// in your home network works too. " +
-                "Downloads need \"Access to all files\" (Settings › Device › Permissions) to land in your ROM folder."
+                "Downloads need \"Access to all files\" (Settings › Permissions) to land in your ROM folder."
         )
     }
 }

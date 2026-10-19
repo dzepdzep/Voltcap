@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Security
@@ -144,16 +145,16 @@ private val CATEGORIES = listOf(
     SettingsCategory("Audio", "Interface sounds, haptics, background music and video sound.", Icons.Filled.MusicNote),
     SettingsCategory("Controls", "Hotkeys, music buttons, the button legend and what each button does.", Icons.Filled.SportsEsports),
     SettingsCategory("Library", "ROM folders, installed apps, Steam games, shortcuts.", Icons.Filled.Folder),
-    SettingsCategory("Accounts", "SteamGridDB, TheGamesDB, ScreenScraper, RetroAchievements, IGDB, RAWG and Discord.", Icons.Filled.Link),
+    SettingsCategory("Accounts", "SteamGridDB, TheGamesDB, ScreenScraper, RetroAchievements, IGDB, RAWG, Discord, Spotify, Steam and RomM.", Icons.Filled.Link),
     SettingsCategory("Emulators", "Which app runs each console.", Icons.Filled.VideogameAsset),
     SettingsCategory("Screens", "Second screen and TV: what goes on each screen when a game starts.", Icons.AutoMirrored.Filled.ScreenShare),
     SettingsCategory("Metadata", "Artwork source, scraping and saved data.", Icons.Filled.Refresh),
     SettingsCategory("Performance", "Power tiers, CPU and GPU limits, AutoTDP, fan control — for the whole device or one game.", Icons.Filled.Speed),
-    SettingsCategory("Overlay", "On top of your games: performance readout (FPS, CPU, GPU, RAM, temperature) and the music player with lyrics.", Icons.Filled.Layers),
+    SettingsCategory("Overlay", "On top of your games: performance readout (FPS, CPU, GPU, RAM, temperature), achievements and the music player with lyrics.", Icons.Filled.Layers),
     SettingsCategory("Sync", "Google Drive: game saves, favourites and playtime across your devices.", Icons.Filled.CloudSync),
     SettingsCategory("Permissions", "Everything Voltcap asks Android for, in one list — allow them all in one go.", Icons.Filled.Security),
-    SettingsCategory("Device", "Hardware, screens, battery, vendor profile, notifications and crash reports.", Icons.Filled.Memory),
-    SettingsCategory("Diagnostics", "Checks everything Voltcap depends on and makes a report to share when something's wrong.", Icons.Filled.Speed),
+    SettingsCategory("Device", "Hardware, battery, screen rate, sleep mode, vendor profile and notifications.", Icons.Filled.Memory),
+    SettingsCategory("Diagnostics", "Checks everything Voltcap depends on, crash reports, a report to share and Restart Voltcap.", Icons.Filled.BugReport),
     SettingsCategory("Backup", "Move settings, accounts and saved details to another device; first-start setup.", Icons.Filled.Backup),
     // Update 141: the version, the update checker and the extra art packs in one place.
     SettingsCategory("Updates & downloads", "Voltcap's version, checking GitHub for a new one and installing it, and the extra art packs (cartridges, spines, discs, 3D models).", Icons.Filled.SystemUpdate),
@@ -491,19 +492,7 @@ fun SettingsDialog(
                                 )
                                 "Screensaver" -> Column {
                                     ScreensaverCard(screensaver, onScreensaverChange, onPreviewScreensaver)
-                                    Spacer(Modifier.height(8.dp))
-                                    SettingsGrid {
-                                        item { m ->
-                                            SwitchRow(
-                                                icon = Icons.Filled.Palette,
-                                                title = "Lights off with the screensaver",
-                                                subtitle = "When the screensaver fades to black, the controller lights go dark too.",
-                                                checked = appearance.lightsOffWithScreensaver,
-                                                onChange = { onAppearanceChange(appearance.copy(lightsOffWithScreensaver = it)) },
-                                                modifier = m
-                                            )
-                                        }
-                                    }
+                                    // (0.6.15: "Lights off with the screensaver" is under Theme › Controller lights, with the other light settings.)
                                 }
                                 "Achievements" -> AchievementsContent(
                                     badgeMode, badgeNextToTitle, onSetBadgeMode, onToggleBadgePlacement,
@@ -616,20 +605,11 @@ fun SettingsDialog(
                                     )
                                 }
                                 "Permissions" -> PermissionsSetup(showAll = true)
-                                "Overlay" -> Column {
-                                    PerfSettingsCard()
-                                    Spacer(Modifier.height(12.dp))
-                                    NotificationSwitch(VoltNote.OVERLAY)
-                                }
-                                "Performance" -> Column {
-                                    TunerSettingsContent()
-                                    if (com.shelf.launcher.device.tune.Tuner.supported) {
-                                        Spacer(Modifier.height(12.dp))
-                                        NotificationSwitch(VoltNote.POWER)
-                                    }
-                                }
+                                // (0.6.15: their notification switches are under Device › Notifications only.)
+                                "Overlay" -> PerfSettingsCard()
+                                "Performance" -> TunerSettingsContent()
                                 "Device" -> Column {
-                                    FoldGroup("This device", key = "dev_info", startOpen = true) { DeviceInfoContent(paneScroll) }
+                                    FoldGroup("This device", summary = "Model, Android, connected controllers, vendor profile", key = "dev_info") { DeviceInfoContent(paneScroll) }
                                     // Update 187.
                                     FoldGroup("Battery saver", summary = "Voltcap rests at low battery and while you play", key = "dev_saver") { ShelfCard { BatterySaverSettings() } }
                                     FoldGroup("Battery watcher", summary = "How much battery Voltcap uses, and what to change", key = "dev_battery") { BatteryWatchCard() }
@@ -640,24 +620,8 @@ fun SettingsDialog(
                                     FoldGroup("Screen rate", summary = "Voltcap at the screen's fastest refresh rate", key = "dev_rate") { ScreenRateCard() }
                                     FoldGroup("Quick Settings tiles", summary = "Voltcap's tiles in Android's pull-down menu", key = "dev_tiles") { QsTilesCard() }
                                     FoldGroup("Notifications", summary = "Power tuner (TDP), overlays, volume mixer", key = "dev_notes") { NotificationSettings() }
-                                    SwitchRow(
-                                        Icons.Filled.MusicOff, "Pause music when closed",
-                                        "Closing a dual-screen / clamshell handheld: Spotify, any music app and Voltcap's own music pause. Locking with the power button doesn't.",
-                                        com.shelf.launcher.data.Features.pauseOnClose.state.value, { com.shelf.launcher.data.Features.pauseOnClose.value = it }
-                                    )
-                                    SwitchRow(
-                                        Icons.Filled.MusicOff, "Also pause when locking",
-                                        // Update 202: Voltcap's own music now pauses with the screen off anyway (Audio › Background music).
-                                        "The power button or the screen timing out pauses music apps too (off: they keep playing with the screen off). Voltcap's own music pauses with the screen off unless \"Keep playing with the screen off\" is on.",
-                                        com.shelf.launcher.data.Features.pauseOnLock.state.value, { com.shelf.launcher.data.Features.pauseOnLock.value = it }
-                                    )
-                                    Spacer(Modifier.height(10.dp))
-                                    val restartCtx = androidx.compose.ui.platform.LocalContext.current
-                                    ActionCard(
-                                        Icons.Filled.RestartAlt, "Restart Voltcap",
-                                        "Closes the app and opens it again, so every setting is read afresh.",
-                                        { com.shelf.launcher.data.Backup.restart(restartCtx) }
-                                    )
+                                    // (0.6.15: "Pause music when closed / when locking" moved to Audio › Background music.)
+                                    // (0.6.17: "Restart Voltcap" moved to Diagnostics.)
                                     Spacer(Modifier.height(10.dp))
                                     SwitchRow(
                                         Icons.Filled.Info, "In-game Quick menu",
@@ -669,6 +633,15 @@ fun SettingsDialog(
                                     val diagCtx = androidx.compose.ui.platform.LocalContext.current
                                     val emuPlatforms = remember { com.shelf.launcher.data.EmulatorSettingsStore(diagCtx).loadAll().keys }
                                     DiagnosticsContent(games, emuPlatforms)
+                                    // 0.6.17: from Device, so everything for "something's wrong" is on one page.
+                                    Spacer(Modifier.height(10.dp))
+                                    ActionCard(
+                                        Icons.Filled.RestartAlt, "Restart Voltcap",
+                                        "Closes the app and opens it again, so every setting is read afresh.",
+                                        { com.shelf.launcher.data.Backup.restart(diagCtx) }
+                                    )
+                                    Spacer(Modifier.height(10.dp))
+                                    CrashReportsCard()
                                 }
                                 "Backup" -> BackupContent(onRunSetup)
                                 "Updates & downloads" -> UpdatesContent()
@@ -936,7 +909,7 @@ private fun HomeContent(
             }
             item { m ->
                 SwitchRow(
-                    Icons.Filled.AutoAwesome, "Only the game you're on moves",
+                    Icons.Filled.AutoAwesome, "Only the game you're on spins",
                     "Spinning, bobbing and hopping discs, cartridges and cases: only the game you're on (off: every game on screen).",
                     com.shelf.launcher.data.Features.motionFocusedOnly.state.value, { com.shelf.launcher.data.Features.motionFocusedOnly.value = it },
                     modifier = m
@@ -1036,7 +1009,7 @@ private fun GameLookContent(appearance: AppearanceSettings, onChange: (Appearanc
             if (appearance.animatedArt) item { m ->
                 SwitchRow(
                     icon = Icons.Filled.Gif,
-                    title = "Only the game you're on moves",
+                    title = "Only the cover you're on animates",
                     subtitle = "On (default): a game's animated cover, banner or background plays only while you're on it — " +
                         "the other games show their plain cover (the animation's first frame), in every layout and on both " +
                         "screens. Off: every animated picture plays.",
@@ -1472,7 +1445,7 @@ private fun ThemeContent(
                     }
                     Spacer(Modifier.height(10.dp))
                     SectionLabel("Spacing")
-                    MutedNote("Comfortable or Compact: how much room between cards, rows and settings. Sizes stay the same.")
+                    MutedNote("Roomy or Tight: how much room between cards, rows and settings. Sizes stay the same.")
                     Spacer(Modifier.height(8.dp))
                     ChipFlow {
                         com.shelf.launcher.data.Features.Density.values().forEach { d ->
@@ -1849,25 +1822,9 @@ private fun AchievementsContent(
 /** Settings › Screens: the second screen's own look and tools (below the per-game screen layouts). */
 @Composable
 private fun SecondScreenExtras(appearance: AppearanceSettings, onChange: (AppearanceSettings) -> Unit, hasSecondScreen: Boolean) {
-        FoldGroup("Screens & home app", summary = if (appearance.useSecondScreen) "Second screen on" else "Second screen off", key = "home_screens") {
-            SettingsGrid {
-            item { m ->
-                SwitchRow(
-                    icon = Icons.AutoMirrored.Filled.ScreenShare,
-                    title = "Use the second screen",
-                    subtitle = if (hasSecondScreen) {
-                        "Found — game info, the details window and music show there."
-                    } else {
-                        "No second screen found on this device right now."
-                    },
-                    checked = appearance.useSecondScreen,
-                    onChange = { onChange(appearance.copy(useSecondScreen = it)) },
-                    modifier = m
-                )
-            }
-            }
-            Spacer(Modifier.height(12.dp))
-        HomeLauncherCard()
+        // 0.6.17: "Use the second screen" is only at the top of this page now (it was here twice).
+        FoldGroup("Home app", summary = "Voltcap as Android's home screen", key = "home_screens") {
+            HomeLauncherCard()
         }
         FoldGroup("Second screen art & music", key = "second_look") {
             // Update 189: the look of the whole second screen.
@@ -3871,7 +3828,7 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
         SwitchRow(
             icon = Icons.Filled.ViewWeek,
             title = "Console cases fit the cover too",
-            subtitle = "On: the consoles' case templates (Settings › Cover templates) take the cover's shape as well. Off (default): they keep the real case's shape and size.",
+            subtitle = "On: the consoles' case templates (Game look › More look options) take the cover's shape as well. Off (default): they keep the real case's shape and size.",
             checked = com.shelf.launcher.data.Features.allCaseFit.state.value,
             onChange = { com.shelf.launcher.data.Features.allCaseFit.value = it }
         )
@@ -4084,17 +4041,7 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                     modifier = m
                 )
             }
-            item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.Movie,
-                    title = "Video previews",
-                    // (Update 151: on by default; on the Hero carousel it plays over the hero picture.)
-                    subtitle = "Rest on a game for two seconds and its clip plays behind the dock or over the hero picture (ScreenScraper, ROMs).",
-                    checked = appearance.videoPreviews,
-                    onChange = { onChange(appearance.copy(videoPreviews = it)) },
-                    modifier = m
-                )
-            }
+            // (0.6.15: "Video previews" is under Audio › Video previews only.)
             }
     SettingsGrid {
         item { m ->
@@ -4619,6 +4566,18 @@ private fun SoundsContent(appearance: AppearanceSettings, currentTheme: AppTheme
     }
     CollapsibleSection("Background music", startExpanded = true) {
         BackgroundMusicCard(appearance, onChange)
+        // (0.6.15: from Settings › Device, so all music switches are in one place.)
+        Spacer(Modifier.height(8.dp))
+        SwitchRow(
+            Icons.Filled.MusicOff, "Pause music when closed",
+            "Closing a dual-screen / clamshell handheld: Spotify, any music app and Voltcap's own music pause. Locking with the power button doesn't.",
+            com.shelf.launcher.data.Features.pauseOnClose.state.value, { com.shelf.launcher.data.Features.pauseOnClose.value = it }
+        )
+        SwitchRow(
+            Icons.Filled.MusicOff, "Also pause when locking",
+            "The power button or the screen timing out pauses music apps too (off: they keep playing with the screen off). Voltcap's own music pauses with the screen off unless \"Keep playing with the screen off\" is on.",
+            com.shelf.launcher.data.Features.pauseOnLock.state.value, { com.shelf.launcher.data.Features.pauseOnLock.value = it }
+        )
     }
     CollapsibleSection("Video previews", startExpanded = true) {
         SettingsGrid {
@@ -4787,7 +4746,7 @@ private fun BackgroundMusicCard(appearance: AppearanceSettings, onChange: (Appea
         SwitchRow(
             Icons.Filled.MusicOff, "Keep playing with the screen off",
             "Off: the music fades out when the screen turns off, the lid closes or the screensaver fades to black, and comes back when you do. " +
-                "(\"Pause music when closed\" under Device still pauses it when the lid closes.)",
+                "(\"Pause music when closed\", further down this section, still pauses it when the lid closes.)",
             com.shelf.launcher.data.Features.keepMusicScreenOff.state.value,
             { com.shelf.launcher.data.Features.keepMusicScreenOff.value = it }
         )

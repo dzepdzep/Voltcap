@@ -248,7 +248,7 @@ fun PerfSettingsCard() {
                 }
             }
         }
-        MutedNote("Shows whatever is playing — Spotify, YouTube Music or any other player — with the current lyric line when lyrics are on (Settings › Audio). With \"Tap to open controls\", a tap on the chip opens play / pause, previous / next and your Spotify playlists and albums; tap outside (or wait a few seconds) to close it. Only the chip itself takes touches; the controller always stays with the game.")
+        MutedNote("Shows whatever is playing — Spotify, YouTube Music or any other player — with the current lyric line when lyrics are on (Settings › Home › Music player). With \"Tap to open controls\", a tap on the chip opens play / pause, previous / next and your Spotify playlists and albums; tap outside (or wait a few seconds) to close it. Only the chip itself takes touches; the controller always stays with the game.")
     }
     // RetroAchievements on top of the game, in its own corner.
     SettingsHeading("Achievements over games")
