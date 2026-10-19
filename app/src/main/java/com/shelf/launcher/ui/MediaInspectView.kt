@@ -1411,6 +1411,14 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
         }
     }
     var shell by androidx.compose.runtime.remember(p) { androidx.compose.runtime.mutableStateOf<Color?>(null) }
+    // (Update 257, #35: a PSP game's UMD — not a cartridge shell picked for it — shows its data side from behind.)
+    val isUmd = p.pick?.platform?.startsWith(SHELL_PREFIX) != true && customPlatform == null &&
+        MediaShell.of(p.game.platform) == MediaShell.UMD
+    // (Its frame in a UMD's own white-grey plastic: the colour read off the front is the label's art, often dark.)
+    val umdTone = (saved ?: PhotoTones.of(p.realScan) ?: Color(0xFFE2E4E7)).copy(alpha = 1f)
+    val umdBack = remember(isUmd, umdTone) {
+        if (isUmd) runCatching { UmdBack.picture(umdTone.toArgbInt()).asImageBitmap() }.getOrNull() else null
+    }
     // Its shell colour, from the face's own pixels (the edge, half-way down), once it's drawn.
     LaunchedEffect(p) {
         delay(700)
@@ -1509,6 +1517,10 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                             val bw = minOf(size.width, size.height * a); val bh = bw / a
                             drawImage(sb, dstOffset = androidx.compose.ui.unit.IntOffset(((size.width - bw) / 2f).toInt(), ((size.height - bh) / 2f).toInt()),
                                 dstSize = androidx.compose.ui.unit.IntSize(bw.toInt(), bh.toInt()))
+                        } else if (umdBack != null) {
+                            // (Update 257, #35: a UMD's data side seen through its clear back — UmdBack.kt.)
+                            drawLayer(solid)
+                            drawImage(umdBack, dstSize = androidx.compose.ui.unit.IntSize(size.width.toInt(), size.height.toInt()), blendMode = BlendMode.SrcIn)
                         } else {
                             drawLayer(solid)
                             drawRect(tone, blendMode = BlendMode.SrcIn)

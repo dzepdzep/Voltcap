@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (257): PSP UMDs show their real back when turned (#35); side-view audit (#95); stability report (#104)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Thor** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, new (1): `src_copy\ui\UmdBack.kt`; changed (1): `src_copy\ui\MediaInspectView.kt`. **Files to delete:** none.
+
+- **#35 PSP UMD back.** Turning a UMD in the game window showed a plain plate. It now shows the UMD's data side: the disc's silver and rainbow through the clear back, the head window from the hub to the left edge, the clear ring and clamping plate in the middle, the two holes near the bottom corners and the notch on the edge. Drawn to size from ECMA-365 (case 64 × 65 mm, disc Ø 60 mm, spindle window Ø 18 mm) and the public-domain Wikimedia photo "Pursuit Force UMD (back).jpg" (the window, ring and hole positions are measured from that photo — marked as estimates in the code). It takes the shell colour of the game's own UMD scan (light grey when there's none). Checked on the Thor with Brick Breaker: `Claude outputs\rec\umdf3.png` (front), `umdb3.png` (turned).
+- **#95 side views (code audit).** No layout turns cases to their side by default; side views come only from a layout or option that is about them (Box turned to show its spine, Arc/Spine wall/Turned carousels, Case stacks, Game shelf, the two presets named for it). A real spine scan always wins where a side shows. `Claude outputs\evidence\95_side_view_audit_2026-10-19.md`. On-device screenshots of every layout still to do.
+- **#104 stability report.** Save integrity, crash clean-up, in-place update, device controls, performance and input checks with today's results: `Claude outputs\evidence\104_stability_report_2026-10-19.md`. Blocked: two-device save conflict (needs a disposable Drive folder, question 11) and charging (your approval).
+
+---
+
 ## Update — 19 Oct 2026 (256): every console started once on the Thor (#102); missing emulators open the picker; the controller stays with Voltcap after a failed start; search bar works with the controller
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Thor** by Claude, committed and pushed by Claude.
