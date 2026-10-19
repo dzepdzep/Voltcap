@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (252): 0.6.13 published; Cross menu's lines under the name readable over light art (#94)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic, checked on the RP Classic** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (1): `src_copy\ui\StyleCrossMenu.kt`. **Files to delete:** none.
+
+- **Release 0.6.13 published** (updates 246–251, as you approved): https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.13 — both handhelds run it; the in-app updater offers it elsewhere.
+- **Cross menu (#94, question 28 approved):** the play time and "console · Last played" lines under the game you're on (and the Trophies lines) now have the name's dark edge — on the RP Classic's light Pokémon art they were white on near-white. Checked on the RP Classic; its layout put back to Dashboard afterwards.
+- **Library panel (#94, question 28):** looked again on the RP Classic — the names under the covers and the tabs already have the dark edge and don't run into each other at its size; nothing changed.
+
+---
+
 ## Update — 19 Oct 2026 (251): game clips stop behind a running game (found in the Azahar / Citra comparison); case-size doc fixes (#89 finding 6)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic, measured on the Thor** by Claude, committed and pushed by Claude.

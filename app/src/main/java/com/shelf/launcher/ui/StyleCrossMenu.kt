@@ -384,7 +384,8 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
                         Spacer(Modifier.height(2.dp))
                         Text(
                             p?.let { (e, t) -> "$e / $t achievements · ${(e * 100) / t} %" } ?: "Achievements loading…",
-                            color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis // (Update 234, #14: ends in "…")
+                            color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis, // (Update 234, #14: ends in "…")
+                            style = nameTextStyle(NameBackdrop.SHADOW) // (Update 252, #94: readable over light art, as the name)
                         )
                         if (p != null) {
                             Spacer(Modifier.height(4.dp))
@@ -392,14 +393,17 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
                                 Box(Modifier.fillMaxWidth(p.first.toFloat() / p.second).height(3.dp).background(ShelfTheme.accent))
                             }
                         }
-                        Text("A: its achievements", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis) // (Update 234, #14: ends in "…")
+                        Text("A: its achievements", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)) // (Update 234, #14: ends in "…")
                     }
                     if (on && info && !trophyRow) Column(Modifier.riseOnEnter()) {
                         Spacer(Modifier.height(2.dp))
-                        Text(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis) // (Update 234, #14: ends in "…")
+                        // (Update 252, #94: the lines under the name with the name's dark edge — white on a light picture (the RP
+                        // Classic's Pokémon art) couldn't be read.)
+                        Text(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)) // (Update 234, #14: ends in "…")
                         Text(
                             titles.console(g.platform) + (c.lastPlayed(g)?.let { " · Last played: " + lastPlayedLabel(it) } ?: ""),
-                            color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp * k, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp * k), maxFontSize = 11.sp * k), maxLines = 1, overflow = TextOverflow.Ellipsis
+                            color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp * k, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp * k), maxFontSize = 11.sp * k), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            style = nameTextStyle(NameBackdrop.SHADOW)
                         )
                     }
                 }
