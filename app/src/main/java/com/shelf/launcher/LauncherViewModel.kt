@@ -1948,7 +1948,40 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setSearchQuery(query: String) {
+        // (Update 258: a search that had to leave its category for All games goes back there once it's cleared.)
+        val back = if (query.isBlank()) searchFrom.also { searchFrom = null } else null
         _uiState.update { it.copy(searchQuery = query, focusedIndex = 0) }
+        if (back != null) {
+            if (back.second != null) setSpecialFilter(back.second) else setPlatformFilter(back.first)
+        }
+    }
+
+    /** Update 258: the category a confirmed search left for All games (platform filter, special filter). */
+    private var searchFrom: Pair<String?, SpecialFilter?>? = null
+
+    /**
+     * Update 258 (#120, RP Classic): a confirmed search that finds nothing in the category you're in but something in
+     * your library shows All games with it (it said "No games match." in Continue playing for a game you have), and says
+     * so; clearing the search puts you back in that category.
+     */
+    fun searchEverywhereIfEmpty() {
+        val s = _uiState.value
+        val q = s.searchQuery
+        if (q.isBlank() || s.visibleGames.isNotEmpty() || (s.platformFilter == null && s.specialFilter == null)) return
+        if (s.specialFilter == SpecialFilter.EMULATORS || s.platformFilter == ANDROID_GAMES_PLATFORM || s.platformFilter == "App") return
+        val all = s.copy(platformFilter = null, specialFilter = null)
+        val found = all.visibleGames.size
+        if (found == 0) return
+        val from = s.platformFilter to s.specialFilter
+        // (Not remembered as your category: that stays the one you were in.)
+        restoreActive = false
+        rememberCategoryFocus()
+        _uiState.update { it.copy(platformFilter = null, specialFilter = null, focusedIndex = 0) }
+        searchFrom = from
+        _uiState.update {
+            it.copy(statusMessage = "Not in this category — " + (if (found == 1) "1 game" else "$found games") +
+                " with “$q” in All games. B goes back.")
+        }
     }
 
     fun setPlatformFilter(platform: String?) {
@@ -5286,12 +5319,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // (Update 256, #102: no emulator for the console yet — the emulator picker opens straight away, its installed
         // suggestions on top. It used to say "press Start on the game", and Start opened the game's options with the
         // emulator entry eight rows down.)
-        if (outcome is LaunchOutcome.NotConfigured) needEmulatorFor.value = game.platform
+        if (outcome is LaunchOutcome.NotConfigured) needEmulatorFor.value = game
         _uiState.update { it.copy(statusMessage = message) }
     }
 
-    /** Update 256: a console whose game couldn't start for want of an emulator; the home screen opens the picker, then clears it. */
-    val needEmulatorFor = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    /**
+     * Update 256: a game that couldn't start for want of an emulator; the home screen opens the picker for its console,
+     * then clears it. (Update 258: the game itself, so it starts once you've picked one.)
+     */
+    val needEmulatorFor = kotlinx.coroutines.flow.MutableStateFlow<Game?>(null)
 
     fun connect(apiKey: String) {
         if (apiKey.isBlank()) return

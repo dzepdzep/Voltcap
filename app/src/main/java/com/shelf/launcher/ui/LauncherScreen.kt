@@ -3064,11 +3064,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 onQueryChange = { viewModel.setSearchQuery(it) },
                 onDone = {
                     showSearchBar = false
+                    // (Update 258: nothing here but something in your library — All games with it.)
+                    viewModel.searchEverywhereIfEmpty()
+                    // (Update 258, RP Classic: the D-pad back on the games — after a tap on a layout's Search button its
+                    // top row kept the selection, and A opened the search again instead of starting the game found.)
+                    StyleNav.reset()
                     sounds?.play(UiSound.SELECT)
                     runCatching { rootFocusRequester.requestFocus() }
                 },
                 onCancel = {
                     showSearchBar = false
+                    StyleNav.reset()
                     viewModel.setSearchQuery("")
                     sounds?.play(UiSound.BACK)
                     runCatching { rootFocusRequester.requestFocus() }
@@ -3868,7 +3874,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                 // added part such as the achievement bar lay across its top row of games.)
                                 else (if ((overlayLayout == com.shelf.launcher.data.HomeLayout.HERO && com.shelf.launcher.data.Features.heroCoversRight.state.value) ||
                                     overlayLayout == com.shelf.launcher.data.HomeLayout.TV) 0f else 1f) to
-                                    (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w
+                                    (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w,
+                            // (Update 258, #120: the category name steps out of the way of a part you put on its spot.)
+                            keepClearOf = if (part == HomeWidgets.CATEGORY) partsHere.filter { it != part }.map { HomeWidgets.overlayId(overlayLayout, it) } else emptyList()
                         ) {
                             // Update 204: the category's name on its own (all the categories with "All categories").
                             // (Update 212: the category title — the category or filter you're in, with or without a
@@ -5103,8 +5111,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
     // (Update 256, #102: a game that couldn't start for want of an emulator opens the picker for its console.)
     val needEmulator by viewModel.needEmulatorFor.collectAsState()
+    // (Update 258, RP Classic: the game waiting for that emulator — it starts as soon as one is picked; you had to find
+    // it and press Play again.)
+    var startAfterPick by remember { mutableStateOf<com.shelf.launcher.data.Game?>(null) }
     LaunchedEffect(needEmulator) {
-        needEmulator?.let { configuringPlatform = it; viewModel.needEmulatorFor.value = null }
+        needEmulator?.let { configuringPlatform = it.platform; startAfterPick = it; viewModel.needEmulatorFor.value = null }
     }
     configuringPlatform?.let { platform ->
         EmulatorPickerDialog(
@@ -5114,8 +5125,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onSave = { config ->
                 viewModel.setEmulatorConfig(config)
                 configuringPlatform = null
+                val g = startAfterPick?.takeIf { it.platform == config.platform }
+                startAfterPick = null
+                if (g != null) startGame(g)
             },
-            onDismiss = { configuringPlatform = null }
+            onDismiss = { configuringPlatform = null; startAfterPick = null }
         )
     }
 

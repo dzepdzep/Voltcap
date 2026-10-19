@@ -4,6 +4,23 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (258): Power saving and Eco really reach their caps (#85/#86, measured); search finds games outside the category; the controller back on the games after a search; a game starts once its emulator is picked; category name steps clear of a card
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the RP Classic (and installed on the Thor)** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (4): `src_copy\LauncherViewModel.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\HomeEdit.kt`, `src_copy\device\tune\TuneHardware.kt`. **Files to delete:** none.
+
+- **#85 / #86 power presets measured on the RP Classic** (Contra III, no save; every tier from R1 › Device › Power, frame times + clocks + temperatures): Stock, Max, Balanced and AutoTDP Efficient all 60 fps with 100 % even frames; Balanced runs ~3 °C cooler at a little over half the clocks; AutoTDP stepped its caps down by a third while frames stayed even. Table: `Claude outputs\evidence\85_86_power_presets_rpc_2026-10-19.md`. Put back to Stock, AutoTDP off.
+- **Power saving and Eco fixed.** They used the kernel's "powersave" governor, which pins every core at its lowest step whatever the cap (499 / 691 MHz): Power saving fell to 34 fps with half the frames uneven on a SNES game. They now use "conservative" (stays low, climbs slowly to the tier's cap — what the setting's text already said), else the device's own. Re-measured: 60 fps, 100 % even, clocks up to the caps and no further.
+- **Search outside the category.** A search that found nothing where you are ("contra iii" in Continue playing) said "No games match." though the game is in your library. Now it shows All games with it and says so; B takes you back to the category you were in.
+- **The controller back on the games after a search.** After a tap on the Spotlight layout's Search button its top row kept the selection, so A after confirming opened the search again instead of the game found.
+- **A game starts once its emulator is picked.** From the "no emulator yet" picker (update 256) you had to find the game and press Play again.
+- **Category name steps clear of a card.** On the RP Classic's Spotlight layout the category name came back on its spot right over the achievements card you had there; while it hasn't been moved, it now sits just above or below a part it would cover.
+- **#102 on the RP Classic:** GB (Darkwing Duck), GBC (Mr. Driller), GBA (Contra Advance), SNES (Contra III; Snes9x set via the picker) boot; PS2 blocked (both games have your memory-card saves); PS1 / GameCube / NDS / PSP have no games there. No save files made; Silver's saves unchanged. **One test save found from this morning's Thor NES test** (Pool of Radiance, new 8 KB file — nothing replaced): question 42. Table: `Claude outputs\evidence\102_launch_matrix_thor_2026-10-19.md`.
+- **#104 report updated** (power row PASS, test-saves row PARTIAL because of that NES save).
+
+---
+
 ## Update — 19 Oct 2026 (257): PSP UMDs show their real back when turned (#35); side-view audit (#95); stability report (#104)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Thor** by Claude, committed and pushed by Claude.

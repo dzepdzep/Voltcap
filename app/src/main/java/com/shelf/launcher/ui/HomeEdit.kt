@@ -533,6 +533,12 @@ internal fun BoxScope.MovableWidget(
     defaultFrac: Pair<Float, Float>? = null,
     /** Lays the content out at this width (unscaled), e.g. the width it had in the layout. */
     fixedWidth: Dp? = null,
+    /**
+     * Update 258 (#120, RP Classic): parts drawn in the same layer that this one, while it hasn't been moved, steps
+     * out of the way of — just above or below them, whichever is nearer. The category title came back at its layout's
+     * free spot right on top of an achievements card you had put there.
+     */
+    keepClearOf: List<String> = emptyList(),
     content: @Composable () -> Unit
 ) {
     val editing = HomeEditState.active
@@ -559,8 +565,11 @@ internal fun BoxScope.MovableWidget(
     }
     val w = with(density) { size.width.toDp() }
     val h = with(density) { size.height.toDp() }
+    // (Update 258: not moved yet, and its spot is taken by a part you placed there — just above or below that part.)
+    val clearOf = if (keepClearOf.isEmpty() || stored != null || nestedAt != null || size == IntSize.Zero) null
+        else PartRects.clearSpot(defaultFrac ?: defaultFractions(defaultAlign), zone, w, h, keepClearOf.mapNotNull { PartRects.at[it] })
     // Where it is now: the stored fractions, or (first time in edit mode) its normal corner.
-    val f = stored ?: defaultFrac ?: defaultFractions(defaultAlign)
+    val f = stored ?: clearOf ?: defaultFrac ?: defaultFractions(defaultAlign)
     val placed = zone.place(f.first, f.second, w, h)
     val pos = if (nestedAt != null) with(density) {
         val o = origin ?: androidx.compose.ui.geometry.Offset.Zero
@@ -568,6 +577,12 @@ internal fun BoxScope.MovableWidget(
     } else placed
     val posNow by androidx.compose.runtime.rememberUpdatedState(pos)
     if (editing) androidx.compose.runtime.SideEffect { HomeEditState.shownAt[id] = if (nestedAt != null) zone.fractionOf(pos.x, pos.y, w, h) else f }
+    // (Update 258: where it's drawn in its layer, for the parts that keep clear of it; written only when it changed.)
+    if (size != IntSize.Zero) {
+        val r = androidx.compose.ui.geometry.Rect(pos.x.value, pos.y.value, (pos.x + w).value, (pos.y + h).value)
+        androidx.compose.runtime.SideEffect { if (PartRects.at[id] != r) PartRects.at[id] = r }
+    }
+    androidx.compose.runtime.DisposableEffect(id) { onDispose { PartRects.at.remove(id) } }
     // Update 144: the drag reads these as they are now, so it isn't restarted (and stopped under the finger) when
     // the part changes size while it's being moved.
     val wNow by androidx.compose.runtime.rememberUpdatedState(w)
@@ -1460,5 +1475,34 @@ internal object HomeNest {
             kids.filterValues { it.parent == id }.keys.sorted().forEach { out += it }
         }
         return out
+    }
+}
+
+
+/**
+ * Update 258 (#120): where each floating part is drawn in its layer (dp, as a Rect), for the parts that step out of
+ * another's way while they haven't been moved (MovableWidget's keepClearOf).
+ */
+internal object PartRects {
+    val at = mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>()
+
+    /**
+     * Where a [w]×[h] part wanting [want] goes so it covers none of [others]: [want] if it's clear; else straight above or
+     * below what it would cover (6 dp apart), the nearer one that's clear and inside [zone]; else [want] after all.
+     */
+    fun clearSpot(want: Pair<Float, Float>, zone: SafeZone, w: Dp, h: Dp, others: List<androidx.compose.ui.geometry.Rect>): Pair<Float, Float> {
+        if (others.isEmpty()) return want
+        val p = zone.place(want.first, want.second, w, h)
+        fun box(y: Float) = androidx.compose.ui.geometry.Rect(p.x.value, y, (p.x + w).value, y + h.value)
+        fun hits(y: Float) = others.filter { it.overlaps(box(y)) }
+        val hit = hits(p.y.value)
+        if (hit.isEmpty()) return want
+        val gap = 6f
+        val top = zone.top.value
+        val bottom = (zone.height - zone.bottom).value
+        val y = listOf(hit.minOf { it.top } - gap - h.value, hit.maxOf { it.bottom } + gap)
+            .filter { it >= top && it + h.value <= bottom && hits(it).isEmpty() }
+            .minByOrNull { abs(it - p.y.value) } ?: return want
+        return zone.fractionOf(p.x, y.dp, w, h)
     }
 }

@@ -182,7 +182,10 @@ object TuneHardware {
         GovernorChoice.SYSTEM -> null
         GovernorChoice.PERFORMANCE -> c.governors.firstOrNull { it == "performance" }
         GovernorChoice.BALANCED -> listOf("walt", "schedutil", "interactive", "ondemand").firstOrNull { it in c.governors }
-        GovernorChoice.POWERSAVE -> listOf("powersave", "conservative").firstOrNull { it in c.governors }
+        // (Update 258, #85/#86, measured on the RP Classic: the kernel's "powersave" governor pins every core at its
+        // lowest step whatever the cap — Power saving and Eco both ran at 499 / 691 MHz, and Contra III fell to 34 fps.
+        // "conservative" stays low and climbs slowly up to the tier's cap, as this choice says; else the vendor's own.)
+        GovernorChoice.POWERSAVE -> listOf("conservative", "walt", "schedutil", "interactive", "ondemand").firstOrNull { it in c.governors }
     }
 
     // ---- Vendor overrides (why caps used to "not stick") ----
