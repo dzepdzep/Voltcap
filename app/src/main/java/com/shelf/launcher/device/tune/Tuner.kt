@@ -207,7 +207,8 @@ object Tuner {
 
     private fun apply(context: Context, p: TuneProfile, key: String?, source: String) {
         if (!supported) return
-        captureStock()
+        appCtx = context.applicationContext
+        captureStock(context)
         current = p
         currentKey = key
         val store = TuneStore(context)
@@ -735,6 +736,7 @@ object Tuner {
             }
         }
         val ok = TuneHardware.writeAll(writes)
+        if (ok) markDirty(t.limit)
         if (remember) lastTarget = t
         // Update 200: "the command ran" isn't "the caps hold". On the Thor the notification said "Underclock Medium"
         // while every core could still reach its full speed, so with a limit the top speeds are read back and a cap
@@ -763,8 +765,69 @@ object Tuner {
     /** Update 201: msm_performance / boost values from right before Voltcap's first limit, put back after the last one. */
     @Volatile private var vendorSaved: Map<String, String>? = null
 
-    private fun captureStock() {
+    /**
+     * Update 254 (#96 / #104): the stock clocks are kept on disk with the boot they were read in, and whether Voltcap's own
+     * limits were on the chip ("dirty"). A Voltcap that starts again in the same boot while its limits are still written
+     * (an app update, Android ending the process, a crash) takes the kept stock instead of reading its own caps back as
+     * the device's. Before, that's what happened: on the RP Classic (whose own software never puts the clocks back) the
+     * Balanced caps — 1.29 / 1.65 GHz, GPU 605 MHz — were read as "stock" after a restart and from then on Stock and even
+     * Max stayed at them until the handheld was restarted.
+     */
+    @Volatile private var appCtx: Context? = null
+    @Volatile private var dirtyWritten: Boolean? = null
+    private const val STOCK_PREFS = "tuner_stock"
+
+    /** When this boot started (wall clock, ±1 s): a different value means the handheld restarted since. */
+    private fun bootStamp(): Long = (System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime()) / 1000L
+
+    private fun sameBoot(saved: Long): Boolean = kotlin.math.abs(saved - bootStamp()) <= 60L
+
+    private fun captureStock(context: Context) {
         if (stock != null) return
+        val prefs = context.applicationContext.getSharedPreferences(STOCK_PREFS, Context.MODE_PRIVATE)
+        val kept = runCatching {
+            if (prefs.getBoolean("dirty", false) && sameBoot(prefs.getLong("boot", 0L)))
+                prefs.getString("stock", null)?.let { stockFromJson(it) }
+            else null
+        }.getOrNull()
+        if (kept != null && kept.max.isNotEmpty()) { stock = kept; dirtyWritten = true; return }
+        readStock()
+        runCatching {
+            prefs.edit().putLong("boot", bootStamp()).putString("stock", stockToJson(stock!!)).putBoolean("dirty", false).apply()
+            dirtyWritten = false
+        }
+    }
+
+    // (Written by hand, not with Gson: the release build renames fields, and an update would read an older file wrong.)
+    private fun stockToJson(s: Stock): String = org.json.JSONObject().apply {
+        fun ints(m: Map<String, Int>) = org.json.JSONObject().also { o -> m.forEach { (k, v) -> o.put(k, v) } }
+        put("max", ints(s.max)); put("min", ints(s.min))
+        put("gov", org.json.JSONObject().also { o -> s.gov.forEach { (k, v) -> o.put(k, v) } })
+        s.gpuMax?.let { put("gpuMax", it) }; s.gpuMin?.let { put("gpuMin", it) }; s.fanMode?.let { put("fanMode", it) }
+        s.msmMax?.let { put("msmMax", it) }; s.msmMin?.let { put("msmMin", it) }
+        s.gpuMaxHz?.let { put("gpuMaxHz", it) }; s.gpuMinHz?.let { put("gpuMinHz", it) }
+    }.toString()
+
+    private fun stockFromJson(text: String): Stock {
+        val o = org.json.JSONObject(text)
+        fun ints(k: String): Map<String, Int> = o.optJSONObject(k)?.let { m -> m.keys().asSequence().associateWith { m.getInt(it) } } ?: emptyMap()
+        fun str(k: String): String? = if (o.has(k)) o.getString(k) else null
+        fun int(k: String): Int? = if (o.has(k)) o.getInt(k) else null
+        val gov = o.optJSONObject("gov")?.let { m -> m.keys().asSequence().associateWith { m.getString(it) } } ?: emptyMap()
+        return Stock(ints("max"), ints("min"), gov, int("gpuMax"), int("gpuMin"), int("fanMode"), str("msmMax"), str("msmMin"), str("gpuMaxHz"), str("gpuMinHz"))
+    }
+
+    /** Whether Voltcap's own limits are on the chip now (kept for [captureStock]); written only when it changes. */
+    private fun markDirty(on: Boolean) {
+        if (dirtyWritten == on) return
+        val c = appCtx ?: return
+        runCatching {
+            c.getSharedPreferences(STOCK_PREFS, Context.MODE_PRIVATE).edit().putBoolean("dirty", on).putLong("boot", bootStamp()).apply()
+            dirtyWritten = on
+        }
+    }
+
+    private fun readStock() {
         val clusters = TuneHardware.clusters()
         val g = TuneHardware.gpu()
         val lv = g?.let { TuneHardware.gpuLevels(it) }

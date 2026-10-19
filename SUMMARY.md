@@ -4,6 +4,21 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (254): the tuner's "stock" clocks survive a Voltcap restart (#96 / #104); RP Classic GBC frame check; Pokémon Silver copies compared (#101)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (1): `src_copy\device\tune\Tuner.kt`. **Files to delete:** none.
+
+- **Found on the RP Classic (#96, with your OK to change tiers for the test — put back to Stock afterwards):** its clocks sat at exactly Voltcap's Balanced caps — little 1.29 GHz, big 1.65 GHz, GPU 605 MHz — with the power tile on **Stock**, and **Max didn't lift them either**. Cause: the tuner reads the "stock" clocks when Voltcap starts. When Voltcap restarted while its own Balanced caps were on the chip (an app update, Android ending the process), it read those caps as the device's own, and from then on Stock and Max put back… the caps. The AYN handhelds rewrite their clocks every 10 s, so it didn't show there; the RP Classic never does (up 14 days).
+- **Fix:** the stock clocks are kept on disk with the boot they were read in, plus whether Voltcap's own limits are on the chip. A Voltcap starting again in the same boot with its limits still on takes the kept stock instead of its own caps (written by hand as JSON, so an app update reads it right). Checked on the Thor: Voltcap force-stopped and started again with your Balanced + Underclock Light on — caps re-applied as before, no crash.
+- **The RP Classic itself needs one restart** to get its real stock clocks back (nothing Voltcap can write goes above what it thinks stock is) — question 38.
+- **GBC frame pacing on the RP Classic:** Mr. Driller (a GBC cartridge without a save battery — no save file was made, checked) in RetroArch / Gambatte, GL driver, at those caps: 35 s, 2110 frames, **100 % at 16.7 ms, none late**. The GBC stutter from #96 didn't show; I'll measure again after the restart and with your Pokémon setup only if you want (it needs a game with a save).
+- **#101 Pokémon Silver (read-only):** every copy compared by in-game play time — the current save (44 h 27 min) is the furthest; you have two Silver ROMs that show the same name (one `[patched]`, empty save, started 17 Oct 18:03). Report: `Claude outputs\evidence\101_silver_progress_2026-10-19.md`, question 36.
+- **Dr. Mario test save** is back on both handhelds — downloaded from Drive again today, so a copy is still in Drive (question 37). Not deleted again.
+
+---
+
 ## Update — 19 Oct 2026 (253): B leaves a search; a Voltcap game start → emulator crash → back home check (#104)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic, checked on the Thor** by Claude, committed and pushed by Claude.
