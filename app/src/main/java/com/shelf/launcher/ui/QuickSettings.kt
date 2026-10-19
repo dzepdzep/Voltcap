@@ -3,6 +3,7 @@ package com.shelf.launcher.ui
 import com.shelf.launcher.data.statusOn
 import android.app.NotificationManager
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Person
@@ -431,6 +432,22 @@ fun QuickSettingsCard(
                 val all = com.shelf.launcher.data.HomeLayout.pickable
                 home.setAppearance(a.copy(homeLayout = all[(all.indexOf(a.homeLayout) + 1) % all.size]))
             })
+            // Update 245 (R1 Popup Style): which game window A opens in this layout — the same settings as Settings › Home ›
+            // Layout options › Game window (Features.gameWindow / classicWindowLayouts / winBanner), so the two never
+            // disagree. Tap: the next style; hold: the list. Only the styles that work today are listed; with the game
+            // window off the tile is greyed (r1TileFit) and says where to switch it on.
+            run {
+                val F = com.shelf.launcher.data.Features
+                val lname = a.homeLayout.name
+                val styles = PopupStyle.values()
+                val now = PopupStyle.current(lname)
+                add(R1Tile("popupstyle", Icons.Filled.OpenInNew, "Popup\n" + now.short, false,
+                    longAction = {
+                        choiceSheet = "Game popup · ${a.homeLayout.label}" to styles.map { st -> R1Choice(st.label, PopupStyle.current(lname) == st) { PopupStyle.set(lname, st) } }
+                    }) {
+                    if (F.gameWindow.value) PopupStyle.set(lname, styles[(PopupStyle.current(lname).ordinal + 1) % styles.size])
+                })
+            }
             // Update 179: the two-screen layouts — the gap between their tiles (tap: the next, hold: the list).
             // (Update 202: every tile is built; which show where is decided in r1TileFit, R1TileRules.kt.)
             run {
@@ -1852,5 +1869,40 @@ private fun R1UndoPill(label: String, accent: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
         Text(label, color = if (accent) onAccentColor() else ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    }
+}
+
+
+/**
+ * Update 245 (R1 Popup Style tile): the game windows A can open, read from and written to the settings Settings › Home ›
+ * Layout options › Game window already uses — nothing of its own. [OWN] and [BANNER] share the "Its style (every layout)"
+ * switch (Features.winBanner); [CLASSIC] is this layout's "A opens: the classic details window" (classicWindowLayouts).
+ */
+internal enum class PopupStyle(val label: String, val short: String) {
+    OWN("The layout's own window", "Own"),
+    BANNER("Banner page", "Banner"),
+    CLASSIC("Classic details window", "Classic");
+
+    companion object {
+        fun current(layout: String): PopupStyle {
+            val F = com.shelf.launcher.data.Features
+            return when {
+                layout in F.classicWindowLayouts.value -> CLASSIC
+                F.winBanner.value -> BANNER
+                else -> OWN
+            }
+        }
+
+        fun set(layout: String, style: PopupStyle) {
+            val F = com.shelf.launcher.data.Features
+            val classicNow = layout in F.classicWindowLayouts.value
+            when (style) {
+                CLASSIC -> if (!classicNow) F.classicWindowLayouts.toggle(layout)
+                OWN, BANNER -> {
+                    if (classicNow) F.classicWindowLayouts.toggle(layout)
+                    F.winBanner.value = style == BANNER
+                }
+            }
+        }
     }
 }

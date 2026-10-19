@@ -4,6 +4,19 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (245): R1 "Popup" tile, fixture tests for the save / icon / hack parsers (#79), sequel saves no longer matched to the first game (#74)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, tested, built, installed on both handhelds and checked on the Thor** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (4): `src_copy\ui\QuickSettings.kt`, `src_copy\ui\R1TileRules.kt`, `src_copy\data\MemoryCards.kt`, `src_copy\data\SaveMatch.kt`. **Copy `project_copy`** (new): `project_copy\app\build.gradle.kts` (two test lines), `project_copy\app\src\test\java\com\shelf\launcher\data\{MemoryCardsTest, Ps2IconsTest, RomHacksTest, SaveLayoutsTest, SaveMatchTest}.kt`, `project_copy\app\src\test\java\com\shelf\launcher\ui\theme\ThemeContrastTest.kt`. Doc: `Claude outputs\VoltcapAgent\TESTS.md`. **Files to delete:** none.
+
+1. **R1 Popup tile** (your addendum). R1 › **Popup** shows which game window A opens in this layout: *Own* (the layout's own window), *Banner* (Banner page) or *Classic* (classic details window). Tap = the next; hold = the list with the current one ticked. It uses exactly the settings Settings › Home › Layout options › Game window already uses (the Banner choice is for every layout there too, Classic per layout), so the two can't disagree; R1's Undo puts it back; hide / move it like any tile. With the game window off the tile is greyed and says where to switch it on. Only working styles are listed — the Row Reveal / Shared move styles join when built and approved. Checked on the Thor: tile reads "Popup Own", hold list, tap → Banner, Undo → Own, list → Own (left as it was).
+2. **Tests (#79).** `gradlew testDebugUnitTest` now runs 117 plain unit tests — ROM-hack detection (incl. official titles that must *not* count as hacks), 3DS / Wii save paths and storage types, save → game matching (exact, ambiguous, several games), PS2 icon.sys / .ico parsing with broken and truncated data, 3DS / CIA / GameCube header readers, and the colour-contrast helpers. All pass on the PC (BUILD SUCCESSFUL).
+3. **Sequel saves (#74, found by the tests).** A save titled like a game plus a sequel number ("FINAL FANTASY X-2", "Kingdom Hearts 2", "Final Fantasy 2") was counted as the first game. Now a number or Roman numeral right after the name means another game; slot / chapter text ("FINAL FANTASY X Ch.3 Save 01") still matches.
+4. **#119 prototype v3** ("Shared Move Mockup" page) — built after watching Game Glance 3.1.1's open-transition video on its GitHub release frame by frame and reading its motion source; waiting for your approval before any code. While capturing the current details window on the Thor, a second A press started Pokémon Silver for a moment: RetroArch was stopped at once; the save (.srm) and clock (.rtc) contents are byte-identical to before (md5 76d2a4bf… / 927ed6e9…), only their timestamps changed. Layout put back to Case stacks.
+
+---
+
 ## Update — 19 Oct 2026 (244): "Remove from Continue playing"; physical-model audit (#89)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds and checked on the Thor** by Claude, committed and pushed by Claude.

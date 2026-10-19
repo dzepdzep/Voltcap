@@ -87,6 +87,10 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
     return when (id) {
         // Layout, Sort, Edit home: every layout (the sort also orders Timeline's same-date / undated games).
         "layout", "sort", "edithome" -> R1Fit.Show
+        // Update 245: the game popup's style — only while A opens a game window at all (Settings › Home › Layout options ›
+        // Game window); off, A starts the game, so the tile is greyed and says where to switch it back on.
+        "popupstyle" -> if (com.shelf.launcher.data.Features.gameWindow.value) R1Fit.Show
+            else R1Fit.Grey("Game window is off: A starts the game straight away. Switch it on in Settings › Home › Layout options › Game window.")
         // Music player position and Round shortcuts: every layout (style homes: in the status bar / moved in Edit Home /
         // off; the shortcuts' corner ☰ or Edit Home spot).
         "musicspot" -> R1Fit.Show

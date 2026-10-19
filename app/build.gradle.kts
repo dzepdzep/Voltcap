@@ -21,6 +21,8 @@ val keystoreProps = Properties().apply {
 }
 
 android {
+    // Update 245 (#79): android.* calls in unit tests return defaults instead of throwing ("Method ... not mocked").
+    testOptions { unitTests.isReturnDefaultValues = true }
     namespace = "com.shelf.launcher"
     compileSdk = 36
 
@@ -107,6 +109,8 @@ composeCompiler {
 }
 
 dependencies {
+    // Update 245 (#79): plain JVM unit tests for the parsers and matchers (app/src/test, gradlew testDebugUnitTest).
+    testImplementation("junit:junit:4.13.2")
     implementation(platform("androidx.compose:compose-bom:2026.02.01"))
 
     implementation("androidx.core:core-ktx:1.16.0")

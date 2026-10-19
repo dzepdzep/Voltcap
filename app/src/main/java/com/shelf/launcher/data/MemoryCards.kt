@@ -271,8 +271,18 @@ object MemoryCards {
         if (a.length < 3 || b.length < 3) return false
         if (a == b) return true
         // Save titles often add a slot or chapter after the name ("FINAL FANTASY X Ch.3 Save 01").
-        return a.startsWith("$b ") || (b.length >= 6 && a.startsWith(b) && !a[b.length].isDigit())
+        // (Update 245, #74: not when what follows is a sequel's number — "FINAL FANTASY X-2" is not Final Fantasy X,
+        // "Kingdom Hearts 2" not Kingdom Hearts; found by the fixture tests.)
+        return (a.startsWith("$b ") && !sequelAfter(a, b)) || (b.length >= 6 && a.startsWith(b) && !a[b.length].isDigit() && a[b.length] != ' ')
     }
+
+    /** Update 245: true when the word right after [b] in [a] is a sequel's number (2, 3…, II, III…, X). */
+    internal fun sequelAfter(a: String, b: String): Boolean {
+        val next = a.substring(b.length).trim().substringBefore(' ')
+        return next.isNotEmpty() && (next.all { it.isDigit() } || next in SEQUEL_ROMAN)
+    }
+
+    private val SEQUEL_ROMAN = setOf("ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv", "xvi")
 
     // ---- GameCube (update 112) ----
 

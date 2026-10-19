@@ -109,7 +109,8 @@ internal object SaveMatch {
     private fun keysMatch(a: String, b: String): Boolean {
         if (a.length < 3 || b.length < 3) return false
         if (a == b) return true
-        return a.startsWith("$b ") || (b.length >= 6 && a.startsWith(b) && !a[b.length].isDigit())
+        // (Update 245, #74: a sequel's number after the name is another game — MemoryCards.sequelAfter.)
+        return (a.startsWith("$b ") && !MemoryCards.sequelAfter(a, b)) || (b.length >= 6 && a.startsWith(b) && !a[b.length].isDigit() && a[b.length] != ' ')
     }
 
     private val ACCENTS = Regex("\\p{M}+")
