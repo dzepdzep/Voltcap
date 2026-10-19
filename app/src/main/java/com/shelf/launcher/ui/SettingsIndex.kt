@@ -608,6 +608,10 @@ internal object SettingsIndex {
         E("Not while charging", "Device", null, "dev_sleep", "Sleep mode"),
         E("After the screen is off for", "Device", null, "dev_sleep", "Sleep mode"),
         E("Gesture hint", "Device", null, "dev_gesture", "Gesture hint"),
+        // 0.6.15.
+        E("Screen rate", "Device", null, "dev_rate", "Screen rate"),
+        E("Fastest rate in Voltcap", "Device", null, "dev_rate", "Screen rate"),
+        E("120 Hz", "Device", null, "dev_rate", "Screen rate"),
         E("Gesture hint (navigation pill)", "Device", null, "dev_gesture", "Gesture hint"),
         E("Hide navigation bar", "Device", null, "dev_gesture", "Gesture hint"),
         E("Force-hide gesture hint", "Device", null, "dev_gesture", "Gesture hint"),

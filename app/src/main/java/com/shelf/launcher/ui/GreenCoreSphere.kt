@@ -89,6 +89,40 @@ internal fun rememberGcClock(running: Boolean, speed: Float, fps: Int): FloatSta
     return t
 }
 
+/**
+ * 0.6.15: line pieces of the sphere's grid and rings, drawn as single lines inside one layer (see [drawGcSegs]) instead
+ * of as a stroked path: the rebuilt-every-frame path was rasterised on the CPU each frame (Odin 2 Portal: about half
+ * of the render work while Green Core was on screen); separate lines are drawn by the GPU.
+ */
+internal class GcSegs(capacity: Int) {
+    var pts = FloatArray(capacity * 4)
+    var count = 0
+    fun reset() { count = 0 }
+    fun add(x0: Float, y0: Float, x1: Float, y1: Float) {
+        if ((count + 1) * 4 > pts.size) pts = pts.copyOf(pts.size * 2)
+        val o = count * 4
+        pts[o] = x0; pts[o + 1] = y0; pts[o + 2] = x1; pts[o + 3] = y1
+        count++
+    }
+}
+
+/**
+ * The pieces in [segs] at [color]: drawn opaque into a layer that gets the colour's alpha as a whole, so where pieces
+ * meet or cross nothing gets brighter — the same look as the one stroked path it replaces.
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGcSegs(segs: GcSegs, color: Color, width: Float, bound: Float, layer: androidx.compose.ui.graphics.Paint) {
+    if (segs.count == 0 || color.alpha <= 0f) return
+    val solid = color.copy(alpha = 1f)
+    layer.alpha = color.alpha.coerceIn(0f, 1f)
+    drawContext.canvas.saveLayer(androidx.compose.ui.geometry.Rect(-bound, -bound, bound, bound), layer)
+    val p = segs.pts
+    for (k in 0 until segs.count) {
+        val o = k * 4
+        drawLine(solid, Offset(p[o], p[o + 1]), Offset(p[o + 2], p[o + 3]), strokeWidth = width)
+    }
+    drawContext.canvas.restore()
+}
+
 /** The sphere's unit geometry: latitude rings and great circles through the poles, made once. */
 private class GcGeo(lite: Boolean) {
     val lats = if (lite) 5 else 7
@@ -134,7 +168,7 @@ private class GcGeo(lite: Boolean) {
      */
     fun polyline(
         src: FloatArray, start: Int, n: Int, r: Float, tiltX: Float, yaw: Float, tilt: Float, radius: Float,
-        front: Path, back: Path
+        front: GcSegs, back: GcSegs
     ) {
         val cy = cos(yaw); val sy = sin(yaw)
         val ct = cos(tilt); val st = sin(tilt)
@@ -152,13 +186,9 @@ private class GcGeo(lite: Boolean) {
             proj[k * 3 + 1] = y2 * radius * p
             proj[k * 3 + 2] = z2
         }
-        var side = 0 // 1 front, -1 back, 0 none yet
         for (k in 0 until n) {
             val f = proj[k * 3 + 2] + proj[k * 3 + 5] >= 0f
-            val s = if (f) 1 else -1
-            val path = if (f) front else back
-            if (s != side) { path.moveTo(proj[k * 3], proj[k * 3 + 1]); side = s }
-            path.lineTo(proj[k * 3 + 3], proj[k * 3 + 4])
+            (if (f) front else back).add(proj[k * 3], proj[k * 3 + 1], proj[k * 3 + 3], proj[k * 3 + 4])
         }
     }
 
@@ -224,10 +254,12 @@ internal fun GreenCoreSphere(
             val arcStroke = Stroke(2f * px, cap = StrokeCap.Round)
             val dashed = Stroke(1f * px, pathEffect = PathEffect.dashPathEffect(floatArrayOf(2f * px, 8f * px)))
             val ticks = Stroke(5f * px, pathEffect = PathEffect.dashPathEffect(floatArrayOf(1.2f * px, 14f * px)))
-            val front = Path()
-            val back = Path()
-            val ringFront = Path()
-            val ringBack = Path()
+            val front = GcSegs(geo.lats * geo.latSeg + geo.lons * geo.lonSeg)
+            val back = GcSegs(geo.lats * geo.latSeg + geo.lons * geo.lonSeg)
+            val ringFront = GcSegs(geo.ringSeg * 3)
+            val ringBack = GcSegs(geo.ringSeg * 3)
+            val segLayer = androidx.compose.ui.graphics.Paint()
+            val segBound = r0 * 1.8f
             // Faint circuit traces leaving the sphere to the right (towards the menu) and down-left: right-angled runs
             // ending in small pads. Fixed to the sphere, so they move with it between the pages.
             val traces = Path().apply {
@@ -282,14 +314,14 @@ internal fun GreenCoreSphere(
                         front.reset(); back.reset()
                         for (j in 0 until geo.lats) geo.polyline(geo.latPts, j * (geo.latSeg + 1) * 3, geo.latSeg, 1f, 0f, yaw, tilt, r0, front, back)
                         for (m in 0 until geo.lons) geo.polyline(geo.lonPts, m * (geo.lonSeg + 1) * 3, geo.lonSeg, 1f, 0f, yaw, tilt, r0, front, back)
-                        drawPath(back, gridBack.copy(alpha = gridBack.alpha * d), style = thin)
+                        drawGcSegs(back, gridBack.copy(alpha = gridBack.alpha * d), thin.width, segBound, segLayer)
                         // Three tilted rings going round at their own speeds (the far halves behind the core).
                         ringFront.reset(); ringBack.reset()
                         val rb = geo.ring(ringBuf)
                         geo.polyline(rb, 0, geo.ringSeg, 1.24f, 0.42f, -t * TAU / 90f, tilt, r0, ringFront, ringBack)
                         geo.polyline(rb, 0, geo.ringSeg, 1.38f, -0.62f, t * TAU / 120f, tilt, r0, ringFront, ringBack)
                         geo.polyline(rb, 0, geo.ringSeg, 1.12f, 1.25f, t * TAU / 180f, tilt, r0, ringFront, ringBack)
-                        drawPath(ringBack, ringCol.copy(alpha = (0.06f + 0.08f * glow) * d), style = thin)
+                        drawGcSegs(ringBack, ringCol.copy(alpha = (0.06f + 0.08f * glow) * d), thin.width, segBound, segLayer)
                         // The energy core: it breathes, flashes on a move, and its filaments turn round it.
                         val cs = 1f + 0.07f * pulse + 0.22f * fl
                         scale(cs, cs, pivot = Offset.Zero) {
@@ -307,8 +339,8 @@ internal fun GreenCoreSphere(
                             drawArc(accent.copy(alpha = (0.12f + 0.22f * glow) * d), 270f, 50f, false, Offset(-fr2, -fr2), Size(fr2 * 2f, fr2 * 2f), style = thin)
                         }
                         // The near side of the grid and the rings, over the core.
-                        drawPath(front, gridFront.copy(alpha = gridFront.alpha * d * flick), style = med)
-                        drawPath(ringFront, ringCol.copy(alpha = (0.2f + 0.3f * glow) * d), style = med)
+                        drawGcSegs(front, gridFront.copy(alpha = gridFront.alpha * d * flick), med.width, segBound, segLayer)
+                        drawGcSegs(ringFront, ringCol.copy(alpha = (0.2f + 0.3f * glow) * d), med.width, segBound, segLayer)
                         // A soft highlight up on the left and the rim line.
                         drawCircle(spec, r0 * 0.5f, specAt, alpha = d)
                         drawCircle(accent.copy(alpha = (0.18f + 0.3f * glow) * d * flick), r0, Offset.Zero, style = thin)

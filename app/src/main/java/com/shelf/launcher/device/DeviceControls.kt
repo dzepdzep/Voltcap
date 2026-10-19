@@ -158,6 +158,8 @@ object DeviceControls {
             DeviceControl.REFRESH_RATE -> {
                 val rates = refreshRates(context)
                 if (rates.size < 2 || !RootShell.available) return false
+                // 0.6.15: picked by hand: that's the rate to keep (Screen rate won't put an older one back).
+                com.shelf.launcher.device.VoltcapRate.forget(context)
                 val now = currentRate(context)
                 val target = rates.firstOrNull { it > now + 1f } ?: rates.first()
                 putSystem("peak_refresh_rate", "%.1f".format(java.util.Locale.US, target)) &&

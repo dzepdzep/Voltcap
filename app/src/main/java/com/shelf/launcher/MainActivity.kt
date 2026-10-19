@@ -328,6 +328,16 @@ class MainActivity : ComponentActivity() {
         // Notification access on but Android didn't bind the listener after a reboot/update: ask it to.
         com.shelf.launcher.data.ShelfNotificationListener.rebindIfNeeded(applicationContext)
         hideSystemBars()
+        // 0.6.15: Settings › Device › Screen rate — the window asks for the fastest mode; where Voltcap can set the rate
+        // itself it goes up once Voltcap has really come back (a moment, with the controller).
+        com.shelf.launcher.device.VoltcapRate.applyWindow(this)
+        window.decorView.postDelayed({
+            // (Top resumed, not window focus: a Settings page or popup over the home has the focus, and it's still Voltcap.)
+            if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) && voltcapOnTop) {
+                val app = applicationContext
+                Thread { runCatching { com.shelf.launcher.device.VoltcapRate.enter(app) } }.start()
+            }
+        }, 1_200L)
         // Safety net for GameMode: if Voltcap has really been back in front for a few seconds, the
         // game is over (the view model's own check skips the first moments after a launch).
         window.decorView.postDelayed({
@@ -351,6 +361,9 @@ class MainActivity : ComponentActivity() {
         // …and give it back once Voltcap has left the front (a game, another app, screen off).
         com.shelf.launcher.data.GestureHint.onBackground(applicationContext)
         com.shelf.launcher.data.SyncNotifier.appInForeground = false
+        // 0.6.15: the screen rate from before Voltcap raised it (Settings › Device › Screen rate).
+        val app = applicationContext
+        Thread { runCatching { com.shelf.launcher.device.VoltcapRate.leave(app) } }.start()
     }
 
     // A game started (Voltcap hidden) or Android needs memory: give the decoded art back, all of it
@@ -364,8 +377,12 @@ class MainActivity : ComponentActivity() {
      * Update 187: which app has the controller. On a two-screen handheld a game on the other screen can have it while
      * Voltcap stays resumed and drawing here; the battery saver then lets Voltcap rest (BatterySaver.away).
      */
+    /** 0.6.15: Voltcap is the activity with the controller (not a game on the other screen). */
+    @Volatile private var voltcapOnTop = true
+
     override fun onTopResumedActivityChanged(isTopResumedActivity: Boolean) {
         super.onTopResumedActivityChanged(isTopResumedActivity)
+        voltcapOnTop = isTopResumedActivity
         com.shelf.launcher.data.BatterySaver.onFront(isTopResumedActivity)
     }
 

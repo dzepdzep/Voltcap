@@ -513,7 +513,9 @@ private fun HandCard(
                 rotationX = CARD_TILT_X * t
                 cameraDistance = 14f * density
                 alpha = geo.alpha(r)
-                flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
+                // 0.6.15: always drawn flat in its own layer, then turned — the fanned (rotated) cards' rounded corners
+                // were clipped on the CPU every frame (27 % of the render thread while scrolling, Odin 2 Portal).
+                compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
             }
             .pointerInput(game) { detectTapGestures(onTap = { onTap(game) }, onLongPress = { onHold(game) }) }
     ) {

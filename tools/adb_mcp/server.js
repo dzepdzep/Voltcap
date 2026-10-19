@@ -307,7 +307,22 @@ async function call2(name, a) {
       if (job && job.code === null) throw new Error('Gradle is still running - wait for it first.');
       const apk = newestApk(variant);
       if (!apk) throw new Error('No built ' + variant + ' APK in app\\build\\outputs\\apk\\' + variant);
-      const out = await adb(['install', '-r', apk], s, { timeout: 300000 });
+      // (0.6.15: with the build's profile (.dm) for the handheld's Android version when there is one, so Android compiles
+      // Voltcap during the install - an APK alone runs uncompiled until Android's overnight optimisation.)
+      let dm = null;
+      try {
+        const meta = JSON.parse(fs.readFileSync(path.join(path.dirname(apk), 'output-metadata.json'), 'utf8'));
+        const sdk = parseInt((await adb(['shell', 'getprop', 'ro.build.version.sdk'], s)).trim(), 10) || 0;
+        const bp = (meta.baselineProfiles || []).find((b) => sdk >= b.minApi && sdk <= b.maxApi);
+        const f = bp && bp.baselineProfiles && bp.baselineProfiles[0] ? path.join(path.dirname(apk), bp.baselineProfiles[0]) : null;
+        if (f && fs.existsSync(f)) dm = f;
+      } catch (e) { dm = null; }
+      let out;
+      if (dm) {
+        try { out = await adb(['install-multiple', '-r', apk, dm], s, { timeout: 300000 }); out = '(with profile ' + path.basename(dm) + ')\n' + out; }
+        catch (e) { dm = null; }
+      }
+      if (!dm) out = await adb(['install', '-r', apk], s, { timeout: 300000 });
       return text(`${apk} (${new Date(fs.statSync(apk).mtimeMs).toISOString()})\n` + out.trim());
     }
     case 'git_status': {

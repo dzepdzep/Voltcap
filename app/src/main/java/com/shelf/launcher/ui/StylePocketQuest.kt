@@ -579,7 +579,9 @@ private fun PqMediaBig(c: StyleCtx, g: Game, tilt: Boolean, modifier: Modifier) 
 private fun PqCover(c: StyleCtx, g: Game, modifier: Modifier) {
     val titles = LocalTitleOptions.current
     val url = c.cover(g) ?: c.wide(g)
-    Box(modifier.gameOrigin(g.stableKey, g.stableKey == c.game?.stableKey).clip(PqChamfer(4.dp)).background(placeholderBrush(g.hue))) {
+    // (0.6.15: its own layer, so the cut-corner clip is drawn once, not again on every frame the strip moves.)
+    Box(modifier.gameOrigin(g.stableKey, g.stableKey == c.game?.stableKey).graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+        .clip(PqChamfer(4.dp)).background(placeholderBrush(g.hue))) {
         when {
             // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the chamfered card.)
             url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == c.cover(g)), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())

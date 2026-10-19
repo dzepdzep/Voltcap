@@ -66,6 +66,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.input.key.onKeyEvent
@@ -302,6 +303,7 @@ fun SettingsDialog(
     // Start with the current section focused: with nothing focused, the first press after opening
     // only moved focus into the menu, so every button seemed to need pressing twice.
     val openFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val paneFocus = remember { androidx.compose.ui.focus.FocusRequester() }
     // (Update 261, #120 Thor: opened straight at a page — Settings › Sync from a game, the Audio page… — the one try at
     // 50 ms came before the dialog could take focus, so the first D-pad press lit Home at the top of the list and A
     // opened Home instead of staying on the page. It tries again until the page's own entry has the focus.)
@@ -407,6 +409,13 @@ fun SettingsDialog(
                             Modifier
                                 .width(220.dp)
                                 .fillMaxHeight()
+                                // (0.6.15, #120 Q47: ▶ goes to the page's first setting — it went to whichever card sat
+                                // level with the sidebar entry, e.g. Video previews on Audio.)
+                                .onPreviewKeyEvent { e ->
+                                    if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown ||
+                                        e.key != androidx.compose.ui.input.key.Key.DirectionRight || searchQuery.isNotBlank()) return@onPreviewKeyEvent false
+                                    runCatching { paneFocus.requestFocus() }.isSuccess
+                                }
                                 .verticalScroll(rememberScrollState())
                                 .padding(16.dp)
                         ) {
@@ -453,6 +462,9 @@ fun SettingsDialog(
                         Column(
                             Modifier
                                 .weight(1f)
+                                // (0.6.15: a group the sidebar's ▶ enters at its first setting.)
+                                .focusRequester(paneFocus)
+                                .focusGroup()
                                 // ▲ ▼ scroll text-only pages that have nothing to focus.
                                 .dpadScroll(paneScroll)
                                 .verticalScroll(paneScroll)
@@ -621,6 +633,8 @@ fun SettingsDialog(
                                     FoldGroup("Works on this device", summary = "Which effects and features this handheld can run", key = "dev_compat") { DeviceCompatCard() }
                                     FoldGroup("Sleep mode", summary = "Wi-Fi / Bluetooth off while the screen is off", key = "dev_sleep") { SleepModeCard() }
                                     FoldGroup("Gesture hint", summary = "The white navigation pill", key = "dev_gesture") { GestureHintCard() }
+                                    // 0.6.15.
+                                    FoldGroup("Screen rate", summary = "Voltcap at the screen's fastest refresh rate", key = "dev_rate") { ScreenRateCard() }
                                     FoldGroup("Quick Settings tiles", summary = "Voltcap's tiles in Android's pull-down menu", key = "dev_tiles") { QsTilesCard() }
                                     FoldGroup("Notifications", summary = "Power tuner (TDP), overlays, volume mixer", key = "dev_notes") { NotificationSettings() }
                                     SwitchRow(

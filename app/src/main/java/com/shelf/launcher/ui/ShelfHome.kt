@@ -342,7 +342,9 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                             alpha = if (shelfFront(pv) > 0f) 0f else 1f
                                         }
                                     }
-                                    flatTextFor3d() // Update 177: drawn flat, then turned (Android 13 text cache)
+                                    // (0.6.15: every spine in its own kept layer — a bookcase of ~150 spines was drawn piece by
+                                    // piece (strip, corners, picture) on every frame of a move; now each is one picture.)
+                                    compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
                                 }
                                 .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
                         ) {

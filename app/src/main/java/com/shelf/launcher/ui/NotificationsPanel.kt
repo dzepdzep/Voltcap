@@ -111,8 +111,7 @@ fun NotificationsPanel(
 
     // A compact sheet in the top-right corner (it covers the status bar, so the clock, Wi-Fi and
     // battery from there are repeated in its first line).
-    QuickSheet(onDismiss = onDismiss) {
-        QuickSheetHeader(onClose = onDismiss)
+    QuickSheet(onDismiss = onDismiss, header = { QuickSheetHeader(onClose = onDismiss) }) {
         if (VoltUi.on) VoltageLine(Modifier.fillMaxWidth().padding(top = 4.dp))
         Spacer(Modifier.height(if (VoltUi.on) 4.dp else 8.dp))
         if (!notificationsOnly) QuickSettingsCard(
@@ -397,7 +396,12 @@ private fun timeAgo(postedAt: Long): String {
 
 /** The R1 sheet's frame: top-right, compact, scrolls when long; tapping outside or B closes it. */
 @Composable
-internal fun QuickSheet(onDismiss: () -> Unit, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+internal fun QuickSheet(
+    onDismiss: () -> Unit,
+    /** 0.6.15 (#120 Q46): stays at the top while the rest scrolls (the time, battery and ✕). */
+    header: (@Composable () -> Unit)? = null,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
+) {
     val sounds = LocalUiSounds.current
     androidx.compose.runtime.LaunchedEffect(Unit) { sounds?.play(UiSound.OPEN) }
     androidx.compose.ui.window.Dialog(
@@ -429,10 +433,17 @@ internal fun QuickSheet(onDismiss: () -> Unit, content: @Composable androidx.com
                     .voltSurface(uiRounded(18.dp), base = ShelfTheme.colors.surface)
                     .border(1.dp, Color.White.copy(alpha = 0.1f), uiRounded(18.dp))
                     .pointerInput(Unit) { detectTapGestures { } }
-                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
-                    .padding(12.dp),
-                content = content
-            )
+                    .padding(top = if (header != null) 12.dp else 0.dp)
+            ) {
+                if (header != null) androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 12.dp)) { header() }
+                Column(
+                    Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp, top = if (header != null) 0.dp else 12.dp),
+                    content = content
+                )
+            }
         }
     }
 }

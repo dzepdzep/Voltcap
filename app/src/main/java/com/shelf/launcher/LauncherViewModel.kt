@@ -5200,6 +5200,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             val tunePlatform = game.platform.takeIf { game.sourceType == SourceType.ROM }
             val tuneConsole = tunePlatform?.let { com.shelf.launcher.data.ConsoleNames.display(it) }
             Thread {
+                // 0.6.15: first the screen rate Voltcap raised for itself goes back, so the game (and its profile's
+                // "put back afterwards") start from your own rate.
+                runCatching { com.shelf.launcher.device.VoltcapRate.leave(app) }
                 runCatching { com.shelf.launcher.device.tune.Tuner.onGameLaunch(app, game.stableKey, game.name, tunePkg, tunePlatform, tuneConsole) }
                 // Volume per app: the saved volumes again, and this game's own one for its emulator / app.
                 runCatching { com.shelf.launcher.device.audio.AppMixer.onGameLaunch(app, game.stableKey, game.name, tunePkg) }

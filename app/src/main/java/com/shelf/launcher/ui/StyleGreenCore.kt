@@ -637,7 +637,12 @@ private fun GcList(c: StyleCtx, compact: Boolean, reduced: Boolean, accent: Colo
                     c, i, i == c.focus, rowH, compact, accent,
                     Modifier
                         .offset { IntOffset(0, (topPx + (i - pos.value) * rowPx).roundToInt()) }
-                        .graphicsLayer { alpha = (1f - abs(i - pos.value) / (half + 1f)).coerceIn(0.12f, 1f) }
+                        .graphicsLayer {
+                                    alpha = (1f - abs(i - pos.value) / (half + 1f)).coerceIn(0.12f, 1f)
+                                    // (0.6.15: a kept layer — the fading row was drawn again every frame of the glide, its angled
+                                    // clip on the CPU each time: a quarter of the render thread on the Odin 2 Portal.)
+                                    compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+                                }
                         .fillMaxWidth()
                         .height(rowH - 5.dp)
                 )
@@ -973,7 +978,12 @@ private fun GcSystems(c: StyleCtx, systems: List<Int>, compact: Boolean, reduced
                                     val d = i - pos.value
                                     IntOffset((d * d * bendPx).coerceAtMost(bendPx * 12f).roundToInt(), (topPx + d * rowPx).roundToInt())
                                 }
-                                .graphicsLayer { alpha = (1f - abs(i - pos.value) / (half + 1f)).coerceIn(0.12f, 1f) }
+                                .graphicsLayer {
+                                    alpha = (1f - abs(i - pos.value) / (half + 1f)).coerceIn(0.12f, 1f)
+                                    // (0.6.15: a kept layer — the fading row was drawn again every frame of the glide, its angled
+                                    // clip on the CPU each time: a quarter of the render thread on the Odin 2 Portal.)
+                                    compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+                                }
                                 .fillMaxWidth()
                                 .height(rowH - 6.dp)
                         ) {

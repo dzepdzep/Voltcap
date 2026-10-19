@@ -4138,10 +4138,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // (The session summary popup after a game is gone: the details window shows "Last session" instead.)
 
         // Google Drive sync: in the status bar; a small note in a corner only when the status bar is off.
+        // (0.6.15, #120 Q45: TV channels and Hero tiles have games right under their top row — there it sits in the
+        // middle of the top row instead, where those layouts leave room.)
+        val noticeTopMiddle = state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CHAN ||
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.HERO_TILES
         if (!state.appearance.statusOn) SyncCornerNotice(
             notice = uiState.syncNotice,
             kind = uiState.syncNoticeKind,
-            modifier = Modifier
+            modifier = if (noticeTopMiddle) Modifier.align(Alignment.TopCenter).padding(top = 8.dp) else Modifier
                 .align(
                     if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP) Alignment.BottomEnd
                     else Alignment.TopEnd

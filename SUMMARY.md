@@ -4,6 +4,25 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (263): smoother busy layouts (Cards, Green Core, Game shelf, Pocket); Voltcap at the screen's fastest rate (new, Settings › Device › Screen rate); R1 menu keeps its ✕; ▶ from the Settings list lands on the first setting; the Drive notice stays off the games in TV channels / Hero tiles
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Odin 2 Portal and the Retroid Pocket Flip 2**, committed and pushed by Claude. **Not published.**
+
+**Copy `src_copy`**, changed (13) + new (2): `src_copy\MainActivity.kt`, `src_copy\LauncherViewModel.kt`, `src_copy\device\DeviceControls.kt`, `src_copy\ui\StyleCardBinder.kt`, `src_copy\ui\StyleGreenCore.kt`, `src_copy\ui\GreenCoreSphere.kt`, `src_copy\ui\StylePocketQuest.kt`, `src_copy\ui\ShelfHome.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\NotificationsPanel.kt`, `src_copy\ui\LauncherScreen.kt`; new `src_copy\device\VoltcapRate.kt`, `src_copy\ui\ScreenRateCard.kt`. Also `tools\adb_mcp\server.js` (+ its project_copy): Claude's install_build sends the profile file with the APK (after the tool restarts). **Files to delete:** none.
+
+- **Smoother busy layouts** (Odin 2 Portal, All games, janky frames before → after, compiled both times):
+  - Cards: ▼▲ 17 % → 5 % — each fanned card is drawn flat in its own layer and then turned; its rounded corners were cut on the CPU every frame (27 % of the render thread).
+  - Green Core: ◀▶ 18 % → 11 %, ▼▲ 13 % → 6 % — the sphere's grid and rings are drawn by the GPU as lines (they were a new path each frame, rasterised on the CPU); the list's fading rows are kept layers.
+  - Game shelf: ▼▲ 17 % → 9–11 % — each spine is one kept picture instead of being drawn piece by piece on every frame of a move.
+  - Pocket: ▼▲ 33 % → 20 % — the strip's cut-corner covers are kept layers.
+  - Same look; still to do: Cards ◀▶ (every card is redrawn when the focus moves), Twin icons, the hitch going to another shelf in Game shelf. Details: `Claude outputs\evidence\stutter_odin_2026-10-19.md`.
+- **New: Settings › Device › Screen rate › Fastest rate in Voltcap** (off by default): Voltcap's menus at the screen's fastest refresh rate (120 Hz), games and other apps keep the rate Android / their profile gives them. Where Voltcap can set the rate (AYN's root service; also the Flip 2) it raises it when Voltcap is in front and puts yours back before a game starts or when you leave Voltcap (kept on disk, so it's put back after a crash too); elsewhere Voltcap's window asks for it and the card says when Android holds the screen lower. Picking a rate with R1's screen-rate tile is kept as yours. Checked: Odin (set to 60 for the test) 120 in Voltcap → 60 in another app → 120 back, then put back to your 120 / 120 and switched off; Flip 2 the same, **left on there** (60 Hz outside Voltcap as you had it).
+- **R1 menu (#120 Q46):** the time, battery and ✕ stay at the top while the tiles and notifications scroll (✕ used to scroll away).
+- **Settings (#120 Q47):** ▶ from the side list goes to the page's first setting (it went to whichever card was level with the list entry, e.g. Video previews on Audio).
+- **Drive sync notice (#120 Q45):** in TV channels and Hero tiles it shows in the middle of the top row instead of over the top-right game.
+
+---
+
 ## Update — 19 Oct 2026 (262): updates install already compiled (no stutter after an update); scroll-stutter measured on the Odin 2 Portal; screens of the Odin and Flip 2 checked
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed and checked on the Odin 2 Portal** (updated there from 0.6.8), committed and pushed by Claude. **Not published.**
