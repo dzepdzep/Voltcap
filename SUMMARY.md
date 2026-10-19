@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (253): B leaves a search; a Voltcap game start → emulator crash → back home check (#104)
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic, checked on the Thor** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (1): `src_copy\ui\LauncherScreen.kt`. **Files to delete:** none.
+
+- **B after a search.** Once a search was confirmed ("robobot" in 3DS: the bar closes, the list stays filtered), B went past it — to the category screen, or nothing — and the only way back to the whole category was opening the search again and deleting the text. Now B (and touch Back) gives the whole category back first; the next B goes on as before. Checked on the Thor in Case stacks: search → Enter → B (off the icon bar) → B → all 224 3DS games.
+- **#104 (crash clean-up), one case checked on the Thor:** a Voltcap start of a kiosk demo (Kirby Planet Robobot demo — no save of any kind, checked), then Azahar force-stopped mid-game as a crash stand-in. Voltcap came back to the front by itself, its second screen came back, Home music resumed, no leftover services (charge limit, notification listener and tune service only — as before the game). The demo was taken off Continue playing afterwards (Options › Remove from Continue playing).
+- Found on the way: **Voltcap already starts 3DS games in Azahar** — question 34 answered, nothing to change.
+
+---
+
 ## Update — 19 Oct 2026 (252): 0.6.13 published; Cross menu's lines under the name readable over light art (#94)
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on the Thor and the RP Classic, checked on the RP Classic** by Claude, committed and pushed by Claude.

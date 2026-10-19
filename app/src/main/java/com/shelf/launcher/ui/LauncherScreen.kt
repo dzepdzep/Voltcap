@@ -5974,6 +5974,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             viewModel.setSearchQuery("")
                             sounds?.play(UiSound.BACK)
                             true
+                        } else if (state.searchQuery.isNotBlank() && !showDetails) {
+                            // (Update 252: a search you've confirmed ("robobot" in 3DS) — B gives the whole category back
+                            // first. It stayed filtered: B went past it to the category screen or did nothing, and the only
+                            // way out was opening the search again and deleting the text.)
+                            viewModel.setSearchQuery("")
+                            sounds?.play(UiSound.BACK)
+                            true
                         } else if (state.appearance.categoryScreen != com.shelf.launcher.data.CategoryScreenMode.OFF &&
                             !showDetails
                         ) {
@@ -6112,7 +6119,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         // Touch back (the back gesture / button with no controller key: Android 13+ doesn't send one) closes
         // what's on top of the home screen, like B. Popups handle their own back.
-        androidx.activity.compose.BackHandler(enabled = !aDialogIsOpen && (showDetails || categoryScreenOpen)) {
+        androidx.activity.compose.BackHandler(enabled = !aDialogIsOpen && (showDetails || categoryScreenOpen || (state.searchQuery.isNotBlank() && !HomeEditState.active))) {
             when {
                 categoryScreenOpen && pbState.editing -> { pbState.saveLayout(); pbState.editing = false }
                 categoryScreenOpen && pbState.grabbed >= 0 -> pbState.grabbed = -1
@@ -6120,6 +6127,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // (Update 208: reordering — back puts the tile down / finishes first.)
                 categoryScreenOpen && CategoryReorder.on -> if (CategoryReorder.held) cancelCategoryMove() else CategoryReorder.stop()
                 categoryScreenOpen -> categoryScreenOpen = false
+                // (Update 252: touch Back gives a confirmed search's whole category back too, as B does.)
+                state.searchQuery.isNotBlank() -> viewModel.setSearchQuery("")
             }
             sounds?.play(UiSound.BACK)
         }
