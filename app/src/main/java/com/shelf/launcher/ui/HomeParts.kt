@@ -91,6 +91,16 @@ internal fun CategoryNamePart(label: String, backdrop: NameBackdrop) {
 }
 
 /**
+ * Update 247 (#94, RP Classic): where the game's logo part (Edit Home › Logo) starts when you haven't moved it. The top-left
+ * corner, except in Side menu, where that corner is the menu panel: the logo lay over its emblem and first entry. There it
+ * starts at the top right, over the game's art.
+ */
+internal fun logoPartSpot(layout: HomeLayout?): Pair<Float, Float> = when (layout) {
+    HomeLayout.SIDE -> 1f to 0.1f
+    else -> 0f to 0.1f
+}
+
+/**
  * Update 204: where the Category name part starts on [layout] (fractions of the free room across and down, as
  * MovableWidget takes them) — a spot that layout leaves free, so it overlaps nothing until you move it.
  */
@@ -104,9 +114,13 @@ internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (la
     // Console hub: on the art at the left, under the profile / icons / clock row.
     HomeLayout.HUB -> 0f to 0.2f
     // Resume & discover: in the middle of the top row, between the profile and the clock.
-    HomeLayout.RESUME -> 0.5f to 0f
+    // (Update 247, #94, RP Classic: a little lower — on the narrower screen the status bar's date and clock reach the
+    // middle of the top row, and the name sat on them.)
+    HomeLayout.RESUME -> 0.5f to 0.07f
     // Hero carousel: along the top, right of the covers down the left and clear of the status bar at the right.
-    HomeLayout.HERO -> 0.35f to 0f
+    // (Update 247, #94, RP Classic: a little lower — on the narrower screen the status bar's date reaches past the
+    // middle of the top row, and the name sat on it.)
+    HomeLayout.HERO -> 0.35f to 0.07f
     // Update 220 (#94): Spotlight — its own profile, icons and clock fill the top row, so the top-left corner put the
     // name over the profile picture. Left, in the free band: under the tiles' names (tiles on top) or above the tiles
     // (tiles at the bottom).
@@ -115,6 +129,9 @@ internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (la
     // "All apps · Search · …" under the status bar. Left, between the row of tiles and the game's title.
     // (Update 235, #08: with the games at the bottom the free band is high up, under the tabs, above the title.)
     HomeLayout.BAR -> 0f to (if (com.shelf.launcher.data.Features.barGamesAt.state.value == com.shelf.launcher.data.Features.SpotSide.BOTTOM) 0.18f else 0.42f)
+    // Update 247 (#94, RP Classic): Green Core — its own "GREEN CORE" title and line of counts fill the top-left corner;
+    // under them, above the globe.
+    HomeLayout.GREENCORE -> 0f to 0.19f
     // Anywhere else it's added by hand: the top-left corner.
     else -> 0f to 0f
 }

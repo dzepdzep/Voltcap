@@ -3832,7 +3832,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             // The logo starts top left (over the art), the rest stacked on the right.
                             // (Update 204: the category name at its layout's free spot, categoryPartSpot.)
                             defaultFrac = if (part == HomeWidgets.CATEGORY) categoryPartSpot(overlayLayout)
-                                else if (part == HomeWidgets.LOGO || part == HomeWidgets.LOGO_SGDB || part == HomeWidgets.LOGO_RA) 0f to 0.1f
+                                else if (part == HomeWidgets.LOGO || part == HomeWidgets.LOGO_SGDB || part == HomeWidgets.LOGO_RA) logoPartSpot(overlayLayout)
                                 // (Update 230, #09: Hero carousel with its covers on the right — the stack starts on the
                                 // left, it sat on the cover column.)
                                 else (if (overlayLayout == com.shelf.launcher.data.HomeLayout.HERO && com.shelf.launcher.data.Features.heroCoversRight.state.value) 0f else 1f) to

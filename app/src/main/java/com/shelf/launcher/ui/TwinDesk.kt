@@ -62,6 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.HomeLayout
@@ -636,12 +637,14 @@ private fun DeskPanel(c: StyleCtx, i: Int, on: Boolean, inGames: Boolean, compac
     ) {
         StyleArt(c, g, Modifier.fillMaxHeight().aspectRatio(1f), square = true, corner = if (compact) 6.dp else 8.dp)
         Spacer(Modifier.width(if (compact) 8.dp else 12.dp))
+        // (Update 247, #94, RP Classic: the two lines at their own height — the theme's text style spaces each line 24 sp
+        // apart, so in a small panel the console's line was cut in half under the name.)
         Column(Modifier.weight(1f)) {
             Text(
                 titles.display(g.name), color = DeskInk, fontSize = if (compact) 12.sp else 15.sp, fontWeight = FontWeight.Bold,
-                maxLines = 1, overflow = TextOverflow.Ellipsis
+                maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 1.2.em
             )
-            Text(titles.console(g.platform), color = DeskMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(titles.console(g.platform), color = DeskMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 1.2.em)
         }
         if (on && playIcon) Icon(Icons.Filled.PlayArrow, null, tint = accent, modifier = Modifier.size(if (compact) 16.dp else 20.dp)) // (Update 243, #55: an extra)
     }

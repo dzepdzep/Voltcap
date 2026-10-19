@@ -4,6 +4,21 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 19 Oct 2026 (247): RP Classic layout check (#94) — parts placed off the layouts' own text, Twin desk's second line no longer cut
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds and checked on the RP Classic** by Claude, committed and pushed by Claude.
+
+**Copy `src_copy`**, changed (3): `src_copy\ui\HomeParts.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\TwinDesk.kt`. **Files to delete:** none.
+
+Went through all 30 home layouts on the RP Classic (1240 × 1080) with R1 › Layout, one screenshot each (`screens\rpc_layout_01…33.png`), then put your **Dashboard** back.
+
+1. **Side menu**: the game's logo part (Edit Home › Logo) started in the top-left corner, which in Side menu is the menu panel — the logo lay over its emblem and first entry. It now starts at the top right, over the game's art (`logoPartSpot`). Checked on the device.
+2. **Twin desk**: the console's line under each game's name was cut in half on every panel. The theme's text style spaces lines 24 sp apart; the two lines now take their own height. Checked on the device: name and console both whole on all four panels.
+3. **Category name part** (only where you've added it): a little lower in **Resume & discover** and **Hero carousel** (the status bar's date and clock reach the middle of the top row on the narrower screen), and under Green Core's own title and counts instead of on them.
+4. Seen and left as they are (they're how those layouts look, or need your eye): Cross menu's name chip sits over the left end of its icon strip; TV room's achievement bar lies across the top of its games column; Library panel's names under the covers run into each other with five short covers.
+
+---
+
 ## Update — 19 Oct 2026 (246): big categories scroll smoothly again (#60) — rows no longer rebuilt every step; 3D cases drawn lighter
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed on both handhelds and measured on the Thor** by Claude, committed and pushed by Claude.
