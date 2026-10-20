@@ -4,6 +4,14 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (283): no more disc labels on the plain cartridge — after release 0.6.20
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **"On some of those pictures the disc is shown on the label"** (Toni): in lists mixing consoles with **All cartridges** (Game row › Mixed categories), a disc game (PS2, GameCube) is drawn on Voltcap's plain cartridge, and it wore its round disc-label scan in the window. It wears its cover now, as on the other cartridge shells since 280. The same in the game window and lying in an open case. Checked on the Flip 2 in All games (Grid, Cartridges look): before, every PS2 / GameCube game showed its disc on the cartridge; now its cover.
+
+Files (`src_copy\`): `ui\PhysicalMedia.kt`, `ui\MediaInspectView.kt`.
+
 ## Update — 20 Oct 2026 (281–282): the cartridge lying in an open case is the cartridge that comes out of it; a real-label audit — after release 0.6.20
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.

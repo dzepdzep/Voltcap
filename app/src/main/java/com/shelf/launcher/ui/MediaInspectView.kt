@@ -319,8 +319,8 @@ internal fun caseItemOf(content: InspectPiece?): CaseItem? = content?.let { c ->
     // (Update 282: the drawn piece's shell, so the one lying in the case is the same piece — CaseFaces — wearing what it
     // wears out of the case: on a library shell a disc game's cover, never its round disc-label scan, as PhysicalMedia.)
     val pick = c.pick?.platform?.takeIf { c.kind == InspectKind.SLAB && c.realScan == null }
-    val discOnShell = pick != null && pick.startsWith(SHELL_PREFIX) && c.labelIsScan && c.cover != null &&
-        MediaShell.of(pick.substringAfter('|', ""))?.let { it.disc || it == MediaShell.UMD } == true
+    val discOnShell = pick != null && c.labelIsScan && c.cover != null && (pick == GENERIC_CART || pick.startsWith(SHELL_PREFIX) &&
+        MediaShell.of(pick.substringAfter('|', ""))?.let { it.disc || it == MediaShell.UMD } == true)
     CaseItem(c.realScan, if (discOnShell) c.cover else c.label ?: c.cover, if (c.kind == InspectKind.DISC) 1f else c.aspect, c.tone.toArgbInt(), c.kind == InspectKind.DISC,
         pick = pick, scan = c.labelIsScan && !discOnShell)
 }

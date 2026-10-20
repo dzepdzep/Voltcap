@@ -571,6 +571,13 @@ internal fun PhysicalMedia(
     /** Update 168: the disc alone even with "Disc in its case" on (the carousels' 3D case draws the case itself). */
     noCase: Boolean = false
 ) {
+    // Update 283 (Toni: "on some the disc is shown on the label"): Voltcap's plain cartridge is only ever handed to a game
+    // with no cartridge of its own — a disc game in "All cartridges" (lists mixing consoles) or Cartridges only — so a
+    // label scan there is the round disc label. Its cover instead, as on the other cartridge shells (update 280).
+    if (platform == GENERIC_CART && labelIsScan && caseCover != null && caseCover != label) {
+        PhysicalMedia(shell, caseCover, modifier, platform, false, caseCover, title, noCase)
+        return
+    }
     // (Update 200: the pre-rendered 3D models' branch is gone — mediaFor never hands one out any more; the 3D cartridges
     // looks come here as drawn shells, below.)
     // Update 195: a game on a shell from the cartridge library, the cover as its label.
