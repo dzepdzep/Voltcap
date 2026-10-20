@@ -4,6 +4,16 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (277): the PSP shell's label fitted inside the shell — after release 0.6.19
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **PSP label too big:** in your optical-system pack the PSP shell's grey "PSP · PlayStation Portable" label was wider than the shell and stuck out past both sides (label 3–557 px of the 560 px picture, the shell 23–518). Voltcap now draws a fitted copy: the label narrowed to 46–494 px, inside the shell like the other consoles' labels. The rounded ends are kept and only the plain middle is trimmed, so the logo and text keep their size. Where the label covered the shell's sides, the shell's own side rail (with its groove) shows; past the shell, nothing.
+- The pack file itself isn't changed. Voltcap makes the copy once, the first time a PSP game is drawn on the pack (`files\packs\fixes\psp_fit1.png`), and uses it everywhere the shell is drawn. It's made again if the pack's PSP picture is downloaded again.
+- Checked on the Flip 2: made on the handheld from the pack's `disc_psp.webp` with a testing hook (`--ez voltcap_test_pspfit true`); the result matches the preview. Not seen on the home rows there, because the Flip 2 draws its games on the cartridge pack.
+
+Files (`src_copy\`): `data\DiscShellFixes.kt` (new), `data\Packs.kt`, `ui\TestHooks.kt`.
+
 ## Update — 20 Oct 2026 (276): your pack's cartridges get the 3D bottoms too — after release 0.6.19
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.

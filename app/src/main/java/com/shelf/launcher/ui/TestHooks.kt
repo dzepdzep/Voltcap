@@ -42,13 +42,20 @@ internal object TestHooks {
         val mc = intent?.getStringExtra("voltcap_test_metacritic")
         val so = intent?.getBooleanExtra("voltcap_test_sort", false) == true
         val ins = intent?.getStringExtra("voltcap_test_inspect")
+        // Update 277: `--ez voltcap_test_pspfit true` — the fitted PSP shell made from <external files>/psp_in.webp into
+        // psp_out.png there (to check DiscShellFixes without the pack).
+        val pf = intent?.getBooleanExtra("voltcap_test_pspfit", false) == true
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
         if (so) sort.value = true
+        if (pf) context.getExternalFilesDir(null)?.let { d ->
+            Thread { runCatching { com.shelf.launcher.data.DiscShellFixes.test(java.io.File(d, "psp_in.webp"), java.io.File(d, "psp_out.png")) }
+                .onFailure { android.util.Log.e("VoltcapTest", "pspfit: ${it.message}") } }.start()
+        }
         if (ins != null) inspect.value = ins // (the shell ids have "_" — only the game's name part gets spaces, below)
         // 0.6.15: load a Metacritic scores file from a path (the Sort window's file picker, without the picker).
         if (mc != null) {

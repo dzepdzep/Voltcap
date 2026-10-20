@@ -144,7 +144,10 @@ object Packs {
     fun discFile(name: String): File? {
         version.intValue
         val c = appContext ?: return null
-        return if ("disc_$name.webp" in have) File(dir(c, Pack.DISCS), "$name.webp") else null
+        if ("disc_$name.webp" !in have) return null
+        val f = File(dir(c, Pack.DISCS), "$name.webp")
+        // (Update 277, Toni: the PSP shell's label stood out past both its sides — a fitted copy, DiscShellFixes.)
+        return if (name == "psp") DiscShellFixes.psp(c, f) { version.intValue++ } else f
     }
 
     /** Update 136: whether the 3D model [id] is on the device. */
