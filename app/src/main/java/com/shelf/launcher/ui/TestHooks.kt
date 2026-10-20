@@ -31,6 +31,12 @@ internal object TestHooks {
      * library shell (this time only, nothing saved), held at that angle: for checking the cartridge bottoms.
      */
     val inspect = mutableStateOf<String?>(null)
+    /**
+     * Update 279: `--es voltcap_test_shell pack:<shape>` (your cartridge pack's shape, e.g. pack:gb) or `opt:<file>` (an
+     * optical-system shell, e.g. opt:playstation) — every cartridge / disc game drawn on that custom shell, this session
+     * only, nothing saved; `off` ends it. For the custom-shell walk. Also logs which packs are on the device.
+     */
+    val shell = mutableStateOf<String?>(null)
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
         val want = intent?.getStringExtra("voltcap_test_layout")
@@ -45,15 +51,44 @@ internal object TestHooks {
         // Update 277: `--ez voltcap_test_pspfit true` — the fitted PSP shell made from <external files>/psp_in.webp into
         // psp_out.png there (to check DiscShellFixes without the pack).
         val pf = intent?.getBooleanExtra("voltcap_test_pspfit", false) == true
+        val sh = intent?.getStringExtra("voltcap_test_shell")
+        // Update 280: `--es voltcap_test_pref "key=value"` — one setting (saved, as Settings would; logged with its old value).
+        val pr = intent?.getStringExtra("voltcap_test_pref")
+        // Update 280: `--es voltcap_test_snapshot save|restore` — every Features setting kept in <external files>/
+        // voltcap_test_snapshot.json and put back afterwards, so a test walk leaves the settings as they were.
+        val snap = intent?.getStringExtra("voltcap_test_snapshot")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf && sh == null && pr == null && snap == null) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
         if (so) sort.value = true
+        if (snap != null) runCatching {
+            val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
+            if (snap == "save") {
+                f.writeText(org.json.JSONObject(com.shelf.launcher.data.Features.snapshot() as Map<*, *>).toString())
+                android.util.Log.e("VoltcapTest", "snapshot saved")
+            } else if (snap == "restore" && f.exists()) {
+                val j = org.json.JSONObject(f.readText())
+                com.shelf.launcher.data.Features.restore(j.keys().asSequence().associateWith { j.getString(it) })
+                android.util.Log.e("VoltcapTest", "snapshot restored")
+            }
+        }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }
+        if (pr != null && '=' in pr) {
+            val k = pr.substringBefore('='); val v = pr.substringAfter('=')
+            android.util.Log.e("VoltcapTest", "pref $k was ${com.shelf.launcher.data.Features.snapshot()[k]} -> $v")
+            com.shelf.launcher.data.Features.restore(mapOf(k to v))
+        }
+        if (sh != null) {
+            shell.value = sh.takeIf { it != "off" }
+            android.util.Log.e("VoltcapTest", "shell=${shell.value} packs=${com.shelf.launcher.data.Packs.debugHave()}")
+        }
         if (pf) context.getExternalFilesDir(null)?.let { d ->
-            Thread { runCatching { com.shelf.launcher.data.DiscShellFixes.test(java.io.File(d, "psp_in.webp"), java.io.File(d, "psp_out.png")) }
+            Thread { runCatching {
+                if (java.io.File(d, "psp_in.webp").exists()) com.shelf.launcher.data.DiscShellFixes.test(java.io.File(d, "psp_in.webp"), java.io.File(d, "psp_out.png"))
+                if (java.io.File(d, "segacd_in.webp").exists()) com.shelf.launcher.data.DiscShellFixes.testSegaCd(context.applicationContext, java.io.File(d, "segacd_in.webp"), java.io.File(d, "segacd_out.png"))
+            }
                 .onFailure { android.util.Log.e("VoltcapTest", "pspfit: ${it.message}") } }.start()
         }
         if (ins != null) inspect.value = ins // (the shell ids have "_" — only the game's name part gets spaces, below)

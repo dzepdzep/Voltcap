@@ -81,11 +81,19 @@ internal fun gameLookLabel(type: CardArtType): String = ALL_LOOKS.firstOrNull { 
 
 /** Update 202: the four main looks, in the order the R1 Look tile steps through them. */
 internal enum class LookMain(val label: String, val short: String, val about: String) {
-    COVERS("Covers", "Covers", "The game's box art as a flat picture: its cover, its wide capsule, a square tile or its spine."),
-    CASES("Cases", "Cases", "Each game in its console's case. Steam and Android games get Voltcap's own case when they have no scan."),
+    // (Update 280, Toni: "Covers" always the covers — the SteamGridDB portrait art; the wide looks are a main look of
+    // their own, and Layout standard follows the home layout.)
+    COVERS("Covers", "Covers", "The game's box art as a flat picture: its cover, a square tile or its spine."),
+    WIDE("Wide capsules", "Wide", "The game's wide capsule art: every game, the first game only, or the game you're on."),
+    CASES("Cases", "Cases", "Each game in its console's case, from the front or turned to show its spine. Steam and Android games get Voltcap's own case when they have no scan."),
     CARTS("Cartridges & discs", "Cartridges", "The game itself: its cartridge, card, UMD or disc, drawn with real depth."),
-    ART("Art", "Art", "A picture from the game instead of its box: its hero art, a screenshot or its wide capsule.")
+    ART("Art", "Art", "A picture from the game instead of its box: its hero art or a screenshot."),
+    LAYOUT("Layout standard", "Layout", "Each home layout in its own standard look (its first preset's): switching layout switches the look with it.")
 }
+
+/** Update 280: the wide-capsule cover styles (the Wide capsules main look); the others are Covers'. */
+internal val LookCoverStyle.wide: Boolean
+    get() = this == LookCoverStyle.WIDE || this == LookCoverStyle.WIDE_FIRST || this == LookCoverStyle.WIDE_FOCUS
 
 /** Update 202: Covers › Cover style. */
 internal enum class LookCoverStyle(val label: String, val about: String) {
@@ -184,9 +192,10 @@ private object LookMemory {
 private inline fun <reified E : Enum<E>> enumOr(name: String?, def: E): E = enumValues<E>().firstOrNull { it.name == name } ?: def
 
 /** Update 202: the main look in use (wide capsules count as Covers unless they were picked under Art). */
-internal fun lookMainOf(a: AppearanceSettings): LookMain = when (a.cardArtFor()) {
-    CardArtType.COVER -> LookMain.COVERS
-    CardArtType.CAPSULE -> LookMain.COVERS
+internal fun lookMainOf(a: AppearanceSettings): LookMain = if (Features.lookFromLayout.value) LookMain.LAYOUT else when (a.cardArtFor()) {
+    // (Update 280: a wide cover style is the Wide capsules look.)
+    CardArtType.COVER -> if (coverStyleNow(a).wide) LookMain.WIDE else LookMain.COVERS
+    CardArtType.CAPSULE -> LookMain.WIDE
     CardArtType.CASE, CardArtType.CASE_REAL -> LookMain.CASES
     CardArtType.CARTRIDGE_DISC, CardArtType.DISC -> LookMain.CARTS
     CardArtType.HERO, CardArtType.SCREENSHOT -> LookMain.ART
@@ -232,7 +241,10 @@ private fun cartLast(): LookCart = when (Features.modelFinishLast.value) {
 
 private fun pickCoverStyle(s: LookCoverStyle, a: AppearanceSettings): AppearanceSettings {
     val F = Features
-    LookMemory.put("main" to LookMain.COVERS.name, "cover" to s.name)
+    F.lookFromLayout.value = false
+    // (Update 280: Covers and Wide capsules each remember their own style.)
+    if (s.wide) LookMemory.put("main" to LookMain.WIDE.name, "wide" to s.name)
+    else LookMemory.put("main" to LookMain.COVERS.name, "cover" to s.name)
     F.squareTiles.value = s == LookCoverStyle.TILE
     F.spineLook.value = s == LookCoverStyle.SPINE
     // (Update 119: the Grid's square tiles drew covers whatever the look was: wide capsules turn them off.)
@@ -312,14 +324,20 @@ private fun pickArt(k: LookArt, a: AppearanceSettings): AppearanceSettings {
  */
 internal fun applyMainLook(m: LookMain, a: AppearanceSettings): AppearanceSettings {
     val F = Features
+    // (Update 280: Layout standard takes the layout's own look — layoutStandardLook — and stays on until another look is picked.)
+    if (m == LookMain.LAYOUT) { F.lookFromLayout.value = true; return layoutStandardLook(a) }
+    F.lookFromLayout.value = false
     if (m != LookMain.COVERS) { F.squareTiles.value = false; F.spineLook.value = false; F.carouselWide.value = false }
     // (Update 200: the 3D finish would put the drawn shells against cases or in the game window, so it's on only here.)
     if (m != LookMain.CARTS) { setModelsLook(false); F.cartsOnly.value = false }
     if (m != LookMain.CASES) F.caseWithMedia.value = false
     if (m == LookMain.COVERS || m == LookMain.ART) F.discCase.value = false
     return when (m) {
-        LookMain.COVERS -> pickCoverStyle(enumOr(LookMemory.get("cover"), LookCoverStyle.COVER), a)
+        // (Update 280: Covers is always covers — a wide style remembered from before 280 counts as Cover.)
+        LookMain.COVERS -> pickCoverStyle(enumOr(LookMemory.get("cover"), LookCoverStyle.COVER).takeIf { !it.wide } ?: LookCoverStyle.COVER, a)
+        LookMain.WIDE -> pickCoverStyle(enumOr(LookMemory.get("wide"), LookCoverStyle.WIDE).takeIf { it.wide } ?: LookCoverStyle.WIDE, a)
         LookMain.CASES -> {
+            pickCaseView(LookMemory.get("caseView") == "TURNED")
             pickCaseMedia(enumOr(LookMemory.get("caseMedia"), LookCaseMedia.INSIDE))
             pickCaseSize(LookMemory.get("caseSize") == "REAL", a)
         }
@@ -328,7 +346,51 @@ internal fun applyMainLook(m: LookMain, a: AppearanceSettings): AppearanceSettin
             pickDiscGames(enumOr(LookMemory.get("discs"), LookDiscGames.DISC), a)
         }
         LookMain.ART -> pickArt(enumOr(LookMemory.get("art"), LookArt.HERO), a)
+        LookMain.LAYOUT -> a
     }
+}
+
+/** Update 280: Cases › Case view — every case facing you, or every case turned to show its spine (Features.boxSpine). */
+private fun pickCaseView(turned: Boolean) {
+    LookMemory.put("caseView" to (if (turned) "TURNED" else "FRONT"))
+    Features.boxSpine.value = turned
+}
+
+/**
+ * Update 280 (Toni: "a new one called Layout standard that uses the set from the layout"): [a] in its home layout's own
+ * standard look — the look of that layout's first built-in preset (LayoutPresets.builtIns: the card artwork, how the game
+ * you're on is drawn, and the look's switches: tiles, spines, cartridges, case with its disc…). Only the look: sizes,
+ * positions and the layout's options stay as you have them. A layout that draws its games its own way keeps them so.
+ */
+internal fun layoutStandardLook(a: AppearanceSettings): AppearanceSettings {
+    val p = com.shelf.launcher.data.LayoutPresets.builtIns.firstOrNull { it.layout == a.homeLayout } ?: return a
+    val std = p.apply(a)
+    val out = a.copy(cardArtType = std.cardArtType, focusedCardStyle = std.focusedCardStyle)
+    val F = Features
+    val l = p.look ?: return out
+    val type = out.cardArtType
+    F.squareTiles.value = l.tiles
+    F.spineLook.value = l.spines
+    F.cartsOnly.value = l.carts
+    val cartLook = type == CardArtType.CARTRIDGE_DISC || type == CardArtType.DISC
+    setModelsLook(cartLook)
+    if (cartLook) { F.discCase.value = false; F.caseWithMedia.value = false }
+    if (type == CardArtType.CASE || type == CardArtType.CASE_REAL) {
+        F.discCase.value = l.discInCase
+        F.discCase3d.value = l.disc3d
+        F.caseWithMedia.value = l.leaning
+    } else F.caseWithMedia.value = false
+    if (type != CardArtType.COVER) F.gridTiles.value = false
+    // (The wide capsule of the game you're on only with plain covers, as Cover style sets it.)
+    F.carouselWide.value = out.focusedCardStyle == FocusedCardStyle.WIDE && type == CardArtType.COVER && !l.tiles && !l.spines
+    return out
+}
+
+/** Update 280: the layout's standard look, if Layout standard is on and [a] isn't in it yet (a layout was switched); else null. */
+internal fun layoutStandardIfDue(a: AppearanceSettings): AppearanceSettings? {
+    if (!Features.lookFromLayout.value) return null
+    val t = layoutStandardLook(a)
+    return t.takeIf { it != a }
 }
 
 /**
@@ -412,8 +474,12 @@ internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? 
  * Name of the look in use for the R1 tile. Update 202: one of the four main looks. Update 204: Cartridges & discs by
  * its Show as (Mix, Cartridges, Discs).
  */
-internal fun currentLookName(a: AppearanceSettings): String =
-    if (lookMainOf(a) == LookMain.CARTS) showAsNow(a).short else lookMainOf(a).short
+internal fun currentLookName(a: AppearanceSettings): String = when (val m = lookMainOf(a)) {
+    LookMain.CARTS -> showAsNow(a).short
+    // (Update 280: the two Cases looks.)
+    LookMain.CASES -> if (Features.boxSpine.value) "Cases · turned" else "Cases"
+    else -> m.short
+}
 
 /**
  * The R1 tile's next look. Update 202: the next of the four main looks, as you last had it (its choices: hold the tile,
@@ -421,15 +487,19 @@ internal fun currentLookName(a: AppearanceSettings): String =
  */
 internal fun stepGameLook(a: AppearanceSettings): AppearanceSettings {
     // Update 204: Covers → Cases → Mix → Cartridges → Discs → Art (Cartridges & discs' three Show as each a step).
+    // Update 280: Covers → Wide capsules → Cases → Cases · turned → Mix → Cartridges → Discs → Art → Layout standard.
     return when (lookMainOf(a)) {
-        LookMain.COVERS -> applyMainLook(LookMain.CASES, a)
-        LookMain.CASES -> pickShowAs(LookShowAs.MIX, applyMainLook(LookMain.CARTS, a))
+        LookMain.COVERS -> applyMainLook(LookMain.WIDE, a)
+        LookMain.WIDE -> applyMainLook(LookMain.CASES, a).also { pickCaseView(false) }
+        LookMain.CASES -> if (!Features.boxSpine.value) { pickCaseView(true); a }
+            else pickShowAs(LookShowAs.MIX, applyMainLook(LookMain.CARTS, a))
         LookMain.CARTS -> when (showAsNow(a)) {
             LookShowAs.MIX -> pickShowAs(LookShowAs.CARTS, a)
             LookShowAs.CARTS -> pickShowAs(LookShowAs.DISCS, a)
             LookShowAs.DISCS -> applyMainLook(LookMain.ART, a)
         }
-        LookMain.ART -> applyMainLook(LookMain.COVERS, a)
+        LookMain.ART -> applyMainLook(LookMain.LAYOUT, a)
+        LookMain.LAYOUT -> applyMainLook(LookMain.COVERS, a)
     }
 }
 
@@ -611,19 +681,22 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
         LookMain.values().forEach { m ->
             val sample = when (m) {
                 LookMain.COVERS -> Sample.COVER
+                LookMain.WIDE -> Sample.WIDE
                 LookMain.CASES -> Sample.CASE_DRAWN
                 LookMain.CARTS -> Sample.CART_REAL
                 LookMain.ART -> Sample.HERO
+                LookMain.LAYOUT -> Sample.FOCUS_WIDE
             }
             LookChoiceCard(m.label, m.about, m == main, enabled, sample) { if (m != main) onChange(applyMainLook(m, appearance)) }
         }
     }
     when (main) {
-        LookMain.COVERS -> {
+        LookMain.COVERS, LookMain.WIDE -> {
             val style = coverStyleNow(appearance)
-            SectionLabel("Cover style")
+            SectionLabel(if (main == LookMain.WIDE) "Wide capsules" else "Cover style")
             ChoiceRow {
-                LookCoverStyle.values().forEach { s ->
+                // (Update 280: Covers' styles, or the three wide looks.)
+                LookCoverStyle.values().filter { it.wide == (main == LookMain.WIDE) }.forEach { s ->
                     val sample = when (s) {
                         LookCoverStyle.COVER -> Sample.COVER
                         LookCoverStyle.WIDE -> Sample.WIDE
@@ -638,6 +711,13 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
             // (Update 274: "The game you're on" is gone — its wide choices are Cover styles of their own now.)
         }
         LookMain.CASES -> {
+            // (Update 280, Toni: every case from the front, or every case turned to its spine — never some of each.)
+            val turned = F.boxSpine.value
+            SectionLabel("Case view")
+            ChoiceRow {
+                LookChoiceCard("From the front", "Every case facing you.", !turned, enabled, Sample.CASE_DRAWN) { pickCaseView(false); onChange(appearance) }
+                LookChoiceCard("Turned", "Every case turned to show its spine, as on a shelf.", turned, enabled, Sample.SPINE) { pickCaseView(true); onChange(appearance) }
+            }
             val scan = F.originalCases.value
             SectionLabel("Case")
             ChoiceRow {
@@ -725,6 +805,15 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
                     F.mediaShells.value = true
                 }
             }
+        }
+        LookMain.LAYOUT -> {
+            // (Update 280.)
+            val p = com.shelf.launcher.data.LayoutPresets.builtIns.firstOrNull { it.layout == appearance.homeLayout }
+            SectionLabel("Layout standard")
+            MutedNote(
+                if (p != null) "This layout is in its standard look: \"${p.name}\" — ${gameLookLabel(appearance.cardArtFor())}. Switch layout and the look switches with it. Pick another look above to choose your own."
+                else "This layout has no standard look of its own; it keeps the look as it is."
+            )
         }
         LookMain.ART -> {
             val now = LookArt.values().firstOrNull { it.type == appearance.cardArtFor() }

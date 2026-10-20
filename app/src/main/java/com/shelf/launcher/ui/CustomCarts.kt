@@ -117,7 +117,7 @@ internal object CustomCarts {
  * (its console banner cut off, fitted at its own shape, the rest the colour along its edge).
  */
 internal class PackSticker(private val platform: String, private val winAspect: Float) : coil.transform.Transformation {
-    override val cacheKey: String = "voltcapPackSticker(1)|$platform|${(winAspect * 1000f).toInt()}"
+    override val cacheKey: String = "voltcapPackSticker(2)|$platform|${(winAspect * 1000f).toInt()}"
     override suspend fun transform(input: android.graphics.Bitmap, size: coil.size.Size): android.graphics.Bitmap =
         CartShells.packSticker(platform, input, winAspect)
 }
@@ -148,6 +148,10 @@ private fun rememberPackLabel(art: Any?, platform: String, winAspect: Float): An
  * wins wherever it has the console.
  */
 internal fun discShellFor(platform: String): DiscShells.Shell? {
+    // (Update 279, testing only: TestHooks `voltcap_test_shell opt:<file>` — that optical shell for every game.)
+    TestHooks.shell.value?.takeIf { it.startsWith("opt:") }?.let { t ->
+        return DiscShells.byFile(t.removePrefix("opt:"))?.takeIf { com.shelf.launcher.data.Packs.discFile(it.file) != null }
+    }
     if (!Features.cartsOnly.state.value) return null
     val shell = DiscShells.of(platform) ?: return null
     if (Features.cartSource.state.value == CartSource.CUSTOM && CustomCarts.idFor(platform)?.let { com.shelf.launcher.data.Packs.hasCart(it) } == true) return null
@@ -279,6 +283,9 @@ internal object DiscShells {
     )
 
     fun of(platform: String): Shell? = byConsole[platform]?.let { shells[it] }
+
+    /** Update 279 (testing): a shell by its picture's name. */
+    fun byFile(file: String): Shell? = shells[file]
 
     /** The pack's pictures and the consoles each one is for (the downloads, data/Packs.kt). */
     fun packFiles(): Map<String, Set<String>> =

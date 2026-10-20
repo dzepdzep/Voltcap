@@ -662,9 +662,18 @@ private fun CaseArtFace(
     // Update 143: a PlayStation case never shows its black PlayStation band — neither turned to its side nor printed down
     // the left of its cover scan (it's cut off): just the cover.
     val noBand = platform == "PS1"
-    val side = com.shelf.launcher.data.Features.boxSpine.state.value && !noBand
+    val turned = com.shelf.launcher.data.Features.boxSpine.state.value
+    val side = turned && !noBand
     val box = tpl?.box
     val discCase = allowDiscCase && discCaseOn(tpl)
+    // (Update 280, Toni: "some games are shown from the side, some front — if side, all side": Cases · turned turned only
+    // the consoles with a template box (PS2…); PS1, Android, PS3 / Xbox (plain cases) and the cover-template cases stayed
+    // facing you. Every case is turned now: those as their real 3D case (Case3D, its catalog shape, its real spine),
+    // as the N64 / SNES boxes already were. Only where the game is known (every home layout hands it in).)
+    if (turned && game != null && !discCase && (box == null || noBand)) {
+        Case3D(game, cover ?: scan, physical, TURNED_CASE_YAW, case3dAspect(game, false), modifier, pitch = 4f, realFront = scan != null, fill = 0.9f)
+        return true
+    }
     // The game's own scanned case (update 101, Settings › Game look › "Original cases"): the scan is the case, with its
     // own spine on the box turned to its side. Falls back to the template case when the scan can't be loaded or cut.
     var scanFailed by androidx.compose.runtime.remember(scan) { androidx.compose.runtime.mutableStateOf(false) }

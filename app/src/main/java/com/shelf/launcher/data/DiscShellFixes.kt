@@ -21,28 +21,79 @@ import java.io.File
  * Measured on the 560 × 846 picture; any other size is scaled to it.
  */
 internal object DiscShellFixes {
-    private const val VERSION = 2
-    @Volatile private var busy = false
+    // Update 280: one fixed copy per broken picture — its version (a new version makes it again).
+    private val VERSIONS = mapOf("psp" to 2, "sega_cd" to 1)
+    private val busy = java.util.Collections.synchronizedSet(HashSet<String>())
 
-    /** [orig] (the pack's PSP shell) as drawn: the fitted copy once it's made; until then (first use only) [orig]. */
-    fun psp(c: Context, orig: File, done: () -> Unit): File {
-        val fixed = File(c.filesDir, "packs/fixes/psp_fit$VERSION.png")
+    /** Whether the pack's picture [name] is drawn from a fitted copy. */
+    fun fixes(name: String): Boolean = name in VERSIONS
+
+    /** [orig] (the pack's shell [name]) as drawn: the fitted copy once it's made; until then (first use only) [orig]. */
+    fun fixed(c: Context, name: String, orig: File, done: () -> Unit): File {
+        val v = VERSIONS[name] ?: return orig
+        val fixed = File(c.filesDir, "packs/fixes/${name}_fit$v.png")
         if (fixed.exists() && fixed.lastModified() >= orig.lastModified()) return fixed
-        if (!busy) {
-            busy = true
+        if (busy.add(name)) {
+            val app = c.applicationContext
             Thread {
-                runCatching { make(orig, fixed) }
+                runCatching { if (name == "psp") make(orig, fixed) else segaCd(app, orig, fixed) }
                 // (An earlier version's copy, no longer used.)
-                for (v in 1 until VERSION) runCatching { File(fixed.parentFile, "psp_fit$v.png").delete() }
-                busy = false
+                for (old in 1 until v) runCatching { File(fixed.parentFile, "${name}_fit$old.png").delete() }
+                busy.remove(name)
                 if (fixed.exists()) android.os.Handler(android.os.Looper.getMainLooper()).post(done)
-            }.apply { name = "voltcap-psp-fit"; isDaemon = true }.start()
+            }.apply { this.name = "voltcap-shell-fit"; isDaemon = true }.start()
         }
         return orig
     }
 
+    /** (Update 277–278: the PSP shell, as before.) */
+    fun psp(c: Context, orig: File, done: () -> Unit): File = fixed(c, "psp", orig, done)
+
+    /**
+     * Update 280 (found in the custom-shell walk): the optical-system pack's Sega CD shell has a blank white bar where its
+     * logo belongs (the Mega CD shell beside it has its logo). The bar (112–452 × 127–173 px of the 560 px picture) is
+     * painted back to the label plate's grey (shaded as the plate above and below it) and the Sega CD badge Voltcap
+     * already has (assets/platform_logos_png/SegaCD.png, the black-and-silver bar) set in its place, at the bar's size.
+     */
+    private fun segaCd(context: Context, orig: File, out: File) {
+        val src = BitmapFactory.decodeFile(orig.path, BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }) ?: return
+        val w = src.width; val h = src.height
+        val s = w / 560f
+        fun px(v: Int) = (v * s).toInt().coerceIn(0, w - 1)
+        fun py(v: Int) = (v * s).toInt().coerceIn(0, h - 1)
+        val res = src.copy(Bitmap.Config.ARGB_8888, true)
+        val x0 = px(104); val x1 = px(470); val y0 = py(121); val y1 = py(180)
+        val ya = (y0 - 3).coerceAtLeast(0); val yb = (y1 + 3).coerceAtMost(h - 1)
+        for (x in x0 until x1) {
+            val a = src.getPixel(x, ya); val b = src.getPixel(x, yb)
+            for (y in y0 until y1) {
+                val t = (y - ya).toFloat() / (yb - ya).coerceAtLeast(1)
+                fun ch(sh: Int) = ((((a shr sh) and 255) * (1 - t)) + (((b shr sh) and 255) * t)).toInt().coerceIn(0, 255)
+                res.setPixel(x, y, (ch(24) shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0))
+            }
+        }
+        val logo = context.assets.open("platform_logos_png/SegaCD.png").use { BitmapFactory.decodeStream(it) }
+        if (logo != null) {
+            val bx0 = 112 * s; val bx1 = 453 * s; val by0 = 127 * s; val by1 = 174 * s
+            val sc = minOf((bx1 - bx0) / logo.width, (by1 - by0) / logo.height)
+            val lw = logo.width * sc; val lh = logo.height * sc
+            val cx = (bx0 + bx1) / 2f; val cy = (by0 + by1) / 2f
+            Canvas(res).drawBitmap(logo, null, android.graphics.RectF(cx - lw / 2f, cy - lh / 2f, cx + lw / 2f, cy + lh / 2f),
+                android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG))
+            logo.recycle()
+        }
+        out.parentFile?.mkdirs()
+        val tmp = File(out.path + ".tmp")
+        tmp.outputStream().use { res.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        if (!tmp.renameTo(out)) { tmp.copyTo(out, overwrite = true); tmp.delete() }
+        src.recycle(); res.recycle()
+    }
+
     /** Testing only (TestHooks `voltcap_test_pspfit`). */
     fun test(orig: File, out: File) = make(orig, out)
+
+    /** Testing only (TestHooks `voltcap_test_pspfit`, with segacd_in.webp). */
+    fun testSegaCd(c: Context, orig: File, out: File) = segaCd(c, orig, out)
 
     private fun make(orig: File, out: File) {
         val src = BitmapFactory.decodeFile(orig.path, BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 })

@@ -102,6 +102,12 @@ object AppUpdates {
                         return@use if (newer(known.tag, installed(app).first)) State.Available(known) else State.UpToDate(known.tag)
                     }
                     if (res.code == 404) return@use State.Failed("No release on GitHub yet ($REPO › Releases).")
+                    // (Update 280, Toni: "GitHub answered 403" on the Thor — GitHub's API allows 60 asks an hour per
+                    // connection, shared by every handheld at home. Then the release page itself is asked instead: it
+                    // isn't counted, and its address says the newest version — the files are at fixed addresses.)
+                    if (res.code == 403 || res.code == 429 || res.code >= 500) {
+                        return@use viaReleasePage(app) ?: State.Failed("GitHub is busy (${res.code}). Voltcap tries again on its own.")
+                    }
                     if (!res.isSuccessful) return@use State.Failed("GitHub answered ${res.code}. Try again later.")
                     val j = org.json.JSONObject(res.body?.string().orEmpty())
                     val assets = j.optJSONArray("assets")
@@ -148,6 +154,29 @@ object AppUpdates {
             }
         }
     }
+
+    /**
+     * Update 280: the newest release from github.com/…/releases/latest (not the API): it redirects to …/tag/v<version>;
+     * the APK is attached as Voltcap-<version>.apk and the profiles as voltcap-profile-api31 / -api28.dm (release.ps1).
+     * Null when that doesn't answer either.
+     */
+    private fun viaReleasePage(app: Context): State? = runCatching {
+        val noFollow = client.newBuilder().followRedirects(false).followSslRedirects(false).build()
+        noFollow.newCall(okhttp3.Request.Builder().url("https://github.com/$REPO/releases/latest").build()).execute().use { res ->
+            val loc = res.header("Location") ?: return@use null
+            val tag = loc.substringAfter("/releases/tag/", "").substringBefore('?').takeIf { it.isNotBlank() } ?: return@use null
+            val ver = tag.removePrefix("v")
+            val base = "https://github.com/$REPO/releases/download/$tag/"
+            val dmName = when {
+                android.os.Build.VERSION.SDK_INT >= 31 -> DM_API31
+                android.os.Build.VERSION.SDK_INT >= 28 -> DM_API28
+                else -> null
+            }
+            val r = Release(tag, "Voltcap $ver", "", base + "Voltcap-$ver.apk", 0L, "", dmName?.let { base + it })
+            lastRelease = r; etag = null
+            if (newer(r.tag, installed(app).first)) State.Available(r) else State.UpToDate(r.tag)
+        }
+    }.getOrNull()
 
     /** Update 204: the newest release seen and its ETag (this run only), for the conditional ask. */
     @Volatile private var lastRelease: Release? = null

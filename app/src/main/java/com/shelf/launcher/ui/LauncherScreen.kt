@@ -899,6 +899,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // (Cleared last: clearing it first restarted this effect and cancelled it in its delay.)
         TestHooks.settings.value = null
     }
+    // (Update 280: Game look › Layout standard — a layout switched to brings its own standard look.)
+    val lookFromLayoutOn = com.shelf.launcher.data.Features.lookFromLayout.state.value
+    LaunchedEffect(state.appearance.homeLayout, lookFromLayoutOn) {
+        if (!lookFromLayoutOn) return@LaunchedEffect
+        layoutStandardIfDue(viewModel.uiState.value.appearance)?.let { t ->
+            if (TestHooks.previewOnly) viewModel.previewAppearance(t) else viewModel.setAppearance(t)
+        }
+    }
     // (Update 261: a layout asked for by a test walk over adb — TestHooks.kt, off without its flag file.)
     val testLayout = TestHooks.layout.value
     LaunchedEffect(testLayout) {
@@ -5427,7 +5435,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     var inspectAsk by remember { mutableStateOf(InspectChoice.due()) }
     var inspectAskReady by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(9_000); inspectAskReady = true }
-    if (inspectAsk && inspectAskReady && !showFirstRun && !otherDialogOpen && !packsAskOpen && WhatsNew.shown.value == null &&
+    // (Not during an adb test walk — TestHooks: it stood over every screenshot.)
+    if (inspectAsk && inspectAskReady && !TestHooks.previewOnly && TestHooks.shell.value == null && !showFirstRun && !otherDialogOpen && !packsAskOpen && WhatsNew.shown.value == null &&
         !(saverIntro && saverIntroReady) && !(showPermissionsPrompt && promptReady) && GamePopup.game == null &&
         launchingGame == null && !screensaverOn && !HomeEditState.active && !categoryScreenOpen && !showDetails
     ) {

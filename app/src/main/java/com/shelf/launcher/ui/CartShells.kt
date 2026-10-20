@@ -584,16 +584,19 @@ internal object CartShells {
         val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
         if (winAspect <= 0f || kotlin.math.abs(pa / winAspect - 1f) <= 0.02f) pic
         else {
+            // (Update 280, Toni: "the art fills the label — only for the custom ones": the cover fills the pack's window,
+            // cut to its shape, instead of shrunk into the middle with the edge colour round it (a portrait cover in a
+            // SNES / GBA / N64-shaped window came out a small strip). A tall cover keeps its upper part — where the
+            // title usually is — a wide picture its middle.)
             val wide = pa > winAspect
-            val ow = (if (wide) pic.width else (pic.height * winAspect).toInt()).coerceAtLeast(1)
-            val oh = (if (wide) (pic.width / winAspect).toInt() else pic.height).coerceAtLeast(1)
-            val out = Bitmap.createBitmap(ow, oh, Bitmap.Config.ARGB_8888)
-            val c = Canvas(out)
-            c.drawColor(edgeColour(pic, wide))
-            val dst = if (wide) RectF(0f, (oh - pic.height) / 2f, ow.toFloat(), (oh + pic.height) / 2f)
-                else RectF((ow - pic.width) / 2f, 0f, (ow + pic.width) / 2f, oh.toFloat())
-            c.drawBitmap(pic, null, dst, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
-            out
+            if (wide) {
+                val cw = (pic.height * winAspect).toInt().coerceIn(1, pic.width)
+                Bitmap.createBitmap(pic, (pic.width - cw) / 2, 0, cw, pic.height)
+            } else {
+                val ch = (pic.width / winAspect).toInt().coerceIn(1, pic.height)
+                val top = ((pic.height - ch) * 0.3f).toInt().coerceIn(0, pic.height - ch)
+                Bitmap.createBitmap(pic, 0, top, pic.width, ch)
+            }
         }
     }.getOrDefault(art)
 

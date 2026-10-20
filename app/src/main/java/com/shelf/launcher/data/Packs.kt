@@ -119,6 +119,9 @@ object Packs {
 
     fun has(item: Item): Boolean = item.file in have
 
+    /** Testing only (TestHooks `voltcap_test_shell`): the pieces on the device. */
+    fun debugHave(): String = have.sorted().joinToString(",")
+
     /** The cartridge pack's picture for console [id] in shape [shape] ([clear]: translucent), when it's on the device. */
     fun cartFile(id: String, shape: String, clear: Boolean): File? {
         version.intValue
@@ -140,14 +143,21 @@ object Packs {
         return if ("spine_$name.webp" in have) File(dir(c, Pack.SPINES), "$name.webp") else null
     }
 
+    /** Update 280: which optical-system pictures are empty (read once per pack change, not on every card). */
+    private val discEmpty = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+
     /** Your disc-console shell [name] when it's on the device. */
     fun discFile(name: String): File? {
         version.intValue
         val c = appContext ?: return null
         if ("disc_$name.webp" !in have) return null
         val f = File(dir(c, Pack.DISCS), "$name.webp")
-        // (Update 277, Toni: the PSP shell's label stood out past both its sides — a fitted copy, DiscShellFixes.)
-        return if (name == "psp") DiscShellFixes.psp(c, f) { version.intValue++ } else f
+        // (Update 280: an empty picture counts as missing — the pack's PS3 shell came down as 0 bytes, and PS3 games
+        // stood as an empty frame instead of falling back to the cartridge pack.)
+        if (discEmpty.getOrPut("$name|${version.intValue}") { f.length() == 0L }) return null
+        // (Update 277, Toni: the PSP shell's label stood out past both its sides; update 280: the Sega CD shell's blank
+        // logo bar — fitted copies, DiscShellFixes.)
+        return if (DiscShellFixes.fixes(name)) DiscShellFixes.fixed(c, name, f) { version.intValue++ } else f
     }
 
     /** Update 136: whether the 3D model [id] is on the device. */

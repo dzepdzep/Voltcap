@@ -313,6 +313,8 @@ internal fun drawn3dPick(platform: String, mixed: Boolean, gameKey: String?): Me
  * plain cartridge). Update 204: never null any more — a console with no physical game gets the plain ones.
  */
 internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean = false, gameKey: String? = null): MediaPick? {
+    // (Update 279, testing only: TestHooks `voltcap_test_shell` — every game on one custom shell, nothing saved.)
+    TestHooks.shell.value?.let { t -> if (!asDisc) testShellPick(t, platform, gameKey)?.let { return it } }
     // (Update 229, #31: "All cartridges" for a list of several consoles wins over Discs only on every layout — the look
     // said cartridge but the layouts asked for a disc, so cartridge games came out as CDs.)
     @Suppress("NAME_SHADOWING") val asDisc = asDisc && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE)
@@ -575,10 +577,15 @@ internal fun PhysicalMedia(
     if (platform != null && platform.startsWith(SHELL_PREFIX)) {
         // (Update 203: a solid piece wherever it's turned — SolidPiece.kt.)
         // (Update 205: the game's real label scan when it's handed one — the whole sticker, no console band over it.)
+        // (Update 280: never a disc game's own label scan — it's the round disc label, which stood in the cartridge's
+        // window as a disc (a GameCube or PS2 game on your pack's shape picked in Cartridge shell…): its cover instead.)
+        val console = platform.substringAfter('|', "")
+        val ownDisc = MediaShell.of(console)?.let { it.disc || it == MediaShell.UMD } == true
+        val useScan = labelIsScan && label != null && !(ownDisc && caseCover != null)
         CartShellArt(
-            platform, if (labelIsScan && label != null) label else caseCover ?: label,
+            platform, if (useScan) label else caseCover ?: label,
             modifier.solidPiece(rememberShellSolid(platform)).mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode()),
-            title = title, labelIsScan = labelIsScan && label != null
+            title = title, labelIsScan = useScan
         )
         return
     }
@@ -899,4 +906,11 @@ internal object PhotoTones {
     private val map = java.util.concurrent.ConcurrentHashMap<String, androidx.compose.ui.graphics.Color>()
     fun of(model: Any?): androidx.compose.ui.graphics.Color? = (model as? String)?.let { map[it] }
     fun put(model: Any?, c: androidx.compose.ui.graphics.Color) { (model as? String)?.let { if (map.size < 4000) map[it] = c } }
+}
+
+/** Update 279, testing only: the pick for TestHooks.shell ("pack:<shape>" or "opt:<file>"), or null. */
+private fun testShellPick(t: String, platform: String, gameKey: String?): MediaPick? = when {
+    t.startsWith("pack:") -> CartShells.pickOf("$t~opaque", platform, gameKey)
+    t.startsWith("opt:") -> DiscShells.byFile(t.removePrefix("opt:"))?.let { MediaPick(MediaShell.GB, CUSTOM_CART + platform, it.aspect) }
+    else -> null
 }

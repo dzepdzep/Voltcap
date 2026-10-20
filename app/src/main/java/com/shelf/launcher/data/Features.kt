@@ -1031,6 +1031,12 @@ object Features {
      * to the flat front, which is gone.)
      */
     val boxSpine = BoolPref("box_spine_side", false)
+    /**
+     * Update 280 (Toni): Game look › Layout standard — each home layout draws its games in its own standard look (the
+     * look of its first preset, e.g. the Voltcap row's covers with the wide capsule, the TV room's cases); switching
+     * layout switches the look with it. Picking any other look turns it off.
+     */
+    val lookFromLayout = BoolPref("look_from_layout", false)
     /** Covers go into each system's own cover template (printed border, real proportions) and its spine; off: plain covers. */
     val coverTemplates = BoolPref("cover_templates", true)
     /** Disc games: the case with the disc half out of it, spinning. */
