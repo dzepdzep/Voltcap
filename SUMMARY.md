@@ -4,9 +4,27 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
-## Update — 20 Oct 2026 (283): no more disc labels on the plain cartridge — after release 0.6.20
+## Update — 20 Oct 2026 (284–285): Inspect in every game popup, everything readable in the game window, the plain cartridge's cover fills its window, round disc photos, full R1 tile names, the Platforms wall moves, Save Vault colours in Solid / Translucent, a memory card's slot, no console logo on the back, Icons only — after release 0.6.21
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **Plain cartridge** (the one disc games get in "All cartridges"): a tall cover fills the label window, cut to it (its upper part kept), never stretched — no white paper either side. Checked in All games (Grid).
+- **Disc photos** ("own photos"): always round — in the Voltcap row and Continue playing they were tall ovals with their foot cut off. Checked in the GameCube row.
+- **R1 tile names in full**: "Edit home", "Look Covers", "Layout Voltcap row", "Achievements Top left"… were cut to "Edit…", "Look…" (a two-line name was laid out as one line). Checked on the Flip 2.
+- **Inspect** (Toni: an option in every popup, an icon half case, half cartridge): a new button beside the window's icons in the game window, and in the Classic details popup, the banner page and Game Glance. It brings the game's cartridge / disc / case out in the window to turn round, whatever look is on. Checked: Classic popup → Inspect → the Zelda cartridge out in the game window.
+- **The game window shows everything**: the name, the facts line and the picture's titles get up to two (facts: three) lines and shrink to fit instead of "…"; the saves / performance chips go onto a second line when they don't fit, in full. A game opened from the other screen also has its piece come out (it grows in where it stands).
+- **Platforms wall** (second screen): the wide window moves along to the next platform and the logo slides with it, instead of the new one fading in.
+- **Save Vault › Appearance** (Toni: "confusing… a section for translucent colours and one for normals, more examples for each colour"): Solid colours and Translucent colours (for a 3D card that comes clear — a save can now be clear or solid on its own), each with the Voltcap cards' colours and six colour families in four shades; the badge goes with the shell unless you pick one. Checked: Pokémon Silver in translucent blue, then reset to original.
+- **Memory card's slot**: the memory cards (drawn and 3D) have their connector opening along the bottom edge when tilted in Inspect. Checked on the Flip 2.
+- **No console logo on the back** of the save objects (the mark and engraving only).
+- **Save Vault style "Icons only"** (Toni: "the logos without the cards, only without cards"): no objects — each save as its game's icon: a PS2 save's own icon from its memory card, else the RetroAchievements icon, else the SteamGridDB logo. The card styles always show cards; the "PS2 browser style" switch is gone.
+- After an ANR on the Thor while inspecting: the cartridge lying in an open case is now made off the main thread (the ANR's own report is needed to find the cause for sure).
+
+Files (`src_copy\`): `data\Features.kt`, `ui\Case3D.kt`, `ui\CaseFaces.kt`, `ui\GameDetailsOverlay.kt`, `ui\GameWindow.kt`, `ui\GameWindowBanner.kt`, `ui\GlanceWindow.kt`, `ui\InspectIcon.kt` (new), `ui\LauncherScreen.kt`, `ui\Models3D.kt`, `ui\PhysicalMedia.kt`, `ui\PlatformBrowser.kt`, `ui\QuickSettings.kt`, `ui\RealMedia.kt`, `ui\SaveExplorer.kt`, `ui\SaveInspect.kt`, `ui\SaveVaultLooks.kt`, `ui\SaveVaultStyles.kt`.
+
+## Update — 20 Oct 2026 (283): no more disc labels on the plain cartridge — after release 0.6.20
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.21.**
 
 - **"On some of those pictures the disc is shown on the label"** (Toni): in lists mixing consoles with **All cartridges** (Game row › Mixed categories), a disc game (PS2, GameCube) is drawn on Voltcap's plain cartridge, and it wore its round disc-label scan in the window. It wears its cover now, as on the other cartridge shells since 280. The same in the game window and lying in an open case. Checked on the Flip 2 in All games (Grid, Cartridges look): before, every PS2 / GameCube game showed its disc on the cartridge; now its cover.
 
@@ -14,7 +32,7 @@ Files (`src_copy\`): `ui\PhysicalMedia.kt`, `ui\MediaInspectView.kt`.
 
 ## Update — 20 Oct 2026 (281–282): the cartridge lying in an open case is the cartridge that comes out of it; a real-label audit — after release 0.6.20
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.21.**
 
 - **"The Android cartridge inside shows the cartridge a bit different inside the case and different when pulled out"** (Toni): an opening case drew a stand-in card lying in it (a plain rounded plate in the shell's colour with the cover on it), while the piece that came out was the real drawn cartridge. Now the piece in the case is made the same way as the one out of it (`CaseFaces`): Voltcap's green Android cartridge and the other template cartridges (their shell picture, label window and mask), library shells, your pack's shapes and the optical-system shells, each wearing the same label (on a library shell a disc game's cover, as out of the case). Cartridge photos and UMDs are as before. Checked on the Flip 2 in a PS2 case with the Android cartridge and your pack's N64 shape: in the case and out of it, the same piece.
 - **Real labels (inspection for the real-label task):** a testing hook, `--es voltcap_test_labelaudit <systemeid|all>`, lists every game's saved ScreenScraper media (which has "support-texture" = the label scan and "support-2D" = the drawn cartridge) and downloads both pictures into the app's files (`label_audit\`; ids only, no credentials). On the Flip 2: 261 games with saved media — N64 35/35, GameCube 95/95, PS2 126/126 have both; 4 games have no ScreenScraper match. ScreenScraper's N64 "support-texture" is the flat, front-only label of the matched release (US here, with rating box and NUS serial, 522 × 600 px); "support-2D" is that label on a rendered grey cartridge (600 × 386 px). Voltcap already prints the label scan on the built-in N64 cartridge and on your pack's N64 shape on the home screen (checked in Grid). The audit files were removed from the Flip 2 afterwards.

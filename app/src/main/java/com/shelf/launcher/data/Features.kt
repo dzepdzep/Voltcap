@@ -810,7 +810,12 @@ object Features {
         MEMORY_CARD("Memory card"),
         FLOPPY("Floppy disk"),
         /** Update 136: your 3D shape library's memory card or SD card, the game's cover on its label ("3D models" pack). */
-        CARD_3D("3D card")
+        CARD_3D("3D card"),
+        /**
+         * Update 285 (Toni: "the logos without the cards"): no object — each save as its game's icon on its own: a PS2
+         * save's own 3D icon from its memory card, else the RetroAchievements icon, else the SteamGridDB logo.
+         */
+        ICONS("Icons only")
     }
     val saveVaultStyle = EnumPref("save_vault_style", SaveVaultStyle.CLASSIC, SaveVaultStyle.values())
     /** Update 136: the 3D card's model (SD card or a memory card colour) and whether it's the clear one. */

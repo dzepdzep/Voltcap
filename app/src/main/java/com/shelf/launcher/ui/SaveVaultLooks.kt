@@ -42,11 +42,16 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  */
 
 /** (Update 236, #42: one object's colours: [shell] (null: its original), [trim] (screws / contacts / shutter / badge; null: its own), [preset] picked.) */
-internal data class SaveLook(val shell: Int?, val trim: Int?, val preset: String?) {
-    val isEmpty: Boolean get() = shell == null && trim == null
+internal data class SaveLook(
+    val shell: Int?, val trim: Int?, val preset: String?,
+    /** Update 285: the 3D card's clear (true) or solid (false) version for this save; null: as picked for every save. */
+    val clear: Boolean? = null
+) {
+    val isEmpty: Boolean get() = shell == null && trim == null && clear == null
 
     fun encode(): String? = listOfNotNull(
-        preset?.let { "p=$it" }, shell?.let { "shell=" + hexOf(it) }, trim?.let { "trim=" + hexOf(it) }
+        preset?.let { "p=$it" }, shell?.let { "shell=" + hexOf(it) }, trim?.let { "trim=" + hexOf(it) },
+        clear?.let { "clear=" + if (it) "1" else "0" }
     ).joinToString(";").ifEmpty { null }
 
     companion object {
@@ -56,6 +61,7 @@ internal data class SaveLook(val shell: Int?, val trim: Int?, val preset: String
             var p: String? = null
             var s: Int? = null
             var t: Int? = null
+            var c: Boolean? = null
             for (f in raw.split(';')) {
                 val i = f.indexOf('=')
                 if (i <= 0) continue
@@ -64,8 +70,9 @@ internal data class SaveLook(val shell: Int?, val trim: Int?, val preset: String
                 if (k == "p") p = v.ifEmpty { null }
                 else if (k == "shell") s = parseHex(v)
                 else if (k == "trim") t = parseHex(v)
+                else if (k == "clear") c = v == "1"
             }
-            return SaveLook(s, t, p).takeUnless { it.isEmpty }
+            return SaveLook(s, t, p, c).takeUnless { it.isEmpty }
         }
     }
 }
@@ -277,53 +284,95 @@ internal fun SaveLookDialog(game: Game, icon: String?, state: SyncState, onDismi
         if (!paintable) {
             MutedNote("This 3D card can't be recoloured. Pick one of the Voltcap memory cards (Filters & look › Style › 3D card) or a drawn style.")
         } else {
-        Text("Shell", color = ShelfTheme.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(4.dp))
-        ChipFlow {
-            SwatchChip("Original", originalShell(style), selected = current?.shell == null && !customShell) {
-                customShell = false; store(SaveLook(null, now()?.trim, null))
+        // Update 285 (Toni: "a bit confusing on what's what: a section for translucent colours and a section for the
+        // normal ones, and more examples for each colour"): Solid and (for a 3D card that comes clear) Translucent, each
+        // the Voltcap cards' own colours and then every colour in four shades; the badge follows the shell unless picked.
+        val canClear = card3d != null && Models3D.saveCardId()?.let { id ->
+            val base = Features.saveVaultCard.state.value.id
+            com.shelf.launcher.data.Packs.hasModel(base + "_translucent") && com.shelf.launcher.data.Packs.hasModel(base)
+        } == true
+        val clearNow = current?.clear ?: Features.saveVaultClear.state.value
+        fun pick(shell: Int?, clear: Boolean?, preset: String?, badge: Int? = null) {
+            customShell = false
+            val l = now()
+            // The badge: a Voltcap card's own, the one you picked, else one that goes with the shell.
+            val trim = when {
+                !hasTrim -> null
+                badge != null -> badge
+                customTrim || (l?.trim != null && l.trim != shell?.let { matchingBadge(it) } && presets.none { it.badge == l.trim }) -> l?.trim
+                else -> shell?.let { matchingBadge(it) }
             }
-            presets.forEach { p ->
-                SwatchChip(p.label, p.shell, selected = !customShell && current?.shell == p.shell && (current?.preset == null || current?.preset == p.id)) {
-                    customShell = false
-                    // A Voltcap card's colours: its shell and, where the object has a trim, its badge colour.
-                    store(SaveLook(p.shell, if (hasTrim) p.badge else null, p.id))
+            store(SaveLook(shell, trim, preset, clear))
+        }
+        @Composable
+        fun ColourSection(title: String, clear: Boolean?) {
+            Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            val inSection = if (clear == null) true else clearNow == clear
+            if (presets.isNotEmpty()) SwatchRow("Voltcap") {
+                presets.forEach { p ->
+                    SwatchDot(p.shell, p.label.removePrefix("Voltcap card · "), selected = inSection && current?.preset == p.id && current?.shell == p.shell) {
+                        pick(p.shell, clear, p.id, if (hasTrim) p.badge else null)
+                    }
                 }
             }
-            SwatchChip("Custom…", current?.shell?.takeIf { current?.preset == null }, selected = customShell) { customShell = !customShell }
+            SAVE_PALETTE.forEach { (family, shades) ->
+                SwatchRow(family) {
+                    shades.forEach { (label, c) ->
+                        SwatchDot(c, label, selected = inSection && current?.preset == null && current?.shell == c) { pick(c, clear, null) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
         }
-        if (presets.isEmpty()) {
-            Spacer(Modifier.height(4.dp))
-            MutedNote("The Voltcap card colours come from the 3D models pack (Settings › Game look › Extra art packs). Until it's on this device: Original or Custom.")
+        ChipFlow {
+            SwatchChip("Original", originalShell(style), selected = current?.shell == null && !customShell) {
+                customShell = false; store(SaveLook(null, null, null, now()?.clear))
+            }
+            SwatchChip("Custom…", current?.shell?.takeIf { current?.preset == null && SAVE_PALETTE.none { f -> f.second.any { it.second == current?.shell } } }, selected = customShell) { customShell = !customShell }
         }
         if (customShell) {
             Spacer(Modifier.height(8.dp))
             val c = current?.shell ?: originalShell(style)
-            HueSlider(c) { h -> store(SaveLook(h, now()?.trim, null)) }
+            HueSlider(c) { h -> now().let { l -> store(SaveLook(h, l?.trim, null, l?.clear)) } }
             Spacer(Modifier.height(6.dp))
-            ColorFineTune("Shell", c) { v -> store(SaveLook(v, now()?.trim, null)) }
+            ColorFineTune("Shell", c) { v -> now().let { l -> store(SaveLook(v, l?.trim, null, l?.clear)) } }
+        }
+        Spacer(Modifier.height(10.dp))
+        ColourSection(if (canClear) "Solid colours" else "Colours", if (canClear) false else null)
+        if (canClear) ColourSection("Translucent colours · see-through plastic", true)
+        if (presets.isEmpty()) {
+            MutedNote("The Voltcap cards' own colours come from the 3D models pack (Settings › Game look › Extra art packs).")
+            Spacer(Modifier.height(6.dp))
         }
         if (hasTrim) {
-            Spacer(Modifier.height(12.dp))
-            Text(trimLabel, color = ShelfTheme.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(4.dp))
+            Text(trimLabel, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            val auto = current?.shell?.let { matchingBadge(it) }
             ChipFlow {
-                SwatchChip("Original", null, selected = current?.trim == null && !customTrim) {
-                    customTrim = false; now().let { l -> store(SaveLook(l?.shell, null, l?.preset)) }
+                SwatchChip("Goes with the shell", auto, selected = !customTrim && current?.trim != null && current?.trim == auto) {
+                    customTrim = false; now().let { l -> store(SaveLook(l?.shell, l?.shell?.let { matchingBadge(it) }, l?.preset, l?.clear)) }
                 }
-                presets.forEach { p ->
-                    SwatchChip(p.label, p.badge, selected = !customTrim && current?.trim == p.badge) {
-                        customTrim = false; now().let { l -> store(SaveLook(l?.shell, p.badge, l?.preset)) }
+                SwatchChip("Original", null, selected = current?.trim == null && !customTrim) {
+                    customTrim = false; now().let { l -> store(SaveLook(l?.shell, null, l?.preset, l?.clear)) }
+                }
+                SwatchChip("Custom…", current?.trim?.takeIf { it != auto }, selected = customTrim) { customTrim = !customTrim }
+            }
+            Spacer(Modifier.height(6.dp))
+            SwatchRow("Badge") {
+                SAVE_PALETTE.forEach { (_, shades) ->
+                    val (label, c) = shades[1]
+                    SwatchDot(c, label, selected = !customTrim && current?.trim == c && c != auto) {
+                        customTrim = false; now().let { l -> store(SaveLook(l?.shell, c, l?.preset, l?.clear)) }
                     }
                 }
-                SwatchChip("Custom…", current?.trim?.takeIf { t -> presets.none { it.badge == t } }, selected = customTrim) { customTrim = !customTrim }
             }
             if (customTrim) {
                 Spacer(Modifier.height(8.dp))
                 val c = current?.trim ?: originalTrim(style)
-                HueSlider(c) { h -> now().let { l -> store(SaveLook(l?.shell, h, l?.preset)) } }
+                HueSlider(c) { h -> now().let { l -> store(SaveLook(l?.shell, h, l?.preset, l?.clear)) } }
                 Spacer(Modifier.height(6.dp))
-                ColorFineTune("Trim", c) { v -> now().let { l -> store(SaveLook(l?.shell, v, l?.preset)) } }
+                ColorFineTune("Trim", c) { v -> now().let { l -> store(SaveLook(l?.shell, v, l?.preset, l?.clear)) } }
             }
         }
         Spacer(Modifier.height(10.dp))
@@ -353,5 +402,51 @@ internal fun SwatchChip(label: String, swatch: Int?, selected: Boolean, onClick:
         )
         Spacer(Modifier.width(8.dp))
         Text(label, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+    }
+}
+
+/** Update 285: the colours offered for a save's object, four shades of each (darkest to lightest). */
+internal val SAVE_PALETTE: List<Pair<String, List<Pair<String, Int>>>> = listOf(
+    "Black / white" to listOf("Black" to 0xFF1E1F23, "Charcoal" to 0xFF4A4D55, "Grey" to 0xFF9EA2A8, "White" to 0xFFE8E9EC),
+    "Red" to listOf("Wine" to 0xFF7A1418, "Red" to 0xFFC62828, "Coral" to 0xFFE8524A, "Rose" to 0xFFF4A3A0),
+    "Orange / yellow" to listOf("Orange" to 0xFFE65100, "Tangerine" to 0xFFFF9F2E, "Yellow" to 0xFFF2C230, "Lemon" to 0xFFF6E27A),
+    "Green" to listOf("Forest" to 0xFF1B5E20, "Green" to 0xFF2E9E4F, "Lime" to 0xFF8BC34A, "Mint" to 0xFF9EE6B8),
+    "Blue" to listOf("Navy" to 0xFF13265C, "Blue" to 0xFF2F6FD6, "Sky" to 0xFF47B5E6, "Teal" to 0xFF2FA7A0),
+    "Purple / pink" to listOf("Indigo" to 0xFF4A2A7A, "Purple" to 0xFF8E4FC2, "Lavender" to 0xFFC08BE8, "Pink" to 0xFFE46FA8)
+).map { (f, l) -> f to l.map { (n, c) -> n to c.toInt() } }
+
+/** Update 285: a badge that goes with [shell] — a deeper shade on a light shell, a lighter one on a dark shell. */
+internal fun matchingBadge(shell: Int): Int {
+    val c = Color(shell)
+    return (if (c.luminance() > 0.45f) mix(c, Color.Black, 0.45f) else mix(c, Color.White, 0.45f)).let {
+        android.graphics.Color.argb(255, (it.red * 255).toInt(), (it.green * 255).toInt(), (it.blue * 255).toInt())
+    }
+}
+
+/** Update 285: one row of a colour section — its family's name, then its swatches. */
+@Composable
+internal fun SwatchRow(label: String, content: @Composable () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(96.dp))
+        Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { content() }
+    }
+}
+
+/** Update 285: a round colour swatch with its name under it (D-pad and touch); a ring when it's the one picked. */
+@Composable
+internal fun SwatchDot(colour: Int, label: String, selected: Boolean, onClick: () -> Unit) {
+    androidx.compose.foundation.layout.Column(
+        Modifier.width(58.dp).clip(uiRounded(10)).shelfClickable(uiRounded(10)) { onClick() }.padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            Modifier.size(28.dp)
+                .border(if (selected) 3.dp else 1.dp, if (selected) ShelfTheme.accent else Color.White.copy(alpha = 0.35f), CircleShape)
+                .padding(if (selected) 4.dp else 1.dp)
+                .clip(CircleShape)
+                .background(Color(colour))
+        )
+        Spacer(Modifier.height(3.dp))
+        Text(label, color = if (selected) ShelfTheme.accent else ShelfTheme.colors.textPrimary, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
     }
 }

@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.CompositingStrategy
@@ -152,12 +153,12 @@ internal fun inspectObjectFor(style: SaveVaultStyle): InspectObject? = when (sty
     SaveVaultStyle.FLOPPY -> InspectObject.FLOPPY
     SaveVaultStyle.CAPSULE -> InspectObject.CAPSULE
     SaveVaultStyle.CARD_3D -> if (Models3D.saveCardId() != null) InspectObject.CARD_3D else InspectObject.MEMORY_CARD
-    SaveVaultStyle.CLASSIC -> null
+    SaveVaultStyle.CLASSIC, SaveVaultStyle.ICONS -> null
 }
 
 /** (Update 241, #48: a PS2 save's memory-card saves when the vault draws it with its own icon — the PS2 browser style.) */
 private fun ps2InspectRefs(game: Game, capsule: SaveCapsules.Capsule?): List<Ps2SaveRef> =
-    if (Ps2BrowserStyle.on.value && Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsule) else emptyList()
+    if (Features.saveVaultStyle.state.value == SaveVaultStyle.ICONS && Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsule) else emptyList()
 
 /** (Update 241, #50: whether a save's details in Save Vault offer Inspect — a 3D object to look at.) */
 internal fun saveInspectable(game: Game, capsule: SaveCapsules.Capsule?): Boolean =
@@ -301,7 +302,7 @@ internal fun SaveInspectDialog(game: Game, icon: String?, state: SyncState, caps
     val context = LocalContext.current
     val style = Features.saveVaultStyle.state.value
     val styleObj = inspectObjectFor(style)
-    val refs = remember(capsule, Ps2BrowserStyle.on.value) { ps2InspectRefs(game, capsule) }
+    val refs = remember(capsule, Features.saveVaultStyle.state.value) { ps2InspectRefs(game, capsule) }
     val ps2 by produceState<Ps2Load>(Ps2Load(refs.isEmpty(), null), refs) {
         if (refs.isEmpty()) return@produceState
         val ic = withContext(Dispatchers.IO) {
@@ -330,7 +331,7 @@ internal fun SaveInspectDialog(game: Game, icon: String?, state: SyncState, caps
     val dirty = preview != savedNow
     // A save without a colour of its own shows its console's.
     val shown = preview ?: if (!forConsole) SaveLookStore.forConsole(game.platform) else null
-    val card = if (obj == InspectObject.CARD_3D) Models3D.saveCardId() else null
+    val card = if (obj == InspectObject.CARD_3D) Models3D.saveCardIdFor(shown) else null
     val paintable = obj != null && obj != InspectObject.PS2_ICON && (card == null || Models3D.meta(card)?.tint?.own != null)
     val hasTrim = obj == InspectObject.MEMORY_CARD || obj == InspectObject.SD_CARD || obj == InspectObject.FLOPPY || obj == InspectObject.CARD_3D
     val presets = remember(com.shelf.launcher.data.Packs.version.intValue) { saveLookPresets() }
@@ -387,16 +388,16 @@ internal fun SaveInspectDialog(game: Game, icon: String?, state: SyncState, caps
                                 SwatchChip(
                                     p.label.substringAfter(" · "), p.shell,
                                     selected = !custom && preview?.shell == p.shell && (preview?.preset == null || preview?.preset == p.id)
-                                ) { custom = false; preview = SaveLook(p.shell, if (hasTrim) p.badge else null, p.id) }
+                                ) { custom = false; preview = SaveLook(p.shell, if (hasTrim) p.badge else null, p.id, preview?.clear) }
                             }
                             SwatchChip("Custom…", preview?.shell?.takeIf { preview?.preset == null }, selected = custom) { custom = !custom }
                         }
                         if (custom) {
                             Spacer(Modifier.height(8.dp))
                             val c = preview?.shell ?: originalShell(obj.style())
-                            HueSlider(c) { h -> preview = SaveLook(h, preview?.trim, null) }
+                            HueSlider(c) { h -> preview = SaveLook(h, preview?.trim, null, preview?.clear) }
                             Spacer(Modifier.height(6.dp))
-                            ColorFineTune("Shell", c) { v -> preview = SaveLook(v, preview?.trim, null) }
+                            ColorFineTune("Shell", c) { v -> preview = SaveLook(v, preview?.trim, null, preview?.clear) }
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(
@@ -651,7 +652,7 @@ private fun InspectStage(
         val nodeW = objW / frac
         val nodeH = nodeW / aspect
         val back by remember(pose) { derivedStateOf { pose.facing() < 0f } }
-        val card = if (obj == InspectObject.CARD_3D) Models3D.saveCardId() else null
+        val card = if (obj == InspectObject.CARD_3D) Models3D.saveCardIdFor(look) else null
         val meta = remember(card, com.shelf.launcher.data.Packs.version.intValue) { card?.let { Models3D.meta(it) } }
         // The sides' plastic (and how see-through it is).
         val tone = when (obj) {
@@ -675,7 +676,8 @@ private fun InspectStage(
                     translationX = pose.panX.floatValue
                     translationY = pose.panY.floatValue
                 }
-                .inspectSolid(pose, if (card != null) saveCardDepth(card) else obj.depth, frac, aspect, tone, clear),
+                .inspectSolid(pose, if (card != null) saveCardDepth(card) else obj.depth, frac, aspect, tone, clear,
+                    slot = obj == InspectObject.MEMORY_CARD || (obj == InspectObject.CARD_3D && card?.startsWith("memory_card") == true)),
             contentAlignment = Alignment.Center
         ) {
             InspectFace(obj, back, game, icon, state, look)
@@ -689,7 +691,7 @@ private fun InspectFace(obj: InspectObject, back: Boolean, game: Game, icon: Str
     val name = gameDisplayName(game.name)
     when (obj) {
         InspectObject.CARD_3D -> {
-            val card = Models3D.saveCardId() ?: return
+            val card = Models3D.saveCardIdFor(look) ?: return
             // Its back made while its front shows, so turning it round never shows an empty back first.
             val version = com.shelf.launcher.data.Packs.version.intValue
             val tint = Models3D.tintFor(card, game.platform, name, look?.shell, look?.trim)
@@ -761,7 +763,11 @@ private fun setPose(m: Matrix, cy: Float, sy: Float, cp: Float, sp: Float, px: F
  * back, drawn mirrored) at the far side. [clear]: a see-through plastic (each slice faint, none of them behind its face).
  * The layers and the drawing blocks are made once per size; each frame only re-records them.
  */
-private fun Modifier.inspectSolid(pose: InspectPose, depth: Float, frac: Float, aspect: Float, tone: Color, clear: Float?): Modifier =
+private fun Modifier.inspectSolid(
+    pose: InspectPose, depth: Float, frac: Float, aspect: Float, tone: Color, clear: Float?,
+    /** Update 285 (Toni: "a memory card's opening at the bottom"): its connector slot cut along the bottom edge. */
+    slot: Boolean = false
+): Modifier =
     this.drawWithCache {
         val face = obtainGraphicsLayer()
         val solid = obtainGraphicsLayer()
@@ -793,6 +799,30 @@ private fun Modifier.inspectSolid(pose: InspectPose, depth: Float, frac: Float, 
             drawRect(side, blendMode = BlendMode.SrcIn)
             drawRect(sheen, blendMode = BlendMode.SrcAtop)
         }
+        // (Update 285: the inner slices carry the connector slot — a dark opening with its contacts' glint — along the
+        // middle of the bottom edge, so tilted to show its underside the card has its opening there; the outer slices,
+        // its front and back walls, stay whole.)
+        val slotted = if (slot) obtainGraphicsLayer().also { it.compositingStrategy = CompositingStrategy.Offscreen } else null
+        // The slot follows the card's own outline: its lowest [slotH] px (the outline less the outline moved up by that
+        // much), across the middle 60 % — wherever the picture's card ends, whatever margin the picture has under it.
+        val oh = ow / aspect.coerceAtLeast(0.05f)
+        val slotH = (oh * 0.045f).coerceAtLeast(2f)
+        val shiftOut = if (slot) obtainGraphicsLayer().also { it.blendMode = BlendMode.DstOut } else null
+        val keepIn = if (slot) obtainGraphicsLayer().also { it.blendMode = BlendMode.DstIn } else null
+        val strip = if (slot) obtainGraphicsLayer().also { it.compositingStrategy = CompositingStrategy.Offscreen } else null
+        val recordShift: DrawScope.() -> Unit = { translate(0f, -slotH) { drawLayer(solid) } }
+        val recordKeep: DrawScope.() -> Unit = { drawLayer(solid) }
+        val recordStrip: DrawScope.() -> Unit = {
+            clipRect(size.width / 2f - ow * 0.30f, 0f, size.width / 2f + ow * 0.30f, size.height) {
+                drawRect(Color(0xFF0E0F12))
+            }
+            shiftOut?.let { drawLayer(it) }
+            keepIn?.let { drawLayer(it) }
+        }
+        val recordSlotted: DrawScope.() -> Unit = {
+            drawLayer(edge)
+            strip?.let { drawLayer(it) }
+        }
         val drawPiece: DrawScope.() -> Unit = {
             // Far to near: the slices, then the face (or, from behind, the back at the far side).
             val n = slices
@@ -800,7 +830,8 @@ private fun Modifier.inspectSolid(pose: InspectPose, depth: Float, frac: Float, 
                 val f = k.toFloat() / n
                 val z = if (facing >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
                 setPose(mx, cyv, syv, cpv, spv, px, py, z)
-                withTransform({ transform(mx) }) { drawLayer(edge) }
+                val inner = slotted != null && n >= 6 && k >= n / 5 && k <= n - n / 5
+                withTransform({ transform(mx) }) { drawLayer(if (inner) slotted!! else edge) }
             }
             val zf = if (facing >= 0f) depthPx / 2f else -depthPx / 2f
             setPose(mx, cyv, syv, cpv, spv, px, py, zf)
@@ -824,6 +855,12 @@ private fun Modifier.inspectSolid(pose: InspectPose, depth: Float, frac: Float, 
             edge.alpha = if (clear == null || slices <= 0) 1f
                 else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f).toDouble(), 1.0 / (slices + 1))).toFloat()
             edge.record(block = recordEdge)
+            if (slotted != null) {
+                shiftOut?.record(block = recordShift)
+                keepIn?.record(block = recordKeep)
+                strip?.record(block = recordStrip)
+                slotted.record(block = recordSlotted)
+            }
             lit.colorFilter = InspectLight.of(1f - 0.35f * spread)
             lit.record(block = recordFromFace)
             if (whole != null) {
@@ -837,4 +874,7 @@ private fun Modifier.inspectSolid(pose: InspectPose, depth: Float, frac: Float, 
 
 
 /** 0.6.18: the console whose logo a save's back carries — none for "Other saves". */
-internal fun vaultConsole(platform: String?): String? = platform?.takeIf { it.isNotBlank() && !it.equals("other", true) }
+// (Update 285, Toni: "remove the console label from the back, please": no save's back carries its console's logo any
+// more — the vault's mark (and the engraving, if on) only.)
+@Suppress("UNUSED_PARAMETER")
+internal fun vaultConsole(platform: String?): String? = null

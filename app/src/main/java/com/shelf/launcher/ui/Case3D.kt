@@ -253,9 +253,11 @@ internal fun Case3D(
     }
     // Update 282 (Toni): the piece lying in the case drawn as the piece that comes out of it (CaseFaces) — the same shell,
     // window and label — not a plain card with the cover on it.
-    val itemFace = remember(canOpen, inside?.pick, inside?.scan, inside?.real, itemLabel) {
-        val pk = inside?.pick
-        if (canOpen && inside != null && inside.real == null && pk != null && !inside.round) CaseFaces.of(ctx, pk, itemLabel, inside.scan) else null
+    // (Made off the main thread: it decodes the shell's picture — Update 285, after an ANR on the Thor while inspecting.)
+    val facePick = inside?.pick?.takeIf { canOpen && inside.real == null && !inside.round }
+    val faceScan = inside?.scan == true
+    val itemFace by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, facePick, faceScan, itemLabel) {
+        value = if (facePick == null) null else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { CaseFaces.of(ctx, facePick, itemLabel, faceScan) }
     }
     val itemBmp = remember(canOpen, itemReal, itemFace, itemLabel, itemAspect, openKind) {
         if (canOpen && inside != null) runCatching { CaseInside.item(openKind, itemReal ?: itemFace, itemLabel, itemAspect, inside.tone, umdCase) }.getOrNull() else null

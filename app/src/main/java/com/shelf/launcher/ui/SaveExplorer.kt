@@ -116,13 +116,16 @@ internal fun SaveExplorerDialog(
     /** When each game was last played (Game.stableKey → millis): the default order. */
     lastPlayed: Map<String, Long> = emptyMap(),
     /** A platform key as the user wants consoles named. */
-    consoleName: (String) -> String = { it }
+    consoleName: (String) -> String = { it },
+    /** Update 285: Icons only — the game's RetroAchievements icon, else its SteamGridDB logo (else [iconFor]). */
+    logoFor: (Game) -> String? = iconFor
 ) {
     val context = LocalContext.current
     LaunchedEffect(Unit) { SyncStatusStore.load(context); com.shelf.launcher.data.SaveCapsules.loadOptions(context) }
     // (Update 239, #112: Filters & look › "PS2 browser style" — read before the first frame.)
     remember { com.shelf.launcher.data.Ps2BrowserStyle.load(context) }
-    val ps2Style = com.shelf.launcher.data.Ps2BrowserStyle.on.value
+    // (Update 285: PS2 saves show their own icon in Icons only — never on the cards.)
+    val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS
     // Google Drive sync, right inside the vault: "Sync now" runs a saves sync, then looks for saves again.
     // (Update 151: read before the first frame, so a connected vault never flashes "Not connected".)
     remember { com.shelf.launcher.data.CloudSync.load(context) }
@@ -543,7 +546,7 @@ internal fun SaveExplorerDialog(
                             val i = copy * n + base + li
                             val (game, st) = entry
                             SaveSlot(
-                                game = game, status = st, icon = iconFor(game),
+                                game = game, status = st, icon = if (ps2Style) logoFor(game) else iconFor(game),
                                 appearDelayMs = if (entered.add(game.stableKey)) (i.coerceAtMost(14) * 45) else -1,
                                 selected = i == selected,
                                 // Each slot bobs a little out of step with its neighbours.
@@ -754,6 +757,29 @@ private fun SaveSlot(
             )
         } else if (vaultStyle == Features.SaveVaultStyle.CAPSULE) {
             CapsuleSaveCard(icon, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, look)
+        } else if (vaultStyle == Features.SaveVaultStyle.ICONS) {
+            // (Update 285: the icon on its own — no card, no frame: lifted, bigger and lit when it's the one you're on.)
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .onGloballyPositioned { onIconPlaced(it.boundsInRoot()) }
+                    .graphicsLayer {
+                        cameraDistance = 12f * density
+                        val b = bob()
+                        translationY = -(3.dp.toPx() * b) - 10.dp.toPx() * lift
+                        if (turnOn) rotationY = if (selected) kotlin.math.sin(Math.toRadians(spin().toDouble())).toFloat() * 28f * lift else b * 4f
+                        val s = 1f + 0.14f * lift
+                        scaleX = s; scaleY = s
+                        alpha = if (hidden) 0.12f else 1f
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                if (selected) Box(Modifier.fillMaxSize(0.9f).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(ShelfTheme.accent.copy(alpha = 0.35f), Color.Transparent))))
+                if (icon != null) AsyncImage(model = icon, contentDescription = game.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize(0.86f).clip(RoundedCornerShape(10.dp)))
+                else Text(gameDisplayName(game.name).take(2).uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                SyncBadge(status.state, 18.dp, Modifier.align(Alignment.TopEnd).padding(2.dp))
+            }
         } else Box(
             // The square save icon, as it always was: idle it bobs, picked it lifts and grows (and,
             // with "3D turn", tilts while bobbing and turns slowly like a 3D save icon).
@@ -1036,7 +1062,7 @@ private fun SaveDetail(
                 ChipFlow(center = true) {
                     Box(Modifier.focusRequester(focus)) { Chip("Save options", accent = true, onClick = onOpenSave) }
                     // (Update 236, #47: the object's colour — not for the Classic squares, which have none.)
-                    if (Features.saveVaultStyle.state.value != Features.SaveVaultStyle.CLASSIC) Chip("Appearance", accent = false) { showLook = true }
+                    if (Features.saveVaultStyle.state.value != Features.SaveVaultStyle.CLASSIC && Features.saveVaultStyle.state.value != Features.SaveVaultStyle.ICONS) Chip("Appearance", accent = false) { showLook = true }
                     // (Update 241, #49/#50: the object (or a PS2 save's own 3D icon) in the Free Inspect viewer — only for a
                     // save shown as a 3D object; the Classic squares are flat icons.)
                     if (saveInspectable(game, capsule)) Chip("Inspect", accent = false) { showInspect = true }
@@ -1064,7 +1090,7 @@ private fun SaveIconCard(
 ) {
     val turnOn = Features.saveTurn.state.value
     // Update 141: with the 3D card style, the whole 3D card turns (it used to be its picture turning on its own).
-    val card = if (Features.saveVaultStyle.state.value == Features.SaveVaultStyle.CARD_3D) Models3D.saveCardId() else null
+    val card = if (Features.saveVaultStyle.state.value == Features.SaveVaultStyle.CARD_3D) Models3D.saveCardIdFor(look) else null
     if (card != null) {
         if (turnOn) SwayingModel(card, icon, gameDisplayName(game.name), game.platform, angle, modifier, shell = look?.shell, badge = look?.trim)
         else Model3DArt(card, icon, 0f, modifier, name = gameDisplayName(game.name), alwaysName = true, platform = game.platform, shellOverride = look?.shell, badgeOverride = look?.trim)
@@ -1120,7 +1146,7 @@ private val SquareIconShape = RoundedCornerShape(16.dp)
 @Composable
 private fun saveIconShape(): androidx.compose.ui.graphics.Shape = when (Features.saveVaultStyle.state.value) {
     Features.SaveVaultStyle.CAPSULE -> CapsuleIconShape
-    Features.SaveVaultStyle.CLASSIC -> SquareIconShape
+    Features.SaveVaultStyle.CLASSIC, Features.SaveVaultStyle.ICONS -> SquareIconShape
     else -> RoundedCornerShape(6.dp)
 }
 

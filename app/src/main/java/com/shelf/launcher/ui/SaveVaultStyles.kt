@@ -329,7 +329,7 @@ internal fun SaveVaultStyle.aspect(): Float = when (this) {
     SaveVaultStyle.MEMORY_CARD -> 0.86f
     SaveVaultStyle.FLOPPY -> 0.95f
     SaveVaultStyle.CAPSULE -> 0.62f
-    SaveVaultStyle.CLASSIC -> 1f
+    SaveVaultStyle.CLASSIC, SaveVaultStyle.ICONS -> 1f
     SaveVaultStyle.CARD_3D -> Models3D.saveCardId()?.let { Models3D.aspect(it) } ?: 0.86f
 }
 
@@ -359,7 +359,7 @@ internal fun StyledSaveCard(
     // Update 136: your 3D shape library's card, the cover on its label and the name under it (the drawn memory card
     // while the "3D models" pack isn't on the device).
     if (style == SaveVaultStyle.CARD_3D) {
-        val card = Models3D.saveCardId()
+        val card = Models3D.saveCardIdFor(look)
         if (card != null) {
             Box(
                 Modifier
@@ -699,7 +699,7 @@ internal fun SaveOpenAnimation(
                     drawRoundRect(glass.copy(alpha = 0.9f * (1 - t * 0.7f)), Offset(cx - w / 2, cy + gap), Size(w, h / 2), androidx.compose.ui.geometry.CornerRadius(w / 2))
                 }
             }
-            SaveVaultStyle.CLASSIC -> Unit
+            SaveVaultStyle.CLASSIC, SaveVaultStyle.ICONS -> Unit
             else -> {
                 // A slot (console / reader / drive) with the save sliding in, then a loading bar.
                 val insert = (t / 0.55f).coerceIn(0f, 1f)
@@ -847,23 +847,15 @@ internal fun SaveVaultSettings(onDark: Boolean = false) {
             if (Models3D.saveCardId() == null) Text("The 3D cards come with the 3D models pack (Settings › Game look › Extra art packs); until then it's the drawn memory card.", color = label, fontSize = 11.sp)
         }
         // (Update 241, #44: "SaveVault" and Voltcap's cloud moulded into the objects — big views and their backs only.)
-        if (Features.saveVaultStyle.state.value != SaveVaultStyle.CLASSIC) ChipFlow {
+        if (Features.saveVaultStyle.state.value != SaveVaultStyle.CLASSIC && Features.saveVaultStyle.state.value != SaveVaultStyle.ICONS) ChipFlow {
             Chip(if (Features.saveEngraving.state.value) "✓ SaveVault engraving" else "SaveVault engraving", accent = Features.saveEngraving.state.value) {
                 Features.saveEngraving.toggle()
             }
         }
-        // (Update 239, #112: PS2 saves as the console's memory-card browser shows them — their own save icons — whatever
-        // the style above; other consoles keep it. Off by default.)
-        val context = androidx.compose.ui.platform.LocalContext.current
-        remember { com.shelf.launcher.data.Ps2BrowserStyle.load(context) }
-        val ps2On = com.shelf.launcher.data.Ps2BrowserStyle.on.value
-        ChipFlow {
-            Chip(if (ps2On) "✓ PS2 browser style" else "PS2 browser style", accent = ps2On) {
-                com.shelf.launcher.data.Ps2BrowserStyle.set(context, !ps2On)
-            }
-        }
-        if (ps2On) Text(
-            "PS2 saves show their own save icon from the memory card; a save without a readable one shows a generic card marked \"No save icon\".",
+        // (Update 285, Toni: "the logos without the cards, and only without cards": PS2 saves show their own save icon in
+        // Icons only — the cards always show the cards. The old "PS2 browser style" switch is gone.)
+        if (Features.saveVaultStyle.state.value == SaveVaultStyle.ICONS) Text(
+            "Each save as its game's icon, no card: a PS2 save's own icon from the memory card, else its RetroAchievements icon, else its SteamGridDB logo.",
             color = label, fontSize = 11.sp
         )
         Spacer(Modifier.height(6.dp))

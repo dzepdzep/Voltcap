@@ -218,6 +218,18 @@ internal object Models3D {
         return id.takeIf { Packs.hasModel(it) }
     }
 
+    /**
+     * Update 285 (Toni: a section for translucent colours, one for solid): the 3D card for a save with its own look — the
+     * clear or the solid one as picked for it (SaveLook.clear), else as picked for every save; the other when that one
+     * isn't on the device.
+     */
+    fun saveCardIdFor(look: SaveLook?): String? {
+        val clear = look?.clear ?: return saveCardId()
+        val base = Features.saveVaultCard.state.value.id
+        val id = if (clear) base + "_translucent" else base
+        return id.takeIf { Packs.hasModel(it) } ?: saveCardId()
+    }
+
     /** [idFor], only when that model is on the device. Update 200: always null — see [on]. */
     @Suppress("UNUSED_PARAMETER")
     fun available(platform: String): String? = null

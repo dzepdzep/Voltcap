@@ -4769,7 +4769,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onDismiss = { showSaveExplorer = false },
             lastPlayed = state.lastPlayedAt,
             // Update 112: the vault always uses the consoles' full names (Game Boy Color, not GBC).
-            consoleName = { p -> com.shelf.launcher.data.ConsoleNames.display(p) }
+            consoleName = { p -> com.shelf.launcher.data.ConsoleNames.display(p) },
+            // (Update 285: Icons only — the RetroAchievements icon, else the SteamGridDB logo, else as above.)
+            logoFor = { g ->
+                g.raGameId?.let { id -> state.raIcons[id] ?: com.shelf.launcher.data.RaBadges.mediaUrl(state.raCompletionById[id]?.ImageIcon) }
+                    ?: state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
+                    ?: state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl ?: vaultArt[g.stableKey]
+            }
         )
     }
 
