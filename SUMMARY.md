@@ -6,7 +6,7 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ## Update — 20 Oct 2026 (267): Cube menu's new Hub look (glass cube + menu + cover-flow library, from Toni's picture); Metacritic score badge (a toggle); Settings: one place for the background picture and the names, quality & battery always there, Audio → Music & sound, names and logos in fewer controls; Tile home's name white with a theme-colour bar — after release 0.6.17
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal**, committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal**, committed and pushed by Claude. **Published as Voltcap 0.6.18** (with updates 266 and 266b).
 
 **Cube menu › Hub (new, the default look on wide screens).** As in Toni's picture: a menu on the left (Voltcap · Games · Systems · Apps · Settings); a big glass cube seen from a corner — top face Games, left Systems, right Apps, a small Settings cube in front — with glowing edges, light in its core, a lit ring on the floor, small glass cubes and specks drifting round it and soft rays from above; it turns to the part you're on, sways, and leans in when you open one. On the right the Game Library: the category tabs, the games as a cover flow (the one you're on big, the others turned aside, mirrored on the floor), the name, console · year · genre · play time, and Ⓐ Open / Ⓧ Favourite / Ⓨ Achievements. Systems shows your consoles (logo, name, games; A: their games); Apps and Settings a card that opens them. Keys: ◀ ▶ games, ▲ tabs (◀ ▶ category), B the menu (▲ ▼ choose, A / ▶ open). Touch works everywhere. Settings › Home › Layout options › Cube menu › Look: Hub or Classic (narrow / portrait screens keep the Classic cube). Motion is read in the draw phase only; still on Lite / reduced motion.
 
@@ -23,7 +23,7 @@ Files (`src_copy\`): `LauncherViewModel.kt`, `data\AppearanceStore.kt`, `data\Fe
 
 ## Update — 19 Oct 2026 (266): big visual check of all 32 layouts and every Settings page on the Odin 2 Portal — names and points readable over bright pictures, Icon bar's category name clear of the big cover, the Drive notice clear of TV channels' clock, achievement counts on the smallest tiles — after release 0.6.17
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal**, committed and pushed by Claude. Not published yet (0.6.17 is the current release; the in-app update 0.6.16 → 0.6.17 was checked on the Odin: installed with its profile, `speed-profile [reason=install-dm]`).
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal**, committed and pushed by Claude. Published in 0.6.18 (0.6.17 was the release before; the in-app update 0.6.16 → 0.6.17 was checked on the Odin: installed with its profile, `speed-profile [reason=install-dm]`).
 
 **What was checked:** every home layout (32), each before and after a few D-pad moves, and all 20 Settings pages, screenshot by screenshot (`screens\vc_walk*.tar`). No crashes in the log.
 
