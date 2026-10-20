@@ -4,6 +4,17 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (289): a narrower label for covers on the cartridge shells — after release 0.6.21
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **Cartridge shells (Cartridge shell… / the drawn shells), Toni: "narrower window for covers":** a game's cover that's narrower than the shell's label (every portrait cover on an N64, Genesis, GBA or SNES shell) is now a narrower sticker. It keeps the cover's own shape at the label's full height, in the middle, with the shell's plastic either side. It used to be the cover in the middle of the full-width label, with bands in the cover's edge colour beside it. The sticker never gets narrower than 45 % of the label; past that, the rest is the cover's edge colour as before. A real label scan is the whole printed sticker and keeps the full label. Checked on the Flip 2 on the GB, GBA, Genesis, N64 and SNES shells with Luigi's Mansion and SmackDown! Here Comes the Pain: before / after in `Claude outputs\shots289\` (lb.tar = before, la.tar = after).
+- **Decisions from Toni's answers (nothing changed):** the Cube Hub keeps "Android" and "App" under Systems. The achievements badge wall keeps its three text chips (Name / Percentage / Count). Background clips stay switchable on the R1 Background tile ("Art + videos" / "Art only"). RetroArch on the RP Classic: switch its video driver to GL (after a backup of its config) next time the RP Classic is plugged in.
+
+Files: `src_copy\ui\CartShells.kt`.
+
+---
+
 ## Update — 20 Oct 2026 (288): no grey band round turning discs, "Shared move" without "Game Glance" — after release 0.6.21
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
