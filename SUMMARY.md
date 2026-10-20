@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (270): Save Vault shows games only — no "Unassigned 3DS / Wii save", numbers or codes on the wall; the same game from two handhelds is one card — after release 0.6.18
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet. No save was opened, changed or moved: only what the wall lists.
+
+- **Saves without a game name are off the wall by default:** "Unassigned 3DS save (title ID …)", "Unassigned Wii save (…)", "Other saves" and saves named only by a number or a code. They're kept and still sync; Filters & look has "Saves without a game name (N)" to show them, with a note saying how many are left out. On the Flip 2: 19 cards → 14 (three unassigned 3DS saves and one Wii save from the Thor / Odin went, plus the duplicate below).
+- **One card per game from several handhelds:** a save not tied to one of your games was keyed by its exact name, so "Pokemon - Red Version" (Thor) and "Pokemon Red Version" (Odin) were two cards, one without art. They're keyed by the title now (accents, punctuation and tags left out), and the name with the " - " (the ROM sets' spelling, which finds art) is shown. Their covers are looked up again once under the new keys (checked: Dr. Mario, Picross and Pokémon Silver all have art now — Silver had none before).
+- No cover lookups for saves without a game name (there's nothing to find).
+
+Files (`src_copy\`): `data\SaveCapsules.kt`, `ui\SaveExplorer.kt`, `ui\LauncherScreen.kt`.
+
+Also this session (not a code change): while opening the Save Vault the R1 panel was on its Device tab and one tap landed on "Charge 80%"; it was switched straight back (100% Charging on, the 80 % limit off — as before).
+
 ## Update — 20 Oct 2026 (269): the handheld's own switches on Retroid too — L2 / R2 mode (new tile), Mode and Fan on the Flip 2, per-game button layout on Retroid — after release 0.6.18
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2** (the Odin 2 Portal was unplugged), committed and pushed by Claude. Not published yet.

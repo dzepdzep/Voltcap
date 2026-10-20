@@ -463,6 +463,7 @@ internal fun SaveExplorerDialog(
                         CapsuleFilters(
                             options = capsuleOptions,
                             hiddenCount = capsules.count { it.game.stableKey in capsuleOptions.hidden },
+                            unnamedCount = capsules.count { !it.named },
                             showHidden = showHidden,
                             onShowHidden = { showHidden = it; selected = home() },
                             onSyncNow = syncNow,
@@ -1290,6 +1291,7 @@ private fun CapsuleSaveRow(item: com.shelf.launcher.data.SaveCapsules.SaveItem) 
 private fun CapsuleFilters(
     options: com.shelf.launcher.data.SaveCapsules.Options,
     hiddenCount: Int,
+    unnamedCount: Int,
     showHidden: Boolean,
     onShowHidden: (Boolean) -> Unit,
     onSyncNow: () -> Unit,
@@ -1304,6 +1306,15 @@ private fun CapsuleFilters(
         Chip("External / imported", accent = options.external && !options.onlyPlayedHere) { onChange { it.copy(external = !it.external) } }
         Chip("Only played in Voltcap", accent = options.onlyPlayedHere) { onChange { it.copy(onlyPlayedHere = !it.onlyPlayedHere) } }
         Chip(if (showHidden) "Hidden ($hiddenCount) ✓" else "Hidden ($hiddenCount)", accent = showHidden) { onShowHidden(!showHidden) }
+        // 0.6.18: saves that don't say which game they are — off by default.
+        if (unnamedCount > 0) Chip("Saves without a game name ($unnamedCount)", accent = options.unnamed) { onChange { it.copy(unnamed = !it.unnamed) } }
+    }
+    if (unnamedCount > 0 && !options.unnamed) {
+        Spacer(Modifier.height(6.dp))
+        MutedNote(
+            "$unnamedCount save${if (unnamedCount == 1) "" else "s"} that don't say which game they are (\"Unassigned 3DS save\", a number, a code) " +
+                "aren't on the wall. They're kept and still sync; turn on \"Saves without a game name\" to see them."
+        )
     }
     // The look, filter and background (the same settings as Settings › Appearance › Save Vault), and
     // what the sync badges mean.

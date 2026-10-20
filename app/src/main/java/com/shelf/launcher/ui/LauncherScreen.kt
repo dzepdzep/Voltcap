@@ -4720,7 +4720,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val vaultArt by viewModel.vaultArt.collectAsState()
         val capsules by com.shelf.launcher.data.SaveCapsules.all.collectAsState()
         LaunchedEffect(capsules) {
-            val away = capsules.filter { !it.onDevice }.map { it.game }
+            // (0.6.18: not for saves without a game name — there is nothing to look up.)
+            val away = capsules.filter { !it.onDevice && it.named }.map { it.game }
             if (away.isNotEmpty()) viewModel.loadVaultArt(away)
         }
         SaveExplorerDialog(

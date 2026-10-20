@@ -33,7 +33,10 @@ object SaveCapsules {
         /** Only games played through Voltcap (overrides [external]). */
         val onlyPlayedHere: Boolean = false,
         /** Capsules hidden by hand (Game.stableKey). The saves themselves are never touched. */
-        val hidden: Set<String> = emptySet()
+        val hidden: Set<String> = emptySet(),
+        /** 0.6.18: saves that don't say which game they are ("Unassigned 3DS save (title ID …)", a number, a code,
+         *  "Other saves"): off by default, so the wall shows games only. The saves stay where they are. */
+        val unnamed: Boolean = false
     )
 
     /** One individual save inside a capsule. */
@@ -54,7 +57,10 @@ object SaveCapsules {
         val status: GameSyncStatus?,
         val playedHere: Boolean,
         /** False for saves whose game isn't in this device's library (found on a memory card / synced). */
-        val onDevice: Boolean = true
+        val onDevice: Boolean = true,
+        /** 0.6.18: a game you'd recognise — one of your games, or a save that names its game in words. False for
+         *  "Unassigned 3DS / Wii save", "Other saves" and saves named only by a number or a code. */
+        val named: Boolean = true
     ) {
         val lastSaved: Long get() = maxOf(saves.maxOfOrNull { it.modified } ?: 0L, status?.lastSuccessAt ?: 0L)
         val fromMemoryCard: Boolean get() = saves.isNotEmpty() && saves.all { it.kind == Kind.MEMORY_CARD || it.kind == Kind.PSP_SAVEDATA }
@@ -80,7 +86,8 @@ object SaveCapsules {
                 memoryCards = p.getBoolean("memory_cards", true),
                 external = p.getBoolean("external", true),
                 onlyPlayedHere = p.getBoolean("only_played_here", false),
-                hidden = p.getStringSet("hidden", emptySet()).orEmpty().toSet()
+                hidden = p.getStringSet("hidden", emptySet()).orEmpty().toSet(),
+                unnamed = p.getBoolean("unnamed", false)
             )
         }
         return _options.value
@@ -91,7 +98,7 @@ object SaveCapsules {
         _options.value = o
         prefs(context).edit()
             .putBoolean("memory_cards", o.memoryCards).putBoolean("external", o.external)
-            .putBoolean("only_played_here", o.onlyPlayedHere).putStringSet("hidden", o.hidden)
+            .putBoolean("only_played_here", o.onlyPlayedHere).putStringSet("hidden", o.hidden).putBoolean("unnamed", o.unnamed)
             .apply()
     }
 
@@ -101,6 +108,7 @@ object SaveCapsules {
     /** The capsules to show with [o]. */
     fun visible(list: List<Capsule>, o: Options): List<Capsule> = list.filter { c ->
         if (c.game.stableKey in o.hidden) return@filter false
+        if (!o.unnamed && !c.named) return@filter false
         if (o.onlyPlayedHere && !c.playedHere) return@filter false
         if (!o.external && !c.playedHere) return@filter false
         if (!o.memoryCards && c.fromMemoryCard) return@filter false
@@ -579,12 +587,17 @@ object SaveCapsules {
             // Its console (update 104): from the folder's kind, the file's type, or the emulator / system folder it's in;
             // Game Boy or Game Boy Color by the game itself (update 119: the emulators keep both in one folder).
             val platform = handheldOf(hint, bare, raLists)
-            val id = stripped.lowercase()
-            val stray = strayGames.getOrPut("LOOSE:$platform:$id") {
+            // (0.6.18: by the title's key, so "Pokemon - Red Version" from one handheld and "Pokemon Red Version" from
+            // another are one game, not two cards; the name with the " - " — the ROM sets' spelling, which finds art — wins.)
+            val id = MemoryCards.titleKey(stripped).ifBlank { stripped.lowercase() }
+            val slot = "LOOSE:$platform:$id"
+            val stray = strayGames.getOrPut(slot) {
                 Game(
                     name = stripped, platform = platform, hue = (id.hashCode() and 0x7FFFFFFF) % 360,
                     sourceType = SourceType.ROM, romPath = "save:$platform:$id"
                 )
+            }.let { g ->
+                if (" - " in stripped && " - " !in g.name) g.copy(name = stripped).also { strayGames[slot] = it } else g
             }
             add(stray, item)
         }
@@ -604,11 +617,20 @@ object SaveCapsules {
             // The same save seen twice (on the card and synced, two card copies): one row.
             val unique = list.distinctBy { Triple(it.title.lowercase(), it.where.substringBefore(" · synced").lowercase(), it.kind == Kind.MEMORY_CARD) }
                 .sortedByDescending { it.modified }
-            Capsule(g, unique, statuses[key], lastPlayed.containsKey(key), onDevice = key in byKey)
+            Capsule(g, unique, statuses[key], lastPlayed.containsKey(key), onDevice = key in byKey, named = key in byKey || isNamedStray(g))
         }
     }
 
     private enum class Platform { PS1, PS2, PSP }
+
+    /** 0.6.18: a save that isn't one of your games still says which game it is (not "Unassigned …", "Other saves",
+     *  a number or a code). */
+    private fun isNamedStray(g: Game): Boolean {
+        val rp = g.romPath.orEmpty()
+        if (rp.startsWith("save:other:") || rp.startsWith("save:3ds:") || rp.startsWith("save:wii:")) return false
+        if (g.name.startsWith("Unassigned ", ignoreCase = true)) return false
+        return looksLikeTitle(com.shelf.launcher.ui.stripRegionTags(g.name))
+    }
 
     /** A save's own title says which game it is (letters, not only a number or a code like "00000012" or "GZLE"). */
     private fun looksLikeTitle(t: String, code: String? = null): Boolean {
