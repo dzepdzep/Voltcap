@@ -316,7 +316,13 @@ internal fun tapBooklet(
 
 /** Update 189: what the opening case draws lying in it, from its [content]. */
 internal fun caseItemOf(content: InspectPiece?): CaseItem? = content?.let { c ->
-    CaseItem(c.realScan, c.label ?: c.cover, if (c.kind == InspectKind.DISC) 1f else c.aspect, c.tone.toArgbInt(), c.kind == InspectKind.DISC)
+    // (Update 282: the drawn piece's shell, so the one lying in the case is the same piece — CaseFaces — wearing what it
+    // wears out of the case: on a library shell a disc game's cover, never its round disc-label scan, as PhysicalMedia.)
+    val pick = c.pick?.platform?.takeIf { c.kind == InspectKind.SLAB && c.realScan == null }
+    val discOnShell = pick != null && pick.startsWith(SHELL_PREFIX) && c.labelIsScan && c.cover != null &&
+        MediaShell.of(pick.substringAfter('|', ""))?.let { it.disc || it == MediaShell.UMD } == true
+    CaseItem(c.realScan, if (discOnShell) c.cover else c.label ?: c.cover, if (c.kind == InspectKind.DISC) 1f else c.aspect, c.tone.toArgbInt(), c.kind == InspectKind.DISC,
+        pick = pick, scan = c.labelIsScan && !discOnShell)
 }
 
 private fun Color.toArgbInt(): Int = android.graphics.Color.argb((alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt())
@@ -357,7 +363,9 @@ private fun slabAspect(pick: MediaPick, labelIsScan: Boolean): Float {
  * capsules…: the game window opens as before). Read in composition (it follows the look's switches).
  */
 internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? =
-    (inspectPieceOf(g, state) ?: if (MediaInspect.force == g.stableKey) forcedPieceOf(g, state) else null)?.also {
+    // (Testing hook's shell first, whatever the look draws: TestHooks `voltcap_test_inspect`.)
+    ((if (MediaInspect.force == g.stableKey && MediaInspect.testShell != null) forcedPieceOf(g, state) else null)
+        ?: inspectPieceOf(g, state) ?: if (MediaInspect.force == g.stableKey) forcedPieceOf(g, state) else null)?.also {
         it.logo = state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
         // Update 170: a case without its back scanned gets a printed one (Settings › Game look › Printed case backs).
         if (it.kind == InspectKind.BOX && it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)

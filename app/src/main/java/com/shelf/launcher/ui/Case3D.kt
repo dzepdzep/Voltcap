@@ -251,8 +251,14 @@ internal fun Case3D(
     val lidBmp = remember(canOpen, g.platform, shape, front, spec, openKind, itemAspect, hasBooklet, bookletPage) {
         if (canOpen) runCatching { CaseInside.lid(g.platform, shape, front, spec, openKind, itemAspect, hasBooklet, bookletPage) }.getOrNull() else null
     }
-    val itemBmp = remember(canOpen, itemReal, itemLabel, itemAspect, openKind) {
-        if (canOpen && inside != null) runCatching { CaseInside.item(openKind, itemReal, itemLabel, itemAspect, inside.tone, umdCase) }.getOrNull() else null
+    // Update 282 (Toni): the piece lying in the case drawn as the piece that comes out of it (CaseFaces) — the same shell,
+    // window and label — not a plain card with the cover on it.
+    val itemFace = remember(canOpen, inside?.pick, inside?.scan, inside?.real, itemLabel) {
+        val pk = inside?.pick
+        if (canOpen && inside != null && inside.real == null && pk != null && !inside.round) CaseFaces.of(ctx, pk, itemLabel, inside.scan) else null
+    }
+    val itemBmp = remember(canOpen, itemReal, itemFace, itemLabel, itemAspect, openKind) {
+        if (canOpen && inside != null) runCatching { CaseInside.item(openKind, itemReal ?: itemFace, itemLabel, itemAspect, inside.tone, umdCase) }.getOrNull() else null
     }
     val itemRect = remember(openKind, shape, itemAspect, spec) { CaseInside.itemRect(openKind, shape, itemAspect, spec) }
     val plastic = remember(g.platform, spec) { CaseInside.plastic(spec, g.platform) }
@@ -293,7 +299,13 @@ internal fun Case3D(
 }
 
 /** Update 189: the disc / card in an opening case: its own picture ([real]) or the art for a drawn one ([label]). */
-internal class CaseItem(val real: Any?, val label: Any?, val aspect: Float, val tone: Int, val round: Boolean = true)
+internal class CaseItem(
+    val real: Any?, val label: Any?, val aspect: Float, val tone: Int, val round: Boolean = true,
+    /** Update 282: the drawn piece's MediaPick platform (its shell), so the piece lying in the case is that piece (CaseFaces). */
+    val pick: String? = null,
+    /** Update 282: [label] is the game's real label scan (it fills the window, as out of the case). */
+    val scan: Boolean = false
+)
 
 /**
  * Update 191: how a case's outside is drawn — the colour of its edges and top (a see-through PS4 case blue, a clear

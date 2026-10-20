@@ -57,9 +57,13 @@ internal object TestHooks {
         // Update 280: `--es voltcap_test_snapshot save|restore` — every Features setting kept in <external files>/
         // voltcap_test_snapshot.json and put back afterwards, so a test walk leaves the settings as they were.
         val snap = intent?.getStringExtra("voltcap_test_snapshot")
+        // Update 281: `--es voltcap_test_labelaudit <systemeid|all>` — every game's saved real-media list (ScreenScraper's
+        // "support-texture" = Disc label, "support-2D" = Disc / cartridge): which it has, and those pictures downloaded
+        // into <external files>/label_audit/ for checking the label pipeline. Only ids, never the account, are written.
+        val la = intent?.getStringExtra("voltcap_test_labelaudit")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf && sh == null && pr == null && snap == null) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf && sh == null && pr == null && snap == null && la == null) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
@@ -75,6 +79,10 @@ internal object TestHooks {
                 android.util.Log.e("VoltcapTest", "snapshot restored")
             }
         }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }
+        if (la != null) {
+            val app = context.applicationContext
+            Thread { runCatching { LabelAudit.run(app, la) }.onFailure { android.util.Log.e("VoltcapTest", "labelaudit: ${it.message}") } }.start()
+        }
         if (pr != null && '=' in pr) {
             val k = pr.substringBefore('='); val v = pr.substringAfter('=')
             android.util.Log.e("VoltcapTest", "pref $k was ${com.shelf.launcher.data.Features.snapshot()[k]} -> $v")
@@ -106,5 +114,45 @@ internal object TestHooks {
         if (st != null) settings.value = st.replace('_', ' ')
         if (g != null) game.value = g.replace('_', ' ') // (adb: "Contra_III")
         if (want != null && com.shelf.launcher.data.HomeLayout.values().any { it.name == want }) layout.value = want
+    }
+}
+
+/** Update 281, testing only: see TestHooks `voltcap_test_labelaudit`. */
+internal object LabelAudit {
+    private fun param(url: String, name: String): String =
+        Regex("[?&]$name=([^&]*)").find(url)?.groupValues?.get(1).orEmpty()
+
+    fun run(c: android.content.Context, system: String) {
+        val prefs = c.getSharedPreferences("physical_media", android.content.Context.MODE_PRIVATE)
+        val dir = java.io.File(c.getExternalFilesDir(null), "label_audit").apply { mkdirs() }
+        val client = okhttp3.OkHttpClient.Builder().readTimeout(30, java.util.concurrent.TimeUnit.SECONDS).build()
+        val rows = StringBuilder("key\tsystem\tjeu\thas_label\thas_cart\tlabel_media\tcart_media\ttypes\n")
+        var n = 0
+        for ((key, v) in prefs.all) {
+            val text = v as? String ?: continue
+            val list = text.split('\n').mapNotNull { l -> l.split('\t').takeIf { it.size == 2 }?.let { it[0] to it[1] } }
+            val label = list.firstOrNull { it.first == "Disc label" }?.second
+            val cart = list.firstOrNull { it.first == "Disc / cartridge" }?.second
+            val any = label ?: cart ?: list.firstOrNull()?.second ?: continue
+            val sys = param(any, "systemeid")
+            if (system != "all" && sys != system) continue
+            val jeu = param(any, "jeuid")
+            rows.append("$key\t$sys\t$jeu\t${label != null}\t${cart != null}\t${label?.let { param(it, "media") }.orEmpty()}\t${cart?.let { param(it, "media") }.orEmpty()}\t${list.joinToString(",") { it.first }}\n")
+            val safe = key.replace(Regex("[^A-Za-z0-9._-]"), "_").take(60)
+            for ((tag, url) in listOf("label" to label, "cart" to cart)) {
+                if (url == null) continue
+                val f = java.io.File(dir, "${safe}_$tag.png")
+                if (f.exists()) continue
+                runCatching {
+                    client.newCall(okhttp3.Request.Builder().url(url).build()).execute().use { r ->
+                        if (r.isSuccessful) r.body?.byteStream()?.use { i -> f.outputStream().use { o -> i.copyTo(o) } }
+                    }
+                }
+                Thread.sleep(400)
+            }
+            n++
+        }
+        java.io.File(dir, "index.tsv").writeText(rows.toString())
+        android.util.Log.e("VoltcapTest", "labelaudit: $n games")
     }
 }

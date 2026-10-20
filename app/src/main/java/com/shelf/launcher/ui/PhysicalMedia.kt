@@ -908,9 +908,11 @@ internal object PhotoTones {
     fun put(model: Any?, c: androidx.compose.ui.graphics.Color) { (model as? String)?.let { if (map.size < 4000) map[it] = c } }
 }
 
-/** Update 279, testing only: the pick for TestHooks.shell ("pack:<shape>" or "opt:<file>"), or null. */
+/** Update 279, testing only: the pick for TestHooks.shell ("pack:<shape>", "opt:<file>" or "android"), or null. */
 private fun testShellPick(t: String, platform: String, gameKey: String?): MediaPick? = when {
     t.startsWith("pack:") -> CartShells.pickOf("$t~opaque", platform, gameKey)
     t.startsWith("opt:") -> DiscShells.byFile(t.removePrefix("opt:"))?.let { MediaPick(MediaShell.GB, CUSTOM_CART + platform, it.aspect) }
+    // (Update 282: "android" — Voltcap's green Android cartridge, for checking the piece lying in a case.)
+    t == "android" -> MediaPick(MediaShell.GB, ANDROID_CART)
     else -> null
 }

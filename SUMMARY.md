@@ -4,6 +4,16 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (281–282): the cartridge lying in an open case is the cartridge that comes out of it; a real-label audit — after release 0.6.20
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **"The Android cartridge inside shows the cartridge a bit different inside the case and different when pulled out"** (Toni): an opening case drew a stand-in card lying in it (a plain rounded plate in the shell's colour with the cover on it), while the piece that came out was the real drawn cartridge. Now the piece in the case is made the same way as the one out of it (`CaseFaces`): Voltcap's green Android cartridge and the other template cartridges (their shell picture, label window and mask), library shells, your pack's shapes and the optical-system shells, each wearing the same label (on a library shell a disc game's cover, as out of the case). Cartridge photos and UMDs are as before. Checked on the Flip 2 in a PS2 case with the Android cartridge and your pack's N64 shape: in the case and out of it, the same piece.
+- **Real labels (inspection for the real-label task):** a testing hook, `--es voltcap_test_labelaudit <systemeid|all>`, lists every game's saved ScreenScraper media (which has "support-texture" = the label scan and "support-2D" = the drawn cartridge) and downloads both pictures into the app's files (`label_audit\`; ids only, no credentials). On the Flip 2: 261 games with saved media — N64 35/35, GameCube 95/95, PS2 126/126 have both; 4 games have no ScreenScraper match. ScreenScraper's N64 "support-texture" is the flat, front-only label of the matched release (US here, with rating box and NUS serial, 522 × 600 px); "support-2D" is that label on a rendered grey cartridge (600 × 386 px). Voltcap already prints the label scan on the built-in N64 cartridge and on your pack's N64 shape on the home screen (checked in Grid). The audit files were removed from the Flip 2 afterwards.
+- Testing hook: `--es voltcap_test_shell android` — every game on Voltcap's green Android cartridge (for checking cases).
+
+Files (`src_copy\`): `ui\CaseFaces.kt` (new), `ui\Case3D.kt`, `ui\MediaInspectView.kt`, `ui\PhysicalMedia.kt`, `ui\TestHooks.kt`.
+
 ## Update — 20 Oct 2026 (279–280): Covers always covers, Wide capsules and Layout standard looks, Cases from the front or turned (every case), the art fills your custom cartridges' labels, disc games' covers on cartridge shells, Sega CD / PS3 optical shells fixed, the update check past GitHub's 403, every custom shell walked through every layout — after release 0.6.19
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.20.**
