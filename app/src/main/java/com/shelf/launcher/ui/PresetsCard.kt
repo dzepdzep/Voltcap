@@ -375,7 +375,7 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     // Update 202.
     com.shelf.launcher.data.HomeLayout.POCKET -> "Pocket Quest: A full-screen game menu in the style of the great 32-bit handheld RPGs: a big showcase of the game you're on, layered blue panels with gold edges, a row of games along the bottom, pixel-art scenery behind."
     com.shelf.launcher.data.HomeLayout.POCKET_RIBBON -> "Pocket ribbon: a 2008-style two-screen pocket menu — a framed picture on top; a row of square icons below with the one you're on in the middle, its name in a speech bubble and a START tab, your categories first and their games inside."
-    com.shelf.launcher.data.HomeLayout.CUSTOM -> "Custom layout: a home screen made by anyone — import a .vclayout file, or make your own (Layout options › How to make one). Starts with the Neon drift example."
+    com.shelf.launcher.data.HomeLayout.CUSTOM -> "Layout Studio: a home screen made by anyone — import a .vclayout file, or make your own (Layout options › How to make one). Starts with the Neon drift example."
     com.shelf.launcher.data.HomeLayout.SHELF -> "Game shelf: your games as spines on a bookcase, the one you're on pulled out to show its front. ◀ ▶ along, ▲ ▼ to the shelf above / below."
     // (Update 239, #93.)
     com.shelf.launcher.data.HomeLayout.CUBE -> "Cube menu: a translucent cube whose sides are your categories (its top Apps, its bottom Settings). ◀ ▶ turn it, A opens a face: the cube docks out of the way and the games fill the screen; B brings the big cube back."

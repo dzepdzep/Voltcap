@@ -162,7 +162,8 @@ enum class HomeLayout(val label: String) {
      *  bottom; the one you're on big in the middle, the others fanned out like a hand; Y turns it over (StyleCardBinder.kt). */
     CARDS("Card binder"),
     /** Update 176: a layout made by anyone — imported from a .vclayout file (CustomLayouts.kt, StyleCustom.kt). */
-    CUSTOM("Custom layout"),
+    // (Update 290, Toni: renamed from "Custom layout" — the layout creator will grow into it.)
+    CUSTOM("Layout Studio"),
     /** Update 181: Voltcap's take on the 2004 two-screen pocket menu: clock and calendar on top, four panels below (PocketClassic.kt). */
     POCKET_CLASSIC("Pocket classic"),
     /** Update 181: Voltcap's take on the 2008 two-screen pocket menu: a picture on top, a ribbon of icons below (PocketRibbon.kt). */

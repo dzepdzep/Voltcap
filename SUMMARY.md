@@ -4,6 +4,16 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (290): "Custom layout" is now "Layout Studio" — after release 0.6.21
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **Renamed (Toni):** the home layout made from a .vclayout file is called **Layout Studio** everywhere it's listed: R1 › hold Layout, Settings › Layout, the layout presets and its description. Nothing else changed: the saved choice, its settings and imported layouts stay as they were. Checked on the Flip 2 in R1's Home layout list. The layout creator itself is next to work on.
+
+Files: `src_copy\data\AppearanceStore.kt`, `src_copy\ui\PresetsCard.kt`.
+
+---
+
 ## Update — 20 Oct 2026 (289): a narrower label for covers on the cartridge shells — after release 0.6.21
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built and installed on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
