@@ -280,10 +280,30 @@ private fun engraveCardBack(b: android.graphics.Bitmap, label: FloatArray?, plat
     // 0.6.18: Toni's SaveVault picture goes big on the back's label plate (a grey plate, like the picture's own), and the
     // console the save comes from has its logo in the free band above / below it. A back without a label: both in its band.
     val lr = labelRect
-    if (lr != null && lr.width() > bw * 0.3f && lr.height() > bh * 0.12f) {
-        val inW = lr.width() * 0.86f; val inH = lr.height() * 0.80f
-        val stackedW = minOf(inW, inH / Engraving.ratio(Engraving.Layout.STACKED))
-        Engraving.engraveOnto(b, lr.centerX(), lr.centerY(), stackedW.toInt(), Engraving.Layout.STACKED)
+    if (lr != null && lr.width() > bw * 0.3f && lr.height() > bh * 0.12f && label != null) {
+        // 0.6.18 (Toni): the grey label plate (a real card's sticker spot, no function here) is filled with the card's own
+        // plastic — its shade from just above to just below it — and your SaveVault mark goes big, straight into the plastic.
+        val gap = bh * 0.025f
+        val above = Engraving.sampleTone(b, android.graphics.RectF(lr.left, lr.top - gap * 2f, lr.right, lr.top - gap))
+        val below = Engraving.sampleTone(b, android.graphics.RectF(lr.left, lr.bottom + gap, lr.right, lr.bottom + gap * 2f))
+        val fillA = above ?: below
+        if (fillA != null) {
+            val grow = 1f + (6f / lr.width().coerceAtLeast(1f)) * 2f
+            val path = android.graphics.Path()
+            for (i in 0 until 4) {
+                val px = lr.centerX() + (label[i * 2] * w - lr.centerX()) * grow
+                val py = lr.centerY() + (label[i * 2 + 1] * h - lr.centerY()) * grow
+                if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
+            }
+            path.close()
+            val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                shader = android.graphics.LinearGradient(0f, lr.top, 0f, lr.bottom, fillA, below ?: fillA, android.graphics.Shader.TileMode.CLAMP)
+                xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_ATOP)
+            }
+            android.graphics.Canvas(b).drawPath(path, paint)
+        }
+        val stackedW = minOf(bw * 0.8f, lr.height() * 1.4f / Engraving.ratio(Engraving.Layout.STACKED))
+        Engraving.engraveOnto(b, x0 + bw / 2f, lr.centerY(), stackedW.toInt(), Engraving.Layout.STACKED)
         val band = bottom - top
         logoAt(x0 + bw / 2f, top + band / 2f, (bw * 0.66f).toInt(), (band * 0.78f).toInt())
         return
