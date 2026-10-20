@@ -4,6 +4,16 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (268): R1 Controller tile — the handheld's own Xbox / Retro controller style, the same switch as Android's (Retroid too) — after release 0.6.18
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2** (the Odin 2 Portal was unplugged), committed and pushed by Claude. Not published yet.
+
+**R1 › Device › Controller (Xbox / Retro).** Press: switches the built-in controller between Xbox and Retro layout. Hold: opens Android's Handheld Settings (Input › Controller style). It writes exactly what Android's own Controller style does — read off the Flip 2 by switching Android's Quick Settings tile and comparing before / after: `temp_abxy_layout_mode` (0 Xbox / 1 Retro), `flip_button_layout` (1 / 0) and `persist.sys.gamepad.type` (1 / 0; before, Voltcap's old Buttons tile didn't set this one). Checked both ways on the Flip 2: Voltcap's tile → Android's tile shows Retro; Android's tile → Voltcap's tile follows. Android's third choice, Disconnect (2 / 0 / no_create 1 / prop 2), shows as "Disconnected"; a press brings the controller back as Xbox (checked: the "Xbox Wireless Controller" input device is back). The tile now shows on every handheld whose firmware has the switch (found by its setting, with the vendor's root service) — before, AYN only.
+Also Settings › Controls › Button legend: "Handheld's controller style" — Xbox / Retro / Handheld Settings, the same switch.
+The Flip 2 was left on Xbox, as it was.
+
+Files (`src_copy\`): `device\DeviceControls.kt`, `ui\QuickSettings.kt`, `ui\SettingsDialog.kt`, `ui\SettingsIndex.kt`.
+
 ## Update — 20 Oct 2026 (267): Cube menu's new Hub look (glass cube + menu + cover-flow library, from Toni's picture); Metacritic score badge (a toggle); Settings: one place for the background picture and the names, quality & battery always there, Audio → Music & sound, names and logos in fewer controls; Tile home's name white with a theme-colour bar — after release 0.6.17
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal**, committed and pushed by Claude. **Published as Voltcap 0.6.18** (with updates 266 and 266b).

@@ -4279,6 +4279,7 @@ private fun ControlsContent(appearance: AppearanceSettings, onChange: (Appearanc
                 }
             }
             Spacer(Modifier.height(12.dp))
+            HandheldControllerStyle()
             SectionLabel("System button layout")
             val detected = com.shelf.launcher.data.SystemButtonLayout.abSwapped
             MutedNote(
@@ -5854,4 +5855,43 @@ internal fun OverlayPartsChoice(layout: com.shelf.launcher.data.HomeLayout) {
         Chip("Edit Home…") { HomeEditState.open() }
     }
     MutedNote("In Edit Home: + Add (Start) picks what to show, a part's red ✕ (Select) takes it off again.")
+}
+
+
+/**
+ * 0.6.18: the handheld's own Controller style (AYN / Retroid: Xbox or Retro) — the same setting as Android's Handheld
+ * Settings › Input › Controller style and its Quick Settings tile, and the R1 Controller tile. Only on handhelds that have it.
+ */
+@Composable
+private fun HandheldControllerStyle() {
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var tick by remember { mutableStateOf(0) }
+    val state by androidx.compose.runtime.produceState<com.shelf.launcher.device.ControlState?>(null, tick) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                com.shelf.launcher.device.DeviceControls.handheldSettingsIntent(context) // (looked up here, off the main thread)
+                if (com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE in com.shelf.launcher.device.DeviceControls.available(context))
+                    com.shelf.launcher.device.DeviceControls.read(context, com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE)
+                else null
+            }.getOrNull()
+        }
+    }
+    val st = state ?: return
+    SectionLabel("Handheld's controller style")
+    MutedNote("The handheld's own switch (Android's Handheld Settings › Input › Controller style, also the R1 Controller tile): which way its built-in buttons reach games and apps. Now: ${st.value}.")
+    Spacer(Modifier.height(6.dp))
+    ChipFlow {
+        listOf(true to "Xbox", false to "Retro").forEach { (xbox, label) ->
+            Chip(label, accent = st.value == label) {
+                scope.launch {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.shelf.launcher.device.DeviceControls.setControllerStyle(xbox) }
+                    tick++
+                }
+            }
+        }
+        val hs = remember { com.shelf.launcher.device.DeviceControls.handheldSettingsIntent(context) }
+        if (hs != null) Chip("Handheld Settings", accent = false) { runCatching { context.startActivity(hs) } }
+    }
+    Spacer(Modifier.height(12.dp))
 }

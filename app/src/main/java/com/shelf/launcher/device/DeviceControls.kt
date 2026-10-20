@@ -18,7 +18,7 @@ enum class DeviceControl(val label: String) {
     PERFORMANCE("Performance"),
     FAN("Fan"),
     REFRESH_RATE("Refresh rate"),
-    CONTROLLER_STYLE("Button layout"),
+    CONTROLLER_STYLE("Controller style"),
     FLOATING_BUTTON("Floating button"),
     /** ClusterTune / PULSE, when installed: opens its quick controls. */
     TUNER_APP("CPU tuner"),
@@ -42,6 +42,9 @@ object DeviceControls {
     private const val ABXY_TEMP = "temp_abxy_layout_mode"
     private const val NO_GAMEPAD_LAYOUT = "no_create_gamepad_button_layout"
     private const val FLIP_LAYOUT = "flip_button_layout"
+    /** 0.6.18: what the handheld's own Controller style (Settings › Handheld Settings › Input, and its Quick Settings tile)
+     *  also sets — 1 Xbox, 0 Retro — seen on the Odin 2 Portal and the Retroid Pocket Flip 2 (the same firmware family). */
+    private const val GAMEPAD_TYPE_PROP = "persist.sys.gamepad.type"
 
     private val perfModes = listOf(0 to "Standard", 1 to "Performance", 2 to "High")
     private val fanModes = listOf(1 to "Quiet", 4 to "Smart", 5 to "Sport", 0 to "Off")
@@ -62,6 +65,8 @@ object DeviceControls {
                 DeviceControl.AIRPLANE -> true // root toggles it; otherwise the tile opens Android's screen
                 DeviceControl.REFRESH_RATE -> refreshRates(context).size > 1
                 DeviceControl.FLOATING_BUTTON -> root && floatingSettingKey() != null
+                // 0.6.18: every handheld whose firmware has the Xbox / Retro switch (AYN and Retroid) — found by its setting.
+                DeviceControl.CONTROLLER_STYLE -> hasControllerStyle()
                 // Any device: Voltcap probes the battery driver's switches itself. Shown even when none
                 // works, saying so, rather than as a toggle that does nothing.
                 DeviceControl.CHARGE_LIMIT -> true
@@ -104,8 +109,12 @@ object DeviceControls {
                 ControlState(now > 61f, "${now.toInt()} Hz")
             }
             DeviceControl.CONTROLLER_STYLE -> {
-                val xbox = getSystem(FLIP_LAYOUT) == "1"
-                ControlState(xbox, if (xbox) "Xbox" else "Retro")
+                // (Android's third choice, Disconnect, takes the built-in controller away: shown as such.)
+                if (getSystem(NO_GAMEPAD_LAYOUT) == "1") ControlState(false, "Disconnected")
+                else {
+                    val xbox = getSystem(FLIP_LAYOUT) == "1"
+                    ControlState(xbox, if (xbox) "Xbox" else "Retro")
+                }
             }
             DeviceControl.FLOATING_BUTTON -> ControlState(floatingSettingKey()?.let { getSystem(it) } == "1")
             DeviceControl.TUNER_APP -> ControlState(false, CpuTuning.tunerApp(context)?.label ?: "Tuner")
@@ -165,13 +174,7 @@ object DeviceControls {
                 putSystem("peak_refresh_rate", "%.1f".format(java.util.Locale.US, target)) &&
                     putSystem("min_refresh_rate", "%.1f".format(java.util.Locale.US, target))
             }
-            DeviceControl.CONTROLLER_STYLE -> {
-                val toXbox = !cur.on
-                // Xbox: 0/0/1 · Nintendo (AYN's own default): 1/0/0.
-                putSystem(ABXY_TEMP, if (toXbox) "0" else "1") &&
-                    putSystem(NO_GAMEPAD_LAYOUT, "0") &&
-                    putSystem(FLIP_LAYOUT, if (toXbox) "1" else "0")
-            }
+            DeviceControl.CONTROLLER_STYLE -> setControllerStyle(xbox = !cur.on)
             DeviceControl.FLOATING_BUTTON -> floatingSettingKey()?.let { putSystem(it, if (cur.on) "0" else "1") } ?: false
             DeviceControl.TUNER_APP -> CpuTuning.tunerApp(context)?.let { CpuTuning.openTuner(context, it) } ?: false
             DeviceControl.CPU_CAP -> if (com.shelf.launcher.device.tune.Tuner.supported) { com.shelf.launcher.device.tune.Tuner.cycleTier(context); true }
@@ -179,6 +182,50 @@ object DeviceControls {
             DeviceControl.AUTO_TDP -> { com.shelf.launcher.device.tune.Tuner.cycleAutoTdp(context); true }
             DeviceControl.UNDERCLOCK -> { com.shelf.launcher.device.tune.Tuner.cycleUnderclock(context); true }
         }
+    }
+
+    /**
+     * 0.6.18: Xbox or Retro, written exactly as the handheld's own Controller style does it (its Quick Settings tile and
+     * Settings › Handheld Settings › Input › Controller style), so all three always agree: temp_abxy_layout_mode
+     * (0 Xbox / 1 Retro), flip_button_layout (1 / 0) and persist.sys.gamepad.type (1 / 0). From "Disconnected" it
+     * brings the controller back. Blocking (root service).
+     */
+    fun setControllerStyle(xbox: Boolean): Boolean {
+        if (!RootShell.available) return false
+        val back = if (getSystem(NO_GAMEPAD_LAYOUT) == "1") putSystem(NO_GAMEPAD_LAYOUT, "0") else true
+        return back &&
+            putSystem(ABXY_TEMP, if (xbox) "0" else "1") &&
+            putSystem(FLIP_LAYOUT, if (xbox) "1" else "0") &&
+            RootShell.exec("setprop $GAMEPAD_TYPE_PROP ${if (xbox) 1 else 0}") != null
+    }
+
+    /** 0.6.18: the firmware has the Xbox / Retro switch (its setting exists) and Voltcap can write it. */
+    private fun hasControllerStyle(): Boolean = RootShell.available && getSystem(FLIP_LAYOUT) != null
+
+    /**
+     * 0.6.18: the handheld's own settings app (AYN's / Retroid's "Handheld Settings", where Input › Controller style
+     * is), or null on other devices.
+     */
+    fun handheldSettingsIntent(context: Context): Intent? {
+        if (handheldSearched) return handheldIntent?.let { Intent(it) }
+        handheldSearched = true
+        handheldIntent = findHandheldSettings(context)
+        return handheldIntent?.let { Intent(it) }
+    }
+    @Volatile private var handheldSearched = false
+    @Volatile private var handheldIntent: Intent? = null
+
+    private fun findHandheldSettings(context: Context): Intent? {
+        val pm = context.packageManager
+        val cls = "com.ro.settings.activity.MainSettingsActivity"
+        val known = listOf("com.odin.settings", "com.rp.settings", "com.ayn.settings")
+        val found = runCatching { pm.getInstalledApplications(0).map { it.packageName }.filter { it.endsWith(".settings") && it !in known } }
+            .getOrDefault(emptyList())
+        for (pkg in known + found) {
+            val i = Intent().setClassName(pkg, cls).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (runCatching { pm.resolveActivity(i, 0) }.getOrNull() != null) return i
+        }
+        return null
     }
 
     /** Android's own screen for a control that couldn't be switched directly. */

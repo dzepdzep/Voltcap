@@ -629,6 +629,7 @@ internal object SettingsIndex {
         E("Settings before an import", "Backup", null, null, null),
         E("First-start setup", "Backup", null, null, null),
         E("Music & sound (Audio)", "Music & sound", null, null, null),
+        E("Handheld's controller style (Xbox / Retro)", "Controls", null, null, null),
         E("Metacritic score on the game you're on", "Game look", "Cards", null, null),
         E("Sound & feel", "Music & sound", "Sound & feel", null, null),
         E("Navigation sounds", "Music & sound", "Sound & feel", null, null),

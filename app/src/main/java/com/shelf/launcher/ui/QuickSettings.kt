@@ -251,6 +251,8 @@ fun QuickSettingsCard(
     val deviceTiles by produceState(initialValue = emptyList<Pair<com.shelf.launcher.device.DeviceControl, com.shelf.launcher.device.ControlState>>(), deviceRefresh, refresh, sync) {
         value = withContext(Dispatchers.IO) {
             runCatching {
+                // (0.6.18: looked up here, off the main thread — the Controller tile's hold opens it.)
+                com.shelf.launcher.device.DeviceControls.handheldSettingsIntent(context)
                 com.shelf.launcher.device.DeviceControls.available(context).map { it to com.shelf.launcher.device.DeviceControls.read(context, it) }
             }.getOrDefault(emptyList())
         }
@@ -906,7 +908,11 @@ fun QuickSettingsCard(
             })
         }
         deviceTiles.forEach { (control, st) ->
-            add(R1Tile("dev_" + control.name, deviceIcon(control), deviceLabel(control, st.value), st.on) {
+            // 0.6.18: hold Controller style: the handheld's own settings (Input › Controller style), else Voltcap's Controls.
+            val hold: (() -> Unit)? = if (control == com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE) {
+                com.shelf.launcher.device.DeviceControls.handheldSettingsIntent(context)?.let { i -> { runCatching { context.startActivity(i) }; Unit } }
+            } else null
+            add(R1Tile("dev_" + control.name, deviceIcon(control), deviceLabel(control, st.value), st.on, longAction = hold) {
                 scope.launch {
                     if (!st.supported) {
                         android.widget.Toast.makeText(context, "Not supported on this device", android.widget.Toast.LENGTH_SHORT).show()
@@ -1402,7 +1408,7 @@ private fun deviceLabel(c: com.shelf.launcher.device.DeviceControl, value: Strin
         com.shelf.launcher.device.DeviceControl.PERFORMANCE -> "Mode"
         com.shelf.launcher.device.DeviceControl.FAN -> "Fan"
         com.shelf.launcher.device.DeviceControl.REFRESH_RATE -> "Screen"
-        com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE -> "Buttons"
+        com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE -> "Controller"
         com.shelf.launcher.device.DeviceControl.FLOATING_BUTTON -> "Floating\nbutton"
         // The tuner app's own name (ClusterTune / PULSE) on the first line.
         com.shelf.launcher.device.DeviceControl.TUNER_APP -> return (value ?: "CPU tuner") + "\nOpen"
