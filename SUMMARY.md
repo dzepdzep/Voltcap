@@ -4,6 +4,16 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (278): the PSP shell's label sits in its label recess — after release 0.6.19
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **"Not really on the label, it's misaligned"** (after 277): the optical-system pack's PSP shell has a label recess at the top (the darker rounded plate). The grey "PSP · PlayStation Portable" label sat below it, covering most of the recess and the shell down to the window. Now the label sits in the recess, at the recess's own size (its face and logo scaled to 74 %, round corners, a soft shadow). Where the label used to be, there's plain shell plastic: the texture comes from the shell's own plain lower part, shaded to match the plastic around it, and the side groove runs through. Your custom-cartridge PSP pieces (the cartridge pack) were already right and are unchanged.
+- Made once on the handheld from your pack's `disc_psp.webp` (`files\packs\fixes\psp_fit2.png`; 277's copy is deleted). The pack file itself isn't changed.
+- Checked on the Flip 2 with the testing hook (`--ez voltcap_test_pspfit true`): the copy made on the handheld matches the PC preview. Not seen on the home rows there (no PSP games on the Flip 2).
+
+Files (`src_copy\`): `data\DiscShellFixes.kt`.
+
 ## Update — 20 Oct 2026 (277): the PSP shell's label fitted inside the shell — after release 0.6.19
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
