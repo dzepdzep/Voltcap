@@ -199,6 +199,22 @@ private class InspectPose {
     /** Upside down (tilted past upright), a turn to the right still turns what you see to the right. */
     private fun yawSign(): Float = if (cos(Math.toRadians(pitch.floatValue.toDouble())) < 0.0) -1f else 1f
 
+    /** 0.6.18: the coast after a flick (°/s), slowing to a stop in [step]; 0 at rest. */
+    val vYaw = mutableFloatStateOf(0f)
+    val vPitch = mutableFloatStateOf(0f)
+
+    /** 0.6.18 (Toni): let go of a drag with speed and it keeps turning, slower and slower, until it stops (gently). */
+    fun fling(vy: Float, vp: Float) {
+        val y = vy.coerceIn(-FLING_MAX, FLING_MAX); val p = vp.coerceIn(-FLING_MAX * 0.6f, FLING_MAX * 0.6f)
+        if (abs(y) < FLING_MIN && abs(p) < FLING_MIN) return
+        resetJob?.cancel()
+        vYaw.floatValue = y; vPitch.floatValue = p
+    }
+
+    fun stopCoast() { vYaw.floatValue = 0f; vPitch.floatValue = 0f }
+
+    private fun coasting(): Boolean = abs(vYaw.floatValue) >= FLING_STOP || abs(vPitch.floatValue) >= FLING_STOP
+
     fun turn(dYaw: Float, dPitch: Float, user: Boolean = true) {
         if (user) resetJob?.cancel()
         yaw.floatValue = Models3D.wrap(yaw.floatValue + dYaw * yawSign())
@@ -226,14 +242,21 @@ private class InspectPose {
 
     fun held(): Boolean =
         abs(rx.floatValue) > DEAD || abs(ry.floatValue) > DEAD || lt.floatValue > DEAD || rt.floatValue > DEAD ||
-            (panMod.value && (abs(lx.floatValue) > DEAD || abs(ly.floatValue) > DEAD)) || auto.value
+            (panMod.value && (abs(lx.floatValue) > DEAD || abs(ly.floatValue) > DEAD)) || auto.value || coasting()
 
     /** One frame of the sticks, triggers and auto-turn, [dt] seconds. */
     fun step(dt: Float) {
         val r = rx.floatValue; val u = ry.floatValue
         val dy = if (abs(r) > DEAD) r * 170f * dt else 0f
         val dp = if (abs(u) > DEAD) u * 140f * dt else 0f
-        if (dy != 0f || dp != 0f) turn(dy, dp)
+        if (dy != 0f || dp != 0f) { stopCoast(); turn(dy, dp) }
+        else if (coasting()) {
+            // (0.6.18: a flick coasting to a stop.)
+            turn(vYaw.floatValue * dt, vPitch.floatValue * dt, user = false)
+            val k = exp(-FLING_FRICTION * dt)
+            vYaw.floatValue *= k; vPitch.floatValue *= k
+            if (!coasting()) stopCoast()
+        }
         else if (auto.value && resetJob?.isActive != true) turn(28f * dt, 0f, user = false)
         val zin = rt.floatValue - lt.floatValue
         if (abs(zin) > DEAD) zoomBy(exp(zin * 1.4f * dt))
@@ -246,6 +269,7 @@ private class InspectPose {
     /** Y: back as it first stood — facing you, upright, its own size, in the middle — smoothly. */
     fun reset(scope: CoroutineScope) {
         resetJob?.cancel()
+        stopCoast()
         resetJob = scope.launch {
             val y0 = Models3D.wrap(yaw.floatValue); val p0 = Models3D.wrap(pitch.floatValue)
             val z0 = zoom.floatValue; val x0 = panX.floatValue; val q0 = panY.floatValue
@@ -490,10 +514,18 @@ private fun InspectStage(
             .clipToBounds()
             .pointerInput(pose) {
                 awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
+                    val down0 = awaitFirstDown(requireUnconsumed = false)
+                    // (0.6.18: a touch stops a coasting turn; a one-finger flick starts one as you let go.)
+                    pose.stopCoast()
+                    val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                    tracker.addPosition(down0.uptimeMillis, down0.position)
+                    var pinched = false
+                    val k0 = 200f / size.width.coerceAtLeast(1)
                     do {
                         val event = awaitPointerEvent()
                         val pressed = event.changes.count { it.pressed }
+                        event.changes.firstOrNull()?.let { tracker.addPosition(it.uptimeMillis, it.position) }
+                        if (pressed >= 2) pinched = true
                         if (pressed >= 2) {
                             val z = event.calculateZoom()
                             val p = event.calculatePan()
@@ -509,6 +541,7 @@ private fun InspectStage(
                         }
                         event.changes.forEach { if (it.positionChange() != Offset.Zero) it.consume() }
                     } while (event.changes.any { it.pressed })
+                    if (!pinched) tracker.calculateVelocity().let { v -> pose.fling(v.x * k0, v.y * k0) }
                 }
             }
             .pointerInput(pose) {

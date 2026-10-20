@@ -517,6 +517,12 @@ internal fun inspectOrigin(key: String, displayId: Int): Rect? {
  * Update 162: the inspected piece's motion, owned by the game window. Plain float states, read only while drawing
  * (nothing recomposes while it flies or turns).
  */
+/** 0.6.18: a flick's gentle coast — the most it starts with (°/s), the least that counts, where it stops, and the friction (1/s). */
+internal const val FLING_MAX = 480f
+internal const val FLING_MIN = 60f
+internal const val FLING_STOP = 6f
+internal const val FLING_FRICTION = 1.9f
+
 internal class InspectMotion {
     /** 0 = in its place on the home screen, 1 = out in front. */
     val lift = mutableFloatStateOf(0f)
@@ -747,6 +753,45 @@ internal class InspectMotion {
         val fly = if (k > 0f && k < 1f) -14f * sin(PI.toFloat() * k) else 0f
         val y = turn.floatValue + manual.floatValue + fly
         return if (limited) y.coerceIn(-60f, 60f) else y
+    }
+
+    /**
+     * 0.6.18 (Toni): let go of a drag with speed and it keeps turning, slower and slower, until it stops — then the usual
+     * return ([release]). Gentle on purpose: at most [FLING_MAX]° a second and an easy friction, so even a hard flick
+     * turns it about three quarters round at most. A new touch / the stick / Y / a tap stop it (nudge, nudgePitch,
+     * spinOnce and resetPose cancel spinJob). [vYaw] / [vPitch]: degrees a second as you let go.
+     */
+    fun fling(scope: CoroutineScope, vYaw: Float, vPitch: Float) {
+        if (closing || !started) { release(scope); return }
+        var vy = vYaw.coerceIn(-FLING_MAX, FLING_MAX)
+        val caseBusy = opened || lid.floatValue > 0.001f || out.floatValue > 0.001f
+        var vp = if (caseBusy) 0f else vPitch.coerceIn(-FLING_MAX * 0.6f, FLING_MAX * 0.6f)
+        if (abs(vy) < FLING_MIN && abs(vp) < FLING_MIN) { release(scope); return }
+        spinJob?.cancel(); easeJob?.cancel()
+        spinJob = scope.launch {
+            var last = -1L
+            while ((abs(vy) >= FLING_STOP || abs(vp) >= FLING_STOP) && !closing) {
+                val now = withFrameNanos { it }
+                if (last > 0L) {
+                    val dt = ((now - last) / 1_000_000_000f).coerceAtMost(0.05f)
+                    var m = manual.floatValue + vy * dt
+                    if (limited) {
+                        val lo = -60f - turn.floatValue; val hi = 60f - turn.floatValue
+                        if (m < lo || m > hi) { m = m.coerceIn(lo, hi); vy = 0f }
+                    }
+                    manual.floatValue = m
+                    if (vp != 0f) {
+                        var p = pitch.floatValue + vp * dt
+                        if (p > 180f) p -= 360f else if (p < -180f) p += 360f
+                        pitch.floatValue = p
+                    }
+                    val k = kotlin.math.exp(-FLING_FRICTION * dt)
+                    vy *= k; vp *= k
+                }
+                last = now
+            }
+            release(scope)
+        }
     }
 
     /** Turns it [deg] more by hand (stops the showcase turn). */
@@ -1079,11 +1124,18 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                     // (Update 238, #116/#117: a drag up / down tilts it over its top or under its bottom; let go and it
                     // stays a while, then turns back slowly — InspectMotion.release.)
                     .pointerInput(piece.kind) {
+                        // (0.6.18: how fast your finger went as you let go — a flick keeps it turning, slowing to a stop.)
+                        val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
                         detectDragGestures(
-                            onDragEnd = { motion.release(scope) },
+                            onDragStart = { tracker.resetTracking() },
+                            onDragEnd = {
+                                val v = tracker.calculateVelocity()
+                                motion.fling(scope, v.x * 0.42f * motion.yawSign(), v.y * 0.42f)
+                            },
                             onDragCancel = { motion.release(scope) }
                         ) { change, drag ->
                             change.consume()
+                            tracker.addPosition(change.uptimeMillis, change.position)
                             if (!motion.closing) {
                                 if (drag.x != 0f) motion.nudge(drag.x * 0.42f * motion.yawSign())
                                 if (drag.y != 0f) motion.nudgePitch(drag.y * 0.42f)

@@ -4,6 +4,15 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (273): flick a 3D piece and it keeps turning, slower and slower, until it stops — after release 0.6.18
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **Save Vault › Inspect** and the **game window's case / cartridge / disc view**: let go of a drag with some speed and it carries on turning with your finger's speed, easing to a stop (smooth exponential slowdown), then the usual "turn back" settings apply. Gentle on purpose: at most 480° a second, friction 1.9 / s — even a hard flick coasts about three quarters of a turn, ~2 s; a slow drag (under 60° a second) just stops as before. Up / down flicks tilt the same way, a bit softer. A touch, the stick, Y or a tap stops it at once.
+- Checked on the Flip 2 (Pool of Radiance's card in Inspect, one quick flick): it went round past its edge to the front and slowed to a stop.
+
+Files (`src_copy\`): `ui\MediaInspectView.kt`, `ui\SaveInspect.kt`.
+
 ## Update — 20 Oct 2026 (272): Save Vault backs — Toni's own SaveVault picture on the back, plus the console's logo embossed — after release 0.6.18
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
