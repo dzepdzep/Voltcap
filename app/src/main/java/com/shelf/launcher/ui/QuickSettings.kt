@@ -106,6 +106,7 @@ import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.PhotoSizeSelectLarge
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.ui.draw.alpha
 import kotlinx.coroutines.launch
@@ -909,7 +910,7 @@ fun QuickSettingsCard(
         }
         deviceTiles.forEach { (control, st) ->
             // 0.6.18: hold Controller style: the handheld's own settings (Input › Controller style), else Voltcap's Controls.
-            val hold: (() -> Unit)? = if (control == com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE) {
+            val hold: (() -> Unit)? = if (control == com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE || control == com.shelf.launcher.device.DeviceControl.TRIGGER_MODE) {
                 com.shelf.launcher.device.DeviceControls.handheldSettingsIntent(context)?.let { i -> { runCatching { context.startActivity(i) }; Unit } }
             } else null
             add(R1Tile("dev_" + control.name, deviceIcon(control), deviceLabel(control, st.value), st.on, longAction = hold) {
@@ -1409,6 +1410,7 @@ private fun deviceLabel(c: com.shelf.launcher.device.DeviceControl, value: Strin
         com.shelf.launcher.device.DeviceControl.FAN -> "Fan"
         com.shelf.launcher.device.DeviceControl.REFRESH_RATE -> "Screen"
         com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE -> "Controller"
+        com.shelf.launcher.device.DeviceControl.TRIGGER_MODE -> "L2 / R2"
         com.shelf.launcher.device.DeviceControl.FLOATING_BUTTON -> "Floating\nbutton"
         // The tuner app's own name (ClusterTune / PULSE) on the first line.
         com.shelf.launcher.device.DeviceControl.TUNER_APP -> return (value ?: "CPU tuner") + "\nOpen"
@@ -1431,6 +1433,7 @@ private fun deviceIcon(c: com.shelf.launcher.device.DeviceControl): ImageVector 
     com.shelf.launcher.device.DeviceControl.FAN -> Icons.Filled.Air
     com.shelf.launcher.device.DeviceControl.REFRESH_RATE -> Icons.Filled.Refresh
     com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE -> Icons.Filled.Gamepad
+    com.shelf.launcher.device.DeviceControl.TRIGGER_MODE -> Icons.Filled.VideogameAsset
     com.shelf.launcher.device.DeviceControl.FLOATING_BUTTON -> Icons.Filled.TouchApp
     com.shelf.launcher.device.DeviceControl.TUNER_APP -> Icons.Filled.Tune
     com.shelf.launcher.device.DeviceControl.CPU_CAP -> Icons.Filled.Memory

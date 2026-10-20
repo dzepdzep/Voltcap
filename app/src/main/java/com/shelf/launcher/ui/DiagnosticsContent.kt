@@ -107,7 +107,9 @@ private fun collect(context: android.content.Context, games: List<Game>, emulato
 
     // Device
     val root = com.shelf.launcher.device.RootShell.available
-    out += Check("Device", "Vendor root service", null, if (root) "Available (AYN) — fan, clocks, controller layout, charge switches" else "Not on this firmware — those features are limited")
+    // (0.6.18: Retroid's firmware has the same service — it said "AYN" on the Flip 2.)
+    val vendor = if (android.os.Build.MODEL.contains("Retroid", ignoreCase = true)) "Retroid" else if (android.os.Build.MANUFACTURER.equals("AYN", true) || android.os.Build.BRAND.equals("AYN", true)) "AYN" else "vendor firmware"
+    out += Check("Device", "Vendor root service", null, if (root) "Available ($vendor) — clocks, controller style, L2 / R2 mode and the handheld's own switches" else "Not on this firmware — those features are limited")
     val clusters = runCatching { com.shelf.launcher.device.tune.TuneHardware.clusters() }.getOrDefault(emptyList())
     out += Check("Device", "Performance tuner", if (root) clusters.isNotEmpty() else null,
         if (clusters.isEmpty()) "No CPU control" else clusters.joinToString { "${it.name} ${it.maxKhz / 1000} MHz" } +

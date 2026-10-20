@@ -19,6 +19,8 @@ enum class DeviceControl(val label: String) {
     FAN("Fan"),
     REFRESH_RATE("Refresh rate"),
     CONTROLLER_STYLE("Controller style"),
+    /** 0.6.18: the handheld's L2 / R2 mode — Analog, Digital or Both (AYN / Retroid firmware). */
+    TRIGGER_MODE("L2 / R2 mode"),
     FLOATING_BUTTON("Floating button"),
     /** ClusterTune / PULSE, when installed: opens its quick controls. */
     TUNER_APP("CPU tuner"),
@@ -45,6 +47,9 @@ object DeviceControls {
     /** 0.6.18: what the handheld's own Controller style (Settings › Handheld Settings › Input, and its Quick Settings tile)
      *  also sets — 1 Xbox, 0 Retro — seen on the Odin 2 Portal and the Retroid Pocket Flip 2 (the same firmware family). */
     private const val GAMEPAD_TYPE_PROP = "persist.sys.gamepad.type"
+    /** 0.6.18: Android's L2/R2 mode tile writes only this (0 Analog, 1 Digital, 2 Both; not there yet = Both). */
+    private const val TRIGGER_MODE = "trigger_input_mode"
+    private val triggerModes = listOf(2 to "Both", 0 to "Analog", 1 to "Digital")
 
     private val perfModes = listOf(0 to "Standard", 1 to "Performance", 2 to "High")
     private val fanModes = listOf(1 to "Quiet", 4 to "Smart", 5 to "Sport", 0 to "Off")
@@ -53,6 +58,10 @@ object DeviceControls {
     @Volatile private var floatingKey: String? = null
     @Volatile private var floatingSearched = false
 
+    /** 0.6.18: Retroid's firmware (same settings app family as AYN's: performance_mode, fan_mode, controller style). */
+    private fun isRetroid(): Boolean = android.os.Build.MODEL.contains("Retroid", ignoreCase = true) ||
+        android.os.Build.BRAND.contains("Retroid", ignoreCase = true)
+
     private fun isAyn(): Boolean = BuildFingerprint.current().let {
         it.manufacturer.equals("AYN", true) || it.brand.equals("AYN", true)
     }
@@ -60,6 +69,9 @@ object DeviceControls {
     /** Which controls this device can really do (blocking: may probe the root service once). */
     fun available(context: Context): List<DeviceControl> {
         val root = RootShell.available && isAyn()
+        // 0.6.18: on Retroid the performance mode and fan work through the same settings (seen on the Flip 2 by
+        // switching Android's own tiles); the AYN-only switches (charge bypass, floating button) stay AYN-only.
+        val retroid = RootShell.available && isRetroid()
         return DeviceControl.values().filter { c ->
             when (c) {
                 DeviceControl.AIRPLANE -> true // root toggles it; otherwise the tile opens Android's screen
@@ -67,6 +79,10 @@ object DeviceControls {
                 DeviceControl.FLOATING_BUTTON -> root && floatingSettingKey() != null
                 // 0.6.18: every handheld whose firmware has the Xbox / Retro switch (AYN and Retroid) — found by its setting.
                 DeviceControl.CONTROLLER_STYLE -> hasControllerStyle()
+                // (Same firmware family: where the controller style is, the L2 / R2 mode is too — its setting only
+                // appears once it was first changed, so it's found through the controller's.)
+                DeviceControl.TRIGGER_MODE -> hasControllerStyle()
+                DeviceControl.PERFORMANCE, DeviceControl.FAN -> root || retroid
                 // Any device: Voltcap probes the battery driver's switches itself. Shown even when none
                 // works, saying so, rather than as a toggle that does nothing.
                 DeviceControl.CHARGE_LIMIT -> true
@@ -116,6 +132,10 @@ object DeviceControls {
                     ControlState(xbox, if (xbox) "Xbox" else "Retro")
                 }
             }
+            DeviceControl.TRIGGER_MODE -> {
+                val v = getSystem(TRIGGER_MODE)?.toIntOrNull() ?: 2
+                ControlState(v != 2, triggerModes.firstOrNull { it.first == v }?.second ?: "Both")
+            }
             DeviceControl.FLOATING_BUTTON -> ControlState(floatingSettingKey()?.let { getSystem(it) } == "1")
             DeviceControl.TUNER_APP -> ControlState(false, CpuTuning.tunerApp(context)?.label ?: "Tuner")
             DeviceControl.CPU_CAP -> if (com.shelf.launcher.device.tune.Tuner.supported) {
@@ -157,12 +177,25 @@ object DeviceControls {
             DeviceControl.PERFORMANCE -> {
                 val v = getSystem(PERF)?.toIntOrNull() ?: 0
                 val i = perfModes.indexOfFirst { it.first == v }
-                putSystem(PERF, perfModes[(i + 1).mod(perfModes.size)].first.toString())
+                val nextMode = perfModes[(i + 1).mod(perfModes.size)].first
+                // (0.6.18: Retroid's own Performance tile also sets this property to the same number — done the same way.
+                // Its firmware also turns the fan Off on Standard (Android's own tile does it too, seen on the Flip 2):
+                // the fan you had is put back.)
+                val fanBefore = if (isRetroid()) getSystem(FAN) else null
+                val ok = putSystem(PERF, nextMode.toString()) &&
+                    (!isRetroid() || RootShell.exec("setprop persist.vendor.debug.mode $nextMode") != null)
+                if (ok && fanBefore != null) {
+                    Thread.sleep(700)
+                    if (getSystem(FAN) != fanBefore) putSystem(FAN, fanBefore)
+                }
+                ok
             }
             DeviceControl.FAN -> {
                 val v = getSystem(FAN)?.toIntOrNull() ?: 1
-                val i = fanModes.indexOfFirst { it.first == v }
-                putSystem(FAN, fanModes[(i + 1).mod(fanModes.size)].first.toString())
+                // (0.6.18: Retroid's own settings offer Off / Quiet / Smart — no Sport.)
+                val modes = if (isRetroid()) fanModes.filter { it.first != 5 } else fanModes
+                val i = modes.indexOfFirst { it.first == v }
+                putSystem(FAN, modes[(i + 1).mod(modes.size)].first.toString())
             }
             DeviceControl.REFRESH_RATE -> {
                 val rates = refreshRates(context)
@@ -175,6 +208,12 @@ object DeviceControls {
                     putSystem("min_refresh_rate", "%.1f".format(java.util.Locale.US, target))
             }
             DeviceControl.CONTROLLER_STYLE -> setControllerStyle(xbox = !cur.on)
+            // As Android's L2/R2 mode tile: Both → Analog → Digital → Both.
+            DeviceControl.TRIGGER_MODE -> {
+                val v = getSystem(TRIGGER_MODE)?.toIntOrNull() ?: 2
+                val i = triggerModes.indexOfFirst { it.first == v }.coerceAtLeast(0)
+                putSystem(TRIGGER_MODE, triggerModes[(i + 1) % triggerModes.size].first.toString())
+            }
             DeviceControl.FLOATING_BUTTON -> floatingSettingKey()?.let { putSystem(it, if (cur.on) "0" else "1") } ?: false
             DeviceControl.TUNER_APP -> CpuTuning.tunerApp(context)?.let { CpuTuning.openTuner(context, it) } ?: false
             DeviceControl.CPU_CAP -> if (com.shelf.launcher.device.tune.Tuner.supported) { com.shelf.launcher.device.tune.Tuner.cycleTier(context); true }
@@ -278,12 +317,11 @@ object DeviceControls {
         RootShell.available && putSystem("peak_refresh_rate", "%.1f".format(java.util.Locale.US, hz)) &&
             putSystem("min_refresh_rate", "%.1f".format(java.util.Locale.US, hz))
 
-    /** True = Xbox layout, false = Nintendo, null = can't tell (no root / not AYN). */
-    fun controllerIsXbox(): Boolean? = if (!RootShell.available || !isAyn()) null else getSystem(FLIP_LAYOUT) == "1"
+    /** True = Xbox layout, false = Retro, null = can't tell (no root / no such switch). (0.6.18: Retroid too.) */
+    fun controllerIsXbox(): Boolean? = if (!hasControllerStyle()) null else getSystem(FLIP_LAYOUT) == "1"
 
-    fun setControllerXbox(xbox: Boolean): Boolean =
-        RootShell.available && isAyn() && putSystem(ABXY_TEMP, if (xbox) "0" else "1") &&
-            putSystem(NO_GAMEPAD_LAYOUT, "0") && putSystem(FLIP_LAYOUT, if (xbox) "1" else "0")
+    /** A game's own button layout (per-game profile): the same writes as the R1 tile and Android's own switch (0.6.18). */
+    fun setControllerXbox(xbox: Boolean): Boolean = setControllerStyle(xbox)
 
     private fun currentRate(context: Context): Float = display(context)?.refreshRate?.let { Math.round(it).toFloat() } ?: 60f
 }

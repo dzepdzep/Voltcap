@@ -4,6 +4,20 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (269): the handheld's own switches on Retroid too — L2 / R2 mode (new tile), Mode and Fan on the Flip 2, per-game button layout on Retroid — after release 0.6.18
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2** (the Odin 2 Portal was unplugged), committed and pushed by Claude. Not published yet.
+
+How it was found: each of Android's own Quick Settings tiles on the Flip 2 was switched while comparing every Android setting and system property before / after; Voltcap's tiles now write exactly the same things, and were checked against Android's tiles both ways. Every switch was put back as it was (Xbox, L2 / R2 Both, Mode Standard, Fan Smart).
+
+- **R1 › Device › L2 / R2 (new):** Both → Analog → Digital, Android's L2/R2 mode (`trigger_input_mode` 2 / 0 / 1). Hold: Android's Handheld Settings. AYN and Retroid.
+- **R1 › Device › Mode and Fan now on Retroid:** they were AYN-only. Mode writes `performance_mode` and, as Retroid's own tile does, `persist.vendor.debug.mode`. Retroid's firmware turns the fan Off whenever Mode goes to Standard (its own tile does it too); Voltcap's Mode tile puts your fan setting back. Fan on Retroid: Quiet / Smart / Off (no Sport there).
+- **A game's own button layout** (per-game profile) used the old AYN-only writes and missed the gamepad property: it now uses the same switch as the R1 Controller tile, so it works on Retroid too.
+- Diagnostics › Device said "Vendor root service: Available (AYN)" on the Flip 2: it names the maker now.
+- Settings search checked: all 617 entries lead to a page and group that exist.
+
+Files (`src_copy\`): `device\DeviceControls.kt`, `ui\QuickSettings.kt`, `ui\DiagnosticsContent.kt`.
+
 ## Update — 20 Oct 2026 (268): R1 Controller tile — the handheld's own Xbox / Retro controller style, the same switch as Android's (Retroid too) — after release 0.6.18
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2** (the Odin 2 Portal was unplugged), committed and pushed by Claude. Not published yet.
