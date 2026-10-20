@@ -400,6 +400,9 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
     val cover: Any? = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl
     // (Testing only: TestHooks `voltcap_test_inspect` — this shell, nothing saved.)
     MediaInspect.testShell?.let { id ->
+        // (Update 286, testing only: "case" — the game's case as the case looks draw it, whatever the look; for checking
+        // every face of the cases and boxes at set angles.)
+        if (id == "case") return casePiece(g, physical, cover, false)
         // (Update 276: "pack:<shape>" — a pack shape picked as the shell; "cc:<console>" — the game on your pack.)
         if (id.startsWith("pack:") || id.startsWith("cc:")) {
             val ms = MediaShell.values().first { !it.disc && it != MediaShell.UMD }
@@ -1603,16 +1606,26 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     val umdBack = remember(isUmd, umdTone) {
         if (isUmd) runCatching { UmdBack.picture(umdTone.toArgbInt()).asImageBitmap() }.getOrNull() else null
     }
-    // Its shell colour, from the face's own pixels (the edge, half-way down), once it's drawn.
+    // Its shell colour. Update 285 (the Thor's ANR while inspecting, 0.6.21: the main thread waited on the render thread
+    // in GraphicsLayer.toImageBitmap → HardwareRenderer.createHardwareBitmap for over 5 s): no longer read back from the
+    // drawn face. It comes from what the face is drawn from — a library shell's own colour, else the template / pack
+    // picture's edge read off the main thread (its file, not the screen); a photo's tone comes from PhotoTones.
+    val ctxTone = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(p) {
-        delay(700)
-        val bmp = runCatching { holder[0]?.toImageBitmap()?.asAndroidBitmap() }.getOrNull() ?: return@LaunchedEffect
-        // (Update 192: the layer's picture is a hardware bitmap — its pixels can't be read, that crashed Voltcap on the
-        // Thor and the Classic as soon as a cartridge was turned. A readable copy is read, and nothing can crash here.)
-        shell = runCatching {
-            val soft = if (bmp.config == android.graphics.Bitmap.Config.HARDWARE) bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else bmp
-            soft?.let { sampleShell(it) }
-        }.getOrNull()
+        val pp = p.pick?.platform
+        shell = when {
+            pp == null -> null
+            pp.startsWith(SHELL_PREFIX) -> CartShells.split(pp).first?.let { ch -> ch.shell?.let { sh -> Color(CartShells.colourOf(sh, ch.colourKey).argb) } }
+            isCustomPiece(pp) -> null
+            else -> MediaTemplates.of(pp)?.cart?.res?.let { res ->
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    runCatching {
+                        val o = android.graphics.BitmapFactory.Options().apply { inSampleSize = 4; inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888 }
+                        android.graphics.BitmapFactory.decodeResource(ctxTone.resources, res, o)?.let { b -> sampleShell(b).also { b.recycle() } }
+                    }.getOrNull()
+                }
+            }
+        }
     }
     Box(
         Modifier.fillMaxSize().drawWithCache {

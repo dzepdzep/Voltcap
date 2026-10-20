@@ -1556,6 +1556,8 @@ object Features {
     val secondGamesLook = EnumPref("second_games_look", FolderGamesLook.TILES, FolderGamesLook.values())
     /** Update 177: the console's logo over a folder picture (off: the picture alone — many packs have the name in it). */
     val secondFolderLogo = BoolPref("second_folder_logo", true)
+    /** Update 286 (Toni): the consoles' logos on the Games page as plain icons in the theme's colours (off: their own colours). */
+    val secondFolderPlain = BoolPref("second_folder_plain", true)
     /**
      * Update 200: the top screen follows the second screen's Games page: a folder lit / touched there shows that console
      * big up top, and opening it switches the top screen to that console's games (off: the top screen stays as it is).

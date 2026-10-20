@@ -1,6 +1,9 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -109,6 +112,15 @@ object PlatformLogos {
         return asset(context, "${dir}_png/${path.substringAfter('/')}.png")
     }
 
+    /**
+     * Update 286 (Toni: "an icon pack… plain white, so they follow the app's colours"): [platform]'s logo as a plain white
+     * icon (assets/platform_icons_mono, made from the baked logos: their shape, with the lettering kept where a logo sits
+     * on a plate — Game Boy Advance, Sega CD, Genesis, NES, PC Engine CD — and the N64 cube's faces in shades), drawn
+     * tinted in the colour it's given. Null: none for it.
+     */
+    fun plain(context: android.content.Context, platform: String): androidx.compose.ui.graphics.ImageBitmap? =
+        key(platform)?.let { asset(context, "platform_icons_mono/$it.png") }
+
     private fun asset(context: android.content.Context, path: String): androidx.compose.ui.graphics.ImageBitmap? {
         bakedCache[path]?.let { return it }
         if (path in bakedMissing) return null
@@ -134,9 +146,25 @@ internal fun PlatformLogo(
     textColor: Color = Color.White,
     textSize: TextUnit = 13.sp,
     /** Black logos in white (for dark backgrounds); off on a light background (the Cross menu's white folders). */
-    blackToWhite: Boolean = true
+    blackToWhite: Boolean = true,
+    /** Update 286: the plain icon (PlatformLogos.plain) in [textColor] — Other apps a grid of apps, Android its robot. */
+    plain: Boolean = false
 ) {
     val context = LocalContext.current
+    if (plain) {
+        val mono = remember(platform) { PlatformLogos.plain(context, platform) }
+        Box(modifier, contentAlignment = Alignment.Center) {
+            when {
+                mono != null -> androidx.compose.foundation.Image(mono, name, contentScale = ContentScale.Fit, colorFilter = ColorFilter.tint(textColor), modifier = Modifier.matchParentSize())
+                platform == "App" -> androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.Apps, name, tint = textColor, modifier = Modifier.fillMaxHeight(0.9f).aspectRatio(1f))
+                else -> Text(
+                    name.uppercase(), color = textColor, fontSize = textSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+                    maxLines = 2, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = textSize * 0.5f, maxFontSize = textSize)
+                )
+            }
+        }
+        return
+    }
     val url = remember(platform) { PlatformLogos.url(platform) }
     var failed by remember(url) { mutableStateOf(false) }
     // Update 166: the baked logo, there on the first frame (see PlatformLogos.baked).

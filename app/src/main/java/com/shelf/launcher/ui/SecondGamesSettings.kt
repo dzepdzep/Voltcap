@@ -84,6 +84,15 @@ internal fun SecondGamesSettings() {
         onChange = { Features.secondFolderLogo.value = it }
     )
     Spacer(Modifier.height(8.dp))
+    // Update 286 (Toni): plain icons in the theme's colours.
+    SwitchRow(
+        icon = Icons.Filled.Label,
+        title = "Plain console icons",
+        subtitle = "Every console's logo as a plain icon in the theme's colours (Other apps a grid of apps). Off: the logos in their own colours.",
+        checked = Features.secondFolderPlain.state.value,
+        onChange = { Features.secondFolderPlain.value = it }
+    )
+    Spacer(Modifier.height(8.dp))
     // Update 200: the top screen shows the console lit on the Games page, and switches to it when it's opened.
     SwitchRow(
         icon = Icons.Filled.VerticalAlignTop,

@@ -273,7 +273,8 @@ private fun ConsoleFolder(f: GamesFolder, modifier: Modifier, source: MutableInt
         // The logo on the front (it starts a quarter of the way down), never past it.
         if (pic == null || com.shelf.launcher.data.Features.secondFolderLogo.state.value) Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.weight(0.34f))
-            PlatformLogo(f.platform, f.name, modifier = Modifier.fillMaxWidth(0.72f).weight(0.5f), textColor = if (pic != null) Color.White else onAccentColor())
+            PlatformLogo(f.platform, f.name, modifier = Modifier.fillMaxWidth(0.72f).weight(0.5f), textColor = if (pic != null) Color.White else onAccentColor(),
+                plain = com.shelf.launcher.data.Features.secondFolderPlain.state.value)
             Spacer(Modifier.weight(0.16f))
         }
         // How many games, small in the corner of the tab.
@@ -329,7 +330,8 @@ private fun ConsoleTile(
                 PlatformLogo(
                     f.platform, f.name,
                     modifier = Modifier.fillMaxWidth(if (pic != null) (if (wide) 0.45f else 0.7f) else 0.72f).fillMaxHeight(if (pic != null) 0.3f else 0.5f),
-                    textColor = if (pic != null || look == com.shelf.launcher.data.Features.FolderLook.LOGOS) Color.White else onAccentColor()
+                    textColor = if (pic != null || look == com.shelf.launcher.data.Features.FolderLook.LOGOS) Color.White else onAccentColor(),
+                    plain = com.shelf.launcher.data.Features.secondFolderPlain.state.value
                 )
             }
         }
