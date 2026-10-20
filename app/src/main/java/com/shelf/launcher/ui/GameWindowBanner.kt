@@ -197,7 +197,9 @@ internal fun BannerGameWindow(
     sync: GameSyncView? = null,
     hasFan: Boolean? = null,
     onPerfAdvanced: () -> Unit = {},
-    onSyncSetUp: () -> Unit = {}
+    onSyncSetUp: () -> Unit = {},
+    /** Update 285: the game window with the game's piece out (null: an app — no Inspect button). */
+    onInspect: (() -> Unit)? = null
 ) {
     val k = g.stableKey
     val o = state.artOverrides[k]
@@ -421,6 +423,8 @@ internal fun BannerGameWindow(
                                 if (trophies.isNotEmpty()) { setTab(BannerTab.ACHIEVEMENTS); focusContent() } else onAchievements()
                             }
                             BannerRound(look, Icons.Filled.CloudSync, "Save sync", round, roundMod, onSync)
+                            // (Update 285: Inspect — half a case, half a cartridge.)
+                            if (onInspect != null) BannerRound(look, InspectIcon.vector, "Inspect", round, roundMod, onInspect)
                             // Update 213: Performance — its tab, one press away.
                             if (perfOn) BannerRound(look, Icons.Filled.Speed, "Performance", round, roundMod) {
                                 setTab(BannerTab.PERFORMANCE); focusContent()

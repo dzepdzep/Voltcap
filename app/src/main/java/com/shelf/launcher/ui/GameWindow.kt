@@ -505,18 +505,28 @@ internal fun GameWindow(
     // Update 249 (#119): the game window as a move of the home screen itself (Game window › Its motion, R1 › Popup) —
     // where the game you're on has a place on this screen; else the usual window below.
     val rowMotion = Features.winMotion.state.value
+    // Update 285 (Toni: "every popup an option to inspect the media"): the Inspect button beside the window's icons — the
+    // game's piece comes out in a column of the window, whatever the look draws (the menu's Inspect…, MediaInspect.force).
+    // From the banner page and Game Glance it opens this window with the piece out.
+    var askedInspect by remember(g.stableKey) { mutableStateOf(false) }
+    val inspectOther: (() -> Unit)? = if (g.sourceType != com.shelf.launcher.data.SourceType.APP) ({
+        MediaInspect.testShell = null; MediaInspect.testPose = null
+        MediaInspect.force = g.stableKey
+        askedInspect = true
+    }) else null
     // (Update 250, #119: the shared move — Game Glance's open, GlanceWindow.kt.)
-    if (rowMotion == Features.WinMotion.SHARED) {
-        GlanceWindow(g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements)
+    if (rowMotion == Features.WinMotion.SHARED && !askedInspect) {
+        GlanceWindow(g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onInspect = inspectOther)
         return
     }
-    if (rowMotion != Features.WinMotion.NONE &&
+    if (rowMotion != Features.WinMotion.NONE && !askedInspect &&
         RowMotionWindow(rowMotion, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements)) return
     // Update 146: the banner page (Settings › Game window › Style), the same for every layout.
-    if (Features.winBanner.state.value) {
+    if (Features.winBanner.state.value && !askedInspect) {
         BannerGameWindow(
             layout, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onSync, options, onLoadComments,
-            perf = perfState, sync = syncView, hasFan = hasFan, onPerfAdvanced = onPerfAdvanced, onSyncSetUp = onSyncSetUp
+            perf = perfState, sync = syncView, hasFan = hasFan, onPerfAdvanced = onPerfAdvanced, onSyncSetUp = onSyncSetUp,
+            onInspect = inspectOther
         )
         return
     }
@@ -555,8 +565,10 @@ internal fun GameWindow(
     // to show every side; the window's parts sit beside it; closing flies it back to its place. Not on the TV room's
     // set, nor picked on the other screen (no card here to come out of); the other looks open as before.
     val fromOtherScreen = origin != null && origin.top == Float.MAX_VALUE
-    val pieceNow = if (tvRect == null && !fromOtherScreen) inspectPieceFor(g, state) else null
-    val inspect = remember(g.stableKey) { pieceNow != null }
+    // (Update 285, Toni: "if using the cartridge and stuff, it's always moved to the window to be inspected": picked on
+    // the other screen too — there's no card here to fly from, so it grows in where it stands.)
+    val pieceNow = if (tvRect == null) inspectPieceFor(g, state) else null
+    val inspect = remember(g.stableKey, askedInspect) { pieceNow != null }
     // (Decided once as it opens; its details follow the game's scans as they come in.)
     val lastPiece = remember(g.stableKey) { arrayOfNulls<InspectPiece>(1) }
     if (pieceNow != null) lastPiece[0] = pieceNow
@@ -649,6 +661,8 @@ internal fun GameWindow(
             }
         }
         LaunchedEffect(g.stableKey) { onNeedMedia(g) }
+        // (Update 285: the Inspect button is gone once the piece is out — the D-pad back onto Play.)
+        LaunchedEffect(askedInspect) { if (askedInspect) { kotlinx.coroutines.delay(80); runCatching { playFocus.requestFocus() } } }
         // Update 125: the picture, the details, the options and the achievements are pages of the same window.
         var page by remember { mutableStateOf(WinPage.MAIN) }
         val details = page != WinPage.MAIN
@@ -672,7 +686,13 @@ internal fun GameWindow(
             onSync = onSync,
             onFullAchievements = onAchievements,
             onLoadComments = onLoadComments,
-            onManual = if (hasManual) ({ com.shelf.launcher.data.ManualLinks.open?.invoke(g); Unit }) else null
+            onManual = if (hasManual) ({ com.shelf.launcher.data.ManualLinks.open?.invoke(g); Unit }) else null,
+            // (Update 285: only while no piece is out — not for apps, nor on the TV room's set / from the other screen.)
+            onInspect = if (piece == null && tvRect == null && g.sourceType != com.shelf.launcher.data.SourceType.APP) ({
+                MediaInspect.testShell = null; MediaInspect.testPose = null
+                MediaInspect.force = g.stableKey
+                askedInspect = true
+            }) else null
         )
         // Turning the window over swaps the buttons: the D-pad's place goes back to Play (the button it was on may be gone),
         // or to the first row of the options / achievements.
@@ -870,7 +890,9 @@ private class WinExtras(
     /** Update 132: loads an achievement's comments from RetroAchievements (shown under it on the achievements page). */
     val onLoadComments: (Int) -> Unit = {},
     /** Update 202: opens the game's manual (null: it has none — no Manual button). */
-    val onManual: (() -> Unit)? = null
+    val onManual: (() -> Unit)? = null,
+    /** Update 285: brings the game's piece out to turn round (null: it's out already — no Inspect button). */
+    val onInspect: (() -> Unit)? = null
 ) {
     fun has(p: WinPart) = (plan[p] ?: WinSlot.OFF) != WinSlot.OFF
     fun at(p: WinPart, slot: WinSlot) = (plan[p] ?: WinSlot.OFF) == slot
@@ -973,8 +995,10 @@ private fun WinInfo(
             )
             if (facts.isNotEmpty()) androidx.compose.material3.Text(
                 // (Update 129: two lines, so the year, maker, genres and last played aren't cut off with "…".)
-                facts.joinToString("  ·  ").let { if (look.caps) it.uppercase() else it }, color = muted, fontSize = 12.sp, maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = align, fontFamily = family
+                // (Update 285: up to three lines, a little smaller until it all fits — "Racing, …", "Last played …".)
+                facts.joinToString("  ·  ").let { if (look.caps) it.uppercase() else it }, color = muted, maxLines = 3,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp),
+                textAlign = align, fontFamily = family
             )
         }
         if (extras.at(WinPart.ACHIEVEMENTS, slot)) {
@@ -1039,6 +1063,8 @@ private fun WinIcons(look: WinLook, extras: WinExtras, size: Dp = 40.dp, slot: W
         WinIconButton(look, androidx.compose.material.icons.Icons.Filled.CloudSync, "Save sync", size, extras.onSync)
         // Update 202: the game's manual (downloaded the first time it's opened).
         extras.onManual?.let { WinIconButton(look, androidx.compose.material.icons.Icons.Filled.MenuBook, "Manual", size, it) }
+        // Update 285: Inspect — half a case, half a cartridge (InspectIcon).
+        extras.onInspect?.let { WinIconButton(look, InspectIcon.vector, "Inspect", size, it) }
     }
 }
 
@@ -1196,7 +1222,7 @@ private fun WindowBody(
           fun est(items: List<Triple<String, () -> Unit, Boolean>>) = items.sumOf { (l, _, _) -> l.length * 9 + 60 } + (items.size - 1) * 12
           val share = fill || maxWidth.value < est(all)
           val items = if (share && !fill) winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, null) else all
-          val iconsBelow = !share && !details && maxWidth.value < est(all) + (if (extras.onManual != null) 4 else 3) * 52
+          val iconsBelow = !share && !details && maxWidth.value < est(all) + (3 + (if (extras.onManual != null) 1 else 0) + (if (extras.onInspect != null) 1 else 0)) * 52
           Column(if (share) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
             Row(if (share) Modifier.fillMaxWidth() else Modifier, horizontalArrangement = Arrangement.spacedBy(if (share) 8.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 // [share]: the buttons share the width (a narrow column).
@@ -1401,10 +1427,13 @@ private fun WindowBody(
  * with short words; stronger only when something needs you.
  */
 @Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 private fun WinStatusLine(look: WinLook) {
     val st = LocalWinStatus.current ?: return
     Spacer(Modifier.height(6.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+    // (Update 285, Toni: "make sure everything is to be seen": the chips go onto a second line when they don't fit beside
+    // each other, each in full — they were cut with "…" and, on the Thor's top screen, cut off by the window's edge.)
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         val sv = st.sync
         WinStatusChip(look, sv.icon, "Saves: " + sv.text, urgent = sv.urgent, onClick = if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync)
         st.perf?.let { p ->
@@ -1433,8 +1462,7 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
         androidx.compose.material3.Icon(icon, null, tint = ink, modifier = Modifier.size(13.dp))
         Spacer(Modifier.width(5.dp))
         androidx.compose.material3.Text(
-            text, color = ink, fontSize = 11.sp, fontWeight = if (urgent) FontWeight.Bold else FontWeight.Medium, maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 260.dp),
+            text, color = ink, fontSize = 11.sp, fontWeight = if (urgent) FontWeight.Bold else FontWeight.Medium, maxLines = 2,
             fontFamily = if (look.mono) FontFamily.Monospace else null
         )
     }
@@ -1679,8 +1707,10 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
 @Composable
 private fun WinText(look: WinLook, text: String, color: Color, size: Int, weight: FontWeight, shadow: Boolean = false) {
     androidx.compose.material3.Text(
-        if (look.caps) text.uppercase() else text, color = color, fontSize = size.sp, fontWeight = weight, maxLines = 1,
-        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        if (look.caps) text.uppercase() else text, color = color, fontSize = size.sp, fontWeight = weight,
+        // (Update 285, Toni: everything to be seen — "Pokemon Sil…", "4 h …": up to two lines, smaller until it fits.)
+        maxLines = 2,
+        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = (size * 0.55f).coerceAtLeast(9f).sp, maxFontSize = size.sp),
         fontFamily = if (look.mono) FontFamily.Monospace else null,
         style = if (shadow) nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW) else androidx.compose.ui.text.TextStyle.Default
     )

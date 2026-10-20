@@ -962,6 +962,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             DetailsAction.STATS -> playStatsForGame = game
             // (Update 231, #81: this game's own quick performance settings, over the window.)
             DetailsAction.PERFORMANCE -> perfForGame = game
+            // (Update 285, Toni: "every popup an option to inspect the media": the game window with its piece out, whatever
+            // the look draws — as the menu's Inspect….)
+            DetailsAction.INSPECT -> if (game.sourceType != com.shelf.launcher.data.SourceType.APP) {
+                showDetails = false
+                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey
+                GamePopup.game = game
+            }
             DetailsAction.CLOSE -> showDetails = false
         }
     }

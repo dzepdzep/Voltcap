@@ -1389,9 +1389,14 @@ private fun QuickTile(
                 lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
                 fontWeight = FontWeight.SemiBold,
                 // (Update 274: a one-word label on one line, made smaller to fit — "Achievements" broke as "Achievement / s".)
-                maxLines = if (label.trim().contains(' ')) 2 else 1,
-                softWrap = label.trim().contains(' '),
-                overflow = TextOverflow.Ellipsis,
+                // (Update 285, Toni: "a lot of stuff still written with …": a two-line caption ("Edit\nhome", "Look\nCovers",
+                // "Achievements\nFocus") has no space, so it was cut to one line — "Edit…", "Look…". A line break now gets its
+                // two lines, each kept on one line and made smaller to fit.)
+                maxLines = if (label.trim().contains(' ') || label.trim().contains('\n')) 2 else 1,
+                softWrap = label.trim().contains(' ') && !label.trim().contains('\n'),
+                // (Compose lays a text that doesn't wrap and ends in "…" out as one line, whatever its line breaks —
+                // so the unwrapped captions are clipped instead; the font shrinks until each line fits.)
+                overflow = if (label.trim().contains(' ') && !label.trim().contains('\n')) TextOverflow.Ellipsis else TextOverflow.Clip,
                 textAlign = TextAlign.Center,
                 style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
                     platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)

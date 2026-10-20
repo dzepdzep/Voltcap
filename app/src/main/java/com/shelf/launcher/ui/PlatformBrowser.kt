@@ -686,10 +686,18 @@ internal fun WallView(
     val start = (selected - visible / 2).coerceIn(0, (tiles.size - visible).coerceAtLeast(0))
     val window = tiles.drop(start).take(visible)
     val shift = remember { Animatable(0f) }
+    // Update 285 (Toni: "I want this window to move between categories, not fade the new category in"): each slice keeps
+    // its platform (keyed), so the wide window moves along to the next slice as it widens and the last one narrows. When
+    // the row itself moves on a slice (to keep the one you're on in the middle), it slides by exactly one slice's width —
+    // it was a fixed 140 dp bump while every slice swapped its picture, so the new category faded in.
+    val slotDp = remember { androidx.compose.runtime.mutableFloatStateOf(140f) }
+    val lastStart = remember { androidx.compose.runtime.mutableIntStateOf(start) }
     LaunchedEffect(selected) {
-        if (animate) {
-            shift.snapTo(direction * 140f)
-            shift.animateTo(0f, spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessLow))
+        val moved = start - lastStart.intValue
+        lastStart.intValue = start
+        if (animate && moved != 0) {
+            shift.snapTo(moved * slotDp.floatValue)
+            shift.animateTo(0f, tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing))
         }
     }
     val skew = with(density) { 54.dp.toPx() }
@@ -698,6 +706,9 @@ internal fun WallView(
         // The slice's own box size, read here: nested scopes below can't use the implicit maxWidth / maxHeight.
         val boxW = maxWidth
         val boxH = maxHeight
+        // (One narrow slice's width: the row's width plus the overlaps, shared by the weights — 1 each, 2.8 for the wide one.)
+        val n = window.size.coerceAtLeast(1)
+        slotDp.floatValue = (boxW.value + (n - 1) * 54f) / (n - 1 + 2.8f)
         val accentColor = ShelfTheme.accent
         Row(
             Modifier
@@ -706,10 +717,12 @@ internal fun WallView(
             horizontalArrangement = Arrangement.spacedBy((-54).dp)
         ) {
             window.forEachIndexed { i, tile ->
-                val index = start + i
-                val sel = index == selected
-                val weight by animateFloatAsState(if (sel) 2.8f else 1f, tween(260), label = "wallWeight")
-                WallSlice(tile, sel, skew, gap, Modifier.weight(weight).fillMaxHeight()) { if (sel) onPick(index) else onFocus(index) }
+                androidx.compose.runtime.key(tile.key) {
+                    val index = start + i
+                    val sel = index == selected
+                    val weight by animateFloatAsState(if (sel) 2.8f else 1f, tween(260), label = "wallWeight")
+                    WallSlice(tile, sel, skew, gap, Modifier.weight(weight).fillMaxHeight()) { if (sel) onPick(index) else onFocus(index) }
+                }
             }
         }
         val tile = tiles.getOrNull(selected)
@@ -721,8 +734,14 @@ internal fun WallView(
                 targetState = tile,
                 transitionSpec = {
                     val dir = if (animate) direction else 0
-                    (fadeIn(tween(260)) + slideInHorizontally(tween(260)) { it / 6 * dir }) togetherWith
-                        (fadeOut(tween(160)) + slideOutHorizontally(tween(160)) { -it / 6 * dir })
+                    // (Update 285: the logo and name move across with the window — no fading.)
+                    if (dir == 0) fadeIn(tween(1)) togetherWith fadeOut(tween(1))
+                    else {
+                        // (From the slice it's on — one slice along — to the middle; the old one moves off the other way, going.)
+                        val step = (slotDp.floatValue * density.density).toInt()
+                        slideInHorizontally(tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { step * dir } togetherWith
+                            (slideOutHorizontally(tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { -step * dir } + fadeOut(tween(140)))
+                    }
                 },
                 label = "wallLogo",
                 modifier = Modifier.fillMaxSize()

@@ -100,7 +100,13 @@ internal object CaseFaces {
         val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         wc.drawColor(PAPER)
         val full = RectF(0f, 0f, ww.toFloat(), wh.toFloat())
-        if (label != null) wc.drawBitmap(label, null, if (scan) full else fit(label, full), p)
+        // (Update 284: on the plain cartridge a cover fills the window, cut to it, as TemplateMedia draws it.)
+        val fillCover = cart.res == com.shelf.launcher.R.drawable.tpl_cart_generic
+        if (label != null) {
+            if (scan) wc.drawBitmap(label, null, full, p)
+            else if (fillCover) wc.drawBitmap(label, cropSrc(label, ww.toFloat() / wh), full, p)
+            else wc.drawBitmap(label, null, fit(label, full), p)
+        }
         if (mask != null) {
             val mw = mask.width; val mh = mask.height
             val src = Rect((win[0] * mw).toInt(), (win[1] * mh).toInt(), (win[2] * mw).toInt().coerceAtLeast((win[0] * mw).toInt() + 1), (win[3] * mh).toInt().coerceAtLeast((win[1] * mh).toInt() + 1))
@@ -113,6 +119,13 @@ internal object CaseFaces {
         cv.drawBitmap(shellBmp, 0f, 0f, p)
         winBmp.recycle(); shellBmp.recycle()
         return out
+    }
+
+    /** The part of [b] cut to [aspect] (width / height), never stretched: a wide picture's middle, a tall one's upper part. */
+    private fun cropSrc(b: Bitmap, aspect: Float): Rect {
+        val a = b.width.toFloat() / b.height.coerceAtLeast(1)
+        return if (a > aspect) { val cw = (b.height * aspect).toInt().coerceIn(1, b.width); Rect((b.width - cw) / 2, 0, (b.width + cw) / 2, b.height) }
+        else { val ch = (b.width / aspect).toInt().coerceIn(1, b.height); val top = ((b.height - ch) * 0.3f).toInt(); Rect(0, top, b.width, top + ch) }
     }
 
     private fun fit(b: Bitmap, r: RectF): RectF {

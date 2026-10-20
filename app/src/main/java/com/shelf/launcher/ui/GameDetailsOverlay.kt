@@ -95,6 +95,8 @@ enum class DetailsAction(val glyph: String, val label: String) {
     // (Update 231, #81: the classic details window opens this game's own quick performance settings from here.)
     /** This game's quick performance settings (only on a handheld that can be tuned: Tuner.supported). */
     PERFORMANCE("⚡", "Performance"),
+    /** Update 285 (Toni): the game's case / cartridge / disc out in the game window, to turn round (InspectIcon). */
+    INSPECT("◧", "Inspect"),
     ADD_MISSING("＋", "Add missing"),
     /** The Google Drive save-sync badge under the play time. */
     SYNC("☁", "Save sync"),
@@ -164,6 +166,7 @@ private fun detailsActionsAll(game: Game, hasMissing: Boolean, hasTips: Boolean,
             DetailsAction.STATS -> hasStats
             // (Update 231, #81: only where the tuner works — elsewhere there's nothing to set.)
             DetailsAction.PERFORMANCE -> com.shelf.launcher.device.tune.Tuner.supported
+            DetailsAction.INSPECT -> game.sourceType != com.shelf.launcher.data.SourceType.APP
             DetailsAction.CLOSE, DetailsAction.MORE -> false
             else -> true
         }
@@ -521,6 +524,15 @@ fun GameDetailsOverlay(
                                 size = buttonSize
                             ) { onAction(DetailsAction.PERFORMANCE) }
                         }
+                        // (Update 285: Inspect — the game's piece out in the game window.)
+                        if (DetailsAction.INSPECT in actions) {
+                            SquareButton(
+                                icon = InspectIcon.vector,
+                                label = "Inspect",
+                                selected = selectedAction == DetailsAction.INSPECT,
+                                size = buttonSize
+                            ) { onAction(DetailsAction.INSPECT) }
+                        }
                         if (syncAvailable) {
                             SyncIconButton(
                                 status = syncStatus,
@@ -860,6 +872,10 @@ private fun DetailsShowcaseRow(
         if (DetailsAction.PERFORMANCE in actions) HeaderButton(
             DetailsAction.PERFORMANCE, icons.Speed, "Performance"
         ) { onAction(DetailsAction.PERFORMANCE) } else null,
+        // (Update 285: Inspect — half a case, half a cartridge.)
+        if (DetailsAction.INSPECT in actions) HeaderButton(
+            DetailsAction.INSPECT, InspectIcon.vector, "Inspect"
+        ) { onAction(DetailsAction.INSPECT) } else null,
         if (syncAvailable) HeaderButton(
             DetailsAction.SYNC,
             when (syncState) {

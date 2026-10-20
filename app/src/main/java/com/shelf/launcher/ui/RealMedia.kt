@@ -69,6 +69,9 @@ private class DiscRing(private val inner: Float, private val outer: Float) : Sha
     }
 }
 
+/** Update 284: where a tall cover is cut on the plain cartridge — its upper part kept (as on your pack's shells, 0.3 down). */
+internal val PLAIN_CART_CROP = androidx.compose.ui.BiasAlignment(0f, -0.4f)
+
 /**
  * Cartridge or disc from the template pack, fitted inside [modifier] with its own proportions. [labelScan] is the
  * game's real label (ScreenScraper's scan), [cover] its cover: with a scan the plain shell is used, with only the
@@ -124,7 +127,16 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
                     // (Update 260: a UMD's window is round — its cover cut square round its middle fills it, as a disc's
                     // label does; fitted, a tall cover left grey bands either side.)
                     val roundWindow = cart.res == com.shelf.launcher.R.drawable.tpl_cart_psp || cart.res == com.shelf.launcher.R.drawable.tpl_cartl_psp
-                    if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = if (labelScan != null) ContentScale.FillBounds else if (roundWindow) ContentScale.Crop else ContentScale.Fit, modifier = Modifier.fillMaxSize()) // (Update 157)
+                    // (Update 284, Toni: "fill the window but don't stretch the picture": on Voltcap's plain cartridge — the one
+                    // disc games get — a tall cover fills the near-square window, cut to it (its upper part kept, where the
+                    // title usually is) instead of standing in the middle with paper either side. Never stretched.)
+                    val fillCover = cart.res == com.shelf.launcher.R.drawable.tpl_cart_generic
+                    if (art != null) AsyncImage(
+                        mediaArtModel(art), null,
+                        contentScale = if (labelScan != null) ContentScale.FillBounds else if (roundWindow || fillCover) ContentScale.Crop else ContentScale.Fit,
+                        alignment = if (fillCover && labelScan == null) PLAIN_CART_CROP else Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) // (Update 157)
                 }
                 Image(painterResource(cart.res), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }

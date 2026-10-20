@@ -3,6 +3,7 @@ package com.shelf.launcher.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -882,10 +883,15 @@ internal fun RealMediaPicture(
         val roundModel = androidx.compose.runtime.remember(model, round) {
             if (round && model is String) coil.request.ImageRequest.Builder(ctx).data(model).transformations(TrimToOpaque).build() else null
         }
+        // (Update 285, Toni: "disc still showing like this": in a slot taller than wide — the Voltcap row, Continue playing —
+        // the disc photo filled the slot and was cut by a circle stretched to it: a tall oval, its foot cut off. A disc photo
+        // is now always round: a square as big as the slot's shorter side, in its middle.)
+        val roundSide = if (round) Modifier.aspectRatio(1f) else Modifier
         coil.compose.AsyncImage(
             roundModel ?: shared, null,
             contentScale = if (round) androidx.compose.ui.layout.ContentScale.Crop else androidx.compose.ui.layout.ContentScale.Fit, // (Update 157)
-            modifier = Modifier.fillMaxSize().then(if (round) Modifier.clip(androidx.compose.foundation.shape.CircleShape) else Modifier),
+            modifier = (if (round) Modifier.fillMaxSize().wrapContentSize().then(roundSide) else Modifier.fillMaxSize())
+                .then(if (round) Modifier.clip(androidx.compose.foundation.shape.CircleShape) else Modifier),
             // Update 200: its shape noted, so the launch animation (LaunchThrow) sizes the game's own cartridge at it.
             onSuccess = { r ->
                 (model as? String)?.let { k -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(k, sz.width, sz.height) } }

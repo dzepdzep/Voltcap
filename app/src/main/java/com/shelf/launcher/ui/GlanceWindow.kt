@@ -105,7 +105,9 @@ internal fun GlanceWindow(
     onFullDetails: () -> Unit,
     onNeedMedia: (Game) -> Unit,
     onOptions: () -> Unit,
-    onAchievements: () -> Unit
+    onAchievements: () -> Unit,
+    /** Update 285: the game window with the game's piece out (null: an app — no Inspect button). */
+    onInspect: (() -> Unit)? = null
 ) {
     val k = g.stableKey
     val titles = LocalTitleOptions.current
@@ -359,6 +361,7 @@ internal fun GlanceWindow(
                 GlancePill(if (resumed) "Continue" else "Play", accent, onAccent, Modifier.focusRequester(playFocus)) { RowReveal.reset(); onPlay() }
                 GlanceRound(Icons.Filled.Info, "Details", accent) { RowReveal.reset(); onFullDetails() }
                 if (g.raGameId != null || g.platform == "Steam") GlanceRound(Icons.Filled.EmojiEvents, "Achievements", accent) { RowReveal.reset(); onAchievements() }
+                if (onInspect != null) GlanceRound(InspectIcon.vector, "Inspect", accent) { RowReveal.reset(); onInspect() }
                 GlanceRound(Icons.Filled.MoreHoriz, "Options", accent) { RowReveal.reset(); onOptions() }
             }
 
