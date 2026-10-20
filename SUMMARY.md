@@ -6,7 +6,7 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ## Update — 20 Oct 2026 (279–280): Covers always covers, Wide capsules and Layout standard looks, Cases from the front or turned (every case), the art fills your custom cartridges' labels, disc games' covers on cartridge shells, Sega CD / PS3 optical shells fixed, the update check past GitHub's 403, every custom shell walked through every layout — after release 0.6.19
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Published as part of 0.6.20.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.20.**
 
 - **"Look Covers" showed wide capsules** (the Thor): Covers came back with the cover style picked last, and that was Wide. Now **Covers** is always the covers (SteamGridDB portrait art, Square tile or Spine), and **Wide capsules** is a main look of its own with its three choices (every game, first game only, when you're on it). The R1 Look tile steps Covers → Wide → Cases → Cases · turned → Mix → Cartridges → Discs → Art → Layout standard.
 - **Layout standard** (new look, Toni): each home layout draws its games in its own standard look, the look of its first preset (the Voltcap row's covers with the wide capsule, the TV room's, the stacks' cases…). Switching layout switches the look with it; picking any other look turns it off. Checked on the Flip 2 in the Voltcap row, TV room, Grid, Case stacks and Spotlight.
@@ -23,7 +23,7 @@ Files (`src_copy\`): `data\AppUpdates.kt`, `data\DiscShellFixes.kt`, `data\Featu
 
 ## Update — 20 Oct 2026 (278): the PSP shell's label sits in its label recess — after release 0.6.19
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.20.**
 
 - **"Not really on the label, it's misaligned"** (after 277): the optical-system pack's PSP shell has a label recess at the top (the darker rounded plate). The grey "PSP · PlayStation Portable" label sat below it, covering most of the recess and the shell down to the window. Now the label sits in the recess, at the recess's own size (its face and logo scaled to 74 %, round corners, a soft shadow). Where the label used to be, there's plain shell plastic: the texture comes from the shell's own plain lower part, shaded to match the plastic around it, and the side groove runs through. Your custom-cartridge PSP pieces (the cartridge pack) were already right and are unchanged.
 - Made once on the handheld from your pack's `disc_psp.webp` (`files\packs\fixes\psp_fit2.png`; 277's copy is deleted). The pack file itself isn't changed.
@@ -33,7 +33,7 @@ Files (`src_copy\`): `data\DiscShellFixes.kt`.
 
 ## Update — 20 Oct 2026 (277): the PSP shell's label fitted inside the shell — after release 0.6.19
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.20.**
 
 - **PSP label too big:** in your optical-system pack the PSP shell's grey "PSP · PlayStation Portable" label was wider than the shell and stuck out past both sides (label 3–557 px of the 560 px picture, the shell 23–518). Voltcap now draws a fitted copy: the label narrowed to 46–494 px, inside the shell like the other consoles' labels. The rounded ends are kept and only the plain middle is trimmed, so the logo and text keep their size. Where the label covered the shell's sides, the shell's own side rail (with its groove) shows; past the shell, nothing.
 - The pack file itself isn't changed. Voltcap makes the copy once, the first time a PSP game is drawn on the pack (`files\packs\fixes\psp_fit1.png`), and uses it everywhere the shell is drawn. It's made again if the pack's PSP picture is downloaded again.
@@ -43,7 +43,7 @@ Files (`src_copy\`): `data\DiscShellFixes.kt` (new), `data\Packs.kt`, `ui\TestHo
 
 ## Update — 20 Oct 2026 (276): your pack's cartridges get the 3D bottoms too — after release 0.6.19
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.20.**
 
 - **Your cartridge pack (Custom cartridges):** each pack shape gets the connector end of the real cartridge it's drawn after — Game Boy, N64, SNES, GBA, NES, Famicom, Genesis, Game Gear, DS, 3DS, Switch, Atari 2600 — fitted to the shell in the picture (the pack's pictures have a clear margin of 1.5–5 % round the shell, measured; the same for every console and both finishes). The Genesis shape is narrower than the real cartridge, so its opening is fitted to the pack's own bottom tab. Clear-plastic pieces draw it a little see-through, as their shell.
 - Works both ways a pack piece comes up: the game on your pack (Cartridges look › Custom, or consoles without a cartridge of their own) and a pack shape picked in the game's menu › Cartridge shell….
@@ -55,7 +55,7 @@ Files (`src_copy\`): `ui\CartUnderside.kt`, `ui\MediaInspectView.kt`; `CARTRIDGE
 
 ## Update — 20 Oct 2026 (275): cartridge bottoms in 3D — the opening, its walls, the board and the gold contacts at their real count, for 54 cartridges — after release 0.6.19
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude (Toni's OK). Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude (Toni's OK). **Published as Voltcap 0.6.20.**
 
 - **Before:** the turned cartridge's bottom was a flat face with a picture on it (a dark strip, a green line), so from below or at an angle it was plain plastic.
 - **Now** each connector end is real geometry seen through a hole: the opening with its inner walls and ceiling at depth (and up the back where the real shell is cut away: Game Boy family, DS / 3DS / Switch cards), the board inside as a solid slab (bevelled where the real one is), each gold finger at the published count and pitch, plus ribs, dust plates, doors, notches and second boards where the real cartridge has them. Flat-shaded, lit from the upper left, drawn far to near; the front, back, labels, colours, sway and turn are unchanged.
@@ -67,7 +67,7 @@ Files (`src_copy\`): `ui\CartUnderside.kt`, `ui\MediaInspectView.kt`; `CARTRIDGE
 
 ## Update — 20 Oct 2026 (274): Inspect / Wobble, a piece sways when left alone, Inspect… in every game's menu, Save Vault Inspect returns and sways, the three wide-capsule looks, Stats round shortcut, play time from Recents, popup fixes — after release 0.6.19
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.20.**
 
 - **Couldn't find the inspect view:** it only came up when the look draws cartridges, discs or cases. Every game's menu (START) now has **Inspect…**, which brings its cartridge / card / disc (else its case) out in the game window whatever the look. Checked on the Flip 2: Donkey Konga 2's disc came out with the Covers look.
 - **Inspect or Wobble** (Settings › Game look › Covers, cases & discs › More look options › In the game window), asked once after this update: *Inspect* = turn it by hand; *Wobble* = no turning by hand, it just sways like the pieces on the home rows. Back / outside leaves the question for next time; only a pick counts.
