@@ -425,6 +425,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // (Update 258: what an empty shelf says — StyleHomes.kt EmptyShelf.)
     val emptyLine = EmptyShelf.textFor(state.searchQuery, state.games.none { it.sourceType != com.shelf.launcher.data.SourceType.APP })
     SideEffect { if (EmptyShelf.text != emptyLine) EmptyShelf.text = emptyLine }
+    // 0.6.17: the Metacritic chip on the wide / row cards reads the details from here (GameCard).
+    SideEffect { if (MetacriticCards.metadata !== state.metadata) MetacriticCards.metadata = state.metadata }
     val focusedGame = visibleGames.getOrNull(state.focusedIndex)
     // Update 181: only the game you're on moves (Settings › Artwork › Only the game you're on moves; on by default).
     val animFocusOnly = com.shelf.launcher.data.Features.animatedFocusOnly.state.value
@@ -2852,7 +2854,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 fallbackUrl = hg?.let { g -> state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl },
                 gameKey = hg?.stableKey
             )
-            // Update 151: rest on a game with a scraped clip and it plays over the hero picture (Settings › Audio ›
+            // Update 151: rest on a game with a scraped clip and it plays over the hero picture (Settings › Music & sound ›
             // Video previews turns it off). It fades in on its first frame, so until then the hero stays.
             // (Not when the info panel plays it already, Detail layers › Preview video: one clip at a time.)
             if (videoUrl != null && !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value) {

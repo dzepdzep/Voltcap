@@ -32,6 +32,6 @@ internal fun LyricsOptInRow(modifier: Modifier = Modifier) {
 /** Shown where lyrics would appear when the master switch is off. */
 @Composable
 internal fun LyricsOffNote() {
-    MutedNote("Lyrics are off. Turn on \"Fetch lyrics online\" in Settings › Audio. " + LyricsOptIn.NOTE)
+    MutedNote("Lyrics are off. Turn on \"Fetch lyrics online\" in Settings › Music & sound. " + LyricsOptIn.NOTE)
     Spacer(Modifier.height(4.dp))
 }

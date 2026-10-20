@@ -190,7 +190,7 @@ private fun lineAt(lyrics: com.shelf.launcher.data.Lyrics, i: Int, durationMs: L
 }
 
 private fun noteFor(lookup: LyricsRepository.Lookup?): String? = when (lookup) {
-    is LyricsRepository.Lookup.Off -> "Lyrics are off · Settings › Audio"
+    is LyricsRepository.Lookup.Off -> "Lyrics are off · Settings › Music & sound"
     is LyricsRepository.Lookup.NotFound -> "No lyrics for this song"
     else -> null
 }
@@ -519,7 +519,7 @@ internal fun LyricThemeSettings(theme: com.shelf.launcher.ui.theme.AppTheme) {
                 ThemeMotif.LYRIC_KARAOKE -> "The line being sung fills with colour as it's sung, like a karaoke video."
                 ThemeMotif.LYRIC_SHEET -> "All the song's lines scroll gently, the one being sung bright in the middle."
                 else -> "Each word lights up as a neon tube as it's sung."
-            } + " Lyrics need to be on (Settings › Audio); Big / Small above sets their size, and Lyrics alignment where they sit."
+            } + " Lyrics need to be on (Settings › Music & sound); Big / Small above sets their size, and Lyrics alignment where they sit."
         )
         if (theme.motif != ThemeMotif.LYRIC_SHEET) {
             Spacer(Modifier.height(8.dp))

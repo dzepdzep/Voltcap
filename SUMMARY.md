@@ -4,6 +4,23 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (267): Cube menu's new Hub look (glass cube + menu + cover-flow library, from Toni's picture); Metacritic score badge (a toggle); Settings: one place for the background picture and the names, quality & battery always there, Audio → Music & sound, names and logos in fewer controls; Tile home's name white with a theme-colour bar — after release 0.6.17
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal**, committed and pushed by Claude. Not published yet.
+
+**Cube menu › Hub (new, the default look on wide screens).** As in Toni's picture: a menu on the left (Voltcap · Games · Systems · Apps · Settings); a big glass cube seen from a corner — top face Games, left Systems, right Apps, a small Settings cube in front — with glowing edges, light in its core, a lit ring on the floor, small glass cubes and specks drifting round it and soft rays from above; it turns to the part you're on, sways, and leans in when you open one. On the right the Game Library: the category tabs, the games as a cover flow (the one you're on big, the others turned aside, mirrored on the floor), the name, console · year · genre · play time, and Ⓐ Open / Ⓧ Favourite / Ⓨ Achievements. Systems shows your consoles (logo, name, games; A: their games); Apps and Settings a card that opens them. Keys: ◀ ▶ games, ▲ tabs (◀ ▶ category), B the menu (▲ ▼ choose, A / ▶ open). Touch works everywhere. Settings › Home › Layout options › Cube menu › Look: Hub or Classic (narrow / portrait screens keep the Classic cube). Motion is read in the draw phase only; still on Lite / reduced motion.
+
+**Metacritic score badge.** Settings › Game look › Cards › Metacritic score (also in the Sort window): a small badge in Metacritic's colours on the game you're on (wide capsule: top right). Turning it on also fills in missing scores from RAWG.
+
+**Settings.**
+- Theme › Background › Background picture shows and sets the layout on screen (it used to set only the Voltcap row with covers), plus "Use it in every layout"; Layout options › "Background & game names" is gone (the names: Home › Name & logo, with "Save changes for: Only this layout").
+- Theme › Effects & battery › Quality & battery: always there (it was hidden unless the animated background was on — the frame rate, idle saving and the second screen's slowdown are for the whole app).
+- Audio is called Music & sound.
+- Home › Name & logo: "Game names: As in the file / Clean / Shortest" (was two switches), "Game logo: Off / where" (was a switch and a card), "Where logos come from" (was two switches).
+- Tile home: the name white with a short bar in the theme's colour under it.
+
+Files (`src_copy\`): `LauncherViewModel.kt`, `data\AppearanceStore.kt`, `data\Features.kt`, `ui\CubeHub.kt` (new), `ui\StyleCube.kt`, `ui\StyleHomeSettings.kt`, `ui\GameCard.kt`, `ui\StyleHomes.kt`, `ui\ConsoleBadge.kt`, `ui\TileHome.kt`, `ui\SettingsDialog.kt`, `ui\SettingsIndex.kt`, `ui\SortDialog.kt`, `ui\LauncherScreen.kt`, `ui\R1Extras.kt` and the "Settings › Music & sound" pointers in `ui\BackgroundMusic.kt`, `ui\GreenCoreSettings.kt`, `ui\LyricScatter.kt`, `ui\LyricThemes.kt`, `ui\LyricsStage.kt`, `ui\NowPlayingPanel.kt`, `ui\PlayerPages.kt`, `ui\ScreenSaver.kt`, `ui\spotify\LyricsOptInRow.kt`.
+
 ## Update — 19 Oct 2026 (266): big visual check of all 32 layouts and every Settings page on the Odin 2 Portal — names and points readable over bright pictures, Icon bar's category name clear of the big cover, the Drive notice clear of TV channels' clock, achievement counts on the smallest tiles — after release 0.6.17
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Odin 2 Portal**, committed and pushed by Claude. Not published yet (0.6.17 is the current release; the in-app update 0.6.16 → 0.6.17 was checked on the Odin: installed with its profile, `speed-profile [reason=install-dm]`).

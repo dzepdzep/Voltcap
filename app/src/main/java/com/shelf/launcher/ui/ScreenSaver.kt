@@ -613,7 +613,7 @@ internal fun ScreensaverLyrics(
     }
     val side = if (compact) 12f else 15f
     val main = if (compact) 18f else 22f
-    // Left / centre / right and the gentle float follow the lyrics layout (Settings › Audio), here too.
+    // Left / centre / right and the gentle float follow the lyrics layout (Settings › Music & sound), here too.
     val align = com.shelf.launcher.data.Features.lyricsAlign.state.value
     // Only the lines that fit in the room it has are shown, whole: never a line cut in half at the bottom.
     // The previous line goes first, then the next one, then the current one keeps to one line.

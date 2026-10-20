@@ -138,10 +138,10 @@ internal object CubeNav {
     @Volatile var homeOn = true
     internal val keysDown = HashSet<Int>()
     /** Everything the controller moves here, for the "▼ changed nothing" check (LauncherScreen, second screen). */
-    fun signature(): Any = listOf(page, ring, tip)
+    fun signature(): Any = listOf(page, ring, tip, CubeHub.section, CubeHub.zone, CubeHub.sysFocus)
 }
 
-private fun cubeSound(s: UiSound) { PocketSounds.play?.invoke(s) }
+internal fun cubeSound(s: UiSound) { PocketSounds.play?.invoke(s) }
 
 /** ◀ ▶ on the big cube: one face along the ring (the category itself changes on A). */
 private fun cubeTurn(c: StyleCtx, d: Int, sound: (UiSound) -> Unit) {
@@ -161,7 +161,7 @@ private fun cubeTip(d: Int, sound: (UiSound) -> Unit): Boolean {
     return true
 }
 
-private fun cubeApps(c: StyleCtx) {
+internal fun cubeApps(c: StyleCtx) {
     val h = GreenCoreHooks.hotkey
     if (h != null) h(HotkeyAction.APP_DRAWER) else c.shortcuts.firstOrNull { it.label == "All apps" }?.onClick?.invoke()
 }
@@ -200,6 +200,8 @@ internal fun cubeGoHome(sound: (UiSound) -> Unit) {
  * LIBRARY: see the comment at the top of the file.
  */
 internal fun cubeKey(event: KeyEvent, reach: (Boolean) -> Boolean, sound: (UiSound) -> Unit): Boolean {
+    // 0.6.17: the Hub look has its own keys (CubeHub.kt).
+    if (CubeHub.active) return cubeHubKey(event, reach, sound)
     val c = CubeNav.ctx ?: return false
     val code = event.nativeKeyEvent.keyCode
     val down = event.type == KeyEventType.KeyDown
@@ -298,9 +300,19 @@ internal fun cubeKey(event: KeyEvent, reach: (Boolean) -> Boolean, sound: (UiSou
 
 // ---- The layout ----
 
-/** (Update 239, #93) */
+/** (Update 239, #93; 0.6.17: the Hub look on wide screens — CubeHub.kt.) */
 @Composable
 internal fun StyleCube(c: StyleCtx, modifier: Modifier = Modifier) {
+    val hub = Features.cubeLook.state.value == Features.CubeLook.HUB
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        if (hub && maxWidth >= 600.dp && maxWidth >= maxHeight * 1.25f) CubeHub(c, Modifier.fillMaxSize())
+        else StyleCubeClassic(c, Modifier.fillMaxSize())
+    }
+}
+
+/** (Update 239, #93: the Classic look — the cube of categories.) */
+@Composable
+private fun StyleCubeClassic(c: StyleCtx, modifier: Modifier = Modifier) {
     val homeOn = Features.cubeHome.state.value
     val dockPref = Features.cubeDock.state.value
     val extra = Features.cubeExtraFaces.state.value
@@ -768,7 +780,7 @@ internal fun CubeBackdrop(modifier: Modifier) {
     Spacer(
         modifier.drawWithCache {
             val bg = Brush.radialGradient(
-                listOf(Color(0xFF241C4C), Color(0xFF120E28), Color(0xFF05040B)),
+                listOf(Color(0xFF2C1C62), Color(0xFF140C30), Color(0xFF06040F)),
                 center = Offset(size.width * 0.36f, size.height * 0.45f), radius = size.maxDimension * 0.78f
             )
             val line = Color(0xFF8C7CFF).copy(alpha = 0.07f)
@@ -792,24 +804,24 @@ internal fun CubeBackdrop(modifier: Modifier) {
 
 // ---- Drawing the cube (one small Canvas; read in the draw phase only) ----
 
-private const val TWO_PI = (2.0 * Math.PI).toFloat()
+internal const val TWO_PI = (2.0 * Math.PI).toFloat()
 /** Resting a little turned and seen a little from above (the next category's face shows at the right). */
 private const val CUBE_REST_YAW = -16f
 private const val CUBE_REST_PITCH = 12f
 /** The camera's distance in half-edges (perspective). */
-private const val CUBE_F = 6.5f
+internal const val CUBE_F = 6.5f
 /** A face's own drawing space (units across). */
-private const val FACE = 360f
-private val RING_NX = floatArrayOf(0f, 1f, 0f, -1f)
-private val RING_NZ = floatArrayOf(1f, 0f, -1f, 0f)
-private const val LX = -0.42f
-private const val LY = 0.68f
-private const val LZ = 0.60f
+internal const val FACE = 360f
+internal val RING_NX = floatArrayOf(0f, 1f, 0f, -1f)
+internal val RING_NZ = floatArrayOf(1f, 0f, -1f, 0f)
+internal const val LX = -0.42f
+internal const val LY = 0.68f
+internal const val LZ = 0.60f
 
 private class CubeFaceArt(val label: String, val logo: ImageBitmap?, val icon: Painter?)
 
 /** Where the visible faces were drawn last (for taps): kind 0 = a category face ([ks]: its ring index), 1 top, 2 bottom. */
-private class CubeHits {
+internal class CubeHits {
     val quads = FloatArray(48)
     val kinds = IntArray(6)
     val ks = IntArray(6)
@@ -833,7 +845,7 @@ private class CubeHits {
     }
 }
 
-private class CubeTools {
+internal class CubeTools {
     val matrix = android.graphics.Matrix()
     val src = floatArrayOf(0f, 0f, FACE, 0f, FACE, FACE, 0f, FACE)
     val dst = FloatArray(8)
@@ -848,7 +860,7 @@ private class CubeTools {
     val lines = HashMap<String, Pair<Float, List<String>>>()
 }
 
-private fun DrawScope.cubeShadow(cx: Float, y: Float, half: Float, alpha: Float) {
+internal fun DrawScope.cubeShadow(cx: Float, y: Float, half: Float, alpha: Float) {
     val sw = half * 2.6f
     val sh = half * 0.42f
     drawOval(
@@ -1025,7 +1037,7 @@ private fun DrawScope.faceContent(tools: CubeTools, nc: android.graphics.Canvas,
 }
 
 /** [label] in at most [maxLines] lines [maxW] wide: the biggest of a few sizes that fits, else the smallest with "…". */
-private fun fitLabel(tools: CubeTools, label: String, base: Float, maxW: Float, maxLines: Int): Pair<Float, List<String>> {
+internal fun fitLabel(tools: CubeTools, label: String, base: Float, maxW: Float, maxLines: Int): Pair<Float, List<String>> {
     val cacheKey = "$label|$base|$maxLines"
     tools.lines[cacheKey]?.let { return it }
     if (tools.lines.size > 240) tools.lines.clear()
@@ -1051,7 +1063,7 @@ private fun fitLabel(tools: CubeTools, label: String, base: Float, maxW: Float, 
     return chosen
 }
 
-private fun wrapLabel(text: String, paint: android.graphics.Paint, maxW: Float): List<String> {
+internal fun wrapLabel(text: String, paint: android.graphics.Paint, maxW: Float): List<String> {
     val out = ArrayList<String>()
     var line = ""
     for (word in text.split(' ').filter { it.isNotEmpty() }) {

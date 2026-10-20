@@ -1014,7 +1014,7 @@ internal fun LyricsStage(
                     else if (react && noShare) add("This device doesn't share its sound: the beat is simulated.")
                     else if (react && deaf) add("No sound reaches Voltcap (the player may send it straight to the hardware): the beat is simulated.")
                     if (np != null && showLyrics) when (lookup) {
-                        is LyricsRepository.Lookup.Off -> add("Lyrics are off (Settings › Audio › Lyrics).")
+                        is LyricsRepository.Lookup.Off -> add("Lyrics are off (Settings › Music & sound › Lyrics).")
                         is LyricsRepository.Lookup.NotFound -> add("No lyrics found for this song.")
                         is LyricsRepository.Lookup.Failed -> add("Couldn't reach the lyrics, trying again.")
                         else -> Unit

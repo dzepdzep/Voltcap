@@ -379,10 +379,13 @@ internal fun TileHomeRow(
             // over the category label).
             val lineDp = with(LocalDensity.current) { (18.sp * ts).toDp() }
             val boxH = if (lines == 1) maxOf(24.dp * ts, lineDp + 6.dp) else maxOf(46.dp * ts, lineDp * 2 + 10.dp)
+            val nameBarColor = ShelfTheme.accent
             Box(Modifier.fillMaxWidth().height(boxH)) {
                 Text(
                     shownName,
-                    color = ShelfTheme.accent,
+                    // (0.6.17: white with a bar in the theme's colour under it — the name in the theme's colour vanished on
+                    // pictures of the same colour.)
+                    color = Color.White,
                     fontSize = 15.sp * ts, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp * ts), maxFontSize = 15.sp * ts),
                     lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em),
                     fontWeight = FontWeight.SemiBold,
@@ -409,6 +412,15 @@ internal fun TileHomeRow(
                                 val screenW = screenWidthPx
                                 p.place(x.coerceIn(8.dp.toPx(), maxOf(8.dp.toPx(), screenW - p.width - 8.dp.toPx())).toInt(), 0)
                             }
+                        }
+                        .drawBehind {
+                            val barW = (size.width * 0.4f).coerceIn(28.dp.toPx(), size.width)
+                            val barH = 2.5.dp.toPx()
+                            val bx = when (align) { 0 -> (size.width - barW) / 2f; 1 -> size.width - barW; else -> 2.dp.toPx() }
+                            drawRoundRect(
+                                nameBarColor, androidx.compose.ui.geometry.Offset(bx, size.height + 2.dp.toPx()),
+                                androidx.compose.ui.geometry.Size(barW, barH), androidx.compose.ui.geometry.CornerRadius(barH / 2f)
+                            )
                         }
                 )
             }

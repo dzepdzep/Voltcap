@@ -142,7 +142,7 @@ private val CATEGORIES = listOf(
     SettingsCategory("Screensaver", "When it starts, what it shows with and without music, the second screen while it runs, fading to black, and the lights.", Icons.Filled.Bedtime),
     SettingsCategory("Categories", "Which categories and their order, the category name on the home screen, the category screen (Tiles, Slides, Wall, Grid) and each platform's own options.", Icons.Filled.Category),
     SettingsCategory("Achievements", "On the cards and pop-ups while playing, their look, and matching your games to RetroAchievements.", Icons.Filled.EmojiEvents),
-    SettingsCategory("Audio", "Interface sounds, haptics, background music and video sound.", Icons.Filled.MusicNote),
+    SettingsCategory("Music & sound", "Background music, interface sounds, haptics and video sound.", Icons.Filled.MusicNote),
     SettingsCategory("Controls", "Hotkeys, music buttons, the button legend and what each button does.", Icons.Filled.SportsEsports),
     SettingsCategory("Library", "ROM folders, installed apps, Steam games, shortcuts.", Icons.Filled.Folder),
     SettingsCategory("Accounts", "SteamGridDB, TheGamesDB, ScreenScraper, RetroAchievements, IGDB, RAWG, Discord, Spotify, Steam and RomM.", Icons.Filled.Link),
@@ -266,7 +266,7 @@ fun SettingsDialog(
     com.shelf.launcher.Breadcrumbs.mark("SettingsDialog")
     // Old name for the Audio section, in case something still opens it by that.
     val wanted = when (initialCategory) {
-        "Sounds" -> "Audio"
+        "Sounds", "Audio" -> "Music & sound" // (0.6.17: "Audio" renamed)
         "Appearance" -> "Home" // the page before update 82
         else -> initialCategory
     }
@@ -645,7 +645,7 @@ fun SettingsDialog(
                                 }
                                 "Backup" -> BackupContent(onRunSetup)
                                 "Updates & downloads" -> UpdatesContent()
-                                "Audio" -> SoundsContent(appearance, currentTheme, onAppearanceChange)
+                                "Music & sound" -> SoundsContent(appearance, currentTheme, onAppearanceChange)
                                 "Controls" -> Column {
                                     ControlsContent(appearance, onAppearanceChange)
                                     FoldGroup("Phone remote", key = "ctl_remote") { WebRemoteCard() }
@@ -739,7 +739,7 @@ private fun HomeContent(
     CollapsibleSection("Extras on the home screen") {
         HomeExtrasCard(appearance, onAppearanceChange)
     }
-    // Everything about the home screen's music player in one place (it used to be under Audio).
+    // Everything about the home screen's music player in one place (it used to be under Music & sound).
     CollapsibleSection("Music player") {
         MusicPlayerAppearance(appearance, onAppearanceChange)
         if (!currentTheme.motif.reactive) {
@@ -1216,15 +1216,31 @@ private fun ThemeContent(
                 MutedNote("For the full console feel, also try Motion & transitions › \"Quick fade + slow zoom\": the art drifts in slowly, like the PS5's.")
             }
         }
-        FoldGroup("Background picture", summary = appearance.heroFit.label, key = "bg_picture") {
+        // (0.6.17: one place for it — this used to set only the Voltcap row with covers, while each layout's own choice sat
+        // in its Layout options. It shows and sets the layout on screen; "Use it in every layout" sets them all.)
+        com.shelf.launcher.data.Features.heroFitByLayout.state.value
+        val bgLayout = appearance.homeLayout
+        val bgFit = com.shelf.launcher.data.HeroFitPlan.of(bgLayout, appearance.heroFit, appearance.cardArtType)
+        FoldGroup("Background picture", summary = bgFit.label, key = "bg_picture") {
             ShelfCard {
                 MutedNote("Colours, blur and dim are per theme: Theme › Theme look.")
                 Spacer(Modifier.height(6.dp))
-            Text("Background picture", color = ShelfTheme.textMuted, fontSize = 12.sp)
+            Text("Background picture · ${bgLayout.label}", color = ShelfTheme.textMuted, fontSize = 12.sp)
             Spacer(Modifier.height(6.dp))
             ChipFlow {
                 com.shelf.launcher.data.HeroFit.values().forEach { fit ->
-                    Chip(fit.label, accent = appearance.heroFit == fit) { onChange(appearance.copy(heroFit = fit)) }
+                    Chip(fit.label, accent = bgFit == fit) {
+                        com.shelf.launcher.data.HeroFitPlan.put(bgLayout, fit)
+                        if (bgLayout == com.shelf.launcher.data.HomeLayout.CLASSIC) onChange(appearance.copy(heroFit = fit))
+                    }
+                }
+            }
+            MutedNote("Fill the screen: top to bottom, the sides of wide art cut off. Whole picture: all of it across the top, a soft blurred copy fills the rest. This sets ${bgLayout.label}, the layout on screen.")
+            Spacer(Modifier.height(4.dp))
+            ChipFlow {
+                Chip("Use it in every layout", accent = false) {
+                    com.shelf.launcher.data.HeroFitPlan.putAll(bgFit)
+                    onChange(appearance.copy(heroFit = bgFit))
                 }
             }
             }
@@ -1358,79 +1374,6 @@ private fun ThemeContent(
                 MutedNote("Speed, particles, colour shift and darkening are part of each theme's look now: Theme › Theme look.")
                 }
             }
-            FoldGroup("Quality & battery", summary = appearance.sceneQuality.label, key = "bg_quality") {
-                ShelfCard {
-                Spacer(Modifier.height(10.dp))
-                SwitchRow(
-                    icon = Icons.Filled.AutoAwesome,
-                    title = "Animate on Lite",
-                    subtitle = "Keeps the animated background moving even when Lite effects are on (or chosen " +
-                        "automatically for this device). Lite otherwise shows a still frame. Uses a little more " +
-                        "battery and GPU; it still stops while the screen is off or a game is running.",
-                    checked = appearance.animateOnLite,
-                    onChange = { onChange(appearance.copy(animateOnLite = it)) }
-                )
-                Spacer(Modifier.height(10.dp))
-                Text("Background quality", color = ShelfTheme.textMuted, fontSize = 12.sp)
-                Spacer(Modifier.height(6.dp))
-                ChipFlow {
-                    com.shelf.launcher.data.SceneQuality.values().forEach { q ->
-                        Chip(q.label, accent = appearance.sceneQuality == q) { onChange(appearance.copy(sceneQuality = q)) }
-                    }
-                }
-                // Update 125: the frame rate for the whole app.
-                Spacer(Modifier.height(10.dp))
-                RowChoice("Background frame rate", com.shelf.launcher.data.Features.SceneFps.values(), com.shelf.launcher.data.Features.sceneFps.state.value, { it.label }) {
-                    com.shelf.launcher.data.Features.sceneFps.value = it
-                }
-                MutedNote(
-                    if (com.shelf.launcher.data.Features.sceneFps.state.value == com.shelf.launcher.data.Features.SceneFps.AUTO)
-                        "Automatic saves battery: the background runs calmer when nobody touches the screen and under popups."
-                    else "The animated backgrounds run at this rate all the time, everywhere in Voltcap (never lowered to save battery). They still stop while the screen is off or a game is running."
-                )
-                if (appearance.sceneQuality == com.shelf.launcher.data.SceneQuality.AUTO && com.shelf.launcher.device.FrameWatch.steps.intValue > 0) {
-                    Spacer(Modifier.height(4.dp))
-                    MutedNote("Automatic lowered it ${com.shelf.launcher.device.FrameWatch.steps.intValue} step(s) this session because the home screen kept missing frames on this device. Pick a quality yourself to keep it fixed.")
-                }
-                Spacer(Modifier.height(10.dp))
-                SwitchRow(
-                    icon = Icons.Filled.AutoAwesome,
-                    title = "Half-resolution scenes",
-                    subtitle = "The animated scenes are drawn at half the screen's resolution (a quarter of the pixels " +
-                        "each frame) and smoothly stretched. They're soft light, noise and glows, so it hardly shows, " +
-                        "and the graphics chip does far less work. Turn it off if a scene looks too soft to you.",
-                    checked = com.shelf.launcher.data.Features.sceneHalfRes.state.value,
-                    onChange = { com.shelf.launcher.data.Features.sceneHalfRes.value = it }
-                )
-                Spacer(Modifier.height(10.dp))
-                SwitchRow(
-                    icon = Icons.Filled.Bedtime,
-                    title = "Second screen slower when unused",
-                    subtitle = "When nobody has touched the second screen for 20 seconds, its animated background runs " +
-                        "at about 15 frames a second. A touch there brings it back to full speed at once.",
-                    checked = com.shelf.launcher.data.Features.secondSlowWhenUnused.state.value,
-                    onChange = { com.shelf.launcher.data.Features.secondSlowWhenUnused.value = it }
-                )
-                Spacer(Modifier.height(10.dp))
-                SwitchRow(
-                    icon = Icons.Filled.Bedtime,
-                    title = "Save power when idle",
-                    subtitle = "After 30 seconds without a button press the background slows to about 30 frames a " +
-                        "second (15 after three minutes) and the card effects hold still; the next press brings them " +
-                        "back at once. A music visualizer keeps its speed while music plays. The background holds a " +
-                        "still frame only while something covers the whole screen (the screensaver, a category page, " +
-                        "a guide or a picture viewer); under a popup that leaves it showing, it runs at about 15.",
-                    checked = appearance.idleSaver,
-                    onChange = { onChange(appearance.copy(idleSaver = it)) }
-                )
-                MutedNote(
-                    "If the home screen stutters with an animated background (Retroid Pocket Classic, Konkr and " +
-                        "other lighter handhelds), pick Low or Lowest: the scene is drawn at a fraction of the " +
-                        "screen's resolution and fewer times a second, then smoothly stretched — the soft glows " +
-                        "look almost the same. Automatic picks Low on slower devices."
-                )
-                }
-            }
         }
     }
     CollapsibleSection("Size & text") {
@@ -1506,6 +1449,81 @@ private fun ThemeContent(
                     )
                 }
             }
+            }
+        }
+        // (0.6.17: from Theme › Background, where it only showed with an animated background — the frame rate, idle saving
+        // and the second screen's slowdown are for the whole app.)
+        FoldGroup("Quality & battery", summary = appearance.sceneQuality.label, key = "bg_quality") {
+            ShelfCard {
+            Spacer(Modifier.height(10.dp))
+            SwitchRow(
+                icon = Icons.Filled.AutoAwesome,
+                title = "Animate on Lite",
+                subtitle = "Keeps the animated background moving even when Lite effects are on (or chosen " +
+                    "automatically for this device). Lite otherwise shows a still frame. Uses a little more " +
+                    "battery and GPU; it still stops while the screen is off or a game is running.",
+                checked = appearance.animateOnLite,
+                onChange = { onChange(appearance.copy(animateOnLite = it)) }
+            )
+            Spacer(Modifier.height(10.dp))
+            Text("Background quality", color = ShelfTheme.textMuted, fontSize = 12.sp)
+            Spacer(Modifier.height(6.dp))
+            ChipFlow {
+                com.shelf.launcher.data.SceneQuality.values().forEach { q ->
+                    Chip(q.label, accent = appearance.sceneQuality == q) { onChange(appearance.copy(sceneQuality = q)) }
+                }
+            }
+            // Update 125: the frame rate for the whole app.
+            Spacer(Modifier.height(10.dp))
+            RowChoice("Background frame rate", com.shelf.launcher.data.Features.SceneFps.values(), com.shelf.launcher.data.Features.sceneFps.state.value, { it.label }) {
+                com.shelf.launcher.data.Features.sceneFps.value = it
+            }
+            MutedNote(
+                if (com.shelf.launcher.data.Features.sceneFps.state.value == com.shelf.launcher.data.Features.SceneFps.AUTO)
+                    "Automatic saves battery: the background runs calmer when nobody touches the screen and under popups."
+                else "The animated backgrounds run at this rate all the time, everywhere in Voltcap (never lowered to save battery). They still stop while the screen is off or a game is running."
+            )
+            if (appearance.sceneQuality == com.shelf.launcher.data.SceneQuality.AUTO && com.shelf.launcher.device.FrameWatch.steps.intValue > 0) {
+                Spacer(Modifier.height(4.dp))
+                MutedNote("Automatic lowered it ${com.shelf.launcher.device.FrameWatch.steps.intValue} step(s) this session because the home screen kept missing frames on this device. Pick a quality yourself to keep it fixed.")
+            }
+            Spacer(Modifier.height(10.dp))
+            SwitchRow(
+                icon = Icons.Filled.AutoAwesome,
+                title = "Half-resolution scenes",
+                subtitle = "The animated scenes are drawn at half the screen's resolution (a quarter of the pixels " +
+                    "each frame) and smoothly stretched. They're soft light, noise and glows, so it hardly shows, " +
+                    "and the graphics chip does far less work. Turn it off if a scene looks too soft to you.",
+                checked = com.shelf.launcher.data.Features.sceneHalfRes.state.value,
+                onChange = { com.shelf.launcher.data.Features.sceneHalfRes.value = it }
+            )
+            Spacer(Modifier.height(10.dp))
+            SwitchRow(
+                icon = Icons.Filled.Bedtime,
+                title = "Second screen slower when unused",
+                subtitle = "When nobody has touched the second screen for 20 seconds, its animated background runs " +
+                    "at about 15 frames a second. A touch there brings it back to full speed at once.",
+                checked = com.shelf.launcher.data.Features.secondSlowWhenUnused.state.value,
+                onChange = { com.shelf.launcher.data.Features.secondSlowWhenUnused.value = it }
+            )
+            Spacer(Modifier.height(10.dp))
+            SwitchRow(
+                icon = Icons.Filled.Bedtime,
+                title = "Save power when idle",
+                subtitle = "After 30 seconds without a button press the background slows to about 30 frames a " +
+                    "second (15 after three minutes) and the card effects hold still; the next press brings them " +
+                    "back at once. A music visualizer keeps its speed while music plays. The background holds a " +
+                    "still frame only while something covers the whole screen (the screensaver, a category page, " +
+                    "a guide or a picture viewer); under a popup that leaves it showing, it runs at about 15.",
+                checked = appearance.idleSaver,
+                onChange = { onChange(appearance.copy(idleSaver = it)) }
+            )
+            MutedNote(
+                "If the home screen stutters with an animated background (Retroid Pocket Classic, Konkr and " +
+                    "other lighter handhelds), pick Low or Lowest: the scene is drawn at a fraction of the " +
+                    "screen's resolution and fewer times a second, then smoothly stretched — the soft glows " +
+                    "look almost the same. Automatic picks Low on slower devices."
+            )
             }
         }
     }
@@ -3514,34 +3532,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             )
         }
         }
-        FoldGroup("Background & game names", key = "lo_bg_names", summary = "How the picture sits, where the names go") {
-        // Update 125: how the background picture sits in this layout.
-        run {
-            val F = com.shelf.launcher.data.Features
-            F.heroFitByLayout.state.value; F.carouselLayouts.state.value
-            F.spineLook.state.value
-            val fit = com.shelf.launcher.data.HeroFitPlan.of(appearance.homeLayout, appearance.heroFit, appearance.cardArtType)
-            RowChoice("Background picture", com.shelf.launcher.data.HeroFit.values(), fit, { it.label }) {
-                com.shelf.launcher.data.HeroFitPlan.put(appearance.homeLayout, it)
-            }
-            MutedNote("Fill the screen: top to bottom, the sides of wide art cut off. Whole picture: all of it across the top, a soft blurred copy fills the rest. Until you pick here, it fills the screen — on the Voltcap row only with cases, cartridges, discs or spines (covers and wide capsules follow Background picture).")
-        }
-        // Update 125: where the game names go in this layout.
-        run {
-            com.shelf.launcher.data.Features.namesByLayout.state.value
-            val (place, side) = com.shelf.launcher.data.NamePlan.of(appearance.homeLayout, appearance.titlePlacement, appearance.nameSide)
-            val places = arrayOf(com.shelf.launcher.data.TitlePlacement.ABOVE, com.shelf.launcher.data.TitlePlacement.INSIDE, com.shelf.launcher.data.TitlePlacement.HIDDEN)
-            RowChoice("Game names", places, if (place == com.shelf.launcher.data.TitlePlacement.BELOW) com.shelf.launcher.data.TitlePlacement.ABOVE else place, { it.label }) {
-                com.shelf.launcher.data.NamePlan.put(appearance.homeLayout, it, side)
-            }
-            if (place == com.shelf.launcher.data.TitlePlacement.ABOVE || place == com.shelf.launcher.data.TitlePlacement.BELOW) {
-                RowChoice("They sit", com.shelf.launcher.data.RowSide.values(), side, { it.label }) {
-                    com.shelf.launcher.data.NamePlan.put(appearance.homeLayout, place, it)
-                }
-            }
-            MutedNote("Layouts with their own name options (below) use those as well.")
-        }
-        }
+        // (0.6.17: "Background & game names" went — the background picture is set per layout in Theme › Background ›
+        // Background picture, the names in Home › Name & logo, with "Save changes for: Only this layout" there.)
         Spacer(Modifier.height(8.dp))
         if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TV) {
             MutedNote(
@@ -4017,6 +4009,12 @@ private fun CardShapeCard(appearance: AppearanceSettings, onChange: (AppearanceS
         RowChoice("Effect on the game you're on", com.shelf.launcher.data.FocusEffect.values(), appearance.focusEffect, { it.label }) {
             onChange(appearance.copy(focusEffect = it))
         }
+        // 0.6.17.
+        SwitchRow(
+            Icons.Filled.Star, "Metacritic score",
+            "A small badge with the game's Metacritic score on the game you're on — green from 75, yellow from 50, red below. Scores come from the game's details (RAWG) or your scores file.",
+            com.shelf.launcher.data.Features.metacriticChip.state.value, { com.shelf.launcher.data.Features.metacriticChip.value = it }
+        )
         CapsuleRevealChoice()
         MutedNote("Corners apply to covers, wide capsules and the details window — the golden border of mastered games follows them.")
     }
@@ -4049,7 +4047,7 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                     modifier = m
                 )
             }
-            // (0.6.15: "Video previews" is under Audio › Video previews only.)
+            // (0.6.15: "Video previews" is under Music & sound › Video previews only.)
             }
     SettingsGrid {
         item { m ->
@@ -4093,7 +4091,9 @@ private fun NameAndCategoryContent(appearance: AppearanceSettings, onChange: (Ap
     ShelfCard {
         MutedNote("The category's own name, logos and animation: Settings › Categories › On the home screen.")
         Spacer(Modifier.height(8.dp))
-        RowChoice("Game's name sits", com.shelf.launcher.data.RowSide.values(), appearance.nameSide, { it.label }) {
+        com.shelf.launcher.data.Features.namesByLayout.state.value
+        RowChoice("Game's name sits", com.shelf.launcher.data.RowSide.values(), com.shelf.launcher.data.NamePlan.of(appearance.homeLayout, appearance.titlePlacement, appearance.nameSide).second, { it.label }) {
+            com.shelf.launcher.data.NamePlan.clear(appearance.homeLayout)
             onChange(appearance.copy(nameSide = it))
         }
         MutedNote("Automatic: above the row — or under it when the games are at the top (then the name moves off the wide capsule too).")
@@ -4117,71 +4117,80 @@ private fun NameAndCategoryContent(appearance: AppearanceSettings, onChange: (Ap
                         .padding(16.dp)
                 ) {
                     SectionLabel("Where the name shows")
-                    MutedNote("On the wide capsule, or on its own line right next to the row (above or under — see \"Name sits\" above). Only the game you're on shows its name.")
+                    MutedNote("On the wide capsule, or on its own line right next to the row (above or under — see \"Game's name sits\" above). Only the game you're on shows its name.")
                     Spacer(Modifier.height(8.dp))
+                    // (0.6.17: a layout that still has a name place of its own — from its Layout options before they
+                    // moved here — shows it; picking one here makes it follow this setting again.)
+                    com.shelf.launcher.data.Features.namesByLayout.state.value
+                    val nameLayout = appearance.homeLayout
+                    val shownPlace = com.shelf.launcher.data.NamePlan.of(nameLayout, appearance.titlePlacement, appearance.nameSide).first
                     ChipFlow {
                         // BELOW is the old "under" choice — the side is its own setting now.
                     com.shelf.launcher.data.TitlePlacement.values().filter { it != com.shelf.launcher.data.TitlePlacement.BELOW }.forEach { p ->
-                            Chip(p.label, accent = appearance.titlePlacement == p ||
-                                (p == com.shelf.launcher.data.TitlePlacement.ABOVE && appearance.titlePlacement == com.shelf.launcher.data.TitlePlacement.BELOW)) {
+                            Chip(p.label, accent = shownPlace == p ||
+                                (p == com.shelf.launcher.data.TitlePlacement.ABOVE && shownPlace == com.shelf.launcher.data.TitlePlacement.BELOW)) {
+                                com.shelf.launcher.data.NamePlan.clear(nameLayout)
                                 onChange(appearance.copy(titlePlacement = p))
                             }
                         }
                     }
                 }
             }
+            // (0.6.17: "Clean up game names" and "Hide everything in brackets" are one choice now; the game logo's
+            // switch and its place are one choice, and where logos come from one card.)
             item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.AutoAwesome,
-                    title = "Clean up game names",
-                    subtitle = "\"Zelda (USA) (En,Fr) (60 FPS)\" shows as \"Zelda\" — regions, languages and patch tags like widescreen hacks go. Disc and revision numbers stay.",
-                    checked = appearance.hideRegionTags,
-                    onChange = { onChange(appearance.copy(hideRegionTags = it)) },
-                    modifier = m
-                )
+                Column(m.clip(uiRounded(16.dp)).background(ShelfTheme.colors.surfaceRaised).padding(16.dp)) {
+                    SectionLabel("Game names")
+                    val namesNow = if (appearance.hideAllBrackets) 2 else if (appearance.hideRegionTags) 1 else 0
+                    ChipFlow {
+                        listOf("As in the file", "Clean", "Shortest").forEachIndexed { i, label ->
+                            Chip(label, accent = namesNow == i) {
+                                onChange(appearance.copy(hideRegionTags = i >= 1, hideAllBrackets = i == 2))
+                            }
+                        }
+                    }
+                    MutedNote(
+                        when (namesNow) {
+                            0 -> "Names exactly as your files have them: \"Zelda (USA) (En,Fr) [!]\"."
+                            1 -> "Regions, languages and patch tags go — \"Zelda (USA) (En,Fr) (60 FPS)\" shows as \"Zelda\". Disc and revision numbers stay."
+                            else -> "Every ( ) and [ ] part goes — \"(Rev 1)\", \"[v1.2]\", \"(Disc 2)\" too — plus loose \"v1.2\" / \"Patch\" endings."
+                        }
+                    )
+                }
             }
             item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.AutoAwesome,
-                    title = "Hide everything in brackets",
-                    subtitle = "Drops every ( ) and [ ] part of a name — \"(QOL Improvements)\", \"(Rev 1)\", \"[v1.2]\", \"(Disc 2)\" — plus loose \"v1.2\" / \"Patch\" endings.",
-                    checked = appearance.hideAllBrackets,
-                    onChange = { onChange(appearance.copy(hideAllBrackets = it)) },
-                    modifier = m
-                )
+                Column(m.clip(uiRounded(16.dp)).background(ShelfTheme.colors.surfaceRaised).padding(16.dp)) {
+                    SectionLabel("Game logo")
+                    MutedNote("The game's logo next to its name on the game you're on, the wide capsule and the details window.")
+                    Spacer(Modifier.height(8.dp))
+                    ChipFlow {
+                        Chip("Off", accent = !appearance.showGameLogos) { onChange(appearance.copy(showGameLogos = false)) }
+                        com.shelf.launcher.data.LogoPlacement.values().forEach { p ->
+                            Chip(p.label, accent = appearance.logoPlacement == p && appearance.showGameLogos) {
+                                onChange(appearance.copy(logoPlacement = p, showGameLogos = true))
+                            }
+                        }
+                    }
+                }
             }
             item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.Image,
-                    title = "Logos from RetroAchievements",
-                    subtitle = "By the game's name: its icon from RetroAchievements instead of a logo (on by default; games linked to RetroAchievements; a logo you picked yourself still wins).",
-                    checked = appearance.raLogos,
-                    onChange = { onChange(appearance.copy(raLogos = it)) },
-                    modifier = m
-                )
-            }
-            // Update 113.
-            item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.Image,
-                    title = "Big logos from SteamGridDB",
-                    subtitle = "The big logos — Edit Home's logo part, the Hero carousel, Spotlight's title, the second screen's showcase — " +
-                        "use SteamGridDB's logo (looked up once per game). Off: whichever source the artwork's logo came from. A logo you picked yourself always wins.",
-                    checked = com.shelf.launcher.data.Features.bigLogoSgdb.state.value,
-                    onChange = { com.shelf.launcher.data.Features.bigLogoSgdb.value = it },
-                    modifier = m
-                )
-            }
-            item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.Image,
-                    title = "Game logos",
-                    subtitle = "The game's logo next to its name on the focused game and in the details window " +
-                        "(SteamGridDB / ScreenScraper logos; pick one under Artwork & details).",
-                    checked = appearance.showGameLogos,
-                    onChange = { onChange(appearance.copy(showGameLogos = it)) },
-                    modifier = m
-                )
+                Column(m.clip(uiRounded(16.dp)).background(ShelfTheme.colors.surfaceRaised).padding(16.dp)) {
+                    SectionLabel("Where logos come from")
+                    ChipFlow {
+                        Chip((if (appearance.raLogos) "✓ " else "") + "RetroAchievements icons", accent = appearance.raLogos) {
+                            onChange(appearance.copy(raLogos = !appearance.raLogos))
+                        }
+                        val sgdb = com.shelf.launcher.data.Features.bigLogoSgdb.state.value
+                        Chip((if (sgdb) "✓ " else "") + "Big logos from SteamGridDB", accent = sgdb) {
+                            com.shelf.launcher.data.Features.bigLogoSgdb.value = !sgdb
+                        }
+                    }
+                    MutedNote(
+                        "RetroAchievements icons: by the name, the game's RetroAchievements icon instead of a logo (games linked to RetroAchievements). " +
+                            "Big logos from SteamGridDB: Edit Home's logo, the Hero carousel, Spotlight and the second screen use SteamGridDB's logo. " +
+                            "A logo you picked yourself always wins."
+                    )
+                }
             }
             item { m ->
                 SwitchRow(
@@ -4202,19 +4211,6 @@ private fun NameAndCategoryContent(appearance: AppearanceSettings, onChange: (Ap
                     onChange = { onChange(appearance.copy(showConsoleName = it)) },
                     modifier = m
                 )
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        ShelfCard {
-            SectionLabel("Where the logo goes")
-            MutedNote("Next to the game's name on the row, the wide capsule and the details window.")
-            Spacer(Modifier.height(8.dp))
-            ChipFlow {
-                com.shelf.launcher.data.LogoPlacement.values().forEach { p ->
-                    Chip(p.label, accent = appearance.logoPlacement == p && appearance.showGameLogos) {
-                        onChange(appearance.copy(logoPlacement = p, showGameLogos = true))
-                    }
-                }
             }
         }
     }
@@ -4479,7 +4475,7 @@ private fun <T> RowChoice(label: String, values: Array<T>, current: T, name: (T)
     Spacer(Modifier.height(14.dp))
 }
 
-/** Settings › Audio: interface sounds, haptics, your own sounds, music player,
+/** Settings › Music & sound: interface sounds, haptics, your own sounds, music player,
  * lyrics, music buttons and the preview clips' sound. */
 @Composable
 private fun SoundsContent(appearance: AppearanceSettings, currentTheme: AppTheme, onChange: (AppearanceSettings) -> Unit) {
@@ -4713,7 +4709,7 @@ private fun HomeLauncherCard() {
 }
 
 /** Lets each interface sound be swapped for an audio file of your own. */
-/** Settings › Audio › Background music: the theme's own loop, your own file, or off — with its own volume. */
+/** Settings › Music & sound › Background music: the theme's own loop, your own file, or off — with its own volume. */
 @Composable
 private fun BackgroundMusicCard(appearance: AppearanceSettings, onChange: (AppearanceSettings) -> Unit) {
     com.shelf.launcher.Breadcrumbs.mark("BackgroundMusicCard")

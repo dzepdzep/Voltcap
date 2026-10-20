@@ -242,7 +242,7 @@ internal fun PlaceCentredOn(
 }
 
 /**
- * A lone lyric line on the home screen (Settings › Audio › Where the lyrics show): its top at [topPx]
+ * A lone lyric line on the home screen (Settings › Music & sound › Where the lyrics show): its top at [topPx]
  * or its bottom at [bottomPx], left / centre / right per the lyrics layout, drawn above the game row.
  */
 @Composable

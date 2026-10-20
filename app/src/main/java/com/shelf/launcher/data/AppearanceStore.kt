@@ -45,6 +45,16 @@ object NamePlan {
         m[layout.name] = placement to side
         Features.namesByLayout.value = m.entries.joinToString(";") { "${it.key}=${it.value.first.name},${it.value.second.name}" }
     }
+
+    /** 0.6.17: whether [layout] has a name place of its own (set in its Layout options before they moved). */
+    fun has(layout: HomeLayout): Boolean = parse(Features.namesByLayout.value).containsKey(layout.name)
+
+    /** 0.6.17: [layout] follows Settings › Home › Name & logo again. */
+    fun clear(layout: HomeLayout) {
+        val m = parse(Features.namesByLayout.value).toMutableMap()
+        if (m.remove(layout.name) == null) return
+        Features.namesByLayout.value = m.entries.joinToString(";") { "${it.key}=${it.value.first.name},${it.value.second.name}" }
+    }
 }
 
 object HeroFitPlan {
@@ -73,6 +83,11 @@ object HeroFitPlan {
         val m = parse(Features.heroFitByLayout.value).toMutableMap()
         m[layout.name] = fit.name
         Features.heroFitByLayout.value = m.entries.joinToString(";") { "${it.key}=${it.value}" }
+    }
+
+    /** 0.6.17: the same fit for every layout (Theme › Background › Background picture › Use it in every layout). */
+    fun putAll(fit: HeroFit) {
+        Features.heroFitByLayout.value = HomeLayout.values().joinToString(";") { "${it.name}=${fit.name}" }
     }
 }
 

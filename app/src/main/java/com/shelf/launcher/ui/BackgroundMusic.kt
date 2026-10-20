@@ -162,7 +162,7 @@ fun BackgroundMusicHost(
  * Update 202: when the main screen is "blacked out" for the background music. The loop fades out and pauses when
  * the screen goes off (power button, timeout, the lid closing), while the lock screen is up after it comes back on
  * (until you unlock), and when Voltcap's own screensaver has faded to black on the main screen; it fades back in
- * when you're back. The second screen going black / dim on its own doesn't count. Settings › Audio › Background
+ * when you're back. The second screen going black / dim on its own doesn't count. Settings › Music & sound › Background
  * music › "Keep playing with the screen off" (off by default) lets it play on — except after the lid closed with
  * "Pause music when closed" (or "Also pause when locking") on: that always holds it until the screen's back on.
  * All state is changed on the main thread.
@@ -734,7 +734,7 @@ internal class GaplessLoop(
     }
 }
 
-/** The person's own background track (Settings › Audio › Background music). */
+/** The person's own background track (Settings › Music & sound › Background music). */
 object BackgroundMusicFiles {
     private const val MAX_BYTES = 30L * 1024 * 1024
 

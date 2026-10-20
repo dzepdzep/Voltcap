@@ -123,7 +123,7 @@ internal fun r1HoldTarget(id: String): R1Target? = when {
     id == "rescan" -> R1Target.Voltcap("Library", "Your games")
     id == "scrape" -> R1Target.Voltcap("Metadata", "Artwork source")
     id == "profile" -> R1Target.Voltcap("Performance", "Performance tuner")
-    id == "mixer" -> R1Target.Voltcap("Audio", null)
+    id == "mixer" -> R1Target.Voltcap("Music & sound", null)
     id == "settings" -> R1Target.Voltcap(null, null)
     id == "dev_AIRPLANE" -> R1Target.Android(Settings.ACTION_AIRPLANE_MODE_SETTINGS)
     id == "dev_REFRESH_RATE" -> R1Target.Android(Settings.ACTION_DISPLAY_SETTINGS)

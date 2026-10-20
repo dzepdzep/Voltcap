@@ -83,7 +83,7 @@ internal fun BoxScope.ConsoleBadge(
     /** Update 202: the tile shows the game's case (its printed band carries the console's logo already). */
     onCase: Boolean = false
 ) {
-    if (!Features.consoleBadges.state.value) return
+    if (!Features.consoleBadges.state.value || LocalArtMirror.current) return
     // Update 202: not on a case that prints its console's band (the Portal showed "NINTENDO GAMECUBE" twice on every
     // GameCube case — the badge's pill over the case's own band; the same on PS2, Switch, N64, Android…). Only the
     // PlayStation (PS1) case, drawn without its band, keeps the badge.

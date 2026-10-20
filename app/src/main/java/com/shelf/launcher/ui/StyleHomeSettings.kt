@@ -144,6 +144,17 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
  */
 @Composable
 private fun CubeSettings() {
+    // 0.6.17: the Hub look.
+    StyleChoice("Look", Features.CubeLook.values(), Features.cubeLook.state.value, { it.label }) { Features.cubeLook.value = it }
+    MutedNote(
+        if (Features.cubeLook.state.value == Features.CubeLook.HUB)
+            "Hub: a glass cube whose faces are Games, Systems, Apps and Settings, a menu on the left and your game library on the " +
+                "right — the category tabs above a cover flow. ◀ ▶ the games, ▲ the tabs (◀ ▶ change the category), B the menu " +
+                "(▲ ▼ choose, A open). On narrow or portrait screens the Classic cube shows. The options below are the Classic look's, " +
+                "except colour, float, backdrop and reduced motion, which both use."
+        else "Classic: the cube of your categories."
+    )
+    Spacer(Modifier.height(10.dp))
     MutedNote(
         "A translucent cube whose sides are your categories, its top face Apps and its bottom face Settings. ◀ ▶ turn it, " +
             "▲ ▼ tip it, A opens the face turned to you. Opening a category docks the cube out of the way and the games fill " +

@@ -911,6 +911,7 @@ internal fun StyleArt(
             // Update 115: the console's badge.
             ConsoleBadge(g.platform, packageName = g.packageName)
             StyleProgressChip(c, g)
+            StyleMetacriticChip(c, g)
         }
         return
     }
@@ -958,7 +959,19 @@ internal fun StyleArt(
         // Update 115: the console's badge (update 141: on every look, cartridges, discs and cases too).
         ConsoleBadge(g.platform, packageName = g.packageName)
         StyleProgressChip(c, g)
+        StyleMetacriticChip(c, g)
     }
+}
+
+/** 0.6.17: the Metacritic score on the game you're on (Settings › Game look › Cards › Metacritic score), when it has one. */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.StyleMetacriticChip(c: StyleCtx, g: Game) {
+    if (!com.shelf.launcher.data.Features.metacriticChip.state.value || LocalArtMirror.current) return
+    if (g.stableKey != c.game?.stableKey) return
+    val score = metacriticScore(c.state.metadata[g.stableKey], g) ?: return
+    val look = LocalCardLook.current
+    val clash = achChipAlign(look.trophyCorner) == Alignment.BottomEnd
+    MetacriticChip(score, Modifier.align(if (clash) Alignment.TopEnd else Alignment.BottomEnd).padding(6.dp))
 }
 
 /**
@@ -968,6 +981,7 @@ internal fun StyleArt(
  */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.StyleProgressChip(c: StyleCtx, g: Game) {
+    if (LocalArtMirror.current) return
     val look = LocalCardLook.current
     if (!look.achievementsOnCards) return
     val at = achChipAlign(look.trophyCorner) ?: return
@@ -1354,3 +1368,39 @@ internal fun StyleEmpty(modifier: Modifier = Modifier) {
         Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.75f), fontSize = 14.sp)
     }
 }
+
+
+/** 0.6.17: a game's Metacritic score — its details (RAWG), else your scores file; null when neither has one. */
+internal fun metacriticScore(meta: com.shelf.launcher.data.GameMetadata?, g: Game): Int? =
+    meta?.metacritic?.takeIf { it in 1..100 } ?: com.shelf.launcher.data.MetacriticFile.score(g)
+
+/** 0.6.17: the details of every game, for the cards that aren't drawn from a StyleCtx (LauncherScreen keeps it current). */
+internal object MetacriticCards {
+    var metadata by androidx.compose.runtime.mutableStateOf<Map<String, com.shelf.launcher.data.GameMetadata>>(emptyMap())
+}
+
+/** 0.6.17: Metacritic's own colours — green from 75, yellow from 50, red below — with the score in it. */
+@Composable
+internal fun MetacriticChip(score: Int, modifier: Modifier = Modifier) {
+    val bg = when {
+        score >= 75 -> Color(0xFF66CC33)
+        score >= 50 -> Color(0xFFFFCC33)
+        else -> Color(0xFFFF0000)
+    }
+    Box(
+        modifier
+            .size(width = 30.dp, height = 24.dp)
+            .clip(RoundedCornerShape(5.dp))
+            .background(bg)
+            .border(1.dp, Color.Black.copy(alpha = 0.35f), RoundedCornerShape(5.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            score.toString(), color = if (score >= 50) Color(0xFF111111) else Color.White,
+            fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, softWrap = false
+        )
+    }
+}
+
+/** 0.6.17: true inside a mirror image of a game (the Cube hub's floor): no badges or chips drawn there (they'd read backwards). */
+internal val LocalArtMirror = androidx.compose.runtime.staticCompositionLocalOf { false }

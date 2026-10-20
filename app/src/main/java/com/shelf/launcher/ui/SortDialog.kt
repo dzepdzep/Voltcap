@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
@@ -111,6 +112,12 @@ internal fun MetacriticFileRow() {
             rawg -> "Games without a score get it from RAWG on their own (your RAWG key, Settings › Accounts)."
             else -> "Connect a free RAWG key in Settings › Accounts and Voltcap fills in the missing scores on its own."
         }
+    )
+    // 0.6.17: the score itself on the game you're on.
+    SwitchRow(
+        Icons.Filled.Star, "Show the score on the game you're on",
+        "A small Metacritic badge on the game you're on — green from 75, yellow from 50, red below. Also in Settings › Game look › Cards.",
+        com.shelf.launcher.data.Features.metacriticChip.state.value, { com.shelf.launcher.data.Features.metacriticChip.value = it }
     )
     MenuRow(
         Icons.Filled.UploadFile,

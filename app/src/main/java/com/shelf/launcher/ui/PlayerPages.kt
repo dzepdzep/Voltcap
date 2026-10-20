@@ -240,7 +240,7 @@ internal fun CompactLyrics(nowPlaying: NowPlaying, height: Dp, textSize: TextUni
     // Update 144: the player skin's ink (dark on the light skins), not always white.
     val ink = LocalPlayerInk.current
     val (now, next) = when {
-        !lyricsOn -> "Lyrics are off — Settings › Audio › Lyrics" to null
+        !lyricsOn -> "Lyrics are off — Settings › Music & sound › Lyrics" to null
         l == null -> "No lyrics found" to null
         l.isSynced -> {
             val i = l.synced.indexOfLast { it.atMs <= position }

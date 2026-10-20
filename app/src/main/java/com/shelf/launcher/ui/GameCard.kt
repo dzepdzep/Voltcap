@@ -677,6 +677,15 @@ fun GameCard(
             }
         }
 
+        // 0.6.17: the Metacritic score on the game you're on (Settings › Game look › Cards › Metacritic score).
+        // (On the wide capsule its bottom row holds the name / buttons: top right there, under the trophy pill if that's there.)
+        if (focused && com.shelf.launcher.data.Features.metacriticChip.state.value) {
+            metacriticScore(MetacriticCards.metadata[game.stableKey], game)?.let { mc ->
+                val mcAlign = if (banner || trophyAlign == Alignment.BottomEnd) Alignment.TopEnd else Alignment.BottomEnd
+                val underPill = mcAlign == Alignment.TopEnd && trophyAlign == Alignment.TopEnd && pillPossible != null
+                MetacriticChip(mc, Modifier.align(mcAlign).padding(start = 8.dp, end = 8.dp, bottom = 8.dp, top = if (underPill) 38.dp else 8.dp))
+            }
+        }
         val pillAlign = trophyAlign.takeIf { pillPossible != null }
         // Top-left normally; top-right when the trophy pill or the console badge sits top-left (the NEW pill
         // never shows together with a top-left trophy pill on a cover). Update 144: when the top-right is taken

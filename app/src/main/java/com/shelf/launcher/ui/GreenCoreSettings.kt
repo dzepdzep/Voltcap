@@ -66,5 +66,5 @@ internal fun GreenCoreSettings() {
         Features.gcHum.state.value, { Features.gcHum.value = it }
     )
     Spacer(Modifier.height(8.dp))
-    MutedNote("Voltcap's own sound switch (Settings › Audio) silences these too. The game window takes Green Core's look as well.")
+    MutedNote("Voltcap's own sound switch (Settings › Music & sound) silences these too. The game window takes Green Core's look as well.")
 }

@@ -336,6 +336,8 @@ object Features {
      * (Game names › Logos from RetroAchievements).
      */
     val bigLogoSgdb = BoolPref("big_logo_sgdb", true)
+    /** 0.6.17: the Metacritic score on the game you're on (Settings › Game look › Cards, and the Sort window). */
+    val metacriticChip = BoolPref("metacritic_chip", false)
     /**
      * Update 115: a small console badge in the corner of every game's tile (the console's logo in white on its own
      * colour), and whether that pill takes your theme's colour instead.
@@ -1633,6 +1635,10 @@ object Features {
     val cubeBackdrop = BoolPref("cube_backdrop", true)
     /** (Update 239, #93: reduced motion — the cube turns and docks without animating.) */
     val cubeReducedMotion = BoolPref("cube_reduced_motion", false)
+    /** 0.6.17: the Cube menu's look — Hub: the glass cube with Games / Systems / Apps / Settings faces beside a menu and the
+     *  game library (on wide screens); Classic: the cube of categories (update 239). */
+    enum class CubeLook(val label: String) { HUB("Hub (cube + library)"), CLASSIC("Classic (cube of categories)") }
+    val cubeLook = EnumPref("cube_look", CubeLook.HUB, CubeLook.values())
     /** Icon bar: the tiles as squares (off: the card artwork's own shape). */
     val barSquares = BoolPref("bar_squares", true)
 
@@ -1697,7 +1703,7 @@ object Features {
     val musicRestartOnReturn = SetPref("music_restart_on_return", emptySet())
     /**
      * Update 202: Voltcap's background music plays on when the screen goes off or the screensaver fades to black
-     * (Settings › Audio › Background music). Off: it fades out there and back in when you return (MusicBlackout).
+     * (Settings › Music & sound › Background music). Off: it fades out there and back in when you return (MusicBlackout).
      */
     val keepMusicScreenOff = BoolPref("music_keep_screen_off", false)
 

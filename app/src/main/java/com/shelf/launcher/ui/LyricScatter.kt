@@ -323,7 +323,7 @@ internal fun LyricCloudSettings() {
     val F = Features
     Column {
         SectionLabel("Lyric cloud")
-        MutedNote("The song's lyrics appear around the screen in the cover's colours, fading in and out as they're sung. Lyrics need to be on (Settings › Audio); Big / Small above sets their size.")
+        MutedNote("The song's lyrics appear around the screen in the cover's colours, fading in and out as they're sung. Lyrics need to be on (Settings › Music & sound); Big / Small above sets their size.")
         Spacer(Modifier.height(8.dp))
         ChipFlow {
             Features.LyricScatter.values().forEach { m ->
@@ -335,7 +335,7 @@ internal fun LyricCloudSettings() {
 }
 
 /**
- * Lyrics layout, shared by Settings › Audio and the music theme card (the same setting in both): left /
+ * Lyrics layout, shared by Settings › Music & sound and the music theme card (the same setting in both): left /
  * centre / right and an optional gentle float. Applies at once to every lyric line — the home screen's,
  * the music themes', the full player on the second screen and the screensaver.
  */

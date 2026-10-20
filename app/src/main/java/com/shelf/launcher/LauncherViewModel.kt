@@ -112,6 +112,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.withLock
@@ -6352,7 +6353,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             kotlinx.coroutines.delay(20_000)
             val st = _uiState.value
             val m = com.shelf.launcher.data.SortMode.METACRITIC; val c = com.shelf.launcher.data.SortMode.CRITIC
-            if (st.appearance.sortMode == m || st.appearance.sortMode == c || st.categorySort.values.any { it == m || it == c }) fillMetacriticScores()
+            if (st.appearance.sortMode == m || st.appearance.sortMode == c || st.categorySort.values.any { it == m || it == c } ||
+                com.shelf.launcher.data.Features.metacriticChip.value) fillMetacriticScores()
+        }
+        // 0.6.17: the Metacritic badge turned on: the missing scores come in from RAWG too.
+        viewModelScope.launch {
+            androidx.compose.runtime.snapshotFlow { com.shelf.launcher.data.Features.metacriticChip.state.value }
+                .drop(1)
+                .collect { on -> if (on) fillMetacriticScores() }
         }
         // 0.6.15: Metacritic scores from your file (Sort › Metacritic score): read once, and the lists sorted again when they change.
         com.shelf.launcher.data.MetacriticFile.onChange = { _uiState.update { it.copy(scoresVersion = it.scoresVersion + 1) } }
