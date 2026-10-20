@@ -109,7 +109,74 @@ internal object Engraving {
     }
 
     /** Height for 1 wide of the SaveVault mark in [layout] (to place it before it's made). */
-    fun ratio(layout: Layout): Float = unit(layout).let { it[1] / it[0] }
+    fun ratio(layout: Layout): Float = photo()?.let { photoRatio(layout) } ?: unit(layout).let { it[1] / it[0] }
+
+    // ---- 0.6.18: Toni's own SaveVault picture as the mark ----
+    // res/drawable-nodpi/savevault_relief.png: his photo of "SaveVault" over the cloud cut into grey plastic, turned into a
+    // light map — mid grey = flat plastic, darker = shade, lighter = the lit edge — with the stone grain taken out. Laid
+    // over any plastic colour it keeps the picture's own carving and light (CLAUDE: 1360 × 682; the word in rows 0–285,
+    // the cloud in x 70–1000, rows 280–682). Without it (or before Voltcap's context is known) the drawn mark is used.
+    @Volatile var app: android.content.Context? = null
+    @Volatile private var photoMap: Bitmap? = null
+    @Volatile private var photoTried = false
+    private val WORD_BOX = intArrayOf(0, 0, 1360, 286)
+    private val CLOUD_BOX = intArrayOf(70, 280, 1000, 682)
+
+    private fun photo(): Bitmap? {
+        if (photoTried) return photoMap
+        val c = app ?: return null
+        photoTried = true
+        photoMap = runCatching {
+            android.graphics.BitmapFactory.decodeResource(c.resources, com.shelf.launcher.R.drawable.savevault_relief, android.graphics.BitmapFactory.Options().apply {
+                inScaled = false; inPreferredConfig = Bitmap.Config.ARGB_8888
+            })
+        }.getOrNull()
+        return photoMap
+    }
+
+    private fun photoRatio(layout: Layout): Float {
+        if (layout == Layout.STACKED) return 682f / 1360f
+        val wh = WORD_BOX[3] - WORD_BOX[1]
+        val cw = (CLOUD_BOX[2] - CLOUD_BOX[0]) * wh.toFloat() / (CLOUD_BOX[3] - CLOUD_BOX[1])
+        return wh / (WORD_BOX[2] - WORD_BOX[0] + wh * 0.25f + cw)
+    }
+
+    /** The picture's light map, [widthPx] wide, in [layout] (stacked: as it is; in a line: the word, then the cloud). */
+    private fun photoLayout(map: Bitmap, widthPx: Int, layout: Layout): Bitmap? {
+        val h = (widthPx * photoRatio(layout)).roundToInt().coerceAtLeast(1)
+        val out = runCatching { Bitmap.createBitmap(widthPx, h, Bitmap.Config.ARGB_8888) }.getOrNull() ?: return null
+        val c = Canvas(out)
+        c.drawColor(android.graphics.Color.rgb(128, 128, 128))
+        val p = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+        if (layout == Layout.STACKED) {
+            c.drawBitmap(map, null, RectF(0f, 0f, widthPx.toFloat(), h.toFloat()), p)
+        } else {
+            val k = h.toFloat() / (WORD_BOX[3] - WORD_BOX[1])
+            val ww = (WORD_BOX[2] - WORD_BOX[0]) * k
+            c.drawBitmap(map, android.graphics.Rect(WORD_BOX[0], WORD_BOX[1], WORD_BOX[2], WORD_BOX[3]), RectF(0f, 0f, ww, h.toFloat()), p)
+            val cw = (CLOUD_BOX[2] - CLOUD_BOX[0]) * h.toFloat() / (CLOUD_BOX[3] - CLOUD_BOX[1])
+            val cx = ww + h * 0.25f
+            c.drawBitmap(map, android.graphics.Rect(CLOUD_BOX[0], CLOUD_BOX[1], CLOUD_BOX[2], CLOUD_BOX[3]), RectF(cx, 0f, cx + cw, h.toFloat()), p)
+        }
+        return out
+    }
+
+    /** The light map as shade and light over [shell]'s plastic: black where it's darker, white where it's lighter. */
+    private fun photoRelief(map: Bitmap, shell: Int): Bitmap? {
+        val w = map.width; val h = map.height
+        val px = IntArray(w * h)
+        map.getPixels(px, 0, w, 0, 0, w, h)
+        val l = lightness(shell or 0xFF000000.toInt())
+        // Dark plastic: the shade a little softer, the lit edge stronger; light plastic the other way round.
+        val darkK = 0.62f + 0.25f * l
+        val lightK = 0.38f + 0.40f * (1f - l)
+        for (i in px.indices) {
+            val d = ((px[i] and 255) - 128) / 127f
+            px[i] = if (d < 0f) (((-d * darkK).coerceIn(0f, 1f) * 255f).roundToInt() shl 24)
+            else (((d * lightK).coerceIn(0f, 1f) * 255f).roundToInt() shl 24) or 0xFFFFFF
+        }
+        return runCatching { Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888) }.getOrNull()
+    }
 
     /** The SaveVault mark's shape in white on clear, [widthPx] wide. */
     private fun saveVaultMask(widthPx: Int, layout: Layout): Bitmap? {
@@ -157,11 +224,12 @@ internal object Engraving {
     }
 
     /** [mask] as a relief in [shell]'s plastic: [recessed] pressed into it, else raised from it. */
-    private fun relief(mask: Bitmap, shell: Int, recessed: Boolean): Bitmap? {
+    private fun relief(mask: Bitmap, shell: Int, recessed: Boolean, strong: Boolean = false): Bitmap? {
         val out = runCatching { Bitmap.createBitmap(mask.width, mask.height, Bitmap.Config.ARGB_8888) }.getOrNull() ?: return null
         val c = Canvas(out)
         val t = tones(shell or 0xFF000000.toInt())
-        val d = (mask.height * 0.035f).coerceIn(1f, (PAD - 1).toFloat())
+        // (0.6.18, [strong]: the Save Vault backs' embossed console logo — a deeper edge, so it reads like the moulded mark.)
+        val d = if (strong) (mask.height * 0.05f).coerceIn(1.5f, 2.6f) else (mask.height * 0.035f).coerceIn(1f, (PAD - 1).toFloat())
         val light = if (recessed) d else -d
         val p = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
         p.colorFilter = PorterDuffColorFilter(t[1], PorterDuff.Mode.SRC_IN); c.drawBitmap(mask, light, light, p)
@@ -179,6 +247,13 @@ internal object Engraving {
         if (w < 28) return null
         val key = "sv|${shell or 0xFF000000.toInt()}|$w|${layout.ordinal}|$recessed"
         cache.get(key)?.let { return it }
+        // 0.6.18: Toni's picture, where it's there.
+        photo()?.let { map ->
+            val laid = photoLayout(map, w, layout)
+            val out = laid?.let { photoRelief(it, shell) }
+            laid?.recycle()
+            if (out != null) { cache.put(key, out); return out }
+        }
         val mask = saveVaultMask(w, layout) ?: return null
         val out = relief(mask, shell, recessed)
         mask.recycle()
@@ -244,12 +319,12 @@ internal object Engraving {
      * [platform]'s logo raised from (or, [raised] false, pressed into) [shell]'s plastic, fitted in [w] × [h] px. For the
      * backs of Voltcap's custom platform cartridges only. Cached.
      */
-    fun platformLogo(context: android.content.Context, platform: String, shell: Int, w: Int, h: Int, raised: Boolean = true): Bitmap? {
+    fun platformLogo(context: android.content.Context, platform: String, shell: Int, w: Int, h: Int, raised: Boolean = true, strong: Boolean = false): Bitmap? {
         if (w < 24 || h < 12) return null
-        val key = "pl|$platform|${shell or 0xFF000000.toInt()}|$w|$h|$raised"
+        val key = "pl|$platform|${shell or 0xFF000000.toInt()}|$w|$h|$raised|$strong"
         cache.get(key)?.let { return it }
         val mask = platformMask(context.applicationContext, platform, w, h) ?: return null
-        val out = relief(mask, shell, recessed = !raised)
+        val out = relief(mask, shell, recessed = !raised, strong = strong)
         mask.recycle()
         if (out != null) cache.put(key, out)
         return out
@@ -271,6 +346,22 @@ internal fun Modifier.saveVaultMark(
         val w = min(it.width, it.height / Engraving.ratio(layout))
         Engraving.saveVault(shell, w.roundToInt(), layout)?.asImageBitmap()
     }
+    val at = if (img != null && r != null) IntOffset((r.center.x - img.width / 2f).roundToInt(), (r.center.y - img.height / 2f).roundToInt()) else IntOffset.Zero
+    onDrawWithContent {
+        if (img != null) drawImage(img, dstOffset = at)
+        drawContent()
+    }
+}
+
+/**
+ * 0.6.18: the console the save comes from — its logo embossed (raised) from this node's plastic ([shell]), in the area [where] gives
+ * (null: none). Made when the size or colour changes, never per frame. Off with Save Vault › SaveVault engraving.
+ */
+internal fun Modifier.consoleMark(platform: String?, shell: Int, where: (Size) -> Rect?): Modifier = this.drawWithCache {
+    val ctx = Engraving.app
+    val r = if (platform != null && ctx != null && Features.saveEngraving.state.value) where(size) else null
+    // (Embossed — raised from the plastic.)
+    val img = r?.let { Engraving.platformLogo(ctx!!, platform!!, shell, it.width.roundToInt(), it.height.roundToInt(), raised = true, strong = true)?.asImageBitmap() }
     val at = if (img != null && r != null) IntOffset((r.center.x - img.width / 2f).roundToInt(), (r.center.y - img.height / 2f).roundToInt()) else IntOffset.Zero
     onDrawWithContent {
         if (img != null) drawImage(img, dstOffset = at)

@@ -170,8 +170,8 @@ internal fun SwayingModel(
     val tint = Models3D.tintFor(card, platform, name, shell, badge)
     // (Update 241, #44/#46: its back carries the SaveVault mark, moulded in the back's own plastic — saveCardBack.)
     val engrave = Features.saveEngraving.state.value
-    val backBmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, card, version, tint?.key, engrave) {
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { saveCardBack(card, tint, engrave) }
+    val backBmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, card, version, tint?.key, engrave, platform) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { saveCardBack(card, tint, engrave, vaultConsole(platform)) }
     }
     // (Update 236, #42: its sides in the picked shell colour too.)
     val tone = remember(meta, shell) { (shell ?: meta?.tint?.own?.first)?.let { Color(it) } ?: Color(0xFF9EA2A8) }
@@ -208,8 +208,9 @@ private val cardBacks = object : android.util.LruCache<String, android.graphics.
  * already there, so it keeps the picture's own light and any colour picked — on the larger blank band of the back above
  * or below its label; left off where no band is big enough to read it, rather than over a label or the badge. Cached.)
  */
-internal fun saveCardBack(card: String, tint: Models3D.Tint?, engrave: Boolean): android.graphics.Bitmap? = runCatching {
-    val key = "$card|${tint?.key.orEmpty()}|$engrave|${com.shelf.launcher.data.Packs.version.intValue}"
+internal fun saveCardBack(card: String, tint: Models3D.Tint?, engrave: Boolean, platform: String? = null): android.graphics.Bitmap? = runCatching {
+    // (0.6.18: and the console the save comes from, its logo under the mark.)
+    val key = "$card|${tint?.key.orEmpty()}|$engrave|${platform.orEmpty()}|${com.shelf.launcher.data.Packs.version.intValue}"
     cardBacks.get(key)?.let { return@runCatching it }
     // (Update 211: the card's front without its label — the plain card — when the pack has no back picture: the turned
     // card was a flat block of colour from behind, half of every turn.)
@@ -219,7 +220,7 @@ internal fun saveCardBack(card: String, tint: Models3D.Tint?, engrave: Boolean):
     val work = if (engrave) src.copy(android.graphics.Bitmap.Config.ARGB_8888, true) else src
     if (engrave && work != null) {
         val meta = Models3D.meta(card)
-        engraveCardBack(work, if (own != null) meta?.backs?.get(180) else meta?.quads?.get(0))
+        engraveCardBack(work, if (own != null) meta?.backs?.get(180) else meta?.quads?.get(0), platform)
     }
     val b = work ?: src
     val m = android.graphics.Matrix().apply { setScale(-1f, 1f, b.width / 2f, 0f) }
@@ -234,7 +235,7 @@ internal fun saveCardBack(card: String, tint: Models3D.Tint?, engrave: Boolean):
  * own outline (its visible pixels), in the bigger band above or below [label] (the back label's / window's four corners,
  * shares of the picture; null: none) — stacked where it's tall enough, else in one line, else not at all.)
  */
-private fun engraveCardBack(b: android.graphics.Bitmap, label: FloatArray?) {
+private fun engraveCardBack(b: android.graphics.Bitmap, label: FloatArray?, platform: String? = null) {
     val w = b.width; val h = b.height
     val px = IntArray(w * h)
     b.getPixels(px, 0, w, 0, 0, w, h)
@@ -253,21 +254,53 @@ private fun engraveCardBack(b: android.graphics.Bitmap, label: FloatArray?) {
     val bw = (x1 - x0).toFloat(); val bh = (y1 - y0).toFloat()
     // The band free of the label: above it or below it, whichever is taller (the whole card without a label).
     var top = y0 + bh * 0.08f; var bottom = y1 - bh * 0.08f
+    var labelRect: android.graphics.RectF? = null
     if (label != null && label.size >= 8) {
         val ly0 = minOf(label[1], label[3], label[5], label[7]) * h
         val ly1 = maxOf(label[1], label[3], label[5], label[7]) * h
+        val lx0 = minOf(label[0], label[2], label[4], label[6]) * w
+        val lx1 = maxOf(label[0], label[2], label[4], label[6]) * w
+        labelRect = android.graphics.RectF(lx0, ly0, lx1, ly1)
         val above = ly0 - top; val below = bottom - ly1
         if (above >= below) bottom = ly0 - bh * 0.03f else top = ly1 + bh * 0.03f
     }
-    val band = bottom - top
-    val markW = bw * 0.46f
+    val ctx = Engraving.app
+    val withLogo = platform != null && ctx != null
+    val atop = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply {
+        xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_ATOP)
+    }
+    fun logoAt(cx: Float, cy: Float, lw: Int, lh: Int) {
+        if (!withLogo || lw < 24 || lh < 12) return
+        val tone = Engraving.sampleTone(b, android.graphics.RectF(cx - lw / 2f, cy - lh / 2f, cx + lw / 2f, cy + lh / 2f)) ?: return
+        // (Embossed: raised from the plastic, as Toni asked.)
+        Engraving.platformLogo(ctx!!, platform!!, tone, lw, lh, raised = true, strong = true)?.let { logo ->
+            android.graphics.Canvas(b).drawBitmap(logo, cx - logo.width / 2f, cy - logo.height / 2f, atop)
+        }
+    }
+    // 0.6.18: Toni's SaveVault picture goes big on the back's label plate (a grey plate, like the picture's own), and the
+    // console the save comes from has its logo in the free band above / below it. A back without a label: both in its band.
+    val lr = labelRect
+    if (lr != null && lr.width() > bw * 0.3f && lr.height() > bh * 0.12f) {
+        val inW = lr.width() * 0.86f; val inH = lr.height() * 0.80f
+        val stackedW = minOf(inW, inH / Engraving.ratio(Engraving.Layout.STACKED))
+        Engraving.engraveOnto(b, lr.centerX(), lr.centerY(), stackedW.toInt(), Engraving.Layout.STACKED)
+        val band = bottom - top
+        logoAt(x0 + bw / 2f, top + band / 2f, (bw * 0.66f).toInt(), (band * 0.78f).toInt())
+        return
+    }
+    val logoH = if (withLogo) (bottom - top) * 0.22f else 0f
+    val band = bottom - top - logoH
+    val markW = bw * 0.62f
     val layout = when {
         markW * Engraving.ratio(Engraving.Layout.STACKED) <= band -> Engraving.Layout.STACKED
-        bw * 0.56f * Engraving.ratio(Engraving.Layout.HORIZONTAL) <= band -> Engraving.Layout.HORIZONTAL
+        bw * 0.7f * Engraving.ratio(Engraving.Layout.HORIZONTAL) <= band -> Engraving.Layout.HORIZONTAL
         else -> return
     }
-    val mw = if (layout == Engraving.Layout.STACKED) markW else bw * 0.56f
-    Engraving.engraveOnto(b, x0 + bw / 2f, top + band / 2f, mw.toInt(), layout)
+    val mw = if (layout == Engraving.Layout.STACKED) minOf(markW, band / Engraving.ratio(layout) * 0.92f) else bw * 0.7f
+    val mh = mw * Engraving.ratio(layout)
+    val markCy = top + band / 2f
+    Engraving.engraveOnto(b, x0 + bw / 2f, markCy, mw.toInt(), layout)
+    if (logoH > 0f) logoAt(x0 + bw / 2f, markCy + mh / 2f + logoH * 0.55f, (bw * 0.42f).toInt(), (logoH * 0.78f).toInt())
 }
 
 /** Width / height of each physical style. */
@@ -463,7 +496,7 @@ private fun frontMark(style: SaveVaultStyle, body: List<Color>): Pair<Int, (Size
  * behind it reads the right way round. The capsule's save shows through its glass the other way round, as it would.)
  */
 @Composable
-internal fun SaveObjectBack(style: SaveVaultStyle, look: SaveLook?, icon: String?, state: SyncState, modifier: Modifier = Modifier) {
+internal fun SaveObjectBack(style: SaveVaultStyle, look: SaveLook?, icon: String?, state: SyncState, modifier: Modifier = Modifier, platform: String? = null) {
     val capsule = style == SaveVaultStyle.CAPSULE
     val shape: Shape = when (style) {
         SaveVaultStyle.SD_CARD -> SdShape
@@ -578,13 +611,26 @@ internal fun SaveObjectBack(style: SaveVaultStyle, look: SaveLook?, icon: String
                     }
                 }
                 // The mark, on top of the details it sits in.
+                // (0.6.18: the mark is Toni's own SaveVault picture — Engraving — and the console the save comes from has its
+                // logo pressed in under it.)
+                val withLogo = platform != null
                 Box(
                     Modifier.fillMaxSize().saveVaultMark(markTone, layout, minWidth = 0.dp) { s ->
                         when (style) {
-                            SaveVaultStyle.MEMORY_CARD -> markArea(s.width * 0.5f, s.height * 0.40f, s.width * 0.44f, s.height * 0.42f)
-                            SaveVaultStyle.SD_CARD -> markArea(s.width * 0.5f, s.height * 0.43f, s.width * 0.5f, s.height * 0.44f)
+                            SaveVaultStyle.MEMORY_CARD -> if (withLogo) markArea(s.width * 0.5f, s.height * 0.33f, s.width * 0.66f, s.height * 0.30f)
+                                else markArea(s.width * 0.5f, s.height * 0.40f, s.width * 0.66f, s.height * 0.42f)
+                            SaveVaultStyle.SD_CARD -> if (withLogo) markArea(s.width * 0.5f, s.height * 0.36f, s.width * 0.68f, s.height * 0.30f)
+                                else markArea(s.width * 0.5f, s.height * 0.43f, s.width * 0.68f, s.height * 0.44f)
                             SaveVaultStyle.FLOPPY -> markArea(s.width * 0.5f, s.height * 0.875f, s.width * 0.52f, s.height * 0.09f)
-                            SaveVaultStyle.CAPSULE -> markArea(s.width * 0.5f, s.height * 0.80f, s.width * 0.56f, s.height * 0.30f)
+                            SaveVaultStyle.CAPSULE -> markArea(s.width * 0.5f, s.height * 0.84f, s.width * 0.6f, s.height * 0.22f)
+                            else -> null
+                        }
+                    }.consoleMark(platform, markTone) { s ->
+                        when (style) {
+                            SaveVaultStyle.MEMORY_CARD -> markArea(s.width * 0.5f, s.height * 0.57f, s.width * 0.5f, s.height * 0.10f)
+                            SaveVaultStyle.SD_CARD -> markArea(s.width * 0.5f, s.height * 0.61f, s.width * 0.5f, s.height * 0.10f)
+                            SaveVaultStyle.FLOPPY -> markArea(s.width * 0.5f, s.height * 0.365f, s.width * 0.42f, s.height * 0.08f)
+                            SaveVaultStyle.CAPSULE -> markArea(s.width * 0.5f, s.height * 0.68f, s.width * 0.5f, s.height * 0.08f)
                             else -> null
                         }
                     }

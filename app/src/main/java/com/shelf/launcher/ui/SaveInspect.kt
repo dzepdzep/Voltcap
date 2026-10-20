@@ -597,8 +597,8 @@ private fun InspectFace(obj: InspectObject, back: Boolean, game: Game, icon: Str
             val version = com.shelf.launcher.data.Packs.version.intValue
             val tint = Models3D.tintFor(card, game.platform, name, look?.shell, look?.trim)
             val engrave = Features.saveEngraving.state.value
-            val bmp by produceState<android.graphics.Bitmap?>(null, card, version, tint?.key, engrave) {
-                value = withContext(Dispatchers.Default) { saveCardBack(card, tint, engrave) }
+            val bmp by produceState<android.graphics.Bitmap?>(null, card, version, tint?.key, engrave, game.platform) {
+                value = withContext(Dispatchers.Default) { saveCardBack(card, tint, engrave, vaultConsole(game.platform)) }
             }
             if (!back) {
                 Model3DArt(card, icon, 0f, Modifier.fillMaxSize(), name = name, alwaysName = true, platform = game.platform, shellOverride = look?.shell, badgeOverride = look?.trim)
@@ -610,13 +610,13 @@ private fun InspectFace(obj: InspectObject, back: Boolean, game: Game, icon: Str
         InspectObject.CAPSULE -> {
             if (!back) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CapsuleSaveCard(icon, name, state, false, 0f, NO_BOB, false, NO_PLACE, look)
-            } else SaveObjectBack(SaveVaultStyle.CAPSULE, look, icon, state, Modifier.fillMaxSize())
+            } else SaveObjectBack(SaveVaultStyle.CAPSULE, look, icon, state, Modifier.fillMaxSize(), platform = vaultConsole(game.platform))
         }
         InspectObject.PS2_ICON -> Unit
         else -> {
             if (!back) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 StyledSaveCard(obj.style(), icon, name, state, false, 0f, NO_BOB, false, NO_PLACE, platform = game.platform, look = look)
-            } else SaveObjectBack(obj.style(), look, icon, state, Modifier.fillMaxSize())
+            } else SaveObjectBack(obj.style(), look, icon, state, Modifier.fillMaxSize(), platform = vaultConsole(game.platform))
         }
     }
 }
@@ -737,3 +737,7 @@ private fun Modifier.inspectSolid(pose: InspectPose, depth: Float, frac: Float, 
             content = null
         }
     }
+
+
+/** 0.6.18: the console whose logo a save's back carries — none for "Other saves". */
+internal fun vaultConsole(platform: String?): String? = platform?.takeIf { it.isNotBlank() && !it.equals("other", true) }

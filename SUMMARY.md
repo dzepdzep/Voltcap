@@ -4,6 +4,17 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (272): Save Vault backs — Toni's own SaveVault picture on the back, plus the console's logo embossed — after release 0.6.18
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **Your picture as the mark:** your photo of "SaveVault" over the cloud, cut into grey plastic, is turned into a light map (`res\drawable-nodpi\savevault_relief.png`, 1360 × 682: mid grey = flat, darker = shade, lighter = the lit edge; the stone grain taken out) and laid over any plastic colour, so it keeps your picture's own carving on red, black, white or see-through shells. It replaces the drawn "SaveVault ☁" everywhere the mark is: the 3D card's back, the drawn memory card / SD card / floppy / capsule backs (Inspect), the fronts that carry it, the open animation. In one line ("SaveVault ☁") it uses your word and your cloud side by side.
+- **3D card back:** your picture fills the back's grey label plate (bigger than the old mark), and the **console the save comes from is embossed (raised) from the plastic** in the free band above it — checked on the Flip 2: GoldenEye 007 → the N64 logo, Pool of Radiance → "Entertainment System" (NES), each over your SaveVault plate.
+- **Drawn backs (memory card, SD card, floppy, capsule in Inspect):** the mark a little bigger, the console's logo embossed under it.
+- "Other saves" (no console) get no logo. Off with Save Vault › Filters & look › SaveVault engraving, as before.
+
+Files: `src_copy\ui\Engraving.kt`, `ui\SaveVaultStyles.kt`, `ui\SaveInspect.kt`, `MainActivity.kt`; `project_copy\app\src\main\res\drawable-nodpi\savevault_relief.png` (new).
+
 ## Update — 20 Oct 2026 (271): Charging log for the RP Classic heat (#99) — read-only; list of what's left (`Claude outputs\LEFT_TO_DO.md`) — after release 0.6.18
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.

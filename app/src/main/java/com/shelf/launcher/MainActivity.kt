@@ -333,6 +333,8 @@ class MainActivity : ComponentActivity() {
         com.shelf.launcher.device.VoltcapRate.applyWindow(this)
         // 0.6.18: the charging log notes whether Voltcap or another app was in front, and starts with the app.
         com.shelf.launcher.data.ChargeLog.inFront = true
+        // 0.6.18: the SaveVault mark reads Toni's picture from the app's resources.
+        com.shelf.launcher.ui.Engraving.app = applicationContext
         com.shelf.launcher.data.ChargeLog.start(this)
         window.decorView.postDelayed({
             // (Top resumed, not window focus: a Settings page or popup over the home has the focus, and it's still Voltcap.)
