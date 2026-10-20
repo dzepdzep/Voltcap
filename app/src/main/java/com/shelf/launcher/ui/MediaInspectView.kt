@@ -1532,15 +1532,24 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // tried again, so a custom cartridge turned grey here.
     // (Update 240, #92: a library shell's researched bottom — its insertion edge, connector opening and board — drawn
     // on its bottom plane when it's tilted to show it; shells without researched data keep the plain edge.)
-    // (Update 240, #92: a library shell's researched bottom — its insertion edge, connector opening and board — drawn
-    // on its bottom plane when it's tilted to show it; shells without researched data keep the plain edge.)
-    val under = remember(p.pick?.platform) {
-        p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
-            val ch = CartShells.split(pp).first
-            ch?.shell?.let { sh ->
-                runCatching { CartUndersides.picture(sh, CartShells.colourOf(sh, ch.colourKey), 8f)?.asImageBitmap() }.getOrNull()?.let { sh to it }
-            }
-        }
+    // (Update 275, Toni: the connector end in real 3D — the opening, its walls, the board, its contacts, ribs and plates
+    // (CartUnderside.kt) — for a drawn shell, and for a cartridge photo / template on its console's real shell's numbers
+    // (stretched to its own shape; no bottom face of its own drawn — its outline isn't the shell's). Custom pack pieces
+    // and shells without researched data keep the plain edge.)
+    val under = remember(p.pick?.platform, p.realScan, p.game.platform) {
+        runCatching {
+            val pp = p.pick?.platform
+            if (pp != null && pp.startsWith(SHELL_PREFIX)) {
+                val ch = CartShells.split(pp).first
+                ch?.shell?.let { sh -> CartUndersides.geo(sh)?.let { g -> UnderPlan(sh, g, CartShells.colourOf(sh, ch.colourKey).opacity, full = true) } }
+            } else if (pp == null || (!isCustomPiece(pp) && pp == p.game.platform)) {
+                ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
+                    // (Only when the picture is close to the real shell's shape — else the opening wouldn't sit on it.)
+                    if (abs(p.aspect - sh.aspect) / sh.aspect > 0.15f) null
+                    else CartUndersides.geo(sh)?.let { g -> UnderPlan(sh, g, 1f, full = false) }
+                }
+            } else null
+        }.getOrNull()
     }
     val customPlatform = p.pick?.platform?.takeIf { isCustomPiece(it) }
     val saved = if (customPlatform != null) rememberCustomPieceTone(customPlatform) else null
@@ -1631,10 +1640,10 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                         at(z) { drawLayer(edge) }
                     }
                 }
-                under?.let { (ush, upic) ->
-                    if (CartUndersides.bottomMatrix(mx, ush, upic.width, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp))
-                        withTransform({ transform(mx) }) { drawImage(upic) }
-                }
+                // (Update 275: the bottom face round the openings — a drawn shell's own.)
+                val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full) }
+                val plasticArgb = sideTone.toArgb()
+                if (under != null && uv != null && under.full) CartUndersides.drawRim(this, under.geo, uv, plasticArgb, under.opacity)
                 if (c >= 0f) {
                     lit.colorFilter = SlabLight.of(1f - 0.4f * abs(sn))
                     lit.record { drawLayer(face) }
@@ -1672,10 +1681,15 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                     }
                     at(-depth / 2f) { drawLayer(back) }
                 }
+                // (Update 275: what's seen through the openings, over the faces — clipped to each opening.)
+                if (under != null && uv != null) CartUndersides.drawInside(this, under.geo, uv, plasticArgb, under.opacity)
             }
         }
     ) { PieceFace(p, Modifier.fillMaxSize()) }
 }
+
+/** Update 275: what InspectSlab draws of a piece's connector end (CartUnderside.kt). */
+private class UnderPlan(val shell: CartShell, val geo: CartUndersides.Geo, val opacity: Float, val full: Boolean)
 
 /** Update 189: the shell's colour in a cartridge / card picture — the first solid pixel in from its left edge, half-way down. */
 private fun sampleShell(b: android.graphics.Bitmap): Color? {

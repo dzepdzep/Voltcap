@@ -169,6 +169,134 @@ backs show just what's certain (seams, the connector); they need real rear photo
 | N-Gage game card (MMC) | Measured from rear photos | 2 stickers; 7 contacts showing; notch | — |
 | Evercade cartridge | Measured from rear photos | 2 stickers; moulded text; notch | the real Evercade cart is LANDSCAPE (w/h ≈ 1.2), not 60 wide x 88 tall, so features are stretched ~1.75x vertically here |
 
+
+## Bottoms (update 275): the connector end in 3D
+
+**What was wrong:** the turned piece is the front outline extruded (InspectSlab's slices), so its bottom was a solid
+face. Update 240 painted a picture on that face (a dark strip, a green line, a gold hairline): from below or at an angle
+it was still flat plastic.
+
+**Now** (`src\ui\CartUnderside.kt`, drawn by `InspectSlab` in `src\ui\MediaInspectView.kt`), each opening is real
+geometry seen through a hole:
+- the opening in the bottom face, with inner walls and a ceiling at the real depth (and up the back face where the
+  real shell is cut away: the Game Boy family, DS / 3DS / Switch cards);
+- the board inside as a solid slab, recessed where the real one is, with a bevelled edge where it has one;
+- each gold finger at the published count and pitch;
+- plastic ribs, dust plates, doors, notches and second boards where the real cartridge has them.
+
+How it's drawn: the faces are flat-shaded polygons lit from the upper left and culled when they face away. They're
+clipped to each opening's outline on screen, far to near. Nothing else on the piece changes: the front, back, labels,
+colours, sway and turn are untouched. It applies to the drawn shells and to cartridge photos / templates of the same
+console; the photos and templates get their console shell's numbers and no bottom face of their own.
+
+**How sure:**
+- Contact counts and pitches are published (NESdev, SNESdev, ConsoleMods, replica KiCad footprints, patents).
+- The size of each opening, how deep it goes, and where the board sits through the thickness are **estimates for
+  every shell**. No photo of a real bottom could be opened during the research: image hosts were blocked and Reddit
+  refused the fetch.
+
+| Shell | Opening (estimated) | Contacts | Also modelled | Verified | Sources |
+|---|---|---|---|---|---|
+| NES Game Pak | 100.5 × 22.0 mm deep, board recessed 8.0 mm | 36 a side at 2.5 mm | — | pcb, contacts | <https://www.nesdev.org/wiki/Cartridge_connector> <https://www.nesdev.org/wiki/NES_cartrige_dimensions> <https://nesdev.nes.science/f9/t5095.xhtml> |
+| Famicom cassette | 82.0 × 11.0 mm deep, board recessed 1.0 mm | 30 a side at 2.54 mm | — | pcb, contacts | <https://nesdev.org/wiki/Famicom_cartridge_dimensions> <https://www.nesdev.org/wiki/Cartridge_connector> <https://ConsoleMods.org/wiki/Dimensions_for_Game_Cartridges> |
+| SNES Game Pak (North America) | 104.0 × 12.0 mm deep, board recessed 3.0 mm | 23 a side at 2.5 mm | — | pcb, contacts | <https://snes.nesdev.org/wiki/Cartridge_connector> <https://consolemods.org/wiki/SNES:Connector_Pinouts> <https://allpinouts.org/pinouts/connectors/videogame/snes-cartridge/> |
+| Super Famicom / SNES PAL cassette | 102.0 × 10.0 mm deep, board recessed 1.0 mm | 23 a side at 2.5 mm | — | pcb, contacts | <https://ConsoleMods.org/wiki/Dimensions_for_Game_Cartridges> <https://consolemods.org/wiki/SNES:Region_Information> <http://www.classicplastic.net/dvgi/features-MODSSNESmod.htm> |
+| Nintendo Power SF Memory | 102.0 × 10.0 mm deep, board recessed 1.0 mm | 23 a side at 2.5 mm | — | pcb, contacts | <https://ConsoleMods.org/wiki/Dimensions_for_Game_Cartridges> <https://consolemods.org/wiki/SNES:Region_Information> <http://www.classicplastic.net/dvgi/features-MODSSNESmod.htm> |
+| Nintendo 64 Game Pak | 72.0 × 10.0 mm deep, board recessed 3.0 mm | 25 a side at 2.5 mm | bevelled board edge | pcb, contacts | <https://www.ifixit.com/Guide/Disassembling+Nintendo+64+Cartridge/3583> <https://n64brew.dev/wiki/Game_Pak?oldid=4389> <https://n64brew.dev/wiki/NUS-006> |
+| Game Boy Game Pak | 49.8 × 9.0 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | open up the back 9.0 mm | contacts | <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_DMG-09_P1.50mm_Edge.kicad_mod> <https://github.com/djedditt/kicad-gamepaks> <https://github.com/Gekkio/gb-hardware> |
+| Game Boy Color Game Pak (black) | 49.8 × 9.0 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | open up the back 9.0 mm | contacts | <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_CGB-002_P1.50mm_Edge.kicad_mod> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_DMG-09_P1.50mm_Edge.kicad_mod> <https://github.com/djedditt/kicad-gamepaks> |
+| Game Boy Color Game Pak (clear) | 49.8 × 9.0 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | open up the back 9.0 mm | contacts | <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_CGB-002_P1.50mm_Edge.kicad_mod> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_DMG-09_P1.50mm_Edge.kicad_mod> <https://github.com/djedditt/kicad-gamepaks> |
+| Game Boy Camera | 49.8 × 9.0 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | open up the back 9.0 mm | contacts | <https://en.wikipedia.org/wiki/Game_Boy_Camera> <https://en.wikipedia.org/wiki/Game_Boy_Game_Pak> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_DMG-09_P1.50mm_Edge.kicad_mod> |
+| Pokémon Pinball (rumble) | 49.8 × 9.0 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | open up the back 9.0 mm | contacts | <https://en.wikipedia.org/wiki/Game_Boy_Game_Pak> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_CGB-002_P1.50mm_Edge.kicad_mod> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_DMG-09_P1.50mm_Edge.kicad_mod> |
+| Kirby Tilt 'n' Tumble | 49.8 × 9.0 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | open up the back 9.0 mm | contacts | <https://en.wikipedia.org/wiki/Game_Boy_Game_Pak> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_CGB-002_P1.50mm_Edge.kicad_mod> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_DMG-09_P1.50mm_Edge.kicad_mod> |
+| Nintendo Power GB Memory | 49.8 × 9.0 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | open up the back 9.0 mm | contacts | <https://en.wikipedia.org/wiki/Nintendo_Power_(cartridge)> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_CGB-002_P1.50mm_Edge.kicad_mod> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_DMG-09_P1.50mm_Edge.kicad_mod> |
+| Game Boy Advance Game Pak | 50.0 × 7.5 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | corner notches, open up the back 6.5 mm | contacts | <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge.kicad_mod> <https://github.com/djedditt/kicad-gamepaks/blob/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge_Bootleg.kicad_mod> <https://github.com/djedditt/kicad-gamepaks> |
+| WarioWare: Twisted! | 50.0 × 7.5 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | corner notches, open up the back 6.5 mm | contacts | <https://gbhwdb.gekkio.fi/cartridges/AGB-RZWE-0/ikk5-1.html> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge.kicad_mod> <https://github.com/djedditt/kicad-gamepaks/blob/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge_Bootleg.kicad_mod> |
+| Boktai (solar sensor) | 50.0 × 7.5 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | corner notches, open up the back 6.5 mm | contacts | <https://en.wikipedia.org/wiki/Game_Boy_Game_Pak> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge.kicad_mod> <https://github.com/djedditt/kicad-gamepaks/blob/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge_Bootleg.kicad_mod> |
+| Drill Dozer (rumble) | 50.0 × 7.5 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | corner notches, open up the back 6.5 mm | contacts | <https://en.wikipedia.org/wiki/Game_Boy_Game_Pak> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge.kicad_mod> <https://github.com/djedditt/kicad-gamepaks/blob/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge_Bootleg.kicad_mod> |
+| Yoshi Topsy-Turvy (tilt) | 50.0 × 7.5 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | corner notches, open up the back 6.5 mm | contacts | <https://en.wikipedia.org/wiki/Game_Boy_Game_Pak> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge.kicad_mod> <https://github.com/djedditt/kicad-gamepaks/blob/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge_Bootleg.kicad_mod> |
+| Nintendo e-Reader | 50.0 × 7.5 mm deep, board recessed 1.0 mm | 32 on the back face at 1.5 mm | corner notches, open up the back 6.5 mm | contacts | <https://en.wikipedia.org/wiki/Nintendo_e-Reader> <https://raw.githubusercontent.com/djedditt/kicad-gamepaks/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge.kicad_mod> <https://github.com/djedditt/kicad-gamepaks/blob/master/modules/Connector_GameBoy.pretty/GameBoy_GamePak_AGB-002_P1.50mm_Edge_Bootleg.kicad_mod> |
+| Nintendo DS Game Card | 25.6 × 10.0 mm deep, board recessed 0.5 mm | 17 on the back face at 1.5 mm | ribs between contacts, open up the back 10.0 mm | ribs | <https://patents.google.com/patent/US8016681B2/en> <https://www.3dbrew.org/wiki/Cards> <https://en.wikipedia.org/wiki/Nintendo_Game_Card> |
+| Nintendo 3DS Game Card | 25.6 × 10.0 mm deep, board recessed 0.5 mm | 17 on the back face at 1.5 mm | ribs between contacts, open up the back 10.0 mm | ribs | <https://www.3dbrew.org/wiki/Cards> <https://www.ifixit.com/Teardown/Nintendo+3DS+Game+Card+Teardown-How+to+Open/143740> <https://en.wikipedia.org/wiki/Nintendo_Game_Card> |
+| Nintendo Switch Game Card | 17.4 × 10.0 mm deep, board recessed 0.5 mm | 17 on the back face at 1.0 mm | open up the back 10.0 mm | nothing | <https://switchbrew.org/wiki/Gamecard> <https://en.wikipedia.org/wiki/Nintendo_Game_Card> <https://www.nintendo.com/au/support/articles/how-to-insert-remove-game-cards-on-nintendo-switch/> |
+| Nintendo Switch 2 Game Card | 17.4 × 10.0 mm deep, board recessed 0.5 mm | 17 on the back face at 1.0 mm | rear corner notch, open up the back 10.0 mm | nothing | <https://en.wikipedia.org/wiki/Nintendo_Game_Card> <https://en.wikipedia.org/wiki/Nintendo_Switch_2> <https://press-start.com.au/news/nintendo/2025/05/20/heres-a-look-at-nintendo-switch-2s-game-cartridges-and-its-official-carry-case/> |
+| Nintendo Switch 2 Game-Key Card | 17.4 × 10.0 mm deep, board recessed 0.5 mm | 17 on the back face at 1.0 mm | rear corner notch, open up the back 10.0 mm | nothing | <https://en.wikipedia.org/wiki/Nintendo_Game_Card> <https://en.wikipedia.org/wiki/Nintendo_Switch_2> <https://press-start.com.au/news/nintendo/2025/05/20/heres-a-look-at-nintendo-switch-2s-game-cartridges-and-its-official-carry-case/> |
+| Mega Drive / Genesis cartridge | 87.0 × 10.0 mm deep, board recessed 3.0 mm | 32 a side at 2.54 mm | bevelled board edge | pcb, contacts | <https://raw.githubusercontent.com/windsorschmidt/md-flashcart/main/pcb/md-flashcart.kicad_pcb> <https://www.pcbway.com/project/shareproject/Genesis_Mega_Drive_Advanced_Flash_Cartridge_83ab3d2d.html> <https://www.pcbway.com/project/shareproject/W53454ASI19_md_gerber.html> |
+| Mega Drive cartridge (Japan) | 86.0 × 10.0 mm deep, board recessed 3.0 mm | 32 a side at 2.54 mm | bevelled board edge | pcb, contacts | <https://raw.githubusercontent.com/windsorschmidt/md-flashcart/main/pcb/md-flashcart.kicad_pcb> <https://www.pcbway.com/project/shareproject/Genesis_Mega_Drive_Advanced_Flash_Cartridge_83ab3d2d.html> <https://www.pcbway.com/project/shareproject/W53454ASI19_md_gerber.html> |
+| Electronic Arts Genesis cartridge | 87.0 × 10.0 mm deep, board recessed 3.0 mm | 32 a side at 2.54 mm | bevelled board edge | pcb, contacts | <https://raw.githubusercontent.com/windsorschmidt/md-flashcart/main/pcb/md-flashcart.kicad_pcb> <https://www.pcbway.com/project/shareproject/Genesis_Mega_Drive_Advanced_Flash_Cartridge_83ab3d2d.html> <https://www.pcbway.com/project/shareproject/W53454ASI19_md_gerber.html> |
+| Sega 32X cartridge | 87.0 × 10.0 mm deep, board recessed 3.0 mm | 32 a side at 2.54 mm | bevelled board edge | pcb | <https://raw.githubusercontent.com/windsorschmidt/md-flashcart/main/pcb/md-flashcart.kicad_pcb> <https://www.pcbway.com/project/shareproject/Genesis_Mega_Drive_Advanced_Flash_Cartridge_83ab3d2d.html> <https://www.pcbway.com/project/shareproject/W53454ASI19_md_gerber.html> |
+| Virtua Racing (SVP) cartridge | 87.0 × 10.0 mm deep, board recessed 3.0 mm | 32 a side at 2.54 mm | bevelled board edge | pcb, contacts | <https://raw.githubusercontent.com/windsorschmidt/md-flashcart/main/pcb/md-flashcart.kicad_pcb> <https://www.pcbway.com/project/shareproject/Genesis_Mega_Drive_Advanced_Flash_Cartridge_83ab3d2d.html> <https://www.pcbway.com/project/shareproject/W53454ASI19_md_gerber.html> |
+| Sonic & Knuckles lock-on cartridge | 87.0 × 10.0 mm deep, board recessed 3.0 mm | 32 a side at 2.54 mm | bevelled board edge | pcb, contacts | <https://raw.githubusercontent.com/windsorschmidt/md-flashcart/main/pcb/md-flashcart.kicad_pcb> <https://www.pcbway.com/project/shareproject/Genesis_Mega_Drive_Advanced_Flash_Cartridge_83ab3d2d.html> <https://www.pcbway.com/project/shareproject/W53454ASI19_md_gerber.html> |
+| Codemasters Mega Drive cartridge | 87.0 × 10.0 mm deep, board recessed 3.0 mm | 32 a side at 2.54 mm | bevelled board edge | pcb, contacts | <https://raw.githubusercontent.com/windsorschmidt/md-flashcart/main/pcb/md-flashcart.kicad_pcb> <https://www.pcbway.com/project/shareproject/Genesis_Mega_Drive_Advanced_Flash_Cartridge_83ab3d2d.html> <https://www.pcbway.com/project/shareproject/W53454ASI19_md_gerber.html> |
+| Codemasters J-Cart | 87.0 × 10.0 mm deep, board recessed 3.0 mm | 32 a side at 2.54 mm | bevelled board edge | pcb, contacts | <https://raw.githubusercontent.com/windsorschmidt/md-flashcart/main/pcb/md-flashcart.kicad_pcb> <https://www.pcbway.com/project/shareproject/Genesis_Mega_Drive_Advanced_Flash_Cartridge_83ab3d2d.html> <https://www.pcbway.com/project/shareproject/W53454ASI19_md_gerber.html> |
+| Master System cartridge | 70.0 × 10.0 mm deep, board recessed 3.0 mm | 25 a side at 2.54 mm | — | pcb, contacts | <https://raw.githubusercontent.com/barbeque/sms-u-simple-cartridge/main/sms-cartridge-basic.kicad_pcb> <https://consolemods.org/wiki/Master_System:Connector_Pinouts> <https://www.hardwarebook.info/Master_System_Cartridge> |
+| Mark III / Master System (Japan) cartridge | 76.0 × 10.0 mm deep, board recessed 2.0 mm | 22 a side at 3.175 mm | — | contacts | <https://consolemods.org/wiki/Master_System:Connector_Pinouts> <https://consolemods.org/wiki/SG-1000:Connector_Pinouts> <https://consolemods.org/wiki/Master_System:171-5304_Board_Info> |
+| SG-1000 cartridge | 76.0 × 10.0 mm deep, board recessed 2.0 mm | 22 a side at 3.175 mm | — | contacts | <https://consolemods.org/wiki/Master_System:Connector_Pinouts> <https://consolemods.org/wiki/SG-1000:Connector_Pinouts> <https://consolemods.org/wiki/Master_System:171-5304_Board_Info> |
+| Game Gear cartridge | 60.0 × 7.0 mm deep, board recessed 2.0 mm | 45 on the back face at 1.27 mm | — | contacts | <https://consolemods.org/wiki/images/2/24/Game_Gear_VA1_Service_Manual.pdf> <https://www.hardwarebook.info/Game_Gear_Cartridge> <https://www.smspower.org/forums/18337-WhereToFindGameGearCartridgeConnectors> |
+| Atari 2600 cartridge | 42.0 × 14.0 mm deep, board recessed 3.0 mm | 12 a side at 2.54 mm | dust plate with slit | contacts | <https://ConsoleMods.org/wiki/Atari_2600:Connector_Pinouts> <https://forums.atariage.com/topic/281211-replacement-2600-connector/> <https://forums.atariage.com/topic/216297-7800-asteroids-cart-w2600-style-spring-cover/> |
+| Atari 2600 cartridge (Activision) | 43.0 × 14.0 mm deep, board recessed 2.0 mm | 12 a side at 2.54 mm | — | contacts | <https://oshpark.com/shared_projects/fqTcNFkn> <https://atariage.com/forums/topic/291443-internal-dust-sleeve-in-atari-carts-really-needed/> <https://forums.atariage.com/topic/281211-replacement-2600-connector/> |
+| Atari 5200 cartridge | 56.0 × 15.0 mm deep, board recessed 3.0 mm | 18 a side at 2.54 mm | dust plate with slit | contacts | <https://consolemods.org/wiki/Atari_5200:Connector_Pinouts> <https://de.ifixit.com/Anleitung/Atari+5200+Game+Cartridge+Disassembly/30264?lang=en> <https://ConsoleMods.org/wiki/Dimensions_for_Game_Cartridges> |
+| Atari 7800 cartridge | 48.0 × 13.0 mm deep, board recessed 2.0 mm | 16 a side at 2.54 mm | board key slot(s) | pcb, contacts | <https://forums.atariage.com/topic/348171-atari-7800-edge-connector-spacing-pad-geometry-pcb-thickness-place-for-cuts/> <https://consolemods.org/wiki/Atari_7800:Connector_Pinouts> <https://forums.atariage.com/topic/216297-7800-asteroids-cart-w2600-style-spring-cover/> |
+| Atari Jaguar cartridge | 100.0 × 12.0 mm deep, board recessed 1.0 mm | 52 a side at 1.8 mm | — | nothing | <https://consolemods.org/wiki/Jaguar:Connector_Pinouts> <https://forums.atariage.com/topic/194422-cartridge-slot/> <https://forums.atariage.com/topic/347610-6mb-cartridge-diy-options/> |
+| Neo Geo AES cartridge | 140.5 × 14.0 mm deep, board recessed 2.0 mm | 50 a side at 2.54 mm | two boards | contacts | <https://wiki.neogeodev.org/index.php/AES_cartridge_pinout> <https://wiki.neogeodev.org/index.php/AES_cartridge> <https://wiki.neogeodev.org/index.php/Cartridges> |
+| Neo Geo MVS cartridge | 159.0 × 12.0 mm deep, board recessed 1.0 mm | 60 a side at 2.54 mm | two boards | contacts | <https://wiki.neogeodev.org/index.php/MVS_cartridge_pinout> <https://wiki.neogeodev.org/index.php/MVS_cartridge> |
+| Neo Geo Pocket cartridge | 27.0 × 9.0 mm deep, board recessed 0.5 mm | 18 a side at 1.27 mm | — | nothing | <https://github.com/Xyl2k/Neo-Geo-Pocket-flash-cartridge/wiki/connector-dims> <https://www.flashmasta.com/how-to-make-a-videogame-cartridge-connector-for-neo-geo-pocket-or-gameboy-nes-snes-genesis-etc/> <https://dumping.guide/_export/raw/todo/carts/snk/neo-geo-pocket> |
+| ColecoVision cartridge | 46.0 × 12.0 mm deep, board recessed 1.0 mm | 15 a side at 2.54 mm | — | contacts | <https://consolemods.org/wiki/ColecoVision:Connector_Pinouts> <https://ConsoleMods.org/wiki/Dimensions_for_Game_Cartridges> |
+| Intellivision cartridge | 60.0 × 10.0 mm deep, board recessed 0.0 mm | 22 a side at 2.54 mm | — | contacts | <https://wiki.intellivision.us/index.php/Cartridge_Port> <https://intvfunhouse.com/tech/cartport/> <https://www.atariage.com/forums/topic/185361-how-do-you-open-an-intellivision-cart-shell/> |
+| Vectrex cartridge | 50.5 × 10.0 mm deep, board recessed 0.0 mm | 18 a side at 2.54 mm | — | nothing | <https://harmlesslion.com/text/vectrex_multicart.htm> <https://ConsoleMods.org/wiki/Dimensions_for_Game_Cartridges> |
+| Odyssey² / Videopac cartridge | 64.0 × 12.0 mm deep, board recessed 1.0 mm | 15 a side at 3.96 mm | — | nothing | <https://www.odyssey2.info/articles/cartread/> <https://www.chipdip.ru/product0/8004980822> <https://odyssey2.info/jgmunchkin/make.php> |
+| Channel F Videocart | 42.0 × 12.0 mm deep, board recessed 4.0 mm | 11 a side at 3.96 mm | closed door | nothing | <https://channelf.se/veswiki/index.php?title=Pinouts> <https://3dgo.app/models/printables/1507542> <https://nicole.express/2021/the-most-unfair-child.html> |
+| Amstrad GX4000 cartridge | 52.0 × 10.0 mm deep, board recessed 1.0 mm | 18 a side at 2.54 mm | — | nothing | <https://www.cpcwiki.eu/index.php/Connector:Cartridge_Slot_(CPC_Plus_only)> <https://cpcwiki.eu/index.php/Cartridge> |
+| Casio PV-1000 cartridge | 50.0 × 12.0 mm deep, board recessed 1.0 mm | 18 a side at 2.54 mm | board key slot(s) | pcb, contacts | <https://obscure.nesdev.org/wiki/Casio_PV-1000/Cartridge_connector> |
+| Watara Supervision cartridge | 46.0 × 5.0 mm deep, board recessed 0.5 mm | 40 on the back face at 1.1 mm | open up the back 4.0 mm | nothing | <https://www.vincenzoscarpa.it/biblioteca/retrofaq/megaduck.html> <https://retrohandhelds.gg/game-over-no-supervision/> <https://www.pcbway.com/project/shareproject/Watara_Supervision_flash_cart_Superpico_5c2a9747.html> |
+| Mega Duck / Cougar Boy cartridge | 54.0 × 5.0 mm deep, board recessed 0.5 mm | 36 on the back face at 1.4 mm | open up the back 4.0 mm | nothing | <https://www.vincenzoscarpa.it/biblioteca/retrofaq/megaduck.html> <https://github.com/zwenergy/picoDuck> <https://github.com/bbbbbr/megaduck-info> |
+| Tiger game.com cartridge | 27.0 × 6.0 mm deep, board recessed 0.5 mm | 20 a side at 1.27 mm | — | pcb | <https://github.com/zwenergy/game.flash> <https://www.digikey.com/en/products/detail/sullins-connector-solutions/RBB25DHHN/927332> <https://en.wikipedia.org/wiki/Tiger_Game.com> |
+
+**Kept plain on purpose:**
+- **Virtual Boy Game Pak**: the dust cap over its connector is part of the drawn shell (73.74 mm with the cap): its plain bottom is the cap.
+- **Famicom Disk System disk**: a disk: no connector.
+- **64DD disk**: a disk: no connector.
+- **Microvision game module**: contacts under a door on the back near the top; the bottom is plain plastic.
+- **Sega Card / My Card**: flat pads flush with the card face: nothing to model in 3D.
+- **PC Engine HuCard / TurboChip**: flat pads flush with the card: nothing to model in 3D.
+- **Atari Lynx game card**: flat fingers flush with the card: nothing to model in 3D.
+- **N-Gage game card (MMC)**: MMC: flat pads flush with the card.
+- **Pokémon mini Game Pak**: only the pin count was found.
+- **Super Cassette Vision cartridge**: no description of its connector end found.
+- **Casio Loopy cartridge**: no description of its connector end found.
+- **Evercade cartridge**: no description of its connector end found.
+- **WonderSwan cartridge**: its 48 × 1.25 mm edge needs ~61 mm but the drawn shell is a 52 mm placeholder.
+
+**Still to do:** measure real bottoms from photos (opening widths, depths, board recess) and replace the estimates;
+check which side the DS / 3DS latch notch is on (not modelled until then); add the N64's separate lower plastic piece
+once its shape is known; the WonderSwan's real landscape shell.
+
+**Checked on the Retroid Pocket Flip 2** (20 Oct 2026), with the testing hook
+(`--es voltcap_test_inspect "Ocarina|<shell>|<yaw>|<pitch>"`). 22 shells, each at three angles: from below-front
+(25°, −58°), straight under (−88°) and from below-behind (205°, −52°). The same angles were shot on the build
+without this change for the before/after sheets (`cart_bottoms_1…6.jpg`).
+
+The following were looked at and are as intended:
+- NES, Famicom, SNES, Super Famicom, N64, Game Boy, GBC (clear), GBA, DS, 3DS, Switch, Switch 2, Mega Drive / Genesis,
+  Japanese Mega Drive, Master System, Mark III, Game Gear, Atari 2600 / 7800, Jaguar, Neo Geo AES, Neo Geo Pocket.
+
+Fixed on the way:
+- The DS / 3DS pocket now lines up with the drawn back's connector window. One 2D contact used to show beside it.
+
+The other 32 shells were checked only in previews made from the same maths on the PC (`sheet0…8.png`). They have not
+been looked at on a handheld.
+
+**Performance:** the inspect view was turned under a Mega Drive cartridge for ~5 s on the Flip 2 (120 Hz screen,
+`dumpsys gfxinfo`):
+
+| | p50 | p90 | p95 | p99 |
+|---|---|---|---|---|
+| Before | 14 ms | 18 ms | 19 ms | 22 ms |
+| After | 12 ms | 15 ms | 17 ms | 24 ms |
+
+That's no measurable cost. Nothing is drawn unless the piece is tilted to show its bottom or its back opening, and
+the home rows never draw it.
+
 ## How it works
 - **Any game on any shell:** use the game's menu › Cartridge shell…, then pick one under Authentic (by maker,
   searchable) or Your custom shells (your cartridge pack's 14 shapes).

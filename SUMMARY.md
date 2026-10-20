@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (275): cartridge bottoms in 3D — the opening, its walls, the board and the gold contacts at their real count, for 54 cartridges — after release 0.6.19
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude (Toni's OK). Not published yet.
+
+- **Before:** the turned cartridge's bottom was a flat face with a picture on it (a dark strip, a green line), so from below or at an angle it was plain plastic.
+- **Now** each connector end is real geometry seen through a hole: the opening with its inner walls and ceiling at depth (and up the back where the real shell is cut away: Game Boy family, DS / 3DS / Switch cards), the board inside as a solid slab (bevelled where the real one is), each gold finger at the published count and pitch, plus ribs, dust plates, doors, notches and second boards where the real cartridge has them. Flat-shaded, lit from the upper left, drawn far to near; the front, back, labels, colours, sway and turn are unchanged.
+- **Which ones:** 54 drawn shells, and cartridge photos / templates of the same console (they get their console's numbers, stretched to fit). 13 stay plain on purpose (disks, flat-pad cards like HuCard / Sega Card / Lynx / MMC, the Virtual Boy's cap, and four with no description of their connector end).
+- **How sure:** contact counts and pitches are published (NESdev, SNESdev, ConsoleMods, replica KiCad footprints, patents); opening sizes, depths and board recess are estimates (no photo of a real bottom could be opened). Full table with sources: `CARTRIDGES.md` › Bottoms.
+- **Checked on the Flip 2:** 22 shells, each from below-front, straight under and below-behind, before and after (`Claude outputs\hold274A\cart_bottoms_1…6.jpg`); the other 32 in PC previews only (`sheet0…8.png`). Fixed on the way: the DS / 3DS pocket lines up with the drawn back's connector window. Frame times turning under a Mega Drive cartridge: p50 14 → 12 ms, p95 19 → 17 ms, p99 22 → 24 ms (no measurable cost; nothing is drawn unless the bottom or back opening shows).
+
+Files (`src_copy\`): `ui\CartUnderside.kt`, `ui\MediaInspectView.kt`; `CARTRIDGES.md` (Bottoms section).
+
 ## Update — 20 Oct 2026 (274): Inspect / Wobble, a piece sways when left alone, Inspect… in every game's menu, Save Vault Inspect returns and sways, the three wide-capsule looks, Stats round shortcut, play time from Recents, popup fixes — after release 0.6.19
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
@@ -22,7 +34,7 @@ All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfL
 
 Files (`src_copy\`): `data\Features.kt`, `data\PlaytimeStore.kt`, `data\UpdatedReceiver.kt` (new), `LauncherViewModel.kt`, `MainActivity.kt`, `ui\BatterySaverUi.kt`, `ui\DialogChrome.kt`, `ui\GameLookPicker.kt`, `ui\GameOptionsDialog.kt`, `ui\GameWindow.kt`, `ui\InspectChoice.kt` (new), `ui\LauncherScreen.kt`, `ui\MediaInspect.kt`, `ui\MediaInspectView.kt`, `ui\QuickSettings.kt`, `ui\SaveExplorer.kt`, `ui\SaveInspect.kt`, `ui\ScrollingName.kt`, `ui\SettingsDialog.kt`, `ui\SettingsIndex.kt`, `ui\TestHooks.kt`, `ui\TileHome.kt`; `project_copy\app\src\main\AndroidManifest.xml`.
 
-**Held, not pushed (Toni's OK first): update 275, cartridge bottoms in 3D** — see `Claude outputs\hold274A\README.md`.
+Update 275 (cartridge bottoms in 3D) was held for Toni's OK, then pushed — see above.
 
 
 ## Update — 20 Oct 2026 (273): flick a 3D piece and it keeps turning, slower and slower, until it stops — after release 0.6.18
