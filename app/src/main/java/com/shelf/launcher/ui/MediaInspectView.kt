@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -1778,51 +1779,42 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     val format by produceState(DiscFormats.quick(p.game.platform), p.game.stableKey) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { DiscFormats.of(p.game) }.getOrDefault(value) }
     }
-    val rim = remember { Color(0xFFA9ADB6) }
-    // (Update 238, #117: the edge as drawn below, darkened once — for the tilted edge's slices.)
-    val rimDark = remember { androidx.compose.ui.graphics.lerp(Color(0xFFA9ADB6), Color.Black, 0.3f) }
+    // Update 288: the edge is the disc's own outline — its label face recorded (below) and drawn again, darker, slice
+    // after slice through its thickness, as the cartridges' sides are (InspectSlab). It was a grey ring / strip drawn
+    // at a set size (98 % of the box), so on a disc whose picture is a little smaller (most photos) a grey band stood
+    // out round its rim whenever it was turned or tilted ("a small grey layer on the edges"); now the edge is exactly
+    // the disc's own rim, in the rim's own colour, and nothing reaches past it.
+    // ([0] the label side, [1] the data side — the edge follows the side facing you: from behind, the label's own
+    // outline showed its colour round the smaller data side.)
+    val faceLayer = remember { arrayOfNulls<androidx.compose.ui.graphics.layer.GraphicsLayer>(2) }
+    // (Read by the edge so it's drawn again once the face has been recorded the first time.)
+    val faceReady = remember { mutableStateOf(false) }
     Box(Modifier.fillMaxSize()) {
         Spacer(
             Modifier.matchParentSize().drawWithCache {
                 val mx = androidx.compose.ui.graphics.Matrix()
+                val edge = obtainGraphicsLayer()
                 onDrawBehind {
-                val t = Math.toRadians(yawOf().toDouble())
-                val c = cos(t).toFloat()
-                val s = sin(t).toFloat()
-                val dia = minOf(size.width, size.height) * k * 0.98f
-                val d = maxOf(p.depth * dia, 2f)
-                val half = d / 2f * abs(s)
-                val pose = PiecePose(yawOf(), pitchOf())
-                if (abs(pose.sp) >= 0.02f) {
-                    // Update 238 (#117): tilted over or under: its edge is the ring (not through the hole) at each depth
-                    // through its thickness, turned and tilted with the faces — seen from above / below it's the band
-                    // round the disc's top / bottom.
-                    val n = kotlin.math.ceil(d * pose.spread / 1.2f).toInt().coerceIn(1, 24)
-                    val outer = dia / 2f; val inner = dia * 0.075f
+                    val pose = PiecePose(yawOf(), pitchOf())
+                    val face = faceLayer[if (pose.facing >= 0f) 0 else 1]
+                    if (!faceReady.value || face == null) return@onDrawBehind
+                    val sn = pose.spread
+                    val d = maxOf(p.depth * k * maxOf(size.width, size.height), 2f)
+                    val n = kotlin.math.ceil(d * sn / 1.2f).toInt().coerceIn(0, 24)
+                    if (n == 0) return@onDrawBehind
+                    edge.colorFilter = SlabLight.of(0.42f + 0.22f * sn)
+                    edge.record(size = androidx.compose.ui.unit.IntSize(size.width.roundToInt(), size.height.roundToInt())) {
+                        // (The data side is a little smaller than the box: in its middle, as it's laid out.)
+                        translate((size.width - face.size.width) / 2f, (size.height - face.size.height) / 2f) { drawLayer(face) }
+                    }
+                    // Far to near (the face itself is drawn over the nearest).
+                    val c = pose.facing
                     for (i in 0..n) {
-                        val z = -d / 2f + d * i / n
+                        val f = i.toFloat() / n
+                        val z = if (c >= 0f) -d / 2f + d * f else d / 2f - d * f
                         pose.matrix(mx, center, z)
-                        withTransform({ transform(mx) }) {
-                            drawCircle(rimDark, radius = (outer + inner) / 2f, center = center, style = Stroke(width = outer - inner))
-                        }
+                        withTransform({ transform(mx) }) { drawLayer(edge) }
                     }
-                } else if (half > 0.3f) {
-                    val cx = size.width / 2f
-                    val cy = size.height / 2f
-                    // (Update 189: not through the hole — the edge and the far face showed in the middle of the disc.)
-                    val holeW = dia * 0.075f * abs(c).coerceAtLeast(0.05f)
-                    val hole = androidx.compose.ui.graphics.Path().apply {
-                        addOval(androidx.compose.ui.geometry.Rect(cx - holeW, cy - dia * 0.075f, cx + holeW, cy + dia * 0.075f))
-                    }
-                    // (Update 215: only the thin edge between the two faces, rounded at its ends — no far face any more.
-                    // Its full silver oval stood out round the disc's own rim whenever the disc was tilted, a second
-                    // disc behind the first ("the layer behind the discs"), on every disc.)
-                    clipPath(hole, androidx.compose.ui.graphics.ClipOp.Difference) {
-                        val cr = androidx.compose.ui.geometry.CornerRadius(half, half)
-                        drawRoundRect(rim, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia), cornerRadius = cr)
-                        drawRoundRect(Color.Black, topLeft = Offset(cx - half, cy - dia / 2f), size = Size(2f * half, dia), cornerRadius = cr, alpha = 0.3f)
-                    }
-                }
                 }
             }
         )
@@ -1835,8 +1827,26 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
             },
             contentAlignment = Alignment.Center
         ) {
-            PieceFace(p, Modifier.fillMaxSize().graphicsLayer { alpha = if (PiecePose(yawOf(), pitchOf()).facing >= 0f) 1f else 0f })
-            DiscDataSide(format, yawOf, Modifier.fillMaxSize(k * 0.98f).graphicsLayer { alpha = if (PiecePose(yawOf(), pitchOf()).facing >= 0f) 0f else 1f })
+            PieceFace(p, Modifier.fillMaxSize().graphicsLayer { alpha = if (PiecePose(yawOf(), pitchOf()).facing >= 0f) 1f else 0f }
+                // (Update 288: recorded, unturned, for the edge's slices behind it.)
+                .drawWithCache {
+                    val l = obtainGraphicsLayer()
+                    faceLayer[0] = l
+                    onDrawWithContent {
+                        l.record { this@onDrawWithContent.drawContent() }
+                        drawLayer(l)
+                        if (!faceReady.value) faceReady.value = true
+                    }
+                })
+            DiscDataSide(format, yawOf, Modifier.fillMaxSize(k * 0.98f).graphicsLayer { alpha = if (PiecePose(yawOf(), pitchOf()).facing >= 0f) 0f else 1f }
+                .drawWithCache {
+                    val l = obtainGraphicsLayer()
+                    faceLayer[1] = l
+                    onDrawWithContent {
+                        l.record { this@onDrawWithContent.drawContent() }
+                        drawLayer(l)
+                    }
+                })
         }
     }
 }

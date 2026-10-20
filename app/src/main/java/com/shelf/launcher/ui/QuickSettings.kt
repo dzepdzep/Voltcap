@@ -1900,7 +1900,7 @@ internal enum class PopupStyle(val label: String, val short: String) {
     // (Update 249, #119: Toni's two earlier designs, as styles of their own — Features.winMotion, RowRevealWindow.kt.)
     ROW_OPENS("The row opens up", "Opens"),
     ROW_REVEAL("Row reveal", "Reveal"),
-    SHARED("Shared move (Game Glance style)", "Shared"),
+    SHARED("Shared move", "Shared"),
     CLASSIC("Classic details window", "Classic");
 
     companion object {
