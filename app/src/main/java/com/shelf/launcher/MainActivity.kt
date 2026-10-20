@@ -331,6 +331,9 @@ class MainActivity : ComponentActivity() {
         // 0.6.15: Settings › Device › Screen rate — the window asks for the fastest mode; where Voltcap can set the rate
         // itself it goes up once Voltcap has really come back (a moment, with the controller).
         com.shelf.launcher.device.VoltcapRate.applyWindow(this)
+        // 0.6.18: the charging log notes whether Voltcap or another app was in front, and starts with the app.
+        com.shelf.launcher.data.ChargeLog.inFront = true
+        com.shelf.launcher.data.ChargeLog.start(this)
         window.decorView.postDelayed({
             // (Top resumed, not window focus: a Settings page or popup over the home has the focus, and it's still Voltcap.)
             if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) && voltcapOnTop) {
@@ -364,6 +367,7 @@ class MainActivity : ComponentActivity() {
         // 0.6.15: the screen rate from before Voltcap raised it (Settings › Device › Screen rate).
         val app = applicationContext
         Thread { runCatching { com.shelf.launcher.device.VoltcapRate.leave(app) } }.start()
+        com.shelf.launcher.data.ChargeLog.inFront = false
     }
 
     // A game started (Voltcap hidden) or Android needs memory: give the decoded art back, all of it

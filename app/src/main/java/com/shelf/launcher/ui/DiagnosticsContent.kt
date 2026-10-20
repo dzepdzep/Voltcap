@@ -116,6 +116,8 @@ private fun collect(context: android.content.Context, games: List<Game>, emulato
             (com.shelf.launcher.device.tune.TuneHardware.gpu()?.let { g -> " · GPU ${g.levelMhz.firstOrNull()} MHz (${g.levelMhz.size} levels)" } ?: "") +
             (if (com.shelf.launcher.device.tune.TuneHardware.hasCustomFan()) " · fan control" else ""))
     out += Check("Device", "Charge limit", null, com.shelf.launcher.device.ChargeLimiter.currentStatus(context).label)
+    // 0.6.18: the charging log (read-only; Android/data/com.shelf.launcher/files/charge_log.csv).
+    out += Check("Device", "Charging log", null, com.shelf.launcher.data.ChargeLog.summary(context) ?: "Nothing logged yet — it notes temperatures once a minute while the handheld charges.")
     out += Check("Device", "Stick lights", null, com.shelf.launcher.data.ControllerLights.describe(context).joinToString().ifBlank { "None found" })
 
     // FPS

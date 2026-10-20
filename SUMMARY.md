@@ -4,6 +4,17 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (271): Charging log for the RP Classic heat (#99) — read-only; list of what's left (`Claude outputs\LEFT_TO_DO.md`) — after release 0.6.18
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+**Charging log (new, read-only — it never changes a charging setting).** While the handheld charges, Voltcap notes once a minute (and at plug / unplug): time, battery %, charger (charger / USB), charging status, battery temperature, chip temperature (through the vendor root service), voltage, current, screen on / off, and Voltcap or another app in front. It's kept 7 days in `Android/data/com.shelf.launcher/files/charge_log.csv` (readable over USB, so the RP Classic can be charged on the 65 W charger away from the PC and read later). Diagnostics › Device › Charging log shows the hottest moment ("Hottest: battery 25.7 °C at 10-20 07:52 (charger, screen on) · chip up to 45 °C · 0.1 h logged"). Checked on the Flip 2: rows every minute, Diagnostics line shown, no crash. Not checked: the plug / unplug rows (the Flip 2 stayed plugged in).
+Limit: it writes only while Voltcap's process lives (it's the home app, so usually; Android may pause it in deep sleep — the minutes before and after show that).
+
+**What's left:** `Claude outputs\LEFT_TO_DO.md` (also in the project as `claude/LEFT_TO_DO.md`): the open roadmap items, devices without the newest builds, open questions, known rough spots, ideas.
+
+Files (`src_copy\`): `data\ChargeLog.kt` (new), `MainActivity.kt`, `ui\DiagnosticsContent.kt`.
+
 ## Update — 20 Oct 2026 (270): Save Vault shows games only — no "Unassigned 3DS / Wii save", numbers or codes on the wall; the same game from two handhelds is one card — after release 0.6.18
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet. No save was opened, changed or moved: only what the wall lists.
