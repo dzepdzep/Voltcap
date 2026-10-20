@@ -6,7 +6,7 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ## Update — 20 Oct 2026 (273): flick a 3D piece and it keeps turning, slower and slower, until it stops — after release 0.6.18
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.19.**
 
 - **Save Vault › Inspect** and the **game window's case / cartridge / disc view**: let go of a drag with some speed and it carries on turning with your finger's speed, easing to a stop (smooth exponential slowdown), then the usual "turn back" settings apply. Gentle on purpose: at most 480° a second, friction 1.9 / s — even a hard flick coasts about three quarters of a turn, ~2 s; a slow drag (under 60° a second) just stops as before. Up / down flicks tilt the same way, a bit softer. A touch, the stick, Y or a tap stops it at once.
 - Checked on the Flip 2 (Pool of Radiance's card in Inspect, one quick flick): it went round past its edge to the front and slowed to a stop.
@@ -15,7 +15,7 @@ Files (`src_copy\`): `ui\MediaInspectView.kt`, `ui\SaveInspect.kt`.
 
 ## Update — 20 Oct 2026 (272): Save Vault backs — Toni's own SaveVault picture on the back, plus the console's logo embossed — after release 0.6.18
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.19.**
 
 - **Your picture as the mark:** your photo of "SaveVault" over the cloud, cut into grey plastic, is turned into a light map (`res\drawable-nodpi\savevault_relief.png`, 1360 × 682: mid grey = flat, darker = shade, lighter = the lit edge; the stone grain taken out) and laid over any plastic colour, so it keeps your picture's own carving on red, black, white or see-through shells. It replaces the drawn "SaveVault ☁" everywhere the mark is: the 3D card's back, the drawn memory card / SD card / floppy / capsule backs (Inspect), the fronts that carry it, the open animation. In one line ("SaveVault ☁") it uses your word and your cloud side by side.
 - **3D card back:** your picture fills the back's grey label plate (bigger than the old mark), and the **console the save comes from is embossed (raised) from the plastic** in the free band above it — checked on the Flip 2: GoldenEye 007 → the N64 logo, Pool of Radiance → "Entertainment System" (NES), each over your SaveVault plate.
@@ -27,7 +27,7 @@ Files: `src_copy\ui\Engraving.kt`, `ui\SaveVaultStyles.kt`, `ui\SaveInspect.kt`,
 
 ## Update — 20 Oct 2026 (271): Charging log for the RP Classic heat (#99) — read-only; list of what's left (`Claude outputs\LEFT_TO_DO.md`) — after release 0.6.18
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.19.**
 
 **Charging log (new, read-only — it never changes a charging setting).** While the handheld charges, Voltcap notes once a minute (and at plug / unplug): time, battery %, charger (charger / USB), charging status, battery temperature, chip temperature (through the vendor root service), voltage, current, screen on / off, and Voltcap or another app in front. It's kept 7 days in `Android/data/com.shelf.launcher/files/charge_log.csv` (readable over USB, so the RP Classic can be charged on the 65 W charger away from the PC and read later). Diagnostics › Device › Charging log shows the hottest moment ("Hottest: battery 25.7 °C at 10-20 07:52 (charger, screen on) · chip up to 45 °C · 0.1 h logged"). Checked on the Flip 2: rows every minute, Diagnostics line shown, no crash. Not checked: the plug / unplug rows (the Flip 2 stayed plugged in).
 Limit: it writes only while Voltcap's process lives (it's the home app, so usually; Android may pause it in deep sleep — the minutes before and after show that).
@@ -38,7 +38,7 @@ Files (`src_copy\`): `data\ChargeLog.kt` (new), `MainActivity.kt`, `ui\Diagnosti
 
 ## Update — 20 Oct 2026 (270): Save Vault shows games only — no "Unassigned 3DS / Wii save", numbers or codes on the wall; the same game from two handhelds is one card — after release 0.6.18
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet. No save was opened, changed or moved: only what the wall lists.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.19.** No save was opened, changed or moved: only what the wall lists.
 
 - **Saves without a game name are off the wall by default:** "Unassigned 3DS save (title ID …)", "Unassigned Wii save (…)", "Other saves" and saves named only by a number or a code. They're kept and still sync; Filters & look has "Saves without a game name (N)" to show them, with a note saying how many are left out. On the Flip 2: 19 cards → 14 (three unassigned 3DS saves and one Wii save from the Thor / Odin went, plus the duplicate below).
 - **One card per game from several handhelds:** a save not tied to one of your games was keyed by its exact name, so "Pokemon - Red Version" (Thor) and "Pokemon Red Version" (Odin) were two cards, one without art. They're keyed by the title now (accents, punctuation and tags left out), and the name with the " - " (the ROM sets' spelling, which finds art) is shown. Their covers are looked up again once under the new keys (checked: Dr. Mario, Picross and Pokémon Silver all have art now — Silver had none before).
@@ -50,7 +50,7 @@ Also this session (not a code change): while opening the Save Vault the R1 panel
 
 ## Update — 20 Oct 2026 (269): the handheld's own switches on Retroid too — L2 / R2 mode (new tile), Mode and Fan on the Flip 2, per-game button layout on Retroid — after release 0.6.18
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2** (the Odin 2 Portal was unplugged), committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2** (the Odin 2 Portal was unplugged), committed and pushed by Claude. **Published as Voltcap 0.6.19.**
 
 How it was found: each of Android's own Quick Settings tiles on the Flip 2 was switched while comparing every Android setting and system property before / after; Voltcap's tiles now write exactly the same things, and were checked against Android's tiles both ways. Every switch was put back as it was (Xbox, L2 / R2 Both, Mode Standard, Fan Smart).
 
@@ -64,7 +64,7 @@ Files (`src_copy\`): `device\DeviceControls.kt`, `ui\QuickSettings.kt`, `ui\Diag
 
 ## Update — 20 Oct 2026 (268): R1 Controller tile — the handheld's own Xbox / Retro controller style, the same switch as Android's (Retroid too) — after release 0.6.18
 
-All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2** (the Odin 2 Portal was unplugged), committed and pushed by Claude. Not published yet.
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2** (the Odin 2 Portal was unplugged), committed and pushed by Claude. **Published as Voltcap 0.6.19.**
 
 **R1 › Device › Controller (Xbox / Retro).** Press: switches the built-in controller between Xbox and Retro layout. Hold: opens Android's Handheld Settings (Input › Controller style). It writes exactly what Android's own Controller style does — read off the Flip 2 by switching Android's Quick Settings tile and comparing before / after: `temp_abxy_layout_mode` (0 Xbox / 1 Retro), `flip_button_layout` (1 / 0) and `persist.sys.gamepad.type` (1 / 0; before, Voltcap's old Buttons tile didn't set this one). Checked both ways on the Flip 2: Voltcap's tile → Android's tile shows Retro; Android's tile → Voltcap's tile follows. Android's third choice, Disconnect (2 / 0 / no_create 1 / prop 2), shows as "Disconnected"; a press brings the controller back as Xbox (checked: the "Xbox Wireless Controller" input device is back). The tile now shows on every handheld whose firmware has the switch (found by its setting, with the vendor's root service) — before, AYN only.
 Also Settings › Controls › Button legend: "Handheld's controller style" — Xbox / Retro / Handheld Settings, the same switch.
