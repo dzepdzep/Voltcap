@@ -107,6 +107,7 @@ object Features {
         migrate42(p)
         // Update 200: the cartridge shell choices, made now — before any screen draws (see CartShellStore).
         runCatching { com.shelf.launcher.ui.CartShellStore.warmUp() }
+        runCatching { com.shelf.launcher.ui.DsCases.warmUp() }
         migrate158(p) // Update 158
         migrate166(p) // Update 166
         // Update 243 (#55): Twin desk's extras start off on a new setup; an install that already had them keeps them.
@@ -1091,6 +1092,8 @@ object Features {
     val caseRegion = EnumPref("case_region", CaseRegionChoice.AUTO_US, CaseRegionChoice.values())
     /** Update 195: the cartridge shell picked per game / per console ("key\tchoice" lines; ui/CartShells.kt). */
     val cartShellChoices = StringPref("cart_shell_choices", "")
+    /** Update 287: the DS case picked for a game (DsCases): "key\tVARIANT" lines. */
+    val dsCaseChoices = StringPref("ds_case_choices", "")
     /**
      * (Update 236, #42/#43/#47: each Save Vault object's colour, per save or per console — "key\tvalue" lines, keys
      * "g:<stableKey>" / "console:<platform>", values "p=<preset>;shell=#RRGGBB;trim=#RRGGBB"; ui/SaveVaultLooks.kt.)

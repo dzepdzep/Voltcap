@@ -71,7 +71,9 @@ internal class CaseSpec(
     /** A thumb grip on the opening edge. */
     val grip: Boolean = shell == CaseShell.KEEP || shell == CaseShell.CARDCASE,
     val check: CaseCheck,
-    val note: String
+    val note: String,
+    /** Update 287: a North American eco case (DsCases) — recycling cut-outs, no GBA holder. */
+    val eco: Boolean = false
 ) {
     val aspect: Float get() = wMm / hMm
     val depth: Float get() = tMm / hMm
@@ -278,6 +280,15 @@ internal object CaseCatalog {
         val tape = platform == "C64" && (file.endsWith(".tap", true) || file.endsWith(".t64", true))
         // (Update 239, #88: a multi-disc PlayStation game in North America / Japan in the thick multi-disc case — PS1_MULTI.
         // Every multi-disc PS1 game was drawn in the single 10.4 mm case.)
+        // (Update 287: a DS game in the case it came in — DsCases: your choice, the evidence, else its region's default.)
+        if (platform == "NDS") {
+            val (v, _) = DsCases.of(g, region)
+            val dsKey = "$key|${v.name}"
+            cache.get(dsKey)?.let { return it as? CaseSpec }
+            val spec = of(platform, v.region)?.let { DsCases.spec(it, v) }
+            cache.put(dsKey, spec ?: NONE)
+            return spec
+        }
         val spec = if (tape) C64_TAPE else of(platform, region)?.let { s ->
             if (s.platform == "PS1" && s.shell == CaseShell.JEWEL) s.region?.let { r -> PS1_MULTI[r] }?.takeIf { discCount(file) >= 2 } ?: s else s
         }

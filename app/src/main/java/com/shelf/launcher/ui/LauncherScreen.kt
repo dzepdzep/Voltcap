@@ -736,6 +736,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         for ((k, o) in state.artOverrides) o.cover?.let { m[it] = k }
         m
     }
+    // Update 287: release years, for a DS game's default case (DsCases) — only the DS games'.
+    LaunchedEffect(state.metadata) {
+        val ds = state.games.filter { it.platform == "NDS" }.mapNotNull { g -> state.metadata[g.stableKey]?.releaseYear?.let { g.stableKey to it } }.toMap()
+        if (ds != DsCases.years) { DsCases.years = ds; DsCases.changed() }
+    }
     // Update 113: the games' scans, for the Spines look's own spines (read only where a spine is drawn).
     SideEffect {
         if (HomeScans.map !== state.physicalMedia) HomeScans.map = state.physicalMedia
@@ -4369,6 +4374,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onCartShell = if (game.sourceType == com.shelf.launcher.data.SourceType.APP && game.packageName?.startsWith("voltcap:") == true) null
                 else { { optionsForGame = null; cartShellForGame = game } },
             // Update 274 (Toni): its piece out in the game window, whatever the look (MediaInspect.force).
+            onDsCase = if (game.platform == "NDS") ({ optionsForGame = null; dsCaseForGame = game }) else null,
             onInspect = if (game.sourceType == com.shelf.launcher.data.SourceType.APP) null
                 else { { optionsForGame = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey; GamePopup.game = game } },
             onShowDetails = {
@@ -4602,6 +4608,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         )
     }
 
+    dsCaseForGame?.let { game -> DsCasePicker(game) { dsCaseForGame = null } }
     cartShellForGame?.let { game ->
         CartShellPicker(game, state.artOverrides[game.stableKey]?.cover ?: state.art[game.stableKey]?.gridUrl) { cartShellForGame = null }
     }

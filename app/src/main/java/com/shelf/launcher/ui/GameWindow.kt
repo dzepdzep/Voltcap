@@ -931,7 +931,13 @@ private fun WinGameMedia(g: Game, state: LauncherUiState, cover: String?, modifi
     // Update 128: on your cartridge pack (Cartridges look) it's that cartridge, never its disc case or a disc scan.
     // (Update 200: the 3D cartridges looks' drawn shells count as custom pieces — the pre-rendered 3D models are retired.)
     val custom = pick?.platform?.let { isCustomPiece(it) } == true
-    val realScan = physical?.firstOrNull { it.first == "Disc / cartridge" }?.second?.takeIf { !custom }
+    // (Update 286, Toni: "real cartridge artwork ignored for our custom ones" — Pokémon Silver's window showed the drawn
+    // silver cartridge: every console's own authentic shell counts as a "custom piece" here, so a cartridge game never
+    // showed its photo. The photo now follows the same rule as the cards: typedArtFor — a shell you picked for the game or
+    // its console, Cartridges only and your pack still win; "Drawn only" still draws.)
+    val realScan = realScanOf(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC,
+        typedArtFor(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, physical, null, g.platform, g.stableKey))
+        ?.takeIf { physical?.any { p -> p.first == "Disc / cartridge" && p.second == it } == true }
     val tpl = MediaTemplates.of(g.platform)
     val caseOn = Features.gameWindowCase.state.value && tpl?.disc != null && tpl.box != null && pick != null && !custom
     Box(modifier, contentAlignment = Alignment.Center) {

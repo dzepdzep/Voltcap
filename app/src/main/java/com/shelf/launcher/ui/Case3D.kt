@@ -231,7 +231,7 @@ internal fun Case3D(
     // Update 191: its plastic's colour and how see-through, its edges, grip and hinge ridge, from the real case.
     // (Update 197: a whole-case scan already shows the tray's ridge — no drawn one over it.)
     val wholeScan = spec?.shell == CaseShell.JEWEL && front != null && isWholeCaseScan(front, shape)
-    val look = remember(spec, style, face, wholeScan) { CaseLook.of(spec, style, face).let { if (wholeScan) it.withoutStrip() else it } }
+    val look = remember(spec, style, face, wholeScan, spine) { CaseLook.of(spec, style, face, spine).let { if (wholeScan) it.withoutStrip() else it } }
     // Update 189: what an opened case shows inside (made only for a case that can open).
     // (Update 191: from the real case, and from what lies in it — a disc case holding a cartridge shows the cartridge.)
     val openKind = CaseInside.kindFor(spec, g.platform, inside?.round)
@@ -332,7 +332,7 @@ internal class CaseLook(
         private val JEWEL_TABS = floatArrayOf(0.12f, 0.88f)
         private val CLAM_CATCH = floatArrayOf(0.5f)
 
-        fun of(spec: CaseSpec?, style: Int, face: android.graphics.Bitmap?): CaseLook {
+        fun of(spec: CaseSpec?, style: Int, face: android.graphics.Bitmap?, spine: android.graphics.Bitmap? = null): CaseLook {
             if (spec == null) return when (style) {
                 CASE_JEWEL -> CaseLook(0xFF9AA0AB.toInt(), 0xFFB9BEC8.toInt(), 0xFF22242C.toInt(), false, 0, 0f, false, 0, false, 0.23f, EDGE_JEWEL, JEWEL_TABS)
                 CASE_JEWEL_BLACK -> CaseLook(0xFF26282D.toInt(), 0xFF3C3E44.toInt(), 0xFF22242C.toInt(), false, 0xF20C0C0E.toInt(), 0.062f, false, 0, false, 0.23f, EDGE_JEWEL, JEWEL_TABS)
@@ -343,7 +343,12 @@ internal class CaseLook(
             return when (spec.shell) {
                 CaseShell.CARDBOARD, CaseShell.BIGBOX, CaseShell.BOOKBOX -> {
                     // Printed cardboard: the top and side carry on the front's print (its colours there, a little darker).
-                    val top = face?.let { averageOf(it, 0f, 0f, 1f, 0.08f) }?.let { CaseInside.mix(it, DARK, 0.15f) } ?: 0xFF4A4740.toInt()
+                    // (Update 286, Toni: Pokémon Silver's box showed big plain light-blue panels top and bottom — the average of the
+                    // front's top strip, its sky. No source has a scan of a box's flaps, so they're plain printed cardboard in the
+                    // box's main colour — the colour most of its front is printed in — a little darker, with the folds; nothing
+                    // made up is printed on them.)
+                    // (The spine's colour first: the side band the flaps fold over from — a front's sky or track was no box's colour.)
+                    val top = (spine?.let { dominantOf(it) } ?: face?.let { dominantOf(it) })?.let { CaseInside.mix(it, DARK, 0.3f) } ?: 0xFF4A4740.toInt()
                     val side = face?.let { averageOf(it, 0.92f, 0f, 1f, 1f) }?.let { CaseInside.mix(it, DARK, 0.2f) } ?: 0xFF3A3832.toInt()
                     // (A book box's front is a cardboard cover over the box: a seam where it closes.)
                     if (spec.shell == CaseShell.BOOKBOX) CaseLook(side, top, side, false, 0, 0f, true, spec.tray, false, (2.5f / spec.tMm).coerceIn(0.05f, 0.3f), EDGE_KEEP)
@@ -391,6 +396,30 @@ internal class CaseLook(
             DerivedArt.of(b, "avg|$l|$t|$r|$bt") { averageNow(b, l, t, r, bt) ?: NO_AVERAGE }.takeIf { it != NO_AVERAGE }
 
         private const val NO_AVERAGE = 0x00FFFFFF
+
+        /** Update 286: the colour most of [b] is printed in (its pixels in 32 levels a channel, the most common bucket's mean). */
+        private fun dominantOf(b: android.graphics.Bitmap): Int? =
+            DerivedArt.of(b, "dominant") { dominantNow(b) ?: NO_AVERAGE }.takeIf { it != NO_AVERAGE }
+
+        private fun dominantNow(b: android.graphics.Bitmap): Int? = runCatching {
+            val n = 40
+            val counts = HashMap<Int, IntArray>()
+            for (j in 0 until n) for (i in 0 until n) {
+                val c = b.getPixel(((i + 0.5f) * b.width / n).toInt().coerceIn(0, b.width - 1), ((j + 0.5f) * b.height / n).toInt().coerceIn(0, b.height - 1))
+                if ((c ushr 24) < 200) continue
+                val r = (c shr 16) and 0xFF; val g = (c shr 8) and 0xFF; val bl = c and 0xFF
+                val key = ((r shr 3) shl 10) or ((g shr 3) shl 5) or (bl shr 3)
+                val a = counts.getOrPut(key) { IntArray(4) }
+                a[0]++; a[1] += r; a[2] += g; a[3] += bl
+            }
+            // Neighbouring buckets count together (a print's colour spreads over a few), then the best one's own mean.
+            val best = counts.maxByOrNull { (k, a) ->
+                var t = a[0]
+                for (d in intArrayOf(1, -1, 32, -32, 1024, -1024)) t += counts[k + d]?.get(0) ?: 0
+                t
+            }?.value ?: return@runCatching null
+            0xFF000000.toInt() or ((best[1] / best[0]) shl 16) or ((best[2] / best[0]) shl 8) or (best[3] / best[0])
+        }.getOrNull()
 
         private fun averageNow(b: android.graphics.Bitmap, l: Float, t: Float, r: Float, bt: Float): Int? = runCatching {
             val x0 = (l * b.width).toInt().coerceIn(0, b.width - 1); val y0 = (t * b.height).toInt().coerceIn(0, b.height - 1)
@@ -940,6 +969,16 @@ private object CaseDraw {
         }
         // Update 193: the top where the halves meet (TOP face: u 0 = spine, 1 = opening side; v 0 = back, 1 = front),
         // or a box's top: the fold at the back and the tuck flap's slit at the front.
+        // (Update 287: a cardboard box's top and bottom as printed card — its folds along both long edges and at the ends,
+        // where the card bends over from the front, back and sides, so a plain flap reads as cardboard, not a blank panel.)
+        fun cardboardFolds(look: CaseLook, l: Float) {
+            val black = 0xFF000000.toInt(); val white = 0xFFFFFFFF.toInt()
+            bandOn(0f, 0f, 1f, 0.012f, scaled(CaseInside.mix(look.top, black, 0.35f), l))
+            bandOn(0f, 0.988f, 1f, 1f, scaled(CaseInside.mix(look.top, black, 0.35f), l))
+            bandOn(0f, 0f, 0.008f, 1f, scaled(CaseInside.mix(look.top, black, 0.3f), l))
+            bandOn(0.992f, 0f, 1f, 1f, scaled(CaseInside.mix(look.top, black, 0.3f), l))
+            bandOn(0.02f, 0.47f, 0.98f, 0.475f, scaled(CaseInside.mix(look.top, white, 0.08f), l))
+        }
         fun topEdge(look: CaseLook, l: Float) {
             val black = 0xFF000000.toInt(); val white = 0xFFFFFFFF.toInt()
             val hair = 0.012f
@@ -951,6 +990,7 @@ private object CaseDraw {
             } else if (look.flap) {
                 bandOn(0.01f, 0.02f, 0.99f, 0.05f, scaled(CaseInside.mix(look.top, white, 0.12f), l))
                 bandOn(0.04f, 0.955f, 0.96f, 0.985f, scaled(CaseInside.mix(look.top, black, 0.55f), l))
+                cardboardFolds(look, l)
             }
         }
         // The plastic: the open edge, the top and the back (update 208: one function — a printed box's side above).
@@ -972,6 +1012,8 @@ private object CaseDraw {
             // shell, behind the seam.
             if (!mirror && f == 2 && look.seam > 0f) openingEdge(look, l)
             if (!mirror && f == 3 && !opening) topEdge(look, l)
+            // (Update 287: the bottom of a cardboard box folded the same way.)
+            if (!mirror && f == 5 && look.flap) cardboardFolds(look, l)
             if (look.grip && f == 2) {
                 val g0 = if (look.seam > 0f) (look.seam + 0.08f).coerceAtMost(0.5f) else 0.12f
                 path.reset()

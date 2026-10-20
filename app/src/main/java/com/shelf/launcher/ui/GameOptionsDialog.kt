@@ -82,7 +82,9 @@ fun GameOptionsDialog(
     /** Update 244: "Remove from Continue playing" (only for a game in it); null hides it. */
     onRemoveFromContinue: (() -> Unit)? = null,
     /** Update 274 (Toni): "Inspect…" — its cartridge / disc / case out in the game window to turn round; null hides it. */
-    onInspect: (() -> Unit)? = null
+    onInspect: (() -> Unit)? = null,
+    /** Update 287: "DS case…" (DsCasePicker) for a DS game; null hides it. */
+    onDsCase: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("GameOptionsDialog")
     ShelfMenuDialog(
@@ -107,6 +109,9 @@ fun GameOptionsDialog(
         }
         if (onInspect != null) {
             MenuRow(Icons.Filled.ViewInAr, "Inspect…", "Its ${inspectNoun(game.platform)} in 3D — turn it, look at its back and under it", onClick = onInspect)
+        }
+        if (onDsCase != null) {
+            MenuRow(Icons.Filled.ViewInAr, "DS case…", "The case it came in: with or without the GBA holder, eco, North American or European", onClick = onDsCase)
         }
         MenuRow(Icons.Filled.Image, "Artwork & details", "Art, summary, score — pick the scraper or your own images", onClick = onEditArtwork)
         if (onCartShell != null) {

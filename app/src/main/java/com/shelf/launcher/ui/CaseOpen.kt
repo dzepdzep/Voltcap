@@ -230,21 +230,44 @@ internal object CaseInside {
                 c.drawCircle(ir.centerX(), ir.bottom + m, ir.width() * 0.12f, p)
             } else {
                 // The card's recess with a thumb notch under it.
+                // (Update 287: on black plastic — the North American / Japanese DS case — a darker recess was black on black,
+                // invisible: there the recesses are lit a little instead, as moulded plastic catches the light.)
+                fun rec(k: Float) = if (light || AColor.red(col) + AColor.green(col) + AColor.blue(col) > 150) shade(col, k) else shade(col, 1f + (1f - k) * 4.5f)
                 p.style = Paint.Style.FILL
-                p.color = shade(col, 0.62f)
+                p.color = rec(0.62f)
                 val rr = h * 0.02f
                 val m = h * 0.012f
                 c.drawRoundRect(RectF(ir.left - m, ir.top - m, ir.right + m, ir.bottom + m), rr, rr, p)
-                p.color = shade(col, 0.5f)
+                p.color = rec(0.5f)
                 c.drawCircle(ir.centerX(), ir.bottom + m, ir.width() * 0.16f, p)
                 when {
+                    // Update 287: the North American eco DS case — no GBA holder; recycling cut-outs through the tray (the
+                    // dark of the case behind them) and the recycle mark moulded under the card.
+                    spec?.eco == true -> {
+                        p.color = 0xFF050506.toInt()
+                        val cw = w * 0.16f; val ch2 = h * 0.2f; val cy = h * 0.66f
+                        for (k in -1..1) {
+                            val cx = w / 2f + k * cw * 1.35f
+                            c.drawRoundRect(RectF(cx - cw / 2f, cy - ch2 / 2f, cx + cw / 2f, cy + ch2 / 2f), cw * 0.25f, cw * 0.25f, p)
+                        }
+                        // The recycle mark: a small triangle of three arrows (drawn as its outline).
+                        p.color = rec(0.55f)
+                        p.style = Paint.Style.STROKE
+                        p.strokeWidth = h * 0.006f
+                        val tr = h * 0.028f; val tx = w / 2f; val ty = ir.bottom + m + h * 0.075f
+                        val path = android.graphics.Path().apply {
+                            moveTo(tx, ty - tr); lineTo(tx + tr * 0.87f, ty + tr * 0.5f); lineTo(tx - tr * 0.87f, ty + tr * 0.5f); close()
+                        }
+                        c.drawPath(path, p)
+                        p.style = Paint.Style.FILL
+                    }
                     // Update 191: a DS case's Game Boy Advance slot under the card (Game Boy Advance cartridge size).
                     spec?.gbaSlot == true -> {
-                        p.color = shade(col, 0.66f)
+                        p.color = rec(0.66f)
                         val gw = 57.5f / spec.wMm * w; val gh = 35f / spec.hMm * h
                         val gy = (ir.bottom + m + h * 0.06f + gh / 2f).coerceAtMost(h * 0.86f)
                         c.drawRoundRect(RectF(w / 2f - gw / 2f, gy - gh / 2f, w / 2f + gw / 2f, gy + gh / 2f), rr, rr, p)
-                        p.color = shade(col, 0.54f)
+                        p.color = rec(0.54f)
                         c.drawCircle(w / 2f, gy + gh / 2f, gw * 0.1f, p)
                     }
                     // Update 191: a Switch case's two tabs above the card, for the paper inside.
