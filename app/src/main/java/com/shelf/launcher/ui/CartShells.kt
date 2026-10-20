@@ -699,7 +699,7 @@ internal object CartShells {
      * label's shape, never stretched) under a band with [brand] (the game's real console).
      */
     fun front(s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean = false): Bitmap {
-        val key = "f4|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
+        val key = "f5|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -757,7 +757,17 @@ internal object CartShells {
         for (e in s.extras) drawExtra(c, e, k, base, p)
         s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
         // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
-        val lr = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
+        val lr0 = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
+        // Update 289 (Toni: the shells' label window was too wide for a cover): a cover — not a real label scan — that's
+        // narrower than the window gets a narrower sticker, its own shape at the window's full height, in the middle,
+        // the shell's plastic either side (never under 45 % of the window; past that the rest is the cover's edge
+        // colour, as before). A real label scan is the whole printed sticker and keeps the full window.
+        val coverPic = if (art != null && !scan) labelArt(s, art) else null
+        val lr = coverPic?.let { pic ->
+            val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
+            val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
+            if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
+        } ?: lr0
         // (Update 239, #40: the label's own outline — labelPath: its top and bottom corners and an arched top where the
         // real sticker has one, the N64's. Other shells' labels are the same round rectangles as before.)
         p.color = withAlpha(shade(base, -0.4f), maxOf(op, 0.7f))
@@ -781,7 +791,7 @@ internal object CartShells {
                 // (Update 215: a cover keeps its own shape — fitted inside the label, never stretched to it — and the
                 // rest of the label is the colour along the cover's own edge, so it reads as one printed sticker. A real
                 // label scan is the sticker itself and still fills it.)
-                val pic = labelArt(s, art)
+                val pic = coverPic ?: labelArt(s, art)
                 val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
                 val la = artRect.width() / artRect.height().coerceAtLeast(1f)
                 val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
