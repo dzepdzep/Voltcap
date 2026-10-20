@@ -252,6 +252,12 @@ console; the photos and templates get their console shell's numbers and no botto
 | Mega Duck / Cougar Boy cartridge | 54.0 × 5.0 mm deep, board recessed 0.5 mm | 36 on the back face at 1.4 mm | open up the back 4.0 mm | nothing | <https://www.vincenzoscarpa.it/biblioteca/retrofaq/megaduck.html> <https://github.com/zwenergy/picoDuck> <https://github.com/bbbbbr/megaduck-info> |
 | Tiger game.com cartridge | 27.0 × 6.0 mm deep, board recessed 0.5 mm | 20 a side at 1.27 mm | — | pcb | <https://github.com/zwenergy/game.flash> <https://www.digikey.com/en/products/detail/sullins-connector-solutions/RBB25DHHN/927332> <https://en.wikipedia.org/wiki/Tiger_Game.com> |
 
+**Your pack (update 276):** the pack's shapes are drawn after real cartridges, so each gets that cartridge's bottom,
+fitted to the shell inside the picture's clear margin (`CartUndersides.packFit`): GB → Game Boy, N64, SNES → SNES (NA),
+GBA, NES, Famicom, Genesis (fitted to the pack's narrower bottom tab), Game Gear, DS, 3DS, Switch, Atari 2600. PS Vita and
+HuCard: plain (flat contacts). The optical-system pack's made-up shells: a Mega Drive–style edge connector
+(`opticalFit`) — an invention, as the shells are; not yet seen on a handheld.
+
 **Kept plain on purpose:**
 - **Virtual Boy Game Pak**: the dust cap over its connector is part of the drawn shell (73.74 mm with the cap): its plain bottom is the cap.
 - **Famicom Disk System disk**: a disk: no connector.

@@ -392,6 +392,16 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
     val cover: Any? = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl
     // (Testing only: TestHooks `voltcap_test_inspect` — this shell, nothing saved.)
     MediaInspect.testShell?.let { id ->
+        // (Update 276: "pack:<shape>" — a pack shape picked as the shell; "cc:<console>" — the game on your pack.)
+        if (id.startsWith("pack:") || id.startsWith("cc:")) {
+            val ms = MediaShell.values().first { !it.disc && it != MediaShell.UMD }
+            val pick = if (id.startsWith("pack:")) {
+                val look = CartLook.values().firstOrNull { it.key == id.removePrefix("pack:") } ?: return@let
+                MediaPick(ms, SHELL_PREFIX + "pack:" + look.key + "~opaque|" + g.platform, look.aspect)
+            } else id.removePrefix("cc:").let { c -> MediaPick(MediaShell.GB, CUSTOM_CART + c, CustomCarts.aspectFor(c)) }
+            return InspectPiece(g, InspectKind.SLAB, pick.aspect, slabDepth(null), pick, cover, false, null, cover, null, null, physical, null,
+                CustomPieceTones.of(pick.platform) ?: CUSTOM_SHELL, false)
+        }
         val sh = CartShells.of(id) ?: return@let
         val ms = MediaShell.of(g.platform)?.takeIf { !it.disc && it != MediaShell.UMD } ?: MediaShell.values().first { !it.disc && it != MediaShell.UMD }
         val pick = MediaPick(ms, SHELL_PREFIX + id + "|" + g.platform, sh.aspect)
@@ -1534,14 +1544,29 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // on its bottom plane when it's tilted to show it; shells without researched data keep the plain edge.)
     // (Update 275, Toni: the connector end in real 3D — the opening, its walls, the board, its contacts, ribs and plates
     // (CartUnderside.kt) — for a drawn shell, and for a cartridge photo / template on its console's real shell's numbers
-    // (stretched to its own shape; no bottom face of its own drawn — its outline isn't the shell's). Custom pack pieces
-    // and shells without researched data keep the plain edge.)
-    val under = remember(p.pick?.platform, p.realScan, p.game.platform) {
+    // (stretched to its own shape; no bottom face of its own drawn — its outline isn't the shell's). Shells without
+    // researched data keep the plain edge.)
+    // (Update 276, Toni: your pack's cartridges too — each pack shape gets the connector end of the real cartridge it's
+    // drawn after, fitted to the shell in the picture (CartUndersides.packFit); the optical-system pack's made-up shells
+    // a plain Mega Drive-style edge connector (opticalFit). PS Vita / HuCard shapes: flat contacts, plain.)
+    val packConsole = p.pick?.platform?.takeIf { it.startsWith(CUSTOM_CART) }?.removePrefix(CUSTOM_CART)
+    val packOptical = packConsole?.let { discShellFor(it) } != null
+    val packLookNow = packConsole?.takeIf { !packOptical }?.let { CustomCarts.lookFor(it) }
+    val packClear = Features.cartClear.state.value &&
+        Features.modelFinish.state.value.let { it == ModelFinish.CLEAR || it == ModelFinish.OFF }
+    val under = remember(p.pick?.platform, p.realScan, p.game.platform, packOptical, packLookNow, packClear) {
         runCatching {
             val pp = p.pick?.platform
+            fun packPlan(fit: CartUndersides.PackFit?, clear: Boolean): UnderPlan? = fit?.let { f ->
+                CartShells.of(f.shellId)?.let { sh -> CartUndersides.geo(sh)?.let { g -> UnderPlan(sh, g, if (clear) 0.82f else 1f, full = false, frame = f.frame) } }
+            }
             if (pp != null && pp.startsWith(SHELL_PREFIX)) {
                 val ch = CartShells.split(pp).first
-                ch?.shell?.let { sh -> CartUndersides.geo(sh)?.let { g -> UnderPlan(sh, g, CartShells.colourOf(sh, ch.colourKey).opacity, full = true) } }
+                if (ch?.pack != null) packPlan(CartUndersides.packFit(ch.pack), ch.clear)
+                else ch?.shell?.let { sh -> CartUndersides.geo(sh)?.let { g -> UnderPlan(sh, g, CartShells.colourOf(sh, ch.colourKey).opacity, full = true) } }
+            } else if (pp != null && pp.startsWith(CUSTOM_CART)) {
+                if (packOptical) packPlan(CartUndersides.opticalFit, false)
+                else packLookNow?.let { packPlan(CartUndersides.packFit(it), packClear) }
             } else if (pp == null || (!isCustomPiece(pp) && pp == p.game.platform)) {
                 ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
                     // (Only when the picture is close to the real shell's shape — else the opening wouldn't sit on it.)
@@ -1641,7 +1666,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                     }
                 }
                 // (Update 275: the bottom face round the openings — a drawn shell's own.)
-                val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full) }
+                val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full, frame = u.frame) }
                 val plasticArgb = sideTone.toArgb()
                 if (under != null && uv != null && under.full) CartUndersides.drawRim(this, under.geo, uv, plasticArgb, under.opacity)
                 if (c >= 0f) {
@@ -1689,7 +1714,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
 }
 
 /** Update 275: what InspectSlab draws of a piece's connector end (CartUnderside.kt). */
-private class UnderPlan(val shell: CartShell, val geo: CartUndersides.Geo, val opacity: Float, val full: Boolean)
+private class UnderPlan(
+    val shell: CartShell, val geo: CartUndersides.Geo, val opacity: Float, val full: Boolean,
+    /** Update 276: where the shell sits in a pack picture (CartUndersides.View's frame). */
+    val frame: FloatArray? = null
+)
 
 /** Update 189: the shell's colour in a cartridge / card picture — the first solid pixel in from its left edge, half-way down. */
 private fun sampleShell(b: android.graphics.Bitmap): Color? {

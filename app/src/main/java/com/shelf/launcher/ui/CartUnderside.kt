@@ -352,6 +352,40 @@ internal object CartUndersides {
     private val geos = HashMap<String, Geo?>()
 
     /** [s]'s connector end as boxes and fingers (cached), clamped inside its foot and thickness; null: plain edge. */
+    /** Update 276: which real shell's connector end a piece of your pack gets, and where that shell's frame sits on it. */
+    class PackFit(val shellId: String, val frame: FloatArray)
+
+    /**
+     * Update 276 (Toni: "add them to custom cartridges as well"): your pack's cartridge shapes are drawn after the real
+     * cartridges, so each gets that cartridge's connector end. [frame]: the shell's box in the pack picture (left, top,
+     * right, bottom as shares of the picture) — measured from the pack's pictures (the same for every console and both
+     * finishes: a clear margin of 1.5–5 % round each). The Genesis shape is narrower than the real cartridge: its frame
+     * is set so the real bottom tab (6.4–93.6 % of its width) lands on the pack's tab (12.3–87.7 %).
+     * The PS Vita and HuCard shapes have flat contacts (nothing to show in 3D): none.
+     */
+    fun packFit(look: CartLook): PackFit? = when (look) {
+        CartLook.GB -> PackFit("gb", floatArrayOf(0.033f, 0.029f, 0.967f, 0.971f))
+        CartLook.N64 -> PackFit("n64", floatArrayOf(0.017f, 0.022f, 0.983f, 0.975f))
+        CartLook.SNES -> PackFit("snes_na", floatArrayOf(0.014f, 0.023f, 0.986f, 0.978f))
+        CartLook.GBA -> PackFit("gba", floatArrayOf(0.031f, 0.051f, 0.969f, 0.949f))
+        CartLook.NES -> PackFit("nes", floatArrayOf(0.016f, 0.015f, 0.984f, 0.985f))
+        CartLook.FAMICOM -> PackFit("famicom", floatArrayOf(0.018f, 0.027f, 0.982f, 0.973f))
+        CartLook.GENESIS -> PackFit("genesis", floatArrayOf(0.068f, 0.027f, 0.932f, 0.973f))
+        CartLook.GAME_GEAR -> PackFit("game_gear", floatArrayOf(0.029f, 0.028f, 0.971f, 0.972f))
+        CartLook.NDS -> PackFit("ds", floatArrayOf(0.029f, 0.027f, 0.971f, 0.973f))
+        CartLook.N3DS -> PackFit("3ds", floatArrayOf(0.028f, 0.027f, 0.973f, 0.973f))
+        CartLook.SWITCH -> PackFit("switch", floatArrayOf(0.044f, 0.030f, 0.956f, 0.970f))
+        CartLook.ATARI -> PackFit("atari2600", floatArrayOf(0.023f, 0.020f, 0.977f, 0.980f))
+        CartLook.VITA, CartLook.HUCARD -> null
+    }
+
+    /**
+     * Update 276: your optical-system pack's shells (a disc console's game as a cartridge: PS1, GameCube, Steam…) are
+     * made up — no real cartridge to copy — so they get a plain cartridge-style edge connector: the Mega Drive's
+     * (an opening across ~80 % of the bottom, the board inside, gold fingers both sides). The pictures are cut to the shell.
+     */
+    val opticalFit = PackFit("genesis", floatArrayOf(0f, 0f, 1f, 1f))
+
     fun geo(s: CartShell): Geo? = synchronized(geos) { geos.getOrPut(s.id) { runCatching { build(s) }.getOrNull() } }
 
     private fun build(s: CartShell): Geo? {
@@ -463,12 +497,17 @@ internal object CartUndersides {
         s: CartShell, nodeW: Float, nodeH: Float, depthPx: Float,
         private val cy: Float, private val sy: Float, private val cp: Float, private val sp: Float,
         /** The shell's frame stretched over the whole node (a photo / template at its own, slightly different shape). */
-        stretch: Boolean = false
+        stretch: Boolean = false,
+        /**
+         * Update 276: the shell's frame stretched over this part of the node instead (left, top, right, bottom as shares
+         * of the node) — your pack's cartridge pictures have a clear margin round the shell ([packFit]).
+         */
+        frame: FloatArray? = null
     ) {
-        private val pw = if (stretch) nodeW else minOf(nodeW, nodeH * s.aspect)
-        private val ph = if (stretch) nodeH else pw / s.aspect
-        private val left = (nodeW - pw) / 2f
-        private val bottom = (nodeH + ph) / 2f
+        private val pw = if (frame != null) nodeW * (frame[2] - frame[0]) else if (stretch) nodeW else minOf(nodeW, nodeH * s.aspect)
+        private val ph = if (frame != null) nodeH * (frame[3] - frame[1]) else if (stretch) nodeH else pw / s.aspect
+        private val left = if (frame != null) nodeW * frame[0] else (nodeW - pw) / 2f
+        private val bottom = if (frame != null) nodeH * frame[3] else (nodeH + ph) / 2f
         private val q = pw / s.w
         private val qy = ph / s.h
         private val zk = depthPx / s.t.coerceAtLeast(0.01f)

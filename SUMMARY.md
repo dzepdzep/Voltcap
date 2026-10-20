@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (276): your pack's cartridges get the 3D bottoms too — after release 0.6.19
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **Your cartridge pack (Custom cartridges):** each pack shape gets the connector end of the real cartridge it's drawn after — Game Boy, N64, SNES, GBA, NES, Famicom, Genesis, Game Gear, DS, 3DS, Switch, Atari 2600 — fitted to the shell in the picture (the pack's pictures have a clear margin of 1.5–5 % round the shell, measured; the same for every console and both finishes). The Genesis shape is narrower than the real cartridge, so its opening is fitted to the pack's own bottom tab. Clear-plastic pieces draw it a little see-through, as their shell.
+- Works both ways a pack piece comes up: the game on your pack (Cartridges look › Custom, or consoles without a cartridge of their own) and a pack shape picked in the game's menu › Cartridge shell….
+- **Optical-system pack** (the made-up cartridge shells for PS1, GameCube, Steam…): no real cartridge to copy, so a plain Mega Drive–style edge connector (an opening across ~80 % of the bottom, the board, gold fingers both sides). Not seen on a handheld yet (the Flip 2 draws those consoles on the cartridge pack).
+- **PS Vita and HuCard shapes:** flat contacts on the real cards, so they stay plain (the HuCard picture already shows its pads).
+- Checked on the Flip 2 with the testing hook (`--es voltcap_test_inspect "Ocarina|pack:<shape>|yaw|pitch"`, or `cc:<console>` for the game on the pack): GB, SNES, Genesis, DS, 3DS, Switch, N64, GBA, Atari 2600 and Famicom (via a GameCube game on the pack) from below-front, straight under and below-behind — each opening sits on the shell's bottom, the DS / 3DS / Switch / Game Boy pockets on the back as on the real cards. Screens: `Claude outputs\shots276\`. The testing hook's shell now wins over the look's own piece (testing only).
+
+Files (`src_copy\`): `ui\CartUnderside.kt`, `ui\MediaInspectView.kt`; `CARTRIDGES.md` (Bottoms › Your pack).
+
 ## Update — 20 Oct 2026 (275): cartridge bottoms in 3D — the opening, its walls, the board and the gold contacts at their real count, for 54 cartridges — after release 0.6.19
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude (Toni's OK). Not published yet.
