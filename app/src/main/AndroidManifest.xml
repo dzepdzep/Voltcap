@@ -279,6 +279,14 @@
         <receiver
             android:name=".device.audio.MixerNotificationReceiver"
             android:exported="false" />
+        <!-- Update 274: Voltcap opens itself again after updating itself (only as the home app, screen on). -->
+        <receiver
+            android:name=".data.UpdatedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
         <receiver
             android:name=".device.ChargeLimitBootReceiver"
             android:exported="true">

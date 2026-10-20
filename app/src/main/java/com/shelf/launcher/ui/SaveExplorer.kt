@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -958,10 +959,13 @@ private fun SaveDetail(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // The icon's spot: measured for the flight; the icon appears here once it has landed.
+            // (Update 274, Toni: a tap on the save's object opens Inspect too — it was only the chip below.)
+            val canInspect = saveInspectable(game, capsule)
             Box(
                 Modifier
                     .size(if (compact) 108.dp else 150.dp)
-                    .onGloballyPositioned { onIconSpot(it.boundsInRoot()) },
+                    .onGloballyPositioned { onIconSpot(it.boundsInRoot()) }
+                    .then(if (canInspect) Modifier.pointerInput(Unit) { detectTapGestures { showInspect = true } } else Modifier),
                 contentAlignment = Alignment.Center
             ) {
                 // A soft glow on the "floor" under it.
@@ -973,6 +977,10 @@ private fun SaveDetail(
                         .height(10.dp)
                         .clip(RoundedCornerShape(50))
                         .background(ShelfTheme.accent.copy(alpha = if (landed) 0.25f else 0.1f))
+                )
+                if (landed && canInspect) Text(
+                    "Tap to inspect", color = Color.White.copy(alpha = 0.55f), fontSize = 10.sp, maxLines = 1,
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = 14.dp)
                 )
                 if (landed) {
                     SaveIconCard(
@@ -1019,12 +1027,13 @@ private fun SaveDetail(
                         fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp
                     )
                     Spacer(Modifier.height(4.dp))
-                    androidx.compose.foundation.lazy.LazyColumn(Modifier.height((saves.size.coerceAtMost(if (compact) 3 else 4) * 38).dp)) {
+                    androidx.compose.foundation.lazy.LazyColumn(Modifier.height((saves.size.coerceAtMost(if (compact) 3 else 4) * 46).dp)) {
                         items(saves.size) { i -> CapsuleSaveRow(saves[i]) }
                     }
                 }
-                Spacer(Modifier.height(if (compact) 10.dp else 16.dp))
-                ChipFlow {
+                Spacer(Modifier.height(if (compact) 12.dp else 18.dp))
+                // (Update 274, Toni: "buttons a bit down … centred".)
+                ChipFlow(center = true) {
                     Box(Modifier.focusRequester(focus)) { Chip("Save options", accent = true, onClick = onOpenSave) }
                     // (Update 236, #47: the object's colour — not for the Classic squares, which have none.)
                     if (Features.saveVaultStyle.state.value != Features.SaveVaultStyle.CLASSIC) Chip("Appearance", accent = false) { showLook = true }
@@ -1271,7 +1280,8 @@ private fun stateColor(state: SyncState): Color = when (state) {
 private fun CapsuleSaveRow(item: com.shelf.launcher.data.SaveCapsules.SaveItem) {
     val context = LocalContext.current
     val fmt = remember { android.text.format.DateFormat.getMediumDateFormat(context) }
-    Row(Modifier.fillMaxWidth().height(38.dp), verticalAlignment = Alignment.CenterVertically) {
+    // (Update 274: 46 dp — the name and "where" lines ran into the next row at the handheld's font size, Flip 2.)
+    Row(Modifier.fillMaxWidth().height(46.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(
             Modifier.size(6.dp).clip(RoundedCornerShape(50)).background(
                 if (item.kind == com.shelf.launcher.data.SaveCapsules.Kind.MEMORY_CARD) ShelfTheme.accent else Color.White.copy(alpha = 0.5f)

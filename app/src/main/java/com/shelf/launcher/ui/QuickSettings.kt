@@ -1385,10 +1385,12 @@ private fun QuickTile(
             Text(
                 label,
                 color = ShelfTheme.colors.textPrimary,
-                fontSize = 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(9.sp), maxFontSize = 9.sp),
+                fontSize = 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 7.sp, maxFontSize = 9.sp),
                 lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
+                // (Update 274: a one-word label on one line, made smaller to fit — "Achievements" broke as "Achievement / s".)
+                maxLines = if (label.trim().contains(' ')) 2 else 1,
+                softWrap = label.trim().contains(' '),
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
                 style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(

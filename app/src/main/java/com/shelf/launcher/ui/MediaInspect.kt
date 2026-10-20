@@ -30,4 +30,17 @@ internal object MediaInspect {
      * the window had the focus yet — the first click went nowhere and it took two).
      */
     @Volatile var stickClick: (() -> Unit)? = null
+
+    /**
+     * Update 274 (Toni): the game's menu › Inspect… — this game's window shows its cartridge / disc (else its case) to
+     * turn round whatever the look draws (a plain cover too); cleared when that window closes.
+     */
+    @Volatile var force: String? = null
+    /** Update 274: bumped with every [force] request — a window closing late clears only its own. */
+    @Volatile var forceSeq = 0
+
+    /** Update 274, testing only (TestHooks `voltcap_test_inspect`): the forced piece on this library shell, held at [testPose]. */
+    @Volatile var testShell: String? = null
+    /** Update 274, testing only: yaw, pitch (degrees) to hold the piece at — no turn once round, no sway. */
+    @Volatile var testPose: FloatArray? = null
 }

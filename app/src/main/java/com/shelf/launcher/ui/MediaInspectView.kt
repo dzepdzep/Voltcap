@@ -357,7 +357,7 @@ private fun slabAspect(pick: MediaPick, labelIsScan: Boolean): Float {
  * capsules…: the game window opens as before). Read in composition (it follows the look's switches).
  */
 internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? =
-    inspectPieceOf(g, state)?.also {
+    (inspectPieceOf(g, state) ?: if (MediaInspect.force == g.stableKey) forcedPieceOf(g, state) else null)?.also {
         it.logo = state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
         // Update 170: a case without its back scanned gets a printed one (Settings › Game look › Printed case backs).
         if (it.kind == InspectKind.BOX && it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)
@@ -380,6 +380,27 @@ internal fun printedBackFor(g: Game, state: LauncherUiState, aspect: Float): Pri
         aspect,
         gameDisplayName(g.name)
     )
+}
+
+/**
+ * Update 274 (Toni): the game's menu › Inspect…: its cartridge / card / disc as the cartridge-and-disc look draws it,
+ * else its case — for a look that draws a plain cover (inspectPieceOf has nothing to show then).
+ */
+private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
+    val k = g.stableKey
+    val physical = state.physicalMedia[k].withoutFlat()
+    val cover: Any? = state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl
+    // (Testing only: TestHooks `voltcap_test_inspect` — this shell, nothing saved.)
+    MediaInspect.testShell?.let { id ->
+        val sh = CartShells.of(id) ?: return@let
+        val ms = MediaShell.of(g.platform)?.takeIf { !it.disc && it != MediaShell.UMD } ?: MediaShell.values().first { !it.disc && it != MediaShell.UMD }
+        val pick = MediaPick(ms, SHELL_PREFIX + id + "|" + g.platform, sh.aspect)
+        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, cover, false, null, cover, null, null, physical, null, shellTone(ms), false)
+    }
+    val small = Features.bigGcDiscs.state.value.not()
+    val mixed = mixedConsoles(state.visibleGames)
+    return runCatching { mediaPiece(g, CardArtType.CARTRIDGE_DISC, physical, cover, small, mixed) }.getOrNull()
+        ?: runCatching { casePiece(g, physical, cover, mixed) }.getOrNull()
 }
 
 private fun inspectPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
@@ -532,6 +553,55 @@ internal class InspectMotion {
     val manual = mutableFloatStateOf(0f)
     /** Its opacity (the short cross-fade used instead of the flight). */
     val fade = mutableFloatStateOf(1f)
+    /**
+     * Update 274 (Toni): the gentle sway, degrees — ±24° left and right over [CART_SPIN_MS], as the pieces on the home
+     * rows sway — while it's left alone: after its turn back (Features.inspectSway), and all the time with Wobble
+     * (Features.inspectMode). Any touch, the stick, Y or a tap folds it into the turn and stops it (no jump).
+     */
+    val sway = mutableFloatStateOf(0f)
+    private var swayJob: Job? = null
+    /** Update 274: Wobble — it can't be turned by hand (drag, stick, tap's turn, Y); it only sways. */
+    var handsOff = false
+
+    /** Update 274, testing only: held at a set angle (MediaInspect.testPose) — no turn, no sway. */
+    var frozen = false
+    fun holdAt(yaw: Float, pitchDeg: Float) {
+        frozen = true
+        spinJob?.cancel(); easeJob?.cancel(); swayJob?.cancel(); sway.floatValue = 0f
+        turn.floatValue = 0f; manual.floatValue = yaw; pitch.floatValue = pitchDeg
+    }
+
+    /** Update 274: starts the sway, fading in, unless it's swaying already, closing, or a case is open. */
+    fun startSway(scope: CoroutineScope) {
+        if (closing || !started || frozen) return
+        if (!handsOff && !Features.inspectSway.state.value) return
+        if (swayJob?.isActive == true) return
+        swayJob = scope.launch {
+            var t = 0f
+            var amp = 0f
+            var last = -1L
+            while (!closing) {
+                val now = withFrameNanos { it }
+                if (last > 0L) {
+                    val dt = ((now - last) / 1_000_000_000f).coerceAtMost(0.05f)
+                    // (Not while a case is open — the open book is drawn from the front only.)
+                    val caseBusy = opened || lid.floatValue > 0.001f || out.floatValue > 0.001f
+                    val target = if (caseBusy) 0f else 1f
+                    amp += (target - amp) * (dt * 1.6f).coerceAtMost(1f)
+                    t += dt
+                    sway.floatValue = 24f * amp * sin(t * 1000f / CART_SPIN_MS * 2f * PI.toFloat())
+                }
+                last = now
+            }
+        }
+    }
+
+    /** Update 274: stops the sway where it is, folded into your own turn, so nothing jumps. */
+    fun stopSway() {
+        swayJob?.cancel(); swayJob = null
+        val s = sway.floatValue
+        if (s != 0f) { manual.floatValue += s; sway.floatValue = 0f }
+    }
     /** The right stick's left / right (−1…1), 0 at rest. */
     val stick = mutableFloatStateOf(0f)
     /** Where it came from (window px); on the way back its place is read again. */
@@ -583,10 +653,10 @@ internal class InspectMotion {
 
     /** Update 238 (#117): tilts it [deg] more by hand (stops the showcase turn and any return). Not while a case is open. */
     fun nudgePitch(deg: Float) {
-        if (closing || !started) return
+        if (closing || !started || handsOff) return
         // (The open book — CaseOpenDraw — is drawn only from the front.)
         if (opened || lid.floatValue > 0.001f || out.floatValue > 0.001f) return
-        spinJob?.cancel(); easeJob?.cancel()
+        spinJob?.cancel(); easeJob?.cancel(); stopSway()
         var p = pitch.floatValue + deg
         // (Update 240, #117: wrapped for a case too — it was held to 0…176° all told.)
         if (p > 180f) p -= 360f else if (p < -180f) p += 360f
@@ -614,8 +684,8 @@ internal class InspectMotion {
      * whatever the return settings say.
      */
     fun resetPose(scope: CoroutineScope) {
-        if (closing || !started) return
-        spinJob?.cancel(); easeJob?.cancel(); contentEase?.cancel()
+        if (closing || !started || handsOff) return
+        spinJob?.cancel(); easeJob?.cancel(); contentEase?.cancel(); stopSway()
         easeJob = scope.launch {
             val total = turn.floatValue + manual.floatValue
             val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
@@ -629,6 +699,7 @@ internal class InspectMotion {
                 contentTurn.floatValue = c0 + (cTo - c0) * v
             }
             turn.floatValue = 0f; pitch.floatValue = 0f; contentTurn.floatValue = 0f
+            startSway(scope)
         }
     }
     private var caseJob: Job? = null
@@ -639,7 +710,7 @@ internal class InspectMotion {
      */
     fun toggleCase(scope: CoroutineScope, hinged: Boolean, hasContent: Boolean) {
         if (closing || !started) return
-        caseJob?.cancel()
+        caseJob?.cancel(); stopSway()
         opened = !opened
         caseJob = scope.launch {
             if (opened) {
@@ -669,7 +740,7 @@ internal class InspectMotion {
      */
     fun openLid(scope: CoroutineScope) {
         if (closing || !started) return
-        caseJob?.cancel()
+        caseJob?.cancel(); stopSway()
         opened = true
         caseJob = scope.launch {
             spinJob?.cancel(); easeJob?.cancel()
@@ -686,7 +757,7 @@ internal class InspectMotion {
 
     fun takeOut(scope: CoroutineScope) {
         if (closing || !started) return
-        caseJob?.cancel()
+        caseJob?.cancel(); stopSway()
         opened = true
         caseJob = scope.launch {
             // (Turned to face you first, so it lifts out of where it's seen lying.)
@@ -717,6 +788,7 @@ internal class InspectMotion {
         caseJob = scope.launch {
             if (out.floatValue > 0f) animate(out.floatValue, 0f, animationSpec = tween(560, easing = FastOutSlowInEasing)) { v, _ -> out.floatValue = v }
             if (lid.floatValue > 0f) animate(lid.floatValue, 0f, animationSpec = tween(620, easing = FastOutSlowInEasing)) { v, _ -> lid.floatValue = v }
+            startSway(scope) // (Update 274: shut again, it sways again.)
         }
     }
 
@@ -751,7 +823,7 @@ internal class InspectMotion {
         val k = lift.floatValue
         // A little turn as it flies (and square again when it lands), so it moves like a thing, not a picture.
         val fly = if (k > 0f && k < 1f) -14f * sin(PI.toFloat() * k) else 0f
-        val y = turn.floatValue + manual.floatValue + fly
+        val y = turn.floatValue + manual.floatValue + fly + sway.floatValue
         return if (limited) y.coerceIn(-60f, 60f) else y
     }
 
@@ -762,12 +834,12 @@ internal class InspectMotion {
      * spinOnce and resetPose cancel spinJob). [vYaw] / [vPitch]: degrees a second as you let go.
      */
     fun fling(scope: CoroutineScope, vYaw: Float, vPitch: Float) {
-        if (closing || !started) { release(scope); return }
+        if (closing || !started || handsOff) { release(scope); return }
         var vy = vYaw.coerceIn(-FLING_MAX, FLING_MAX)
         val caseBusy = opened || lid.floatValue > 0.001f || out.floatValue > 0.001f
         var vp = if (caseBusy) 0f else vPitch.coerceIn(-FLING_MAX * 0.6f, FLING_MAX * 0.6f)
         if (abs(vy) < FLING_MIN && abs(vp) < FLING_MIN) { release(scope); return }
-        spinJob?.cancel(); easeJob?.cancel()
+        spinJob?.cancel(); easeJob?.cancel(); stopSway()
         spinJob = scope.launch {
             var last = -1L
             while ((abs(vy) >= FLING_STOP || abs(vp) >= FLING_STOP) && !closing) {
@@ -796,7 +868,8 @@ internal class InspectMotion {
 
     /** Turns it [deg] more by hand (stops the showcase turn). */
     fun nudge(deg: Float) {
-        spinJob?.cancel(); easeJob?.cancel()
+        if (handsOff) return
+        spinJob?.cancel(); easeJob?.cancel(); stopSway()
         var m = manual.floatValue + deg
         if (limited) m = m.coerceIn(-60f - turn.floatValue, 60f - turn.floatValue)
         manual.floatValue = m
@@ -807,8 +880,8 @@ internal class InspectMotion {
      * model: to one side, the other and back), from facing you. A drag or the stick stops it.
      */
     fun spinOnce(scope: CoroutineScope) {
-        if (closing || !started || lift.floatValue < 0.999f || spinJob?.isActive == true) return
-        easeJob?.cancel()
+        if (closing || !started || handsOff || lift.floatValue < 0.999f || spinJob?.isActive == true) return
+        easeJob?.cancel(); stopSway()
         spinJob = scope.launch {
             val total = turn.floatValue + manual.floatValue
             val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
@@ -821,6 +894,7 @@ internal class InspectMotion {
             }
             manual.floatValue = 0f; pitch.floatValue = 0f
             showcase()
+            startSway(scope)
         }
     }
 
@@ -833,8 +907,9 @@ internal class InspectMotion {
     fun release(scope: CoroutineScope) {
         if (closing) return
         easeJob?.cancel()
-        if (!Features.inspectAutoReturn.state.value) return
         val hold = Features.inspectHold.state.value.ms
+        // (Update 274: left where you let go, it still sways again after the hold.)
+        if (!Features.inspectAutoReturn.state.value) { easeJob = scope.launch { delay(hold); startSway(scope) }; return }
         val dur = Features.inspectReturnSpeed.state.value.ms
         easeJob = scope.launch {
             delay(hold)
@@ -848,6 +923,7 @@ internal class InspectMotion {
                 pitch.floatValue = p0 * (1f - v)
             }
             pitch.floatValue = 0f
+            startSway(scope) // (Update 274: still again, it goes back to its sway.)
         }
     }
 
@@ -864,13 +940,16 @@ internal class InspectMotion {
                 MediaInspect.amount.floatValue = 1f
                 fade.floatValue = 0f
                 animate(0f, 1f, animationSpec = tween(160)) { v, _ -> fade.floatValue = v }
+                startSway(scope)
                 return@launch
             }
             animate(0f, 1f, animationSpec = tween(600, easing = CubicBezierEasing(0.3f, 0f, 0.12f, 1f))) { v, _ ->
                 lift.floatValue = v
                 MediaInspect.amount.floatValue = v
             }
-            if (spin && !closing) spinJob = scope.launch { showcase() }
+            // (Update 274: Wobble skips the turn once round — it just sways.)
+            if (spin && !closing && !handsOff) spinJob = scope.launch { showcase(); startSway(scope) }
+            else startSway(scope)
         }
     }
 
@@ -890,6 +969,7 @@ internal class InspectMotion {
 
     /** Back it goes: turns to face you, shrinks and flies to its place ([full]; else a short fade). Ends with amount 0. */
     suspend fun close(full: Boolean) {
+        stopSway()
         closing = true
         openJob?.cancel(); spinJob?.cancel(); easeJob?.cancel(); caseJob?.cancel()
         // (Update 189: an opened case goes back together first — quickly.)
@@ -1030,6 +1110,13 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
     // Update 238 (#117): its tilt, read while drawing; a case tilts only over its top (InspectMotion.boxPitch).
     val pitchOf: () -> Float = remember(motion) { { motion.pitch.floatValue } }
     SideEffect { motion.boxPitch = piece.kind == InspectKind.BOX }
+    // (Update 274, testing only: held at the angle asked for, once it has landed.)
+    LaunchedEffect(piece.game.stableKey) {
+        val tp = MediaInspect.testPose ?: return@LaunchedEffect
+        snapshotFlow { motion.lift.floatValue >= 0.999f }.first { it }
+        delay(250)
+        motion.holdAt(tp[0], tp.getOrElse(1) { 0f })
+    }
     // Update 198: Settings › Game look › "Open cases side by side": once it has landed, it opens by itself.
     val startOpen = Features.inspectOpenAtStart.state.value
     LaunchedEffect(piece.game.stableKey, startOpen) {
@@ -1443,6 +1530,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // Update 228 (#36): a custom piece's own plastic from what was picked (CustomPieceTones) wins over the pixel read
     // below — that read failed while the pack picture was still loading (or on a clear shell's faint edge) and was never
     // tried again, so a custom cartridge turned grey here.
+    // (Update 240, #92: a library shell's researched bottom — its insertion edge, connector opening and board — drawn
+    // on its bottom plane when it's tilted to show it; shells without researched data keep the plain edge.)
     // (Update 240, #92: a library shell's researched bottom — its insertion edge, connector opening and board — drawn
     // on its bottom plane when it's tilted to show it; shells without researched data keep the plain edge.)
     val under = remember(p.pick?.platform) {

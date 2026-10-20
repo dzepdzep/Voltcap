@@ -1802,6 +1802,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             )
         }
         val ended = playtimeStore.endSession(endNow, activeMs)
+        // Update 274 (Toni: "Silver only says 3 hours", RP Classic): Voltcap is the home screen, so Home pressed mid-game
+        // ended the session here, and going back into the game from Recents was never counted. Now every game still open
+        // from an earlier launch (RunningGames) gets the time it was really in front while Voltcap was away.
+        runCatching {
+            val away = playtimeStore.awaySince()
+            playtimeStore.clearAway()
+            val app0 = getApplication<Application>()
+            if (away in 1 until endNow && com.shelf.launcher.data.RunningGames.hasUsageAccess(app0)) {
+                for (e in com.shelf.launcher.data.RunningGames.others(app0, openKey ?: "")) {
+                    val ms = com.shelf.launcher.data.RunningGames.foregroundMs(app0, e.pkg, away, endNow) ?: continue
+                    if (playtimeStore.addPlayed(e.key, endNow - ms, ms)) android.util.Log.i("Playtime", "away play: ${e.key} ${ms / 1000}s")
+                }
+            }
+        }
         // The game is in the background now (still open until it's closed); check what's still running.
         com.shelf.launcher.data.RunningGames.noteLeft(getApplication())
         refreshRunning()

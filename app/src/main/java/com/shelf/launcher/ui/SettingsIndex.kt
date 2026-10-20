@@ -140,7 +140,7 @@ internal object SettingsIndex {
         E("Main look", "Game look", "Covers, cases & discs", null, null),
         E("Covers (cover, wide, square tile, spine)", "Game look", "Covers, cases & discs", null, null),
         E("Cover style", "Game look", "Covers, cases & discs", null, null),
-        E("The game you're on (same as the others, wide capsule, only the first one wide)", "Game look", "Covers, cases & discs", null, null),
+        E("Cover style: wide capsules · wide first game only · wide when you're on it", "Game look", "Covers, cases & discs", null, null),
         E("Cases (real case scan or the drawn case, same size or real sizes)", "Game look", "Covers, cases & discs", null, null),
         E("Case size", "Game look", "Covers, cases & discs", null, null),
         E("Its disc or cartridge (inside only, beside it, half out)", "Game look", "Covers, cases & discs", null, null),
@@ -168,6 +168,8 @@ internal object SettingsIndex {
         E("Cases that open on the second screen", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         // (Update 238, #116/#117: a turned piece's return in the game window.)
         E("Turned pieces turn back by themselves", "Game look", "Covers, cases & discs", "look_more", "More look options"),
+        E("In the game window (Inspect / Wobble)", "Game look", "Covers, cases & discs", "look_more", "More look options"),
+        E("Sway when left alone", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Stay turned for", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Turning back", "Game look", "Covers, cases & discs", "look_more", "More look options"),
         E("Case region", "Game look", "Covers, cases & discs", "look_more", "More look options"),

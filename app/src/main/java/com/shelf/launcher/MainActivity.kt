@@ -370,6 +370,8 @@ class MainActivity : ComponentActivity() {
         val app = applicationContext
         Thread { runCatching { com.shelf.launcher.device.VoltcapRate.leave(app) } }.start()
         com.shelf.launcher.data.ChargeLog.inFront = false
+        // Update 274: when Voltcap left the front — a game picked from Recents afterwards still gets its play time.
+        runCatching { com.shelf.launcher.data.PlaytimeStore(app).markAway(System.currentTimeMillis()) }
     }
 
     // A game started (Voltcap hidden) or Android needs memory: give the decoded art back, all of it

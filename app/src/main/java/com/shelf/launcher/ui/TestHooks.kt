@@ -26,6 +26,11 @@ internal object TestHooks {
     val category = mutableStateOf<String?>(null)
     /** 0.6.15: open the Sort window (`--ez voltcap_test_sort true`). */
     val sort = mutableStateOf(false)
+    /**
+     * Update 274: `--es voltcap_test_inspect "Game_name|shellId|yaw|pitch"` — that game's window with its piece out on that
+     * library shell (this time only, nothing saved), held at that angle: for checking the cartridge bottoms.
+     */
+    val inspect = mutableStateOf<String?>(null)
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
         val want = intent?.getStringExtra("voltcap_test_layout")
@@ -36,13 +41,15 @@ internal object TestHooks {
         val inst = intent?.getStringExtra("voltcap_test_install")
         val mc = intent?.getStringExtra("voltcap_test_metacritic")
         val so = intent?.getBooleanExtra("voltcap_test_sort", false) == true
+        val ins = intent?.getStringExtra("voltcap_test_inspect")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
         if (so) sort.value = true
+        if (ins != null) inspect.value = ins // (the shell ids have "_" — only the game's name part gets spaces, below)
         // 0.6.15: load a Metacritic scores file from a path (the Sort window's file picker, without the picker).
         if (mc != null) {
             val app = context.applicationContext

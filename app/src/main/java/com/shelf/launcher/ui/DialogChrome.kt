@@ -908,11 +908,13 @@ internal fun Chip(label: String, accent: Boolean = true, enabled: Boolean = true
 @Composable
 internal fun ChipFlow(
     modifier: Modifier = Modifier,
+    /** Update 274: the chips centred in their row (a popup's own buttons). */
+    center: Boolean = false,
     content: @Composable () -> Unit
 ) {
     androidx.compose.foundation.layout.FlowRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = if (center) Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally) else Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         content()

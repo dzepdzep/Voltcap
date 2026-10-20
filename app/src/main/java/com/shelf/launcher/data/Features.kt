@@ -1120,6 +1120,17 @@ object Features {
     enum class InspectReturnSpeed(val label: String, val ms: Int) { SLOW("Slow", 2_500), NORMAL("Normal", 1_200), QUICK("Quick", 600) }
     /** Update 238 (#116): how long its turn back takes. */
     val inspectReturnSpeed = EnumPref("inspect_return_speed", InspectReturnSpeed.NORMAL, InspectReturnSpeed.values())
+    /**
+     * Update 274 (Toni): what the cartridge / disc / case does once it's out in the game window. Inspect (default): turn
+     * and tilt it by hand (drag, the right stick), it turns back after the hold. Wobble: no turning by hand — it just
+     * sways gently left and right, as the pieces on the home rows do. Asked once after this update (InspectChoice.kt).
+     */
+    enum class InspectMode(val label: String) { INSPECT("Inspect (turn it by hand)"), WOBBLE("Wobble (it just sways)") }
+    val inspectMode = EnumPref("inspect_mode", InspectMode.INSPECT, InspectMode.values())
+    /** Update 274 (Toni): a piece left alone (after its turn back) sways gently, as on the home rows. On by default. */
+    val inspectSway = BoolPref("inspect_sway", true)
+    /** Update 274: the Inspect / Wobble question has been answered (asked once, after this update). */
+    val inspectModeAsked = BoolPref("inspect_mode_asked_274", false)
     /** Update 147, Disc station: the loaded disc turns slowly. */
     val discSpin = BoolPref("disc_spin", true)
     /** Update 147, Disc station: a few lines about the game under its name. */

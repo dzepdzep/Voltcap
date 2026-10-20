@@ -47,9 +47,34 @@ class PlaytimeStore(context: Context) {
         if (since <= 0L || now <= since) return null
         val duration = activeMs?.coerceIn(0L, now - since) ?: (now - since)
         if (duration < MIN_SESSION_MS) return null
-        // A device left on overnight in-game shouldn't add 10 hours.
-        val counted = minOf(duration, MAX_SESSION_MS)
+        // A device left on overnight in-game shouldn't add 10 hours. (Update 274, Toni — "Silver only says 3 hours": only
+        // when the wall clock is all there is. With usage access [activeMs] is the time the game was really in front,
+        // screen-off left out, so a game kept open for days and played a few hours at a time counts all of it; it was
+        // cut to 8 h.)
+        val counted = if (activeMs != null) minOf(duration, MAX_MEASURED_MS) else minOf(duration, MAX_SESSION_MS)
+        add(key, now - counted, counted)
+        return key to counted
+    }
 
+    /**
+     * Update 274: time played without a Voltcap launch — Home pressed mid-game (Voltcap is the home screen) and the game
+     * picked again from Recents. That ended the session at Home and the rest was never counted. [start] / [ms]: when and
+     * how long the game was really in front (RunningGames.foregroundMs). Under 20 s doesn't count.
+     */
+    fun addPlayed(key: String, start: Long, ms: Long): Boolean {
+        if (StatsExclusions.excluded(app, key) || ms < MIN_SESSION_MS) return false
+        add(key, start, minOf(ms, MAX_MEASURED_MS))
+        return true
+    }
+
+    /** Update 274: Voltcap went behind another app / the screen went off (MainActivity.onStop): kept until it's back. */
+    fun markAway(at: Long) { if (prefs.getLong(KEY_AWAY_SINCE, 0L) <= 0L) prefs.edit().putLong(KEY_AWAY_SINCE, at).apply() }
+    /** Update 274: when Voltcap last left the front (0: unknown), and forgetting it. */
+    fun awaySince(): Long = prefs.getLong(KEY_AWAY_SINCE, 0L)
+    fun clearAway() { prefs.edit().remove(KEY_AWAY_SINCE).apply() }
+
+    private fun add(key: String, start: Long, counted: Long) {
+        val now = start + counted
         // Update 202: under LOCK, so a Drive sync seeding / reading this device's own counter never misses a session.
         synchronized(LOCK) {
             val totals = loadTotals().toMutableMap()
@@ -63,7 +88,6 @@ class PlaytimeStore(context: Context) {
             prefs.edit().putString(KEY_TOTALS, gson.toJson(totals)).putString(KEY_OWN, gson.toJson(own))
                 .putString(KEY_SESSIONS, gson.toJson(log)).apply()
         }
-        return key to counted
     }
 
     // ---- Update 202: per-device play time (playtime format 2) ----
@@ -158,6 +182,9 @@ class PlaytimeStore(context: Context) {
         const val SESSION_LOG_MAX = MAX_SESSIONS
         private const val MIN_SESSION_MS = 20_000L
         private const val MAX_SESSION_MS = 8L * 60 * 60 * 1000
+        /** Update 274: the most one measured stretch can add (time really in front; a sanity bound, not a cut). */
+        private const val MAX_MEASURED_MS = 24L * 60 * 60 * 1000
+        private const val KEY_AWAY_SINCE = "away_since"
 
         /** "42 min", "3.5 h", "120 h". */
         fun format(ms: Long): String {

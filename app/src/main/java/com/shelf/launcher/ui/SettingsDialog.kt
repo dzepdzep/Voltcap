@@ -3871,11 +3871,25 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.secondOpenCase.state.value,
             onChange = { com.shelf.launcher.data.Features.secondOpenCase.value = it }
         )
+        // Update 274 (Toni): Inspect or Wobble, and the sway when it's left alone.
+        Spacer(Modifier.height(8.dp))
+        StyleChoice(
+            "In the game window", com.shelf.launcher.data.Features.InspectMode.values(),
+            com.shelf.launcher.data.Features.inspectMode.state.value, { it.label }
+        ) { com.shelf.launcher.data.Features.inspectMode.value = it; com.shelf.launcher.data.Features.inspectModeAsked.value = true }
+        MutedNote("Inspect: drag (or the right stick) to turn the case, cartridge or disc and look at every side; tap it to turn it once round. Wobble: it just sways gently, as on the home rows — no turning by hand. Save Vault's Inspect always turns by hand.")
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Sway when left alone",
+            subtitle = "On (default): once it has turned back to face you, the piece sways gently left and right, as on the home rows, until you touch it again — also in Save Vault's Inspect. Off: it stands still.",
+            checked = com.shelf.launcher.data.Features.inspectSway.state.value,
+            onChange = { com.shelf.launcher.data.Features.inspectSway.value = it }
+        )
         // Update 238 (#116/#117): a piece turned in the game window stays turned a while, then turns back slowly.
         SwitchRow(
             icon = Icons.Filled.ViewWeek,
             title = "Turned pieces turn back by themselves",
-            subtitle = "On (default): a case, cartridge or disc you've turned or tilted in the game window stays at its angle for a moment once you let go, then turns back slowly to face you. Off: it stays as you left it. Drag (or the right stick) sideways to turn it, up / down to look over its top or under it; press Y or hold a finger on it to put it straight again.",
+            subtitle = "On (default): a case, cartridge or disc you've turned or tilted in the game window (or a save in Save Vault's Inspect) stays at its angle for a moment once you let go, then turns back slowly to face you. Off: it stays as you left it. Drag (or the right stick) sideways to turn it, up / down to look over its top or under it; press Y or hold a finger on it to put it straight again.",
             checked = com.shelf.launcher.data.Features.inspectAutoReturn.state.value,
             onChange = { com.shelf.launcher.data.Features.inspectAutoReturn.value = it }
         )

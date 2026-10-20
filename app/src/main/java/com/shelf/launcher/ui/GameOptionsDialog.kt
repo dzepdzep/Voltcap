@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.VideogameAsset
@@ -79,7 +80,9 @@ fun GameOptionsDialog(
     /** Update 195: "Cartridge shell…" (CartShellPicker.kt); null hides it. */
     onCartShell: (() -> Unit)? = null,
     /** Update 244: "Remove from Continue playing" (only for a game in it); null hides it. */
-    onRemoveFromContinue: (() -> Unit)? = null
+    onRemoveFromContinue: (() -> Unit)? = null,
+    /** Update 274 (Toni): "Inspect…" — its cartridge / disc / case out in the game window to turn round; null hides it. */
+    onInspect: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("GameOptionsDialog")
     ShelfMenuDialog(
@@ -101,6 +104,9 @@ fun GameOptionsDialog(
         }
         if (onGuide != null) {
             MenuRow(Icons.Filled.Book, "Guide", "Walkthrough that follows where you are", onClick = onGuide)
+        }
+        if (onInspect != null) {
+            MenuRow(Icons.Filled.ViewInAr, "Inspect…", "Its ${inspectNoun(game.platform)} in 3D — turn it, look at its back and under it", onClick = onInspect)
         }
         MenuRow(Icons.Filled.Image, "Artwork & details", "Art, summary, score — pick the scraper or your own images", onClick = onEditArtwork)
         if (onCartShell != null) {
@@ -233,4 +239,11 @@ fun GameOptionsDialog(
             }
         }
     }
+}
+
+/** Update 274: what the menu's Inspect… shows, in words. */
+private fun inspectNoun(platform: String): String = when {
+    platform in setOf("NDS", "3DS", "Switch", "PSVita") -> "game card"
+    mediaKind(platform) == "disc" -> "disc"
+    else -> "cartridge"
 }

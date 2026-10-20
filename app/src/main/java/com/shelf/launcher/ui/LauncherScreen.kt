@@ -839,6 +839,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         perfForGame = null
     }
     // (Update 261: the game a test walk starts from — its console's category, focused on it.)
+    // Update 274 (testing): a game's piece out on a given shell, held at an angle (TestHooks.inspect).
+    val testInspect = TestHooks.inspect.value
+    LaunchedEffect(testInspect, state.games.size) {
+        val v = testInspect ?: return@LaunchedEffect
+        val parts = v.split('|')
+        val g = state.games.firstOrNull { it.name.contains(parts[0].replace('_', ' '), ignoreCase = true) } ?: run { TestHooks.inspect.value = null; return@LaunchedEffect }
+        GamePopup.game = null
+        kotlinx.coroutines.delay(400)
+        MediaInspect.testShell = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
+        MediaInspect.testPose = floatArrayOf(parts.getOrNull(2)?.toFloatOrNull() ?: 0f, parts.getOrNull(3)?.toFloatOrNull() ?: 0f)
+        MediaInspect.forceSeq++
+        MediaInspect.force = g.stableKey
+        GamePopup.game = g
+        TestHooks.inspect.value = null
+    }
     val testGame = TestHooks.game.value
     LaunchedEffect(testGame) {
         val q = testGame ?: return@LaunchedEffect
@@ -2090,6 +2105,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             if (game?.raGameId != null) viewingAchievementsForGame = game
             else hubScreen = HubScreen.ACHIEVEMENTS
         },
+        // Update 274 (Toni): Play stats as a round shortcut too (hours, weeks, streaks — the Stats page).
+        HomeShortcut("Stats", Icons.Filled.BarChart, Color(0xFF4FD1A5)) { hubScreen = HubScreen.STATS },
         HomeShortcut("Shortcuts", Icons.Filled.Bolt, Color(0xFF5AC8FA)) { showShortcuts = true },
         // The memory-card save browser (also in the R1 panel and Settings › Sync).
         HomeShortcut(com.shelf.launcher.data.SAVES_NAME, Icons.Filled.SdCard, Color(0xFF7FE0C4)) { showSaveExplorer = true },
@@ -4336,6 +4353,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // Update 195: draw it on any shell of the cartridge library.
             onCartShell = if (game.sourceType == com.shelf.launcher.data.SourceType.APP && game.packageName?.startsWith("voltcap:") == true) null
                 else { { optionsForGame = null; cartShellForGame = game } },
+            // Update 274 (Toni): its piece out in the game window, whatever the look (MediaInspect.force).
+            onInspect = if (game.sourceType == com.shelf.launcher.data.SourceType.APP) null
+                else { { optionsForGame = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey; GamePopup.game = game } },
             onShowDetails = {
                 optionsForGame = null
                 if (!showDetails) openDetails()
@@ -5401,6 +5421,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             },
             onDismiss = done
         )
+    }
+    // Update 274 (Toni): once after this update — Inspect or Wobble for the pieces in the game window (InspectChoice.kt),
+    // on the bare home screen with nothing else asking.
+    var inspectAsk by remember { mutableStateOf(InspectChoice.due()) }
+    var inspectAskReady by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(9_000); inspectAskReady = true }
+    if (inspectAsk && inspectAskReady && !showFirstRun && !otherDialogOpen && !packsAskOpen && WhatsNew.shown.value == null &&
+        !(saverIntro && saverIntroReady) && !(showPermissionsPrompt && promptReady) && GamePopup.game == null &&
+        launchingGame == null && !screensaverOn && !HomeEditState.active && !categoryScreenOpen && !showDetails
+    ) {
+        InspectChoiceDialog { inspectAsk = false }
     }
     if (showPermissionsPrompt && promptReady && !showFirstRun) {
         PermissionsPromptDialog(onDismiss = {

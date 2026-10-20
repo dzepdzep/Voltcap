@@ -4,6 +4,27 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 20 Oct 2026 (274): Inspect / Wobble, a piece sways when left alone, Inspect… in every game's menu, Save Vault Inspect returns and sways, the three wide-capsule looks, Stats round shortcut, play time from Recents, popup fixes — after release 0.6.19
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. Not published yet.
+
+- **Couldn't find the inspect view:** it only came up when the look draws cartridges, discs or cases. Every game's menu (START) now has **Inspect…**, which brings its cartridge / card / disc (else its case) out in the game window whatever the look. Checked on the Flip 2: Donkey Konga 2's disc came out with the Covers look.
+- **Inspect or Wobble** (Settings › Game look › Covers, cases & discs › More look options › In the game window), asked once after this update: *Inspect* = turn it by hand; *Wobble* = no turning by hand, it just sways like the pieces on the home rows. Back / outside leaves the question for next time; only a pick counts.
+- **Left alone it goes back to its animation:** after the 2-second turn back (on by default, as before) the piece sways gently ±24° ("Sway when left alone", on). Any touch, the stick, Y or a tap stops it where it is (no jump).
+- **Save Vault:** tap the save's object in its details to Inspect it ("Tap to inspect" under it). In Inspect, left alone for the hold it turns back to face you (and its own size, in the middle), then sways. Checked on the Flip 2 with Pokémon Silver's card: dragged, it came back after ~3 s and swayed. Nothing about the save is touched.
+- **Wide capsules, three looks under Covers › Cover style:** *Wide capsules* (every game wide, the ones beside too), *Wide · first game only* (a fixed capsule, no animation, the others covers), *Wide · when you're on it* (cover → wide capsule animation). "Wide capsules" is gone from Art (it was the same look twice) and the separate "The game you're on" choice is folded into these.
+- **Stats round shortcut** (bar chart, next to Achievements): opens Play stats; hide it like the others in Settings › Home › Round shortcuts.
+- **Play time (Silver showed 3 h, played on the RP Classic):** Voltcap is the home screen, so Home pressed mid-game ended the session and going back to the game from Recents was never counted. Now any game still open from an earlier launch gets the time it was really on screen while Voltcap was away (Android's usage record, Usage access needed). Measured sessions are no longer cut to 8 h (that stays only for the wall-clock fallback). Time already lost can't be recovered.
+- **After an in-app update Voltcap opens itself again** (it left the Flip 2 on the Retroid launcher until Home was pressed): only as the home app, with the screen on.
+- **Popups:** the Game look choices' text was cut with "…" — now shown in full, cards as tall as the tallest; R1 tile names no longer break mid-word ("Achievement / s") or end in "…"; the game window beside an inspected piece had its "Saves / Performance" line squeezed to two empty slivers — room made; Save Vault's save list rows ran into each other — taller; Save Vault details' buttons centred and a little lower; the battery-saver note's buttons centred.
+- **Two-line names:** the name under a card switched between two heights when it started scrolling (one frame or two), nudging the row; both now sit in the same fixed-height box. Recorded on the Flip 2 in the Grid and the Voltcap row: no vertical movement of the row (within 0.4 px).
+- Testing hook (adb only, with `voltcap_test_hooks`): `--es voltcap_test_inspect "Game|shellId|yaw|pitch"`.
+
+Files (`src_copy\`): `data\Features.kt`, `data\PlaytimeStore.kt`, `data\UpdatedReceiver.kt` (new), `LauncherViewModel.kt`, `MainActivity.kt`, `ui\BatterySaverUi.kt`, `ui\DialogChrome.kt`, `ui\GameLookPicker.kt`, `ui\GameOptionsDialog.kt`, `ui\GameWindow.kt`, `ui\InspectChoice.kt` (new), `ui\LauncherScreen.kt`, `ui\MediaInspect.kt`, `ui\MediaInspectView.kt`, `ui\QuickSettings.kt`, `ui\SaveExplorer.kt`, `ui\SaveInspect.kt`, `ui\ScrollingName.kt`, `ui\SettingsDialog.kt`, `ui\SettingsIndex.kt`, `ui\TestHooks.kt`, `ui\TileHome.kt`; `project_copy\app\src\main\AndroidManifest.xml`.
+
+**Held, not pushed (Toni's OK first): update 275, cartridge bottoms in 3D** — see `Claude outputs\hold274A\README.md`.
+
+
 ## Update — 20 Oct 2026 (273): flick a 3D piece and it keeps turning, slower and slower, until it stops — after release 0.6.18
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built, installed (with the start-up profile) and checked on the Retroid Pocket Flip 2**, committed and pushed by Claude. **Published as Voltcap 0.6.19.**

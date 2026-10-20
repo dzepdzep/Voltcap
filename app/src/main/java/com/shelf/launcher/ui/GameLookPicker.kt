@@ -90,7 +90,11 @@ internal enum class LookMain(val label: String, val short: String, val about: St
 /** Update 202: Covers › Cover style. */
 internal enum class LookCoverStyle(val label: String, val about: String) {
     COVER("Cover", "The game's front cover."),
-    WIDE("Wide", "The wide capsule art for every game (the long banner, like Steam's library)."),
+    // (Update 274, Toni: the three wide looks side by side, each one thing — they were split between Cover style, "The
+    // game you're on" and Art, and Art › Wide capsules was the same as Wide.)
+    WIDE("Wide capsules", "Every game a wide capsule, the ones beside the game you're on too."),
+    WIDE_FIRST("Wide · first game only", "The first game is a fixed wide capsule (no animation); the others are covers."),
+    WIDE_FOCUS("Wide · when you're on it", "Covers; the game you're on turns from its cover into its wide capsule."),
     TILE("Square tile", "Big rounded squares, the game you're on a little bigger."),
     SPINE("Spine", "Every game as its spine, like boxes on a shelf. The game you're on shows its cover.")
 }
@@ -154,16 +158,9 @@ internal fun pickShowAs(v: LookShowAs, a: AppearanceSettings): AppearanceSetting
 /** Update 202: Art. */
 internal enum class LookArt(val label: String, val about: String, val type: CardArtType) {
     HERO("Hero art", "The game's wide background art, cropped to the card.", CardArtType.HERO),
-    SCREENSHOT("Screenshots", "A screenshot from the game.", CardArtType.SCREENSHOT),
-    WIDE("Wide capsules", "The wide capsule art (the long banner).", CardArtType.CAPSULE)
+    SCREENSHOT("Screenshots", "A screenshot from the game.", CardArtType.SCREENSHOT)
+    // (Update 274: Wide capsules moved to Covers › Cover style — here it was the same look under a second name.)
 }
-
-/** Update 202: Covers › The game you're on (the row's "It shows as", FocusedCardStyle). */
-private val FOCUS_CHOICES: List<Triple<FocusedCardStyle, String, String>> = listOf(
-    Triple(FocusedCardStyle.COVER, "Same as the others", "The game you're on stays a cover, just lifted."),
-    Triple(FocusedCardStyle.WIDE, "Wide capsule", "The game you're on unfolds into its wide capsule; the carousels too."),
-    Triple(FocusedCardStyle.FIRST_ONLY, "Only the first one wide", "The first game of the Voltcap row stays a wide capsule at the left; the others are covers. (Turns the row's carousel off and puts the game you're on at the left.)")
-)
 
 /**
  * Update 202: what each main look had (Features.lookMemory), so stepping through the four brings each back as you left
@@ -189,7 +186,7 @@ private inline fun <reified E : Enum<E>> enumOr(name: String?, def: E): E = enum
 /** Update 202: the main look in use (wide capsules count as Covers unless they were picked under Art). */
 internal fun lookMainOf(a: AppearanceSettings): LookMain = when (a.cardArtFor()) {
     CardArtType.COVER -> LookMain.COVERS
-    CardArtType.CAPSULE -> if (LookMemory.get("main") == LookMain.ART.name) LookMain.ART else LookMain.COVERS
+    CardArtType.CAPSULE -> LookMain.COVERS
     CardArtType.CASE, CardArtType.CASE_REAL -> LookMain.CASES
     CardArtType.CARTRIDGE_DISC, CardArtType.DISC -> LookMain.CARTS
     CardArtType.HERO, CardArtType.SCREENSHOT -> LookMain.ART
@@ -199,6 +196,8 @@ private fun coverStyleNow(a: AppearanceSettings): LookCoverStyle = when {
     Features.spineLook.value -> LookCoverStyle.SPINE
     Features.squareTiles.value -> LookCoverStyle.TILE
     a.cardArtFor() == CardArtType.CAPSULE -> LookCoverStyle.WIDE
+    a.focusedCardStyle == FocusedCardStyle.FIRST_ONLY -> LookCoverStyle.WIDE_FIRST
+    a.focusedCardStyle == FocusedCardStyle.WIDE -> LookCoverStyle.WIDE_FOCUS
     else -> LookCoverStyle.COVER
 }
 
@@ -236,15 +235,23 @@ private fun pickCoverStyle(s: LookCoverStyle, a: AppearanceSettings): Appearance
     LookMemory.put("main" to LookMain.COVERS.name, "cover" to s.name)
     F.squareTiles.value = s == LookCoverStyle.TILE
     F.spineLook.value = s == LookCoverStyle.SPINE
-    // (Update 166: the carousels unfold the game you're on only with plain covers and "Wide capsule".)
-    F.carouselWide.value = s == LookCoverStyle.COVER && a.focusedCardStyle == FocusedCardStyle.WIDE
     // (Update 119: the Grid's square tiles drew covers whatever the look was: wide capsules turn them off.)
     if (s == LookCoverStyle.WIDE) F.gridTiles.value = false
-    return a.copy(cardArtType = if (s == LookCoverStyle.WIDE) CardArtType.CAPSULE else CardArtType.COVER)
+    // (Update 274: each wide look sets the game you're on itself — they were a second choice under Cover.)
+    val focus = when (s) {
+        LookCoverStyle.WIDE_FIRST -> FocusedCardStyle.FIRST_ONLY
+        LookCoverStyle.WIDE_FOCUS -> FocusedCardStyle.WIDE
+        else -> FocusedCardStyle.COVER
+    }
+    // (The first-game-only capsule stands still; the one you're on keeps its cover → wide animation, on if it was off.)
+    if (s == LookCoverStyle.WIDE_FIRST) F.capsuleRevealFirst.value = Features.CapsuleReveal.NONE
+    if (s == LookCoverStyle.WIDE_FOCUS && F.capsuleReveal.value == Features.CapsuleReveal.NONE) F.capsuleReveal.value = Features.CapsuleReveal.ROLL
+    return pickFocus(focus, a.copy(cardArtType = if (s == LookCoverStyle.WIDE) CardArtType.CAPSULE else CardArtType.COVER))
 }
 
 private fun pickFocus(f: FocusedCardStyle, a: AppearanceSettings): AppearanceSettings {
-    Features.carouselWide.value = f == FocusedCardStyle.WIDE
+    // (Update 166: the carousels unfold the game you're on only with plain covers and "Wide capsule".)
+    Features.carouselWide.value = f == FocusedCardStyle.WIDE && a.cardArtFor() == CardArtType.COVER
     // Update 204: "Only the first one wide" is the Voltcap row's fixed capsule at its left end — it only exists in the
     // plain row, so picking it takes the row out of the carousel and puts the game you're on at the left (it seemed not
     // to take: in the carousel nothing changed, or every game unfolded as you reached it).
@@ -620,26 +627,15 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
                     val sample = when (s) {
                         LookCoverStyle.COVER -> Sample.COVER
                         LookCoverStyle.WIDE -> Sample.WIDE
+                        LookCoverStyle.WIDE_FIRST -> Sample.FOCUS_FIRST
+                        LookCoverStyle.WIDE_FOCUS -> Sample.FOCUS_WIDE
                         LookCoverStyle.TILE -> Sample.TILE
                         LookCoverStyle.SPINE -> Sample.SPINE
                     }
                     LookChoiceCard(s.label, s.about, s == style, enabled, sample) { onChange(pickCoverStyle(s, appearance)) }
                 }
             }
-            // (Tiles keep the game you're on a square, spines show its cover, wide capsules are wide already.)
-            if (style == LookCoverStyle.COVER) {
-                SectionLabel("The game you're on")
-                ChoiceRow {
-                    FOCUS_CHOICES.forEach { (f, label, about) ->
-                        val sample = when (f) {
-                            FocusedCardStyle.WIDE -> Sample.FOCUS_WIDE
-                            FocusedCardStyle.FIRST_ONLY -> Sample.FOCUS_FIRST
-                            FocusedCardStyle.COVER -> Sample.FOCUS_SAME
-                        }
-                        LookChoiceCard(label, about, appearance.focusedCardStyle == f, enabled, sample) { onChange(pickFocus(f, appearance)) }
-                    }
-                }
-            }
+            // (Update 274: "The game you're on" is gone — its wide choices are Cover styles of their own now.)
         }
         LookMain.CASES -> {
             val scan = F.originalCases.value
@@ -738,7 +734,6 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
                     val sample = when (k) {
                         LookArt.HERO -> Sample.HERO
                         LookArt.SCREENSHOT -> Sample.SHOT
-                        LookArt.WIDE -> Sample.ART_WIDE
                     }
                     LookChoiceCard(k.label, k.about, k == now, enabled, sample) { onChange(pickArt(k, appearance)) }
                 }
@@ -751,7 +746,7 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
 @Composable
 private fun ChoiceRow(content: @Composable () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 10.dp),
+        Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Max).horizontalScroll(rememberScrollState()).padding(bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) { content() }
 }
@@ -761,7 +756,9 @@ private fun ChoiceRow(content: @Composable () -> Unit) {
 private fun LookChoiceCard(label: String, about: String, on: Boolean, enabled: Boolean, sample: Sample, onPick: () -> Unit) {
     val shape = uiRounded(12.dp)
     Column(
-        Modifier.width(150.dp)
+        // (Update 274, Toni: "text written with …" — the choices' lines were cut to four with "…"; now the whole text
+        // shows, every card in the row as tall as the tallest.)
+        Modifier.width(164.dp).fillMaxHeight()
             .clip(shape)
             .background(if (on) ShelfTheme.accent.copy(alpha = 0.16f) else ShelfTheme.colors.surfaceRaised)
             .border(if (on) 2.dp else 1.dp, if (on) ShelfTheme.accent else ShelfTheme.textMuted.copy(alpha = 0.25f), shape)
@@ -774,7 +771,7 @@ private fun LookChoiceCard(label: String, about: String, on: Boolean, enabled: B
             (if (on) "✓ " else "") + label, color = ShelfTheme.colors.textPrimary.copy(alpha = if (enabled) 1f else 0.5f),
             fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
         )
-        Text(about, color = ShelfTheme.textMuted, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
+        Text(about, color = ShelfTheme.textMuted, fontSize = 11.sp, lineHeight = 14.sp)
     }
 }
 

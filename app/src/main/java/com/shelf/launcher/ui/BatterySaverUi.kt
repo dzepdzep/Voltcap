@@ -172,7 +172,8 @@ internal fun BatterySaverIntroDialog(onSettings: () -> Unit, onDismiss: () -> Un
                 MutedNote("Settings › Device › Battery saver, or hold the Battery saver tile in R1.")
             }
             Spacer(Modifier.height(10.dp))
-            androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+            // (Update 274: the buttons centred under the text.)
+            androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp, androidx.compose.ui.Alignment.CenterHorizontally)) {
                 Chip("Got it", accent = true) { onDismiss() }
                 Chip("Settings", accent = false) { onSettings() }
             }

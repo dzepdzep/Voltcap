@@ -796,7 +796,7 @@ private fun HomeTile(
 
 /** The round buttons' names, in their order (Settings › Round shortcuts › Buttons). */
 internal val HomeShortcutNames = listOf(
-    "Categories", "All apps", "Search", "Notifications", "Music", "Achievements", "Shortcuts",
+    "Categories", "All apps", "Search", "Notifications", "Music", "Achievements", "Stats", "Shortcuts",
     com.shelf.launcher.data.SAVES_NAME, "What should I play?", "Edit Home", "Volt", "Settings"
 )
 

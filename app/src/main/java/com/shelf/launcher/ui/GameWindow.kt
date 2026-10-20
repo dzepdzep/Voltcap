@@ -565,6 +565,8 @@ internal fun GameWindow(
     // (Update 162: a piece turns all the way round. Update 200: the drawn shells of the 3D cartridges looks too — the
     // pre-rendered 3D models and their InspectModel are retired.)
     motion.limited = false
+    // (Update 274: Settings › Game look › In the game window: Wobble — it only sways, no turning by hand.)
+    motion.handsOff = com.shelf.launcher.data.Features.inspectMode.state.value == com.shelf.launcher.data.Features.InspectMode.WOBBLE
     val inspectScope = rememberCoroutineScope()
     // Update 200: the stick click for the piece, also from the home screen's key handler (MediaInspect.stickClick).
     val pieceForStick by rememberUpdatedState(piece)
@@ -602,11 +604,14 @@ internal fun GameWindow(
         }
     }
     // (However it closes — Play, Details, the options… — the carousel gets its games back.)
+    val mySeq = remember(g.stableKey) { MediaInspect.forceSeq }
     DisposableEffect(g.stableKey) {
         val k = g.stableKey
         onDispose {
             if (motion.started) MediaInspect.amount.floatValue = 0f
             if (MediaInspect.key == k) MediaInspect.key = null
+            // (Update 274: the menu's Inspect… is for this opening only — unless a newer one was asked for meanwhile.)
+            if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null }
         }
     }
     androidx.compose.ui.window.Dialog(
@@ -1271,8 +1276,13 @@ private fun WindowBody(
             val bottom = (extras.textAt(WinSlot.BOTTOM) || extras.at(WinPart.MEDIA, WinSlot.BOTTOM) || extras.at(WinPart.ICONS, WinSlot.BOTTOM)) && !details
             // (Update 260: + the status line under the buttons — "Saves: …" and the power mode — which had no room and
             // showed as two cut-off slivers at the window's bottom edge on the Thor and the RP Classic.)
-            val btnRoom = 100.dp + (if (info) 74.dp else 0.dp) + (if (bottom) 82.dp else 0.dp) + (if (status != null) 46.dp else 0.dp)
+            // (Update 274, Toni: "buttons a bit down / centred" — beside an inspected piece on the Flip 2 the window is
+            // narrow, so the small round icons go to a row of their own under the buttons, and the facts + achievements +
+            // two lines of story are ~100 dp, not 74: the status line was still squeezed to two empty slivers at the
+            // bottom edge. Room for both now; the picture gives way.)
             val inner = (maxW - (if (look.panel != null) 28.dp else 0.dp)).coerceAtLeast(120.dp)
+            val iconsRow = if (!details && inner < 600.dp) 52.dp else 0.dp
+            val btnRoom = 100.dp + iconsRow + (if (info) 104.dp else 0.dp) + (if (bottom) 82.dp else 0.dp) + (if (status != null) 46.dp else 0.dp)
             val screenW = minOf(inner, (maxH - btnRoom - (if (look.panel != null) 28.dp else 0.dp)) * 1.78f).coerceAtLeast(120.dp)
             Column(panelMod, horizontalAlignment = Alignment.CenterHorizontally) {
                 Media(Modifier.width(screenW).height(screenW / 1.78f), showName = true)

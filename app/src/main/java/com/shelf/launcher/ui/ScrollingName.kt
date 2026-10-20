@@ -35,21 +35,24 @@ internal fun ScrollingName(
     textAlign: TextAlign? = null, style: TextStyle = TextStyle.Default, lines: Int = 2
 ) {
     var overflows by remember(text, fontSize) { mutableStateOf(false) }
-    if (scrolling && overflows && !LocalLiteEffects.current) {
-        val h = with(LocalDensity.current) { lineHeight.toDp() } * lines
-        Box(modifier.height(h), contentAlignment = Alignment.TopStart) {
+    // (Update 274, Toni: "a two-line name moves the row and brings it back" — the name was a Text the height of its two
+    // lines, then, once it was found too long for them, a marquee box of [lines] × lineHeight: a different height for a
+    // frame or two, so the row under / round it jumped and came back. Both now sit in the same fixed-height box.)
+    val h = with(LocalDensity.current) { lineHeight.toDp() } * lines
+    // (propagateMinConstraints: the name keeps the width the caller gives it — filled, or just its own — as before.)
+    Box(modifier.height(h), contentAlignment = Alignment.TopStart, propagateMinConstraints = true) {
+        if (scrolling && overflows && !LocalLiteEffects.current) {
             Text(
                 text, color = color, fontSize = fontSize, lineHeight = lineHeight, fontWeight = fontWeight, textAlign = textAlign, style = style,
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
                 modifier = Modifier.fillMaxWidth().basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 700, repeatDelayMillis = 900, velocity = 36.dp)
             )
+        } else {
+            Text(
+                text, color = color, fontSize = fontSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(fontSize), maxFontSize = fontSize), lineHeight = lineHeight, fontWeight = fontWeight, textAlign = textAlign, style = style,
+                maxLines = lines, minLines = lines, overflow = TextOverflow.Ellipsis,
+                onTextLayout = { overflows = it.hasVisualOverflow }
+            )
         }
-    } else {
-        Text(
-            text, color = color, fontSize = fontSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(fontSize), maxFontSize = fontSize), lineHeight = lineHeight, fontWeight = fontWeight, textAlign = textAlign, style = style,
-            maxLines = lines, minLines = lines, overflow = TextOverflow.Ellipsis,
-            onTextLayout = { overflows = it.hasVisualOverflow },
-            modifier = modifier
-        )
     }
 }

@@ -94,6 +94,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -191,6 +192,11 @@ private class InspectPose {
     var limitY = 0f
     var panSpeed = 600f
     private var resetJob: Job? = null
+    /** Update 274 (Toni): when it was last touched / turned / zoomed (uptime ms), for the turn back after the hold. */
+    @Volatile var touchedAt = android.os.SystemClock.uptimeMillis()
+    /** Update 274: a finger is on it. */
+    @Volatile var touching = false
+    fun touch() { touchedAt = android.os.SystemClock.uptimeMillis() }
 
     /** How much its front faces you (−1: its back, full on). */
     fun facing(): Float =
@@ -214,21 +220,22 @@ private class InspectPose {
     fun stopCoast() { vYaw.floatValue = 0f; vPitch.floatValue = 0f }
 
     private fun coasting(): Boolean = abs(vYaw.floatValue) >= FLING_STOP || abs(vPitch.floatValue) >= FLING_STOP
+    fun coastingNow(): Boolean = coasting()
 
     fun turn(dYaw: Float, dPitch: Float, user: Boolean = true) {
-        if (user) resetJob?.cancel()
+        if (user) { resetJob?.cancel(); touch() }
         yaw.floatValue = Models3D.wrap(yaw.floatValue + dYaw * yawSign())
         pitch.floatValue = Models3D.wrap(pitch.floatValue + dPitch)
     }
 
     fun zoomBy(f: Float) {
-        resetJob?.cancel()
+        resetJob?.cancel(); touch()
         zoom.floatValue = (zoom.floatValue * f).coerceIn(ZOOM_MIN, ZOOM_MAX)
         clampPan()
     }
 
     fun panBy(dx: Float, dy: Float) {
-        resetJob?.cancel()
+        resetJob?.cancel(); touch()
         panX.floatValue += dx
         panY.floatValue += dy
         clampPan()
@@ -269,7 +276,7 @@ private class InspectPose {
     /** Y: back as it first stood — facing you, upright, its own size, in the middle — smoothly. */
     fun reset(scope: CoroutineScope) {
         resetJob?.cancel()
-        stopCoast()
+        stopCoast(); touch()
         resetJob = scope.launch {
             val y0 = Models3D.wrap(yaw.floatValue); val p0 = Models3D.wrap(pitch.floatValue)
             val z0 = zoom.floatValue; val x0 = panX.floatValue; val q0 = panY.floatValue
@@ -499,6 +506,61 @@ private fun InspectControllerInput(pose: InspectPose, onReset: () -> Unit, onTog
             }
         }
     }
+    // Update 274 (Toni): as in the game window — left alone for the hold (Settings › Game look: 2 s by default) it turns
+    // back to face you slowly (its own size, in the middle), then sways gently left and right until it's touched again.
+    LaunchedEffect(pose) { pose.idleLoop() }
+}
+
+/**
+ * Update 274: the turn back after the hold and the sway after it (Features.inspectAutoReturn / inspectHold /
+ * inspectReturnSpeed / inspectSway — the game window's settings). Sleeps while there's nothing to do.
+ */
+private suspend fun InspectPose.idleLoop() {
+    var swayT = 0f
+    var amp = 0f
+    var back: FloatArray? = null   // yaw, pitch, zoom, panX, panY as the turn back started
+    var backT = 0f
+    var swayBase = 0f
+    var last = -1L
+    while (true) {
+        val busy = touching || held()
+        val idle = android.os.SystemClock.uptimeMillis() - touchedAt
+        val hold = Features.inspectHold.state.value.ms
+        val returnOn = Features.inspectAutoReturn.state.value
+        val swayOn = Features.inspectSway.state.value
+        if (busy) {
+            if (busy && (touching || coastingNow() || abs(rx.floatValue) > DEAD || abs(ry.floatValue) > DEAD)) touch()
+            back = null; amp = 0f; swayT = 0f; last = -1L
+            kotlinx.coroutines.delay(120)
+            continue
+        }
+        if (idle < hold) { back = null; amp = 0f; swayT = 0f; last = -1L; kotlinx.coroutines.delay(100); continue }
+        val atRest = abs(Models3D.wrap(yaw.floatValue)) < 0.5f && abs(Models3D.wrap(pitch.floatValue)) < 0.5f &&
+            abs(zoom.floatValue - 1f) < 0.01f && abs(panX.floatValue) < 0.5f && abs(panY.floatValue) < 0.5f
+        val wantBack = returnOn && back == null && amp == 0f && swayT == 0f && !atRest
+        if (!wantBack && back == null && !swayOn) { kotlinx.coroutines.delay(200); continue }
+        val now = withFrameNanos { it }
+        val dt = if (last > 0L) ((now - last) / 1_000_000_000f).coerceAtMost(0.05f) else 0f
+        last = now
+        if (wantBack) { back = floatArrayOf(Models3D.wrap(yaw.floatValue), Models3D.wrap(pitch.floatValue), zoom.floatValue, panX.floatValue, panY.floatValue); backT = 0f }
+        val b = back
+        if (b != null) {
+            backT += dt * 1000f / Features.inspectReturnSpeed.state.value.ms
+            val v = FastOutSlowInEasing.transform(backT.coerceIn(0f, 1f))
+            val k = 1f - v
+            yaw.floatValue = b[0] * k; pitch.floatValue = b[1] * k
+            zoom.floatValue = 1f + (b[2] - 1f) * k
+            panX.floatValue = b[3] * k; panY.floatValue = b[4] * k
+            if (backT >= 1f) { back = null; swayBase = 0f; swayT = 0.0001f }
+            continue
+        }
+        if (!swayOn) { kotlinx.coroutines.delay(200); continue }
+        // The sway (around where it stands — facing you after the turn back, else where you left it).
+        if (swayT == 0f) swayBase = yaw.floatValue
+        amp += (1f - amp) * (dt * 1.6f).coerceAtMost(1f)
+        swayT += dt
+        yaw.floatValue = swayBase + 24f * amp * sin(swayT * 1000f / CART_SPIN_MS * 2f * PI.toFloat())
+    }
 }
 
 private val NO_BOB: () -> Float = { 0f }
@@ -517,6 +579,7 @@ private fun InspectStage(
                     val down0 = awaitFirstDown(requireUnconsumed = false)
                     // (0.6.18: a touch stops a coasting turn; a one-finger flick starts one as you let go.)
                     pose.stopCoast()
+                    pose.touching = true; pose.touch() // (Update 274: not turned back while a finger is on it)
                     val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
                     tracker.addPosition(down0.uptimeMillis, down0.position)
                     var pinched = false
@@ -541,6 +604,7 @@ private fun InspectStage(
                         }
                         event.changes.forEach { if (it.positionChange() != Offset.Zero) it.consume() }
                     } while (event.changes.any { it.pressed })
+                    pose.touching = false; pose.touch()
                     if (!pinched) tracker.calculateVelocity().let { v -> pose.fling(v.x * k0, v.y * k0) }
                 }
             }
