@@ -70,6 +70,13 @@ So almost every DS game got a holder whether or not its real case had one.
 - UNKNOWN with evidence: 4 (2 both-kinds, 2 conflicts).
 - Every other DS game in every region is UNKNOWN, so no holder is drawn.
 
+## Update 297: the opened case's cache
+The inside of an opened case is drawn once and cached. Its key held only the console, region and shell, so a DS case
+with the GBA holder and one without (same region) shared one picture: whichever game was opened first decided it for
+the other. Reproduced on the Thor (0.6.25): Mario Kart DS showed Pokémon Platinum's holder when opened after it. The key
+now holds every property that changes the inside (holder, eco, sizes, colours…); a unit test checks every DS variant
+gets its own. Checked on the Thor in both orders.
+
 ## Limits
 - Reddit and Stack Exchange could not be opened from the research session (blocked). The Reddit entries are Toni's
   leads, recorded as "Reported", and their region is assumed North America unless stated. The Stack Exchange lead gave

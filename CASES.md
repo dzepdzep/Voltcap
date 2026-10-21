@@ -18,8 +18,8 @@ Sizes are width × height × thickness in mm, as the case stands.
 
 | Console key | Region | Case | Size (mm) | How sure | Notes |
 |---|---|---|---|---|---|
-| PS1 | North America | Jewel case | 142 × 125 × 10.4 | Published size | Standard CD jewel case (142×125×10.4) with the black PlayStation tray. Early 1995 longboxes not drawn: no measurements found. |
-| PS1 | Europe | Jewel case | 142 × 125 × 17.4 | Estimated | PAL: deeper jewel case for the multi-language manual; 17.4 mm from a replacement-insert maker, not measured. |
+| PS1 | North America | Jewel case | 142 × 125 × 10.4 | Published size | Standard CD jewel case (142×125×10.4) with the black PlayStation tray. Early 1995 longboxes not drawn: no measurements found. Multi-disc games (2+): the 25 mm multiway case, each disc on its own tray, the upper tray hinged (update 297; the next disc drawn plain). |
+| PS1 | Europe | Jewel case | 142 × 125 × 17.4 | Estimated | PAL: deeper jewel case for the multi-language manual; 17.4 mm from a replacement-insert maker, not measured. Update 297: 3+ discs in the 25 mm multiway case (PSX PAL DB); 2-disc games keep this case (Full Jewel from Oct 1997, multiway before — the files can't say which). |
 | PS1 | Japan | Jewel case | 142 × 125 × 10.4 | Published size | Standard jewel case as North America. The paper obi on the spine isn't drawn. |
 | PS2 | North America | Keep case | 135 × 190 × 14 | Published size | DVD keep case, black. Memory card holder in most; its place inside isn't confirmed. Greatest Hits red / Platinum silver not drawn. |
 | PS2 | Europe | Keep case | 135 × 190 × 14 | Published size | PAL: black early on, then dark blue from about 2001 (Wikipedia). The dark blue is drawn. Platinum silver not drawn. |
@@ -38,9 +38,9 @@ Sizes are width × height × thickness in mm, as the case stands.
 | GameCube | Japan | Keep case | 107 × 149 × 17 | Published size | Japan: compact clear case 149×107×17. An outer sleeve isn't confirmed, so not drawn. |
 | Wii | All | Keep case | 135 × 190 × 14 | Published size | White DVD-size case. |
 | WiiU | All | Keep case | 135 × 190 × 14 | Published size | Bright blue DVD-size case. |
-| NDS | North America | Card case | 135 × 122 × 15 | Published size | Black slim case (North America, Japan). Card at the top, Game Boy Advance slot under it (places not confirmed). |
-| NDS | Japan | Card case | 135 × 122 × 15 | Published size | As North America. |
-| NDS | Europe | Card case | 135 × 122 × 20 | Published size | Europe: clear and thicker (20 mm). |
+| NDS | North America | Card case | 135 × 122 × 15 | Published size | Black slim case. Card at the top. GBA holder under it **only for games with evidence it had one** (update 296); else the plain case, or the eco case from 2011. See `DS_CASES.md`. |
+| NDS | Japan | Card case | 135 × 122 × 15 | Published size | As North America; no GBA holder unless evidence says so (none found yet). |
+| NDS | Europe | Card case | 135 × 122 × 20 | Published size | Europe: clear and thicker (20 mm). GBA holder only with evidence; a few PAL games in the black Asian-made case (with holder). See `DS_CASES.md`. |
 | 3DS | All | Card case | 135 × 122 × 12 | Published size | White in every region. The moulded cut-outs inside aren't confirmed, so only the card slot is drawn. |
 | Switch | All | Card case | 104 × 170 × 10 | Published size | Clear (the red is the paper insert). Card holder low on the right, tabs above it for paper. |
 | Switch2 | All | Card case | 104 × 170 × 10 | Published size | Red, red inside too; 170×104×10 like Switch (Wikipedia's keep-case table). How see-through isn't confirmed. |
@@ -77,7 +77,7 @@ Sizes are width × height × thickness in mm, as the case stands.
 | Saturn | Japan | Jewel case | 142 × 125 × 10.4 | Estimated | Jewel case; tray colour and obi not confirmed. |
 | Dreamcast | North America | Jewel case | 142 × 125 × 10.2 | Published size | Standard jewel case with a clear tray. |
 | Dreamcast | Japan | Jewel case | 142 × 125 × 10.4 | Published size | White tray in about 95 % of games (Shenmue black). |
-| Dreamcast | Europe | Jewel case | 142 × 125 × 20 | **Placeholder** | PAL cases are thicker (confirmed); 20 mm and the tray colour aren't. |
+| Dreamcast | Europe | Own 3-part case | 142 × 125 × 20 | **Placeholder** (size) | Update 297: Sega of Europe's own case — clear front, deep-blue inner tray, clear back; the front opens onto the first disc, the back onto the manual and second disc (GameFAQs PAL box FAQ). Inside the front: the inlay's blank reverse and four clips, no manual. Size not measured. |
 | GameGear | All | Cardboard box | 111 × 152 × 24 | **Placeholder** | Cardboard box with a hang tab (North America, confirmed); size not found. |
 | NeoGeo | All | Clamshell | 171 × 222 × 51 | Measured | Big hard black clamshell, 222×171×51 (measured by a museum). Early Japanese soft boxes not drawn. |
 | NeoGeoCD | All | Jewel case | 142 × 125 × 10.4 | Estimated | Jewel case assumed; some games came in double cases. |
@@ -125,7 +125,7 @@ Famicom Disk System and 64DD packaging. Not drawn yet:
 - **Cardboard:** matte, printed edges. Opens with the tuck flap and dust flaps on top; the inner tray rises.
 - **Inside:**
   - the disc at its real size on its hub (8 cm on GameCube);
-  - the card at its real size and place (Switch low right, DS top with the GBA slot under it);
+  - the card at its real size and place (Switch low right, DS top, with the GBA holder under it only where that game's real case had one — `DS_CASES.md`);
   - the disc on the left for Xbox One / Series;
   - memory card holders on PS2 and GameCube (their place is assumed).
 

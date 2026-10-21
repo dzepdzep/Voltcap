@@ -28,7 +28,7 @@ Sizes are width × height × thickness in mm, front view.
 | Virtual Boy Game Pak | Nintendo | 75.8 × 73.74 × 6.61 | Drawn, partly estimated | Size measured (75.8×68.36×6.61, 73.74 tall with its removable dust cap, drawn at the bottom); label about 52×42 measured. |
 | Nintendo DS Game Card | Nintendo | 33 × 35 × 3.8 | Drawn, partly estimated | Size measured (33×35×3.8); layout estimated. |
 | Nintendo 3DS Game Card | Nintendo | 34 × 35 × 3.8 | Drawn, partly estimated | Size measured; the side tab (it stops a 3DS card going into a DS) estimated. |
-| Nintendo Switch Game Card | Nintendo | 21 × 31 × 3 | Drawn, partly estimated | Size 21×31×3 (Wikipedia; others say 3.3 thick); layout estimated. |
+| Nintendo Switch Game Card | Nintendo | 21 × 31 × 3 | Drawn, partly estimated | Size 21×31×3 (Wikipedia; others say 3.3 thick); layout estimated. Update 297: without a real label scan the sticker has the real red NINTENDO SWITCH header (from the template pack's label frame) with the cover cut under it — `SwitchLabel.kt`. |
 | Nintendo Switch 2 Game Card | Nintendo | 21 × 31 × 3 | Drawn, partly estimated | Same size as Switch, red; the rear notch isn't drawn. |
 | Nintendo Switch 2 Game-Key Card | Nintendo | 21 × 31 × 3 | Drawn, partly estimated | As Switch 2; the label's key mark drawn top right (licence only, no game on the card). |
 | Pokémon mini Game Pak | Nintendo | 26 × 25 × 6 | **Placeholder, not finished** | No measurements found: placeholder. |
@@ -75,11 +75,11 @@ Sizes are width × height × thickness in mm, front view.
 | Evercade cartridge | Other | 60 × 88 × 11 | **Placeholder, not finished** | No measurements found; estimated. |
 | Game Boy Camera | Special | 57 × 110 × 38 | **Placeholder, not finished** | A Game Boy cart with the round camera head on top; the head's size and the colours from memory. |
 | Pokémon Pinball (rumble) | Special | 57 × 84 × 18 | **Placeholder, not finished** | A Game Boy Color cart with the rumble and battery housing on top (estimated). |
-| Kirby Tilt 'n' Tumble | Special | 57 × 78 × 14 | **Placeholder, not finished** | A clear Game Boy Color cart with the tilt sensor on top (estimated). |
-| WarioWare: Twisted! | Special | 57.5 × 48 × 12 | **Placeholder, not finished** | A taller Game Boy Advance cart with gyro and rumble (estimated). |
-| Boktai (solar sensor) | Special | 57.5 × 50 × 9 | **Placeholder, not finished** | A clear, slightly taller Game Boy Advance cart with the solar window on top (estimated). |
-| Drill Dozer (rumble) | Special | 57.5 × 48 × 11 | **Placeholder, not finished** | A taller Game Boy Advance cart with rumble (estimated). |
-| Yoshi Topsy-Turvy (tilt) | Special | 57.5 × 48 × 11 | **Placeholder, not finished** | A taller Game Boy Advance cart with a tilt sensor (estimated). |
+| Kirby Tilt 'n' Tumble | Special | 57 × 65 × 14 | Drawn, partly estimated | Update 297: height 78 → 65 from the rear-photo measurement its back was already drawn at (a Game Boy Color-sized cart). The front-top sensor bump isn't drawn; label place estimated. |
+| WarioWare: Twisted! | Special | 57.5 × 51 × 12 | Drawn, partly estimated | Update 297: height 48 → 51 and 8 mm top corners (the dome), from the rear-photo measurement (±3 mm). Side tabs not drawn. |
+| Boktai (solar sensor) | Special | 57.5 × 44 × 9 | Drawn, partly estimated | Update 297: height 50 → 44, 5 mm top corners (text sources / a poor photo). The sensor window is still centred (a source puts it right of centre; not changed on that alone). |
+| Drill Dozer (rumble) | Special | 57.5 × 44 × 11 | Drawn, partly estimated | Update 297: height 48 → 44 from the rear-photo measurement (43–45). Checked on the Thor, front and back. |
+| Yoshi Topsy-Turvy (tilt) | Special | 57.5 × 43 × 11 | Drawn, partly estimated | Update 297: height 48 → 43 from the rear-photo measurement. |
 | Nintendo e-Reader | Special | 120 × 72 × 26 | **Placeholder, not finished** | The head with its card slot over a Game Boy Advance plug (estimated). |
 | Nintendo Power SF Memory | Special | 127 × 86 × 20 | Drawn, partly estimated | The Super Famicom shell; its own colour unconfirmed. |
 | Nintendo Power GB Memory | Special | 57 × 65.5 × 9 | **Placeholder, not finished** | Assumed the Game Boy Color size; colour unconfirmed. |

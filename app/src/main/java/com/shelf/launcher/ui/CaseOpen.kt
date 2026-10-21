@@ -135,7 +135,16 @@ internal object CaseInside {
 
     private val cache = android.util.LruCache<String, Bitmap>(12)
 
-    private fun specKey(spec: CaseSpec?): String = spec?.let { "${it.platform}.${it.region}.${it.shell}" } ?: "-"
+    /**
+     * Update 297: everything about [spec] that changes what the inside looks like. It was only platform, region and shell,
+     * so two DS cases of one region — one with the GBA holder, one without (DsCases' variants), or the eco case — shared
+     * one cached inside: whichever was opened first was shown for the other (a holder in a slotless case, or none in one
+     * that had it). The same for a multi-disc case's tray and the PAL Dreamcast case.
+     */
+    internal fun specKey(spec: CaseSpec?): String = spec?.let {
+        "${it.platform}.${it.region}.${it.shell}.${it.media}.${it.wMm}x${it.hMm}x${it.tMm}.${it.plastic}.${it.opacity}.${it.tray}" +
+            ".${it.mediaU},${it.mediaV}.${it.mediaLeft}.${it.memCard}.${it.gbaSlot}.${it.eco}.${it.grip}.${it.discs}.${it.inner}"
+    } ?: "-"
 
     /** The tray side (the case's back half, seen from inside). */
     fun tray(platform: String?, aspect: Float, itemAspect: Float, spec: CaseSpec? = null, kind0: Kind? = null, umd: Boolean = false): Bitmap {
@@ -296,6 +305,8 @@ internal object CaseInside {
      */
     fun bookletRect(spec: CaseSpec?, kind: Kind, aspect: Float): FloatArray? {
         if (spec?.mediaLeft == true || kind == Kind.BOX) return null
+        // (Update 297: the PAL Dreamcast case keeps its manual behind the tray, in the back part — not in the front's lid.)
+        if (spec?.inner == CaseInner.DC_PAL) return null
         val a = aspect.coerceAtLeast(0.2f)
         val jewelLid = if (spec != null) spec.shell == CaseShell.JEWEL else kind == Kind.JEWEL
         if (jewelLid) { val m = 0.05f; return floatArrayOf(m / a, m, 1f - m / a, 1f - m) }
@@ -331,6 +342,18 @@ internal object CaseInside {
             // Update 191 (Xbox One / Series): the disc's hub is inside the front cover.
             plasticBase(c, w, h, col, p)
             mediaBed(c, w, h, kind, aspect, itemAspect, spec, col, p)
+        } else if (spec?.inner == CaseInner.DC_PAL) {
+            // Update 297: the PAL Dreamcast case's clear front, seen from inside: the front cover's inlay held by its four
+            // clips, its reverse side towards you — "normally it's just left blank" (GameFAQs' PAL box FAQ). The manual is
+            // in the back part, behind the blue tray, so none here.
+            c.drawColor(0xFF0E0F12.toInt())
+            val m = h * 0.03f
+            p.color = 0xFFEDEDE8.toInt()
+            c.drawRect(RectF(m, m, w - m, h - m), p)
+            p.color = 0xFFB9BEC6.toInt()
+            val cw = w * 0.06f; val ch = h * 0.035f
+            for ((x, y) in listOf(m to m, w - m - cw to m, m to h - m - ch, w - m - cw to h - m - ch)) c.drawRoundRect(RectF(x, y, x + cw, y + ch), ch * 0.3f, ch * 0.3f, p)
+            glare(c, w, h, p)
         } else if (jewelLid) {
             // Clear plastic over the booklet: the booklet's back page (its cover, faded like a printed back), a little
             // smaller than the lid, with the lid's two tabs on the opening side.
@@ -393,6 +416,32 @@ internal object CaseInside {
             }
             // (Update 189: the clips sit by the hinge, top and bottom, as in a real keep case.)
             tabs(c, w, h, shade(col, if (isLight(col)) 0.85f else 1.5f), p, onLeft = false)
+        }
+        cache.put(key, b)
+        return b
+    }
+
+    /**
+     * Update 297: the hinged inner tray of a multi-disc case ([CaseInner.FLIP_TRAY]), seen from its top: the tray's plastic,
+     * its disc seat, hub and finger notches, and the next disc lying on it. That disc is drawn plain (its label isn't
+     * known — never the first disc's art again); with [discs] under 2, an empty tray. Null for other cases.
+     */
+    fun leaf(spec: CaseSpec?, aspect: Float, itemAspect: Float): Bitmap? {
+        if (spec == null || spec.inner != CaseInner.FLIP_TRAY) return null
+        val col = spec.tray
+        val key = "leaf|$col|${(aspect * 100).toInt()}|${specKey(spec)}"
+        cache.get(key)?.let { return it }
+        val h = 512
+        val w = (h * aspect).toInt().coerceIn(160, 1200)
+        val b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(b)
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        plasticBase(c, w, h, col, p)
+        mediaBed(c, w, h, Kind.JEWEL, aspect, itemAspect, spec, col, p)
+        if (spec.discs >= 2) {
+            val r = itemRect(Kind.JEWEL, aspect, itemAspect, spec)
+            val disc = item(Kind.JEWEL, null, null, 1f, 0)
+            if (disc != null) c.drawBitmap(disc, null, RectF(r[0] * w, r[1] * h, r[2] * w, r[3] * h), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
         }
         cache.put(key, b)
         return b
@@ -488,7 +537,9 @@ internal object CaseInside {
             c.drawRect(r, p)
         }
         if (firstPage == null) {
-            // Not downloaded yet: the cover dressed as the game's manual.
+            // Not downloaded yet: the cover stands in (dimmed a little, so it isn't taken for the manual's own cover).
+            p.color = 0x33000000
+            c.drawRect(r, p)
             val band = RectF(r.left, r.top, r.right, r.top + r.height() * 0.12f)
             p.color = 0xE6141518.toInt()
             c.drawRect(band, p)
@@ -497,7 +548,9 @@ internal object CaseInside {
             p.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             p.letterSpacing = 0.14f
             p.textSize = band.height() * 0.42f
-            val label = "INSTRUCTION MANUAL"
+            // (Update 297: not a printed "INSTRUCTION MANUAL" title — that read as the real manual's cover. It's the game's
+            // cover standing in until the manual's own first page is downloaded, and says so: a prompt, not print.)
+            val label = "TAP TO OPEN THE MANUAL"
             val maxW = band.width() * 0.88f
             val tw = p.measureText(label)
             if (tw > maxW) p.textSize = p.textSize * maxW / tw
@@ -617,7 +670,7 @@ internal object CaseOpenDraw {
         /** Update 193: drawn from either side (the lid's rim). */
         var twoSided = false
     }
-    private val quads = Array(16) { Quad() }
+    private val quads = Array(18) { Quad() }
 
     @Synchronized
     fun draw(
@@ -629,7 +682,12 @@ internal object CaseOpenDraw {
         /** Update 193: the front lid's share of the case's depth (its own thickness; the tray's walls are the rest). */
         lidFrac: Float = 0f,
         /** Update 193: the lid's edge colour (its rim, seen as it swings). */
-        lidEdge: Int = 0
+        lidEdge: Int = 0,
+        /**
+         * Update 297: a multi-disc case's hinged inner tray (CaseInside.leaf): it lies over the first disc and lifts on the
+         * same hinge as the lid, part of the way, as the case opens.
+         */
+        leaf: Bitmap? = null
     ) {
         val ty = Math.toRadians(yaw.toDouble()); val tp = Math.toRadians(pitch.toDouble())
         val cy0 = kotlin.math.cos(ty).toFloat(); val sy0 = kotlin.math.sin(ty).toFloat()
@@ -670,6 +728,17 @@ internal object CaseOpenDraw {
             val y0 = -hh + itemRect[1] * h; val y1 = -hh + itemRect[3] * h
             put(q, 0, x0, y0, z); put(q, 1, x1, y0, z); put(q, 2, x1, y1, z); put(q, 3, x0, y1, z)
             q.depth = trayQ.depth + 0.001f }
+        // Update 297: a multi-disc case's inner tray, hinged at the spine just above the first disc, lifted part of the
+        // lid's swing (so the first disc shows under it and the next one on it).
+        if (leaf != null) next().also { q -> q.bmp = leaf; q.light = 0.9f
+            val la = Math.toRadians((open.coerceIn(0f, 1f) * 178f * 0.28f).toDouble())
+            val lc = kotlin.math.cos(la).toFloat(); val ls = kotlin.math.sin(la).toFloat()
+            val z0 = floor + d * 0.3f
+            // (Inside the tray's walls, a little shorter than the case, as the inner tray is.)
+            val ly = hh * 0.92f
+            fun fx(u: Float) = -hw + u * w * 0.96f * lc
+            fun fz(u: Float) = z0 + u * w * 0.96f * ls
+            put(q, 0, fx(0f), -ly, fz(0f)); put(q, 1, fx(1f), -ly, fz(1f)); put(q, 2, fx(1f), ly, fz(1f)); put(q, 3, fx(0f), ly, fz(0f)) }
         // The walls: each drawn on the side that faces you (outside: the spine picture / plastic; inside: plastic).
         val wall = CaseInside.shade(plastic, 0.8f)
         // (Update 193: the tray's walls stop where the lid sits on them — the lid has its own thickness.)

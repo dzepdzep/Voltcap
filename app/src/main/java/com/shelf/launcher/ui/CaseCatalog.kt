@@ -42,6 +42,16 @@ internal enum class CaseShell {
     CASSETTE
 }
 
+/**
+ * Update 297: a case's inner part, where the source documents one.
+ *  - [FLIP_TRAY]: the thick multi-disc ("multiway") PlayStation jewel case — each disc on its own moulded tray layered in
+ *    the case, the upper one hinged at the spine like a page (PSX PAL Database, multiway jewel case).
+ *  - [DC_PAL]: Sega of Europe's own Dreamcast case — three parts: a clear front, a deep-blue inner tray, a clear back; the
+ *    front opens onto the tray's first disc holder, the back onto the manual and the second disc holder (GameFAQs,
+ *    "Dreamcast PAL box FAQ"). The front cover's inlay is held by four clips; its reverse is normally blank.
+ */
+internal enum class CaseInner { NONE, FLIP_TRAY, DC_PAL }
+
 internal enum class CaseHeld(val round: Boolean) { DISC120(true), DISC80(true), UMD(false), CARD(false), CART(false), FLOPPY(false), TAPE(false) }
 
 /** How sure an entry is. */
@@ -73,7 +83,11 @@ internal class CaseSpec(
     val check: CaseCheck,
     val note: String,
     /** Update 287: a North American eco case (DsCases) — recycling cut-outs, no GBA holder. */
-    val eco: Boolean = false
+    val eco: Boolean = false,
+    /** Update 297: how many discs the retail case holds (1 unless a multi-disc case is known for it). */
+    val discs: Int = 1,
+    /** Update 297: an inner part the case is built round (see [CaseInner]). */
+    val inner: CaseInner = CaseInner.NONE
 ) {
     val aspect: Float get() = wMm / hMm
     val depth: Float get() = tMm / hMm
@@ -87,6 +101,8 @@ internal object CaseCatalog {
     private const val CARD_WHITE = 0xFFEFECE4.toInt()
     private const val CARD_BEIGE = 0xFFC8B89A.toInt()
     private const val CARD_DARK = 0xFF1A1A1A.toInt()
+    /** Update 297: the PAL Dreamcast case's inner tray, "coloured a deep blue" (GameFAQs' PAL box FAQ); matched by eye. */
+    private const val DC_PAL_BLUE = 0xFF1F3C8F.toInt()
 
     private val US = CaseRegion.US
     private val EU = CaseRegion.EU
@@ -173,7 +189,9 @@ internal object CaseCatalog {
         jewel("Saturn", JP, 10.4f, BLACK_TRAY, CaseCheck.ESTIMATED, "Jewel case; tray colour and obi not confirmed."),
         jewel("Dreamcast", US, 10.2f, 0xFFE8EEF2.toInt(), CaseCheck.SOURCED, "Standard jewel case with a clear tray."),
         jewel("Dreamcast", JP, 10.4f, 0xFFF5F5F5.toInt(), CaseCheck.SOURCED, "White tray in about 95 % of games (Shenmue black)."),
-        jewel("Dreamcast", EU, 20f, 0xFF2A2C31.toInt(), CaseCheck.PLACEHOLDER, "PAL cases are thicker (confirmed); 20 mm and the tray colour aren't."),
+        // (Update 297: Sega of Europe's own three-part case, not a jewel case with another thickness or tint — CaseInner.DC_PAL.)
+        CaseSpec("Dreamcast", EU, CaseShell.JEWEL, 142f, 125f, 20f, CLEAR, 0.08f, DC_PAL_BLUE, CaseHeld.DISC120, 120f, inner = CaseInner.DC_PAL,
+            check = CaseCheck.PLACEHOLDER, note = "PAL: Sega of Europe's own case in three parts — clear front, deep-blue inner tray, clear back; opens from either side: the front onto the first disc, the back onto the manual and the second disc. The 20 mm thickness and 142×125 footprint aren't measured."),
         box("GameGear", ALL, 111f, 152f, 24f, CARD_WHITE, CaseCheck.PLACEHOLDER, "Cardboard box with a hang tab (North America, confirmed); size not found."),
         // ── Neo Geo, NEC, Bandai, Panasonic, Philips ──
         clam("NeoGeo", ALL, 171f, 222f, 51f, 146f, CaseCheck.MEASURED, "Big hard black clamshell, 222×171×51 (measured by a museum). Early Japanese soft boxes not drawn."),
@@ -213,10 +231,23 @@ internal object CaseCatalog {
      * earlier ones in the 25 mm case, and a file name doesn't say which. Some releases came in a slim double case instead —
      * the release isn't known from the files, so this stays an estimate.
      */
-    private val PS1_MULTI: Map<CaseRegion, CaseSpec> = mapOf(
-        US to jewel("PS1", US, 25f, BLACK_TRAY, CaseCheck.ESTIMATED, "Multi-disc game: the thick multi-disc jewel case (142×125×25, PSX PAL Database's multiway case). Which case a release really came in isn't known from its files (some used a slim double case)."),
-        JP to jewel("PS1", JP, 25f, BLACK_TRAY, CaseCheck.ESTIMATED, "Multi-disc game: the thick multi-disc jewel case (142×125×25, PSX PAL Database's multiway case); Japanese releases not checked one by one.")
+    private val PS1_MULTI_NOTE = mapOf(
+        US to "Multi-disc game: the thick multi-disc jewel case (142×125×25, PSX PAL Database's multiway case), each disc on its own tray, the upper tray hinged at the spine. Which case a release really came in isn't known from its files (some used a slim double case).",
+        JP to "Multi-disc game: the thick multi-disc jewel case (142×125×25, PSX PAL Database's multiway case), each disc on its own tray; Japanese releases not checked one by one.",
+        EU to "PAL game on three or more discs: the multiway jewel case (142×125×25; PSX PAL Database: from 1997 the Full Jewel case took one- and two-disc games, three or more stayed in the multiway case), each disc on its own tray."
     )
+
+    /**
+     * Update 297: [discs] discs in [r]'s multi-disc PlayStation case (the 25 mm multiway case with its hinged inner tray), or
+     * null where that case isn't the documented one: a two-disc PAL game (Full Jewel case from October 1997, 25 mm before,
+     * and the files don't say which) keeps the PAL case.
+     */
+    internal fun ps1Multi(r: CaseRegion, discs: Int): CaseSpec? {
+        if (discs < 2 || (r == EU && discs < 3)) return null
+        val note = PS1_MULTI_NOTE[r] ?: return null
+        return CaseSpec("PS1", r, CaseShell.JEWEL, 142f, 125f, 25f, CLEAR, 0.08f, BLACK_TRAY, CaseHeld.DISC120, 120f,
+            check = CaseCheck.ESTIMATED, note = note, discs = discs.coerceAtMost(6), inner = CaseInner.FLIP_TRAY)
+    }
 
     private val DISC_TAG = Regex("""(?i)[\(\[]\s*(?:disc|disk|cd)\s*(\d+)(?:\s*(?:of|/)\s*(\d+))?\s*[\)\]]""")
 
@@ -290,7 +321,7 @@ internal object CaseCatalog {
             return spec
         }
         val spec = if (tape) C64_TAPE else of(platform, region)?.let { s ->
-            if (s.platform == "PS1" && s.shell == CaseShell.JEWEL) s.region?.let { r -> PS1_MULTI[r] }?.takeIf { discCount(file) >= 2 } ?: s else s
+            if (s.platform == "PS1" && s.shell == CaseShell.JEWEL) s.region?.let { r -> ps1Multi(r, discCount(file)) } ?: s else s
         }
         cache.put(key, spec ?: NONE)
         return spec

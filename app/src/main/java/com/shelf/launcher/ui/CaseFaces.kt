@@ -24,6 +24,7 @@ internal object CaseFaces {
     /** The front of the piece [pick] (a MediaPick platform) with [label] on it, as it is drawn out of the case; null = the old card. */
     fun of(c: Context, pick: String?, label: Bitmap?, labelIsScan: Boolean): Bitmap? = runCatching {
         pick ?: return null
+        SwitchLabel.prime(c)
         when {
             pick.startsWith(SHELL_PREFIX) -> shell(pick, label, labelIsScan)
             pick.startsWith(CUSTOM_CART) -> pack(c, pick.removePrefix(CUSTOM_CART), label)
@@ -84,7 +85,10 @@ internal object CaseFaces {
 
     /** A template cartridge (TemplateMedia): the label in the shell's window, cut by its mask, the shell over it. */
     private fun template(c: Context, pick: String, label: Bitmap?, scan: Boolean): Bitmap? {
-        val cart = MediaTemplates.of(pick)?.cart ?: return null
+        val tpl = MediaTemplates.of(pick)
+        // (Update 297: a Switch card from a cover wears its label frame with the red header, as TemplateMedia draws it.)
+        val switchFrame = SwitchLabel.useFrame(tpl, scan)
+        val cart = (if (switchFrame) tpl?.label else tpl?.cart) ?: return null
         // (A UMD keeps its drawn UMD — UmdBack — as before.)
         if (cart.res == com.shelf.launcher.R.drawable.tpl_cart_psp) return null
         val opts = BitmapFactory.Options().apply { inScaled = false; inPreferredConfig = Bitmap.Config.ARGB_8888 }
@@ -104,6 +108,7 @@ internal object CaseFaces {
         val fillCover = cart.res == com.shelf.launcher.R.drawable.tpl_cart_generic
         if (label != null) {
             if (scan) wc.drawBitmap(label, null, full, p)
+            else if (switchFrame) wc.drawBitmap(label, SwitchLabel.cutRect(label, ww.toFloat() / wh), full, p)
             else if (fillCover) wc.drawBitmap(label, cropSrc(label, ww.toFloat() / wh), full, p)
             else wc.drawBitmap(label, null, fit(label, full), p)
         }

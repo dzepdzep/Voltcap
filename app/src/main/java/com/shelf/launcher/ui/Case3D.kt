@@ -263,6 +263,10 @@ internal fun Case3D(
         if (canOpen && inside != null) runCatching { CaseInside.item(openKind, itemReal ?: itemFace, itemLabel, itemAspect, inside.tone, umdCase) }.getOrNull() else null
     }
     val itemRect = remember(openKind, shape, itemAspect, spec) { CaseInside.itemRect(openKind, shape, itemAspect, spec) }
+    // (Update 297: a multi-disc case's hinged inner tray, with the next disc on it — CaseInner.FLIP_TRAY.)
+    val leafBmp = remember(canOpen, shape, itemAspect, spec, openKind) {
+        if (canOpen && openKind == CaseInside.Kind.JEWEL) runCatching { CaseInside.leaf(spec, shape, itemAspect) }.getOrNull() else null
+    }
     val plastic = remember(g.platform, spec) { CaseInside.plastic(spec, g.platform) }
     val itemOnLid = spec?.mediaLeft == true
     Canvas(modifier) {
@@ -287,7 +291,7 @@ internal fun Case3D(
                 openNow, face ?: noCover ?: loading, spine, backFace, trayBmp, lidBmp, itemBmp, itemRect,
                 showItemOf?.invoke() ?: true, plastic, (1f - shadeNow).coerceIn(0f, 1f), itemOnLid,
                 // (Update 193: the lid's own thickness and its rim's colour, so the halves part at the seam.)
-                look.seam, look.edge
+                look.seam, look.edge, leafBmp
             )
         } else drawIntoCanvas { canvas ->
             CaseDraw.draw(

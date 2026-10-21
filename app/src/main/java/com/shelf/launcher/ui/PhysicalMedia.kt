@@ -937,5 +937,8 @@ private fun testShellPick(t: String, platform: String, gameKey: String?): MediaP
     t.startsWith("opt:") -> DiscShells.byFile(t.removePrefix("opt:"))?.let { MediaPick(MediaShell.GB, CUSTOM_CART + platform, it.aspect) }
     // (Update 282: "android" — Voltcap's green Android cartridge, for checking the piece lying in a case.)
     t == "android" -> MediaPick(MediaShell.GB, ANDROID_CART)
+    // (Update 297, testing only: "real" — every game as its console's own disc / cartridge, past any shell picked, for
+    // checking the insides of disc cases — multi-disc trays — on a device whose console has a shell picked.)
+    t == "real" -> MediaShell.of(platform)?.let { MediaPick(it, platform) }
     else -> null
 }

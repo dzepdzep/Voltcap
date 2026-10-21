@@ -350,17 +350,21 @@ internal object CartShells {
         CartShell("pokemon_pinball", "Pokémon Pinball (rumble)", ShellGroup.SPECIAL, 57f, 84f, 18f, rect(57f, 84f, 4f, 1f), lab(5f, 28f, 47f, 40f),
             colours = listOf(c("Black", 0xFF1A1A1A)), extras = listOf(ShellExtra(ShellExtra.ACCENT, 3f, 3f, 51f, 16f, 0xFF2A2A2E.toInt())),
             check = CaseCheck.PLACEHOLDER, note = "A Game Boy Color cart with the rumble and battery housing on top (estimated)."),
-        CartShell("kirby_tilt", "Kirby Tilt 'n' Tumble", ShellGroup.SPECIAL, 57f, 78f, 14f, rect(57f, 78f, 4f, 1f), lab(5f, 20f, 47f, 40f),
+        // (Update 297: the special carts' heights from the rear-photo measurements their backs (CartBacks) were already drawn
+        // at — the fronts kept the old estimates, so a back's seam, sticker and opening sat short of the outline's bottom.
+        // CARTRIDGES.md › special carts. Kirby Tilt 'n' Tumble is a Game Boy Color-sized cart (~65 mm, not 78): its tilt
+        // sensor is a bump on the front's top, not extra height — the bump isn't drawn.)
+        CartShell("kirby_tilt", "Kirby Tilt 'n' Tumble", ShellGroup.SPECIAL, 57f, 65f, 14f, rect(57f, 65f, 4f, 1f), lab(5f, 18f, 47f, 38f),
             colours = listOf(c("Clear pink", 0xFFF29AC0, 0.6f)), check = CaseCheck.PLACEHOLDER, note = "A clear Game Boy Color cart with the tilt sensor on top (estimated)."),
-        CartShell("warioware_twisted", "WarioWare: Twisted!", ShellGroup.SPECIAL, 57.5f, 48f, 12f, rect(57.5f, 48f, 3f, 1f), lab(4f, 16f, 49.5f, 26f),
+        CartShell("warioware_twisted", "WarioWare: Twisted!", ShellGroup.SPECIAL, 57.5f, 51f, 12f, rect(57.5f, 51f, 8f, 1f), lab(4f, 16f, 49.5f, 26f),
             colours = listOf(c("Transparent grey", 0xFF9A9DA4, 0.55f), c("Translucent white (Japan)", 0xFFE0E9EB, 0.65f)), check = CaseCheck.PLACEHOLDER,
             note = "A taller Game Boy Advance cart with gyro and rumble (AGB-019A transparent grey; Japan AGB-019 translucent white — Game Verifying; shape estimated)."),
-        CartShell("boktai", "Boktai (solar sensor)", ShellGroup.SPECIAL, 57.5f, 50f, 9f, rect(57.5f, 50f, 3f, 1f), lab(4f, 18f, 49.5f, 26f),
+        CartShell("boktai", "Boktai (solar sensor)", ShellGroup.SPECIAL, 57.5f, 44f, 9f, rect(57.5f, 44f, 5f, 1f), lab(4f, 14f, 49.5f, 24f),
             colours = listOf(c("Clear", 0xFFE6EAEE, 0.5f)), extras = listOf(ShellExtra(ShellExtra.WINDOW, 23.75f, 4f, 10f, 6f, 0xFF1E3A6A.toInt())),
             check = CaseCheck.PLACEHOLDER, note = "A clear, slightly taller Game Boy Advance cart with the solar window on top (estimated)."),
-        CartShell("drill_dozer", "Drill Dozer (rumble)", ShellGroup.SPECIAL, 57.5f, 48f, 11f, rect(57.5f, 48f, 3f, 1f), lab(4f, 16f, 49.5f, 26f),
+        CartShell("drill_dozer", "Drill Dozer (rumble)", ShellGroup.SPECIAL, 57.5f, 44f, 11f, rect(57.5f, 44f, 3f, 1f), lab(4f, 14f, 49.5f, 24f),
             colours = listOf(c("Brown", 0xFF795440)), check = CaseCheck.PLACEHOLDER, note = "A taller Game Boy Advance cart with rumble (AGB-021, brown — Game Verifying; shape estimated)."),
-        CartShell("yoshi_topsy", "Yoshi Topsy-Turvy (tilt)", ShellGroup.SPECIAL, 57.5f, 48f, 11f, rect(57.5f, 48f, 3f, 1f), lab(4f, 16f, 49.5f, 26f),
+        CartShell("yoshi_topsy", "Yoshi Topsy-Turvy (tilt)", ShellGroup.SPECIAL, 57.5f, 43f, 11f, rect(57.5f, 43f, 3f, 1f), lab(4f, 14f, 49.5f, 24f),
             colours = listOf(c("Green", 0xFF4FA84A)), check = CaseCheck.PLACEHOLDER,
             note = "A taller Game Boy Advance cart with a tilt sensor (AGB-013, green and white — Game Verifying; shape estimated)."),
         CartShell("ereader", "Nintendo e-Reader", ShellGroup.SPECIAL, 120f, 72f, 26f,
@@ -699,7 +703,10 @@ internal object CartShells {
      * label's shape, never stretched) under a band with [brand] (the game's real console).
      */
     fun front(s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean = false): Bitmap {
-        val key = "f5|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan"
+        // (Update 297: a Switch card's red header strip — SwitchLabel — once it's loaded; in the key, so a card drawn before
+        // it was there is drawn again with it.)
+        val switchHeader = if (s.id == "switch" && !scan) SwitchLabel.header() else null
+        val key = "f5|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -763,7 +770,8 @@ internal object CartShells {
         // the shell's plastic either side (never under 45 % of the window; past that the rest is the cover's edge
         // colour, as before). A real label scan is the whole printed sticker and keeps the full window.
         val coverPic = if (art != null && !scan) labelArt(s, art) else null
-        val lr = coverPic?.let { pic ->
+        // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
+        val lr = if (switchHeader != null) lr0 else coverPic?.let { pic ->
             val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
             val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
             if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
@@ -780,8 +788,16 @@ internal object CartShells {
         // console's own branding comes from its sticker. A box scan used instead has its printed console banner cut
         // off — labelArt — so a DS card no longer wore the box's NINTENDO DS strip like a little box.)
         val band = 0f
-        val artRect = RectF(lr.left, lr.top + band, lr.right, lr.bottom)
-        if (art != null) {
+        // (Update 297: a Switch card from a cover — no label scan — has the real sticker's red NINTENDO SWITCH header
+        // across its top (SwitchLabel, from the template pack's label frame), at the header's own shape; the cover is cut
+        // into the rest under it: its upper middle, leaving a box front's corner logo tile and rating off the card.)
+        val headerH = switchHeader?.let { lr.width() * it.height / it.width.coerceAtLeast(1) }?.coerceAtMost(lr.height() * 0.4f) ?: 0f
+        val artRect = RectF(lr.left, lr.top + band + headerH, lr.right, lr.bottom)
+        if (switchHeader != null) {
+            c.drawBitmap(switchHeader, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
+            if (art != null) c.drawBitmap(art, SwitchLabel.cutRect(art, artRect.width() / artRect.height().coerceAtLeast(1f)), artRect, p)
+            else if (!title.isNullOrBlank()) text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
+        } else if (art != null) {
             // (Update 206: the picture fills the label exactly — stretched to it, never cut — the label keeps the shell's
             // real size and place, the art adapts to it; a label scan is the sticker itself.)
             // (Update 240, #90: a scan of the whole sticker of a label that folds over the top has its fold cut off its
@@ -1220,6 +1236,9 @@ internal fun CartShellArt(
     } else {
         val shell = choice?.shell
         val bmpArt = rememberSoftBitmap(art, 480)
+        // (Update 297: the Switch card's red header strip, loaded once — SwitchLabel.)
+        val ctxSw = androidx.compose.ui.platform.LocalContext.current
+        remember { SwitchLabel.prime(ctxSw) }
         val brand = remember(console) { console?.let { com.shelf.launcher.data.ConsoleNames.display(it) } ?: "" }
         val front = remember(pickPlatform, bmpArt, brand, title, maxPx, labelIsScan) {
             if (shell == null) null else runCatching { CartShells.front(shell, CartShells.colourOf(shell, choice.colourKey), bmpArt, brand, title, maxPx, labelIsScan) }.getOrNull()

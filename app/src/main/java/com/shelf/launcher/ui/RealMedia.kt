@@ -84,7 +84,12 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
     // headers, SEGA / GENESIS bars, ratings, seals). The cover goes into the plain shell's window, which has the console's
     // logo where its moulded brand was (res tpl_cart_*, cleaned).
     val useLabelFrame = false
-    val cart = if (useLabelFrame) tpl.label else tpl.cart
+    // (Update 297, Toni: the Switch card's sticker: without a real label scan, a Switch card wears its label frame — the
+    // template pack's horizontal red NINTENDO SWITCH header across the top of the sticker, as every real Switch game card
+    // has (SwitchLabel) — and the cover is cut into the art window under it. A real label scan is the whole sticker and
+    // keeps the plain shell, as before.)
+    val switchFrame = SwitchLabel.useFrame(tpl, labelScan != null)
+    val cart = if (useLabelFrame || switchFrame) tpl.label else tpl.cart
     if (disc == null && cart == null) return false
     val art = labelScan ?: cover
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
@@ -133,8 +138,8 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
                     val fillCover = cart.res == com.shelf.launcher.R.drawable.tpl_cart_generic
                     if (art != null) AsyncImage(
                         mediaArtModel(art), null,
-                        contentScale = if (labelScan != null) ContentScale.FillBounds else if (roundWindow || fillCover) ContentScale.Crop else ContentScale.Fit,
-                        alignment = if (fillCover && labelScan == null) PLAIN_CART_CROP else Alignment.Center,
+                        contentScale = if (labelScan != null) ContentScale.FillBounds else if (roundWindow || fillCover || switchFrame) ContentScale.Crop else ContentScale.Fit,
+                        alignment = if (switchFrame) SwitchLabel.CROP else if (fillCover && labelScan == null) PLAIN_CART_CROP else Alignment.Center,
                         modifier = Modifier.fillMaxSize()
                     ) // (Update 157)
                 }

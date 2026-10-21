@@ -1,3 +1,96 @@
+# Update 297 — physical media accuracy audit and targeted fixes (21 Oct 2026)
+
+Code read: `CaseCatalog.kt`, `CaseOpen.kt`, `Case3D.kt` (opening path), `DsCases.kt`, `CartShells.kt` (Switch, special
+carts, `front()`), `CaseFaces.kt`, `MediaTemplates.kt`, `MediaCovers.kt`, `RealMedia.kt` (`TemplateMedia`),
+`PhysicalMedia.kt` (`mediaFor`), `CartBacks.kt` / `CartUnderside.kt` (special carts only), `MediaEditions.kt` (special
+carts only). Not re-read this time: `DiscUnderside.kt` (no reported fault, its tests still pass), `MEDIA_EDITIONS.md`.
+Switch 2 was not touched.
+
+Status words:
+- **Verified**: a source is linked below.
+- **Reported**: one secondary source, such as a forum, FAQ or listing.
+- **Conflicting**: sources disagree.
+- **Unknown**: nothing found.
+
+"Implemented?" means what was there before this update.
+
+## Audit table
+
+| Platform | Feature | Already implemented? | Verified accurate? | Problem | Action | Source |
+|---|---|---|---|---|---|---|
+| Switch | Card sticker (no label scan) | Yes, but inaccurate | No | Cover fitted into the whole sticker: no red header; a box front's corner logo tile / rating could be copied onto the card | **Fixed.** Red NINTENDO SWITCH header from the template pack's own label frame, cover cut under it (logo tile and rating zones excluded). Real scans unchanged. In and out of the case. Template and drawn shell both | [Commons photo](https://commons.wikimedia.org/wiki/File:Nintendo_Switch_Speicherkarte_Vorder-und_R%C3%BCckseite(HWDE)_20220521_02.png) (could not be opened from here; the template pack's frame has the same header) |
+| Switch | Product codes / ratings on card | No (none drawn) | n/a | Not generated, kept that way | None | — |
+| Switch 2 | Anything | — | — | Out of scope | Not touched | — |
+| DS | Opened case's inside cache | Yes, malfunctioning | — | `specKey` = platform.region.shell, so GBA / plain / eco cases of one region shared one cached inside. **Reproduced on the Thor (0.6.25):** Mario Kart DS (UNKNOWN, plain) showed the GBA holder after Pokémon Platinum was opened | **Fixed:** the key holds every appearance field (holder, eco, sizes, colours, media, discs, inner). Reverse order and rapid switching checked | — |
+| DS | Holder only for documented variants | Yes (296) | Reported/Verified per game | — | Kept. Evidence, picks and UNKNOWN untouched | `docs/claude/DS_CASES.md`, [Nintendo Life](https://www.nintendolife.com/forums/ds/ds_gets_its_eco_friendly_box) |
+| DS | Slotless case leftovers | Yes | — | None (CaseOpen draws only the card recess) | Regression test added | — |
+| Xbox / 360 / One / Series | Disc side | Yes | Reported | Xbox One: disc left, paper clipped right — matches | None | [GameSpark](https://www.gamespark.jp/article/2013/11/16/44665.html) |
+| Xbox 360 | Platinum Hits grey, Kinect purple, later small left-handed reissue cases | No | Reported (Wikipedia) | The edition can't be told from the files | Documented only, not drawn | [Wikipedia: Keep case](https://en.wikipedia.org/wiki/Keep_case) |
+| Xbox 360 | Multi-disc (Lost Odyssey, Blue Dragon, FF XIII, Mass Effect 2) | No | Unknown | No source describing how each holds its discs could be opened (shop listings only) | Not implemented | — |
+| Xbox One | Red Dead Redemption 2 two discs | No | Unknown | No source found | Not implemented | — |
+| PS1 | Multi-disc case (NA/JP 2+, PAL 3+) | Partly (thickness only, NA/JP) | Reported | Opened case showed one disc on one tray | **Added:** 25 mm multiway case holds its discs on layered trays; the upper tray hinged at the spine, lifted as the case opens, the next disc on it drawn **plain** (its label isn't known). PAL 3+ discs now in the multiway case; PAL 2-disc keeps the Full Jewel case (the files can't say which) | [PSX PAL DB: case types](https://www.psxpaldb.com/case-types/), [multiway](https://www.psxpaldb.com/case-types/multiway-jewel-two-disk/), [Full Jewel PAL](https://www.psxpaldb.com/case-types/full-jewel-pal/) |
+| PS1 | Disc count | Yes | — | Counts "(Disc N)" / m3u entries (physical discs), not files; "(Combined Disc)" = 1 | Tests added | — |
+| PS1 | Longbox, cardboard, mini jewel, Australian slim, rental | No | Reported (names only) | No per-release data (product codes) in the files | Not implemented, documented | [PSX PAL DB](https://www.psxpaldb.com/case-types/), [Tekken 2](https://www.psxpaldb.com/games/tekken-2/) |
+| Dreamcast PAL | Case structure | Placeholder (tinted, thicker jewel case) | Reported | Not the real case | **Replaced:** three-part case — clear front, deep-blue inner tray, clear back. The front's inside shows the inlay's blank reverse with its four clips; no manual in the front (it's behind the tray). NA / JP unchanged | [GameFAQs PAL box FAQ](https://gamefaqs.gamespot.com/dreamcast/916412-dreamcast/faqs/23963) |
+| Dreamcast PAL | Thickness, footprint, opening from the back, second disc on the tray's back | Partly | Unknown | 20 mm / 142×125 not measured; only the front opens in Voltcap | Kept as placeholder size; documented | (dreamcast-talk.com could not be fetched) |
+| Dreamcast | Multi-disc (Shenmue ×4, Skies of Arcadia ×2…) | No | Reported (counts only) | — | Not implemented | GameFAQs FAQ |
+| PS2 / GameCube | Memory card holder | Yes | Partly | Wikipedia: "most" PS2 and full-size/clear GC cases have one; the place inside isn't confirmed | No change | [Wikipedia](https://en.wikipedia.org/wiki/Keep_case) |
+| PS2 / GameCube | Special colours (PAL Sunshine blue, MKDD red, MGS2 clear, GT4 / SingStar white, Buzz red) | No | Reported | First prints only; Player's Choice / Platinum reprints differ, and the files can't say which | Documented, not drawn | Wikipedia |
+| GameCube JP | Compact clear case 149×107×17 | Yes | Reported | Matches | None | Wikipedia |
+| GameCube | 2-disc trays (Twin Snakes, RE4, Tales of Symphonia) | No | Unknown | No source found | Not implemented | — |
+| 3DS | Interior cut-outs | No | Reported (that they exist) | "Small squares", from launch (JP, EU, AU sources); no source gives count or layout | Not implemented (no geometry to draw from) | [Nintendo Life](https://www.nintendolife.com/news/2011/02/3ds_game_cases_look_to_be_more_environmentally_friendly), [Vooks](https://vooks.net/the-inside-of-a-3ds-case-wide-open-for-all-to-see/amp), [Kotaku](https://kotaku.com/ocarina-of-time-puts-those-new-3ds-cases-to-good-use-5803344) |
+| 3DS | New 3DS-only games: black 14 mm case (Europe) | No | Reported | Needs a per-title list | Documented | Wikipedia |
+| PSP | Case size | Yes | Conflicting | Wikipedia 168×99×14 vs 177×104 drawn | Unchanged (already noted as disputed) | Wikipedia |
+| PSP | UMD recess / hub | Yes (260) | Unknown | — | No change | — |
+| PS3 | Greatest Hits red / Platinum silver | No | Reported | Edition unknown from files | Documented | Wikipedia |
+| Sega CD / Saturn | Regional cases | Estimates / placeholders | Unknown | No new evidence | No change | — |
+| Special carts | Heights of Kirby Tilt 'n' Tumble, WarioWare: Twisted!, Boktai, Drill Dozer, Yoshi Topsy-Turvy | Placeholder heights | Reported (earlier rear-photo measurements in CARTRIDGES.md) | Fronts kept old estimates (78/48/50/48/48 mm) while their researched backs were drawn at the measured heights. The back's seam, sticker and opening stopped short of the outline | **Fixed:** 65 / 51 / 44 / 44 / 43 mm, so front and back match. Labels moved to fit. Colours and edition mappings unchanged. Not changed: Kirby's front-top sensor bump and Boktai's off-centre sensor (weak source), Game Boy Camera, Pokémon Pinball, e-Reader | CARTRIDGES.md (special carts, rear photos); [Game Verifying](https://www.gameverifying.com/wiki/depository/gba) |
+| Discs | Surfaces (`DiscUnderside`) | Yes | — | No reported fault | Not touched; existing tests pass | — |
+| Manuals | Stand-in for an unloaded manual | Yes, misleading | — | The cover was printed with "INSTRUCTION MANUAL" like a real manual cover | **Fixed:** dimmed a little, band reads "TAP TO OPEN THE MANUAL" (a prompt, not print). The real first page replaces it once loaded | — |
+| Accessories | Bundled items (DS Rumble Pak etc.) | No | — | None documented per release in the files | None drawn (as required) | — |
+| Edges / spines | Top, bottom, spine | Yes (earlier updates) | — | No new fault found in this pass | No change | — |
+
+## Files changed
+- `src_copy\ui\SwitchLabel.kt` (new)
+- `src_copy\ui\RealMedia.kt`
+- `src_copy\ui\CaseFaces.kt`
+- `src_copy\ui\CartShells.kt`
+- `src_copy\ui\CaseOpen.kt`
+- `src_copy\ui\CaseCatalog.kt`
+- `src_copy\ui\Case3D.kt`
+- `src_copy\ui\PhysicalMedia.kt` (testing hook only: `--es voltcap_test_shell real`)
+- `project_copy\app\src\test\java\com\shelf\launcher\ui\PhysicalMediaFixesTest.kt` (new)
+
+## Tests
+- **Automated:** `testDebugUnitTest` passed, all suites. The new `PhysicalMediaFixesTest` has 8/8 passing:
+  - each DS variant gets its own cache key;
+  - the holder appears only on holder variants;
+  - the key is stable;
+  - the Switch cut leaves the logo tile and rating off, and wide art keeps its middle;
+  - PS1 multi-disc rules;
+  - disc count comes from tags;
+  - PAL Dreamcast has its own structure, NA/JP unchanged, and no manual in the front.
+- **assembleRelease:** built with no new warnings.
+- **Visual, on the AYN Thor:**
+  - DS cache bug reproduced before the fix and gone after, in both orders.
+  - Switch home row, the game window, the card in the opened case, and the card taken out.
+  - PS1 Legend of Dragoon (4 discs) opened, with the hinged tray.
+  - Drill Dozer front and back at 0° and 180°.
+- **Not checked visually:**
+  - PAL Dreamcast (no Dreamcast games on the device);
+  - PAL PS1 3+ disc games;
+  - the other four special carts (same change as Drill Dozer);
+  - the manual stand-in band;
+  - every layout's own case view (game window and home row only).
+
+## Remaining risks
+- The Switch art is cut to the card's window, so a cover whose title sits low can lose part of it. A real label scan avoids this.
+- PS1 multi-disc case type is chosen by disc count, not by product code, so it is an estimate. Some releases used a slim double case.
+- Toni's PS1 console has a cartridge shell picked, so its cases hold that cartridge, not a disc. That choice was left alone. The test hook `voltcap_test_shell real` shows the disc instead.
+
+
+---
+
 # Voltcap — physical media audit (updates 206–207)
 
 Source-first pass over every cartridge, card, UMD, disc and case Voltcap draws. The full per-model data, with a source
