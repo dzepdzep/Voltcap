@@ -28,7 +28,7 @@ class Cases303Test {
     }
 
     @Test fun othersUntouched() {
-        assertEquals(12f, spec("PS5").tMm, 0.01f)
+        // (Update 304: PS5 now 14 mm — Cases304Test.)
         assertEquals(12f, spec("XboxOne").tMm, 0.01f)
     }
 }

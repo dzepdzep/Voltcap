@@ -137,7 +137,10 @@ internal object CaseCatalog {
         // PS3's thickness (NeoGAF, launch-day comparisons). Not a Sony figure; replacement makers sell 14–15 mm.)
         keep("PS3", ALL, 135f, 171.5f, 14f, 0xFFE8ECEF.toInt(), 0.25f, check = CaseCheck.SOURCED, note = "Blu-ray-size game case, clear (Wikipedia: translucent white); 14 mm thick (third-party measurement of retail cases, not a Sony figure). Greatest Hits red not drawn (can't be told from the files)."),
         keep("PS4", ALL, 135f, 171.5f, 14f, 0xFF1E5BB8.toInt(), 0.55f, check = CaseCheck.SOURCED, note = "Blu-ray-size game case, see-through blue; 14 mm thick like PS3 (third-party measurement of retail cases, not a Sony figure)."),
-        keep("PS5", ALL, 135f, 171.5f, 12f, 0xFF1F5FC4.toInt(), 0.55f, check = CaseCheck.SOURCED, note = "Blu-ray keep case, see-through blue."),
+        // (Update 304: PS5 14 mm like PS4 — GamesRadar: "the same blue plastic shell as PS4 games"; every PS5 figure found
+        // (cases sold as Sony originals, replacement makers) says 14 mm, none 12; 12 was the Blu-ray movie case's. Nobody
+        // measured a retail case with a ruler, and a protector maker finds PS4 / PS5 cases a little thinner than PS3's.)
+        keep("PS5", ALL, 135f, 171.5f, 14f, 0xFF1F5FC4.toInt(), 0.55f, check = CaseCheck.SOURCED, note = "Blu-ray-size game case, see-through blue; the PS4's shell (GamesRadar), so 14 mm like PS4 (sellers' ratings, not a Sony figure or a measurement). Usually no manual inside."),
         keep("PSP", ALL, 104f, 177f, 14f, CLEAR, 0.15f, CaseHeld.UMD, 64f, check = CaseCheck.SOURCED, note = "Clear UMD case, the UMD in the middle of the right side. Sources differ on size (177×104 or 168×99); the UMD's holder isn't confirmed."),
         keep("PSVita", ALL, 105f, 135f, 12f, 0xFF2A5DB0.toInt(), 0.6f, CaseHeld.CARD, 15f, v = 0.3f, shell = CaseShell.CARDCASE, check = CaseCheck.SOURCED, note = "Blue card case 135×105×12. How see-through, and where the card sits, aren't confirmed."),
         // ── Xbox ──

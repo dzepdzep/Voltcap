@@ -4,6 +4,24 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 21 Oct 2026 (304): PS5 case 14 mm, PS5 lid without a manual, PlayStation / Xbox case research (corners, insides, editions), docs fixed
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** No other console, animation, design or setting changed.
+
+- **PS5 thickness 12 → 14 mm.** GamesRadar: PS5 games use "the same blue plastic shell as PS4 games"; every PS5 figure found (cases sold as Sony originals, replacement makers) says 14 mm, none 12 (12 is the Blu-ray movie case). Confidence medium-low: nobody measured a retail case, and Stone Age Gamer (protector maker) finds PS4/PS5 cases slightly thinner than PS3's (one protector "up to 13 mm") — kept at the PS4's 14, conflict documented.
+- **Xbox One / Series stay 12 mm** (several listings agree), PS3 / PS4 14 mm (update 303), Xbox 360 unchanged.
+- **PS5 lid without a manual:** PS5 games rarely contain a manual (Push Square), so an opened PS5 case whose game has no manual to read now shows the insert's plain back under the clear lid with its clips, as Switch / Xbox 360 already did (`INSERT_BACK_ONLY`). A manual you can read still shows as before.
+- **Corners — not implemented.** Only one forum post (NeoGAF, PS4 launch) says PS4 cases are less rounded than PS3's; no radius in mm exists in any source found, and nothing for PS5 / Xbox One / Series. Any radius would be invented, so the models stay as they are.
+- **Insides:** disc sides confirmed (Wikipedia: Xbox One / Series left-handed, 360 right); hub type confirmed (push-button / rosette). The three ridges and the two clips' exact place stay unverified estimates (no source for or against). Eco cut-outs (early PS4, 2009–10 Xbox 360) and Xbox 360 multi-disc spindles reported but without geometry: not drawn.
+- **Case variants per game:** design only (CASES.md): generalise the DS case picker (`DsCases` / `DsCasePicker`, `ds_case_choices`) to other consoles, no title matching; only sourced variants (Xbox 360 Platinum Hits grey, left-handed dual-logo reissue; PS3 Greatest Hits red). Not built.
+- **Docs:** the repo's `CASES.md` still said 12 mm for PS3 / PS4 (the project copy was updated in 303) — fixed, PS5 / Xbox rows updated, the audit and the variant design added; `docs/physical_media/PHYSICAL_MEDIA_AUDIT.md`'s PS3 / PS4 / PS5 rows fixed (12 → 14).
+- **Checked on the Thor:** PS3 (UFC Undisputed 3) opened case unchanged (same picture as update 303). **PS5 not seen on a device:** there are no PS5 games, and R1 › Case can't show a PS5 case (no PS5 cover template), so the PS5 case was only checked by unit tests. The setting used to try (`case_style`) was put back to empty.
+- **Tests:** `Cases304Test` (3); `Cases303Test` no longer expects PS5 at 12.
+
+**Copy:** `src_copy\ui\CaseCatalog.kt`, `src_copy\ui\CaseOpen.kt`; `project_copy\app\src\test\java\com\shelf\launcher\ui\Cases303Test.kt`, `Cases304Test.kt`; `CASES.md`, `docs\physical_media\PHYSICAL_MEDIA_AUDIT.md`.
+
+---
+
 ## Update — 21 Oct 2026 (303): Xbox 360 / PS3 / PS4 case audit — PS3 and PS4 game cases 14 mm thick
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** Only the two thickness values changed; no model, animation or other console was touched.

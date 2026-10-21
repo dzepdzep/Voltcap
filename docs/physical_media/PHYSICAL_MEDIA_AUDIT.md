@@ -221,9 +221,9 @@ Every other size is unchanged. Where a source disagrees, the entry is **disputed
 | CaseCatalog:PS2/US | PS2 | US | 135 × 190 × 14 | disputed |
 | CaseCatalog:PS2/EU | PS2 | EU | 135 × 190 × 14 | disputed |
 | CaseCatalog:PS2/JP | PS2 | JP | 135 × 190 × 14 | disputed |
-| CaseCatalog:PS3/ALL | PS3 | ALL | 135 × 171.5 × 12 | disputed |
-| CaseCatalog:PS4/ALL | PS4 | ALL | 135 × 171.5 × 12 | disputed |
-| CaseCatalog:PS5/ALL | PS5 | ALL | 135 × 171.5 × 12 | disputed |
+| CaseCatalog:PS3/ALL | PS3 | ALL | 135 × 171.5 × 14 | disputed (14 mm since update 303; see CASES.md) |
+| CaseCatalog:PS4/ALL | PS4 | ALL | 135 × 171.5 × 14 | disputed (14 mm since update 303; see CASES.md) |
+| CaseCatalog:PS5/ALL | PS5 | ALL | 135 × 171.5 × 14 | disputed (14 mm since update 304; see CASES.md) |
 | CaseCatalog:PSP/ALL | PSP | ALL | 104 × 177 × 14 | disputed |
 | CaseCatalog:Xbox/ALL | Xbox | ALL | 135 × 190 × 14 | disputed |
 | CaseCatalog:Xbox360/ALL | Xbox360 | ALL | 135 × 190 × 14 | disputed |

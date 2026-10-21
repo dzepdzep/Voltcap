@@ -57,7 +57,8 @@ internal object CaseInside {
     }
 
     /** Update 215: cases whose lid shows the insert's plain back when the game has no manual (no manual in the real case). */
-    private val INSERT_BACK_ONLY = setOf("Switch", "Switch2", "Xbox360")
+    // (Update 304: PS5 too — its games rarely have a manual (Push Square); the clips are still moulded in.)
+    private val INSERT_BACK_ONLY = setOf("Switch", "Switch2", "Xbox360", "PS5")
 
     /** The case's inside plastic, its real colour (before update 191, by console). */
     fun plastic(platform0: String?): Int = when (LookStyles.casePlatform(platform0)) {
@@ -391,7 +392,7 @@ internal object CaseInside {
                 // Update 202: the manual as a booklet you can tap to read (same place as the drawn manual).
                 drawBooklet(c, RectF(book[0] * w, book[1] * h, book[2] * w, book[3] * h), bookletPage, cover, h)
             } else if (LookStyles.casePlatform(platform) in INSERT_BACK_ONLY) {
-                // (Update 215: a Switch or Xbox 360 game without a manual: the lid's inside is the clear plastic over the
+                // (Update 215: a Switch or Xbox 360 game (update 304: or PS5) without a manual: the lid's inside is the clear plastic over the
                 // paper insert's plain back, as on the real case — it showed the front cover again, as a manual, which
                 // isn't in these cases.)
                 p.color = 0x14000000

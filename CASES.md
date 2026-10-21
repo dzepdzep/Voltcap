@@ -1,4 +1,4 @@
-# Voltcap: real game cases (update 191)
+# Voltcap: real game cases (update 191; PlayStation / Xbox audit updates 303–304)
 
 What Voltcap's 3D cases are drawn from (`src\ui\CaseCatalog.kt`). Four research passes looked up each console's
 packaging per region (Wikipedia's keep case, video game packaging and optical disc packaging articles, protector and
@@ -24,15 +24,15 @@ Sizes are width × height × thickness in mm, as the case stands.
 | PS2 | North America | Keep case | 135 × 190 × 14 | Published size | DVD keep case, black. Memory card holder in most; its place inside isn't confirmed. Greatest Hits red / Platinum silver not drawn. |
 | PS2 | Europe | Keep case | 135 × 190 × 14 | Published size | PAL: black early on, then dark blue from about 2001 (Wikipedia). The dark blue is drawn. Platinum silver not drawn. |
 | PS2 | Japan | Keep case | 135 × 190 × 14 | Estimated | Black assumed; Japanese differences not found. |
-| PS3 | All | Keep case | 135 × 171.5 × 12 | Published size | Blu-ray keep case, clear. Greatest Hits red / Platinum silver not drawn. |
-| PS4 | All | Keep case | 135 × 171.5 × 12 | Published size | Blu-ray keep case, see-through blue. |
-| PS5 | All | Keep case | 135 × 171.5 × 12 | Published size | Blu-ray keep case, see-through blue. |
+| PS3 | All | Keep case | 135 × 171.5 × 14 | Published size (thickness: third-party measurement) | Blu-ray-size game case, clear / translucent white. 14 mm since update 303 (CoverStitch, measured from retail cases; not a Sony figure). Greatest Hits red / Platinum silver not drawn. |
+| PS4 | All | Keep case | 135 × 171.5 × 14 | Published size (thickness: third-party measurement) | Blu-ray-size game case, see-through blue. 14 mm like PS3 since update 303. Square corners (PS3's are rounded) not drawn. |
+| PS5 | All | Keep case | 135 × 171.5 × 14 | Published size (thickness: sellers' ratings) | The PS4's blue shell (GamesRadar); 14 mm like PS4 since update 304. Usually no manual: the lid shows the insert's plain back, clips still drawn (update 304). |
 | PSP | All | Keep case | 104 × 177 × 14 | Published size | Clear UMD case, the UMD in the middle of the right side. Sources differ on size (177×104 or 168×99); the UMD's holder isn't confirmed. |
 | PSVita | All | Card case | 105 × 135 × 12 | Published size | Blue card case 135×105×12. How see-through, and where the card sits, aren't confirmed. |
 | Xbox | All | Keep case | 135 × 190 × 14 | Published size | Green, near opaque (not black). Platinum Hits silver not drawn. |
 | Xbox360 | All | Keep case | 135 × 190 × 14 | Published size | See-through lime green. Platinum Hits grey / Kinect purple not drawn. |
-| XboxOne | All | Keep case | 135 × 171.5 × 12 | Published size | See-through green Blu-ray case; the disc is on the left, inside the front cover. |
-| XboxSeries | All | Keep case | 135 × 171.5 × 12 | Published size | As Xbox One: see-through green, disc on the left. |
+| XboxOne | All | Keep case | 135 × 171.5 × 12 | Published size | See-through green Blu-ray case; the disc is on the left, inside the front cover (Wikipedia: "left-handed"). 12 mm confirmed by several listings (update 304). |
+| XboxSeries | All | Keep case | 135 × 171.5 × 12 | Published size | As Xbox One: see-through green, disc on the left; 12 mm (fewer sources than Xbox One). |
 | GameCube | North America | Keep case | 135 × 190 × 14 | Published size | Black DVD-size case with an 8 cm hub; memory card holder in most (its place inside isn't confirmed). |
 | GameCube | Europe | Keep case | 135 × 190 × 14 | Published size | As North America. |
 | GameCube | Japan | Keep case | 107 × 149 × 17 | Published size | Japan: compact clear case 149×107×17. An outer sleeve isn't confirmed, so not drawn. |
@@ -155,3 +155,47 @@ Famicom Disk System and 64DD packaging. Not drawn yet:
 - **Opening:** the lid has its own thickness and swings on the hinge; the tray's walls stop where it sat.
 - **Not yet:** rounded corners, the PAL Dreamcast multi-part case, and NA vs EU DS closure differences beyond
   thickness.
+
+## Xbox 360 / PS3 / PS4 audit (update 303)
+- **Changed:** PS3 and PS4 thickness 12 → 14 mm. 12 mm is the Blu-ray *movie* case; CoverStitch's table ("measured from physical" cases) gives PS3 / PS4 / PS5 game cases a 14 mm spine. Replacement makers sell 14–15 mm "compatible" cases — that range was not taken as evidence on its own.
+- **Kept:** width 135 (agrees everywhere); height 171.5 (sources give 169–175, conflicting); PS3 clear, PS4 see-through blue; Xbox 360 135 × 190 × 14 lime green (confirmed).
+- **Not verified:** the inside (hub with three ridges, manual in two clips by the hinge); PS4 square vs PS3 rounded corners (not drawn — no corner radius in the models); the exact height.
+- **Special editions documented, not drawn:** Xbox 360 smaller eco case, Platinum Hits grey, Kinect purple; PS3 Greatest Hits red / Platinum. A game's files don't say which one a copy came in, and these consoles have no per-game case choice, so nothing is assigned from a title.
+- **Not touched then:** PS5 (changed in update 304), Xbox One / Series (12).
+
+## PS5, corners, insides, editions (update 304)
+**Verified** = a source states it. **Reported** = sellers / forum posts, consistent. **Estimate** = Voltcap's drawing, no source either way.
+
+| Detail | Drawn now | Evidence | Status | Change |
+|---|---|---|---|---|
+| PS5 thickness | 12 → **14 mm** | GamesRadar: "the same blue plastic shell as PS4 games"; cases sold as Sony originals and replacement makers all say 14 mm for PS4/PS5; nothing says 12 (that's the Blu-ray movie case) | Reported (medium-low) | Changed |
+| PS4 / PS5 thickness vs PS3 | All 14 mm | Stone Age Gamer (protector maker): PS4/PS5 cases "thinner" than PS3, a little loose in PS3 protectors; one protector sold for PS4/PS5 fits cases "up to 13 mm" | Conflict | Kept 14 — only a ruler on a retail case settles 13 vs 14 |
+| Xbox One / Series thickness | 12 mm | Several listings of claimed original and replacement cases | Reported (medium-high / medium) | Kept |
+| Blu-ray case height | 171.5 mm | Wikipedia: Blu-ray case 171.5 × 135 (13 mm thick for movies) | Verified | Kept |
+| Corner shape | Square (no radius) | NeoGAF (PS4 launch): PS4 case edges "not rounded anymore… more akin to regular DVD cases" — so PS3 rounder; keep cases in general have curved corners (andreas-lenz.de). **No radius in mm found for any of these cases**, nothing at all for PS5 / Xbox One / Series | Reported, no numbers | **Not implemented** — a radius would be invented |
+| Disc side | PlayStation, Xbox 360 right; Xbox One / Series left | Wikipedia (keep case: Xbox One / Series "left-handed", 360 right-handed except later dual-logo reissues); DualShockers' Xbox One photos | Verified | Kept |
+| Hub | Ring of small teeth round a button | Wikipedia: "pluck" and push-to-release hubs; Xbox 360 push-button hub (GenesysDTP) | Verified (type), count unknown | Kept |
+| Three ridges round the disc | Drawn | No source for or against | Estimate | Kept, unverified |
+| Manual clips | Two, by the hinge, opposite the disc (Xbox One / Series: on the right) | Wikipedia: "clips on the inside"; Xbox 360 clips inside the front cover (GenesysDTP); count / place not stated anywhere | Partly verified (side), count estimate | Kept |
+| PS5 manual | The cover drawn again as a manual when none is downloaded | Push Square: PS5 games rarely contain any documentation; the clips are still moulded in | Verified | **Changed:** PS5 joins Switch / Xbox 360 (`INSERT_BACK_ONLY`): the insert's plain back under the clear lid, clips drawn. A downloaded manual still shows as before |
+| PS4 / early Xbox 360 eco cut-outs | Not drawn | NeoGAF: early PS4 cases had holes to save plastic; some 2009–10 Xbox 360 eco cases had large holes — place, size and which games not stated | Reported, no geometry | Not implemented |
+| Xbox 360 multi-disc | One disc | NeoGAF: Microsoft's 3-disc case is a stacked spindle; others a hinged tray — per game unknown | Reported | Not implemented |
+
+### Selectable case variants per game (design only, not built)
+The DS already has this (`DsCases.kt`, update 287): an enum of variants with a label and what they change, your pick per
+game stored as `game key → variant` text in one `Features` StringPref (`ds_case_choices`, in the `voltcap_features` prefs), a picker opened
+from the game's menu (`GameOptionsDialog` › "DS case…", `LauncherUiFlags.dsCaseForGame`, `DsCasePicker` in `ShelfMenuDialog`),
+and `CaseCatalog.forGame` asking it before the region's case (its answer is part of the cache key). Its evidence list
+(title matches with sources) is DS-specific and **would not be reused**: the request is no automatic editions.
+
+To extend it rather than add a second system:
+1. Generalise `DsCaseVariant` into a per-platform variant list (e.g. `CaseVariants.forPlatform(p)`), each variant a
+   function `CaseSpec → CaseSpec` (colour, opacity, thickness, `mediaLeft`) like `DsCases.spec`.
+2. Keep one choices pref (e.g. `case_choices` in the same `voltcap_features` file, migrating `ds_case_choices`).
+3. Rename the menu item to "Case…" for any platform that has variants; "As found" = the standard case (and, on DS only,
+   the evidence).
+4. In `CaseCatalog.forGame`, apply the pick after `of(platform, region)` and add its name to the cache key (as for DS);
+   `CaseOpen`'s inside cache already keys on colour / thickness / `mediaLeft`.
+5. Only variants with sources: Xbox 360 Platinum Hits (grey) and the later left-handed dual-logo reissue (Wikipedia);
+   PS3 Greatest Hits (red, Wikipedia footnote). Kinect purple, PS3 Platinum / Essentials and colours need a colour
+   source first. Sizes are assumed to be the standard case's unless a source says otherwise.
