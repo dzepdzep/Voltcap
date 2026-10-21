@@ -1765,6 +1765,11 @@ object Features {
     val wallOfPlatforms = BoolPref("wall_of_platforms", true)
     /** The widgets on the second screen's Widget Board: "builtin:NOW_PLAYING", "builtin:SYSTEM_STATS", "app:<appWidgetId>". */
     val widgetBoardItems = StringPref("widget_board_items", "builtin:NOW_PLAYING,builtin:SYSTEM_STATS")
+    /**
+     * Update 299: each Widget Board widget's size, "<item>=COMPACT|NORMAL|EXPANDED;…" (an item not listed is NORMAL), so
+     * the boards saved before keep their look and order.
+     */
+    val widgetBoardSizes = StringPref("widget_board_sizes", "")
     /** Screen Mirror: pinch-zoom, or a trackpad that moves a pointer on the primary screen. */
     enum class MirrorMode(val label: String) { ZOOM("Zoom"), TRACKPAD("Trackpad") }
     val mirrorMode = EnumPref("mirror_mode", MirrorMode.ZOOM, MirrorMode.values())

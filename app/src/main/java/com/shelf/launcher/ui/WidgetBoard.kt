@@ -8,12 +8,36 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -60,11 +84,41 @@ object WidgetBoardItems {
     const val NOW_PLAYING = "builtin:NOW_PLAYING"
     const val SYSTEM_STATS = "builtin:SYSTEM_STATS"
     const val SCREEN_MIRROR = "builtin:SCREEN_MIRROR"
+    /** Update 299: the volume mixer (MixerActivity / AppMixer) as a widget. */
+    const val VOLUME_MIXER = "builtin:VOLUME_MIXER"
+
+    /** Update 299: the built-in widgets, in the order they're offered. */
+    val BUILTINS = listOf(NOW_PLAYING to "Now Playing", SYSTEM_STATS to "System Stats", SCREEN_MIRROR to "Screen Mirror", VOLUME_MIXER to "Volume Mixer")
 
     fun list(): List<String> = Features.widgetBoardItems.value.split(',').map { it.trim() }.filter { it.isNotEmpty() }
     fun set(items: List<String>) { Features.widgetBoardItems.value = items.distinct().joinToString(",") }
     fun add(item: String) { if (item !in list()) set(list() + item) }
-    fun remove(item: String) { set(list() - item) }
+    fun remove(item: String) { set(list() - item); setSize(item, null) }
+
+    // ---- Update 299: each widget's size (Features.widgetBoardSizes) ----
+    fun parseSizes(raw: String): Map<String, WidgetSize> = raw.split(';').mapNotNull { e ->
+        val k = e.substringBefore('=', "").trim(); val v = e.substringAfter('=', "").trim()
+        val sz = WidgetSize.entries.firstOrNull { it.name == v }
+        if (k.isEmpty() || sz == null) null else k to sz
+    }.toMap()
+    fun encodeSizes(m: Map<String, WidgetSize>): String =
+        m.filter { it.value != WidgetSize.NORMAL }.entries.joinToString(";") { "${it.key}=${it.value.name}" }
+    fun sizeOf(item: String): WidgetSize = parseSizes(Features.widgetBoardSizes.value)[item] ?: WidgetSize.NORMAL
+    /** [size] null (or NORMAL): back to the default size. */
+    fun setSize(item: String, size: WidgetSize?) {
+        val m = parseSizes(Features.widgetBoardSizes.value).toMutableMap()
+        if (size == null || size == WidgetSize.NORMAL) m.remove(item) else m[item] = size
+        val enc = encodeSizes(m)
+        if (enc != Features.widgetBoardSizes.value) Features.widgetBoardSizes.value = enc
+    }
+    /** [item] moved to [to] (an index in the list as it is). */
+    fun moveTo(order: List<String>, item: String, to: Int): List<String> {
+        val i = order.indexOf(item)
+        if (i < 0) return order
+        val l = order.toMutableList()
+        l.add(to.coerceIn(0, l.size - 1), l.removeAt(i))
+        return l
+    }
     fun move(item: String, by: Int) {
         val l = list().toMutableList()
         val i = l.indexOf(item)
@@ -73,6 +127,12 @@ object WidgetBoardItems {
         l.add(j, l.removeAt(i))
         set(l)
     }
+}
+
+/** Update 299: a Widget Board widget's size: its height, and EXPANDED takes the whole row. */
+enum class WidgetSize(val label: String, val heightDp: Int) {
+    COMPACT("Compact", 112), NORMAL("Normal", 190), EXPANDED("Expanded", 300);
+    fun next(allowed: List<WidgetSize>): WidgetSize = allowed.getOrNull((allowed.indexOf(this) + 1) % allowed.size.coerceAtLeast(1)) ?: this
 }
 
 /** One AppWidgetHost for the whole app (Android wants a stable host id). */
@@ -98,7 +158,26 @@ object AppWidgets {
     }
 
     fun delete(context: Context, id: Int) { runCatching { host(context).deleteAppWidgetId(id) } }
+
+    /**
+     * Update 299: the sizes another app's widget [id] allows on the board — its own limits (resize mode, smallest and,
+     * from Android 12, largest height). NORMAL (the board's size before 299) is always kept.
+     */
+    fun allowedSizes(context: Context, id: Int): List<WidgetSize> {
+        val info = runCatching { manager(context).getAppWidgetInfo(id) }.getOrNull() ?: return listOf(WidgetSize.NORMAL)
+        val d = context.resources.displayMetrics.density
+        val vertical = info.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
+        if (!vertical) return listOf(WidgetSize.NORMAL)
+        val minDp = ((info.minResizeHeight.takeIf { it > 0 } ?: info.minHeight) / d)
+        val maxDp = if (android.os.Build.VERSION.SDK_INT >= 31 && info.maxResizeHeight > 0) info.maxResizeHeight / d else Float.MAX_VALUE
+        return WidgetSize.entries.filter { it == WidgetSize.NORMAL || (it.heightDp >= minDp && it.heightDp <= maxDp) }
+    }
 }
+
+/** Update 299: the sizes [item] may take (built-ins: all three). */
+internal fun allowedSizesOf(context: Context, item: String): List<WidgetSize> =
+    if (item.startsWith("app:")) item.removePrefix("app:").toIntOrNull()?.let { AppWidgets.allowedSizes(context, it) } ?: listOf(WidgetSize.NORMAL)
+    else WidgetSize.entries
 
 /** The page. */
 @Composable
@@ -113,7 +192,19 @@ internal fun WidgetBoardPage(
     val context = LocalContext.current
     val raw = Features.widgetBoardItems.state.value
     val items = remember(raw) { raw.split(',').map { it.trim() }.filter { it.isNotEmpty() } }
+    val sizesRaw = Features.widgetBoardSizes.state.value
+    val sizes = remember(sizesRaw) { WidgetBoardItems.parseSizes(sizesRaw) }
     var editing by remember { mutableStateOf(false) }
+    // Update 299: the editor — the widget picked (touch, or the controller's focus), the one being dragged and the order
+    // while dragging (saved when it's let go, so nothing is written on every step).
+    var selected by remember { mutableStateOf<String?>(null) }
+    var dragId by remember { mutableStateOf<String?>(null) }
+    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+    var order by remember { mutableStateOf(items) }
+    LaunchedEffect(items) { if (dragId == null) order = items }
+    LaunchedEffect(editing) { if (!editing) { selected = null; dragId = null } }
+    val gridState = rememberLazyGridState()
+    val inputMode = androidx.compose.ui.platform.LocalInputModeManager.current
     // Widgets from other apps only update while the host listens.
     DisposableEffect(Unit) {
         val host = AppWidgets.host(context)
@@ -124,61 +215,201 @@ internal fun WidgetBoardPage(
         Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Widgets", color = ShelfTheme.colors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
-            Chip(if (editing) "Done" else "Edit", accent = editing) { editing = !editing }
+            Chip(if (editing) "Done" else "Edit", accent = editing, modifier = Modifier.padTarget("wb-edit") { editing = !editing }) { editing = !editing }
         }
-        if (items.isEmpty()) {
+        // (Update 299: the built-ins not on the board yet, added from the board itself while editing.)
+        // (Shown while no widget is picked; picking one shows its tools in this place instead — room is short below.)
+        if (editing && selected?.takeIf { it in order } == null) {
+            val missing = WidgetBoardItems.BUILTINS.filter { it.first !in items }
+            if (missing.isNotEmpty()) Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Add:", color = ShelfTheme.textMuted, fontSize = 12.sp)
+                missing.forEach { (id, label) -> Chip("+ $label", accent = false, modifier = Modifier.padTarget("wb-add-$id") { WidgetBoardItems.add(id); selected = id }) { WidgetBoardItems.add(id); selected = id } }
+            }
+        }
+        // (Update 299: the picked widget's tools sit here, above the board — always in view, whatever the widget's size
+        // on the small lower screen.)
+        val sel = selected?.takeIf { editing && it in order }
+        if (sel != null) {
+            val index = order.indexOf(sel)
+            val name = WidgetBoardItems.BUILTINS.firstOrNull { it.first == sel }?.second
+                ?: sel.removePrefix("app:").toIntOrNull()?.let { wid -> runCatching { AppWidgets.manager(context).getAppWidgetInfo(wid)?.loadLabel(context.packageManager) }.getOrNull() }
+                ?: "Widget"
+            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(name, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                WidgetEditBar(
+                    sel, index, order.size, sizes[sel] ?: WidgetSize.NORMAL, allowedSizesOf(context, sel), Modifier,
+                    onMove = { by -> order = WidgetBoardItems.moveTo(order, sel, index + by); WidgetBoardItems.set(order) },
+                    onSize = { WidgetBoardItems.setSize(sel, it) },
+                    onReset = { WidgetBoardItems.setSize(sel, null) },
+                    onRemove = {
+                        if (sel.startsWith("app:")) sel.removePrefix("app:").toIntOrNull()?.let { AppWidgets.delete(context, it) }
+                        WidgetBoardItems.remove(sel); selected = null
+                    }
+                )
+            }
+        } else if (editing && order.isNotEmpty() && WidgetBoardItems.BUILTINS.all { it.first in items }) {
+            Text("Tap a widget to size, move or remove it; drag its handle to move it.", color = ShelfTheme.textMuted, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+        }
+        if (order.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    "No widgets yet. Add some in Settings › Screens › Second screen tools.",
+                    if (editing) "Add a widget above." else "No widgets yet. Tap Edit to add some, or Settings › Screens › Second screen tools.",
                     color = ShelfTheme.textMuted, fontSize = 13.sp
                 )
             }
         } else {
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+            // (Expanded never taller than the board's own room: the Thor's lower screen shows ~225 dp of it.)
+            val viewH = maxHeight
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(260.dp),
+                state = gridState,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Update 112: every widget the same size (the screen mirror used to take a whole wide, tall row).
-                itemsIndexed(items, key = { _, id -> id }) { index, id ->
-                    val tall = false
+                // Update 112: every widget the same size. Update 299: each its own size (compact / normal / expanded,
+                // expanded the whole row), set in the editor and kept.
+                itemsIndexed(
+                    order, key = { _, id -> id },
+                    span = { _, id -> GridItemSpan(if ((sizes[id] ?: WidgetSize.NORMAL) == WidgetSize.EXPANDED) maxLineSpan else 1) }
+                ) { _, id ->
+                    val size = sizes[id] ?: WidgetSize.NORMAL
+                    val dragging = dragId == id
+                    val isSel = editing && (selected == id || dragging)
+                    val shape = RoundedCornerShape(16.dp)
                     Box(
                         Modifier
+                            .then(if (dragging) Modifier.zIndex(2f).graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
                             .fillMaxWidth()
-                            .height(if (tall) 320.dp else 190.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .height(if (size == WidgetSize.EXPANDED) minOf(size.heightDp.dp, viewH) else size.heightDp.dp)
+                            .clip(shape)
                             .background(ShelfTheme.colors.surface.copy(alpha = 0.78f))
+                            .then(
+                                if (editing) Modifier.border(if (isSel) 3.dp else 1.5.dp, if (isSel) ShelfTheme.accent else Color.White.copy(alpha = 0.35f), shape)
+                                else Modifier
+                            )
                     ) {
                         when {
-                            id == WidgetBoardItems.NOW_PLAYING -> NowPlayingWidget(nowPlaying, onPlayPause, onNext, onPrevious)
-                            id == WidgetBoardItems.SYSTEM_STATS -> SystemStatsWidget()
+                            id == WidgetBoardItems.NOW_PLAYING -> NowPlayingWidget(nowPlaying, onPlayPause, onNext, onPrevious, size)
+                            id == WidgetBoardItems.SYSTEM_STATS -> SystemStatsWidget(size)
                             id == WidgetBoardItems.SCREEN_MIRROR -> ScreenMirrorWidget(Modifier.fillMaxSize())
+                            id == WidgetBoardItems.VOLUME_MIXER -> VolumeMixerWidget(size)
                             id.startsWith("app:") -> id.removePrefix("app:").toIntOrNull()?.let { AppWidgetView(it) }
                         }
-                        if (editing) Row(
-                            Modifier.align(Alignment.TopStart).padding(6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            if (index > 0) Chip("◀", accent = false) { WidgetBoardItems.move(id, -1) }
-                            if (index < items.size - 1) Chip("▶", accent = false) { WidgetBoardItems.move(id, 1) }
-                            Chip("Remove", accent = false) {
-                                if (id.startsWith("app:")) id.removePrefix("app:").toIntOrNull()?.let { AppWidgets.delete(context, it) }
-                                WidgetBoardItems.remove(id)
+                        if (editing) {
+                            // While editing, the widget itself doesn't take taps (no volume moved by accident): a tap — or
+                            // the controller's focus — picks it; a second tap lets it go.
+                            var focused by remember { mutableStateOf(false) }
+                            Box(
+                                Modifier.fillMaxSize()
+                                    .background(Color.Black.copy(alpha = if (isSel) 0.10f else 0.22f))
+                                    .pointerInput(id) { detectTapGestures { selected = if (selected == id) null else id } }
+                                    .padTarget("wb-tile-$id") { selected = if (selected == id) null else id }
+                                    // (Picked by focus only when the controller moved it there: a widget moved by touch
+                                    // could otherwise hand the pick to whichever one took its old place.)
+                                    .onFocusChanged { focused = it.isFocused; if (it.isFocused && inputMode.inputMode == androidx.compose.ui.input.InputMode.Keyboard) selected = id }
+                                    .focusable()
+                                    .focusRing(focused, shape)
+                            )
+                            // The drag handle (top middle, clear of the widgets' own corner keys): drag it to put the
+                            // widget elsewhere.
+                            Box(
+                                Modifier.align(Alignment.TopCenter).padding(4.dp).size(width = 56.dp, height = 36.dp).clip(RoundedCornerShape(50))
+                                    .background(if (dragging) ShelfTheme.accent else Color.Black.copy(alpha = 0.55f))
+                                    .pointerInput(id) {
+                                        detectDragGestures(
+                                            onDragStart = { dragId = id; selected = id; dragOffset = Offset.Zero },
+                                            onDrag = { change, amount ->
+                                                change.consume()
+                                                dragOffset += amount
+                                                val vis = gridState.layoutInfo.visibleItemsInfo
+                                                val me = vis.firstOrNull { it.key == id } ?: return@detectDragGestures
+                                                val cx = me.offset.x + me.size.width / 2f + dragOffset.x
+                                                val cy = me.offset.y + me.size.height / 2f + dragOffset.y
+                                                val over = vis.firstOrNull { it.key != id && cx >= it.offset.x && cx <= it.offset.x + it.size.width && cy >= it.offset.y && cy <= it.offset.y + it.size.height }
+                                                if (over != null) {
+                                                    val to = order.indexOf(over.key as String)
+                                                    if (to >= 0) {
+                                                        order = WidgetBoardItems.moveTo(order, id, to)
+                                                        // (It takes that one's place: kept under the finger.)
+                                                        dragOffset += Offset((me.offset.x - over.offset.x).toFloat(), (me.offset.y - over.offset.y).toFloat())
+                                                    }
+                                                }
+                                            },
+                                            onDragEnd = { WidgetBoardItems.set(order); dragId = null; dragOffset = Offset.Zero },
+                                            onDragCancel = { WidgetBoardItems.set(order); dragId = null; dragOffset = Offset.Zero }
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                androidx.compose.material3.Icon(
+                                    androidx.compose.material.icons.Icons.Filled.DragHandle, contentDescription = "Drag to move",
+                                    tint = if (dragging) onAccentColor() else Color.White, modifier = Modifier.size(22.dp)
+                                )
                             }
                         }
                     }
                 }
             }
+            }
         }
     }
 }
 
+/**
+ * Update 299: the picked widget's tools, above the board — move it before / after, its size (cycles through the sizes
+ * it allows), back to its default size, remove. Round 40 dp keys: easy to hit on the small lower screen, and each a
+ * controller stop with the shared focus ring.
+ */
 @Composable
-private fun NowPlayingWidget(nowPlaying: NowPlaying?, onPlayPause: () -> Unit, onNext: () -> Unit, onPrevious: () -> Unit) {
-    Row(Modifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun WidgetEditBar(
+    id: String, index: Int, count: Int, size: WidgetSize, allowed: List<WidgetSize>, modifier: Modifier,
+    onMove: (Int) -> Unit, onSize: (WidgetSize) -> Unit, onReset: () -> Unit, onRemove: () -> Unit
+) {
+    Row(
+        modifier.padding(6.dp).clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.72f)).padding(horizontal = 4.dp, vertical = 3.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (index > 0) EditKey(androidx.compose.material.icons.Icons.Filled.ChevronLeft, "Move earlier", "wb-left") { onMove(-1) }
+        if (index < count - 1) EditKey(androidx.compose.material.icons.Icons.Filled.ChevronRight, "Move later", "wb-right") { onMove(1) }
+        if (allowed.size > 1) {
+            Box(
+                Modifier.height(40.dp).clip(RoundedCornerShape(50)).background(ShelfTheme.accent.copy(alpha = 0.85f))
+                    .shelfClickable(RoundedCornerShape(50)) { onSize(size.next(allowed)) }
+                    .padTarget("wb-size") { onSize(size.next(allowed)) }
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center
+            ) { Text(size.label, color = onAccentColor(), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
+        }
+        if (size != WidgetSize.NORMAL) EditKey(androidx.compose.material.icons.Icons.Filled.Refresh, "Reset size", "wb-reset", onClick = onReset)
+        EditKey(androidx.compose.material.icons.Icons.Filled.Close, "Remove", "wb-remove", danger = true, onClick = onRemove)
+    }
+}
+
+@Composable
+private fun EditKey(icon: androidx.compose.ui.graphics.vector.ImageVector, desc: String, padId: String, danger: Boolean = false, onClick: () -> Unit) {
+    Box(
+        Modifier.size(40.dp).clip(CircleShape)
+            .background(if (danger) com.shelf.launcher.ui.theme.Ds.danger.copy(alpha = 0.30f) else Color.White.copy(alpha = 0.12f))
+            .shelfClickable(CircleShape) { onClick() }
+            .padTarget(padId) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        androidx.compose.material3.Icon(icon, contentDescription = desc, tint = if (danger) com.shelf.launcher.ui.theme.Ds.danger else Color.White, modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
+private fun NowPlayingWidget(nowPlaying: NowPlaying?, onPlayPause: () -> Unit, onNext: () -> Unit, onPrevious: () -> Unit, size: WidgetSize = WidgetSize.NORMAL) {
+    // (Update 299: its cover follows the widget's size.)
+    val artSize = if (size == WidgetSize.COMPACT) 84.dp else 110.dp
+    Row(Modifier.fillMaxSize().padding(if (size == WidgetSize.COMPACT) 10.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
         val art = nowPlaying?.art
-        Box(Modifier.size(110.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = 0.08f))) {
+        Box((if (size == WidgetSize.EXPANDED) Modifier.fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = true) else Modifier.size(artSize)).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = 0.08f))) {
             if (art != null) androidx.compose.foundation.Image(
                 bitmap = art.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
             )
@@ -190,12 +421,12 @@ private fun NowPlayingWidget(nowPlaying: NowPlaying?, onPlayPause: () -> Unit, o
                 nowPlaying?.title ?: "Nothing playing", color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp), maxFontSize = 15.sp),
                 fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
             )
-            nowPlaying?.artist?.let { Text(it, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            Spacer(Modifier.height(8.dp))
+            if (size != WidgetSize.COMPACT) nowPlaying?.artist?.let { Text(it, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            Spacer(Modifier.height(if (size == WidgetSize.COMPACT) 4.dp else 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Chip("◀◀", accent = false, onClick = onPrevious)
-                Chip(if (nowPlaying?.isPlaying == true) "Pause" else "Play", onClick = onPlayPause)
-                Chip("▶▶", accent = false, onClick = onNext)
+                Chip("◀◀", accent = false, modifier = Modifier.padTarget("wb-np-prev", onPress = onPrevious), onClick = onPrevious)
+                Chip(if (nowPlaying?.isPlaying == true) "Pause" else "Play", modifier = Modifier.padTarget("wb-np-play", onPress = onPlayPause), onClick = onPlayPause)
+                Chip("▶▶", accent = false, modifier = Modifier.padTarget("wb-np-next", onPress = onNext), onClick = onNext)
             }
         }
     }
@@ -203,7 +434,7 @@ private fun NowPlayingWidget(nowPlaying: NowPlaying?, onPlayPause: () -> Unit, o
 
 /** Battery, memory, storage and the time, refreshed every couple of seconds while the page is on screen. */
 @Composable
-private fun SystemStatsWidget() {
+private fun SystemStatsWidget(size: WidgetSize = WidgetSize.NORMAL) {
     val context = LocalContext.current
     var battery by remember { mutableStateOf("—") }
     var batteryFraction by remember { mutableStateOf(0f) }
@@ -241,15 +472,18 @@ private fun SystemStatsWidget() {
             kotlinx.coroutines.delay(2_000)
         }
     }
-    Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxSize().padding(if (size == WidgetSize.COMPACT) 10.dp else 14.dp), verticalArrangement = Arrangement.spacedBy(if (size == WidgetSize.EXPANDED) 16.dp else 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("SYSTEM", color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             Spacer(Modifier.weight(1f))
             Text(clock, color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
         StatBar("Battery", battery, batteryFraction)
-        StatBar("Memory", memory, memoryFraction)
-        StatBar("Storage", storage, storageFraction)
+        // (Update 299: compact shows the battery and the time only.)
+        if (size != WidgetSize.COMPACT) {
+            StatBar("Memory", memory, memoryFraction)
+            StatBar("Storage", storage, storageFraction)
+        }
     }
 }
 
@@ -294,5 +528,106 @@ private fun AppWidgetView(id: Int) {
             },
             modifier = Modifier.fillMaxSize().onSizeChanged { sizePx = it }
         )
+    }
+}
+
+/**
+ * Update 299: the Volume Mixer as a widget — the same mixer as MixerActivity, not a second one: the media volume is
+ * Android's own (StreamRow, which follows the volume keys through SystemSync), each app's is AppMixer's (read with
+ * AppMixer.apps, set with AppMixer.setVolume, numbered with its tickets), and both re-read when either side changes
+ * something (AppMixer.changes). Compact: the media volume; normal: and the app playing; expanded: up to six apps.
+ * The ⤢ key opens the full mixer.
+ */
+@Composable
+private fun VolumeMixerWidget(size: WidgetSize) {
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    LaunchedEffect(Unit) { com.shelf.launcher.device.SystemSync.start(context) }
+    val sync by com.shelf.launcher.device.SystemSync.version.collectAsState()
+    val changes by com.shelf.launcher.device.audio.AppMixer.changes.collectAsState()
+    val perApp = remember { com.shelf.launcher.device.audio.AppMixer.available(context) }
+    val showApps = size != WidgetSize.COMPACT && perApp
+    var apps by remember { mutableStateOf<List<com.shelf.launcher.device.audio.AppMixer.AudioApp>?>(null) }
+    // Volumes just moved here, shown over what a look in the background reads until they're saved (as the full mixer).
+    val held = remember { androidx.compose.runtime.mutableStateMapOf<String, Pair<Int, Long>>() }
+    val beforeMute = remember { HashMap<String, Int>() }
+    val pending = remember { HashMap<String, kotlinx.coroutines.Job>() }
+    suspend fun load() {
+        if (!showApps) return
+        apps = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { com.shelf.launcher.device.audio.AppMixer.apps(context) }.getOrNull()
+        } ?: apps
+    }
+    LaunchedEffect(showApps, changes) { load() }
+    // (A slow second look while it's on screen, as the full mixer: a game that starts making sound shows up.)
+    LaunchedEffect(showApps) { while (showApps) { kotlinx.coroutines.delay(6_000L); load() } }
+    fun volumeOf(a: com.shelf.launcher.device.audio.AppMixer.AudioApp): Int =
+        held[a.packageName]?.takeIf { it.second > android.os.SystemClock.uptimeMillis() }?.first ?: a.volume
+    fun commit(a: com.shelf.launcher.device.audio.AppMixer.AudioApp, v: Int) {
+        held[a.packageName] = v to (android.os.SystemClock.uptimeMillis() + 3_000L)
+        val ticket = com.shelf.launcher.device.audio.AppMixer.ticket(a.packageName)
+        pending.remove(a.packageName)?.cancel()
+        pending[a.packageName] = scope.launch {
+            kotlinx.coroutines.delay(280)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { com.shelf.launcher.device.audio.AppMixer.setVolume(context, a.packageName, v, forGame = a.gameOnly, ticket = ticket) }
+            }
+        }
+    }
+    fun openMixer() {
+        val i = com.shelf.launcher.device.audio.AppMixer.openIntent(context)
+        // (On the main screen: an activity started on the second screen's own display opens under the second screen's
+        // window and can't be seen — checked on the Thor.)
+        val opened = if (android.os.Build.VERSION.SDK_INT >= 26) runCatching {
+            context.startActivity(i, android.app.ActivityOptions.makeBasic().setLaunchDisplayId(android.view.Display.DEFAULT_DISPLAY).toBundle())
+        }.isSuccess else false
+        if (!opened) runCatching { context.startActivity(i) }
+    }
+    Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = if (size == WidgetSize.COMPACT) 6.dp else 10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("VOLUME", color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Spacer(Modifier.weight(1f))
+            Box(
+                Modifier.size(36.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)).shelfClickable(CircleShape) { openMixer() }.padTarget("wb-mix-open") { openMixer() },
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.OpenInFull, contentDescription = "Open the volume mixer", tint = ShelfTheme.colors.textPrimary, modifier = Modifier.size(18.dp))
+            }
+        }
+        StreamRow("Media", android.media.AudioManager.STREAM_MUSIC, sync, padId = "wb-mix-media")
+        if (size != WidgetSize.COMPACT) {
+            if (!perApp) Text("Volume per app isn't available on this device — open the mixer for why.", color = ShelfTheme.textMuted, fontSize = 11.sp, lineHeight = 14.sp)
+            else {
+                val list = apps
+                // Playing first, then the ones set to their own volume.
+                val shown = list.orEmpty().sortedWith(compareByDescending<com.shelf.launcher.device.audio.AppMixer.AudioApp> { it.playing || it.runningGame != null }.thenBy { it.volume == 100 })
+                    .take(if (size == WidgetSize.EXPANDED) 6 else 1)
+                when {
+                    list == null -> Text("Looking for apps playing sound…", color = ShelfTheme.textMuted, fontSize = 11.sp)
+                    shown.isEmpty() -> Text("No app is playing sound.", color = ShelfTheme.textMuted, fontSize = 11.sp)
+                    else -> Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                        shown.forEach { a ->
+                            val v = volumeOf(a)
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                                val icon = rememberAppIcon(a.packageName)
+                                if (icon != null) androidx.compose.foundation.Image(icon, null, modifier = Modifier.size(20.dp).clip(RoundedCornerShape(5.dp)))
+                                Spacer(Modifier.width(6.dp))
+                                Text(a.label, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                Text(if (v == 0) "Muted" else "$v %", color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            VolumeBar(
+                                percent = v, steps = 20,
+                                onChange = { nv -> commit(a, nv) },
+                                onToggle = {
+                                    if (v == 0) commit(a, beforeMute.remove(a.packageName) ?: 100)
+                                    else { beforeMute[a.packageName] = v; commit(a, 0) }
+                                },
+                                padId = "wb-mix-${a.packageName}"
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ViewCarousel
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -115,6 +116,12 @@ internal fun SecondScreenToolsSettings(hasSecondScreen: Boolean) {
         SwitchRow(Icons.Filled.Cast, "Screen Mirror", "The main screen's picture on the second screen, with zoom and trackpad modes.", WidgetBoardItems.SCREEN_MIRROR in items, { on ->
             if (on) WidgetBoardItems.add(WidgetBoardItems.SCREEN_MIRROR) else WidgetBoardItems.remove(WidgetBoardItems.SCREEN_MIRROR)
         })
+        Spacer(Modifier.height(8.dp))
+        // Update 299: the volume mixer on the board (MixerActivity's mixer, not a copy).
+        SwitchRow(Icons.AutoMirrored.Filled.VolumeUp, "Volume Mixer", "The media volume and each app's volume, with mute; opens the full mixer.", WidgetBoardItems.VOLUME_MIXER in items, { on ->
+            if (on) WidgetBoardItems.add(WidgetBoardItems.VOLUME_MIXER) else WidgetBoardItems.remove(WidgetBoardItems.VOLUME_MIXER)
+        })
+        MutedNote("Sizes and order: the Widgets page › Edit (drag the handle, or ◀ ▶; the size key cycles compact / normal / expanded).")
         Spacer(Modifier.height(8.dp))
         FeatureChoice("Screen Mirror mode", Features.MirrorMode.values(), Features.mirrorMode) { it.label }
         MutedNote("Zoom: pinch and drag on the mirrored picture. Trackpad: drag moves a pointer on the main screen, a tap clicks (needs this handheld's system shell). Android asks for permission to capture the screen when you start it.")

@@ -4,6 +4,33 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 21 Oct 2026 (299): Volume Mixer widget, widget sizes and drag-to-reorder on the second screen's Widget Board — after release 0.6.26
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** Your Widget Board was put back exactly as it was after testing (Now Playing, System Stats; no sizes).
+
+What already existed (reused, not rebuilt): the Widget Board (`WidgetBoard.kt`: Now Playing, System Stats, Screen Mirror, other apps' widgets, Edit with ◀ ▶ Remove), its settings (`SecondScreenTools.kt`), the full mixer (`MixerActivity.kt` / `AppMixer.kt`), the second screen's controller (`SecondPad.kt`).
+
+Added / changed:
+- **Volume Mixer widget** (`builtin:VOLUME_MIXER`): media volume (Android's own, follows the volume keys), each app's volume where the mixer works (AppMixer), mute / unmute, a key that opens the full mixer on the main screen. Compact = media only; Normal = + the app playing; Expanded = up to six apps. Added from Settings › Second screen tools, or from the board itself (Edit › Add).
+- **One source of truth:** `AppMixer.changes` is bumped on every volume / game-only / reset / app-list change; the widget and the full mixer both re-read AppMixer on it. No copied audio state. Checked both ways on the Thor (mute in the widget → full mixer shows Muted; unmute in the full mixer → widget shows 100 %).
+- **Editor:** tap a widget (or reach it with the controller) to pick it; its tools appear above the board (always in view on the small lower screen): ◀ ▶ move, size (Compact / Normal / Expanded — only the sizes another app's widget allows: its resize mode and min/max height), ↺ back to its default size, ✕ remove. A drag handle on each widget moves it by touch. Outlines on every widget while editing, the picked one in the accent colour. While editing, widgets don't take taps (no accidental volume changes).
+- **Saved:** order in `widget_board_items` (unchanged format), sizes in a new `widget_board_sizes` ("item=SIZE;…", NORMAL not stored) — existing boards keep their look and order. Expanded is never taller than the board's room.
+- **Controller:** Edit, Add, each widget, the editor's keys, Now Playing's buttons, the mixer's open key and every volume bar are SecondPad stops (◀ ▶ change the volume by 5 %, A mutes). Checked on the Thor.
+- **Thor top/bottom-screen volume — investigated, not shown:** `Settings.System secondary_screen_volume_level` (0–15, default 7; the Thor has 4) is watched by AYN's `com.odin.settings`, which turns it into `persist.sys.audio.value` (a gain table) and re-applies the music volume. Checked: changing the setting changes the property (then put back to 4). Writing it needs the system shell or root (a non-public System setting); `…_for_headphones` is declared but nothing uses it. Whether it actually changes one screen's loudness can only be judged by ear — not confirmed, so no control is shown yet. Retroid Pocket Duo: not available here, nothing documented found — not shown.
+
+Files touched:
+- `src_copy\ui\WidgetBoard.kt`
+- `src_copy\ui\SecondScreenTools.kt`
+- `src_copy\ui\MixerActivity.kt` (`StreamRow` / `VolumeBar` internal, optional SecondPad id; reload on `AppMixer.changes`)
+- `src_copy\device\audio\AppMixer.kt` (`changes`)
+- `src_copy\data\Features.kt` (`widgetBoardSizes`)
+- `project_copy\app\src\test\java\com\shelf\launcher\ui\WidgetBoard299Test.kt` (new, 6 tests)
+
+Checked on the Thor: adding the widget; media and app volume from it; sync with the full mixer both ways; Expanded / Compact / Normal / reset for Now Playing and the mixer; drag reorder; order and sizes after a restart and a reinstall; controller on the lower screen.
+Not checked: another app's widget (none on the board; adding one needs Android's permission screen), the virtual second screen, the Retroid Pocket Duo, single-screen devices, devices without the per-app mixer (code path: "Volume per app isn't available" note).
+
+---
+
 ## Update — 21 Oct 2026 (298): earlier case fixes checked one by one — real disc back in carts-only cases, no flat-colour backs, single spines, PS3 back explained — after release 0.6.26
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published** (no release without your go-ahead). Pictures in `shots298\`.

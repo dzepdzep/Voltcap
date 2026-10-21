@@ -174,7 +174,9 @@ internal fun MixerContent() {
         }
     }
     val sync by com.shelf.launcher.device.SystemSync.version.collectAsState()
-    LaunchedEffect(reload) {
+    // (Update 299: also when a volume was changed elsewhere — the second screen's Volume Mixer widget — AppMixer.changes.)
+    val changes by AppMixer.changes.collectAsState()
+    LaunchedEffect(reload, changes) {
         apps = merged(withContext(Dispatchers.IO) { runCatching { AppMixer.apps(context) }.getOrDefault(emptyList()) })
     }
     // A slow second look: a game that just started making sound shows up without pressing Refresh.
@@ -324,7 +326,7 @@ internal fun MixerContent() {
 
 /** One of Android's own volumes (media, notifications…), with ◀ ▶ steps. */
 @Composable
-private fun StreamRow(label: String, stream: Int, sync: Any?, modifier: Modifier = Modifier) {
+internal fun StreamRow(label: String, stream: Int, sync: Any?, modifier: Modifier = Modifier, padId: String? = null) {
     val context = LocalContext.current
     val am = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     val max = remember(stream) { runCatching { am.getStreamMaxVolume(stream) }.getOrDefault(1).coerceAtLeast(1) }
@@ -352,7 +354,8 @@ private fun StreamRow(label: String, stream: Int, sync: Any?, modifier: Modifier
                 refused = runCatching { am.setStreamVolume(stream, target, 0) }.isFailure
                 level = runCatching { am.getStreamVolume(stream) }.getOrDefault(level)
             },
-            live = true
+            live = true,
+            padId = padId
         )
         if (refused) MutedNote("Android didn't allow this change (Do not disturb is probably on).")
     }
@@ -414,21 +417,25 @@ private fun MixerAppRow(
  * and a slider for touch. Reports when let go, or every step with [live].
  */
 @Composable
-private fun VolumeBar(percent: Int, steps: Int, onChange: (Int) -> Unit, onToggle: () -> Unit, live: Boolean = false) {
+internal fun VolumeBar(percent: Int, steps: Int, onChange: (Int) -> Unit, onToggle: () -> Unit, live: Boolean = false, padId: String? = null) {
     var drag by remember(percent) { mutableStateOf(percent.toFloat()) }
     var focused by remember { mutableStateOf(false) }
     val step = if (steps in 1..19) (100f / steps) else 5f
+    // (Update 299: on the second screen — the Widget Board's Volume Mixer — the controller reaches it through SecondPad:
+    // ◀ ▶ the same steps, A mute / unmute.)
+    fun stepBy(dir: Int) {
+        val next = (drag + dir * step).coerceIn(0f, 100f)
+        val snapped = ((next / step).roundToInt() * step).coerceIn(0f, 100f).roundToInt()
+        if (snapped != drag.roundToInt()) { drag = snapped.toFloat(); onChange(snapped) }
+    }
     Row(
         Modifier.fillMaxWidth()
+            .then(if (padId != null) Modifier.padTarget(padId, onMove = { d -> if (d <= 1) { stepBy(if (d == 0) -1 else 1); true } else false }) { onToggle() } else Modifier)
             .onFocusChanged { focused = it.isFocused }
             .onPreviewKeyEvent { e ->
                 val dir = when (e.key) { Key.DirectionLeft -> -1; Key.DirectionRight -> 1; else -> 0 }
                 if (dir != 0) {
-                    if (e.type == KeyEventType.KeyDown) {
-                        val next = (drag + dir * step).coerceIn(0f, 100f)
-                        val snapped = ((next / step).roundToInt() * step).coerceIn(0f, 100f).roundToInt()
-                        if (snapped != drag.roundToInt()) { drag = snapped.toFloat(); onChange(snapped) }
-                    }
+                    if (e.type == KeyEventType.KeyDown) stepBy(dir)
                     true
                 } else if (e.key == Key.ButtonA || e.key == Key.Enter || e.key == Key.DirectionCenter) {
                     if (e.type == KeyEventType.KeyUp) onToggle()

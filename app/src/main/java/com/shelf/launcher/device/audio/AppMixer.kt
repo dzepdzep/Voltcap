@@ -29,6 +29,14 @@ object AppMixer {
     private const val GAMES = "mixer_games"
     private const val META = "mixer_meta"
     private const val DAEMON = "voltcap_mixd"
+
+    /**
+     * Update 299: bumped after any app volume, "Just for this game", reset or app-list change, so every view of the mixer
+     * (the full mixer, the second screen's Volume Mixer widget) reads AppMixer again — one source of truth, no copies.
+     */
+    private val _changes = kotlinx.coroutines.flow.MutableStateFlow(0)
+    val changes: kotlinx.coroutines.flow.StateFlow<Int> = _changes
+    private fun changed() { _changes.value = _changes.value + 1 }
     private const val LISTER = "voltcap_mixl"
     /**
      * pgrep / pkill pattern for the helper. "[d]" matches "d" but not itself: the shell running pgrep has
@@ -159,6 +167,7 @@ object AppMixer {
         val now = pinned(c).toMutableSet()
         if (on) now += pkg else now -= pkg
         meta(c).edit().putStringSet("pinned", now).apply()
+        changed()
     }
 
     fun runningGame(c: Context): RunningGame? {
@@ -218,6 +227,7 @@ object AppMixer {
         }
         apply(c, resets = before - effective(c).keys)
         MixerNotification.refreshAsync(c)
+        changed()
         // Update 119: Spotify, before it has announced its audio session (it does as it starts playing): its own
         // volume through your Spotify account (Settings › Music › Spotify), where Spotify lets this device's volume be set.
         // Update 144: only on this handheld's own Spotify device while it plays; without a device id Spotify would
@@ -247,6 +257,7 @@ object AppMixer {
             games(c).edit().putString(g.key, "${g.packageName}|$now").commit()
         } else games(c).edit().remove(g.key).commit()
         apply(c, resets = before - effective(c).keys)
+        changed()
     }
 
     /** Every app back to 100 % (the running game's own volume too). Blocking. */
@@ -256,6 +267,7 @@ object AppMixer {
         runningGame(c)?.let { games(c).edit().remove(it.key).commit() }
         apply(c, resets = had)
         MixerNotification.refreshAsync(c)
+        changed()
     }
 
     /** A game started from Voltcap: its own volume (if it has one) holds while it runs. Blocking. */
