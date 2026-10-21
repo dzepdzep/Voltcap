@@ -4,6 +4,29 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 21 Oct 2026 (303): Xbox 360 / PS3 / PS4 case audit — PS3 and PS4 game cases 14 mm thick
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** Only the two thickness values changed; no model, animation or other console was touched.
+
+| Case | Before | Evidence found | Now |
+|---|---|---|---|
+| PS3 thickness | 12 mm (Blu-ray movie case) | CoverStitch's case table, "measured from physical" retail cases: PS3 / PS4 / PS5 game cases 14 mm, Blu-ray movie cases 12 mm. Replacement makers sell 14–15 mm "PS3 compatible" cases. Not a Sony figure. | **14 mm** (Sourced) |
+| PS4 thickness | 12 mm | Same table; launch-day comparisons (NeoGAF, IGN photos) say PS4 cases are the PS3's thickness. | **14 mm** (Sourced) |
+| PS3 / PS4 width × height | 135 × 171.5 | Width 135 agrees everywhere; height given as 169–175 by different sources (conflicting). | Kept |
+| PS3 plastic | clear-ish, 25 % | Wikipedia: translucent white / clear. | Kept |
+| PS4 plastic | see-through blue | Matches photos and descriptions. | Kept |
+| Xbox 360 | 135 × 190 × 14, see-through lime green | Wikipedia (DVD keep case, green); CoverStitch 14 mm. | Confirmed, kept |
+
+- **Not verified (unchanged):** the inside layout (hub with three ridges, manual in two clips by the hinge) is still an estimate; PS4's square corners vs PS3's rounded corners (IGN) aren't drawn — the models have no corner radius; the exact height.
+- **Special editions not added:** Xbox 360's later smaller eco case, Platinum Hits grey, Kinect purple; PS3 Greatest Hits red / Platinum. They're documented, but nothing in a game's files says which one a copy came in, and these consoles have no per-game case choice (only the DS has one), so nothing is assigned from a title.
+- **Not touched:** PS5, Xbox One and Series stay 12 mm (CoverStitch suggests PS5 is 14 too — not asked for).
+- **Checked on the Thor:** UFC Undisputed 3 (PS3) turned to 80° (spine slightly wider, no gaps or artefacts) and opened (clear case, manual left, disc on its hub right). No Xbox 360 or PS4 games on the device, so those weren't seen.
+- **Tests:** `Cases303Test` (4).
+
+**Copy:** `src_copy\ui\CaseCatalog.kt`; `project_copy\app\src\test\java\com\shelf\launcher\ui\Cases303Test.kt`.
+
+---
+
 ## Update — 21 Oct 2026 (302): case backs from TheGamesDB, unused picture copies cleaned up — after release 0.6.27
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** The Cover Project and MobyGames are left out, as you decided.

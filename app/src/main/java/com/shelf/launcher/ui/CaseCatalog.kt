@@ -132,8 +132,11 @@ internal object CaseCatalog {
         keep("PS2", US, 135f, 190f, 14f, BLACK, 1f, mem = true, check = CaseCheck.SOURCED, note = "DVD keep case, black. Memory card holder in most; its place inside isn't confirmed. Greatest Hits red / Platinum silver not drawn."),
         keep("PS2", EU, 135f, 190f, 14f, 0xFF111A2E.toInt(), 1f, mem = true, check = CaseCheck.SOURCED, note = "PAL: black early on, then dark blue from about 2001 (Wikipedia). The dark blue is drawn. Platinum silver not drawn."),
         keep("PS2", JP, 135f, 190f, 14f, BLACK, 1f, check = CaseCheck.ESTIMATED, note = "Black assumed; Japanese differences not found."),
-        keep("PS3", ALL, 135f, 171.5f, 12f, 0xFFE8ECEF.toInt(), 0.25f, check = CaseCheck.SOURCED, note = "Blu-ray keep case, clear. Greatest Hits red / Platinum silver not drawn."),
-        keep("PS4", ALL, 135f, 171.5f, 12f, 0xFF1E5BB8.toInt(), 0.55f, check = CaseCheck.SOURCED, note = "Blu-ray keep case, see-through blue."),
+        // (Update 303: 14 mm thick, not the Blu-ray movie case's 12 — CoverStitch's case table, "measured from physical"
+        // retail cases, gives PS3 / PS4 / PS5 game cases a 14 mm spine against 12 mm for Blu-ray movies; PS4 cases are the
+        // PS3's thickness (NeoGAF, launch-day comparisons). Not a Sony figure; replacement makers sell 14–15 mm.)
+        keep("PS3", ALL, 135f, 171.5f, 14f, 0xFFE8ECEF.toInt(), 0.25f, check = CaseCheck.SOURCED, note = "Blu-ray-size game case, clear (Wikipedia: translucent white); 14 mm thick (third-party measurement of retail cases, not a Sony figure). Greatest Hits red not drawn (can't be told from the files)."),
+        keep("PS4", ALL, 135f, 171.5f, 14f, 0xFF1E5BB8.toInt(), 0.55f, check = CaseCheck.SOURCED, note = "Blu-ray-size game case, see-through blue; 14 mm thick like PS3 (third-party measurement of retail cases, not a Sony figure)."),
         keep("PS5", ALL, 135f, 171.5f, 12f, 0xFF1F5FC4.toInt(), 0.55f, check = CaseCheck.SOURCED, note = "Blu-ray keep case, see-through blue."),
         keep("PSP", ALL, 104f, 177f, 14f, CLEAR, 0.15f, CaseHeld.UMD, 64f, check = CaseCheck.SOURCED, note = "Clear UMD case, the UMD in the middle of the right side. Sources differ on size (177×104 or 168×99); the UMD's holder isn't confirmed."),
         keep("PSVita", ALL, 105f, 135f, 12f, 0xFF2A5DB0.toInt(), 0.6f, CaseHeld.CARD, 15f, v = 0.3f, shell = CaseShell.CARDCASE, check = CaseCheck.SOURCED, note = "Blue card case 135×105×12. How see-through, and where the card sits, aren't confirmed."),
