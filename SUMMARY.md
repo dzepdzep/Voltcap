@@ -4,6 +4,27 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 21 Oct 2026 (301): your own full case scans (back | spine | front) with adjustable cuts, uploads kept in Voltcap's storage — after release 0.6.27
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** Only the parts with no licensing question were done (see `ARTWORK_SOURCES.md` in the project for the research; nothing from The Cover Project or any new provider was added).
+
+- **Full case scan slot** (Artwork & details, under the box / back / spine slots): upload one picture with the back, spine and front side by side, or pick one of the game's scans. It stands for the case's front, back and spine (cut out of it), unless you picked one of those yourself — your own picks always win. Removing it (Clear) puts everything back as it was.
+- **Adjust the cuts…:** the scan in its own proportions with the spine's two edges as lines. Starts where the automatic cut (the existing `findSpine`) puts them; drag a line sideways (up / down still scrolls), or pick Left / Right edge and nudge with ◀ ▶ / ◀◀ ▶▶ (controller). Save, Automatic (back to the found cut), Cancel. Works for ScreenScraper's full scans too. Saved per scan on the device (`FullScanCuts`); the cut is part of the cut picture's address, so every view picks it up.
+- **Uploads are copied into Voltcap's own storage** (`files/user_art`, named by content), for every Upload… in Artwork & details (cover, background, logo, box, back, spine, disc, full scan). They used to be links to the file (broken when it moved). Nothing is uploaded anywhere. If copying fails, the old link is used.
+- Unchanged: case models, sizes, opening, the automatic cut, ScreenScraper and the other providers, all saved picks.
+- Testing only: `--es voltcap_test_artwork "Game"` opens that game's Artwork & details.
+
+Files touched:
+- `src_copy\data\FullScanCuts.kt` (new), `src_copy\data\UserArt.kt` (new), `src_copy\ui\FullScanCutEditor.kt` (new)
+- `src_copy\data\PhysicalOverrides.kt` (slot + the scan standing for front / back / spine), `src_copy\ui\BoxTexture.kt` (cut in the address, BoxCrop uses it), `src_copy\ui\ArtworkPickerDialog.kt`
+- `src_copy\MainActivity.kt` (one line), `src_copy\LauncherViewModel.kt` (one line: the console for the scan's proportions), `src_copy\ui\TestHooks.kt`, `src_copy\ui\LauncherScreen.kt` (test hook)
+- `project_copy\app\src\test\java\com\shelf\launcher\ui\FullScan301Test.kt` (new, 4 tests)
+
+Checked on the Thor: the slot shows on Legend of Dragoon with its ScreenScraper scan, the editor opens with the automatic lines on the spine; on TNA iMPACT! a test picture uploaded through Android's file picker (copied, shown as "Your pick"), its left cut moved by touch and ◀ ▶, saved ("yours"), the case's spine drawn from the new cut, then cleared again (TNA is as before; your own back pick for it untouched). Not checked: a real Xbox / PS3 scan, the front on a case look that shows scanned fronts ("Original cases" — yours shows covers), the Flip 2. Leftover from the test: one small picture copy in Voltcap's storage and its cut entry (unused).
+Not done (needs a decision or permission): The Cover Project, MobyGames, using TheGamesDB backs, Voltcap's own Xbox / PS3 templates, cleaning up copies nobody uses.
+
+---
+
 ## Update — 21 Oct 2026 (300): cartridge accuracy — ROM headers pick the Game Boy Color / DSi card, Japanese Gold & Silver, Disk System disks, white Nintendo Power carts, DS card thickness — after release 0.6.26
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** The full audit (system, variant, region, before, change, source, VERIFIED / ESTIMATED / CONFLICTING / UNCONFIRMED) is `docs\physical_media\CARTRIDGE_AUDIT_300.md` (also in the project as `CARTRIDGE_AUDIT_300.md`).

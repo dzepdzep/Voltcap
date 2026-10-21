@@ -16,7 +16,9 @@ object PhysicalOverrides {
         "Disc label" to "Disc / cartridge label (drawn media)",
         "Spine" to "Spine (Spines look, shelves)",
         "Box (3D)" to "3D box",
-        "Back of the box" to "Back of the box"
+        "Back of the box" to "Back of the box",
+        // Update 301: a whole case scan of yours — back | spine | front side by side, as one picture.
+        com.shelf.launcher.ui.BoxTexture.LABEL to "Full case scan (back | spine | front)"
     )
 
     private var prefs: android.content.SharedPreferences? = null
@@ -38,6 +40,9 @@ object PhysicalOverrides {
     /** (Update 238, #111) The pictures the details' scans list got from RetroAchievements (LauncherViewModel). */
     private val FROM_RA = setOf("Box (RetroAchievements)", "Title screen")
 
+    /** Update 301: a game's console from its key, for the case's proportions (null when it can't be told). */
+    @Volatile var platformOf: (String) -> String? = { null }
+
     /** This game's picks (label → address). */
     fun of(key: String): Map<String, String> = map[key] ?: emptyMap()
 
@@ -58,8 +63,18 @@ object PhysicalOverrides {
         // (Update 238, #111: a game whose RetroAchievements link was refused — a ROM hack matched to the base game by
         // its title — no longer shows that game's RA box and title screen saved with its scans.)
         val list = if (key in RaMatchStore.refusedKeys) scraped.filter { it.first !in FROM_RA } else scraped
-        val own = of(key)
+        var own = of(key)
         if (own.isEmpty()) return list
+        // Update 301: your own full case scan stands for the front, back and spine (cut out of it — automatically, or
+        // where you set the cuts) unless you picked one of those yourself; the scraped ones give way to it.
+        own[com.shelf.launcher.ui.BoxTexture.LABEL]?.let { scan ->
+            val cut = mapOf(
+                "Box" to com.shelf.launcher.ui.BoxPart.FRONT,
+                "Back of the box" to com.shelf.launcher.ui.BoxPart.BACK,
+                "Spine" to com.shelf.launcher.ui.BoxPart.SPINE
+            )
+            own = own + cut.filterKeys { it !in own }.mapValues { (_, part) -> com.shelf.launcher.ui.BoxTexture.model(scan, part, platformOf(key)) }
+        }
         val out = list.map { (label, url) -> label to (own[label] ?: url) }
         return out + own.filterKeys { k -> out.none { it.first == k } }.map { it.key to it.value }
     }

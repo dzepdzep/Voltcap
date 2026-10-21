@@ -40,6 +40,7 @@ import com.shelf.launcher.data.ArtOverride
 import com.shelf.launcher.data.ArtSlot
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.ui.theme.ShelfTheme
+import kotlinx.coroutines.launch
 
 /**
  * Replace any of a game's four artwork slots — with a different alternative
@@ -89,19 +90,25 @@ fun ArtworkPickerDialog(
     var pendingSlot by remember { mutableStateOf<ArtSlot?>(null) }
     var pendingPhysical by remember { mutableStateOf<String?>(null) }
     var searchText by remember { mutableStateOf(game.name) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    // Update 301: the full case scan whose cuts are being set (FullScanCutEditor).
+    var cutting by remember { mutableStateOf<String?>(null) }
 
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val slot = pendingSlot
         val phys = pendingPhysical
         pendingSlot = null; pendingPhysical = null
         if (uri != null && (slot != null || phys != null)) {
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
+            // Update 301: copied into Voltcap's storage on this device (UserArt) — it keeps working if the file moves. Only
+            // if the copy fails is the file linked as before.
+            scope.launch {
+                val local = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.shelf.launcher.data.UserArt.importLocal(context, uri) }
+                val address = local ?: run {
+                    runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+                    uri.toString()
+                }
+                if (slot != null) onSet(slot, address) else if (phys != null) onSetPhysical(phys, address)
             }
-            if (slot != null) onSet(slot, uri.toString()) else if (phys != null) onSetPhysical(phys, uri.toString())
         }
     }
     val pickCustom: (ArtSlot) -> Unit = { pendingSlot = it; pickImage.launch(arrayOf("image/*")) }
@@ -288,6 +295,20 @@ fun ArtworkPickerDialog(
                         Spacer(Modifier.width(8.dp))
                     }
                     Chip("Upload…", accent = false, onClick = { pendingPhysical = label; pickImage.launch(arrayOf("image/*")) })
+                }
+                // Update 301: a full case scan — where it's cut into back, spine and front can be set by hand.
+                if (label == BoxTexture.LABEL) {
+                    val scan = mine ?: inUse
+                    if (scan != null && cutting != scan) {
+                        Spacer(Modifier.height(8.dp))
+                        Chip(if (com.shelf.launcher.data.FullScanCuts.of(scan) != null) "Adjust the cuts… (yours)" else "Adjust the cuts…", accent = false) { cutting = scan }
+                    }
+                    if (scan != null && cutting == scan) {
+                        Spacer(Modifier.height(8.dp))
+                        // (Your own scan: its front / back / spine addresses are made again with the new cut.)
+                        FullScanCutEditor(scan, game.platform) { cutting = null; if (mine != null) onSetPhysical(label, mine) }
+                    }
+                    MutedNote("One picture with the back, spine and front side by side (as printed on the case's insert). Used for the case's front, back and spine unless you picked those yourself. Kept on this device only.")
                 }
                 Spacer(Modifier.height(10.dp))
                 if (pool.isEmpty()) EmptyState("No scans for this game yet (ScreenScraper, Accounts).")

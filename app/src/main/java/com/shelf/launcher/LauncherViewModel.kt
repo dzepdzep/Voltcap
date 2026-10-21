@@ -1008,6 +1008,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             // (Your own picks for a game's pictures go on top, as when a game is looked up; read here in case the
             // packs, which read them at start, haven't yet.)
             runCatching { com.shelf.launcher.data.PhysicalOverrides.init(getApplication()) }
+            // (Update 301: your full case scan is cut in its console's proportions.)
+            com.shelf.launcher.data.PhysicalOverrides.platformOf = { k -> _uiState.value.games.firstOrNull { it.stableKey == k }?.platform }
             val all = runCatching { physicalPrefs.all }.getOrNull().orEmpty()
             val loaded = HashMap<String, List<Pair<String, String>>>(all.size)
             for ((k, v) in all) {

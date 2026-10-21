@@ -31,6 +31,8 @@ internal object TestHooks {
      * library shell (this time only, nothing saved), held at that angle: for checking the cartridge bottoms.
      */
     val inspect = mutableStateOf<String?>(null)
+    /** Update 301: `--es voltcap_test_artwork "Game name"` — that game's Artwork & details (for checking the full-scan slot). */
+    val artwork = mutableStateOf<String?>(null)
     /**
      * Update 279: `--es voltcap_test_shell pack:<shape>` (your cartridge pack's shape, e.g. pack:gb) or `opt:<file>` (an
      * optical-system shell, e.g. opt:playstation) — every cartridge / disc game drawn on that custom shell, this session
@@ -54,6 +56,7 @@ internal object TestHooks {
         val mc = intent?.getStringExtra("voltcap_test_metacritic")
         val so = intent?.getBooleanExtra("voltcap_test_sort", false) == true
         val ins = intent?.getStringExtra("voltcap_test_inspect")
+        val aw = intent?.getStringExtra("voltcap_test_artwork")
         // Update 277: `--ez voltcap_test_pspfit true` — the fitted PSP shell made from <external files>/psp_in.webp into
         // psp_out.png there (to check DiscShellFixes without the pack).
         val pf = intent?.getBooleanExtra("voltcap_test_pspfit", false) == true
@@ -70,7 +73,7 @@ internal object TestHooks {
         val la = intent?.getStringExtra("voltcap_test_labelaudit")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
@@ -110,6 +113,7 @@ internal object TestHooks {
             }
                 .onFailure { android.util.Log.e("VoltcapTest", "pspfit: ${it.message}") } }.start()
         }
+        if (aw != null) artwork.value = aw
         if (ins != null) inspect.value = ins // (the shell ids have "_" — only the game's name part gets spaces, below)
         // 0.6.15: load a Metacritic scores file from a path (the Sort window's file picker, without the picker).
         if (mc != null) {

@@ -12,7 +12,9 @@ import coil.transform.Transformation
  * part on its right, the back the part on its left.
  *
  * A cut is asked for with a plain string model (so it goes everywhere a picture address goes, Coil's caches included):
- *     voltcrop:<spine|front|back>:<platform>:<the scan's address>
+ *     voltcrop:<spine|front|back>[@l,r]:<platform>:<the scan's address>
+ * (Update 301: "@l,r" — your own cut, the spine's edges as shares of the scan's width, FullScanCuts; without it the cut
+ * is found automatically. Part of the address, so a changed cut is a new picture everywhere.)
  * BoxCropInterceptor (installed on the app's image loader, ArtStorage) turns it back into the scan's address with a
  * BoxCrop transformation: the scan is downloaded and saved once and every cut is made from it.
  */
@@ -34,8 +36,19 @@ internal object BoxTexture {
     const val LABEL = "Box (full scan)"
 
     /** The model for [part] of the full scan at [url] (a game of [platform], for its case's proportions). */
-    fun model(url: String, part: BoxPart, platform: String?): String =
-        PREFIX + part.name.lowercase() + ":" + (platform ?: "") + ":" + url
+    fun model(url: String, part: BoxPart, platform: String?): String {
+        val cut = if (part == BoxPart.SPINE3D) null else com.shelf.launcher.data.FullScanCuts.of(url)
+        return PREFIX + part.name.lowercase() + (cut?.let { "@" + com.shelf.launcher.data.FullScanCuts.encode(it.first, it.second) } ?: "") +
+            ":" + (platform ?: "") + ":" + url
+    }
+
+    /** Update 301: your cut carried by a "voltcrop:" model ([model]), or null (automatic). */
+    fun cutOf(data: Any?): Pair<Float, Float>? {
+        val s = data as? String ?: return null
+        if (!s.startsWith(PREFIX)) return null
+        val head = s.removePrefix(PREFIX).substringBefore(':')
+        return com.shelf.launcher.data.FullScanCuts.parse(head.substringAfter('@', "").ifEmpty { null })
+    }
 
     /** (part, platform, address) of a cut model, or null for anything else. */
     fun parse(data: Any?): Triple<BoxPart, String?, String>? {
@@ -43,7 +56,7 @@ internal object BoxTexture {
         if (!s.startsWith(PREFIX)) return null
         val bits = s.removePrefix(PREFIX).split(':', limit = 3)
         if (bits.size != 3 || bits[2].isBlank()) return null
-        val part = when (bits[0]) { "spine" -> BoxPart.SPINE; "front" -> BoxPart.FRONT; "back" -> BoxPart.BACK; "spine3d" -> BoxPart.SPINE3D; else -> return null }
+        val part = when (bits[0].substringBefore('@')) { "spine" -> BoxPart.SPINE; "front" -> BoxPart.FRONT; "back" -> BoxPart.BACK; "spine3d" -> BoxPart.SPINE3D; else -> return null }
         return Triple(part, bits[1].ifBlank { null }, bits[2])
     }
 
@@ -272,15 +285,17 @@ internal object BoxTexture {
 }
 
 /** Cuts [part] out of a full box scan; fails (so the picture falls back) when the scan isn't laid out that way. */
-internal class BoxCrop(private val part: BoxPart, private val platform: String?) : Transformation {
-    override val cacheKey: String = "voltcapBoxCrop(${part.name},${platform ?: ""},4)"
+internal class BoxCrop(private val part: BoxPart, private val platform: String?, private val cut: Pair<Float, Float>? = null) : Transformation {
+    override val cacheKey: String = "voltcapBoxCrop(${part.name},${platform ?: ""},4" + (cut?.let { ",${it.first},${it.second}" } ?: "") + ")"
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
         val w = input.width
         val h = input.height
         val rect = if (part == BoxPart.SPINE3D) BoxTexture.findSpine3D(input) ?: throw IllegalStateException("No spine face on this 3D box")
         else {
-        val (l, r) = BoxTexture.findSpine(input, platform) ?: throw IllegalStateException("Not a back | spine | front box scan")
+        // (Update 301: your own cut first — FullScanCuts.)
+        val (l, r) = cut?.let { (a, b) -> ((a * w).toInt().coerceIn(0, w - 2)) to ((b * w).toInt().coerceIn((a * w).toInt().coerceIn(0, w - 2) + 1, w - 1)) }
+            ?: BoxTexture.findSpine(input, platform) ?: throw IllegalStateException("Not a back | spine | front box scan")
         // Update 204: the back and the front of a case are the same width, so each is cut no wider than the other — a
         // fold found a little off (Game Boy and Game Boy Color scans) showed a strip of the spine along the back's edge. And
         // a little more room from the fold than one pixel (half a percent of the scan), so no sliver of it shows.
@@ -318,7 +333,7 @@ internal class BoxCropInterceptor : Interceptor {
         val (part, platform, url) = BoxTexture.parse(chain.request.data) ?: return chain.proceed(chain.request)
         val request = chain.request.newBuilder()
             .data(url)
-            .transformations(listOf(BoxCrop(part, platform)) + chain.request.transformations)
+            .transformations(listOf(BoxCrop(part, platform, BoxTexture.cutOf(chain.request.data))) + chain.request.transformations)
             .build()
         return chain.withSize(Size(1600, 1600)).proceed(request)
     }

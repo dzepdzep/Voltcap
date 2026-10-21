@@ -129,6 +129,8 @@ class MainActivity : ComponentActivity() {
         com.shelf.launcher.data.Packs.init(this)
         // (Update 300: the ROM headers kept from before — which cartridge a Game Boy / DS game came on.)
         com.shelf.launcher.data.RomHeaders.init(this)
+        // (Update 301: where you set the cuts of your full case scans.)
+        com.shelf.launcher.data.FullScanCuts.init(this)
         // Debug builds only: logs (never crashes) any disk or network access on the main thread, the
         // usual cause of stutters. Filter Logcat by "StrictMode" to find them.
         if ((applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) {

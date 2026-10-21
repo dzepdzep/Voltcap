@@ -869,6 +869,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         GamePopup.game = g
         TestHooks.inspect.value = null
     }
+    // (Update 301, testing only: a game's Artwork & details — TestHooks.artwork.)
+    val testArtwork = TestHooks.artwork.value
+    LaunchedEffect(testArtwork, state.games.size) {
+        val v = testArtwork ?: return@LaunchedEffect
+        val g = state.games.firstOrNull { it.name.contains(v, ignoreCase = true) } ?: return@LaunchedEffect
+        editingArtworkForGame = g
+        TestHooks.artwork.value = null
+    }
     val testGame = TestHooks.game.value
     LaunchedEffect(testGame) {
         val q = testGame ?: return@LaunchedEffect
