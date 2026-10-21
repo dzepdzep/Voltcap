@@ -209,7 +209,7 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
  */
 private fun lookFit(l: HomeLayout): R1Fit = when {
     layoutOwnLook(l) != null -> R1Fit.Hide
-    l == HomeLayout.POCKET && Features.pqMedia.state.value == Features.PqMedia.COVERS -> R1Fit.Hide
+    l == HomeLayout.POCKET && Features.pqMedia.state.value != Features.PqMedia.LOOK -> R1Fit.Hide
     else -> R1Fit.Show
 }
 

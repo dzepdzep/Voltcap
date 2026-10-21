@@ -1817,7 +1817,7 @@ object Features {
     /** Update 202, Pocket Quest: the colour of the panel edges, the cursor and Play (Theme = the theme's own). */
     enum class PqAccent(val label: String) { THEME("Theme's own"), GOLD("Gold"), CYAN("Cyan"), ROSE("Rose"), EMERALD("Emerald"), SILVER("Silver"), VOLTCAP("Voltcap accent") }
     /** Update 202, Pocket Quest: the games drawn as your game look (cartridges, discs, cases…) or as plain cover art. */
-    enum class PqMedia(val label: String) { LOOK("Your game look"), COVERS("Cover art") }
+    enum class PqMedia(val label: String) { CARTS("Cartridges & discs"), LOOK("Your game look"), COVERS("Cover art") }
     /** Update 202, Pocket Quest: how tall the collection along the bottom is. */
     enum class PqSize(val label: String) { SMALL("Small"), MEDIUM("Medium"), LARGE("Large") }
     /** Update 202, Pocket Quest: how quickly things glide. */
@@ -1829,7 +1829,9 @@ object Features {
     /** Update 202, Pocket Quest: how far the scenery's layers shift as you move along the games, % (0 = none). */
     val pqParallax = IntPref("pq_parallax", 50, 0..100)
     val pqAccent = EnumPref("pq_accent", PqAccent.THEME, PqAccent.values())
-    val pqMedia = EnumPref("pq_media", PqMedia.LOOK, PqMedia.values())
+    // (Update 295, Toni: "use the cartridge look as default on Pocket Quest": Cartridges & discs, whatever look the other
+    // layouts use — a new key, so everyone gets it once; Your game look and Cover art stay as choices.)
+    val pqMedia = EnumPref("pq_media2", PqMedia.CARTS, PqMedia.values())
     val pqDescription = BoolPref("pq_description", true)
     val pqScreenshots = BoolPref("pq_screenshots", true)
     val pqSize = EnumPref("pq_size", PqSize.MEDIUM, PqSize.values())
@@ -1858,8 +1860,12 @@ object Features {
      * Starting a game): its case opens and the disc flies out, the cartridge is thrown into a slot below the screen,
      * the disc drops into a tray. Off: the usual launch animation (or none).
      */
-    enum class LaunchThrow(val label: String) { THROW("Throw it in"), OFF("Off") }
-    val launchThrow = EnumPref("launch_throw", LaunchThrow.THROW, LaunchThrow.values())
+    // (Update 295, Toni: "always play the physical media plug-in animation as the default and the other one as an
+    // alternative": one choice — Plug in the media (every look: a case opens, a cartridge / disc is plugged in, and
+    // with covers / capsules it's pulled out from behind the card first), Cover rises (the launch animation), or Off.
+    // A new key, so everyone gets the new default once.)
+    enum class LaunchThrow(val label: String) { THROW("Plug in the media"), COVER("Cover rises"), OFF("Off") }
+    val launchThrow = EnumPref("launch_throw2", LaunchThrow.THROW, LaunchThrow.values())
 
     // ---- Update 200: Lyrics stage (ui/LyricsStage.kt; the second screen's Music page, layout "Lyrics stage") ----
     // Update 200: the same switches and sliders, with the same defaults, as the user's Wallpaper Engine lyrics dashboard

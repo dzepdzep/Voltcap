@@ -1580,9 +1580,13 @@ fun swapLayoutLook(old: AppearanceSettings, new: AppearanceSettings): Appearance
     else base
 }
 
-/** The card artwork (the game look): one for every home layout since update 82; [layout] is kept for callers. */
-@Suppress("UNUSED_PARAMETER")
-fun AppearanceSettings.cardArtFor(layout: HomeLayout = homeLayout): CardArtType = cardArtType
+/**
+ * The card artwork (the game look): one for every home layout since update 82.
+ * Update 295 (Toni): Pocket Quest draws Cartridges & discs by default (Layout options › Games shown as), whatever the
+ * look — so its game window, Inspect and the start-up animation show the same cartridge / disc as its rows.
+ */
+fun AppearanceSettings.cardArtFor(layout: HomeLayout = homeLayout): CardArtType =
+    if (layout == HomeLayout.POCKET && Features.pqMedia.state.value == Features.PqMedia.CARTS) CardArtType.CARTRIDGE_DISC else cardArtType
 
 /**
  * The status bar is drawn: the setting, except on the Channel grid unless it is turned on there (update 104), and on

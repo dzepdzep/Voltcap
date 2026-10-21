@@ -355,9 +355,9 @@ internal object SettingsIndex {
         E("Slide speed between games (Quick Smooth Slow)", "Home", "Animations", null, null),
         E("Scrolling animation", "Home", "Animations", null, null),
         E("How far the game you're on stands out", "Home", "Animations", null, null),
+        // Update 151 / 295: one choice — plug in the media (default), the cover rises, or off.
+        E("Starting a game (plug in the media, cover rises)", "Home", "Animations", null, null),
         E("Launch animation", "Home", "Animations", null, null),
-        // Update 151: the case opens / the cartridge or disc is thrown in when a game starts.
-        E("Starting a game (throw it in)", "Home", "Animations", null, null),
         E("New game arrival", "Home", "Animations", null, null),
         E("Details window grows out of the game", "Home", "Animations", null, null),
         E("Startup intro", "Home", "Animations", null, null),

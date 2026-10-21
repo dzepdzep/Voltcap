@@ -818,22 +818,20 @@ private fun HomeContent(
             }
             Spacer(Modifier.height(8.dp))
             SettingsGrid {
-            item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.AutoAwesome,
-                    title = "Launch animation",
-                    subtitle = "When a game starts, its cover rises, light runs round its edge and it flares — then straight into the game (under a second).",
-                    checked = appearance.launchAnimation,
-                    onChange = { onAppearanceChange(appearance.copy(launchAnimation = it)) },
-                    modifier = m
-                )
-            }
             // Update 151: the case opens, the cartridge or disc is thrown in (LaunchThrow.kt).
+            // (Update 295: one choice — the plug-in by default, the cover rising as the alternative; the separate
+            // "Launch animation" switch is folded in here.)
             item { m ->
                 Box(m) { ShelfCard {
                     val F = com.shelf.launcher.data.Features
                     RowChoice("Starting a game", com.shelf.launcher.data.Features.LaunchThrow.values(), F.launchThrow.state.value, { it.label }) { F.launchThrow.value = it }
-                    MutedNote("With cases, cartridges and discs: the case opens and its disc flies out, the cartridge spins down into a slot under the screen, the disc drops into a tray. Under a second. Other looks keep the launch animation above.")
+                    MutedNote(
+                        when (F.launchThrow.state.value) {
+                            com.shelf.launcher.data.Features.LaunchThrow.THROW -> "The game's media goes in: a case opens and its disc or cartridge comes out, a cartridge slots in under the screen, a disc drops into a tray. With covers and capsules, its cartridge or disc is pulled out from behind the picture first. Where that can't play (a full-screen picture), the cover rises instead. Under a second."
+                            com.shelf.launcher.data.Features.LaunchThrow.COVER -> "The cover rises, light runs round its edge and it flares — then straight into the game (under a second)."
+                            else -> "Straight into the game."
+                        }
+                    )
                 } }
             }
             item { m ->

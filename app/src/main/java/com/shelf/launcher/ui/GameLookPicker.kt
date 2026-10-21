@@ -529,13 +529,13 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
     val ownLook = layoutOwnLook(appearance.homeLayout)
     // Update 204: where the layout draws its games its own way, the looks are left out (they were greyed out): only
     // what applies here is shown. They come back on a layout that draws your look.
-    val pqCovers = appearance.homeLayout == HomeLayout.POCKET &&
-        com.shelf.launcher.data.Features.pqMedia.state.value == com.shelf.launcher.data.Features.PqMedia.COVERS
+    val pqMedia = com.shelf.launcher.data.Features.pqMedia.state.value
+    val pqCovers = appearance.homeLayout == HomeLayout.POCKET && pqMedia != com.shelf.launcher.data.Features.PqMedia.LOOK
     if (ownLook != null || pqCovers) {
         Spacer(Modifier.height(4.dp))
         MutedNote(
             if (ownLook != null) "${appearance.homeLayout.label} draws its games as $ownLook, so the game looks don't apply here. They show again on a layout that draws your look."
-            else "Pocket Quest is set to show plain covers (Settings › Home › Layout options › Games shown as). Pick Your game look there to choose a look here."
+            else "Pocket Quest is set to show ${if (pqMedia == com.shelf.launcher.data.Features.PqMedia.COVERS) "plain covers" else "cartridges & discs"} (Settings › Home › Layout options › Games shown as). Pick Your game look there to choose a look here."
         )
         return
     }

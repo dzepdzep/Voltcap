@@ -83,8 +83,20 @@ internal class ThrowPlan(
     /** The case's width / height. */
     val caseAspect: Float,
     /** The piece's own width / height (to size it at the bottom of the screen). */
-    val pieceAspect: Float
-)
+    val pieceAspect: Float,
+    /**
+     * Update 295 (Toni: "if there isn't any media, pull it from behind the cover or wide capsule"): the card's own
+     * picture (cover, capsule, hero, screenshot) when the look shows no case, cartridge or disc — the game's cartridge /
+     * disc is first pulled out from behind it, then plugged in as usual. Null: the piece is the card itself.
+     */
+    val behind: Any? = null
+) {
+    /** The whole animation's length: the piece's, plus the pull from behind the card. */
+    val totalMs: Int get() = kind.totalMs + if (behind != null) PULL_MS else 0
+}
+
+/** Update 295: how long the cartridge / disc takes to come out from behind a cover or capsule. */
+internal const val PULL_MS = 320
 
 internal object LaunchThrow {
     /** The game going in now (LauncherScreen draws [LaunchThrowOverlay] while it's set, and starts the game after). */
@@ -150,7 +162,9 @@ internal object LaunchThrow {
                 val realScan = if (drawn) null else realScanOf(type, typed)
                 val pick = if (drawn) mediaFor(game.platform, false, asDisc, gameKey = game.stableKey) else null
                 if (pick == null && realScan == null) return null
-                val label = typed ?: cover ?: wide
+                // (Update 295: the drawn piece wears its real label scan when it has one, as on the home row.)
+                val labelScan = if (typed == null && pick != null) drawnLabelScan(physical, game.platform) else null
+                val label = typed ?: labelScan ?: cover ?: wide
                 if (label == null && realScan == null) return null
                 val round = if (pick != null) pick.shell.disc || pick.shell == MediaShell.UMD else mediaRound(game.platform)
                 // (Update 200: no 3D-model case or piece any more — the 3D cartridges looks are drawn shells, custom pieces.)
@@ -163,15 +177,54 @@ internal object LaunchThrow {
                     }
                     ThrowPlan(
                         game, kind, rect, GameOrigin.displayId, cover, null, null, pick, label,
-                        typed != null && label == typed, realScan, round, null, null, 1f,
+                        (typed != null && label == typed) || (labelScan != null && label == labelScan), realScan, round, null, null, 1f,
                         // Update 200: the game's own cartridge scan at its own shape (noted as the card loads it,
                         // RealMediaPicture) — it was taken as square, so it ended the wrong size over a slot not its width.
                         if (round) 1f else (pick?.aspect ?: CoverAspects.rawOf(realScan) ?: 1f).coerceIn(0.3f, 3f)
                     )
                 }
             }
-            else -> null
+            // Update 295 (Toni: "the physical media plug-in animation as the default"): a look with no case, cartridge or
+            // disc (covers, wide capsules, heroes, screenshots…) — the game's own cartridge / disc comes out from behind
+            // its picture, then is plugged in as usual. Only where it fits: a card that takes most of the screen (a hero
+            // background, a full-screen spotlight) keeps the cover-rise animation instead.
+            else -> pullPlan(game, state, type, rect, physical, cover, wide)
         }
+    }
+
+    private fun pullPlan(
+        game: Game, state: LauncherUiState, type: CardArtType, rect: Rect,
+        physical: List<Pair<String, String>>?, cover: String?, wide: String?
+    ): ThrowPlan? {
+        val dm = android.content.res.Resources.getSystem().displayMetrics
+        if (rect.width > dm.widthPixels * 0.55f || rect.height > dm.heightPixels * 0.8f) return null
+        val k = game.stableKey
+        val hero = state.artOverrides[k]?.hero ?: state.art[k]?.heroUrl
+        val behind: Any = when (type) {
+            CardArtType.CAPSULE -> wide ?: cover
+            CardArtType.HERO -> hero ?: wide ?: cover
+            CardArtType.SCREENSHOT -> state.screenshots[k]?.firstOrNull() ?: hero ?: wide ?: cover
+            else -> cover ?: wide
+        } ?: return null
+        val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, game.platform, k)
+        val drawn = drawnMediaWanted(CardArtType.CARTRIDGE_DISC, typed)
+        val realScan = if (drawn) null else realScanOf(CardArtType.CARTRIDGE_DISC, typed)
+        val pick = if (drawn) mediaFor(game.platform, false, false, gameKey = k) else null
+        if (pick == null && realScan == null) return null
+        val labelScan = if (typed == null && pick != null) drawnLabelScan(physical, game.platform) else null
+        val label = typed ?: labelScan ?: cover ?: wide
+        val round = if (pick != null) pick.shell.disc || pick.shell == MediaShell.UMD else mediaRound(game.platform)
+        val kind = when {
+            pick != null && isCustomPiece(pick.platform) -> ThrowKind.CART
+            round -> ThrowKind.DISC
+            else -> ThrowKind.CART
+        }
+        return ThrowPlan(
+            game, kind, rect, GameOrigin.displayId, cover, null, null, pick, label,
+            (typed != null && label == typed) || (labelScan != null && label == labelScan), realScan, round, null, null, 1f,
+            if (round) 1f else (pick?.aspect ?: CoverAspects.rawOf(realScan) ?: 1f).coerceIn(0.3f, 3f),
+            behind = behind
+        )
     }
 }
 
@@ -231,7 +284,7 @@ internal fun LaunchThrowOverlay(plan: ThrowPlan, onDone: () -> Unit) {
     val run = sameScreen && animsOn
     val clock = remember(plan) { Animatable(0f) }
     LaunchedEffect(plan) {
-        if (run) clock.animateTo(plan.kind.totalMs.toFloat(), tween(plan.kind.totalMs, easing = LinearEasing))
+        if (run) clock.animateTo(plan.totalMs.toFloat(), tween(plan.totalMs, easing = LinearEasing))
         done()
     }
     if (run) ThrowScene(plan, clock)
@@ -260,7 +313,7 @@ private fun ThrowScene(p: ThrowPlan, clock: Animatable<Float, AnimationVector1D>
     val accent = com.shelf.launcher.ui.theme.ShelfTheme.accent
     // Where this overlay sits in the window (the game's place is in window px).
     val win = remember { FloatArray(2) }
-    val total = p.kind.totalMs.toFloat()
+    val total = p.totalMs.toFloat()
     BoxWithConstraints(
         Modifier.fillMaxSize().onGloballyPositioned { c -> val o = c.positionInWindow(); win[0] = o.x; win[1] = o.y }
     ) {
@@ -279,7 +332,11 @@ private fun ThrowScene(p: ThrowPlan, clock: Animatable<Float, AnimationVector1D>
             CaseScene(p, clock, sw, sh, px, win, accent)
         } else {
             val disc = p.kind == ThrowKind.DISC
-            val pad = if (p.round) 6f * px else 10f * px
+            // (Update 295: pulled from behind a cover / capsule: everything after the pull, [o] ms later; the piece a
+            // little smaller than the card it comes out from behind.)
+            val pulled = p.behind != null
+            val o = if (pulled) PULL_MS.toFloat() else 0f
+            val pad = if (pulled) minOf(w, h) * 0.14f else if (p.round) 6f * px else 10f * px
             val innerW = (w - 2 * pad).coerceAtLeast(1f)
             val innerH = (h - 2 * pad).coerceAtLeast(1f)
             // The piece's own height on the card, and the height it ends up at the bottom of the screen.
@@ -290,16 +347,17 @@ private fun ThrowScene(p: ThrowPlan, clock: Animatable<Float, AnimationVector1D>
             val slotH = (if (disc) 16f else 14f) * px
             // Update 182: plugged in, not thrown — it lifts off the shelf, glides upright to just above the slot / tray,
             // rests a moment, then is pushed in (a cartridge about half way, a disc all the way) with a soft click.
-            val liftEnd = 150f
-            val flyEnd = 500f
-            val pushAt = 560f
-            val inEnd = if (disc) 730f else 690f
+            val liftEnd = 150f + o
+            val flyEnd = 500f + o
+            val pushAt = 560f + o
+            val inEnd = (if (disc) 730f else 690f) + o
             Box(
                 Modifier.size(wDp, hDp).graphicsLayer {
                     val t = clock.value
                     val cx0 = p.from.left - win[0] + w / 2f
-                    val cy0 = p.from.top - win[1] + h / 2f
-                    val lift = eOut3(ph(t, 0f, liftEnd))
+                    // (Update 295: out from behind the card first — up until most of it stands above the card's top.)
+                    val cy0 = p.from.top - win[1] + h / 2f - (if (pulled) h * 0.62f * eOut3(ph(t, 0f, o)) else 0f)
+                    val lift = eOut3(ph(t, o, liftEnd))
                     val u = eInOut2(ph(t, liftEnd, flyEnd))
                     val v = ph(t, pushAt, inEnd)
                     // The piece's height at the end, the slot's top edge, just above it, and in.
@@ -323,6 +381,23 @@ private fun ThrowScene(p: ThrowPlan, clock: Animatable<Float, AnimationVector1D>
             ) {
                 ThrownPiece(p, p.pick, p.label, p.labelIsScan, Modifier.fillMaxSize().padding(with(density) { pad.toDp() }))
             }
+            // Update 295: the card it came from behind, over it, staying in its place and fading once the piece is out.
+            if (p.behind != null) {
+                val corner = with(density) { 6.dp.toPx() }
+                Box(
+                    Modifier.size(wDp, hDp).graphicsLayer {
+                        translationX = p.from.left - win[0]
+                        translationY = p.from.top - win[1]
+                        alpha = 1f - ph(clock.value, o + 60f, o + 260f)
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(corner)
+                        clip = true
+                    }
+                ) {
+                    coil.compose.AsyncImage(
+                        p.behind, null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
             // The slot (cartridge) or tray (disc) at the bottom edge, over the piece so it goes in.
             val dark = remember { Brush.verticalGradient(listOf(Color(0xFF1C1E27), Color(0xFF07080B))) }
             val glowH = 30f * px
@@ -331,7 +406,7 @@ private fun ThrowScene(p: ThrowPlan, clock: Animatable<Float, AnimationVector1D>
             }
             Canvas(Modifier.fillMaxSize()) {
                 val t = clock.value
-                val appear = eOut3(ph(t, 160f, 380f))
+                val appear = eOut3(ph(t, 160f + o, 380f + o))
                 if (appear > 0f) {
                     val bump = if (disc) 0f else 1.5f * px * sin(PI.toFloat() * ph(t, inEnd, inEnd + 80f))
                     val flash = if (t >= inEnd) 1f - ph(t, inEnd, inEnd + 200f) else 0f

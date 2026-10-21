@@ -400,10 +400,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         sounds?.play(UiSound.LAUNCH)
         // A game that's still open just comes back to the front: no launch animation for that.
         // Update 151: a case, cartridge or disc is thrown in instead (LaunchThrow.kt, Home › Animations › Starting a game).
-        val thrown = if (!alreadyOpen && LaunchThrow.plan == null && launchingGame == null)
+        // (Update 295: one choice, Home › Animations › Starting a game — Plug in the media by default, falling back to the
+        // cover rising where the media can't play (no place on screen, a full-screen card); Cover rises; or Off.)
+        val style = com.shelf.launcher.data.Features.launchThrow.value
+        val thrown = if (style == com.shelf.launcher.data.Features.LaunchThrow.THROW && !alreadyOpen && LaunchThrow.plan == null && launchingGame == null)
             LaunchThrow.planFor(game, state, state.visibleGames.getOrNull(state.focusedIndex)?.stableKey) else null
         if (thrown != null) LaunchThrow.plan = thrown
-        else if (state.appearance.launchAnimation && !alreadyOpen) launchingGame = game else launchAfterIntro(game, alreadyOpen)
+        else if (style != com.shelf.launcher.data.Features.LaunchThrow.OFF && !alreadyOpen) launchingGame = game else launchAfterIntro(game, alreadyOpen)
     }
     val detailsScroll = rememberScrollState()
     val detailsScope = rememberCoroutineScope()
