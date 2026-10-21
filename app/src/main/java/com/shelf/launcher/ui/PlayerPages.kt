@@ -135,8 +135,11 @@ internal fun CompactPlaylists(
             playlists == null -> Text("Loading playlists…", color = ink.copy(alpha = 0.8f), fontSize = textSize, modifier = Modifier.padding(horizontal = 4.dp))
             playlists!!.isEmpty() -> Text("No playlists", color = ink.copy(alpha = 0.8f), fontSize = textSize, modifier = Modifier.padding(horizontal = 4.dp))
             // A plain scrolling Row (not LazyRow): safe inside any parent measurement.
-            else -> Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                playlists!!.distinctBy { it.id ?: it.uri ?: it.name }.take(40).forEach { p ->
+            // (Update 294: whole playlist chips only, "+N ›" for the rest — WholeChipRow; it follows the D-pad's focus.)
+            else -> {
+                val list = playlists!!.distinctBy { it.id ?: it.uri ?: it.name }.take(40)
+                WholeChipRow(list.size, -1, Modifier.fillMaxWidth(), spacing = 4.dp, hintColor = ink.copy(alpha = 0.8f)) { pi ->
+                    val p = list[pi]
                     Row(
                         Modifier
                             .height(height - 4.dp)

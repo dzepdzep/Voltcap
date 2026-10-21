@@ -101,7 +101,7 @@ internal fun VoltSecondHeader(
             } else VoltTabs(
                 labels = pages.map { it.label },
                 selected = pages.indexOf(page),
-                modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())
+                modifier = Modifier.weight(1f)
             ) { i -> pages.getOrNull(i)?.let(onPage) }
             Text(time, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
@@ -194,10 +194,11 @@ internal fun VoltAchievementBoard(
                 }
             } else {
                 Column(Modifier.fillMaxSize()) {
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        BoardFilter.values().forEach { f ->
-                            Chip("${f.label} ${f.pick(list).size}", accent = f == filter) { filter = f; pickedId = null }
-                        }
+                    // (Update 294: whole chips only — WholeChipRow.)
+                    val boardFilters = BoardFilter.values()
+                    WholeChipRow(boardFilters.size, boardFilters.indexOf(filter), Modifier.fillMaxWidth(), spacing = 6.dp, hintColor = ShelfTheme.textMuted) { bi ->
+                        val f = boardFilters[bi]
+                        Chip("${f.label} ${f.pick(list).size}", accent = f == filter) { filter = f; pickedId = null }
                     }
                     Spacer(Modifier.height(8.dp))
                     // Narrow screens: the whole height is the list; tap one to open its details right under it

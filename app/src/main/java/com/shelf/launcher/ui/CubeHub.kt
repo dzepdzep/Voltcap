@@ -523,26 +523,22 @@ private fun HubHint(button: String, label: String, onTap: () -> Unit) {
 @Composable
 private fun HubTabs(c: StyleCtx, tint: Color, on: Boolean) {
     val live by rememberUpdatedState(c)
-    val state = rememberLazyListState()
     val stop = c.stop
-    LaunchedEffect(stop) { if (stop >= 0) runCatching { state.animateScrollToItem((stop - 1).coerceAtLeast(0)) } }
-    LazyRow(
-        state = state, modifier = Modifier.fillMaxWidth().height(30.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        itemsIndexed(c.stops, key = { i, st -> "${st.special?.name ?: st.platform ?: "ALL"}#$i" }) { i, st ->
-            val here = i == stop
-            val shape = RoundedCornerShape(8.dp)
-            Box(
-                Modifier.height(28.dp).clip(shape)
-                    .background(if (here) tint.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.08f))
-                    .border(if (here && on) 1.5.dp else 1.dp, if (here && on) Color.White else Color.White.copy(alpha = if (here) 0.4f else 0.14f), shape)
-                    .pointerInput(i) { detectTapGestures { val d = pocketStepsTo(live, i); if (d != 0) live.actions.category(d); cubeSound(UiSound.MOVE) } }
-                    .padding(horizontal = 11.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(st.label, color = Color.White.copy(alpha = if (here) 1f else 0.78f), fontSize = 12.sp, fontWeight = if (here) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
-            }
+    // (Update 294, Toni: the last tab ("App") was cut off at the right edge: whole tabs only, "+N ›" for the rest —
+    // WholeChipRow.)
+    WholeChipRow(count = c.stops.size, focused = stop, modifier = Modifier.fillMaxWidth().height(30.dp), spacing = 6.dp) { i ->
+        val st = c.stops[i]
+        val here = i == stop
+        val shape = RoundedCornerShape(8.dp)
+        Box(
+            Modifier.height(28.dp).clip(shape)
+                .background(if (here) tint.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.08f))
+                .border(if (here && on) 1.5.dp else 1.dp, if (here && on) Color.White else Color.White.copy(alpha = if (here) 0.4f else 0.14f), shape)
+                .pointerInput(i) { detectTapGestures { val d = pocketStepsTo(live, i); if (d != 0) live.actions.category(d); cubeSound(UiSound.MOVE) } }
+                .padding(horizontal = 11.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(st.label, color = Color.White.copy(alpha = if (here) 1f else 0.78f), fontSize = 12.sp, fontWeight = if (here) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
         }
     }
 }
@@ -600,6 +596,7 @@ private fun HubCoverFlow(c: StyleCtx, tint: Color, on: Boolean, modifier: Modifi
                             rotationY = -d.coerceIn(-1f, 1f) * 38f
                             cameraDistance = 14f * density.density
                             alpha = (1f - (ad - 2.6f).coerceIn(0f, 1f)) * (1f - 0.18f * near)
+                            flatTextFor3d() // (Update 294: drawn flat, then turned — the Thor's frozen Hub, Android 13's text cache)
                         }
                 ) {
                     val here = v == vf
@@ -925,7 +922,8 @@ private fun DrawScope.hubFace(tools: CubeTools, art: HubFaceArt?, light: Float, 
             val (ts, lines) = fitLabel(tools, art.label, if (small) 62f else 50f, FACE * 0.86f, 1)
             paint.textSize = ts
             var y = FACE * (if (small) 0.80f else 0.66f)
-            for (l in lines) { nc.drawText(l, FACE / 2f, y, paint); y += ts * 1.15f }
+            // (Update 294: drawn flat once and put on the face as a picture — StyleCube's flatLabel.)
+            for (l in lines) { flatLabel(tools, nc, l, FACE / 2f, y, ts, if (here) 255 else 225, 8f, 2f, 170, 1f); y += ts * 1.15f }
         }
         nc.restore()
     }

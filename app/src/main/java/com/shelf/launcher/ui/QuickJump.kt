@@ -44,9 +44,7 @@ fun QuickJumpBar(
     modifier: Modifier = Modifier
 ) {
     com.shelf.launcher.Breadcrumbs.mark("QuickJumpBar")
-    val listState = rememberLazyListState()
     val index = QUICK_JUMP_LETTERS.indexOf(selected).coerceAtLeast(0)
-    LaunchedEffect(index) { listState.animateScrollToItem((index - 4).coerceAtLeast(0)) }
 
     Column(
         modifier
@@ -61,13 +59,12 @@ fun QuickJumpBar(
             fontSize = 11.sp
         )
         Spacer(Modifier.height(10.dp))
-        LazyRow(
-            state = listState,
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(QUICK_JUMP_LETTERS) { letter ->
+        // (Update 294: whole letters only, "+N ›" for the rest, the chosen one always whole — WholeChipRow.)
+        WholeChipRow(
+            QUICK_JUMP_LETTERS.size, index, Modifier.fillMaxWidth(), spacing = 4.dp,
+            startPadding = 16.dp, endPadding = 16.dp, hintColor = ShelfTheme.textMuted
+        ) { li ->
+                val letter = QUICK_JUMP_LETTERS[li]
                 val isSelected = letter == selected
                 val enabled = letter in available
                 Box(
@@ -89,7 +86,6 @@ fun QuickJumpBar(
                         fontWeight = FontWeight.Bold
                     )
                 }
-            }
         }
     }
 }

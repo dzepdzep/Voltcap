@@ -37,6 +37,12 @@ internal object TestHooks {
      * only, nothing saved; `off` ends it. For the custom-shell walk. Also logs which packs are on the device.
      */
     val shell = mutableStateOf<String?>(null)
+    /**
+     * Update 294: `--es voltcap_test_pose "60"` — every solid cartridge on the home screen held at that turn (degrees; the
+     * view's own turn and the sway left out), `"60|old"` the same drawn the old way (no smear between the side slices),
+     * for before / after pictures of the sides; `off` ends it. This session only, nothing saved.
+     */
+    val pose = mutableStateOf<Pair<Float, Boolean>?>(null)
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
         val want = intent?.getStringExtra("voltcap_test_layout")
@@ -52,6 +58,7 @@ internal object TestHooks {
         // psp_out.png there (to check DiscShellFixes without the pack).
         val pf = intent?.getBooleanExtra("voltcap_test_pspfit", false) == true
         val sh = intent?.getStringExtra("voltcap_test_shell")
+        val po = intent?.getStringExtra("voltcap_test_pose")
         // Update 280: `--es voltcap_test_pref "key=value"` — one setting (saved, as Settings would; logged with its old value).
         val pr = intent?.getStringExtra("voltcap_test_pref")
         // Update 280: `--es voltcap_test_snapshot save|restore` — every Features setting kept in <external files>/
@@ -63,7 +70,7 @@ internal object TestHooks {
         val la = intent?.getStringExtra("voltcap_test_labelaudit")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf && sh == null && pr == null && snap == null && la == null) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
@@ -87,6 +94,10 @@ internal object TestHooks {
             val k = pr.substringBefore('='); val v = pr.substringAfter('=')
             android.util.Log.e("VoltcapTest", "pref $k was ${com.shelf.launcher.data.Features.snapshot()[k]} -> $v")
             com.shelf.launcher.data.Features.restore(mapOf(k to v))
+        }
+        if (po != null) {
+            pose.value = if (po == "off") null else po.substringBefore('|').toFloatOrNull()?.let { it to po.endsWith("|old") }
+            android.util.Log.e("VoltcapTest", "pose=${pose.value}")
         }
         if (sh != null) {
             shell.value = sh.takeIf { it != "off" }

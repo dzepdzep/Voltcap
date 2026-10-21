@@ -514,8 +514,9 @@ internal fun VoltSwitch(checked: Boolean, modifier: Modifier = Modifier) {
 /** Underlined tabs (the second screen, pages with views): the selected one in the accent with a bar under it. */
 @Composable
 internal fun VoltTabs(labels: List<String>, selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
-    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        labels.forEachIndexed { i, label ->
+    // (Update 294: whole tabs only, "+N ›" for the rest, the one you're on always whole — WholeChipRow.)
+    WholeChipRow(labels.size, selected, modifier, spacing = 0.dp, hintColor = ShelfTheme.textMuted) { i ->
+            val label = labels[i]
             val on = i == selected
             Column(
                 Modifier
@@ -538,7 +539,6 @@ internal fun VoltTabs(labels: List<String>, selected: Int, modifier: Modifier = 
                         .background(if (on) ShelfTheme.accent else Color.Transparent)
                 )
             }
-        }
     }
 }
 

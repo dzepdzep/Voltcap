@@ -1330,11 +1330,9 @@ private fun InlineAchievements(
     val shown = inlineAchievementsShown(achievements, filter)
     Spacer(Modifier.height(8.dp))
     // Five pills now: scrolls sideways on narrow screens instead of squashing them.
-    Row(
-        Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        INLINE_FILTERS.forEachIndexed { i, label ->
+    // (Update 294: whole pills only, "+N ›" for the rest — WholeChipRow.)
+    WholeChipRow(INLINE_FILTERS.size, filter, Modifier.fillMaxWidth(), spacing = 6.dp) { i ->
+            val label = INLINE_FILTERS[i]
             val on = i == filter
             Text(
                 label,
@@ -1346,7 +1344,6 @@ private fun InlineAchievements(
                     .tapToRun { onFilter(i) }
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             )
-        }
     }
     Spacer(Modifier.height(4.dp))
     if (shown.isEmpty()) Muted("Nothing here.")

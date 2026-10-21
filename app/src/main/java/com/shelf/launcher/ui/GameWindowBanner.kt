@@ -89,6 +89,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -468,14 +469,17 @@ internal fun BannerGameWindow(
                     BannerHint(look, "L1") { sounds?.play(UiSound.MOVE); stepTab(-1) }
                     Spacer(Modifier.width(10.dp))
                     Box(Modifier.weight(1f)) {
-                        Box(Modifier.horizontalScroll(rememberScrollState())) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                tabs.forEach { t ->
+                        // (Update 294: whole tabs only, "+N ›" for the rest — WholeChipRow; the marker is placed from
+                        // each tab's place in the row, read against the row's own.)
+                        val rowX = remember { floatArrayOf(0f) }
+                        Box(Modifier.fillMaxWidth().onGloballyPositioned { rowX[0] = it.positionInRoot().x }) {
+                            WholeChipRow(tabs.size, tabs.indexOf(tab), Modifier.fillMaxWidth(), spacing = 4.dp, hintColor = look.muted) { ti ->
+                                    val t = tabs[ti]
                                     BannerTabChip(
                                         look, t.label, selected = t == tab,
                                         modifier = Modifier
                                             .onGloballyPositioned { c ->
-                                                val v = c.positionInParent().x to c.size.width.toFloat()
+                                                val v = (c.positionInRoot().x - rowX[0]) to c.size.width.toFloat()
                                                 if (tabPos[t] != v) tabPos[t] = v
                                             }
                                             .focusRequester(tabFocus.getValue(t))
@@ -484,7 +488,6 @@ internal fun BannerGameWindow(
                                             .onFocusChanged { if (it.isFocused) setTab(t) },
                                         onClick = { setTab(t) }
                                     )
-                                }
                             }
                             // The marker under the shown tab glides to the next one (drawn only: no new layout).
                             val target = tabPos[tab]
@@ -493,7 +496,7 @@ internal fun BannerGameWindow(
                             val markColor = look.glow
                             Spacer(
                                 Modifier.matchParentSize().drawBehind {
-                                    if (mw > 0f) {
+                                    if (mw > 0f && mx >= -1f && mx + mw <= size.width + 1f) {
                                         val h = 3.dp.toPx()
                                         drawRoundRect(
                                             markColor, topLeft = Offset(mx + mw * 0.18f, size.height - h),

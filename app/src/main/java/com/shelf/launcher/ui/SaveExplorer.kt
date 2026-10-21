@@ -772,6 +772,7 @@ private fun SaveSlot(
                         val s = 1f + 0.14f * lift
                         scaleX = s; scaleY = s
                         alpha = if (hidden) 0.12f else 1f
+                        flatTextFor3d() // (Update 294: drawn flat, then turned — Android 13's text cache)
                     },
                 contentAlignment = Alignment.Center
             ) {

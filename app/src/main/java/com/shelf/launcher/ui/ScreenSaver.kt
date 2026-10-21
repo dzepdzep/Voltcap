@@ -350,7 +350,21 @@ private fun SlideshowScene(given: List<ScreensaverSlide>, dx: Dp, dy: Dp, sharpe
         }
     }
 
+    // Update 294 (Toni: "screensavers sometimes don't display anything" — seen on the Thor: only the clock and the
+    // console's name, no picture, no game name): a slide whose picture never arrives (a request that hangs, a file that
+    // isn't there yet) left the screen black until the next slide, and a logo that failed left no name at all.
+    //  - a dim backdrop in the theme's colour is always under the picture, so the screen is never just black;
+    //  - a picture that hasn't loaded within 8 s counts as failed (on to the next one, as an error does);
+    //  - the game's name shows when its logo can't be loaded.
+    var loaded by remember(slide) { mutableStateOf(false) }
+    var logoFailed by remember(slide) { mutableStateOf(false) }
+    LaunchedEffect(slide) {
+        if (slide == null) return@LaunchedEffect
+        delay(8_000)
+        if (!loaded) failures++
+    }
     Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(ShelfTheme.accent.copy(alpha = 0.14f), Color.Black))))
         if (slide != null) {
             // Weaker devices: no cross-fade (two full-screen pictures decoded and drawn at once) — the
             // next one fades up from black instead.
@@ -370,7 +384,7 @@ private fun SlideshowScene(given: List<ScreensaverSlide>, dx: Dp, dy: Dp, sharpe
                     // A picture that can't be loaded (gone from the server, no network): on to the next one
                     // after a short pause instead of a black screen (or a race through every slide).
                     onError = { failures++ },
-                    onSuccess = { failures = 0 },
+                    onSuccess = { failures = 0; if (current == slide) loaded = true },
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
@@ -442,12 +456,13 @@ private fun SlideshowScene(given: List<ScreensaverSlide>, dx: Dp, dy: Dp, sharpe
                     .offset(dx, dy)
                     .padding(36.dp)
             ) {
-                if (slide.logoUrl != null) {
+                if (slide.logoUrl != null && !logoFailed) {
                     AsyncImage(
                         model = slide.logoUrl,
                         contentDescription = slide.title,
                         contentScale = ContentScale.Fit,
                         alignment = Alignment.CenterStart,
+                        onError = { logoFailed = true },
                         modifier = Modifier
                             .heightIn(max = 64.dp)
                             .widthIn(max = 260.dp)

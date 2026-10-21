@@ -858,6 +858,44 @@ internal class CubeTools {
     }
     /** Labels already fitted to a face: text size and lines. */
     val lines = HashMap<String, Pair<Float, List<String>>>()
+    /** Update 294: each label line drawn flat once, as a picture (flatLabel). */
+    val labels = HashMap<String, FlatLabel>()
+    val bmpPaint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
+}
+
+internal class FlatLabel(val bmp: android.graphics.Bitmap, val pad: Float, val ascent: Float)
+
+/**
+ * Update 294 (the Thor stopped answering on the Hub — its render thread spent minutes in Android 13's text cache,
+ * GrTextBlobRedrawCoordinator): a cube face's name was drawn as text under the face's perspective, which changes every
+ * frame while the cube sways, and every new angle added another cached copy of the text until each frame took seconds.
+ * The line is now drawn flat once into a small picture ([text] in white at [color]'s alpha, with its shadow), and that
+ * picture is what's put on the face — centred on [cx], its baseline at [baseline], faded by [alpha].
+ */
+internal fun flatLabel(
+    tools: CubeTools, nc: android.graphics.Canvas, text: String, cx: Float, baseline: Float, size: Float,
+    colorAlpha: Int, shadowR: Float, shadowDy: Float, shadowAlpha: Int, alpha: Float
+) {
+    val key = "$text|$size|$colorAlpha|$shadowR|$shadowDy|$shadowAlpha"
+    val fl = tools.labels[key] ?: run {
+        if (tools.labels.size > 96) tools.labels.clear()
+        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = tools.text.typeface
+            textAlign = android.graphics.Paint.Align.CENTER
+            textSize = size
+            color = android.graphics.Color.argb(colorAlpha.coerceIn(0, 255), 255, 255, 255)
+            setShadowLayer(shadowR, 0f, shadowDy, android.graphics.Color.argb(shadowAlpha.coerceIn(0, 255), 0, 0, 0))
+        }
+        val pad = shadowR * 2f + kotlin.math.abs(shadowDy) + 2f
+        val fm = p.fontMetrics
+        val w = (p.measureText(text) + 2f * pad).toInt().coerceAtLeast(1)
+        val h = (fm.descent - fm.ascent + 2f * pad).toInt().coerceAtLeast(1)
+        val b = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(b).drawText(text, w / 2f, pad - fm.ascent, p)
+        FlatLabel(b, pad, fm.ascent).also { tools.labels[key] = it }
+    }
+    tools.bmpPaint.alpha = (alpha * 255f).roundToInt().coerceIn(0, 255)
+    nc.drawBitmap(fl.bmp, cx - fl.bmp.width / 2f, baseline + fl.ascent - fl.pad, tools.bmpPaint)
 }
 
 internal fun DrawScope.cubeShadow(cx: Float, y: Float, half: Float, alpha: Float) {
@@ -1009,7 +1047,7 @@ private fun DrawScope.faceContent(tools: CubeTools, nc: android.graphics.Canvas,
         paint.textSize = ts
         val lh = ts * 1.15f
         var y = FACE / 2f - lh * (lines.size - 1) / 2f + ts * 0.35f
-        for (l in lines) { nc.drawText(l, FACE / 2f, y, paint); y += lh }
+        for (l in lines) { flatLabel(tools, nc, l, FACE / 2f, y, ts, 242, 5f, 2f, 140, alpha); y += lh }
         return
     }
     val boxW = FACE * 0.56f
@@ -1033,7 +1071,7 @@ private fun DrawScope.faceContent(tools: CubeTools, nc: android.graphics.Canvas,
     val (ts, lines) = fitLabel(tools, art.label, 40f, FACE * 0.84f, 2)
     paint.textSize = ts
     var y = FACE * 0.72f
-    for (l in lines) { nc.drawText(l, FACE / 2f, y, paint); y += ts * 1.15f }
+    for (l in lines) { flatLabel(tools, nc, l, FACE / 2f, y, ts, 242, 5f, 2f, 140, alpha); y += ts * 1.15f }
 }
 
 /** [label] in at most [maxLines] lines [maxW] wide: the biggest of a few sizes that fits, else the smallest with "…". */

@@ -517,14 +517,10 @@ internal fun PlatformFilterRow(
     edge: androidx.compose.ui.unit.Dp? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("PlatformFilterRow")
-    val listState = rememberLazyListState()
-    // Every pill needs its own key (two with one key crash the row): no category listed twice.
+    // Every pill needs its own key: no category listed twice.
     val orderU = remember(order) { order.distinct() }
     val platformsU = remember(platforms) { platforms.distinct() }
     val collectionsU = remember(collections, platformsU) { collections.distinct().filter { it !in platformsU } }
-
-    // Keep the highlighted category in view: when L2/R2 moves past the
-    // visible pills, the row slides so the selected one sits in the middle.
     val itemKeys = remember(orderU, platformsU, collectionsU) {
         buildList {
             orderU.forEach { key ->
@@ -542,84 +538,42 @@ internal fun PlatformFilterRow(
         selected != null -> "p:$selected"
         else -> com.shelf.launcher.data.CategorySettings.ALL
     }
-    LaunchedEffect(selectedKey, itemKeys, align) {
-        val index = itemKeys.indexOf(selectedKey)
-        if (index < 0) return@LaunchedEffect
-        // Bring it on screen first if it's far away, then slide the selected pill onto the game
-        // name's line: its left edge where the name starts (row at the left end), centred (game in
-        // the middle) or its right edge at the end. It used to always slide to the middle, so with the
-        // game at the left the selected category sat far from the name. Pills at either end of the
-        // list stop at the edge instead of sliding out of view.
-        if (listState.layoutInfo.visibleItemsInfo.none { it.index == index }) {
-            listState.scrollToItem(index)
-        }
-        val info = listState.layoutInfo
-        val item = info.visibleItemsInfo.firstOrNull { it.index == index } ?: return@LaunchedEffect
-        val delta = when (align) {
-            Alignment.CenterHorizontally -> {
-                val viewportCenter = (info.viewportStartOffset + info.viewportEndOffset) / 2f
-                item.offset + item.size / 2f - viewportCenter
-            }
-            Alignment.End -> (item.offset + item.size).toFloat() - (info.viewportEndOffset - info.afterContentPadding)
-            // Item offsets are measured from the end of the start padding: 0 = on the name's edge.
-            else -> item.offset.toFloat()
-        }
-        listState.animateScrollBy(delta)
-    }
-
+    // (Update 294, Toni: "never show a partly hidden chip": whole pills only, "+N ›" for the rest, the selected one always
+    // whole — WholeChipRow. It used to slide the selected pill onto the game name's line in a LazyRow, which left a pill
+    // cut at the screen's edge. The pills still start where the game name does, and sit left / centred / right with it.)
+    val e = edge ?: dockTextStart()
     Row(Modifier.padding(bottom = bottomGap), verticalAlignment = Alignment.CenterVertically) {
-    LazyRow(
-        state = listState,
-        // Starts where the game name does (GameDock's dockTextStart).
-        contentPadding = (edge ?: dockTextStart()).let { e ->
-            PaddingValues(start = e, end = if (align == Alignment.Start) 24.dp else e)
-        },
-        horizontalArrangement = Arrangement.spacedBy(8.dp, align),
-        modifier = Modifier.weight(1f)
-    ) {
-        // In the order set under Select › Library › Category order.
-        orderU.forEach { key ->
-            when (key) {
-                com.shelf.launcher.data.CategorySettings.ALL -> item(key = key) {
-                    FilterPill(
-                        label = "All",
-                        isSelected = selected == null && special == null,
-                        onClick = { onSelectSpecial(null); onSelect(null) }
-                    )
-                }
-                com.shelf.launcher.data.CategorySettings.CONSOLES -> items(platformsU.size, key = { "p:" + platformsU[it] }) { index ->
-                    val platform = platformsU[index]
-                    FilterPill(
-                        label = when (platform) {
-                            com.shelf.launcher.ANDROID_GAMES_PLATFORM -> "Android games"
-                            "App" -> "Other apps"
-                            else -> LocalTitleOptions.current.console(platform)
-                        },
-                        isSelected = selected == platform && special == null,
-                        onClick = { onSelect(platform) },
-                        logo = com.shelf.launcher.data.ConsoleLogos.iconFor(platform)
-                    )
-                }
-                com.shelf.launcher.data.CategorySettings.COLLECTIONS -> items(collectionsU.size, key = { "p:" + collectionsU[it] }) { index ->
-                    val collectionKey = collectionsU[index]
-                    FilterPill(
-                        label = com.shelf.launcher.data.collectionLabel(collectionKey),
-                        isSelected = selected == collectionKey && special == null,
-                        onClick = { onSelect(collectionKey) }
-                    )
-                }
-                else -> {
-                    val filter = runCatching { SpecialFilter.valueOf(key) }.getOrNull()
-                    if (filter != null) {
-                        item(key = key) {
-                            FilterPill(
-                                label = filter.label,
-                                isSelected = special == filter,
-                                onClick = { onSelectSpecial(filter) }
-                            )
-                        }
-                    }
-                }
+    WholeChipRow(
+        count = itemKeys.size, focused = itemKeys.indexOf(selectedKey), modifier = Modifier.weight(1f),
+        spacing = 8.dp, align = align, startPadding = e, endPadding = if (align == Alignment.Start) 24.dp else e
+    ) { i ->
+        val key = itemKeys[i]
+        when {
+            key == com.shelf.launcher.data.CategorySettings.ALL -> FilterPill(
+                label = "All",
+                isSelected = selected == null && special == null,
+                onClick = { onSelectSpecial(null); onSelect(null) }
+            )
+            key.startsWith("p:") -> {
+                val p = key.removePrefix("p:")
+                if (p in collectionsU) FilterPill(
+                    label = com.shelf.launcher.data.collectionLabel(p),
+                    isSelected = selected == p && special == null,
+                    onClick = { onSelect(p) }
+                ) else FilterPill(
+                    label = when (p) {
+                        com.shelf.launcher.ANDROID_GAMES_PLATFORM -> "Android games"
+                        "App" -> "Other apps"
+                        else -> LocalTitleOptions.current.console(p)
+                    },
+                    isSelected = selected == p && special == null,
+                    onClick = { onSelect(p) },
+                    logo = com.shelf.launcher.data.ConsoleLogos.iconFor(p)
+                )
+            }
+            else -> {
+                val filter = runCatching { SpecialFilter.valueOf(key) }.getOrNull()
+                if (filter != null) FilterPill(label = filter.label, isSelected = special == filter, onClick = { onSelectSpecial(filter) })
             }
         }
     }

@@ -380,17 +380,21 @@ internal fun SaveInspectDialog(game: Game, icon: String?, state: SyncState, caps
                         }
                         Spacer(Modifier.height(8.dp))
                         // The strip: Original, the Voltcap memory cards' colours, your own.
-                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(Modifier.focusRequester(firstFocus)) {
-                                SwatchChip("Original", originalShell(obj.style()), selected = preview?.shell == null && !custom) { custom = false; preview = null }
+                        // (Update 294: whole swatches only, "+N ›" for the rest; it follows the D-pad's focus — WholeChipRow.)
+                        WholeChipRow(presets.size + 2, -1, Modifier.fillMaxWidth(), spacing = 8.dp) { si ->
+                            when {
+                                si == 0 -> Box(Modifier.focusRequester(firstFocus)) {
+                                    SwatchChip("Original", originalShell(obj.style()), selected = preview?.shell == null && !custom) { custom = false; preview = null }
+                                }
+                                si <= presets.size -> {
+                                    val p = presets[si - 1]
+                                    SwatchChip(
+                                        p.label.substringAfter(" · "), p.shell,
+                                        selected = !custom && preview?.shell == p.shell && (preview?.preset == null || preview?.preset == p.id)
+                                    ) { custom = false; preview = SaveLook(p.shell, if (hasTrim) p.badge else null, p.id, preview?.clear) }
+                                }
+                                else -> SwatchChip("Custom…", preview?.shell?.takeIf { preview?.preset == null }, selected = custom) { custom = !custom }
                             }
-                            presets.forEach { p ->
-                                SwatchChip(
-                                    p.label.substringAfter(" · "), p.shell,
-                                    selected = !custom && preview?.shell == p.shell && (preview?.preset == null || preview?.preset == p.id)
-                                ) { custom = false; preview = SaveLook(p.shell, if (hasTrim) p.badge else null, p.id, preview?.clear) }
-                            }
-                            SwatchChip("Custom…", preview?.shell?.takeIf { preview?.preset == null }, selected = custom) { custom = !custom }
                         }
                         if (custom) {
                             Spacer(Modifier.height(8.dp))

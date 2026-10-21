@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
@@ -106,6 +107,8 @@ internal object GameOrigin {
     var key: String? = null
     var rect: Rect? = null
     var displayId: Int = -1
+    /** Update 294: when [rect] was last marked (uptime ms). */
+    var markedAt = 0L
 }
 
 /**
@@ -125,11 +128,27 @@ internal fun bigLogo(g: Game, state: LauncherUiState): String? {
 /** Marks [key]'s picture as the game you're on ([on]), so the game window can grow out of it. */
 @Composable
 internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
-    if (!on) return this
+    // Update 294 (Toni: "closing a game window, whatever look you use goes back into its place, not somewhere on the
+    // screen at random"): the game window flies back to the last picture that marked itself as the game you're on — and
+    // a layout can draw the same game more than once: the Hub's cover flow draws its mirror on the floor (upside down,
+    // under the real one), and a big spot and its row both draw the game you're on. Whichever was laid out last won, so
+    // the piece flew back to its reflection or to the other copy. Now a mirror never marks, a copy that's off the
+    // window or has no size doesn't either, and of two copies marked at the same moment the bigger one (the one you're
+    // on) stays.
+    if (!on || LocalArtMirror.current) return this
     val view = LocalView.current
     return this.onGloballyPositioned { c ->
+        val r = c.boundsInWindow()
+        if (r.width < 4f || r.height < 4f) return@onGloballyPositioned
+        val win = c.findRootCoordinates().size
+        if (r.right <= 0f || r.bottom <= 0f || r.left >= win.width || r.top >= win.height) return@onGloballyPositioned
+        val now = android.os.SystemClock.uptimeMillis()
+        val old = GameOrigin.rect
+        if (GameOrigin.key == key && old != null && now - GameOrigin.markedAt < 120L && r != old &&
+            r.width * r.height < old.width * old.height) return@onGloballyPositioned
         GameOrigin.key = key
-        GameOrigin.rect = c.boundsInWindow()
+        GameOrigin.rect = r
+        GameOrigin.markedAt = now
         GameOrigin.displayId = runCatching { view.display?.displayId }.getOrNull() ?: -1
     }
 }

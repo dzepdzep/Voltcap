@@ -439,20 +439,19 @@ fun SettingsDialog(
                             .fillMaxHeight()
                     ) {
                         if (compact) {
-                            Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                CATEGORIES.forEach { entry ->
+                            // (Update 294: whole chips only, "+N ›" for the rest; the page you're on, or the chip with the
+                            // D-pad's focus, always whole — WholeChipRow.)
+                            WholeChipRow(
+                                CATEGORIES.size, CATEGORIES.indexOf(category),
+                                Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), spacing = 6.dp,
+                                hintColor = ShelfTheme.textMuted
+                            ) { ci ->
+                                    val entry = CATEGORIES[ci]
                                     Box(if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier) {
                                         // Update 202: the compact chips get the update dot as a "•" after the name.
                                         val dot = entry.label == "Updates & downloads" && com.shelf.launcher.data.AppUpdates.hasNews()
                                         Chip(entry.label + (if (dot) " •" else ""), accent = entry == category) { category = entry }
                                     }
-                                }
                             }
                             ThinDivider()
                         }

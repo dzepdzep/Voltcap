@@ -839,6 +839,7 @@ private fun GcCarousel(c: StyleCtx, compact: Boolean, reduced: Boolean) {
                                     alpha = (cos(a) * 1.3f - 0.15f).coerceIn(0f, 1f)
                                     rotationY = if (solidCart) 0f else -a * 30f
                                     cameraDistance = 12f * this.density
+                                    flatTextFor3d() // (Update 294: drawn flat, then turned — Android 13's text cache)
                                 }
                                 .pointerInput(i) {
                                     detectTapGestures {

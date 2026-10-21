@@ -219,22 +219,12 @@ private fun LibraryTabs(c: StyleCtx, compact: Boolean, modifier: Modifier) {
     val inTop = StyleNav.zone == StyleNav.Zone.TOP
     // The tab the D-pad is on while up there, else the category you're in: that one is kept in view.
     val lit = (if (inTop) StyleNav.index else current).coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
-    val list = rememberLazyListState(initialFirstVisibleItemIndex = (current - 1).coerceAtLeast(0))
-    LaunchedEffect(lit, tabs.size) {
-        val info = list.layoutInfo
-        val seen = info.visibleItemsInfo.firstOrNull { it.index == lit }
-        val whole = seen != null && seen.offset >= info.viewportStartOffset && seen.offset + seen.size <= info.viewportEndOffset
-        if (!whole) runCatching { list.animateScrollToItem((lit - 1).coerceAtLeast(0)) }
-    }
     val accent = ShelfTheme.accent
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         LibraryHint("L2", compact) { step(-1) }
         Spacer(Modifier.width(6.dp))
-        LazyRow(
-            state = list, modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp), verticalAlignment = Alignment.CenterVertically
-        ) {
-            items(tabs.size) { t ->
+        // (Update 294: whole tabs only, "+N ›" for the rest, the lit one always whole — WholeChipRow.)
+        WholeChipRow(tabs.size, lit, Modifier.weight(1f), spacing = if (compact) 2.dp else 4.dp, hintSize = if (compact) 11.sp else 12.sp) { t ->
                 val (label, icon) = tabs[t]
                 val here = t == current
                 val dpad = inTop && StyleNav.index == t
@@ -272,7 +262,6 @@ private fun LibraryTabs(c: StyleCtx, compact: Boolean, modifier: Modifier) {
                     // A thin accent line under the category you're in.
                     Box(Modifier.padding(top = 2.dp).width(if (here) 22.dp else 0.dp).height(2.dp).clip(RoundedCornerShape(1.dp)).background(accent))
                 }
-            }
         }
         Spacer(Modifier.width(6.dp))
         LibraryHint("R2", compact) { step(1) }

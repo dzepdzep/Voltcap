@@ -144,12 +144,13 @@ private fun BarCategoryTab(c: StyleCtx, compact: Boolean) {
 /** The shortcuts as plain text tabs (like "Games  Media"): the one you're on white and bold, the others dimmed; no icons, no underline. */
 @Composable
 private fun BarTabs(icons: List<HomeShortcut>, compact: Boolean) {
-    val scroll = androidx.compose.foundation.rememberScrollState()
-    Row(
-        Modifier.fillMaxWidth().horizontalScroll(scroll).padding(start = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(if (compact) 12.dp else 18.dp), verticalAlignment = Alignment.CenterVertically
-    ) {
-        icons.forEachIndexed { i, s ->
+    // (Update 294: whole tabs only, "+N ›" for the rest, the one you're on always whole — WholeChipRow.)
+    val lit = if (StyleNav.zone == StyleNav.Zone.TOP) StyleNav.index else -1
+    WholeChipRow(
+        icons.size, lit, Modifier.fillMaxWidth(), spacing = if (compact) 12.dp else 18.dp, startPadding = 2.dp,
+        hintSize = if (compact) 13.sp else 15.sp
+    ) { i ->
+            val s = icons[i]
             val on = StyleNav.on(StyleNav.Zone.TOP, i)
             val click by rememberUpdatedState(s.onClick)
             Column(
@@ -163,7 +164,6 @@ private fun BarTabs(icons: List<HomeShortcut>, compact: Boolean) {
                     style = nameTextStyle(NameBackdrop.SHADOW)
                 )
             }
-        }
     }
 }
 

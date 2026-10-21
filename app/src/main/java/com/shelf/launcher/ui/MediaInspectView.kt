@@ -158,7 +158,15 @@ private fun contentPieceFor(g: Game, state: LauncherUiState): InspectPiece? {
     val scans = if (androidOwnCase(g.platform)) null else physical
     // (Update 293, Toni: "use the real cartridges with the real cases": what lies in a game's case is its real cartridge /
     // disc — its own photo, else its console's authentic shell — never one of the custom looks' pieces.)
-    val piece = runCatching { RealMedia.wanted { mediaPiece(g, CardArtType.CARTRIDGE_DISC, scans, cover, small, false) } }.getOrNull()
+    // (Update 294, Toni: "same cartridge in and out of the case as on the home row": a cartridge is the piece the home row /
+    // Hub cover flow draws — mediaPiece is the carousel's own choice (a shell picked in the game's menu first, then the
+    // look's shell, e.g. your pack's Game Boy / N64 shell), wearing the same real label scan. Only a disc console keeps
+    // update 293's rule: its real disc, never a pack's cartridge-shaped optical shell.)
+    val discConsole = MediaShell.of(g.platform)?.let { it.disc || it == MediaShell.UMD } == true
+    val piece = runCatching {
+        if (discConsole) RealMedia.wanted { mediaPiece(g, CardArtType.CARTRIDGE_DISC, scans, cover, small, false) }
+        else mediaPiece(g, CardArtType.CARTRIDGE_DISC, scans, cover, small, false)
+    }.getOrNull()
     if (piece != null && (piece.kind == InspectKind.DISC || piece.kind == InspectKind.SLAB)) return piece
     return if (mediaRound(g.platform)) InspectPiece(
         g, InspectKind.DISC, 1f, 0.012f, MediaPick(MediaShell.DISC, genericDiscKey(g.platform)), cover, false, null, cover, null, null,
@@ -1487,10 +1495,15 @@ private fun Modifier.slabFace(yawOf: () -> Float, depth: Float, pitchOf: () -> F
         compositingStrategy = CompositingStrategy.Offscreen
     }.drawWithCache {
         val m = androidx.compose.ui.graphics.Matrix()
+        // (Update 294: the face drawn flat into its own picture, and only that squeezed / tilted — its text drawn at a new
+        // scale every frame filled Android 13's text cache until the Thor stopped answering.)
+        val flat = obtainGraphicsLayer()
+        flat.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         onDrawWithContent {
+            flat.record { this@onDrawWithContent.drawContent() }
             // (Squeezed and tilted round its middle: a round face stays inside its own box at any angle.)
             PiecePose(yawOf(), pitchOf()).matrix(m, center, 0f)
-            withTransform({ transform(m) }) { this@onDrawWithContent.drawContent() }
+            withTransform({ transform(m) }) { drawLayer(flat) }
         }
     }
 
@@ -1642,6 +1655,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     Box(
         Modifier.fillMaxSize().drawWithCache {
             val face = obtainGraphicsLayer()
+            // (Update 294: drawn flat into its own picture first, then turned / tilted — Android 13's text cache.)
+            face.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
             holder[0] = face
             val edge = obtainGraphicsLayer()
             // (Update 205: the sides are the outline in the plastic's colour, in a layer of their own.)
@@ -1842,6 +1857,8 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                 // (Update 288: recorded, unturned, for the edge's slices behind it.)
                 .drawWithCache {
                     val l = obtainGraphicsLayer()
+                    // (Update 294: flat into its own picture — the edge's slices draw it at a new angle every frame.)
+                    l.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
                     faceLayer[0] = l
                     onDrawWithContent {
                         l.record { this@onDrawWithContent.drawContent() }
@@ -1852,6 +1869,7 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
             DiscDataSide(format, yawOf, Modifier.fillMaxSize(k * 0.98f).graphicsLayer { alpha = if (PiecePose(yawOf(), pitchOf()).facing >= 0f) 0f else 1f }
                 .drawWithCache {
                     val l = obtainGraphicsLayer()
+                    l.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
                     faceLayer[1] = l
                     onDrawWithContent {
                         l.record { this@onDrawWithContent.drawContent() }

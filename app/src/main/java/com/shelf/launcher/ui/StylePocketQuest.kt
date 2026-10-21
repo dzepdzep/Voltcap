@@ -98,6 +98,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -318,50 +319,45 @@ private fun PqTopBar(c: StyleCtx, pal: PqPalette, compact: Boolean, pulse: Anima
 private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, single: Boolean, inTop: Boolean, modifier: Modifier) {
     val current = if (single) 0 else c.stop.coerceAtLeast(0)
     val lit = if (inTop && PqNav.index < tabs) PqNav.index else current
-    val scroll = rememberScrollState()
     val places = remember { mutableStateMapOf<Int, Pair<Int, Int>>() }
     val live by rememberUpdatedState(c)
     val here = places[current]
     val ix = animateFloatAsState((here?.first ?: 0).toFloat(), tween(pqMs(260), easing = FastOutSlowInEasing), label = "pqTabX")
     val iw = animateFloatAsState((here?.second ?: 0).toFloat(), tween(pqMs(260), easing = FastOutSlowInEasing), label = "pqTabW")
     val plate = remember(pal) { Brush.verticalGradient(listOf(pal.accentLight, pal.accent, pal.accentDeep)) }
-    BoxWithConstraints(modifier) {
-        val viewport = constraints.maxWidth
-        val pad = with(LocalDensity.current) { 24.dp.toPx() }.toInt()
-        LaunchedEffect(lit, places[lit], viewport) {
-            val p = places[lit] ?: return@LaunchedEffect
-            if (p.first < scroll.value + pad) scroll.animateScrollTo((p.first - pad).coerceAtLeast(0))
-            else if (p.first + p.second > scroll.value + viewport - pad) scroll.animateScrollTo(p.first + p.second - viewport + pad)
-        }
-        Row(
-            Modifier.fillMaxHeight().horizontalScroll(scroll)
-                .drawBehind {
-                    // The plate under the tab you're in (read while drawing: the glide redraws, never recomposes).
-                    val w = iw.value
-                    if (w > 0f) {
-                        val inset = 5.dp.toPx()
-                        val notch = 2.dp.toPx()
-                        val x = ix.value
-                        drawRect(pal.edgeDark, Offset(x - 1f, inset - 1f), Size(w + 2f, size.height - 2 * inset + 2f))
-                        drawRect(plate, Offset(x, inset), Size(w, size.height - 2 * inset))
-                        drawRect(Color.White.copy(alpha = 0.5f), Offset(x + notch, inset + 1f), Size(w - 2 * notch, 1.dp.toPx()))
-                        // Notched corners, a pixel-art plate.
-                        val bg = pal.deep
-                        drawRect(bg, Offset(x, inset), Size(notch, notch)); drawRect(bg, Offset(x + w - notch, inset), Size(notch, notch))
-                        drawRect(bg, Offset(x, size.height - inset - notch), Size(notch, notch)); drawRect(bg, Offset(x + w - notch, size.height - inset - notch), Size(notch, notch))
-                    }
-                },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CategoryTitle.Native() // (Update 212: the layout's own category title.)
-            for (t in 0 until tabs) {
+    CategoryTitle.Native() // (Update 212: the layout's own category title.)
+    // (Update 294, Toni: "never show a partly hidden chip": whole tabs only, "+N ›" for the rest, the lit one always
+    // whole — WholeChipRow. The plate is placed from each tab's place read against the row's own.)
+    val rowX = remember { floatArrayOf(0f) }
+    WholeChipRow(
+        tabs, lit,
+        modifier.onPlaced { rowX[0] = it.positionInRoot().x }
+            .drawBehind {
+                // The plate under the tab you're in (read while drawing: the glide redraws, never recomposes).
+                val w = iw.value
+                // (Never under a tab that's hidden past the row's ends.)
+                if (w > 0f && ix.value >= -1f && ix.value + w <= size.width + 1f) {
+                    val inset = 5.dp.toPx()
+                    val notch = 2.dp.toPx()
+                    val x = ix.value
+                    drawRect(pal.edgeDark, Offset(x - 1f, inset - 1f), Size(w + 2f, size.height - 2 * inset + 2f))
+                    drawRect(plate, Offset(x, inset), Size(w, size.height - 2 * inset))
+                    drawRect(Color.White.copy(alpha = 0.5f), Offset(x + notch, inset + 1f), Size(w - 2 * notch, 1.dp.toPx()))
+                    // Notched corners, a pixel-art plate.
+                    val bg = pal.deep
+                    drawRect(bg, Offset(x, inset), Size(notch, notch)); drawRect(bg, Offset(x + w - notch, inset), Size(notch, notch))
+                    drawRect(bg, Offset(x, size.height - inset - notch), Size(notch, notch)); drawRect(bg, Offset(x + w - notch, size.height - inset - notch), Size(notch, notch))
+                }
+            },
+        spacing = 0.dp, hintColor = pal.ink.copy(alpha = 0.78f), hintSize = if (compact) 11.sp else 13.sp
+    ) { t ->
                 val st = if (single) null else c.stops.getOrNull(t)
                 val isHere = t == current
                 val dpad = inTop && PqNav.index == t
                 Row(
                     Modifier.fillMaxHeight()
                         .onPlaced { co ->
-                            val v = co.positionInParent().x.toInt() to co.size.width
+                            val v = (co.positionInRoot().x - rowX[0]).toInt() to co.size.width
                             if (places[t] != v) places[t] = v
                         }
                         .padding(vertical = 5.dp)
@@ -386,8 +382,6 @@ private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, sin
                         PqCursor(pal, Modifier.size(7.dp, 9.dp).graphicsLayer { scaleX = -1f })
                     }
                 }
-            }
-        }
     }
 }
 
@@ -566,6 +560,7 @@ private fun PqMediaBig(c: StyleCtx, g: Game, tilt: Boolean, modifier: Modifier) 
                     rotationY = sin(t * 0.55f) * 6f
                     rotationX = sin(t * 0.4f + 1f) * 1.5f
                     cameraDistance = 14f * density
+                    flatTextFor3d() // (Update 294: its lean never stops — drawn flat, then turned, Android 13's text cache)
                 }
             }
         ) {

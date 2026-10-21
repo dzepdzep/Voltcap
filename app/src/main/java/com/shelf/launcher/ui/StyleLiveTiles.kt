@@ -173,8 +173,14 @@ internal fun StyleLiveTiles(c: StyleCtx, modifier: Modifier) {
 private fun LiveTabs(c: StyleCtx, ink: Color, compact: Boolean) {
     val move by rememberUpdatedState(c.actions.category)
     val tabs = liveTabs(c)
-    Row(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.LIVE, "tabs"), "Category tabs"), verticalAlignment = Alignment.Bottom) {
-        tabs.forEachIndexed { i, (d, label) ->
+    // (Update 294, Toni: "never show a partly hidden chip": the category words that fit whole, "+N ›" for the rest, the
+    // lit one always whole — WholeChipRow. The next words used to run off the right edge, cut.)
+    val lit = if (StyleNav.zone == StyleNav.Zone.TOP) StyleNav.index else tabs.indexOfFirst { it.first == 0 }
+    WholeChipRow(
+        tabs.size, lit, Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.LIVE, "tabs"), "Category tabs"),
+        spacing = 0.dp, hintColor = ink.copy(alpha = 0.38f), hintSize = if (compact) 16.sp else 22.sp
+    ) { i ->
+            val (d, label) = tabs[i]
             val on = StyleNav.on(StyleNav.Zone.TOP, i)
             Text(
                 // (Update 136: as written — no all-lower-case labels.)
@@ -186,7 +192,6 @@ private fun LiveTabs(c: StyleCtx, ink: Color, compact: Boolean) {
                     .padding(end = if (compact) 16.dp else 26.dp)
                     .pointerInput(d) { detectTapGestures { if (d != 0) move(d) } }
             )
-        }
     }
 }
 

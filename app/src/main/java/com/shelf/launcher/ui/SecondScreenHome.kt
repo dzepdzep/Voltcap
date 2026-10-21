@@ -643,17 +643,15 @@ private fun PageTabs(
     showExtra: Boolean = false,
     showGames: Boolean = false
 ) {
-    Row(
-        Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        SecondPage.values().filter {
-            (it != SecondPage.LIBRARY || showGames) &&
-                ((it != SecondPage.WALKTHROUGH || showWalkthrough) && (it != SecondPage.PERFORMANCE || showPerformance) &&
-                    (showExtra || (it != SecondPage.WIDGETS && it != SecondPage.WALL && it != SecondPage.MAGNIFIER)) &&
-                    (it != SecondPage.MAGNIFIER || SecondScreenReal.active) && it.available() || it == page)
-        }.forEach { p ->
+    val pages = SecondPage.values().filter {
+        (it != SecondPage.LIBRARY || showGames) &&
+            ((it != SecondPage.WALKTHROUGH || showWalkthrough) && (it != SecondPage.PERFORMANCE || showPerformance) &&
+                (showExtra || (it != SecondPage.WIDGETS && it != SecondPage.WALL && it != SecondPage.MAGNIFIER)) &&
+                (it != SecondPage.MAGNIFIER || SecondScreenReal.active) && it.available() || it == page)
+    }
+    // (Update 294: whole page chips only, "+N ›" for the rest, the page you're on always whole — WholeChipRow.)
+    WholeChipRow(pages.size, pages.indexOf(page), Modifier.fillMaxWidth(), spacing = 6.dp, hintColor = ShelfTheme.textMuted) { pi ->
+            val p = pages[pi]
             val selected = p == page
             Box(
                 Modifier
@@ -669,7 +667,6 @@ private fun PageTabs(
                     fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false
                 )
             }
-        }
     }
 }
 
@@ -941,8 +938,10 @@ private fun AchievementList(list: List<RaAchievementDetail>, modifier: Modifier 
         }
     }
     Column(modifier) {
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            AchFilter.values().forEach { f ->
+        // (Update 294: whole filter chips only — WholeChipRow.)
+        val filters = AchFilter.values()
+        WholeChipRow(filters.size, filters.indexOf(filter), Modifier.fillMaxWidth(), spacing = 6.dp, hintColor = ShelfTheme.textMuted) { fi ->
+                val f = filters[fi]
                 val selected = f == filter
                 Box(
                     Modifier
@@ -957,7 +956,6 @@ private fun AchievementList(list: List<RaAchievementDetail>, modifier: Modifier 
                         fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false
                     )
                 }
-            }
         }
         Spacer(Modifier.height(8.dp))
         if (shown.isEmpty()) {

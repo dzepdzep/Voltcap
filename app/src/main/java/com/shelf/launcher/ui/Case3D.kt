@@ -1078,8 +1078,14 @@ private object CaseDraw {
                     // Update 208: a printed cardboard box's other side carries its print too (the same panel as the spine,
                     // as on the real Game Boy / NES / N64 boxes), with the folds along its edges — it was one solid colour
                     // taken from the front's edge, a plain block of plastic down the whole side.
+                    // (Update 294, Toni: "the right side of those cases looks not good — use the real scan or just put
+                    // cardboard there": that side drew the spine's picture again, so a box showed the wrong side's print or
+                    // a bad cut of it — "ME BOY VANCE" down a Game Boy Advance box. No scan of that side exists (a box scan
+                    // has one spine), so it's plain cardboard now, lit like the other faces, with its folds.)
                     2 -> if (look.flap && look.matte) {
-                        warp(spine, filterOf(l))
+                        fill.shader = null
+                        fill.color = scaled(CARDBOARD_SIDE, l)
+                        c.drawPath(pathOf(), fill)
                         if (!mirror) {
                             lineOn(0f, 0f, 0f, 1f, scaled(0x66000000, 1f), (w / 400f).coerceIn(0.6f, 2f))
                             lineOn(1f, 0f, 1f, 1f, scaled(0x55000000, 1f), (w / 400f).coerceIn(0.6f, 2f))
@@ -1184,3 +1190,6 @@ internal fun defaultCaseBack(g: Game, scans: List<Pair<String, String>>?, cover:
     }
     return if (Features.printedBacks.state.value) PrintedBack(LookStyles.casePlatform(g.platform), cover, emptyList(), null, aspect, gameDisplayName(g.name)) else null
 }
+
+/** Update 294: a cardboard box's unprinted side (Case3D's right side). */
+private const val CARDBOARD_SIDE = 0xFFB3A385.toInt()

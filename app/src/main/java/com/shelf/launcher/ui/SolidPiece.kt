@@ -305,11 +305,15 @@ internal fun Modifier.solidPiece(
     if (spec == null) return this
     val turn = LocalPieceTurn.current
     val spin = if (withCartSpin) rememberCartSpin() else null
-    if (turn == null && spin == null) return this
+    if (turn == null && spin == null && TestHooks.pose.value == null) return this
     val dens = LocalDensity.current.density
     val cam = (turn?.camera ?: 14f) * dens
     return this.drawWithCache {
         val face = obtainGraphicsLayer()
+        // (Update 294: the face drawn flat into its own picture, which is then turned — the turned layers below used to
+        // draw its contents (a badge's or a label's text) under a new angle every frame, and Android 13's text cache
+        // grew until the Thor stopped answering on the Hub.)
+        face.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         val edge = obtainGraphicsLayer()
         // (Update 205: the sides are the piece's outline in its plastic's colour, made in a layer of their own.)
         edge.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
@@ -323,6 +327,9 @@ internal fun Modifier.solidPiece(
         back.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         // The face's outline made solid, for a back without a drawn one (a clear shell's face is see-through).
         val solid = obtainGraphicsLayer()
+        // Update 294: one slice's side smeared across the gap to the next (see below), drawn once into its own picture.
+        val smear = obtainGraphicsLayer()
+        smear.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         // Update 209: the face's outline that clears a see-through piece's sides from behind its face.
         val hole = obtainGraphicsLayer()
         hole.blendMode = BlendMode.DstOut
@@ -336,7 +343,9 @@ internal fun Modifier.solidPiece(
         val ph = if (a == null) size.height else pw / a
         val depthPx = spec.depth * maxOf(pw, ph)
         onDrawWithContent {
-            val yaw = (turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f)
+            // (Update 294, testing only: TestHooks `voltcap_test_pose` — held at one turn, for before / after pictures.)
+            val testPose = TestHooks.pose.value
+            val yaw = testPose?.first ?: ((turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f))
             if (abs(yaw) < 0.25f) { drawContent(); return@onDrawWithContent }
             face.record { this@onDrawWithContent.drawContent() }
             val t = Math.toRadians(yaw.toDouble())
@@ -394,12 +403,33 @@ internal fun Modifier.solidPiece(
                     // was part of what made scrolling a big library heavy; 2 px apart still shows no gap.)
                     val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, 32)
                     val clear = spec.clear
+                    // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
+                    // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
+                    // the slices are copies of the turned outline moved sideways, and on the Thor's bigger pieces they're
+                    // further apart than 2 px (at most 32 of them: 4–5 px on a big N64 cartridge seen at 60–80°). Each
+                    // slice's slanted top / bottom edge then ends in a step before the next one starts, and the steps
+                    // read as a stack of layers. Each slice is now smeared across the gap to the next one — its side
+                    // drawn again 1 px apart (at most 4 times, into one picture made once a frame) — so the sides are one
+                    // solid edge at every angle, with the same 32 slice draws as before (no new render load).
+                    val dz = if (n > 0) depthPx / n else 0f
+                    val step = dz * sn * (if (c >= 0f) 1f else -1f)
+                    val fill = if (n > 0 && testPose?.second != true) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
+                    val copies = n * fill + 1
                     // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
-                    edge.alpha = if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / (n + 1))).toFloat()
+                    edge.alpha = if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
+                    if (n > 0 && fill > 1) {
+                        smear.record(size = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)) {
+                            translate(m.toFloat(), m.toFloat()) {
+                                for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
+                            }
+                        }
+                    }
                     if (n > 0) for (k in 0..n) {
                         val f = k.toFloat() / n
                         val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
-                        translate(z * sn, 0f) { drawLayer(edge) }
+                        // (The nearest slice alone: nothing past it to fill.)
+                        if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+                        else translate(z * sn, 0f) { drawLayer(edge) }
                     }
                     val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
                     // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
