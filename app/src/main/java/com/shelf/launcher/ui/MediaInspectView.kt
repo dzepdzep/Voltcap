@@ -383,6 +383,8 @@ internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? =
         // Update 170: a case without its back scanned gets a printed one (Settings › Game look › Printed case backs).
         // (Update 302: no back scan — TheGamesDB's is asked for once, with your key; it replaces the printed one when found.)
         if (it.kind == InspectKind.BOX && it.back == null) com.shelf.launcher.data.TgdbBacks.request(g)
+        // (Update 305: and its verified details for the printed back — ratings, publisher… — once.)
+        if (it.kind == InspectKind.BOX && it.back == null && Features.printedBacks.state.value) com.shelf.launcher.data.PackagingFactsStore.request(g)
         if (it.kind == InspectKind.BOX && it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)
         // Update 189: what's inside, for opening it.
         if (it.kind == InspectKind.BOX) it.content = contentPieceFor(g, state)
@@ -395,13 +397,29 @@ internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? =
 internal fun printedBackFor(g: Game, state: LauncherUiState, aspect: Float): PrintedBack {
     val k = g.stableKey
     val o = state.artOverrides[k]; val a = state.art[k]
+    // (Update 305: the game's verified details — its Steam store / ScreenScraper record — and its metadata: what a back
+    // without a console template prints (CollectorBacks). Steam's own description and screenshots stand in where the
+    // scrapers had none.)
+    val facts = com.shelf.launcher.data.PackagingFactsStore.of(k)
+    val meta = state.metadata[k]
+    val shots = state.screenshots[k].orEmpty().ifEmpty { facts?.shots.orEmpty() }
     return PrintedBack(
-        LookStyles.casePlatform(g.platform),
+        // (Update 305: a Steam / Android game's back is its own case's — as its front and spine are, whatever R1 › Case.)
+        if (MediaCovers.own(g.platform) != null) g.platform else LookStyles.casePlatform(g.platform),
         o?.hero ?: a?.heroUrl ?: o?.cover ?: a?.gridUrl,
-        state.screenshots[k].orEmpty().take(4),
-        state.metadata[k]?.summary,
+        shots.take(4),
+        meta?.summary?.takeIf { it.isNotBlank() } ?: facts?.description,
         aspect,
-        gameDisplayName(g.name)
+        // (Update 305: the printed title without the file's bracketed tags.)
+        printTitle(g.name),
+        publisher = facts?.publisher ?: meta?.publisher?.takeIf { it.isNotBlank() },
+        developer = facts?.developer ?: meta?.developer?.takeIf { it.isNotBlank() },
+        year = meta?.releaseYear ?: facts?.year,
+        players = facts?.players,
+        features = facts?.features.orEmpty(),
+        rating = facts?.let {
+            com.shelf.launcher.data.PackagingFactsStore.pick(it.ratings, Features.backRating.state.value.system, Features.backRatingOthers.state.value)
+        }
     )
 }
 
@@ -537,7 +555,10 @@ private fun mediaPiece(
     }
     if (pick == null) return null
     // (Update 205: the drawn piece wears its real label scan when it has one, as on the home screen.)
-    val labelScan = if (typed == null) drawnLabelScan(physical, p) else null
+    // (Update 305: the real disc lying in its case — RealMedia, also with Cartridges only on — wears its label: your own
+    // label pick or its label scan; it always showed the cover there.)
+    val labelScan = if (typed == null) drawnLabelScan(physical, p)
+        ?: (if (RealMedia.on && pick.shell.disc) physical?.firstOrNull { it.first == "Disc label" }?.second else null) else null
     val label = typed ?: labelScan ?: cover
     val isScan = typed != null || labelScan != null
     val custom = isCustomPiece(pick.platform)

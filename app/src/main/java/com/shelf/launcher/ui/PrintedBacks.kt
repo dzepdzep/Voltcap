@@ -30,8 +30,26 @@ internal data class PrintedBack(
     /** The case's width / height (the back is made in its shape). */
     val aspect: Float,
     /** Update 173: the game's name, printed when there's no description (an app with nothing scraped had a bare back). */
-    val title: String? = null
+    val title: String? = null,
+    // Update 305: what's known for this game (PackagingFacts / its metadata) — printed on a back without a template of its
+    // own (CollectorBacks); a console's template back keeps its own print and gets none of these on top.
+    val publisher: String? = null,
+    val developer: String? = null,
+    val year: Int? = null,
+    val players: String? = null,
+    val features: List<String> = emptyList(),
+    /** The age rating to print (the one picked by Settings › Game look › Age rating on generated backs), or null. */
+    val rating: com.shelf.launcher.data.AgeRating? = null
 )
+
+/**
+ * Update 305: what any case on screen needs for its printed back — the screen's state, kept here by the view model — so a
+ * case on a shelf, in a carousel or a stack gets the same back as Inspect (it was made with no screenshots, no description
+ * and the cover instead of the hero art: Case3D's defaultCaseBack).
+ */
+internal object BackSources {
+    val state = androidx.compose.runtime.mutableStateOf<com.shelf.launcher.LauncherUiState?>(null)
+}
 
 internal object PrintedBacks {
     private val cache = android.util.LruCache<PrintedBack, Bitmap>(6)
@@ -40,12 +58,14 @@ internal object PrintedBacks {
 
     /** The back drawn (blocking, off the main thread): [art] and [shots] already decoded. */
     fun compose(context: android.content.Context, spec: PrintedBack, art: Bitmap?, shots: List<Bitmap>): Bitmap {
+        val tpl = MediaBacks.of(spec.platform)
+        // (Update 305: no back template for this console — Steam, Android, PS3–5, the Xboxes… — a collector's back.)
+        if (tpl == null) return CollectorBacks.compose(context, spec, art, shots).also { cache.put(spec, it) }
         val w = 480
         val h = (w / spec.aspect.coerceIn(0.3f, 3f)).toInt().coerceAtLeast(1)
         val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(out)
         val p = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
-        val tpl = MediaBacks.of(spec.platform)
         // The game's art behind it, soft and dark (a picture made small and drawn big again), so the print reads.
         c.drawColor(0xFF1E2028.toInt())
         if (art != null) {
@@ -150,7 +170,7 @@ internal fun rememberPrintedBack(spec: PrintedBack?): Bitmap? {
                         drawableBitmap((loader.execute(req) as? coil.request.SuccessResult)?.drawable, side)
                     }.getOrNull()
                 }
-                val art = load(spec.art, 360)
+                val art = load(spec.art, if (MediaBacks.of(spec.platform) == null) 720 else 360)
                 val shots = spec.shots.take(4).mapNotNull { load(it, 400) }
                 PrintedBacks.compose(context, spec, art, shots)
             }.getOrNull()

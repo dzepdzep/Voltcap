@@ -1078,6 +1078,25 @@ object Features {
      */
     val printedBacks = BoolPref("printed_backs", true)
     /**
+     * Update 305: the age rating a generated case back prints — only a rating body's rating found for that very game
+     * (Steam's store record for its app id, its ScreenScraper record; PackagingFacts), as plain text ("USK 16"), never
+     * guessed. USK by default (Germany); with [backRatingOthers] another body's is printed when the chosen one has none.
+     */
+    enum class BackRating(val label: String, val system: String?) {
+        USK("USK (Germany)", "USK"), PEGI("PEGI (Europe)", "PEGI"), ESRB("ESRB (North America)", "ESRB"), OFF("None", null)
+    }
+    val backRating = EnumPref("back_rating", BackRating.USK, BackRating.values())
+    val backRatingOthers = BoolPref("back_rating_others", true)
+    /**
+     * Update 305: a cardboard box's right side, top and bottom (Case3D). FILL: a real scan of that side, else your own
+     * picture of it, else one printed from the game's own title, logo and colours. AUTHENTIC: only pictures marked as a
+     * real packaging scan (no scraper has those sides, so mostly your own scans), else plain card. PLAIN: plain card.
+     */
+    enum class BoxSides(val label: String) {
+        FILL("Fill missing sides"), AUTHENTIC("Authentic only"), PLAIN("Plain cardboard")
+    }
+    val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
+    /**
      * Update 191: which region's case a game gets (ui/CaseCatalog.kt) when its file name doesn't say ("(USA)", "(Europe)",
      * "(Japan)"), or one region for every game.
      */

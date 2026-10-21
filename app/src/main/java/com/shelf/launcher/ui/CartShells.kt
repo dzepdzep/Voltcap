@@ -829,7 +829,9 @@ internal object CartShells {
             // real size and place, the art adapts to it; a label scan is the sticker itself.)
             // (Update 240, #90: a scan of the whole sticker of a label that folds over the top has its fold cut off its
             // top — that part is on the top face — rather than the whole sticker squashed into the front: foldCrop.)
-            if (scan) c.drawBitmap(art, foldCrop(s, art), artRect, p)
+            // (Update 305: a label picture far off the label's shape — over 15 %, one made for another cartridge or a
+            // different print — is cut in the middle to it instead of squeezed; real label scans, close to it, as before.)
+            if (scan) c.drawBitmap(art, foldCrop(s, art) ?: offShapeCrop(art, artRect.width() / artRect.height().coerceAtLeast(1f)), artRect, p)
             else {
                 // (Update 215: a cover keeps its own shape — fitted inside the label, never stretched to it — and the
                 // rest of the label is the colour along the cover's own edge, so it reads as one printed sticker. A real
@@ -1174,6 +1176,13 @@ internal object CartShells {
         if (kotlin.math.abs(a / whole - 1f) >= kotlin.math.abs(a / front - 1f)) return null
         val cut = (b.height * fold / (lh + fold)).toInt().coerceIn(0, b.height - 4)
         return android.graphics.Rect(0, cut, b.width, b.height)
+    }
+
+    /** Update 305: the middle of [b] at [aspect] when [b] is more than 15 % off it, else null (the whole picture). */
+    private fun offShapeCrop(b: Bitmap, aspect: Float): android.graphics.Rect? {
+        if (aspect <= 0f || b.height <= 0) return null
+        val cur = b.width.toFloat() / b.height
+        return if (kotlin.math.abs(cur / aspect - 1f) > 0.15f) cropRect(b, aspect) else null
     }
 
     /** The middle of [b] at [aspect] (width / height). */

@@ -18,7 +18,11 @@ object PhysicalOverrides {
         "Box (3D)" to "3D box",
         "Back of the box" to "Back of the box",
         // Update 301: a whole case scan of yours — back | spine | front side by side, as one picture.
-        com.shelf.launcher.ui.BoxTexture.LABEL to "Full case scan (back | spine | front)"
+        com.shelf.launcher.ui.BoxTexture.LABEL to "Full case scan (back | spine | front)",
+        // Update 305: a cardboard box's other sides (Case3D: Settings › Game look › Box sides).
+        "Box right side" to "Box right side (cardboard boxes)",
+        "Box top" to "Box top (cardboard boxes)",
+        "Box bottom" to "Box bottom (cardboard boxes)"
     )
 
     private var prefs: android.content.SharedPreferences? = null
@@ -42,6 +46,9 @@ object PhysicalOverrides {
 
     /** Update 301: a game's console from its key, for the case's proportions (null when it can't be told). */
     @Volatile var platformOf: (String) -> String? = { null }
+
+    /** Update 305: the games with picks of yours. */
+    fun keys(): Set<String> = map.keys.toSet()
 
     /** This game's picks (label → address). */
     fun of(key: String): Map<String, String> = map[key] ?: emptyMap()
@@ -77,7 +84,10 @@ object PhysicalOverrides {
             )
             own = own + cut.filterKeys { it !in own }.mapValues { (_, part) -> com.shelf.launcher.ui.BoxTexture.model(scan, part, platformOf(key)) }
         }
-        val out = list.map { (label, url) -> label to (own[label] ?: url) }
+        // (Update 305: a label of yours — "Disc label" — is worn by the drawn disc / cartridge, so the scraped photo of the
+        // real one gives way to it everywhere — unless you picked a photo for it too. It showed the photo, not your label.)
+        val drop = if ("Disc label" in own && "Disc / cartridge" !in own) setOf("Disc / cartridge") else emptySet()
+        val out = list.filter { it.first !in drop }.map { (label, url) -> label to (own[label] ?: url) }
         return out + own.filterKeys { k -> out.none { it.first == k } }.map { it.key to it.value }
     }
 }

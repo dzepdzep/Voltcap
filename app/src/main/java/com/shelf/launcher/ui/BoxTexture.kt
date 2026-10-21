@@ -38,7 +38,8 @@ internal object BoxTexture {
     /** The model for [part] of the full scan at [url] (a game of [platform], for its case's proportions). */
     fun model(url: String, part: BoxPart, platform: String?): String {
         val cut = if (part == BoxPart.SPINE3D) null else com.shelf.launcher.data.FullScanCuts.of(url)
-        return PREFIX + part.name.lowercase() + (cut?.let { "@" + com.shelf.launcher.data.FullScanCuts.encode(it.first, it.second) } ?: "") +
+        val bleed = if (cut == null) 0f else com.shelf.launcher.data.FullScanCuts.bleedOf(url)
+        return PREFIX + part.name.lowercase() + (cut?.let { "@" + com.shelf.launcher.data.FullScanCuts.encode(it.first, it.second, bleed) } ?: "") +
             ":" + (platform ?: "") + ":" + url
     }
 
@@ -48,6 +49,13 @@ internal object BoxTexture {
         if (!s.startsWith(PREFIX)) return null
         val head = s.removePrefix(PREFIX).substringBefore(':')
         return com.shelf.launcher.data.FullScanCuts.parse(head.substringAfter('@', "").ifEmpty { null })
+    }
+
+    /** Update 305: the bleed carried by a "voltcrop:" model (0: none). */
+    fun bleedOf(data: Any?): Float {
+        val s = data as? String ?: return 0f
+        if (!s.startsWith(PREFIX)) return 0f
+        return com.shelf.launcher.data.FullScanCuts.parseBleed(s.removePrefix(PREFIX).substringBefore(':').substringAfter('@', "").ifEmpty { null })
     }
 
     /** (part, platform, address) of a cut model, or null for anything else. */
@@ -285,8 +293,8 @@ internal object BoxTexture {
 }
 
 /** Cuts [part] out of a full box scan; fails (so the picture falls back) when the scan isn't laid out that way. */
-internal class BoxCrop(private val part: BoxPart, private val platform: String?, private val cut: Pair<Float, Float>? = null) : Transformation {
-    override val cacheKey: String = "voltcapBoxCrop(${part.name},${platform ?: ""},4" + (cut?.let { ",${it.first},${it.second}" } ?: "") + ")"
+internal class BoxCrop(private val part: BoxPart, private val platform: String?, private val cut: Pair<Float, Float>? = null, private val bleed: Float = 0f) : Transformation {
+    override val cacheKey: String = "voltcapBoxCrop(${part.name},${platform ?: ""},4" + (cut?.let { ",${it.first},${it.second}" } ?: "") + (if (bleed > 0f) ",b$bleed" else "") + ")"
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
         val w = input.width
@@ -304,10 +312,13 @@ internal class BoxCrop(private val part: BoxPart, private val platform: String?,
         // template's, not the scan's: a PlayStation back lost a quarter of its right side. The back and front being the
         // same width is enough: Pokémon Silver's back ends 18 px before its spine with it.)
         val side = minOf(l, w - r)
+        // (Update 305: your bleed / border trimmed off the scan's outer edges — top, bottom, the back's left, the front's
+        // right — the same width all round, so the print isn't moved off the case's own edges.)
+        val bl = (bleed * h).toInt().coerceIn(0, h / 4)
         when (part) {
-            BoxPart.SPINE -> android.graphics.Rect(l, 0, r, h)
-            BoxPart.FRONT -> android.graphics.Rect((w - side + pad).coerceIn((r + 1).coerceAtMost(w - 2), w - 2), 0, w, h)
-            BoxPart.BACK -> android.graphics.Rect(0, 0, (side - pad).coerceIn(2, (l - 1).coerceAtLeast(2)), h)
+            BoxPart.SPINE -> android.graphics.Rect(l, bl, r, h - bl)
+            BoxPart.FRONT -> android.graphics.Rect((w - side + pad).coerceIn((r + 1).coerceAtMost(w - 2), w - 2), bl, (w - bl).coerceAtLeast((w - side + pad) + 2), h - bl)
+            BoxPart.BACK -> android.graphics.Rect(bl, bl, maxOf(bl + 2, (side - pad).coerceIn(2, (l - 1).coerceAtLeast(2))), h - bl)
             BoxPart.SPINE3D -> android.graphics.Rect(0, 0, 1, 1)
         }
         }
@@ -333,7 +344,7 @@ internal class BoxCropInterceptor : Interceptor {
         val (part, platform, url) = BoxTexture.parse(chain.request.data) ?: return chain.proceed(chain.request)
         val request = chain.request.newBuilder()
             .data(url)
-            .transformations(listOf(BoxCrop(part, platform, BoxTexture.cutOf(chain.request.data))) + chain.request.transformations)
+            .transformations(listOf(BoxCrop(part, platform, BoxTexture.cutOf(chain.request.data), BoxTexture.bleedOf(chain.request.data))) + chain.request.transformations)
             .build()
         return chain.withSize(Size(1600, 1600)).proceed(request)
     }

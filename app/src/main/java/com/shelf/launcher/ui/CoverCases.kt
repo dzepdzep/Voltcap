@@ -153,13 +153,20 @@ internal fun rememberSpine(res: Int, landscape: Boolean): SpineCache.Ready? {
  * the 3D boxes and cases use it; null while it's being made (away from the screen's thread, kept for the next time).
  */
 @Composable
-internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean): SpineCache.Titled {
+internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean, accentFrom: Any? = null): SpineCache.Titled {
     val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
-    val key = if (res == null) "" else SpineCache.key(res, landscape, title, com.shelf.launcher.data.Packs.version.intValue)
+    // (Update 305: Voltcap's own Steam / Android spine is drawn for the game — OwnSpines — with its cover's accent colour,
+    // so the cover is part of its key.)
+    val own = OwnSpines.isOwn(res)
+    val key = if (res == null) "" else SpineCache.key(res, landscape, title, com.shelf.launcher.data.Packs.version.intValue) +
+        (if (own) "|own2|" + (accentFrom?.toString() ?: "") else "")
     val now = if (res == null) null else SpineCache.peekTitled(key)
     val made by androidx.compose.runtime.produceState<Pair<String, android.graphics.Bitmap?>?>(null, key) {
         if (res != null) {
-            value = key to (SpineCache.peekTitled(key) ?: kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { SpineCache.titled(context, res, title, landscape, key) })
+            value = key to (SpineCache.peekTitled(key) ?: kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                if (own) SpineCache.own(context, res, title, OwnSpines.accentFor(context, accentFrom), landscape, key)
+                else SpineCache.titled(context, res, title, landscape, key)
+            })
         }
     }
     val got = made?.takeIf { it.first == key }
@@ -220,6 +227,15 @@ internal object SpineCache {
         val r = Ready(key, img.asImageBitmap(), if (lum > 150f) Color(0xFF1A1A1E) else Color.White)
         readyMap.put(key, r)
         return r
+    }
+
+    /** Update 305: a Steam / Android game's own spine (OwnSpines), kept like the titled ones. */
+    @Synchronized
+    fun own(context: android.content.Context, res: Int, title: String?, accent: Int?, landscape: Boolean, key: String): android.graphics.Bitmap? {
+        titledMap.get(key)?.let { return it }
+        val out = runCatching { orientSpine(OwnSpines.compose(context, res, title, accent), landscape) }.getOrNull() ?: return null
+        titledMap.put(key, out)
+        return out
     }
 
     @Synchronized

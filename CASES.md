@@ -1,5 +1,7 @@
 # Voltcap: real game cases (update 191; PlayStation / Xbox audit updates 303–304)
 
+(Update 305: imported artwork, generated backs, ratings and printed box sides — `docs/physical_media/ARTWORK_PACKAGING.md`.)
+
 What Voltcap's 3D cases are drawn from (`src\ui\CaseCatalog.kt`). Four research passes looked up each console's
 packaging per region (Wikipedia's keep case, video game packaging and optical disc packaging articles, protector and
 replacement-case makers' sizes, MobyGames, Nintendo Life, The Dreamcast Junkyard, Digital Game Museum, collector

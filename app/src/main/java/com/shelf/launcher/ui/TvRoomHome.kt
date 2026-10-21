@@ -712,6 +712,9 @@ private fun SpineShelf(
                         // Update 117: the game's own spine (its spine scan, or cut from its box scan), as on the Shelf.
                         // (Update 125: a real spine scan always, whatever Original cases says.)
                         GameSpine(g, null, Modifier.fillMaxSize())
+                    } else if (spineTpl != null && OwnSpines.isOwn(spineTpl.res)) {
+                        // (Update 305: Voltcap's own Steam / Android spine drawn for this game, as the 3D cases show it.)
+                        OwnSpine(spineTpl.res, gameDisplayName(g.name), HomeScans.cover?.invoke(g.stableKey), Modifier.fillMaxSize())
                     } else if (spineTpl != null) {
                         // Your own console spine (or Steam's / Android's), the game's name in the box left for it.
                         SpinePicture(spineTpl, Modifier.fillMaxSize()) { ink ->

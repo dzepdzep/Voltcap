@@ -54,6 +54,8 @@ internal fun FullScanCutEditor(url: String, platform: String?, onClose: () -> Un
     var l by remember(url) { mutableFloatStateOf(saved?.first ?: 0.47f) }
     var r by remember(url) { mutableFloatStateOf(saved?.second ?: 0.53f) }
     var edge by remember { mutableIntStateOf(0) } // 0 = left edge, 1 = right edge
+    // Update 305: the printer's bleed / border round the scan (a share of its height), trimmed off its outer edges.
+    var bleed by remember(url) { mutableFloatStateOf(FullScanCuts.bleedOf(url)) }
     LaunchedEffect(url) {
         val b = withContext(Dispatchers.IO) {
             runCatching {
@@ -99,6 +101,11 @@ internal fun FullScanCutEditor(url: String, platform: String?, onClose: () -> Un
                         drawRect(Color.Black.copy(alpha = 0.18f), Offset(r * w, 0f), Size(w - r * w, h))
                         drawLine(if (edge == 0) accent else Color.White, Offset(l * w, 0f), Offset(l * w, h), strokeWidth = if (edge == 0) 5f else 3f)
                         drawLine(if (edge == 1) accent else Color.White, Offset(r * w, 0f), Offset(r * w, h), strokeWidth = if (edge == 1) 5f else 3f)
+                        // (Update 305: the bleed trimmed off, shown as a frame inside the scan's edges.)
+                        if (bleed > 0f) {
+                            val bp = bleed * h
+                            drawRect(Color(0xFFFFC107), Offset(bp, bp), Size(w - 2 * bp, h - 2 * bp), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+                        }
                     }
                     Text("Back", color = Color.White, fontSize = 11.sp, modifier = Modifier.align(Alignment.TopStart).background(Color.Black.copy(alpha = 0.5f)))
                     Text("Front", color = Color.White, fontSize = 11.sp, modifier = Modifier.align(Alignment.TopEnd).background(Color.Black.copy(alpha = 0.5f)))
@@ -114,8 +121,17 @@ internal fun FullScanCutEditor(url: String, platform: String?, onClose: () -> Un
                     Chip("▶▶", accent = false) { nudge(0.01f) }
                 }
                 Spacer(Modifier.height(6.dp))
+                // Update 305: a cover printed with a bleed (or a white border) round it — The Cover Project's wraps often
+                // are — has it trimmed off its outer edges, so the case's edges show the print's own edges.
+                MutedNote("Bleed / border trimmed off the outer edges: " + if (bleed <= 0f) "none" else String.format(java.util.Locale.US, "%.1f %% of the height", bleed * 100f))
                 ChipFlow {
-                    Chip("Save the cuts") { FullScanCuts.set(url, l to r); onClose() }
+                    Chip("Less", accent = false) { bleed = (bleed - 0.0025f).coerceAtLeast(0f) }
+                    Chip("More", accent = false) { bleed = (bleed + 0.0025f).coerceAtMost(0.12f) }
+                    Chip("None", accent = false) { bleed = 0f }
+                }
+                Spacer(Modifier.height(6.dp))
+                ChipFlow {
+                    Chip("Save the cuts") { FullScanCuts.set(url, l to r, bleed); onClose() }
                     Chip(if (auto != null) "Automatic" else "Automatic (none found)", accent = false) { FullScanCuts.set(url, null); auto?.let { l = it.first; r = it.second }; onClose() }
                     Chip("Cancel", accent = false) { onClose() }
                 }

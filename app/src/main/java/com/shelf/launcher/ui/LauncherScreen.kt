@@ -869,6 +869,37 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         GamePopup.game = g
         TestHooks.inspect.value = null
     }
+    // (Update 305, testing only: TEST packaging facts for a game this session — TestHooks.facts.)
+    val testFacts = TestHooks.facts.value
+    LaunchedEffect(testFacts, state.games.size) {
+        val v = testFacts ?: return@LaunchedEffect
+        val parts = v.split('|')
+        val g = state.games.firstOrNull { it.name.contains(parts[0].replace('_', ' '), ignoreCase = true) }
+        if (g != null) {
+            val ratings = parts.drop(1).mapNotNull { r -> com.shelf.launcher.data.PackagingFactsStore.rating(r.substringBefore(' '), r.substringAfter(' ', ""), "test") }
+            com.shelf.launcher.data.PackagingFactsStore.put(g.stableKey, com.shelf.launcher.data.PackagingFacts(
+                ratings = ratings, publisher = "Test Publisher", features = listOf("Single-player", "Full controller support"), source = "test"))
+            android.util.Log.e("VoltcapTest", "facts for ${g.name}: ${ratings.map { it.label }}")
+        }
+        TestHooks.facts.value = null
+    }
+    // (Update 305, testing only: a picture added to / removed from a game's real-media slot — TestHooks.pick.)
+    val testPick = TestHooks.pick.value
+    val testCtx = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(testPick, state.games.size) {
+        val v = testPick ?: return@LaunchedEffect
+        val parts = v.split('|')
+        val g = state.games.firstOrNull { it.name.contains(parts[0].replace('_', ' '), ignoreCase = true) }
+        if (g != null && parts.size >= 3) {
+            val label = parts[1]
+            val url = if (parts[2] == "clear") null else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.shelf.launcher.data.UserArt.importLocal(testCtx, android.net.Uri.fromFile(java.io.File(parts[2])))
+            }
+            viewModel.setPhysicalOverride(g, label, url)
+            android.util.Log.e("VoltcapTest", "pick ${g.name} / $label -> $url")
+        }
+        TestHooks.pick.value = null
+    }
     // (Update 301, testing only: a game's Artwork & details — TestHooks.artwork.)
     val testArtwork = TestHooks.artwork.value
     LaunchedEffect(testArtwork, state.games.size) {

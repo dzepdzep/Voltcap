@@ -1018,6 +1018,16 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 val raw = physicalRaw[key] ?: _uiState.value.physicalMedia[key].orEmpty()
                 _uiState.update { it.copy(physicalMedia = it.physicalMedia + (key to com.shelf.launcher.data.PhysicalOverrides.apply(key, raw))) }
             }
+            // (Update 305: verified details for generated case backs — ratings, publisher, year… — asked for when a back
+            // is wanted: Steam games from Steam's store record, ROMs from their ScreenScraper record. PackagingFacts.)
+            // (Update 305: what the cases' printed backs are made of — the hero art, screenshots, description — read from
+            // the screen's state where any case is drawn, not only in Inspect: ui/PrintedBacks.kt › BackSources.)
+            viewModelScope.launch(Dispatchers.Main) { _uiState.collect { com.shelf.launcher.ui.BackSources.state.value = it } }
+            com.shelf.launcher.data.PackagingFactsStore.init(getApplication())
+            com.shelf.launcher.data.ArtProvenance.init(getApplication())
+            com.shelf.launcher.data.PackagingFactsStore.screenScraper = { g ->
+                screenScraperStore.load()?.let { c -> screenScraperRepository.packagingFacts(c, g) }
+            }
             val all = runCatching { physicalPrefs.all }.getOrNull().orEmpty()
             val loaded = HashMap<String, List<Pair<String, String>>>(all.size)
             for ((k, v) in all) {
@@ -1029,6 +1039,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 if (list.isEmpty()) continue
                 physicalRaw.putIfAbsent(k, list)
                 loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, list) }.getOrDefault(list)
+            }
+            // (Update 305: a game with your own pictures but nothing scraped — no saved list — gets them too; they showed
+            // only once its scans had been looked up again.)
+            for (k in com.shelf.launcher.data.PhysicalOverrides.keys()) {
+                if (k !in loaded) loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, emptyList()) }.getOrDefault(emptyList())
             }
             // (What was looked up meanwhile wins over the saved list.)
             if (loaded.isNotEmpty()) _uiState.update { st -> st.copy(physicalMedia = loaded + st.physicalMedia) }

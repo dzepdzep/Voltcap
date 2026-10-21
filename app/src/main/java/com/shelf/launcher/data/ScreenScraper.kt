@@ -350,6 +350,29 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         )
     }
 
+    /**
+     * Update 305: what a generated case back may print, from this game's own record (matched by checksum / name, only when
+     * sure — isConfidentMatch): its age ratings (ScreenScraper's "classifications": USK, PEGI, ESRB…), publisher,
+     * developer, year and players. Null when nothing matched; throws when the look-up itself failed (network).
+     */
+    suspend fun packagingFacts(c: ScreenScraperCredentials, game: Game): PackagingFacts? {
+        val found = lookup(c, game)
+        if (found == null && lookupOutcome[game.stableKey] == OUTCOME_OFFLINE) throw java.io.IOException("ScreenScraper offline")
+        val jeu = found?.takeIf { isConfidentMatch(it, game) } ?: return null
+        val ratings = jeu.arr("classifications")?.mapNotNull { e ->
+            (e as? JsonObject)?.let { o -> PackagingFactsStore.rating(o.str("type"), o.str("text"), "ScreenScraper") }
+        }.orEmpty().distinctBy { it.system }
+        val f = PackagingFacts(
+            ratings = ratings,
+            publisher = jeu.obj("editeur")?.str("text")?.trim()?.takeIf { it.isNotEmpty() },
+            developer = jeu.obj("developpeur")?.str("text")?.trim()?.takeIf { it.isNotEmpty() },
+            year = regional(jeu.arr("dates"))?.take(4)?.toIntOrNull(),
+            players = jeu.obj("joueurs")?.str("text")?.trim()?.takeIf { it.isNotEmpty() },
+            source = "ScreenScraper"
+        )
+        return f.takeIf { it.ratings.isNotEmpty() || it.publisher != null || it.developer != null || it.year != null || it.players != null }
+    }
+
     /** In-game screenshots (and title/fan art) for the details window's media row. */
     suspend fun screenshots(c: ScreenScraperCredentials, game: Game): List<String> {
         val jeu = lookup(c, game)?.takeIf { isConfidentMatch(it, game) } ?: return emptyList()

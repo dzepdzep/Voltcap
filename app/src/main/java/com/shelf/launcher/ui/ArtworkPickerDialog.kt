@@ -93,6 +93,8 @@ fun ArtworkPickerDialog(
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     // Update 301: the full case scan whose cuts are being set (FullScanCutEditor).
     var cutting by remember { mutableStateOf<String?>(null) }
+    // Update 305: a picture just added to a real-media slot — where it's from, and whether it fits (ArtProvenance, ArtFit).
+    var provFor by remember { mutableStateOf<Triple<String, String, String?>?>(null) }
 
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val slot = pendingSlot
@@ -107,7 +109,13 @@ fun ArtworkPickerDialog(
                     runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
                     uri.toString()
                 }
-                if (slot != null) onSet(slot, address) else if (phys != null) onSetPhysical(phys, address)
+                if (slot != null) onSet(slot, address) else if (phys != null) {
+                    onSetPhysical(phys, address)
+                    // (Update 305: its shape against the surface it's for — said now, not found out later — and where it's from.)
+                    val warn = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { pictureSize(context, address) }
+                        ?.let { (w, h) -> ArtFit.warning(phys, w, h, game) }
+                    provFor = Triple(phys, address, warn)
+                }
             }
         }
     }
@@ -274,6 +282,22 @@ fun ArtworkPickerDialog(
         // Update 137: the box, disc, cartridge, label and spine too — any of the game's scans (or the cover / background),
         // or a picture of yours, for the looks that draw them.
         val pool = (physical.map { it.second } + listOfNotNull(currentOverride?.cover ?: scrapedArt?.gridUrl, currentOverride?.hero ?: scrapedArt?.heroUrl)).distinct()
+        // Update 305: artwork from The Cover Project (or anywhere) — downloaded in your browser, then added here. Voltcap
+        // doesn't fetch from the site itself: it has no API and no permission for automatic downloads was found.
+        Spacer(Modifier.height(12.dp))
+        ShelfCard {
+            SectionLabel("Covers, wraps and labels from elsewhere")
+            MutedNote("Download a cover, full wrap, label or box side in your browser — The Cover Project or another site — then add it with Upload… on the slot it's for. Voltcap asks where it's from and what it was made for, keeps the picture on this device only, and checks it fits this game's case or media (the model never changes: a picture made for another format is cut or fitted, never stretched).")
+            Spacer(Modifier.height(8.dp))
+            ChipFlow {
+                Chip("Open The Cover Project", accent = false) {
+                    runCatching {
+                        context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.thecoverproject.net/"))
+                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                }
+            }
+        }
         com.shelf.launcher.data.PhysicalOverrides.SLOTS.forEach { (label, title) ->
             Spacer(Modifier.height(12.dp))
             val inUse = physical.firstOrNull { it.first == label }?.second
@@ -295,6 +319,20 @@ fun ArtworkPickerDialog(
                         Spacer(Modifier.width(8.dp))
                     }
                     Chip("Upload…", accent = false, onClick = { pendingPhysical = label; pickImage.launch(arrayOf("image/*")) })
+                }
+                // (Update 305: your picture's provenance and whether it fits this game's surface.)
+                if (mine != null) {
+                    val prov = com.shelf.launcher.data.ArtProvenance.of(mine)
+                    val fitNote by androidx.compose.runtime.produceState<String?>(null, mine, label) {
+                        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { pictureSize(context, mine) }
+                            ?.let { (w, h) -> ArtFit.warning(label, w, h, game) }
+                    }
+                    prov?.summary?.takeIf { it.isNotBlank() }?.let { Spacer(Modifier.height(4.dp)); MutedNote("From: $it") }
+                    fitNote?.let { Spacer(Modifier.height(4.dp)); MutedNote("⚠ $it") }
+                    if (mine.startsWith("file:")) {
+                        Spacer(Modifier.height(6.dp))
+                        Chip(if (prov == null) "Where's it from?…" else "Edit where it's from…", accent = false) { provFor = Triple(label, mine, fitNote) }
+                    }
                 }
                 // Update 301: a full case scan — where it's cut into back, spine and front can be set by hand.
                 if (label == BoxTexture.LABEL) {
@@ -334,6 +372,59 @@ fun ArtworkPickerDialog(
                 }
             }
         }
+    }
+    // (Update 305: where a picture just added is from, and whether it fits.)
+    provFor?.let { (label, url, warn) ->
+        ProvenanceDialog(url, warn, onRemove = { onSetPhysical(label, null) }) { provFor = null }
+    }
+}
+
+/** Update 305: a picture's pixel size from its address (a local copy or a content:// link), without decoding it; null if unreadable. */
+internal fun pictureSize(context: android.content.Context, address: String): Pair<Int, Int>? = runCatching {
+    val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(android.net.Uri.parse(address))?.use { android.graphics.BitmapFactory.decodeStream(it, null, o) }
+    if (o.outWidth > 0 && o.outHeight > 0) o.outWidth to o.outHeight else null
+}.getOrNull()
+
+/**
+ * Update 305: where a picture you've added is from — its source (The Cover Project, your own scan…), whether it's a scan
+ * of real packaging or a custom design, who made it, and what it was made for — plus whether it fits ([warning]).
+ * Saved with the picture (ArtProvenance); nothing leaves the device.
+ */
+@Composable
+internal fun ProvenanceDialog(url: String, warning: String?, onRemove: (() -> Unit)?, onDone: () -> Unit) {
+    val now = remember(url) { com.shelf.launcher.data.ArtProvenance.of(url) ?: com.shelf.launcher.data.ArtProvenance.Info() }
+    var source by remember(url) { mutableStateOf(now.source) }
+    var kind by remember(url) { mutableStateOf(now.kind) }
+    var credit by remember(url) { mutableStateOf(now.credit) }
+    var madeFor by remember(url) { mutableStateOf(now.madeFor) }
+    ShelfDialog(
+        icon = Icons.Filled.Image,
+        title = "Where's this picture from?",
+        subtitle = "Kept with it on this device — never uploaded",
+        onDismiss = onDone,
+        footer = {
+            if (onRemove != null) Chip("Remove it", accent = false, onClick = { onRemove(); onDone() })
+            Chip("Skip", accent = false, onClick = onDone)
+            Chip("Save", onClick = {
+                com.shelf.launcher.data.ArtProvenance.set(url, com.shelf.launcher.data.ArtProvenance.Info(source.trim(), kind, credit.trim(), madeFor))
+                onDone()
+            })
+        }
+    ) {
+        warning?.let { MutedNote("⚠ $it"); Spacer(Modifier.height(10.dp)) }
+        SectionLabel("Source")
+        ChipFlow { com.shelf.launcher.data.ArtProvenance.SOURCES.forEach { s -> Chip((if (source == s) "✓ " else "") + s, accent = source == s) { source = s } } }
+        ShelfTextField(source, { source = it }, "Or type it (a site, a person, a book…)")
+        Spacer(Modifier.height(10.dp))
+        SectionLabel("What it is")
+        ChipFlow { com.shelf.launcher.data.ArtProvenance.Kind.values().forEach { k -> Chip((if (kind == k) "✓ " else "") + k.label, accent = kind == k) { kind = k } } }
+        Spacer(Modifier.height(10.dp))
+        SectionLabel("Made for")
+        ChipFlow { ArtFit.FORMATS.forEach { f -> Chip((if (madeFor == f) "✓ " else "") + f, accent = madeFor == f) { madeFor = f } } }
+        Spacer(Modifier.height(10.dp))
+        ShelfTextField(credit, { credit = it }, "Made by (credit, optional)")
+        MutedNote("\"Scan of real packaging\" is what Box sides › Authentic only shows. A design made for another case keeps that case's look — Voltcap fits it onto this game's own model without stretching it.")
     }
 }
 

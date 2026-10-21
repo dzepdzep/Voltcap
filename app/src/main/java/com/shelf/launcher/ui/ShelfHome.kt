@@ -698,6 +698,14 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     // box left for it.
     val tpl = if (Features.coverTemplates.state.value || forAll || matching || MediaCovers.own(g.platform) != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     val name = gameDisplayName(g.name)
+    if (tpl != null && OwnSpines.isOwn(tpl.res)) {
+        // (Update 305: Voltcap's own Steam / Android spine drawn for this game — its title, its cover's accent — as the 3D
+        // cases show it.)
+        SpineSlot(tpl.aspect, modifier) { inner ->
+            OwnSpine(tpl.res, name, HomeScans.cover?.invoke(g.stableKey), inner.clip(RoundedCornerShape(2.dp)))
+        }
+        return
+    }
     if (tpl != null) {
         // (Update 147: at the console spine's own shape, not stretched to a wider slot.)
         SpineSlot(tpl.aspect, modifier) { inner ->

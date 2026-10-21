@@ -56,6 +56,11 @@ object UserArt {
                 if (f.isFile && now - f.lastModified() > 60 * 60 * 1000L && !text.contains(f.name)) f.delete()
             }
             FullScanCuts.dropMissingFiles()
+            // (Update 305: and the provenance kept for a copy that's gone.)
+            app.getSharedPreferences("art_provenance", Context.MODE_PRIVATE).let { p ->
+                val gone = p.all.keys.filter { it.startsWith("file://") && runCatching { !File(Uri.parse(it).path!!).exists() }.getOrDefault(false) }
+                if (gone.isNotEmpty()) p.edit().apply { gone.forEach { remove(it) } }.apply()
+            }
         }
     }
 }

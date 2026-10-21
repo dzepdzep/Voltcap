@@ -3837,6 +3837,24 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.printedBacks.state.value,
             onChange = { com.shelf.launcher.data.Features.printedBacks.value = it }
         )
+        // Update 305: the generated backs' age rating and the cardboard boxes' other sides.
+        RowChoice(
+            "Age rating on generated backs", com.shelf.launcher.data.Features.BackRating.values(),
+            com.shelf.launcher.data.Features.backRating.state.value, { it.label }
+        ) { com.shelf.launcher.data.Features.backRating.value = it }
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Another rating when that one isn't known",
+            subtitle = "On (default): when the chosen body has no rating for a game, another body's (USK, PEGI, ESRB…) is printed, with its name. Off: only the chosen body's.",
+            checked = com.shelf.launcher.data.Features.backRatingOthers.state.value,
+            onChange = { com.shelf.launcher.data.Features.backRatingOthers.value = it }
+        )
+        MutedNote("A rating is printed only when it was found for that very game — Steam's store record for a Steam game, the game's ScreenScraper record for a ROM — as plain text (\"USK 16\"), not the rating body's own symbol. Nothing is guessed: no rating found, none printed. Android apps have no public rating source, so none. Backs printed from a console's own back template keep that template's print and get nothing added.")
+        RowChoice(
+            "Box sides (cardboard boxes)", com.shelf.launcher.data.Features.BoxSides.values(),
+            com.shelf.launcher.data.Features.boxSides.state.value, { it.label }
+        ) { com.shelf.launcher.data.Features.boxSides.value = it }
+        MutedNote("A cardboard box's right side, top and bottom. Fill missing sides (default): your picture of that side (Artwork & details › Box right side / top / bottom), else a print made from the game's title, its console's logo and its box's colours. Authentic only: only pictures you've marked as a real packaging scan. Plain cardboard: plain card. The box's size and shape never change.")
         // (Update 195's "Authentic drawn cartridges" switch stood here. Update 202: it's Cartridges & discs › Cartridge ›
         // "Real shell for each console" now, which sets it. Any game can still go on any shell: its menu › Cartridge shell…)
         // Update 200: the cartridges' backs.

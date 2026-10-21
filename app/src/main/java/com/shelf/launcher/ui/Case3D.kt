@@ -98,7 +98,8 @@ internal fun Case3D(
     val ownCase = MediaCovers.own(g.platform).takeIf { !forAll }
     val tpl = if (Features.coverTemplates.state.value || forAll || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     // (Made once per game, away from the screen's thread: SpineCache.)
-    val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false)
+    // (Update 305: a Steam / Android spine takes its accent from the game's cover — the same one the shelves use.)
+    val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false, accentFrom = HomeScans.cover?.invoke(g.stableKey) ?: cover)
     // The game's own spine stood up (reading top to bottom), when it has one.
     // (Update 298: a scan that is both of the insert's end flaps side by side is cut to one spine — singleSpine.)
     val ownUpright = remember(ownBmp) { ownBmp?.let { b -> DerivedArt.of(b, "spine|1") { singleSpine(orientSpine(b, landscape = false)) } } }
@@ -145,7 +146,10 @@ internal fun Case3D(
     // (Update 191: not a template made for another region's shape — a Super Famicom box isn't a US SNES box's shape.)
     val caseTpl = ownCase ?: if (Features.coverTemplates.state.value && !forAll && !LookStyles.caseForAll()) MediaCovers.of(g.platform)
         ?.takeIf { t -> spec == null || spec.shell == CaseShell.JEWEL || kotlin.math.abs(t.frontAspect / spec.aspect - 1f) < 0.15f } else null
-    val tplFront = caseTpl.takeIf { ownFront == null }
+    // (Update 305: never over a front you added yourself — your box front or full wrap is the whole design, its own
+    // band and logos included; the template's band went over a wrap made for another case.)
+    val userFront = remember(g.stableKey, scans) { com.shelf.launcher.data.PhysicalOverrides.of(g.stableKey).keys.any { it == "Box" || it == BoxTexture.LABEL } }
+    val tplFront = caseTpl.takeIf { ownFront == null && !userFront }
     // (Update 169: Steam / Android cases at a SteamGridDB cover's shape — case3dAspect — so the cover fills the window.)
     val fit = tplFront?.takeIf { it.isOwn() && Features.ownCaseFit.state.value }?.fitTo(SGDB_COVER_ASPECT)
     val band = remember(tplFront?.frontRes, fit?.aspect) {
@@ -212,10 +216,19 @@ internal fun Case3D(
     val given = back?.takeUnless { FlatArt.isKnown(it) }
     // (Update 298: flatVersion too — a back cut from the full box scan that turns out a flat stand-in passes on to the
     // printed back; it stayed plain plastic: the Ben 10 PSP case.)
-    val autoBack: Any? = if (given != null) null else remember(scans, g.platform, cover, aspect, flatVersion) { defaultCaseBack(g, scans, cover, aspect) }
+    // (Update 305: what its printed back is made of, from the screen's state — read so that it's only made again when
+    // what it prints changes: the screenshots, description or details arriving.)
+    val printedSpec by remember(g.stableKey, g.platform, aspect) {
+        androidx.compose.runtime.derivedStateOf { BackSources.state.value?.let { printedBackFor(g, it, aspect) } }
+    }
+    val autoBack: Any? = if (given != null) null else remember(scans, g.platform, cover, aspect, flatVersion, printedSpec) { defaultCaseBack(g, scans, cover, aspect, printedSpec) }
     // (Update 302: no back scan and its back is wanted — TheGamesDB's back is asked for once, with your key: TgdbBacks.)
     val noScanBack = given == null && (autoBack == null || autoBack is PrintedBack)
-    if (noScanBack && backAsked) androidx.compose.runtime.LaunchedEffect(g.stableKey) { com.shelf.launcher.data.TgdbBacks.request(g) }
+    if (noScanBack && backAsked) androidx.compose.runtime.LaunchedEffect(g.stableKey) {
+        com.shelf.launcher.data.TgdbBacks.request(g)
+        // (Update 305: and the verified details its printed back may show — once, when its back is actually looked at.)
+        com.shelf.launcher.data.PackagingFactsStore.request(g)
+    }
     // (A scanned back at once; a printed one — drawn from its parts — only once it's turned.)
     val backModel: Any? = given ?: autoBack?.takeIf { back != null || backAsked || (backAtOnce && it !is PrintedBack) }
     // (Update 170: a printed back is made from its parts; a scanned one is a picture.)
@@ -238,6 +251,9 @@ internal fun Case3D(
     // (Update 197: a whole-case scan already shows the tray's ridge — no drawn one over it.)
     val wholeScan = spec?.shell == CaseShell.JEWEL && front != null && isWholeCaseScan(front, shape)
     val look = remember(spec, style, face, wholeScan, spine) { CaseLook.of(spec, style, face, spine).let { if (wholeScan) it.withoutStrip() else it } }
+    // Update 305: a cardboard box's right side, top and bottom — your picture of that side, else one printed for the game,
+    // else plain card (Settings › Game look › Box sides; BoxSides.kt).
+    val boxSides = if (look.flap && look.matte) rememberBoxSides(g, scans, look, shape, depth, front) else null
     // Update 189: what an opened case shows inside (made only for a case that can open).
     // (Update 191: from the real case, and from what lies in it — a disc case holding a cartridge shows the cartridge.)
     val openKind = CaseInside.kindFor(spec, g.platform, inside?.round)
@@ -308,7 +324,7 @@ internal fun Case3D(
                 canvas.nativeCanvas, size.width / 2f, size.height / 2f, w, h, d, yawNow, pitch,
                 face ?: noCover ?: loading, spine, (1f - shadeNow).coerceIn(0f, 1f), reflect,
                 if (frame) frameArgb else 0, 2.5f * density, backFace, look,
-                if (flapOpen) (openOf?.invoke() ?: 0f) else 0f
+                if (flapOpen) (openOf?.invoke() ?: 0f) else 0f, boxSides
             )
         }
     }
@@ -870,7 +886,9 @@ private object CaseDraw {
         /** Update 191: how its outside looks (the real case's plastic, grip, ridge…). */
         look: CaseLook,
         /** Update 191: a cardboard box's top flap, open 0…1 (its tray rises out of it). */
-        flap: Float = 0f
+        flap: Float = 0f,
+        /** Update 305: a cardboard box's right side, top and bottom pictures (BoxSide order; null: plain card). */
+        sides: Array<android.graphics.Bitmap?>? = null
     ) {
         val ty = Math.toRadians(yaw.toDouble()); val tp = Math.toRadians(pitch.toDouble())
         val cy0 = kotlin.math.cos(ty).toFloat(); val sy0 = kotlin.math.sin(ty).toFloat()
@@ -1016,8 +1034,12 @@ private object CaseDraw {
             // (Update 240, #117: the bottom (5) the same plastic / print as the top — CaseLook.top: a keep case's shell, a
             // jewel case's tray seen through it, a box's print colour — lit from below by the face light.)
             val base = if (opening) 0xFF141210.toInt() else if (f == 3 || f == 5) look.top else look.edge
-            fill.color = scaled(base, l)
-            c.drawPath(pathOf(), fill)
+            // (Update 305: a cardboard box's top and bottom with their picture — BoxSides — its folds drawn over it.)
+            val art = if (look.flap && look.matte && !opening) sides?.getOrNull(if (f == 3) 1 else if (f == 5) 2 else -1) else null
+            if (art != null) warp(art, filterOf(l)) else {
+                fill.color = scaled(base, l)
+                c.drawPath(pathOf(), fill)
+            }
             // Update 189: a keep case's opening edge has its thumb grip — a recess in the middle third,
             // where you open it (jewel cases and boxes don't have one; update 191: where the real case has).
             // Update 193: the opening side is two pieces fitted together (CaseLook.seam): the front lid's own
@@ -1097,9 +1119,13 @@ private object CaseDraw {
                     // a bad cut of it — "ME BOY VANCE" down a Game Boy Advance box. No scan of that side exists (a box scan
                     // has one spine), so it's plain cardboard now, lit like the other faces, with its folds.)
                     2 -> if (look.flap && look.matte) {
-                        fill.shader = null
-                        fill.color = scaled(CARDBOARD_SIDE, l)
-                        c.drawPath(pathOf(), fill)
+                        // (Update 305: its own picture or the game's print when there is one — BoxSides.)
+                        val art = sides?.getOrNull(0)
+                        if (art != null) warp(art, filterOf(l)) else {
+                            fill.shader = null
+                            fill.color = scaled(CARDBOARD_SIDE, l)
+                            c.drawPath(pathOf(), fill)
+                        }
                         if (!mirror) {
                             lineOn(0f, 0f, 0f, 1f, scaled(0x66000000, 1f), (w / 400f).coerceIn(0.6f, 2f))
                             lineOn(1f, 0f, 1f, 1f, scaled(0x55000000, 1f), (w / 400f).coerceIn(0.6f, 2f))
@@ -1135,10 +1161,12 @@ private object CaseDraw {
             val k = flap.coerceIn(0f, 1f)
             fill.shader = null
             // Fills the quad just projected: [outer] when its outside faces you, else [inner]; skipped behind the eye.
-            fun quad(p: FloatArray, outer: Int, inner: Int, lit: Float, cull: Boolean = false) {
+            fun quad(p: FloatArray, outer: Int, inner: Int, lit: Float, cull: Boolean = false, outerArt: android.graphics.Bitmap? = null) {
                 for (i in 0 until 4) if (!point(i, p[i * 3], p[i * 3 + 1], p[i * 3 + 2])) return
                 val a = area()
                 if (cull && a <= 0f) return
+                // (Update 305: the tuck flap is the box's top — its picture swings up with it.)
+                if (a > 0f && outerArt != null) { warp(outerArt, filterOf(lit * light)); return }
                 fill.color = scaled(if (a > 0f) outer else inner, lit * light)
                 c.drawPath(pathOf(), fill)
             }
@@ -1156,7 +1184,7 @@ private object CaseDraw {
             val a = Math.toRadians((k * 118f).toDouble())
             val ca = kotlin.math.cos(a).toFloat(); val sa = kotlin.math.sin(a).toFloat()
             val fy = -hh - d * sa; val fz = -hd + d * ca
-            quad(floatArrayOf(-hw, -hh, -hd, hw, -hh, -hd, hw, fy, fz, -hw, fy, fz), look.top, cardInside, 0.95f)
+            quad(floatArrayOf(-hw, -hh, -hd, hw, -hh, -hd, hw, fy, fz, -hw, fy, fz), look.top, cardInside, 0.95f, outerArt = sides?.getOrNull(1))
             val tl = d * 0.4f
             val ey = fy + tl * ca; val ez = fz + tl * sa
             quad(floatArrayOf(-hw * 0.94f, fy, fz, hw * 0.94f, fy, fz, hw * 0.94f, ey, ez, -hw * 0.94f, ey, ez), look.top, cardInside, 0.88f)
@@ -1197,13 +1225,15 @@ private object CaseDraw {
  * scan, else (Settings › Game look › Printed case backs) a printed one with its cover behind the console's back print.
  * Not the game's own scans with one console's case picked for all (R1 › Case).
  */
-internal fun defaultCaseBack(g: Game, scans: List<Pair<String, String>>?, cover: Any?, aspect: Float): Any? {
+internal fun defaultCaseBack(g: Game, scans: List<Pair<String, String>>?, cover: Any?, aspect: Float, printed: PrintedBack? = null): Any? {
     if (!LookStyles.caseForAll()) {
         // (Update 298: never one already found to be a flat-colour stand-in — ScreenScraper's green fill — FlatArt.)
         scans?.firstOrNull { it.first == "Back of the box" }?.second?.takeUnless { FlatArt.isKnown(it) }?.let { return it }
         BoxTexture.fullScan(scans)?.let { BoxTexture.model(it, BoxPart.BACK, g.platform) }?.takeUnless { FlatArt.isKnown(it) }?.let { return it }
     }
-    return if (Features.printedBacks.state.value) PrintedBack(LookStyles.casePlatform(g.platform), cover, emptyList(), null, aspect, gameDisplayName(g.name)) else null
+    // (Update 305: the printed back with the game's hero art, screenshots, description and details — printedBackFor, as
+    // Inspect has it — when the screen's state is known; it was always the cover alone.)
+    return if (Features.printedBacks.state.value) printed ?: PrintedBack(LookStyles.casePlatform(g.platform), cover, emptyList(), null, aspect, gameDisplayName(g.name)) else null
 }
 
 /** Update 294: a cardboard box's unprinted side (Case3D's right side). */
