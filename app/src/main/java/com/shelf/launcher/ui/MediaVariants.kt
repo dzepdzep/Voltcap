@@ -4,9 +4,10 @@ import com.shelf.launcher.R
 import com.shelf.launcher.data.Features
 
 /**
- * Variants on top of the generated template pack (MediaTemplates.kt): Game Boy Color games as the black GBC-only
- * cartridge (the Game Boy shell recoloured, res tpl_cart_gbc_black / tpl_cartl_gbc_black) or the grey dual-mode
- * one (the Game Boy shell as it is), besides the pack's clear GBC shell (Appearance › Game row › Cartridge look).
+ * Variants on top of the generated template pack (MediaTemplates.kt): Game Boy Color games as the black dual-mode
+ * cartridge (the Game Boy shell recoloured, res tpl_cart_gbc_black / tpl_cartl_gbc_black — the real one is the Game Boy
+ * case in black) or the grey Game Boy one (the Game Boy shell as it is), besides the pack's clear Color-only shell
+ * (Appearance › Game row › Cartridge look — a style you pick for all; Update 300 corrected this note, black is dual-mode).
  */
 internal object MediaVariants {
     /** The pack's entry (with the Game Boy Color variants), its box carrying the console's cover template and spine. */

@@ -174,10 +174,13 @@ internal object CartShells {
         CartShell("gb", "Game Boy Game Pak", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
             listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Grey", 0xFFA3A2A8), c("Yellow", 0xFFE8C51E)),
             contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED,
-            note = "Size (57×65×7.8) and sticker (42×37) measured; places estimated. The power-lock notch isn't drawn (its place unconfirmed)."),
-        CartShell("gbc_dual", "Game Boy Color Game Pak (black)", ShellGroup.NINTENDO, 57f, 65.5f, 9f, rect(57f, 65.5f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
+            note = "Size (57×65×7.8) and sticker (42×37) measured; places estimated. The power-lock notch is at the top-right corner seen from the front (Wikipedia, Game Boy Game Pak) — drawn on the back (CartBacks), not on the front."),
+        // (Update 300: the black dual-mode Game Pak is the Game Boy's own case in black — Game Verifying: "GBC games with
+        // black DMG cases… follow the same rules as the DMG games" — so it has the Game Boy shell's size, not the clear
+        // Color-only cart's 9 mm.)
+        CartShell("gbc_dual", "Game Boy Color Game Pak (black)", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
             listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Black", 0xFF1C1C1E)),
-            contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, note = "Size measured; layout as Game Boy (estimated)."),
+            contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED, note = "The Game Boy case in black (Game Verifying); its size as the Game Boy shell, places estimated."),
         CartShell("gbc", "Game Boy Color Game Pak (clear)", ShellGroup.NINTENDO, 57f, 65.5f, 9f, rect(57f, 65.5f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
             listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Clear", 0xFFE6E8EA, 0.45f)),
             contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, note = "Clear shell, the board shows through; size measured, layout estimated."),
@@ -200,10 +203,12 @@ internal object CartShells {
         // 33 mm card): the sticker is 27 × 29 mm from 2.9 mm in and 1.6 mm down — it carries the printed NINTENDO DS
         // logo itself — with plain charcoal plastic below it and the lower left corner cut off. It was a 28 × 28 window
         // under a moulded ridge, the cover under a console band across it: it read as a little box.)
-        CartShell("ds", "Nintendo DS Game Card", ShellGroup.NINTENDO, 33f, 35f, 3.8f,
+        // (Update 300: 3.64 mm thick — Game Verifying: "All legitimate Nintendo DS cartridges have a cart thickness of
+        // 3.64mm, ± 0.02mm". It was 3.8.)
+        CartShell("ds", "Nintendo DS Game Card", ShellGroup.NINTENDO, 33f, 35f, 3.64f,
             o(0f, 0f, 1.2f, 33f, 0f, 1.2f, 33f, 35f, 0.8f, 2.6f, 35f, 0.3f, 0f, 32.4f, 0.3f), lab(2.9f, 1.6f, 27f, 29f),
             emptyList(), colours = listOf(c("Dark grey", 0xFF45464B), c("White", 0xFFF2F2F2)), // (Update 210: V3's DS dark grey preset)
-            contactsBack = floatArrayOf(2f, 29f, 29f, 5f), check = CaseCheck.ESTIMATED, note = "Size measured (33×35×3.8); sticker 27×29 and the cut corner measured off a photo (approximate)."),
+            contactsBack = floatArrayOf(2f, 29f, 29f, 5f), check = CaseCheck.ESTIMATED, note = "Size 33×35 measured, 3.64 thick (Game Verifying); sticker 27×29 and the cut corner measured off a photo (approximate)."),
         CartShell("3ds", "Nintendo 3DS Game Card", ShellGroup.NINTENDO, 34f, 35f, 3.8f,
             // (Update 208: the sticker as on the DS card — the 3DS card is the same form with its side tab.)
             o(0f, 0f, 1.5f, 33f, 0f, 0.3f, 33f, 3f, 0.3f, 34f, 3.5f, 0.3f, 34f, 7f, 0.3f, 33f, 7.5f, 0.3f, 33f, 35f, 0.8f, 2.6f, 35f, 0.3f, 0f, 32.4f, 0.3f), lab(2.9f, 1.6f, 27f, 29f),
@@ -372,9 +377,13 @@ internal object CartShells {
             colours = listOf(c("Grey", 0xFF8E9096)), extras = listOf(ShellExtra(ShellExtra.SLOT, 6f, 30f, 108f, 2.5f)), check = CaseCheck.PLACEHOLDER,
             note = "The head with its card slot over a Game Boy Advance plug (estimated)."),
         CartShell("np_sfc", "Nintendo Power SF Memory", ShellGroup.SPECIAL, 127f, 86f, 20f, rect(127f, 86f, 12f, 2f), lab(12f, 8f, 103f, 52f),
-            colours = listOf(c("Grey", 0xFFA9A8AD)), check = CaseCheck.ESTIMATED, note = "The Super Famicom shell; its own colour unconfirmed."),
+            // (Update 300: white — MarioWiki: "special, white flash memory cartridges known as SF Memory Cassettes"; the
+            // colour value is an approximation.)
+            colours = listOf(c("White", 0xFFECECE9)), check = CaseCheck.ESTIMATED, note = "The Super Famicom shell in white (MarioWiki); shape not separately measured."),
+        // (Update 300: white — MarioWiki: "white GB Memory Cartridges"; Bulbapedia's infobox "Colors: White". It was a dark
+        // grey placeholder.)
         CartShell("np_gb", "Nintendo Power GB Memory", ShellGroup.SPECIAL, 57f, 65.5f, 9f, rect(57f, 65.5f, 2f, 1f), lab(5f, 8f, 47f, 42f),
-            colours = listOf(c("Dark grey", 0xFF3C3C42)), check = CaseCheck.PLACEHOLDER, note = "Assumed the Game Boy Color size; colour unconfirmed.")
+            colours = listOf(c("White", 0xFFECECE9)), check = CaseCheck.PLACEHOLDER, note = "White (MarioWiki, Bulbapedia); the Game Boy Color size assumed, not measured.")
     )
 
     private val byId: Map<String, CartShell> = all.associateBy { it.id }
@@ -424,7 +433,25 @@ internal object CartShells {
      */
     fun authenticIdFor(platform: String, region: CaseRegion, gameKey: String?): String? {
         val id = authenticId(platform, region) ?: return null
+        // Update 300: a Famicom Disk System image (the scanner files .fds under NES — its emulator and launch stay as they
+        // are) is drawn as the disk, not as an NES / Famicom cartridge.
+        if (platform == "NES" && gameKey != null && isFdsFile(gameKey)) return "fds"
+        // Update 300: Game Boy / Color — the ROM's own header first (RomHeaders: 0x80 the black dual-mode Game Pak, 0xC0
+        // the clear Color-only one, else the grey Game Boy one); the file name's "(GB Compatible)" tag only when the
+        // header can't be read (yet).
+        if (id == "gb" || id == "gbc") when (com.shelf.launcher.data.RomHeaders.gb(gameKey, platform)) {
+            com.shelf.launcher.data.RomHeaders.Gb.CGB_DUAL -> return "gbc_dual"
+            com.shelf.launcher.data.RomHeaders.Gb.CGB_ONLY -> return "gbc"
+            com.shelf.launcher.data.RomHeaders.Gb.DMG -> return "gb"
+            null -> {}
+        }
         return if (id == "gbc" && gameKey != null && gameKey.contains("GB Compatible", ignoreCase = true)) "gbc_dual" else id
+    }
+
+    /** A Famicom Disk System image (.fds, also zipped as "….fds.zip"). */
+    fun isFdsFile(gameKey: String): Boolean {
+        val k = gameKey.lowercase()
+        return k.endsWith(".fds") || k.endsWith(".fds.zip") || k.endsWith(".fds.7z")
     }
 
     fun authenticId(platform: String, region: CaseRegion): String? = when (platform) {

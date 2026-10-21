@@ -118,8 +118,8 @@ internal object MediaEditions {
         Edition("gb_pkmn_yellow", "Yellow cartridge", setOf("GB", "GBC"), listOf("pokemon yellow version special pikachu edition", "pokemon yellow version", "pokemon yellow"), setOf("US", "EU", "AU"), "gb", "pkmn_yellow", EditionStatus.VERIFIED, true, listOf("https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"), "A Game Boy (DMG-shaped) cartridge in yellow."),
         Edition("gb_pkmn_gold", "Gold cartridge", setOf("GB", "GBC"), listOf("pokemon gold version", "pokemon gold"), setOf("US", "EU", "AU"), "gbc_dual", "pkmn_gold", EditionStatus.VERIFIED, true, listOf("https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"), "Dual-mode (black-style) Game Pak shape in sparkling gold."),
         Edition("gb_pkmn_silver", "Silver cartridge", setOf("GB", "GBC"), listOf("pokemon silver version", "pokemon silver"), setOf("US", "EU", "AU"), "gbc_dual", "pkmn_silver", EditionStatus.VERIFIED, true, listOf("https://gameverifying.com/wiki/cart-based-systems/gameboy/casing", "V3 spec (not re-checked)"), "Silver isn't in the part of Game Verifying's casing list that loaded; the western silver cartridge is well known. Colour approximate."),
-        Edition("gb_pkmn_gold_jp", "Two-tone cartridge (Japan)", setOf("GB", "GBC"), listOf("pocket monsters kin", "pocket monsters gold"), setOf("JP"), "gbc_dual", "pkmn_gold_jp", EditionStatus.PENDING, false, listOf("V3 spec (not re-checked)"), "Dark blue front / dark grey back per the V3 spec; not yet checked against a photograph."),
-        Edition("gb_pkmn_silver_jp", "Two-tone cartridge (Japan)", setOf("GB", "GBC"), listOf("pocket monsters gin", "pocket monsters silver"), setOf("JP"), "gbc_dual", "pkmn_silver_jp", EditionStatus.PENDING, false, listOf("V3 spec (not re-checked)"), "Dark grey front / dark blue back per the V3 spec; not yet checked against a photograph."),
+        Edition("gb_pkmn_gold_jp", "Two-tone cartridge (Japan)", setOf("GB", "GBC"), listOf("pocket monsters kin", "pocket monsters gold"), setOf("JP"), "gbc_dual", "pkmn_gold_jp", EditionStatus.VERIFIED, true, listOf("https://gameverifying.com/wiki/cart-based-systems/gameboy/dmg"), "Update 300 — Game Verifying: \"The front half of Gold should be dark blue and the back half should be a dark grey.\" Colours approximate."),
+        Edition("gb_pkmn_silver_jp", "Two-tone cartridge (Japan)", setOf("GB", "GBC"), listOf("pocket monsters gin", "pocket monsters silver"), setOf("JP"), "gbc_dual", "pkmn_silver_jp", EditionStatus.VERIFIED, true, listOf("https://gameverifying.com/wiki/cart-based-systems/gameboy/dmg"), "Update 300 — Game Verifying: \"The Japanese Silver is the exact opposite\" of Gold (dark grey front, dark blue back). Colours approximate."),
         Edition("gb_dkland", "Yellow cartridge", setOf("GB"), listOf("donkey kong land"), setOf("US", "EU", "AU"), null, "yellow", EditionStatus.VERIFIED, true, listOf("https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"), "Game Verifying lists Donkey Kong Land in yellow (DMG-09)."),
         Edition("gb_dkland23", "Yellow cartridge", setOf("GB"), listOf("donkey kong land 2", "donkey kong land iii", "donkey kong land 3"), setOf("US", "EU", "AU"), null, "yellow", EditionStatus.PENDING, false, listOf("V3 spec (not re-checked)"), "\"Donkey Kong Land series — yellow\" (V3 spec); the sequels not confirmed separately."),
         Edition("gb_tamagotchi", "Pink cartridge", setOf("GB"), listOf("tamagotchi"), setOf("US", "EU", "AU"), null, "pink", EditionStatus.VERIFIED, false, listOf("https://gameverifying.com/wiki/cart-based-systems/gameboy/casing"), "Game Verifying lists Tamagotchi in pink; other Tamagotchi releases differ, so it isn't picked by itself."),
@@ -137,14 +137,14 @@ internal object MediaEditions {
         Edition("gba_drill_dozer", "Drill Dozer rumble shell, brown", setOf("GBA"), listOf("drill dozer", "screw breaker*"), setOf("US", "EU", "AU", "JP"), "drill_dozer", "brown", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/depository/gba"), "AGB-021A (AGB-021 in Japan), brown; shape estimated."),
         Edition("gba_twisted", "WarioWare: Twisted! shell, transparent grey", setOf("GBA"), listOf("warioware twisted"), setOf("US", "EU", "AU"), "warioware_twisted", "twisted_grey", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/depository/gba"), "AGB-019A; shape estimated."),
         Edition("gba_mawaru", "Mawaru Made in Wario shell, translucent white", setOf("GBA"), listOf("mawaru made in wario"), setOf("JP"), "warioware_twisted", "mawaru_white", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/depository/gba"), "AGB-019; shape estimated."),
-        Edition("gba_yoshi_topsy", "Yoshi Topsy-Turvy tilt shell, green and white", setOf("GBA"), listOf("yoshi topsy turvy", "yoshis universal gravitation", "yoshi no banyuu inryoku"), setOf("US", "EU", "AU", "JP"), "yoshi_topsy", "yoshi_green_white", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/depository/gba"), "AGB-013; PAL copies have a different front casing (not drawn). Which half is green not confirmed."),
+        Edition("gba_yoshi_topsy", "Yoshi Topsy-Turvy tilt shell, green and white", setOf("GBA"), listOf("yoshi topsy turvy", "yoshis universal gravitation", "yoshi no banyuu inryoku"), setOf("US", "JP"), "yoshi_topsy", "yoshi_green_white", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/depository/gba"), "AGB-013; PAL copies have a different front casing (not drawn — Update 300: so Europe and Australia no longer get this one by themselves). Which half is green not confirmed."),
         Edition("gba_classic_nes", "Classic NES Series medium grey", setOf("GBA"), listOf("classic nes series*"), setOf("US", "EU", "AU"), "gba", "classic_nes_grey", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/depository/gba"), ""),
         Edition("gba_video", "GBA Video light grey", setOf("GBA"), listOf("game boy advance video*", "gba video*"), setOf("US", "EU", "AU"), "gba", "gba_video_grey", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/depository/gba"), ""),
         Edition("gba_bitgen", "bit Generations black", setOf("GBA"), listOf("bit generations*"), setOf("JP"), "gba", "black", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/depository/gba"), ""),
         Edition("gba_exe4_blue", "Blue cartridge (Japan)", setOf("GBA"), listOf("rockman exe 4 tournament blue moon", "rockman exe 4 blue moon"), setOf("JP"), "gba", "blue", EditionStatus.VERIFIED, false, listOf("https://www.gameverifying.com/wiki/depository/gba"), "Also released in a standard grey cartridge — choose in Cartridge shell…"),
         Edition("gba_exe4_red", "Red cartridge (Japan)", setOf("GBA"), listOf("rockman exe 4 tournament red sun", "rockman exe 4 red sun"), setOf("JP"), "gba", "red", EditionStatus.VERIFIED, false, listOf("https://www.gameverifying.com/wiki/depository/gba"), "Also released in a standard grey cartridge — choose in Cartridge shell…"),
         Edition("gba_exe5_colonel", "Teal cartridge (Japan)", setOf("GBA"), listOf("rockman exe 5 team of colonel"), setOf("JP"), "gba", "teal", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/depository/gba"), ""),
-        Edition("ds_ntr031", "Infrared crimson card (NTR-031)", setOf("NDS"), listOf("pokemon heartgold version", "pokemon soulsilver version", "pokemon black version", "pokemon white version", "pokemon black version 2", "pokemon white version 2", "pokemon heartgold", "pokemon soulsilver", "pokemon black", "pokemon white", "pokemon black 2", "pokemon white 2", "pocket monsters heartgold", "pocket monsters soulsilver", "pocket monsters black", "pocket monsters white", "pocket monsters black 2", "pocket monsters white 2", "personal trainer walking", "walk with me*", "active health with carol vorderman"), setOf("US", "EU", "AU", "JP"), "ds", "ntr031", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/cart-based-systems/nds031", "https://bulbapedia.bulbagarden.net/wiki/Game_Pak"), "Eight known NTR-031 games (Game Verifying). The crimson-light trick isn't proof of authenticity."),
+        Edition("ds_ntr031", "Infrared crimson card (NTR-031)", setOf("NDS"), listOf("pokemon heartgold version", "pokemon soulsilver version", "pokemon black version", "pokemon white version", "pokemon black version 2", "pokemon white version 2", "pokemon heartgold", "pokemon soulsilver", "pokemon black", "pokemon white", "pokemon black 2", "pokemon white 2", "pocket monsters heartgold", "pocket monsters soulsilver", "pocket monsters black", "pocket monsters white", "pocket monsters black 2", "pocket monsters white 2", "personal trainer walking", "walk with me*", "active health with carol vorderman"), setOf("US", "EU", "AU", "JP", "KOREA"), "ds", "ntr031", EditionStatus.VERIFIED, true, listOf("https://www.gameverifying.com/wiki/cart-based-systems/nds031", "https://bulbapedia.bulbagarden.net/wiki/Game_Pak"), "Eight known NTR-031 games (Game Verifying). The crimson-light trick isn't proof of authenticity."),
         Edition("nes_zelda_gold", "Gold cartridge", setOf("NES"), listOf("legend of zelda"), setOf("US"), "nes", "zelda_gold", EditionStatus.VERIFIED, false, listOf("https://www.thelegendofnes.com/game-specific-variants"), "Original release (NES-ZL-USA). A grey Classic Series re-issue exists — choose in Cartridge shell…"),
         Edition("nes_zelda_grey", "Grey cartridge (Classic Series)", setOf("NES"), listOf("legend of zelda"), setOf("US"), "nes", "nes_grey", EditionStatus.ALTERNATE, false, listOf("https://www.thelegendofnes.com/game-specific-variants"), "NES-ZL-USA-1."),
         Edition("nes_zelda2_gold", "Gold cartridge", setOf("NES"), listOf("zelda ii adventure of link"), setOf("US"), "nes", "zelda_gold", EditionStatus.VERIFIED, false, listOf("https://www.thelegendofnes.com/game-specific-variants"), "Original release (NES-AL-USA). A grey Classic Series re-issue exists — choose in Cartridge shell…"),
@@ -186,9 +186,18 @@ internal object MediaEditions {
     }
 
     /** The file name of a game key (a path, or a content address with its slashes escaped). */
-    fun fileNameOf(gameKey: String): String =
-        java.net.URLDecoder.decode(gameKey.replace("+", "%2B"), "UTF-8").substringAfterLast('/').substringAfterLast(':')
-            .substringBeforeLast('.').trim()
+    private val INNER = setOf("gb", "gbc", "sgb", "gba", "nds", "dsi", "3ds", "nes", "fds", "sfc", "smc", "n64", "z64", "v64",
+        "md", "gen", "smd", "sms", "gg", "32x", "pce", "ws", "wsc", "ngp", "ngc", "a26", "a52", "a78", "lnx", "j64", "col", "int", "vec", "min", "vb")
+
+    fun fileNameOf(gameKey: String): String {
+        val name = java.net.URLDecoder.decode(gameKey.replace("+", "%2B"), "UTF-8").substringAfterLast('/').substringAfterLast(':')
+        // (Update 300: an archive named after its ROM — "… [patched].gbc.zip" — loses both endings; the ROM's ".gbc" was
+        // read as part of the title and no edition matched.)
+        val ext = name.substringAfterLast('.', "").lowercase()
+        var base = name.substringBeforeLast('.')
+        if ((ext == "zip" || ext == "7z") && base.substringAfterLast('.', "").lowercase() in INNER) base = base.substringBeforeLast('.')
+        return base.trim()
+    }
 
     private fun matches(e: Edition, fileName: String, title: String): Boolean = e.titles.any { t ->
         when {
@@ -211,17 +220,35 @@ internal object MediaEditions {
     }
 
     private val NONE = Edition("", "", emptySet(), emptyList(), emptySet(), null, null, EditionStatus.PENDING, false, emptyList(), "")
+
+    /**
+     * Update 300: the white DSi-exclusive card (NTR-005 white) — chosen by the game's own DS header (unit code 03h =
+     * DSi only, RomHeaders), not by its title. Game Verifying: "This variant of the NTR-005 is used for DSi Exclusive
+     * games"; Wikipedia (Nintendo Game Card): "These titles have game cards with white-colored casings."
+     */
+    val DSI_WHITE = Edition("ds_dsi_white", "White card (DSi exclusive)", setOf("NDS"), emptyList(), emptySet(), "ds", "dsi_white",
+        EditionStatus.VERIFIED, true, listOf("https://gameverifying.com/wiki/cart-based-systems/nds", "https://en.wikipedia.org/wiki/Nintendo_Game_Card"),
+        "Picked from the game's DS header (DSi only); colour approximate.")
     private val autoCache = java.util.concurrent.ConcurrentHashMap<String, Edition>()
 
     /** The edition picked by itself for this game, or null. (Worked out once per game: mediaFor asks on every draw.) */
     fun auto(platform: String, gameKey: String?): Edition? {
         if (!Features.realEditions.state.value || gameKey.isNullOrEmpty()) return null
-        return autoCache.getOrPut("$platform|$gameKey") { autoNow(platform, gameKey) ?: NONE }.takeIf { it !== NONE }
+        autoCache["$platform|$gameKey"]?.let { return it.takeIf { e -> e !== NONE } }
+        val found = autoNow(platform, gameKey)
+        // (Update 300: not kept while the ROM's header is still being read — the answer may change when it arrives.)
+        if (found != null || !(com.shelf.launcher.data.RomHeaders.reads(platform) && com.shelf.launcher.data.RomHeaders.pending(gameKey)))
+            autoCache["$platform|$gameKey"] = found ?: NONE
+        return found
     }
 
     private fun autoNow(platform: String, gameKey: String): Edition? {
         val list = forGame(platform, gameKey).filter { it.auto && it.status == EditionStatus.VERIFIED }
-        if (list.isEmpty()) return null
+        if (list.isEmpty()) {
+            // (Update 300: no title edition — a DSi-only DS game is on the white card.)
+            if (platform == "NDS" && com.shelf.launcher.data.RomHeaders.nds(gameKey, platform) == com.shelf.launcher.data.RomHeaders.Nds.DSI_ONLY) return DSI_WHITE
+            return null
+        }
         val regions = regionsOf(runCatching { fileNameOf(gameKey) }.getOrDefault(gameKey))
         // (The file has to say where it's from, and every place it names must have had this edition.)
         val fit = list.filter { e -> regions.isNotEmpty() && e.regions.containsAll(regions) }

@@ -4,6 +4,35 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 21 Oct 2026 (300): cartridge accuracy — ROM headers pick the Game Boy Color / DSi card, Japanese Gold & Silver, Disk System disks, white Nintendo Power carts, DS card thickness — after release 0.6.26
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** The full audit (system, variant, region, before, change, source, VERIFIED / ESTIMATED / CONFLICTING / UNCONFIRMED) is `docs\physical_media\CARTRIDGE_AUDIT_300.md` (also in the project as `CARTRIDGE_AUDIT_300.md`).
+
+- **Game Boy / Color from the ROM header (new `data/RomHeaders.kt`).** Byte 0x0143 (Pan Docs): 80h → the black dual-mode Game Pak, C0h → the clear Color-only one, anything else → the grey Game Boy one. Only trusted when the header checksum matches; read on a background thread, 0x240 bytes, from plain files, content addresses and .zip (the first ROM inside); .7z stays unknown. Kept with the file's size and date (a changed file is read again; an unreadable one is retried once per run). The "(GB Compatible)" file-name tag is now only the fallback. Your picks, console styles and verified editions still come first; console, emulator, launch, saves untouched. On the Thor: header read confirmed (Pokémon Picross (Proto) → 80h). On Toni's library 6 untagged GBC files are 80h (e.g. The Smurfs' Nightmare (USA), South Park (Proto)); Pokémon Yellow is 80h on the GB list but keeps its own yellow edition.
+- **Black dual-mode cart = the Game Boy case in black** (Game Verifying): same 57×65×7.8 as `gb` (it was the clear cart's 9 mm).
+- **DS: white DSi-exclusive card from the header** (unit code 03h; Game Verifying / Wikipedia). DSiWare (title-ID category 00030004 — Cave Story, Dragon Quest Wars, Game & Watch… on Toni's Thor) were never on a card and keep the standard one. `dsi_white` (existing material) is used for the first time. No DSi-only retail card is in the library, so the white card itself wasn't seen on the device.
+- **DS card 3.64 mm thick** (Game Verifying), was 3.8.
+- **Pocket Monsters Kin / Gin (Japan): verified and automatic** — dark-blue front / dark-grey back, Gin the opposite (Game Verifying's DMG guide). Western Gold / Silver, Crystal unchanged.
+- **NTR-031 infrared cards: Korea added** (Game Verifying lists Korean releases).
+- **Yoshi Topsy-Turvy: no longer picked by itself in Europe / Australia** ("PAL copies have a different front casing", not drawn).
+- **Famicom Disk System (.fds, also .fds.zip):** drawn as the FDS disk, not an NES / Famicom cartridge. The scanner still files them under NES (emulator and launch unchanged).
+- **Nintendo Power GB Memory and SF Memory: white** (MarioWiki, Bulbapedia — text sources); were dark grey / grey placeholders.
+- **Zipped ROM names** ("… [patched].gbc.zip"): the ROM's own ending is dropped too, so the edition matches (Pokémon Silver [patched] had no edition).
+- Comment fixes: `MediaVariants` (black is dual-mode), the Game Boy notch place.
+
+Not changed (see the audit for why): N64 / NES / SNES / Sega mappings (already match their sources), GBC moulded top text (needs new front geometry), Pokémon Pinball / Game Boy Camera outlines, Famicom Mini colours, Sega and rare-system proportions (ConsoleMods offline today), the template-pack "Game Boy Color cartridge look" setting (an intentional style you pick), Switch (297) and Switch 2.
+
+Files touched:
+- `src_copy\data\RomHeaders.kt` (new)
+- `src_copy\MainActivity.kt` (one line: `RomHeaders.init`)
+- `src_copy\ui\CartShells.kt`, `src_copy\ui\MediaEditions.kt`, `src_copy\ui\ShellMaterials.kt`, `src_copy\ui\MediaVariants.kt`
+- `project_copy\app\src\test\java\com\shelf\launcher\ui\Cartridges300Test.kt` (new, 17 tests: GBC / GB / invalid headers, DS unit codes, DSiWare, CRC, FDS, file-name fallback, Kin / Gin, western Gold, Crystal, NTR-031 Korea, Yoshi PAL, DSi white, Nintendo Power white, zipped names, shell sizes)
+- `docs\physical_media\CARTRIDGE_AUDIT_300.md` (new), `docs\physical_media\MEDIA_EDITIONS.md`
+
+Checked on the Thor: the header reader on real files (GBC 80h read and kept); DSiWare vs card titles in the library (by their headers); no change to the home row's real cartridge photos (scans still win). Not seen on the device: a header-only black cart drawn (the GBC games I opened all had real cartridge photos), the white DSi card, an .fds game (none in the library), Japanese Kin / Gin (not in the library), the Flip 2.
+
+---
+
 ## Update — 21 Oct 2026 (299): Volume Mixer widget, widget sizes and drag-to-reorder on the second screen's Widget Board — after release 0.6.26
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** Your Widget Board was put back exactly as it was after testing (Now Playing, System Stats; no sizes).
