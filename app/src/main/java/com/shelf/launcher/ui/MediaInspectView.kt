@@ -1755,7 +1755,22 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                     at(-depth / 2f) { drawLayer(back) }
                 }
                 // (Update 275: what's seen through the openings, over the faces — clipped to each opening.)
-                if (under != null && uv != null) CartUndersides.drawInside(this, under.geo, uv, plasticArgb, under.opacity)
+                // (Update 296, Toni: "floating objects round some cartridges" — seen on Astérix & Obélix XXL's GBA
+                // cartridge from behind: the real GBA's corner notches sit at the real shell's foot, and on your pack's
+                // GBA shape (narrower at the bottom) or a photo, that's past the piece's own edge, so their dark inner
+                // walls hung in the air beside the plug. Now everything seen through the openings is cut to the piece's
+                // own outline through its thickness (its slices' silhouettes): nothing can show outside the cartridge.)
+                if (under != null && uv != null) {
+                    val cv = drawContext.canvas
+                    val room = androidx.compose.ui.geometry.Rect(-w, -h, 2f * w, 2f * h)
+                    cv.saveLayer(room, androidx.compose.ui.graphics.Paint())
+                    CartUndersides.drawInside(this, under.geo, uv, plasticArgb, under.opacity)
+                    cv.saveLayer(room, androidx.compose.ui.graphics.Paint().apply { blendMode = BlendMode.DstIn })
+                    val mn = n.coerceAtLeast(1)
+                    for (k in 0..mn) at(-depth / 2f + depth * k / mn) { drawLayer(solid) }
+                    cv.restore()
+                    cv.restore()
+                }
             }
         }
     ) { PieceFace(p, Modifier.fillMaxSize()) }

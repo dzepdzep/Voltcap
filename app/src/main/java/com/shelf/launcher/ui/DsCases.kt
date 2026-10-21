@@ -26,13 +26,30 @@ import com.shelf.launcher.data.Game
  * stays unknown: a game with copies of both kinds (Mario Kart DS) keeps the default until you pick one. Only how the
  * case is drawn: the GBA holder is a moulded recess, never an unrelated cartridge, and has nothing to do with the
  * console's Slot-2.
+ *
+ * Update 296 (Toni: "a GBA cartridge holder appears in every DS case — show it only where the real retail case had one"):
+ * the cause was the defaults — every game without evidence was drawn in its region's case WITH the holder (Europe and
+ * Japan always; North America for anything before 2011, and for every game whose release year wasn't known yet). Now:
+ *  - a holder is drawn only for a game whose evidence says its case had one (PRESENT), for that region;
+ *  - a game whose evidence says it hadn't (ABSENT) gets that region's slotless case (the eco case in North America from
+ *    2011, else the plain case with just the card holder);
+ *  - everything else is UNKNOWN: no holder is invented — the region's plain case with only the card holder (a documented
+ *    fallback, shown as "unknown" in the game's menu › DS case…, where any case can still be picked);
+ *  - evidence names its region; it's never copied to the game's other regional editions;
+ *  - a game with genuine variants of both kinds (an early printing with the holder, a later reprint without) stays
+ *    unknown until you pick the one you have.
+ * The research and every source: docs/claude/DS_CASES.md.
  */
 internal enum class DsCaseVariant(val label: String, val detail: String, val region: CaseRegion, val gbaHolder: Boolean, val eco: Boolean) {
     NA_GBA("North America · black, with GBA holder", "Black 15 mm case: DS card holder, GBA cartridge holder under it.", CaseRegion.US, true, false),
     NA_ECO("North America · eco case, no GBA holder", "Later black eco case (from late 2010): card holder only, recycling cut-outs.", CaseRegion.US, false, true),
     EU_CLEAR("Europe · clear, with GBA holder", "Clear 20 mm PAL case: 4 × 4 cm card holder, 6 × 2.5 cm GBA holder.", CaseRegion.EU, true, false),
     EU_BLACK("Europe · black (Asian-made), with GBA holder", "Black 15 mm case found on some PAL games, GBA holder present.", CaseRegion.EU, true, false),
-    JP("Japan · black, with GBA holder", "As the North American black case.", CaseRegion.JP, true, false)
+    JP("Japan · black, with GBA holder", "As the North American black case.", CaseRegion.JP, true, false),
+    // Update 296: the same cases without the GBA holder — the DS card holder only (no mounting, recess or clips left behind).
+    NA_PLAIN("North America · black, no GBA holder", "Black 15 mm case with the DS card holder only (not the eco case).", CaseRegion.US, false, false),
+    EU_CLEAR_PLAIN("Europe · clear, no GBA holder", "Clear 20 mm PAL case with the 4 × 4 cm card holder only.", CaseRegion.EU, false, false),
+    JP_PLAIN("Japan · black, no GBA holder", "Black 15 mm case with the DS card holder only.", CaseRegion.JP, false, false)
 }
 
 /** How sure a game's case is. */
@@ -41,6 +58,8 @@ internal enum class DsCaseStatus(val label: String) {
     VERIFIED("Verified"),
     REPORTED("Reported by collectors — not verified"),
     DEFAULT("Default for its region and year — not verified"),
+    /** Update 296: nothing found for this game in this region — no GBA holder is drawn (the plain case). */
+    UNKNOWN("Unknown — no evidence for this game and region, so no GBA holder is drawn"),
 }
 
 /**
@@ -56,29 +75,64 @@ internal object DsCases {
     private const val NINTENDO_LIFE_ECO = "https://www.nintendolife.com/forums/ds/ds_gets_its_eco_friendly_box"
     private const val PADERETRO = "https://paderetro.com/2014/03/24/tout-savoir-sur-les-jeux-nintendo-ds-euro/"
 
-    /** The evidence, as Toni gathered it and as checked (Reddit could not be opened from here: those stay "reported"). */
+    private const val CAG_ECO = "https://www.cheapassgamer.com/threads/eco-friendly-ds-cases-no-more-gba-slot.246662/"
+
+    /**
+     * The evidence (Update 296: every entry names its region — none is copied to another regional edition; [hasGba]
+     * null = genuine copies of both kinds are reported). Reddit and Stack Exchange could not be opened from the research
+     * session (blocked), so what comes only from them stays REPORTED, as Toni passed it on; the North American region of
+     * those posts is assumed from the posts' English-language US context and says so in the note. Details and the
+     * conflicts: docs/claude/DS_CASES.md.
+     */
     val evidence: List<DsCaseEvidence> = listOf(
+        // ---- North America ----
         DsCaseEvidence("mario vs donkey kong miniland mayhem", CaseRegion.US, false, DsCaseStatus.VERIFIED, "high",
             listOf(NINTENDO_LIFE_ECO), "Contemporary report (Nov 2010): the first DS game in the eco case, GBA slot removed."),
-        DsCaseEvidence("pokemon platinum", null, true, DsCaseStatus.REPORTED, "medium",
-            listOf("https://www.reddit.com/r/NintendoDS/comments/1p4aclb/"), "Owner photograph showing the GBA holder."),
-        DsCaseEvidence("kingdom hearts 3582 days", null, true, DsCaseStatus.REPORTED, "medium",
-            listOf("https://www.reddit.com/r/NintendoDS/comments/1ryj5ux/"), "A collector's checked case had the GBA holder."),
-        DsCaseEvidence("super mario 64 ds", null, true, DsCaseStatus.REPORTED, "low",
-            emptyList(), "Early-case collector reports."),
-        DsCaseEvidence("pokemon diamond", CaseRegion.EU, true, DsCaseStatus.REPORTED, "low",
-            emptyList(), "UK PAL owner report; whether that case is original isn't confirmed."),
+        DsCaseEvidence("golden sun dark dawn", CaseRegion.US, false, DsCaseStatus.REPORTED, "medium",
+            listOf(CAG_ECO), "Buyer report, Dec 2010 (US retailers): \"My new Golden Sun game came that way\" — the eco case, no GBA slot."),
+        DsCaseEvidence("super mario 64 ds", CaseRegion.US, null, DsCaseStatus.REPORTED, "medium",
+            listOf(CAG_ECO), "Both kinds: the 2004 printing in the black case with the holder (collector reports), and a reprint bought Jan 2011 \"came in an eco case\". Pick the one you have."),
+        DsCaseEvidence("pokemon platinum", CaseRegion.US, true, DsCaseStatus.REPORTED, "medium",
+            listOf("https://www.reddit.com/r/NintendoDS/comments/1p4aclb/whats_supposed_to_go_here/"), "Owner photograph of the GBA holder (\"what's supposed to go here?\"). Region assumed North America (English-language post; the page couldn't be opened to confirm)."),
+        DsCaseEvidence("animal crossing wild world", CaseRegion.US, true, DsCaseStatus.REPORTED, "medium",
+            listOf("https://www.reddit.com/r/NintendoDS/comments/1dk2hqa/"), "Owner photograph of the case with the GBA holder. Region assumed North America (not confirmed)."),
+        DsCaseEvidence("kingdom hearts 3582 days", CaseRegion.US, null, DsCaseStatus.REPORTED, "low",
+            listOf("https://www.reddit.com/r/NintendoDS/comments/1ryj5ux/nintendo_ds_game_case/"), "Conflicting: one collector's original case had the holder, another copy hasn't — possibly a replacement case. Region assumed North America."),
+        DsCaseEvidence("chrono trigger", CaseRegion.US, null, DsCaseStatus.REPORTED, "low",
+            listOf("https://www.reddit.com/r/NintendoDS/comments/1ryj5ux/nintendo_ds_game_case/"), "A slotless copy is reported, but whether that case is original is uncertain. Region assumed North America."),
+        DsCaseEvidence("shin megami tensei devil survivor 2", CaseRegion.US, false, DsCaseStatus.REPORTED, "medium",
+            listOf("https://www.reddit.com/r/nds/comments/vfg30c/"), "Collectors report copies without the GBA holder. Region assumed North America (Atlus USA)."),
+        DsCaseEvidence("shin megami tensei devil survivor", CaseRegion.US, false, DsCaseStatus.REPORTED, "medium",
+            listOf("https://www.reddit.com/r/nds/comments/vfg30c/"), "Collectors report copies without the GBA holder. Region assumed North America (Atlus USA)."),
         DsCaseEvidence("kirby mass attack", CaseRegion.US, false, DsCaseStatus.REPORTED, "medium",
             listOf("https://www.reddit.com/r/gamecollecting/comments/wyu0o9/"), "Collector report of the later case without the holder."),
         DsCaseEvidence("pokemon black version 2", CaseRegion.US, false, DsCaseStatus.REPORTED, "medium",
-            listOf("https://www.reddit.com/r/nds/comments/17edbew/"), "Owner report: no holder, recycling cut-out."),
+            listOf("https://www.reddit.com/r/nds/comments/17edbew/"), "Owner report: no holder, recycling cut-out (the eco case)."),
         DsCaseEvidence("pokemon black 2", CaseRegion.US, false, DsCaseStatus.REPORTED, "medium",
-            listOf("https://www.reddit.com/r/nds/comments/17edbew/"), "Owner report: no holder, recycling cut-out."),
-        DsCaseEvidence("mario kart ds", null, null, DsCaseStatus.REPORTED, "medium",
-            listOf("https://www.reddit.com/r/gamecollecting/comments/vnkr67/"), "Both kinds: the early black case with the holder, a later red-case reprint without."),
-        DsCaseEvidence("chrono trigger", null, null, DsCaseStatus.REPORTED, "low",
-            listOf("https://www.reddit.com/r/NintendoDS/comments/1ryj5ux/"), "A collector reports no holder; whether that case is original is uncertain."),
+            listOf("https://www.reddit.com/r/nds/comments/17edbew/"), "Owner report: no holder, recycling cut-out (the eco case)."),
+        DsCaseEvidence("mario kart ds", CaseRegion.US, null, DsCaseStatus.REPORTED, "medium",
+            listOf("https://www.reddit.com/r/gamecollecting/comments/vnkr67/"), "Both kinds: the early black case with the holder, a later red-case reprint without. Pick the one you have."),
+        // ---- Europe ----
+        DsCaseEvidence("pokemon diamond", CaseRegion.EU, true, DsCaseStatus.REPORTED, "low",
+            emptyList(), "UK PAL owner report; whether that case is original isn't confirmed."),
+        // The black, Asian-made PAL cases (they carry a GBA slot with a cartridge-shaped logo), by name in Paderetro's list.
+        DsCaseEvidence("geometry wars galaxy", CaseRegion.EU, true, DsCaseStatus.REPORTED, "medium",
+            listOf(PADERETRO), "Listed (EUR) among the PAL games in the black Asian-made case, which has the GBA slot."),
+        DsCaseEvidence("42 jeux indemodables", CaseRegion.EU, true, DsCaseStatus.REPORTED, "medium",
+            listOf(PADERETRO), "Listed (FRA) among the PAL games in the black Asian-made case, which has the GBA slot."),
+        DsCaseEvidence("english training", CaseRegion.EU, true, DsCaseStatus.REPORTED, "medium",
+            listOf(PADERETRO), "Listed (FRA) among the PAL games in the black Asian-made case, which has the GBA slot."),
+        DsCaseEvidence("entrainement cerebral", CaseRegion.EU, true, DsCaseStatus.REPORTED, "medium",
+            listOf(PADERETRO), "\"Programme d'entraînement cérébral du Dr Kawashima\" (FRA): listed among the PAL games in the black Asian-made case, which has the GBA slot."),
+        DsCaseEvidence("mundo misterioso equipo de rescate azul", CaseRegion.EU, true, DsCaseStatus.REPORTED, "medium",
+            listOf(PADERETRO), "Spanish (ESP) edition: listed among the PAL games in the black Asian-made case, which has the GBA slot."),
     )
+
+    /** Update 296: the North American games reported in the eco case (recycling cut-outs) rather than a plain slotless one. */
+    private val naEco = setOf("mario vs donkey kong miniland mayhem", "golden sun dark dawn", "kirby mass attack", "pokemon black version 2", "pokemon black 2")
+
+    /** Update 296: the evidence's black PAL games are drawn in the black PAL case (the source lists them as such). */
+    private val euBlack = setOf("geometry wars galaxy", "42 jeux indemodables", "english training", "entrainement cerebral", "mundo misterioso equipo de rescate azul")
 
     /** Release years by game key (set by the home screen from the metadata), for the default. */
     @Volatile var years: Map<String, Int> = emptyMap()
@@ -136,30 +190,37 @@ internal object DsCases {
 
     private fun ofNow(g: Game, region: CaseRegion): Pair<DsCaseVariant, DsCaseStatus> {
         picked(g.stableKey)?.let { return it to DsCaseStatus.PICKED }
+        // (Update 296: only evidence for this game in this region; PRESENT → the holder, ABSENT → that region's slotless
+        // case, both kinds or nothing → UNKNOWN: the plain case, no holder invented.)
         val e = evidenceFor(g, region)
-        if (e?.hasGba != null) {
+        val has = e?.hasGba
+        if (e != null && has != null) {
             val v = when (region) {
-                CaseRegion.US -> if (e.hasGba) DsCaseVariant.NA_GBA else DsCaseVariant.NA_ECO
-                CaseRegion.EU -> DsCaseVariant.EU_CLEAR
-                CaseRegion.JP -> DsCaseVariant.JP
+                CaseRegion.US -> if (has) DsCaseVariant.NA_GBA else if ((years[g.stableKey] ?: 0) >= 2011 || e.match in naEco) DsCaseVariant.NA_ECO else DsCaseVariant.NA_PLAIN
+                CaseRegion.EU -> if (!has) DsCaseVariant.EU_CLEAR_PLAIN else if (e.match in euBlack) DsCaseVariant.EU_BLACK else DsCaseVariant.EU_CLEAR
+                CaseRegion.JP -> if (has) DsCaseVariant.JP else DsCaseVariant.JP_PLAIN
             }
-            // (A PAL or Japanese game reported without a holder isn't drawn without one: no such case is documented.)
-            if (region == CaseRegion.US || e.hasGba) return v to e.status
+            return v to e.status
         }
-        return defaultFor(g, region) to DsCaseStatus.DEFAULT
+        return defaultFor(g, region) to DsCaseStatus.UNKNOWN
     }
 
-    /** By region; in North America by release year — the eco case from 2011 on (2010 releases stay on the older case). */
+    /**
+     * Update 296: a game with nothing known for its region — never a holder: the region's plain case. In North America
+     * from 2011 that's the eco case (documented: Nintendo's DS games moved to it from Nov 2010), before then the plain black
+     * case with the card holder only.
+     */
     fun defaultFor(g: Game, region: CaseRegion): DsCaseVariant = when (region) {
-        CaseRegion.EU -> DsCaseVariant.EU_CLEAR
-        CaseRegion.JP -> DsCaseVariant.JP
-        CaseRegion.US -> if ((years[g.stableKey] ?: 0) >= 2011) DsCaseVariant.NA_ECO else DsCaseVariant.NA_GBA
+        CaseRegion.EU -> DsCaseVariant.EU_CLEAR_PLAIN
+        CaseRegion.JP -> DsCaseVariant.JP_PLAIN
+        CaseRegion.US -> if ((years[g.stableKey] ?: 0) >= 2011) DsCaseVariant.NA_ECO else DsCaseVariant.NA_PLAIN
     }
 
     /** [base] (the region's DS case) as [v] draws it. */
     fun spec(base: CaseSpec, v: DsCaseVariant): CaseSpec {
-        val black = v != DsCaseVariant.EU_CLEAR
-        val t = if (v == DsCaseVariant.EU_CLEAR) 20f else 15f
+        val clear = v == DsCaseVariant.EU_CLEAR || v == DsCaseVariant.EU_CLEAR_PLAIN
+        val black = !clear
+        val t = if (clear) 20f else 15f
         val h = if (v == DsCaseVariant.EU_BLACK) 123f else base.hMm
         return CaseSpec(
             base.platform, base.region, base.shell, base.wMm, h, t,
