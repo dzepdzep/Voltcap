@@ -39,6 +39,7 @@ object CrashReports {
     private const val REPORT = "report.txt"
     private const val LOGCAT = "logcat.txt"
     private const val EXIT = "exit-info.txt"
+    private const val FREEZE = "freeze.txt"
     private const val MAX_LOGCAT_BYTES = 200_000
     private const val MAX_TRACE_BYTES = 300_000
 
@@ -150,7 +151,7 @@ object CrashReports {
         awaitPending(5000)
         if (id.contains('/') || id.contains("..")) return null
         val dir = File(root(context), id)
-        val files = listOf(REPORT, LOGCAT, EXIT).map { File(dir, it) }.filter { it.isFile && it.length() > 0 }
+        val files = listOf(REPORT, LOGCAT, EXIT, FREEZE).map { File(dir, it) }.filter { it.isFile && it.length() > 0 }
         if (files.none { it.name == REPORT }) return null
         if (files.size == 1) {
             Export("voltcap-crash-$id.txt", "text/plain") { out ->
@@ -211,6 +212,39 @@ object CrashReports {
         event.exit?.let { exit ->
             val text = buildExitInfo(exit)
             File(dir, EXIT).writeText(CrashRedactor.redact(text))
+        }
+        // Update 292: what the app was doing while frozen (see FreezeWatchdog).
+        FreezeWatchdog.takeSnapshot(context, event.timeMillis)?.let { snap ->
+            File(dir, FREEZE).writeText(CrashRedactor.redact(snap))
+            // The short top part (state + CPU per thread) also goes into report.txt, so one file is enough to start with.
+            val head = snap.substringBefore("== Java thread stacks").trimEnd()
+            File(dir, REPORT).appendText(CrashRedactor.redact("\n== Freeze snapshot (full stacks in freeze.txt) ==\n$head\n"))
+        }
+    }
+
+    /**
+     * A freeze that left no crash record (the app was force-closed, or recovered after seconds):
+     * its snapshot becomes a report of its own. Only freezes of 4 s or more. Call at start when no crash was found.
+     */
+    fun adoptOrphanFreeze(context: Context) {
+        runCatching {
+            val app = context.applicationContext
+            FreezeWatchdog.dropStale(app)
+            val f = FreezeWatchdog.file(app)
+            if (!f.isFile) return
+            val head = f.bufferedReader().useLines { it.take(3).toList() }
+            val ms = Regex("silent for: (\\d+) ms").find(head.joinToString("\n"))?.groupValues?.get(1)?.toLongOrNull() ?: 0L
+            if (ms < 4000L) {
+                f.delete()
+                return
+            }
+            val pid = Regex("Process id: (\\d+)").find(head.joinToString("\n"))?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            val event = Event(
+                timeMillis = f.lastModified(), kind = "Freeze", pid = pid, thread = "main",
+                details = "Main thread not responding for $ms ms (no crash or ANR was recorded for it)",
+                safeRun = false
+            )
+            writeAsync(app, listOf(event), emptyList(), false, "") { }
         }
     }
 

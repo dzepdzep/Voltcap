@@ -108,7 +108,7 @@ fun GameOptionsDialog(
             MenuRow(Icons.Filled.Book, "Guide", "Walkthrough that follows where you are", onClick = onGuide)
         }
         if (onInspect != null) {
-            MenuRow(Icons.Filled.ViewInAr, "Inspect…", "Its ${inspectNoun(game.platform)} in 3D — turn it, look at its back and under it", onClick = onInspect)
+            MenuRow(Icons.Filled.ViewInAr, "Inspect…", "Its case and ${inspectNoun(game.platform)} in 3D — open the case, turn them, look at the back and under", onClick = onInspect)
         }
         if (onDsCase != null) {
             MenuRow(Icons.Filled.ViewInAr, "DS case…", "The case it came in: with or without the GBA holder, eco, North American or European", onClick = onDsCase)

@@ -313,6 +313,16 @@ internal fun drawn3dPick(platform: String, mixed: Boolean, gameKey: String?): Me
  * "All cartridges" - the generic one (a cartridge game gets a plain CD with its label scan on it, a disc game a
  * plain cartridge). Update 204: never null any more — a console with no physical game gets the plain ones.
  */
+/** Update 293: while [wanted] runs (composition, one thread), [mediaFor] skips the custom looks and gives the real piece. */
+internal object RealMedia {
+    @Volatile var on = false
+    inline fun <T> wanted(block: () -> T): T {
+        val before = on
+        on = true
+        try { return block() } finally { on = before }
+    }
+}
+
 internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean = false, gameKey: String? = null): MediaPick? {
     // (Update 279, testing only: TestHooks `voltcap_test_shell` — every game on one custom shell, nothing saved.)
     TestHooks.shell.value?.let { t -> if (!asDisc) testShellPick(t, platform, gameKey)?.let { return it } }
@@ -332,10 +342,10 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     if (!asDisc) CartShellStore.choice(platform, gameKey)?.let { raw -> CartShells.pickOf(raw, platform, gameKey)?.let { return it } }
     // Update 200: the 3D cartridges looks draw the drawn pieces with real depth (they used to draw the pre-rendered 3D
     // models, which turned in 20° steps like a slide show): see drawn3dPick.
-    if (!asDisc) drawn3dPick(platform, mixed, gameKey)?.let { return it }
+    if (!asDisc && !RealMedia.on) drawn3dPick(platform, mixed, gameKey)?.let { return it }
     // Update 128, Cartridges look: the game on your cartridge pack (CustomCarts.kt) — every console with Custom, the
     // ones without a cartridge of their own with Original (consoles Voltcap has no media for included).
-    if (!asDisc && customCartFor(platform)) {
+    if (!asDisc && !RealMedia.on && customCartFor(platform)) {
         // (Update 131: a disc console's own shell from your optical-system pack has its own shape.)
         return MediaPick(MediaShell.GB, CUSTOM_CART + platform, CustomCarts.aspectFor(platform))
     }

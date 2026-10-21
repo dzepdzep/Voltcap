@@ -1190,6 +1190,7 @@ private fun WinBottomPart(look: WinLook, g: Game, state: LauncherUiState, cover:
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun WindowBody(
     look: WinLook, g: Game, state: LauncherUiState, cover: String?, wide: String?, backdrop: String?,
@@ -1230,16 +1231,28 @@ private fun WindowBody(
           val items = if (share && !fill) winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, null) else all
           val iconsBelow = !share && !details && maxWidth.value < est(all) + (3 + (if (extras.onManual != null) 1 else 0) + (if (extras.onInspect != null) 1 else 0)) * 52
           Column(if (share) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(if (share) Modifier.fillMaxWidth() else Modifier, horizontalArrangement = Arrangement.spacedBy(if (share) 8.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (share) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 // [share]: the buttons share the width (a narrow column).
                 items.forEach { (l, f, isPlay) ->
                     WinButton(
                         look, if (look.caps) l.uppercase() else l,
-                        (if (share) Modifier.weight(1f) else Modifier).then(btnMod(l, isPlay)),
-                        wideButton = false, stretch = share, onClick = f
+                        Modifier.weight(1f).then(btnMod(l, isPlay)),
+                        wideButton = false, stretch = true, onClick = f
                     )
                 }
-                if (!share && !details && !iconsBelow) WinIcons(look, extras, 44.dp)
+            } else {
+                // (Update 291, Toni: "the icon isn't reachable": the Inspect icon was the fifth round icon, and on the Cube
+                // layout's window (Mario Party, Animal Crossing) it ran past the window's right edge — the estimate above is
+                // only a guess from the words. A FlowRow puts whatever doesn't fit on a second line instead.)
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
+                    itemVerticalAlignment = Alignment.CenterVertically
+                ) {
+                    items.forEach { (l, f, isPlay) ->
+                        WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = false, stretch = false, onClick = f)
+                    }
+                    if (!details && !iconsBelow) WinIcons(look, extras, 44.dp)
+                }
             }
             if (iconsBelow) Box(Modifier.padding(top = 8.dp)) { WinIcons(look, extras, 40.dp) }
             // (Update 261, #120 Thor: in a narrow window — the Grid's and the Dashboard's — the round icons shared the row

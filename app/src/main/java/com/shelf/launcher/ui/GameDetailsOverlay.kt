@@ -1068,9 +1068,10 @@ val DetailsRows: List<List<DetailsAction>> get() =
         // Showcase: the PLAYED box sits above Play; Play and its round buttons share one row.
         listOf(DetailsAction.STATS),
         // (Update 231, #81: Performance sits right after Favorite.)
-        listOf(DetailsAction.PLAY, DetailsAction.FAVORITE, DetailsAction.PERFORMANCE, DetailsAction.SYNC, DetailsAction.MORE, DetailsAction.OPTIONS)
+        // (Update 291, Toni: "on the popup the icon isn't reachable": Inspect sits between Performance and Sync, as drawn.)
+        listOf(DetailsAction.PLAY, DetailsAction.FAVORITE, DetailsAction.PERFORMANCE, DetailsAction.INSPECT, DetailsAction.SYNC, DetailsAction.MORE, DetailsAction.OPTIONS)
     ) + DetailsRowsBelow
-    else listOf(listOf(DetailsAction.PLAY, DetailsAction.STATS, DetailsAction.FAVORITE, DetailsAction.PERFORMANCE, DetailsAction.SYNC, DetailsAction.MORE, DetailsAction.OPTIONS)) +
+    else listOf(listOf(DetailsAction.PLAY, DetailsAction.STATS, DetailsAction.FAVORITE, DetailsAction.PERFORMANCE, DetailsAction.INSPECT, DetailsAction.SYNC, DetailsAction.MORE, DetailsAction.OPTIONS)) +
         DetailsRowsBelow
 
 /** Everything under the Play row, the same in both layouts. */

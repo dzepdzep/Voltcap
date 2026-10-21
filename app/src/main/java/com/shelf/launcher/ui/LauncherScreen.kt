@@ -729,6 +729,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     LaunchedEffect(Unit) { com.shelf.launcher.data.BatteryWatch.start(batteryWatchContext) }
     // Update 112: the animations follow the layout on screen (its own choices, Home › Animations › per layout).
     SideEffect { MotionPrefs.layout = state.appearance.homeLayout }
+    // Update 292: what's on screen, for the freeze snapshot of a crash report (FreezeWatchdog).
+    SideEffect {
+        com.shelf.launcher.data.crash.FreezeWatchdog.state("homeLayout", state.appearance.homeLayout.name)
+        com.shelf.launcher.data.crash.FreezeWatchdog.state("screensaverOn", screensaverOn)
+        com.shelf.launcher.data.crash.FreezeWatchdog.state("settingsOpen", showSettings)
+        com.shelf.launcher.data.crash.FreezeWatchdog.state("menuOpen", showMenu)
+    }
     // Update 159: each game's key by its cover (a 3D case finds the game's scanned case front from it, Model3DArt).
     val coverKeys = remember(state.art, state.artOverrides) {
         val m = HashMap<String, String>(state.art.size * 2)

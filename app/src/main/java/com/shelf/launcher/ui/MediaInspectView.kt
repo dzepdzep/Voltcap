@@ -156,7 +156,9 @@ private fun contentPieceFor(g: Game, state: LauncherUiState): InspectPiece? {
     // entries), not a piece: WWE All Stars' opened case held a bare cover. It holds Voltcap's own green Android cartridge
     // (mediaFor → ANDROID_CART, or the shell you picked for it) with its cover as the label.
     val scans = if (androidOwnCase(g.platform)) null else physical
-    val piece = runCatching { mediaPiece(g, CardArtType.CARTRIDGE_DISC, scans, cover, small, false) }.getOrNull()
+    // (Update 293, Toni: "use the real cartridges with the real cases": what lies in a game's case is its real cartridge /
+    // disc — its own photo, else its console's authentic shell — never one of the custom looks' pieces.)
+    val piece = runCatching { RealMedia.wanted { mediaPiece(g, CardArtType.CARTRIDGE_DISC, scans, cover, small, false) } }.getOrNull()
     if (piece != null && (piece.kind == InspectKind.DISC || piece.kind == InspectKind.SLAB)) return piece
     return if (mediaRound(g.platform)) InspectPiece(
         g, InspectKind.DISC, 1f, 0.012f, MediaPick(MediaShell.DISC, genericDiscKey(g.platform)), cover, false, null, cover, null, null,
@@ -365,8 +367,10 @@ private fun slabAspect(pick: MediaPick, labelIsScan: Boolean): Float {
  */
 internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? =
     // (Testing hook's shell first, whatever the look draws: TestHooks `voltcap_test_inspect`.)
-    ((if (MediaInspect.force == g.stableKey && MediaInspect.testShell != null) forcedPieceOf(g, state) else null)
-        ?: inspectPieceOf(g, state) ?: if (MediaInspect.force == g.stableKey) forcedPieceOf(g, state) else null)?.also {
+    // (Update 291, Toni: "inspect media should show the case as well": an Inspect request (the button / the menu) always
+    // takes forcedPieceOf — the game's case with its cartridge / disc inside — before whatever the look draws.)
+    ((if (MediaInspect.force == g.stableKey) forcedPieceOf(g, state) else null)
+        ?: inspectPieceOf(g, state))?.also {
         it.logo = state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
         // Update 170: a case without its back scanned gets a printed one (Settings › Game look › Printed case backs).
         if (it.kind == InspectKind.BOX && it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)
@@ -421,8 +425,10 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
     }
     val small = Features.bigGcDiscs.state.value.not()
     val mixed = mixedConsoles(state.visibleGames)
-    return runCatching { mediaPiece(g, CardArtType.CARTRIDGE_DISC, physical, cover, small, mixed) }.getOrNull()
-        ?: runCatching { casePiece(g, physical, cover, mixed) }.getOrNull()
+    // (Update 291, Toni: "inspect media should show the case as well": the case first — it opens (a stick click) to the
+    // cartridge / disc it holds (contentPieceFor) — and the piece alone only where a case can't be made.)
+    return runCatching { casePiece(g, physical, cover, mixed) }.getOrNull()
+        ?: runCatching { mediaPiece(g, CardArtType.CARTRIDGE_DISC, physical, cover, small, mixed) }.getOrNull()
 }
 
 private fun inspectPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
@@ -1122,6 +1128,11 @@ internal fun InspectStick(motion: InspectMotion) {
 internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot: Rect?, displayId: Int) {
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
+    // Update 292: Inspect is on screen (for the freeze snapshot of a crash report).
+    DisposableEffect(displayId) {
+        com.shelf.launcher.data.crash.FreezeWatchdog.state("inspectOnDisplay$displayId", "since " + java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date()))
+        onDispose { com.shelf.launcher.data.crash.FreezeWatchdog.state("inspectOnDisplay$displayId", null) }
+    }
     // Where this overlay sits in the window (the places are in window px).
     val win = remember { FloatArray(2) }
     val yawOf: () -> Float = remember(motion) { { motion.yaw() } }

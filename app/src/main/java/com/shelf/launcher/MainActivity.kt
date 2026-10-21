@@ -109,6 +109,9 @@ class MainActivity : ComponentActivity() {
         runCatching { com.shelf.launcher.data.RomLibraryPrefetch.start(this) }
         val crashReport = CrashGuard.takeReport(this)
         if (crashReport == null) CrashGuard.beginLauncher(this)
+        // Update 292: a freeze that left no crash record becomes a report; then the freeze watchdog starts.
+        if (crashReport == null) com.shelf.launcher.data.crash.CrashReports.adoptOrphanFreeze(this)
+        com.shelf.launcher.data.crash.FreezeWatchdog.start(this)
 
         super.onCreate(savedInstanceState)
         // The newer feature switches (achievements, Living Library, density…): small prefs, read once.
