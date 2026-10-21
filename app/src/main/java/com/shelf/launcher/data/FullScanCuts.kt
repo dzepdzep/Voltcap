@@ -47,4 +47,12 @@ object FullScanCuts {
         }
         version.intValue++
     }
+
+    /** Update 302: forgets cuts kept for a picture of yours that's gone (UserArt.cleanup). */
+    fun dropMissingFiles() {
+        val gone = map.keys.filter { it.startsWith("file://") && runCatching { !java.io.File(android.net.Uri.parse(it).path!!).exists() }.getOrDefault(false) }
+        if (gone.isEmpty()) return
+        gone.forEach { map.remove(it) }
+        prefs?.edit()?.apply { gone.forEach { remove(it) } }?.apply()
+    }
 }

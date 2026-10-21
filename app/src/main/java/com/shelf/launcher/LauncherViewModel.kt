@@ -1010,6 +1010,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             runCatching { com.shelf.launcher.data.PhysicalOverrides.init(getApplication()) }
             // (Update 301: your full case scan is cut in its console's proportions.)
             com.shelf.launcher.data.PhysicalOverrides.platformOf = { k -> _uiState.value.games.firstOrNull { it.stableKey == k }?.platform }
+            // (Update 302: a case's back from TheGamesDB, with your own key, where the game has no back scan — TgdbBacks.)
+            com.shelf.launcher.data.TgdbBacks.init(getApplication())
+            com.shelf.launcher.data.TgdbBacks.fetcher = { g -> tgdbKeyStore.loadKey()?.let { k -> tgdbRepository.fetchBack(k, g) } }
+            com.shelf.launcher.data.TgdbBacks.onFound = { g ->
+                val key = g.stableKey
+                val raw = physicalRaw[key] ?: _uiState.value.physicalMedia[key].orEmpty()
+                _uiState.update { it.copy(physicalMedia = it.physicalMedia + (key to com.shelf.launcher.data.PhysicalOverrides.apply(key, raw))) }
+            }
             val all = runCatching { physicalPrefs.all }.getOrNull().orEmpty()
             val loaded = HashMap<String, List<Pair<String, String>>>(all.size)
             for ((k, v) in all) {

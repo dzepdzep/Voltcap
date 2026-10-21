@@ -7,8 +7,8 @@ import java.io.File
 /**
  * Update 301: a picture you upload in Artwork & details (cover, background, logo, box, back, spine, full case scan…) is
  * copied into Voltcap's own storage on this device, so it keeps working after the original file is moved or deleted (it
- * used to be a link to the file). Never uploaded or shared anywhere. (Clearing a pick stops using it; the copy stays in Voltcap's
- * storage, shared by any other game that uses the same picture.)
+ * used to be a link to the file). Never uploaded or shared anywhere. Update 302: copies no pick uses any more are removed at start
+ * ([cleanup]).
  */
 object UserArt {
     private const val DIR = "user_art"
@@ -38,4 +38,24 @@ object UserArt {
         if (dest.exists()) tmp.delete() else if (!tmp.renameTo(dest)) { tmp.copyTo(dest, true); tmp.delete() }
         Uri.fromFile(dest).toString()
     }.getOrNull()
+
+    /**
+     * Update 302: removes the copies no pick refers to any more (your artwork and real-media picks), and the cuts kept for
+     * them. Blocking — off the main thread. A copy made in the last hour is kept (its pick may be about to be saved).
+     */
+    fun cleanup(c: Context) {
+        runCatching {
+            val app = c.applicationContext
+            val used = StringBuilder()
+            for (name in listOf("physical_overrides", "art_overrides")) {
+                app.getSharedPreferences(name, Context.MODE_PRIVATE).all.values.forEach { used.append(it.toString()).append('\n') }
+            }
+            val text = used.toString()
+            val now = System.currentTimeMillis()
+            dir(app).listFiles()?.forEach { f ->
+                if (f.isFile && now - f.lastModified() > 60 * 60 * 1000L && !text.contains(f.name)) f.delete()
+            }
+            FullScanCuts.dropMissingFiles()
+        }
+    }
 }

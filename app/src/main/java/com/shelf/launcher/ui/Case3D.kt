@@ -213,6 +213,9 @@ internal fun Case3D(
     // (Update 298: flatVersion too — a back cut from the full box scan that turns out a flat stand-in passes on to the
     // printed back; it stayed plain plastic: the Ben 10 PSP case.)
     val autoBack: Any? = if (given != null) null else remember(scans, g.platform, cover, aspect, flatVersion) { defaultCaseBack(g, scans, cover, aspect) }
+    // (Update 302: no back scan and its back is wanted — TheGamesDB's back is asked for once, with your key: TgdbBacks.)
+    val noScanBack = given == null && (autoBack == null || autoBack is PrintedBack)
+    if (noScanBack && backAsked) androidx.compose.runtime.LaunchedEffect(g.stableKey) { com.shelf.launcher.data.TgdbBacks.request(g) }
     // (A scanned back at once; a printed one — drawn from its parts — only once it's turned.)
     val backModel: Any? = given ?: autoBack?.takeIf { back != null || backAsked || (backAtOnce && it !is PrintedBack) }
     // (Update 170: a printed back is made from its parts; a scanned one is a picture.)

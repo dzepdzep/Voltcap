@@ -11,6 +11,7 @@ import retrofit2.http.Query
  * Chosen over the alternatives because it has a documented public API and its
  * image types map onto the four slots this launcher uses:
  *   boxart (front) -> cover, fanart -> hero, banner -> wide, clearlogo -> logo
+ *   boxart (back) -> the case's back where no back scan was found (Update 302, TgdbBacks)
  *
  * Its retro coverage is often better than SteamGridDB's, which is
  * Steam-centric — so it's a genuine alternative rather than a duplicate.
@@ -61,6 +62,23 @@ fun createTheGamesDbApi(): TheGamesDbApi = Retrofit.Builder()
 class TheGamesDbRepository(private val api: TheGamesDbApi) {
 
     private val cache = java.util.concurrent.ConcurrentHashMap<String, GameArt>() // shared by parallel scrapes
+    /** Update 302: the back cover found with the art ("" = none), by game. */
+    private val backs = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /**
+     * Update 302: the game's back cover (boxart, side "back"), or null. Same look-up as [fetchArt] (one search and one
+     * images call, shared with it); the back is only used where no back scan was found (TgdbBacks).
+     */
+    suspend fun fetchBack(apiKey: String, game: Game): String? {
+        backs[game.stableKey]?.let { return it.ifEmpty { null } }
+        cache.remove(game.stableKey) // (looked up again so the back comes with it)
+        lastFailure = null
+        if (fetchArt(apiKey, game) == null) lastFailure?.let { throw it } // (a failed look-up isn't "no back")
+        return backs[game.stableKey]?.ifEmpty { null }
+    }
+
+    /** Update 302: why the last look-up failed (network, HTTP 429 — the key's allowance used up…), else null. */
+    @Volatile private var lastFailure: Exception? = null
 
     suspend fun testConnection(apiKey: String): Boolean = try {
         api.searchByName(apiKey, "mario").data?.games != null
@@ -103,9 +121,11 @@ class TheGamesDbRepository(private val api: TheGamesDbApi) {
                 heroUrl = url(images.firstOrNull { it.type == "fanart" }),
                 logoUrl = url(images.firstOrNull { it.type == "clearlogo" })
             )
+            backs[game.stableKey] = url(images.firstOrNull { it.type == "boxart" && it.side == "back" }).orEmpty()
             cache[game.stableKey] = art
             art
         } catch (e: Exception) {
+            lastFailure = e
             null
         }
     }

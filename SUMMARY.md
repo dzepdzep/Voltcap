@@ -4,6 +4,23 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 21 Oct 2026 (302): case backs from TheGamesDB, unused picture copies cleaned up — after release 0.6.27
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** The Cover Project and MobyGames are left out, as you decided.
+
+- **TheGamesDB backs.** TheGamesDB already sent each game's back cover (`boxart`, side `back`); Voltcap ignored it. Now, with your own TheGamesDB key, a case with **no back scan of its own** (no ScreenScraper back, no full case scan, no pick of yours) asks TheGamesDB for its back **once its back is actually looked at** (turned round in the game window / a case look, or Inspect) — not for every game in the library, so the key's allowance isn't used up. Found backs are kept per game on the device (`TgdbBacks`, prefs `tgdb_backs2`) and go into the game's real-media list as "Back of the box" (so the case, Inspect and Artwork & details all see it, and you can still pick another). TheGamesDB doesn't say which region a back is from.
+- **Failures aren't "no back":** a failed look-up (no network, HTTP 429) is not remembered as "none", and TheGamesDB is left alone for an hour after one. A game with no back on TheGamesDB is asked again after two weeks.
+- **Cleanup:** copies of your uploaded pictures (`files/user_art`, Update 301) that no pick uses any more are removed at start (in the background; anything copied in the last hour is kept), with the cuts kept for them.
+- Device / repo leftovers from this session removed (screenshots, test picture, the test snapshot file, logcat buffer back to 256 KB).
+
+Files touched:
+- `src_copy\data\TgdbBacks.kt` (new), `src_copy\data\TheGamesDbApi.kt` (`fetchBack`, failures surfaced), `src_copy\data\PhysicalOverrides.kt` (TheGamesDB back filled in before your picks), `src_copy\data\UserArt.kt` (`cleanup`), `src_copy\data\FullScanCuts.kt` (`dropMissingFiles`)
+- `src_copy\LauncherViewModel.kt` (wiring), `src_copy\MainActivity.kt` (cleanup at start), `src_copy\ui\Case3D.kt` and `src_copy\ui\MediaInspectView.kt` (ask when the back is wanted and there's no scan)
+
+Checked on the Thor: the look-up runs only for cases without a back scan when turned / inspected (homebrew games correctly get none). **Your TheGamesDB key answers "HTTP 429 Too Many Requests" right now** — its allowance is used up for the moment (my test build, which asked repeatedly, made it worse). So no TheGamesDB back has been seen on the device yet; the code now backs off on 429 and will fetch when the key works again.
+
+---
+
 ## Update — 21 Oct 2026 (301): your own full case scans (back | spine | front) with adjustable cuts, uploads kept in Voltcap's storage — after release 0.6.27
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** Only the parts with no licensing question were done (see `ARTWORK_SOURCES.md` in the project for the research; nothing from The Cover Project or any new provider was added).

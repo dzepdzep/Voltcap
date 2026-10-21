@@ -131,6 +131,8 @@ class MainActivity : ComponentActivity() {
         com.shelf.launcher.data.RomHeaders.init(this)
         // (Update 301: where you set the cuts of your full case scans.)
         com.shelf.launcher.data.FullScanCuts.init(this)
+        // (Update 302: copies of your pictures nothing uses any more, removed in the background.)
+        applicationContext.let { app -> Thread { com.shelf.launcher.data.UserArt.cleanup(app) }.apply { priority = Thread.MIN_PRIORITY }.start() }
         // Debug builds only: logs (never crashes) any disk or network access on the main thread, the
         // usual cause of stutters. Filter Logcat by "StrictMode" to find them.
         if ((applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) {

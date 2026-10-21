@@ -62,7 +62,9 @@ object PhysicalOverrides {
     fun apply(key: String, scraped: List<Pair<String, String>>): List<Pair<String, String>> {
         // (Update 238, #111: a game whose RetroAchievements link was refused — a ROM hack matched to the base game by
         // its title — no longer shows that game's RA box and title screen saved with its scans.)
-        val list = if (key in RaMatchStore.refusedKeys) scraped.filter { it.first !in FROM_RA } else scraped
+        // (Update 302: TheGamesDB's back where the game has none of its own — TgdbBacks.)
+        val scrapedPlus = TgdbBacks.fill(key, scraped)
+        val list = if (key in RaMatchStore.refusedKeys) scrapedPlus.filter { it.first !in FROM_RA } else scrapedPlus
         var own = of(key)
         if (own.isEmpty()) return list
         // Update 301: your own full case scan stands for the front, back and spine (cut out of it — automatically, or

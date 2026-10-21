@@ -381,6 +381,8 @@ internal fun inspectPieceFor(g: Game, state: LauncherUiState): InspectPiece? =
         ?: inspectPieceOf(g, state))?.also {
         it.logo = state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
         // Update 170: a case without its back scanned gets a printed one (Settings › Game look › Printed case backs).
+        // (Update 302: no back scan — TheGamesDB's is asked for once, with your key; it replaces the printed one when found.)
+        if (it.kind == InspectKind.BOX && it.back == null) com.shelf.launcher.data.TgdbBacks.request(g)
         if (it.kind == InspectKind.BOX && it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)
         // Update 189: what's inside, for opening it.
         if (it.kind == InspectKind.BOX) it.content = contentPieceFor(g, state)
