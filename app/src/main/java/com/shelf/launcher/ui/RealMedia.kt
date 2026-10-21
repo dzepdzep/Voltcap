@@ -385,7 +385,8 @@ internal fun Box3D(
         else (ownSpine ?: consoleSpine(context, platform?.let { LookStyles.spinePlatform(it) ?: it }, title, 0.1f)).let { b ->
             // Landscape boxes want a lying spine, the others a standing one: turn the picture whichever way it needs.
             // (Update 240: turned once per picture — DerivedArt — not again for every box showing it.)
-            DerivedArt.of(b, "orient|${tpl.hSpine}") { orientSpine(b, landscape = tpl.hSpine) }
+            // (Update 298: a doubled scan — both of the insert's end flaps — cut to one spine first, singleSpine.)
+            DerivedArt.of(b, "orient2|${tpl.hSpine}") { orientSpine(singleSpine(orientSpine(b, landscape = false)), landscape = tpl.hSpine) }
         }
     }
     val spinAnim = if (spin && !LocalLiteEffects.current) androidx.compose.animation.core.rememberInfiniteTransition(label = "box3d") else null

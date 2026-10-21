@@ -4,6 +4,88 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 21 Oct 2026 (298): earlier case fixes checked one by one — real disc back in carts-only cases, no flat-colour backs, single spines, PS3 back explained — after release 0.6.26
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published** (no release without your go-ahead). Pictures in `shots298\`.
+
+Every earlier case request (282–297) was checked in the code **and** on the Thor, not taken as done from a code comment:
+
+| # | Item | Status | What was found / done |
+|---|---|---|---|
+| 1 | Top, bottom, side surfaces | Working | GBC Silver box: plain slate top/bottom, 294's cardboard right side kept. No edge scans exist, so nothing copied or stretched onto them. |
+| 2 | Real vs custom media in cases | **Was broken, fixed** | With "Cartridges only" on (`carts_only`), a disc console's case held Voltcap's plain cartridge (e.g. PS1). Cases now hold the real disc / UMD; a shell you picked in the game's menu still wins. *(Correction to 297's note: no PS1 shell was picked — it was this switch.)* |
+| 3 | PS3 case | Explained, not a code fault | TNA iMPACT!'s back showed its front. Cause: a "Back of the box" picture set in that game's own picks (Game settings › Artwork & details) points at the SteamGridDB cover. Your pick is respected; reset that one slot to get the printed back. Front (no PS3 band: no scan), spine (Voltcap's PS3 spine) and opening are unchanged. |
+| 4 | Missing / late backs | **Was broken, fixed** | A back found to be ScreenScraper's flat-colour stand-in, also when cut from the full box scan, now passes on to the next back (printed back) instead of plain plastic. A case you turn yourself asks for its back from 40° (was 70°), so it's ready before it comes round. Category switch / scroll not slowed (below). |
+| 5 | Ben 10 PSP green back | **Was partial, fixed** | The green back is ScreenScraper's stand-in (both the back scan and the full scan's back). Only US scans exist for the EU edition, so it now shows the printed back. Note: the PSP printed-back template itself carries a "TEEN" rating box and a 00000 barcode (template art, not this game's) — left as is, flagged for you. |
+| 6 | Disc beside the case | Working | Case only by default; the setting survives a restart. |
+| 7 | Cases face forward, real spines | **Partly broken, fixed** | DS, PS1 and GBC spines real. A spine scan that holds the same spine twice side by side (Legend of Dragoon) was drawn doubled; it is now cut to one (`singleSpine`, also on the template box spines). N64 box not checked on the device. |
+| 8 | Performance | Working | Thor, PlayStation category, R2 ×6 + 20 right: 10.1 % janky, p50 15 / p90 22 / p95 27 ms (before: 12.0 %, 13 / 25 / 34 ms). New derived pictures go through the existing `DerivedArt` cache with complete keys. |
+| 9 | Scope | Kept | Nothing else changed; Switch 2 untouched. |
+
+Files touched:
+- `src_copy\ui\PhysicalMedia.kt` (item 2)
+- `src_copy\ui\Case3D.kt` (items 4, 7)
+- `src_copy\ui\CoverCases.kt` (`isTwinSpine`, `singleSpine`)
+- `src_copy\ui\RealMedia.kt` (template spine)
+- `src_copy\ui\TestHooks.kt` (testing only: `voltcap_test_labelaudit scans:<name>`)
+- `project_copy\app\src\test\java\com\shelf\launcher\ui\CaseFixes298Test.kt` (new, 4 tests)
+
+Not checked on a device: N64 box faces; PAL PS1 3+ disc games; the Flip 2.
+
+---
+
+## Update — 21 Oct 2026 (297): physical media audit — Switch card sticker, DS case cache, multi-disc PS1 cases, PAL Dreamcast case, special cart heights — after release 0.6.25
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor**, committed, pushed and published as 0.6.26 by Claude. The full audit table (what was working, broken, partial, unverifiable, with sources) is at the top of the project's `PHYSICAL_MEDIA_AUDIT.md` and `docs\physical_media\PHYSICAL_MEDIA_AUDIT.md`.
+
+- **Switch card sticker (reported).** Without a real label scan, a Switch card showed the whole cover fitted into its sticker: no red header, and a box front's own logo tile / rating could land on the card. Now it has the real red NINTENDO SWITCH header across the top (the template pack's own label frame, nothing redrawn or made up) and the cover cut under it, leaving the box's logo tile and rating off. Real label scans are drawn as before. Same on the home row, in the game window, in the opened case and when taken out (checked on the Thor). Switch 2 untouched.
+- **DS cases showing the wrong inside (found and reproduced).** The opened case's inside was cached by console + region + shell only, so a DS case with the GBA holder and one without shared a picture: after opening Pokémon Platinum, Mario Kart DS showed Platinum's holder (Thor, 0.6.25). The cache now tells every case apart; checked in both orders and switching between games quickly. DS evidence, your picks and "Unknown" untouched.
+- **PlayStation multi-disc cases.** The thick 25 mm multi-disc case (North America / Japan, 2+ discs; Europe 3+ discs, per the PSX PAL Database) now holds each disc on its own tray: opening it shows the upper tray hinged at the spine, lifted, with the next disc on it. That disc is drawn plain, because its label isn't known. Taking disc 1 out leaves it in the case. Two-disc PAL games keep the PAL case (the files can't say which case they came in). Checked on the Thor with The Legend of Dragoon.
+- **PAL Dreamcast case.** No longer a thicker tinted jewel case. It is Sega of Europe's own three-part case: clear front, deep-blue inner tray, clear back. The front's inside shows the cover inlay's blank reverse and its four clips, with no manual there, because it's behind the tray. North American and Japanese cases are unchanged. **Not seen on a device** (no Dreamcast games on the Thor).
+- **Special cartridges' heights.** Kirby Tilt 'n' Tumble 78→65 mm, WarioWare: Twisted! 48→51, Boktai 50→44, Drill Dozer 48→44, Yoshi Topsy-Turvy 48→43. These now match the measurements their backs were already drawn at. The backs' seam, sticker and opening used to stop short of the bottom. Colours and which games get them are unchanged. Checked Drill Dozer front and back on the Thor.
+- **Manual stand-in.** Until a game's manual is downloaded, the booklet in the lid used the cover printed with "INSTRUCTION MANUAL", which read as the real manual. It's now dimmed a little and says "TAP TO OPEN THE MANUAL".
+- **Researched, not changed (no per-release evidence in the files, or no geometry found):** Xbox 360 / One multi-disc and Platinum Hits / Kinect cases, PS2 / GameCube / Wii special colours, GameCube 2-disc trays, 3DS cut-outs (they exist, layout unknown), New 3DS black EU cases, PSP size (sources disagree), PS3 Greatest Hits / Platinum, Sega CD / Saturn regional cases, PS1 longboxes / mini / slim cases.
+- **Left alone:** your PS1 console has a cartridge shell picked, so PS1 cases hold that cartridge, not a disc. Testing hook to see the disc instead: `--es voltcap_test_shell real` (this session only).
+- New unit tests: `PhysicalMediaFixesTest` (8 tests).
+
+Files: `src_copy\ui\SwitchLabel.kt` (new), `RealMedia.kt`, `CaseFaces.kt`, `CartShells.kt`, `CaseOpen.kt`, `CaseCatalog.kt`, `Case3D.kt`, `PhysicalMedia.kt` (testing hook); `project_copy\app\src\test\java\com\shelf\launcher\ui\PhysicalMediaFixesTest.kt` (new); docs `CASES.md`, `CARTRIDGES.md`, `docs\claude\DS_CASES.md`, `docs\physical_media\PHYSICAL_MEDIA_AUDIT.md`.
+
+---
+
+## Update — 21 Oct 2026 (296): GBA holder only in the DS cases that really had one, no floating blocks round GBA cartridges — after release 0.6.24
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors) and installed on the AYN Thor**, committed, pushed and published as 0.6.25 by Claude.
+
+- **DS cases: the GBA cartridge holder only where the real retail case had one (Toni).** Cause: the defaults. Every game with no evidence was drawn with the holder: Europe and Japan always, North America before 2011 or with no known year. Now:
+  - The holder shows only where that game's evidence for **that region** says it was there (PRESENT).
+  - ABSENT gets the region's case without it. In North America that's the eco case for 2011-on games or games reported in it.
+  - Everything else is UNKNOWN: no holder invented, the plain case with only the card holder. The game's menu › DS case… says "Unknown", and you can still pick a case there.
+  - Evidence is never copied to another regional edition. Games with both kinds (Super Mario 64 DS, Mario Kart DS) stay unknown until you pick yours.
+  - New plain variants: NA / EU / JP without the holder. No leftover recess or clips.
+  - Evidence: 8 present, 6 absent, 4 unknown/conflicting, every other game unknown. Sources and conflicts: `docs\claude\DS_CASES.md`. Reddit and Stack Exchange were blocked, so those leads are kept as "Reported", not verified.
+  - Checked on the Thor, case look, case opened: Pokémon Platinum USA (holder), Golden Sun: Dark Dawn USA (eco, none), Mario Kart DS USA (plain, none), Zoo Tycoon EU (clear, none), Pokémon Diamond USA (EU evidence not copied: none).
+  - Not checked: a Japanese game or the black PAL case games (none in the library).
+- **Floating blocks round GBA cartridges (Toni: cartridge look, Asterix & Obelix XXL).** The GBA cartridge's corner notches underneath are drawn at the real cartridge's size. On the narrower pack GBA shape they stuck out past the outline, as dark blocks beside the plug when the cartridge is seen from behind. The undersides are now cut to the piece's own outline. Checked on the Thor from behind (180°) and at 145°/15°: nothing outside the cartridge.
+
+Files: `src_copy\ui\DsCases.kt`, `src_copy\ui\MediaInspectView.kt`; docs `docs\claude\DS_CASES.md` (new), project `CASES.md` (NDS rows).
+
+---
+
+## Update — 21 Oct 2026 (295): the media plug-in is the start-up animation for every look, Pocket Quest shows cartridges — after release 0.6.23
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors) and installed on the AYN Thor**, committed, pushed and published as 0.6.24 by Claude.
+
+- **Starting a game (Toni: "always play the physical media plug-in animation as the default, the other one as an alternative").** Home › Animations › Starting a game is one choice now: **Plug in the media** (default), **Cover rises** (the old launch animation) or **Off**. The separate "Launch animation" switch is folded into it. A new key, so everyone gets the plug-in once.
+  - A case opens and its disc / cartridge comes out (as before). A cartridge or disc on its own is plugged in (as before), now wearing its real label scan as on the home row.
+  - **New:** with covers, wide capsules, heroes and screenshots, the game's own cartridge or disc is pulled up from behind the picture, then plugged in.
+  - Only where it fits (Toni: "not on every layout if it doesn't work"): without the game's place on screen, or with a picture taking most of the screen (a full-screen hero), the cover rises instead. Checked on the Thor with Covers on the Hub's row layout (Addams Family, Game Boy): `Claude outputs\shots295\launch_cover.mp4`.
+- **Pocket Quest shows Cartridges & discs by default (Toni).** Layout options › Games shown as: Cartridges & discs (new default, whatever look the other layouts use), Your game look, Cover art. Its game window, Inspect and the start-up animation use the same cartridge / disc. A new key, so everyone gets it once. Checked on the Thor with Covers as the look: Pocket Quest still shows cartridges.
+- **Floating objects round some cartridges (Toni):** not found yet. The Hub cover flow, Pocket Quest rows and Inspect (turned and tilted) showed nothing loose on the Thor; waiting for where it shows.
+
+Files: `src_copy\ui\LaunchThrow.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\SettingsDialog.kt`, `src_copy\ui\SettingsIndex.kt`, `src_copy\data\Features.kt`, `src_copy\data\AppearanceStore.kt`, `src_copy\ui\GameLookPicker.kt`, `src_copy\ui\R1TileRules.kt`.
+
+---
+
 ## Update — 21 Oct 2026 (294): the pack shell in and out of the case, no chip cut at the screen's edge, solid cartridge sides, the Thor's Hub freeze, screensaver never blank, the game window flies back to its own place — after release 0.6.22
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors) and installed on the AYN Thor and the Retroid Pocket Flip 2.** Not committed by Claude (PowerShell block in the chat). Not published. Pictures in `Claude outputs\shots294\`.
@@ -15,10 +97,7 @@ All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfL
 - **Screensaver sometimes shows nothing (Toni).** A dim backdrop is always under the picture; a picture that hasn't loaded in 8 s counts as failed (next slide); the game's name shows when its logo can't load. Not seen failing on the Thor since.
 - **Closing a game window: the piece flies back to its own place (Toni).** The window flew back to whichever copy of the game marked itself last — the Hub's mirror on the floor, or the other of a big spot and its row. A mirror never marks now, a copy off the window doesn't, and of two copies at once the bigger one stays. Checked on the Thor's Hub: back into the centre slot (`fly_back.mp4`).
 
-- **A cardboard box's right side (Toni: "use the real scan or just put cardboard there", "it looks stretched").** That side drew the spine's picture again, stretched to the side (on a GBA box a bad cut: "ME BOY VANCE"). A box scan has only one spine, so that side is now plain cardboard, lit like the other faces, with its folds. Checked on the Thor with Astérix & Obélix XXL (GBA), turned both ways.
-- **"It crashed again" (Toni):** the report Voltcap shows on the next start is the 15:22 freeze, from the build before this update (the Hub's text cache, fixed above). Since this build was installed (15:23) there's been no freeze, ANR or crash on the Thor or the Flip 2 (Android's exit records and Settings › Diagnostics › Crash reports).
-
-Files: `src_copy\ui\WholeChipRow.kt` (new), `MediaInspectView.kt`, `SolidPiece.kt`, `Case3D.kt`, `TestHooks.kt`, `CubeHub.kt`, `StyleCube.kt`, `GameWindow.kt`, `ScreenSaver.kt`, `HomeChrome.kt`, `GameDetailsOverlay.kt`, `GameWindowBanner.kt`, `PlayerPages.kt`, `QuickJump.kt`, `SaveExplorer.kt`, `SaveInspect.kt`, `SecondScreenHome.kt`, `SecondScreenVolt.kt`, `SettingsDialog.kt`, `StyleGreenCore.kt`, `StyleIconBar.kt`, `StyleLibrary.kt`, `StyleLiveTiles.kt`, `StylePocketQuest.kt`, `VoltUi.kt`.
+Files: `src_copy\ui\WholeChipRow.kt` (new), `MediaInspectView.kt`, `SolidPiece.kt`, `TestHooks.kt`, `CubeHub.kt`, `StyleCube.kt`, `GameWindow.kt`, `ScreenSaver.kt`, `HomeChrome.kt`, `GameDetailsOverlay.kt`, `GameWindowBanner.kt`, `PlayerPages.kt`, `QuickJump.kt`, `SaveExplorer.kt`, `SaveInspect.kt`, `SecondScreenHome.kt`, `SecondScreenVolt.kt`, `SettingsDialog.kt`, `StyleGreenCore.kt`, `StyleIconBar.kt`, `StyleLibrary.kt`, `StyleLiveTiles.kt`, `StylePocketQuest.kt`, `VoltUi.kt`.
 
 ---
 

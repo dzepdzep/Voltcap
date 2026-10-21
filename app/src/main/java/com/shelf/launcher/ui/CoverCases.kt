@@ -70,6 +70,40 @@ internal fun orientSpine(b: android.graphics.Bitmap, landscape: Boolean): androi
     return runCatching { android.graphics.Bitmap.createBitmap(b, 0, 0, b.width, b.height, m, true) }.getOrDefault(b)
 }
 
+/**
+ * Update 298 (Toni: "the PS1 Legend of Dragoon case showed its title twice down the side"): some scraped spine scans
+ * ("box-2D-side") are both end flaps of a jewel case's back insert side by side — two copies of the spine. [gray] is the
+ * upright scan sampled 16 wide × 64 tall (row by row, 0…255): true when its left and right halves are the same strip
+ * (average difference under 33) and it isn't a plain colour (spread over 15). One real spine's halves differ far more
+ * (measured, each cell averaged: 40–87 on single PS1, DS, GBC, N64, GameCube and PSP spines; 24–27 on the doubled PS1 one).
+ */
+internal fun isTwinSpine(gray: IntArray): Boolean {
+    if (gray.size != 16 * 64) return false
+    var diff = 0L
+    for (y in 0 until 64) for (x in 0 until 8) diff += kotlin.math.abs(gray[y * 16 + x] - gray[y * 16 + x + 8])
+    val mean = gray.sum() / gray.size.toFloat()
+    var spread = 0f
+    for (v in gray) spread += kotlin.math.abs(v - mean)
+    return diff / 512f < 33f && spread / gray.size > 15f
+}
+
+/** Update 298: an upright spine scan that is two copies of the spine side by side ([isTwinSpine]) cut to one; else itself. */
+internal fun singleSpine(b: android.graphics.Bitmap): android.graphics.Bitmap = runCatching {
+    if (b.width < 16 || b.height < 64 || b.width.toFloat() / b.height < 0.07f) return b
+    val soft = if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
+    val g = IntArray(16 * 64)
+    // (Each cell the average of 4 × 4 points in it — single points landed on or off thin lettering by chance.)
+    for (y in 0 until 64) for (x in 0 until 16) {
+        var sum = 0
+        for (sy in 0 until 4) for (sx in 0 until 4) {
+            val p = soft.getPixel(((x + (sx + 0.5f) / 4f) * soft.width / 16).toInt().coerceIn(0, soft.width - 1), ((y + (sy + 0.5f) / 4f) * soft.height / 64).toInt().coerceIn(0, soft.height - 1))
+            sum += (((p shr 16) and 255) * 30 + ((p shr 8) and 255) * 59 + (p and 255) * 11) / 100
+        }
+        g[y * 16 + x] = sum / 16
+    }
+    if (isTwinSpine(g)) android.graphics.Bitmap.createBitmap(soft, 0, 0, soft.width / 2, soft.height) else b
+}.getOrDefault(b)
+
 /** The picture's average colour (solid pixels only), sampled on a grid. */
 internal fun averageColor(b: android.graphics.Bitmap): Int {
     var r = 0L; var g = 0L; var bl = 0L; var n = 0L

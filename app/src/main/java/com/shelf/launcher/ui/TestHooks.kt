@@ -134,6 +134,10 @@ internal object LabelAudit {
         Regex("[?&]$name=([^&]*)").find(url)?.groupValues?.get(1).orEmpty()
 
     fun run(c: android.content.Context, system: String) {
+        // (Update 298, testing only: "scans:<part of a file name>" — every saved scan of those games (front, back, spine,
+        // full scan…) downloaded into label_audit/, and their addresses (without any login) in scans.tsv: for checking
+        // which edition's back a game really has.)
+        if (system.startsWith("scans:")) { scans(c, system.removePrefix("scans:")); return }
         val prefs = c.getSharedPreferences("physical_media", android.content.Context.MODE_PRIVATE)
         val dir = java.io.File(c.getExternalFilesDir(null), "label_audit").apply { mkdirs() }
         val client = okhttp3.OkHttpClient.Builder().readTimeout(30, java.util.concurrent.TimeUnit.SECONDS).build()
@@ -165,5 +169,32 @@ internal object LabelAudit {
         }
         java.io.File(dir, "index.tsv").writeText(rows.toString())
         android.util.Log.e("VoltcapTest", "labelaudit: $n games")
+    }
+
+    private fun scans(c: android.content.Context, part: String) {
+        val prefs = c.getSharedPreferences("physical_media", android.content.Context.MODE_PRIVATE)
+        val dir = java.io.File(c.getExternalFilesDir(null), "label_audit").apply { mkdirs() }
+        val client = okhttp3.OkHttpClient.Builder().readTimeout(30, java.util.concurrent.TimeUnit.SECONDS).build()
+        val rows = StringBuilder("key\tkind\tregion\tmedia\tjeu\tsystem\n")
+        for ((key, v) in prefs.all) {
+            if (!key.contains(part, ignoreCase = true)) continue
+            val text = v as? String ?: continue
+            val safe = key.substringAfterLast('/').replace(Regex("[^A-Za-z0-9._-]"), "_").take(40)
+            for (l in text.split('\n')) {
+                val kv = l.split('\t').takeIf { it.size == 2 } ?: continue
+                val (kind, url) = kv[0] to kv[1]
+                rows.append("$key\t$kind\t${param(url, "region")}\t${param(url, "media")}\t${param(url, "jeuid")}\t${param(url, "systemeid")}\n")
+                val f = java.io.File(dir, "${safe}_${kind.replace(Regex("[^A-Za-z0-9]"), "")}.png")
+                if (f.exists() || !url.startsWith("http")) continue
+                runCatching {
+                    client.newCall(okhttp3.Request.Builder().url(url).build()).execute().use { r ->
+                        if (r.isSuccessful) r.body?.byteStream()?.use { i -> f.outputStream().use { o -> i.copyTo(o) } }
+                    }
+                }
+                Thread.sleep(400)
+            }
+        }
+        java.io.File(dir, "scans.tsv").writeText(rows.toString())
+        android.util.Log.e("VoltcapTest", "labelaudit scans: done")
     }
 }

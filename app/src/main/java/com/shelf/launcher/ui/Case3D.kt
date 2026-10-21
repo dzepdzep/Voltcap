@@ -100,7 +100,8 @@ internal fun Case3D(
     // (Made once per game, away from the screen's thread: SpineCache.)
     val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false)
     // The game's own spine stood up (reading top to bottom), when it has one.
-    val ownUpright = remember(ownBmp) { ownBmp?.let { b -> DerivedArt.of(b, "spine|0") { orientSpine(b, landscape = false) } } }
+    // (Update 298: a scan that is both of the insert's end flaps side by side is cut to one spine — singleSpine.)
+    val ownUpright = remember(ownBmp) { ownBmp?.let { b -> DerivedArt.of(b, "spine|1") { singleSpine(orientSpine(b, landscape = false)) } } }
     // How thick the case is (its spine's width against its height), kept to real cases'.
     // (Update 240, #26: the real case's thickness (CaseCatalog, the console and region) wins over the spine scan's own shape
     // when the two are far apart — a scan of the long edge of a landscape box (N64 / SNES "box-2D-side"), or one cut a little
@@ -209,7 +210,9 @@ internal fun Case3D(
     var backAsked by remember(g.stableKey) { androidx.compose.runtime.mutableStateOf(false) }
     // (Update 208: a back handed in that turned out a flat-colour stand-in is replaced by the next one in line.)
     val given = back?.takeUnless { FlatArt.isKnown(it) }
-    val autoBack: Any? = if (given != null) null else remember(scans, g.platform, cover, aspect) { defaultCaseBack(g, scans, cover, aspect) }
+    // (Update 298: flatVersion too — a back cut from the full box scan that turns out a flat stand-in passes on to the
+    // printed back; it stayed plain plastic: the Ben 10 PSP case.)
+    val autoBack: Any? = if (given != null) null else remember(scans, g.platform, cover, aspect, flatVersion) { defaultCaseBack(g, scans, cover, aspect) }
     // (A scanned back at once; a printed one — drawn from its parts — only once it's turned.)
     val backModel: Any? = given ?: autoBack?.takeIf { back != null || backAsked || (backAtOnce && it !is PrintedBack) }
     // (Update 170: a printed back is made from its parts; a scanned one is a picture.)
@@ -274,7 +277,11 @@ internal fun Case3D(
         // (Update 205: turned far enough that its back will show: its back is made now, once.)
         if (given == null && !backAsked) {
             val a = ((yawNow % 360f) + 360f) % 360f
-            if (a > 70f && a < 290f) backAsked = true
+            // (Update 298, Toni: "the back appeared only after turning": a case you turn yourself — the game window, Inspect
+            // — asks for its back from 40°, so a printed back is ready before the back comes round at 90°; a row's still,
+            // turned case (28°) still never makes one.)
+            val from = if (yawOf != null) 40f else 70f
+            if (a > from && a < 360f - from) backAsked = true
         }
         val shadeNow = shadeOf?.invoke() ?: shade
         val fit = minOf(size.height, size.width / shape) * fill
@@ -1189,8 +1196,9 @@ private object CaseDraw {
  */
 internal fun defaultCaseBack(g: Game, scans: List<Pair<String, String>>?, cover: Any?, aspect: Float): Any? {
     if (!LookStyles.caseForAll()) {
-        scans?.firstOrNull { it.first == "Back of the box" }?.second?.let { return it }
-        BoxTexture.fullScan(scans)?.let { return BoxTexture.model(it, BoxPart.BACK, g.platform) }
+        // (Update 298: never one already found to be a flat-colour stand-in — ScreenScraper's green fill — FlatArt.)
+        scans?.firstOrNull { it.first == "Back of the box" }?.second?.takeUnless { FlatArt.isKnown(it) }?.let { return it }
+        BoxTexture.fullScan(scans)?.let { BoxTexture.model(it, BoxPart.BACK, g.platform) }?.takeUnless { FlatArt.isKnown(it) }?.let { return it }
     }
     return if (Features.printedBacks.state.value) PrintedBack(LookStyles.casePlatform(g.platform), cover, emptyList(), null, aspect, gameDisplayName(g.name)) else null
 }

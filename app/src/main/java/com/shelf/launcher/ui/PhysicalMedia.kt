@@ -380,7 +380,10 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
         }
     }
     // Update 125, Cartridges only: a disc / UMD game (and Steam) as the plain cartridge with its cover as the label.
-    if (!asDisc && cartsOnlyFor(platform)) return MediaPick(MediaShell.GB, GENERIC_CART)
+    // (Update 298, Toni: "opened cases showed Voltcap's own cartridges though the real piece was there": what lies in a
+    // case (RealMedia.wanted) is the game's real disc / UMD — Cartridges only is a look for the home rows, it never put the
+    // plain cartridge into a PS1 / PS2 / PSP case. A shell picked for the game or its console still wins, above.)
+    if (!asDisc && !RealMedia.on && cartsOnlyFor(platform)) return MediaPick(MediaShell.GB, GENERIC_CART)
     // Steam has no disc of its own: always the generic CD with Steam's logo (update 119).
     if (platform == "Steam") return MediaPick(MediaShell.DISC, genericDiscKey(platform))
     // Update 125: Android games on Voltcap's own green cartridge; as a disc (Discs only, All CDs), the plain CD with

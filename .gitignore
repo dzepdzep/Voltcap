@@ -34,3 +34,6 @@ keystore.properties
 # Logs, Python caches.
 *.log
 __pycache__/
+
+# Claude screenshots / device pulls (not source)
+shots*/
