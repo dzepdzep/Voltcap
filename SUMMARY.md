@@ -1,5 +1,23 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 22 Oct 2026 (310): Dual-screen dashboard access, shared category picker and gliding-category stability
+
+**Status:** Source changes prepared in GitHub branch `fix/dual-screen-controls-310` for review. **Not merged into main, not compiled or installed, not device-tested, not released.** Last published release remains **0.6.30**. Claude's original update 309 and all earlier work remain on `main`.
+
+- **Checked Claude's work first.** Verified latest `main` commit `555df82` (update 309) and existing code for all five two-screen layouts. Twin Icons already has Mixed / Dark / Light themes; its implementation was left unchanged. Twin Desk, Twin Icons and both Pocket layouts already had native buttons to open the regular second-screen dashboard. Twin Showcase was missing this access. No duplicate dashboard subsystem was built.
+- **Regular second-screen pages from dual layouts.** Added a saved **Open normal second screen** switch (on by default) in shared twin layout options. Existing native shortcuts honor it. Twin Showcase gets a compact **Second screen** button on the lower screen. Pocket Classic gets a fallback button when its optional bottom toolbar is hidden. The normal second-screen page and dock are reused; the existing back button returns to the dual-layout lower screen. No second-screen pages, widgets, media mixer or game data were duplicated.
+- **Option for categories on dual-screen layouts.** Added **Additional category bar** (off by default) for Twin Desk, Twin Icons, Twin Showcase, Pocket Classic and Pocket Ribbon. It uses the current category stops and follows the existing **Categories: All / Current only / Off** setting. **Current only** shows the current label; tap it to expand the selectable category pills and tap **Done** to collapse again. **All** shows the selectable pills immediately. **Off** shows no shared bar. Each original layout's own built-in category navigation remains usable rather than being replaced.
+- **Hidden/current category case.** Fixed Twin Showcase's built-in category pill tap when the current stop is `-1` (a saved category that is now hidden); it uses the existing Pocket category-step helper, as other Pocket category navigation does.
+- **Flashing/jitter candidate.** `GlidingChipRow` previously restarted its scroll animation whenever a chip remeasured, potentially repeatedly on dual-screen presentation changes. The animation now starts on changes to the selected category or viewport/count and waits for the selected chip to be measured instead of restarting on every layout pass. This is a code-level fix for a plausible cause, **not yet a visual confirmation** that the reported flashing is gone.
+- **Native category bar setting.** Twin Desk stops drawing its permanent native category label when Categories is set to **Off**. The shared category expansion state resets when a new home layout is selected.
+- **Prior update preserved.** Update 309's Twin Icons `Colours`: Mixed (dark top / light bottom, default), Dark (both dark) and Light (both light) remain unchanged. Update 308 and earlier changes remain as Claude committed them.
+
+**Files changed on branch:** `app/src/main/java/com/shelf/launcher/data/Features.kt`; `ui/TwinScreens.kt`, `TwinDesk.kt`, `TwinIcons.kt`, `TwinShowcase.kt`, `PocketShared.kt`, `PocketSettings.kt`, `HomeChrome.kt`, `LauncherScreen.kt`; `SUMMARY.md`.
+
+**Still required before release:** review the code, assemble the Android release with the existing release signing key, run the unit test suite and device/UI checks on AYN Thor (both screens; all five layouts; categories All/Current/Off; hidden category; repeated switching; dashboard open/back; with Pocket Classic toolbar off). Check RP handheld/one-screen fallbacks where available. Verify that no category flashing remains; if it persists, capture a screen recording and diagnose the real rendering cause. Then set versionCode 37 / versionName 0.6.31, build the compatible signed APK and publish a GitHub release. Do not publish an unverified or differently signed build.
+
+---
+
 Newest update at the top. Each update lists the files touched in `src_copy` (robocopy them into the real source).
 
 ---
