@@ -144,8 +144,15 @@ tested on a handheld.
   side (`fitSpineInside`, never stretched one way, never cut), the room round it in its edge colour (`spineWhole`).
   **Speed:** the sides' picture's sideways spread (`sideArtOf`) was a 21-wide scan per pixel — now a running maximum
   (checked against the plain version on 2,000 random rows); photos now make one per picture too.
+- **User (317x): spines "even worse"** — screenshots: Melee's full case scan has the right spine (a narrow blue strip with
+  the title and the GameCube logo) but the scraped "Spine" picture is a wider slice with part of the back; Twilight
+  Princess's is right. No fitting rule fixes a wrong picture: keep cases back to the middle cut (`spineFit`); a bad one
+  is fixed by your own cut of the full scan (wins since 317v). **Cut editor zoom (Toni):** 1× / 3× / 6× round the edge
+  picked (`FullScanCutEditor.kt`); the lines stay thin.
+- Measured (317x): frames 81 ms (p50) / 150 ms (p90), 76 MB — the step from 5 ms came with 317u–w; not yet traced.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
-  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
+  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`,
+  `ui/FullScanCutEditor.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
   `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
