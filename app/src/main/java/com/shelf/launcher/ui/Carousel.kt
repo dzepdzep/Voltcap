@@ -662,6 +662,16 @@ internal object Carousel {
  * game's name under the one in the middle.
  */
 @Composable
+/**
+ * Update 314: bounded on-screen 3D cartridge compositing for Stacks.
+ * Rendering dozens of cards simultaneously creates multiple GPU-backed
+ * GraphicsLayers per cartridge (SolidPiece.kt), including hidden far items.
+ * Keep the selected and nearest five on each side as true 3D pieces. Do not
+ * change other layouts or the standard/non-3D cartridge carousel.
+ */
+internal fun stacks3dCartridgeReach(requestedReach: Int, stacks: Boolean, full3dCartridges: Boolean): Int =
+    if (stacks && full3dCartridges) requestedReach.coerceIn(0, 5) else requestedReach
+
 internal fun GameCarousel(
     games: List<Game>, focus: Int, art: Map<String, GameArt>, overrides: Map<String, ArtOverride>,
     onSelect: (Int) -> Unit, onOpen: () -> Unit,
@@ -676,7 +686,9 @@ internal fun GameCarousel(
     loopTick: Int = 0,
     loopStep: Int = 0,
     /** Update 146: time played per game (stableKey → ms), for the Receding row's line under its big game. */
-    playtime: Map<String, Long> = emptyMap()
+    playtime: Map<String, Long> = emptyMap(),
+    /** Update 314: Stacks' full 3D cartridge mode may exhaust the Flip 2's Adreno layer budget. */
+    gpuSafeStacks: Boolean = false
 ) {
     // Update 156: the covers a few games either side decoded ahead, in the shape the carousel draws them (the Grid and TV
     // room carousels warmed nothing: each new cover came in empty for a moment).
@@ -792,7 +804,14 @@ internal fun GameCarousel(
     // the draw lambdas), so moving doesn't rebuild the carousel each frame. It glides on a critically damped spring as
     // quick as Settings › Home › Animations › Moving between games: a new step carries on at the speed it already has
     // (holding the D-pad flows instead of stopping and starting at each game), and it never overshoots.
-    val reachNow = Carousel.reach(side, view)
+    // Update 314: Flip 2's ANR trace shows Adreno texture allocation failures
+    // with Stacks + 3D cartridges. Compose fewer simultaneous offscreen 3D
+    // cartridge layers in this one mode; animations and other carousel looks stay.
+    val reachNow = stacks3dCartridgeReach(
+        Carousel.reach(side, view),
+        gpuSafeStacks,
+        cardArtType == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && drawn3dOn()
+    )
     val animOn = rememberAnimationsEnabled()
     val glideSpeed = Features.rowGlide.state.value
     val glide = remember { CarouselGlide(vFocus.toFloat()) }
