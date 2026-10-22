@@ -1331,9 +1331,19 @@ private fun InspectCase(
     caseItem: CaseItem?, itemInCase: () -> Boolean
 ) {
     val tilt = motion.pitch.floatValue.coerceIn(BOX_PITCH_MIN, BOX_PITCH_MAX)
+    // Update 311: InspectPiece.front has already selected the actual Box scan when
+    // Original cases is on. Tell Case3D that it is a real, fully printed front,
+    // just as the shelf's ScanCase does. Otherwise Case3D sees realFront=false
+    // and can paste a second console template on top of it (N64 corner/logo).
+    val realScan = Features.originalCases.state.value &&
+        !LookStyles.caseForAll() &&
+        !androidOwnCase(piece.game.platform) &&
+        piece.front != null &&
+        piece.front == BoxTexture.front(piece.physical, piece.game.platform)
     Case3D(
         piece.game, piece.front, piece.physical, 0f, aspect, Modifier.fillMaxSize(),
         pitch = CASE_PITCH + tilt,
+        realFront = realScan,
         // (Update 162: Case3D's back face and its angle read while drawing.)
         back = piece.back, yawOf = yawOf, fill = 0.97f,
         // (Update 189: it opens.)

@@ -106,7 +106,7 @@ internal val TwinToolOrder = listOf("Settings", "Search", "Achievements", "Notif
 private fun twinTools(c: StyleCtx): List<HomeShortcut> =
     TwinToolOrder.mapNotNull { l -> c.shortcuts.firstOrNull { it.label == l } }.ifEmpty { c.shortcuts.take(6) } +
         // Update 180: the second screen's own dashboard (its pages, dock, Games page); ↩ there comes back.
-        if (twinOnSecond(c.state)) listOf(HomeShortcut("Second screen", androidx.compose.material.icons.Icons.Filled.Dashboard, Color(0xFF7C5CFF)) { TwinScreens.dashboard = true }) else emptyList()
+        if (twinOnSecond(c.state) && Features.twinDashboardAccess.state.value) listOf(HomeShortcut("Second screen", androidx.compose.material.icons.Icons.Filled.Dashboard, Color(0xFF7C5CFF)) { TwinScreens.dashboard = true }) else emptyList()
 
 @Composable
 internal fun StyleTwinIcons(c: StyleCtx, modifier: Modifier = Modifier) {

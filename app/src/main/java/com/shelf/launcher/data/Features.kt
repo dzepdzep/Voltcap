@@ -1189,6 +1189,10 @@ object Features {
     val twinDeskHandles = BoolPref("twin_desk_handles", false)
     /** Update 180: on two screens, the two-screen layouts fill the whole top screen with their own background (theme off). */
     val twinFullTop = BoolPref("twin_full_top", true)
+    /** Update 310: allow navigation to the regular second-screen dashboard from twin layouts. */
+    val twinDashboardAccess = BoolPref("twin_dashboard_access", true)
+    /** Update 310: optionally show standard selectable categories above the twin layout\'s lower screen. */
+    val twinSharedCategories = BoolPref("twin_shared_categories", false)
     // ---- Update 181: the two Pocket layouts (PocketClassic.kt, PocketRibbon.kt) ----
     enum class PocketAnim(val label: String) { NORMAL("Normal"), FAST("Fast"), OFF("Off") }
     enum class PocketArrange(val label: String) { AUTO("Two screens when there are"), STACKED("One above the other"), SIDE("Side by side") }

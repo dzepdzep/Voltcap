@@ -33,7 +33,11 @@ if ($LASTEXITCODE -ne 0) {
 
 $g = Join-Path $root "app\build.gradle.kts"
 $t = Get-Content $g -Raw
-$code = [int]([regex]::Match($t, 'versionCode\s*=\s*(\d+)').Groups[1].Value) + 1
+$currentCode = [int]([regex]::Match($t, 'versionCode\s*=\s*(\d+)').Groups[1].Value)
+$currentVersion = [regex]::Match($t, 'versionName\s*=\s*"([^"]*)"').Groups[1].Value
+# Update 311: an already staged version keeps its code (v0.6.31 was staged as 37 on the PR).
+# New versions still increment, as before. This avoids silently publishing v0.6.31 as code 38.
+$code = if ($currentVersion -eq $Version) { $currentCode } else { $currentCode + 1 }
 $t = [regex]::Replace($t, 'versionCode\s*=\s*\d+', "versionCode = $code")
 $t = [regex]::Replace($t, 'versionName\s*=\s*"[^"]*"', "versionName = `"$Version`"")
 Set-Content -Path $g -Value $t -NoNewline

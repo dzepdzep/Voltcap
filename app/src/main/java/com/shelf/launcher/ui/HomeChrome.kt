@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import kotlinx.coroutines.flow.first
+
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.layout.onSizeChanged
@@ -607,8 +609,11 @@ internal fun GlidingChipRow(
     var viewW by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var laidOut by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val first = remember { booleanArrayOf(true) }
-    androidx.compose.runtime.LaunchedEffect(focused, viewW, laidOut) {
-        if (focused !in 0 until count || viewW <= 0 || widths[focused] <= 0) return@LaunchedEffect
+    // Update 310: remeasuring a pill should not cancel/restart the ongoing scroll animation.
+    // This repeated restart could look like a flashing category bar on dual screens.
+    androidx.compose.runtime.LaunchedEffect(focused, viewW, count) {
+        if (focused !in 0 until count || viewW <= 0) return@LaunchedEffect
+        androidx.compose.runtime.snapshotFlow { laidOut }.first { widths[focused] > 0 }
         val l = lefts[focused]; val r = l + widths[focused]
         val cur = scroll.value
         val target = when {

@@ -2169,7 +2169,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Update 159: Discs only on → cartridge games print their cover on their CD (typedArtFor).
     val discLookNow = state.appearance.cardArtType == com.shelf.launcher.data.CardArtType.DISC
     androidx.compose.runtime.SideEffect { if (DiscLook.on != discLookNow) DiscLook.on = discLookNow }
-    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false }
+    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
     // Update 181: the Pocket layouts play their sounds through the home screen's.
     SideEffect { PocketSounds.play = { s -> sounds?.play(s) } }
     // Update 202: Green Core's menu opens the app drawer, the music library and the sort window through the hotkey actions.
@@ -4009,7 +4009,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         var catSettled by remember(state.appearance.homeLayout) { mutableStateOf(false) }
         LaunchedEffect(state.appearance.homeLayout) { kotlinx.coroutines.delay(600); catSettled = true }
         // (On the row layouts, Settings › Categories › Category name: Off is your choice of no name there: no fallback.)
-        val catFallback = overlayLayout != null && catSettled && HomeWidgets.CATEGORY !in overlayParts && CategoryTitle.fallbackOn(overlayLayout) &&
+        // Update 310: the fallback must follow the CURRENT layout, not the process-wide count of
+        // native category titles. The old counter can include the other display (or a departing page).
+        // On Green Core that toggled the whole category-pill bar over the MENU (visible in Toni's video).
+        val nativeOnThisLayout = when (overlayLayout) {
+            com.shelf.launcher.data.HomeLayout.GREENCORE -> GreenCoreNav.page == GreenCoreNav.Page.GAMES
+            com.shelf.launcher.data.HomeLayout.TWIN_DESK,
+            com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE -> state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF
+            com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC,
+            com.shelf.launcher.data.HomeLayout.POCKET_RIBBON -> true // native menu/category navigation
+            else -> CategoryTitle.nativeShown()
+        }
+        val catFallback = overlayLayout != null && catSettled && HomeWidgets.CATEGORY !in overlayParts &&
+            !nativeOnThisLayout &&
+            com.shelf.launcher.data.Features.categoryTitle.state.value != com.shelf.launcher.data.Features.CategoryTitleMode.OFF &&
+            HomeWidgets.overlayId(overlayLayout, HomeWidgets.CATEGORY) !in com.shelf.launcher.data.Features.hiddenParts.state.value &&
             !(!overlayLayout.styleHome && state.appearance.categoryBar == com.shelf.launcher.data.CategoryBar.OFF)
         // (Update 212: the category title shows with no game too — an empty category; the other parts need the game.)
         val partsHere = (if (catFallback) overlayParts + HomeWidgets.CATEGORY else overlayParts)

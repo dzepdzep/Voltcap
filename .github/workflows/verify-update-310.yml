@@ -1,0 +1,56 @@
+name: Verify Android update 310
+
+on:
+  push:
+    branches:
+      - fix/dual-screen-controls-310
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Source-check without Discord SDK (not a release)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+      - name: Configure JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      # Real Discord SDK is deliberately not committed to GitHub.
+      # This checks Kotlin/Compose with an isolated API stub; the real build
+      # still needs the genuine AAR and current developer PC's signing key.
+      # GitHub's ubuntu-latest image already provides Android SDK command-line tools.
+      # setup-android@v3 currently requests the removed "tools" SDK package and fails.
+      - name: Install Android 36 and native tools
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME}"
+          SDKM=$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | head -1)
+          test -n "$SDKM"
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
+      - name: Configure Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build and run JVM unit tests
+        run: bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest :app:assembleDebug
+      - name: Preserve test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-310-test-results
+          path: |
+            app/build/reports/tests
+            app/build/test-results
+          if-no-files-found: ignore
+      # Do not upload the stubbed debug APK: it is not a valid user build.

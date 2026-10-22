@@ -1,6 +1,11 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
@@ -62,6 +67,8 @@ internal object TwinScreens {
      * part — the Second screen button in the layout, or ↩ on the dashboard to come back.
      */
     var dashboard by mutableStateOf(false)
+    /** Expands Current-only to the selectable category list until Done. */
+    var categoriesExpanded by mutableStateOf(false)
 }
 
 /** Update 180: Layout options of both two-screen layouts: the top screen filled by the layout, the theme off. */
@@ -72,6 +79,24 @@ internal fun TwinFullTopSwitch() {
         androidx.compose.material.icons.Icons.Filled.OpenInFull, "Fill the top screen",
         "With two screens: the layout's own background fills the whole top screen and the theme's background is off. One screen: as before.",
         com.shelf.launcher.data.Features.twinFullTop.state.value, { com.shelf.launcher.data.Features.twinFullTop.value = it }
+    )
+    TwinCommonControls()
+}
+
+/** Update 310: opt-in standard category picker and dashboard access for all five dual-screen layouts. */
+@Composable
+internal fun TwinCommonControls() {
+    SwitchRow(
+        androidx.compose.material.icons.Icons.Filled.Dashboard, "Open normal second screen",
+        "Show a shortcut to Voltcap\'s normal second-screen pages and dock, with a button to return.",
+        com.shelf.launcher.data.Features.twinDashboardAccess.state.value,
+        { com.shelf.launcher.data.Features.twinDashboardAccess.value = it }
+    )
+    SwitchRow(
+        androidx.compose.material.icons.Icons.Filled.OpenInFull, "Additional category bar",
+        "Optional shared category picker on the lower screen. Follows Categories: All / Current only / Off, independently of each layout\'s own design.",
+        com.shelf.launcher.data.Features.twinSharedCategories.state.value,
+        { com.shelf.launcher.data.Features.twinSharedCategories.value = it }
     )
 }
 
@@ -215,14 +240,102 @@ private fun TwinScaled(w: Dp, h: Dp, s: Float, content: @Composable (Modifier) -
 /** Update 158: what the second screen shows while a twin layout is on: its bottom part, filling the screen. */
 @Composable
 internal fun TwinSecondScreen(c: StyleCtx) {
-    when (c.state.appearance.homeLayout) {
-        HomeLayout.TWIN_ICONS -> TwinIconsBottom(c, Modifier.fillMaxSize(), framed = false)
-        // Update 307.
-        HomeLayout.TWIN_SHOWCASE -> TwinShowcaseBottom(c, Modifier.fillMaxSize(), framed = false)
-        // Update 181.
-        HomeLayout.POCKET_CLASSIC -> PocketClassicBottom(c, Modifier.fillMaxSize(), framed = false)
-        HomeLayout.POCKET_RIBBON -> PocketRibbonBottom(c, Modifier.fillMaxSize(), framed = false)
-        else -> TwinDeskBottom(c, Modifier.fillMaxSize(), framed = false)
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            // Keep each layout's original category controls. This extra selector is opt-in.
+            TwinSharedCategoryStrip(c)
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                when (c.state.appearance.homeLayout) {
+                    HomeLayout.TWIN_ICONS -> TwinIconsBottom(c, Modifier.fillMaxSize(), framed = false)
+                    HomeLayout.TWIN_SHOWCASE -> TwinShowcaseBottom(c, Modifier.fillMaxSize(), framed = false)
+                    HomeLayout.POCKET_CLASSIC -> PocketClassicBottom(c, Modifier.fillMaxSize(), framed = false)
+                    HomeLayout.POCKET_RIBBON -> PocketRibbonBottom(c, Modifier.fillMaxSize(), framed = false)
+                    else -> TwinDeskBottom(c, Modifier.fillMaxSize(), framed = false)
+                }
+            }
+        }
+        // Desk, icons, Ribbon and Classic (when its toolbar is visible) have native buttons.
+        // Showcase, and Classic when the toolbar is hidden, get this accessible fallback.
+        if ((c.state.appearance.homeLayout == HomeLayout.TWIN_SHOWCASE ||
+            (c.state.appearance.homeLayout == HomeLayout.POCKET_CLASSIC && !com.shelf.launcher.data.Features.classicToolbar.state.value)) &&
+            com.shelf.launcher.data.Features.twinDashboardAccess.state.value
+        ) {
+            Row(
+                Modifier.align(Alignment.BottomEnd).padding(8.dp).clip(RoundedCornerShape(50))
+                    .background(Color(0xEAF8F9FB)).tapOnly { TwinScreens.dashboard = true }
+                    .padding(horizontal = 9.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.material.icons.Icons.Filled.Dashboard, "Normal second screen",
+                    tint = Color(0xFF26313C), modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.size(5.dp))
+                androidx.compose.material3.Text("Second screen", color = Color(0xFF26313C), fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+/** Optional, consistent category selection for layouts that use different built-in navigation. */
+@Composable
+private fun TwinSharedCategoryStrip(c: StyleCtx) {
+    if (!com.shelf.launcher.data.Features.twinSharedCategories.state.value) return
+    val mode = c.state.appearance.categoryBar
+    if (mode == com.shelf.launcher.data.CategoryBar.OFF || c.stops.isEmpty()) return
+    val expanded = mode == com.shelf.launcher.data.CategoryBar.FULL || TwinScreens.categoriesExpanded
+    val accent = ShelfTheme.accent
+    Box(
+        Modifier.fillMaxWidth().height(38.dp).background(Color(0xFFF0F2F6))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        if (!expanded) {
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                    .tapOnly { TwinScreens.categoriesExpanded = true }
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                androidx.compose.material3.Text(
+                    c.categoryLabel, color = Color(0xFF26313C), fontSize = 12.sp,
+                    modifier = Modifier.weight(1f), maxLines = 1
+                )
+                androidx.compose.material3.Text("Categories ›", color = Color(0xFF576473), fontSize = 11.sp)
+            }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                GlidingChipRow(
+                    count = c.stops.size, focused = c.stop, modifier = Modifier.weight(1f),
+                    spacing = 5.dp, endPadding = 6.dp
+                ) { i ->
+                    val on = i == c.stop
+                    Box(
+                        Modifier.clip(RoundedCornerShape(50))
+                            .background(if (on) accent else Color(0xFFDDE2E8))
+                            .tapOnly {
+                                val steps = pocketStepsTo(c, i)
+                                if (steps != 0) c.actions.category(steps)
+                            }
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
+                        androidx.compose.material3.Text(
+                            c.stops[i].label,
+                            color = if (on) onAccentColor() else Color(0xFF26313C),
+                            fontSize = 11.sp, maxLines = 1
+                        )
+                    }
+                }
+                if (mode == com.shelf.launcher.data.CategoryBar.CURRENT) {
+                    androidx.compose.material3.Text(
+                        "Done", color = Color(0xFF26313C), fontSize = 11.sp,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                            .tapOnly { TwinScreens.categoriesExpanded = false }
+                            .padding(horizontal = 6.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
     }
 }
 

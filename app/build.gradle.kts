@@ -20,6 +20,14 @@ val keystoreProps = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 
+// Update 310: compile-only CI check when the proprietary Discord binary is not in GitHub.
+// The stub is NEVER included in ordinary local or release builds and CI must not publish it.
+val voltcapCiWithoutDiscord = System.getenv("GITHUB_ACTIONS") == "true" &&
+    providers.gradleProperty("voltcapCiWithoutDiscord").orNull == "true"
+if (voltcapCiWithoutDiscord && gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }) {
+    error("CI-only Discord stub must never be used for release builds.")
+}
+
 android {
     // Update 245 (#79): android.* calls in unit tests return defaults instead of throwing ("Method ... not mocked").
     testOptions { unitTests.isReturnDefaultValues = true }
@@ -31,8 +39,8 @@ android {
         minSdk = 24
         // Android 16. Play needs 36 for new apps since 31 Aug 2026; GitHub builds just benefit.
         targetSdk = 36
-        versionCode = 36
-        versionName = "0.6.30"
+        versionCode = 37
+        versionName = "0.6.31"
 
         // Handheld CPUs only — also keeps Discord's native library small.
         ndk {
@@ -43,10 +51,15 @@ android {
     // Small native bridge to the Discord Social SDK (Rich Presence), see src/main/cpp.
     // AGP 9.3 builds it with NDK 28 (Android Studio offers to install it), which lays the
     // library out for 16 KB memory pages. Discord's own library is already 16 KB aligned.
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
+    if (!voltcapCiWithoutDiscord) {
+        externalNativeBuild {
+            cmake {
+                path = file("src/main/cpp/CMakeLists.txt")
+            }
         }
+    } else {
+        // CI can check Kotlin/Compose without licensing/releasing the Discord SDK.
+        sourceSets.getByName("main").java.srcDir("src/ciDiscordStubs/java")
     }
 
     signingConfigs {
@@ -142,7 +155,7 @@ dependencies {
     // Discord Social SDK (Rich Presence: "Playing … on Voltcap"), downloaded
     // from discord.com/developers into app/libs/discord. Custom Tabs is what
     // it opens Discord's sign-in with.
-    implementation(files("libs/discord/lib/release/discord_partner_sdk.aar"))
+    if (!voltcapCiWithoutDiscord) implementation(files("libs/discord/lib/release/discord_partner_sdk.aar"))
     implementation("androidx.browser:browser:1.8.0")
 
     // Networking. Retrofit 2.11 ships the R8 rules its suspend functions need.

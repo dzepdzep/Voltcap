@@ -101,6 +101,7 @@ private fun PocketNameField() {
 private fun PocketCommonSettings() {
     Spacer(Modifier.height(10.dp))
     SectionLabel("Both Pocket layouts")
+    TwinCommonControls()
     StyleChoice("Screens", Features.PocketArrange.values(), Features.pocketArrange.state.value, { it.label }) { Features.pocketArrange.value = it }
     SwitchRow(Icons.Filled.GridView, "Pixel-perfect", "Whole pixels per dot (sharp, but smaller with a border on some screens). Off (default): as big as fits, the background filling the screen.",
         Features.pocketPixel.state.value, { Features.pocketPixel.value = it })
