@@ -1056,45 +1056,60 @@ internal fun GameCarousel(
         val pf = posFloor
         val base = if (swap.snapPending) vFocus else pf
         val oldPos = swap.oldPos
-        for (layer in 0..(if (showOld) 1 else 0)) {
-            val old = layer == 1
-            val list = if (old) swap.oldGames else games
-            val ln = list.size
-            val lLoop = if (old) swap.oldLoop else looping
-            val lBase = if (old) kotlin.math.floor(oldPos).toInt() else base
-            // (The leaving collection only as far as 8 each side: a long stack's far end just goes, rather than
-            // building dozens of games for a moment.)
-            val lReach = if (old) minOf(reachNow, 8) else reachNow
-            val lo = lBase - lReach - 1 - (if (showOld && ((!old && dirS > 0) || (old && dirS < 0))) shiftN else 0)
-            val hi = lBase + lReach + 2 + (if (showOld && ((!old && dirS < 0) || (old && dirS > 0))) shiftN else 0)
-            val focusIdx = if (old) kotlin.math.round(oldPos).toInt() else vFocus
-            // (Update 246, #60: the places worked out first, then one keyed group each with no `continue` between them. A
-            // `continue` in the loop made the Compose compiler put every pass of it in a group of its own, so the games'
-            // keys were looked up only within their pass: when a step moved them all one place along, every game in the
-            // carousel was thrown away and built again — about a hundred 3D cases per step in a big category.)
-            val places = (lo..hi).filter { i ->
-                // (Update 135: on an endless row item i is a place on the endless row; its game is i mod the count.)
-                // (Update 174: each game once when the row is shorter than the view.)
-                !(lLoop && !drawnOnce(i - focusIdx, ln)) && list.getOrNull(if (lLoop) i.mod(ln) else i) != null
-            }
-            for (i in places) {
-                val real = if (lLoop) i.mod(ln) else i
-                val g = list[real]
-                androidx.compose.runtime.key(old, if (lLoop) i else g.stableKey) {
-                    // (Update 246, #60: made inside the game's own group and kept while its place and the slide are the
-                    // same. Made before it at the loop's position, every step shifted each position's place by one, so
-                    // every game in the carousel got new ones and rebuilt — about a hundred 3D cases per step in a big
-                    // category, 200–300 ms frames.)
-                    val relOf: () -> Float = remember(i, old, showOld, oldPos, dirS, shiftK) {
-                        if (old) ({ i - oldPos - dirS * shiftK * kNow() })
-                        else if (showOld) ({ i - curPos() + dirS * shiftK * (1f - kNow()) })
-                        else ({ i - curPos() })
+        // Update 314 (Flip 2 ANR when Inspect opened): a game opened to inspect fades the others as one group — one buffer
+        // the carousel's size — instead of each game on its own (each turned cartridge then needed its own big buffer, all
+        // allocated at once as the inspect view opened). Overlapping cases no longer show through each other while dimmed.
+        // (Wider and taller than the carousel, round the same middle: the games run on past its sides and their reflections
+        // under it, and a faded group is cut to its own bounds.)
+        Box(
+            Modifier.layout { m, cons ->
+                val bw = if (cons.hasBoundedWidth) cons.maxWidth else cons.minWidth
+                val bh = if (cons.hasBoundedHeight) cons.maxHeight else cons.minHeight
+                val gw = (bw * 1.5f).toInt(); val gh = (bh * 1.6f).toInt()
+                val pl = m.measure(androidx.compose.ui.unit.Constraints.fixed(gw, gh))
+                layout(bw, bh) { pl.place((bw - gw) / 2, (bh - gh) / 2) }
+            }.graphicsLayer { alpha = 1f - 0.65f * MediaInspect.amount.floatValue }
+        ) {
+            for (layer in 0..(if (showOld) 1 else 0)) {
+                val old = layer == 1
+                val list = if (old) swap.oldGames else games
+                val ln = list.size
+                val lLoop = if (old) swap.oldLoop else looping
+                val lBase = if (old) kotlin.math.floor(oldPos).toInt() else base
+                // (The leaving collection only as far as 8 each side: a long stack's far end just goes, rather than
+                // building dozens of games for a moment.)
+                val lReach = if (old) minOf(reachNow, 8) else reachNow
+                val lo = lBase - lReach - 1 - (if (showOld && ((!old && dirS > 0) || (old && dirS < 0))) shiftN else 0)
+                val hi = lBase + lReach + 2 + (if (showOld && ((!old && dirS < 0) || (old && dirS > 0))) shiftN else 0)
+                val focusIdx = if (old) kotlin.math.round(oldPos).toInt() else vFocus
+                // (Update 246, #60: the places worked out first, then one keyed group each with no `continue` between them. A
+                // `continue` in the loop made the Compose compiler put every pass of it in a group of its own, so the games'
+                // keys were looked up only within their pass: when a step moved them all one place along, every game in the
+                // carousel was thrown away and built again — about a hundred 3D cases per step in a big category.)
+                val places = (lo..hi).filter { i ->
+                    // (Update 135: on an endless row item i is a place on the endless row; its game is i mod the count.)
+                    // (Update 174: each game once when the row is shorter than the view.)
+                    !(lLoop && !drawnOnce(i - focusIdx, ln)) && list.getOrNull(if (lLoop) i.mod(ln) else i) != null
+                }
+                for (i in places) {
+                    val real = if (lLoop) i.mod(ln) else i
+                    val g = list[real]
+                    androidx.compose.runtime.key(old, if (lLoop) i else g.stableKey) {
+                        // (Update 246, #60: made inside the game's own group and kept while its place and the slide are the
+                        // same. Made before it at the loop's position, every step shifted each position's place by one, so
+                        // every game in the carousel got new ones and rebuilt — about a hundred 3D cases per step in a big
+                        // category, 200–300 ms frames.)
+                        val relOf: () -> Float = remember(i, old, showOld, oldPos, dirS, shiftK) {
+                            if (old) ({ i - oldPos - dirS * shiftK * kNow() })
+                            else if (showOld) ({ i - curPos() + dirS * shiftK * (1f - kNow()) })
+                            else ({ i - curPos() })
+                        }
+                        val fadeOf: () -> Float = if (old) remember { { 1f - kNow() } } else if (showOld) kNow else CarouselSwap.FULL
+                        vcTrace("VC:CarouselItem") { CarouselItem(
+                            ctx, g, real, i, atFocus = i == focusIdx, on = !old && i == vFocus, interactive = !old,
+                            relOf = relOf, fadeOf = fadeOf, onTap = tap, modifier = Modifier.align(Alignment.Center)
+                        ) }
                     }
-                    val fadeOf: () -> Float = if (old) remember { { 1f - kNow() } } else if (showOld) kNow else CarouselSwap.FULL
-                    vcTrace("VC:CarouselItem") { CarouselItem(
-                        ctx, g, real, i, atFocus = i == focusIdx, on = !old && i == vFocus, interactive = !old,
-                        relOf = relOf, fadeOf = fadeOf, onTap = tap, modifier = Modifier.align(Alignment.Center)
-                    ) }
                 }
             }
         }
@@ -1419,9 +1434,9 @@ private fun CarouselItem(
     }
     val shadeOf: () -> Float = { if (culled.value) ps.lastShade else c.place(ps.s, relNow.value()).shade.also { ps.lastShade = it } }
     // Update 314 (Flip 2 ANR, the GPU out of memory): drawn fully opaque now — the slot's alpha (its place's, a category
-    // slide's fade, an inspected game's stepping back) all 1 — so a solid piece needs no buffer of its own to fade as one.
+    // slide's fade) all 1 — so a solid piece needs no buffer of its own to fade as one. (Inspect's dimming is the group's.)
     val opaqueOf: () -> Boolean = {
-        MediaInspect.amount.floatValue <= 0f && c.place(ps.o, relNow.value()).alpha * fadeNow.value() >= 0.999f
+        c.place(ps.o, relNow.value()).alpha * fadeNow.value() >= 0.999f
     }
     Box(
         modifier
@@ -1448,8 +1463,8 @@ private fun CarouselItem(
                     // (Update 162 (review): only the one you're on — on a short endless row the same game shows more than once.)
                     if (on && g.stableKey == MediaInspect.key) a = 0f
                     else {
+                        // (Update 314: their fade is the group's — see the Box round the games.)
                         s *= 1f - 0.1f * ins
-                        a *= 1f - 0.65f * ins
                         tx += (if (rel < 0f) -1f else 1f) * ins * 0.16f * c.bigW.toPx()
                     }
                 }

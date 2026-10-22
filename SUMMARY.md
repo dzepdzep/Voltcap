@@ -17,6 +17,12 @@ tested on a handheld.
   same for the console spine (`DerivedArt.peekNamed`). The face is remembered as an alias (`DerivedArt.alias`, not
   counted twice in the 48 MB cache); `framed` is now cached too (it was made again on every key change). Same pictures,
   same rules (update 308 / 311 / 312 spine fitting untouched).
+- **Flip 2 ANR again (`voltcap-crash-20261022-193624_11.zip`):** 0.6.34 — again published from `main` *without* PR #6
+  (main = 313 + two version bumps). Froze as Inspect opened over Case stacks (421 kgsl allocation failures, 3–7 MB each,
+  8 s frames). With PR #6 the games behind the inspect view faded one by one, so every turned cartridge would have
+  needed its whole-piece buffer again at once: the carousel's games now fade as **one group** (`Carousel.kt`, a Box
+  1.5× wide / 1.6× tall round the carousel so the games past its sides and their reflections aren't cut), each piece
+  stays opaque inside it (no buffer of its own). Overlapping cases no longer show through each other while dimmed.
 - **Not changed yet:** N64 spines that "still don't apply correctly on some games" (user) — waiting for which games and
   how they look (see the chat for the likely causes).
 
