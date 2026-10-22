@@ -5,6 +5,15 @@ import org.junit.Test
 
 /** Regression: update 311's intact scans should not look like narrow stickers on N64 3D box sides. */
 class RealSpineWidth312Test {
+    @Test fun wideningAffectsOnlyN64WithoutCaseOverride() {
+        assertEquals(true, shouldWidenN64CardboardSpine("N64", false))
+        assertEquals(false, shouldWidenN64CardboardSpine("N64", true))
+        for (platform in listOf("SNES", "GB", "GBC", "GBA", "NES", "Genesis", "PS1", "Switch")) {
+            assertEquals(platform, false, shouldWidenN64CardboardSpine(platform, false))
+        }
+        assertEquals(false, shouldWidenN64CardboardSpine(null, false))
+    }
+
     @Test fun narrowRealSpineUsesMoreOfTheThreeDimensionalSide() {
         // An 80px-wide spine in a 120px-wide box should extend close to the side,
         // rather than leaving the original 20px green borders on both sides.
