@@ -34,7 +34,13 @@ tested on a handheld.
   of its own whose drawing bumps `PieceShot.version` only when it changes (a label coming in), which takes the picture
   again; content that keeps changing gives up on it (`off`) and is drawn as before. The face-light change above is
   reverted (the picture must be unlit).
-- **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `device/ChargeLimitService.kt`.
+- **Measured (user):** 16 fps (frames 61 ms p50 / 65 ms p90, GPU 6 ms) — better, still sluggish. **Perfetto
+  (`voltcap-trace6.zip`):** still ~460 offscreen redraws a frame; the process had taken ~737 front pictures — each
+  recomposition (every carousel step) gave the piece a new content-layer modifier, which drew the content again, counted
+  as new content, retook the picture, and after 40 retakes gave up (`off`). Now remembered once per piece (`shotMark`).
+  The idle hop of the drawn templates, cartridge photos and pack pictures moved round the solid piece (as the drawn
+  shells' already was), so their picture never holds them mid-hop (`PhysicalMedia.kt`, `CustomCarts.kt`).
+- **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/CustomCarts.kt`, `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
   targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
   that the charge-limit notification still appears / updates / goes with the charger.

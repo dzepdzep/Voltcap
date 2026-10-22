@@ -331,8 +331,9 @@ internal fun CustomCart(
     // Update 131: a disc console on its own shell (your optical-system pack).
     val shell = discShellFor(platform)
     if (shell != null) {
-        val m = if (solid != null) modifier.solidPiece(solid) else modifier
-        DiscShellArt(shell, art, if (motionSeed != null) m.mediaMotion(false, motionSeed) else m, platform)
+        // (Update 317: the hop round the solid piece — see PhysicalMedia.)
+        val moving = if (motionSeed != null) modifier.mediaMotion(false, motionSeed) else modifier
+        DiscShellArt(shell, art, if (solid != null) moving.solidPiece(solid) else moving, platform)
     } else PackCart(platform, art, modifier, solid = solid, motionSeed = motionSeed)
 }
 
@@ -369,8 +370,9 @@ internal fun PackCart(
         return
     }
     // (Update 316: the pack picture's shapes — two pictures, not one — turn as before: the solid piece round them.)
-    val packM = if (solid != null) modifier.solidPiece(solid) else modifier
-    BoxWithConstraints(if (motionSeed != null) packM.mediaMotion(false, motionSeed) else packM, contentAlignment = Alignment.Center) {
+    // (Update 317: the hop round the solid piece — see PhysicalMedia.)
+    val packMoving = if (motionSeed != null) modifier.mediaMotion(false, motionSeed) else modifier
+    BoxWithConstraints(if (solid != null) packMoving.solidPiece(solid) else packMoving, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * look.aspect)
         val h = w / look.aspect
         // Dp per unit of the pack's own measurements.

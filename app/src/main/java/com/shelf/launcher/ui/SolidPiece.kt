@@ -374,6 +374,9 @@ internal fun Modifier.solidPiece(
     // offscreen picture of their own (and no smear: each slice's copies drawn at the very same places).
     val shotImage = if (faceArt == null) shot.image.value else null
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+    // (The same modifier for the piece's whole life: a new one at each recomposition — every step of a carousel — made the
+    // content draw again, which counted as new content and took the picture again, until the piece gave up on it.)
+    val shotMark = remember(shot) { Modifier.graphicsLayer { }.drawWithContent { shot.changed(); drawContent() } }
     val sideArt = rememberDerived((faceArt?.image ?: shotImage)?.asAndroidBitmap(), "side|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
     // Update 316 (Flip 2: ~1,000 GPU pictures, 1.2 GB, climbing while scrolling until it froze): the piece's layers kept for
     // as long as the piece is shown, recorded again when its drawing is rebuilt. They were made new at every rebuild —
@@ -607,7 +610,7 @@ internal fun Modifier.solidPiece(
         }
     }.then(
         // (Update 317: the content in a layer of its own, so its drawing runs only when it changes — PieceShot.version.)
-        if (faceArt == null && !shot.off) Modifier.graphicsLayer { }.drawWithContent { shot.changed(); drawContent() } else Modifier
+        if (faceArt == null && !shot.off) shotMark else Modifier
     )
 }
 

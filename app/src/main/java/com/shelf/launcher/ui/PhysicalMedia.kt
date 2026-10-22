@@ -664,8 +664,11 @@ internal fun PhysicalMedia(
         else -> shell.disc
     }
     // (Update 203: a cartridge solid wherever it's turned, at its template's / drawn shell's own shape; a disc turns flat.)
-    val modifier = (if (discLook) modifier.followTurn() else modifier.solidPiece(cartSolid(shell, platform, tpl?.cart?.aspect ?: shell.aspect)))
-        .mediaMotion(discLook, (label?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0))
+    // (Update 317: a cartridge's hop round its solid piece, so the piece's picture of its front — PieceShot — never holds
+    // it mid-hop; the turned piece hops whole, as the drawn shells do.)
+    val motionSeed = (label?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0)
+    val modifier = if (discLook) modifier.followTurn().mediaMotion(true, motionSeed)
+        else modifier.mediaMotion(false, motionSeed).solidPiece(cartSolid(shell, platform, tpl?.cart?.aspect ?: shell.aspect))
     if (tpl != null && TemplateMedia(
             tpl, labelScan = if (labelIsScan) label else null, cover = if (labelIsScan) null else label, modifier = modifier,
             smallDisc = shell == MediaShell.MINI_DISC && !Features.bigGcDiscs.state.value
@@ -905,7 +908,8 @@ internal fun RealMediaPicture(
         if (t != null) { PhotoTones.put(model, t); tone = t }
     }
     val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) }, tone)
-    Box((if (round) modifier.followTurn() else modifier.solidPiece(solid)).mediaMotion(round, 0), contentAlignment = Alignment.Center) {
+    // (Update 317: a cartridge photo's hop round its solid piece — see PhysicalMedia.)
+    Box(if (round) modifier.followTurn().mediaMotion(true, 0) else modifier.mediaMotion(false, 0).solidPiece(solid), contentAlignment = Alignment.Center) {
         // (Update 207: a disc photo has its empty margins trimmed and fills its circle — with a margin round it, the disc's
         // drawn rim and edge in the game window stood out round the smaller photo as a second layer behind the disc.)
         val shared = mediaArtModel(model)
