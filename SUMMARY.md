@@ -2,7 +2,7 @@
 
 ## Update — 22 Oct 2026 (310): Dual-screen dashboard access, shared category picker and gliding-category stability
 
-**Status:** Source changes prepared in GitHub branch `fix/dual-screen-controls-310` for review. **Not merged into main, not compiled or installed, not device-tested, not released.** Last published release remains **0.6.30**. Claude's original update 309 and all earlier work remain on `main`.
+**Status:** Source changes prepared on branch `fix/dual-screen-controls-310` and opened as [draft PR #1](https://github.com/dzepdzep/Voltcap/pull/1) for review. **Not merged into main, not compiled or installed, not device-tested, not released.** Last published release remains **0.6.30**. Claude's original update 309 and all earlier work remain on `main`.
 
 - **Checked Claude's work first.** Verified latest `main` commit `555df82` (update 309) and existing code for all five two-screen layouts. Twin Icons already has Mixed / Dark / Light themes; its implementation was left unchanged. Twin Desk, Twin Icons and both Pocket layouts already had native buttons to open the regular second-screen dashboard. Twin Showcase was missing this access. No duplicate dashboard subsystem was built.
 - **Regular second-screen pages from dual layouts.** Added a saved **Open normal second screen** switch (on by default) in shared twin layout options. Existing native shortcuts honor it. Twin Showcase gets a compact **Second screen** button on the lower screen. Pocket Classic gets a fallback button when its optional bottom toolbar is hidden. The normal second-screen page and dock are reused; the existing back button returns to the dual-layout lower screen. No second-screen pages, widgets, media mixer or game data were duplicated.
@@ -13,6 +13,8 @@
 - **Prior update preserved.** Update 309's Twin Icons `Colours`: Mixed (dark top / light bottom, default), Dark (both dark) and Light (both light) remain unchanged. Update 308 and earlier changes remain as Claude committed them.
 
 **Files changed on branch:** `app/src/main/java/com/shelf/launcher/data/Features.kt`; `ui/TwinScreens.kt`, `TwinDesk.kt`, `TwinIcons.kt`, `TwinShowcase.kt`, `PocketShared.kt`, `PocketSettings.kt`, `HomeChrome.kt`, `LauncherScreen.kt`; `SUMMARY.md`.
+
+**Visual evidence:** The user's 'this is how it looks' message did not include a visible image/video attachment in this conversation; the real flickering symptom therefore still needs a device recording for confirmation if it persists.
 
 **Still required before release:** review the code, assemble the Android release with the existing release signing key, run the unit test suite and device/UI checks on AYN Thor (both screens; all five layouts; categories All/Current/Off; hidden category; repeated switching; dashboard open/back; with Pocket Classic toolbar off). Check RP handheld/one-screen fallbacks where available. Verify that no category flashing remains; if it persists, capture a screen recording and diagnose the real rendering cause. Then set versionCode 37 / versionName 0.6.31, build the compatible signed APK and publish a GitHub release. Do not publish an unverified or differently signed build.
 
