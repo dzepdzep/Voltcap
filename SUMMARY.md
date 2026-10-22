@@ -1,5 +1,21 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 22 Oct 2026 (311): Investigate N64 Shelf vs Inspect mismatch, release safety
+
+**Status:** Changes on `fix/dual-screen-controls-310`, draft PR #1. **No device access from this ChatGPT GitHub connection**: user has the Flip 2 physically connected with USB/ADB enabled, but the connected GitHub tool cannot reach that PC's local ADB server. Do not claim a Flip 2 test or release; last public APK is still v0.6.30.
+
+- **Verified main first:** Main is still Claude's update 309. Checked `ShelfHome.kt`, `MediaInspectView.kt`, `Case3D.kt`, `CaseCatalog.kt`, `MediaCovers.kt`, `BoxTexture.kt`, and release script before editing. No main or published APK was changed.
+- **Confirmed a mismatched precedence rule:** `ShelfHome.kt`'s `SpineBody` uses `Features.spinesOwn` ("Matching spines") to suppress per-game real spine scans and pick the console-wide/custom spine. The inspected 3D case's `Case3D` did *not* honor that setting, so N64 cardboard-game spines could suddenly change to scanned spines only in Inspect. Updated `Case3D.kt` to follow the shelf's matching-spine precedence and to skip waiting for unused scans when matching/for-all is selected.
+- **Not yet resolved:** N64 front-cover mismatch seen by the user on Flip 2. The shelf and 3D Inspect use different rendering paths (e.g. `PulledOutCase` / `CoverCase` versus `InspectCase` / `Case3D`), and Inspect may select a boxed-front scan where shelf uses a framed cover; the *specific* visual cause cannot be established without screen capture. Compare the *same N64 game* on shelf and Inspect with identical settings before modifying artwork transforms. Check real N64 region orientation, spine scan vs long top edge, crop/fold flaps, and whether any image source is incorrectly chosen. Preserve correct shelf appearance and other systems.
+- **Release script:** `tools/release/release.ps1` now preserves `versionCode=37` when `versionName=0.6.31` has already been staged, instead of silently incrementing it to 38; for a genuinely new version the old increment behavior is retained.
+- **Build verification:** CI-only compilation from update 310 passed at <https://github.com/dzepdzep/Voltcap/actions/runs/39770672317>. Update 311 still needs its own completed CI source compile, followed by a *real* local build with the genuine Discord SDK and signing key, and device tests. CI stub artifacts are never releasable.
+
+**Changed:** `app/src/main/java/com/shelf/launcher/ui/Case3D.kt`, `tools/release/release.ps1`, `SUMMARY.md`. No changes to Discord production functionality or N64 artwork assets.
+
+**Release order:** Back up and compare Claude's local `src_copy` / `project_copy` with GitHub changes first (do not blindly robocopy old local copies over this branch). Compile with the developer PC's original private AAR/keystore; install as an update, preserving data, on the user's AYN Thor and Flip 2. Verify N64 same-game shelf/Inspect fronts and spines, each `Matching spines` / Original cases setting, 2-screen category behaviour/flashing, app startup, controller/touch and back. Then merge PR #1 into main and publish v0.6.31 through `tools/release/release.ps1`; validate release signature matches v0.6.30 and verify a device update before publishing.
+
+---
+
 ## Update — 22 Oct 2026 (310): Dual-screen dashboard access, shared category picker and gliding-category stability
 
 **Status:** Source changes prepared on branch `fix/dual-screen-controls-310` and opened as [draft PR #1](https://github.com/dzepdzep/Voltcap/pull/1) for review. **Not merged into main, compiled and unit-tested in CI-only stub mode, not installed, not device-tested, not released.** Last published release remains **0.6.30**. Claude's original update 309 and all earlier work remain on `main`.
