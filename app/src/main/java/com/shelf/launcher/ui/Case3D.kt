@@ -134,7 +134,10 @@ internal fun Case3D(
     // logo at its foot, made at the side's own shape — the plain dark strip was the same for every console and, made for a
     // DVD case's thin side, came out stretched two and a half times wide on a cartridge box.)
     val spinePlatform = LookStyles.spinePlatform(g.platform) ?: g.platform
-    val spine: android.graphics.Bitmap = remember(ownUpright, tplSpine, title, spinePending, depth, spinePlatform) {
+    // Read R1 case override before remember so a live setting change invalidates
+    // the N64 fitted image even if both case styles have the same depth.
+    val widenN64 = shouldWidenN64CardboardSpine(g.platform, LookStyles.caseForAll())
+    val spine: android.graphics.Bitmap = remember(ownUpright, tplSpine, title, spinePending, depth, spinePlatform, widenN64) {
         // (Update 240, #26: the game's own spine fitted to the side — cut in the middle only as much as its shape is off the
         // side's, never squeezed onto it: the long-edge print of a landscape box was squashed onto its short end.)
         // (Update 308, Toni: "spines aren't fitted properly on most consoles aside from PS2": a cardboard box's side scan
@@ -143,8 +146,13 @@ internal fun Case3D(
         // flaps are cut off at their fold, and a print far off the side's shape is left out: the console's spine with the
         // title, made at the side's own shape, instead. Keep cases, jewel cases and the rest as before.)
         val cardboard = spec?.shell == CaseShell.CARDBOARD
-        (if (cardboard) ownUpright?.let { b -> DerivedArt.of(b, "spineBox|$depth") { listOfNotNull(boxSideSpine(b, depth)) }.firstOrNull() }
-            else ownUpright?.let { b -> DerivedArt.of(b, "spineFit|$depth") { fillCrop(b, depth, 0.1f) } })
+        // Update 312 is strictly an N64 Inspect alignment fix. Do not change
+        // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
+        (if (cardboard) ownUpright?.let { b ->
+            DerivedArt.of(b, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") {
+                listOfNotNull(boxSideSpine(b, depth, widenN64))
+            }.firstOrNull()
+        } else ownUpright?.let { b -> DerivedArt.of(b, "spineFit|$depth") { fillCrop(b, depth, 0.1f) } })
             ?: (if (spinePending && !(cardboard && ownUpright != null)) SpineCache.WAITING else null)
             ?: tplSpine.bitmap
             // (A plain dark strip for the moment your console spine is being made, then the console's own with the name.)
@@ -670,7 +678,7 @@ private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphi
  * folds (a row whose colour changes across nearly the whole width, in the top or bottom fifth), then fitted as any spine
  * ([fillCrop], a tenth let off); null when what's left is far off the side's shape (over 30 %) — another face's print.
  */
-private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap? = runCatching {
+private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float, widenN64: Boolean = false): android.graphics.Bitmap? = runCatching {
     val w = src.width; val h = src.height
     if (w < 8 || h < 24) return@runCatching fillCrop(src, aspect, 0.1f)
     val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
@@ -702,26 +710,46 @@ private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float): android.g
     // Preserve the complete printed scan within the fixed-size side, without
     // stretching it or blindly chopping its title/logo off. A missing or
     // failed scan still gets the existing console spine fallback.
-    if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect)
+    if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect, widenN64)
     else fillCrop(cut, aspect, 0.1f)
 }.getOrElse { fillCrop(src, aspect, 0.1f) }
 
-/** Fit a real spine scan onto a 3D side without distorting or cropping its printed design. */
-private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+/**
+ * Update 312: an authentic cardboard spine may be noticeably narrower than the
+ * measured 3D box side. Widen its actual print moderately (never more than 35%)
+ * towards 94% of the available side, instead of leaving broad synthetic-colour
+ * strips around an otherwise correct Super Mario 64 scan. Do not shrink a scan
+ * that already fills its side; never stretch past the physical side's width.
+ * Kept independent of Bitmap so the fitting limits can be unit-tested.
+ */
+/** Only the N64's authentic side art is widened; never touch another box or an R1 case override. */
+internal fun shouldWidenN64CardboardSpine(platform: String?, caseOverridden: Boolean): Boolean =
+    platform == "N64" && !caseOverridden
+
+internal fun widenedRealSpineWidth(containedWidth: Float, sideWidth: Float): Float {
+    if (containedWidth <= 0f || sideWidth <= 0f) return 0f
+    val natural = containedWidth.coerceAtMost(sideWidth)
+    return maxOf(natural, minOf(sideWidth * 0.94f, natural * 1.35f))
+}
+
+/** Place an intact real spine on its 3D box side, with a bounded horizontal widening. */
+private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float, widenN64: Boolean): android.graphics.Bitmap {
     val h = 512
     val w = (h * aspect).toInt().coerceIn(16, 512)
     val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
     val c = android.graphics.Canvas(out)
-    // Carry the scan's border colour into the spare margin rather than
-    // replacing the entire spine with a synthetic title template.
+    // The scan's edge colour still reaches the box edges; a genuine printed
+    // title/logo stays readable, with no top/bottom crop or substituted template.
     val safe = if (src.config == android.graphics.Bitmap.Config.HARDWARE)
         src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
     c.drawColor(safe.getPixel(0, (safe.height / 2).coerceAtMost(safe.height - 1)))
     val scale = minOf(w.toFloat() / safe.width.coerceAtLeast(1), h.toFloat() / safe.height.coerceAtLeast(1))
-    val fw = safe.width * scale; val fh = safe.height * scale
+    val containedWidth = safe.width * scale
+    val drawnWidth = if (widenN64) widenedRealSpineWidth(containedWidth, w.toFloat()) else containedWidth
+    val drawnHeight = safe.height * scale
     c.drawBitmap(
         safe, null,
-        android.graphics.RectF((w - fw) / 2f, (h - fh) / 2f, (w + fw) / 2f, (h + fh) / 2f),
+        android.graphics.RectF((w - drawnWidth) / 2f, (h - drawnHeight) / 2f, (w + drawnWidth) / 2f, (h + drawnHeight) / 2f),
         android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
     )
     return out
