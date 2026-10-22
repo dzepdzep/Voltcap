@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import kotlinx.coroutines.flow.first
+
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.layout.onSizeChanged
@@ -611,7 +613,7 @@ internal fun GlidingChipRow(
     // This repeated restart could look like a flashing category bar on dual screens.
     androidx.compose.runtime.LaunchedEffect(focused, viewW, count) {
         if (focused !in 0 until count || viewW <= 0) return@LaunchedEffect
-        kotlinx.coroutines.flow.first(androidx.compose.runtime.snapshotFlow { laidOut }) { widths[focused] > 0 }
+        androidx.compose.runtime.snapshotFlow { laidOut }.first { widths[focused] > 0 }
         val l = lefts[focused]; val r = l + widths[focused]
         val cur = scroll.value
         val target = when {
