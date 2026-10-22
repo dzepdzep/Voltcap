@@ -160,8 +160,9 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
                 }
             }
             // Small captions under the picture: the category, and where you are in it.
-            CategoryTitle.Native() // (Update 212: the layout's own category title.)
-            PocketText(this, c.categoryLabel, 22f, POCKET_H - 13f, 140f, 11f, 6.5f, RMuted, font, TextAlign.Start)
+            // (Update 315: off for this layout — Categories tile / Settings — no caption.)
+            if (CategoryTitle.captionOn(c.state.appearance)) CategoryTitle.Native() // (Update 212: the layout's own category title.)
+            if (CategoryTitle.captionOn(c.state.appearance)) PocketText(this, c.categoryLabel, 22f, POCKET_H - 13f, 140f, 11f, 6.5f, RMuted, font, TextAlign.Start)
             if (c.games.isNotEmpty()) PocketText(this, "${c.focus + 1} / ${c.games.size}", 154f, POCKET_H - 13f, 80f, 11f, 6.5f, RMuted, font, TextAlign.End)
         }
     }

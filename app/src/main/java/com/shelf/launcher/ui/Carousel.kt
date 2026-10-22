@@ -1300,6 +1300,7 @@ private class CarouselScratch {
     val p = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
     /** Update 314: for the off-screen check, and the turn / shade last drawn (kept while the game is off the screen). */
     val v = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
+    val o = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
     var lastTurn = 0f
     var lastYaw = 0f
     var lastShade = 0f
@@ -1417,6 +1418,11 @@ private fun CarouselItem(
         else { val rel = relNow.value(); (c.place(ps.r, rel).turnY + PickedFacing.carouselTurn(kotlin.math.abs(rel))).also { ps.lastYaw = it } }
     }
     val shadeOf: () -> Float = { if (culled.value) ps.lastShade else c.place(ps.s, relNow.value()).shade.also { ps.lastShade = it } }
+    // Update 314 (Flip 2 ANR, the GPU out of memory): drawn fully opaque now — the slot's alpha (its place's, a category
+    // slide's fade, an inspected game's stepping back) all 1 — so a solid piece needs no buffer of its own to fade as one.
+    val opaqueOf: () -> Boolean = {
+        MediaInspect.amount.floatValue <= 0f && c.place(ps.o, relNow.value()).alpha * fadeNow.value() >= 0.999f
+    }
     Box(
         modifier
             // The drawing order, read while placing (zIndex is otherwise fixed at composition).
@@ -1471,7 +1477,7 @@ private fun CarouselItem(
                 cameraDistance = 12f * c.dens
                 if (rotationY != 0f) flatTextFor3d()
             }
-        ) { ProvidePieceTurn(if (solidHere) PieceTurn(turnOf, 12f) else null) {
+        ) { ProvidePieceTurn(if (solidHere) PieceTurn(turnOf, 12f, opaqueOf) else null) {
             // (Update 200: CarouselModel — a game as its pre-rendered 3D model — is gone.)
             if (c.cases3d && withMedia != null) CaseWithMedia3D(
                 g, cover, physical, aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow

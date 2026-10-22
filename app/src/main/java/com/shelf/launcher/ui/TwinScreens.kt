@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.categoryBarHere
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -281,7 +282,7 @@ internal fun TwinSecondScreen(c: StyleCtx) {
 @Composable
 private fun TwinSharedCategoryStrip(c: StyleCtx) {
     if (!com.shelf.launcher.data.Features.twinSharedCategories.state.value) return
-    val mode = c.state.appearance.categoryBar
+    val mode = c.state.appearance.categoryBarHere
     if (mode == com.shelf.launcher.data.CategoryBar.OFF || c.stops.isEmpty()) return
     val expanded = mode == com.shelf.launcher.data.CategoryBar.FULL || TwinScreens.categoriesExpanded
     val accent = ShelfTheme.accent

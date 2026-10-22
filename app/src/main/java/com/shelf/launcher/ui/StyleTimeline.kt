@@ -267,11 +267,14 @@ private fun TimelineHeader(c: StyleCtx, mode: Features.TimelineBy, compact: Bool
         // category), one short line.
         Box(Modifier.weight(1f).editablePart(LayoutParts.id(HomeLayout.TIMELINE, "title"), "Name & time played")) {
             Column(Modifier.fillMaxWidth()) {
+                // (Update 315: off for this layout — Categories tile / Settings — no caption.)
+                if (CategoryTitle.captionOn(c.state.appearance)) {
                 CategoryTitle.Native(LayoutParts.id(HomeLayout.TIMELINE, "title"))
                 Text(
                     c.categoryLabel, color = Color.White, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.Bold,
                     maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
                 )
+                }
                 if (g != null) Text(
                     titles.display(g.name) + "  ·  " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
                     color = Color.White.copy(alpha = 0.75f), fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, softWrap = false,

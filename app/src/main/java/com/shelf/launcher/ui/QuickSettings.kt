@@ -1,5 +1,9 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.categoryBarHere
+import com.shelf.launcher.data.withCategoryBar
+import com.shelf.launcher.data.dockHere
+import com.shelf.launcher.data.withDockHere
 import com.shelf.launcher.data.statusOn
 import android.app.NotificationManager
 import androidx.compose.material.icons.filled.Album
@@ -712,18 +716,16 @@ fun QuickSettingsCard(
             // name): press steps Just the current one → All categories → Off; hold: the list. Where the layout draws the
             // category bar (r1TileFit).
             run {
-                val bar = a.categoryBar
-                val order = listOf(com.shelf.launcher.data.CategoryBar.CURRENT, com.shelf.launcher.data.CategoryBar.FULL, com.shelf.launcher.data.CategoryBar.OFF)
-                fun short(b: com.shelf.launcher.data.CategoryBar) = when (b) {
-                    com.shelf.launcher.data.CategoryBar.CURRENT -> "Current only"
-                    com.shelf.launcher.data.CategoryBar.FULL -> "All"
-                    com.shelf.launcher.data.CategoryBar.OFF -> "Off"
-                }
+                // (Update 315: on every layout, each keeping its own — CategoryBars; a caption is just shown or off.)
+                val lay = a.homeLayout
+                val bar = a.categoryBarHere
+                val order = com.shelf.launcher.data.CategoryBars.choices(lay)
+                fun short(b: com.shelf.launcher.data.CategoryBar) = com.shelf.launcher.data.CategoryBars.short(lay, b)
                 add(R1Tile("categories", Icons.Filled.Category, "Categories\n" + short(bar), bar != com.shelf.launcher.data.CategoryBar.OFF,
                     longAction = {
-                        choiceSheet = "Category names on the home screen" to order.map { b -> R1Choice(short(b), bar == b) { home.setAppearance(a.copy(categoryBar = b)) } }
+                        choiceSheet = "Category names · " + lay.label to order.map { b -> R1Choice(short(b), bar == b) { home.setAppearance(a.withCategoryBar(lay, b)) } }
                     }) {
-                    home.setAppearance(a.copy(categoryBar = order[(order.indexOf(bar) + 1) % order.size]))
+                    home.setAppearance(a.withCategoryBar(lay, order[(order.indexOf(bar).coerceAtLeast(0) + 1) % order.size]))
                 })
             }
             // Where the game row sits (Voltcap row and Tile home): Top → Middle → Bottom. (Update 202: r1TileFit.)
@@ -738,9 +740,10 @@ fun QuickSettingsCard(
                         com.shelf.launcher.data.Features.heroCoversRight.toggle()
                     })
                 } else
-                add(R1Tile("rowpos", Icons.Filled.SwapVert, "Row\n" + a.dockPosition.label, false) {
+                // (Update 315: Tile home's own place — in the middle by default; the Voltcap row keeps its own.)
+                add(R1Tile("rowpos", Icons.Filled.SwapVert, "Row\n" + a.dockHere.label, false) {
                     val all = com.shelf.launcher.data.DockPosition.values()
-                    home.setAppearance(a.copy(dockPosition = all[(a.dockPosition.ordinal + 1) % all.size]))
+                    home.setAppearance(a.withDockHere(all[(a.dockHere.ordinal + 1) % all.size]))
                 })
             }
             // RomM (update 93): browse your RomM server and download games (only once it's set up — rommSetUp, r1TileFit).

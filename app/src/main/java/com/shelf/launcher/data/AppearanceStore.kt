@@ -650,6 +650,87 @@ enum class SecondMusicLayout(val label: String) {
     CLASSIC("Classic card")
 }
 
+/**
+ * Update 315: the category name on the home screen, per layout (the R1 Categories tile and Settings › Categories › On the
+ * home screen set the layout in use; each keeps its own). The layouts differ in how they show a category:
+ * - [BAR]: the layout's own category bar (all the categories, or just the current one) — Voltcap row, Tile home, Grid,
+ *   the Twin desk / showcase;
+ * - [OWN]: the layout's own caption or title in its design (Game shelf's header, Record crate's stencil…) — on or off;
+ * - [MENU]: the categories are the layout's own menu or tabs (Cross menu, Icon bar, Library…): they stay;
+ * - else the layout shows none of its own and gets the category part at its free spot (Hero carousel, TV room, Case
+ *   stacks…): there the bar of every category didn't fit, so by default just the current one's name.
+ */
+object CategoryBars {
+    val BAR = setOf(HomeLayout.CLASSIC, HomeLayout.TILES, HomeLayout.GRID, HomeLayout.TWIN_DESK, HomeLayout.TWIN_SHOWCASE)
+    val OWN = setOf(
+        HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.DISCS, HomeLayout.CRATE, HomeLayout.POCKET_RIBBON,
+        HomeLayout.TIMELINE, HomeLayout.SIDE, HomeLayout.DASH
+    )
+    val MENU = setOf(
+        HomeLayout.CROSS, HomeLayout.BAR, HomeLayout.LIBRARY, HomeLayout.LIVE, HomeLayout.SPOT, HomeLayout.CIRCUIT,
+        HomeLayout.ARCADE, HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET, HomeLayout.GREENCORE, HomeLayout.CUBE,
+        HomeLayout.CUSTOM
+    )
+
+    @Volatile private var lastRaw: String? = null
+    @Volatile private var lastMap: Map<HomeLayout, CategoryBar> = emptyMap()
+
+    fun parse(raw: String): Map<HomeLayout, CategoryBar> {
+        if (raw == lastRaw) return lastMap
+        val m = raw.split(';').mapNotNull { part ->
+            val i = part.indexOf('=')
+            if (i <= 0) null else {
+                val l = HomeLayout.values().firstOrNull { it.name == part.substring(0, i) }
+                val b = CategoryBar.values().firstOrNull { it.name == part.substring(i + 1) }
+                if (l == null || b == null) null else l to b
+            }
+        }.toMap()
+        lastMap = m; lastRaw = raw
+        return m
+    }
+
+    fun format(m: Map<HomeLayout, CategoryBar>): String = m.entries.joinToString(";") { "${it.key.name}=${it.value.name}" }
+
+    /** [layout]'s choice: its own, else from [global] (the bar of every category only where the layout draws a bar). */
+    fun of(layout: HomeLayout, raw: String, global: CategoryBar): CategoryBar =
+        parse(raw)[layout] ?: when {
+            layout in BAR -> global
+            // (As before: Off took the name off the row layouts and the Hero carousel / TV room, never off the style homes.)
+            global == CategoryBar.OFF && !layout.styleHome -> CategoryBar.OFF
+            else -> CategoryBar.CURRENT
+        }
+
+    /** The choices [layout] offers, in the R1 tile's order. */
+    fun choices(layout: HomeLayout): List<CategoryBar> =
+        if (layout in OWN || layout in MENU) listOf(CategoryBar.CURRENT, CategoryBar.OFF)
+        else listOf(CategoryBar.CURRENT, CategoryBar.FULL, CategoryBar.OFF)
+
+    /** A short name for [b] on [layout] (a caption is just shown or not). */
+    fun short(layout: HomeLayout, b: CategoryBar): String = when {
+        b == CategoryBar.OFF -> "Off"
+        layout in OWN || layout in MENU -> "Shown"
+        b == CategoryBar.FULL -> "All"
+        else -> "Current only"
+    }
+}
+
+/** Update 315: where the games sit on the layout in use (Tile home has its own, [AppearanceSettings.tileDockPosition]). */
+val AppearanceSettings.dockHere: DockPosition get() = if (homeLayout == HomeLayout.TILES) tileDockPosition else dockPosition
+
+/** Update 315: [p] for the layout in use. */
+fun AppearanceSettings.withDockHere(p: DockPosition): AppearanceSettings =
+    if (homeLayout == HomeLayout.TILES) copy(tileDockPosition = p) else copy(dockPosition = p)
+
+/** Update 315: the category name's choice on [layout] ([CategoryBars]). */
+fun AppearanceSettings.categoryBarFor(layout: HomeLayout): CategoryBar = CategoryBars.of(layout, categoryBarByLayout, categoryBar)
+
+/** Update 315: the category name's choice on the layout in use. */
+val AppearanceSettings.categoryBarHere: CategoryBar get() = categoryBarFor(homeLayout)
+
+/** Update 315: [layout] set to [b] (the others keep theirs). */
+fun AppearanceSettings.withCategoryBar(layout: HomeLayout, b: CategoryBar): AppearanceSettings =
+    copy(categoryBarByLayout = CategoryBars.format(CategoryBars.parse(categoryBarByLayout) + (layout to b)))
+
 /** "cat=THEME;cat2=THEME2" ⇄ map, for [AppearanceSettings.categoryScenes]. */
 object CategoryScenes {
     fun parse(s: String): Map<String, String> = s.split(';').mapNotNull { part ->
@@ -769,6 +850,12 @@ data class AppearanceSettings(
     /** The console's name under the game's name on the focused wide card. */
     val showConsoleName: Boolean = false,
     val dockPosition: DockPosition = DockPosition.BOTTOM,
+    /**
+     * Update 315: where Tile home's tiles sit — its own, in the middle by default as the Switch-style home always stood
+     * (it shared the Voltcap row's, Bottom, which stacked its buttons, categories and name up from the bottom edge).
+     * Read with [dockHere].
+     */
+    val tileDockPosition: DockPosition = DockPosition.MIDDLE,
     val focusPosition: FocusPosition = FocusPosition.LEFT,
     val focusedCardStyle: FocusedCardStyle = FocusedCardStyle.WIDE,
     val cardSize: CardSize = CardSize.MEDIUM,
@@ -797,6 +884,11 @@ data class AppearanceSettings(
      * special category's name (RECENT, FAVORITES…). */
     val startCategory: String = "RECENT",
     val categoryBar: CategoryBar = CategoryBar.FULL,
+    /**
+     * Update 315: the category name's choice for each layout ("LAYOUT=MODE;…", [CategoryBars]); a layout without one
+     * follows [categoryBar] — read it with [categoryBarFor] / [categoryBarHere].
+     */
+    val categoryBarByLayout: String = "",
     /** Where the trophy count sits on covers and the wide capsule. */
     val trophyCorner: CardCorner = CardCorner.TOP_RIGHT,
     /** The trophy count on the wide capsule of the game you're on. */
@@ -1167,6 +1259,7 @@ class AppearanceStore(context: Context) {
         showConsoleName = prefs.getBoolean("show_console_name", false),
         heroFit = runCatching { HeroFit.valueOf(prefs.getString("hero_fit_v2", null) ?: "") }.getOrDefault(HeroFit.FILL),
         dockPosition = enumPref("dock_position", DockPosition.BOTTOM),
+        tileDockPosition = enumPref("tile_dock_position", DockPosition.MIDDLE),
         focusPosition = enumPref("focus_position", FocusPosition.LEFT),
         focusedCardStyle = enumPref("focused_card_style", FocusedCardStyle.WIDE),
         cardSize = enumPref("card_size", CardSize.MEDIUM),
@@ -1183,6 +1276,7 @@ class AppearanceStore(context: Context) {
         themeSounds = prefs.getBoolean("theme_sounds", true),
         startCategory = prefs.getString("start_category", null) ?: "RECENT",
         categoryBar = enumPref("category_bar", CategoryBar.FULL),
+        categoryBarByLayout = prefs.getString("category_bar_by_layout", "").orEmpty(),
         trophyCorner = enumPref("trophy_corner", CardCorner.TOP_RIGHT),
         trophyOnBanner = prefs.getBoolean("trophy_on_banner", true),
         progressOnBanner = prefs.getBoolean("progress_on_banner", true),
@@ -1359,6 +1453,7 @@ class AppearanceStore(context: Context) {
             putString("hero_fit_v2", s.heroFit.name)
             putBoolean("show_console_name", s.showConsoleName)
             putString("dock_position", s.dockPosition.name)
+            putString("tile_dock_position", s.tileDockPosition.name)
             putString("focus_position", s.focusPosition.name)
             putString("focused_card_style", s.focusedCardStyle.name)
             putString("card_size", s.cardSize.name)
@@ -1375,6 +1470,7 @@ class AppearanceStore(context: Context) {
             putBoolean("theme_sounds", s.themeSounds)
             putString("start_category", s.startCategory)
             putString("category_bar", s.categoryBar.name)
+            putString("category_bar_by_layout", s.categoryBarByLayout)
             putString("trophy_corner", s.trophyCorner.name)
             putBoolean("trophy_on_banner", s.trophyOnBanner)
             putBoolean("progress_on_banner", s.progressOnBanner)

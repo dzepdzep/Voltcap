@@ -41,8 +41,13 @@ import kotlin.math.sin
  * same (InspectSlab). Flat parts that ride along with it (a console badge, a disc) turn flat (followTurn).
  */
 
-/** A view's turn for the game in it: degrees round the upright ([yawOf], read while drawing), and its camera distance. */
-internal class PieceTurn(val yawOf: () -> Float, val camera: Float = 12f)
+/**
+ * A view's turn for the game in it: degrees round the upright ([yawOf], read while drawing), and its camera distance.
+ * Update 314: [opaqueOf] (read while drawing): the view draws the piece fully opaque right now — then it's drawn straight
+ * into the view, without the buffer that makes a fading piece fade as one (pixel for pixel the same at full opacity, one
+ * big GPU picture less per piece). Null: always through the buffer, as before.
+ */
+internal class PieceTurn(val yawOf: () -> Float, val camera: Float = 12f, val opaqueOf: (() -> Boolean)? = null)
 
 /** Set by a view that leaves the turning to the piece (solidPiece / followTurn) inside it; null: nothing turns it. */
 internal val LocalPieceTurn = compositionLocalOf<PieceTurn?> { null }
@@ -377,6 +382,9 @@ internal fun Modifier.solidPiece(
         val depthPx = spec.depth * maxOf(pw, ph)
         // (Room round it in the buffer: the near side grows past the node as it turns, and the slices stand out.)
         val m = (0.35f * maxOf(size.width, size.height) + depthPx).roundToInt()
+        // (Update 314, Flip 2 ANR — the GPU ran out of memory: the smear was made inside the whole piece's buffer and took
+        // that buffer's size plus the margin again, about twice the pixels it needs. Both are this size now.)
+        val buf = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)
         // Update 314: the picture's place in the node, as CartShellArt draws it (null: any content, drawn each frame).
         val art = faceArt?.image
         val artAt = faceArt?.let { f -> pieceArtRect(size.width, size.height, f.aspect, f.image.width, f.image.height) }
@@ -391,8 +399,11 @@ internal fun Modifier.solidPiece(
             val testPose = TestHooks.pose.value
             val yaw = testPose?.first ?: ((turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f))
             if (abs(yaw) < 0.25f) { drawContent(); return@onDrawWithContent }
+            // (Update 314: fully opaque in its view — drawn straight into it, no whole-piece buffer.)
+            // (Not a see-through piece: its cut-out behind the face, DstOut, must stay inside its own buffer.)
+            val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true
             // (Update 314: the same turn as last drawn — the parts only drawn from the picture are still right.)
-            if (art != null && artMade && yaw == madeYaw && testPose == null) {
+            if (art != null && artMade && yaw == madeYaw && testPose == null && !direct) {
                 translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
                 return@onDrawWithContent
             }
@@ -458,53 +469,59 @@ internal fun Modifier.solidPiece(
                     drawRect(Color.Black, alpha = 0.4f * abs(sn), blendMode = BlendMode.SrcAtop)
                 }
             }
-            whole.record(size = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)) {
-                translate(m.toFloat(), m.toFloat()) {
-                    // Far to near: the slices, then the face (or the back, seen from behind).
-                    // (Update 205: close enough together that no gap shows between them on a thick piece side-on.)
-                    // (Update 207: a slice every 2 px, at most 32 — 64 slices a piece, every piece in a row, each frame,
-                    // was part of what made scrolling a big library heavy; 2 px apart still shows no gap.)
-                    val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, 32)
-                    val clear = spec.clear
-                    // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
-                    // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
-                    // the slices are copies of the turned outline moved sideways, and on the Thor's bigger pieces they're
-                    // further apart than 2 px (at most 32 of them: 4–5 px on a big N64 cartridge seen at 60–80°). Each
-                    // slice's slanted top / bottom edge then ends in a step before the next one starts, and the steps
-                    // read as a stack of layers. Each slice is now smeared across the gap to the next one — its side
-                    // drawn again 1 px apart (at most 4 times, into one picture made once a frame) — so the sides are one
-                    // solid edge at every angle, with the same 32 slice draws as before (no new render load).
-                    val dz = if (n > 0) depthPx / n else 0f
-                    val step = dz * sn * (if (c >= 0f) 1f else -1f)
-                    val fill = if (n > 0 && testPose?.second != true) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
-                    val copies = n * fill + 1
-                    // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
-                    edge.alpha = if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
-                    if (n > 0 && fill > 1) {
-                        smear.record(size = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)) {
-                            translate(m.toFloat(), m.toFloat()) {
-                                for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
-                            }
+            // The piece itself: far to near, the slices, then the face (or the back), in the node's own place.
+            val pieceDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = {
+                // Far to near: the slices, then the face (or the back, seen from behind).
+                // (Update 205: close enough together that no gap shows between them on a thick piece side-on.)
+                // (Update 207: a slice every 2 px, at most 32 — 64 slices a piece, every piece in a row, each frame,
+                // was part of what made scrolling a big library heavy; 2 px apart still shows no gap.)
+                val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, 32)
+                val clear = spec.clear
+                // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
+                // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
+                // the slices are copies of the turned outline moved sideways, and on the Thor's bigger pieces they're
+                // further apart than 2 px (at most 32 of them: 4–5 px on a big N64 cartridge seen at 60–80°). Each
+                // slice's slanted top / bottom edge then ends in a step before the next one starts, and the steps
+                // read as a stack of layers. Each slice is now smeared across the gap to the next one — its side
+                // drawn again 1 px apart (at most 4 times, into one picture made once a frame) — so the sides are one
+                // solid edge at every angle, with the same 32 slice draws as before (no new render load).
+                val dz = if (n > 0) depthPx / n else 0f
+                val step = dz * sn * (if (c >= 0f) 1f else -1f)
+                val fill = if (n > 0 && testPose?.second != true) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
+                val copies = n * fill + 1
+                // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
+                edge.alpha = if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
+                if (n > 0 && fill > 1) {
+                    smear.record(size = buf) {
+                        translate(m.toFloat(), m.toFloat()) {
+                            for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
                         }
                     }
-                    if (n > 0) for (k in 0..n) {
-                        val f = k.toFloat() / n
-                        val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
-                        // (The nearest slice alone: nothing past it to fill.)
-                        if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
-                        else translate(z * sn, 0f) { drawLayer(edge) }
-                    }
-                    val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
-                    // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
-                    if (clear != null) {
-                        hole.rotationY = yaw; hole.cameraDistance = cam
-                        hole.record { drawLayer(solid) }
-                        translate(faceX, 0f) { drawLayer(hole) }
-                    }
-                    if (c >= 0f) translate(faceX, 0f) { drawLayer(lit) }
-                    else translate(faceX, 0f) { drawLayer(back) }
                 }
+                if (n > 0) for (k in 0..n) {
+                    val f = k.toFloat() / n
+                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+                    // (The nearest slice alone: nothing past it to fill.)
+                    if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+                    else translate(z * sn, 0f) { drawLayer(edge) }
+                }
+                val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
+                // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
+                if (clear != null) {
+                    hole.rotationY = yaw; hole.cameraDistance = cam
+                    hole.record { drawLayer(solid) }
+                    translate(faceX, 0f) { drawLayer(hole) }
+                }
+                if (c >= 0f) translate(faceX, 0f) { drawLayer(lit) }
+                else translate(faceX, 0f) { drawLayer(back) }
             }
+            if (direct) {
+                // (Update 314: fully opaque in its view — straight in; nothing shows through, so it reads as one piece.)
+                pieceDraw()
+                madeYaw = Float.NaN
+                return@onDrawWithContent
+            }
+            whole.record(size = buf) { translate(m.toFloat(), m.toFloat()) { pieceDraw() } }
             translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
         }
     }

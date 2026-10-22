@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.categoryBarHere
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
@@ -371,7 +372,7 @@ internal fun TwinShowcaseBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
             // The category and where you are in it. (Update 308: as Settings › Categories › Category name / the R1
             // Categories tile say — every category as pills gliding to the one you're in, just the current one, or
             // none; the count stays.)
-            val bar = c.state.appearance.categoryBar
+            val bar = c.state.appearance.categoryBarHere
             if (bar != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
             Row(
                 Modifier.fillMaxWidth().height(headH).padding(horizontal = if (compact) 10.dp else 16.dp),

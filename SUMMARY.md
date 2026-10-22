@@ -1,5 +1,48 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 22 Oct 2026 (315): Categories tile on every layout (each layout its own), Tile home in the middle again, Flip 2 GPU-memory ANR
+
+**Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6) as update 314, not merged. **Note:** the
+published **0.6.33 was built from `main` without PR #6** (commit `Voltcap 0.6.33` only bumps the version) — none of
+the 314 cartridge fixes were in it. CI is the compile check; not tested on a handheld.
+
+- **Flip 2 ANR again (user's `voltcap-crash-20261022-1917431.zip`, 0.6.33, Case stacks, cartridges in a big carousel):**
+  input-dispatch ANR, main thread in `syncAndDrawFrame`, RenderThread 80–90 %, **497 `kgsl_sharedmem_alloc() failed`
+  (~8.8 MB each)** — the GPU out of memory, as in PR #5's report. On top of 314's off-screen skipping:
+  - `SolidPiece.kt`: the smear buffer was recorded inside the whole-piece buffer and took *that* buffer's size plus the
+    margin again — (W+4m)² instead of (W+2m)², about twice the pixels; both are `buf` now (content unchanged).
+  - A piece the carousel draws fully opaque (`PieceTurn.opaqueOf`: its place's alpha × the slide fade = 1, no inspect)
+    is drawn straight into the carousel, without the whole-piece buffer that only exists so a *fading* piece fades as
+    one — pixel-identical at full opacity. See-through shells keep the buffer (their DstOut cut-out needs it). With the
+    picture-built sides (314), a turned cartridge keeps ~3 GPU pictures instead of ~6, the biggest two gone.
+- **R1 › Categories on every layout, each layout its own (user):** `AppearanceSettings.categoryBarByLayout`
+  ("LAYOUT=MODE;…", `CategoryBars`), read with `categoryBarFor(layout)` / `categoryBarHere`; written by the tile and
+  Settings › Categories › Category name (now "· <layout>") for the layout in use only. Unset layouts follow the old
+  global value, except:
+  - layouts with no category label of their own (Hero carousel, TV room, Case stacks, Console hub, Resume, Channel grid,
+    Hero tiles, Twin icons, Card binder) showed the generic bar of every category pasted on (the global default "All") —
+    now **just the current category's name** at the layout's free spot by default (All / Current only / Off on the tile);
+  - layouts with their own caption (Game shelf, Console stack, Disc station, Record crate, Pocket ribbon, Timeline,
+    Side menu's row title, Dashboard): **Shown / Off** — Off hides that caption (`CategoryTitle.captionOn`), no fallback;
+  - layouts whose categories are their menu (Cross menu, Icon bar, Library, Live tiles, Spotlight, Circuit, Arcade,
+    Pocket classic / Quest, Green Core, Cube, Layout Studio): tile shown greyed, saying they stay.
+- **Tile home (user: "should be in the middle as default, content shouldn't collide"):** it shared the Voltcap row's
+  row position (default Bottom), and the built-in *Tile home* preset reset it to Bottom — the buttons, category bar, name
+  and tiles stacked up from the bottom edge. Own `tileDockPosition`, **Middle** by default (the Switch-style home: tiles a
+  little above the middle, round buttons under them), read everywhere through `dockHere`; R1 Row tile / Settings ›
+  Where the tiles sit / presets set Tile home's own. The Voltcap row keeps its own. Overlap in other positions not
+  reproduced here (no screenshot) — needs a check on the Flip 2.
+- **Tests:** `HomeLayouts315Test.kt` (defaults per layout group, Off as before, layouts independent, stored string
+  round trip and garbage, Tile home middle and independent). New prefs live in the `appearance` file (backed up whole).
+
+**Changed:** `data/AppearanceStore.kt`, `data/LayoutPresets.kt`, `ui/SolidPiece.kt`, `ui/Carousel.kt`,
+`ui/LauncherScreen.kt`, `ui/HomeChrome.kt`, `ui/QuickSettings.kt`, `ui/R1TileRules.kt`, `ui/SettingsDialog.kt`,
+`ui/PresetsCard.kt`, `ui/CategoryTitle.kt`, `ui/TwinDesk.kt`, `ui/TwinScreens.kt`, `ui/TwinShowcase.kt`, `ui/ShelfHome.kt`,
+`ui/StyleConsoleStack.kt`, `ui/StyleDiscStation.kt`, `ui/StyleRecordCrate.kt`, `ui/PocketRibbon.kt`, `ui/StyleTimeline.kt`,
+`ui/StyleSideMenu.kt`, `ui/StyleDashboard.kt`, `app/src/test/.../HomeLayouts315Test.kt`, `SUMMARY.md`.
+
+---
+
 ## Update — 22 Oct 2026 (314): Smooth scrolling through 3D cartridges in the carousel
 
 **Status:** Branch `claude/laughing-franklin-xci4p0`, PR to `main` (not merged). Edited in `app/src/main/java/...` and

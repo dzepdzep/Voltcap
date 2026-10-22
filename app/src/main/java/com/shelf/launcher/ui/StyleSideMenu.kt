@@ -94,7 +94,8 @@ internal fun StyleSideMenu(c: StyleCtx, modifier: Modifier) {
                 if (c.game == null) {
                     StyleEmpty(Modifier.weight(1f))
                 } else {
-                    if (Features.sideRowTitle.state.value) {
+                    // (Update 315: off for this layout — Categories tile / Settings — no caption.)
+                    if (Features.sideRowTitle.state.value && CategoryTitle.captionOn(c.state.appearance)) {
                         CategoryTitle.Native() // (Update 212: the layout's own category title.)
                         Text(
                             c.categoryLabel.uppercase(), color = Color.White, fontSize = if (compact) 13.sp else 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 13.sp else 16.sp), maxFontSize = if (compact) 13.sp else 16.sp), fontWeight = FontWeight.Bold,

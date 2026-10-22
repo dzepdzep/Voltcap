@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.categoryBarHere
+import com.shelf.launcher.data.withCategoryBar
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.drawBehind
@@ -3678,8 +3680,9 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                 "Big square tiles in one row, the name above the one you're on and round buttons under it " +
                     "(▼ to reach them; with the tiles at the bottom the buttons sit above them, ▲). Card size sets the tile size; wide capsules are off in this layout."
             )
-            RowChoice("Where the tiles sit", com.shelf.launcher.data.DockPosition.values(), appearance.dockPosition, { it.label }) {
-                onChange(appearance.copy(dockPosition = it))
+            // (Update 315: Tile home's own place, in the middle by default — the Voltcap row keeps its own.)
+            RowChoice("Where the tiles sit", com.shelf.launcher.data.DockPosition.values(), appearance.tileDockPosition, { it.label }) {
+                onChange(appearance.copy(tileDockPosition = it))
             }
             RowChoice("Game you're on", com.shelf.launcher.data.TileFocus.values(), appearance.tileFocus, { it.label }) {
                 onChange(appearance.copy(tileFocus = it))
@@ -5626,9 +5629,22 @@ private fun CategoriesContent(
         }
         FoldGroup("On the home screen", summary = "The category's name above the games, logos, L2 / R2", key = "cat_home") {
             ShelfCard {
-                RowChoice("Category name", com.shelf.launcher.data.CategoryBar.values(), appearance.categoryBar, { it.label }) {
-                    onChange(appearance.copy(categoryBar = it))
+                // Update 315: each layout keeps its own (the R1 Categories tile sets the same), shown as that layout shows it.
+                val catLayout = appearance.homeLayout
+                RowChoice(
+                    "Category name · " + catLayout.label, com.shelf.launcher.data.CategoryBars.choices(catLayout).toTypedArray(),
+                    appearance.categoryBarHere, { com.shelf.launcher.data.CategoryBars.short(catLayout, it) }
+                ) {
+                    onChange(appearance.withCategoryBar(catLayout, it))
                 }
+                MutedNote(
+                    when (catLayout) {
+                        in com.shelf.launcher.data.CategoryBars.MENU -> "On this layout the categories are its own menu, so they always show."
+                        in com.shelf.launcher.data.CategoryBars.OWN -> "This layout shows the category in its own design. Each layout keeps its own choice."
+                        in com.shelf.launcher.data.CategoryBars.BAR -> "Every category as a bar, just the one you're in, or none. Each layout keeps its own choice."
+                        else -> "Just the category you're in at a free spot of this layout, every category as a bar, or none. Each layout keeps its own choice."
+                    }
+                )
                 RowChoice("It sits", com.shelf.launcher.data.RowSide.values(), appearance.categorySide, { it.label }) {
                     onChange(appearance.copy(categorySide = it))
                 }
@@ -5645,8 +5661,8 @@ private fun CategoriesContent(
                         Chip(p.label, accent = F.consoleNamePin.state.value == p) {
                             F.consoleNamePin.value = p
                             // Pinned / hidden works on the single category name.
-                            if (p != com.shelf.launcher.data.Features.ConsoleNamePin.FLOW && appearance.categoryBar == com.shelf.launcher.data.CategoryBar.FULL) {
-                                onChange(appearance.copy(categoryBar = com.shelf.launcher.data.CategoryBar.CURRENT))
+                            if (p != com.shelf.launcher.data.Features.ConsoleNamePin.FLOW && appearance.categoryBarHere == com.shelf.launcher.data.CategoryBar.FULL) {
+                                onChange(appearance.withCategoryBar(appearance.homeLayout, com.shelf.launcher.data.CategoryBar.CURRENT))
                             }
                         }
                     }

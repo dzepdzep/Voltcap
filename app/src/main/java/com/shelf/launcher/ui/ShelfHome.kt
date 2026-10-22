@@ -228,9 +228,12 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
 
         // Header: the category and how many games.
         Row(Modifier.fillMaxWidth().height(headerH), verticalAlignment = Alignment.CenterVertically) {
+            // (Update 315: off for this layout — Categories tile / Settings — no caption.)
+            if (CategoryTitle.captionOn(c.state.appearance)) {
             CategoryTitle.Native() // (Update 212: the layout's own category title.)
             Text(c.categoryLabel, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW))
             Spacer(Modifier.width(8.dp))
+            }
             Text(games.size.toString(), color = ShelfTheme_accent(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         }
 
