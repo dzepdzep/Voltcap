@@ -64,7 +64,12 @@ internal fun Case3D(
     val scans = remember(physical, homeScans, flatVersion) { (physical ?: homeScans).withoutFlat() }
     // (Update 202: never for an Android game — its case is Voltcap's own with the Android band, androidOwnCase; a scraped
     // "box" of it is store art, it stood bare without the band.)
-    val ownFront = if (realFront && Features.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) {
+    // (Update 317, Toni: with the Covers look an N64 box's front was its cover cut to the box — its title and foot lost. A
+    // cover that would lose more than 8 % to the box's shape gives way to the game's own box-front scan, when it has one,
+    // as the Cases look shows it.)
+    val coverCut = !realFront && spec != null && (cover as? String)?.let { CoverAspects.rawOf(it) }
+        ?.let { a -> a > 0f && kotlin.math.abs(a / spec.aspect - 1f) > 0.08f } == true
+    val ownFront = if (((realFront && Features.originalCases.state.value) || coverCut) && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) {
         remember(scans, g.platform) { BoxTexture.front(scans, g.platform) }
     } else null
     // (Update 202: flat strips that are part of the cover's / front scan's file trimmed off, TrimMargins.kt — the
@@ -156,7 +161,7 @@ internal fun Case3D(
     // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
     // (Update 316: fitted away from the screen's thread — rememberDerived.)
     val ownFitted: List<android.graphics.Bitmap>? =
-        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-fill317|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317, Toni: GameCube spines "messed up" — Budokai 2, Melee, Pikmin: the "spine" scan was a picture of much
         // more of the box, and its middle cut to the side's width came out a blurred slice of the box art. A scan far wider
         // than the side is left out — the console's spine with the title instead, as update 308 does for cardboard boxes.)
@@ -791,7 +796,13 @@ private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float, widenN64: 
     // Preserve the complete printed scan within the fixed-size side, without
     // stretching it or blindly chopping its title/logo off. A missing or
     // failed scan still gets the existing console spine fallback.
-    if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect, widenN64)
+    // (Update 317, Toni — an N64 spine "wrongly applied": a scan narrower than the side was shrunk into it, the rest the
+    // scan's edge colour, a wide plain strip beside the print. An N64 spine narrower than its side now fills it, top to
+    // bottom and edge to edge — nothing cut, nothing beside it.)
+    if (widenN64 && aspect > 0f && cur < aspect) android.graphics.Bitmap.createScaledBitmap(
+        cut, (cut.height * aspect).toInt().coerceAtLeast(1), cut.height, true
+    )
+    else if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect, widenN64)
     else fillCrop(cut, aspect, 0.1f)
 }.getOrElse { fillCrop(src, aspect, 0.1f) }
 

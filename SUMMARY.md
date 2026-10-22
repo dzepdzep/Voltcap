@@ -98,6 +98,11 @@ tested on a handheld.
   swaps its label / case cover. Covers scraped before this need a refresh of their artwork to get the still one (until
   then: the animated one's first frame, as in 317i).
 - **Measured (user, 317m):** frames 40 ms (p50) / 350 ms (p90), 184 MB / 162 render targets.
+- **User (317n):** flashing gone. Screenshots: N64 Mario Party 2 — Cases look shows the box-front scan whole, Covers look
+  its cover cut to the box (title and foot lost); its N64 spine shrunk into the side beside a wide plain strip.
+- **Changed (`Case3D.kt`):** Covers look — a cover that would lose more than 8 % to the case's shape (`CoverAspects`)
+  gives way to the game's box-front scan when it has one (`coverCut`). N64 spine narrower than its side
+  (`boxSideSpine`, widenN64): fills the side (scaled across, nothing cut, no strip) — cache kind `n64-fill317`.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
