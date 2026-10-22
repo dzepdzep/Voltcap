@@ -167,9 +167,12 @@ internal fun Case3D(
         if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317: keep cases as update 240 had them — the middle cut keeps the spine of a scan that carries slivers of
         // the back and front beside it, as the GameCube ones do; see the note above SPINE_TOO_WIDE.)
-        else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else "spineFit|$depth") { b ->
+        else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else if (spec?.shell == CaseShell.KEEP) "spineWhole|$depth" else "spineFit|$depth") { b ->
             // (Update 317: your own cut is the spine exactly — fitted to the side whole, scaled across, never cut.)
-            listOf(if (userSpine != null) scaleAcross(b, depth) else fillCrop(b, depth, 0.1f))
+            // (Update 317, Toni: "can we please fix this finally" — right on the shelf, over-stretched on the 3D case: the shelf
+            // shows the scan whole at its own shape. A keep case's side now does the same: the whole scan, scaled evenly into
+            // the side (never stretched one way, never cut), the room round it in the scan's edge colour.)
+            listOf(if (userSpine != null) scaleAcross(b, depth) else if (spec?.shell == CaseShell.KEEP) fitSpineInside(b, depth, false) else fillCrop(b, depth, 0.1f))
         }
     // (Update 317: the strip cut from the box scan, when the spine scan was left out as too wide and cuts are on.)
     val cutWanted = cutModel != null && !cardboard && ownFitted?.isEmpty() == true

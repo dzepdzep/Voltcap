@@ -139,6 +139,11 @@ tested on a handheld.
   cartridge photos (523×339) and the disc shells (380×468) on the generic path. **317h again, with stable inputs:** the
   photo's front from `rememberSoftBitmap(model)` (the cache's same object), not the loaded drawable (a new one at each
   load — the likely loop); the disc shell's front keyed only by addresses (anything else gets none).
+- **User (317w):** spines still over-stretched; frames 81 ms (p50) / 133 ms (p90), every frame janky; 74 MB render targets
+  (the lowest yet). **Spines:** a keep case's side now shows the scan as the shelf does — whole, scaled evenly into the
+  side (`fitSpineInside`, never stretched one way, never cut), the room round it in its edge colour (`spineWhole`).
+  **Speed:** the sides' picture's sideways spread (`sideArtOf`) was a 21-wide scan per pixel — now a running maximum
+  (checked against the plain version on 2,000 random rows); photos now make one per picture too.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,

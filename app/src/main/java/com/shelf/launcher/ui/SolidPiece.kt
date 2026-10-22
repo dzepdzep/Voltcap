@@ -762,15 +762,23 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
     val w = w0 + 2 * r
     val px = IntArray(w * h)
     val alpha = IntArray(w)
+    val win = IntArray(w)
     for (y in 0 until h) {
         val rgb = sideRowRgb((y + 0.5f) / h, tone)
         java.util.Arrays.fill(alpha, 0)
         for (x in 0 until w0) alpha[x + r] = sideAlpha(src0[y * w0 + x] ushr 24)
         val row = y * w
-        for (x in 0 until w) {
-            var a = 0
-            for (d in (x - r).coerceAtLeast(0)..(x + r).coerceAtMost(w - 1)) if (alpha[d] > a) a = alpha[d]
-            px[row + x] = (a shl 24) or rgb
+        // (The widest alpha within r either side — a running maximum over the row, once per pixel.)
+        var head = 0; var tail = 0
+        for (x in 0 until w + r) {
+            if (x < w) {
+                while (tail > head && alpha[win[tail - 1]] <= alpha[x]) tail--
+                win[tail++] = x
+            }
+            val c = x - r
+            if (c < 0) continue
+            while (win[head] < c - r) head++
+            px[row + c] = (alpha[win[head]] shl 24) or rgb
         }
     }
     val made = android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888)
