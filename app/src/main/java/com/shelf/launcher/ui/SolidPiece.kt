@@ -394,7 +394,25 @@ internal fun Modifier.solidPiece(
     val sideArt = rememberDerived((faceArt?.image ?: shotImage)?.asAndroidBitmap(), "side|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
     // (Update 317: drawn from its pictures — it takes the view's shade on itself; see PieceTurn.shadeOf.)
     val fromPictures = sideArt != null && (faceArt?.image ?: shotImage) != null
-    if (turn?.shadeOf != null) androidx.compose.runtime.SideEffect { turn.shadeTaken.value = fromPictures }
+    // (Once taken, kept: it flipped back while a piece rebuilt its pictures, and for that frame neither the view nor the
+    // piece darkened it — the games aside flashed brighter. Without its pictures the piece darkens itself in a passing
+    // buffer — shadeLayer — so it's always darkened exactly once.)
+    if (turn?.shadeOf != null && fromPictures) androidx.compose.runtime.SideEffect { turn.shadeTaken.value = true }
+    val lightNow = androidx.compose.runtime.rememberUpdatedState(fromPictures)
+    val shadeLayer = remember(turn) {
+        Modifier.drawWithContent {
+            val t = turn
+            val sh = if (t?.shadeOf != null && t.shadeTaken.value && !lightNow.value) t.shadeOf.invoke().coerceIn(0f, 1f) else 0f
+            if (sh <= 0.01f) { drawContent(); return@drawWithContent }
+            // (Room round the node: a turned piece's sides reach past it.)
+            val e = maxOf(size.width, size.height)
+            val r = androidx.compose.ui.geometry.Rect(-e, -e, size.width + e, size.height + e)
+            drawContext.canvas.saveLayer(r, androidx.compose.ui.graphics.Paint())
+            drawContent()
+            drawRect(Color.Black.copy(alpha = sh), topLeft = r.topLeft, size = r.size, blendMode = BlendMode.SrcAtop)
+            drawContext.canvas.restore()
+        }
+    }
     // Update 316 (Flip 2: ~1,000 GPU pictures, 1.2 GB, climbing while scrolling until it froze): the piece's layers kept for
     // as long as the piece is shown, recorded again when its drawing is rebuilt. They were made new at every rebuild —
     // and a carousel rebuilt its pieces at each step — while the ones let go kept their GPU pictures for a long time.
@@ -408,7 +426,7 @@ internal fun Modifier.solidPiece(
     val hole = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val edgeLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val litLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
-    return this.drawWithCache {
+    return this.then(shadeLayer).drawWithCache {
         // (Update 294: the face drawn flat into its own picture, which is then turned — the turned layers below used to
         // draw its contents (a badge's or a label's text) under a new angle every frame, and Android 13's text cache
         // grew until the Thor stopped answering on the Hub.)
@@ -467,7 +485,7 @@ internal fun Modifier.solidPiece(
             val testPose = TestHooks.pose.value
             val yaw = testPose?.first ?: ((turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f))
             // (Update 317: the view's shade, on the piece's own light — see PieceTurn.shadeOf.)
-            val shadeK = if (side != null && art != null && turn?.shadeOf != null && turn.shadeTaken.value)
+            val shadeK = if (lightNow.value && side != null && art != null && turn?.shadeOf != null && turn.shadeTaken.value)
                 1f - turn.shadeOf.invoke().coerceIn(0f, 1f) else 1f
             if (abs(yaw) < 0.25f && shadeK >= 0.999f) { drawContent(); return@onDrawWithContent }
             // (Update 314: fully opaque in its view — drawn straight into it, no whole-piece buffer.)

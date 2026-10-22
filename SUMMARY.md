@@ -78,6 +78,11 @@ tested on a handheld.
 - **GameCube spines (Toni: Budokai 2, Melee, Pikmin):** a keep case's spine scan more than 1.8× as wide (for its height)
   as the side is left out (`SPINE_TOO_WIDE`, `Case3D.kt` spineFit2) — its middle cut to the side was a blurred slice of
   the box art; the console's spine with the title instead (as update 308 does for cardboard).
+- **Games aside flashing brighter (user, still):** `PieceTurn.shadeTaken` flipped back while a piece rebuilt its pictures;
+  that frame neither CarouselArt nor the piece darkened it. Now set once and kept; a piece without its pictures darkens
+  itself in a passing buffer (`shadeLayer`, saveLayer + SrcAtop black, only then) — always darkened exactly once.
+- **"Spines cut from box scans" didn't change the GameCube spines:** by design — it's only for games without a spine scan
+  (a strip cut from the box scan); these have a (bad) spine scan, handled by update 317j's width check.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`,
   `device/ChargeLimitService.kt`.
