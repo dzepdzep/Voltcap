@@ -95,7 +95,10 @@ internal fun Case3D(
     // Without this, N64 (and other cardboard cases) could switch to a different,
     // badly fitted scanned spine only when the game was opened in Inspect.
     val matching = Features.spinesOwn.state.value
-    val realSpine = if (forAll || matching) null else scans?.firstOrNull { it.first == "Spine" }?.second
+    // (Update 317, Toni: "adjusting the cuts didn't do anything for the 3D models": your own cut of the full case scan
+    // first — BoxTexture.userSpine — it lost to the scraped spine scan.)
+    val userSpine = if (forAll || matching) null else BoxTexture.userSpine(scans, g.platform)
+    val realSpine = if (forAll || matching) null else userSpine ?: scans?.firstOrNull { it.first == "Spine" }?.second
     // (Update 317, Toni: "make the cuts apply to the 3D models as well": with Spines cut from box scans on, the 3D case uses
     // the strip cut from the box scans too — it did only with Original cases on.)
     val cutsOn = Features.spineCuts.state.value && !forAll && !matching
@@ -140,12 +143,7 @@ internal fun Case3D(
         // is fitted onto that side (spineFit below); its own shape decides only where no spec is known.)
         val known = spec?.takeIf { it.check != CaseCheck.PLACEHOLDER }?.depth
         val own = ownUpright?.let { it.width.toFloat() / it.height.coerceAtLeast(1) }
-        // (Update 317, Toni: GameCube spines over / under-stretched on the 3D cases, right on the shelf: the shelf stands a
-        // real spine scan at its own shape, whole (ShelfHome's SpineSlot). A keep case with its own spine scan does the same
-        // now — its thickness the scan's shape — so the scan goes on its side whole. Jewel cases, cardboard boxes and the
-        // others keep their spec's thickness.)
-        val keepScan = spec?.shell == CaseShell.KEEP && own != null
-        (if (keepScan) own!! else (known ?: own ?: spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f)).coerceIn(0.03f, 0.35f)
+        (known ?: own ?: spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.26f)
     }
     // (Update 240, #26: no spine picture of the game's own: the console's colour with the name down it and the console's
     // logo at its foot, made at the side's own shape — the plain dark strip was the same for every console and, made for a
@@ -169,7 +167,10 @@ internal fun Case3D(
         if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317: keep cases as update 240 had them — the middle cut keeps the spine of a scan that carries slivers of
         // the back and front beside it, as the GameCube ones do; see the note above SPINE_TOO_WIDE.)
-        else rememberDerived(ownUpright, "spineFit|$depth") { b -> listOf(fillCrop(b, depth, 0.1f)) }
+        else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else "spineFit|$depth") { b ->
+            // (Update 317: your own cut is the spine exactly — fitted to the side whole, scaled across, never cut.)
+            listOf(if (userSpine != null) scaleAcross(b, depth) else fillCrop(b, depth, 0.1f))
+        }
     // (Update 317: the strip cut from the box scan, when the spine scan was left out as too wide and cuts are on.)
     val cutWanted = cutModel != null && !cardboard && ownFitted?.isEmpty() == true
     val cutLoad = rememberSoftLoad(if (cutWanted) cutModel else null, 600)
@@ -845,6 +846,14 @@ private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float, widenN64
 // (Update 317: the spines' fitting is update 240 / 308 / 312's again — keep cases cut in the middle (the GameCube scans
 // carry slivers of the back and front either side of the spine), N64 as update 312 fits it. Fitting them whole, widening
 // or stretching them put more of them wrong than right on the Flip 2.)
+
+/** Update 317: [src] scaled across (its height kept) to [aspect] — nothing cut. */
+private fun scaleAcross(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+    if (aspect <= 0f) return src
+    val w = (src.height * aspect).toInt().coerceAtLeast(1)
+    if (kotlin.math.abs(w - src.width) <= 1) return src
+    return runCatching { android.graphics.Bitmap.createScaledBitmap(src, w, src.height, true) }.getOrDefault(src)
+}
 
 /** Update 317: a keep case's spine scan more than this many times as wide (for its height) as the side isn't its spine. */
 private const val SPINE_TOO_WIDE = 1.8f

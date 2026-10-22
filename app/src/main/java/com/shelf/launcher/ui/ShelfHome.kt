@@ -670,7 +670,8 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
         Box(modifier.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue)))
         return
     }
-    val realSpine = if (forAll || matching) null else scans?.firstOrNull { it.first == "Spine" }?.second
+    // (Update 317: your own cut of the full case scan first — BoxTexture.userSpine.)
+    val realSpine = if (forAll || matching) null else BoxTexture.userSpine(scans, g.platform) ?: scans?.firstOrNull { it.first == "Spine" }?.second
     val own = realSpine ?: if (Features.originalCases.state.value && !forAll && !matching) BoxTexture.spine(scans, g.platform) else null
     var failed by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }
     if (own != null && !failed) {

@@ -76,6 +76,18 @@ internal object BoxTexture {
      * the template pack is used). Update 123: the strips cut out of other scans (often cut in the wrong place) only with
      * Game look › Spines cut from box scans on.
      */
+    /**
+     * Update 317 (Toni: "adjusting the cuts didn't do anything for the 3D models"): the spine cut from the full case scan
+     * at the cut you set yourself (Artwork & details › Full case scan › Adjust the cuts…), when you've set one — it wins
+     * over the scraped spine scan, on the shelf and the 3D cases. Null without your own cut. Reads [FullScanCuts.version].
+     */
+    fun userSpine(physical: List<Pair<String, String>>?, platform: String?): String? {
+        com.shelf.launcher.data.FullScanCuts.version.intValue
+        val full = fullScan(physical) ?: return null
+        if (com.shelf.launcher.data.FullScanCuts.of(full) == null) return null
+        return model(full, BoxPart.SPINE, platform)
+    }
+
     fun spine(physical: List<Pair<String, String>>?, platform: String?): String? =
         physical?.firstOrNull { it.first == "Spine" }?.second
             ?: if (!com.shelf.launcher.data.Features.spineCuts.state.value) null
