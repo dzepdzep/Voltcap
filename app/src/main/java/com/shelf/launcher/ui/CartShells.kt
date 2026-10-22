@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import com.shelf.launcher.data.Features
 
 /*
@@ -399,7 +400,47 @@ internal object CartShells {
         ShellColour("yellow", "Clear yellow", 0xFFE8C51E.toInt(), 0.65f)
     )
 
+    // ---- Update 308: your pack's shapes on the real cartridge ----
+
+    /**
+     * Update 308 (Toni: "custom cartridges still look physically different — reuse the exact authentic shell"): a pack
+     * shape modelled on a real cartridge is drawn AS that cartridge — a library shell pick ("<shell>~<colour>") whose
+     * colour is your pack's plastic: "pack.<shape>.<o|c>.<console>" (the pack picture it's read off: that shape, opaque or
+     * clear, the game's console). Everything after (front, sides, thickness, back, connector, Inspect) is then the authentic
+     * shell's own; only the plastic, the sticker's console plaque and the art are yours.
+     */
+    fun packColourKey(look: CartLook, clear: Boolean, console: String): String = "pack.${look.key}.${if (clear) "c" else "o"}.$console"
+
+    /** [key]'s pack shape, clear finish and console, or null when it isn't a pack colour. */
+    fun packColourParts(key: String?): Triple<CartLook, Boolean, String>? {
+        if (key == null || !key.startsWith("pack.")) return null
+        val parts = key.removePrefix("pack.").split('.', limit = 3)
+        if (parts.size < 3) return null
+        val look = CartLook.values().firstOrNull { it.key == parts[0] } ?: return null
+        return Triple(look, parts[1] == "c", parts[2])
+    }
+
+    private val packColours = java.util.concurrent.ConcurrentHashMap<String, ShellColour>()
+
+    /** The plastic of a pack colour [key] — read once off the pack picture (small copy); null while it can't be read. */
+    private fun packColour(key: String): ShellColour? = packColours[key] ?: run {
+        val (look, clear, console) = packColourParts(key) ?: return null
+        val file = CustomCarts.idFor(console)?.let { CustomCarts.asset(look, clear, it) } ?: return null
+        val tone = CustomPieceTones.toneOfFile(file) ?: return null
+        ShellColour(key, "Your pack", (tone.toArgb() and 0x00FFFFFF) or 0xFF000000.toInt(), if (clear) 0.6f else 1f)
+            .also { packColours[key] = it }
+    }
+
+    /** Update 308: [ch] (a pack shape picked for [console]'s game) as its real cartridge in your pack's plastic; null: no real one. */
+    fun authentic(ch: Choice, console: String?): Choice? {
+        val look = ch.pack ?: return null
+        val real = CustomCarts.authenticShell(look) ?: return null
+        val key = packColourKey(look, ch.clear, console ?: "")
+        return Choice(real, null, key, "${real.id}~$key")
+    }
+
     fun colourOf(shell: CartShell, key: String?): ShellColour =
+        packColourParts(key)?.let { packColour(key!!) ?: shell.colours.first() } ?:
         (if (key.isNullOrEmpty()) null else shell.colours.firstOrNull { it.key == key } ?: presets.firstOrNull { it.key == key }
             // (Update 210: a material from the registry — "m:<id>", ShellMaterials.)
             ?: ShellMaterials.colourFor(key)) ?: shell.colours.first()
@@ -534,7 +575,9 @@ internal object CartShells {
 
     /** The piece for a choice on [platform]'s game ([gameKey]: its region, for a retired 3D piece's authentic shell). */
     fun pickOf(raw: String, platform: String, gameKey: String? = null): MediaPick? =
-        parse(raw)?.let { retired(it, platform, CaseCatalog.regionOf(gameKey ?: "")) }?.let { ch ->
+        parse(raw)?.let { retired(it, platform, CaseCatalog.regionOf(gameKey ?: "")) }?.let { ch0 ->
+            // (Update 308: a pack shape with a real cartridge is that cartridge in your pack's plastic — authentic.)
+            val ch = authentic(ch0, platform) ?: ch0
             // (Update 200: [Choice.raw] — a retired 3D piece's is its authentic shell's.)
             MediaPick(MediaShell.GB, "$SHELL_PREFIX${ch.raw}|$platform", ch.aspect)
         }
@@ -875,6 +918,19 @@ internal object CartShells {
         c.restore()
         cache.put(key, b)
         return b
+    }
+
+    /**
+     * Update 308: [s]'s front for a pick's colour [key]: your pack's plastic (a pack colour) gets the pack's console plaque
+     * across the sticker and its art filling it (CustomCarts.authenticFront); every other colour the shell's own [front].
+     */
+    fun frontFor(s: CartShell, key: String?, console: String?, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean): Bitmap {
+        packColourParts(key)?.let { (look, clear, con) ->
+            val colour = colourOf(s, key)
+            val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
+            CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx)?.let { return it }
+        }
+        return front(s, colourOf(s, key), art, brand, title, maxPx, scan)
     }
 
     /**
@@ -1345,7 +1401,9 @@ internal fun CartShellArt(
     /** Update 205: [art] is the game's real label scan: it fills the label, no console band over it. */
     labelIsScan: Boolean = false
 ) {
-    val (choice, console) = remember(pickPlatform) { CartShells.split(pickPlatform) }
+    // (Update 308: a pack shape with a real cartridge is drawn as that cartridge — CartShells.authentic — in the picker
+    // previews too, the same piece the home screen shows.)
+    val (choice, console) = remember(pickPlatform) { CartShells.split(pickPlatform).let { (c, con) -> (c?.let { CartShells.authentic(it, con) } ?: c) to con } }
     val packLook = choice?.pack
     // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
     // pre-rendered pictures.)
@@ -1359,7 +1417,7 @@ internal fun CartShellArt(
         remember { SwitchLabel.prime(ctxSw) }
         val brand = remember(console) { console?.let { com.shelf.launcher.data.ConsoleNames.display(it) } ?: "" }
         val front = remember(pickPlatform, bmpArt, brand, title, maxPx, labelIsScan) {
-            if (shell == null) null else runCatching { CartShells.front(shell, CartShells.colourOf(shell, choice.colourKey), bmpArt, brand, title, maxPx, labelIsScan) }.getOrNull()
+            if (shell == null) null else runCatching { CartShells.frontFor(shell, choice.colourKey, console, bmpArt, brand, title, maxPx, labelIsScan) }.getOrNull()
         }
         BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
             val a = shell?.aspect ?: 1f

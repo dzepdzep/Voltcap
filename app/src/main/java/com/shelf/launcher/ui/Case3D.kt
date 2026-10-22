@@ -132,8 +132,15 @@ internal fun Case3D(
     val spine: android.graphics.Bitmap = remember(ownUpright, tplSpine, title, spinePending, depth, spinePlatform) {
         // (Update 240, #26: the game's own spine fitted to the side — cut in the middle only as much as its shape is off the
         // side's, never squeezed onto it: the long-edge print of a landscape box was squashed onto its short end.)
-        ownUpright?.let { b -> DerivedArt.of(b, "spineFit|$depth") { fillCrop(b, depth, 0.1f) } }
-            ?: (if (spinePending) SpineCache.WAITING else null)
+        // (Update 308, Toni: "spines aren't fitted properly on most consoles aside from PS2": a cardboard box's side scan
+        // often carries a piece of the top / bottom flap (Advance Wars 2's black "…NCE", Pokémon Pinball's logo corner),
+        // or is the print of the box's long top edge (an N64 / SNES box), whose middle was cut onto the short side. The
+        // flaps are cut off at their fold, and a print far off the side's shape is left out: the console's spine with the
+        // title, made at the side's own shape, instead. Keep cases, jewel cases and the rest as before.)
+        val cardboard = spec?.shell == CaseShell.CARDBOARD
+        (if (cardboard) ownUpright?.let { b -> DerivedArt.of(b, "spineBox|$depth") { listOfNotNull(boxSideSpine(b, depth)) }.firstOrNull() }
+            else ownUpright?.let { b -> DerivedArt.of(b, "spineFit|$depth") { fillCrop(b, depth, 0.1f) } })
+            ?: (if (spinePending && !(cardboard && ownUpright != null)) SpineCache.WAITING else null)
             ?: tplSpine.bitmap
             // (A plain dark strip for the moment your console spine is being made, then the console's own with the name.)
             ?: if (!tplSpine.done) SpineCache.WAITING
@@ -653,6 +660,39 @@ private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphi
  * of cutting them. The face is then drawn onto a front of exactly [aspect], so nothing is stretched. Within half a
  * percent (a pixel or so) it is left as it is.
  */
+/**
+ * Update 308: a cardboard box's side scan for its side of [aspect] (width / height): the top / bottom flap cut off where it
+ * folds (a row whose colour changes across nearly the whole width, in the top or bottom fifth), then fitted as any spine
+ * ([fillCrop], a tenth let off); null when what's left is far off the side's shape (over 30 %) — another face's print.
+ */
+private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap? = runCatching {
+    val w = src.width; val h = src.height
+    if (w < 8 || h < 24) return@runCatching fillCrop(src, aspect, 0.1f)
+    val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+    val px = IntArray(w * h)
+    soft.getPixels(px, 0, w, 0, 0, w, h)
+    // How much of row y differs from the row above it (share of the columns, a little in from the edges).
+    val x0 = (w * 0.06f).toInt(); val x1 = (w * 0.94f).toInt().coerceAtLeast(x0 + 1)
+    fun change(y: Int): Float {
+        var n = 0
+        for (x in x0 until x1) {
+            val a = px[(y - 1) * w + x]; val b = px[y * w + x]
+            val d = kotlin.math.abs(((a shr 16) and 255) - ((b shr 16) and 255)) + kotlin.math.abs(((a shr 8) and 255) - ((b shr 8) and 255)) + kotlin.math.abs((a and 255) - (b and 255))
+            if (d > 60) n++
+        }
+        return n / (x1 - x0).toFloat()
+    }
+    val band = (h * 0.2f).toInt()
+    var top = 0; var bottom = h
+    var best = 0.85f
+    for (y in (h * 0.02f).toInt().coerceAtLeast(1) until band) { val c = change(y); if (c >= best) { best = c; top = y } }
+    best = 0.85f
+    for (y in (h - band) until (h - (h * 0.02f).toInt()).coerceAtMost(h - 1)) { val c = change(y); if (c >= best) { best = c; bottom = y } }
+    val cut = if (top > 0 || bottom < h) android.graphics.Bitmap.createBitmap(soft, 0, top, w, (bottom - top).coerceAtLeast(1)) else soft
+    val cur = cut.width.toFloat() / cut.height.coerceAtLeast(1)
+    if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) null else fillCrop(cut, aspect, 0.1f)
+}.getOrElse { fillCrop(src, aspect, 0.1f) }
+
 private fun fillCrop(src: android.graphics.Bitmap, aspect: Float, slack: Float = 0.005f): android.graphics.Bitmap {
     val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
     // (Update 240, #26: [slack] — how far off it may be and be left as it is; a spine scan is let off by a tenth.)

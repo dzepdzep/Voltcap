@@ -1446,14 +1446,30 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     )
     DisposableEffect(Unit) {
         val app = lightsContext.applicationContext
+        // Update 308 (AYN Thor: the stick lights stayed dark after the screen went off and on): whether they were lit when
+        // the screen went off is remembered, and on the AYN route they're put back once, a moment after the screen comes on
+        // (after the firmware's own wake-up writes) — Voltcap's colour, or with System setting the handheld's own; never
+        // switched on when they were off or you switched them off. Other handhelds: as before.
+        val wasLit = java.util.concurrent.atomic.AtomicBoolean(true)
+        val wakeGen = java.util.concurrent.atomic.AtomicInteger(0)
         val receiver = object : android.content.BroadcastReceiver() {
             override fun onReceive(c: android.content.Context, i: android.content.Intent) {
                 val (enabled, on, colorLevel) = lightsNow
-                if (!enabled) return
                 val off = i.action == android.content.Intent.ACTION_SCREEN_OFF
+                val gen = wakeGen.incrementAndGet()
                 Thread({
                     runCatching {
-                        com.shelf.launcher.data.ControllerLights.apply(app, true, on = !off && on, color = colorLevel.first, brightness = colorLevel.second)
+                        val wakeRoute = com.shelf.launcher.data.ControllerLights.restoresOnWake(app)
+                        if (off && wakeRoute) wasLit.set(if (enabled) on else com.shelf.launcher.data.ControllerLights.systemLightsOn(app) == true)
+                        if (wakeRoute && !off) {
+                            Thread.sleep(1200)
+                            // (Screen off again meanwhile: nothing.)
+                            if (wakeGen.get() != gen) return@runCatching
+                            val (en, onNow, cl) = lightsNow
+                            com.shelf.launcher.data.ControllerLights.restoreAfterWake(app, wasLit.get(), en, onNow, cl.first, cl.second)
+                        } else if (enabled) {
+                            com.shelf.launcher.data.ControllerLights.apply(app, true, on = !off && on, color = colorLevel.first, brightness = colorLevel.second)
+                        }
                     }
                 }, "voltcap-lights-screen").start()
             }

@@ -1,6 +1,9 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.animation.AnimatedVisibility
@@ -541,11 +544,14 @@ internal fun PlatformFilterRow(
     // (Update 294, Toni: "never show a partly hidden chip": whole pills only, "+N ›" for the rest, the selected one always
     // whole — WholeChipRow. It used to slide the selected pill onto the game name's line in a LazyRow, which left a pill
     // cut at the screen's edge. The pills still start where the game name does, and sit left / centred / right with it.)
+    // (Update 308, Toni: "smooth horizontal scrolling instead of abruptly hiding categories or jumping between groups":
+    // one row that glides to keep the category you're in in view, its ends fading out softly — GlidingChipRow — in place
+    // of update 294's pages of whole pills with "+N ›".)
     val e = edge ?: dockTextStart()
     Row(Modifier.padding(bottom = bottomGap), verticalAlignment = Alignment.CenterVertically) {
-    WholeChipRow(
+    GlidingChipRow(
         count = itemKeys.size, focused = itemKeys.indexOf(selectedKey), modifier = Modifier.weight(1f),
-        spacing = 8.dp, align = align, startPadding = e, endPadding = if (align == Alignment.Start) 24.dp else e
+        spacing = 6.dp, align = align, startPadding = e, endPadding = if (align == Alignment.Start) 24.dp else e
     ) { i ->
         val key = itemKeys[i]
         when {
@@ -581,6 +587,77 @@ internal fun PlatformFilterRow(
     }
 }
 
+/**
+ * Update 308: the category bar's pills in one row that scrolls smoothly: the chip you're on ([focused]) glides into view
+ * (kept a pill's width clear of the ends where it can), touch drags and flings it, and the ends fade out softly where
+ * more pills are past them — nothing is hidden behind "+N" or swapped a group at a time. When everything fits, the pills
+ * sit at [align] as before.
+ */
+@Composable
+internal fun GlidingChipRow(
+    count: Int, focused: Int, modifier: Modifier = Modifier, spacing: androidx.compose.ui.unit.Dp = 6.dp,
+    align: Alignment.Horizontal = Alignment.Start, startPadding: androidx.compose.ui.unit.Dp = 0.dp,
+    endPadding: androidx.compose.ui.unit.Dp = 0.dp, chip: @Composable (Int) -> Unit
+) {
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    val lefts = remember(count) { IntArray(count) }
+    val widths = remember(count) { IntArray(count) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val margin = with(density) { 48.dp.roundToPx() }
+    var viewW by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var laidOut by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val first = remember { booleanArrayOf(true) }
+    androidx.compose.runtime.LaunchedEffect(focused, viewW, laidOut) {
+        if (focused !in 0 until count || viewW <= 0 || widths[focused] <= 0) return@LaunchedEffect
+        val l = lefts[focused]; val r = l + widths[focused]
+        val cur = scroll.value
+        val target = when {
+            l - margin < cur -> l - margin
+            r + margin > cur + viewW -> (r + margin - viewW)
+            else -> cur
+        }.coerceIn(0, scroll.maxValue)
+        if (target == cur) return@LaunchedEffect
+        if (first[0]) scroll.scrollTo(target) else scroll.animateScrollTo(target, androidx.compose.animation.core.tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        first[0] = false
+    }
+    androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(400); first[0] = false }
+    androidx.compose.foundation.layout.BoxWithConstraints(
+        modifier
+            .onSizeChanged { viewW = it.width }
+            // The ends fade out where pills carry on past them (drawn off-screen once, then masked).
+            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                val fade = 28.dp.toPx()
+                if (scroll.value > 0) drawRect(
+                    Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = 0f, endX = fade),
+                    size = androidx.compose.ui.geometry.Size(fade, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                )
+                if (scroll.value < scroll.maxValue) drawRect(
+                    Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fade, endX = size.width),
+                    topLeft = androidx.compose.ui.geometry.Offset(size.width - fade, 0f),
+                    size = androidx.compose.ui.geometry.Size(fade, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                )
+            }
+    ) {
+        val minW = maxWidth
+        Row(
+            Modifier.horizontalScroll(scroll).widthIn(min = minW).padding(start = startPadding, end = endPadding),
+            horizontalArrangement = Arrangement.spacedBy(spacing, align),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            for (i in 0 until count) {
+                Box(Modifier.onGloballyPositioned { c ->
+                    val x = c.positionInParent().x.toInt()
+                    if (i < lefts.size && (lefts[i] != x || widths[i] != c.size.width)) {
+                        lefts[i] = x; widths[i] = c.size.width; laidOut++
+                    }
+                }) { chip(i) }
+            }
+        }
+    }
+}
+
 /** The active sort at the end of the category bar; tap to change it. */
 @Composable
 internal fun SortChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -612,17 +689,18 @@ internal fun FilterPill(label: String, isSelected: Boolean, onClick: () -> Unit,
             .clip(RoundedCornerShape(50))
             .background(if (isSelected) ShelfTheme.accent else Color.White.copy(alpha = 0.08f))
             .tapOnly(onClick)
-            .padding(horizontal = (if (compact) 10.dp else 14.dp) * ps, vertical = (if (compact) 4.dp else 7.dp) * ps)
+            // (Update 308: a little smaller — 12 / 5 dp padding, 12 sp, a 15 dp logo; were 14 / 7, 13 sp, 17 dp.)
+            .padding(horizontal = (if (compact) 10.dp else 12.dp) * ps, vertical = (if (compact) 4.dp else 5.dp) * ps)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (logo != null) {
-                coil.compose.AsyncImage(logo, null, Modifier.size((if (compact) 14.dp else 17.dp) * ps).clip(RoundedCornerShape(3.dp)))
+                coil.compose.AsyncImage(logo, null, Modifier.size((if (compact) 14.dp else 15.dp) * ps).clip(RoundedCornerShape(3.dp)))
                 Spacer(Modifier.width(5.dp))
             }
             Text(
                 label,
                 color = if (isSelected) onAccentColor() else Color.White,
-                fontSize = (if (compact) 11.sp else 13.sp) * ps,
+                fontSize = (if (compact) 11.sp else 12.sp) * ps,
                 fontWeight = FontWeight.SemiBold
             )
         }

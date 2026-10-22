@@ -104,6 +104,33 @@ object ControllerLights {
         if (enabled) runCatching { applySysfs(on, color, brightness) }
     }
 
+    // ---- Update 308: screen off / on (AYN Thor) ----
+
+    /** Whether this handheld's stick lights are put back by Voltcap after the screen comes on (the AYN SN3112 route). */
+    fun restoresOnWake(context: Context): Boolean = runCatching { vendor(context)?.restoresOnWake() == true }.getOrDefault(false)
+
+    /** Whether the handheld's own light setting has a stick lit (null: unknown). Not blocking. */
+    fun systemLightsOn(context: Context): Boolean? = runCatching { vendor(context)?.systemOn(context) }.getOrNull()
+
+    /**
+     * Update 308 (Toni: "the RGB lights stay off after turning the screen off and back on"): the screen came back on —
+     * the lights as they were before it went off, once, after the firmware's own wake-up writes ([wasOn]: they were lit;
+     * nothing is switched on that was off, or that you switched off since). [enabled]: Voltcap runs the lights (its
+     * colour, [on] = not held off), else the handheld's own setting is put back as the system has it. Blocking.
+     */
+    @Synchronized
+    fun restoreAfterWake(context: Context, wasOn: Boolean, enabled: Boolean, on: Boolean, color: Int, brightness: Int) {
+        val v = vendor(context)?.takeIf { it.restoresOnWake() } ?: return
+        if (!wasOn) return
+        if (enabled) {
+            if (!on) return
+            v.rearm()
+            apply(context, true, on = true, color = color, brightness = brightness)
+        } else if (v.systemOn(context) == true) {
+            v.restoreSystem(context)
+        }
+    }
+
     /**
      * Blinks the lights [times] times in [color] at full brightness, then puts
      * back [restoreColor] / [restoreBrightness]. Used for achievement

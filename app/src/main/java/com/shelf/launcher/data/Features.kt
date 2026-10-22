@@ -1233,6 +1233,8 @@ object Features {
     val twinCols = IntPref("twin_cols", 5, 4..7)
     /** Update 307: Twin showcase's rows of icons (1–3); more games run on to the right. */
     val twinShowRows = IntPref("twin_show_rows", 2, 1..3)
+    /** Update 308: Twin showcase with Voltcap's status bar too (off: the picture's own status capsule). */
+    val twinShowStatusBar = BoolPref("twin_show_status_bar", false)
     /** Update 179: the space between the tiles of the two-screen layouts, dp (Twin icons' grid, Twin desk's panels). */
     val twinGap = IntPref("twin_gap", 8, 0..32)
     val twinDeskGap = IntPref("twin_desk_gap", 7, 0..24)

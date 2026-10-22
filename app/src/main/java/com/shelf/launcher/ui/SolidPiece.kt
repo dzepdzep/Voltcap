@@ -222,6 +222,21 @@ internal object CustomPieceTones {
         return packs[f.path]?.takeIf { it != 0 }?.let { Color(it) }
     }
 
+    /** Update 308: the plastic of the pack picture [f] (read at 1/8 size once, then kept); null when none can be read. */
+    fun toneOfFile(f: java.io.File): Color? {
+        packs[f.path]?.let { c -> return if (c != 0) Color(c) else null }
+        synchronized(this) {
+            packs[f.path]?.let { c -> return if (c != 0) Color(c) else null }
+            val b = runCatching {
+                android.graphics.BitmapFactory.decodeFile(f.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = 8 })
+            }.getOrNull() ?: return null
+            val t = runCatching { pictureTone(b) }.getOrNull()
+            b.recycle()
+            if (packs.size < 512) packs[f.path] = t?.toArgb() ?: 0
+            return t
+        }
+    }
+
     /** [of], reading the pack picture (at 1/8 size, once per picture) when it hasn't been read. Off the main thread. */
     fun load(pickPlatform: String): Color? {
         of(pickPlatform)?.let { return it }

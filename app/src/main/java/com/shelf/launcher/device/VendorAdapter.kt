@@ -46,6 +46,20 @@ interface LightsBackend {
     fun set(color: Int, brightness: Int)
     /** Which driver was found (blocking; Settings › Device). */
     fun describe(): String? = null
+    /**
+     * Update 308: this route needs the lights put back after the screen comes on (the AYN Thor's stick lights stayed
+     * dark after a screen off / on). False: nothing changes on wake (every other device).
+     */
+    fun restoresOnWake(): Boolean = false
+    /** Update 308: the next colour switches the driver back on (the firmware may have switched it off while asleep). */
+    fun rearm() {}
+    /**
+     * Update 308: the handheld's own light setting (System setting chosen in Voltcap) put back as the system had it before
+     * the screen went off: each side lit only where that setting has it on, in its own colour and brightness. Blocking.
+     */
+    fun restoreSystem(context: android.content.Context) {}
+    /** Update 308: whether the handheld's own light setting has any stick lit (null: unknown). */
+    fun systemOn(context: android.content.Context): Boolean? = null
 }
 
 interface VendorAdapter {
@@ -153,9 +167,43 @@ class AynAdapter : VendorAdapter {
             null -> "Stick lights: no driver found"
         }
 
+        // ---- Update 308: the screen coming back on ----
+
+        override fun restoresOnWake(): Boolean = binder != null && layout() is Layout.Sn3112
+
+        override fun rearm() { enableHeld = true }
+
+        /** The system's "joystick_light_enabled" (Thor: "1,1" = left,right), read without root. */
+        private fun sides(context: android.content.Context): List<Boolean>? = runCatching {
+            android.provider.Settings.System.getString(context.contentResolver, "joystick_light_enabled")
+        }.getOrNull()?.split(',')?.map { it.trim() != "0" }?.takeIf { it.isNotEmpty() }
+
+        override fun systemOn(context: android.content.Context): Boolean? = sides(context)?.any { it }
+
+        override fun restoreSystem(context: android.content.Context) {
+            val kind = layout() as? Layout.Sn3112 ?: return
+            val on = sides(context) ?: return
+            if (on.none { it }) return
+            val cr = context.contentResolver
+            val colours = runCatching { android.provider.Settings.System.getString(cr, "joystick_led_light_picker_color") }.getOrNull()
+                ?.split(',')?.map { runCatching { android.graphics.Color.parseColor(it.trim()) }.getOrNull() }.orEmpty()
+            val pct = runCatching { android.provider.Settings.System.getString(cr, "led_light_brightness_percent")?.toFloat() }.getOrNull()
+                ?.coerceIn(0f, 1f) ?: 1f
+            val commands = ArrayList<String>()
+            kind.sides.forEachIndexed { i, side ->
+                // (sn3112l = left, sn3112r = right, as the setting lists them; a single value counts for both.)
+                if (!(on.getOrNull(i) ?: on.first())) return@forEachIndexed
+                val c = colours.getOrNull(i) ?: colours.firstOrNull() ?: return@forEachIndexed
+                val r = ((c shr 16 and 0xFF) * pct).toInt(); val g = ((c shr 8 and 0xFF) * pct).toInt(); val bl = ((c and 0xFF) * pct).toInt()
+                commands += "echo 1 > /sys/class/$side/led/enable"
+                listOf(1, 2).forEach { zone -> commands += "echo $zone-$r:$g:$bl:255 > /sys/class/$side/led/brightness" }
+            }
+            send(commands)
+        }
+
         /** [color] at [brightness] (0-100) on both sticks, both rings. */
         override fun set(color: Int, brightness: Int) {
-            val b = binder ?: return
+            if (binder == null) return
             // The driver ignores its own brightness field, so dimming is done
             // by scaling the colour itself.
             val level = brightness.coerceIn(0, 100)
@@ -196,6 +244,12 @@ class AynAdapter : VendorAdapter {
                 }
                 null -> return
             }
+            send(commands)
+        }
+
+        /** The commands, in order, through AYN's root service. */
+        private fun send(commands: List<String>) {
+            val b = binder ?: return
             // Update 201: AYN's root service cuts a command after 255 characters (see RootShell). The SN3112 "off" chain
             // (four rings + two enables, ~300 characters) lost both `enable` writes, and the first colour after it lost the
             // last ring — so update 200's "switch both drivers off" never ran. Sent in pieces that fit, in order (one-way

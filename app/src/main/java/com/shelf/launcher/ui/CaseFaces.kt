@@ -34,12 +34,14 @@ internal object CaseFaces {
 
     /** A library shell (CartShellArt): CartShells.front, as drawn. Your pack's shapes picked as a shell: the pack's. */
     private fun shell(pick: String, label: Bitmap?, scan: Boolean): Bitmap? {
-        val (choice, console) = CartShells.split(pick)
-        choice ?: return null
+        val (choice0, console) = CartShells.split(pick)
+        choice0 ?: return null
+        // (Update 308: a pack shape with a real cartridge: that cartridge in your pack's plastic — CartShells.authentic.)
+        val choice = CartShells.authentic(choice0, console) ?: choice0
         choice.pack?.let { look -> return packShape(console ?: "", look, choice.clear, label) }
         val sh = choice.shell ?: return null
         val brand = console?.let { com.shelf.launcher.data.ConsoleNames.display(it) } ?: ""
-        return CartShells.front(sh, CartShells.colourOf(sh, choice.colourKey), label, brand, null, 480, scan)
+        return CartShells.frontFor(sh, choice.colourKey, console, label, brand, null, 480, scan)
     }
 
     /** Your pack (CustomCart): its optical-system shell for the console, else the cartridge shape picked. */

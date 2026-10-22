@@ -1599,6 +1599,8 @@ val AppearanceSettings.statusOn: Boolean
     get() = showStatusBar && (homeLayout != HomeLayout.CHAN || Features.chanStatusBar.state.value) && !spotOwnTop &&
         // Update 158: Hero tiles has its own status pill on the picture (unless its Status bar is turned on).
         (homeLayout != HomeLayout.HERO_TILES || Features.heroTilesStatusBar.state.value) &&
+        // Update 308: Twin showcase has its own status capsule on the picture (unless its Status bar is turned on).
+        (homeLayout != HomeLayout.TWIN_SHOWCASE || Features.twinShowStatusBar.state.value) &&
         // Update 182: the Pocket layouts have their own bar on top (name, date, time, battery); Voltcap's sat over it.
         homeLayout != HomeLayout.POCKET_CLASSIC && homeLayout != HomeLayout.POCKET_RIBBON &&
         // Update 202: Pocket Quest has its own top bar too (brand, consoles, search, settings, battery and clock).

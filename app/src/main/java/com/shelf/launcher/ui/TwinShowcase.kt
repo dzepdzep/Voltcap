@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -68,6 +69,9 @@ import coil.compose.AsyncImage
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.data.HomeLayout
+import com.shelf.launcher.data.NameBackdrop
+import com.shelf.launcher.data.statusOn
+import androidx.compose.material.icons.filled.Info
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -105,7 +109,8 @@ internal fun StyleTwinShowcase(c: StyleCtx, modifier: Modifier = Modifier) {
     SideEffect {
         StyleLoop.on = false
         StyleNav.side = emptyList()
-        StyleNav.top = emptyList()
+        // (Update 308: ▲ from the grid's top row reaches the two shortcut buttons on the top screen.)
+        StyleNav.top = showTools(c).map { it.onClick }
         StyleNav.topStart = -1
         StyleNav.bar = emptyList()
     }
@@ -138,7 +143,11 @@ internal fun twinShowcaseKey(ctx: StyleKeyCtx): Boolean {
         return ctx.take()
     }
     return when (ctx.key) {
-        Key.DirectionUp -> if (row > 0) go(f - 1) else ctx.reach(true)
+        Key.DirectionUp -> when {
+            row > 0 -> go(f - 1)
+            StyleNav.top.isNotEmpty() -> ctx.enterZone(StyleNav.Zone.TOP)
+            else -> ctx.reach(true)
+        }
         Key.DirectionDown -> if (row < rows - 1 && f + 1 < n) go(f + 1) else ctx.reach(false)
         Key.DirectionLeft -> if (f - rows >= 0) go(f - rows) else ctx.take()
         // (The last column may be shorter: its last game.)
@@ -158,13 +167,26 @@ internal fun TwinShowcaseSettings() {
     StyleChoice("Rows", arrayOf(1, 2, 3), Features.twinShowRows.state.value, { "$it" }) { Features.twinShowRows.value = it }
     StyleChoice("Gap between icons", TWIN_GAPS, Features.twinGap.state.value, { gapLabel(it) }) { Features.twinGap.value = it }
     TwinFullTopSwitch()
+    Spacer(Modifier.height(8.dp))
+    SwitchRow(
+        androidx.compose.material.icons.Icons.Filled.Info, "Status bar", "Voltcap's status bar along the top too. Off: the picture's own capsule with Wi-Fi, battery and the time.",
+        Features.twinShowStatusBar.state.value, { Features.twinShowStatusBar.value = it }
+    )
 }
 
 /** Twin showcase's dark backdrop across the whole top screen (behind the status bar too, filling the top screen). */
 @Composable
 internal fun TwinShowcaseBackdrop(modifier: Modifier) {
-    Box(modifier.background(themeDark(ShowTop)))
+    // (Update 308: filling the top screen, the picture, its logo and the status capsule run edge to edge behind
+    // everything — like the reference — drawn from the layout's own context, TwinScreens.ctx.)
+    val c = TwinScreens.ctx
+    if (c == null || c.state.appearance.homeLayout != HomeLayout.TWIN_SHOWCASE) Box(modifier.background(themeDark(ShowTop)))
+    else ShowStage(c, modifier, framed = false)
 }
+
+/** Update 308: the two round shortcut buttons in the capsule (your round shortcuts, Twin icons' order). */
+private fun showTools(c: StyleCtx): List<HomeShortcut> =
+    TwinToolOrder.mapNotNull { l -> c.shortcuts.firstOrNull { it.label == l } }.ifEmpty { c.shortcuts }.take(2)
 
 // ---- Top screen: the game you're on ----
 
@@ -174,6 +196,27 @@ private class ShowPick(val game: Game?, val dx: Int, val dy: Int)
 @Composable
 private fun TwinShowcaseTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     val shape = RoundedCornerShape(if (framed) 14.dp else 0.dp)
+    // Filling the top screen, the stage is drawn edge to edge behind everything (TwinShowcaseBackdrop); here only what
+    // you touch: the picture (opens the game) and the shortcut capsule.
+    val full = !framed && TwinScreens.fullTop
+    val open by rememberUpdatedState(c.actions.open)
+    Box(
+        if (full) modifier else modifier.clip(shape)
+            .then(if (framed) Modifier.border(1.dp, Color.White.copy(alpha = 0.12f), shape) else Modifier)
+    ) {
+        if (!full) ShowStage(c, Modifier.fillMaxSize(), framed)
+        Box(Modifier.fillMaxSize().tapOnly { if (c.game != null) open() })
+        ShowToolsCapsule(c, framed, Modifier.align(Alignment.BottomEnd).padding(if (framed) 8.dp else 14.dp))
+    }
+}
+
+/**
+ * Update 308: the top screen's stage — the game's picture with its logo in the middle (text when it has none) and the
+ * status capsule top right (when Voltcap's status bar is off there, Layout options › Status bar). Picking another game
+ * moves the picture out and the next in, in the direction you moved, the logo settling in just after on the same timing.
+ */
+@Composable
+private fun ShowStage(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val rows = Features.twinShowRows.state.value.coerceIn(1, 3)
@@ -188,10 +231,7 @@ private fun TwinShowcaseTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
         val dy = if (sameList && dx == 0) Integer.signum(f % rows - old % rows) else 0
         ShowPick(g, dx, dy)
     }
-    BoxWithConstraints(
-        modifier.clip(shape).background(themeDark(ShowTop))
-            .then(if (framed) Modifier.border(1.dp, Color.White.copy(alpha = 0.12f), shape) else Modifier)
-    ) {
+    BoxWithConstraints(modifier.background(themeDark(ShowTop))) {
         val wPx = with(density) { maxWidth.toPx() }.toInt().coerceIn(320, 1920)
         val hPx = with(density) { maxHeight.toPx() }.toInt().coerceIn(240, 1080)
         // The pictures round the one you're on are decoded ahead, so a move shows the next one at once.
@@ -232,6 +272,36 @@ private fun TwinShowcaseTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
         ) { p ->
             ShowPicture(c, p.game, wPx, hPx, framed)
         }
+        if (!c.state.appearance.statusOn) HeroStatusPill(framed, Modifier.align(Alignment.TopEnd).padding(if (framed) 8.dp else 14.dp))
+    }
+}
+
+/** Update 308: the two round shortcut buttons in a light capsule (▲ from the grid's top row reaches them). */
+@Composable
+private fun ShowToolsCapsule(c: StyleCtx, framed: Boolean, modifier: Modifier) {
+    val tools = showTools(c)
+    if (tools.isEmpty()) return
+    val accent = ShelfTheme.accent
+    val size = if (framed) 26.dp else 34.dp
+    Row(
+        modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.82f))
+            .padding(horizontal = 5.dp, vertical = 4.dp),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        tools.forEachIndexed { i, t ->
+            val on = StyleNav.on(StyleNav.Zone.TOP, i)
+            val k by animateFloatAsState(if (on) 1.12f else 1f, tween(160), label = "showTool")
+            Box(
+                Modifier.graphicsLayer { scaleX = k; scaleY = k }.size(size).clip(CircleShape)
+                    .background(if (on) t.tint.copy(alpha = 0.22f) else Color.White)
+                    .border(if (on) 2.dp else 1.dp, if (on) accent else ShowEdge, CircleShape)
+                    .tapOnly { t.onClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.Icon(t.icon, t.label, tint = androidx.compose.ui.graphics.lerp(t.tint, Color.Black, 0.3f), modifier = Modifier.size(size * 0.56f))
+            }
+        }
     }
 }
 
@@ -239,11 +309,10 @@ private fun TwinShowcaseTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
 private fun showPicture(c: StyleCtx, g: Game): String? = c.backdrop(g) ?: c.wide(g) ?: c.cover(g)
 
 @Composable
-private fun ShowPicture(c: StyleCtx, g: Game?, wPx: Int, hPx: Int, framed: Boolean) {
+private fun androidx.compose.animation.AnimatedVisibilityScope.ShowPicture(c: StyleCtx, g: Game?, wPx: Int, hPx: Int, framed: Boolean) {
     val context = LocalContext.current
     val titles = LocalTitleOptions.current
-    val open by rememberUpdatedState(c.actions.open)
-    Box(Modifier.fillMaxSize().tapOnly { if (c.game != null) open() }) {
+    Box(Modifier.fillMaxSize()) {
         if (g == null) {
             Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.align(Alignment.Center))
             return@Box
@@ -255,29 +324,29 @@ private fun ShowPicture(c: StyleCtx, g: Game?, wPx: Int, hPx: Int, framed: Boole
         } else {
             StyleArt(c, g, Modifier.fillMaxSize(), wide = true, corner = 0.dp)
         }
-        // A soft shade low down for the name.
+        // A soft shade round the middle so the logo reads on any picture.
+        Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.28f), Color.Transparent))))
+        // The game's big logo in the middle (Hero tiles' rule: your pick / SteamGridDB's, never the small RetroAchievements
+        // icon), its name when it has none or the logo can't be loaded. It settles in just after the picture.
+        val logo = if (titles.showLogos) bigLogo(g, c.state)?.takeIf { !it.contains("retroachievements", ignoreCase = true) } else null
+        var failed by remember(logo) { mutableStateOf(false) }
         Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(0f to Color.Transparent, 0.58f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.72f))
-            )
-        )
-        Column(
-            Modifier.align(Alignment.BottomStart).padding(horizontal = if (framed) 12.dp else 22.dp, vertical = if (framed) 10.dp else 18.dp)
-                .fillMaxWidth(0.7f)
+            Modifier.align(Alignment.Center).fillMaxWidth(0.6f).fillMaxHeight(0.46f)
+                .animateEnterExit(
+                    enter = fadeIn(tween(SHOW_MS, delayMillis = SHOW_MS / 5, easing = ShowEase)) +
+                        scaleIn(tween(SHOW_MS, delayMillis = SHOW_MS / 5, easing = ShowEase), initialScale = 0.86f),
+                    exit = fadeOut(tween(SHOW_MS / 3)) + scaleOut(tween(SHOW_MS / 2), targetScale = 1.06f)
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                titles.display(g.name), color = Color.White, fontSize = if (framed) 16.sp else 24.sp, fontWeight = FontWeight.Bold,
-                maxLines = 2, overflow = TextOverflow.Ellipsis
+            if (logo != null && !failed) AsyncImage(
+                logo, titles.display(g.name), contentScale = ContentScale.Fit,
+                onError = { failed = true }, modifier = Modifier.fillMaxSize()
+            ) else FitText(
+                titles.display(g.name), color = Color.White, maxSize = if (framed) 22.sp else 40.sp, minSize = 14.sp,
+                maxLines = 2, fontWeight = FontWeight.Black, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                style = nameTextStyle(NameBackdrop.SHADOW)
             )
-            Spacer(Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(7.dp).clip(CircleShape).background(ShelfTheme.accent))
-                Spacer(Modifier.width(7.dp))
-                Text(
-                    titles.console(g.platform), color = Color.White.copy(alpha = 0.85f), fontSize = if (framed) 11.sp else 13.sp,
-                    fontWeight = FontWeight.SemiBold, maxLines = 1
-                )
-            }
         }
     }
 }
@@ -299,15 +368,39 @@ internal fun TwinShowcaseBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
         val compact = maxHeight < 260.dp
         val headH = if (compact) 22.dp else 30.dp
         Column(Modifier.fillMaxSize()) {
-            // The category and where you are in it.
+            // The category and where you are in it. (Update 308: as Settings › Categories › Category name / the R1
+            // Categories tile say — every category as pills gliding to the one you're in, just the current one, or
+            // none; the count stays.)
+            val bar = c.state.appearance.categoryBar
+            if (bar != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
             Row(
                 Modifier.fillMaxWidth().height(headH).padding(horizontal = if (compact) 10.dp else 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    c.categoryLabel, color = ShowInk, fontSize = if (compact) 11.sp else 13.sp, fontWeight = FontWeight.Bold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
-                )
+                when (bar) {
+                    com.shelf.launcher.data.CategoryBar.FULL -> if (c.stops.isNotEmpty()) GlidingChipRow(
+                        count = c.stops.size, focused = c.stop, modifier = Modifier.weight(1f), spacing = 5.dp, endPadding = 8.dp
+                    ) { i ->
+                        val st = c.stops[i]
+                        val on = i == c.stop
+                        Box(
+                            Modifier.clip(RoundedCornerShape(50))
+                                .background(if (on) ShelfTheme.accent else ShowInk.copy(alpha = 0.08f))
+                                .tapOnly { if (i != c.stop && c.stop >= 0) c.actions.category(i - c.stop) }
+                                .padding(horizontal = if (compact) 8.dp else 10.dp, vertical = if (compact) 2.dp else 3.dp)
+                        ) {
+                            Text(
+                                st.label, color = if (on) onAccentColor() else ShowInk, fontSize = if (compact) 10.sp else 12.sp,
+                                fontWeight = FontWeight.SemiBold, maxLines = 1
+                            )
+                        }
+                    } else Spacer(Modifier.weight(1f))
+                    com.shelf.launcher.data.CategoryBar.CURRENT -> Text(
+                        c.categoryLabel, color = ShowInk, fontSize = if (compact) 11.sp else 13.sp, fontWeight = FontWeight.Bold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                    )
+                    com.shelf.launcher.data.CategoryBar.OFF -> Spacer(Modifier.weight(1f))
+                }
                 if (n > 0) Text("${c.focus.coerceIn(0, n - 1) + 1} / $n", color = ShowMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1)
             }
             if (n == 0) {

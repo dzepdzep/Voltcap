@@ -350,6 +350,16 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     // Update 128, Cartridges look: the game on your cartridge pack (CustomCarts.kt) — every console with Custom, the
     // ones without a cartridge of their own with Original (consoles Voltcap has no media for included).
     if (!asDisc && !RealMedia.on && customCartFor(platform)) {
+        // (Update 308: a pack shape with a real cartridge (the N64 shape → the N64 Game Pak…) is drawn as that cartridge
+        // in your pack's plastic, with its plaque and the game's art — the exact authentic piece: CartShells.authentic.)
+        if (discShellFor(platform) == null) {
+            val look = CustomCarts.lookFor(platform)
+            val finish = Features.modelFinish.state.value
+            val clear = Features.cartClear.state.value && (finish == ModelFinish.CLEAR || finish == ModelFinish.OFF)
+            CustomCarts.authenticShell(look)?.let { real ->
+                return MediaPick(MediaShell.GB, "$SHELL_PREFIX${real.id}~${CartShells.packColourKey(look, clear, platform)}|$platform", real.aspect)
+            }
+        }
         // (Update 131: a disc console's own shell from your optical-system pack has its own shape.)
         return MediaPick(MediaShell.GB, CUSTOM_CART + platform, CustomCarts.aspectFor(platform))
     }

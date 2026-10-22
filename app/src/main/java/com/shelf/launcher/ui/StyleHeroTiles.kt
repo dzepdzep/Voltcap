@@ -247,7 +247,7 @@ private fun HeroTitle(c: StyleCtx, g: Game, compact: Boolean) {
 
 /** Wi-Fi, battery and the time in a small dark pill. */
 @Composable
-private fun HeroStatusPill(compact: Boolean, modifier: Modifier) {
+internal fun HeroStatusPill(compact: Boolean, modifier: Modifier) {
     val (time, _) = rememberConsoleClock()
     val battery = rememberBatteryInfo()
     val wifi = rememberWifiConnected()

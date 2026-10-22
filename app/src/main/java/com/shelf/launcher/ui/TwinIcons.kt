@@ -89,7 +89,7 @@ internal object TwinNav {
 }
 
 /** The round shortcuts used as tool buttons, in this order (the ones you've kept). */
-private val TwinToolOrder = listOf("Settings", "Search", "Achievements", "Notifications", "Music", "Categories")
+internal val TwinToolOrder = listOf("Settings", "Search", "Achievements", "Notifications", "Music", "Categories")
 
 private fun twinTools(c: StyleCtx): List<HomeShortcut> =
     TwinToolOrder.mapNotNull { l -> c.shortcuts.firstOrNull { it.label == l } }.ifEmpty { c.shortcuts.take(6) } +

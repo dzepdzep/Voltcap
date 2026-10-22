@@ -164,7 +164,7 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         "rowpos" -> on(classic || l == HomeLayout.HERO)
         // Update 307: the category names — the layouts with the category bar (Voltcap row, Tile home, Grid), and any layout
         // with the category bar added as a part (Edit Home › + Add).
-        "categories" -> on(classic || l == HomeLayout.GRID || HomeWidgets.CATEGORY in Features.overlayPartsFor(l))
+        "categories" -> on(classic || l == HomeLayout.GRID || l == HomeLayout.TWIN_SHOWCASE || HomeWidgets.CATEGORY in Features.overlayPartsFor(l))
         // Game header tight / roomy: the Voltcap row with its game header on (Settings › Home › Game header).
         // (Update 235, #15/#16: the Voltcap row only — the Tile home shows no game header.)
         "headertight" -> on(l == HomeLayout.CLASSIC && Features.homeHeader.state.value)

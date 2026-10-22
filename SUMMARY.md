@@ -4,6 +4,23 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 22 Oct 2026 (308): custom cartridges ARE the authentic piece, R1 Categories everywhere, gliding category bar, Twin showcase top screen like the reference, AYN Thor lights after the screen wakes, cardboard-box spines
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** No extra tests (as asked).
+
+- **Custom cartridges = the authentic piece.** A pack shape that has a real cartridge (N64, Game Boy / Color / Advance, SNES, NES, Famicom, Genesis, Game Gear, DS, 3DS, Switch, Atari) is now handed out as that real shell itself (`CartShells.authentic`, in `mediaFor` and `pickOf`), its colour your pack's plastic ("pack.<shape>.<o|c>.<console>", read off the pack picture once). Shape, proportions, front, sides, thickness, back, connector, Inspect — all the authentic shell's own code path; only the plastic, the console plaque across the sticker and the game's art / label are yours (`CartShells.frontFor`). Also in the picker previews and cases (`CaseFaces`). Vita / HuCard shapes unchanged.
+- **R1 › Categories** (Current only / All / Off) also drives Twin showcase's category line (pills / just the name / none) and the tile shows there.
+- **Category bar**: pills a little smaller (12 sp, 12 / 5 dp padding, 15 dp logo); one row that glides smoothly to keep the category you're in in view, ends fading softly where more pills continue — no "+N ›" groups or jumps (`GlidingChipRow`, only for the category bar; WholeChipRow elsewhere unchanged).
+- **Twin showcase top screen** (reference screenshots): artwork edge to edge (drawn behind everything when it fills the top screen), the game's big logo centred (Hero tiles' logo rule; name as fallback, also when the logo fails), the status capsule top right (Hero tiles' pill reused; Voltcap's status bar is off for this layout unless Layout options › Status bar), a two-button shortcut capsule bottom right (your round shortcuts; ▲ from the grid's top row reaches them). The logo settles in just after the art on the same timing. Twin icons untouched.
+- **AYN Thor RGB after screen off / on**: whether the stick lights were lit is remembered when the screen goes off; 1.2 s after it comes on (after the firmware's own wake writes) they're put back once — Voltcap's colour (driver re-enabled), or with System setting the handheld's own setting (sides, colour, brightness). Never switched on when they were off or you switched them off; nothing else re-sent. Only on the AYN SN3112 route; other devices as before.
+- **Cardboard-box spines** (Toni: "spines aren't fitted properly on most consoles aside from PS2"): a box side scan has its top / bottom flap cut off at the fold, and a scan far off the side's shape (e.g. an N64 box's long top-edge print) is no longer cut onto the short side — the console's spine with the title, made at the side's shape, instead. Keep / jewel cases unchanged.
+- **Checked on the Thor:** 25 To Life on the N64 pack vs the library N64 shell (identical piece, PS2 plaque, blue plastic), at an angle and from the back (Sarge's Heroes keeps Nintendo); Twin showcase on both screens (logo, capsules, gliding category pills, move animation); cardboard boxes of Adventure Island (GB), Pokémon Pinball (GBC), Advance Wars 2 (GBA), Sarge's Heroes (N64) and 25 To Life (PS2) from the side.
+- **Not checked on a device:** the RGB lights themselves (they can't be seen through adb; the driver writes on sleep / wake were checked), R1 Categories' Current only / Off on Twin showcase, the flat Spines look, the RP handheld.
+
+**Copy:** `src_copy\ui\` CartShells.kt, CaseFaces.kt, SolidPiece.kt, PhysicalMedia.kt, HomeChrome.kt, TwinShowcase.kt, TwinIcons.kt, StyleHeroTiles.kt, R1TileRules.kt, LauncherScreen.kt, Case3D.kt; `src_copy\data\` ControllerLights.kt, Features.kt, AppearanceStore.kt; `src_copy\device\VendorAdapter.kt`.
+
+---
+
 ## Update — 22 Oct 2026 (307): custom cartridges on the real cartridge's front, smooth clip changes, R1 Categories tile, new Twin showcase layout, smoother Twin icons / game details
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** No extra tests added (as asked).
