@@ -145,7 +145,7 @@ internal fun Case3D(
         val cardboard = spec?.shell == CaseShell.CARDBOARD
         // Update 312 is strictly an N64 Inspect alignment fix. Do not change
         // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
-        val widenN64 = g.platform == "N64" && !LookStyles.caseForAll()
+        val widenN64 = shouldWidenN64CardboardSpine(g.platform, LookStyles.caseForAll())
         (if (cardboard) ownUpright?.let { b ->
             DerivedArt.of(b, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") {
                 listOfNotNull(boxSideSpine(b, depth, widenN64))
@@ -720,6 +720,10 @@ private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float, widenN64: 
  * that already fills its side; never stretch past the physical side's width.
  * Kept independent of Bitmap so the fitting limits can be unit-tested.
  */
+/** Only the N64's authentic side art is widened; never touch another box or an R1 case override. */
+internal fun shouldWidenN64CardboardSpine(platform: String?, caseOverridden: Boolean): Boolean =
+    platform == "N64" && !caseOverridden
+
 internal fun widenedRealSpineWidth(containedWidth: Float, sideWidth: Float): Float {
     if (containedWidth <= 0f || sideWidth <= 0f) return 0f
     val natural = containedWidth.coerceAtMost(sideWidth)
