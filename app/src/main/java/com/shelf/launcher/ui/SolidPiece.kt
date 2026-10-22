@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.shelf.launcher.data.Features
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -357,6 +359,8 @@ internal fun Modifier.solidPiece(
     faceArt: PieceFace? = null
 ): Modifier {
     if (spec == null) return this
+    // Update 317: the front's own picture for a piece without one (kept while it's off the screen) — see PieceShot.
+    val shot = remember { PieceShot() }
     val turn = LocalPieceTurn.current
     // (Update 316: not shown at all — none of its layers kept; see PieceTurn.activeOf.)
     if (turn?.activeOf?.invoke() == false) return this
@@ -368,7 +372,9 @@ internal fun Modifier.solidPiece(
     // uploaded again every frame): the sides' picture — the face's outline in the plastic's colour with its sheen — made
     // once from the front, away from the screen's thread. With it the sides and the face are plain picture draws, no
     // offscreen picture of their own (and no smear: each slice's copies drawn at the very same places).
-    val sideArt = rememberDerived(faceArt?.image?.asAndroidBitmap(), "side|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
+    val shotImage = if (faceArt == null) shot.image.value else null
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val sideArt = rememberDerived((faceArt?.image ?: shotImage)?.asAndroidBitmap(), "side|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
     // Update 316 (Flip 2: ~1,000 GPU pictures, 1.2 GB, climbing while scrolling until it froze): the piece's layers kept for
     // as long as the piece is shown, recorded again when its drawing is rebuilt. They were made new at every rebuild —
     // and a carousel rebuilt its pieces at each step — while the ones let go kept their GPU pictures for a long time.
@@ -414,8 +420,12 @@ internal fun Modifier.solidPiece(
         // that buffer's size plus the margin again, about twice the pixels it needs. Both are this size now.)
         val buf = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)
         // Update 314: the picture's place in the node, as CartShellArt draws it (null: any content, drawn each frame).
-        val art = faceArt?.image
-        val artAt = faceArt?.let { f ->
+        // (Update 317: a piece without its front's picture uses its own shot of it once there is one, made at the node's size.)
+        val shotFace = shotImage?.takeIf { it.width == size.width.toInt() && it.height == size.height.toInt() && size.height > 0f }
+            ?.let { PieceFace(it, size.width / size.height) }
+        val pf = faceArt ?: shotFace
+        val art = pf?.image
+        val artAt = pf?.let { f ->
             f.frame?.let { fr -> pieceFrameRect(size.width, size.height, f.aspect, fr) }
                 ?: pieceArtRect(size.width, size.height, f.aspect, f.image.width, f.image.height)
         }
@@ -439,12 +449,20 @@ internal fun Modifier.solidPiece(
             // (Update 314: fully opaque in its view — drawn straight into it, no whole-piece buffer.)
             // (Not a see-through piece: its cut-out behind the face, DstOut, must stay inside its own buffer.)
             val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true
+            if (art == null) face.record { this@onDrawWithContent.drawContent() }
+            // (Update 317: the content's picture taken again whenever it changes — see PieceShot.)
+            if (faceArt == null && testPose == null && !shot.off) {
+                val want = "${shot.version.intValue}|${size.width.toInt()}x${size.height.toInt()}"
+                if (shot.asked != want) {
+                    if (art != null) face.record { this@onDrawWithContent.drawContent() }
+                    shot.take(scope, face, want)
+                }
+            }
             // (Update 314: the same turn as last drawn — the parts only drawn from the picture are still right.)
             if (art != null && artMade && yaw == madeYaw && testPose == null && !direct) {
                 translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
                 return@onDrawWithContent
             }
-            if (art == null) face.record { this@onDrawWithContent.drawContent() }
             val t = Math.toRadians(yaw.toDouble())
             val c = cos(t).toFloat()
             val sn = sin(t).toFloat()
@@ -499,15 +517,8 @@ internal fun Modifier.solidPiece(
             }
             madeYaw = yaw
             if (c >= 0f) {
-                val faceLight = SolidLight.of(1f - 0.4f * abs(sn))
-                if (art == null) {
-                    // (Update 317: the light on the face's own picture, so the turned face is a plain layer — not a second
-                    // offscreen picture the size of the piece. The outline made from the face only keeps its shape: its
-                    // colour is always painted over — SrcIn / DstOut — so the light there changes nothing.)
-                    face.colorFilter = faceLight
-                    lit.colorFilter = null
-                    lit.record { drawLayer(face) }
-                } else lit.colorFilter = faceLight
+                lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))
+                if (art == null) lit.record { drawLayer(face) }
             } else {
                 val sb = spec.back
                 back.record {
@@ -593,6 +604,49 @@ internal fun Modifier.solidPiece(
             }
             whole.record(size = buf) { translate(m.toFloat(), m.toFloat()) { pieceDraw() } }
             translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
+        }
+    }.then(
+        // (Update 317: the content in a layer of its own, so its drawing runs only when it changes — PieceShot.version.)
+        if (faceArt == null && !shot.off) Modifier.graphicsLayer { }.drawWithContent { shot.changed(); drawContent() } else Modifier
+    )
+}
+
+/**
+ * Update 317 (Perfetto trace, Flip 2, scrolling the drawn console cartridges: ~6 frames a second, ~400 offscreen pictures
+ * drawn again each frame — face, outline, sides and smear for each of ~75 turned pieces): a piece whose front isn't one
+ * picture (the drawn templates, a cartridge photo, a pack picture) is drawn once into a picture of its own, and turned
+ * from that like the shells (solidPiece's faceArt). Taken again whenever the content draws something new ([changed], run
+ * from the content's own layer only when it does — a label coming in); until then it's drawn as before. Content that
+ * keeps changing (an animation in it) gives up on the picture and is drawn as before.
+ */
+internal class PieceShot {
+    val image = mutableStateOf<ImageBitmap?>(null)
+    val version = androidx.compose.runtime.mutableIntStateOf(0)
+    var asked: String? = null
+    var off = false
+    private var job: kotlinx.coroutines.Job? = null
+    private var restarts = 0
+    private var fails = 0
+
+    fun changed() { version.intValue++ }
+
+    fun take(scope: kotlinx.coroutines.CoroutineScope, layer: androidx.compose.ui.graphics.layer.GraphicsLayer, key: String) {
+        asked = key
+        if (job?.isActive == true && ++restarts > 40) { off = true; image.value = null; job?.cancel(); return }
+        job?.cancel()
+        job = scope.launch {
+            var done = false
+            try {
+                // (A short wait, so a label still coming in isn't taken half drawn.)
+                kotlinx.coroutines.delay(120)
+                if (asked != key) return@launch
+                val b = runCatching { layer.toImageBitmap() }.getOrNull()
+                if (b == null || b.width <= 0 || b.height <= 0) { if (++fails > 5) { off = true; image.value = null } }
+                else if (asked == key) { restarts = 0; image.value = b; done = true }
+            } finally {
+                // (Not taken — gone off the screen meanwhile, say: asked again the next time it's drawn.)
+                if (!done && asked == key) asked = null
+            }
         }
     }
 }

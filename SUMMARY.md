@@ -1,6 +1,6 @@
 # Voltcap — what's been done (running summary)
 
-## Update — 22 Oct 2026 (317): Cartridge carousel GPU memory, first-launch charge-limit crash
+## Update — 22 Oct 2026 (317): Cartridge carousel GPU memory and redraws, first-launch charge-limit crash
 
 **Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6), not merged; CI is the compile check, not
 tested on a handheld.
@@ -16,13 +16,24 @@ tested on a handheld.
   (`CarouselViewport.CULL_MARGIN`), its reach half the slot's width + its height (still room for a turned piece's sides,
   its media and lean). `SolidPiece.kt` — the generic path (drawn templates, cartridge photos, pack pictures): the face's
   light set on the face's own layer, so the turned face is a plain layer, not a second offscreen buffer (the outline made
-  from the face only uses its shape — SrcIn / DstOut — so it looks the same).
+  from the face only uses its shape — SrcIn / DstOut — so it looks the same). *(Reverted below.)*
 - **Crash (`voltcap-crash-20261022-2110331`, 0.6.35):** `ForegroundServiceDidNotStartInTimeException` for
   `ChargeLimitService` — six minutes after start, the main thread skipping 50–110 frames at a time (the GPU memory
   above), so the service didn't reach `startForeground` within Android's 10 s. `ChargeLimitService`: with Voltcap in
   front a plain `startService` (no deadline; `startForegroundService` only when Android refuses from the background); a
   new status while it runs only updates the notification (each new label used to start it again, each with a new 10 s
   deadline); `stop` never stops it while a start is on its way — it stops itself once in the foreground (`wanted`).
+- **Measured after the above (user, Flip 2):** render targets 1,011 → 363 (479 MB); still sluggish. gfxinfo: GPU 3 ms
+  (p50) / 9 ms (p90), frames 28 ms / 300 ms — CPU-bound. **Perfetto (`voltcap-trace5.zip`, Case stacks, scrolling the
+  drawn console cartridges):** ~6 fps; the main thread waits on the RenderThread (113 ms/frame), which re-draws ~400
+  offscreen pictures every frame (`flush layers` 125 ms, 2,026 rect fills): ~75 turned pieces, all on the generic path
+  (face, outline, sides, smear — PhysicalMedia's drawn templates have no single front picture), plus each game's shade.
+- **Changed (`SolidPiece.kt`, `PieceShot`):** a piece without its front's picture takes one of its own — its content
+  drawn once into a node-sized picture (`GraphicsLayer.toImageBitmap`, 120 ms after the content last changed) — and is
+  turned from it like the shells (sides' picture, plain layers, nothing offscreen per frame). The content sits in a layer
+  of its own whose drawing bumps `PieceShot.version` only when it changes (a label coming in), which takes the picture
+  again; content that keeps changing gives up on it (`off`) and is drawn as before. The face-light change above is
+  reverted (the picture must be unlit).
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
   targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
