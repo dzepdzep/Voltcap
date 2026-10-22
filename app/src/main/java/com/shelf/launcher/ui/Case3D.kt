@@ -134,7 +134,10 @@ internal fun Case3D(
     // logo at its foot, made at the side's own shape — the plain dark strip was the same for every console and, made for a
     // DVD case's thin side, came out stretched two and a half times wide on a cartridge box.)
     val spinePlatform = LookStyles.spinePlatform(g.platform) ?: g.platform
-    val spine: android.graphics.Bitmap = remember(ownUpright, tplSpine, title, spinePending, depth, spinePlatform) {
+    // Read R1 case override before remember so a live setting change invalidates
+    // the N64 fitted image even if both case styles have the same depth.
+    val widenN64 = shouldWidenN64CardboardSpine(g.platform, LookStyles.caseForAll())
+    val spine: android.graphics.Bitmap = remember(ownUpright, tplSpine, title, spinePending, depth, spinePlatform, widenN64) {
         // (Update 240, #26: the game's own spine fitted to the side — cut in the middle only as much as its shape is off the
         // side's, never squeezed onto it: the long-edge print of a landscape box was squashed onto its short end.)
         // (Update 308, Toni: "spines aren't fitted properly on most consoles aside from PS2": a cardboard box's side scan
@@ -145,7 +148,6 @@ internal fun Case3D(
         val cardboard = spec?.shell == CaseShell.CARDBOARD
         // Update 312 is strictly an N64 Inspect alignment fix. Do not change
         // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
-        val widenN64 = shouldWidenN64CardboardSpine(g.platform, LookStyles.caseForAll())
         (if (cardboard) ownUpright?.let { b ->
             DerivedArt.of(b, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") {
                 listOfNotNull(boxSideSpine(b, depth, widenN64))
