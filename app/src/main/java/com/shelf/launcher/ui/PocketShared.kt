@@ -485,7 +485,7 @@ internal fun pocketTools(c: StyleCtx, ribbon: Boolean): List<Pair<Int, List<Stri
     add(PocketSpot.SET to PocketIcons.GEAR)
     if (ribbon) add(PocketSpot.ACH to PocketIcons.TROPHY)
     add(PocketSpot.STATS to PocketIcons.GRAPH)
-    if (twinOnSecond(c.state)) add(PocketSpot.DASH to PocketIcons.SCREEN)
+    if (twinOnSecond(c.state) && Features.twinDashboardAccess.state.value) add(PocketSpot.DASH to PocketIcons.SCREEN)
     add(PocketSpot.MOON to PocketIcons.MOON)
 }
 
