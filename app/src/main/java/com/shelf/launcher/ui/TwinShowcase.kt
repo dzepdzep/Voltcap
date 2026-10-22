@@ -386,7 +386,11 @@ internal fun TwinShowcaseBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
                         Box(
                             Modifier.clip(RoundedCornerShape(50))
                                 .background(if (on) ShelfTheme.accent else ShowInk.copy(alpha = 0.08f))
-                                .tapOnly { if (i != c.stop && c.stop >= 0) c.actions.category(i - c.stop) }
+                                .tapOnly {
+                                    // Hidden saved categories leave stop=-1; navigation must still work.
+                                    val steps = pocketStepsTo(c, i)
+                                    if (steps != 0) c.actions.category(steps)
+                                }
                                 .padding(horizontal = if (compact) 8.dp else 10.dp, vertical = if (compact) 2.dp else 3.dp)
                         ) {
                             Text(
