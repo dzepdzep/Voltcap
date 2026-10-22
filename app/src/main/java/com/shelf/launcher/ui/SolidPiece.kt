@@ -499,8 +499,15 @@ internal fun Modifier.solidPiece(
             }
             madeYaw = yaw
             if (c >= 0f) {
-                lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))
-                if (art == null) lit.record { drawLayer(face) }
+                val faceLight = SolidLight.of(1f - 0.4f * abs(sn))
+                if (art == null) {
+                    // (Update 317: the light on the face's own picture, so the turned face is a plain layer — not a second
+                    // offscreen picture the size of the piece. The outline made from the face only keeps its shape: its
+                    // colour is always painted over — SrcIn / DstOut — so the light there changes nothing.)
+                    face.colorFilter = faceLight
+                    lit.colorFilter = null
+                    lit.record { drawLayer(face) }
+                } else lit.colorFilter = faceLight
             } else {
                 val sb = spec.back
                 back.record {

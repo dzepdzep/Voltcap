@@ -1302,6 +1302,11 @@ private fun carouselSlotH(
  * page slide could go stale and hide games that were on the screen. Written only when it changes.
  */
 private class CarouselViewport {
+    companion object {
+        /** Update 317: how far past each edge of the carousel (a share of its width) a game is still drawn. */
+        const val CULL_MARGIN = 0.1f
+    }
+
     val boxW = androidx.compose.runtime.mutableFloatStateOf(0f)
 
     fun update(lc: androidx.compose.ui.layout.LayoutCoordinates) {
@@ -1395,8 +1400,8 @@ private fun CarouselItem(
     val piece = turns && !spineHere && freeArt
     // Update 314 (scrolling the 3D cartridges lagged): far off the screen — "To the edge" (on by default) builds far
     // more games each side than show (~15 a side on the Thor, three times that in Box flow / Spine wall), and each turned
-    // 3D cartridge or case drew its pictures every frame out of sight. A game more than the carousel's whole width past
-    // either of its edges isn't drawn, and its turn and shade stay as last drawn (nothing of it is redrawn while it's
+    // 3D cartridge or case drew its pictures every frame out of sight. A game wholly past either of its edges (update 317:
+    // by more than a tenth of its width) isn't drawn, and its turn and shade stay as last drawn (nothing of it is redrawn while it's
     // away); it's still built, so its art is ready when it comes in. Changes only when a game crosses that line.
     val pieceDens = androidx.compose.ui.platform.LocalDensity.current
     val slotW = rememberUpdatedState(w0)
@@ -1412,9 +1417,13 @@ private fun CarouselItem(
                 cc.locate(ps.v, rel, spineNow.value, true, pieceDens)
                 // (A game opened to inspect parts the others a little — MediaInspect.)
                 val inspectShift = MediaInspect.amount.floatValue * 0.16f * with(pieceDens) { cc.bigW.toPx() }
-                // (Generous: the whole slot's width plus height either side covers a turned piece's sides, its media and lean.)
-                val half = with(pieceDens) { slotW.value.toPx() + slotH.value.toPx() } * ps.v.scale + inspectShift
-                carouselOffScreen(boxW / 2f + ps.v.x, half, boxW, boxW)
+                // (The slot's half width plus its height either side: room for a turned piece's sides, its media and lean.)
+                // (Update 317, Flip 2 — the cartridges still dragged, cases and discs didn't: the slot's whole width plus
+                // height, and a whole screen's width past each edge, reached past every game "To the edge" builds, so none
+                // was ever left out — each turned cartridge kept its GPU pictures, ~1,000 of them. A tenth of the screen
+                // past each edge now: the next game in still has its pictures made before it shows.)
+                val half = with(pieceDens) { 0.5f * slotW.value.toPx() + slotH.value.toPx() } * ps.v.scale + inspectShift
+                carouselOffScreen(boxW / 2f + ps.v.x, half, boxW, boxW * CarouselViewport.CULL_MARGIN)
             }
         }
     }

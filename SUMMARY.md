@@ -1,5 +1,33 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 22 Oct 2026 (317): Cartridge carousel GPU memory, first-launch charge-limit crash
+
+**Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6), not merged; CI is the compile check, not
+tested on a handheld.
+
+- **Found (`voltcap-mem6.zip`, Flip 2):** still 1,011 GPU render targets / 1,233 MB, identical to mem5 — the GPU's
+  ceiling, not a slow leak (new buffers simply fail past it). Android keeps one buffer per offscreen layer for every
+  node in the drawn tree, even off the screen or behind something; a game is only left out when the carousel doesn't
+  draw it. The "far off the screen" check (update 314) counted a game as on it up to the slot's width + height *and* a
+  whole screen's width past each edge — further than "To the edge" builds games (~15 a side on the Flip 2, ×3 in Box
+  flow), so nothing was ever left out. Cases and discs (plain canvas drawing) barely noticed; each turned cartridge
+  holds up to 6–7 layers (user: "the cases and cds don't lag").
+- **Changed:** `Carousel.kt` — a game is left out once it is past the edge by more than a tenth of the carousel's width
+  (`CarouselViewport.CULL_MARGIN`), its reach half the slot's width + its height (still room for a turned piece's sides,
+  its media and lean). `SolidPiece.kt` — the generic path (drawn templates, cartridge photos, pack pictures): the face's
+  light set on the face's own layer, so the turned face is a plain layer, not a second offscreen buffer (the outline made
+  from the face only uses its shape — SrcIn / DstOut — so it looks the same).
+- **Crash (`voltcap-crash-20261022-2110331`, 0.6.35):** `ForegroundServiceDidNotStartInTimeException` for
+  `ChargeLimitService` — six minutes after start, the main thread skipping 50–110 frames at a time (the GPU memory
+  above), so the service didn't reach `startForeground` within Android's 10 s. `ChargeLimitService`: with Voltcap in
+  front a plain `startService` (no deadline; `startForegroundService` only when Android refuses from the background); a
+  new status while it runs only updates the notification (each new label used to start it again, each with a new 10 s
+  deadline); `stop` never stops it while a start is on its way — it stops itself once in the foreground (`wanted`).
+- **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `device/ChargeLimitService.kt`.
+- **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
+  targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
+  that the charge-limit notification still appears / updates / goes with the charger.
+
 ## Update — 22 Oct 2026 (316): Smoother 3D cases — their pictures made away from the screen's thread
 
 **Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6), not merged; CI is the compile check, not
