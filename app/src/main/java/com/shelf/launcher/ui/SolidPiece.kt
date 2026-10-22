@@ -48,7 +48,15 @@ import kotlin.math.sin
  * into the view, without the buffer that makes a fading piece fade as one (pixel for pixel the same at full opacity, one
  * big GPU picture less per piece). Null: always through the buffer, as before.
  */
-internal class PieceTurn(val yawOf: () -> Float, val camera: Float = 12f, val opaqueOf: (() -> Boolean)? = null)
+internal class PieceTurn(
+    val yawOf: () -> Float, val camera: Float = 12f, val opaqueOf: (() -> Boolean)? = null,
+    /**
+     * Update 316 (read while composing): false while the view doesn't show the piece at all (a carousel game far off the
+     * screen) — it keeps no GPU pictures then: Compose keeps every layer a piece makes alive, on the GPU too, until it's
+     * let go, drawn or not (Flip 2: GPU memory full after ~90 s of scrolling). Null: always.
+     */
+    val activeOf: (() -> Boolean)? = null
+)
 
 /** Set by a view that leaves the turning to the piece (solidPiece / followTurn) inside it; null: nothing turns it. */
 internal val LocalPieceTurn = compositionLocalOf<PieceTurn?> { null }
@@ -350,6 +358,8 @@ internal fun Modifier.solidPiece(
 ): Modifier {
     if (spec == null) return this
     val turn = LocalPieceTurn.current
+    // (Update 316: not shown at all — none of its layers kept; see PieceTurn.activeOf.)
+    if (turn?.activeOf?.invoke() == false) return this
     val spin = if (withCartSpin) rememberCartSpin() else null
     if (turn == null && spin == null && TestHooks.pose.value == null) return this
     val dens = LocalDensity.current.density
@@ -414,6 +424,7 @@ internal fun Modifier.solidPiece(
         val edgeLeaf = if (side != null) obtainGraphicsLayer().also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.ModulateAlpha } else null
         val litLeaf = if (side != null) obtainGraphicsLayer() else null
         var artMade = false
+        var solidMade = false
         var madeYaw = Float.NaN
         onDrawWithContent {
             // (Update 294, testing only: TestHooks `voltcap_test_pose` — held at one turn, for before / after pictures.)
@@ -465,13 +476,21 @@ internal fun Modifier.solidPiece(
                 // (Update 314: each made once from the picture, with no other layer inside — so drawing the sides many
                 // times a frame never makes Android redraw them, or the face, again.)
                 artMade = true
-                solid.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
-                edge.record {
-                    drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!, colorFilter = solidFilter)
-                    drawRect(sideTone, blendMode = BlendMode.SrcIn)
-                    drawRect(sheen, blendMode = BlendMode.SrcAtop)
+                // (Update 316: not with the plain sides and face — edgeLeaf / litLeaf: an offscreen layer recorded and never
+                // drawn still held its GPU picture.)
+                if (edgeLeaf == null) {
+                    edge.record {
+                        drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!, colorFilter = solidFilter)
+                        drawRect(sideTone, blendMode = BlendMode.SrcIn)
+                        drawRect(sheen, blendMode = BlendMode.SrcAtop)
+                    }
+                    lit.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
                 }
-                lit.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
+            }
+            // (Update 316: the outline made solid only once it's drawn — behind a see-through piece's face, or its back.)
+            if (art != null && !solidMade && (spec.clear != null || c < 0f)) {
+                solidMade = true
+                solid.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
             }
             madeYaw = yaw
             if (c >= 0f) {

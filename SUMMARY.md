@@ -49,6 +49,13 @@ tested on a handheld.
   turn changes). The smear is gone for them: each of its copies is drawn at its own place, the same places in the same
   order. Difference: the sheen spans the piece's picture rather than the whole slot (a landscape cartridge's sides
   shade over the cartridge, not the empty slot above and below it).
+- **Flip 2 ANR on the fix build (`voltcap-crash-20261022-2016011.zip`, 0.6.35, Case stacks, after 88 s):** 500 kgsl
+  failures at ~0.8 MB (slot-sized layers) and ~3.2 MB (whole-piece buffers). Compose keeps every GraphicsLayer a node
+  makes alive — and its GPU picture — until it's let go, drawn or not, so the games built off the screen still held
+  theirs. Now: `PieceTurn.activeOf` (the carousel's `!culled`, read while composing) — a piece not shown keeps no
+  solid-piece layers at all; `shadeOf` is 0 while culled, so `CarouselArt` lets go of its darkening layer; and the picture
+  path no longer records the offscreen `edge` / `lit` it doesn't draw, nor `solid` until a see-through face or the back
+  needs it.
 - **Not changed yet:** N64 spines that "still don't apply correctly on some games" (user) — waiting for which games and
   how they look (see the chat for the likely causes).
 
