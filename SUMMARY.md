@@ -1,5 +1,21 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 22 Oct 2026 (313): Respect selected home background over gameplay previews
+
+**Status:** Changes saved on branch `fix/background-video-respect-selection-313`, [draft PR #4](https://github.com/dzepdzep/Voltcap/pull/4); not yet merged or published. The existing v0.6.32 release is untouched. Code level review complete, CI and handheld checks pending.
+
+- **Root cause:** `LauncherScreen.HomeLayer` draws `VideoCrossfade` *after* the user's chosen background. Its old `backdropClip` excludes only Black and some layouts, so a gameplay video can cover a wallpaper or animated scene once the selected game rests for two seconds. The Hero carousel path also had no background-choice guard.
+- **Fix:** New pure helper `allowsFullscreenGameplayVideo` in `ui/BackgroundVideoPolicy.kt` permits fullscreen gameplay previews only when the effective background is **Game art** or **Blurred art**. The wallpaper, animated scene (including per-game theme override) and Black backgrounds are respected in both regular home and Hero carousel. Existing `VideoCrossfade` fades, looping, sounds and preview fetching are left alone.
+- **Unchanged:** The global video-preview on/off toggle, sound preference, any video in the Gaming room monitor, the video/details pages, selected wallpaper playback (including GIF / video wallpaper), saved preferences, home layouts, physical-media artwork, and other transitions. Updated the Video previews settings subtitle to explain the behavior.
+- **Tests:** Added `BackgroundVideoPolicy313Test.kt` verifying both allowed, three excluded and all enum modes; GitHub Actions source compilation with isolated compile-only Discord stub must pass before merge. Signed APK and real-device visual test are separate.
+- **Separate crash report:** User reports VoltCap crashing while showing cartridges in a 3D carousel. Code paths inspected in `Carousel.kt`, `SolidPiece.kt`, `PhysicalMedia.kt`, `MediaInspectView.kt`; no stack trace or repro log available, and GitHub cannot reach the user's local USB ADB server. **Not diagnosed / not fixed.** Collect `adb logcat -b crash -d` immediately after reproducing, and address in a *separate* minimal patch. Do not switch off 3D effects or remove features without evidence.
+- **Separate installation log:** `:app:installDebug` compiled Kotlin but failed with ADB `No connected devices`, unrelated to the background preference or crash. The user must authorize USB debugging / confirm `adb devices` before trying to install.
+
+**Changed:** `ui/LauncherScreen.kt`, `ui/BackgroundVideoPolicy.kt`, `ui/SettingsDialog.kt`, `app/src/test/java/com/shelf/launcher/ui/BackgroundVideoPolicy313Test.kt`, `SUMMARY.md`.
+
+---
+
+
 ## Update — 22 Oct 2026 (311): Investigate N64 Shelf vs Inspect mismatch, release safety
 
 - **Tarzan real-spine exception (user's follow-up):** Some N64 games, such as Tarzan, already display their genuine artwork spine; Super Mario 64 and Superman show generated dark title spines in Inspect. Do **not** force one common N64 spine, or treat every N64 title as having a missing scan. Resolve each game independently, prioritize a usable game's own `Spine` scan when Matching spines and R1 Spine override are off, and preserve its real proportions. A real scan might be absent, delayed, incompatible, or intentionally overridden; user screenshots alone do not prove which for each title.
