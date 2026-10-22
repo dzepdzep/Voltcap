@@ -102,7 +102,7 @@ internal fun StyleTwinDesk(c: StyleCtx, modifier: Modifier = Modifier) {
         // The round buttons along the bottom of the lower screen.
         // (Update 180: and the second screen's dashboard, while the bottom part is on the second screen.)
         StyleNav.bar = listOf(c.actions.quickMenu, c.actions.settings, c.actions.screensaver) +
-            if (twinOnSecond(c.state)) listOf({ TwinScreens.dashboard = true }) else emptyList()
+            if (twinOnSecond(c.state) && Features.twinDashboardAccess.state.value) listOf({ TwinScreens.dashboard = true }) else emptyList()
     }
     TwinHost(
         c, modifier,
@@ -694,7 +694,7 @@ private fun DeskBar(c: StyleCtx, h: Dp, modifier: Modifier) {
         )
         DeskRound(Icons.Filled.Bedtime, names[2], StyleNav.on(StyleNav.Zone.BAR, 2), round) { c.actions.screensaver() }
         // Update 180: the second screen's own dashboard (its pages, dock, Games page); ↩ there comes back.
-        if (twinOnSecond(c.state)) {
+        if (twinOnSecond(c.state) && Features.twinDashboardAccess.state.value) {
             Spacer(Modifier.width(6.dp))
             DeskRound(Icons.Filled.Dashboard, "Second screen", StyleNav.on(StyleNav.Zone.BAR, 3), round) { TwinScreens.dashboard = true }
         }
