@@ -732,7 +732,10 @@ internal object CartShells {
     fun front(s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean = false): Bitmap {
         // (Update 297: a Switch card's red header strip — SwitchLabel — once it's loaded; in the key, so a card drawn before
         // it was there is drawn again with it.)
-        val switchHeader = if (s.id == "switch" && !scan) SwitchLabel.header() else null
+        // (Update 306: only for a Switch game — another console's game on the Switch card's shape gets the same strip with
+        // its own console's name, not NINTENDO SWITCH.)
+        val switchGame = brand.isEmpty() || brand == com.shelf.launcher.data.ConsoleNames.display("Switch") || brand == com.shelf.launcher.data.ConsoleNames.display("Switch2")
+        val switchHeader = if (s.id == "switch" && !scan) SwitchLabel.header()?.let { h -> if (switchGame) h else brandStrip(h, brand) } else null
         val key = "f5|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
@@ -868,10 +871,13 @@ internal object CartShells {
      * the same shape, screws, panels and contacts without the maker's text and stickers (a game on another console's
      * shell). Shells without researched backs keep the plain one. The front is never touched.
      */
-    fun back(s: CartShell, colour: ShellColour, maxPx: Int, neutral: Boolean = false): Bitmap {
+    fun back(s: CartShell, colour: ShellColour, maxPx: Int, neutral: Boolean = false, brand: String? = null): Bitmap {
         val data = CartBacks.of(s.id)
         val plainText = neutral && data?.neutralOk != false
-        val key = "b|${s.id}|${colour.key}|$maxPx|$plainText"
+        // (Update 306: [brand] — the game's own console, on another console's shell: the maker's name and model numbers
+        // moulded on the back become that console's name; the rest of the shell — screws, panels, stickers — stays.)
+        val rebrand = brand?.takeIf { !plainText && data != null && !belongsTo(s.id, it) }
+        val key = "b|${s.id}|${colour.key}|$maxPx|$plainText|${rebrand ?: ""}"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -909,9 +915,70 @@ internal object CartShells {
         if (data == null) {
             for (sc in s.screws) screw(c, (s.w - sc[0]) * k, sc[1] * k, 3.8f * k, 4.8f * k, 0, base, p)
             s.contactsBack?.let { ct -> contacts(c, floatArrayOf(s.w - ct[0] - ct[2], ct[1], ct[2], ct[3]), k, p) }
-        } else drawBack(c, data, k, base, op, plainText, p)
+        } else drawBack(c, if (rebrand != null) rebranded(data, rebrand) else data, k, base, op, plainText, p)
         c.restore()
         cache.put(key, b)
+        return b
+    }
+
+    /**
+     * Update 306: which moulded texts on a back name its maker or console (they're replaced on another console's game);
+     * "MADE IN JAPAN", "PAT. PEND.", "CAUTION" and the like are a shell's, whoever made the game.
+     */
+    private val BRAND_TEXT = Regex("(?i)nintendo|sega|game ?boy|codemasters|mattel|electronic arts|blaze|atari|activision|model ?no|dmg-|agb-|cgb-|rumble|\\(c\\)|©")
+
+    /** Whether [t] (a moulded text on a back) names a maker, console or model. */
+    fun isBrandText(t: String): Boolean = BRAND_TEXT.containsMatchIn(t)
+
+    /**
+     * Update 306: [d] with its maker's / console's names replaced by [console]'s own name (the first one; the others —
+     * model numbers, a second maker line — left off), so a PlayStation 2 game on an N64-shaped shell reads
+     * "PlayStation 2" where the N64's back says "Nintendo". Nothing is added where the real back has no such text.
+     */
+    fun rebranded(d: CartBack, console: String): CartBack {
+        val name = com.shelf.launcher.data.ConsoleNames.display(console)
+        val pos = ArrayList<Float>(); val texts = ArrayList<String>()
+        var placed = false
+        d.texts.forEachIndexed { i, t ->
+            val at = i * 5
+            if (at + 4 >= d.textPos.size) return@forEachIndexed
+            val keep = if (isBrandText(t)) (if (!placed) name.also { placed = true } else null) else t
+            if (keep != null) { for (j in 0 until 5) pos += d.textPos[at + j]; texts += keep }
+        }
+        return CartBack(d.id, d.verified, d.screws, pos.toFloatArray(), texts.toTypedArray(), d.recesses, d.raised, d.stickers,
+            d.stickerColours, d.seams, d.connector, d.extras, d.neutralOk)
+    }
+
+    /**
+     * Update 306: the back of shell [s] for a game of [console] as Settings › Game look › Cartridge backs says — Neutral:
+     * no markings; Authentic / Auto: the real markings on the console's own shell, and on another console's shell that
+     * console's name in place of the maker's (Auto used to leave the markings off there; Authentic left Nintendo's on a
+     * PlayStation game). [console] null: not known — Authentic keeps the markings, Auto leaves them off.
+     */
+    fun backFor(s: CartShell, colour: ShellColour, maxPx: Int, console: String?, style: com.shelf.launcher.data.Features.CartBackStyle): Bitmap = when {
+        style == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL -> back(s, colour, maxPx, neutral = true)
+        console == null -> back(s, colour, maxPx, neutral = style == com.shelf.launcher.data.Features.CartBackStyle.AUTO)
+        belongsTo(s.id, console) -> back(s, colour, maxPx)
+        else -> back(s, colour, maxPx, brand = console)
+    }
+
+    /** Update 306: a strip the Switch header's shape in dark plastic grey with [brand] (a console's name) on it. */
+    private val strips = android.util.LruCache<String, Bitmap>(16)
+    private fun brandStrip(like: Bitmap, brand: String): Bitmap {
+        val key = "${like.width}x${like.height}|$brand"
+        strips.get(key)?.let { return it }
+        val w = like.width.coerceAtLeast(40); val h = like.height.coerceAtLeast(8)
+        val b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(b)
+        c.drawColor(0xFF2B2C30.toInt())
+        val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFF2F2F2.toInt(); textAlign = Paint.Align.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            textSize = h * 0.55f; letterSpacing = 0.04f
+        }
+        val t = brand.uppercase()
+        while (tp.measureText(t) > w * 0.9f && tp.textSize > h * 0.2f) tp.textSize -= 1f
+        c.drawText(t, w / 2f, h / 2f - (tp.ascent() + tp.descent()) / 2f, tp)
+        strips.put(key, b)
         return b
     }
 

@@ -86,6 +86,10 @@ internal enum class MediaShell(
             "Dreamcast" -> DISC_GD
             "Wii", "WiiU" -> DISC_WII
             "PS2", "PS3", "PS4", "SegaCD", "NeoGeoCD", "PCEngineCD", "3DO", "Xbox", "Xbox360", "Disc" -> DISC
+            // (Update 306: the disc consoles CaseCatalog knows that had no media here — their games came out as a generic
+            // cartridge (mediaKind → "cartridge"), and their opened case held one: Blu-ray (PS5, Xbox One / Series) and
+            // CD-i discs.)
+            "PS5", "XboxOne", "XboxSeries", "CDi" -> DISC
             // Update 119: Steam games come on a disc too — the plain CD with the game's cover and Steam's band (GenericDisc).
             "Steam" -> DISC
             // Update 125: Android games (and apps) on Voltcap's own green cartridge (mediaFor, ANDROID_CART).

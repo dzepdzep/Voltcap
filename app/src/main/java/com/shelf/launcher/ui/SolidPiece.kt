@@ -101,17 +101,21 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
         val sh = choice?.shell
         when {
             choice == null -> null
-            sh == null -> SolidSpec(choice.aspect, 0.12f, packTone ?: CUSTOM_SHELL)
+            // (Update 306: a pack shape modelled on a real cartridge — the N64 shape on the N64 Game Pak — turns with that
+            // cartridge's thickness and back (its screws, panels, connector), the game's own console named on it;
+            // CustomCarts.authenticShell. Pack shapes without one keep the plain slab.)
+            sh == null -> choice.pack?.let { CustomCarts.authenticShell(it) }?.let { real ->
+                val tone = packTone ?: CUSTOM_SHELL
+                SolidSpec(choice.aspect, real.depth.coerceIn(0.02f, 0.4f), tone, back = {
+                    CustomCarts.authenticBack(real, tone, choice.clear, console, backStyle, 480)?.asImageBitmap()
+                }, fitBackToFace = true)
+            } ?: SolidSpec(choice.aspect, 0.12f, packTone ?: CUSTOM_SHELL)
             else -> {
                 val colour = CartShells.colourOf(sh, choice.colourKey)
                 // (Update 210: a see-through plastic stays see-through turned — SolidSpec.clear.)
+                // (Update 306: another console's game on this shell has its own console's name on the back — backFor.)
                 SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(colour.argb).copy(alpha = 1f), clear = if (colour.opacity < 0.85f) 0.5f else null, back = {
-                    val neutral = when (backStyle) {
-                        Features.CartBackStyle.AUTHENTIC -> false
-                        Features.CartBackStyle.NEUTRAL -> true
-                        Features.CartBackStyle.AUTO -> console == null || !CartShells.belongsTo(sh.id, console)
-                    }
-                    CartShells.back(sh, colour, 480, neutral).asImageBitmap()
+                    CartShells.backFor(sh, colour, 480, console, backStyle).asImageBitmap()
                 })
             }
         }

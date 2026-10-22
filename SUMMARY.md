@@ -4,6 +4,21 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 22 Oct 2026 (306): PS5 / Xbox One / Xbox Series / CD-i games as discs, custom cartridges on the authentic shells, the game's own console on borrowed shells
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude.
+
+- **Missing disc mappings (still present, fixed).** `MediaShell.of` had no entry for PS5, XboxOne, XboxSeries and CDi, so `mediaKind` said "cartridge": those games were drawn as a generic cartridge and their opened case held one. They're now discs (DVD / Blu-ray / CD as their case and disc styles already say). Their display names were missing too (`ConsoleNames`: PlayStation 5, Xbox One, Xbox Series X|S, CD-i). Checked every other console key in `CaseCatalog` / `ConsoleNames`: the remaining ones without an entry (Amiga, Arcade, Atomiswave, DOS, MSX, Naomi, PICO-8, ScummVM) aren't disc systems and were left as they are. The scanner's folder names were not touched (unrelated).
+- **Custom cartridges use the real model.** A custom cartridge (your pack's shape, e.g. "N64", picked for a game or a console) now uses the authentic shell's model where Voltcap has one (`CartUndersides.packFit` → the same N64 / GB / GBC / GBA / SNES / Genesis / Game Gear / NES / DS / 3DS / Switch shell): its real depth and its real moulded back (screws, label well, ribs) instead of the flat slab — on the home layouts (`SolidPiece`), in the game window / Inspect (`MediaInspectView`) and wherever the pack cart is picked. No geometry duplicated; the front stays your pack's picture. Vita and HuCard packs have no authentic model and stay as they were.
+- **The game's own console on a borrowed shell.** A PS2 game on an N64-shaped cartridge keeps the N64 shape but the back's moulded "Nintendo" now reads "PlayStation 2"; other console-maker texts (Model No., DMG-/AGB-/CGB-, ©, Rumble…) are dropped, generic ones (Made in…, label well) kept. Same for library shells used for another console's game, with Back style Authentic and Auto (Neutral stays plain). The Switch shell's "NINTENDO SWITCH" header on another console's game becomes a strip with that game's console. The shell's own console's games keep their genuine markings; pack fronts already carry the game's console plaque; your own label / picture picks untouched.
+- **Tests:** `Media306Test` (new): the four consoles are discs, PS4 / N64 unchanged, names; authentic shell per pack look (none for Vita / HuCard); pack pick → N64 shell with PS2 branding and the real depth; rebranded N64 back (PlayStation 2, no Nintendo, same layout); GBA back keeps Made in…; brand texts.
+- **Checked on the Thor:** 25 To Life (PS2) on the N64 pack cart — front (PS2 plaque, art) and back (authentic N64 back in the pack's blue, "PlayStation 2" moulded); 25 To Life on the library N64 shell (back reads PlayStation 2); Army Men – Sarge's Heroes (N64) on the same cart (back keeps Nintendo); 25 To Life on the Switch shell (header "PLAYSTATION 2"); the home row (Cartridge / disc look) with every PS2 game on the N64 pack cart, front and back. All via session-only test hooks; settings untouched.
+- **Not checked on a device:** a real PS5 / Xbox One / Series / CD-i game (none on the Thor — unit-tested), the second screen, the RP handheld, every home layout individually (they share `SolidPiece`, checked on one).
+
+**Copy:** `src_copy\data\ConsoleNames.kt`; `src_copy\ui\` PhysicalMedia.kt, CartShells.kt, CustomCarts.kt, SolidPiece.kt, MediaInspectView.kt; `project_copy\app\src\test\java\com\shelf\launcher\ui\Media306Test.kt`.
+
+---
+
 ## Update — 21 Oct 2026 (305): artwork & generated packaging — case backs with real data, verified ratings, Steam / Android collector spines, printed box sides, format-aware imports
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors), unit tests run (all pass) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** Details and limits: `docs\physical_media\ARTWORK_PACKAGING.md`.

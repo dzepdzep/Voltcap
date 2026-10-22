@@ -11,6 +11,11 @@ object ConsoleNames {
         "PS2" to "PlayStation 2",
         "PS3" to "PlayStation 3",
         "PS4" to "PlayStation 4",
+        // (Update 306: the consoles CaseCatalog has cases for, named too — they read as their short keys.)
+        "PS5" to "PlayStation 5",
+        "XboxOne" to "Xbox One",
+        "XboxSeries" to "Xbox Series X|S",
+        "CDi" to "CD-i",
         "PSP" to "PlayStation Portable",
         "PSVita" to "PlayStation Vita",
         "GameCube" to "Nintendo GameCube",

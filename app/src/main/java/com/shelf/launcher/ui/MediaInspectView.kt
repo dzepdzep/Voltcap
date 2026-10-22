@@ -443,7 +443,7 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
                 val look = CartLook.values().firstOrNull { it.key == id.removePrefix("pack:") } ?: return@let
                 MediaPick(ms, SHELL_PREFIX + "pack:" + look.key + "~opaque|" + g.platform, look.aspect)
             } else id.removePrefix("cc:").let { c -> MediaPick(MediaShell.GB, CUSTOM_CART + c, CustomCarts.aspectFor(c)) }
-            return InspectPiece(g, InspectKind.SLAB, pick.aspect, slabDepth(null), pick, cover, false, null, cover, null, null, physical, null,
+            return InspectPiece(g, InspectKind.SLAB, pick.aspect, CustomCarts.depthForPick(pick.platform) ?: slabDepth(null), pick, cover, false, null, cover, null, null, physical, null,
                 CustomPieceTones.of(pick.platform) ?: CUSTOM_SHELL, false)
         }
         val sh = CartShells.of(id) ?: return@let
@@ -573,8 +573,10 @@ private fun mediaPiece(
         else -> InspectPiece(
             g, InspectKind.SLAB, slabAspect(pick, isScan),
             // (Update 195: a library shell at its own real thickness.)
-            if (pick.platform.startsWith(SHELL_PREFIX)) (CartShells.split(pick.platform).first?.shell?.depth ?: 0.12f).coerceIn(0.02f, 0.4f)
-            else slabDepth(if (custom) null else pick.shell), pick, label, isScan, null,
+            // (Update 306: a pack shape at its real cartridge's thickness — CustomCarts.depthForPick.)
+            if (pick.platform.startsWith(SHELL_PREFIX)) (CartShells.split(pick.platform).first?.shell?.depth ?: CustomCarts.depthForPick(pick.platform) ?: 0.12f).coerceIn(0.02f, 0.4f)
+            else if (custom) CustomCarts.depthForPick(pick.platform) ?: slabDepth(null)
+            else slabDepth(pick.shell), pick, label, isScan, null,
             cover, null, null, physical, null,
             // (Update 202: Voltcap's Android cartridge is green — its edge and the card lying in the case too.)
             // (Update 228, #36: a custom piece in its own plastic — the library shell's colour, the pack picture's once
@@ -1586,13 +1588,9 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
         }
         else p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
             val (ch, console) = CartShells.split(pp)
+            // (Update 306: on another console's shell, that game's console named where the maker's name is — backFor.)
             ch?.shell?.let { sh ->
-                val neutral = when (backStyle) {
-                    Features.CartBackStyle.AUTHENTIC -> false
-                    Features.CartBackStyle.NEUTRAL -> true
-                    Features.CartBackStyle.AUTO -> console == null || !CartShells.belongsTo(sh.id, console)
-                }
-                runCatching { CartShells.back(sh, CartShells.colourOf(sh, ch.colourKey), 640, neutral).asImageBitmap() }.getOrNull()
+                runCatching { CartShells.backFor(sh, CartShells.colourOf(sh, ch.colourKey), 640, console, backStyle).asImageBitmap() }.getOrNull()
             }
         }
     }
@@ -1640,8 +1638,14 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // (Update 241, #45: your pack's cartridge turned round shows its back with its console's logo moulded in —
     // CustomCartBacks — cut to the cartridge's own outline; it was a plain plate.)
     val ctx = androidx.compose.ui.platform.LocalContext.current
-    val customBack = remember(customPlatform, saved) {
-        customPlatform?.removePrefix(CUSTOM_CART)?.takeIf { customPlatform.startsWith(CUSTOM_CART) && CustomCartBacks.applies(it) }?.let { console ->
+    val customBack = remember(customPlatform, saved, backStyle) {
+        // (Update 306: a pack shape modelled on a real cartridge shows that cartridge's researched back, in the pack's
+        // plastic, with this game's console named on it — CustomCarts.authenticForPick; a pack shape picked in Cartridge
+        // shell… too, which had a plain plate.)
+        customPlatform?.let { cp -> CustomCarts.authenticForPick(cp) }?.let { (real, console) ->
+            val clear = if (customPlatform.startsWith(SHELL_PREFIX)) CartShells.split(customPlatform).first?.clear == true else packClear
+            CustomCarts.authenticBack(real, (saved ?: p.tone), clear, console, backStyle, 640)?.asImageBitmap()
+        } ?: customPlatform?.removePrefix(CUSTOM_CART)?.takeIf { customPlatform.startsWith(CUSTOM_CART) && CustomCartBacks.applies(it) }?.let { console ->
             runCatching { CustomCartBacks.backImage(ctx, console, (saved ?: p.tone).copy(alpha = 1f).toArgb(), CustomCarts.aspectFor(console)) }.getOrNull()
         }
     }

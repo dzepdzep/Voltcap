@@ -83,6 +83,45 @@ internal object CustomCarts {
     /** The pack's id for [platform], or null where the pack has no cartridge for it. */
     fun idFor(platform: String): String? = ids[platform]
 
+    /**
+     * Update 306: the real cartridge a pack shape is drawn after (the one whose connector end it already gets,
+     * CartUndersides.packFit) — the N64 shape → the N64 Game Pak, the Game Boy shape → the Game Boy Game Pak… — so a
+     * game on your pack turns with that cartridge's thickness and back. Null for the PS Vita and HuCard shapes (flat cards
+     * with no researched back to borrow).
+     */
+    fun authenticShell(look: CartLook): CartShell? = CartUndersides.packFit(look)?.shellId?.let { CartShells.of(it) }
+
+    /**
+     * Update 306: the real cartridge behind a custom piece — your pack's cartridge ([CUSTOM_CART] + console, not an
+     * optical-system shell) or a pack shape picked for the game ([SHELL_PREFIX] "pack:…") — and the game's console; null
+     * for anything else.
+     */
+    fun authenticForPick(pickPlatform: String): Pair<CartShell, String?>? = when {
+        pickPlatform.startsWith(CUSTOM_CART) -> {
+            val console = pickPlatform.removePrefix(CUSTOM_CART)
+            if (discShellFor(console) != null) null else authenticShell(lookFor(console))?.let { it to console }
+        }
+        pickPlatform.startsWith(SHELL_PREFIX) -> {
+            val (choice, console) = CartShells.split(pickPlatform)
+            choice?.takeIf { it.shell == null }?.pack?.let { authenticShell(it) }?.let { it to console }
+        }
+        else -> null
+    }
+
+    /** Update 306: a custom piece's thickness from its real cartridge (against its longest side), or null. */
+    fun depthForPick(pickPlatform: String): Float? = authenticForPick(pickPlatform)?.first?.depth?.coerceIn(0.02f, 0.4f)
+
+    /**
+     * Update 306: [real]'s researched back in the pack picture's plastic [tone] ([clear]: its see-through edition) — with
+     * the game's [console] named in place of the maker's where the cartridge isn't that console's own
+     * (CartShells.backFor, as Settings › Game look › Cartridge backs says).
+     */
+    fun authenticBack(real: CartShell, tone: Color, clear: Boolean, console: String?, style: Features.CartBackStyle, px: Int): android.graphics.Bitmap? = runCatching {
+        val argb = tone.copy(alpha = 1f).toArgb()
+        val colour = ShellColour("pack:$argb${if (clear) "c" else ""}", "Pack", argb, if (clear) 0.6f else 1f)
+        CartShells.backFor(real, colour, px, console, style)
+    }.getOrNull()
+
     /** Update 131: every console key → pack id (the downloads, data/Packs.kt). */
     fun allIds(): Map<String, String> = ids
 
@@ -410,10 +449,19 @@ internal object CustomCartBacks {
 @Composable
 internal fun rememberCustomCartSolid(pickPlatform: String, aspect: Float?, tone: Color?): SolidSpec {
     val context = androidx.compose.ui.platform.LocalContext.current
-    return androidx.compose.runtime.remember(pickPlatform, aspect, tone) {
+    val backStyle = Features.cartBackStyle.state.value
+    return androidx.compose.runtime.remember(pickPlatform, aspect, tone, backStyle) {
         val base = cartSolid(null, pickPlatform, aspect, custom = true, tone = tone)
         val console = pickPlatform.removePrefix(CUSTOM_CART)
-        if (!CustomCartBacks.applies(console)) base
+        // (Update 306: a pack shape modelled on a real cartridge turns with that cartridge's thickness and researched back,
+        // this game's console named on it — CustomCarts.authenticForPick; the others keep the engraved back below.)
+        val real = CustomCarts.authenticForPick(pickPlatform)?.first
+        if (real != null) SolidSpec(
+            base.aspect, real.depth.coerceIn(0.02f, 0.4f), base.tone,
+            back = { CustomCarts.authenticBack(real, base.tone, Features.cartClear.state.value, console, backStyle, 480)?.asImageBitmap() },
+            fitBackToFace = true
+        )
+        else if (!CustomCartBacks.applies(console)) base
         else SolidSpec(
             base.aspect, base.depth, base.tone,
             back = { CustomCartBacks.backImage(context, console, base.tone.toArgb(), base.aspect ?: CustomCarts.aspectFor(console)) },
