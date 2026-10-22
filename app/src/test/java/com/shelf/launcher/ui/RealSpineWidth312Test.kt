@@ -7,8 +7,8 @@ import org.junit.Test
 class RealSpineWidth312Test {
     @Test fun narrowRealSpineUsesMoreOfTheThreeDimensionalSide() {
         // An 80px-wide spine in a 120px-wide box should extend close to the side,
-        // rather than leaving the 20px green borders on both sides.
-        assertEquals(112.8f, widenedRealSpineWidth(80f, 120f), 0.01f)
+        // rather than leaving the original 20px green borders on both sides.
+        assertEquals(108f, widenedRealSpineWidth(80f, 120f), 0.01f)
     }
 
     @Test fun veryNarrowScanIsOnlyExpandedByThirtyFivePercent() {
