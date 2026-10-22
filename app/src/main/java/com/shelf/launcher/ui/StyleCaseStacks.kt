@@ -194,7 +194,9 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, m
                 onSelect = c.actions.select, onOpen = c.actions.open, cardArtType = c.type,
                 physicalMedia = c.state.physicalMedia, screenshots = c.state.screenshots, onNeedPhysical = c.actions.needPhysical,
                 loop = loopRowOn(c), loopTick = c.state.loopTick, loopStep = c.state.loopStep,
-                modifier = stage
+                modifier = stage,
+                // Only Stacks in 3D-cartridge carousel mode needs the Flip 2 GPU guard.
+                gpuSafeStacks = true
             ) } else vcTrace("VC:StacksStage") { StacksStage(c, stage) }
             if (barOn) Box(
                 Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Bottom panel")
