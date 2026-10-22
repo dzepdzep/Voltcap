@@ -652,9 +652,15 @@ internal object Carousel {
         val turn = 90f * (1f - r * r * (3f - 2f * r))
         val step = PULL_SPINE_K * pullDepth.coerceIn(0.04f, 0.25f) * (0.97f + 0.05f * gap / spread.coerceAtLeast(0.01f))
         val far = (d - 1f).coerceAtLeast(0f)
+        // (Update 317, Toni: "putting the game back on the right side puts it over the game behind it and then quickly
+        // behind it": it kept the pulled-out case's drawing order — over everything — until it was all the way back in its
+        // slot, then dropped to the stack's. Once it has turned back to its spine (under 35 % out) it takes its place in the
+        // stack's order — under the ones further out on the right, over them on the left, as the stack is drawn — so it
+        // slides in where it belongs.)
+        val z = if (d < 1f && t < 0.35f) (if (rel > 0f) 49f + d else 51f - d) else stackZ(rel)
         return out.set(
             rel * step * sc, (1f - sc) * 0.5f, sc, turn, 0f,
-            alpha(d, reach(side, shown)), (0.18f * (1f - t) + 0.008f * far).coerceAtMost(0.3f), stackZ(rel)
+            alpha(d, reach(side, shown)), (0.18f * (1f - t) + 0.008f * far).coerceAtMost(0.3f), z
         )
     }
 

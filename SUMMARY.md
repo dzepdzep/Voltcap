@@ -158,6 +158,10 @@ tested on a handheld.
 - **Perfetto (`voltcap-trace11.zip`, 317y):** ~45 offscreen redraws a frame (from ~210), RenderThread ~28 ms a frame
   (from ~90), pictures of the screen almost gone — the photos / disc shells fix works. Main thread ~35 ms (recomposition,
   animation, key handling) is what's left.
+- **User (317z): spines "work perfectly"** (GameCube and N64). **Pull-out stack — a game put back on the right drawn over
+  the one behind it, then behind it:** it kept the pulled-out case's drawing order until fully back in its slot. Once
+  under 35 % out (turned back to its spine) it takes the stack's order (`pullOut`: right 49 + d, left 51 − d, continuing
+  `stackZ`), so it slides in where it belongs.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`,
   `ui/FullScanCutEditor.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
