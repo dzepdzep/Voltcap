@@ -695,8 +695,37 @@ private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float): android.g
     for (y in (h - band) until (h - (h * 0.02f).toInt()).coerceAtMost(h - 1)) { val c = change(y); if (c >= best) { best = c; bottom = y } }
     val cut = if (top > 0 || bottom < h) android.graphics.Bitmap.createBitmap(soft, 0, top, w, (bottom - top).coerceAtLeast(1)) else soft
     val cur = cut.width.toFloat() / cut.height.coerceAtLeast(1)
-    if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) null else fillCrop(cut, aspect, 0.1f)
+    // Update 311: the shelf shows real scanned spines at their actual aspect.
+    // Inspect must not discard a valid real scan merely because a regional
+    // cardboard scan is narrower/wider than the physical 3D side: that made
+    // Mario 64 and Superman show the generated black title spine instead.
+    // Preserve the complete printed scan within the fixed-size side, without
+    // stretching it or blindly chopping its title/logo off. A missing or
+    // failed scan still gets the existing console spine fallback.
+    if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect)
+    else fillCrop(cut, aspect, 0.1f)
 }.getOrElse { fillCrop(src, aspect, 0.1f) }
+
+/** Fit a real spine scan onto a 3D side without distorting or cropping its printed design. */
+private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+    val h = 512
+    val w = (h * aspect).toInt().coerceIn(16, 512)
+    val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(out)
+    // Carry the scan's border colour into the spare margin rather than
+    // replacing the entire spine with a synthetic title template.
+    val safe = if (src.config == android.graphics.Bitmap.Config.HARDWARE)
+        src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+    c.drawColor(safe.getPixel(0, (safe.height / 2).coerceAtMost(safe.height - 1)))
+    val scale = minOf(w.toFloat() / safe.width.coerceAtLeast(1), h.toFloat() / safe.height.coerceAtLeast(1))
+    val fw = safe.width * scale; val fh = safe.height * scale
+    c.drawBitmap(
+        safe, null,
+        android.graphics.RectF((w - fw) / 2f, (h - fh) / 2f, (w + fw) / 2f, (h + fh) / 2f),
+        android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
+    )
+    return out
+}
 
 private fun fillCrop(src: android.graphics.Bitmap, aspect: Float, slack: Float = 0.005f): android.graphics.Bitmap {
     val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
