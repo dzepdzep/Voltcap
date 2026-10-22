@@ -98,7 +98,7 @@ internal fun Case3D(
     // Update 205: the game's real spine is on its way (or its scans aren't known yet): a neutral strip meanwhile, never
     // Voltcap's own console spine that then pops to the real one.
     val spinePending = (own != null && !ownLoad.done) ||
-        (!scansKnown && g.sourceType == com.shelf.launcher.data.SourceType.ROM)
+        (!scansKnown && !forAll && !matching && g.sourceType == com.shelf.launcher.data.SourceType.ROM)
     // (Update 166: Voltcap's own Steam / Android case always — its spine and its front band, see below.)
     val ownCase = MediaCovers.own(g.platform).takeIf { !forAll }
     val tpl = if (Features.coverTemplates.state.value || forAll || matching || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
