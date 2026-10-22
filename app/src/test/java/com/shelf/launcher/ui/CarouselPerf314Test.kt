@@ -36,6 +36,17 @@ class CarouselPerf314Test {
         assertArrayEquals(intArrayOf(0, 71, 400, 258), pieceArtRect(400f, 400f, 1.55f, 0, 0))
     }
 
+    // --- pieceFrameRect: where AuthenticPackCart draws its front (update 316) ---
+
+    @Test fun packFrontSitsAtItsFrameInTheCentredBox() {
+        // A 1.5 shape in a 600 × 300 node: a 450 × 300 box, 75 px in; the front at 10 %–90 % across, 5 %–95 % down.
+        assertArrayEquals(intArrayOf(75 + 45, 15, 360, 270), pieceFrameRect(600f, 300f, 1.5f, floatArrayOf(0.1f, 0.05f, 0.9f, 0.95f)))
+    }
+
+    @Test fun wholeFrameIsTheBox() {
+        assertArrayEquals(intArrayOf(0, 71, 400, 258), pieceFrameRect(400f, 400f, 1.55f, floatArrayOf(0f, 0f, 1f, 1f)))
+    }
+
     // --- carouselOffScreen ---
 
     @Test fun gameOnTheScreenIsDrawn() {

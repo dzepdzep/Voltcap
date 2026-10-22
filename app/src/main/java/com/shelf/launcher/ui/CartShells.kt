@@ -1435,9 +1435,9 @@ internal fun CartShellArt(
     // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
     // pre-rendered pictures.)
     if (packLook != null) {
-        // (Update 314: turned and moving as before — the solid piece round the pack picture, its motion inside it.)
-        val m = if (solid != null) modifier.solidPiece(solid) else modifier
-        PackCart(console ?: "", art, if (motionSeed != null) m.mediaMotion(false, motionSeed) else m, packLook, choice.clear, labelIsScan, title)
+        // (Update 316: the solid build and the motion applied in PackCart — a shape drawn as its real cartridge turns from
+        // its finished front, as the drawn shells do.)
+        PackCart(console ?: "", art, modifier, packLook, choice.clear, labelIsScan, title, solid = solid, motionSeed = motionSeed)
     } else {
         val shell = choice?.shell
         val colourKey = choice?.colourKey

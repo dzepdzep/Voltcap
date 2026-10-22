@@ -23,6 +23,17 @@ tested on a handheld.
   needed its whole-piece buffer again at once: the carousel's games now fade as **one group** (`Carousel.kt`, a Box
   1.5× wide / 1.6× tall round the carousel so the games past its sides and their reflections aren't cut), each piece
   stays opaque inside it (no buffer of its own). Overlapping cases no longer show through each other while dimmed.
+- **Perfetto trace from the Flip 2 (user, 0.6.35 fix build, scrolling cartridges in Case stacks, 8 s):** 53 frames in 8 s
+  (~6–7 fps), ~150 ms each; RenderThread "flush layers" 75 ms/frame, ~287 offscreen render passes and ~566 clears per frame
+  for ~47 turned pieces (≈6 passes each — the old generic solid-piece path), GPU itself 6–11 ms; 374 MB of render targets.
+  Cause: the **Custom / Clear 3D cartridges** draw your pack's shapes through `PackCart` → `AuthenticPackCart` (update 307),
+  which wasn't on update 314's picture-built path, and made its 640 px front and read the pack picture's plastic
+  (`CustomPieceTones.load`, a file decode) on the screen's thread for each new piece. Fixed: `AuthenticPackCart` front from
+  cache at once else on `Dispatchers.Default` (previous kept, a place changing game draws at once), plastic via
+  `rememberCustomPieceTone`, and `solidPiece(faceArt = PieceFace(front, look.aspect, frame))` — `PieceFace.frame` +
+  `pieceFrameRect` (the front stretched to its frame in the shape's box, rounded as Compose rounds Dp). `PackCart` /
+  `CustomCart` take `solid` / `motionSeed` and apply them themselves (the two-picture Vita / HuCard shapes and the disc
+  shells keep the old order and path). Tests for `pieceFrameRect`.
 - **Not changed yet:** N64 spines that "still don't apply correctly on some games" (user) — waiting for which games and
   how they look (see the chat for the likely causes).
 

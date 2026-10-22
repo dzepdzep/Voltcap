@@ -634,12 +634,14 @@ internal fun PhysicalMedia(
         val packShell = discShellFor(platform.removePrefix(CUSTOM_CART))
         // (Update 228, #36: its sides and back in the pack picture's own plastic, not grey — rememberCustomPieceTone.)
         val packTone = rememberCustomPieceTone(platform)
+        // (Update 316: the solid build and the motion applied inside — PackCart — so your pack's shapes drawn as their real
+        // cartridge turn from their finished front picture.)
         CustomCart(
-            platform.removePrefix(CUSTOM_CART), caseCover ?: label,
+            platform.removePrefix(CUSTOM_CART), caseCover ?: label, modifier,
             // (Update 239, #33: at the shape it's drawn in — CustomCarts.aspectFor, an app's Switch-card shape too.)
             // (Update 241, #45: turned round, its back carries its console's logo moulded into the plastic — CustomCartBacks.)
-            modifier.solidPiece(rememberCustomCartSolid(platform, packShell?.aspect ?: CustomCarts.aspectFor(platform.removePrefix(CUSTOM_CART)), packTone))
-                .mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode())
+            solid = rememberCustomCartSolid(platform, packShell?.aspect ?: CustomCarts.aspectFor(platform.removePrefix(CUSTOM_CART)), packTone),
+            motionSeed = (label?.hashCode() ?: 0) xor platform.hashCode()
         )
         return
     }

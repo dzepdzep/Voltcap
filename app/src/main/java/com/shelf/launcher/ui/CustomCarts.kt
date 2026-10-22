@@ -323,10 +323,17 @@ private val CartPaper = Color(0xFFE9E6DF)
  * proportions inside [modifier]: [art] (its cover) in the window, the shell over it.
  */
 @Composable
-internal fun CustomCart(platform: String, art: Any?, modifier: Modifier) {
+internal fun CustomCart(
+    platform: String, art: Any?, modifier: Modifier,
+    /** Update 316: the solid build and the motion seed, applied in [PackCart] (see there); null: none. */
+    solid: SolidSpec? = null, motionSeed: Int? = null
+) {
     // Update 131: a disc console on its own shell (your optical-system pack).
     val shell = discShellFor(platform)
-    if (shell != null) DiscShellArt(shell, art, modifier, platform) else PackCart(platform, art, modifier)
+    if (shell != null) {
+        val m = if (solid != null) modifier.solidPiece(solid) else modifier
+        DiscShellArt(shell, art, if (motionSeed != null) m.mediaMotion(false, motionSeed) else m, platform)
+    } else PackCart(platform, art, modifier, solid = solid, motionSeed = motionSeed)
 }
 
 /**
@@ -337,7 +344,12 @@ internal fun CustomCart(platform: String, art: Any?, modifier: Modifier) {
 internal fun PackCart(
     platform: String, art: Any?, modifier: Modifier, look0: CartLook? = null, clear0: Boolean? = null,
     /** Update 307: [art] is the game's real label scan (the whole sticker) — on a shape drawn on its real cartridge. */
-    labelIsScan: Boolean = false, title: String? = null
+    labelIsScan: Boolean = false, title: String? = null,
+    /**
+     * Update 316: the piece's solid build (it may be turned) and its idle motion's seed, applied here so a shape drawn as
+     * its real cartridge turns from its finished front picture (solidPiece's faceArt); null: neither.
+     */
+    solid: SolidSpec? = null, motionSeed: Int? = null
 ) {
     val id = CustomCarts.idFor(platform)
     // (Update 239, #33: apps / Android games on the Switch-card shape unless a shape was picked for them — lookFor.)
@@ -353,10 +365,12 @@ internal fun PackCart(
     val real = androidx.compose.runtime.remember(look) { CustomCarts.authenticShell(look) }
     val fit = androidx.compose.runtime.remember(look) { CartUndersides.packFit(look) }
     if (real != null && fit != null && id != null) {
-        AuthenticPackCart(platform, id, art, modifier, look, clear, real, fit.frame, labelIsScan, title)
+        AuthenticPackCart(platform, id, art, modifier, look, clear, real, fit.frame, labelIsScan, title, solid, motionSeed)
         return
     }
-    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+    // (Update 316: the pack picture's shapes — two pictures, not one — turn as before: the solid piece round them.)
+    val packM = if (solid != null) modifier.solidPiece(solid) else modifier
+    BoxWithConstraints(if (motionSeed != null) packM.mediaMotion(false, motionSeed) else packM, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * look.aspect)
         val h = w / look.aspect
         // Dp per unit of the pack's own measurements.
@@ -392,16 +406,39 @@ internal fun PackCart(
 @Composable
 private fun AuthenticPackCart(
     platform: String, id: String, art: Any?, modifier: Modifier, look: CartLook, clear: Boolean,
-    real: CartShell, frame: FloatArray, scan: Boolean, title: String?
+    real: CartShell, frame: FloatArray, scan: Boolean, title: String?,
+    solid: SolidSpec? = null, motionSeed: Int? = null
 ) {
     val file = CustomCarts.asset(look, clear, id)
     val pick = "${SHELL_PREFIX}pack:${look.key}~${if (clear) "clear" else "opaque"}|$platform"
     val bmpArt = rememberSoftBitmap(art, 480)
-    val front = androidx.compose.runtime.remember(file?.path, bmpArt, clear, platform, scan, title) {
-        val tone = CustomPieceTones.load(pick) ?: Color(0xFF7C7D82)
-        CustomCarts.authenticFront(real, look, file, tone, clear, platform, bmpArt, scan, title, 640)?.asImageBitmap()
+    // Update 316 (scrolling your pack's cartridges stuttered): the pack picture's plastic read away from the screen's
+    // thread (rememberCustomPieceTone; it was read from the file here), and the front — 640 px, the plaque and the label —
+    // used at once when it's made, else drawn away from the screen's thread, the one before staying meanwhile.
+    val tone = rememberCustomPieceTone(pick) ?: Color(0xFF7C7D82)
+    val identity = "$pick|${file?.path}|$scan|$title"
+    val madeFront = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, androidx.compose.ui.graphics.ImageBitmap>?>(null) }
+    val prior = madeFront.value
+    val cachedFront = androidx.compose.runtime.remember(file?.path, bmpArt, clear, platform, scan, title, tone) {
+        runCatching {
+            CustomCarts.authenticFront(real, look, file, tone, clear, platform, bmpArt, scan, title, 640, peek = true)
+                // (A place that changes to another game draws its own here, as before — never the old game's for a moment.)
+                ?: if (prior != null && prior.first != identity) CustomCarts.authenticFront(real, look, file, tone, clear, platform, bmpArt, scan, title, 640) else null
+        }.getOrNull()?.asImageBitmap()
     }
-    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+    androidx.compose.runtime.LaunchedEffect(file?.path, bmpArt, clear, platform, scan, title, tone) {
+        if (cachedFront != null) { madeFront.value = identity to cachedFront; return@LaunchedEffect }
+        val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            runCatching { CustomCarts.authenticFront(real, look, file, tone, clear, platform, bmpArt, scan, title, 640)?.asImageBitmap() }.getOrNull()
+        }
+        if (made != null) madeFront.value = identity to made
+    }
+    val front = cachedFront ?: prior?.takeIf { it.first == identity }?.second
+    // (Update 316: the motion round the solid piece, and the turned piece drawn from the front itself — PieceFace — as the
+    // drawn shells are: its sides and face made once, not every frame.)
+    val moving = if (motionSeed != null) modifier.mediaMotion(false, motionSeed) else modifier
+    val shaped = if (solid != null) moving.solidPiece(solid, faceArt = front?.let { PieceFace(it, look.aspect, frame) }) else moving
+    BoxWithConstraints(shaped, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * look.aspect)
         val h = w / look.aspect
         Box(Modifier.size(w, h)) {

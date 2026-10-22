@@ -320,7 +320,14 @@ internal const val CART_SPIN_MS = 5200L
  * Update 314: a piece whose whole content is one finished picture (a drawn shell's front, CartShellArt), fitted at
  * [aspect] in the node as CartShellArt lays it out (pieceArtRect). See [solidPiece]'s faceArt.
  */
-internal class PieceFace(val image: ImageBitmap, val aspect: Float)
+internal class PieceFace(
+    val image: ImageBitmap, val aspect: Float,
+    /**
+     * Update 316: the picture stretched to this part of the [aspect] box (left, top, right, bottom shares) — your pack's
+     * shape drawn as its real cartridge (AuthenticPackCart, pieceFrameRect); null: fitted whole (CartShellArt).
+     */
+    val frame: FloatArray? = null
+)
 
 /**
  * Draws this node's content as the solid piece [spec] turned by the view's turn (LocalPieceTurn) plus its own spin.
@@ -387,7 +394,10 @@ internal fun Modifier.solidPiece(
         val buf = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)
         // Update 314: the picture's place in the node, as CartShellArt draws it (null: any content, drawn each frame).
         val art = faceArt?.image
-        val artAt = faceArt?.let { f -> pieceArtRect(size.width, size.height, f.aspect, f.image.width, f.image.height) }
+        val artAt = faceArt?.let { f ->
+            f.frame?.let { fr -> pieceFrameRect(size.width, size.height, f.aspect, fr) }
+                ?: pieceArtRect(size.width, size.height, f.aspect, f.image.width, f.image.height)
+        }
         val artPos = artAt?.let { IntOffset(it[0], it[1]) }
         val artSize = artAt?.let { IntSize(it[2], it[3]) }
         val artSrc = art?.let { IntSize(it.width, it.height) }
