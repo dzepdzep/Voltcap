@@ -131,8 +131,16 @@ tested on a handheld.
 - **No shade hand-over at all (`SolidPiece.kt`):** a piece always darkens itself (`shadeTaken` always true for a solid
   piece in a carousel) — through its light when drawn from its pictures, else through the whole-piece buffer's paint
   (`bufShade`, the flat view too); a piece coming in before its pictures had a frame darkened by no one.
+- **User (317u): spines thinner** — the keep-case thickness from the scan undone. **"Adjusting the cuts didn't do anything
+  for the 3D models":** your own cut of the full case scan (FullScanCuts) only fed the strip used without a scraped spine
+  scan; now it comes first on the shelf and the 3D cases (`BoxTexture.userSpine`), fitted to the 3D side whole
+  (`scaleAcross`, cache `spineUser`).
+- **Perfetto (`voltcap-trace10.zip`):** still ~210 offscreen redraws a frame and ~137 pictures of the screen in 15 s — the
+  cartridge photos (523×339) and the disc shells (380×468) on the generic path. **317h again, with stable inputs:** the
+  photo's front from `rememberSoftBitmap(model)` (the cache's same object), not the loaded drawable (a new one at each
+  load — the likely loop); the disc shell's front keyed only by addresses (anything else gets none).
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
-  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
+  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
   `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render

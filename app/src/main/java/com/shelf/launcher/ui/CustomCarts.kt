@@ -335,7 +335,9 @@ internal fun CustomCart(
     if (shell != null) {
         // (Update 317: the hop round the solid piece — see PhysicalMedia.)
         val moving = if (motionSeed != null) modifier.mediaMotion(false, motionSeed) else modifier
-        DiscShellArt(shell, art, if (solid != null) moving.solidPiece(solid) else moving, platform)
+        // (Update 317: turned from its front made as one picture — rememberDiscShellFront.)
+        val face = if (solid != null) rememberDiscShellFront(shell, art, platform) else null
+        DiscShellArt(shell, art, if (solid != null) moving.solidPiece(solid, faceArt = face) else moving, platform)
     } else PackCart(platform, art, modifier, solid = solid, motionSeed = motionSeed)
 }
 
@@ -512,6 +514,75 @@ internal object DiscShells {
     /** The pack's pictures and the consoles each one is for (the downloads, data/Packs.kt). */
     fun packFiles(): Map<String, Set<String>> =
         shells.keys.associateWith { f -> byConsole.filterValues { it == f }.keys }
+}
+
+/**
+ * Update 317 (Perfetto, Flip 2: each turned optical-system shell took a picture of the screen — ~10 ms of its drawing each,
+ * ~280 in 15 s of scrolling): [DiscShellArt]'s front made as one picture away from the screen's thread — the window in the
+ * paper colour with its rounded corners, the label fitted in it (rememberPackLabel's sticker), the shell over it — so the
+ * turned piece is drawn from it (solidPiece's faceArt). Null while it loads, or when the label can't be read.
+ */
+@Composable
+private fun rememberDiscShellFront(shell: DiscShells.Shell, art: Any?, platform: String): PieceFace? {
+    val file = com.shelf.launcher.data.Packs.discFile(shell.file) ?: return null
+    val win = shell.win
+    val labelModel = rememberPackLabel(art, platform, shell.aspect * win[2] / win[3].coerceAtLeast(0.01f))
+    val ctx = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    // (Update 317 (2nd go): keyed only by addresses — a picture handed in as anything else (a request object, a new one at
+    // each recomposition) gets no front picture, so it can never be made again and again.)
+    val artKey = when (art) { null -> "none"; is String -> art; is java.io.File -> art.path; else -> return null }
+    val key = "discfront|${file.path}|${file.lastModified()}|$artKey|$platform"
+    val known = androidx.compose.runtime.remember(key) { DerivedArt.peekNamed<android.graphics.Bitmap>(key) }
+    val made = androidx.compose.runtime.remember(key) { androidx.compose.runtime.mutableStateOf<android.graphics.Bitmap?>(null) }
+    androidx.compose.runtime.LaunchedEffect(key) {
+        if (known != null) return@LaunchedEffect
+        made.value = runCatching {
+            val loader = coil.Coil.imageLoader(ctx)
+            suspend fun load(req: coil.request.ImageRequest): android.graphics.Bitmap? =
+                ((loader.execute(req) as? coil.request.SuccessResult)?.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                    ?.let { b -> if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b }
+            val shellBmp = load(
+                coil.request.ImageRequest.Builder(ctx).data(file).size(560, 560).scale(coil.size.Scale.FIT)
+                    .precision(coil.size.Precision.INEXACT).allowHardware(false).build()
+            ) ?: return@runCatching null
+            val label = if (art == null) null else load(
+                (labelModel as? coil.request.ImageRequest)?.newBuilder()?.allowHardware(false)?.allowConversionToBitmap(true)?.build()
+                    ?: coil.request.ImageRequest.Builder(ctx).data(labelModel).size(720, 720).allowHardware(false).build()
+            ) ?: return@runCatching null
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                discShellFront(shell, shellBmp, label)?.let { b -> DerivedArt.named(key) { b } }
+            }
+        }.getOrNull()
+    }
+    val front = known ?: made.value
+    return androidx.compose.runtime.remember(front) { front?.let { PieceFace(it.asImageBitmap(), shell.aspect) } }
+}
+
+/** Update 317: see [rememberDiscShellFront]. */
+private fun discShellFront(shell: DiscShells.Shell, shellBmp: android.graphics.Bitmap, label: android.graphics.Bitmap?): android.graphics.Bitmap? {
+    val a = shell.aspect.coerceAtLeast(0.05f)
+    val w = shellBmp.width.coerceAtLeast(1)
+    val h = (w / a).toInt().coerceAtLeast(1)
+    val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(out)
+    val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
+    val win = shell.win
+    val l = w * win[0]; val t = h * win[1]; val ww = w * win[2]; val wh = h * win[3]
+    val r = w * shell.corner
+    c.save()
+    c.clipPath(android.graphics.Path().apply { addRoundRect(l, t, l + ww, t + wh, r, r, android.graphics.Path.Direction.CW) })
+    c.drawColor(CartPaper.toArgb())
+    if (label != null && label.width > 0 && label.height > 0) {
+        // (Fitted, as DiscShellArt's label: ContentScale.Fit in the window, centred.)
+        val k = minOf(ww / label.width, wh / label.height)
+        val dw = label.width * k; val dh = label.height * k
+        val x = l + (ww - dw) / 2f; val y = t + (wh - dh) / 2f
+        c.drawBitmap(label, null, android.graphics.RectF(x, y, x + dw, y + dh), paint)
+    }
+    c.restore()
+    c.drawBitmap(shellBmp, null, android.graphics.Rect(0, 0, w, h), paint)
+    // (Kept on the GPU, as the sides' picture is — sideArtOf.)
+    return if (android.os.Build.VERSION.SDK_INT >= 26) out.copy(android.graphics.Bitmap.Config.HARDWARE, false) ?: out else out
 }
 
 /** [art] (the game's cover) in [shell]'s window, the shell over it, keeping the shell's proportions inside [modifier]. */
