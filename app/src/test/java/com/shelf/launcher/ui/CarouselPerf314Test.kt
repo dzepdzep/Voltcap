@@ -60,4 +60,21 @@ class CarouselPerf314Test {
         assertFalse(carouselOffScreen(Float.NaN, 1f, 1920f, 0f))
         assertFalse(carouselOffScreen(-99999f, Float.NaN, 1920f, 0f))
     }
+
+    // --- "To the edge" packing (Flip 2: only 2 games each side) ---
+
+    /** Games each side whose middle is within [half] middle-game widths of the middle, in Tucked behind. */
+    private fun shown(side: Int, half: Float): Int = (1..60).count { d -> Carousel.offset(d.toFloat(), side) <= half }
+
+    @Test fun toTheEdgeShowsAtLeastAsManyAsFiveEachSide() {
+        // Flip 2, Stacks: about 1.8 middle-game widths from the middle to the screen's edge.
+        for (half in floatArrayOf(1.5f, 1.8f, 2.5f, 4f)) {
+            assertTrue("half $half", shown(Carousel.EDGE_SIDE, half) >= minOf(5, shown(5, half)))
+        }
+        assertTrue(shown(Carousel.EDGE_SIDE, 1.8f) >= 5)
+    }
+
+    @Test fun toTheEdgeKeepsItsBiggerGames() {
+        assertTrue(Carousel.sideScale(Carousel.EDGE_SIDE) > Carousel.sideScale(5))
+    }
 }

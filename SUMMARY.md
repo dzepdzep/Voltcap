@@ -30,10 +30,17 @@ not checked on a handheld.
     hop lifts the turned piece whole); front from cache at once (`CartShells.cachedFrontFor`, `CustomCarts.authenticFront(peek)`),
     else drawn on `Dispatchers.Default` keeping the previous front while the cover arrives; a place switching to another
     game still draws synchronously (never shows the old game's piece). `PhysicalMedia.kt` passes `solid` / `motionSeed`.
+  - **"To the edge" showed only 2 games each side (user, Flip 2, every look).** Tucked behind spaced its far games
+    0.42 middle-game widths apart (update 129's bigger games × 0.62), against 0.27 with 5 each side — so on the Flip 2
+    only ~3 centres fitted (the third cut by the edge). `Carousel.EDGE_STEP` 0.4: as close as 5 each side's, games kept
+    at their bigger size; ~5 a side on the Flip 2, more on wider screens. The other views' spacing is unchanged.
+  - Off-screen check measured against the carousel's own box (cull only past a whole box width beyond either edge),
+    not window coordinates, which can go stale during a page slide.
+  - PR #5's Stacks-only cap of 5 games each side is not wanted (user) — not carried over; PR #5 closed.
   - `PieceFit.kt` (new): `pieceArtRect` (CartShellArt's exact pixel placement, so flat ↔ turned never shifts) and
     `carouselOffScreen`.
-- **Tests:** `app/src/test/.../CarouselPerf314Test.kt` (9 tests: placement rounding for wide / tall / mismatched
-  pictures, on / near / far off screen, unknown sizes) — passed locally with Kotlin 2.2.10 + JUnit 4.13.2. The rest
+- **Tests:** `app/src/test/.../CarouselPerf314Test.kt` (11 tests: placement rounding for wide / tall / mismatched
+  pictures, on / near / far off screen, unknown sizes, "To the edge" shows at least as many as 5 each side) — passed locally with Kotlin 2.2.10 + JUnit 4.13.2. The rest
   needs the PR's CI (assembleDebug + unit tests). **Not tested:** frame times, memory and visuals on AYN Thor / Retroid
   Pocket Classic (no device access) — see the PR for the `dumpsys gfxinfo` steps.
 

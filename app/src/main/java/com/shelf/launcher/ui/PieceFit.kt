@@ -28,10 +28,10 @@ internal fun pieceArtRect(nodeW: Float, nodeH: Float, aspect: Float, bw: Int, bh
 }
 
 /**
- * Update 314: a carousel game is wholly off the screen — its middle at [centerX] (window px), reaching [halfExtent] px
- * either side of it — with [margin] px kept round the screen ([viewW] px wide). "To the edge" builds far more games each
- * side than the screen shows (up to ~45 in Box flow on the Thor); each turned 3D cartridge or case drew its pictures
- * every frame while out of sight. Unknown sizes (0) never count as off the screen.
+ * Update 314: a carousel game is far off the screen — its middle at [centerX] (px from the carousel's left edge),
+ * reaching [halfExtent] px either side of it — more than [margin] px past either edge of the carousel ([viewW] px wide).
+ * "To the edge" builds far more games each side than the screen shows (up to ~45 in Box flow on the Thor); each turned
+ * 3D cartridge or case drew its pictures every frame while out of sight. Unknown sizes (0) never count as off it.
  */
 internal fun carouselOffScreen(centerX: Float, halfExtent: Float, viewW: Float, margin: Float): Boolean {
     if (viewW <= 0f || centerX.isNaN() || halfExtent.isNaN()) return false
