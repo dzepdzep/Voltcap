@@ -161,22 +161,18 @@ internal fun Case3D(
     // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
     // (Update 316: fitted away from the screen's thread — rememberDerived.)
     val ownFitted: List<android.graphics.Bitmap>? =
-        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-fit317c|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
-        // (Update 317, Toni: GameCube spines "messed up" — Budokai 2, Melee, Pikmin: the "spine" scan was a picture of much
-        // more of the box, and its middle cut to the side's width came out a blurred slice of the box art. A scan far wider
-        // than the side is left out — the console's spine with the title instead, as update 308 does for cardboard boxes.)
-        else rememberDerived(ownUpright, "spineFit5|$depth") { b ->
-            val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
-            if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(keepCaseSpine(b, depth))
-        }
+        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        // (Update 317: keep cases as update 240 had them — the middle cut keeps the spine of a scan that carries slivers of
+        // the back and front beside it, as the GameCube ones do; see the note above SPINE_TOO_WIDE.)
+        else rememberDerived(ownUpright, "spineFit|$depth") { b -> listOf(fillCrop(b, depth, 0.1f)) }
     // (Update 317: the strip cut from the box scan, when the spine scan was left out as too wide and cuts are on.)
     val cutWanted = cutModel != null && !cardboard && ownFitted?.isEmpty() == true
     val cutLoad = rememberSoftLoad(if (cutWanted) cutModel else null, 600)
     val cutBmp = cutLoad.bitmap
     val cutUpright = rememberDerived(cutBmp, "spine|1") { b -> singleSpine(orientSpine(b, landscape = false)) }
-    val cutFitted = rememberDerived(cutUpright, "spineFit5|$depth") { b ->
+    val cutFitted = rememberDerived(cutUpright, "spineFit2|$depth") { b ->
         val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
-        if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(keepCaseSpine(b, depth))
+        if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(fillCrop(b, depth, 0.1f))
     }
     val ownFitting = (ownUpright != null && ownFitted == null) || (cutWanted && (!cutLoad.done || (cutBmp != null && (cutUpright == null || cutFitted == null))))
     val spineWaiting = spinePending || uprightPending
@@ -796,13 +792,7 @@ private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float, widenN64: 
     // Preserve the complete printed scan within the fixed-size side, without
     // stretching it or blindly chopping its title/logo off. A missing or
     // failed scan still gets the existing console spine fallback.
-    // (Update 317, Toni — an N64 spine "wrongly applied": a scan narrower than the side was shrunk into it, the rest the
-    // scan's edge colour, a wide plain strip beside the print. An N64 spine narrower than its side now fills it, top to
-    // bottom and edge to edge — nothing cut, nothing beside it.)
-    // (…only as far as a fifth wider: some N64 "spines" are the box's long top edge, far narrower, and came out stretched.)
-    // (…and an N64 scan up to three tenths off its side is fitted to it whole — cut in the middle it lost its title's edges.)
-    if (widenN64 && aspect > 0f && kotlin.math.abs(cur / aspect - 1f) <= 0.3f) scaleToAspect(cut, aspect)
-    else if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect, widenN64)
+    if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect, widenN64)
     else fillCrop(cut, aspect, 0.1f)
 }.getOrElse { fillCrop(src, aspect, 0.1f) }
 
@@ -847,29 +837,9 @@ private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float, widenN64
     return out
 }
 
-/**
- * Update 317 (Toni: GameCube spines "overstretched" — Budokai 2, Melee, Pikmin): a keep case's spine scan narrower than its
- * side had its top and bottom cut to the side's shape ([fillCrop]) and was then drawn at the side's full height — zoomed,
- * its title cut at both ends. Narrower by more than a tenth it now keeps its whole height: widened up to a fifth, past
- * that set in the side at its own width on the scan's edge colour ([fitSpineInside]). Wider ones are cut as before.
- */
-private fun keepCaseSpine(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
-    val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
-    if (aspect <= 0f) return src
-    val r = cur / aspect
-    // (…and never cut across either: a scan a little wider than the side lost the edges of its title — Zelda's logo,
-    // Budokai 2's name and GameCube logo. Within a fifth narrower to two fifths wider it's fitted to the side whole,
-    // a little narrowed or widened; further off it's set in at its own shape on its edge colour.)
-    if (r in (1f / 1.2f)..1.4f) return scaleToAspect(src, aspect)
-    return fitSpineInside(src, aspect, false)
-}
-
-/** Update 317: [src] scaled across (its height kept) to [aspect] — nothing cut. */
-private fun scaleToAspect(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
-    val w = (src.height * aspect).toInt().coerceAtLeast(1)
-    if (kotlin.math.abs(w - src.width) <= 1) return src
-    return runCatching { android.graphics.Bitmap.createScaledBitmap(src, w, src.height, true) }.getOrDefault(src)
-}
+// (Update 317: the spines' fitting is update 240 / 308 / 312's again — keep cases cut in the middle (the GameCube scans
+// carry slivers of the back and front either side of the spine), N64 as update 312 fits it. Fitting them whole, widening
+// or stretching them put more of them wrong than right on the Flip 2.)
 
 /** Update 317: a keep case's spine scan more than this many times as wide (for its height) as the side isn't its spine. */
 private const val SPINE_TOO_WIDE = 1.8f

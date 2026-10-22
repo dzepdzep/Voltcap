@@ -63,7 +63,12 @@ internal class PieceTurn(
      * a darker light on its pictures, once it's drawn from them ([shadeTaken]) — the view then needs no offscreen picture
      * of its own to darken it, which was drawn again every frame for every game aside. Null: the view shades it.
      */
-    val shadeOf: (() -> Float)? = null
+    val shadeOf: (() -> Float)? = null,
+    /**
+     * Update 317 (Toni, option 2: "fewer copies while moving"): the view is moving (a carousel gliding) — the piece draws its
+     * sides with at most [MOVING_COPIES] copies meanwhile, its full sides again the moment it stops. Null: never.
+     */
+    val movingOf: (() -> Boolean)? = null
 ) {
     /** Update 317: the piece applies [shadeOf] itself (it's drawn from its pictures); the view leaves it out. */
     val shadeTaken = mutableStateOf(false)
@@ -470,6 +475,7 @@ internal fun Modifier.solidPiece(
         var solidMade = false
         var madeYaw = Float.NaN
         var madeShade = 1f
+        var madeMoving = false
         onDrawWithContent {
             // (Update 294, testing only: TestHooks `voltcap_test_pose` — held at one turn, for before / after pictures.)
             val testPose = TestHooks.pose.value
@@ -478,6 +484,7 @@ internal fun Modifier.solidPiece(
             val shadeK = if (side != null && art != null && turn?.shadeOf != null && turn.shadeTaken.value)
                 1f - turn.shadeOf.invoke().coerceIn(0f, 1f) else 1f
             if (abs(yaw) < 0.25f && shadeK >= 0.999f) { drawContent(); return@onDrawWithContent }
+            val moving = turn?.movingOf?.invoke() == true
             // (Update 314: fully opaque in its view — drawn straight into it, no whole-piece buffer.)
             // (Not a see-through piece: its cut-out behind the face, DstOut, must stay inside its own buffer.)
             val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true
@@ -498,7 +505,7 @@ internal fun Modifier.solidPiece(
                 }
             }
             // (Update 314: the same turn as last drawn — the parts only drawn from the picture are still right.)
-            if (art != null && artMade && yaw == madeYaw && shadeK == madeShade && testPose == null && !direct) {
+            if (art != null && artMade && yaw == madeYaw && shadeK == madeShade && moving == madeMoving && testPose == null && !direct) {
                 translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
                 return@onDrawWithContent
             }
@@ -563,6 +570,7 @@ internal fun Modifier.solidPiece(
             }
             madeYaw = yaw
             madeShade = shadeK
+            madeMoving = moving
             if (c >= 0f) {
                 lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))
                 if (art == null) lit.record { drawLayer(face) }
@@ -619,7 +627,7 @@ internal fun Modifier.solidPiece(
                 val reach = if (edgeLeaf != null && side != null && artSize != null)
                     (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(c)).coerceAtLeast(1.5f) else 0f
                 val span = depthPx * abs(sn)
-                val nLeaf = if (edgeLeaf == null || span < 0.5f) 0 else ceil(span / reach).toInt().coerceIn(1, 24)
+                val nLeaf = if (edgeLeaf == null || span < 0.5f) 0 else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
                 edgeL.alpha = if (edgeLeaf != null) {
                     if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
                 } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
@@ -765,6 +773,9 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
  * curves) kept, the side a few px thicker at most, never thinner.
  */
 internal const val SIDE_SPREAD = 10
+
+/** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
+internal const val MOVING_COPIES = 4
 
 /** A brightness filter in 40 steps (made once each). */
 private object SolidLight {

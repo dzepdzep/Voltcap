@@ -865,6 +865,8 @@ internal fun GameCarousel(
     // (Update 162 (review): the moving values always read first — while a slide was pending they weren't read at all, so
     // the games' layers and posFloor never subscribed to them and stayed frozen through the slide and after it.)
     val curPos: () -> Float = remember { { val v = glide.pos.value; if (swap.snapPending) swap.snapTo else v } }
+    // (Update 317: whether the row is gliding — the turned cartridges draw their sides lighter meanwhile, PieceTurn.movingOf.)
+    val movingNow: () -> Boolean = remember { { glide.pos.isRunning } }
     val kNow: () -> Float = remember { { val v = swap.k.value; if (swap.kPending) 0f else v } }
     // Which games are near enough to draw changes only once per game passed (not every frame).
     val posFloor by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.floor(curPos()).toInt() } }
@@ -1051,6 +1053,7 @@ internal fun GameCarousel(
         ctx.caseRefMm = caseRefMm
         ctx.physicalMedia = physicalMedia
         ctx.viewport = viewport
+        ctx.moving = movingNow
         // Update 162: while a category change slides, the collection that was here goes on along the path (layer 1)
         // and the new one comes in after it from the side the change came from (layer 0), each fading as it goes.
         val showOld = swap.token != 0 && swap.doneToken.intValue != swap.token && swap.oldGames.isNotEmpty()
@@ -1252,6 +1255,9 @@ private class CarouselCtx(
 
     /** Update 314: the carousel's box width (set each composition). */
     var viewport: CarouselViewport? = null
+
+    /** Update 317: the carousel is gliding (read while drawing — a state, so the pieces draw again when it stops). */
+    var moving: (() -> Boolean)? = null
 
     /** [Carousel.placeInto] for this carousel's view. */
     fun place(p: Carousel.Place, rel: Float): Carousel.Place = Carousel.placeInto(p, rel, side, view, unit.value)
@@ -1459,7 +1465,8 @@ private fun CarouselItem(
     val opaqueLatest = rememberUpdatedState(opaqueOf)
     // (Update 317: the shade too — a piece drawn from its pictures darkens itself, CarouselArt then needs no buffer for it.)
     val shadeLatest = rememberUpdatedState(shadeOf)
-    val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }, shadeOf = { shadeLatest.value() }) }
+    val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }, shadeOf = { shadeLatest.value() },
+        movingOf = { ctxNow.value.moving?.invoke() == true }) }
     Box(
         modifier
             // The drawing order, read while placing (zIndex is otherwise fixed at composition).

@@ -117,6 +117,12 @@ tested on a handheld.
   were cut in the middle. Now never cut: keep cases fitted whole (scaled across) from a fifth narrower to two fifths
   wider, else set in at their own shape (`fitSpineInside`); N64 within three tenths fitted whole (`scaleToAspect`).
   Cache kinds `spineFit5`, `n64-fit317c`. Measured: frames 11 ms (p50) / 400 ms (p90), 310 MB render targets.
+- **User (317r): GameCube and N64 spines "all cut / messed up" — some worked before update 317.** The GameCube spine scans
+  carry slivers of the back and front either side of the spine; update 240's middle cut is what left the spine itself.
+  **Spine fitting put back as before 317** (keep cases `spineFit` fillCrop; N64 update 312's `n64-align312`); the width
+  check, keepCaseSpine and scaleToAspect are gone. (Kept: spine cuts on 3D cases, the Covers-look front.)
+- **Fewer side copies while moving (Toni, option 2):** `PieceTurn.movingOf` (the carousel's glide running, `ctx.moving`,
+  a state — the pieces draw again when it stops): a turned piece's side at most `MOVING_COPIES` (4) copies meanwhile.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
