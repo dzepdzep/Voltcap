@@ -108,6 +108,11 @@ tested on a handheld.
   piece drawn from its pictures puts a copy every SIDE_SPREAD px (foreshortened by the turn, at least 1.5 px), the near
   one (under the face) left out — 4–20 draws a piece instead of up to 32 × 4 (n × fill). Outline shape kept; the side a
   few px thicker at most. Cache kind `side317`.
+- **User screenshots (317p):** some N64 spines now overstretched (Zelda OoT, Mario Party 2 — the box's long-edge print
+  stretched across the side); GameCube spines (Budokai 2) still zoomed. **Changed (`Case3D.kt`):** the N64 stretch only
+  up to a fifth wider (else update 312's fit, cache `n64-fill317b`); keep cases — a spine scan narrower than its side by
+  more than a tenth keeps its whole height (widened up to a fifth, else set in at its own width on its edge colour,
+  `keepCaseSpine`) instead of having top and bottom cut and being zoomed to the side (`spineFit4`).
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,

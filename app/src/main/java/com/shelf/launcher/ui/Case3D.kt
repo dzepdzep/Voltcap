@@ -161,22 +161,22 @@ internal fun Case3D(
     // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
     // (Update 316: fitted away from the screen's thread — rememberDerived.)
     val ownFitted: List<android.graphics.Bitmap>? =
-        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-fill317|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-fill317b|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317, Toni: GameCube spines "messed up" — Budokai 2, Melee, Pikmin: the "spine" scan was a picture of much
         // more of the box, and its middle cut to the side's width came out a blurred slice of the box art. A scan far wider
         // than the side is left out — the console's spine with the title instead, as update 308 does for cardboard boxes.)
-        else rememberDerived(ownUpright, "spineFit2|$depth") { b ->
+        else rememberDerived(ownUpright, "spineFit4|$depth") { b ->
             val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
-            if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(fillCrop(b, depth, 0.1f))
+            if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(keepCaseSpine(b, depth))
         }
     // (Update 317: the strip cut from the box scan, when the spine scan was left out as too wide and cuts are on.)
     val cutWanted = cutModel != null && !cardboard && ownFitted?.isEmpty() == true
     val cutLoad = rememberSoftLoad(if (cutWanted) cutModel else null, 600)
     val cutBmp = cutLoad.bitmap
     val cutUpright = rememberDerived(cutBmp, "spine|1") { b -> singleSpine(orientSpine(b, landscape = false)) }
-    val cutFitted = rememberDerived(cutUpright, "spineFit2|$depth") { b ->
+    val cutFitted = rememberDerived(cutUpright, "spineFit4|$depth") { b ->
         val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
-        if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(fillCrop(b, depth, 0.1f))
+        if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(keepCaseSpine(b, depth))
     }
     val ownFitting = (ownUpright != null && ownFitted == null) || (cutWanted && (!cutLoad.done || (cutBmp != null && (cutUpright == null || cutFitted == null))))
     val spineWaiting = spinePending || uprightPending
@@ -799,7 +799,8 @@ private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float, widenN64: 
     // (Update 317, Toni — an N64 spine "wrongly applied": a scan narrower than the side was shrunk into it, the rest the
     // scan's edge colour, a wide plain strip beside the print. An N64 spine narrower than its side now fills it, top to
     // bottom and edge to edge — nothing cut, nothing beside it.)
-    if (widenN64 && aspect > 0f && cur < aspect) android.graphics.Bitmap.createScaledBitmap(
+    // (…only as far as a fifth wider: some N64 "spines" are the box's long top edge, far narrower, and came out stretched.)
+    if (widenN64 && aspect > 0f && cur < aspect && aspect / cur <= 1.2f) android.graphics.Bitmap.createScaledBitmap(
         cut, (cut.height * aspect).toInt().coerceAtLeast(1), cut.height, true
     )
     else if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect, widenN64)
@@ -845,6 +846,21 @@ private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float, widenN64
         android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
     )
     return out
+}
+
+/**
+ * Update 317 (Toni: GameCube spines "overstretched" — Budokai 2, Melee, Pikmin): a keep case's spine scan narrower than its
+ * side had its top and bottom cut to the side's shape ([fillCrop]) and was then drawn at the side's full height — zoomed,
+ * its title cut at both ends. Narrower by more than a tenth it now keeps its whole height: widened up to a fifth, past
+ * that set in the side at its own width on the scan's edge colour ([fitSpineInside]). Wider ones are cut as before.
+ */
+private fun keepCaseSpine(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+    val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
+    if (aspect <= 0f || cur >= aspect * 0.9f) return fillCrop(src, aspect, 0.1f)
+    if (aspect / cur <= 1.2f) return runCatching {
+        android.graphics.Bitmap.createScaledBitmap(src, (src.height * aspect).toInt().coerceAtLeast(1), src.height, true)
+    }.getOrDefault(src)
+    return fitSpineInside(src, aspect, false)
 }
 
 /** Update 317: a keep case's spine scan more than this many times as wide (for its height) as the side isn't its spine. */
