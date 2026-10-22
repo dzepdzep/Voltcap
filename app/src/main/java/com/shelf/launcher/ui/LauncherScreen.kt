@@ -2169,7 +2169,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Update 159: Discs only on → cartridge games print their cover on their CD (typedArtFor).
     val discLookNow = state.appearance.cardArtType == com.shelf.launcher.data.CardArtType.DISC
     androidx.compose.runtime.SideEffect { if (DiscLook.on != discLookNow) DiscLook.on = discLookNow }
-    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false }
+    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
     // Update 181: the Pocket layouts play their sounds through the home screen's.
     SideEffect { PocketSounds.play = { s -> sounds?.play(s) } }
     // Update 202: Green Core's menu opens the app drawer, the music library and the sort window through the hotkey actions.
