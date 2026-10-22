@@ -29,12 +29,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Configure Android SDK
-        uses: android-actions/setup-android@v3
+      # GitHub's ubuntu-latest image already provides Android SDK command-line tools.
+      # setup-android@v3 currently requests the removed "tools" SDK package and fails.
       - name: Install Android 36 and native tools
         run: |
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
-          yes | sdkmanager --licenses > /dev/null || true
+          echo "ANDROID_HOME=${ANDROID_HOME}"
+          SDKM=$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | head -1)
+          test -n "$SDKM"
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
       - name: Configure Gradle cache
         uses: gradle/actions/setup-gradle@v4
       - name: Build and run JVM unit tests
