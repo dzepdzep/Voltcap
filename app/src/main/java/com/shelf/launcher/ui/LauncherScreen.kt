@@ -2924,8 +2924,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // (Update 159: nor over a style layout's own solid background — pale backdrops, the bookcase, the circuit board.)
         // (Update 307: one clip fading into the next and out when it's put away — VideoCrossfade — and looping on while the
         // home screen rests: only a low battery holds its frame now. Update 221 held it after 30 s without input.)
+        // Update 313: Video previews are allowed as a fullscreen background only
+        // when the user has selected game art or blurred game art. A clip must
+        // never replace Your wallpaper or an animated theme (including the
+        // per-game theme selected above). The Gaming room's video monitor
+        // remains independent and is intentionally not affected.
         val backdropClip = videoUrl?.takeIf {
-            !roomClip && !screensaverOn && !heroLayout && !discCalm && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK &&
+            allowsFullscreenGameplayVideo(backgroundStyle) &&
+                !roomClip && !screensaverOn && !heroLayout && !discCalm &&
                 !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))
         }
         VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low)
@@ -2962,7 +2968,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Not when the info panel plays it already, Detail layers › Preview video: one clip at a time.)
             // (Update 307: fading from clip to clip, looping on while idle — VideoCrossfade.)
             VideoCrossfade(
-                videoUrl?.takeIf { !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value },
+                videoUrl?.takeIf {
+                    allowsFullscreenGameplayVideo(backgroundStyle) &&
+                        !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
+                },
                 state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low
             )
         }
