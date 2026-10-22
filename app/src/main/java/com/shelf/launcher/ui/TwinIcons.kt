@@ -77,11 +77,23 @@ import kotlin.math.roundToInt
  */
 
 private val IconsBack = Color(0xFF161C27)
-private val IconsDots = Color(0x12FFFFFF)
-private val TrayBack = listOf(Color(0xFFF1F3F6), Color(0xFFDDE2E8))
-private val TrayInk = Color(0xFF26313C)
-private val TrayMuted = Color(0xFF6A7682)
-private val TrayEdge = Color(0xFFC6CFD7)
+// (Update 309, Toni: "the same colour on top and bottom — black or white fully, or mix": Layout options › Colours.
+// Mixed is the look as it was: the dark top, the light tray.)
+private val topLight: Boolean get() = Features.twinIconsTone.state.value == Features.TwinTone.LIGHT
+private val trayDark: Boolean get() = Features.twinIconsTone.state.value == Features.TwinTone.DARK
+private val IconsDots: Color get() = if (topLight) Color(0x14000000) else Color(0x12FFFFFF)
+/** Text on the top screen's background (the status strip). */
+private val TopInk: Color get() = if (topLight) Color(0xE626313C) else Color.White.copy(alpha = 0.9f)
+private val TrayBack: List<Color> get() = if (trayDark) listOf(Color(0xFF1C2330), Color(0xFF121820)) else listOf(Color(0xFFF1F3F6), Color(0xFFDDE2E8))
+private val TrayInk: Color get() = if (trayDark) Color(0xFFE8EDF2) else Color(0xFF26313C)
+private val TrayMuted: Color get() = if (trayDark) Color(0xFF97A3B0) else Color(0xFF6A7682)
+private val TrayEdge: Color get() = if (trayDark) Color(0x33FFFFFF) else Color(0xFFC6CFD7)
+/** The tray's buttons and icon frames. */
+private val TraySurface: Color get() = if (trayDark) Color(0xFF242C39) else Color.White
+
+/** The top screen's background: the theme-tinted dark one, or the tray's light grey. */
+@Composable
+private fun topBack(): Color = if (topLight) Color(0xFFEDF0F4) else themeDark(IconsBack)
 
 /** Update 158: the grid's icons per row as last drawn (for the keys). */
 internal object TwinNav {
@@ -166,6 +178,8 @@ internal fun TwinIconsSettings() {
     StyleChoice("Icons per row", arrayOf(4, 5, 6, 7), Features.twinCols.state.value, { "$it" }) { Features.twinCols.value = it }
     // Update 179.
     StyleChoice("Gap between icons", TWIN_GAPS, Features.twinGap.state.value, { gapLabel(it) }) { Features.twinGap.value = it }
+    // Update 309.
+    StyleChoice("Colours", Features.TwinTone.values(), Features.twinIconsTone.state.value, { it.label }) { Features.twinIconsTone.value = it }
     TwinFullTopSwitch()
     MutedNote("The tool buttons are your round shortcuts (Settings, Search, Achievements, Notifications, Music, Categories: the ones you keep in Settings › Home › Round shortcuts). The bottom half goes to the second screen when Settings › Screens › Use the second screen is on.")
 }
@@ -175,7 +189,7 @@ internal fun TwinIconsSettings() {
 @Composable
 private fun TwinIconsTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     val shape = RoundedCornerShape(if (framed) 14.dp else 18.dp)
-    val back = themeDark(IconsBack)
+    val back = topBack()
     // The home screen's status bar already shows the time and battery above a full-screen top; a small framed one
     // (one screen) or no status bar: its own strip.
     // (Update 158: only without the status bar — stacked on one screen it drew the clock twice.)
@@ -184,7 +198,7 @@ private fun TwinIconsTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
     val full = !framed && TwinScreens.fullTop
     BoxWithConstraints(
         if (full) modifier else modifier.clip(shape).background(back).iconsPattern()
-            .then(if (framed) Modifier.border(1.dp, Color.White.copy(alpha = 0.12f), shape) else Modifier)
+            .then(if (framed) Modifier.border(1.dp, if (topLight) TrayEdge else Color.White.copy(alpha = 0.12f), shape) else Modifier)
     ) {
         val compact = maxHeight < 230.dp
         val pad = if (compact) 8.dp else 14.dp
@@ -213,7 +227,12 @@ private fun TwinIconsTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
 /** Update 180: Twin icons' dark patterned background across the whole top screen (behind the status bar too). */
 @Composable
 internal fun TwinIconsBackdrop(modifier: Modifier) {
-    Box(modifier.background(themeDark(IconsBack)).iconsPattern())
+    Box(modifier.background(topBack()).iconsPattern()) {
+        // (Update 309: on the light top, a soft shade behind Voltcap's white status bar so it stays readable.)
+        if (topLight && TwinScreens.ctx?.state?.appearance?.statusOn == true) Box(
+            Modifier.fillMaxWidth().height(64.dp).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.38f), Color.Transparent)))
+        )
+    }
 }
 
 /** Small diamonds over the dark background, and a soft shade (drawn once per size). */
@@ -236,7 +255,7 @@ private fun Modifier.iconsPattern(): Modifier = this.drawWithCache {
         y += step / 2f
         odd = !odd
     }
-    val shade = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.05f), Color.Transparent, Color.Black.copy(alpha = 0.28f)))
+    val shade = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.05f), Color.Transparent, Color.Black.copy(alpha = if (topLight) 0.06f else 0.28f)))
     onDrawBehind {
         drawPath(path, IconsDots)
         drawRect(shade)
@@ -252,11 +271,11 @@ private fun IconsStatus(compact: Boolean, modifier: Modifier) {
     val battery = rememberBatteryInfo()
     val fs = if (compact) 10.sp else 12.sp
     Row(modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(clock.orEmpty(), color = Color.White.copy(alpha = 0.9f), fontSize = fs, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Text(clock.orEmpty(), color = TopInk, fontSize = fs, fontWeight = FontWeight.SemiBold, maxLines = 1)
         Spacer(Modifier.weight(1f))
-        Icon(batteryIconFor(battery.percent, battery.charging), null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(if (compact) 12.dp else 15.dp))
+        Icon(batteryIconFor(battery.percent, battery.charging), null, tint = TopInk, modifier = Modifier.size(if (compact) 12.dp else 15.dp))
         Spacer(Modifier.width(3.dp))
-        Text("${battery.percent}%", color = Color.White.copy(alpha = 0.9f), fontSize = fs, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Text("${battery.percent}%", color = TopInk, fontSize = fs, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
 
@@ -279,7 +298,7 @@ private fun IconsSlot(c: StyleCtx, slot: Dp) {
             .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.9f), accent, Color.White.copy(alpha = 0.55f))))
             .padding(slot * 0.03f)
             .clip(RoundedCornerShape(slot * 0.14f))
-            .background(Color(0xFF0E131B))
+            .background(if (topLight) Color.White else Color(0xFF0E131B))
             .padding(slot * 0.05f)
             .tapOnly { if (c.game != null) open() },
         contentAlignment = Alignment.Center
@@ -320,7 +339,7 @@ private fun IconsCard(c: StyleCtx, compact: Boolean, modifier: Modifier) {
     val open by rememberUpdatedState(c.actions.open)
     val shape = RoundedCornerShape(12.dp)
     Row(
-        modifier.clip(shape).background(Color.White.copy(alpha = 0.92f)).tapOnly { if (c.game != null) open() }.padding(horizontal = 12.dp),
+        modifier.clip(shape).background(if (trayDark) TraySurface else Color.White.copy(alpha = 0.92f)).tapOnly { if (c.game != null) open() }.padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(Modifier.size(if (compact) 8.dp else 10.dp).clip(CircleShape).background(accent))
@@ -402,7 +421,7 @@ private fun TrayTools(tools: List<HomeShortcut>, h: Dp, modifier: Modifier) {
                     .graphicsLayer { val k = if (on) 1.12f else 1f; scaleX = k; scaleY = k }
                     .size(h)
                     .clip(CircleShape)
-                    .background(if (on) t.tint.copy(alpha = 0.22f) else Color.White)
+                    .background(if (on) t.tint.copy(alpha = 0.22f) else TraySurface)
                     .border(if (on) 2.dp else 1.dp, if (on) accent else TrayEdge, CircleShape)
                     .tapOnly { t.onClick() },
                 contentAlignment = Alignment.Center
@@ -480,7 +499,7 @@ private fun TrayIcon(c: StyleCtx, i: Int, on: Boolean, inGames: Boolean, modifie
             .graphicsLayer { val k = 1f + 0.06f * lift; scaleX = k; scaleY = k }
             .trayRing(ring > 0.01f, accent.copy(alpha = (if (inGames) 1f else 0.45f) * ring), ring)
             .clip(shape)
-            .background(Color.White)
+            .background(TraySurface)
             .border(1.dp, TrayEdge, shape)
             .tapOnly(onTap)
             .padding(2.dp)
@@ -517,7 +536,7 @@ private fun TrayOpen(c: StyleCtx, tools: List<HomeShortcut>, modifier: Modifier)
         modifier
             .graphicsLayer { val k = if (on) 1.03f else 1f; scaleX = k; scaleY = k }
             .clip(shape)
-            .background(if (on) lerp(Color.White, accent, 0.22f) else Color.White)
+            .background(if (on) lerp(TraySurface, accent, 0.22f) else TraySurface)
             .border(if (on) 2.dp else 1.dp, if (on) accent else TrayEdge, shape)
             .tapOnly { if (c.game != null) open() }
             .padding(horizontal = 14.dp),

@@ -4,6 +4,18 @@ Newest update at the top. Each update lists the files touched in `src_copy` (rob
 
 ---
 
+## Update — 22 Oct 2026 (309): Twin icons colours — mixed, all dark or all light
+
+All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published** (0.6.30 was published before this).
+
+- **Twin icons › Layout options › Colours**: Mixed (dark top, light bottom — as before, the default), Dark (both screens dark: tray, tool buttons, icon frames, Open bar and name card dark with light text), Light (both screens light: the top's patterned background light grey with darker dots, its status strip in dark ink, the icon slot white). With Voltcap's status bar over a light top, a soft shade sits behind it so its white text stays readable. Twin icons' layout, sizes and motion unchanged.
+- **Checked on the Thor:** Dark and Light on both screens (setting put back to Mixed afterwards).
+- **Not checked:** one-screen (stacked) Twin icons in Dark / Light.
+
+**Copy:** `src_copy\ui\TwinIcons.kt`, `src_copy\data\Features.kt`.
+
+---
+
 ## Update — 22 Oct 2026 (308): custom cartridges ARE the authentic piece, R1 Categories everywhere, gliding category bar, Twin showcase top screen like the reference, AYN Thor lights after the screen wakes, cardboard-box spines
 
 All paths below are on your PC under `C:\Users\User\AndroidStudioProjects\ShelfLauncher\`. **Copied, built (assembleRelease, no errors) and installed on the AYN Thor.** Committed and pushed by Claude. **Not published.** No extra tests (as asked).

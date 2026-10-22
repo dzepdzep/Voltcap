@@ -1231,6 +1231,9 @@ object Features {
     /** Open on the categories (true) or on the games of the category you're in. */
     val ribbonStartOnCategories = BoolPref("ribbon_start_categories", false)
     val twinCols = IntPref("twin_cols", 5, 4..7)
+    /** Update 309: Twin icons' colours — dark top / light bottom as before, or both screens dark, or both light. */
+    enum class TwinTone(val label: String) { MIX("Mixed (dark top, light bottom)"), DARK("Dark"), LIGHT("Light") }
+    val twinIconsTone = EnumPref("twin_icons_tone", TwinTone.MIX, TwinTone.values())
     /** Update 307: Twin showcase's rows of icons (1–3); more games run on to the right. */
     val twinShowRows = IntPref("twin_show_rows", 2, 1..3)
     /** Update 308: Twin showcase with Voltcap's status bar too (off: the picture's own status capsule). */
