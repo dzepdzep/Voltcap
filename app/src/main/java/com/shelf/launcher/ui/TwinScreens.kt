@@ -138,6 +138,7 @@ internal fun androidx.compose.foundation.layout.BoxScope.TwinBackPill(name: Stri
 
 /** Update 158: one of the two-screen layouts. */
 internal val HomeLayout.isTwin: Boolean get() = this == HomeLayout.TWIN_DESK || this == HomeLayout.TWIN_ICONS ||
+    this == HomeLayout.TWIN_SHOWCASE || // Update 307
     this == HomeLayout.POCKET_CLASSIC || this == HomeLayout.POCKET_RIBBON // Update 181
 
 /** Update 181: the Pocket layouts (their own keys, sounds and pocket screens). */
@@ -216,6 +217,8 @@ private fun TwinScaled(w: Dp, h: Dp, s: Float, content: @Composable (Modifier) -
 internal fun TwinSecondScreen(c: StyleCtx) {
     when (c.state.appearance.homeLayout) {
         HomeLayout.TWIN_ICONS -> TwinIconsBottom(c, Modifier.fillMaxSize(), framed = false)
+        // Update 307.
+        HomeLayout.TWIN_SHOWCASE -> TwinShowcaseBottom(c, Modifier.fillMaxSize(), framed = false)
         // Update 181.
         HomeLayout.POCKET_CLASSIC -> PocketClassicBottom(c, Modifier.fillMaxSize(), framed = false)
         HomeLayout.POCKET_RIBBON -> PocketRibbonBottom(c, Modifier.fillMaxSize(), framed = false)

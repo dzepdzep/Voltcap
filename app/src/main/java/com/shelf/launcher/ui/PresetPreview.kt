@@ -92,6 +92,7 @@ internal fun PresetPreview(
             HomeLayout.HERO_TILES -> p.heroTiles()
             HomeLayout.TWIN_DESK -> p.twinDesk()
             HomeLayout.TWIN_ICONS -> p.twinIcons()
+            HomeLayout.TWIN_SHOWCASE -> p.twinShowcase() // Update 307
             HomeLayout.CRATE -> p.crate()
             HomeLayout.CARDS -> p.binder()
             // Update 176.
@@ -964,6 +965,21 @@ private class PreviewPainter(
         val ic = minOf(cell - 0.02f, 0.14f * h / w)
         for (r in 0..1) for (c in 0 until cols) card(0.13f + c * cell, 0.55f + r * 0.165f, ic, ic * w / h, r * cols + c, on = r == 0 && c == 0, r0 = 4f, plainCover = true)
         rect(0.13f, 0.9f, 0.84f, 0.07f, accent.copy(alpha = 0.8f), 8f)
+    }
+
+    /** Update 307: Twin showcase — a big picture on top, square icons in 1–3 rows under it, the one you're on framed. */
+    fun twinShowcase() {
+        val rows = oi(Features.twinShowRows).coerceIn(1, 3)
+        rect(0f, 0f, 1f, 0.48f, Color(0xFF0D1118), 0f)
+        card(0.02f, 0.02f, 0.96f, 0.44f, 0, on = false, r0 = 2f, plainCover = true)
+        rect(0f, 0.5f, 1f, 0.5f, Color(0xFFE9EDF2), 0f)
+        val ih = 0.4f / rows - 0.02f
+        val iw = ih * h / w
+        for (r in 0 until rows) for (c in 0 until 6) {
+            val x = 0.04f + c * (iw + 0.02f)
+            if (x + iw > 0.98f) break
+            card(x, 0.55f + r * (ih + 0.02f), iw, ih, c * rows + r, on = r == 0 && c == 1, r0 = 3f, plainCover = true)
+        }
     }
 
     /** Record crate: sleeves standing in a wooden crate, the one you're on lifted with its record sliding out. */

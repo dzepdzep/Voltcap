@@ -552,6 +552,13 @@ internal fun styleHomeKey(
             )
             return if (layout == HomeLayout.TWIN_DESK) twinDeskKey(twinCtx) else twinIconsKey(twinCtx)
         }
+        // Update 307: Twin showcase's grid runs in columns (TwinShowcase.kt).
+        HomeLayout.TWIN_SHOWCASE -> return twinShowcaseKey(
+            StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+        )
         // Update 158: Card binder handles its own ▲ ▼ (StyleCardBinder.kt); ◀ ▶ are the home screen's own.
         HomeLayout.CARDS -> return cardBinderKey(
             StyleKeyCtx(
@@ -1211,6 +1218,8 @@ internal fun StyleHome(
         // Update 158: the two-screen layouts (TwinDesk.kt / TwinIcons.kt, the halves shared out in TwinScreens.kt).
         HomeLayout.TWIN_DESK -> StyleTwinDesk(c, modifier)
         HomeLayout.TWIN_ICONS -> StyleTwinIcons(c, modifier)
+        // Update 307 (TwinShowcase.kt).
+        HomeLayout.TWIN_SHOWCASE -> StyleTwinShowcase(c, modifier)
         // Update 158: Record crate (StyleRecordCrate.kt).
         HomeLayout.CRATE -> StyleRecordCrate(c, modifier)
         // Update 158: Card binder (StyleCardBinder.kt).
@@ -1283,6 +1292,7 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         // Update 180: the two-screen layouts filling the top screen (two screens in use): their own background.
         HomeLayout.TWIN_DESK -> if (TwinScreens.fullTop) TwinDeskBackdrop(Modifier.fillMaxSize())
         HomeLayout.TWIN_ICONS -> if (TwinScreens.fullTop) TwinIconsBackdrop(Modifier.fillMaxSize())
+        HomeLayout.TWIN_SHOWCASE -> if (TwinScreens.fullTop) TwinShowcaseBackdrop(Modifier.fillMaxSize())
         // Update 181: the Pocket layouts: paper filling the top screen (two screens), else the handheld's light body.
         HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON -> PocketBackdrop(Modifier.fillMaxSize(), paper = TwinScreens.fullTop)
         // Update 202: Green Core's near-black green backdrop over the whole screen (GreenCoreSphere.kt).
@@ -1322,7 +1332,7 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     // Update 176: a custom layout with its own colour / picture.
     HomeLayout.CUSTOM -> customOwnsBackground(CustomSceneNow.scene)
     // Update 180.
-    HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS -> TwinScreens.fullTop
+    HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE -> TwinScreens.fullTop
     // Update 181: always their own (the theme's background stays off).
     HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON -> true
     // Update 202: Green Core always draws its own backdrop.

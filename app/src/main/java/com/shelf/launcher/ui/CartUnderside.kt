@@ -370,7 +370,10 @@ internal object CartUndersides {
         CartLook.GBA -> PackFit("gba", floatArrayOf(0.031f, 0.051f, 0.969f, 0.949f))
         CartLook.NES -> PackFit("nes", floatArrayOf(0.016f, 0.015f, 0.984f, 0.985f))
         CartLook.FAMICOM -> PackFit("famicom", floatArrayOf(0.018f, 0.027f, 0.982f, 0.973f))
-        CartLook.GENESIS -> PackFit("genesis", floatArrayOf(0.068f, 0.027f, 0.932f, 0.973f))
+        // (Update 307: the Genesis shape now draws the real cartridge's front, at its own proportions — wider than the
+        // pack picture's shell — so its box is the real shell fitted across the picture, standing on the same bottom
+        // edge; the connector end follows it.)
+        CartLook.GENESIS -> PackFit("genesis", floatArrayOf(0.015f, 0.1033f, 0.985f, 0.973f))
         CartLook.GAME_GEAR -> PackFit("game_gear", floatArrayOf(0.029f, 0.028f, 0.971f, 0.972f))
         CartLook.NDS -> PackFit("ds", floatArrayOf(0.029f, 0.027f, 0.971f, 0.973f))
         CartLook.N3DS -> PackFit("3ds", floatArrayOf(0.028f, 0.027f, 0.973f, 0.973f))

@@ -847,9 +847,7 @@ private fun VideoPage(info: SecondHomeGame, withSound: Boolean) {
                 .clip(RoundedCornerShape(18.dp))
                 .background(Color.Black)
         ) {
-            androidx.compose.runtime.key(url) {
-                VideoBackdrop(url, withSound = withSound, modifier = Modifier.fillMaxSize())
-            }
+            VideoCrossfade(url, withSound = withSound, modifier = Modifier.fillMaxSize())
         }
     }
 }

@@ -105,19 +105,18 @@ internal fun ShowcaseScene(motif: ThemeMotif, colors: ShelfColors, modifier: Mod
             Box(modifier.onSizeChanged { fullW = it.width.toFloat(); fullH = it.height.toFloat() }) {
                 CrtRoom3D(scene, art, time, colors, Modifier.fillMaxSize(), room, focus, poster)
                 // The gameplay clip plays on the monitor itself (a video view laid exactly over its screen).
-                val clip = Showcase.video
-                if (clip != null && !LocalSceneCovered.current && !liteStill && fullW > 0f) {
+                val clip = Showcase.video?.takeIf { !LocalSceneCovered.current && !liteStill }
+                // (Update 307: one clip fading into the next on the monitor — VideoCrossfade.)
+                if (fullW > 0f) {
                     val r = roomMonitorRect(fullW, fullH, focus.value)
                     val d = LocalDensity.current
-                    androidx.compose.runtime.key(clip) {
-                        VideoBackdrop(
-                            clip, Showcase.videoSound,
-                            Modifier
-                                .offset { androidx.compose.ui.unit.IntOffset(r.left.toInt(), r.top.toInt()) }
-                                .size(with(d) { r.width.toDp() }, with(d) { r.height.toDp() })
-                                .clip(RoundedCornerShape(with(d) { (r.width / 110f).toDp() }))
-                        )
-                    }
+                    VideoCrossfade(
+                        clip, Showcase.videoSound, Modifier.fillMaxSize(),
+                        clipModifier = Modifier
+                            .offset { androidx.compose.ui.unit.IntOffset(r.left.toInt(), r.top.toInt()) }
+                            .size(with(d) { r.width.toDp() }, with(d) { r.height.toDp() })
+                            .clip(RoundedCornerShape(with(d) { (r.width / 110f).toDp() }))
+                    )
                 }
             }
             return

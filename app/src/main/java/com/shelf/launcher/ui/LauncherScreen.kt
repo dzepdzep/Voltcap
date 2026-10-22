@@ -2906,12 +2906,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         SideEffect { Showcase.video = roomVideo; Showcase.videoSound = roomSound }
         // Update 151: the Hero carousel plays it over its big hero picture (below), not under it where it was hidden.
         // (Update 159: nor over a style layout's own solid background — pale backdrops, the bookcase, the circuit board.)
-        if (videoUrl != null && !roomClip && !screensaverOn && !heroLayout && !discCalm && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK &&
-            !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))) {
-            androidx.compose.runtime.key(videoUrl) {
-                VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize(), paused = HomeIdle.calm) // (Update 221: holds its frame while idle)
-            }
+        // (Update 307: one clip fading into the next and out when it's put away — VideoCrossfade — and looping on while the
+        // home screen rests: only a low battery holds its frame now. Update 221 held it after 30 s without input.)
+        val backdropClip = videoUrl?.takeIf {
+            !roomClip && !screensaverOn && !heroLayout && !discCalm && backgroundStyle != com.shelf.launcher.data.BackgroundStyle.BLACK &&
+                !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))
         }
+        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low)
 
         // Hero carousel: the focused game's hero fills the screen (under the status bar).
         if (heroLayout) {
@@ -2943,11 +2944,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // Update 151: rest on a game with a scraped clip and it plays over the hero picture (Settings › Music & sound ›
             // Video previews turns it off). It fades in on its first frame, so until then the hero stays.
             // (Not when the info panel plays it already, Detail layers › Preview video: one clip at a time.)
-            if (videoUrl != null && !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value) {
-                androidx.compose.runtime.key(videoUrl) {
-                    VideoBackdrop(videoUrl, state.appearance.videoSound, Modifier.fillMaxSize(), paused = HomeIdle.calm) // (Update 221: holds its frame while idle)
-                }
-            }
+            // (Update 307: fading from clip to clip, looping on while idle — VideoCrossfade.)
+            VideoCrossfade(
+                videoUrl?.takeIf { !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value },
+                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low
+            )
         }
         // The status bar's real height (taller with the music player in it), so what sits under it
         // (grid, TV room, corner visualizers and shortcuts) starts below it instead of on the player.

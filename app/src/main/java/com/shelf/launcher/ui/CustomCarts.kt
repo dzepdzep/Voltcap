@@ -122,6 +122,101 @@ internal object CustomCarts {
         CartShells.backFor(real, colour, px, console, style)
     }.getOrNull()
 
+    /**
+     * Update 307: where each pack shape's console plaque sits in its pictures — the plate inside its rim, as left, top,
+     * right, bottom shares of the picture. Measured on the pack's pictures (PS2, N64, Game Boy, SNES parts): the same
+     * place for every console and both finishes. The PS Vita and HuCard shapes have no real cartridge to go on.
+     */
+    private val PLAQUE: Map<CartLook, FloatArray> = mapOf(
+        CartLook.N64 to floatArrayOf(0.2669f, 0.0995f, 0.7331f, 0.2195f),
+        CartLook.GB to floatArrayOf(0.1831f, 0.1114f, 0.8169f, 0.2370f),
+        CartLook.SNES to floatArrayOf(0.2056f, 0.0819f, 0.7950f, 0.2038f),
+        CartLook.GBA to floatArrayOf(0.1544f, 0.1036f, 0.8450f, 0.2636f),
+        CartLook.NES to floatArrayOf(0.2850f, 0.0511f, 0.7262f, 0.1488f),
+        CartLook.FAMICOM to floatArrayOf(0.0994f, 0.0816f, 0.9006f, 0.2280f),
+        CartLook.GENESIS to floatArrayOf(0.1462f, 0.0864f, 0.8538f, 0.2269f),
+        CartLook.GAME_GEAR to floatArrayOf(0.1138f, 0.0784f, 0.8862f, 0.2151f),
+        CartLook.NDS to floatArrayOf(0.1131f, 0.0775f, 0.8869f, 0.2158f),
+        CartLook.N3DS to floatArrayOf(0.1019f, 0.0777f, 0.8500f, 0.2158f),
+        CartLook.SWITCH to floatArrayOf(0.1375f, 0.0945f, 0.8625f, 0.2496f),
+        CartLook.ATARI to floatArrayOf(0.0875f, 0.0933f, 0.9125f, 0.2260f)
+    )
+
+    private val plaques = android.util.LruCache<String, android.graphics.Bitmap>(32)
+    private val fronts = object : android.util.LruCache<String, android.graphics.Bitmap>(16 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: android.graphics.Bitmap) = value.byteCount
+    }
+
+    /**
+     * Update 307: the console's plaque from your pack picture [file] ([look]'s place, [PLAQUE]) — the plate with its logo,
+     * its rounded ends filled with the plate's own colour so it prints as a band. Read once per picture (blocking).
+     */
+    fun plaque(file: java.io.File, look: CartLook): android.graphics.Bitmap? {
+        val r = PLAQUE[look] ?: return null
+        val key = "${file.path}|${file.lastModified()}"
+        plaques.get(key)?.let { return it }
+        return runCatching {
+            val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = 2; inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888 }
+            val full = android.graphics.BitmapFactory.decodeFile(file.path, opts) ?: return@runCatching null
+            val bw = full.width; val bh = full.height
+            var top = r[1] * bh; var bottom = r[3] * bh
+            val ph = bottom - top
+            val left = r[0] * bw + ph * 0.04f; val right = r[2] * bw - ph * 0.04f
+            top += ph * 0.05f; bottom -= ph * 0.05f
+            val x0 = left.toInt().coerceIn(0, bw - 2); val y0 = top.toInt().coerceIn(0, bh - 2)
+            val w = (right.toInt() - x0).coerceIn(2, bw - x0); val h = (bottom.toInt() - y0).coerceIn(2, bh - y0)
+            val px = IntArray(w * h)
+            full.getPixels(px, 0, w, x0, y0, w, h)
+            full.recycle()
+            // The plate's colour: the middle of its top and bottom rows (channel by channel).
+            val rs = ArrayList<Int>(); val gs = ArrayList<Int>(); val bs = ArrayList<Int>()
+            for (x in w / 5 until w * 4 / 5) for (y in intArrayOf(1, h - 2)) {
+                val c = px[y * w + x]; rs.add((c shr 16) and 0xFF); gs.add((c shr 8) and 0xFF); bs.add(c and 0xFF)
+            }
+            rs.sort(); gs.sort(); bs.sort()
+            val plate = (0xFF shl 24) or (rs[rs.size / 2] shl 16) or (gs[gs.size / 2] shl 8) or bs[bs.size / 2]
+            // The plate's round ends (the shell's plastic showed in its corners) and anything see-through: the plate.
+            val rad = h * 0.3f
+            for (y in 0 until h) for (x in 0 until w) {
+                val i = y * w + x
+                if ((px[i] ushr 24) < 250) { px[i] = plate; continue }
+                val cx = when { x < rad -> rad; x > w - 1 - rad -> w - 1 - rad; else -> -1f }
+                val cy = when { y < rad -> rad; y > h - 1 - rad -> h - 1 - rad; else -> -1f }
+                if (cx >= 0f && cy >= 0f) {
+                    val dx = x - cx; val dy = y - cy
+                    if (dx * dx + dy * dy > rad * rad * 0.8f) px[i] = plate
+                }
+            }
+            android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        }.getOrNull()?.also { plaques.put(key, it) }
+    }
+
+    /**
+     * Update 307 (Toni: "reuse the complete authentic cartridge geometry, especially N64, including the front"): a game on
+     * your pack's [look] drawn on its real cartridge [real] front — the researched outline, panel lines, label recess and
+     * sticker shape (CartShells.front) — in your pack's plastic [tone] ([clear]: see-through), the console's plaque from
+     * the pack picture [file] printed across the sticker's top and the game's [art] under it (a box front's console banner
+     * cut off and the art filling the sticker, as in the pack's window). A real label [scan] is the whole sticker, as on
+     * the drawn shells. Cached; blocking the first time a pack picture is read.
+     */
+    fun authenticFront(
+        real: CartShell, look: CartLook, file: java.io.File?, tone: Color, clear: Boolean, platform: String,
+        art: android.graphics.Bitmap?, scan: Boolean, title: String?, px: Int
+    ): android.graphics.Bitmap? = runCatching {
+        val argb = tone.copy(alpha = 1f).toArgb()
+        val key = "${real.id}|$argb|$clear|$platform|${file?.path}|${art?.let { System.identityHashCode(it) } ?: 0}|$scan|${title ?: ""}|$px"
+        fronts.get(key)?.let { return@runCatching it }
+        val colour = ShellColour("pack:$argb${if (clear) "c" else ""}", "Pack", argb, if (clear) 0.6f else 1f)
+        val head = if (scan) null else file?.let { plaque(it, look) }
+        val pic = if (art != null && !scan) {
+            val lw = real.label[2]; val lh = real.label[3]
+            val hh = head?.let { minOf(lw * it.height / it.width.coerceAtLeast(1), lh * 0.4f) } ?: 0f
+            CartShells.packSticker(platform, art, lw / (lh - hh).coerceAtLeast(1f))
+        } else art
+        CartShells.front(real, colour, pic, com.shelf.launcher.data.ConsoleNames.display(platform), title, px, scan, header = head)
+            .also { fronts.put(key, it) }
+    }.getOrNull()
+
     /** Update 131: every console key → pack id (the downloads, data/Packs.kt). */
     fun allIds(): Map<String, String> = ids
 
@@ -236,7 +331,11 @@ internal fun CustomCart(platform: String, art: Any?, modifier: Modifier) {
  * game or console (the Cartridge shell picker), else the pack's shape picked for all.
  */
 @Composable
-internal fun PackCart(platform: String, art: Any?, modifier: Modifier, look0: CartLook? = null, clear0: Boolean? = null) {
+internal fun PackCart(
+    platform: String, art: Any?, modifier: Modifier, look0: CartLook? = null, clear0: Boolean? = null,
+    /** Update 307: [art] is the game's real label scan (the whole sticker) — on a shape drawn on its real cartridge. */
+    labelIsScan: Boolean = false, title: String? = null
+) {
     val id = CustomCarts.idFor(platform)
     // (Update 239, #33: apps / Android games on the Switch-card shape unless a shape was picked for them — lookFor.)
     val look = look0 ?: CustomCarts.lookFor(platform)
@@ -245,6 +344,15 @@ internal fun PackCart(platform: String, art: Any?, modifier: Modifier, look0: Ca
     // see-through — the clear switch stayed on from an earlier pick.)
     val finish = Features.modelFinish.state.value
     val clear = clear0 ?: (Features.cartClear.state.value && (finish == ModelFinish.CLEAR || finish == ModelFinish.OFF))
+    // Update 307: a shape modelled on a real cartridge is drawn as that cartridge's front (its own outline, panels, label
+    // recess and sticker), in your pack's plastic and with its console plaque — AuthenticPackCart. The PS Vita and HuCard
+    // shapes (no real cartridge) keep the pack picture.
+    val real = androidx.compose.runtime.remember(look) { CustomCarts.authenticShell(look) }
+    val fit = androidx.compose.runtime.remember(look) { CartUndersides.packFit(look) }
+    if (real != null && fit != null && id != null) {
+        AuthenticPackCart(platform, id, art, modifier, look, clear, real, fit.frame, labelIsScan, title)
+        return
+    }
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * look.aspect)
         val h = w / look.aspect
@@ -268,6 +376,35 @@ internal fun PackCart(platform: String, art: Any?, modifier: Modifier, look0: Ca
             // (Update 141: the clear shell a little more see-through.)
             if (file != null) AsyncImage(
                 rememberShellRequest(file), null, contentScale = ContentScale.FillBounds, alpha = if (clear) 0.82f else 1f, modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+/**
+ * Update 307: [PackCart] on the real cartridge [real]: its front (CustomCarts.authenticFront) where the real shell sits in
+ * the pack picture ([frame], CartUndersides.packFit — the same box its connector end and back are fitted to), so the piece
+ * keeps the pack shape's size, its turn, sides and back line up, and the layouts don't move.
+ */
+@Composable
+private fun AuthenticPackCart(
+    platform: String, id: String, art: Any?, modifier: Modifier, look: CartLook, clear: Boolean,
+    real: CartShell, frame: FloatArray, scan: Boolean, title: String?
+) {
+    val file = CustomCarts.asset(look, clear, id)
+    val pick = "${SHELL_PREFIX}pack:${look.key}~${if (clear) "clear" else "opaque"}|$platform"
+    val bmpArt = rememberSoftBitmap(art, 480)
+    val front = androidx.compose.runtime.remember(file?.path, bmpArt, clear, platform, scan, title) {
+        val tone = CustomPieceTones.load(pick) ?: Color(0xFF7C7D82)
+        CustomCarts.authenticFront(real, look, file, tone, clear, platform, bmpArt, scan, title, 640)?.asImageBitmap()
+    }
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val w = minOf(maxWidth, maxHeight * look.aspect)
+        val h = w / look.aspect
+        Box(Modifier.size(w, h)) {
+            if (front != null) androidx.compose.foundation.Image(
+                front, real.name, contentScale = ContentScale.FillBounds,
+                modifier = Modifier.offset(x = w * frame[0], y = h * frame[1]).size(w * (frame[2] - frame[0]), h * (frame[3] - frame[1]))
             )
         }
     }

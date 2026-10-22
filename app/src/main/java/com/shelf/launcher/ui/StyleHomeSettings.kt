@@ -68,6 +68,7 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     // Update 158: the two-screen layouts.
     HomeLayout.TWIN_DESK -> "Clock style, calendar"
     HomeLayout.TWIN_ICONS -> "Icons per row"
+    HomeLayout.TWIN_SHOWCASE -> "Rows of icons, gap" // Update 307
     // Update 158: Record crate.
     HomeLayout.CRATE -> "Record turning, wood colour"
     // Update 158: Card binder.
@@ -112,6 +113,7 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         // Update 158: the two-screen layouts (TwinDesk.kt / TwinIcons.kt).
         HomeLayout.TWIN_DESK -> TwinDeskSettings()
         HomeLayout.TWIN_ICONS -> TwinIconsSettings()
+        HomeLayout.TWIN_SHOWCASE -> TwinShowcaseSettings() // Update 307
         // Update 158: Record crate (StyleRecordCrate.kt).
         HomeLayout.CRATE -> RecordCrateSettings()
         // Update 158: Card binder (StyleCardBinder.kt).

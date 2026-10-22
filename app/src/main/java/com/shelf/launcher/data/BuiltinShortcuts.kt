@@ -15,7 +15,7 @@ object BuiltinShortcuts {
         "music" to "Play / pause music", "musicspot" to "Music player position", "edithome" to "Edit home",
         "dual" to "Dual screen", "navbar" to "Hide nav bar",
         "fps" to "Overlay", "sort" to "Sort", "gamelook" to "Game look", "media" to "Cartridges & discs", "badges" to "Console badges", "layout" to "Layout", "endless" to "Endless row",
-        "roundshort" to "Round shortcuts", "progressbar" to "Achievements place", "gamesize" to "Game size", "corners" to "Cover corners", "rowpos" to "Row position",
+        "roundshort" to "Round shortcuts", "progressbar" to "Achievements place", "gamesize" to "Game size", "corners" to "Cover corners", "categories" to "Category names", "rowpos" to "Row position",
         "romm" to "RomM", "carousel" to "Carousel", "theme" to "Theme", "colors" to "Colours follow", "rescan" to "Rescan library", "scrape" to "Missing art",
         "profile" to "Power profile", "batterywatch" to "Battery watcher", "battery" to "Battery & charge limit",
         "mixer" to "Volume mixer", "settings" to "Android settings",

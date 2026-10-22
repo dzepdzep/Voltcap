@@ -3,6 +3,7 @@ package com.shelf.launcher.ui
 import com.shelf.launcher.data.statusOn
 import android.app.NotificationManager
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Cast
@@ -707,6 +708,24 @@ fun QuickSettingsCard(
                 val all = com.shelf.launcher.data.CardCorners.values()
                 home.setAppearance(a.copy(cardCorners = all[(a.cardCorners.ordinal + 1) % all.size]))
             })
+            // Update 307: the category names on the home screen (Settings › Categories › On the home screen › Category
+            // name): press steps Just the current one → All categories → Off; hold: the list. Where the layout draws the
+            // category bar (r1TileFit).
+            run {
+                val bar = a.categoryBar
+                val order = listOf(com.shelf.launcher.data.CategoryBar.CURRENT, com.shelf.launcher.data.CategoryBar.FULL, com.shelf.launcher.data.CategoryBar.OFF)
+                fun short(b: com.shelf.launcher.data.CategoryBar) = when (b) {
+                    com.shelf.launcher.data.CategoryBar.CURRENT -> "Current only"
+                    com.shelf.launcher.data.CategoryBar.FULL -> "All"
+                    com.shelf.launcher.data.CategoryBar.OFF -> "Off"
+                }
+                add(R1Tile("categories", Icons.Filled.Category, "Categories\n" + short(bar), bar != com.shelf.launcher.data.CategoryBar.OFF,
+                    longAction = {
+                        choiceSheet = "Category names on the home screen" to order.map { b -> R1Choice(short(b), bar == b) { home.setAppearance(a.copy(categoryBar = b)) } }
+                    }) {
+                    home.setAppearance(a.copy(categoryBar = order[(order.indexOf(bar) + 1) % order.size]))
+                })
+            }
             // Where the game row sits (Voltcap row and Tile home): Top → Middle → Bottom. (Update 202: r1TileFit.)
             run {
                 // (Update 230, #09: Hero carousel had no tile for its cover side — there this tile puts the covers on the

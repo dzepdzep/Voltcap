@@ -148,7 +148,7 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // Game size: the layouts that read it (GameSize) — not Disc station, the Twin layouts, Custom layout, the Pocket
         // layouts, Green Core (their own sizes, or none) or Pocket Quest (its own Size in Layout options).
         "gamesize" -> on(l !in setOf(
-            HomeLayout.DISCS, HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.CUSTOM,
+            HomeLayout.DISCS, HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.CUSTOM,
             HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.GREENCORE, HomeLayout.POCKET
         ))
         // (Update 239, #93: the Cube menu needs no rule of its own — its games are drawn with StyleArt in your look, size
@@ -162,11 +162,14 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // Row position: the Voltcap row and the Tile home (update 235, #15/#16: a layout again — Where the tiles sit).
         // (Update 230, #09: on Hero carousel it puts the covers on the left / right — QuickSettings.kt.)
         "rowpos" -> on(classic || l == HomeLayout.HERO)
+        // Update 307: the category names — the layouts with the category bar (Voltcap row, Tile home, Grid), and any layout
+        // with the category bar added as a part (Edit Home › + Add).
+        "categories" -> on(classic || l == HomeLayout.GRID || HomeWidgets.CATEGORY in Features.overlayPartsFor(l))
         // Game header tight / roomy: the Voltcap row with its game header on (Settings › Home › Game header).
         // (Update 235, #15/#16: the Voltcap row only — the Tile home shows no game header.)
         "headertight" -> on(l == HomeLayout.CLASSIC && Features.homeHeader.state.value)
         // Gaps: the two Twin layouts (their own gap each).
-        "twingap" -> on(l == HomeLayout.TWIN_ICONS || l == HomeLayout.TWIN_DESK)
+        "twingap" -> on(l == HomeLayout.TWIN_ICONS || l == HomeLayout.TWIN_DESK || l == HomeLayout.TWIN_SHOWCASE)
         // Each layout's own option: Game shelf, Spotlight, Icon bar, Cross menu, Pocket Quest (theme).
         "shelflook" -> on(l == HomeLayout.SHELF)
         "spotlight" -> on(l == HomeLayout.SPOT)

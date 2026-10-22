@@ -434,18 +434,17 @@ private fun RetroTv(
                     // Update 119: the game window opens right here, on the set.
                     .onGloballyPositioned { TvScreen.rect = it.boundsInWindow(); TvScreen.displayId = tvDisplay }
             ) {
-                if (video != null) {
-                    androidx.compose.runtime.key(video) { VideoBackdrop(video, withSound = videoSound, modifier = Modifier.fillMaxSize().background(Color.Black)) }
-                } else {
-                    Crossfade(targetState = pictures.getOrNull(slide % maxOf(1, pictures.size)), animationSpec = tween(500), label = "tvPicture") { url ->
-                        if (url != null) {
-                            val model: Any = if (url.startsWith("/")) java.io.File(url) else url
-                            AsyncImage(model, game.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
-                        } else if (game.sourceType == com.shelf.launcher.data.SourceType.APP) {
-                            AppIconArt(game.packageName, wide = true, modifier = Modifier.fillMaxSize().background(Color.Black))
-                        }
+                // (Update 307: the game's pictures stay on the set under its clip, which fades in on its first frame and
+                // into the next game's — VideoCrossfade — instead of a black screen while a clip loads or changes.)
+                Crossfade(targetState = pictures.getOrNull(slide % maxOf(1, pictures.size)), animationSpec = tween(500), label = "tvPicture") { url ->
+                    if (url != null) {
+                        val model: Any = if (url.startsWith("/")) java.io.File(url) else url
+                        AsyncImage(model, game.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                    } else if (game.sourceType == com.shelf.launcher.data.SourceType.APP) {
+                        AppIconArt(game.packageName, wide = true, modifier = Modifier.fillMaxSize().background(Color.Black))
                     }
                 }
+                VideoCrossfade(video, withSound = videoSound, modifier = Modifier.fillMaxSize())
                 // Tube glass: scanlines, the bulge darkening to the corners, a curved reflection, the edge glow.
                 Canvas(Modifier.fillMaxSize()) {
                     val gap = 3.dp.toPx()

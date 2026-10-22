@@ -15,6 +15,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -675,7 +676,12 @@ fun GameDetailsOverlay(
                         if (!achievementsNote.isNullOrBlank()) Muted(achievementsNote)
                         // Everything the separate list window had, right here and compact: A on the bar opens it,
                         // ◀ ▶ switch the filter, Y still opens the full window (details, comments, sorting).
-                        if (achievementsExpanded && achievements.isNotEmpty()) {
+                        // (Update 307: opens and closes smoothly instead of the page jumping by its height.)
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = achievementsExpanded && achievements.isNotEmpty(),
+                            enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.tween(220)) + androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220)),
+                            exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.tween(180)) + androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(140))
+                        ) {
                             InlineAchievements(
                                 achievements = achievements,
                                 filter = achievementsFilter,
@@ -713,12 +719,24 @@ fun GameDetailsOverlay(
                     if (show(com.shelf.launcher.data.DetailsSection.SUMMARY)) {
                         Box(Modifier.onGloballyPositioned { summaryTop = it.positionInParent().y.toInt() })
                         PageHeading("About")
+                        // (Update 307: "Looking up…" fades into the summary, and More / Less opens and closes it smoothly,
+                        // instead of the text popping in and the page below jumping.)
+                        val aboutPhase = when {
+                            metadata == null && metadataLoading -> 0
+                            metadata == null && !metadataReady -> 1
+                            metadata == null -> 2
+                            else -> 3
+                        }
+                        androidx.compose.animation.Crossfade(
+                            aboutPhase, Modifier.animateContentSize(androidx.compose.animation.core.tween(220)),
+                            androidx.compose.animation.core.tween(200), label = "detailsAbout"
+                        ) { phase -> Column {
                         when {
-                            metadata == null && metadataLoading -> Muted("Looking up ${game.name}…")
-                            metadata == null && !metadataReady -> Muted(
+                            phase == 0 -> Muted("Looking up ${game.name}…")
+                            phase == 1 -> Muted(
                                 "Connect a details source — IGDB or ScreenScraper (Select › Accounts) — to see the summary, score and playtimes."
                             )
-                            metadata == null -> Muted("No metadata found for \"${game.name}\".")
+                            phase == 2 || metadata == null -> Muted("No metadata found for \"${game.name}\".")
                             else -> {
                                 val summary = metadata.summary
                                 if (summary.isNullOrBlank()) {
@@ -743,6 +761,7 @@ fun GameDetailsOverlay(
                                 }
                             }
                         }
+                        } }
                     }
 
                     // Scores and time to beat moved up next to "Last played".

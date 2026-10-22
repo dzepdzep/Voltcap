@@ -729,14 +729,23 @@ internal object CartShells {
      * inside, its rim, grip ridges, special parts, and the label in its recess — [art] (the game's cover, cut to the
      * label's shape, never stretched) under a band with [brand] (the game's real console).
      */
-    fun front(s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean = false): Bitmap {
+    fun front(
+        s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean = false,
+        /**
+         * Update 307: a header printed across the sticker's top, the art under it (your cartridge pack's console plaque on
+         * a custom cartridge drawn on its real shell — CustomCarts.authenticFront). Never over a real label scan.
+         */
+        header: Bitmap? = null
+    ): Bitmap {
         // (Update 297: a Switch card's red header strip — SwitchLabel — once it's loaded; in the key, so a card drawn before
         // it was there is drawn again with it.)
         // (Update 306: only for a Switch game — another console's game on the Switch card's shape gets the same strip with
         // its own console's name, not NINTENDO SWITCH.)
         val switchGame = brand.isEmpty() || brand == com.shelf.launcher.data.ConsoleNames.display("Switch") || brand == com.shelf.launcher.data.ConsoleNames.display("Switch2")
-        val switchHeader = if (s.id == "switch" && !scan) SwitchLabel.header()?.let { h -> if (switchGame) h else brandStrip(h, brand) } else null
-        val key = "f5|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}"
+        val plaque = header?.takeIf { !scan }
+        val switchHeader = if (plaque == null && s.id == "switch" && !scan) SwitchLabel.header()?.let { h -> if (switchGame) h else brandStrip(h, brand) } else null
+        val head = plaque ?: switchHeader
+        val key = "f5|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -801,7 +810,8 @@ internal object CartShells {
         // colour, as before). A real label scan is the whole printed sticker and keeps the full window.
         val coverPic = if (art != null && !scan) labelArt(s, art) else null
         // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
-        val lr = if (switchHeader != null) lr0 else coverPic?.let { pic ->
+        // (Update 307: a pack plaque header runs across the whole sticker too.)
+        val lr = if (head != null) lr0 else coverPic?.let { pic ->
             val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
             val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
             if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
@@ -821,13 +831,18 @@ internal object CartShells {
         // (Update 297: a Switch card from a cover — no label scan — has the real sticker's red NINTENDO SWITCH header
         // across its top (SwitchLabel, from the template pack's label frame), at the header's own shape; the cover is cut
         // into the rest under it: its upper middle, leaving a box front's corner logo tile and rating off the card.)
-        val headerH = switchHeader?.let { lr.width() * it.height / it.width.coerceAtLeast(1) }?.coerceAtMost(lr.height() * 0.4f) ?: 0f
+        val headerH = head?.let { lr.width() * it.height / it.width.coerceAtLeast(1) }?.coerceAtMost(lr.height() * 0.4f) ?: 0f
         val artRect = RectF(lr.left, lr.top + band + headerH, lr.right, lr.bottom)
         if (switchHeader != null) {
             c.drawBitmap(switchHeader, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
             if (art != null) c.drawBitmap(art, SwitchLabel.cutRect(art, artRect.width() / artRect.height().coerceAtLeast(1f)), artRect, p)
             else if (!title.isNullOrBlank()) text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
+        } else if (plaque != null && art == null) {
+            c.drawBitmap(plaque, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
+            if (!title.isNullOrBlank()) text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
         } else if (art != null) {
+            // (Update 307: the pack's plaque across the sticker's top, the art fitted under it as below.)
+            if (plaque != null) c.drawBitmap(plaque, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
             // (Update 206: the picture fills the label exactly — stretched to it, never cut — the label keeps the shell's
             // real size and place, the art adapts to it; a label scan is the sticker itself.)
             // (Update 240, #90: a scan of the whole sticker of a label that folds over the top has its fold cut off its
@@ -1335,7 +1350,7 @@ internal fun CartShellArt(
     // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
     // pre-rendered pictures.)
     if (packLook != null) {
-        PackCart(console ?: "", art, modifier, packLook, choice.clear)
+        PackCart(console ?: "", art, modifier, packLook, choice.clear, labelIsScan, title)
     } else {
         val shell = choice?.shell
         val bmpArt = rememberSoftBitmap(art, 480)

@@ -459,7 +459,8 @@ internal object LookPreviewGame {
  */
 internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? = when (layout) {
     com.shelf.launcher.data.HomeLayout.HUB, com.shelf.launcher.data.HomeLayout.RESUME, com.shelf.launcher.data.HomeLayout.CHAN,
-    com.shelf.launcher.data.HomeLayout.HERO_TILES, com.shelf.launcher.data.HomeLayout.TWIN_ICONS -> "square and wide tiles"
+    com.shelf.launcher.data.HomeLayout.HERO_TILES, com.shelf.launcher.data.HomeLayout.TWIN_ICONS,
+    com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE -> "square and wide tiles"
     com.shelf.launcher.data.HomeLayout.LIVE, com.shelf.launcher.data.HomeLayout.TWIN_DESK -> "wide tiles"
     com.shelf.launcher.data.HomeLayout.SHELF -> "spines and cases on shelves (Layout options › Shelves)"
     com.shelf.launcher.data.HomeLayout.DISCS -> "discs"

@@ -1109,7 +1109,7 @@ private fun TvWindowBody(
             WinPage.MAIN -> {
                 if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                 val video = state.videoUrls[g.stableKey]
-                if (video != null) androidx.compose.runtime.key(video) { VideoBackdrop(video, state.appearance.videoSound, Modifier.fillMaxSize()) }
+                VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                 if (controlsInside) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.88f)))))
                 WinPicturePart(look, g, state, cover, extras, Modifier.fillMaxSize(), nameShown = false)
             }
@@ -1308,7 +1308,7 @@ private fun WindowBody(
                     WinPage.MAIN -> Box(Modifier.fillMaxSize()) {
                         if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                         val video = state.videoUrls[g.stableKey]
-                        if (video != null) androidx.compose.runtime.key(video) { VideoBackdrop(video, state.appearance.videoSound, Modifier.fillMaxSize()) }
+                        VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                         if (showName) {
                             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.72f)))))
                             // (Update 199: the name stops short of the disc / cartridge drawn in the picture's lower right.)

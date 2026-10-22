@@ -110,7 +110,7 @@ internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (la
     // Case stacks: above the stage on the left, under the tool strip.
     HomeLayout.STACKS -> 0f to 0.16f
     // Card binder, Hero tiles, Twin icons: the top-left corner (the status pill / clock is at the right).
-    HomeLayout.CARDS, HomeLayout.HERO_TILES, HomeLayout.TWIN_ICONS -> 0f to 0f
+    HomeLayout.CARDS, HomeLayout.HERO_TILES, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE -> 0f to 0f
     // Console hub: on the art at the left, under the profile / icons / clock row.
     HomeLayout.HUB -> 0f to 0.2f
     // Resume & discover: in the middle of the top row, between the profile and the clock.

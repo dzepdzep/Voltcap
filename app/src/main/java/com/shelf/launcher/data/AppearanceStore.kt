@@ -155,6 +155,9 @@ enum class HomeLayout(val label: String) {
     /** Update 158: two screens — the game you're on as a big framed icon on top, a grid of square icons on the second
      *  screen (TwinIcons.kt; both halves stacked on a one-screen handheld). */
     TWIN_ICONS("Twin icons"),
+    /** Update 307: two screens — the game you're on as its big picture on top (moving out and in with every move), square
+     *  icons in 1–3 rows running on to the right on the second screen (TwinShowcase.kt). */
+    TWIN_SHOWCASE("Twin showcase"),
     /** Update 158: your games as record sleeves in a wooden crate; the one you're on lifts out, its record slides out
      *  to the right and turns (StyleRecordCrate.kt). */
     CRATE("Record crate"),
@@ -183,7 +186,7 @@ enum class HomeLayout(val label: String) {
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
         this == LIBRARY || this == STACKS || this == TIMELINE || this == ARCADE || this == CONSOLES || this == DISCS ||
         this == HERO_TILES || // Update 158
-        this == TWIN_DESK || this == TWIN_ICONS || // Update 158: the two-screen layouts
+        this == TWIN_DESK || this == TWIN_ICONS || this == TWIN_SHOWCASE || // Update 158: the two-screen layouts (307: Twin showcase)
         this == CRATE || // Update 158: Record crate
         this == CARDS || // Update 158: Card binder
         this == CUSTOM || // Update 176: Custom layout

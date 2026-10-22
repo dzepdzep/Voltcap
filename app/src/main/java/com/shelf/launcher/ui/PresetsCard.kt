@@ -361,6 +361,7 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     // Update 158.
     com.shelf.launcher.data.HomeLayout.HERO_TILES -> "Hero tiles: the game you're on as a big picture across the top, one or two rows of square tiles under it, an app dock and round buttons along the bottom."
     // Update 158: the two-screen layouts.
+    com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE -> "Twin showcase: for two screens — the game you're on as its big picture on top, moving out and in as you move; square icons in one, two or three rows on the second screen, running on to the right. With one screen, both halves show together."
     com.shelf.launcher.data.HomeLayout.TWIN_DESK -> "Twin desk: for two screens — a clock and this month's calendar on squared paper on top, your games as wide panels with round buttons on the second screen. With one screen, both halves show together."
     com.shelf.launcher.data.HomeLayout.TWIN_ICONS -> "Twin icons: for two screens — the game you're on as a big framed icon on top, a grid of square icons with tool buttons and an Open bar on the second screen. With one screen, both halves show together."
     // Update 158: Record crate.

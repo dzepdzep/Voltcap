@@ -76,6 +76,7 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         // Update 158: the two-screen layouts (the nearest pictures: a list of panels, a grid of icons).
         com.shelf.launcher.data.HomeLayout.TWIN_DESK -> Pictogram.LIST
         com.shelf.launcher.data.HomeLayout.TWIN_ICONS -> Pictogram.GRID
+        com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE -> Pictogram.SPOT // Update 307
         // Update 158: Record crate (the nearest picture: a disc).
         com.shelf.launcher.data.HomeLayout.CRATE -> Pictogram.DISC
         // Update 158: Card binder (the nearest picture: a big card with others either side).

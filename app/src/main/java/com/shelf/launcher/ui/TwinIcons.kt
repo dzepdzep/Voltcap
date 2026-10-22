@@ -295,16 +295,19 @@ private fun IconsSlot(c: StyleCtx, slot: Dp) {
 private fun IconsNeighbour(c: StyleCtx, d: Int, size: Dp) {
     val n = c.games.size
     val i = if (loopRowOn(c)) (c.focus + d).mod(n.coerceAtLeast(1)) else c.focus + d
-    val g = c.games.getOrNull(i)
-    if (g != null && i != c.focus) {
-        Box(
-            Modifier.size(size).graphicsLayer { alpha = 0.45f }.tapOnly {
-                StyleLoop.walked += d
-                c.actions.select(i)
-            }
-        ) { StyleArt(c, g, Modifier.fillMaxSize(), square = true, corner = size * 0.14f) }
-    } else {
-        Spacer(Modifier.size(size))
+    val g = c.games.getOrNull(i)?.takeIf { i != c.focus }
+    // (Update 307: the side games change with the same short crossfade as the big icon — they used to swap at once.)
+    Crossfade(targetState = g, animationSpec = tween(160), label = "twinSide", modifier = Modifier.size(size)) { sg ->
+        if (sg != null) {
+            Box(
+                Modifier.fillMaxSize().graphicsLayer { alpha = 0.45f }.tapOnly {
+                    StyleLoop.walked += d
+                    c.actions.select(i)
+                }
+            ) { StyleArt(c, sg, Modifier.fillMaxSize(), square = true, corner = size * 0.14f) }
+        } else {
+            Spacer(Modifier.size(size))
+        }
     }
 }
 
@@ -325,15 +328,18 @@ private fun IconsCard(c: StyleCtx, compact: Boolean, modifier: Modifier) {
         if (g == null) {
             Text(EmptyShelf.text, color = TrayMuted, fontSize = if (compact) 12.sp else 14.sp)
         } else {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    titles.display(g.name), color = TrayInk, fontSize = if (compact) 13.sp else 17.sp, fontWeight = FontWeight.Bold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    titles.console(g.platform) + " · " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
-                    color = TrayMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
+            // (Update 307: the name and console fade over with the big icon instead of jumping to the next game's.)
+            Crossfade(targetState = g, animationSpec = tween(160), label = "twinCard", modifier = Modifier.weight(1f)) { cg ->
+                Column(Modifier.fillMaxWidth()) {
+                    Text(
+                        titles.display(cg.name), color = TrayInk, fontSize = if (compact) 13.sp else 17.sp, fontWeight = FontWeight.Bold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        titles.console(cg.platform) + " · " + stylePlaytime(c.playtime(cg), c.lastPlayed(cg) != null),
+                        color = TrayMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
@@ -466,11 +472,13 @@ private fun TrayIcon(c: StyleCtx, i: Int, on: Boolean, inGames: Boolean, modifie
     val g = c.games[i]
     val accent = ShelfTheme.accent
     val lift = styleLift(on && inGames)
+    // (Update 307: the ring fades onto the next icon and off the last one instead of jumping across.)
+    val ring by androidx.compose.animation.core.animateFloatAsState(if (on) 1f else 0f, tween(if (on) 140 else 180), label = "twinRing")
     val shape = RoundedCornerShape(18)
     Box(
         modifier
             .graphicsLayer { val k = 1f + 0.06f * lift; scaleX = k; scaleY = k }
-            .trayRing(on, accent.copy(alpha = if (inGames) 1f else 0.45f))
+            .trayRing(ring > 0.01f, accent.copy(alpha = (if (inGames) 1f else 0.45f) * ring), ring)
             .clip(shape)
             .background(Color.White)
             .border(1.dp, TrayEdge, shape)
@@ -480,7 +488,7 @@ private fun TrayIcon(c: StyleCtx, i: Int, on: Boolean, inGames: Boolean, modifie
 }
 
 /** The ring round the icon you're on: the theme's colour with a thin white line inside, just outside the icon. */
-private fun Modifier.trayRing(on: Boolean, color: Color): Modifier = if (!on) this else this.drawWithCache {
+private fun Modifier.trayRing(on: Boolean, color: Color, fade: Float = 1f): Modifier = if (!on) this else this.drawWithCache {
     val w = 3.dp.toPx()
     val o = 3.dp.toPx()
     val outer = Stroke(w)
@@ -491,7 +499,7 @@ private fun Modifier.trayRing(on: Boolean, color: Color): Modifier = if (!on) th
     onDrawWithContent {
         drawContent()
         drawRoundRect(color, tl, sz, corner, style = outer)
-        drawRoundRect(Color.White, Offset(-o + w / 2f, -o + w / 2f), Size(sz.width - w, sz.height - w), corner, style = inner)
+        drawRoundRect(Color.White.copy(alpha = fade), Offset(-o + w / 2f, -o + w / 2f), Size(sz.width - w, sz.height - w), corner, style = inner)
     }
 }
 

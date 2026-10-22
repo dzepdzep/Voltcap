@@ -29,7 +29,12 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  * frame is ready, so a slow or failed download just leaves the artwork.
  */
 @Composable
-fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier, paused: Boolean = false) {
+fun VideoBackdrop(
+    url: String, withSound: Boolean, modifier: Modifier = Modifier, paused: Boolean = false,
+    /** Update 307: false fades the clip out (VideoCrossfade), then [onHidden]. */
+    show: Boolean = true,
+    onHidden: (() -> Unit)? = null
+) {
     com.shelf.launcher.Breadcrumbs.mark("VideoBackdrop")
     var playing by remember(url) { mutableStateOf(false) }
     // Update 221 (#60 / #96): [paused] — the home screen is idle (HomeIdle.calm: 30 s without input, or the battery
@@ -42,7 +47,14 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
     val hold = paused || !active
     val pausedNow = androidx.compose.runtime.rememberUpdatedState(hold)
     val prepared = remember(url) { java.util.concurrent.atomic.AtomicBoolean(false) }
-    val alpha by animateFloatAsState(if (playing) 1f else 0f, tween(700), label = "video")
+    val alpha by animateFloatAsState(if (playing && show) 1f else 0f, tween(if (show) 700 else CLIP_FADE_OUT_MS), label = "video")
+    // (Update 307: a clip being replaced or put away fades out over the artwork, then goes — VideoCrossfade.)
+    val hidden = androidx.compose.runtime.rememberUpdatedState(onHidden)
+    androidx.compose.runtime.LaunchedEffect(show) {
+        if (show) return@LaunchedEffect
+        kotlinx.coroutines.delay(CLIP_FADE_OUT_MS + 60L)
+        hidden.value?.invoke()
+    }
 
     Box(modifier.graphicsLayer { this.alpha = alpha }) {
         AndroidView(
@@ -71,6 +83,9 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
                                 if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) playing = true
                                 false
                             }
+                            // (Update 307: a clip whose looping the player didn't honour — some streamed clips end
+                            // after one play — starts over from its first frame, keeping its last one on screen meanwhile.)
+                            player.setOnCompletionListener { mp -> runCatching { if (view.tag === mp && !pausedNow.value) { mp.seekTo(0); mp.start() } } }
                             player.setOnVideoSizeChangedListener { _, w, h -> cropToFill(view, w, h) }
                             player.setOnErrorListener { _, _, _ -> playing = false; true }
                             player.prepareAsync()
@@ -127,6 +142,32 @@ fun VideoBackdrop(url: String, withSound: Boolean, modifier: Modifier = Modifier
     }
 }
 
+private const val CLIP_FADE_OUT_MS = 450
+
+/**
+ * Update 307 (Toni: "loop preview clips continuously, with smooth transitions between different clips and no black
+ * flashes"): the clip for [url] that changes smoothly — the clip it replaces (or one put away, [url] null) keeps playing
+ * while it fades out over what's under it, and the new one fades in on its first frame, so nothing pops away and no empty
+ * (black) video view shows. Each clip loops on its own (VideoBackdrop). [clipModifier]: each clip's own size and place.
+ */
+@Composable
+fun VideoCrossfade(
+    url: String?, withSound: Boolean, modifier: Modifier = Modifier, paused: Boolean = false,
+    clipModifier: Modifier = Modifier.fillMaxSize()
+) {
+    val clips = remember { androidx.compose.runtime.mutableStateListOf<String>() }
+    androidx.compose.runtime.LaunchedEffect(url) {
+        if (url != null && clips.lastOrNull() != url) { clips.remove(url); clips.add(url) }
+    }
+    if (clips.isEmpty()) return
+    Box(modifier) {
+        for (c in clips.toList()) androidx.compose.runtime.key(c) {
+            val shown = c == url
+            VideoBackdrop(c, withSound && shown, clipModifier, paused, show = shown, onHidden = { if (c != url) clips.remove(c) })
+        }
+    }
+}
+
 /**
  * (Update 231, #59: leaving a game whose clip had started no longer stalls the screen — MediaPlayer.release() waits for
  * the decoder to shut down, which took a frame or more on the main thread; it now happens on a background thread.)
@@ -139,6 +180,7 @@ private fun releaseInBackground(player: MediaPlayer, surface: Surface?) {
         player.setOnInfoListener(null)
         player.setOnVideoSizeChangedListener(null)
         player.setOnErrorListener(null)
+        player.setOnCompletionListener(null)
     }
     ClipReleaser.execute {
         runCatching { player.release() }

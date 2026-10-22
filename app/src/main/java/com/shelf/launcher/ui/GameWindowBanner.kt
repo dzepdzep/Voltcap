@@ -804,7 +804,7 @@ private fun BannerHero(
     ) {
         if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
         val video = state.videoUrls[g.stableKey]
-        if (video != null) key(video) { VideoBackdrop(video, state.appearance.videoSound, Modifier.fillMaxSize()) }
+        VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
         Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(

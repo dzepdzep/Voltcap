@@ -3,6 +3,7 @@ package com.shelf.launcher.ui
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Label
@@ -75,6 +76,7 @@ internal object R1Shortcut {
         "progressbar" -> Icons.Filled.EmojiEvents
         "gamesize" -> Icons.Filled.PhotoSizeSelectLarge
         "corners" -> Icons.Filled.RoundedCorner
+        "categories" -> Icons.Filled.Category
         "romm" -> Icons.Filled.CloudDownload
         "carousel" -> Icons.Filled.ViewCarousel
         "theme" -> Icons.Filled.Palette

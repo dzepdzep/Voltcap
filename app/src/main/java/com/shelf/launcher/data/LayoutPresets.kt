@@ -603,6 +603,17 @@ object LayoutPresets {
             look = null, options = twinIconsOpts(4)) { s ->
             s.copy(focusEffect = FocusEffect.GLOW)
         },
+        // Update 307: Twin showcase.
+        preset("twin_showcase", HomeLayout.TWIN_SHOWCASE, "Twin showcase",
+            "The game you're on as its big picture on top, moving with you; two rows of square icons on the second screen, running on to the right.",
+            look = null, options = listOf(o(Features.twinShowRows, 2))) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
+        preset("twin_showcase_one", HomeLayout.TWIN_SHOWCASE, "Showcase · one row",
+            "The same with one row of big icons — easier to hit with a thumb.",
+            look = null, options = listOf(o(Features.twinShowRows, 1))) { s ->
+            s.copy(focusEffect = FocusEffect.GLOW)
+        },
         // Update 162: Record crate.
         preset("crate_std", HomeLayout.CRATE, "Record crate",
             "Your games as sleeves in a light wooden crate; the one you're on lifts out and its record slides out, turning.",
