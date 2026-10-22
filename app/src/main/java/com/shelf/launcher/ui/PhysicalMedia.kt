@@ -599,6 +599,9 @@ internal fun PhysicalMedia(
     /** Update 168: the disc alone even with "Disc in its case" on (the carousels' 3D case draws the case itself). */
     noCase: Boolean = false
 ) {
+    // (Update 317, Toni: an animated cover is never a cartridge's / disc's label — its first still cover from the scrape.)
+    @Suppress("NAME_SHADOWING") val label = com.shelf.launcher.data.StillCovers.swap(label)
+    @Suppress("NAME_SHADOWING") val caseCover = com.shelf.launcher.data.StillCovers.swap(caseCover)
     // Update 283 (Toni: "on some the disc is shown on the label"): Voltcap's plain cartridge is only ever handed to a game
     // with no cartridge of its own — a disc game in "All cartridges" (lists mixing consoles) or Cartridges only — so a
     // label scan there is the round disc label. Its cover instead, as on the other cartridge shells (update 280).

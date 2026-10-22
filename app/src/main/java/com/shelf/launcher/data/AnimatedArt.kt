@@ -314,3 +314,21 @@ object AnimatedArt {
         }
     }
 }
+
+/**
+ * Update 317 (Toni: "for the animated pictures on cartridges and CDs use another, the first result showing up for covers in
+ * the scraper"): an animated cover's first still cover from the same scrape (GameArt.stillGridUrl), by the animated one's
+ * address — PhysicalMedia puts it on the cartridge or disc instead. Any thread.
+ */
+object StillCovers {
+    private val byAnimated = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    fun note(art: GameArt?) {
+        val a = art?.gridUrl ?: return
+        val s = art.stillGridUrl ?: return
+        byAnimated[a] = s
+    }
+
+    /** [model]'s still cover when it's an animated cover with one; else [model] as it is. */
+    fun swap(model: Any?): Any? = (model as? String)?.let { byAnimated[it] } ?: model
+}

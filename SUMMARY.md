@@ -92,8 +92,15 @@ tested on a handheld.
 - **Spine cuts on the 3D cases (Toni):** with Spines cut from box scans on, Case3D uses the strip cut from the box scans
   (it did only with Original cases), and in place of a keep case's spine scan left out as too wide (`cutModel` /
   `cutFitted`, same width check).
+- **Animated covers on cartridges / discs → the scraper's first still cover (Toni):** `GameArt.stillGridUrl` — when
+  SteamGridDB's first cover is animated, its first static one (`types=static`) is fetched beside it; `StillCovers`
+  (`AnimatedArt.kt`, filled from `ArtCacheStore` and each scrape) maps the animated address to it, and `PhysicalMedia`
+  swaps its label / case cover. Covers scraped before this need a refresh of their artwork to get the still one (until
+  then: the animated one's first frame, as in 317i).
+- **Measured (user, 317m):** frames 40 ms (p50) / 350 ms (p90), 184 MB / 162 render targets.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
-  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`,
+  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
+  `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
   `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
   targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
