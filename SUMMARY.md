@@ -150,6 +150,14 @@ tested on a handheld.
   is fixed by your own cut of the full scan (wins since 317v). **Cut editor zoom (Toni):** 1× / 3× / 6× round the edge
   picked (`FullScanCutEditor.kt`); the lines stay thin.
 - Measured (317x): frames 81 ms (p50) / 150 ms (p90), 76 MB — the step from 5 ms came with 317u–w; not yet traced.
+- **The spines' real cause (user: still stretched, even with your own cut):** the shelf never runs `singleSpine`; the 3D
+  case did on every spine. A GameCube spine (14 / 190 mm = 0.074) is just past its 0.07 floor, and a plain strip with the
+  title down the middle read as "both end flaps side by side" — the left half kept and stretched to twice its width. The
+  twin check now only runs on jewel cases (whose inserts have the twin flaps, update 298) and never on your own cut
+  (`twinsPossible`, cache kind `spine|0` otherwise).
+- **Perfetto (`voltcap-trace11.zip`, 317y):** ~45 offscreen redraws a frame (from ~210), RenderThread ~28 ms a frame
+  (from ~90), pictures of the screen almost gone — the photos / disc shells fix works. Main thread ~35 ms (recomposition,
+  animation, key handling) is what's left.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`,
   `ui/FullScanCutEditor.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,

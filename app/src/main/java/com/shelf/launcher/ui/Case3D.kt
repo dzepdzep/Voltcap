@@ -121,7 +121,15 @@ internal fun Case3D(
     // The game's own spine stood up (reading top to bottom), when it has one.
     // (Update 298: a scan that is both of the insert's end flaps side by side is cut to one spine — singleSpine.)
     // (Update 316: made away from the screen's thread — rememberDerived; the dark strip shows the moment it's being made.)
-    val ownUpright = rememberDerived(ownBmp, "spine|1") { b -> singleSpine(orientSpine(b, landscape = false)) }
+    // (Update 317, Toni: GameCube spines stretched on every try, right on the shelf — the shelf never runs singleSpine. A
+    // GameCube spine (14 mm on 190: 0.074 of its height) is just past singleSpine's 0.07 floor, and a plain strip with its
+    // title down the middle reads as "both flaps side by side": its left half was kept and stretched to twice its width.
+    // The twin flaps are a jewel case insert's (update 298), so only there — and never on your own cut.)
+    val twinsPossible = spec?.shell == CaseShell.JEWEL && userSpine == null
+    val ownUpright = rememberDerived(ownBmp, if (twinsPossible) "spine|1" else "spine|0") { b ->
+        val up = orientSpine(b, landscape = false)
+        if (twinsPossible) singleSpine(up) else up
+    }
     val uprightPending = ownBmp != null && ownUpright == null
     // How thick the case is (its spine's width against its height), kept to real cases'.
     // (Update 240, #26: the real case's thickness (CaseCatalog, the console and region) wins over the spine scan's own shape
