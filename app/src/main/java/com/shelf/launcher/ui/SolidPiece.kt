@@ -312,6 +312,12 @@ internal fun rememberCartSpin(): (() -> Float)? {
 internal const val CART_SPIN_MS = 5200L
 
 /**
+ * Update 314: a piece whose whole content is one finished picture (a drawn shell's front, CartShellArt), fitted at
+ * [aspect] in the node as CartShellArt lays it out (pieceArtRect). See [solidPiece]'s faceArt.
+ */
+internal class PieceFace(val image: ImageBitmap, val aspect: Float)
+
+/**
  * Draws this node's content as the solid piece [spec] turned by the view's turn (LocalPieceTurn) plus its own spin.
  * Nothing changes (no layers) when nothing turns it.
  */
@@ -319,7 +325,15 @@ internal const val CART_SPIN_MS = 5200L
 internal fun Modifier.solidPiece(
     spec: SolidSpec?,
     /** Update 207: false for a piece that isn't a game's cartridge (the Save Vault's 3D card): no cartridge spin added. */
-    withCartSpin: Boolean = true
+    withCartSpin: Boolean = true,
+    /**
+     * Update 314 (scrolling the 3D cartridges lagged): the content is exactly this picture ([PieceFace]), so the turned
+     * face, its outline and its sides are drawn from the picture itself — made once, not every frame. Each side slice
+     * used to draw the face's own layer again (up to ~130 times a piece), and Android re-walks and redraws everything
+     * under a layer drawn more than once in a frame: every turned cartridge redrew five or six offscreen pictures each
+     * frame. Now only the slices' smear and the whole piece are drawn per frame. Null: as before (any content).
+     */
+    faceArt: PieceFace? = null
 ): Modifier {
     if (spec == null) return this
     val turn = LocalPieceTurn.current
@@ -361,33 +375,65 @@ internal fun Modifier.solidPiece(
         val pw = if (a == null) size.width else minOf(size.width, size.height * a)
         val ph = if (a == null) size.height else pw / a
         val depthPx = spec.depth * maxOf(pw, ph)
+        // (Room round it in the buffer: the near side grows past the node as it turns, and the slices stand out.)
+        val m = (0.35f * maxOf(size.width, size.height) + depthPx).roundToInt()
+        // Update 314: the picture's place in the node, as CartShellArt draws it (null: any content, drawn each frame).
+        val art = faceArt?.image
+        val artAt = faceArt?.let { f -> pieceArtRect(size.width, size.height, f.aspect, f.image.width, f.image.height) }
+        val artPos = artAt?.let { IntOffset(it[0], it[1]) }
+        val artSize = artAt?.let { IntSize(it[2], it[3]) }
+        val artSrc = art?.let { IntSize(it.width, it.height) }
+        val solidFilter = solid.colorFilter
+        var artMade = false
+        var madeYaw = Float.NaN
         onDrawWithContent {
             // (Update 294, testing only: TestHooks `voltcap_test_pose` — held at one turn, for before / after pictures.)
             val testPose = TestHooks.pose.value
             val yaw = testPose?.first ?: ((turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f))
             if (abs(yaw) < 0.25f) { drawContent(); return@onDrawWithContent }
-            face.record { this@onDrawWithContent.drawContent() }
+            // (Update 314: the same turn as last drawn — the parts only drawn from the picture are still right.)
+            if (art != null && artMade && yaw == madeYaw && testPose == null) {
+                translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
+                return@onDrawWithContent
+            }
+            if (art == null) face.record { this@onDrawWithContent.drawContent() }
             val t = Math.toRadians(yaw.toDouble())
             val c = cos(t).toFloat()
             val sn = sin(t).toFloat()
-            for (l in arrayOf(edge, lit, back)) { l.rotationY = yaw; l.cameraDistance = cam }
+            edge.rotationY = yaw; edge.cameraDistance = cam
+            lit.rotationY = yaw; lit.cameraDistance = cam
+            back.rotationY = yaw; back.cameraDistance = cam
             // (Update 209: a see-through piece's back as see-through as its sides.)
             back.alpha = spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f
             // (Each part recorded at the node's own size, round its own middle; then placed in the buffer below.)
             // The sides: the face's outline, darker, lit a little as they face you. Update 205: filled with the shell's
             // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
             // over in stripes (the "glitches" round the turned cartridges in the Box flow stacks).
-            solid.record { drawLayer(face) }
             val sideTone = spec.tone.copy(alpha = 1f)
             edge.colorFilter = SolidLight.of(0.42f + 0.22f * abs(sn))
-            edge.record {
-                drawLayer(solid)
-                drawRect(sideTone, blendMode = BlendMode.SrcIn)
-                drawRect(sheen, blendMode = BlendMode.SrcAtop)
+            if (art == null) {
+                solid.record { drawLayer(face) }
+                edge.record {
+                    drawLayer(solid)
+                    drawRect(sideTone, blendMode = BlendMode.SrcIn)
+                    drawRect(sheen, blendMode = BlendMode.SrcAtop)
+                }
+            } else if (!artMade) {
+                // (Update 314: each made once from the picture, with no other layer inside — so drawing the sides many
+                // times a frame never makes Android redraw them, or the face, again.)
+                artMade = true
+                solid.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
+                edge.record {
+                    drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!, colorFilter = solidFilter)
+                    drawRect(sideTone, blendMode = BlendMode.SrcIn)
+                    drawRect(sheen, blendMode = BlendMode.SrcAtop)
+                }
+                lit.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
             }
+            madeYaw = yaw
             if (c >= 0f) {
                 lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))
-                lit.record { drawLayer(face) }
+                if (art == null) lit.record { drawLayer(face) }
             } else {
                 val sb = spec.back
                 back.record {
@@ -412,8 +458,6 @@ internal fun Modifier.solidPiece(
                     drawRect(Color.Black, alpha = 0.4f * abs(sn), blendMode = BlendMode.SrcAtop)
                 }
             }
-            // (Room round it in the buffer: the near side grows past the node as it turns, and the slices stand out.)
-            val m = (0.35f * maxOf(size.width, size.height) + depthPx).roundToInt()
             whole.record(size = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)) {
                 translate(m.toFloat(), m.toFloat()) {
                     // Far to near: the slices, then the face (or the back, seen from behind).

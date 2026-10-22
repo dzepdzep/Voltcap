@@ -617,10 +617,11 @@ internal fun PhysicalMedia(
         val console = platform.substringAfter('|', "")
         val ownDisc = MediaShell.of(console)?.let { it.disc || it == MediaShell.UMD } == true
         val useScan = labelIsScan && label != null && !(ownDisc && caseCover != null)
+        // (Update 314: the solid build and the motion applied inside, so the turned shell is drawn from its front picture.)
         CartShellArt(
-            platform, if (useScan) label else caseCover ?: label,
-            modifier.solidPiece(rememberShellSolid(platform)).mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode()),
-            title = title, labelIsScan = useScan
+            platform, if (useScan) label else caseCover ?: label, modifier,
+            title = title, labelIsScan = useScan,
+            solid = rememberShellSolid(platform), motionSeed = (label?.hashCode() ?: 0) xor platform.hashCode()
         )
         return
     }

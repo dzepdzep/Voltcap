@@ -201,11 +201,14 @@ internal object CustomCarts {
      */
     fun authenticFront(
         real: CartShell, look: CartLook, file: java.io.File?, tone: Color, clear: Boolean, platform: String,
-        art: android.graphics.Bitmap?, scan: Boolean, title: String?, px: Int
+        art: android.graphics.Bitmap?, scan: Boolean, title: String?, px: Int,
+        /** Update 314: only one already made (null when it isn't; nothing is read or drawn). */
+        peek: Boolean = false
     ): android.graphics.Bitmap? = runCatching {
         val argb = tone.copy(alpha = 1f).toArgb()
         val key = "${real.id}|$argb|$clear|$platform|${file?.path}|${art?.let { System.identityHashCode(it) } ?: 0}|$scan|${title ?: ""}|$px"
         fronts.get(key)?.let { return@runCatching it }
+        if (peek) return@runCatching null
         val colour = ShellColour("pack:$argb${if (clear) "c" else ""}", "Pack", argb, if (clear) 0.6f else 1f)
         val head = if (scan) null else file?.let { plaque(it, look) }
         val pic = if (art != null && !scan) {

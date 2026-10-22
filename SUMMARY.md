@@ -1,5 +1,47 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 22 Oct 2026 (314): Smooth scrolling through 3D cartridges in the carousel
+
+**Status:** Branch `claude/laughing-franklin-xci4p0`, PR to `main` (not merged). Edited in `app/src/main/java/...` and
+`app/src/test/...` directly (this cloud checkout has no `src_copy/`): **pull the branch; don't robocopy an older
+`src_copy` over these files.** No Android SDK in the cloud workspace — GitHub Actions on the PR is the compile check;
+not checked on a handheld.
+
+- **What caused the lag (found before changing anything):**
+  1. *Off-screen pieces drawn every frame.* "To the edge" (on by default) builds ~15 games each side on the Thor
+     (`ceil(12 × screenWidthDp / 600)`), three times that in Box flow / Spine wall; only ~5–7 a side are on screen. Every
+     turned 3D cartridge (and 3D case) out of sight still drew all its offscreen pictures each frame.
+  2. *Each turned cartridge redrew 5–6 offscreen pictures per frame* (`solidPiece`: face, solid outline, sides, lit face,
+     smear, whole). Its sides draw the same layer up to ~130 times a frame (32 slices × 4 smear copies), and Android's
+     renderer re-walks and fully re-damages everything under a layer drawn more than once in a frame — so nothing was
+     ever reused, and the RenderThread walked the face's layers ~130 times per piece per frame.
+  3. *Main-thread stutter:* `CartShellArt` drew each ~640 px shell front (outline, label, text, glitter) synchronously in
+     composition as each cartridge came into the carousel, and again when its cover arrived (shared 24-entry cache).
+- **Fixes (no models, sizes, art, animations or settings changed):**
+  - `Carousel.kt`: `CarouselViewport` (the carousel's box on screen) + per-game `culled` (derivedStateOf, flips only when
+    a game crosses a line a quarter screen past the edge, slot width + height of slack). A culled game isn't drawn and its
+    turn / yaw / shade lambdas return the last drawn values, so nothing of it is re-recorded while away. It stays composed
+    (its art keeps loading ahead).
+  - `SolidPiece.kt`: `solidPiece(faceArt = PieceFace(bitmap, aspect))` — when the content is exactly one picture (a drawn
+    shell's front), the turned face, outline and sides are made once from the picture as leaf layers (no layer inside),
+    so drawing the sides many times never re-damages them; only smear + whole are drawn per frame, and nothing when the
+    turn hasn't changed. Without `faceArt` (pack / template / photo cartridges, Save Vault card) it is exactly as before.
+  - `CartShellArt` (`CartShells.kt`): applies the solid piece and motion itself (motion now round the solid piece, so a
+    hop lifts the turned piece whole); front from cache at once (`CartShells.cachedFrontFor`, `CustomCarts.authenticFront(peek)`),
+    else drawn on `Dispatchers.Default` keeping the previous front while the cover arrives; a place switching to another
+    game still draws synchronously (never shows the old game's piece). `PhysicalMedia.kt` passes `solid` / `motionSeed`.
+  - `PieceFit.kt` (new): `pieceArtRect` (CartShellArt's exact pixel placement, so flat ↔ turned never shifts) and
+    `carouselOffScreen`.
+- **Tests:** `app/src/test/.../CarouselPerf314Test.kt` (9 tests: placement rounding for wide / tall / mismatched
+  pictures, on / near / far off screen, unknown sizes) — passed locally with Kotlin 2.2.10 + JUnit 4.13.2. The rest
+  needs the PR's CI (assembleDebug + unit tests). **Not tested:** frame times, memory and visuals on AYN Thor / Retroid
+  Pocket Classic (no device access) — see the PR for the `dumpsys gfxinfo` steps.
+
+**Changed:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/CustomCarts.kt`, `ui/PhysicalMedia.kt`,
+`ui/PieceFit.kt` (new), `app/src/test/java/com/shelf/launcher/ui/CarouselPerf314Test.kt` (new), `SUMMARY.md`.
+
+---
+
 ## Update — 22 Oct 2026 (313): Respect selected home background over gameplay previews
 
 **Status:** Changes saved on branch `fix/background-video-respect-selection-313`, [draft PR #4](https://github.com/dzepdzep/Voltcap/pull/4); not yet merged or published. The existing v0.6.32 release is untouched. Code level review complete, CI and handheld checks pending.

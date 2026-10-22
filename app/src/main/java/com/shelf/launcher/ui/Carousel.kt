@@ -786,6 +786,9 @@ internal fun GameCarousel(
         else games.asSequence().map { it.platform }.distinct().mapNotNull { realCaseMm(it) }.maxOfOrNull { maxOf(it.first, it.second) } ?: 0f
     }
     val dens = androidx.compose.ui.platform.LocalDensity.current.density
+    // Update 314: where the carousel is on the screen, so games wholly off it aren't drawn (CarouselItem).
+    val viewport = remember { CarouselViewport() }
+    val hostView = androidx.compose.ui.platform.LocalView.current
     val latestFocus by rememberUpdatedState(focus)
     val latestLoop by rememberUpdatedState(looping)
     // Update 162: one moving place for the whole carousel (in games), read only while placing and drawing (graphicsLayer,
@@ -862,7 +865,7 @@ internal fun GameCarousel(
     val nameAbove = view == CarouselView.TURNED
     if (showName && nameAbove) games.getOrNull(focus)?.let { g -> CarouselName(g, Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 6.dp)) }
     BoxWithConstraints(
-        Modifier.fillMaxWidth().weight(1f).pointerInput(games.size) {
+        Modifier.fillMaxWidth().weight(1f).onGloballyPositioned { lc -> viewport.update(lc, hostView.width.toFloat()) }.pointerInput(games.size) {
             // Swipe: one game per ~70 dp.
             var acc = 0f
             detectHorizontalDragGestures(onDragEnd = { acc = 0f }) { change, dx ->
@@ -1039,6 +1042,7 @@ internal fun GameCarousel(
         }
         ctx.caseRefMm = caseRefMm
         ctx.physicalMedia = physicalMedia
+        ctx.viewport = viewport
         // Update 162: while a category change slides, the collection that was here goes on along the path (layer 1)
         // and the new one comes in after it from the side the change came from (layer 0), each fading as it goes.
         val showOld = swap.token != 0 && swap.doneToken.intValue != swap.token && swap.oldGames.isNotEmpty()
@@ -1223,6 +1227,9 @@ private class CarouselCtx(
      */
     var caseRefMm = 0f
 
+    /** Update 314: where the carousel's box is on the screen (set each composition). */
+    var viewport: CarouselViewport? = null
+
     /** [Carousel.placeInto] for this carousel's view. */
     fun place(p: Carousel.Place, rel: Float): Carousel.Place = Carousel.placeInto(p, rel, side, view, unit.value)
 
@@ -1271,9 +1278,37 @@ private fun carouselSlotH(
     // row spaces its neighbours by the one you're on's width.)
     else minOf(bigH, if (aspect > 1f) bigW / aspect * (if (aspect >= 1.6f) 1.7f else 1.25f) else bigH)
 
+/**
+ * Update 314 (scrolling the 3D cartridges lagged): the carousel's box on the screen, in window pixels — its left edge,
+ * window pixels per box pixel (a scaled parent), its width and the screen's — for leaving out the games wholly off it
+ * ([carouselOffScreen]). Written only when it changes (from onGloballyPositioned).
+ */
+private class CarouselViewport {
+    val left = androidx.compose.runtime.mutableFloatStateOf(0f)
+    val scale = androidx.compose.runtime.mutableFloatStateOf(1f)
+    val boxW = androidx.compose.runtime.mutableFloatStateOf(0f)
+    val viewW = androidx.compose.runtime.mutableFloatStateOf(0f)
+
+    fun update(lc: androidx.compose.ui.layout.LayoutCoordinates, screenW: Float) {
+        val w = lc.size.width.toFloat()
+        val l = lc.localToWindow(androidx.compose.ui.geometry.Offset.Zero).x
+        val r = lc.localToWindow(androidx.compose.ui.geometry.Offset(w, 0f)).x
+        val k = if (w > 0f) ((r - l) / w).takeIf { it.isFinite() && it > 0.01f } ?: 1f else 1f
+        if (left.floatValue != l) left.floatValue = l
+        if (scale.floatValue != k) scale.floatValue = k
+        if (boxW.floatValue != w) boxW.floatValue = w
+        if (viewW.floatValue != screenW) viewW.floatValue = screenW
+    }
+}
+
 /** Update 162: one carousel game's own scratch places (filled while placing / drawing on the main thread, never made per frame). */
 private class CarouselScratch {
     val p = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
+    /** Update 314: for the off-screen check, and the turn / shade last drawn (kept while the game is off the screen). */
+    val v = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
+    var lastTurn = 0f
+    var lastYaw = 0f
+    var lastShade = 0f
     val z = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
     val r = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
     val s = Carousel.Place(0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
@@ -1349,18 +1384,48 @@ private fun CarouselItem(
     // (Update 144: at most 78°, never edge-on.)
     val turns = !(sideways || c.cases3d || model != null || (spineHere && (c.view == CarouselView.SPINE_WALL || c.view == CarouselView.BOX_FLOW)))
     val piece = turns && !spineHere && freeArt
+    // Update 314 (scrolling the 3D cartridges lagged): wholly off the screen — "To the edge" (on by default) builds far
+    // more games each side than show (~15 a side on the Thor, three times that in Box flow / Spine wall), and each turned
+    // 3D cartridge or case drew its pictures every frame out of sight. Such a game isn't drawn, and its turn and shade
+    // stay as last drawn (nothing of it is redrawn while it's away); it's still built, so its art is ready when it comes
+    // in. Changes only when a game crosses the line (a quarter of the screen past its edge, so nothing seen is left out).
+    val pieceDens = androidx.compose.ui.platform.LocalDensity.current
+    val slotW = rememberUpdatedState(w0)
+    val slotH = rememberUpdatedState(h0)
+    val spineNow = rememberUpdatedState(spineHere)
+    val culled = remember {
+        androidx.compose.runtime.derivedStateOf {
+            val cc = ctxNow.value
+            val vp = cc.viewport
+            if (vp == null || vp.viewW.floatValue <= 0f || vp.boxW.floatValue <= 0f) false
+            else {
+                val rel = relNow.value()
+                cc.locate(ps.v, rel, spineNow.value, true, pieceDens)
+                val k = vp.scale.floatValue
+                // (A game opened to inspect parts the others a little — MediaInspect.)
+                val inspectShift = MediaInspect.amount.floatValue * 0.16f * with(pieceDens) { cc.bigW.toPx() }
+                val centre = vp.left.floatValue + (vp.boxW.floatValue / 2f + ps.v.x) * k
+                // (Generous: the whole slot's width plus height either side covers a turned piece's sides, its media and lean.)
+                val half = (with(pieceDens) { slotW.value.toPx() + slotH.value.toPx() } * ps.v.scale + inspectShift) * k
+                carouselOffScreen(centre, half, vp.viewW.floatValue, vp.viewW.floatValue * 0.25f)
+            }
+        }
+    }
     val band = if (piece) remember(gArt, g.platform, c.mixed, c.cardArtType, AndroidMedia.isAndroid(g.platform) && AndroidMedia.disc(g.platform, g.stableKey, DiscLook.on)) { mediaBandFor(gArt, g.platform, c.mixed, c.cardArtType, g.stableKey) } else null
     val turnOf: () -> Float = {
-        if (!turns) 0f else {
+        if (!turns) 0f else if (culled.value) ps.lastTurn else {
             val rel = relNow.value()
             // Update 158: a piece you're on turned like the others with "Turned like the others" (PickedFacing).
-            (c.place(ps.r, rel).turnY + (if (piece) PickedFacing.carouselTurn(kotlin.math.abs(rel)) else 0f)).coerceIn(-78f, 78f)
+            (c.place(ps.r, rel).turnY + (if (piece) PickedFacing.carouselTurn(kotlin.math.abs(rel)) else 0f)).coerceIn(-78f, 78f).also { ps.lastTurn = it }
         }
     }
     // Update 158: the one you're on faces you in every view (its turn there is 0); with "Turned like the others"
     // (PickedFacing.kt) it gets a turn of its own, fading in as it reaches the middle.
-    val yawOf: () -> Float = { val rel = relNow.value(); c.place(ps.r, rel).turnY + PickedFacing.carouselTurn(kotlin.math.abs(rel)) }
-    val shadeOf: () -> Float = { c.place(ps.s, relNow.value()).shade }
+    val yawOf: () -> Float = {
+        if (culled.value) ps.lastYaw
+        else { val rel = relNow.value(); (c.place(ps.r, rel).turnY + PickedFacing.carouselTurn(kotlin.math.abs(rel))).also { ps.lastYaw = it } }
+    }
+    val shadeOf: () -> Float = { if (culled.value) ps.lastShade else c.place(ps.s, relNow.value()).shade.also { ps.lastShade = it } }
     Box(
         modifier
             // The drawing order, read while placing (zIndex is otherwise fixed at composition).
@@ -1399,6 +1464,8 @@ private fun CarouselItem(
                 // (Faded op by op: a 3D case's reflection is drawn outside its slot, and no slot-sized buffer per game.)
                 compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha
             }
+            // (Update 314: nothing of a game wholly off the screen is drawn — see culled.)
+            .drawWithContent { if (!culled.value) drawContent() }
             .then(if (interactive) Modifier.pointerInput(real) { detectTapGestures { tapNow.value(real) } } else Modifier)
             .then(if (on) Modifier.focusedCard() else Modifier)
     ) {

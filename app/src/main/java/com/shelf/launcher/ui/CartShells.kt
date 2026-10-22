@@ -779,7 +779,13 @@ internal object CartShells {
          * a custom cartridge drawn on its real shell — CustomCarts.authenticFront). Never over a real label scan.
          */
         header: Bitmap? = null
-    ): Bitmap {
+    ): Bitmap = frontOrNull(s, colour, art, brand, title, maxPx, scan, header, peek = false)!!
+
+    /** [front], or with [peek] only one already made (null when it isn't — nothing is drawn then). Update 314. */
+    private fun frontOrNull(
+        s: CartShell, colour: ShellColour, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean,
+        header: Bitmap?, peek: Boolean
+    ): Bitmap? {
         // (Update 297: a Switch card's red header strip — SwitchLabel — once it's loaded; in the key, so a card drawn before
         // it was there is drawn again with it.)
         // (Update 306: only for a Switch game — another console's game on the Switch card's shape gets the same strip with
@@ -790,6 +796,7 @@ internal object CartShells {
         val head = plaque ?: switchHeader
         val key = "f5|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
+        if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
         val b = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
@@ -931,6 +938,19 @@ internal object CartShells {
             CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx)?.let { return it }
         }
         return front(s, colourOf(s, key), art, brand, title, maxPx, scan)
+    }
+
+    /**
+     * Update 314: [frontFor] only when it's already made (null: it has to be drawn — CartShellArt does that away from the
+     * screen's thread). Making one on the screen's thread as each cartridge came into a carousel stuttered the scrolling.
+     */
+    fun cachedFrontFor(s: CartShell, key: String?, console: String?, art: Bitmap?, brand: String, title: String?, maxPx: Int, scan: Boolean): Bitmap? {
+        packColourParts(key)?.let { (look, clear, con) ->
+            val colour = colourOf(s, key)
+            val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
+            return CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx, peek = true)
+        }
+        return frontOrNull(s, colourOf(s, key), art, brand, title, maxPx, scan, null, peek = true)
     }
 
     /**
@@ -1399,7 +1419,14 @@ internal object CartShellStore {
 internal fun CartShellArt(
     pickPlatform: String, art: Any?, modifier: Modifier, title: String? = null, maxPx: Int = 640,
     /** Update 205: [art] is the game's real label scan: it fills the label, no console band over it. */
-    labelIsScan: Boolean = false
+    labelIsScan: Boolean = false,
+    /**
+     * Update 314: the piece's solid build (rememberShellSolid) when it may be turned, and its idle motion's seed
+     * (mediaMotion); null: neither (the pickers). Applied here, so a drawn shell turns from its finished front picture
+     * (solidPiece's faceArt) — PhysicalMedia used to apply them round this.
+     */
+    solid: SolidSpec? = null,
+    motionSeed: Int? = null
 ) {
     // (Update 308: a pack shape with a real cartridge is drawn as that cartridge — CartShells.authentic — in the picker
     // previews too, the same piece the home screen shows.)
@@ -1408,22 +1435,49 @@ internal fun CartShellArt(
     // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
     // pre-rendered pictures.)
     if (packLook != null) {
-        PackCart(console ?: "", art, modifier, packLook, choice.clear, labelIsScan, title)
+        // (Update 314: turned and moving as before — the solid piece round the pack picture, its motion inside it.)
+        val m = if (solid != null) modifier.solidPiece(solid) else modifier
+        PackCart(console ?: "", art, if (motionSeed != null) m.mediaMotion(false, motionSeed) else m, packLook, choice.clear, labelIsScan, title)
     } else {
         val shell = choice?.shell
+        val colourKey = choice?.colourKey
         val bmpArt = rememberSoftBitmap(art, 480)
         // (Update 297: the Switch card's red header strip, loaded once — SwitchLabel.)
         val ctxSw = androidx.compose.ui.platform.LocalContext.current
         remember { SwitchLabel.prime(ctxSw) }
         val brand = remember(console) { console?.let { com.shelf.launcher.data.ConsoleNames.display(it) } ?: "" }
-        val front = remember(pickPlatform, bmpArt, brand, title, maxPx, labelIsScan) {
-            if (shell == null) null else runCatching { CartShells.frontFor(shell, choice.colourKey, console, bmpArt, brand, title, maxPx, labelIsScan) }.getOrNull()
+        // Update 314 (scrolling the 3D cartridges stuttered): a front already made is used at once; a new one is drawn
+        // away from the screen's thread (it was drawn here, ~640 px with its label, as each cartridge came into a
+        // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
+        // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
+        val identity = "$pickPlatform|$title|$maxPx|$labelIsScan"
+        val madeFront = remember { androidx.compose.runtime.mutableStateOf<Pair<String, android.graphics.Bitmap>?>(null) }
+        val prior = madeFront.value
+        val cachedFront = remember(pickPlatform, bmpArt, brand, title, maxPx, labelIsScan) {
+            if (shell == null) null else runCatching {
+                CartShells.cachedFrontFor(shell, colourKey, console, bmpArt, brand, title, maxPx, labelIsScan)
+                    ?: if (prior != null && prior.first != identity) CartShells.frontFor(shell, colourKey, console, bmpArt, brand, title, maxPx, labelIsScan) else null
+            }.getOrNull()
         }
-        BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
-            val a = shell?.aspect ?: 1f
+        androidx.compose.runtime.LaunchedEffect(pickPlatform, bmpArt, brand, title, maxPx, labelIsScan) {
+            if (shell == null) { madeFront.value = null; return@LaunchedEffect }
+            if (cachedFront != null) { madeFront.value = identity to cachedFront; return@LaunchedEffect }
+            val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                runCatching { CartShells.frontFor(shell, colourKey, console, bmpArt, brand, title, maxPx, labelIsScan) }.getOrNull()
+            }
+            if (made != null) madeFront.value = identity to made
+        }
+        val front = cachedFront ?: prior?.takeIf { it.first == identity }?.second
+        val frontImage = remember(front) { front?.asImageBitmap() }
+        val a = shell?.aspect ?: 1f
+        val moving = if (motionSeed != null) modifier.mediaMotion(false, motionSeed) else modifier
+        // (Update 314: the motion round the solid piece, so a hop lifts the turned piece whole — its face is drawn from the
+        // picture when turned, PieceFace.)
+        val m = if (solid != null) moving.solidPiece(solid, faceArt = frontImage?.let { PieceFace(it, a) }) else moving
+        BoxWithConstraints(m, contentAlignment = Alignment.Center) {
             val w = minOf(maxWidth, maxHeight * a)
             val h = w / a
-            if (front != null) Image(front.asImageBitmap(), shell?.name, Modifier.size(w, h))
+            if (frontImage != null) Image(frontImage, shell?.name, Modifier.size(w, h))
         }
     }
 }
