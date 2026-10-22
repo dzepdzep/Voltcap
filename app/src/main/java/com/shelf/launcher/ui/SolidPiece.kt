@@ -457,7 +457,12 @@ internal fun Modifier.solidPiece(
             if (faceArt == null && testPose == null && !shot.off) {
                 val want = "${shot.version.intValue}|${size.width.toInt()}x${size.height.toInt()}"
                 if (shot.asked != want) {
-                    if (art != null) face.record { this@onDrawWithContent.drawContent() }
+                    // (Its own drawing for the picture isn't new content: drawn again here after a while away from the
+                    // screen's drawing, the content draws itself again — counted, that took a picture every frame.)
+                    if (art != null) {
+                        shot.quiet = true
+                        try { face.record { this@onDrawWithContent.drawContent() } } finally { shot.quiet = false }
+                    }
                     shot.take(scope, face, want)
                 }
             }
@@ -627,14 +632,19 @@ internal class PieceShot {
     val version = androidx.compose.runtime.mutableIntStateOf(0)
     var asked: String? = null
     var off = false
+    /** While the piece draws its content for the picture itself (not a change of the content). */
+    var quiet = false
     private var job: kotlinx.coroutines.Job? = null
     private var restarts = 0
     private var fails = 0
+    private var taken = 0
 
-    fun changed() { version.intValue++ }
+    fun changed() { if (!quiet) version.intValue++ }
 
     fun take(scope: kotlinx.coroutines.CoroutineScope, layer: androidx.compose.ui.graphics.layer.GraphicsLayer, key: String) {
         asked = key
+        // (Never more than [MAX_SHOTS] for a piece: the last one stays — each new one also makes its sides' picture again.)
+        if (taken >= MAX_SHOTS) return
         if (job?.isActive == true && ++restarts > 40) { off = true; image.value = null; job?.cancel(); return }
         job?.cancel()
         job = scope.launch {
@@ -645,12 +655,16 @@ internal class PieceShot {
                 if (asked != key) return@launch
                 val b = runCatching { layer.toImageBitmap() }.getOrNull()
                 if (b == null || b.width <= 0 || b.height <= 0) { if (++fails > 5) { off = true; image.value = null } }
-                else if (asked == key) { restarts = 0; image.value = b; done = true }
+                else if (asked == key) { restarts = 0; taken++; image.value = b; done = true }
             } finally {
                 // (Not taken — gone off the screen meanwhile, say: asked again the next time it's drawn.)
                 if (!done && asked == key) asked = null
             }
         }
+    }
+
+    private companion object {
+        const val MAX_SHOTS = 10
     }
 }
 

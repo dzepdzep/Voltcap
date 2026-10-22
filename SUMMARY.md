@@ -40,6 +40,10 @@ tested on a handheld.
   as new content, retook the picture, and after 40 retakes gave up (`off`). Now remembered once per piece (`shotMark`).
   The idle hop of the drawn templates, cartridge photos and pack pictures moved round the solid piece (as the drawn
   shells' already was), so their picture never holds them mid-hop (`PhysicalMedia.kt`, `CustomCarts.kt`).
+- **Measured (user, 317c):** worse — frames 350 ms, the Flip 2's fan loud. A loop: a piece drawn from its picture
+  leaves its content out of the screen's drawing; drawn again for the next picture, the content drew itself anew, which
+  counted as a change and asked for another picture (and its sides' picture again, on the CPU) — over and over. Now its
+  own drawing for the picture doesn't count (`PieceShot.quiet`), and a piece takes at most 10 pictures (the last stays).
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/CustomCarts.kt`, `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
   targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
