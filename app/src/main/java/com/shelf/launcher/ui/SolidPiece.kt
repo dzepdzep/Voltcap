@@ -391,7 +391,7 @@ internal fun Modifier.solidPiece(
     // (The same modifier for the piece's whole life: a new one at each recomposition — every step of a carousel — made the
     // content draw again, which counted as new content and took the picture again, until the piece gave up on it.)
     val shotMark = remember(shot) { Modifier.graphicsLayer { }.drawWithContent { shot.changed(); drawContent() } }
-    val sideMade = rememberDerived((faceArt?.image ?: shotImage)?.asAndroidBitmap(), "side|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
+    val sideMade = rememberDerived((faceArt?.image ?: shotImage)?.asAndroidBitmap(), "side317|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
     // (Update 317: the last sides' picture kept while a new front's is made — the piece stays drawn from its pictures, so it
     // keeps darkening itself; see shadeTaken below.)
     val lastSide = remember { mutableStateOf<ImageBitmap?>(null) }
@@ -512,7 +512,14 @@ internal fun Modifier.solidPiece(
                 edgeLeaf.rotationY = yaw; edgeLeaf.cameraDistance = cam
                 litLeaf.rotationY = yaw; litLeaf.cameraDistance = cam
                 val edgeLight = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
-                edgeLeaf.record { drawImage(side, IntOffset.Zero, sideSrc!!, artPos!!, artSize!!, colorFilter = edgeLight) }
+                // (Update 317: the sides' picture is SIDE_SPREAD px wider each side — drawn that much wider.)
+                val padN = (SIDE_SPREAD * artSize!!.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
+                edgeLeaf.record {
+                    drawImage(
+                        side, IntOffset.Zero, sideSrc!!, IntOffset(artPos!!.x - padN, artPos.y),
+                        IntSize(artSize.width + 2 * padN, artSize.height), colorFilter = edgeLight
+                    )
+                }
                 if (c >= 0f) {
                     val faceLight = SolidLight.of((1f - 0.4f * abs(sn)) * shadeK)
                     litLeaf.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!, colorFilter = faceLight) }
@@ -607,7 +614,20 @@ internal fun Modifier.solidPiece(
                 // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
                 // (Update 316: the plain sides when there's a sides' picture — edgeLeaf — else the offscreen ones.)
                 val edgeL = edgeLeaf ?: edge
-                edgeL.alpha = if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
+                // (Update 317: drawn from the sides' picture — a copy every [SIDE_SPREAD] px (foreshortened), the near one,
+                // under the face, left out; see SIDE_SPREAD.)
+                val reach = if (edgeLeaf != null && side != null && artSize != null)
+                    (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(c)).coerceAtLeast(1.5f) else 0f
+                val span = depthPx * abs(sn)
+                val nLeaf = if (edgeLeaf == null || span < 0.5f) 0 else ceil(span / reach).toInt().coerceIn(1, 24)
+                edgeL.alpha = if (edgeLeaf != null) {
+                    if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
+                } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
+                if (edgeLeaf != null) for (k in 0 until nLeaf) {
+                    val f = k.toFloat() / nLeaf
+                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+                    translate(z * sn, 0f) { drawLayer(edgeLeaf) }
+                }
                 if (n > 0 && fill > 1 && edgeLeaf == null) {
                     smear.record(size = buf) {
                         translate(m.toFloat(), m.toFloat()) {
@@ -615,16 +635,11 @@ internal fun Modifier.solidPiece(
                         }
                     }
                 }
-                if (n > 0) for (k in 0..n) {
+                if (n > 0 && edgeLeaf == null) for (k in 0..n) {
                     val f = k.toFloat() / n
                     val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
                     // (The nearest slice alone: nothing past it to fill.)
-                    if (edgeLeaf != null) {
-                        // (Update 316: each copy the smear held, drawn at its own place — the same places, in the same order.)
-                        val reps = if (fill > 1 && k < n) fill else 1
-                        for (j in 0 until reps) translate(z * sn + step * j / fill, 0f) { drawLayer(edgeLeaf) }
-                    }
-                    else if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+                    if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
                     else translate(z * sn, 0f) { drawLayer(edge) }
                 }
                 val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
@@ -716,20 +731,40 @@ internal object PieceShots {
  */
 internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphics.Bitmap? = runCatching {
     val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
-    val w = soft.width; val h = soft.height
-    if (w <= 0 || h <= 0) return@runCatching null
+    val w0 = soft.width; val h = soft.height
+    if (w0 <= 0 || h <= 0) return@runCatching null
+    val src0 = IntArray(w0 * h)
+    soft.getPixels(src0, 0, w0, 0, 0, w0, h)
+    // (Update 317: [SIDE_SPREAD] px of room each side, and the outline spread that far sideways — see SIDE_SPREAD.)
+    val r = SIDE_SPREAD
+    val w = w0 + 2 * r
     val px = IntArray(w * h)
-    soft.getPixels(px, 0, w, 0, 0, w, h)
+    val alpha = IntArray(w)
     for (y in 0 until h) {
         val rgb = sideRowRgb((y + 0.5f) / h, tone)
+        java.util.Arrays.fill(alpha, 0)
+        for (x in 0 until w0) alpha[x + r] = sideAlpha(src0[y * w0 + x] ushr 24)
         val row = y * w
-        for (x in 0 until w) px[row + x] = (sideAlpha(px[row + x] ushr 24) shl 24) or rgb
+        for (x in 0 until w) {
+            var a = 0
+            for (d in (x - r).coerceAtLeast(0)..(x + r).coerceAtMost(w - 1)) if (alpha[d] > a) a = alpha[d]
+            px[row + x] = (a shl 24) or rgb
+        }
     }
     val made = android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888)
     // (Update 317: kept on the GPU — as a plain picture it was thrown out of the GPU's cache and uploaded again, ~28 a
     // frame in the Flip 2 trace.)
     if (android.os.Build.VERSION.SDK_INT >= 26) made.copy(android.graphics.Bitmap.Config.HARDWARE, false) ?: made else made
 }.getOrNull()
+
+/**
+ * Update 317 (Toni: "draw them like the cases, as long as they aren't thin like paper from the side"): the sides' picture
+ * has this many px of room each side of the front's, and its outline is spread that far sideways. The turned piece's
+ * side is copies of it from far to near; spread, each copy reaches the next across a gap of up to this much (foreshortened
+ * by the turn), so a few copies make one solid edge — 4–20 a piece instead of 30–130 — the outline's shape (notches,
+ * curves) kept, the side a few px thicker at most, never thinner.
+ */
+internal const val SIDE_SPREAD = 10
 
 /** A brightness filter in 40 steps (made once each). */
 private object SolidLight {

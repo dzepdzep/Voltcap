@@ -103,6 +103,11 @@ tested on a handheld.
 - **Changed (`Case3D.kt`):** Covers look — a cover that would lose more than 8 % to the case's shape (`CoverAspects`)
   gives way to the game's box-front scan when it has one (`coverCut`). N64 spine narrower than its side
   (`boxSideSpine`, widenN64): fills the side (scaled across, nothing cut, no strip) — cache kind `n64-fill317`.
+- **Cartridges drawn with far fewer copies (Toni: "as long as they aren't thin like paper from the side"):** the sides'
+  picture (`sideArtOf`) has `SIDE_SPREAD` (10) px of room each side and its outline spread that far sideways; a turned
+  piece drawn from its pictures puts a copy every SIDE_SPREAD px (foreshortened by the turn, at least 1.5 px), the near
+  one (under the face) left out — 4–20 draws a piece instead of up to 32 × 4 (n × fill). Outline shape kept; the side a
+  few px thicker at most. Cache kind `side317`.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
