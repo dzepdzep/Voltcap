@@ -2929,7 +2929,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // wallpaper (still/animated/video), animated theme, or Black. Keep the
         // existing Gaming room monitor and layouts that own their backdrop.
         val backdropClip = videoUrl?.takeIf {
-            videoMayReplaceSelectedBackground(backgroundStyle) &&
+            videoMayReplaceSelectedBackground(backgroundStyle, focusOverride?.hero != null) &&
                 !roomClip && !screensaverOn && !heroLayout && !discCalm &&
                 !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))
         }
@@ -2968,7 +2968,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Update 307: fading from clip to clip, looping on while idle — VideoCrossfade.)
             VideoCrossfade(
                 videoUrl?.takeIf {
-                    videoMayReplaceSelectedBackground(backgroundStyle) &&
+                    videoMayReplaceSelectedBackground(backgroundStyle, focusOverride?.hero != null) &&
                         !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                 },
                 state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low
