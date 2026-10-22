@@ -140,7 +140,14 @@ internal fun Case3D(
         // is fitted onto that side (spineFit below); its own shape decides only where no spec is known.)
         val known = spec?.takeIf { it.check != CaseCheck.PLACEHOLDER }?.depth
         val own = ownUpright?.let { it.width.toFloat() / it.height.coerceAtLeast(1) }
-        (known ?: own ?: spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f).coerceIn(0.05f, 0.26f)
+        // (Update 317, Toni: GameCube spines "overstretched — they were okay before": since update 255 a keep case took its
+        // spec's thickness whatever its spine scan, and a scan narrower than that side had its top and bottom cut and was
+        // zoomed to fill it. A keep / jewel case whose spine scan is within a quarter of its spec takes the scan's own
+        // thickness again, as before 255, so the spine fits it exactly; further off (a scan with slivers of the back and
+        // front beside the spine) the spec's, cut in the middle. Cardboard boxes as updates 308 / 312 have them.)
+        val scanFits = known != null && own != null && spec?.shell != CaseShell.CARDBOARD &&
+            kotlin.math.abs(own / known - 1f) <= 0.25f
+        (if (scanFits) own!! else (known ?: own ?: spec?.depth ?: tpl?.aspect ?: realCaseDepth(g.platform) ?: 0.085f)).coerceIn(0.05f, 0.26f)
     }
     // (Update 240, #26: no spine picture of the game's own: the console's colour with the name down it and the console's
     // logo at its foot, made at the side's own shape — the plain dark strip was the same for every console and, made for a
