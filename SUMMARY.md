@@ -162,6 +162,9 @@ tested on a handheld.
   the one behind it, then behind it:** it kept the pulled-out case's drawing order until fully back in its slot. Once
   under 35 % out (turned back to its spine) it takes the stack's order (`pullOut`: right 49 + d, left 51 − d, continuing
   `stackZ`), so it slides in where it belongs.
+- **N64 spine cut at its foot (Pokémon Stadium):** a scan a little narrower than the side (under 30 % off) had its top and
+  bottom cut and was zoomed; an N64 one keeps its whole height now (`fitSpineInside`, update 312's widening). Cache kind
+  `n64-align317`.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`,
   `ui/FullScanCutEditor.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
