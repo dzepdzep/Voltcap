@@ -67,11 +67,8 @@ tested on a handheld.
   screen's edges. Now the number picked is how many show each side (pull-out: + the 8 hidden); To the edge keeps ×3.
 - **Screen recording (`voltcap-flash.mp4`):** the "flashing" is the stacks jumping — ~70 distinct frames in 10 s while
   stepping — not a drawing fault (no brightness flicker, no label changes found).
-- **Perfetto (`voltcap-trace9.zip`):** pictures of the screen still ~70 ms a frame (`copyImageInto` 51 + `setSurface` 20),
-  ~280 in 15 s — the cartridge photos (523×339, N64) and the optical-system shells (380×468, GameCube / PS2), which had
-  no front picture of their own. **Changed:** `RealMediaPicture` hands its loaded photo as `faceArt`;
-  `rememberDiscShellFront` / `discShellFront` (`CustomCarts.kt`) make a disc shell's front (paper window with its round
-  corners, the pack sticker fitted, the shell over it) off the screen's thread. PieceShot is left for pack pictures only.
+- **317h reverted:** with it every frame took 250–400 ms (UI thread slow on each, bitmap uploads on most) and the fans
+  ran hard on the Flip 2 — a repeat somewhere in the photo / disc-shell front path. Back to 317g.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
