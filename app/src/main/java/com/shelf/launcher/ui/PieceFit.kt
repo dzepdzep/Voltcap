@@ -59,3 +59,21 @@ internal fun carouselOffScreen(centerX: Float, halfExtent: Float, viewW: Float, 
     if (viewW <= 0f || centerX.isNaN() || halfExtent.isNaN()) return false
     return centerX + halfExtent < -margin || centerX - halfExtent > viewW + margin
 }
+
+/** Update 316: the sides' outline alpha from a front pixel's [a] (0–255): × 4 − 24, as the solid filter's matrix makes it. */
+internal fun sideAlpha(a: Int): Int = (a * 4 - 24).coerceIn(0, 255)
+
+/**
+ * Update 316: the sides' colour (0xRRGGBB) [t] of the way down: [tone] under the sheen — white 12 % at the top, clear in
+ * the middle, black 18 % at the bottom (each stop's colour and alpha blended in a straight line), laid on as SrcAtop.
+ */
+internal fun sideRowRgb(t: Float, tone: Int): Int {
+    val tr = (tone shr 16) and 255; val tg = (tone shr 8) and 255; val tb = tone and 255
+    val sa: Float; val sc: Float
+    if (t <= 0.5f) { val k = (t / 0.5f).coerceIn(0f, 1f); sa = 0.12f * (1f - k); sc = 255f * (1f - k) }
+    else { val k = ((t - 0.5f) / 0.5f).coerceIn(0f, 1f); sa = 0.18f * k; sc = 0f }
+    val r = (sc * sa + tr * (1f - sa)).toInt().coerceIn(0, 255)
+    val g = (sc * sa + tg * (1f - sa)).toInt().coerceIn(0, 255)
+    val b = (sc * sa + tb * (1f - sa)).toInt().coerceIn(0, 255)
+    return (r shl 16) or (g shl 8) or b
+}

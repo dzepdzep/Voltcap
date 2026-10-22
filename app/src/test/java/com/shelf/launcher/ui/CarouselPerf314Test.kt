@@ -47,6 +47,22 @@ class CarouselPerf314Test {
         assertArrayEquals(intArrayOf(0, 71, 400, 258), pieceFrameRect(400f, 400f, 1.55f, floatArrayOf(0f, 0f, 1f, 1f)))
     }
 
+    // --- the sides' picture (update 316) ---
+
+    @Test fun sideAlphaMatchesTheSolidFilter() {
+        assertTrue(sideAlpha(0) == 0 && sideAlpha(6) == 0 && sideAlpha(255) == 255)
+        assertTrue(sideAlpha(64) == 232)
+    }
+
+    @Test fun sideColourIsTheToneUnderTheSheen() {
+        val tone = 0x406080
+        // The middle: no sheen, the plastic itself.
+        assertTrue(sideRowRgb(0.5f, tone) == tone)
+        // The top: a little lighter; the bottom: a little darker.
+        assertTrue(((sideRowRgb(0f, tone) shr 16) and 255) > 0x40)
+        assertTrue((sideRowRgb(1f, tone) and 255) < 0x80)
+    }
+
     // --- carouselOffScreen ---
 
     @Test fun gameOnTheScreenIsDrawn() {

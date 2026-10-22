@@ -40,6 +40,15 @@ tested on a handheld.
   the rest were the games far off the screen that update 314 stopped *drawing* but that still *held* their GPU pictures
   (~45 a side with To the edge). Now a game far off the screen (`culled`) keeps nothing composed inside its slot — its
   layers are released — and is built again a whole carousel width before it can show.
+- **Third trace (with that):** worse — **1,019 render targets / 1,243 MB**, median frame 101 ms, GPU stalls: rebuilding
+  the games coming back made new GPU pictures faster than the old ones were let go. **Reverted** (culled games stay
+  composed, not drawn). Instead the turned pieces drawn from a picture need **no offscreen picture at all** while drawn
+  opaque: `sideArtOf` makes the sides' picture once per front off the screen's thread (`rememberDerived`: the outline at
+  alpha × 4 − 24 in the plastic's tone under the sheen — what the offscreen sides drew; `sideAlpha` / `sideRowRgb`,
+  tested), and the sides and the face are plain layers (`edgeLeaf` / `litLeaf`, their light drawn in, recorded as the
+  turn changes). The smear is gone for them: each of its copies is drawn at its own place, the same places in the same
+  order. Difference: the sheen spans the piece's picture rather than the whole slot (a landscape cartridge's sides
+  shade over the cartridge, not the empty slot above and below it).
 - **Not changed yet:** N64 spines that "still don't apply correctly on some games" (user) — waiting for which games and
   how they look (see the chat for the likely causes).
 

@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -353,6 +354,11 @@ internal fun Modifier.solidPiece(
     if (turn == null && spin == null && TestHooks.pose.value == null) return this
     val dens = LocalDensity.current.density
     val cam = (turn?.camera ?: 14f) * dens
+    // Update 316 (Perfetto traces, Flip 2: ~1,000 GPU pictures standing, the covers thrown out of the GPU's cache and
+    // uploaded again every frame): the sides' picture — the face's outline in the plastic's colour with its sheen — made
+    // once from the front, away from the screen's thread. With it the sides and the face are plain picture draws, no
+    // offscreen picture of their own (and no smear: each slice's copies drawn at the very same places).
+    val sideArt = rememberDerived(faceArt?.image?.asAndroidBitmap(), "side|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
     return this.drawWithCache {
         val face = obtainGraphicsLayer()
         // (Update 294: the face drawn flat into its own picture, which is then turned — the turned layers below used to
@@ -402,6 +408,11 @@ internal fun Modifier.solidPiece(
         val artSize = artAt?.let { IntSize(it[2], it[3]) }
         val artSrc = art?.let { IntSize(it.width, it.height) }
         val solidFilter = solid.colorFilter
+        // (Update 316: plain layers — no offscreen picture — for the sides and the face drawn from the pictures.)
+        val side = sideArt?.takeIf { art != null }
+        val sideSrc = side?.let { IntSize(it.width, it.height) }
+        val edgeLeaf = if (side != null) obtainGraphicsLayer().also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.ModulateAlpha } else null
+        val litLeaf = if (side != null) obtainGraphicsLayer() else null
         var artMade = false
         var madeYaw = Float.NaN
         onDrawWithContent {
@@ -423,6 +434,17 @@ internal fun Modifier.solidPiece(
             val sn = sin(t).toFloat()
             edge.rotationY = yaw; edge.cameraDistance = cam
             lit.rotationY = yaw; lit.cameraDistance = cam
+            // (Update 316: the plain sides and face, their light drawn in — recorded again only as the turn changes.)
+            if (edgeLeaf != null && litLeaf != null && side != null && art != null) {
+                edgeLeaf.rotationY = yaw; edgeLeaf.cameraDistance = cam
+                litLeaf.rotationY = yaw; litLeaf.cameraDistance = cam
+                val edgeLight = SolidLight.of(0.42f + 0.22f * abs(sn))
+                edgeLeaf.record { drawImage(side, IntOffset.Zero, sideSrc!!, artPos!!, artSize!!, colorFilter = edgeLight) }
+                if (c >= 0f) {
+                    val faceLight = SolidLight.of(1f - 0.4f * abs(sn))
+                    litLeaf.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!, colorFilter = faceLight) }
+                }
+            }
             back.rotationY = yaw; back.cameraDistance = cam
             // (Update 209: a see-through piece's back as see-through as its sides.)
             back.alpha = spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f
@@ -500,8 +522,10 @@ internal fun Modifier.solidPiece(
                 val fill = if (n > 0 && testPose?.second != true) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
                 val copies = n * fill + 1
                 // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
-                edge.alpha = if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
-                if (n > 0 && fill > 1) {
+                // (Update 316: the plain sides when there's a sides' picture — edgeLeaf — else the offscreen ones.)
+                val edgeL = edgeLeaf ?: edge
+                edgeL.alpha = if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
+                if (n > 0 && fill > 1 && edgeLeaf == null) {
                     smear.record(size = buf) {
                         translate(m.toFloat(), m.toFloat()) {
                             for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
@@ -512,7 +536,12 @@ internal fun Modifier.solidPiece(
                     val f = k.toFloat() / n
                     val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
                     // (The nearest slice alone: nothing past it to fill.)
-                    if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+                    if (edgeLeaf != null) {
+                        // (Update 316: each copy the smear held, drawn at its own place — the same places, in the same order.)
+                        val reps = if (fill > 1 && k < n) fill else 1
+                        for (j in 0 until reps) translate(z * sn + step * j / fill, 0f) { drawLayer(edgeLeaf) }
+                    }
+                    else if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
                     else translate(z * sn, 0f) { drawLayer(edge) }
                 }
                 val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
@@ -522,7 +551,7 @@ internal fun Modifier.solidPiece(
                     hole.record { drawLayer(solid) }
                     translate(faceX, 0f) { drawLayer(hole) }
                 }
-                if (c >= 0f) translate(faceX, 0f) { drawLayer(lit) }
+                if (c >= 0f) translate(faceX, 0f) { drawLayer(litLeaf ?: lit) }
                 else translate(faceX, 0f) { drawLayer(back) }
             }
             if (direct) {
@@ -536,6 +565,25 @@ internal fun Modifier.solidPiece(
         }
     }
 }
+
+/**
+ * Update 316: the sides' picture for a front [src]: its outline (alpha × 4 − 24, as the solid filter makes it) filled with
+ * [tone], under the sheen (white 12 % at the top, clear in the middle, black 18 % at the bottom — the offscreen sides drew
+ * the same over the node) — what the offscreen sides drew, made once on the CPU. Null when it can't be read.
+ */
+internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphics.Bitmap? = runCatching {
+    val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+    val w = soft.width; val h = soft.height
+    if (w <= 0 || h <= 0) return@runCatching null
+    val px = IntArray(w * h)
+    soft.getPixels(px, 0, w, 0, 0, w, h)
+    for (y in 0 until h) {
+        val rgb = sideRowRgb((y + 0.5f) / h, tone)
+        val row = y * w
+        for (x in 0 until w) px[row + x] = (sideAlpha(px[row + x] ushr 24) shl 24) or rgb
+    }
+    android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888)
+}.getOrNull()
 
 /** A brightness filter in 20 steps (made once each). */
 private object SolidLight {

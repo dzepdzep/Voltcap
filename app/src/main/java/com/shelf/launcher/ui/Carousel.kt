@@ -1486,11 +1486,7 @@ private fun CarouselItem(
         // Update 203: a cartridge turns as a solid piece (its thickness showing) — the slot hands it the turn instead of
         // turning the flat picture (SolidPiece.kt).
         val solidHere = turns && !spineHere && !wideHere && gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
-        // Update 316 (Perfetto trace, Flip 2: 567 GPU pictures, 754 MB — the screen's covers thrown out of the GPU's cache
-        // and uploaded again every frame): a game far off the screen keeps nothing drawn — not drawing it (culled) still
-        // left each turned piece's GPU pictures standing, ~45 games a side with "To the edge". Built again a whole carousel
-        // width before it can show (its pictures come from the caches, made away from the screen's thread if not).
-        if (!culled.value) Box(
+        Box(
             Modifier.fillMaxSize().graphicsLayer {
                 rotationY = if (solidHere) 0f else turnOf()
                 cameraDistance = 12f * c.dens
