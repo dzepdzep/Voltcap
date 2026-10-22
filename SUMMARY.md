@@ -2,6 +2,11 @@
 
 ## Update — 22 Oct 2026 (311): Investigate N64 Shelf vs Inspect mismatch, release safety
 
+- **Tarzan real-spine exception (user's follow-up):** Some N64 games, such as Tarzan, already display their genuine artwork spine; Super Mario 64 and Superman show generated dark title spines in Inspect. Do **not** force one common N64 spine, or treat every N64 title as having a missing scan. Resolve each game independently, prioritize a usable game's own `Spine` scan when Matching spines and R1 Spine override are off, and preserve its real proportions. A real scan might be absent, delayed, incompatible, or intentionally overridden; user screenshots alone do not prove which for each title.
+- **Update 311 source verification:** GitHub Actions `Verify Android update 310` succeeded on exact commit `53a90c62f95ee6674af6481644b7f2168b563dd2` (runs <https://github.com/dzepdzep/Voltcap/actions/runs/39774297334> and <https://github.com/dzepdzep/Voltcap/actions/runs/39774289193>) with the CI-only Discord stub, Gradle debug assemble and JVM unit tests. This is NOT a real release build, and no Flip 2 / Thor device check happened in this session.
+- **Publishing access audit, 22 Oct 2026:** Latest published signed release remains `v0.6.30` on GitHub. No signed v0.6.31 APK or DM profile files from Claude's local PC are present in this chat, its Library, or the GitHub releases; this session cannot see the PC's USB ADB server or the local APK output. Available GitHub connector has no create-release/upload-asset action. Never re-label v0.6.30 or upload the stubbed CI debug build as 0.6.31. Only the original production-signed APK that was *actually built from the final merged revision* can be released.
+
+
 **Status:** Changes on `fix/dual-screen-controls-310`, draft PR #1. **No device access from this ChatGPT GitHub connection**: user has the Flip 2 physically connected with USB/ADB enabled, but the connected GitHub tool cannot reach that PC's local ADB server. Do not claim a Flip 2 test or release; last public APK is still v0.6.30.
 
 - **Verified main first:** Main is still Claude's update 309. Checked `ShelfHome.kt`, `MediaInspectView.kt`, `Case3D.kt`, `CaseCatalog.kt`, `MediaCovers.kt`, `BoxTexture.kt`, and release script before editing. No main or published APK was changed.
