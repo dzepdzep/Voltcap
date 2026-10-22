@@ -254,8 +254,10 @@ internal fun TwinSecondScreen(c: StyleCtx) {
                 }
             }
         }
-        // The other four layouts already include a native dashboard button. Showcase did not.
-        if (c.state.appearance.homeLayout == HomeLayout.TWIN_SHOWCASE &&
+        // Desk, icons, Ribbon and Classic (when its toolbar is visible) have native buttons.
+        // Showcase, and Classic when the toolbar is hidden, get this accessible fallback.
+        if ((c.state.appearance.homeLayout == HomeLayout.TWIN_SHOWCASE ||
+            (c.state.appearance.homeLayout == HomeLayout.POCKET_CLASSIC && !com.shelf.launcher.data.Features.classicToolbar.state.value)) &&
             com.shelf.launcher.data.Features.twinDashboardAccess.state.value
         ) {
             Row(
