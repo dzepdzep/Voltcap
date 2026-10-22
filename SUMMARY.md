@@ -17,9 +17,9 @@
 
 **Files changed on branch:** `app/build.gradle.kts`; `.github/workflows/verify-update-310.yml`; `app/src/main/java/com/shelf/launcher/data/Features.kt`; `ui/TwinScreens.kt`, `TwinDesk.kt`, `TwinIcons.kt`, `TwinShowcase.kt`, `PocketShared.kt`, `PocketSettings.kt`, `HomeChrome.kt`, `LauncherScreen.kt`; `SUMMARY.md`.
 
-**Visual evidence:** The user's 'this is how it looks' message did not include a visible image/video attachment in this conversation; the real flickering symptom therefore still needs a device recording for confirmation if it persists.
+**Visual evidence:** Inspected the attached AYN Thor video: the entire standard category-pill strip repeatedly appears and disappears over the Green Core menu. The proposed fix must be verified with a new build on-device.
 
-**Still required before release:** review the code, assemble the Android release with the existing release signing key, run the unit test suite and device/UI checks on AYN Thor (both screens; all five layouts; categories All/Current/Off; hidden category; repeated switching; dashboard open/back; with Pocket Classic toolbar off). Check RP handheld/one-screen fallbacks where available. Verify that no category flashing remains; if it persists, capture a screen recording and diagnose the real rendering cause. Then set versionCode 37 / versionName 0.6.31, build the compatible signed APK and publish a GitHub release. Do not publish an unverified or differently signed build.
+**Still required before release:** review the code, assemble the Android release with the existing release signing key, run the unit test suite and device/UI checks on AYN Thor (both screens; all five layouts; categories All/Current/Off; hidden category; repeated switching; dashboard open/back; with Pocket Classic toolbar off). Check RP handheld/one-screen fallbacks where available. Verify that no category flashing remains; if it persists, capture a screen recording and diagnose the real rendering cause. VersionCode 37 and versionName 0.6.31 are staged on the branch; after QA, build the compatible signed APK and publish a GitHub release. Do not publish an unverified or differently signed build.
 
 ---
 
