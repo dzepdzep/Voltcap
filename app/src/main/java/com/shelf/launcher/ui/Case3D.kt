@@ -152,7 +152,13 @@ internal fun Case3D(
     // (Update 316: fitted away from the screen's thread — rememberDerived.)
     val ownFitted: List<android.graphics.Bitmap>? =
         if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
-        else rememberDerived(ownUpright, "spineFit|$depth") { b -> listOf(fillCrop(b, depth, 0.1f)) }
+        // (Update 317, Toni: GameCube spines "messed up" — Budokai 2, Melee, Pikmin: the "spine" scan was a picture of much
+        // more of the box, and its middle cut to the side's width came out a blurred slice of the box art. A scan far wider
+        // than the side is left out — the console's spine with the title instead, as update 308 does for cardboard boxes.)
+        else rememberDerived(ownUpright, "spineFit2|$depth") { b ->
+            val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
+            if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(fillCrop(b, depth, 0.1f))
+        }
     val ownFitting = ownUpright != null && ownFitted == null
     val spineWaiting = spinePending || uprightPending
     // (Update 316: the console's spine with the title, made away from the screen's thread when it's the one shown.)
@@ -814,6 +820,9 @@ private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float, widenN64
     )
     return out
 }
+
+/** Update 317: a keep case's spine scan more than this many times as wide (for its height) as the side isn't its spine. */
+private const val SPINE_TOO_WIDE = 1.8f
 
 private fun fillCrop(src: android.graphics.Bitmap, aspect: Float, slack: Float = 0.005f): android.graphics.Bitmap {
     val cur = src.width.toFloat() / src.height.coerceAtLeast(1)

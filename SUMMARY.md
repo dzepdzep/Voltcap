@@ -75,8 +75,11 @@ tested on a handheld.
 - **Speed after installing with `adb install -r`:** Android runs the app interpreted until it compiles it in the background
   later; `adb shell cmd package compile -m speed-profile -f com.shelf.launcher` (or installing with the build's `.dm`)
   compiles it at once — why the update 316-era `.dm` helped the cases.
+- **GameCube spines (Toni: Budokai 2, Melee, Pikmin):** a keep case's spine scan more than 1.8× as wide (for its height)
+  as the side is left out (`SPINE_TOO_WIDE`, `Case3D.kt` spineFit2) — its middle cut to the side was a blurred slice of
+  the box art; the console's spine with the title instead (as update 308 does for cardboard).
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
-  `ui/StyleArtRequests.kt`,
+  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`,
   `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
   targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
