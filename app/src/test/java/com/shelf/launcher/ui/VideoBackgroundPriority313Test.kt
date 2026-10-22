@@ -18,6 +18,13 @@ class VideoBackgroundPriority313Test {
         assertFalse(videoMayReplaceSelectedBackground(BackgroundStyle.BLACK))
     }
 
+    @Test fun manuallySelectedPerGameBackgroundAlwaysWins() {
+        // Artwork & details > Background takes priority even when Game art is the chosen mode.
+        assertFalse(videoMayReplaceSelectedBackground(BackgroundStyle.ART, hasPickedBackground = true))
+        assertFalse(videoMayReplaceSelectedBackground(BackgroundStyle.BLURRED, hasPickedBackground = true))
+        assertTrue(videoMayReplaceSelectedBackground(BackgroundStyle.ART, hasPickedBackground = false))
+    }
+
     @Test fun allBackgroundChoicesHaveExplicitExpectedBehavior() {
         val expected = mapOf(
             BackgroundStyle.ART to true,
