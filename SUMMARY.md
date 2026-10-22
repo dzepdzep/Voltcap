@@ -113,6 +113,10 @@ tested on a handheld.
   up to a fifth wider (else update 312's fit, cache `n64-fill317b`); keep cases — a spine scan narrower than its side by
   more than a tenth keeps its whole height (widened up to a fifth, else set in at its own width on its edge colour,
   `keepCaseSpine`) instead of having top and bottom cut and being zoomed to the side (`spineFit4`).
+- **User (317q): spines still "cut"** — Zelda's logo, Budokai 2's name and GameCube logo: scans a little wider than the side
+  were cut in the middle. Now never cut: keep cases fitted whole (scaled across) from a fifth narrower to two fifths
+  wider, else set in at their own shape (`fitSpineInside`); N64 within three tenths fitted whole (`scaleToAspect`).
+  Cache kinds `spineFit5`, `n64-fit317c`. Measured: frames 11 ms (p50) / 400 ms (p90), 310 MB render targets.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,

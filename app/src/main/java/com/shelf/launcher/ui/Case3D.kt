@@ -161,11 +161,11 @@ internal fun Case3D(
     // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
     // (Update 316: fitted away from the screen's thread — rememberDerived.)
     val ownFitted: List<android.graphics.Bitmap>? =
-        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-fill317b|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-fit317c|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317, Toni: GameCube spines "messed up" — Budokai 2, Melee, Pikmin: the "spine" scan was a picture of much
         // more of the box, and its middle cut to the side's width came out a blurred slice of the box art. A scan far wider
         // than the side is left out — the console's spine with the title instead, as update 308 does for cardboard boxes.)
-        else rememberDerived(ownUpright, "spineFit4|$depth") { b ->
+        else rememberDerived(ownUpright, "spineFit5|$depth") { b ->
             val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
             if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(keepCaseSpine(b, depth))
         }
@@ -174,7 +174,7 @@ internal fun Case3D(
     val cutLoad = rememberSoftLoad(if (cutWanted) cutModel else null, 600)
     val cutBmp = cutLoad.bitmap
     val cutUpright = rememberDerived(cutBmp, "spine|1") { b -> singleSpine(orientSpine(b, landscape = false)) }
-    val cutFitted = rememberDerived(cutUpright, "spineFit4|$depth") { b ->
+    val cutFitted = rememberDerived(cutUpright, "spineFit5|$depth") { b ->
         val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
         if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(keepCaseSpine(b, depth))
     }
@@ -800,9 +800,8 @@ private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float, widenN64: 
     // scan's edge colour, a wide plain strip beside the print. An N64 spine narrower than its side now fills it, top to
     // bottom and edge to edge — nothing cut, nothing beside it.)
     // (…only as far as a fifth wider: some N64 "spines" are the box's long top edge, far narrower, and came out stretched.)
-    if (widenN64 && aspect > 0f && cur < aspect && aspect / cur <= 1.2f) android.graphics.Bitmap.createScaledBitmap(
-        cut, (cut.height * aspect).toInt().coerceAtLeast(1), cut.height, true
-    )
+    // (…and an N64 scan up to three tenths off its side is fitted to it whole — cut in the middle it lost its title's edges.)
+    if (widenN64 && aspect > 0f && kotlin.math.abs(cur / aspect - 1f) <= 0.3f) scaleToAspect(cut, aspect)
     else if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect, widenN64)
     else fillCrop(cut, aspect, 0.1f)
 }.getOrElse { fillCrop(src, aspect, 0.1f) }
@@ -856,11 +855,20 @@ private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float, widenN64
  */
 private fun keepCaseSpine(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
     val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
-    if (aspect <= 0f || cur >= aspect * 0.9f) return fillCrop(src, aspect, 0.1f)
-    if (aspect / cur <= 1.2f) return runCatching {
-        android.graphics.Bitmap.createScaledBitmap(src, (src.height * aspect).toInt().coerceAtLeast(1), src.height, true)
-    }.getOrDefault(src)
+    if (aspect <= 0f) return src
+    val r = cur / aspect
+    // (…and never cut across either: a scan a little wider than the side lost the edges of its title — Zelda's logo,
+    // Budokai 2's name and GameCube logo. Within a fifth narrower to two fifths wider it's fitted to the side whole,
+    // a little narrowed or widened; further off it's set in at its own shape on its edge colour.)
+    if (r in (1f / 1.2f)..1.4f) return scaleToAspect(src, aspect)
     return fitSpineInside(src, aspect, false)
+}
+
+/** Update 317: [src] scaled across (its height kept) to [aspect] — nothing cut. */
+private fun scaleToAspect(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+    val w = (src.height * aspect).toInt().coerceAtLeast(1)
+    if (kotlin.math.abs(w - src.width) <= 1) return src
+    return runCatching { android.graphics.Bitmap.createScaledBitmap(src, w, src.height, true) }.getOrDefault(src)
 }
 
 /** Update 317: a keep case's spine scan more than this many times as wide (for its height) as the side isn't its spine. */
