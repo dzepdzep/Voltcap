@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Compile and unit-test (not a signed release)
+    name: Source-check without Discord SDK (not a release)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -29,13 +29,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Verify required local Discord SDK is available
-        run: |
-          AAR="app/libs/discord/lib/release/discord_partner_sdk.aar"
-          if [ ! -s "$AAR" ]; then
-            echo "::error file=app/build.gradle.kts::Cannot compile: Discord Social SDK AAR is absent. Use the exact licensed SDK on the developer PC, or configure a secure CI source. Do not substitute a different release key."
-            exit 1
-          fi
+      # Real Discord SDK is deliberately not committed to GitHub.
+      # This checks Kotlin/Compose with an isolated API stub; the real build
+      # still needs the genuine AAR and current developer PC's signing key.
       # GitHub's ubuntu-latest image already provides Android SDK command-line tools.
       # setup-android@v3 currently requests the removed "tools" SDK package and fails.
       - name: Install Android 36 and native tools
@@ -47,7 +43,7 @@ jobs:
       - name: Configure Gradle cache
         uses: gradle/actions/setup-gradle@v4
       - name: Build and run JVM unit tests
-        run: bash ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
+        run: bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest :app:assembleDebug
       - name: Preserve test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,10 +53,4 @@ jobs:
             app/build/reports/tests
             app/build/test-results
           if-no-files-found: ignore
-      - name: Save non-release debug APK for review
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: update-310-debug-only-not-for-release
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+      # Do not upload the stubbed debug APK: it is not a valid user build.
