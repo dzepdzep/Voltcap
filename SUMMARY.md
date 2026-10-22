@@ -1,5 +1,21 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 22 Oct 2026 (314): Flip 2 3D cartridge GPU ANR
+
+**Status:** Draft [PR #5](https://github.com/dzepdzep/Voltcap/pull/5) branched from published v0.6.32 source, independent of background-selection fix PR #4. Not merged, signed, device-tested or released.
+
+- **User-provided evidence reviewed:** `voltcap-crash-20261022-162542.zip`, containing `report.txt`, `logcat.txt`, `exit-info.txt`, `freeze.txt`. Retroid Pocket Flip 2 (Android 13), VoltCap **v0.6.32, code 38**, `homeLayout=STACKS`, 16:25:42 local. It is a **5-second input-dispatch ANR**, not an ordinary Kotlin exception.
+- **Android stack:** Main thread waits in `android::uirenderer::renderthread::DrawFrameTask::drawFrame` / `HardwareRenderer.syncAndDrawFrame`; RenderThread is in Adreno GPU driver `kgsl_sharedmem_alloc`. Logcat contains about **490 `kgsl_sharedmem_alloc` failures**, for buffers of varying size including ~8.7 MB. `Choreographer` reports **1361 skipped frames**. App Java heap is low (~51 MB / 512 MB) relative to native heap (~660 MB). Logs do not identify a *specific* cartridge model or graphics layer; the resource-pressure hypothesis is supported, but not fully proven.
+- **Inspected code:** `StyleCaseStacks.kt` can host `GameCarousel` in Stacks. Heavy 3D cartridge looks use `PhysicalMedia` + `SolidPiece.kt` (multiple offscreen `GraphicsLayer` resources per tilted cartridge). Full `Spine wall`, `Box flow`, and `To the edge` reach can compose dozens of cards concurrently.
+- **Minimal mitigation:** `GameCarousel(... gpuSafeStacks=true)` **only from Stacks**. The new `stacks3dCartridgeReach` limits reach to **five on each side** only when the heavy `3D cartridges` look is selected. Center/nearby games retain actual 3D, styles/geometry remain, other carousels and normal cartridge modes keep their previous reach. This reduces simultaneous potential offscreen layer allocations rather than replacing authentic models. Farther content may not be rendered in the Stacks-only heavy mode; check this visually.
+- **Test:** `StacksGpuBudget314Test.kt` verifies the cap and that all other combinations retain the requested reach.
+- **Still required:** GitHub source compile and JVM tests, device QA in the **same Stacks + 3D cartridges + Carousel view** on Retroid Flip 2, confirm controller response and absence of new Adreno allocation failures. Keep a fresh zip if it still hangs. Do not claim fixed solely because CI succeeds. No signing/release action in PR.
+
+**Files:** `ui/Carousel.kt`, `ui/StyleCaseStacks.kt`, `app/src/test/java/com/shelf/launcher/ui/StacksGpuBudget314Test.kt`, `SUMMARY.md`.
+
+---
+
+
 ## Update — 22 Oct 2026 (311): Investigate N64 Shelf vs Inspect mismatch, release safety
 
 - **Tarzan real-spine exception (user's follow-up):** Some N64 games, such as Tarzan, already display their genuine artwork spine; Super Mario 64 and Superman show generated dark title spines in Inspect. Do **not** force one common N64 spine, or treat every N64 title as having a missing scan. Resolve each game independently, prioritize a usable game's own `Spine` scan when Matching spines and R1 Spine override are off, and preserve its real proportions. A real scan might be absent, delayed, incompatible, or intentionally overridden; user screenshots alone do not prove which for each title.
