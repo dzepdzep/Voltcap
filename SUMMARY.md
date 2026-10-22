@@ -123,11 +123,6 @@ tested on a handheld.
   check, keepCaseSpine and scaleToAspect are gone. (Kept: spine cuts on 3D cases, the Covers-look front.)
 - **Fewer side copies while moving (Toni, option 2):** `PieceTurn.movingOf` (the carousel's glide running, `ctx.moving`,
   a state — the pieces draw again when it stops): a turned piece's side at most `MOVING_COPIES` (4) copies meanwhile.
-- **Spines still overstretched (user: "they were okay before all our changes"; Spines cut from box scans on / off made no
-  difference):** the spine code matches main apart from update 316's background making; the cause is update 255 (every
-  case at its spec's thickness — a narrower spine scan was cut top and bottom and zoomed onto the side). A keep / jewel
-  case whose spine scan is within a quarter of its spec's thickness takes the scan's own again (`scanFits`, as before
-  255); further off, the spec's with the middle cut. Cardboard boxes unchanged.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
