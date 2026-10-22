@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import coil.compose.AsyncImage
 import com.shelf.launcher.R
 import com.shelf.launcher.data.Features
+import androidx.compose.ui.graphics.asImageBitmap
 import com.shelf.launcher.data.CardArtType as Art
 
 /*
@@ -916,7 +917,13 @@ internal fun RealMediaPicture(
     }
     val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) }, tone)
     // (Update 317: a cartridge photo's hop round its solid piece — see PhysicalMedia.)
-    Box(if (round) modifier.followTurn().mediaMotion(true, 0) else modifier.mediaMotion(false, 0).solidPiece(solid, shotKey = "photo|$model|$platform|$gameKey"), contentAlignment = Alignment.Center) {
+    // (Update 317: the photo, fitted in the middle as the AsyncImage below draws it, is the piece's front — no picture of
+    // the screen taken for it.)
+    val photoFace = androidx.compose.runtime.remember(loaded) {
+        (loaded as? android.graphics.drawable.BitmapDrawable)?.bitmap?.takeIf { it.width > 0 && it.height > 0 }
+            ?.let { b -> PieceFace(b.asImageBitmap(), b.width.toFloat() / b.height) }
+    }
+    Box(if (round) modifier.followTurn().mediaMotion(true, 0) else modifier.mediaMotion(false, 0).solidPiece(solid, faceArt = photoFace, shotKey = "photo|$model|$platform|$gameKey"), contentAlignment = Alignment.Center) {
         // (Update 207: a disc photo has its empty margins trimmed and fills its circle — with a margin round it, the disc's
         // drawn rim and edge in the game window stood out round the smaller photo as a second layer behind the disc.)
         val shared = mediaArtModel(model)
