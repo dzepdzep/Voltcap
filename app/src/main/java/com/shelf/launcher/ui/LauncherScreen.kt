@@ -2928,9 +2928,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // when the user has selected game art or blurred game art. A clip must
         // never replace Your wallpaper or an animated theme (including the
         // per-game theme selected above). The Gaming room's video monitor
-        // remains independent and is intentionally not affected.
+        // remains independent and is intentionally not affected. (Update 314: nor over a background picture picked for
+        // the game itself, Artwork & details.)
         val backdropClip = videoUrl?.takeIf {
-            allowsFullscreenGameplayVideo(backgroundStyle) &&
+            allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                 !roomClip && !screensaverOn && !heroLayout && !discCalm &&
                 !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))
         }
@@ -2969,7 +2970,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Update 307: fading from clip to clip, looping on while idle — VideoCrossfade.)
             VideoCrossfade(
                 videoUrl?.takeIf {
-                    allowsFullscreenGameplayVideo(backgroundStyle) &&
+                    allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                         !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                 },
                 state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low

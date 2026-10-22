@@ -22,4 +22,9 @@ class BackgroundVideoPolicy313Test {
         val permitted = BackgroundStyle.values().filter(::allowsFullscreenGameplayVideo)
         org.junit.Assert.assertEquals(setOf(BackgroundStyle.ART, BackgroundStyle.BLURRED), permitted.toSet())
     }
+
+    @Test fun aBackgroundPickedForTheGameIsNeverCoveredByItsClip() {
+        for (style in BackgroundStyle.values()) assertFalse(allowsFullscreenGameplayVideo(style, pickedBackground = true))
+        assertTrue(allowsFullscreenGameplayVideo(BackgroundStyle.ART, pickedBackground = false))
+    }
 }

@@ -37,6 +37,10 @@ not checked on a handheld.
   - Off-screen check measured against the carousel's own box (cull only past a whole box width beyond either edge),
     not window coordinates, which can go stale during a page slide.
   - PR #5's Stacks-only cap of 5 games each side is not wanted (user) — not carried over; PR #5 closed.
+  - **Video previews (carried over from `fix/video-preview-background-priority-313`, the one part `main`'s update 313
+    lacked):** a background picture picked for the game itself (Artwork & details) is never covered by its gameplay clip
+    either — `allowsFullscreenGameplayVideo(style, pickedBackground)`, both the home and Hero carousel clips. Test added
+    to `BackgroundVideoPolicy313Test`. With this, every fix branch's wanted change is in this PR or already in `main`.
   - `PieceFit.kt` (new): `pieceArtRect` (CartShellArt's exact pixel placement, so flat ↔ turned never shifts) and
     `carouselOffScreen`.
 - **Tests:** `app/src/test/.../CarouselPerf314Test.kt` (11 tests: placement rounding for wide / tall / mismatched
@@ -45,7 +49,7 @@ not checked on a handheld.
   Pocket Classic (no device access) — see the PR for the `dumpsys gfxinfo` steps.
 
 **Changed:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/CustomCarts.kt`, `ui/PhysicalMedia.kt`,
-`ui/PieceFit.kt` (new), `app/src/test/java/com/shelf/launcher/ui/CarouselPerf314Test.kt` (new), `SUMMARY.md`.
+`ui/PieceFit.kt` (new), `ui/BackgroundVideoPolicy.kt`, `ui/LauncherScreen.kt`, `BackgroundVideoPolicy313Test.kt`, `app/src/test/java/com/shelf/launcher/ui/CarouselPerf314Test.kt` (new), `SUMMARY.md`.
 
 ---
 
