@@ -29,6 +29,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Verify required local Discord SDK is available
+        run: |
+          AAR="app/libs/discord/lib/release/discord_partner_sdk.aar"
+          if [ ! -s "$AAR" ]; then
+            echo "::error file=app/build.gradle.kts::Cannot compile: Discord Social SDK AAR is absent. Use the exact licensed SDK on the developer PC, or configure a secure CI source. Do not substitute a different release key."
+            exit 1
+          fi
       # GitHub's ubuntu-latest image already provides Android SDK command-line tools.
       # setup-android@v3 currently requests the removed "tools" SDK package and fails.
       - name: Install Android 36 and native tools
