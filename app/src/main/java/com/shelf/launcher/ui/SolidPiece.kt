@@ -407,7 +407,10 @@ internal fun Modifier.solidPiece(
     // (Update 317: set to whether it's drawn from its pictures — they're kept while a new front's are made, lastSide, so it
     // no longer flips back for a frame while a piece rebuilds, which left the games aside undarkened: flashing brighter.
     // A passing buffer to darken it then held ~470 GPU pictures on the Flip 2.)
-    if (turn?.shadeOf != null) androidx.compose.runtime.SideEffect { turn.shadeTaken.value = fromPictures }
+    // (Update 317, Toni: still flashing now and then — a piece coming in before its pictures were ready left the view to
+    // darken it a frame late. The piece now always darkens itself: through its light once drawn from its pictures, else
+    // through its whole-piece buffer's paint — so the view never does, and there's no hand-over left.)
+    if (turn?.shadeOf != null) androidx.compose.runtime.SideEffect { turn.shadeTaken.value = true }
     // Update 316 (Flip 2: ~1,000 GPU pictures, 1.2 GB, climbing while scrolling until it froze): the piece's layers kept for
     // as long as the piece is shown, recorded again when its drawing is rebuilt. They were made new at every rebuild —
     // and a carousel rebuilt its pieces at each step — while the ones let go kept their GPU pictures for a long time.
@@ -474,20 +477,31 @@ internal fun Modifier.solidPiece(
         var artMade = false
         var solidMade = false
         var madeYaw = Float.NaN
-        var madeShade = 1f
+        var madeShade = -1f
         var madeMoving = false
         onDrawWithContent {
             // (Update 294, testing only: TestHooks `voltcap_test_pose` — held at one turn, for before / after pictures.)
             val testPose = TestHooks.pose.value
             val yaw = testPose?.first ?: ((turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f))
             // (Update 317: the view's shade, on the piece's own light — see PieceTurn.shadeOf.)
-            val shadeK = if (side != null && art != null && turn?.shadeOf != null && turn.shadeTaken.value)
-                1f - turn.shadeOf.invoke().coerceIn(0f, 1f) else 1f
-            if (abs(yaw) < 0.25f && shadeK >= 0.999f) { drawContent(); return@onDrawWithContent }
+            val shadeS = if (turn?.shadeOf != null) turn.shadeOf.invoke().coerceIn(0f, 1f) else 0f
+            val lightShade = side != null && art != null
+            val shadeK = if (lightShade) 1f - shadeS else 1f
+            // (Without its pictures: darkened through the whole-piece buffer's paint.)
+            val bufShade = !lightShade && shadeS > 0.01f
+            whole.colorFilter = if (bufShade) SolidLight.of(1f - shadeS) else null
+            if (abs(yaw) < 0.25f && !(lightShade && shadeS > 0.01f)) {
+                if (bufShade) {
+                    whole.record(size = buf) { translate(m.toFloat(), m.toFloat()) { this@onDrawWithContent.drawContent() } }
+                    translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
+                } else drawContent()
+                madeYaw = Float.NaN
+                return@onDrawWithContent
+            }
             val moving = turn?.movingOf?.invoke() == true
             // (Update 314: fully opaque in its view — drawn straight into it, no whole-piece buffer.)
             // (Not a see-through piece: its cut-out behind the face, DstOut, must stay inside its own buffer.)
-            val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true
+            val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true && !bufShade
             if (art == null) face.record { this@onDrawWithContent.drawContent() }
             // (Update 317: the content's picture taken again whenever it changes — see PieceShot.)
             if (faceArt == null && testPose == null && !shot.off) {
@@ -505,7 +519,7 @@ internal fun Modifier.solidPiece(
                 }
             }
             // (Update 314: the same turn as last drawn — the parts only drawn from the picture are still right.)
-            if (art != null && artMade && yaw == madeYaw && shadeK == madeShade && moving == madeMoving && testPose == null && !direct) {
+            if (art != null && artMade && yaw == madeYaw && shadeS == madeShade && moving == madeMoving && testPose == null && !direct) {
                 translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
                 return@onDrawWithContent
             }
@@ -569,7 +583,7 @@ internal fun Modifier.solidPiece(
                 solid.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
             }
             madeYaw = yaw
-            madeShade = shadeK
+            madeShade = shadeS
             madeMoving = moving
             if (c >= 0f) {
                 lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))

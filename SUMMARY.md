@@ -123,6 +123,14 @@ tested on a handheld.
   check, keepCaseSpine and scaleToAspect are gone. (Kept: spine cuts on 3D cases, the Covers-look front.)
 - **Fewer side copies while moving (Toni, option 2):** `PieceTurn.movingOf` (the carousel's glide running, `ctx.moving`,
   a state — the pieces draw again when it stops): a turned piece's side at most `MOVING_COPIES` (4) copies meanwhile.
+- **317t reverted** (didn't help). **User:** GameCube spines look right on the shelf (Spines layout); flashing "sometimes"
+  again; frames 5 ms (p50) / 350 ms (p90), scrolling only.
+- **Keep cases at their spine scan's shape (`Case3D.kt`):** as the shelf's SpineSlot does — a keep case with its own spine
+  scan takes the scan's shape as its thickness, so the scan goes on the side whole (clamp 0.03–0.35). Jewel, cardboard
+  and the rest keep their spec's.
+- **No shade hand-over at all (`SolidPiece.kt`):** a piece always darkens itself (`shadeTaken` always true for a solid
+  piece in a carousel) — through its light when drawn from its pictures, else through the whole-piece buffer's paint
+  (`bufShade`, the flat view too); a piece coming in before its pictures had a frame darkened by no one.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
