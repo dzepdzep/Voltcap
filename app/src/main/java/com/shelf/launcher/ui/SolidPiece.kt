@@ -57,8 +57,17 @@ internal class PieceTurn(
      * screen) — it keeps no GPU pictures then: Compose keeps every layer a piece makes alive, on the GPU too, until it's
      * let go, drawn or not (Flip 2: GPU memory full after ~90 s of scrolling). Null: always.
      */
-    val activeOf: (() -> Boolean)? = null
-)
+    val activeOf: (() -> Boolean)? = null,
+    /**
+     * Update 317: how dark the view shades the piece (0–1, the carousel's games aside). The piece takes it on itself, as
+     * a darker light on its pictures, once it's drawn from them ([shadeTaken]) — the view then needs no offscreen picture
+     * of its own to darken it, which was drawn again every frame for every game aside. Null: the view shades it.
+     */
+    val shadeOf: (() -> Float)? = null
+) {
+    /** Update 317: the piece applies [shadeOf] itself (it's drawn from its pictures); the view leaves it out. */
+    val shadeTaken = mutableStateOf(false)
+}
 
 /** Set by a view that leaves the turning to the piece (solidPiece / followTurn) inside it; null: nothing turns it. */
 internal val LocalPieceTurn = compositionLocalOf<PieceTurn?> { null }
@@ -356,7 +365,12 @@ internal fun Modifier.solidPiece(
      * under a layer drawn more than once in a frame: every turned cartridge redrew five or six offscreen pictures each
      * frame. Now only the slices' smear and the whole piece are drawn per frame. Null: as before (any content).
      */
-    faceArt: PieceFace? = null
+    faceArt: PieceFace? = null,
+    /**
+     * Update 317: what the content shows (its console, art and shape), so its picture (PieceShot) is kept for a piece of
+     * the same content coming back on the screen — taking it again cost the screen's drawing ~10–80 ms. Null: not kept.
+     */
+    shotKey: String? = null
 ): Modifier {
     if (spec == null) return this
     // Update 317: the front's own picture for a piece without one (kept while it's off the screen) — see PieceShot.
@@ -378,6 +392,9 @@ internal fun Modifier.solidPiece(
     // content draw again, which counted as new content and took the picture again, until the piece gave up on it.)
     val shotMark = remember(shot) { Modifier.graphicsLayer { }.drawWithContent { shot.changed(); drawContent() } }
     val sideArt = rememberDerived((faceArt?.image ?: shotImage)?.asAndroidBitmap(), "side|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
+    // (Update 317: drawn from its pictures — it takes the view's shade on itself; see PieceTurn.shadeOf.)
+    val fromPictures = sideArt != null && (faceArt?.image ?: shotImage) != null
+    if (turn?.shadeOf != null) androidx.compose.runtime.SideEffect { turn.shadeTaken.value = fromPictures }
     // Update 316 (Flip 2: ~1,000 GPU pictures, 1.2 GB, climbing while scrolling until it froze): the piece's layers kept for
     // as long as the piece is shown, recorded again when its drawing is rebuilt. They were made new at every rebuild —
     // and a carousel rebuilt its pieces at each step — while the ones let go kept their GPU pictures for a long time.
@@ -444,11 +461,15 @@ internal fun Modifier.solidPiece(
         var artMade = false
         var solidMade = false
         var madeYaw = Float.NaN
+        var madeShade = 1f
         onDrawWithContent {
             // (Update 294, testing only: TestHooks `voltcap_test_pose` — held at one turn, for before / after pictures.)
             val testPose = TestHooks.pose.value
             val yaw = testPose?.first ?: ((turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f))
-            if (abs(yaw) < 0.25f) { drawContent(); return@onDrawWithContent }
+            // (Update 317: the view's shade, on the piece's own light — see PieceTurn.shadeOf.)
+            val shadeK = if (side != null && art != null && turn?.shadeOf != null && turn.shadeTaken.value)
+                1f - turn.shadeOf.invoke().coerceIn(0f, 1f) else 1f
+            if (abs(yaw) < 0.25f && shadeK >= 0.999f) { drawContent(); return@onDrawWithContent }
             // (Update 314: fully opaque in its view — drawn straight into it, no whole-piece buffer.)
             // (Not a see-through piece: its cut-out behind the face, DstOut, must stay inside its own buffer.)
             val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true
@@ -456,6 +477,8 @@ internal fun Modifier.solidPiece(
             // (Update 317: the content's picture taken again whenever it changes — see PieceShot.)
             if (faceArt == null && testPose == null && !shot.off) {
                 val want = "${shot.version.intValue}|${size.width.toInt()}x${size.height.toInt()}"
+                val keep = shotKey?.let { "$it|${size.width.toInt()}x${size.height.toInt()}" }
+                if (shot.image.value == null && keep != null) PieceShots.get(keep)?.let { shot.image.value = it; shot.asked = want }
                 if (shot.asked != want) {
                     // (Its own drawing for the picture isn't new content: drawn again here after a while away from the
                     // screen's drawing, the content draws itself again — counted, that took a picture every frame.)
@@ -463,11 +486,11 @@ internal fun Modifier.solidPiece(
                         shot.quiet = true
                         try { face.record { this@onDrawWithContent.drawContent() } } finally { shot.quiet = false }
                     }
-                    shot.take(scope, face, want)
+                    shot.take(scope, face, want, keep)
                 }
             }
             // (Update 314: the same turn as last drawn — the parts only drawn from the picture are still right.)
-            if (art != null && artMade && yaw == madeYaw && testPose == null && !direct) {
+            if (art != null && artMade && yaw == madeYaw && shadeK == madeShade && testPose == null && !direct) {
                 translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
                 return@onDrawWithContent
             }
@@ -480,10 +503,10 @@ internal fun Modifier.solidPiece(
             if (edgeLeaf != null && litLeaf != null && side != null && art != null) {
                 edgeLeaf.rotationY = yaw; edgeLeaf.cameraDistance = cam
                 litLeaf.rotationY = yaw; litLeaf.cameraDistance = cam
-                val edgeLight = SolidLight.of(0.42f + 0.22f * abs(sn))
+                val edgeLight = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
                 edgeLeaf.record { drawImage(side, IntOffset.Zero, sideSrc!!, artPos!!, artSize!!, colorFilter = edgeLight) }
                 if (c >= 0f) {
-                    val faceLight = SolidLight.of(1f - 0.4f * abs(sn))
+                    val faceLight = SolidLight.of((1f - 0.4f * abs(sn)) * shadeK)
                     litLeaf.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!, colorFilter = faceLight) }
                 }
             }
@@ -524,6 +547,7 @@ internal fun Modifier.solidPiece(
                 solid.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
             }
             madeYaw = yaw
+            madeShade = shadeK
             if (c >= 0f) {
                 lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))
                 if (art == null) lit.record { drawLayer(face) }
@@ -549,6 +573,7 @@ internal fun Modifier.solidPiece(
                     }
                     drawRect(sheen, blendMode = BlendMode.SrcAtop)
                     drawRect(Color.Black, alpha = 0.4f * abs(sn), blendMode = BlendMode.SrcAtop)
+                    if (shadeK < 1f) drawRect(Color.Black, alpha = 1f - shadeK, blendMode = BlendMode.SrcAtop)
                 }
             }
             // The piece itself: far to near, the slices, then the face (or the back), in the node's own place.
@@ -641,7 +666,7 @@ internal class PieceShot {
 
     fun changed() { if (!quiet) version.intValue++ }
 
-    fun take(scope: kotlinx.coroutines.CoroutineScope, layer: androidx.compose.ui.graphics.layer.GraphicsLayer, key: String) {
+    fun take(scope: kotlinx.coroutines.CoroutineScope, layer: androidx.compose.ui.graphics.layer.GraphicsLayer, key: String, keep: String? = null) {
         asked = key
         // (Never more than [MAX_SHOTS] for a piece: the last one stays — each new one also makes its sides' picture again.)
         if (taken >= MAX_SHOTS) return
@@ -655,7 +680,7 @@ internal class PieceShot {
                 if (asked != key) return@launch
                 val b = runCatching { layer.toImageBitmap() }.getOrNull()
                 if (b == null || b.width <= 0 || b.height <= 0) { if (++fails > 5) { off = true; image.value = null } }
-                else if (asked == key) { restarts = 0; taken++; image.value = b; done = true }
+                else if (asked == key) { restarts = 0; taken++; image.value = b; done = true; if (keep != null) PieceShots.put(keep, b) }
             } finally {
                 // (Not taken — gone off the screen meanwhile, say: asked again the next time it's drawn.)
                 if (!done && asked == key) asked = null
@@ -666,6 +691,14 @@ internal class PieceShot {
     private companion object {
         const val MAX_SHOTS = 10
     }
+}
+
+/** Update 317: the pieces' pictures of their content ([PieceShot]) by what they show, for pieces coming back on the screen. */
+internal object PieceShots {
+    // (About 0.7 MB each at a carousel's size, on the GPU.)
+    private val cache = android.util.LruCache<String, ImageBitmap>(96)
+    fun get(key: String): ImageBitmap? = cache.get(key)
+    fun put(key: String, image: ImageBitmap) { cache.put(key, image) }
 }
 
 /**
@@ -684,17 +717,21 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
         val row = y * w
         for (x in 0 until w) px[row + x] = (sideAlpha(px[row + x] ushr 24) shl 24) or rgb
     }
-    android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    val made = android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    // (Update 317: kept on the GPU — as a plain picture it was thrown out of the GPU's cache and uploaded again, ~28 a
+    // frame in the Flip 2 trace.)
+    if (android.os.Build.VERSION.SDK_INT >= 26) made.copy(android.graphics.Bitmap.Config.HARDWARE, false) ?: made else made
 }.getOrNull()
 
-/** A brightness filter in 20 steps (made once each). */
+/** A brightness filter in 40 steps (made once each). */
 private object SolidLight {
-    private val cache = arrayOfNulls<ColorFilter>(21)
+    // (Update 317: 40 steps — the carousel's shade now changes through it as the games slide.)
+    private val cache = arrayOfNulls<ColorFilter>(41)
     fun of(l: Float): ColorFilter? {
-        val i = (l.coerceIn(0f, 1f) * 20f).roundToInt()
-        if (i >= 20) return null
+        val i = (l.coerceIn(0f, 1f) * 40f).roundToInt()
+        if (i >= 40) return null
         cache[i]?.let { return it }
-        val k = i / 20f
+        val k = i / 40f
         return ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToScale(k, k, k, 1f) }).also { cache[i] = it }
     }
 }

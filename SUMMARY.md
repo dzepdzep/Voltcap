@@ -44,6 +44,16 @@ tested on a handheld.
   leaves its content out of the screen's drawing; drawn again for the next picture, the content drew itself anew, which
   counted as a change and asked for another picture (and its sides' picture again, on the CPU) — over and over. Now its
   own drawing for the picture doesn't count (`PieceShot.quiet`), and a piece takes at most 10 pictures (the last stays).
+- **Measured (user, 317d):** frames 5 ms (p50) / 250 ms (p90), 34 % janky, 323 MB render targets, fan quieter; still
+  sluggish. **Perfetto (`voltcap-trace7.zip`):** ~226 offscreen redraws a frame — CarouselArt's darkening buffer for each
+  game aside (~67 a frame, ~32 ms), pieces coming back on the screen taking their picture again (`copyImageInto` /
+  `setSurface` ~28 ms a frame, up to 86 ms), and the sides' pictures thrown out of the GPU's cache and uploaded again (~28
+  a frame).
+- **Changed:** `PieceTurn.shadeOf` / `shadeTaken` — a piece drawn from its pictures takes the carousel's shade on itself
+  (its lights × (1 − shade), its back a black SrcAtop), and `CarouselArt` then leaves out its darkening buffer (read again
+  while drawing, so never both). `PieceShots` — the pieces' pictures kept by what they show (`solidPiece(shotKey)`: drawn
+  templates, cartridge photos), 96 at most. `sideArtOf` returns a GPU (HARDWARE) bitmap on API 26+. `SolidLight` in 40
+  steps (the shade slides through it). Known difference: a console badge on a cartridge aside isn't darkened with it.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/CustomCarts.kt`, `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
   targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and

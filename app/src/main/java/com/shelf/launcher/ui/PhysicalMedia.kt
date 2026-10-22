@@ -668,7 +668,11 @@ internal fun PhysicalMedia(
     // it mid-hop; the turned piece hops whole, as the drawn shells do.)
     val motionSeed = (label?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0)
     val modifier = if (discLook) modifier.followTurn().mediaMotion(true, motionSeed)
-        else modifier.mediaMotion(false, motionSeed).solidPiece(cartSolid(shell, platform, tpl?.cart?.aspect ?: shell.aspect))
+        else modifier.mediaMotion(false, motionSeed).solidPiece(
+            cartSolid(shell, platform, tpl?.cart?.aspect ?: shell.aspect),
+            // (Update 317: its picture kept for the same cartridge coming back — PieceShots.)
+            shotKey = "media|$shell|$platform|${tpl?.hashCode()}|$label|$labelIsScan|$caseCover|$title|${Features.bigGcDiscs.state.value}"
+        )
     if (tpl != null && TemplateMedia(
             tpl, labelScan = if (labelIsScan) label else null, cover = if (labelIsScan) null else label, modifier = modifier,
             smallDisc = shell == MediaShell.MINI_DISC && !Features.bigGcDiscs.state.value
@@ -909,7 +913,7 @@ internal fun RealMediaPicture(
     }
     val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) }, tone)
     // (Update 317: a cartridge photo's hop round its solid piece — see PhysicalMedia.)
-    Box(if (round) modifier.followTurn().mediaMotion(true, 0) else modifier.mediaMotion(false, 0).solidPiece(solid), contentAlignment = Alignment.Center) {
+    Box(if (round) modifier.followTurn().mediaMotion(true, 0) else modifier.mediaMotion(false, 0).solidPiece(solid, shotKey = "photo|$model|$platform|$gameKey"), contentAlignment = Alignment.Center) {
         // (Update 207: a disc photo has its empty margins trimmed and fills its circle — with a margin round it, the disc's
         // drawn rim and edge in the game window stood out round the smaller photo as a second layer behind the disc.)
         val shared = mediaArtModel(model)

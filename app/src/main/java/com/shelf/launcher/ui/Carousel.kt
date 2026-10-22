@@ -1452,7 +1452,9 @@ private fun CarouselItem(
     // every recomposition (each step, for the game left and the one reached) made the piece rebuild its drawing.
     val turnLatest = rememberUpdatedState(turnOf)
     val opaqueLatest = rememberUpdatedState(opaqueOf)
-    val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }) }
+    // (Update 317: the shade too — a piece drawn from its pictures darkens itself, CarouselArt then needs no buffer for it.)
+    val shadeLatest = rememberUpdatedState(shadeOf)
+    val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }, shadeOf = { shadeLatest.value() }) }
     Box(
         modifier
             // The drawing order, read while placing (zIndex is otherwise fixed at composition).
@@ -1518,7 +1520,7 @@ private fun CarouselItem(
                 // (Update 235, #24: not with a cover you picked for the game — it's the case front, UserCovers.)
                 realFront = (c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL) &&
                     UserCovers.of(g.stableKey) == null
-            ) } else vcTrace("VC:CarouselArt") { CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn) }
+            ) } else vcTrace("VC:CarouselArt") { CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn, if (solidHere) pieceTurn else null) }
         } }
     }
 }
@@ -1734,24 +1736,29 @@ private fun CarouselArt(
     g: Game, on: Boolean, spineHere: Boolean, reflect: Boolean, h0: androidx.compose.ui.unit.Dp, shadeOf: () -> Float,
     cardArtType: com.shelf.launcher.data.CardArtType, art: Map<String, GameArt>, overrides: Map<String, ArtOverride>,
     physicalMedia: Map<String, List<Pair<String, String>>>, screenshots: Map<String, List<String>>,
-    mixed: Boolean, realRef: RealCaseRef?, pulseOn: Boolean
+    mixed: Boolean, realRef: RealCaseRef?, pulseOn: Boolean,
+    /** Update 317: the turn handed to a solid piece in it, which may take the shade on itself (PieceTurn.shadeTaken). */
+    pieceTurn: PieceTurn? = null
 ) {
     // Update 162: the focus pulse only for the game you're on (it used to recompose the whole carousel).
     val pulse = if (on) rememberFocusPulse(animate = pulseOn) else 0f
     // Update 162: the shade follows the moving place while drawing; only whether there is one is decided here.
     val shadeNow = rememberUpdatedState(shadeOf)
     val shaded by remember { androidx.compose.runtime.derivedStateOf { shadeNow.value() > 0.01f } }
+    // (Update 317: the piece in it shades itself — no darkening buffer, which was drawn again every frame per game aside.)
+    val shadeInPiece = pieceTurn?.shadeTaken?.value == true
     Box(Modifier.fillMaxSize()) {
         // Update 143: the games aside darkened only where they're drawn — the shade used to be a dark box over the whole
         // slot, showing round a case, cartridge or disc smaller than it.
         Box(
             Modifier.fillMaxSize().then(
-                if (shaded) Modifier
+                if (shaded && !shadeInPiece) Modifier
                     .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
                     .drawWithContent {
                         drawContent()
                         val shade = shadeNow.value()
-                        if (shade > 0.01f) drawRect(Color.Black.copy(alpha = shade.coerceAtMost(1f)), blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop)
+                        // (Read again here: the piece may have taken it on itself this very frame.)
+                        if (shade > 0.01f && pieceTurn?.shadeTaken?.value != true) drawRect(Color.Black.copy(alpha = shade.coerceAtMost(1f)), blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop)
                     }
                 else Modifier
             )
