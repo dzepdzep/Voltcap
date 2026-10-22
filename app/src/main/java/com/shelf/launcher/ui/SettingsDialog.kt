@@ -4621,7 +4621,7 @@ private fun SoundsContent(appearance: AppearanceSettings, currentTheme: AppTheme
                 SwitchRow(
                     icon = Icons.Filled.Movie,
                     title = "Video previews",
-                    subtitle = "Rest on a game and its scraped clip plays over its background or hero picture.",
+                    subtitle = "Rest on a game to preview its clip over Game art or Blurred art. Your wallpaper, animated theme and Black background stay visible. Gaming room videos stay on the monitor.",
                     checked = appearance.videoPreviews,
                     onChange = { onChange(appearance.copy(videoPreviews = it)) },
                     modifier = m
