@@ -922,7 +922,9 @@ internal fun RealMediaPicture(
         val shared = mediaArtModel(model)
         val ctx = androidx.compose.ui.platform.LocalContext.current
         val roundModel = androidx.compose.runtime.remember(model, round) {
-            if (round && model is String) coil.request.ImageRequest.Builder(ctx).data(model).transformations(TrimToOpaque).build() else null
+            if (round && model is String) coil.request.ImageRequest.Builder(ctx).data(model).transformations(TrimToOpaque)
+                // (Update 317: always still on a disc — see mediaArtModel.)
+                .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true, memoryCacheKey = null).build() else null
         }
         // (Update 285, Toni: "disc still showing like this": in a slot taller than wide — the Voltcap row, Continue playing —
         // the disc photo filled the slot and was cut by a circle stretched to it: a tall oval, its foot cut off. A disc photo

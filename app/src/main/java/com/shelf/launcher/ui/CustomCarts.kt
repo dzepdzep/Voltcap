@@ -273,6 +273,8 @@ private fun rememberPackLabel(art: Any?, platform: String, winAspect: Float): An
                     .scale(coil.size.Scale.FIT).precision(coil.size.Precision.INEXACT)
                     .transformations(TrimUniformMargins, PackSticker(platform, winAspect))
                     .allowConversionToBitmap(false)
+                    // (Update 317: always still on a cartridge / disc — see mediaArtModel.)
+                    .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true, memoryCacheKey = null)
                     .build()
             else -> art
         }

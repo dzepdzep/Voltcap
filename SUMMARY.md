@@ -69,7 +69,14 @@ tested on a handheld.
   stepping — not a drawing fault (no brightness flicker, no label changes found).
 - **317h reverted:** with it every frame took 250–400 ms (UI thread slow on each, bitmap uploads on most) and the fans
   ran hard on the Flip 2 — a repeat somewhere in the photo / disc-shell front path. Back to 317g.
+- **Animated covers off on cartridges and discs (Toni):** `mediaArtModel` (every cartridge / disc printed picture) asks
+  for the still first frame (`styleArtRequest(still)`, own memory key), as do the pack sticker (`rememberPackLabel`) and
+  a disc photo's trimmed request — whatever Animated artwork is set to. A playing label redrew its turned piece each frame.
+- **Speed after installing with `adb install -r`:** Android runs the app interpreted until it compiles it in the background
+  later; `adb shell cmd package compile -m speed-profile -f com.shelf.launcher` (or installing with the build's `.dm`)
+  compiles it at once — why the update 316-era `.dm` helped the cases.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
+  `ui/StyleArtRequests.kt`,
   `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
   targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
