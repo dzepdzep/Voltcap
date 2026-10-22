@@ -4013,7 +4013,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // native category titles. The old counter can include the other display (or a departing page).
         // On Green Core that toggled the whole category-pill bar over the MENU (visible in Toni's video).
         val nativeOnThisLayout = when (overlayLayout) {
-            com.shelf.launcher.data.HomeLayout.GREEN_CORE -> GreenCoreNav.page == GreenCoreNav.Page.GAMES
+            com.shelf.launcher.data.HomeLayout.GREENCORE -> GreenCoreNav.page == GreenCoreNav.Page.GAMES
             com.shelf.launcher.data.HomeLayout.TWIN_DESK,
             com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE -> state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF
             com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC,
