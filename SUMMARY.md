@@ -54,7 +54,16 @@ tested on a handheld.
   while drawing, so never both). `PieceShots` — the pieces' pictures kept by what they show (`solidPiece(shotKey)`: drawn
   templates, cartridge photos), 96 at most. `sideArtOf` returns a GPU (HARDWARE) bitmap on API 26+. `SolidLight` in 40
   steps (the shade slides through it). Known difference: a console badge on a cartridge aside isn't darkened with it.
-- **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/CustomCarts.kt`, `device/ChargeLimitService.kt`.
+- **Measured (user, 317e):** frames 32 ms (p50) / 250 ms (p90), 264 MB render targets; still janky. "Games each side"
+  didn't change how many show (open question — which view the R1 Carousel tile names). **Perfetto (`voltcap-trace8.zip`):**
+  ~158 offscreen redraws a frame (from ~460); the pictures taken of the screen (`copyImageInto` + `setSurface`) ~42 ms a
+  frame while new games come in.
+- **Changed:** `rememberTemplateCartFront` / `templateCartFront` (`RealMedia.kt`) — a template cartridge's front made as
+  one picture on `Dispatchers.Default` (paper window, art laid as TemplateMedia lays it, cut by the shell's mask, the shell
+  over it; GPU bitmap; kept in `DerivedArt`), handed to its solid piece as `faceArt` (`PhysicalMedia.kt`): no picture of
+  the screen taken for them any more (PieceShot stays for cartridge photos and pack pictures).
+- **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
+  `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
   targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
   that the charge-limit notification still appears / updates / goes with the charger.

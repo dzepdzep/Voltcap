@@ -667,9 +667,12 @@ internal fun PhysicalMedia(
     // (Update 317: a cartridge's hop round its solid piece, so the piece's picture of its front — PieceShot — never holds
     // it mid-hop; the turned piece hops whole, as the drawn shells do.)
     val motionSeed = (label?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0)
+    // (Update 317: a template cartridge's front made as one picture — the turned piece is drawn from it.)
+    val tplFace = if (!discLook && tpl != null) rememberTemplateCartFront(tpl, if (labelIsScan) label else null, if (labelIsScan) null else label) else null
     val modifier = if (discLook) modifier.followTurn().mediaMotion(true, motionSeed)
         else modifier.mediaMotion(false, motionSeed).solidPiece(
             cartSolid(shell, platform, tpl?.cart?.aspect ?: shell.aspect),
+            faceArt = tplFace,
             // (Update 317: its picture kept for the same cartridge coming back — PieceShots.)
             shotKey = "media|$shell|$platform|${tpl?.hashCode()}|$label|$labelIsScan|$caseCover|$title|${Features.bigGcDiscs.state.value}"
         )
