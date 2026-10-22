@@ -661,7 +661,6 @@ internal object Carousel {
  * games"). Used by TV room › Carousel and by the Grid's "Carousel look". ◀ ▶ move, A opens. [showName]: the
  * game's name under the one in the middle.
  */
-@Composable
 /**
  * Update 314: bounded on-screen 3D cartridge compositing for Stacks.
  * Rendering dozens of cards simultaneously creates multiple GPU-backed
@@ -672,6 +671,7 @@ internal object Carousel {
 internal fun stacks3dCartridgeReach(requestedReach: Int, stacks: Boolean, full3dCartridges: Boolean): Int =
     if (stacks && full3dCartridges) requestedReach.coerceIn(0, 5) else requestedReach
 
+@Composable
 internal fun GameCarousel(
     games: List<Game>, focus: Int, art: Map<String, GameArt>, overrides: Map<String, ArtOverride>,
     onSelect: (Int) -> Unit, onOpen: () -> Unit,
