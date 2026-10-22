@@ -142,6 +142,17 @@ fun VideoBackdrop(
     }
 }
 
+/**
+ * Update 313: a background chosen in Theme > Behind the dock must stay visible.
+ * The automatic gameplay preview may replace game artwork (or its blurred form)
+ * only. It must never be layered over a user wallpaper (still, GIF or video),
+ * an animated theme, or a plain black background. A Gaming room monitor and
+ * details-panel video are separate destinations, not full-screen replacements.
+ */
+internal fun videoMayReplaceSelectedBackground(style: com.shelf.launcher.data.BackgroundStyle): Boolean =
+    style == com.shelf.launcher.data.BackgroundStyle.ART ||
+        style == com.shelf.launcher.data.BackgroundStyle.BLURRED
+
 private const val CLIP_FADE_OUT_MS = 450
 
 /**
