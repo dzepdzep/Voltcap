@@ -437,7 +437,9 @@ private fun AuthenticPackCart(
     // (Update 316: the motion round the solid piece, and the turned piece drawn from the front itself — PieceFace — as the
     // drawn shells are: its sides and face made once, not every frame.)
     val moving = if (motionSeed != null) modifier.mediaMotion(false, motionSeed) else modifier
-    val shaped = if (solid != null) moving.solidPiece(solid, faceArt = front?.let { PieceFace(it, look.aspect, frame) }) else moving
+    // (Update 316: the same PieceFace while the front is the same — a new one rebuilt the piece's drawing.)
+    val pieceFace = androidx.compose.runtime.remember(front, look.aspect, frame) { front?.let { PieceFace(it, look.aspect, frame) } }
+    val shaped = if (solid != null) moving.solidPiece(solid, faceArt = pieceFace) else moving
     BoxWithConstraints(shaped, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * look.aspect)
         val h = w / look.aspect

@@ -369,30 +369,35 @@ internal fun Modifier.solidPiece(
     // once from the front, away from the screen's thread. With it the sides and the face are plain picture draws, no
     // offscreen picture of their own (and no smear: each slice's copies drawn at the very same places).
     val sideArt = rememberDerived(faceArt?.image?.asAndroidBitmap(), "side|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
+    // Update 316 (Flip 2: ~1,000 GPU pictures, 1.2 GB, climbing while scrolling until it froze): the piece's layers kept for
+    // as long as the piece is shown, recorded again when its drawing is rebuilt. They were made new at every rebuild —
+    // and a carousel rebuilt its pieces at each step — while the ones let go kept their GPU pictures for a long time.
+    val face = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val edge = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val lit = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val back = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val whole = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val solid = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val smear = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val hole = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val edgeLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val litLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     return this.drawWithCache {
-        val face = obtainGraphicsLayer()
         // (Update 294: the face drawn flat into its own picture, which is then turned — the turned layers below used to
         // draw its contents (a badge's or a label's text) under a new angle every frame, and Android 13's text cache
         // grew until the Thor stopped answering on the Hub.)
         face.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
-        val edge = obtainGraphicsLayer()
         // (Update 205: the sides are the piece's outline in its plastic's colour, made in a layer of their own.)
         edge.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
-        val lit = obtainGraphicsLayer()
-        val back = obtainGraphicsLayer()
         // All of it in one buffer, so a faded piece (a carousel fades its games op by op) fades as one, its slices never
         // showing through its face.
-        val whole = obtainGraphicsLayer()
         whole.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         // The back in a layer of its own, so its tone and shade only touch the back (see InspectSlab, update 201).
         back.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
-        // The face's outline made solid, for a back without a drawn one (a clear shell's face is see-through).
-        val solid = obtainGraphicsLayer()
+        // The face's outline made solid, for a back without a drawn one (a clear shell's face is see-through): `solid`.
         // Update 294: one slice's side smeared across the gap to the next (see below), drawn once into its own picture.
-        val smear = obtainGraphicsLayer()
         smear.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         // Update 209: the face's outline that clears a see-through piece's sides from behind its face.
-        val hole = obtainGraphicsLayer()
         hole.blendMode = BlendMode.DstOut
         solid.colorFilter = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
             1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 4f, -24f
@@ -421,8 +426,8 @@ internal fun Modifier.solidPiece(
         // (Update 316: plain layers — no offscreen picture — for the sides and the face drawn from the pictures.)
         val side = sideArt?.takeIf { art != null }
         val sideSrc = side?.let { IntSize(it.width, it.height) }
-        val edgeLeaf = if (side != null) obtainGraphicsLayer().also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.ModulateAlpha } else null
-        val litLeaf = if (side != null) obtainGraphicsLayer() else null
+        val edgeLeaf = if (side != null) edgeLeafLayer.also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.ModulateAlpha } else null
+        val litLeaf = if (side != null) litLeafLayer else null
         var artMade = false
         var solidMade = false
         var madeYaw = Float.NaN

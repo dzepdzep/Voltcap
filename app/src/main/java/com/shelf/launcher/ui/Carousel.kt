@@ -1439,6 +1439,11 @@ private fun CarouselItem(
     val opaqueOf: () -> Boolean = {
         c.place(ps.o, relNow.value()).alpha * fadeNow.value() >= 0.999f
     }
+    // Update 316: one turn handed to the piece for the slot's whole life (reading the latest turn / opacity) — a new one at
+    // every recomposition (each step, for the game left and the one reached) made the piece rebuild its drawing.
+    val turnLatest = rememberUpdatedState(turnOf)
+    val opaqueLatest = rememberUpdatedState(opaqueOf)
+    val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }) }
     Box(
         modifier
             // The drawing order, read while placing (zIndex is otherwise fixed at composition).
@@ -1493,7 +1498,7 @@ private fun CarouselItem(
                 cameraDistance = 12f * c.dens
                 if (rotationY != 0f) flatTextFor3d()
             }
-        ) { ProvidePieceTurn(if (solidHere) PieceTurn(turnOf, 12f, opaqueOf, activeOf = { !culled.value }) else null) {
+        ) { ProvidePieceTurn(if (solidHere) pieceTurn else null) {
             // (Update 200: CarouselModel — a game as its pre-rendered 3D model — is gone.)
             if (c.cases3d && withMedia != null) CaseWithMedia3D(
                 g, cover, physical, aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow

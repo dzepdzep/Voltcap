@@ -1473,7 +1473,9 @@ internal fun CartShellArt(
         val moving = if (motionSeed != null) modifier.mediaMotion(false, motionSeed) else modifier
         // (Update 314: the motion round the solid piece, so a hop lifts the turned piece whole — its face is drawn from the
         // picture when turned, PieceFace.)
-        val m = if (solid != null) moving.solidPiece(solid, faceArt = frontImage?.let { PieceFace(it, a) }) else moving
+        // (Update 316: the same PieceFace while the front is the same — a new one rebuilt the piece's drawing.)
+        val pieceFace = remember(frontImage, a) { frontImage?.let { PieceFace(it, a) } }
+        val m = if (solid != null) moving.solidPiece(solid, faceArt = pieceFace) else moving
         BoxWithConstraints(m, contentAlignment = Alignment.Center) {
             val w = minOf(maxWidth, maxHeight * a)
             val h = w / a

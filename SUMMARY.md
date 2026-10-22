@@ -56,6 +56,13 @@ tested on a handheld.
   solid-piece layers at all; `shadeOf` is 0 while culled, so `CarouselArt` lets go of its darkening layer; and the picture
   path no longer records the offscreen `edge` / `lit` it doesn't draw, nor `solid` until a see-through face or the back
   needs it.
+- **Memory snapshot after 2 min of scrolling (fix build):** still **1,011 render targets / 1,233 MB**, native heap 560 MB
+  — the culling change didn't touch it. Cause found in `solidPiece`: it took ~10 new GraphicsLayers (`obtainGraphicsLayer`)
+  every time its drawing cache was rebuilt, and it was rebuilt at every carousel step for the pieces whose slot recomposed
+  (a new `PieceTurn` each recomposition, a new `PieceFace` each recomposition of CartShellArt / AuthenticPackCart); the
+  layers let go kept their GPU pictures for a long time, so they piled up while scrolling until the GPU ran out. Now the
+  layers are `rememberGraphicsLayer()`s kept for the piece's life (re-recorded on a rebuild), the carousel hands each slot
+  one remembered `PieceTurn` (latest turn / opacity through `rememberUpdatedState`), and the `PieceFace`s are remembered.
 - **Not changed yet:** N64 spines that "still don't apply correctly on some games" (user) — waiting for which games and
   how they look (see the chat for the likely causes).
 
