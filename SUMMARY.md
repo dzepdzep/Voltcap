@@ -34,6 +34,12 @@ tested on a handheld.
   `pieceFrameRect` (the front stretched to its frame in the shape's box, rounded as Compose rounds Dp). `PackCart` /
   `CustomCart` take `solid` / `motionSeed` and apply them themselves (the two-picture Vita / HuCard shapes and the disc
   shells keep the old order and path). Tests for `pieceFrameRect`.
+- **Second trace (after the pack fix):** 82 frames / 8 s (was 53), 123 GPU passes a frame (was 287), flush layers 33 ms
+  (was 75) — but prepareTree 39 ms (was 10): the covers (480×426) were **uploaded to the GPU 5,461 times in 8 s** (2.2 s),
+  because **567 render targets / 754 MB** stood in the GPU cache and threw them out every frame. Only ~25 pieces show:
+  the rest were the games far off the screen that update 314 stopped *drawing* but that still *held* their GPU pictures
+  (~45 a side with To the edge). Now a game far off the screen (`culled`) keeps nothing composed inside its slot — its
+  layers are released — and is built again a whole carousel width before it can show.
 - **Not changed yet:** N64 spines that "still don't apply correctly on some games" (user) — waiting for which games and
   how they look (see the chat for the likely causes).
 
