@@ -62,6 +62,11 @@ tested on a handheld.
   one picture on `Dispatchers.Default` (paper window, art laid as TemplateMedia lays it, cut by the shell's mask, the shell
   over it; GPU bitmap; kept in `DerivedArt`), handed to its solid piece as `faceArt` (`PhysicalMedia.kt`): no picture of
   the screen taken for them any more (PieceShot stays for cartridge photos and pack pictures).
+- **Games each side in Box flow / Spine wall / pull-out stack (user: "doesn't work with those"):** `Carousel.reach` took
+  three times the number (pull-out: + 8 behind the pulled-out case) — slim and packed, every choice from 2 up reached the
+  screen's edges. Now the number picked is how many show each side (pull-out: + the 8 hidden); To the edge keeps ×3.
+- **Screen recording (`voltcap-flash.mp4`):** the "flashing" is the stacks jumping — ~70 distinct frames in 10 s while
+  stepping — not a drawing fault (no brightness flicker, no label changes found).
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render

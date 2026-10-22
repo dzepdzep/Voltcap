@@ -379,13 +379,18 @@ internal object Carousel {
     /** Update 134: the games drawn as real 3D cases (the "3D cases" switch, and always in Arc, Spine wall and Turned row). */
     val cases3d: Boolean get() = Features.carousel3d.state.value || view.cases
     /** How many games show each side for the [shown] view: the Spine wall packs three times as many (its spines are slim). */
-    fun reach(side: Int, shown: CarouselView = view): Int =
-        // (Update 182: with To the edge too — slim spines and boxes need three times as many to reach the edges.)
-        if (shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) side * 3
-        // (Update 238, #21: the pull-out stack's spines are slimmer still, and the first few each side stand behind the
-        // case pulled out in front of them — that many more, so the row still shows past it.)
-        else if (shown == CarouselView.SPINE_PULL) side * 3 + PULL_HIDDEN
+    fun reach(side: Int, shown: CarouselView = view): Int {
+        // (Update 317, Toni: "Games each side" did nothing in Box flow / the pull-out stack — three times the number, slim
+        // and packed, reached the screen's edges at 2 already. Now the number picked is how many show each side; To the edge
+        // keeps the full stacks.)
+        val each = if (side >= EDGE_SIDE) side * 3 else side
+        // (Update 182: with To the edge — slim spines and boxes need three times as many to reach the edges.)
+        return if (shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) each
+        // (Update 238, #21: the pull-out stack's first few each side stand behind the case pulled out in front of them —
+        // that many more, so the row still shows past it.)
+        else if (shown == CarouselView.SPINE_PULL) each + PULL_HIDDEN
         else side
+    }
     /** Spacing between the games (Settings, 60–160 %), times [spread]. */
     val gap: Float get() = Features.carouselGap.state.value / 100f * spread
     /**
