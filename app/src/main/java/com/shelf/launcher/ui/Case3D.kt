@@ -85,8 +85,13 @@ internal fun Case3D(
         androidx.compose.runtime.LaunchedEffect(g.stableKey) { kotlinx.coroutines.delay(400); HomeScans.need?.invoke(g) }
     }
     val forAll = LookStyles.spineForAll()
-    val realSpine = if (forAll) null else scans?.firstOrNull { it.first == "Spine" }?.second
-    val own = realSpine ?: if (Features.originalCases.state.value && !forAll) BoxTexture.spine(scans, g.platform) else null
+    // Update 311: match the shelf's GameSpine precedence. Matching spines deliberately
+    // suppresses each game's scan and uses the console/selected spine instead.
+    // Without this, N64 (and other cardboard cases) could switch to a different,
+    // badly fitted scanned spine only when the game was opened in Inspect.
+    val matching = Features.spinesOwn.state.value
+    val realSpine = if (forAll || matching) null else scans?.firstOrNull { it.first == "Spine" }?.second
+    val own = realSpine ?: if (Features.originalCases.state.value && !forAll && !matching) BoxTexture.spine(scans, g.platform) else null
     // (Update 205: loaded with its state — see [spine] below.)
     val ownLoad = rememberSoftLoad(own, 600)
     val ownBmp = ownLoad.bitmap
@@ -96,7 +101,7 @@ internal fun Case3D(
         (!scansKnown && g.sourceType == com.shelf.launcher.data.SourceType.ROM)
     // (Update 166: Voltcap's own Steam / Android case always — its spine and its front band, see below.)
     val ownCase = MediaCovers.own(g.platform).takeIf { !forAll }
-    val tpl = if (Features.coverTemplates.state.value || forAll || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
+    val tpl = if (Features.coverTemplates.state.value || forAll || matching || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     // (Made once per game, away from the screen's thread: SpineCache.)
     // (Update 305: a Steam / Android spine takes its accent from the game's cover — the same one the shelves use.)
     val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false, accentFrom = HomeScans.cover?.invoke(g.stableKey) ?: cover)
