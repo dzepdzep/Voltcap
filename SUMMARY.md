@@ -86,6 +86,12 @@ tested on a handheld.
 - **N64 fronts bigger than the box with the Covers look (Toni):** `looksLikeBoxFront` let a front off by 4.5 % of the box's
   shape; an N64 box-front scan 5–10 % off counted as a plain cover and was cut into the cover template's window (zoomed,
   edges lost). Landscape box and landscape art (both > 1.15): 15 % (covers stand upright, never mistaken).
+- **Measured (user, 317l): 57 ms every frame, 576 MB / 471 render targets** — 317k's passing darkening buffer (3× the
+  piece each way) ran far more often than meant. Removed. Instead the piece keeps its last sides' picture while a new
+  front's is made (`lastSide`), so it stays drawn from its pictures and `shadeTaken` no longer flips for a frame.
+- **Spine cuts on the 3D cases (Toni):** with Spines cut from box scans on, Case3D uses the strip cut from the box scans
+  (it did only with Original cases), and in place of a keep case's spine scan left out as too wide (`cutModel` /
+  `cutFitted`, same width check).
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`,
   `device/ChargeLimitService.kt`.

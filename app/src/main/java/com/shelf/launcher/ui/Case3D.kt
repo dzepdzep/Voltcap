@@ -91,7 +91,12 @@ internal fun Case3D(
     // badly fitted scanned spine only when the game was opened in Inspect.
     val matching = Features.spinesOwn.state.value
     val realSpine = if (forAll || matching) null else scans?.firstOrNull { it.first == "Spine" }?.second
-    val own = realSpine ?: if (Features.originalCases.state.value && !forAll && !matching) BoxTexture.spine(scans, g.platform) else null
+    // (Update 317, Toni: "make the cuts apply to the 3D models as well": with Spines cut from box scans on, the 3D case uses
+    // the strip cut from the box scans too — it did only with Original cases on.)
+    val cutsOn = Features.spineCuts.state.value && !forAll && !matching
+    val own = realSpine ?: if ((Features.originalCases.state.value || cutsOn) && !forAll && !matching) BoxTexture.spine(scans, g.platform) else null
+    // (…and in place of a spine scan that isn't one — far wider than the side, see spineFit2 below.)
+    val cutModel = if (realSpine != null && cutsOn) BoxTexture.fullScan(scans)?.let { BoxTexture.model(it, BoxPart.SPINE, g.platform) } else null
     // (Update 205: loaded with its state — see [spine] below.)
     val ownLoad = rememberSoftLoad(own, 600)
     val ownBmp = ownLoad.bitmap
@@ -159,14 +164,24 @@ internal fun Case3D(
             val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
             if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(fillCrop(b, depth, 0.1f))
         }
-    val ownFitting = ownUpright != null && ownFitted == null
+    // (Update 317: the strip cut from the box scan, when the spine scan was left out as too wide and cuts are on.)
+    val cutWanted = cutModel != null && !cardboard && ownFitted?.isEmpty() == true
+    val cutLoad = rememberSoftLoad(if (cutWanted) cutModel else null, 600)
+    val cutBmp = cutLoad.bitmap
+    val cutUpright = rememberDerived(cutBmp, "spine|1") { b -> singleSpine(orientSpine(b, landscape = false)) }
+    val cutFitted = rememberDerived(cutUpright, "spineFit2|$depth") { b ->
+        val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
+        if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(fillCrop(b, depth, 0.1f))
+    }
+    val ownFitting = (ownUpright != null && ownFitted == null) || (cutWanted && (!cutLoad.done || (cutBmp != null && (cutUpright == null || cutFitted == null))))
     val spineWaiting = spinePending || uprightPending
     // (Update 316: the console's spine with the title, made away from the screen's thread when it's the one shown.)
-    val consoleWanted = ownFitted?.firstOrNull() == null && !ownFitting && !(spineWaiting && !(cardboard && ownUpright != null)) &&
+    val consoleWanted = ownFitted?.firstOrNull() == null && cutFitted?.firstOrNull() == null && !ownFitting && !(spineWaiting && !(cardboard && ownUpright != null)) &&
         tplSpine.bitmap == null && tplSpine.done
     val madeConsoleSpine = rememberConsoleSpine(consoleWanted, spinePlatform, title, depth)
-    val spine: android.graphics.Bitmap = remember(ownFitted, ownFitting, tplSpine, title, spineWaiting, depth, spinePlatform, cardboard, ownUpright, madeConsoleSpine) {
+    val spine: android.graphics.Bitmap = remember(ownFitted, cutFitted, ownFitting, tplSpine, title, spineWaiting, depth, spinePlatform, cardboard, ownUpright, madeConsoleSpine) {
         ownFitted?.firstOrNull()
+            ?: cutFitted?.firstOrNull()
             ?: (if (ownFitting) SpineCache.WAITING else null)
             ?: (if (spineWaiting && !(cardboard && ownUpright != null)) SpineCache.WAITING else null)
             ?: tplSpine.bitmap
