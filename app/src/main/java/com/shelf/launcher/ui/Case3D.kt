@@ -107,7 +107,9 @@ internal fun Case3D(
     val tplSpine = rememberTitledSpine(tpl?.res, title, landscape = false, accentFrom = HomeScans.cover?.invoke(g.stableKey) ?: cover)
     // The game's own spine stood up (reading top to bottom), when it has one.
     // (Update 298: a scan that is both of the insert's end flaps side by side is cut to one spine — singleSpine.)
-    val ownUpright = remember(ownBmp) { ownBmp?.let { b -> DerivedArt.of(b, "spine|1") { singleSpine(orientSpine(b, landscape = false)) } } }
+    // (Update 316: made away from the screen's thread — rememberDerived; the dark strip shows the moment it's being made.)
+    val ownUpright = rememberDerived(ownBmp, "spine|1") { b -> singleSpine(orientSpine(b, landscape = false)) }
+    val uprightPending = ownBmp != null && ownUpright == null
     // How thick the case is (its spine's width against its height), kept to real cases'.
     // (Update 240, #26: the real case's thickness (CaseCatalog, the console and region) wins over the spine scan's own shape
     // when the two are far apart — a scan of the long edge of a landscape box (N64 / SNES "box-2D-side"), or one cut a little
@@ -137,27 +139,34 @@ internal fun Case3D(
     // Read R1 case override before remember so a live setting change invalidates
     // the N64 fitted image even if both case styles have the same depth.
     val widenN64 = shouldWidenN64CardboardSpine(g.platform, LookStyles.caseForAll())
-    val spine: android.graphics.Bitmap = remember(ownUpright, tplSpine, title, spinePending, depth, spinePlatform, widenN64) {
-        // (Update 240, #26: the game's own spine fitted to the side — cut in the middle only as much as its shape is off the
-        // side's, never squeezed onto it: the long-edge print of a landscape box was squashed onto its short end.)
-        // (Update 308, Toni: "spines aren't fitted properly on most consoles aside from PS2": a cardboard box's side scan
-        // often carries a piece of the top / bottom flap (Advance Wars 2's black "…NCE", Pokémon Pinball's logo corner),
-        // or is the print of the box's long top edge (an N64 / SNES box), whose middle was cut onto the short side. The
-        // flaps are cut off at their fold, and a print far off the side's shape is left out: the console's spine with the
-        // title, made at the side's own shape, instead. Keep cases, jewel cases and the rest as before.)
-        val cardboard = spec?.shell == CaseShell.CARDBOARD
-        // Update 312 is strictly an N64 Inspect alignment fix. Do not change
-        // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
-        (if (cardboard) ownUpright?.let { b ->
-            DerivedArt.of(b, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") {
-                listOfNotNull(boxSideSpine(b, depth, widenN64))
-            }.firstOrNull()
-        } else ownUpright?.let { b -> DerivedArt.of(b, "spineFit|$depth") { fillCrop(b, depth, 0.1f) } })
-            ?: (if (spinePending && !(cardboard && ownUpright != null)) SpineCache.WAITING else null)
+    val cardboard = spec?.shell == CaseShell.CARDBOARD
+    // (Update 240, #26: the game's own spine fitted to the side — cut in the middle only as much as its shape is off the
+    // side's, never squeezed onto it: the long-edge print of a landscape box was squashed onto its short end.)
+    // (Update 308, Toni: "spines aren't fitted properly on most consoles aside from PS2": a cardboard box's side scan
+    // often carries a piece of the top / bottom flap (Advance Wars 2's black "…NCE", Pokémon Pinball's logo corner),
+    // or is the print of the box's long top edge (an N64 / SNES box), whose middle was cut onto the short side. The
+    // flaps are cut off at their fold, and a print far off the side's shape is left out: the console's spine with the
+    // title, made at the side's own shape, instead. Keep cases, jewel cases and the rest as before.)
+    // Update 312 is strictly an N64 Inspect alignment fix. Do not change
+    // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
+    // (Update 316: fitted away from the screen's thread — rememberDerived.)
+    val ownFitted: List<android.graphics.Bitmap>? =
+        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align312|$depth" else "spineBox|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        else rememberDerived(ownUpright, "spineFit|$depth") { b -> listOf(fillCrop(b, depth, 0.1f)) }
+    val ownFitting = ownUpright != null && ownFitted == null
+    val spineWaiting = spinePending || uprightPending
+    // (Update 316: the console's spine with the title, made away from the screen's thread when it's the one shown.)
+    val consoleWanted = ownFitted?.firstOrNull() == null && !ownFitting && !(spineWaiting && !(cardboard && ownUpright != null)) &&
+        tplSpine.bitmap == null && tplSpine.done
+    val madeConsoleSpine = rememberConsoleSpine(consoleWanted, spinePlatform, title, depth)
+    val spine: android.graphics.Bitmap = remember(ownFitted, ownFitting, tplSpine, title, spineWaiting, depth, spinePlatform, cardboard, ownUpright, madeConsoleSpine) {
+        ownFitted?.firstOrNull()
+            ?: (if (ownFitting) SpineCache.WAITING else null)
+            ?: (if (spineWaiting && !(cardboard && ownUpright != null)) SpineCache.WAITING else null)
             ?: tplSpine.bitmap
             // (A plain dark strip for the moment your console spine is being made, then the console's own with the name.)
             ?: if (!tplSpine.done) SpineCache.WAITING
-            else consoleSpine(ctx, spinePlatform, title, depth)
+            else madeConsoleSpine ?: SpineCache.WAITING
     }
     // Update 166: a Steam / Android game's case front is Voltcap's own: the game's art in its window, the band on top.
     // Update 169: and with Settings › Cover templates on, every console's case front is its template too (the band, the
@@ -200,29 +209,31 @@ internal fun Case3D(
         else if (f == null || framedFront) aspect
         else (f.width.toFloat() / f.height.coerceAtLeast(1)).coerceIn(aspect * 0.8f, aspect * 1.25f)
     }
-    val face = remember(front, noCover, shape, band, spec) {
-        (front ?: noCover)?.let { f ->
-            // (Update 171: not over a box scan used as the cover — it has its own band and logo, they showed twice.)
-            val whole = tplFront != null && isBoxFront(tplFront, f.width.toFloat() / f.height.coerceAtLeast(1))
-            val made = if (band != null && tplFront != null && !whole) framed(f, band, fit?.win ?: tplFront.win) else null
-            when {
-                // Update 191: a jewel case shows its booklet under the clear lid, beside the tray's hinge ridge, with the
-                // lid's clear edge round it. (Update 202: the cover fills the booklet, cut only as much as its shape is
-                // off — jewelFront; it was letterboxed over the tray's colour.)
-                // (Update 193 (Thor): a front scan or booklet — about square — goes in whole; the template's frame cut a
-                // PlayStation cover to its own narrower shape first. Only other art gets the template's band.)
-                // (Update 195 (Thor, still cut in 194): always the whole picture — the template's frame is never used
-                // on a jewel case, whatever the picture's shape.)
-                // (Update 197 (Thor): a scan of the whole jewel case's front — its own hinge ribs at the left, about the
-                // case's shape — is the front itself: it fills the face, no drawn booklet window or ridge over it.)
-                spec?.shell == CaseShell.JEWEL -> if (isWholeCaseScan(f, shape)) f else DerivedArt.of(f, "jewel|$shape|${spec.tray}") { jewelFront(f, shape, spec.tray) }
-                // Update 191: a keep case's sleeve, a box's print: the cover over the whole front, at the real case's
-                // shape. (Update 202: cut in the middle only as much as it's off — fillCrop, never stretched.)
-                spec != null -> made ?: DerivedArt.of(f, "fill|$shape") { fitFace(f, shape) }
-                // (Update 202: the case already takes the cover's own shape within a quarter — [shape] above — so this
-                // cuts only past that; Update 200 stretched it up to 13 % here.)
-                else -> made ?: DerivedArt.of(f, "fill|$shape") { fillCrop(f, shape) }
-            }
+    // (Update 316: cut, fitted and framed away from the screen's thread — rememberDerived; the game's colour meanwhile.)
+    val faceKind = "face|$shape|${band?.let { System.identityHashCode(it) } ?: 0}|${tplFront?.frontRes ?: 0}|${fit?.aspect}|${spec?.shell}|${spec?.tray}|${spec != null}"
+    val face = rememberDerived(front ?: noCover, faceKind, alias = true) { f ->
+        // (Update 171: not over a box scan used as the cover — it has its own band and logo, they showed twice.)
+        val whole = tplFront != null && isBoxFront(tplFront, f.width.toFloat() / f.height.coerceAtLeast(1))
+        val made = if (band != null && tplFront != null && !whole) (fit?.win ?: tplFront.win).let { win ->
+            DerivedArt.of(f, "framed|${System.identityHashCode(band)}|${win.contentToString()}") { framed(f, band, win) }
+        } else null
+        when {
+            // Update 191: a jewel case shows its booklet under the clear lid, beside the tray's hinge ridge, with the
+            // lid's clear edge round it. (Update 202: the cover fills the booklet, cut only as much as its shape is
+            // off — jewelFront; it was letterboxed over the tray's colour.)
+            // (Update 193 (Thor): a front scan or booklet — about square — goes in whole; the template's frame cut a
+            // PlayStation cover to its own narrower shape first. Only other art gets the template's band.)
+            // (Update 195 (Thor, still cut in 194): always the whole picture — the template's frame is never used
+            // on a jewel case, whatever the picture's shape.)
+            // (Update 197 (Thor): a scan of the whole jewel case's front — its own hinge ribs at the left, about the
+            // case's shape — is the front itself: it fills the face, no drawn booklet window or ridge over it.)
+            spec?.shell == CaseShell.JEWEL -> if (isWholeCaseScan(f, shape)) f else DerivedArt.of(f, "jewel|$shape|${spec.tray}") { jewelFront(f, shape, spec.tray) }
+            // Update 191: a keep case's sleeve, a box's print: the cover over the whole front, at the real case's
+            // shape. (Update 202: cut in the middle only as much as it's off — fillCrop, never stretched.)
+            spec != null -> made ?: DerivedArt.of(f, "fill|$shape") { fitFace(f, shape) }
+            // (Update 202: the case already takes the cover's own shape within a quarter — [shape] above — so this
+            // cuts only past that; Update 200 stretched it up to 13 % here.)
+            else -> made ?: DerivedArt.of(f, "fill|$shape") { fillCrop(f, shape) }
         }
     }
     // Update 205: a case with no back handed in (the carousels, Case stacks, the shelf's 3D cases) gets its own — its
@@ -260,7 +271,8 @@ internal fun Case3D(
     // (Update 205: a jewel case's back insert scanned with its two end flaps — the strips that fold into the case's
     // sides — has them cut off instead of squeezing them onto the back.)
     val jewelBack = spec?.shell == CaseShell.JEWEL || caseStyleOf(g.platform).let { it == CASE_JEWEL || it == CASE_JEWEL_BLACK }
-    val backFace = remember(backBmp, shape, jewelBack) { backBmp?.let { b -> DerivedArt.of(b, "back|$shape|$jewelBack") { fitBack(b, shape, jewelBack) } } }
+    // (Update 316: fitted away from the screen's thread — rememberDerived.)
+    val backFace = rememberDerived(backBmp, "back|$shape|$jewelBack") { b -> fitBack(b, shape, jewelBack) }
     // Update 166: while its cover is still loading, the front in the game's own colour (not near-black: scrolling a
     // carousel of 3D cases showed dark fronts for a moment).
     val loading = remember(g.hue) { DerivedArt.named("hue|${g.hue}") { hueFront(g.hue) } }
@@ -611,6 +623,14 @@ internal object DerivedArt {
     private fun bytesOf(v: Any, src: Any?): Int =
         if (v is android.graphics.Bitmap && v !== src) runCatching { v.allocationByteCount }.getOrDefault(64).coerceAtLeast(64) else 64
 
+    /**
+     * Update 316: [value] remembered for [src] under [kind] as well, counted as nothing — it's a picture already kept (and
+     * counted) under its own kind.
+     */
+    fun alias(src: android.graphics.Bitmap, kind: String, value: Any) {
+        if (value !== src) cache.put("${System.identityHashCode(src)}|${src.width}x${src.height}|$kind", Entry(java.lang.ref.WeakReference(src), value, 64))
+    }
+
     /** [make] for [src] (a picture), made once while [src] lives. */
     fun <T : Any> of(src: android.graphics.Bitmap, kind: String, make: () -> T): T {
         val key = "${System.identityHashCode(src)}|${src.width}x${src.height}|$kind"
@@ -625,6 +645,19 @@ internal object DerivedArt {
         return v
     }
 
+    /** Update 316: [of]'s picture for [src] when it's already made, else null (nothing is made). */
+    fun <T : Any> peek(src: android.graphics.Bitmap, kind: String): T? {
+        val hit = cache.get("${System.identityHashCode(src)}|${src.width}x${src.height}|$kind") ?: return null
+        @Suppress("UNCHECKED_CAST")
+        return if (hit.src?.get() === src && !(hit.value is android.graphics.Bitmap && hit.value.isRecycled)) hit.value as? T else null
+    }
+
+    /** Update 316: [named]'s picture for [key] when it's already made, else null. */
+    fun <T : Any> peekNamed(key: String): T? {
+        @Suppress("UNCHECKED_CAST")
+        return cache.get("n|$key")?.value?.takeUnless { it is android.graphics.Bitmap && it.isRecycled } as? T
+    }
+
     /** [make] for a [key] that says everything it's made from (a hue, a name). */
     fun <T : Any> named(key: String, make: () -> T): T {
         @Suppress("UNCHECKED_CAST")
@@ -635,6 +668,33 @@ internal object DerivedArt {
         cache.put("n|$key", Entry(null, v, bytesOf(v, null)))
         return v
     }
+}
+
+/**
+ * Update 316 (smoothness: a carousel of 3D cases stuttered as each new case came in): [DerivedArt.of]'s picture for
+ * [src] made away from the screen's thread — the one already made at once, else null until it's ready (the case shows
+ * its stand-in meanwhile: the game's colour, the dark spine strip). Each case cut, fitted and framed its front, spine and
+ * back right here the first time it was drawn: several full-size picture copies on the screen's thread per new case.
+ */
+@Composable
+internal fun <T : Any> rememberDerived(
+    src: android.graphics.Bitmap?, kind: String,
+    /** What's made is a picture [make] already keeps under its own kind: remembered here without counting it twice. */
+    alias: Boolean = false,
+    make: (android.graphics.Bitmap) -> T?
+): T? {
+    val known = remember(src, kind) { src?.let { DerivedArt.peek<T>(it, kind) } }
+    val made = remember(src, kind) { androidx.compose.runtime.mutableStateOf<T?>(null) }
+    androidx.compose.runtime.LaunchedEffect(src, kind) {
+        if (src == null || known != null) return@LaunchedEffect
+        val v = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            runCatching {
+                make(src)?.let { m -> if (alias) { DerivedArt.alias(src, kind, m); m } else DerivedArt.of(src, kind) { m } }
+            }.getOrNull()
+        }
+        made.value = v
+    }
+    return known ?: made.value
 }
 
 /**
@@ -802,8 +862,30 @@ private fun cropTo(src: android.graphics.Bitmap, aspect: Float): android.graphic
  */
 internal fun consoleSpine(context: android.content.Context, platform: String?, title: String, aspect: Float): android.graphics.Bitmap {
     val h = 600
-    val w = (h * aspect.coerceIn(0.04f, 0.3f)).toInt().coerceIn(28, 180)
-    return DerivedArt.named("consoleSpine|${platform ?: ""}|$title|$w") { consoleSpineNow(context, platform, title, w, h) }
+    val w = consoleSpineW(aspect)
+    return DerivedArt.named(consoleSpineKey(platform, title, w)) { consoleSpineNow(context, platform, title, w, h) }
+}
+
+private fun consoleSpineW(aspect: Float): Int = (600 * aspect.coerceIn(0.04f, 0.3f)).toInt().coerceIn(28, 180)
+private fun consoleSpineKey(platform: String?, title: String, w: Int): String = "consoleSpine|${platform ?: ""}|$title|$w"
+
+/**
+ * Update 316: [consoleSpine] made away from the screen's thread when [wanted] — the one already made at once, else null
+ * until it's ready (it was drawn here, 600 px with the title and logo, for each game without a spine of its own).
+ */
+@Composable
+private fun rememberConsoleSpine(wanted: Boolean, platform: String?, title: String, aspect: Float): android.graphics.Bitmap? {
+    val ctx = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val key = consoleSpineKey(platform, title, consoleSpineW(aspect))
+    val known = remember(wanted, key) { if (wanted) DerivedArt.peekNamed<android.graphics.Bitmap>(key) else null }
+    val made = remember(key) { androidx.compose.runtime.mutableStateOf<android.graphics.Bitmap?>(null) }
+    androidx.compose.runtime.LaunchedEffect(wanted, key) {
+        if (!wanted || known != null) return@LaunchedEffect
+        made.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            runCatching { consoleSpine(ctx, platform, title, aspect) }.getOrNull()
+        }
+    }
+    return known ?: made.value
 }
 
 private fun consoleSpineNow(context: android.content.Context, platform: String?, title: String, w: Int, h: Int): android.graphics.Bitmap {

@@ -1,5 +1,29 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 22 Oct 2026 (316): Smoother 3D cases — their pictures made away from the screen's thread
+
+**Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6), not merged; CI is the compile check, not
+tested on a handheld.
+
+- **Found:** `Case3D` (the 3D cases in every carousel, Case stacks, the shelf and the game window) cut, fitted and
+  framed its pictures inside `remember` on the screen's thread the first time each case was drawn: the front
+  (`fillCrop` / `fitFace` / `jewelFront` / `framed` with the template band), its own spine (`singleSpine(orientSpine)`,
+  which reads the scan's pixels, then `boxSideSpine` — reads every pixel to find the flaps — or `fillCrop`), the console
+  spine with the title (600 px, text and logo) for games without one, and the back (`fitBack`). Several full-size
+  picture copies per new case on the screen's thread: scrolling a big carousel of cases stuttered as they came in.
+- **Changed:** `rememberDerived` (Case3D.kt): the result already in `DerivedArt` at once (`DerivedArt.peek`), else made on
+  `Dispatchers.Default` while the case shows its usual stand-ins (the front in the game's colour, the dark spine strip
+  `SpineCache.WAITING`) — the same stand-ins it already showed while its pictures loaded. `rememberConsoleSpine` does the
+  same for the console spine (`DerivedArt.peekNamed`). The face is remembered as an alias (`DerivedArt.alias`, not
+  counted twice in the 48 MB cache); `framed` is now cached too (it was made again on every key change). Same pictures,
+  same rules (update 308 / 311 / 312 spine fitting untouched).
+- **Not changed yet:** N64 spines that "still don't apply correctly on some games" (user) — waiting for which games and
+  how they look (see the chat for the likely causes).
+
+**Changed:** `ui/Case3D.kt`, `SUMMARY.md`.
+
+---
+
 ## Update — 22 Oct 2026 (315): Categories tile on every layout (each layout its own), Tile home in the middle again, Flip 2 GPU-memory ANR
 
 **Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6) as update 314, not merged. **Note:** the
