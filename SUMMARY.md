@@ -83,8 +83,11 @@ tested on a handheld.
   itself in a passing buffer (`shadeLayer`, saveLayer + SrcAtop black, only then) — always darkened exactly once.
 - **"Spines cut from box scans" didn't change the GameCube spines:** by design — it's only for games without a spine scan
   (a strip cut from the box scan); these have a (bad) spine scan, handled by update 317j's width check.
+- **N64 fronts bigger than the box with the Covers look (Toni):** `looksLikeBoxFront` let a front off by 4.5 % of the box's
+  shape; an N64 box-front scan 5–10 % off counted as a plain cover and was cut into the cover template's window (zoomed,
+  edges lost). Landscape box and landscape art (both > 1.15): 15 % (covers stand upright, never mistaken).
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
-  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`,
+  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`,
   `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
   targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
