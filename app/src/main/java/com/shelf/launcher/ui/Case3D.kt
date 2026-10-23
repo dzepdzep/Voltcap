@@ -242,7 +242,7 @@ internal fun Case3D(
     // Update 173: a game without a cover (an app) gets its plain front — its icon and name — in its case template too
     // (an Android game's case had no Android band then), and the app's icon on it.
     val noArt = cover == null && ownFront == null
-    val appIcon = if (noArt && g.sourceType == com.shelf.launcher.data.SourceType.APP) rememberAppIcon(g.packageName) else null
+    val appIcon = if (noArt && g.sourceType == com.shelf.launcher.data.SourceType.APP) rememberOwnAppIcon(g.packageName) else null
     val noCover = remember(title, g.hue, noArt, appIcon) { if (noArt) plainFront(title, g.hue, appIcon?.asAndroidBitmap()) else null }
     // Update 188: a scanned front (or a box scan used as the cover) keeps its own shape — the case takes it, within a
     // quarter of the console's case shape — instead of being cut to the template's shape: a PlayStation case lost the

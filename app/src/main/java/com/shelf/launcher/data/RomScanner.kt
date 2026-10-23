@@ -379,6 +379,7 @@ object RomScanner {
             .map { it.absolutePath }.toSet())
 
         // Pass 1: an existing .m3u playlist is authoritative for whatever it lists.
+        val m3uListed = mutableSetOf<String>()
         m3uFiles.forEach { m3u ->
             val discPaths = parseM3u(m3u)
             val platform = discPaths.firstOrNull()?.let { platformFor(it, rootPath, deep) }
@@ -391,6 +392,7 @@ object RomScanner {
                     romPath = m3u.absolutePath
                 )
                 discPaths.forEach { consumedPaths += it.absolutePath }
+                m3uListed += m3u.absolutePath
             }
         }
 
@@ -471,11 +473,17 @@ object RomScanner {
             }
 
             val m3uFile = File(parentDir, "$title.m3u")
+            // (Update 325, Toni: "Alone in the Dark still shows disc 2": these two used to list every disc as a game of
+            // its own. A playlist of this name that's already listed (Pass 1) but leaves these discs out — disc 2 missing
+            // from it, say — is the game: the discs aren't listed again. One that couldn't be read, or a playlist that
+            // can't be written (Android often won't let an app write in the ROM folder): the set is one game started
+            // from disc 1, listed under Library check like a set without its playlist.)
+            if (m3uFile.exists() && m3uFile.absolutePath in m3uListed) return@forEach
+            val firstOnly = Game(name = prettifyName(title), platform = platform, hue = hueFor(title), sourceType = SourceType.ROM, romPath = firstFile.absolutePath)
             if (m3uFile.exists()) {
-                // Something's already at this path that Pass 1 didn't parse
-                // as covering these discs — don't overwrite or guess, just
-                // fall back to listing the discs individually.
-                singleFiles += sortedDiscs.map { it.second }
+                // Something's already at this path that Pass 1 didn't parse — don't overwrite or guess.
+                missingM3u += MultiDiscSet(title, platform, parentDir, sortedDiscs.map { it.second.relativeTo(parentDir).path })
+                games += firstOnly
                 return@forEach
             }
             val set = MultiDiscSet(title, platform, parentDir, sortedDiscs.map { it.second.relativeTo(parentDir).path })
@@ -506,7 +514,8 @@ object RomScanner {
                 groupsCreated++
             } else {
                 groupWriteFailures++
-                singleFiles += sortedDiscs.map { it.second }
+                missingM3u += set
+                games += firstOnly
             }
         }
 

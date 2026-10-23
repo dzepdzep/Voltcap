@@ -114,6 +114,17 @@ internal fun rememberAppIcon(packageName: String?): ImageBitmap? {
     val style = com.shelf.launcher.data.IconStyles.of(packageName)
     if (com.shelf.launcher.data.Features.secondDockMono.state.value && style != com.shelf.launcher.data.Features.MonoIconStyle.ORIGINAL)
         return rememberMonoAppIcon(packageName, com.shelf.launcher.ui.theme.ShelfTheme.accent, solid = style == com.shelf.launcher.data.Features.MonoIconStyle.SOLID)
+    return rememberOwnAppIcon(packageName)
+}
+
+/**
+ * Update 325: [packageName]'s own icon in its own colours, whatever the icon style — for an app's art printed on a
+ * cartridge, disc or case (coverOrAppIcon). (Toni: "some apps keep glitching with their picture on the cartridge — the
+ * normal colour, then another colour, then only text": the label wore the one-colour icon in the accent, which follows
+ * the game you're on, so every app's cartridge was drawn again in a new colour at each step.)
+ */
+@Composable
+internal fun rememberOwnAppIcon(packageName: String?): ImageBitmap? {
     val context = LocalContext.current
     // Update 151: the icon is kept with the package it belongs to. produceState keeps its value across key changes, so for
     // the first frame after the package changed (a slot moving on to another app) it still held the LAST app's icon —
@@ -276,7 +287,7 @@ internal fun themedIconFilter(): androidx.compose.ui.graphics.ColorFilter? {
 @Composable
 internal fun coverOrAppIcon(g: com.shelf.launcher.data.Game, cover: Any?): Any? {
     val want = cover == null && g.sourceType == com.shelf.launcher.data.SourceType.APP
-    val icon = if (want) rememberAppIcon(g.packageName) else null
+    val icon = if (want) rememberOwnAppIcon(g.packageName) else null
     val bmp = icon?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
     return cover ?: bmp
 }

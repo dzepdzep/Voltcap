@@ -122,7 +122,7 @@ internal fun ShelfGameArt(
             val real = realScanOf(gArt, typed)
             // (Update 173: an app without art: its icon on the label / case front — they stayed blank.)
             val appIcon = if (cover == null && typed == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
-                rememberAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
+                rememberOwnAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
             } else null
             if (real != null) MediaFocus(on) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp), platform = g.platform, gameKey = g.stableKey) }
             else if (pick != null) {
@@ -1103,7 +1103,7 @@ internal fun GameCarousel(
         buildTick.intValue
         LaunchedEffect(buildKey) {
             // (The new collection's pieces take their pictures once it has come in — PieceShots.hold.)
-            PieceShots.hold(1200)
+            PieceShots.hold(2500)
             while ((build[1] as Int) < reachNow) {
                 androidx.compose.runtime.withFrameNanos { }
                 build[1] = (build[1] as Int) + 2
@@ -1647,7 +1647,7 @@ private fun CaseWithMedia3D(
     val label = scans?.firstOrNull { it.first == "Disc label" }?.second
     // (Update 173: an app without art wears its icon on its cartridge's label, as the cards do — it was blank.)
     val appIcon = if (cover == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
-        rememberAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
+        rememberOwnAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
     } else null
     val dens = c.dens
     @Composable

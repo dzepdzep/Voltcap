@@ -49,6 +49,18 @@
   `cameraDistance` × 72 px) (`solidPiece`, `depthK`).
 - **The clock's faint "88:88"** (Toni: "something weird behind that clock", Stacks panel): it sat beside the digits — the
   app's font has digits of different widths. Removed (`StacksArch.ArchClock`).
+- **Thor recordings 21:32 / 21:33** (scrolling Mix; categories): the pieces' pictures still took 3.2 s between category
+  steps, one right after another — a third of a second apart now, and only 2.5 s after a category comes in. While a row
+  glides the pieces' sides are drawn with 4 copies (photos) / 3 (shells), was 6 / 4 (`MOVING_SLICES`, `MOVING_COPIES`).
+- **Alone in the Dark still showed disc 2** (Toni): a set whose playlist couldn't be written (Android often won't let an
+  app write in the ROM folder) — or with a playlist of its name that couldn't be read — had every disc listed as a game of
+  its own; and a playlist that leaves a disc out left that disc listed. The set is one game now, started from disc 1 and
+  listed under Library check (make its playlist there); a disc missing from its game's own playlist isn't listed again
+  (`RomScanner`, Pass 2). Rescan to see it.
+- **Apps' pictures on their cartridges flickering** (Toni: "the normal colour, then another colour, then only text"): an
+  app's cartridge, disc or case wore its one-colour icon in the accent, which follows the game you're on — every app's
+  piece was drawn again in a new colour at each step. They wear the app's own icon now (`rememberOwnAppIcon`; the
+  one-colour icons stay everywhere else).
 - **Remove / add categories on the category screen** (Toni: "Other apps appears in the categories screen for some reason
   — add a way to add or remove categories there"): a tile's options (Y / Options) have **Remove from categories** — off
   the category screen and L2 / R2 (and the style homes' tabs), never the last one; the one showing now goes back to All
@@ -71,7 +83,8 @@
 - **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/SwitchLabel.kt`, `ui/SecondShowcase.kt`, `ui/LauncherScreen.kt`,
   `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`, `ui/Carousel.kt`, `data/Packs.kt`,
   `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`, `ui/MediaEditions.kt`,
-  `ui/StacksArch.kt`.
+  `ui/StacksArch.kt`, `data/RomScanner.kt`, `ui/AppIcons.kt`, `ui/GameCard.kt`, `ui/StyleHomes.kt`,
+  `ui/Case3D.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1

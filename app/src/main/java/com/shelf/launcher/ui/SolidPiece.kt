@@ -755,7 +755,9 @@ internal class PieceShot {
                 // games coming in all took theirs in the same frame: 1–2.4 s frames. One at a time now, a frame apart.)
                 val b = SHOTS.withLock {
                     if (asked != key) null
-                    else runCatching { layer.toImageBitmap() }.getOrNull().also { kotlinx.coroutines.delay(24) }
+                    // (Update 325, the next Thor recording: still 3.2 s of 15 between category steps, one right after another —
+                    // a third of a second apart now, so the frames between them stay quick.)
+                    else runCatching { layer.toImageBitmap() }.getOrNull().also { kotlinx.coroutines.delay(320) }
                 }
                 if (asked != key) return@launch
                 if (b == null || b.width <= 0 || b.height <= 0) { if (++fails > 5) { off = true; image.value = null } }
@@ -837,9 +839,11 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
 internal const val SIDE_SPREAD = 10
 
 /** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
-internal const val MOVING_COPIES = 4
+// (Update 325, Thor recordings scrolling the Mix look: still ~63 ms a frame handing it to the GPU while it glides — each
+// copy is a turned layer of its own. 3 and 4 while moving; all of them again the moment it stops.)
+internal const val MOVING_COPIES = 3
 /** Update 324: a photo piece's slices while the row glides (at rest up to 16). */
-internal const val MOVING_SLICES = 6
+internal const val MOVING_SLICES = 4
 
 /** A brightness filter in 40 steps (made once each). */
 private object SolidLight {
