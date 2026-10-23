@@ -380,6 +380,8 @@ object RomScanner {
 
         // Pass 1: an existing .m3u playlist is authoritative for whatever it lists.
         val m3uListed = mutableSetOf<String>()
+        // (Update 325: each listed set's folder and title without any tags — see the lone later disc below.)
+        val setBases = mutableMapOf<String, File>()
         m3uFiles.forEach { m3u ->
             val discPaths = parseM3u(m3u)
             val platform = discPaths.firstOrNull()?.let { platformFor(it, rootPath, deep) }
@@ -393,6 +395,7 @@ object RomScanner {
                 )
                 discPaths.forEach { consumedPaths += it.absolutePath }
                 m3uListed += m3u.absolutePath
+                setBases.putIfAbsent("${m3u.parent}|${baseTitle(m3u.nameWithoutExtension)}", m3u)
             }
         }
 
@@ -448,12 +451,26 @@ object RomScanner {
             }
         }
         val missingM3u = mutableListOf<MultiDiscSet>()
+        discGroups.forEach { (key, discs) ->
+            if (discs.size >= 2) discGroupDirs[key]?.let { dir -> setBases.putIfAbsent("${dir.path}|${baseTitle(discGroupTitles[key] ?: "")}", discs.minBy { it.first }.second) }
+        }
 
         var groupsCreated = 0
         var groupWriteFailures = 0
 
         discGroups.forEach { (groupKey, discs) ->
             if (discs.size < 2) {
+                // Update 325 (Toni: "Alone in the Dark still shows disc 2" — beside the USA set and its playlist lay a
+                // European "(Europe) (Disc 2).chd" with no disc 1 of its own): a lone later disc of a game whose set is
+                // already here (the same folder, the same title whatever its region and other tags) isn't a game of its
+                // own — it's listed under Library check › doubles.
+                val (num, file) = discs[0]
+                val dir = discGroupDirs[groupKey]
+                val set = if (num >= 2 && dir != null) setBases["${dir.path}|${baseTitle(discGroupTitles[groupKey] ?: "")}"] else null
+                if (set != null) {
+                    duplicates += Duplicate(prettifyName(set.nameWithoutExtension), platformFor(file, rootPath, deep) ?: "", set.absolutePath, file.absolutePath, sameFolder = true)
+                    return@forEach
+                }
                 // Only one file actually matched this title — not a real
                 // multi-disc set, so don't strip its name; scan it normally.
                 singleFiles += discs.map { it.second }
@@ -561,6 +578,10 @@ object RomScanner {
     } catch (e: Exception) {
         emptyList()
     }
+
+    /** Update 325: [raw] without any (…) / […] tags, trimmed and lower case — a set's title whatever its region. */
+    private val TAGS = Regex("""\s*[(\[][^)\]]*[)\]]""")
+    private fun baseTitle(raw: String): String = cleanupTitle(raw.replace(TAGS, " ")).lowercase()
 
     private fun cleanupTitle(raw: String): String =
         raw.replace(Regex("""\s+"""), " ")
