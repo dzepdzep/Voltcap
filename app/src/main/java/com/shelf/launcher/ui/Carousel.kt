@@ -1446,7 +1446,12 @@ private fun CarouselItem(
         Math.pow((maxOf(w, h) / c.caseRefMm).toDouble(), 0.6).toFloat().coerceIn(0.74f, 1f)
     } ?: 1f else 1f
     val h0 = hFull * realK
-    val floorDrop = (hFull - h0) / 2f
+    // (Update 325, Toni: "make all the cartridges and CDs stand at the same height, their bottoms level": a cartridge or
+    // disc shorter than the tallest slot (a Game Boy cartridge beside an N64 one, a disc beside a DS card) stood in the
+    // middle of the row; it stands on the row's floor now — the bottom of the tallest slot, where the floor is drawn.)
+    val standDrop = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && !c.cases3d && !spineHere && !wideHere && model == null)
+        ((c.bigH - hFull) / 2f).coerceAtLeast(0.dp) else 0.dp
+    val floorDrop = (hFull - h0) / 2f + standDrop
     // Update 168: the case looks with their media (Case + disc, 3D case + disc, Case + its media) in the 3D-case views
     // too: the disc half out of the case behind it, or the cartridge / disc leaning against it — the views drew the case
     // alone. The slot widens the same both sides, so the case stays in the middle.
@@ -1525,7 +1530,7 @@ private fun CarouselItem(
     val shadeLatest = rememberUpdatedState(shadeOf)
     val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }, shadeOf = { shadeLatest.value() },
         movingOf = { ctxNow.value.moving?.invoke() == true },
-        // (Update 325: past the nearest FULL_NEAR each side, the face alone — see PieceTurn.farOf.)
+        // (Update 325: past the nearest FULL_NEAR each side, fewer copies for its sides — see PieceTurn.farOf.)
         farOf = { kotlin.math.abs(relNow.value()) > FULL_NEAR + 0.5f }) }
     Box(
         modifier

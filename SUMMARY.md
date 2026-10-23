@@ -65,6 +65,11 @@
   app's cartridge, disc or case wore its one-colour icon in the accent, which follows the game you're on — every app's
   piece was drawn again in a new colour at each step. They wear the app's own icon now (`rememberOwnAppIcon`; the
   one-colour icons stay everywhere else).
+- **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
+  drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **Cartridges and discs stand on one floor** (Toni: "all the cartridges and CDs at the same height, their bottoms"): a
+  cartridge / disc shorter than the tallest slot stood in the row's middle; it stands at the bottom of the tallest slot now,
+  where the floor is (`CarouselItem`, `standDrop`).
 - **Cartridges as two turned panels — tried and taken back** (Toni: the N64 cartridges, UMDs and others showed layers on
   their sides, and it didn't help the sluggishness much): the carousel's cartridges are the stacked copies again.
 - **Lighter sides past the nearest 5 each side** (Toni: "with 5 each side it works super well — but I don't want the

@@ -5599,7 +5599,8 @@ private fun CarouselTiltChoices() {
         f.carouselSpread.state.value, { f.carouselSpread.value = it }
     )
     SwitchRow(
-        Icons.Filled.ViewInAr, "Reflection", "A faint mirror image of each game under it, as on a glossy floor.",
+        // (Update 325, Toni: turning it off made the cartridges' carousel smooth on the Thor — every game drawn twice.)
+        Icons.Filled.ViewInAr, "Reflection", "A faint mirror image of each game under it, as on a glossy floor. Every game is drawn twice — with To the edge and the cartridges / discs looks, off makes scrolling smoother.",
         f.carouselReflect.state.value, { f.carouselReflect.value = it }
     )
     // Update 147: the black stage of a disc loader's case views (on with Arc, Spine wall and Turned row).
