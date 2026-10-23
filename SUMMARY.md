@@ -2,6 +2,12 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **"Case + media" on the R1 Look tile** (Toni: "the look for the boxes and cases with their physical media is gone, can't
+  find it anywhere"): it was still in Settings › Game look › Cases › With its media, but the R1 Look tile stepped Cases →
+  Cases · turned → Mix and never landed on it. Now Cases → Cases · turned → **Case + media** (the case facing you, its
+  disc / cartridge leaning on it) → Mix…, and the tile names it (`stepGameLook`, `lookLabel`).
+- Files: `ui/GameLookPicker.kt`. Not compiled here (CI builds it).
+
 - **Cases wobble in 3D** (Toni: "the animation the cases do when they wobble left and right makes them seem flat"): the
   wobble tilted the case's flat picture (a graphics-layer rotationY), so it read as a card. It's now the case's own
   turn: a 3D case (Case3D) adds it to its turn; a front-facing case (scanned case, official cover case, template box,

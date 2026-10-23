@@ -492,7 +492,8 @@ internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? 
 internal fun currentLookName(a: AppearanceSettings): String = when (val m = lookMainOf(a)) {
     LookMain.CARTS -> showAsNow(a).short
     // (Update 280: the two Cases looks.)
-    LookMain.CASES -> if (Features.boxSpine.value) "Cases · turned" else "Cases"
+    // (Update 325: "Case + media" named on the tile too.)
+    LookMain.CASES -> if (Features.caseWithMedia.value) "Case + media" else if (Features.boxSpine.value) "Cases · turned" else "Cases"
     // (Update 322: Square tiles named as a look of its own on the tile.)
     LookMain.COVERS -> if (Features.squareTiles.value && !Features.spineLook.value) "Tiles" else m.short
     else -> m.short
@@ -509,8 +510,13 @@ internal fun stepGameLook(a: AppearanceSettings): AppearanceSettings {
         // (Update 322, Toni: "the Tile look is nowhere to be found": Covers → Square tiles → Wide…, a step of its own.)
         LookMain.COVERS -> if (coverStyleNow(a) != LookCoverStyle.TILE) pickCoverStyle(LookCoverStyle.TILE, a) else applyMainLook(LookMain.WIDE, a)
         LookMain.WIDE -> applyMainLook(LookMain.CASES, a).also { pickCaseView(false) }
-        LookMain.CASES -> if (!Features.boxSpine.value) { pickCaseView(true); a }
-            else pickShowAs(LookShowAs.MIX, applyMainLook(LookMain.CARTS, a))
+        // (Update 325, Toni: "the look for the boxes and cases with their physical media is gone, can't find it": a step
+        // of its own after Cases · turned — Case + media, the case facing you with its disc / cartridge leaning on it.)
+        LookMain.CASES -> when {
+            Features.caseWithMedia.value -> { pickCaseMedia(LookCaseMedia.INSIDE); pickShowAs(LookShowAs.MIX, applyMainLook(LookMain.CARTS, a)) }
+            !Features.boxSpine.value -> { pickCaseView(true); a }
+            else -> { pickCaseView(false); pickCaseMedia(LookCaseMedia.BESIDE); a }
+        }
         LookMain.CARTS -> when (showAsNow(a)) {
             LookShowAs.MIX -> pickShowAs(LookShowAs.CARTS, a)
             LookShowAs.CARTS -> pickShowAs(LookShowAs.DISCS, a)
