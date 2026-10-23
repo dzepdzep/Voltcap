@@ -891,7 +891,10 @@ internal object CartShells {
         // into the rest under it: its upper middle, leaving a box front's corner logo tile and rating off the card.)
         val headerH = head?.let { lr.width() * it.height / it.width.coerceAtLeast(1) }?.coerceAtMost(lr.height() * 0.4f) ?: 0f
         // (Under the DS sticker's own header the art starts at its notch — the band's sides are see-through below its line.)
-        val artRect = RectF(lr.left, lr.top + band + headerH * (if (dsOwn != null) SwitchLabel.DS_ART_FROM else 1f), lr.right, lr.bottom)
+        // (Toni: "also the line at the bottom, the white square thing": the DS / 3DS sticker's white band along its bottom,
+        // about a tenth of its height on the real card — the art stops above it.)
+        val footH = if (paperHead != null) lr.height() * 0.097f else 0f
+        val artRect = RectF(lr.left, lr.top + band + headerH * (if (dsOwn != null) SwitchLabel.DS_ART_FROM else 1f), lr.right, lr.bottom - footH)
         if (switchHeader != null) {
             c.drawBitmap(switchHeader, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
             if (art != null) c.drawBitmap(art, SwitchLabel.cutRect(art, artRect.width() / artRect.height().coerceAtLeast(1f)), artRect, p)
@@ -930,6 +933,8 @@ internal object CartShells {
                     c.drawBitmap(pic, src, artRect, p)
                     // (Over the art: the DS sticker's own header lies over its top, its notched line on the picture.)
                     c.drawBitmap(paperHead, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
+                    p.color = 0xFFFFFFFF.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom), p)
+                    p.color = 0xFFBDBDBD.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom - footH + 0.12f * k), p)
                 } else {
                     val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
                         else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)

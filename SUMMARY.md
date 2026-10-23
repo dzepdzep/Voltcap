@@ -18,7 +18,8 @@
 - **DS sticker header from Toni's picture** (Toni: "remove that and use this"): a DS game's card drawn from its cover wears
   the real sticker's header (`res/drawable-nodpi/ds_label_strip.webp`, the white band with the console's name over the
   notched line), the cover cut to the sticker under it and showing below the line (`SwitchLabel.dsStrip`, loaded with
-  `prime`). A 3DS card, or another console's game on a DS card, keeps the plain strip with its console's name.
+  `prime`). A 3DS card, or another console's game on a DS card, keeps the plain strip with its console's name. Both get
+  the real sticker's white band along the bottom (about a tenth of its height); the art stops above it.
 - **Second screen Showcase dock** (Toni: "Home black inside red outside, Chrome red inside white outside"): with the
   one-colour icons every round button there is the accent symbol on the dock's faint plate — no accent plate behind Home,
   no white plate behind the apps (`SecondShowcase.ShowcaseDock`).
