@@ -173,6 +173,12 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317as — Stats › Recaps show pictures of games no longer on this device** (played here, since removed: neither in the
+  library nor another device's): cover looked up by the name in the file's address (console from its folder), as other
+  devices' games are; `loadVaultArt` no longer drops a request made while a look-up runs (queued, and past 40 per pass).
+  Tile home: the row starts 22 dp in (the coloured frame and its glow were cut at the left edge); with Endless (moving
+  to the edges) 30 % of a tile in, so the game before shows cut by the screen's left edge like the right side.
+  `YearRecapDialog.kt`, `LauncherViewModel.kt`, `TileHome.kt`.
 - **317ar — the trophy count no longer grows on the game you're on** (Voltcap row, `GameCard.kt`): the same 9 sp text,
   icon, tick and padding on every card, and no percentage joining it there.
 - **317aq — no white haze over the game art** (Voltcap row, Tile home: the top / bottom shade took a light theme's

@@ -2803,6 +2803,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     /** Game key → cover for Save Vault games that aren't on this device (looked up by name, kept in prefs). */
     val vaultArt: StateFlow<Map<String, String>> = _vaultArt.asStateFlow()
     @Volatile private var vaultArtRunning = false
+    /** Update 317as: games asked for while a look-up was running (they were dropped), and the rest past a pass's 40. */
+    private val vaultArtPending = java.util.concurrent.ConcurrentLinkedQueue<Game>()
 
     /**
      * Looks up a cover for each of [games] (Save Vault entries without a ROM here) by its name, from the art sources
@@ -2815,8 +2817,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         if (_vaultArt.value.isEmpty()) {
             _vaultArt.value = prefs.all.mapNotNull { (k, v) -> if (k.startsWith("art:") && v is String) k.removePrefix("art:") to v else null }.toMap()
         }
-        if (vaultArtRunning) return
-        val todo = games.filter { g ->
+        if (vaultArtRunning) { vaultArtPending.addAll(games); return }
+        val todo = games.distinctBy { it.stableKey }.filter { g ->
             g.stableKey !in _vaultArt.value &&
                 System.currentTimeMillis() - prefs.getLong("tried:${g.stableKey}", 0L) > 7L * 86_400_000L
         }
@@ -2824,6 +2826,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         vaultArtRunning = true
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                vaultArtPending.addAll(todo.drop(40))
                 for (g in todo.take(40)) {
                     val search = g.copy(name = vaultSearchName(g.name), romPath = null)
                     val art = runCatching { fetchArtFromSelectedSource(search) }.getOrNull()
@@ -2837,6 +2840,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
             } finally {
                 vaultArtRunning = false
+                // (Update 317as) Then the ones that waited.
+                val next = generateSequence { vaultArtPending.poll() }.toList()
+                if (next.isNotEmpty()) launch(Dispatchers.Main) { loadVaultArt(next) }
             }
         }
     }

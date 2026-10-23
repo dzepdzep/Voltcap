@@ -120,7 +120,9 @@ internal fun tileRowMetrics(size: CardSize): TileRowMetrics {
     val scale = LocalTileScale.current
     // (Update 317an, Toni: "move them completely to the edge of the screen": the row starts at the screen's left edge —
     // just the focus ring's room — instead of 6.5 % in.)
-    val start = 14.dp
+    // (Update 317as, Toni: "with the coloured frame the frame seems cut off": the frame and its glow reach ~12 dp out from
+    // the tile, a little more with the lift — 22 dp in now, so all of it shows.)
+    val start = 22.dp
     val byHeight = screen.height * tileFraction(size) * scale
     val spacingFor = { t: Dp -> maxOf(10.dp, t * 0.075f) }
     // At the default size at least ~4 tiles fit across; bigger sizes may show fewer (never under ~1.6),
@@ -255,7 +257,15 @@ internal fun TileHomeRow(
     // tucked behind it and optionally turned away (Carousel); the name sits centred over it.
     val carousel = com.shelf.launcher.data.HomeLayout.TILES.name in com.shelf.launcher.data.Features.carouselLayouts.state.value
     @Suppress("NAME_SHADOWING") val focusAnchor = if (carousel) com.shelf.launcher.data.TileFocus.CENTER else focusAnchor
-    val m = tileRowMetrics(cardSize)
+    val m0 = tileRowMetrics(cardSize)
+    // (Update 317as, Toni: "with Endless the games still don't show at the literal edge of the screen on the left": the row
+    // started right at the edge, so the game before was all off the screen. With Endless (moving to the edges) the row
+    // starts 30 % of a tile in: the game before shows cut by the screen's left edge, as the next ones are on the right.)
+    val screenW = screenSizeDp().width
+    val m = if (looping && focusAnchor == com.shelf.launcher.data.TileFocus.EDGES) {
+        val start = m0.tile * 0.3f + m0.spacing
+        TileRowMetrics(m0.tile, m0.spacing, start, ((screenW - start - m0.start + m0.spacing) / m0.stride).toInt().coerceAtLeast(1))
+    } else m0
     val strideDpValue = m.stride.value
     if (games.isNotEmpty()) {
         val n = games.size

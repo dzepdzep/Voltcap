@@ -113,13 +113,26 @@ internal fun YearRecapDialog(
     // Update 117: games played on your other devices that aren't on this one — their name, and their cover (looked up
     // by name) or a disc of their console (Stats › "Recaps include your other devices").
     val others = recap?.otherInfo.orEmpty()
-    LaunchedEffect(others) {
-        if (others.isNotEmpty() && com.shelf.launcher.data.Features.recapForeignArt.value == com.shelf.launcher.data.Features.RecapForeignArt.COVER) {
-            onNeedForeignCovers(others.map { (k, i) -> Game(i.name.ifBlank { k.substringAfterLast('/') }, i.platform, 0, com.shelf.launcher.data.SourceType.ROM, romPath = k) })
+    // (Update 317as, Toni: "Stats don't show pictures of games that aren't on my device": a game played here and since
+    // removed was neither in the library nor another device's — no picture at all. Its cover is looked up by the name in
+    // its file's address, as the other devices' games are; the console guessed from its folder.)
+    val gone = remember(recap) {
+        val r = recap ?: return@remember emptyList<String>()
+        (r.topGames.map { it.key } + listOfNotNull(r.longestSessionKey, r.firstKey)).distinct()
+            .filter { k -> byKey[k] == null && k !in others && k.contains('/') }
+    }
+    LaunchedEffect(others, gone) {
+        val wanted = (if (com.shelf.launcher.data.Features.recapForeignArt.value == com.shelf.launcher.data.Features.RecapForeignArt.COVER)
+            others.map { (k, i) -> Game(i.name.ifBlank { k.substringAfterLast('/') }, i.platform, 0, com.shelf.launcher.data.SourceType.ROM, romPath = k) }
+        else emptyList()) + gone.map { k ->
+            val file = android.net.Uri.decode(k).substringAfterLast('/')
+            val folder = android.net.Uri.decode(k).substringBeforeLast('/').substringAfterLast('/').substringAfterLast(':')
+            Game(file.substringBeforeLast('.'), folder, 0, com.shelf.launcher.data.SourceType.ROM, romPath = k)
         }
+        if (wanted.isNotEmpty()) onNeedForeignCovers(wanted)
     }
     val coverFor: (String) -> String? = { k ->
-        coverForLib(k) ?: others[k]?.let { info ->
+        coverForLib(k) ?: (if (byKey[k] == null && k !in others) foreignCover(k) else null) ?: others[k]?.let { info ->
             val disc = com.shelf.launcher.data.SystemLogos.discAsset(info.platform)?.let { "file:///android_asset/$it" }
             if (com.shelf.launcher.data.Features.recapForeignArt.value == com.shelf.launcher.data.Features.RecapForeignArt.DISC) disc
             else foreignCover(k) ?: disc
