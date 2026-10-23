@@ -15,6 +15,8 @@
     its plain plastic.
   - "Drawn only" goes off once (`applyRealPhotos325`); picking a disc on the R1 tile no longer turns it on.
   - Kept: your custom pack cartridges for consoles without their own, the plain CDs, and the drawn discs.
+  - Test `Media306Test.packShapesUseTheirRealCartridge` (it checked the update 306 rule being removed) is now
+    `packShapesStayTheirOwnPictures`: every pack shape has no drawn cartridge behind it.
   - The drawn-shell code itself is still in the app (nothing calls it for drawing); deleting the files is a later
     clean-up once this is checked on the device.
 - Files: `ui/PhysicalMedia.kt`, `ui/CartShells.kt`, `ui/CartShellPicker.kt`, `ui/CustomCarts.kt`, `ui/SolidPiece.kt`,
