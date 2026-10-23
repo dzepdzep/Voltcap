@@ -21,7 +21,13 @@
   accent, all the very same colour (an icon without its own monochrome version keeps its drawing as see-through parts)
   (`rememberAppIcon` returns it, tinted once per icon and colour; `AppIconArt` drops the banner and the blurred
   copy behind it).
+- **Still covers for games scraped before update 317** (Toni: "I don't see the still art on the discs and cartridges"):
+  the still cover was only looked up on a fresh scrape. `LauncherViewModel.backfillStillCovers()` (20 s after start)
+  looks up the first still cover of every game whose cover is animated and has none yet (40 a pass, a game tried once
+  a week; `SteamGridDbRepository.fetchStillGrid`), keeps it with the art and the cartridges / discs wear it at once.
+  A cover you picked yourself (Artwork & details) that's animated still has no still one beside it.
 - **Copy:** `ui/Case3D.kt`, `ui/BoxSides.kt`, `ui/SettingsDialog.kt`, `data/Features.kt`, `ui/AppIcons.kt`,
+  `data/SteamGridDbRepository.kt`, `LauncherViewModel.kt`, `ui/LauncherScreen.kt`,
   `ui/SecondDockShortcuts.kt`, `ui/SecondScreenHome.kt`, `ui/ScreenLayoutsUi.kt`.
 - **Not compiled here**; GitHub's build check runs on the PR. Not tried on a device.
 

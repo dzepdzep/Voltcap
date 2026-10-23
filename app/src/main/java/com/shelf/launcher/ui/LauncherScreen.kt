@@ -741,6 +741,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (state.games.isEmpty()) return@LaunchedEffect
         kotlinx.coroutines.delay(20_000)
         viewModel.prefetchStatsArt()
+        // (Update 319: still covers for the cartridges and discs of games scraped animated before update 317.)
+        viewModel.backfillStillCovers()
     }
     SideEffect {
         MotionPrefs.layout = state.appearance.homeLayout
