@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.math.floor
@@ -47,6 +48,12 @@ internal fun AnchoredStrip(
     extraForFocus: Dp = 0.dp,
     alignTop: Boolean = true,
     loop: Boolean = false,
+    /**
+     * Update 325 (Toni, Cube menu: "the games get cut off at the far left and right — always show the whole cartridge or
+     * disc"): a piece shows only while it fits whole inside the strip — fading in as it comes all the way in, out as it
+     * starts to leave — never cut by the strip's edge.
+     */
+    wholeOnly: Boolean = false,
     item: @Composable (i: Int, grow: Float, w: Dp, h: Dp, here: Boolean) -> Unit
 ) {
     val looping = loop && count >= 2
@@ -94,11 +101,17 @@ internal fun AnchoredStrip(
             val hh = h(idx)
             val real = if (looping) idx.mod(count) else idx
             key(if (looping) "${keyOf(real)}#${Math.floorDiv(idx, count)}" else keyOf(idx)) {
+                val ww = w(idx)
                 Box(
                     Modifier
                         .align(if (alignTop) Alignment.TopStart else Alignment.CenterStart)
                         .offset { IntOffset(left.roundToPx(), 0) }
-                        .size(w(idx), hh)
+                        .size(ww, hh)
+                        .then(if (wholeOnly) Modifier.graphicsLayer {
+                            // How much of it is outside the strip, as a share of its width: gone at a tenth.
+                            val out = (maxOf(0f, -left.value) + maxOf(0f, (left + ww - maxWidth).value)) / ww.value.coerceAtLeast(1f)
+                            alpha = (1f - out * 10f).coerceIn(0f, 1f)
+                        } else Modifier)
                 ) { item(real, grow(idx), widthFor(hh), hh, idx == focus) }
             }
         }

@@ -702,7 +702,7 @@ private fun CubeBrowser(c: StyleCtx, chip: Boolean, chipOn: Boolean, homeOn: Boo
                 AnchoredStrip(
                     count = c.games.size, focus = rememberLoopFocus(c), keyOf = { keys[it] }, small = small, big = big,
                     widthFor = { it * aspect }, gap = 12.dp, startPad = 10.dp, anchorSlots = 1, alignTop = false,
-                    loop = loopRowOn(c),
+                    loop = loopRowOn(c), wholeOnly = true,
                     modifier = Modifier.fillMaxWidth().height(big + 12.dp).padding(vertical = 6.dp).categorySlide()
                         .editablePart(LayoutParts.id(HomeLayout.CUBE, "games"), "Games row")
                 ) { i, _, gw, gh, here ->

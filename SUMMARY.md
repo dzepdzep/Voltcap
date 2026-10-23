@@ -2,6 +2,25 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **Real cartridges by default, drawn ones only with "Drawn only"** (Toni: "remove the drawn cartridges, they only break
+  stuff; keep the custom ones for consoles that don't have them and the CDs"): a game without its own photo is its
+  console's real cartridge from the template pack with its cover on the label; Voltcap's drawn shells (the 3D drawn
+  pick and the authentic drawn shell) only when Settings › Media shells is on. Custom carts for consoles without a
+  cartridge and the generic CDs stay (`PhysicalMedia.mediaFor`).
+- **Cube menu: games never cut at the strip's ends** — a piece shows only while it's whole inside the strip, fading as it
+  leaves (`AnchoredStrip(wholeOnly)`, used by `StyleCube`).
+- **Pocket Classic: the Game Boy logos in their own colours** (Toni: "the Game Boy logo is just plain black"): GB / GBC /
+  GBA logos are lettering only, so in ink they read as plain text; they keep their navy / colour lettering now, the
+  other consoles stay in ink (`PocketClassic.pocketLogoTint`).
+- **Save Vault: "PS2 browser style" is back** (Toni: "the PS2 view for Save Vault is gone"): update 285 kept PS2 save
+  icons for Icons only and removed the switch; the switch is back in Filters & look for the card styles (your old
+  setting is still saved), and Inspect follows it.
+- **Save Vault Inspect: the capsule from the side** (Toni: "weird graphics"): its sides were made from the face's opaque
+  parts — the glass is nearly clear, so only the icon and badge were pushed out. They follow the pill's own outline now
+  (`inspectSolid(pill)`).
+- Files: `ui/PhysicalMedia.kt`, `ui/AnchoredStrip.kt`, `ui/StyleCube.kt`, `ui/PocketClassic.kt`, `ui/SaveExplorer.kt`,
+  `ui/SaveVaultStyles.kt`, `ui/SaveInspect.kt`. Not compiled here (CI builds it); not tried on a device.
+
 - **Thor recording after 324** (`voltcap-perf-20261023-190727.zip`, Mix look, All games): 308 → 250 ms a frame, handing
   the frame to the GPU 63 → 41 ms; the main thread still waits on the render thread ~half of the time. Cause: a
   cartridge / disc photo without a sides' picture was darkened (the shadow of the games aside) through a buffer of its

@@ -76,6 +76,14 @@ private val MutedC = Color(0xFF8B919A)
 private val PressC = Color(0xFFE9ECF0)
 private val SundayC = Color(0xFFD5453D)
 private val SaturdayC = Color(0xFF3B6FD1)
+
+/**
+ * Update 325 (Toni: "in Pocket Classic the Game Boy logo is just plain black — make it recognizable"): the Game Boy
+ * family's logos are lettering only, so in ink they read as plain text; they keep their own colours (the navy GAME BOY).
+ * The others stay in ink.
+ */
+private val OWN_COLOUR_LOGOS = setOf("GB", "GBC", "GBA")
+private fun pocketLogoTint(platform: String): Color? = if (platform in OWN_COLOUR_LOGOS) null else InkC
 /** The handheld's body round the screens on one display. */
 internal val PocketShell = Color(0xFFE8EAED)
 
@@ -237,7 +245,7 @@ private fun PocketTopBrowse(s: PocketScope, c: StyleCtx, font: androidx.compose.
             val st = c.stops[cur]
             val p = st.platform
             Box(Modifier.at(48f, 28f, 160f, 100f), contentAlignment = Alignment.Center) {
-                if (p != null && !com.shelf.launcher.data.isCollectionKey(p)) PlatformLogo(p, st.label, Modifier.fillMaxSize(), tint = InkC, textColor = InkC, textSize = sp(12f))
+                if (p != null && !com.shelf.launcher.data.isCollectionKey(p)) PlatformLogo(p, st.label, Modifier.fillMaxSize(), tint = pocketLogoTint(p), blackToWhite = false, textColor = InkC, textSize = sp(12f))
                 else Icon(st.icon, null, tint = InkC, modifier = Modifier.fillMaxSize(0.6f))
             }
             PocketText(s, st.label, 10f, 140f, 236f, 16f, 10f, InkC, font, TextAlign.Center)
@@ -417,7 +425,7 @@ private fun PocketHome(s: PocketScope, c: StyleCtx, accent: Color, font: android
         PocketPanel(s, CAT, 134f, 66f, 88f, 38f, accent, spot, thick = true, onTap = { pocketActivate(c, CAT) }) {
             Box(Modifier.at(4f - cx, 9f, 22f, 20f), contentAlignment = Alignment.Center) {
                 val p = stop?.platform
-                if (p != null && !com.shelf.launcher.data.isCollectionKey(p)) PlatformLogo(p, c.categoryLabel, Modifier.fillMaxSize(), tint = InkC, textColor = InkC, textSize = sp(5f))
+                if (p != null && !com.shelf.launcher.data.isCollectionKey(p)) PlatformLogo(p, c.categoryLabel, Modifier.fillMaxSize(), tint = pocketLogoTint(p), blackToWhite = false, textColor = InkC, textSize = sp(5f))
                 else Icon(stop?.icon ?: Icons.Filled.GridView, null, tint = InkC, modifier = Modifier.fillMaxSize())
             }
             CategoryTitle.Native()
@@ -568,7 +576,7 @@ private fun PocketBrowser(s: PocketScope, c: StyleCtx, accent: Color, font: andr
                         val st = c.stops[i]
                         val p = st.platform
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            if (p != null && !com.shelf.launcher.data.isCollectionKey(p)) PlatformLogo(p, st.label, Modifier.fillMaxSize(), tint = InkC, textColor = InkC, textSize = sp(6f))
+                            if (p != null && !com.shelf.launcher.data.isCollectionKey(p)) PlatformLogo(p, st.label, Modifier.fillMaxSize(), tint = pocketLogoTint(p), blackToWhite = false, textColor = InkC, textSize = sp(6f))
                             else Icon(st.icon, null, tint = InkC, modifier = Modifier.fillMaxSize(0.6f))
                         }
                     }

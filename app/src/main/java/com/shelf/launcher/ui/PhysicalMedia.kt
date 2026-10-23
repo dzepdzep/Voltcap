@@ -347,7 +347,11 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     if (!asDisc) CartShellStore.choice(platform, gameKey)?.let { raw -> CartShells.pickOf(raw, platform, gameKey)?.let { return it } }
     // Update 200: the 3D cartridges looks draw the drawn pieces with real depth (they used to draw the pre-rendered 3D
     // models, which turned in 20° steps like a slide show): see drawn3dPick.
-    if (!asDisc && !RealMedia.on) drawn3dPick(platform, mixed, gameKey)?.let { return it }
+    // (Update 325, Toni: "remove the drawn cartridges — they only break things; keep the custom ones for the consoles that
+    // have none, and the CDs": Voltcap's drawn shells only with "Drawn only" — Features.mediaShells — or a shell you
+    // picked yourself, above. Otherwise a game without its own photo is its console's real cartridge from the template
+    // pack with its cover on the label, as before update 206.)
+    if (!asDisc && !RealMedia.on && mediaShellsOn) drawn3dPick(platform, mixed, gameKey)?.let { return it }
     // Update 128, Cartridges look: the game on your cartridge pack (CustomCarts.kt) — every console with Custom, the
     // ones without a cartridge of their own with Original (consoles Voltcap has no media for included).
     if (!asDisc && !RealMedia.on && customCartFor(platform)) {
@@ -370,7 +374,7 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     // (Update 206, one cartridge per console: always — not only after Real shell was picked once (Features.authenticCarts,
     // off for anyone who never picked it). Without it a cartridge beside its case, in the Disc station or the launch
     // animation was the template pack's flat picture: a second, different N64 / Game Boy / SNES cartridge.)
-    if (!asDisc) {
+    if (!asDisc && mediaShellsOn) {
         val ownShell = MediaShell.of(platform)
         if (ownShell == null || !(ownShell.disc || ownShell == MediaShell.UMD)) {
             val region = CaseCatalog.regionOf(gameKey ?: "")
