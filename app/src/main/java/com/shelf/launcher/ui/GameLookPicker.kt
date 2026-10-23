@@ -617,7 +617,7 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
     // (Update 317ao: where the badge sits — Auto keeps each layout's own place, clear of the trophy count.)
     ChipFlow {
         val at = F.consoleBadgeCorner.state.value
-        F.BadgeCorner.values().forEach { c -> Chip((if (at == c) "✓ " else "") + c.label, accent = at == c) { F.consoleBadgeCorner.value = c } }
+        com.shelf.launcher.data.Features.BadgeCorner.values().forEach { c: com.shelf.launcher.data.Features.BadgeCorner -> Chip((if (at == c) "✓ " else "") + c.label, accent = at == c) { F.consoleBadgeCorner.value = c } }
     }
     MutedNote("A small badge in the corner of each game's tile: the console's logo in white on the console's own colour (or your theme's). On every look: covers, cases, cartridges (3D ones too) and discs (not on a spine too slim for it).")
     // (Update 240, #32/#57: the strip under round discs that carries the trophy count and game status.)
