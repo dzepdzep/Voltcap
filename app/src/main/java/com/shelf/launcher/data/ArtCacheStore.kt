@@ -37,12 +37,13 @@ class ArtCacheStore(context: Context) {
     fun loadAll(): Map<String, GameArt> = synchronized(lock) {
         if (pending.isEmpty() && pendingRemovals.isEmpty()) readDisk()
         else readDisk() - pendingRemovals + pending
-    }
+    }.also { all -> all.values.forEach { StillCovers.note(it) } }
 
     /** Merges one game's art into the cache. Called incrementally as a
      * background scrape progresses, so interrupting it never loses the work
      * already done (saved within a second). */
     fun put(stableKey: String, art: GameArt) {
+        StillCovers.note(art)
         synchronized(lock) {
             pending[stableKey] = art
             pendingRemovals -= stableKey

@@ -1,5 +1,406 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 22 Oct 2026 (317): Cartridge carousel GPU memory and redraws, first-launch charge-limit crash
+
+**Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6), not merged; CI is the compile check, not
+tested on a handheld.
+
+- **Found (`voltcap-mem6.zip`, Flip 2):** still 1,011 GPU render targets / 1,233 MB, identical to mem5 — the GPU's
+  ceiling, not a slow leak (new buffers simply fail past it). Android keeps one buffer per offscreen layer for every
+  node in the drawn tree, even off the screen or behind something; a game is only left out when the carousel doesn't
+  draw it. The "far off the screen" check (update 314) counted a game as on it up to the slot's width + height *and* a
+  whole screen's width past each edge — further than "To the edge" builds games (~15 a side on the Flip 2, ×3 in Box
+  flow), so nothing was ever left out. Cases and discs (plain canvas drawing) barely noticed; each turned cartridge
+  holds up to 6–7 layers (user: "the cases and cds don't lag").
+- **Changed:** `Carousel.kt` — a game is left out once it is past the edge by more than a tenth of the carousel's width
+  (`CarouselViewport.CULL_MARGIN`), its reach half the slot's width + its height (still room for a turned piece's sides,
+  its media and lean). `SolidPiece.kt` — the generic path (drawn templates, cartridge photos, pack pictures): the face's
+  light set on the face's own layer, so the turned face is a plain layer, not a second offscreen buffer (the outline made
+  from the face only uses its shape — SrcIn / DstOut — so it looks the same). *(Reverted below.)*
+- **Crash (`voltcap-crash-20261022-2110331`, 0.6.35):** `ForegroundServiceDidNotStartInTimeException` for
+  `ChargeLimitService` — six minutes after start, the main thread skipping 50–110 frames at a time (the GPU memory
+  above), so the service didn't reach `startForeground` within Android's 10 s. `ChargeLimitService`: with Voltcap in
+  front a plain `startService` (no deadline; `startForegroundService` only when Android refuses from the background); a
+  new status while it runs only updates the notification (each new label used to start it again, each with a new 10 s
+  deadline); `stop` never stops it while a start is on its way — it stops itself once in the foreground (`wanted`).
+- **Measured after the above (user, Flip 2):** render targets 1,011 → 363 (479 MB); still sluggish. gfxinfo: GPU 3 ms
+  (p50) / 9 ms (p90), frames 28 ms / 300 ms — CPU-bound. **Perfetto (`voltcap-trace5.zip`, Case stacks, scrolling the
+  drawn console cartridges):** ~6 fps; the main thread waits on the RenderThread (113 ms/frame), which re-draws ~400
+  offscreen pictures every frame (`flush layers` 125 ms, 2,026 rect fills): ~75 turned pieces, all on the generic path
+  (face, outline, sides, smear — PhysicalMedia's drawn templates have no single front picture), plus each game's shade.
+- **Changed (`SolidPiece.kt`, `PieceShot`):** a piece without its front's picture takes one of its own — its content
+  drawn once into a node-sized picture (`GraphicsLayer.toImageBitmap`, 120 ms after the content last changed) — and is
+  turned from it like the shells (sides' picture, plain layers, nothing offscreen per frame). The content sits in a layer
+  of its own whose drawing bumps `PieceShot.version` only when it changes (a label coming in), which takes the picture
+  again; content that keeps changing gives up on it (`off`) and is drawn as before. The face-light change above is
+  reverted (the picture must be unlit).
+- **Measured (user):** 16 fps (frames 61 ms p50 / 65 ms p90, GPU 6 ms) — better, still sluggish. **Perfetto
+  (`voltcap-trace6.zip`):** still ~460 offscreen redraws a frame; the process had taken ~737 front pictures — each
+  recomposition (every carousel step) gave the piece a new content-layer modifier, which drew the content again, counted
+  as new content, retook the picture, and after 40 retakes gave up (`off`). Now remembered once per piece (`shotMark`).
+  The idle hop of the drawn templates, cartridge photos and pack pictures moved round the solid piece (as the drawn
+  shells' already was), so their picture never holds them mid-hop (`PhysicalMedia.kt`, `CustomCarts.kt`).
+- **Measured (user, 317c):** worse — frames 350 ms, the Flip 2's fan loud. A loop: a piece drawn from its picture
+  leaves its content out of the screen's drawing; drawn again for the next picture, the content drew itself anew, which
+  counted as a change and asked for another picture (and its sides' picture again, on the CPU) — over and over. Now its
+  own drawing for the picture doesn't count (`PieceShot.quiet`), and a piece takes at most 10 pictures (the last stays).
+- **Measured (user, 317d):** frames 5 ms (p50) / 250 ms (p90), 34 % janky, 323 MB render targets, fan quieter; still
+  sluggish. **Perfetto (`voltcap-trace7.zip`):** ~226 offscreen redraws a frame — CarouselArt's darkening buffer for each
+  game aside (~67 a frame, ~32 ms), pieces coming back on the screen taking their picture again (`copyImageInto` /
+  `setSurface` ~28 ms a frame, up to 86 ms), and the sides' pictures thrown out of the GPU's cache and uploaded again (~28
+  a frame).
+- **Changed:** `PieceTurn.shadeOf` / `shadeTaken` — a piece drawn from its pictures takes the carousel's shade on itself
+  (its lights × (1 − shade), its back a black SrcAtop), and `CarouselArt` then leaves out its darkening buffer (read again
+  while drawing, so never both). `PieceShots` — the pieces' pictures kept by what they show (`solidPiece(shotKey)`: drawn
+  templates, cartridge photos), 96 at most. `sideArtOf` returns a GPU (HARDWARE) bitmap on API 26+. `SolidLight` in 40
+  steps (the shade slides through it). Known difference: a console badge on a cartridge aside isn't darkened with it.
+- **Measured (user, 317e):** frames 32 ms (p50) / 250 ms (p90), 264 MB render targets; still janky. "Games each side"
+  didn't change how many show (open question — which view the R1 Carousel tile names). **Perfetto (`voltcap-trace8.zip`):**
+  ~158 offscreen redraws a frame (from ~460); the pictures taken of the screen (`copyImageInto` + `setSurface`) ~42 ms a
+  frame while new games come in.
+- **Changed:** `rememberTemplateCartFront` / `templateCartFront` (`RealMedia.kt`) — a template cartridge's front made as
+  one picture on `Dispatchers.Default` (paper window, art laid as TemplateMedia lays it, cut by the shell's mask, the shell
+  over it; GPU bitmap; kept in `DerivedArt`), handed to its solid piece as `faceArt` (`PhysicalMedia.kt`): no picture of
+  the screen taken for them any more (PieceShot stays for cartridge photos and pack pictures).
+- **Games each side in Box flow / Spine wall / pull-out stack (user: "doesn't work with those"):** `Carousel.reach` took
+  three times the number (pull-out: + 8 behind the pulled-out case) — slim and packed, every choice from 2 up reached the
+  screen's edges. Now the number picked is how many show each side (pull-out: + the 8 hidden); To the edge keeps ×3.
+- **Screen recording (`voltcap-flash.mp4`):** the "flashing" is the stacks jumping — ~70 distinct frames in 10 s while
+  stepping — not a drawing fault (no brightness flicker, no label changes found).
+- **317h reverted:** with it every frame took 250–400 ms (UI thread slow on each, bitmap uploads on most) and the fans
+  ran hard on the Flip 2 — a repeat somewhere in the photo / disc-shell front path. Back to 317g.
+- **Animated covers off on cartridges and discs (Toni):** `mediaArtModel` (every cartridge / disc printed picture) asks
+  for the still first frame (`styleArtRequest(still)`, own memory key), as do the pack sticker (`rememberPackLabel`) and
+  a disc photo's trimmed request — whatever Animated artwork is set to. A playing label redrew its turned piece each frame.
+- **Speed after installing with `adb install -r`:** Android runs the app interpreted until it compiles it in the background
+  later; `adb shell cmd package compile -m speed-profile -f com.shelf.launcher` (or installing with the build's `.dm`)
+  compiles it at once — why the update 316-era `.dm` helped the cases.
+- **GameCube spines (Toni: Budokai 2, Melee, Pikmin):** a keep case's spine scan more than 1.8× as wide (for its height)
+  as the side is left out (`SPINE_TOO_WIDE`, `Case3D.kt` spineFit2) — its middle cut to the side was a blurred slice of
+  the box art; the console's spine with the title instead (as update 308 does for cardboard).
+- **Games aside flashing brighter (user, still):** `PieceTurn.shadeTaken` flipped back while a piece rebuilt its pictures;
+  that frame neither CarouselArt nor the piece darkened it. Now set once and kept; a piece without its pictures darkens
+  itself in a passing buffer (`shadeLayer`, saveLayer + SrcAtop black, only then) — always darkened exactly once.
+- **"Spines cut from box scans" didn't change the GameCube spines:** by design — it's only for games without a spine scan
+  (a strip cut from the box scan); these have a (bad) spine scan, handled by update 317j's width check.
+- **N64 fronts bigger than the box with the Covers look (Toni):** `looksLikeBoxFront` let a front off by 4.5 % of the box's
+  shape; an N64 box-front scan 5–10 % off counted as a plain cover and was cut into the cover template's window (zoomed,
+  edges lost). Landscape box and landscape art (both > 1.15): 15 % (covers stand upright, never mistaken).
+- **Measured (user, 317l): 57 ms every frame, 576 MB / 471 render targets** — 317k's passing darkening buffer (3× the
+  piece each way) ran far more often than meant. Removed. Instead the piece keeps its last sides' picture while a new
+  front's is made (`lastSide`), so it stays drawn from its pictures and `shadeTaken` no longer flips for a frame.
+- **Spine cuts on the 3D cases (Toni):** with Spines cut from box scans on, Case3D uses the strip cut from the box scans
+  (it did only with Original cases), and in place of a keep case's spine scan left out as too wide (`cutModel` /
+  `cutFitted`, same width check).
+- **Animated covers on cartridges / discs → the scraper's first still cover (Toni):** `GameArt.stillGridUrl` — when
+  SteamGridDB's first cover is animated, its first static one (`types=static`) is fetched beside it; `StillCovers`
+  (`AnimatedArt.kt`, filled from `ArtCacheStore` and each scrape) maps the animated address to it, and `PhysicalMedia`
+  swaps its label / case cover. Covers scraped before this need a refresh of their artwork to get the still one (until
+  then: the animated one's first frame, as in 317i).
+- **Measured (user, 317m):** frames 40 ms (p50) / 350 ms (p90), 184 MB / 162 render targets.
+- **User (317n):** flashing gone. Screenshots: N64 Mario Party 2 — Cases look shows the box-front scan whole, Covers look
+  its cover cut to the box (title and foot lost); its N64 spine shrunk into the side beside a wide plain strip.
+- **Changed (`Case3D.kt`):** Covers look — a cover that would lose more than 8 % to the case's shape (`CoverAspects`)
+  gives way to the game's box-front scan when it has one (`coverCut`). N64 spine narrower than its side
+  (`boxSideSpine`, widenN64): fills the side (scaled across, nothing cut, no strip) — cache kind `n64-fill317`.
+- **Cartridges drawn with far fewer copies (Toni: "as long as they aren't thin like paper from the side"):** the sides'
+  picture (`sideArtOf`) has `SIDE_SPREAD` (10) px of room each side and its outline spread that far sideways; a turned
+  piece drawn from its pictures puts a copy every SIDE_SPREAD px (foreshortened by the turn, at least 1.5 px), the near
+  one (under the face) left out — 4–20 draws a piece instead of up to 32 × 4 (n × fill). Outline shape kept; the side a
+  few px thicker at most. Cache kind `side317`.
+- **User screenshots (317p):** some N64 spines now overstretched (Zelda OoT, Mario Party 2 — the box's long-edge print
+  stretched across the side); GameCube spines (Budokai 2) still zoomed. **Changed (`Case3D.kt`):** the N64 stretch only
+  up to a fifth wider (else update 312's fit, cache `n64-fill317b`); keep cases — a spine scan narrower than its side by
+  more than a tenth keeps its whole height (widened up to a fifth, else set in at its own width on its edge colour,
+  `keepCaseSpine`) instead of having top and bottom cut and being zoomed to the side (`spineFit4`).
+- **User (317q): spines still "cut"** — Zelda's logo, Budokai 2's name and GameCube logo: scans a little wider than the side
+  were cut in the middle. Now never cut: keep cases fitted whole (scaled across) from a fifth narrower to two fifths
+  wider, else set in at their own shape (`fitSpineInside`); N64 within three tenths fitted whole (`scaleToAspect`).
+  Cache kinds `spineFit5`, `n64-fit317c`. Measured: frames 11 ms (p50) / 400 ms (p90), 310 MB render targets.
+- **User (317r): GameCube and N64 spines "all cut / messed up" — some worked before update 317.** The GameCube spine scans
+  carry slivers of the back and front either side of the spine; update 240's middle cut is what left the spine itself.
+  **Spine fitting put back as before 317** (keep cases `spineFit` fillCrop; N64 update 312's `n64-align312`); the width
+  check, keepCaseSpine and scaleToAspect are gone. (Kept: spine cuts on 3D cases, the Covers-look front.)
+- **Fewer side copies while moving (Toni, option 2):** `PieceTurn.movingOf` (the carousel's glide running, `ctx.moving`,
+  a state — the pieces draw again when it stops): a turned piece's side at most `MOVING_COPIES` (4) copies meanwhile.
+- **317t reverted** (didn't help). **User:** GameCube spines look right on the shelf (Spines layout); flashing "sometimes"
+  again; frames 5 ms (p50) / 350 ms (p90), scrolling only.
+- **Keep cases at their spine scan's shape (`Case3D.kt`):** as the shelf's SpineSlot does — a keep case with its own spine
+  scan takes the scan's shape as its thickness, so the scan goes on the side whole (clamp 0.03–0.35). Jewel, cardboard
+  and the rest keep their spec's.
+- **No shade hand-over at all (`SolidPiece.kt`):** a piece always darkens itself (`shadeTaken` always true for a solid
+  piece in a carousel) — through its light when drawn from its pictures, else through the whole-piece buffer's paint
+  (`bufShade`, the flat view too); a piece coming in before its pictures had a frame darkened by no one.
+- **User (317u): spines thinner** — the keep-case thickness from the scan undone. **"Adjusting the cuts didn't do anything
+  for the 3D models":** your own cut of the full case scan (FullScanCuts) only fed the strip used without a scraped spine
+  scan; now it comes first on the shelf and the 3D cases (`BoxTexture.userSpine`), fitted to the 3D side whole
+  (`scaleAcross`, cache `spineUser`).
+- **Perfetto (`voltcap-trace10.zip`):** still ~210 offscreen redraws a frame and ~137 pictures of the screen in 15 s — the
+  cartridge photos (523×339) and the disc shells (380×468) on the generic path. **317h again, with stable inputs:** the
+  photo's front from `rememberSoftBitmap(model)` (the cache's same object), not the loaded drawable (a new one at each
+  load — the likely loop); the disc shell's front keyed only by addresses (anything else gets none).
+- **User (317w):** spines still over-stretched; frames 81 ms (p50) / 133 ms (p90), every frame janky; 74 MB render targets
+  (the lowest yet). **Spines:** a keep case's side now shows the scan as the shelf does — whole, scaled evenly into the
+  side (`fitSpineInside`, never stretched one way, never cut), the room round it in its edge colour (`spineWhole`).
+  **Speed:** the sides' picture's sideways spread (`sideArtOf`) was a 21-wide scan per pixel — now a running maximum
+  (checked against the plain version on 2,000 random rows); photos now make one per picture too.
+- **User (317x): spines "even worse"** — screenshots: Melee's full case scan has the right spine (a narrow blue strip with
+  the title and the GameCube logo) but the scraped "Spine" picture is a wider slice with part of the back; Twilight
+  Princess's is right. No fitting rule fixes a wrong picture: keep cases back to the middle cut (`spineFit`); a bad one
+  is fixed by your own cut of the full scan (wins since 317v). **Cut editor zoom (Toni):** 1× / 3× / 6× round the edge
+  picked (`FullScanCutEditor.kt`); the lines stay thin.
+- Measured (317x): frames 81 ms (p50) / 150 ms (p90), 76 MB — the step from 5 ms came with 317u–w; not yet traced.
+- **The spines' real cause (user: still stretched, even with your own cut):** the shelf never runs `singleSpine`; the 3D
+  case did on every spine. A GameCube spine (14 / 190 mm = 0.074) is just past its 0.07 floor, and a plain strip with the
+  title down the middle read as "both end flaps side by side" — the left half kept and stretched to twice its width. The
+  twin check now only runs on jewel cases (whose inserts have the twin flaps, update 298) and never on your own cut
+  (`twinsPossible`, cache kind `spine|0` otherwise).
+- **Perfetto (`voltcap-trace11.zip`, 317y):** ~45 offscreen redraws a frame (from ~210), RenderThread ~28 ms a frame
+  (from ~90), pictures of the screen almost gone — the photos / disc shells fix works. Main thread ~35 ms (recomposition,
+  animation, key handling) is what's left.
+- **User (317z): spines "work perfectly"** (GameCube and N64). **Pull-out stack — a game put back on the right drawn over
+  the one behind it, then behind it:** it kept the pulled-out case's drawing order until fully back in its slot. Once
+  under 35 % out (turned back to its spine) it takes the stack's order (`pullOut`: right 49 + d, left 51 − d, continuing
+  `stackZ`), so it slides in where it belongs.
+- **N64 spine cut at its foot (Pokémon Stadium):** a scan a little narrower than the side (under 30 % off) had its top and
+  bottom cut and was zoomed; an N64 one keeps its whole height now (`fitSpineInside`, update 312's widening). Cache kind
+  `n64-align317`.
+- **Fix:** 317aa redeclared `pullOut`'s `z` (compile error on the user's build) — now `order`.
+- **The Cover Project's N64 wrap on the 3D box (Toni):** back | the box's long top edge | front, lying on its side. New
+  `BoxPart.TOP`: the strip between back and front (found, or your own cut) turned a quarter back; only from a scan no
+  wider than `WRAP_MAX` (2.2) for its height. `rememberBoxSides` uses it for the top of a cardboard box with a landscape
+  front (N64, SNES) that has no top picture of its own. The short sides aren't in such a wrap — unchanged.
+- **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
+  hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
+  own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317at — the slow zoom in the layouts with a big picture of their own:** Dashboard, Hero tiles, Library panel's
+  header, Twin showcase and the Hero carousel's background now drift slowly closer while you rest on a game, as the home
+  background does with Background art motion "Quick fade + slow zoom" / "Ken Burns" (the layout's own choice first),
+  up to the same Zoom size. `Modifier.slowZoom` in `Motion.kt` (MotionPrefs.globalHero / zoomPercent set by
+  LauncherScreen); `StyleDashboard.kt`, `StyleHeroTiles.kt`, `StyleLibrary.kt`, `TwinShowcase.kt`, `HeroCarousel.kt`.
+- **317as — Stats › Recaps show pictures of games no longer on this device** (played here, since removed: neither in the
+  library nor another device's): cover looked up by the name in the file's address (console from its folder), as other
+  devices' games are; `loadVaultArt` no longer drops a request made while a look-up runs (queued, and past 40 per pass).
+  Tile home: the row starts 22 dp in (the coloured frame and its glow were cut at the left edge); with Endless (moving
+  to the edges) 30 % of a tile in, so the game before shows cut by the screen's left edge like the right side.
+  `YearRecapDialog.kt`, `LauncherViewModel.kt`, `TileHome.kt`.
+- **317ar — the trophy count no longer grows on the game you're on** (Voltcap row, `GameCard.kt`): the same 9 sp text,
+  icon, tick and padding on every card, and no percentage joining it there.
+- **317aq — no white haze over the game art** (Voltcap row, Tile home: the top / bottom shade took a light theme's
+  background colour — now always dark, `BackdropArt` in `HomeChrome.kt`), and Tile home with Endless fills to the right
+  edge: once each only when the games don't fill the row.
+- **317ap — Tile home, Auto badge corner:** the bottom right when the trophy count is along the top (a tile is too
+  narrow for both in one row — the count ended in "…"); otherwise the top left.
+- **317ao — console badge where you want it:** Settings › Game look › Console badges has a new row, **Auto / Top left /
+  Top right / Bottom left / Bottom right** (`Features.consoleBadgeCorner`, `badgeCornerOr` in `ConsoleBadge.kt`; every
+  layout's badge follows it; the Voltcap row's other marks still keep clear of the corner it takes). On Tile home a long
+  trophy count no longer runs under the badge when they share a row: it shrinks, then ends in "…".
+- **317an — Tile home's row from the screen's left edge** (14 dp in — the focus ring's room — instead of 6.5 % of the
+  width; `tileRowMetrics`), and the trophy count centred in its bubble (no font padding, line trimmed).
+- **317am — Tile home's badges lined up:** the achievement count and the state mark take the console badge's height
+  (13 % of the tile, 11–20 dp) and its distance from the edge, so the three sit level and the same size (`TileHome.kt`).
+- **317al — console badges on the Hero carousel's covers too** (every other layout already had them: the Voltcap row,
+  Grid, TV room, the carousels, the style layouts through StyleArt — not on spines, nor on a case printing its console).
+  Tile home with Endless and "Moves to the edges": one game shows past the left edge as well when there are more games
+  than fit. Game states ("PLAYING"…) is already off by default (`Features.gameStates`).
+- **317ak — Tile home with Endless: the row reaches the screen's edge again, the game leaving on the left slides off**
+  instead of vanishing. "Each game once" (update 226) now only when the category has fewer games than fit plus two.
+- **317aj — console badges on Tile home's tiles** (R1 Console badges): top left, or top right when the achievement
+  count takes the top left; not on a case that prints its console (`TileHome.kt`). **317ai reverted** (Toni: a
+  background picked for the game keeps the clip off it). Clips weren't playing because Battery saver was resting
+  (18 % battery) — clips pause in the low-battery rest by design.
+- **317ai — "Art + videos" plays clips again over a background you picked for the game:** update 314's rule (no clip
+  over a game's own picked background) is no longer used (`LauncherScreen.kt`, both clip places); the rule in
+  `BackgroundVideoPolicy.kt` stays only as an option with its default.
+- **317ah — Tile home like the Switch home:** "Middle" centred the whole group (name and categories above the tiles,
+  buttons under), so the tiles sat under the screen's middle. Now the tiles' own middle is the screen's middle (the rest
+  kept on screen; Top / Bottom unchanged). The first time Tile home is picked its round buttons come on under the tiles
+  (`Features.tileHomeButtonsSet`, once only — changed later in Settings › Home › Round shortcuts, it stays).
+  `LauncherScreen.kt`, `LauncherViewModel.kt` (`setAppearance`), `data/Features.kt`. Not compiled here (CI builds it).
+- **317ag — Pull-out stack with cartridges / discs back to the edges:** with a non-case look (cartridges, discs, …) the
+  Pull-out stack stands as the Spine wall (update 238), and 317g's exact count cut that short too. With Pull-out stack
+  picked it's three times the number again, whatever the look.
+- **317af — pull-out stack back as it was:** with "Games each side" counting exactly (317g) the pull-out stack showed only
+  that many spines and stopped short of the screen's edges. It's back to three times the number (plus the 8 hidden
+  behind the case pulled out), so its row reaches the edges again. Box flow / Spine wall keep the exact number.
+- **Still "over the one behind it, then behind" — it's Box flow, not the pull-out stack:** Box flow and Spine wall use
+  `stackZ` too (middle game's order until d = 1). `settleZ(rel, e)`: once its ease into the stack passes 0.8 (the last
+  third of the step) it takes the stack's order — the incoming game (d ≈ 0.33) stays on top.
+- **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
+  `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`,
+  `ui/FullScanCutEditor.kt`, `ui/BoxSides.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
+  `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
+  `device/ChargeLimitService.kt`.
+- **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
+  targets while scrolling cartridges (should stay far below 1,011), that games at the screen's edges never pop in, and
+  that the charge-limit notification still appears / updates / goes with the charger.
+
+## Update — 22 Oct 2026 (316): Smoother 3D cases — their pictures made away from the screen's thread
+
+**Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6), not merged; CI is the compile check, not
+tested on a handheld.
+
+- **Found:** `Case3D` (the 3D cases in every carousel, Case stacks, the shelf and the game window) cut, fitted and
+  framed its pictures inside `remember` on the screen's thread the first time each case was drawn: the front
+  (`fillCrop` / `fitFace` / `jewelFront` / `framed` with the template band), its own spine (`singleSpine(orientSpine)`,
+  which reads the scan's pixels, then `boxSideSpine` — reads every pixel to find the flaps — or `fillCrop`), the console
+  spine with the title (600 px, text and logo) for games without one, and the back (`fitBack`). Several full-size
+  picture copies per new case on the screen's thread: scrolling a big carousel of cases stuttered as they came in.
+- **Changed:** `rememberDerived` (Case3D.kt): the result already in `DerivedArt` at once (`DerivedArt.peek`), else made on
+  `Dispatchers.Default` while the case shows its usual stand-ins (the front in the game's colour, the dark spine strip
+  `SpineCache.WAITING`) — the same stand-ins it already showed while its pictures loaded. `rememberConsoleSpine` does the
+  same for the console spine (`DerivedArt.peekNamed`). The face is remembered as an alias (`DerivedArt.alias`, not
+  counted twice in the 48 MB cache); `framed` is now cached too (it was made again on every key change). Same pictures,
+  same rules (update 308 / 311 / 312 spine fitting untouched).
+- **Flip 2 ANR again (`voltcap-crash-20261022-193624_11.zip`):** 0.6.34 — again published from `main` *without* PR #6
+  (main = 313 + two version bumps). Froze as Inspect opened over Case stacks (421 kgsl allocation failures, 3–7 MB each,
+  8 s frames). With PR #6 the games behind the inspect view faded one by one, so every turned cartridge would have
+  needed its whole-piece buffer again at once: the carousel's games now fade as **one group** (`Carousel.kt`, a Box
+  1.5× wide / 1.6× tall round the carousel so the games past its sides and their reflections aren't cut), each piece
+  stays opaque inside it (no buffer of its own). Overlapping cases no longer show through each other while dimmed.
+- **Perfetto trace from the Flip 2 (user, 0.6.35 fix build, scrolling cartridges in Case stacks, 8 s):** 53 frames in 8 s
+  (~6–7 fps), ~150 ms each; RenderThread "flush layers" 75 ms/frame, ~287 offscreen render passes and ~566 clears per frame
+  for ~47 turned pieces (≈6 passes each — the old generic solid-piece path), GPU itself 6–11 ms; 374 MB of render targets.
+  Cause: the **Custom / Clear 3D cartridges** draw your pack's shapes through `PackCart` → `AuthenticPackCart` (update 307),
+  which wasn't on update 314's picture-built path, and made its 640 px front and read the pack picture's plastic
+  (`CustomPieceTones.load`, a file decode) on the screen's thread for each new piece. Fixed: `AuthenticPackCart` front from
+  cache at once else on `Dispatchers.Default` (previous kept, a place changing game draws at once), plastic via
+  `rememberCustomPieceTone`, and `solidPiece(faceArt = PieceFace(front, look.aspect, frame))` — `PieceFace.frame` +
+  `pieceFrameRect` (the front stretched to its frame in the shape's box, rounded as Compose rounds Dp). `PackCart` /
+  `CustomCart` take `solid` / `motionSeed` and apply them themselves (the two-picture Vita / HuCard shapes and the disc
+  shells keep the old order and path). Tests for `pieceFrameRect`.
+- **Second trace (after the pack fix):** 82 frames / 8 s (was 53), 123 GPU passes a frame (was 287), flush layers 33 ms
+  (was 75) — but prepareTree 39 ms (was 10): the covers (480×426) were **uploaded to the GPU 5,461 times in 8 s** (2.2 s),
+  because **567 render targets / 754 MB** stood in the GPU cache and threw them out every frame. Only ~25 pieces show:
+  the rest were the games far off the screen that update 314 stopped *drawing* but that still *held* their GPU pictures
+  (~45 a side with To the edge). Now a game far off the screen (`culled`) keeps nothing composed inside its slot — its
+  layers are released — and is built again a whole carousel width before it can show.
+- **Third trace (with that):** worse — **1,019 render targets / 1,243 MB**, median frame 101 ms, GPU stalls: rebuilding
+  the games coming back made new GPU pictures faster than the old ones were let go. **Reverted** (culled games stay
+  composed, not drawn). Instead the turned pieces drawn from a picture need **no offscreen picture at all** while drawn
+  opaque: `sideArtOf` makes the sides' picture once per front off the screen's thread (`rememberDerived`: the outline at
+  alpha × 4 − 24 in the plastic's tone under the sheen — what the offscreen sides drew; `sideAlpha` / `sideRowRgb`,
+  tested), and the sides and the face are plain layers (`edgeLeaf` / `litLeaf`, their light drawn in, recorded as the
+  turn changes). The smear is gone for them: each of its copies is drawn at its own place, the same places in the same
+  order. Difference: the sheen spans the piece's picture rather than the whole slot (a landscape cartridge's sides
+  shade over the cartridge, not the empty slot above and below it).
+- **Flip 2 ANR on the fix build (`voltcap-crash-20261022-2016011.zip`, 0.6.35, Case stacks, after 88 s):** 500 kgsl
+  failures at ~0.8 MB (slot-sized layers) and ~3.2 MB (whole-piece buffers). Compose keeps every GraphicsLayer a node
+  makes alive — and its GPU picture — until it's let go, drawn or not, so the games built off the screen still held
+  theirs. Now: `PieceTurn.activeOf` (the carousel's `!culled`, read while composing) — a piece not shown keeps no
+  solid-piece layers at all; `shadeOf` is 0 while culled, so `CarouselArt` lets go of its darkening layer; and the picture
+  path no longer records the offscreen `edge` / `lit` it doesn't draw, nor `solid` until a see-through face or the back
+  needs it.
+- **Memory snapshot after 2 min of scrolling (fix build):** still **1,011 render targets / 1,233 MB**, native heap 560 MB
+  — the culling change didn't touch it. Cause found in `solidPiece`: it took ~10 new GraphicsLayers (`obtainGraphicsLayer`)
+  every time its drawing cache was rebuilt, and it was rebuilt at every carousel step for the pieces whose slot recomposed
+  (a new `PieceTurn` each recomposition, a new `PieceFace` each recomposition of CartShellArt / AuthenticPackCart); the
+  layers let go kept their GPU pictures for a long time, so they piled up while scrolling until the GPU ran out. Now the
+  layers are `rememberGraphicsLayer()`s kept for the piece's life (re-recorded on a rebuild), the carousel hands each slot
+  one remembered `PieceTurn` (latest turn / opacity through `rememberUpdatedState`), and the `PieceFace`s are remembered.
+- **Not changed yet:** N64 spines that "still don't apply correctly on some games" (user) — waiting for which games and
+  how they look (see the chat for the likely causes).
+
+**Changed:** `ui/Case3D.kt`, `SUMMARY.md`.
+
+---
+
+## Update — 22 Oct 2026 (315): Categories tile on every layout (each layout its own), Tile home in the middle again, Flip 2 GPU-memory ANR
+
+**Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6) as update 314, not merged. **Note:** the
+published **0.6.33 was built from `main` without PR #6** (commit `Voltcap 0.6.33` only bumps the version) — none of
+the 314 cartridge fixes were in it. CI is the compile check; not tested on a handheld.
+
+- **Flip 2 ANR again (user's `voltcap-crash-20261022-1917431.zip`, 0.6.33, Case stacks, cartridges in a big carousel):**
+  input-dispatch ANR, main thread in `syncAndDrawFrame`, RenderThread 80–90 %, **497 `kgsl_sharedmem_alloc() failed`
+  (~8.8 MB each)** — the GPU out of memory, as in PR #5's report. On top of 314's off-screen skipping:
+  - `SolidPiece.kt`: the smear buffer was recorded inside the whole-piece buffer and took *that* buffer's size plus the
+    margin again — (W+4m)² instead of (W+2m)², about twice the pixels; both are `buf` now (content unchanged).
+  - A piece the carousel draws fully opaque (`PieceTurn.opaqueOf`: its place's alpha × the slide fade = 1, no inspect)
+    is drawn straight into the carousel, without the whole-piece buffer that only exists so a *fading* piece fades as
+    one — pixel-identical at full opacity. See-through shells keep the buffer (their DstOut cut-out needs it). With the
+    picture-built sides (314), a turned cartridge keeps ~3 GPU pictures instead of ~6, the biggest two gone.
+- **R1 › Categories on every layout, each layout its own (user):** `AppearanceSettings.categoryBarByLayout`
+  ("LAYOUT=MODE;…", `CategoryBars`), read with `categoryBarFor(layout)` / `categoryBarHere`; written by the tile and
+  Settings › Categories › Category name (now "· <layout>") for the layout in use only. Unset layouts follow the old
+  global value, except:
+  - layouts with no category label of their own (Hero carousel, TV room, Case stacks, Console hub, Resume, Channel grid,
+    Hero tiles, Twin icons, Card binder) showed the generic bar of every category pasted on (the global default "All") —
+    now **just the current category's name** at the layout's free spot by default (All / Current only / Off on the tile);
+  - layouts with their own caption (Game shelf, Console stack, Disc station, Record crate, Pocket ribbon, Timeline,
+    Side menu's row title, Dashboard): **Shown / Off** — Off hides that caption (`CategoryTitle.captionOn`), no fallback;
+  - layouts whose categories are their menu (Cross menu, Icon bar, Library, Live tiles, Spotlight, Circuit, Arcade,
+    Pocket classic / Quest, Green Core, Cube, Layout Studio): tile shown greyed, saying they stay.
+- **Tile home (user: "should be in the middle as default, content shouldn't collide"):** it shared the Voltcap row's
+  row position (default Bottom), and the built-in *Tile home* preset reset it to Bottom — the buttons, category bar, name
+  and tiles stacked up from the bottom edge. Own `tileDockPosition`, **Middle** by default (the Switch-style home: tiles a
+  little above the middle, round buttons under them), read everywhere through `dockHere`; R1 Row tile / Settings ›
+  Where the tiles sit / presets set Tile home's own. The Voltcap row keeps its own. Overlap in other positions not
+  reproduced here (no screenshot) — needs a check on the Flip 2.
+- **Tests:** `HomeLayouts315Test.kt` (defaults per layout group, Off as before, layouts independent, stored string
+  round trip and garbage, Tile home middle and independent). New prefs live in the `appearance` file (backed up whole).
+
+**Changed:** `data/AppearanceStore.kt`, `data/LayoutPresets.kt`, `ui/SolidPiece.kt`, `ui/Carousel.kt`,
+`ui/LauncherScreen.kt`, `ui/HomeChrome.kt`, `ui/QuickSettings.kt`, `ui/R1TileRules.kt`, `ui/SettingsDialog.kt`,
+`ui/PresetsCard.kt`, `ui/CategoryTitle.kt`, `ui/TwinDesk.kt`, `ui/TwinScreens.kt`, `ui/TwinShowcase.kt`, `ui/ShelfHome.kt`,
+`ui/StyleConsoleStack.kt`, `ui/StyleDiscStation.kt`, `ui/StyleRecordCrate.kt`, `ui/PocketRibbon.kt`, `ui/StyleTimeline.kt`,
+`ui/StyleSideMenu.kt`, `ui/StyleDashboard.kt`, `app/src/test/.../HomeLayouts315Test.kt`, `SUMMARY.md`.
+
+---
+
+## Update — 22 Oct 2026 (314): Smooth scrolling through 3D cartridges in the carousel
+
+**Status:** Branch `claude/laughing-franklin-xci4p0`, PR to `main` (not merged). Edited in `app/src/main/java/...` and
+`app/src/test/...` directly (this cloud checkout has no `src_copy/`): **pull the branch; don't robocopy an older
+`src_copy` over these files.** No Android SDK in the cloud workspace — GitHub Actions on the PR is the compile check;
+not checked on a handheld.
+
+- **What caused the lag (found before changing anything):**
+  1. *Off-screen pieces drawn every frame.* "To the edge" (on by default) builds ~15 games each side on the Thor
+     (`ceil(12 × screenWidthDp / 600)`), three times that in Box flow / Spine wall; only ~5–7 a side are on screen. Every
+     turned 3D cartridge (and 3D case) out of sight still drew all its offscreen pictures each frame.
+  2. *Each turned cartridge redrew 5–6 offscreen pictures per frame* (`solidPiece`: face, solid outline, sides, lit face,
+     smear, whole). Its sides draw the same layer up to ~130 times a frame (32 slices × 4 smear copies), and Android's
+     renderer re-walks and fully re-damages everything under a layer drawn more than once in a frame — so nothing was
+     ever reused, and the RenderThread walked the face's layers ~130 times per piece per frame.
+  3. *Main-thread stutter:* `CartShellArt` drew each ~640 px shell front (outline, label, text, glitter) synchronously in
+     composition as each cartridge came into the carousel, and again when its cover arrived (shared 24-entry cache).
+- **Fixes (no models, sizes, art, animations or settings changed):**
+  - `Carousel.kt`: `CarouselViewport` (the carousel's box on screen) + per-game `culled` (derivedStateOf, flips only when
+    a game crosses a line a quarter screen past the edge, slot width + height of slack). A culled game isn't drawn and its
+    turn / yaw / shade lambdas return the last drawn values, so nothing of it is re-recorded while away. It stays composed
+    (its art keeps loading ahead).
+  - `SolidPiece.kt`: `solidPiece(faceArt = PieceFace(bitmap, aspect))` — when the content is exactly one picture (a drawn
+    shell's front), the turned face, outline and sides are made once from the picture as leaf layers (no layer inside),
+    so drawing the sides many times never re-damages them; only smear + whole are drawn per frame, and nothing when the
+    turn hasn't changed. Without `faceArt` (pack / template / photo cartridges, Save Vault card) it is exactly as before.
+  - `CartShellArt` (`CartShells.kt`): applies the solid piece and motion itself (motion now round the solid piece, so a
+    hop lifts the turned piece whole); front from cache at once (`CartShells.cachedFrontFor`, `CustomCarts.authenticFront(peek)`),
+    else drawn on `Dispatchers.Default` keeping the previous front while the cover arrives; a place switching to another
+    game still draws synchronously (never shows the old game's piece). `PhysicalMedia.kt` passes `solid` / `motionSeed`.
+  - **"To the edge" showed only 2 games each side (user, Flip 2, every look).** Tucked behind spaced its far games
+    0.42 middle-game widths apart (update 129's bigger games × 0.62), against 0.27 with 5 each side — so on the Flip 2
+    only ~3 centres fitted (the third cut by the edge). `Carousel.EDGE_STEP` 0.4: as close as 5 each side's, games kept
+    at their bigger size; ~5 a side on the Flip 2, more on wider screens. The other views' spacing is unchanged.
+  - Off-screen check measured against the carousel's own box (cull only past a whole box width beyond either edge),
+    not window coordinates, which can go stale during a page slide.
+  - PR #5's Stacks-only cap of 5 games each side is not wanted (user) — not carried over; PR #5 closed.
+  - **Video previews (carried over from `fix/video-preview-background-priority-313`, the one part `main`'s update 313
+    lacked):** a background picture picked for the game itself (Artwork & details) is never covered by its gameplay clip
+    either — `allowsFullscreenGameplayVideo(style, pickedBackground)`, both the home and Hero carousel clips. Test added
+    to `BackgroundVideoPolicy313Test`. With this, every fix branch's wanted change is in this PR or already in `main`.
+  - `PieceFit.kt` (new): `pieceArtRect` (CartShellArt's exact pixel placement, so flat ↔ turned never shifts) and
+    `carouselOffScreen`.
+- **Tests:** `app/src/test/.../CarouselPerf314Test.kt` (11 tests: placement rounding for wide / tall / mismatched
+  pictures, on / near / far off screen, unknown sizes, "To the edge" shows at least as many as 5 each side) — passed locally with Kotlin 2.2.10 + JUnit 4.13.2. The rest
+  needs the PR's CI (assembleDebug + unit tests). **Not tested:** frame times, memory and visuals on AYN Thor / Retroid
+  Pocket Classic (no device access) — see the PR for the `dumpsys gfxinfo` steps.
+
+**Changed:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/CustomCarts.kt`, `ui/PhysicalMedia.kt`,
+`ui/PieceFit.kt` (new), `ui/BackgroundVideoPolicy.kt`, `ui/LauncherScreen.kt`, `BackgroundVideoPolicy313Test.kt`, `app/src/test/java/com/shelf/launcher/ui/CarouselPerf314Test.kt` (new), `SUMMARY.md`.
+
+---
+
 ## Update — 22 Oct 2026 (313): Respect selected home background over gameplay previews
 
 **Status:** Changes saved on branch `fix/background-video-respect-selection-313`, [draft PR #4](https://github.com/dzepdzep/Voltcap/pull/4); not yet merged or published. The existing v0.6.32 release is untouched. Code level review complete, CI and handheld checks pending.

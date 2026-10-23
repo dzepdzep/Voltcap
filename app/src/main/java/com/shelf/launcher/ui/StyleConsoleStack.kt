@@ -482,7 +482,8 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
         val hi = if (loop) reachHi + shown + 3 else (reachHi + shown + 3).coerceAtMost(count - 1)
         // Caption over the row: the category and how many games it has (where there's room above the big card).
         val captionY = centreY - bigH / 2 - 26.dp
-        if (captionY >= 0.dp) Row(
+        // (Update 315: off for this layout — Categories tile / Settings — no caption.)
+        if (captionY >= 0.dp && CategoryTitle.captionOn(c.state.appearance)) Row(
             Modifier.offset(x = 8.dp, y = captionY).graphicsLayer { alpha = out.value },
             verticalAlignment = Alignment.CenterVertically
         ) {

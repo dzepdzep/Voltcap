@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.categoryBarHere
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
@@ -312,7 +313,7 @@ private fun showPicture(c: StyleCtx, g: Game): String? = c.backdrop(g) ?: c.wide
 private fun androidx.compose.animation.AnimatedVisibilityScope.ShowPicture(c: StyleCtx, g: Game?, wPx: Int, hPx: Int, framed: Boolean) {
     val context = LocalContext.current
     val titles = LocalTitleOptions.current
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().clipToBounds()) {
         if (g == null) {
             Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.align(Alignment.Center))
             return@Box
@@ -320,7 +321,7 @@ private fun androidx.compose.animation.AnimatedVisibilityScope.ShowPicture(c: St
         val url = showPicture(c, g)
         if (url != null) {
             val req = remember(url, wPx, hPx) { heroRequest(context, url, wPx, hPx, g.stableKey) }
-            AsyncImage(req, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+            AsyncImage(req, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().slowZoom(g.stableKey).pixelArtwork())
         } else {
             StyleArt(c, g, Modifier.fillMaxSize(), wide = true, corner = 0.dp)
         }
@@ -371,7 +372,7 @@ internal fun TwinShowcaseBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
             // The category and where you are in it. (Update 308: as Settings › Categories › Category name / the R1
             // Categories tile say — every category as pills gliding to the one you're in, just the current one, or
             // none; the count stays.)
-            val bar = c.state.appearance.categoryBar
+            val bar = c.state.appearance.categoryBarHere
             if (bar != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
             Row(
                 Modifier.fillMaxWidth().height(headH).padding(horizontal = if (compact) 10.dp else 16.dp),

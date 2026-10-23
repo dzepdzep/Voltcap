@@ -118,7 +118,11 @@ internal fun tileRowMetrics(size: CardSize): TileRowMetrics {
     val screen = screenSizeDp()
     // Never so big that fewer than four tiles fit across.
     val scale = LocalTileScale.current
-    val start = maxOf(24.dp, screen.width * 0.065f)
+    // (Update 317an, Toni: "move them completely to the edge of the screen": the row starts at the screen's left edge —
+    // just the focus ring's room — instead of 6.5 % in.)
+    // (Update 317as, Toni: "with the coloured frame the frame seems cut off": the frame and its glow reach ~12 dp out from
+    // the tile, a little more with the lift — 22 dp in now, so all of it shows.)
+    val start = 22.dp
     val byHeight = screen.height * tileFraction(size) * scale
     val spacingFor = { t: Dp -> maxOf(10.dp, t * 0.075f) }
     // At the default size at least ~4 tiles fit across; bigger sizes may show fewer (never under ~1.6),
@@ -253,7 +257,15 @@ internal fun TileHomeRow(
     // tucked behind it and optionally turned away (Carousel); the name sits centred over it.
     val carousel = com.shelf.launcher.data.HomeLayout.TILES.name in com.shelf.launcher.data.Features.carouselLayouts.state.value
     @Suppress("NAME_SHADOWING") val focusAnchor = if (carousel) com.shelf.launcher.data.TileFocus.CENTER else focusAnchor
-    val m = tileRowMetrics(cardSize)
+    val m0 = tileRowMetrics(cardSize)
+    // (Update 317as, Toni: "with Endless the games still don't show at the literal edge of the screen on the left": the row
+    // started right at the edge, so the game before was all off the screen. With Endless (moving to the edges) the row
+    // starts 30 % of a tile in: the game before shows cut by the screen's left edge, as the next ones are on the right.)
+    val screenW = screenSizeDp().width
+    val m = if (looping && focusAnchor == com.shelf.launcher.data.TileFocus.EDGES) {
+        val start = m0.tile * 0.3f + m0.spacing
+        TileRowMetrics(m0.tile, m0.spacing, start, ((screenW - start - m0.start + m0.spacing) / m0.stride).toInt().coerceAtLeast(1))
+    } else m0
     val strideDpValue = m.stride.value
     if (games.isNotEmpty()) {
         val n = games.size
@@ -492,11 +504,20 @@ internal fun TileHomeRow(
                     com.shelf.launcher.data.TileFocus.LEFT -> 0
                     com.shelf.launcher.data.TileFocus.RIGHT -> n - 1
                     com.shelf.launcher.data.TileFocus.CENTER -> (n - 1) / 2
-                    com.shelf.launcher.data.TileFocus.EDGES -> vFocus - window[0]
+                    // (Update 317al: one more before the row's first, so a game shows past the left edge too when there are
+                    // more games than fit — the one leaving slides off instead of vanishing.)
+                    com.shelf.launcher.data.TileFocus.EDGES -> vFocus - window[0] + (if (n > m.visible) 1 else 0)
                 }
                 // (Update 246, #60: the places picked before the loop — a `continue` in it made Compose give each pass its
                 // own group, so a step that moved every game one place along threw them all away and built them again.)
-                for (i in (from..to).filter { i -> !(looping && !drawnOnce(i - vFocus, n, loopBefore)) }) {
+                // (Update 317ak, Toni: "the games don't go to the end, and the far left one just disappears": each game once
+                // cut the row short and dropped the game leaving on the left at once. Only needed when the row holds nearly
+                // all the games — with more than fit (plus the one sliding off each side) no game shows twice on the screen.)
+                // (Update 317aq, Toni: with Endless on the row still stopped short of the right edge — with only a few more games
+                // than fit, once each couldn't fill both edges. Now once each only when the games don't fill the row at all;
+                // otherwise the slivers at the two edges may show the same game's two ends of the loop.)
+                val onceOnly = looping && n <= m.visible
+                for (i in (from..to).filter { i -> !(onceOnly && !drawnOnce(i - vFocus, n, loopBefore)) }) {
                     val game = games[if (looping) i.mod(n) else i]
                     key(game.stableKey, if (looping) i.floorDiv(n) else 0) {
                         // Update 203: a cartridge turns as a solid piece (its thickness showing) — the tile hands it the
@@ -765,15 +786,32 @@ private fun HomeTile(
         // (Update 129: placed by the R1 Achievements tile; the corner one keeps the top right.)
         // Update 151: the corner picked (Settings / the R1 Achievements tile), not always the top right.
         val pillAt = achChipAlign(look.trophyCorner)
+        // (Update 317am, Toni: the badges lined up, the same size: the achievement count and the state mark take the console
+        // badge's height and its distance from the tile's edge — ConsoleBadge sizes its pill from the tile's width.)
+        val chipH = (tile * 0.13f).coerceIn(11.dp, 20.dp)
+        val chipPad = chipH * 0.3f
+        // (Update 317ao: the console badge's corner — picked, else the top right when the count has the top left — and, when
+        // the two share a row, the count kept clear of it: it shrinks its text, then ends in "…", never running under it.)
+        // (Update 317ap, Toni: "the count is written with …": a tile is too narrow for the count and the logo side by side,
+        // so Auto puts the badge in the bottom right when the count is along the top; picked into the same row, the count
+        // still keeps clear of it.)
+        val badgeAt = badgeCornerOr(
+            if (pillAt == Alignment.TopStart || pillAt == Alignment.TopEnd || pillAt == Alignment.TopCenter) Alignment.BottomEnd else Alignment.TopStart
+        )
+        val topRow = { a: Alignment? -> a == Alignment.TopStart || a == Alignment.TopEnd || a == Alignment.TopCenter }
+        val sharesRow = com.shelf.launcher.data.Features.consoleBadges.state.value && pillAt != null && topRow(pillAt) == topRow(badgeAt)
+        val pillMax = if (sharesRow) (tile - chipH * 3.4f - chipPad * 4).coerceAtLeast(chipH * 2.5f) else tile
         if (possible != null && possible > 0 && look.achievementsOnCards && titles.coverAchievements && pillAt != null) {
             val earned = progress.NumAchieved ?: 0
             Row(
                 Modifier
                     .align(pillAt)
-                    .padding(6.dp)
+                    .padding(chipPad)
+                    .height(chipH)
+                    .widthIn(max = pillMax)
                     .clip(RoundedCornerShape(50))
                     .background(Color.Black.copy(alpha = 0.62f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                    .padding(horizontal = chipH * 0.4f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Filled.EmojiEvents, null, tint = accent, modifier = Modifier.size(10.dp))
@@ -781,16 +819,26 @@ private fun HomeTile(
                 ProgressTick(height = 8.dp, gap = 3.dp)
                 Text(
                     "$earned/$possible",
-                    color = Color.White, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false
+                    color = Color.White, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
+                    // (Update 317an, Toni: the count sat low in its bubble — the font's own top / bottom room. Trimmed, centred.)
+                    style = androidx.compose.ui.text.TextStyle(
+                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                        lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                            androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                        )
+                    )
                 )
             }
         }
         // Game state mark (Settings › Library › Game states), bottom-left unless the no-art name sits there.
         if (request != null || game.sourceType == SourceType.APP) {
             GameStates.byKey[game.stableKey]?.let { gs ->
-                GameStateTag(gs, Modifier.align(Alignment.BottomStart).padding(6.dp), compact = !focused)
+                GameStateTag(gs, Modifier.align(Alignment.BottomStart).padding(chipPad).height(chipH), compact = !focused)
             }
         }
+        // (Update 317aj, Toni: the console badges — R1 Console badges — on Tile home's tiles too, as on the Voltcap row:
+        // the top left, or the top right when the achievement count has the top left. Not on a case printing its console.)
+        ConsoleBadge(game.platform, badgeAt, game.packageName, onCase = box3d != null)
     }
 }
 

@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.categoryBarHere
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -686,10 +687,10 @@ private fun DeskBar(c: StyleCtx, h: Dp, modifier: Modifier) {
         DeskRound(Icons.Filled.Tune, names[0], StyleNav.on(StyleNav.Zone.BAR, 0), round) { c.actions.quickMenu() }
         Spacer(Modifier.width(6.dp))
         DeskRound(Icons.Filled.Settings, names[1], StyleNav.on(StyleNav.Zone.BAR, 1), round) { c.actions.settings() }
-        if (c.state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
+        if (c.state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
         Text(
             if (inBar) names.getOrElse(StyleNav.index) { "" }
-            else if (c.state.appearance.categoryBar == com.shelf.launcher.data.CategoryBar.OFF) ""
+            else if (c.state.appearance.categoryBarHere == com.shelf.launcher.data.CategoryBar.OFF) ""
             else c.categoryLabel,
             color = if (inBar) DeskInk else DeskMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
             maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.weight(1f).padding(horizontal = 6.dp)

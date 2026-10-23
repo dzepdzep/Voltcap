@@ -210,7 +210,7 @@ private fun HeroPicture(c: StyleCtx, g: Game?, compact: Boolean, showStatus: Boo
     val fill = if (g != null) placeholderBrush(g.hue) else SolidColor(themeDark(Color(0xFF1D222B)))
     Box(modifier.clip(shape).background(fill).tapOnly { open() }) {
         val url = g?.let { c.backdrop(it) ?: c.wide(it) }
-        HeldImage(url, Modifier.fillMaxSize(), imageModifier = Modifier.pixelArtwork())
+        HeldImage(url, Modifier.fillMaxSize().slowZoom(g?.stableKey), imageModifier = Modifier.pixelArtwork())
         // A soft shade along the bottom, so the logo reads on any picture.
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.6f))))
         if (g != null) AnimatedContent(

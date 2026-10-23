@@ -263,7 +263,7 @@ private fun DashHero(c: StyleCtx, g: com.shelf.launcher.data.Game, panel: Featur
                 .pointerInput(g.stableKey) { detectTapGestures { open() } }
         ) {
             // Held (update 104): the next game's picture fades in over the last one, no black gap.
-            HeldImage(c.backdrop(g) ?: c.wide(g), Modifier.fillMaxSize(), imageModifier = Modifier.pixelArtwork())
+            HeldImage(c.backdrop(g) ?: c.wide(g), Modifier.fillMaxSize().slowZoom(g.stableKey), imageModifier = Modifier.pixelArtwork())
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.78f), 0.6f to Color.Transparent)))
             // Update 136: and a shade along the bottom, so the name's end, the button and "Last played" on the right
             // still read over a bright picture.
@@ -324,8 +324,10 @@ private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Sh
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
     Column(modifier.stylePanel(panel, op, shape).padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 8.dp)) {
-        if (custom.isBlank()) CategoryTitle.Native() // (Update 212: the layout's own category title.)
-        PanelLabel(custom.ifBlank { c.categoryLabel }, ink)
+        // (Update 315: off for this layout — Categories tile / Settings — no caption.)
+        val catOn = custom.isNotBlank() || CategoryTitle.captionOn(c.state.appearance)
+        if (custom.isBlank() && catOn) CategoryTitle.Native() // (Update 212: the layout's own category title.)
+        if (catOn) PanelLabel(custom.ifBlank { c.categoryLabel }, ink)
         Spacer(Modifier.height(6.dp))
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
             // Room round the cards for the glow / electric frame (it spreads ~14 dp).

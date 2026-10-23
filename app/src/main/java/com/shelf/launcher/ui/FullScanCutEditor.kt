@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +55,8 @@ internal fun FullScanCutEditor(url: String, platform: String?, onClose: () -> Un
     var l by remember(url) { mutableFloatStateOf(saved?.first ?: 0.47f) }
     var r by remember(url) { mutableFloatStateOf(saved?.second ?: 0.53f) }
     var edge by remember { mutableIntStateOf(0) } // 0 = left edge, 1 = right edge
+    // (Update 317, Toni: "add a zoom when adjusting the edges so it's easier to see": 1×, 3× or 6×, round the edge picked.)
+    var zoom by remember { mutableFloatStateOf(1f) }
     // Update 305: the printer's bleed / border round the scan (a share of its height), trimmed off its outer edges.
     var bleed by remember(url) { mutableFloatStateOf(FullScanCuts.bleedOf(url)) }
     LaunchedEffect(url) {
@@ -84,8 +87,14 @@ internal fun FullScanCutEditor(url: String, platform: String?, onClose: () -> Un
                     Modifier.heightIn(max = 220.dp).fillMaxWidth().aspectRatio(b.width.toFloat() / b.height, matchHeightConstraintsFirst = true)
                         .clip(RoundedCornerShape(8.dp)).background(Color.Black)
                 ) {
-                    Image(img, contentDescription = "Full case scan", contentScale = ContentScale.Fit, modifier = Modifier.matchParentSize())
                     val accent = ShelfTheme.accent
+                    // (Zoomed round the edge picked — it stays where it is, the scan grows round it; dragging moves the edge
+                    // as finely as the zoom shows it.)
+                    Box(Modifier.matchParentSize().graphicsLayer {
+                        scaleX = zoom; scaleY = zoom
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (edge == 0) l else r, 0.5f)
+                    }) {
+                    Image(img, contentDescription = "Full case scan", contentScale = ContentScale.Fit, modifier = Modifier.matchParentSize())
                     Canvas(
                         Modifier.matchParentSize().pointerInput(url) {
                             // (Sideways only: an up / down swipe still scrolls the dialog.)
@@ -99,13 +108,15 @@ internal fun FullScanCutEditor(url: String, platform: String?, onClose: () -> Un
                         // The back and the front dimmed a little, the spine between the lines clear.
                         drawRect(Color.Black.copy(alpha = 0.18f), Offset(0f, 0f), Size(l * w, h))
                         drawRect(Color.Black.copy(alpha = 0.18f), Offset(r * w, 0f), Size(w - r * w, h))
-                        drawLine(if (edge == 0) accent else Color.White, Offset(l * w, 0f), Offset(l * w, h), strokeWidth = if (edge == 0) 5f else 3f)
-                        drawLine(if (edge == 1) accent else Color.White, Offset(r * w, 0f), Offset(r * w, h), strokeWidth = if (edge == 1) 5f else 3f)
+                        // (Thin as ever when zoomed in.)
+                        drawLine(if (edge == 0) accent else Color.White, Offset(l * w, 0f), Offset(l * w, h), strokeWidth = (if (edge == 0) 5f else 3f) / zoom)
+                        drawLine(if (edge == 1) accent else Color.White, Offset(r * w, 0f), Offset(r * w, h), strokeWidth = (if (edge == 1) 5f else 3f) / zoom)
                         // (Update 305: the bleed trimmed off, shown as a frame inside the scan's edges.)
                         if (bleed > 0f) {
                             val bp = bleed * h
-                            drawRect(Color(0xFFFFC107), Offset(bp, bp), Size(w - 2 * bp, h - 2 * bp), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+                            drawRect(Color(0xFFFFC107), Offset(bp, bp), Size(w - 2 * bp, h - 2 * bp), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f / zoom))
                         }
+                    }
                     }
                     Text("Back", color = Color.White, fontSize = 11.sp, modifier = Modifier.align(Alignment.TopStart).background(Color.Black.copy(alpha = 0.5f)))
                     Text("Front", color = Color.White, fontSize = 11.sp, modifier = Modifier.align(Alignment.TopEnd).background(Color.Black.copy(alpha = 0.5f)))
@@ -119,6 +130,11 @@ internal fun FullScanCutEditor(url: String, platform: String?, onClose: () -> Un
                     Chip("▶", accent = false) { nudge(0.002f) }
                     Chip("◀◀", accent = false) { nudge(-0.01f) }
                     Chip("▶▶", accent = false) { nudge(0.01f) }
+                }
+                ChipFlow {
+                    Chip("Zoom 1×", accent = zoom == 1f) { zoom = 1f }
+                    Chip("Zoom 3×", accent = zoom == 3f) { zoom = 3f }
+                    Chip("Zoom 6×", accent = zoom == 6f) { zoom = 6f }
                 }
                 Spacer(Modifier.height(6.dp))
                 // Update 305: a cover printed with a bleed (or a white border) round it — The Cover Project's wraps often

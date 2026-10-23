@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.dockHere
 import kotlinx.coroutines.flow.first
 
 import androidx.compose.ui.draw.drawWithContent
@@ -1162,10 +1163,12 @@ internal fun BackdropArt(
                     Brush.verticalGradient(
                         // Lighter than it used to be, so the art reaches
                         // all the way down instead of fading out at the row.
-                        0.0f to ShelfTheme.background.copy(alpha = 0.5f),
+                        // (Update 317aq, Toni: a white haze at the top and bottom with a light theme — it took the theme's
+                        // background colour. Always a dark shade now: the status bar's text is white.)
+                        0.0f to Color.Black.copy(alpha = 0.45f),
                         0.18f to Color.Transparent,
                         0.6f to Color.Transparent,
-                        1.0f to ShelfTheme.background.copy(alpha = 0.5f)
+                        1.0f to Color.Black.copy(alpha = 0.45f)
                     )
                 )
         )
@@ -1426,7 +1429,7 @@ private fun BackdropArtLayer(
             com.shelf.launcher.data.Features.spineLook.state.value
             val fitNow = com.shelf.launcher.data.HeroFitPlan.of(layoutNow, state.appearance.heroFit, state.appearance.cardArtType)
             val whole = !blurred && rowFilled && fitNow == com.shelf.launcher.data.HeroFit.WHOLE &&
-                (layoutNow != com.shelf.launcher.data.HomeLayout.CLASSIC || state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM)
+                (layoutNow != com.shelf.launcher.data.HomeLayout.CLASSIC || state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM)
             // Decoded at screen size (heroes are ~3840 px wide) and, when
             // blurred, at half of it — the blur hides the detail. Whole
             // picture uses ONE request for both copies (sharp + blurred
@@ -1519,7 +1522,7 @@ private fun BackdropArtLayer(
                 // The sharp picture fills the space above the row exactly,
                 // so its bottom edge lines up with the top of the cards.
                 val density = androidx.compose.ui.platform.LocalDensity.current
-                val above = if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM) {
+                val above = if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM) {
                     with(density) { rowTopPx.toDp() }
                 } else 0.dp
                 AsyncImage(

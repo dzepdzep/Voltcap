@@ -68,7 +68,9 @@ data class GameArt(
     val logoUrl: String? = null,
     /** SteamGridDB's first animated hero, kept beside the still one for the "Animated hero → Hero →
      * Screenshot → Cover" artwork priority ([ArtPick]). Null when the game has none (or older caches). */
-    val animatedHeroUrl: String? = null
+    val animatedHeroUrl: String? = null,
+    /** Update 317: the first still cover when [gridUrl] is an animated one — the cartridges and discs wear it (StillCovers). */
+    val stillGridUrl: String? = null
 )
 
 val sampleLibrary = listOf(

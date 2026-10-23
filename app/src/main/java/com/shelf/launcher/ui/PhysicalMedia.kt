@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import coil.compose.AsyncImage
 import com.shelf.launcher.R
 import com.shelf.launcher.data.Features
+import androidx.compose.ui.graphics.asImageBitmap
 import com.shelf.launcher.data.CardArtType as Art
 
 /*
@@ -599,6 +600,9 @@ internal fun PhysicalMedia(
     /** Update 168: the disc alone even with "Disc in its case" on (the carousels' 3D case draws the case itself). */
     noCase: Boolean = false
 ) {
+    // (Update 317, Toni: an animated cover is never a cartridge's / disc's label — its first still cover from the scrape.)
+    @Suppress("NAME_SHADOWING") val label = com.shelf.launcher.data.StillCovers.swap(label)
+    @Suppress("NAME_SHADOWING") val caseCover = com.shelf.launcher.data.StillCovers.swap(caseCover)
     // Update 283 (Toni: "on some the disc is shown on the label"): Voltcap's plain cartridge is only ever handed to a game
     // with no cartridge of its own — a disc game in "All cartridges" (lists mixing consoles) or Cartridges only — so a
     // label scan there is the round disc label. Its cover instead, as on the other cartridge shells (update 280).
@@ -617,10 +621,11 @@ internal fun PhysicalMedia(
         val console = platform.substringAfter('|', "")
         val ownDisc = MediaShell.of(console)?.let { it.disc || it == MediaShell.UMD } == true
         val useScan = labelIsScan && label != null && !(ownDisc && caseCover != null)
+        // (Update 314: the solid build and the motion applied inside, so the turned shell is drawn from its front picture.)
         CartShellArt(
-            platform, if (useScan) label else caseCover ?: label,
-            modifier.solidPiece(rememberShellSolid(platform)).mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode()),
-            title = title, labelIsScan = useScan
+            platform, if (useScan) label else caseCover ?: label, modifier,
+            title = title, labelIsScan = useScan,
+            solid = rememberShellSolid(platform), motionSeed = (label?.hashCode() ?: 0) xor platform.hashCode()
         )
         return
     }
@@ -633,12 +638,14 @@ internal fun PhysicalMedia(
         val packShell = discShellFor(platform.removePrefix(CUSTOM_CART))
         // (Update 228, #36: its sides and back in the pack picture's own plastic, not grey — rememberCustomPieceTone.)
         val packTone = rememberCustomPieceTone(platform)
+        // (Update 316: the solid build and the motion applied inside — PackCart — so your pack's shapes drawn as their real
+        // cartridge turn from their finished front picture.)
         CustomCart(
-            platform.removePrefix(CUSTOM_CART), caseCover ?: label,
+            platform.removePrefix(CUSTOM_CART), caseCover ?: label, modifier,
             // (Update 239, #33: at the shape it's drawn in — CustomCarts.aspectFor, an app's Switch-card shape too.)
             // (Update 241, #45: turned round, its back carries its console's logo moulded into the plastic — CustomCartBacks.)
-            modifier.solidPiece(rememberCustomCartSolid(platform, packShell?.aspect ?: CustomCarts.aspectFor(platform.removePrefix(CUSTOM_CART)), packTone))
-                .mediaMotion(false, (label?.hashCode() ?: 0) xor platform.hashCode())
+            solid = rememberCustomCartSolid(platform, packShell?.aspect ?: CustomCarts.aspectFor(platform.removePrefix(CUSTOM_CART)), packTone),
+            motionSeed = (label?.hashCode() ?: 0) xor platform.hashCode()
         )
         return
     }
@@ -661,8 +668,18 @@ internal fun PhysicalMedia(
         else -> shell.disc
     }
     // (Update 203: a cartridge solid wherever it's turned, at its template's / drawn shell's own shape; a disc turns flat.)
-    val modifier = (if (discLook) modifier.followTurn() else modifier.solidPiece(cartSolid(shell, platform, tpl?.cart?.aspect ?: shell.aspect)))
-        .mediaMotion(discLook, (label?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0))
+    // (Update 317: a cartridge's hop round its solid piece, so the piece's picture of its front — PieceShot — never holds
+    // it mid-hop; the turned piece hops whole, as the drawn shells do.)
+    val motionSeed = (label?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0)
+    // (Update 317: a template cartridge's front made as one picture — the turned piece is drawn from it.)
+    val tplFace = if (!discLook && tpl != null) rememberTemplateCartFront(tpl, if (labelIsScan) label else null, if (labelIsScan) null else label) else null
+    val modifier = if (discLook) modifier.followTurn().mediaMotion(true, motionSeed)
+        else modifier.mediaMotion(false, motionSeed).solidPiece(
+            cartSolid(shell, platform, tpl?.cart?.aspect ?: shell.aspect),
+            faceArt = tplFace,
+            // (Update 317: its picture kept for the same cartridge coming back — PieceShots.)
+            shotKey = "media|$shell|$platform|${tpl?.hashCode()}|$label|$labelIsScan|$caseCover|$title|${Features.bigGcDiscs.state.value}"
+        )
     if (tpl != null && TemplateMedia(
             tpl, labelScan = if (labelIsScan) label else null, cover = if (labelIsScan) null else label, modifier = modifier,
             smallDisc = shell == MediaShell.MINI_DISC && !Features.bigGcDiscs.state.value
@@ -902,13 +919,25 @@ internal fun RealMediaPicture(
         if (t != null) { PhotoTones.put(model, t); tone = t }
     }
     val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) }, tone)
-    Box((if (round) modifier.followTurn() else modifier.solidPiece(solid)).mediaMotion(round, 0), contentAlignment = Alignment.Center) {
+    // (Update 317: a cartridge photo's hop round its solid piece — see PhysicalMedia.)
+    // (Update 317: the photo, fitted in the middle as the AsyncImage below draws it, is the piece's front — no picture of
+    // the screen taken for it.)
+    // (Update 317 (2nd go): from the photo's still picture in the shared cache — the same object every time it's asked for.
+    // The first go took the drawable the picture handed back each time it loaded, a new one each time, and the piece rebuilt
+    // itself over and over on the Flip 2.)
+    val photoBmp = if (!round) rememberSoftBitmap(model, 480) else null
+    val photoFace = androidx.compose.runtime.remember(photoBmp) {
+        photoBmp?.takeIf { it.width > 0 && it.height > 0 }?.let { b -> PieceFace(b.asImageBitmap(), b.width.toFloat() / b.height) }
+    }
+    Box(if (round) modifier.followTurn().mediaMotion(true, 0) else modifier.mediaMotion(false, 0).solidPiece(solid, faceArt = photoFace, shotKey = "photo|$model|$platform|$gameKey"), contentAlignment = Alignment.Center) {
         // (Update 207: a disc photo has its empty margins trimmed and fills its circle — with a margin round it, the disc's
         // drawn rim and edge in the game window stood out round the smaller photo as a second layer behind the disc.)
         val shared = mediaArtModel(model)
         val ctx = androidx.compose.ui.platform.LocalContext.current
         val roundModel = androidx.compose.runtime.remember(model, round) {
-            if (round && model is String) coil.request.ImageRequest.Builder(ctx).data(model).transformations(TrimToOpaque).build() else null
+            if (round && model is String) coil.request.ImageRequest.Builder(ctx).data(model).transformations(TrimToOpaque)
+                // (Update 317: always still on a disc — see mediaArtModel.)
+                .setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true, memoryCacheKey = null).build() else null
         }
         // (Update 285, Toni: "disc still showing like this": in a slot taller than wide — the Voltcap row, Continue playing —
         // the disc photo filled the slot and was cut by a circle stretched to it: a tall oval, its foot cut off. A disc photo

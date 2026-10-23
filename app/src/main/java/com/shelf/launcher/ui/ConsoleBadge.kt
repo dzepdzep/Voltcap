@@ -77,13 +77,23 @@ internal fun consoleColor(platform: String): Color = when (platform) {
  * The console badge for [platform], in the top left corner of the tile it's drawn over (put it last in the tile's
  * Box). Nothing when Console badges is off.
  */
+internal fun badgeCornerOr(auto: Alignment): Alignment = when (Features.consoleBadgeCorner.state.value) {
+    Features.BadgeCorner.AUTO -> auto
+    Features.BadgeCorner.TOP_LEFT -> Alignment.TopStart
+    Features.BadgeCorner.TOP_RIGHT -> Alignment.TopEnd
+    Features.BadgeCorner.BOTTOM_LEFT -> Alignment.BottomStart
+    Features.BadgeCorner.BOTTOM_RIGHT -> Alignment.BottomEnd
+}
+
 @Composable
 internal fun BoxScope.ConsoleBadge(
-    platform: String, corner: Alignment = Alignment.TopStart, packageName: String? = null,
+    platform: String, cornerAuto: Alignment = Alignment.TopStart, packageName: String? = null,
     /** Update 202: the tile shows the game's case (its printed band carries the console's logo already). */
     onCase: Boolean = false
 ) {
     if (!Features.consoleBadges.state.value || LocalArtMirror.current) return
+    // (Update 317ao: the corner picked in Game look › Console badges › Where, else the layout's own.)
+    val corner = badgeCornerOr(cornerAuto)
     // Update 202: not on a case that prints its console's band (the Portal showed "NINTENDO GAMECUBE" twice on every
     // GameCube case — the badge's pill over the case's own band; the same on PS2, Switch, N64, Android…). Only the
     // PlayStation (PS1) case, drawn without its band, keeps the badge.

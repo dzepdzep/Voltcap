@@ -328,7 +328,12 @@ internal fun looksLikeBoxFront(frontAspect: Float, artAspect: Float?): Boolean {
     val a = artAspect ?: return false
     if (a <= 0f || frontAspect <= 0f) return false
     if (kotlin.math.abs(a / SGDB_COVER - 1f) < 0.02f) return false
-    return kotlin.math.abs(a / frontAspect - 1f) < 0.045f
+    // (Update 317, Toni: N64 fronts "bigger than the box" with the Covers look: an N64 box-front scan a little off the
+    // box's shape (5–10 %, its border or the scan's crop) counted as a plain cover and was cut into the template's window,
+    // zoomed and its edges lost. A landscape box's front is never mistaken for a cover — covers stand upright — so it is
+    // let off further.)
+    val slack = if (frontAspect > 1.15f && a > 1.15f) 0.15f else 0.045f
+    return kotlin.math.abs(a / frontAspect - 1f) < slack
 }
 
 /**

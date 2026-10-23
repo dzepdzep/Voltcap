@@ -43,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -306,8 +307,8 @@ private fun LibraryPanelInfo(c: StyleCtx, g: Game, compact: Boolean, roomy: Bool
     Box(Modifier.fillMaxSize()) {
         // The game's backdrop, faint, fading out down the top of the panel (a PC library's header).
         c.backdrop(g)?.let { url ->
-            Box(Modifier.fillMaxWidth().fillMaxHeight(0.55f)) {
-                AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.32f })
+            Box(Modifier.fillMaxWidth().fillMaxHeight(0.55f).then(Modifier.clipToBounds())) {
+                AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().slowZoom(g.stableKey).graphicsLayer { alpha = 0.32f })
                 // (Update 151: fades into the panel's own dark, which now takes the theme's colour — see stylePanel.)
                 Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, themeDark(Color(0xFF0A0E15))))))
             }

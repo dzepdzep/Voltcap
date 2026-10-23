@@ -20,7 +20,18 @@ import coil.transform.Transformation
  */
 
 /** Which part of the full box scan. */
-internal enum class BoxPart { SPINE, FRONT, BACK, SPINE3D }
+internal enum class BoxPart {
+    SPINE, FRONT, BACK, SPINE3D,
+    /**
+     * Update 317 (Toni: The Cover Project's N64 wrap — back | the box's long top edge | front, lying on its side): the strip
+     * between the back and the front of such a wrap is the box's top, turned the right way up. Only from a scan laid out
+     * that way (no wider than [WRAP_MAX] for its height); else nothing.
+     */
+    TOP
+}
+
+/** Update 317: a wrap lying on its side (an N64 / SNES box's: about 1.6 for its height) is never wider than this. */
+internal const val WRAP_MAX = 2.2f
 
 /**
  * (Update 240, #27/#58: a front scan this much wider than its real case's front (CaseCatalog / the cover template) is the
@@ -64,7 +75,7 @@ internal object BoxTexture {
         if (!s.startsWith(PREFIX)) return null
         val bits = s.removePrefix(PREFIX).split(':', limit = 3)
         if (bits.size != 3 || bits[2].isBlank()) return null
-        val part = when (bits[0].substringBefore('@')) { "spine" -> BoxPart.SPINE; "front" -> BoxPart.FRONT; "back" -> BoxPart.BACK; "spine3d" -> BoxPart.SPINE3D; else -> return null }
+        val part = when (bits[0].substringBefore('@')) { "spine" -> BoxPart.SPINE; "front" -> BoxPart.FRONT; "back" -> BoxPart.BACK; "spine3d" -> BoxPart.SPINE3D; "top" -> BoxPart.TOP; else -> return null }
         return Triple(part, bits[1].ifBlank { null }, bits[2])
     }
 
@@ -76,8 +87,31 @@ internal object BoxTexture {
      * the template pack is used). Update 123: the strips cut out of other scans (often cut in the wrong place) only with
      * Game look › Spines cut from box scans on.
      */
+    /**
+     * Update 317 (Toni: "adjusting the cuts didn't do anything for the 3D models"): the spine cut from the full case scan
+     * at the cut you set yourself (Artwork & details › Full case scan › Adjust the cuts…), when you've set one — it wins
+     * over the scraped spine scan, on the shelf and the 3D cases. Null without your own cut. Reads [FullScanCuts.version].
+     */
+    fun userSpine(physical: List<Pair<String, String>>?, platform: String?): String? {
+        com.shelf.launcher.data.FullScanCuts.version.intValue
+        val full = fullScan(physical) ?: return null
+        if (com.shelf.launcher.data.FullScanCuts.of(full) == null) return null
+        return model(full, BoxPart.SPINE, platform)
+    }
+
+    /**
+     * Update 317: the box's top cut from a full case scan lying on its side (BoxPart.TOP) — for a cardboard box with a
+     * landscape front (N64, SNES), when the game has no picture of its top. Null without a full scan.
+     */
+    fun wrapTop(physical: List<Pair<String, String>>?, platform: String?): String? {
+        com.shelf.launcher.data.FullScanCuts.version.intValue
+        return fullScan(physical)?.let { model(it, BoxPart.TOP, platform) }
+    }
+
     fun spine(physical: List<Pair<String, String>>?, platform: String?): String? =
-        physical?.firstOrNull { it.first == "Spine" }?.second
+        // (Update 317: your own cut first — userSpine.)
+        userSpine(physical, platform)
+            ?: physical?.firstOrNull { it.first == "Spine" }?.second
             ?: if (!com.shelf.launcher.data.Features.spineCuts.state.value) null
             else fullScan(physical)?.let { model(it, BoxPart.SPINE, platform) }
                 // Update 108: last of all, the spine face of ScreenScraper's 3D box picture (the side you see on the left).
@@ -92,7 +126,10 @@ internal object BoxTexture {
      */
     fun realSpine(physical: List<Pair<String, String>>?, platform: String?): String? {
         if (LookStyles.spineForAll()) return null
-        return physical?.firstOrNull { it.first == "Spine" }?.second
+        // (Update 317, Toni: "correcting the cut still doesn't fix the 3D model" — the game window's case and the other
+        // layouts' boxes take their spine from here, which never looked at your own cut.)
+        return userSpine(physical, platform)
+            ?: physical?.firstOrNull { it.first == "Spine" }?.second
             ?: if (com.shelf.launcher.data.Features.originalCases.state.value) spine(physical, platform) else null
     }
 
@@ -317,6 +354,10 @@ internal class BoxCrop(private val part: BoxPart, private val platform: String?,
         val bl = (bleed * h).toInt().coerceIn(0, h / 4)
         when (part) {
             BoxPart.SPINE -> android.graphics.Rect(l, bl, r, h - bl)
+            BoxPart.TOP -> {
+                if (w.toFloat() / h > WRAP_MAX) throw IllegalStateException("Not a wrap lying on its side")
+                android.graphics.Rect(l, bl, r, h - bl)
+            }
             BoxPart.FRONT -> android.graphics.Rect((w - side + pad).coerceIn((r + 1).coerceAtMost(w - 2), w - 2), bl, (w - bl).coerceAtLeast((w - side + pad) + 2), h - bl)
             BoxPart.BACK -> android.graphics.Rect(bl, bl, maxOf(bl + 2, (side - pad).coerceIn(2, (l - 1).coerceAtLeast(2))), h - bl)
             BoxPart.SPINE3D -> android.graphics.Rect(0, 0, 1, 1)
@@ -331,6 +372,11 @@ internal class BoxCrop(private val part: BoxPart, private val platform: String?,
             soft, rect, android.graphics.Rect(0, 0, out.width, out.height),
             android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
         )
+        // (Update 317: the top lies on its side in the wrap — turned a quarter back, so it reads left to right.)
+        if (part == BoxPart.TOP) {
+            val m = android.graphics.Matrix().apply { postRotate(-90f) }
+            return Bitmap.createBitmap(out, 0, 0, out.width, out.height, m, true)
+        }
         return out
     }
 }

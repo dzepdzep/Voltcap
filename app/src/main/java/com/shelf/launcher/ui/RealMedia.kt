@@ -151,6 +151,95 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
 }
 
 /**
+ * Update 317 (Perfetto, Flip 2: the drawn console cartridges turned from a picture taken of the screen — ~10 ms of the
+ * screen's drawing each, ~34 ms a frame while new games came in): [TemplateMedia]'s cartridge front made as one picture
+ * away from the screen's thread — the window in the paper colour, the art in it as TemplateMedia lays it (stretched for
+ * a label scan, cut to it for the round / plain / Switch windows, else fitted), cut by the shell's mask, the shell over
+ * it — so the turned piece is drawn from it (solidPiece's faceArt) like the drawn shells. Null for a disc, or while the
+ * art loads.
+ */
+@Composable
+internal fun rememberTemplateCartFront(tpl: MediaTpl, labelScan: Any?, cover: Any?): PieceFace? {
+    if (tpl.disc != null) return null
+    val switchFrame = SwitchLabel.useFrame(tpl, labelScan != null)
+    val cart = (if (switchFrame) tpl.label else tpl.cart) ?: return null
+    val art = labelScan ?: cover
+    val bmp = rememberSoftBitmap(art, 480)
+    val ctx = LocalContext.current.applicationContext
+    // (As TemplateMedia picks them.)
+    val roundWindow = cart.res == com.shelf.launcher.R.drawable.tpl_cart_psp || cart.res == com.shelf.launcher.R.drawable.tpl_cartl_psp
+    val fillCover = cart.res == com.shelf.launcher.R.drawable.tpl_cart_generic
+    val stretch = labelScan != null
+    val crop = !stretch && (roundWindow || fillCover || switchFrame)
+    val align = (if (switchFrame) SwitchLabel.CROP else if (fillCover && labelScan == null) PLAIN_CART_CROP else Alignment.Center) as? androidx.compose.ui.BiasAlignment
+    val hb = align?.horizontalBias ?: 0f
+    val vb = align?.verticalBias ?: 0f
+    val ready = art == null || bmp != null
+    val key = "tplfront|${cart.res}|${cart.mask}|${bmp?.let { System.identityHashCode(it) } ?: "none"}|$stretch|$crop|$hb|$vb"
+    val known = remember(key) { if (ready) DerivedArt.peekNamed<android.graphics.Bitmap>(key) else null }
+    val made = remember(key) { androidx.compose.runtime.mutableStateOf<android.graphics.Bitmap?>(null) }
+    androidx.compose.runtime.LaunchedEffect(key) {
+        if (!ready || known != null) return@LaunchedEffect
+        made.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            runCatching { templateCartFront(ctx, cart, bmp, stretch, crop, hb, vb)?.let { b -> DerivedArt.named(key) { b } } }.getOrNull()
+        }
+    }
+    val front = known ?: made.value
+    return remember(front, cart) { front?.let { PieceFace(it.asImageBitmap(), cart.aspect) } }
+}
+
+/** Update 317: see [rememberTemplateCartFront]. Up to [maxSide] px on its longer side; null when a picture can't be read. */
+internal fun templateCartFront(
+    ctx: android.content.Context, cart: CartTpl, label: android.graphics.Bitmap?, stretch: Boolean, crop: Boolean,
+    hBias: Float, vBias: Float, maxSide: Int = 640
+): android.graphics.Bitmap? {
+    val shell = DerivedArt.named("tplres|${cart.res}") { android.graphics.BitmapFactory.decodeResource(ctx.resources, cart.res) ?: EMPTY_BITMAP }
+        .takeIf { it !== EMPTY_BITMAP } ?: return null
+    val mask = DerivedArt.named("tplres|${cart.mask}") { android.graphics.BitmapFactory.decodeResource(ctx.resources, cart.mask) ?: EMPTY_BITMAP }
+        .takeIf { it !== EMPTY_BITMAP } ?: return null
+    val a = cart.aspect.coerceAtLeast(0.05f)
+    val w = if (a >= 1f) maxSide else (maxSide * a).toInt().coerceAtLeast(1)
+    val h = (w / a).toInt().coerceAtLeast(1)
+    val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(out)
+    val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
+    val win = cart.win
+    val wl = w * win[0]; val wt = h * win[1]
+    val ww = (w * (win[2] - win[0])).toInt().coerceAtLeast(1)
+    val wh = (h * (win[3] - win[1])).toInt().coerceAtLeast(1)
+    // The window: paper, the art laid in it, cut by the mask.
+    val pane = android.graphics.Bitmap.createBitmap(ww, wh, android.graphics.Bitmap.Config.ARGB_8888)
+    val pc = android.graphics.Canvas(pane)
+    pc.drawColor(0xFFE9E6DF.toInt())
+    if (label != null && label.width > 0 && label.height > 0) {
+        val lw = label.width.toFloat(); val lh = label.height.toFloat()
+        val dst = if (stretch) android.graphics.RectF(0f, 0f, ww.toFloat(), wh.toFloat()) else {
+            val k = if (crop) maxOf(ww / lw, wh / lh) else minOf(ww / lw, wh / lh)
+            val dw = lw * k; val dh = lh * k
+            val x = (ww - dw) * (1f + hBias) / 2f
+            val y = (wh - dh) * (1f + vBias) / 2f
+            android.graphics.RectF(x, y, x + dw, y + dh)
+        }
+        pc.drawBitmap(label, null, dst, paint)
+    }
+    val mw = mask.width.toFloat(); val mh = mask.height.toFloat()
+    val src = android.graphics.Rect(
+        (win[0] * mw).toInt(), (win[1] * mh).toInt(),
+        (win[0] * mw).toInt() + ((win[2] - win[0]) * mw).toInt().coerceAtLeast(1),
+        (win[1] * mh).toInt() + ((win[3] - win[1]) * mh).toInt().coerceAtLeast(1)
+    )
+    val cut = android.graphics.Paint(paint).apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN) }
+    pc.drawBitmap(mask, src, android.graphics.Rect(0, 0, ww, wh), cut)
+    c.drawBitmap(pane, wl, wt, paint)
+    pane.recycle()
+    c.drawBitmap(shell, null, android.graphics.Rect(0, 0, w, h), paint)
+    // (Kept on the GPU, as the sides' picture is — sideArtOf.)
+    return if (android.os.Build.VERSION.SDK_INT >= 26) out.copy(android.graphics.Bitmap.Config.HARDWARE, false) ?: out else out
+}
+
+private val EMPTY_BITMAP: android.graphics.Bitmap by lazy { android.graphics.Bitmap.createBitmap(1, 1, android.graphics.Bitmap.Config.ALPHA_8) }
+
+/**
  * A game picture as a plain (software) bitmap the perspective drawing can use; null while it loads. Update 202: [trim]
  * for a cover (or box front scan) drawn on a case: flat strips that are part of its file trimmed off (TrimMargins.kt),
  * under its own memory key. Off for spines, backs, discs, cartridge labels and the 3D models.

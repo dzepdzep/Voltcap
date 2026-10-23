@@ -83,6 +83,7 @@ object PresetFields {
         // field simply don't have it, so applying them keeps the layout you're on.
         e("homeLayout", { it.homeLayout }, { s, v -> s.copy(homeLayout = v) }),
         e("dockPosition", { it.dockPosition }, { s, v -> s.copy(dockPosition = v) }),
+        e("tileDockPosition", { it.tileDockPosition }, { s, v -> s.copy(tileDockPosition = v) }),
         e("focusPosition", { it.focusPosition }, { s, v -> s.copy(focusPosition = v) }),
         e("focusedCardStyle", { it.focusedCardStyle }, { s, v -> s.copy(focusedCardStyle = v) }),
         // The game look (covers, cases, cartridges / discs…), one for every layout since update 82.
@@ -153,7 +154,7 @@ object LayoutPresets {
      * lands on exactly what it says.
      */
     val BUILT_IN_KEYS: Set<String> = setOf(
-        "homeLayout", "cardArtType", "dockPosition", "focusPosition", "focusedCardStyle", "cardSize", "tileScale",
+        "homeLayout", "cardArtType", "dockPosition", "tileDockPosition", "focusPosition", "focusedCardStyle", "cardSize", "tileScale",
         "cardCorners", "otherGamesLook", "focusEffect", "tiltOthers", "infoSpacing", "titlePlacement", "showGameLogos", "rowInfo"
     )
 
@@ -303,7 +304,7 @@ object LayoutPresets {
         preset("tile_home_big", HomeLayout.TILES, "Big tile home",
             "The same tiles a good deal bigger, in the middle of the screen — easy to read on a small handheld.",
             look = null, carousel = false) { s ->
-            s.copy(tileScale = 130, dockPosition = DockPosition.MIDDLE)
+            s.copy(tileScale = 130, tileDockPosition = DockPosition.MIDDLE)
         },
         // Hero carousel (update 162: the whole column of covers, the column standing still).
         preset("l_hero", HomeLayout.HERO, "Hero carousel",

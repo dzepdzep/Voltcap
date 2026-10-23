@@ -318,6 +318,8 @@ object Features {
     val homeHeaderTight = BoolPref("home_header_tight", true)
     /** Game look "Tile": the Voltcap row's covers as big squares (the Tile home's tiles), the one you're on a bit bigger. */
     val squareTiles = BoolPref("look_square_tiles", false)
+    /** Update 317ah: Tile home's round buttons were put under its tiles the first time it was picked (once only). */
+    val tileHomeButtonsSet = BoolPref("tile_home_buttons_set", false)
     /**
      * Update 166: in the carousels, the game you're on unfolds into its wide capsule as you scroll (the look "Covers ·
      * wide capsule"; the Voltcap row has it from the row's own "It shows as"). Off: it stays a cover.
@@ -347,6 +349,9 @@ object Features {
     val consoleBadgeTheme = BoolPref("console_badge_theme", false)
     /** Update 125: badges with the console's logo from Dan Patrick's white set (the R1 Console badges tile's second step). */
     val consoleBadgeLogos = BoolPref("console_badge_logos", false)
+    /** Update 317ao: which corner of a game's tile the console badge takes (Auto: where each layout puts it, clear of the rest). */
+    enum class BadgeCorner(val label: String) { AUTO("Auto"), TOP_LEFT("Top left"), TOP_RIGHT("Top right"), BOTTOM_LEFT("Bottom left"), BOTTOM_RIGHT("Bottom right") }
+    val consoleBadgeCorner = EnumPref("console_badge_corner", BadgeCorner.AUTO, BadgeCorner.values())
     /**
      * Update 125: with the Cartridges & discs look, every game as a cartridge — its own cartridge for cartridge consoles
      * (the real scan, or the drawn one), a plain cartridge with its cover as the label for disc and UMD games. The R1

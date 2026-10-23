@@ -228,9 +228,12 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
 
         // Header: the category and how many games.
         Row(Modifier.fillMaxWidth().height(headerH), verticalAlignment = Alignment.CenterVertically) {
+            // (Update 315: off for this layout — Categories tile / Settings — no caption.)
+            if (CategoryTitle.captionOn(c.state.appearance)) {
             CategoryTitle.Native() // (Update 212: the layout's own category title.)
             Text(c.categoryLabel, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW))
             Spacer(Modifier.width(8.dp))
+            }
             Text(games.size.toString(), color = ShelfTheme_accent(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         }
 
@@ -667,7 +670,8 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
         Box(modifier.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue)))
         return
     }
-    val realSpine = if (forAll || matching) null else scans?.firstOrNull { it.first == "Spine" }?.second
+    // (Update 317: your own cut of the full case scan first — BoxTexture.userSpine.)
+    val realSpine = if (forAll || matching) null else BoxTexture.userSpine(scans, g.platform) ?: scans?.firstOrNull { it.first == "Spine" }?.second
     val own = realSpine ?: if (Features.originalCases.state.value && !forAll && !matching) BoxTexture.spine(scans, g.platform) else null
     var failed by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }
     if (own != null && !failed) {

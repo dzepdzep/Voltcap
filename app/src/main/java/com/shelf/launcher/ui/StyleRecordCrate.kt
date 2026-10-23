@@ -414,6 +414,8 @@ private fun CrateStage(c: StyleCtx, wood: CrateColours, modifier: Modifier) {
                 contentAlignment = Alignment.Center
             ) {
                 val fs = with(density) { (plankH * 0.5f).toSp() }
+                // (Update 315: off for this layout — Categories tile / Settings — no caption.)
+                if (CategoryTitle.captionOn(c.state.appearance)) {
                 CategoryTitle.Native() // (Update 212: the layout's own category title.)
                 Text(
                     c.categoryLabel.uppercase(), color = wood.paint.copy(alpha = 0.74f), fontSize = fs,
@@ -423,6 +425,7 @@ private fun CrateStage(c: StyleCtx, wood: CrateColours, modifier: Modifier) {
                         .border(1.5.dp, wood.paint.copy(alpha = 0.45f), RoundedCornerShape(2.dp))
                         .padding(horizontal = 8.dp, vertical = 1.dp)
                 )
+                }
             }
         }
     }

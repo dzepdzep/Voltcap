@@ -29,17 +29,19 @@ internal fun styleArtPx(context: Context): Int {
  * off once at decode (TrimMargins.kt), under its own memory key. Off for anything else drawn this way (labels, discs,
  * wide art, screenshots) — a card and its warm-up must pass the same value to share the decode.
  */
-internal fun styleArtRequest(context: Context, url: String, px: Int = styleArtPx(context), trim: Boolean = false): ImageRequest =
+internal fun styleArtRequest(context: Context, url: String, px: Int = styleArtPx(context), trim: Boolean = false, still: Boolean = false): ImageRequest =
     ImageRequest.Builder(context)
         .data(url)
         .size(px, px)
+        // (Update 317: a cartridge's / disc's printed picture always still — mediaArtModel.)
+        .apply { if (still) setParameter(com.shelf.launcher.data.AnimatedArt.PARAM_STILL, true, memoryCacheKey = null) }
         // Fit (not fill): a wide picture doesn't decode to many times the card's size; cards crop it as before.
         // (The decode only bounds the picture's size; every card draws it with ContentScale.Crop, filling its slot.)
         .scale(Scale.FIT)
         .precision(Precision.INEXACT)
         // (Update 202: an animated cover skips the trim and stays animated.)
         .apply { if (trim) transformations(TrimUniformMargins).allowConversionToBitmap(false) }
-        .memoryCacheKey("$url|style|$px" + if (trim) "|" + TrimUniformMargins.KEY else "")
+        .memoryCacheKey("$url|style|$px" + (if (trim) "|" + TrimUniformMargins.KEY else "") + (if (still) "|still" else ""))
         // The small thumbnail (ArtRequests.kt) stands in while the sharp picture is read.
         .placeholderMemoryCacheKey(thumbKey(url))
         .memoryCachePolicy(CachePolicy.ENABLED)
@@ -48,10 +50,10 @@ internal fun styleArtRequest(context: Context, url: String, px: Int = styleArtPx
 
 /** [styleArtRequest] for a card, remembered per picture ([trim]: it's the game's cover, Update 202). */
 @Composable
-internal fun rememberStyleArtRequest(url: String, trim: Boolean = false): ImageRequest {
+internal fun rememberStyleArtRequest(url: String, trim: Boolean = false, still: Boolean = false): ImageRequest {
     val context = LocalContext.current
     val px = styleArtPx(context)
-    return remember(url, px, context, trim) { styleArtRequest(context, url, px, trim) }
+    return remember(url, px, context, trim, still) { styleArtRequest(context, url, px, trim, still) }
 }
 
 /**
@@ -100,7 +102,9 @@ internal fun coverModel(model: Any?): Any? = if (model is String) rememberCoverR
  * a bitmap) is passed through as it is.
  */
 @Composable
-internal fun mediaArtModel(model: Any?, trim: Boolean = false): Any? = if (model is String) rememberStyleArtRequest(model, trim) else model
+// (Update 317, Toni: no animated covers on the cartridges and discs at all — their first frame, whatever Animated artwork
+// says. A playing label redrew its turned 3D piece every frame.)
+internal fun mediaArtModel(model: Any?, trim: Boolean = false): Any? = if (model is String) rememberStyleArtRequest(model, trim, still = true) else model
 
 /**
  * Update 157: every plain game picture of a card's size (a layout's own AsyncImage(url) with no key of its own) is

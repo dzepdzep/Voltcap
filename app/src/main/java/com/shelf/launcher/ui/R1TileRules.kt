@@ -164,7 +164,9 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         "rowpos" -> on(classic || l == HomeLayout.HERO)
         // Update 307: the category names — the layouts with the category bar (Voltcap row, Tile home, Grid), and any layout
         // with the category bar added as a part (Edit Home › + Add).
-        "categories" -> on(classic || l == HomeLayout.GRID || l == HomeLayout.TWIN_SHOWCASE || HomeWidgets.CATEGORY in Features.overlayPartsFor(l))
+        // (Update 315: every layout — each keeps its own choice, CategoryBars; where the categories are the layout's own
+        // menu it's greyed, saying so.)
+        "categories" -> if (l in com.shelf.launcher.data.CategoryBars.MENU) R1Fit.Grey("On this layout the categories are its own menu, so they stay.") else R1Fit.Show
         // Game header tight / roomy: the Voltcap row with its game header on (Settings › Home › Game header).
         // (Update 235, #15/#16: the Voltcap row only — the Tile home shows no game header.)
         "headertight" -> on(l == HomeLayout.CLASSIC && Features.homeHeader.state.value)

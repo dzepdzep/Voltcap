@@ -8,11 +8,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -23,6 +25,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.shelf.launcher.data.Features
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -41,8 +44,35 @@ import kotlin.math.sin
  * same (InspectSlab). Flat parts that ride along with it (a console badge, a disc) turn flat (followTurn).
  */
 
-/** A view's turn for the game in it: degrees round the upright ([yawOf], read while drawing), and its camera distance. */
-internal class PieceTurn(val yawOf: () -> Float, val camera: Float = 12f)
+/**
+ * A view's turn for the game in it: degrees round the upright ([yawOf], read while drawing), and its camera distance.
+ * Update 314: [opaqueOf] (read while drawing): the view draws the piece fully opaque right now — then it's drawn straight
+ * into the view, without the buffer that makes a fading piece fade as one (pixel for pixel the same at full opacity, one
+ * big GPU picture less per piece). Null: always through the buffer, as before.
+ */
+internal class PieceTurn(
+    val yawOf: () -> Float, val camera: Float = 12f, val opaqueOf: (() -> Boolean)? = null,
+    /**
+     * Update 316 (read while composing): false while the view doesn't show the piece at all (a carousel game far off the
+     * screen) — it keeps no GPU pictures then: Compose keeps every layer a piece makes alive, on the GPU too, until it's
+     * let go, drawn or not (Flip 2: GPU memory full after ~90 s of scrolling). Null: always.
+     */
+    val activeOf: (() -> Boolean)? = null,
+    /**
+     * Update 317: how dark the view shades the piece (0–1, the carousel's games aside). The piece takes it on itself, as
+     * a darker light on its pictures, once it's drawn from them ([shadeTaken]) — the view then needs no offscreen picture
+     * of its own to darken it, which was drawn again every frame for every game aside. Null: the view shades it.
+     */
+    val shadeOf: (() -> Float)? = null,
+    /**
+     * Update 317 (Toni, option 2: "fewer copies while moving"): the view is moving (a carousel gliding) — the piece draws its
+     * sides with at most [MOVING_COPIES] copies meanwhile, its full sides again the moment it stops. Null: never.
+     */
+    val movingOf: (() -> Boolean)? = null
+) {
+    /** Update 317: the piece applies [shadeOf] itself (it's drawn from its pictures); the view leaves it out. */
+    val shadeTaken = mutableStateOf(false)
+}
 
 /** Set by a view that leaves the turning to the piece (solidPiece / followTurn) inside it; null: nothing turns it. */
 internal val LocalPieceTurn = compositionLocalOf<PieceTurn?> { null }
@@ -312,6 +342,19 @@ internal fun rememberCartSpin(): (() -> Float)? {
 internal const val CART_SPIN_MS = 5200L
 
 /**
+ * Update 314: a piece whose whole content is one finished picture (a drawn shell's front, CartShellArt), fitted at
+ * [aspect] in the node as CartShellArt lays it out (pieceArtRect). See [solidPiece]'s faceArt.
+ */
+internal class PieceFace(
+    val image: ImageBitmap, val aspect: Float,
+    /**
+     * Update 316: the picture stretched to this part of the [aspect] box (left, top, right, bottom shares) — your pack's
+     * shape drawn as its real cartridge (AuthenticPackCart, pieceFrameRect); null: fitted whole (CartShellArt).
+     */
+    val frame: FloatArray? = null
+)
+
+/**
  * Draws this node's content as the solid piece [spec] turned by the view's turn (LocalPieceTurn) plus its own spin.
  * Nothing changes (no layers) when nothing turns it.
  */
@@ -319,38 +362,84 @@ internal const val CART_SPIN_MS = 5200L
 internal fun Modifier.solidPiece(
     spec: SolidSpec?,
     /** Update 207: false for a piece that isn't a game's cartridge (the Save Vault's 3D card): no cartridge spin added. */
-    withCartSpin: Boolean = true
+    withCartSpin: Boolean = true,
+    /**
+     * Update 314 (scrolling the 3D cartridges lagged): the content is exactly this picture ([PieceFace]), so the turned
+     * face, its outline and its sides are drawn from the picture itself — made once, not every frame. Each side slice
+     * used to draw the face's own layer again (up to ~130 times a piece), and Android re-walks and redraws everything
+     * under a layer drawn more than once in a frame: every turned cartridge redrew five or six offscreen pictures each
+     * frame. Now only the slices' smear and the whole piece are drawn per frame. Null: as before (any content).
+     */
+    faceArt: PieceFace? = null,
+    /**
+     * Update 317: what the content shows (its console, art and shape), so its picture (PieceShot) is kept for a piece of
+     * the same content coming back on the screen — taking it again cost the screen's drawing ~10–80 ms. Null: not kept.
+     */
+    shotKey: String? = null
 ): Modifier {
     if (spec == null) return this
+    // Update 317: the front's own picture for a piece without one (kept while it's off the screen) — see PieceShot.
+    val shot = remember { PieceShot() }
     val turn = LocalPieceTurn.current
+    // (Update 316: not shown at all — none of its layers kept; see PieceTurn.activeOf.)
+    if (turn?.activeOf?.invoke() == false) return this
     val spin = if (withCartSpin) rememberCartSpin() else null
     if (turn == null && spin == null && TestHooks.pose.value == null) return this
     val dens = LocalDensity.current.density
     val cam = (turn?.camera ?: 14f) * dens
+    // Update 316 (Perfetto traces, Flip 2: ~1,000 GPU pictures standing, the covers thrown out of the GPU's cache and
+    // uploaded again every frame): the sides' picture — the face's outline in the plastic's colour with its sheen — made
+    // once from the front, away from the screen's thread. With it the sides and the face are plain picture draws, no
+    // offscreen picture of their own (and no smear: each slice's copies drawn at the very same places).
+    val shotImage = if (faceArt == null) shot.image.value else null
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    // (The same modifier for the piece's whole life: a new one at each recomposition — every step of a carousel — made the
+    // content draw again, which counted as new content and took the picture again, until the piece gave up on it.)
+    val shotMark = remember(shot) { Modifier.graphicsLayer { }.drawWithContent { shot.changed(); drawContent() } }
+    val sideMade = rememberDerived((faceArt?.image ?: shotImage)?.asAndroidBitmap(), "side317|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
+    // (Update 317: the last sides' picture kept while a new front's is made — the piece stays drawn from its pictures, so it
+    // keeps darkening itself; see shadeTaken below.)
+    val lastSide = remember { mutableStateOf<ImageBitmap?>(null) }
+    if (sideMade != null && lastSide.value !== sideMade) androidx.compose.runtime.SideEffect { lastSide.value = sideMade }
+    val sideArt = sideMade ?: lastSide.value?.takeIf { faceArt?.image != null || shotImage != null }
+    // (Update 317: drawn from its pictures — it takes the view's shade on itself; see PieceTurn.shadeOf.)
+    val fromPictures = sideArt != null && (faceArt?.image ?: shotImage) != null
+    // (Update 317: set to whether it's drawn from its pictures — they're kept while a new front's are made, lastSide, so it
+    // no longer flips back for a frame while a piece rebuilds, which left the games aside undarkened: flashing brighter.
+    // A passing buffer to darken it then held ~470 GPU pictures on the Flip 2.)
+    // (Update 317, Toni: still flashing now and then — a piece coming in before its pictures were ready left the view to
+    // darken it a frame late. The piece now always darkens itself: through its light once drawn from its pictures, else
+    // through its whole-piece buffer's paint — so the view never does, and there's no hand-over left.)
+    if (turn?.shadeOf != null) androidx.compose.runtime.SideEffect { turn.shadeTaken.value = true }
+    // Update 316 (Flip 2: ~1,000 GPU pictures, 1.2 GB, climbing while scrolling until it froze): the piece's layers kept for
+    // as long as the piece is shown, recorded again when its drawing is rebuilt. They were made new at every rebuild —
+    // and a carousel rebuilt its pieces at each step — while the ones let go kept their GPU pictures for a long time.
+    val face = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val edge = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val lit = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val back = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val whole = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val solid = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val smear = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val hole = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val edgeLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val litLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     return this.drawWithCache {
-        val face = obtainGraphicsLayer()
         // (Update 294: the face drawn flat into its own picture, which is then turned — the turned layers below used to
         // draw its contents (a badge's or a label's text) under a new angle every frame, and Android 13's text cache
         // grew until the Thor stopped answering on the Hub.)
         face.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
-        val edge = obtainGraphicsLayer()
         // (Update 205: the sides are the piece's outline in its plastic's colour, made in a layer of their own.)
         edge.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
-        val lit = obtainGraphicsLayer()
-        val back = obtainGraphicsLayer()
         // All of it in one buffer, so a faded piece (a carousel fades its games op by op) fades as one, its slices never
         // showing through its face.
-        val whole = obtainGraphicsLayer()
         whole.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         // The back in a layer of its own, so its tone and shade only touch the back (see InspectSlab, update 201).
         back.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
-        // The face's outline made solid, for a back without a drawn one (a clear shell's face is see-through).
-        val solid = obtainGraphicsLayer()
+        // The face's outline made solid, for a back without a drawn one (a clear shell's face is see-through): `solid`.
         // Update 294: one slice's side smeared across the gap to the next (see below), drawn once into its own picture.
-        val smear = obtainGraphicsLayer()
         smear.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
         // Update 209: the face's outline that clears a see-through piece's sides from behind its face.
-        val hole = obtainGraphicsLayer()
         hole.blendMode = BlendMode.DstOut
         solid.colorFilter = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
             1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 4f, -24f
@@ -361,33 +450,144 @@ internal fun Modifier.solidPiece(
         val pw = if (a == null) size.width else minOf(size.width, size.height * a)
         val ph = if (a == null) size.height else pw / a
         val depthPx = spec.depth * maxOf(pw, ph)
+        // (Room round it in the buffer: the near side grows past the node as it turns, and the slices stand out.)
+        val m = (0.35f * maxOf(size.width, size.height) + depthPx).roundToInt()
+        // (Update 314, Flip 2 ANR — the GPU ran out of memory: the smear was made inside the whole piece's buffer and took
+        // that buffer's size plus the margin again, about twice the pixels it needs. Both are this size now.)
+        val buf = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)
+        // Update 314: the picture's place in the node, as CartShellArt draws it (null: any content, drawn each frame).
+        // (Update 317: a piece without its front's picture uses its own shot of it once there is one, made at the node's size.)
+        val shotFace = shotImage?.takeIf { it.width == size.width.toInt() && it.height == size.height.toInt() && size.height > 0f }
+            ?.let { PieceFace(it, size.width / size.height) }
+        val pf = faceArt ?: shotFace
+        val art = pf?.image
+        val artAt = pf?.let { f ->
+            f.frame?.let { fr -> pieceFrameRect(size.width, size.height, f.aspect, fr) }
+                ?: pieceArtRect(size.width, size.height, f.aspect, f.image.width, f.image.height)
+        }
+        val artPos = artAt?.let { IntOffset(it[0], it[1]) }
+        val artSize = artAt?.let { IntSize(it[2], it[3]) }
+        val artSrc = art?.let { IntSize(it.width, it.height) }
+        val solidFilter = solid.colorFilter
+        // (Update 316: plain layers — no offscreen picture — for the sides and the face drawn from the pictures.)
+        val side = sideArt?.takeIf { art != null }
+        val sideSrc = side?.let { IntSize(it.width, it.height) }
+        val edgeLeaf = if (side != null) edgeLeafLayer.also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.ModulateAlpha } else null
+        val litLeaf = if (side != null) litLeafLayer else null
+        var artMade = false
+        var solidMade = false
+        var madeYaw = Float.NaN
+        var madeShade = -1f
+        var madeMoving = false
         onDrawWithContent {
             // (Update 294, testing only: TestHooks `voltcap_test_pose` — held at one turn, for before / after pictures.)
             val testPose = TestHooks.pose.value
             val yaw = testPose?.first ?: ((turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f))
-            if (abs(yaw) < 0.25f) { drawContent(); return@onDrawWithContent }
-            face.record { this@onDrawWithContent.drawContent() }
+            // (Update 317: the view's shade, on the piece's own light — see PieceTurn.shadeOf.)
+            val shadeS = if (turn?.shadeOf != null) turn.shadeOf.invoke().coerceIn(0f, 1f) else 0f
+            val lightShade = side != null && art != null
+            val shadeK = if (lightShade) 1f - shadeS else 1f
+            // (Without its pictures: darkened through the whole-piece buffer's paint.)
+            val bufShade = !lightShade && shadeS > 0.01f
+            whole.colorFilter = if (bufShade) SolidLight.of(1f - shadeS) else null
+            if (abs(yaw) < 0.25f && !(lightShade && shadeS > 0.01f)) {
+                if (bufShade) {
+                    whole.record(size = buf) { translate(m.toFloat(), m.toFloat()) { this@onDrawWithContent.drawContent() } }
+                    translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
+                } else drawContent()
+                madeYaw = Float.NaN
+                return@onDrawWithContent
+            }
+            val moving = turn?.movingOf?.invoke() == true
+            // (Update 314: fully opaque in its view — drawn straight into it, no whole-piece buffer.)
+            // (Not a see-through piece: its cut-out behind the face, DstOut, must stay inside its own buffer.)
+            val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true && !bufShade
+            if (art == null) face.record { this@onDrawWithContent.drawContent() }
+            // (Update 317: the content's picture taken again whenever it changes — see PieceShot.)
+            if (faceArt == null && testPose == null && !shot.off) {
+                val want = "${shot.version.intValue}|${size.width.toInt()}x${size.height.toInt()}"
+                val keep = shotKey?.let { "$it|${size.width.toInt()}x${size.height.toInt()}" }
+                if (shot.image.value == null && keep != null) PieceShots.get(keep)?.let { shot.image.value = it; shot.asked = want }
+                if (shot.asked != want) {
+                    // (Its own drawing for the picture isn't new content: drawn again here after a while away from the
+                    // screen's drawing, the content draws itself again — counted, that took a picture every frame.)
+                    if (art != null) {
+                        shot.quiet = true
+                        try { face.record { this@onDrawWithContent.drawContent() } } finally { shot.quiet = false }
+                    }
+                    shot.take(scope, face, want, keep)
+                }
+            }
+            // (Update 314: the same turn as last drawn — the parts only drawn from the picture are still right.)
+            if (art != null && artMade && yaw == madeYaw && shadeS == madeShade && moving == madeMoving && testPose == null && !direct) {
+                translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
+                return@onDrawWithContent
+            }
             val t = Math.toRadians(yaw.toDouble())
             val c = cos(t).toFloat()
             val sn = sin(t).toFloat()
-            for (l in arrayOf(edge, lit, back)) { l.rotationY = yaw; l.cameraDistance = cam }
+            edge.rotationY = yaw; edge.cameraDistance = cam
+            lit.rotationY = yaw; lit.cameraDistance = cam
+            // (Update 316: the plain sides and face, their light drawn in — recorded again only as the turn changes.)
+            if (edgeLeaf != null && litLeaf != null && side != null && art != null) {
+                edgeLeaf.rotationY = yaw; edgeLeaf.cameraDistance = cam
+                litLeaf.rotationY = yaw; litLeaf.cameraDistance = cam
+                val edgeLight = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
+                // (Update 317: the sides' picture is SIDE_SPREAD px wider each side — drawn that much wider.)
+                val padN = (SIDE_SPREAD * artSize!!.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
+                edgeLeaf.record {
+                    drawImage(
+                        side, IntOffset.Zero, sideSrc!!, IntOffset(artPos!!.x - padN, artPos.y),
+                        IntSize(artSize.width + 2 * padN, artSize.height), colorFilter = edgeLight
+                    )
+                }
+                if (c >= 0f) {
+                    val faceLight = SolidLight.of((1f - 0.4f * abs(sn)) * shadeK)
+                    litLeaf.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!, colorFilter = faceLight) }
+                }
+            }
+            back.rotationY = yaw; back.cameraDistance = cam
             // (Update 209: a see-through piece's back as see-through as its sides.)
             back.alpha = spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f
             // (Each part recorded at the node's own size, round its own middle; then placed in the buffer below.)
             // The sides: the face's outline, darker, lit a little as they face you. Update 205: filled with the shell's
             // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
             // over in stripes (the "glitches" round the turned cartridges in the Box flow stacks).
-            solid.record { drawLayer(face) }
             val sideTone = spec.tone.copy(alpha = 1f)
             edge.colorFilter = SolidLight.of(0.42f + 0.22f * abs(sn))
-            edge.record {
-                drawLayer(solid)
-                drawRect(sideTone, blendMode = BlendMode.SrcIn)
-                drawRect(sheen, blendMode = BlendMode.SrcAtop)
+            if (art == null) {
+                solid.record { drawLayer(face) }
+                edge.record {
+                    drawLayer(solid)
+                    drawRect(sideTone, blendMode = BlendMode.SrcIn)
+                    drawRect(sheen, blendMode = BlendMode.SrcAtop)
+                }
+            } else if (!artMade) {
+                // (Update 314: each made once from the picture, with no other layer inside — so drawing the sides many
+                // times a frame never makes Android redraw them, or the face, again.)
+                artMade = true
+                // (Update 316: not with the plain sides and face — edgeLeaf / litLeaf: an offscreen layer recorded and never
+                // drawn still held its GPU picture.)
+                if (edgeLeaf == null) {
+                    edge.record {
+                        drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!, colorFilter = solidFilter)
+                        drawRect(sideTone, blendMode = BlendMode.SrcIn)
+                        drawRect(sheen, blendMode = BlendMode.SrcAtop)
+                    }
+                    lit.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
+                }
             }
+            // (Update 316: the outline made solid only once it's drawn — behind a see-through piece's face, or its back.)
+            if (art != null && !solidMade && (spec.clear != null || c < 0f)) {
+                solidMade = true
+                solid.record { drawImage(art, IntOffset.Zero, artSrc!!, artPos!!, artSize!!) }
+            }
+            madeYaw = yaw
+            madeShade = shadeS
+            madeMoving = moving
             if (c >= 0f) {
                 lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))
-                lit.record { drawLayer(face) }
+                if (art == null) lit.record { drawLayer(face) }
             } else {
                 val sb = spec.back
                 back.record {
@@ -410,70 +610,204 @@ internal fun Modifier.solidPiece(
                     }
                     drawRect(sheen, blendMode = BlendMode.SrcAtop)
                     drawRect(Color.Black, alpha = 0.4f * abs(sn), blendMode = BlendMode.SrcAtop)
+                    if (shadeK < 1f) drawRect(Color.Black, alpha = 1f - shadeK, blendMode = BlendMode.SrcAtop)
                 }
             }
-            // (Room round it in the buffer: the near side grows past the node as it turns, and the slices stand out.)
-            val m = (0.35f * maxOf(size.width, size.height) + depthPx).roundToInt()
-            whole.record(size = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)) {
-                translate(m.toFloat(), m.toFloat()) {
-                    // Far to near: the slices, then the face (or the back, seen from behind).
-                    // (Update 205: close enough together that no gap shows between them on a thick piece side-on.)
-                    // (Update 207: a slice every 2 px, at most 32 — 64 slices a piece, every piece in a row, each frame,
-                    // was part of what made scrolling a big library heavy; 2 px apart still shows no gap.)
-                    val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, 32)
-                    val clear = spec.clear
-                    // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
-                    // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
-                    // the slices are copies of the turned outline moved sideways, and on the Thor's bigger pieces they're
-                    // further apart than 2 px (at most 32 of them: 4–5 px on a big N64 cartridge seen at 60–80°). Each
-                    // slice's slanted top / bottom edge then ends in a step before the next one starts, and the steps
-                    // read as a stack of layers. Each slice is now smeared across the gap to the next one — its side
-                    // drawn again 1 px apart (at most 4 times, into one picture made once a frame) — so the sides are one
-                    // solid edge at every angle, with the same 32 slice draws as before (no new render load).
-                    val dz = if (n > 0) depthPx / n else 0f
-                    val step = dz * sn * (if (c >= 0f) 1f else -1f)
-                    val fill = if (n > 0 && testPose?.second != true) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
-                    val copies = n * fill + 1
-                    // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
-                    edge.alpha = if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
-                    if (n > 0 && fill > 1) {
-                        smear.record(size = IntSize(size.width.roundToInt() + 2 * m, size.height.roundToInt() + 2 * m)) {
-                            translate(m.toFloat(), m.toFloat()) {
-                                for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
-                            }
+            // The piece itself: far to near, the slices, then the face (or the back), in the node's own place.
+            val pieceDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = {
+                // Far to near: the slices, then the face (or the back, seen from behind).
+                // (Update 205: close enough together that no gap shows between them on a thick piece side-on.)
+                // (Update 207: a slice every 2 px, at most 32 — 64 slices a piece, every piece in a row, each frame,
+                // was part of what made scrolling a big library heavy; 2 px apart still shows no gap.)
+                val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, 32)
+                val clear = spec.clear
+                // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
+                // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
+                // the slices are copies of the turned outline moved sideways, and on the Thor's bigger pieces they're
+                // further apart than 2 px (at most 32 of them: 4–5 px on a big N64 cartridge seen at 60–80°). Each
+                // slice's slanted top / bottom edge then ends in a step before the next one starts, and the steps
+                // read as a stack of layers. Each slice is now smeared across the gap to the next one — its side
+                // drawn again 1 px apart (at most 4 times, into one picture made once a frame) — so the sides are one
+                // solid edge at every angle, with the same 32 slice draws as before (no new render load).
+                val dz = if (n > 0) depthPx / n else 0f
+                val step = dz * sn * (if (c >= 0f) 1f else -1f)
+                val fill = if (n > 0 && testPose?.second != true) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
+                val copies = n * fill + 1
+                // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
+                // (Update 316: the plain sides when there's a sides' picture — edgeLeaf — else the offscreen ones.)
+                val edgeL = edgeLeaf ?: edge
+                // (Update 317: drawn from the sides' picture — a copy every [SIDE_SPREAD] px (foreshortened), the near one,
+                // under the face, left out; see SIDE_SPREAD.)
+                val reach = if (edgeLeaf != null && side != null && artSize != null)
+                    (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(c)).coerceAtLeast(1.5f) else 0f
+                val span = depthPx * abs(sn)
+                val nLeaf = if (edgeLeaf == null || span < 0.5f) 0 else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
+                edgeL.alpha = if (edgeLeaf != null) {
+                    if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
+                } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
+                if (edgeLeaf != null) for (k in 0 until nLeaf) {
+                    val f = k.toFloat() / nLeaf
+                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+                    translate(z * sn, 0f) { drawLayer(edgeLeaf) }
+                }
+                if (n > 0 && fill > 1 && edgeLeaf == null) {
+                    smear.record(size = buf) {
+                        translate(m.toFloat(), m.toFloat()) {
+                            for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
                         }
                     }
-                    if (n > 0) for (k in 0..n) {
-                        val f = k.toFloat() / n
-                        val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
-                        // (The nearest slice alone: nothing past it to fill.)
-                        if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
-                        else translate(z * sn, 0f) { drawLayer(edge) }
-                    }
-                    val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
-                    // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
-                    if (clear != null) {
-                        hole.rotationY = yaw; hole.cameraDistance = cam
-                        hole.record { drawLayer(solid) }
-                        translate(faceX, 0f) { drawLayer(hole) }
-                    }
-                    if (c >= 0f) translate(faceX, 0f) { drawLayer(lit) }
-                    else translate(faceX, 0f) { drawLayer(back) }
                 }
+                if (n > 0 && edgeLeaf == null) for (k in 0..n) {
+                    val f = k.toFloat() / n
+                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+                    // (The nearest slice alone: nothing past it to fill.)
+                    if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+                    else translate(z * sn, 0f) { drawLayer(edge) }
+                }
+                val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
+                // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
+                if (clear != null) {
+                    hole.rotationY = yaw; hole.cameraDistance = cam
+                    hole.record { drawLayer(solid) }
+                    translate(faceX, 0f) { drawLayer(hole) }
+                }
+                if (c >= 0f) translate(faceX, 0f) { drawLayer(litLeaf ?: lit) }
+                else translate(faceX, 0f) { drawLayer(back) }
             }
+            if (direct) {
+                // (Update 314: fully opaque in its view — straight in; nothing shows through, so it reads as one piece.)
+                pieceDraw()
+                madeYaw = Float.NaN
+                return@onDrawWithContent
+            }
+            whole.record(size = buf) { translate(m.toFloat(), m.toFloat()) { pieceDraw() } }
             translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
         }
+    }.then(
+        // (Update 317: the content in a layer of its own, so its drawing runs only when it changes — PieceShot.version.)
+        if (faceArt == null && !shot.off) shotMark else Modifier
+    )
+}
+
+/**
+ * Update 317 (Perfetto trace, Flip 2, scrolling the drawn console cartridges: ~6 frames a second, ~400 offscreen pictures
+ * drawn again each frame — face, outline, sides and smear for each of ~75 turned pieces): a piece whose front isn't one
+ * picture (the drawn templates, a cartridge photo, a pack picture) is drawn once into a picture of its own, and turned
+ * from that like the shells (solidPiece's faceArt). Taken again whenever the content draws something new ([changed], run
+ * from the content's own layer only when it does — a label coming in); until then it's drawn as before. Content that
+ * keeps changing (an animation in it) gives up on the picture and is drawn as before.
+ */
+internal class PieceShot {
+    val image = mutableStateOf<ImageBitmap?>(null)
+    val version = androidx.compose.runtime.mutableIntStateOf(0)
+    var asked: String? = null
+    var off = false
+    /** While the piece draws its content for the picture itself (not a change of the content). */
+    var quiet = false
+    private var job: kotlinx.coroutines.Job? = null
+    private var restarts = 0
+    private var fails = 0
+    private var taken = 0
+
+    fun changed() { if (!quiet) version.intValue++ }
+
+    fun take(scope: kotlinx.coroutines.CoroutineScope, layer: androidx.compose.ui.graphics.layer.GraphicsLayer, key: String, keep: String? = null) {
+        asked = key
+        // (Never more than [MAX_SHOTS] for a piece: the last one stays — each new one also makes its sides' picture again.)
+        if (taken >= MAX_SHOTS) return
+        if (job?.isActive == true && ++restarts > 40) { off = true; image.value = null; job?.cancel(); return }
+        job?.cancel()
+        job = scope.launch {
+            var done = false
+            try {
+                // (A short wait, so a label still coming in isn't taken half drawn.)
+                kotlinx.coroutines.delay(120)
+                if (asked != key) return@launch
+                val b = runCatching { layer.toImageBitmap() }.getOrNull()
+                if (b == null || b.width <= 0 || b.height <= 0) { if (++fails > 5) { off = true; image.value = null } }
+                else if (asked == key) { restarts = 0; taken++; image.value = b; done = true; if (keep != null) PieceShots.put(keep, b) }
+            } finally {
+                // (Not taken — gone off the screen meanwhile, say: asked again the next time it's drawn.)
+                if (!done && asked == key) asked = null
+            }
+        }
+    }
+
+    private companion object {
+        const val MAX_SHOTS = 10
     }
 }
 
-/** A brightness filter in 20 steps (made once each). */
+/** Update 317: the pieces' pictures of their content ([PieceShot]) by what they show, for pieces coming back on the screen. */
+internal object PieceShots {
+    // (About 0.7 MB each at a carousel's size, on the GPU.)
+    private val cache = android.util.LruCache<String, ImageBitmap>(96)
+    fun get(key: String): ImageBitmap? = cache.get(key)
+    fun put(key: String, image: ImageBitmap) { cache.put(key, image) }
+}
+
+/**
+ * Update 316: the sides' picture for a front [src]: its outline (alpha × 4 − 24, as the solid filter makes it) filled with
+ * [tone], under the sheen (white 12 % at the top, clear in the middle, black 18 % at the bottom — the offscreen sides drew
+ * the same over the node) — what the offscreen sides drew, made once on the CPU. Null when it can't be read.
+ */
+internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphics.Bitmap? = runCatching {
+    val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+    val w0 = soft.width; val h = soft.height
+    if (w0 <= 0 || h <= 0) return@runCatching null
+    val src0 = IntArray(w0 * h)
+    soft.getPixels(src0, 0, w0, 0, 0, w0, h)
+    // (Update 317: [SIDE_SPREAD] px of room each side, and the outline spread that far sideways — see SIDE_SPREAD.)
+    val r = SIDE_SPREAD
+    val w = w0 + 2 * r
+    val px = IntArray(w * h)
+    val alpha = IntArray(w)
+    val win = IntArray(w)
+    for (y in 0 until h) {
+        val rgb = sideRowRgb((y + 0.5f) / h, tone)
+        java.util.Arrays.fill(alpha, 0)
+        for (x in 0 until w0) alpha[x + r] = sideAlpha(src0[y * w0 + x] ushr 24)
+        val row = y * w
+        // (The widest alpha within r either side — a running maximum over the row, once per pixel.)
+        var head = 0; var tail = 0
+        for (x in 0 until w + r) {
+            if (x < w) {
+                while (tail > head && alpha[win[tail - 1]] <= alpha[x]) tail--
+                win[tail++] = x
+            }
+            val c = x - r
+            if (c < 0) continue
+            while (win[head] < c - r) head++
+            px[row + c] = (alpha[win[head]] shl 24) or rgb
+        }
+    }
+    val made = android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    // (Update 317: kept on the GPU — as a plain picture it was thrown out of the GPU's cache and uploaded again, ~28 a
+    // frame in the Flip 2 trace.)
+    if (android.os.Build.VERSION.SDK_INT >= 26) made.copy(android.graphics.Bitmap.Config.HARDWARE, false) ?: made else made
+}.getOrNull()
+
+/**
+ * Update 317 (Toni: "draw them like the cases, as long as they aren't thin like paper from the side"): the sides' picture
+ * has this many px of room each side of the front's, and its outline is spread that far sideways. The turned piece's
+ * side is copies of it from far to near; spread, each copy reaches the next across a gap of up to this much (foreshortened
+ * by the turn), so a few copies make one solid edge — 4–20 a piece instead of 30–130 — the outline's shape (notches,
+ * curves) kept, the side a few px thicker at most, never thinner.
+ */
+internal const val SIDE_SPREAD = 10
+
+/** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
+internal const val MOVING_COPIES = 4
+
+/** A brightness filter in 40 steps (made once each). */
 private object SolidLight {
-    private val cache = arrayOfNulls<ColorFilter>(21)
+    // (Update 317: 40 steps — the carousel's shade now changes through it as the games slide.)
+    private val cache = arrayOfNulls<ColorFilter>(41)
     fun of(l: Float): ColorFilter? {
-        val i = (l.coerceIn(0f, 1f) * 20f).roundToInt()
-        if (i >= 20) return null
+        val i = (l.coerceIn(0f, 1f) * 40f).roundToInt()
+        if (i >= 40) return null
         cache[i]?.let { return it }
-        val k = i / 20f
+        val k = i / 40f
         return ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToScale(k, k, k, 1f) }).also { cache[i] = it }
     }
 }

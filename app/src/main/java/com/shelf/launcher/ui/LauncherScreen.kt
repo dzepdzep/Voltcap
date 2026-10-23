@@ -1,5 +1,8 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.dockHere
+import com.shelf.launcher.data.categoryBarFor
+import com.shelf.launcher.data.categoryBarHere
 import kotlinx.coroutines.flow.flowOn
 import com.shelf.launcher.data.statusOn
 import com.shelf.launcher.data.legendOn
@@ -47,6 +50,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.border
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
@@ -199,7 +203,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
             // by default (Game names › "On the art" + Name sits › Automatic).
             // (Update 125: per layout — the layout's own choice in its options, else Game names.)
             if (layoutNames.first == com.shelf.launcher.data.TitlePlacement.INSIDE &&
-                appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP &&
+                appearance.dockHere == com.shelf.launcher.data.DockPosition.TOP &&
                 layoutNames.second == com.shelf.launcher.data.RowSide.AUTO
             ) com.shelf.launcher.data.TitlePlacement.ABOVE else layoutNames.first,
             appearance.hideRegionTags,
@@ -247,7 +251,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
             progressOnBanner = appearance.progressOnBanner,
             focusBorder = appearance.focusBorder,
             loopRow = appearance.loopRow,
-            nameBelow = layoutNames.second.below(appearance.dockPosition),
+            nameBelow = layoutNames.second.below(appearance.dockHere),
             tiltOthers = appearance.tiltOthers,
             nameCapsule = appearance.nameCapsule,
             nameBackdrop = appearance.nameBackdrop,
@@ -731,7 +735,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     val batteryWatchContext = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) { com.shelf.launcher.data.BatteryWatch.start(batteryWatchContext) }
     // Update 112: the animations follow the layout on screen (its own choices, Home › Animations › per layout).
-    SideEffect { MotionPrefs.layout = state.appearance.homeLayout }
+    SideEffect {
+        MotionPrefs.layout = state.appearance.homeLayout
+        MotionPrefs.globalHero = state.appearance.heroMotion; MotionPrefs.zoomPercent = state.appearance.heroZoomPercent
+    }
     // Update 292: what's on screen, for the freeze snapshot of a crash report (FreezeWatchdog).
     SideEffect {
         com.shelf.launcher.data.crash.FreezeWatchdog.state("homeLayout", state.appearance.homeLayout.name)
@@ -2215,7 +2222,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     /** What lies above / below the games for the D-pad right now (HomeReach), nearest first. */
     fun prepareReach() {
         val a = state.appearance
-        val dock = a.dockPosition
+        val dock = a.dockHere
         val classic = !tileLayout && !heroLayout && !gridLayout && !tvLayout && !styleLayout
         // The game header's buttons (classic row), or its Play & buttons part on Hero / Spotlight / Icon bar.
         val actionsAt = HomeWidgets.position(HomeWidgets.H_ACTIONS) ?: HomeWidgets.position(HomeWidgets.HEADER)
@@ -2279,7 +2286,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         (HomeWidgets.position(HomeWidgets.SHORTCUTS) != null || HomeEditState.active))
     LaunchedEffect(
         shortcutsMovable, tileLayout, heroLayout, gridLayout, tvLayout, styleLayout, com.shelf.launcher.data.Features.homeHeader.state.value,
-        com.shelf.launcher.data.Features.homeHeaderHidden.state.value, state.appearance.categoryBar, state.appearance.rowInfo,
+        com.shelf.launcher.data.Features.homeHeaderHidden.state.value, state.appearance.categoryBarHere, state.appearance.rowInfo,
         com.shelf.launcher.data.Features.overlayParts.state.value, state.appearance.homeLayout
     ) {
         HomeWidgets.present = buildSet {
@@ -2296,7 +2303,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 if (listOf("play", "fav", "details", "options", "sync").any { it !in hidden }) add(HomeWidgets.H_ACTIONS)
                 if ("source" !in hidden) add(HomeWidgets.H_BADGE)
             }
-            if (classic && state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF) add(HomeWidgets.CATEGORY)
+            if (classic && state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) add(HomeWidgets.CATEGORY)
             state.appearance.homeLayout.takeIf { it in com.shelf.launcher.data.Features.overlayLayouts }?.let { l ->
                 com.shelf.launcher.data.Features.overlayPartsFor(l).forEach { add(HomeWidgets.overlayId(l, it)) }
             }
@@ -2464,7 +2471,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // The free band beside the game row (above it, below it, or the bigger side when it's in the
         // middle): the panel sits in it and the wave runs through it.
         val musicDensity = androidx.compose.ui.platform.LocalDensity.current
-        val musicDock = state.appearance.dockPosition
+        val musicDock = state.appearance.dockHere
         val musicReserveTop = with(musicDensity) {
             (if (state.appearance.statusOn && musicDock != com.shelf.launcher.data.DockPosition.TOP) 50.dp else 14.dp).toPx()
         }
@@ -2928,9 +2935,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // when the user has selected game art or blurred game art. A clip must
         // never replace Your wallpaper or an animated theme (including the
         // per-game theme selected above). The Gaming room's video monitor
-        // remains independent and is intentionally not affected.
+        // remains independent and is intentionally not affected. (Update 314: nor over a background picture picked for
+        // the game itself, Artwork & details.)
         val backdropClip = videoUrl?.takeIf {
-            allowsFullscreenGameplayVideo(backgroundStyle) &&
+            allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                 !roomClip && !screensaverOn && !heroLayout && !discCalm &&
                 !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))
         }
@@ -2969,7 +2977,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Update 307: fading from clip to clip, looping on while idle — VideoCrossfade.)
             VideoCrossfade(
                 videoUrl?.takeIf {
-                    allowsFullscreenGameplayVideo(backgroundStyle) &&
+                    allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                         !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                 },
                 state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low
@@ -2991,9 +2999,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     HomeWidgets.position(HomeWidgets.MUSIC) == null && !HomeEditState.active
             },
             // With the games at the top, clock / battery / Wi-Fi go to the bottom.
-            atBottom = state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP && !gridLayout && !tvLayout && !styleLayout,
+            atBottom = state.appearance.dockHere == com.shelf.launcher.data.DockPosition.TOP && !gridLayout && !tvLayout && !styleLayout,
             // Grid and TV room fill the screen: the status bar is fixed at the top there and drawn above the games, never covered.
-            modifier = (if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP && !gridLayout && !tvLayout && !styleLayout) {
+            modifier = (if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.TOP && !gridLayout && !tvLayout && !styleLayout) {
                 Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = if (state.appearance.legendOn) 32.dp else 0.dp)
@@ -3007,7 +3015,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (!(state.appearance.musicFxSecond && SecondScreenShown.value)) CornerVisualizers(
             playing = state.nowPlaying?.isPlaying == true,
             colors = musicSceneColors(),
-            topInset = if (state.appearance.statusOn && state.appearance.dockPosition != com.shelf.launcher.data.DockPosition.TOP) maxOf(48.dp, statusBarDp + 6.dp) else 10.dp,
+            topInset = if (state.appearance.statusOn && state.appearance.dockHere != com.shelf.launcher.data.DockPosition.TOP) maxOf(48.dp, statusBarDp + 6.dp) else 10.dp,
             bottomInset = if (state.appearance.legendOn) 34.dp else 10.dp,
             busy = buildSet {
                 // The round shortcuts folded into a corner ☰.
@@ -3031,7 +3039,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (shortcutsFloating) {
             MovableWidget(
                 HomeWidgets.SHORTCUTS,
-                defaultAlign = if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM) Alignment.TopCenter else Alignment.BottomCenter,
+                defaultAlign = if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM) Alignment.TopCenter else Alignment.BottomCenter,
                 defaultPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
             ) {
                 HomeShortcutBar(
@@ -3047,7 +3055,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // (Not on a style home that has them in its own menu already: the corner ☰ sat on its title / menu.)
         if (state.appearance.tileShortcuts && spot != com.shelf.launcher.data.ShortcutSpot.ROW && spot != com.shelf.launcher.data.ShortcutSpot.FREE &&
             !HomeEditState.active && !(styleLayout && styleHasShortcuts(state.appearance.homeLayout))) {
-            val dock = state.appearance.dockPosition
+            val dock = state.appearance.dockHere
             var top = spot == com.shelf.launcher.data.ShortcutSpot.TOP_LEFT || spot == com.shelf.launcher.data.ShortcutSpot.TOP_RIGHT
             val start = spot == com.shelf.launcher.data.ShortcutSpot.TOP_LEFT || spot == com.shelf.launcher.data.ShortcutSpot.BOTTOM_LEFT
             if (top && dock == com.shelf.launcher.data.DockPosition.TOP) top = false
@@ -3259,7 +3267,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // 0.6.15 (#120, RP Classic Spotlight): over a layout's own top row (status bar off) the layout was drawn
                 // over the bar — the typed text ran under its icons. The bar now sits above the layout, solid enough to read.
                 solid = styleLayout && !state.appearance.statusOn,
-                modifier = if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP) Modifier
+                modifier = if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.TOP) Modifier
                     .zIndex(5.5f)
                     .align(Alignment.BottomCenter)
                     .padding(bottom = (if (state.appearance.statusOn) 44.dp else 12.dp) + (if (state.appearance.legendOn) 30.dp else 0.dp))
@@ -3336,8 +3344,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         fun CategoriesBar() {
             if (state.games.isNotEmpty()) Box(Modifier) {
                 // (Update 212: the category bar is this layout's own category title, CategoryTitle.kt.)
-                if (state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
-                when (state.appearance.categoryBar) {
+                if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
+                when (state.appearance.categoryBarHere) {
                     com.shelf.launcher.data.CategoryBar.FULL -> PlatformFilterRow(
                         bottomGap = state.appearance.infoSpacing.dp.dp,
                         platforms = state.availablePlatforms,
@@ -3449,7 +3457,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
         // The row of games: top, middle or bottom (Appearance › Game row). The
         // legend always stays along the bottom edge.
-        val dockPosition = state.appearance.dockPosition
+        val dockPosition = state.appearance.dockHere
         val legendShown = state.appearance.legendOn
         @Composable
         fun BoxScope.GameRows() {
@@ -3591,7 +3599,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     .padding(top = if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else 12.dp, bottom = if (legendShown) 26.dp else 6.dp, start = 12.dp, end = 12.dp)
             ) {
                 // (Update 202: the category bar and the games are moved / resized / taken off in Edit Home.)
-                if (state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF) {
+                if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) {
                     Box(Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.GRID, "category"), "Category bar")) { CategoriesBar() }
                     Spacer(Modifier.height(4.dp))
                 }
@@ -3625,6 +3633,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 )
             }
         } else if (tileLayout) androidx.compose.runtime.CompositionLocalProvider(LocalTileScale provides state.appearance.tileScale / 100f) {
+            // (Update 317ah) The group's and the tiles' coordinates (plain holders, not state) and the tiles' middle in the group.
+            val tileCoords = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(2) }
+            val tileMid = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+            val measureTileMid = {
+                val g = tileCoords[0]; val t = tileCoords[1]
+                if (g != null && t != null && g.isAttached && t.isAttached) {
+                    // The same wherever the group is placed, so it settles at once.
+                    val m = g.localPositionOf(t, androidx.compose.ui.geometry.Offset.Zero).y + t.size.height / 2f
+                    if (kotlin.math.abs(m - tileMid.floatValue) > 1f) tileMid.floatValue = m
+                }
+            }
             // Tile-style: tiles a little above the middle, round buttons under them.
             // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
             Column(
@@ -3636,6 +3655,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             com.shelf.launcher.data.DockPosition.BOTTOM -> Alignment.BottomCenter
                         }
                     )
+                    // (Update 317ah, Toni: "Tile home is still kind of low in the middle": Middle centred the whole group — the
+                    // name and categories above the tiles, the buttons under — so the tiles sat under the screen's middle. Now
+                    // the tiles' own middle is the screen's, the rest kept on the screen.)
+                    .then(
+                        if (dockPosition != com.shelf.launcher.data.DockPosition.MIDDLE) Modifier
+                        else Modifier.layout { measurable, constraints ->
+                            val p = measurable.measure(constraints.copy(minHeight = 0))
+                            val h = constraints.maxHeight
+                            if (h == androidx.compose.ui.unit.Constraints.Infinity) return@layout layout(p.width, p.height) { p.place(0, 0) }
+                            val mid = tileMid.floatValue.takeIf { it > 0f } ?: (p.height / 2f)
+                            val y = (h / 2f - mid).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            layout(p.width, h) { p.place(0, y) }
+                        }
+                    )
+                    .onGloballyPositioned { tileCoords[0] = it; measureTileMid() }
                     .padding(
                         // At the top it sits right under the edge like the classic row (the status bar moves to the bottom).
                         top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) 10.dp else 0.dp,
@@ -3653,7 +3687,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // Default: right above the game names (between the round buttons and the name when the
                 // buttons sit above the tiles). "Under the row" puts them right under the tiles.
                 val tileCategoryBelow = state.appearance.categorySide == com.shelf.launcher.data.RowSide.BELOW
-                val showCats = state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF
+                val showCats = state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF
                 state.statusMessage?.let { message ->
                     Box(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)) {
                         Text(
@@ -3692,7 +3726,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 } else {
                     // (Update 235, #15/#16: the tiles are moved / resized / taken off in Edit Home like the Voltcap row's
                     // Game row (update 202) — Tile home was out of the list when that came.)
-                    Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"), "Game row")) {
+                    Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"), "Game row")
+                        .onGloballyPositioned { tileCoords[1] = it; measureTileMid() }) {
                     TileHomeRow(
                         lastPlayedAt = state.lastPlayedAt,
                         onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
@@ -3834,7 +3869,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         onToggleFavorite = { game -> viewModel.toggleFavorite(game) },
                         artOverrides = state.artOverrides,
                         cardArtType = state.appearance.cardArtFor(),
-                        categoryBelow = categoryBelow && state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF,
+                        categoryBelow = categoryBelow && state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF,
                         rowAtBottom = dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM, // (Update 153)
                         physicalMedia = state.physicalMedia,
                         screenshots = state.screenshots,
@@ -3961,7 +3996,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 onLoadMedia = { g -> viewModel.loadMedia(g) },
                 bottomPadding = if (legendShown) 24.dp else 0.dp,
                 wideFor = { g -> state.artOverrides[g.stableKey]?.wide ?: state.art[g.stableKey]?.wideGridUrl },
-                infoAtTop = state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP,
+                infoAtTop = state.appearance.dockHere == com.shelf.launcher.data.DockPosition.TOP,
                 cardArtType = state.appearance.cardArtFor(), physicalMedia = state.physicalMedia,
                 onNeedPhysical = { viewModel.loadPhysicalMedia(it) },
                 videoUrl = hg?.stableKey?.let { state.videoUrls[it] },
@@ -4024,7 +4059,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val nativeOnThisLayout = when (overlayLayout) {
             com.shelf.launcher.data.HomeLayout.GREENCORE -> GreenCoreNav.page == GreenCoreNav.Page.GAMES
             com.shelf.launcher.data.HomeLayout.TWIN_DESK,
-            com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE -> state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.OFF
+            com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE -> state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF
             com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC,
             com.shelf.launcher.data.HomeLayout.POCKET_RIBBON -> true // native menu/category navigation
             else -> CategoryTitle.nativeShown()
@@ -4033,7 +4068,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             !nativeOnThisLayout &&
             com.shelf.launcher.data.Features.categoryTitle.state.value != com.shelf.launcher.data.Features.CategoryTitleMode.OFF &&
             HomeWidgets.overlayId(overlayLayout, HomeWidgets.CATEGORY) !in com.shelf.launcher.data.Features.hiddenParts.state.value &&
-            !(!overlayLayout.styleHome && state.appearance.categoryBar == com.shelf.launcher.data.CategoryBar.OFF)
+            state.appearance.categoryBarFor(overlayLayout) != com.shelf.launcher.data.CategoryBar.OFF
         // (Update 212: the category title shows with no game too — an empty category; the other parts need the game.)
         val partsHere = (if (catFallback) overlayParts + HomeWidgets.CATEGORY else overlayParts)
             .filter { focusedGame != null || it == HomeWidgets.CATEGORY }
@@ -4075,7 +4110,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             // Update 204: the category's name on its own (all the categories with "All categories").
                             // (Update 212: the category title — the category or filter you're in, with or without a
                             // game; clear when it changes, then dimmed (Settings › Home › Category title).)
-                            if (part == HomeWidgets.CATEGORY && state.appearance.categoryBar != com.shelf.launcher.data.CategoryBar.FULL) {
+                            if (part == HomeWidgets.CATEGORY && state.appearance.categoryBarFor(overlayLayout) != com.shelf.launcher.data.CategoryBar.FULL) {
                                 val key = state.sortCategoryKey + "|" + state.searchQuery
                                 // Update 220 (#04): a tap on the category's name opens Choose a category (every category,
                                 // Continue playing too) — TV room and the other layouts showing just the name had no way to
@@ -4191,7 +4226,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     onDone = { viewModel.consumeNewArrivals() },
                     // Under the status bar (it used to cover the clock and the player there).
                     modifier = Modifier.align(Alignment.TopCenter).padding(
-                        top = if (state.appearance.dockPosition != com.shelf.launcher.data.DockPosition.TOP) maxOf(30.dp, statusBarDp + 6.dp) else 30.dp
+                        top = if (state.appearance.dockHere != com.shelf.launcher.data.DockPosition.TOP) maxOf(30.dp, statusBarDp + 6.dp) else 30.dp
                     )
                 )
             }
@@ -4279,14 +4314,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // centred on the screen it reached over TV channels' clock; it's narrower there when the gap is small.)
             modifier = if (noticeTopMiddle) Modifier.align(Alignment.TopCenter).padding(top = 8.dp, start = 200.dp, end = 280.dp) else Modifier
                 .align(
-                    if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP) Alignment.BottomEnd
+                    if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.TOP) Alignment.BottomEnd
                     else Alignment.TopEnd
                 )
                 .padding(
                     // (Update 211: below the layouts' own top row — at 44 dp it sat over their clock and icons, e.g.
                     // Spotlight on the RP Classic.)
                     top = 60.dp, end = 16.dp,
-                    bottom = if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.TOP) 30.dp else 0.dp
+                    bottom = if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.TOP) 30.dp else 0.dp
                 )
         )
 
@@ -4936,7 +4971,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Update 137: an R1 tile's control on the home screen (Art drop, Cartridge colour): the R1 panel closes for it, and
     // it sits under the game, or above it when the game row is at the bottom.
     androidx.compose.runtime.LaunchedEffect(HomeAdjust.open) { if (HomeAdjust.open != null) showNotifications = false }
-    HomeAdjustBar(atTop = state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM)
+    HomeAdjustBar(atTop = state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM)
 
     if (showNotifications) {
         // Re-check on every return to the app while open: coming back from the
@@ -5637,7 +5672,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     HomeEditState.active && isSystemKey(event.nativeKeyEvent.keyCode) -> false
                     HomeEditState.active -> HomeEditState.onKey(event) { id ->
                         if (id == HomeWidgets.SHORTCUTS) defaultFractions(
-                            if (state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM) Alignment.TopCenter else Alignment.BottomCenter
+                            if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM) Alignment.TopCenter else Alignment.BottomCenter
                         ) else defaultFractions(
                             when (state.appearance.musicPlayerPosition) {
                                 com.shelf.launcher.data.MusicPlayerPosition.TOP_LEFT -> Alignment.TopStart
@@ -5944,7 +5979,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 if (tileLayout && !aDialogIsOpen && !showDetails && quickJump == null && miniFocus == null) {
                     val code = event.nativeKeyEvent.keyCode
                     // The buttons sit above the tiles when the tiles are at the bottom: ▲ goes to them there.
-                    val buttonsAbove = state.appearance.dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM
+                    val buttonsAbove = state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM
                     val tileBarEnterKey = if (buttonsAbove) Key.DirectionUp else Key.DirectionDown
                     val tileBarLeaveKey = if (buttonsAbove) Key.DirectionDown else Key.DirectionUp
                     if (event.type == KeyEventType.KeyUp && dockKeysDown.remove(code)) return@onKeyEvent true

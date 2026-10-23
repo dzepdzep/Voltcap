@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.HomeLayout
+import com.shelf.launcher.data.CategoryBars
 
 /*
  * Update 212: the category's title on every layout, one way.
@@ -46,6 +47,13 @@ internal object CategoryTitle {
             onDispose { if (on) native.intValue = (native.intValue - 1).coerceAtLeast(0) }
         }
     }
+
+    /**
+     * Update 315: the layout in use shows its own category caption (Settings › Categories › Category name / the R1
+     * Categories tile, per layout — CategoryBars.OWN): off, the caption isn't drawn and nothing takes its place.
+     */
+    fun captionOn(a: com.shelf.launcher.data.AppearanceSettings): Boolean =
+        CategoryBars.of(a.homeLayout, a.categoryBarByLayout, a.categoryBar) != com.shelf.launcher.data.CategoryBar.OFF
 
     /** A layout's own label is showing the category now (reads state). */
     fun nativeShown(): Boolean = native.intValue > 0

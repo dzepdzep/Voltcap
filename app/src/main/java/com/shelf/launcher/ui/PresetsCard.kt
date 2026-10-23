@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.dockHere
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -280,7 +281,7 @@ private fun PresetDetails(
                 options = p.features,
                 // (Update 241, #110: where the row sits, the game you're on and the others, and Tile home's size — the
                 // previews of "Big tiles", "Big tile home" and "Cover shelf" were the same picture as their standard one.)
-                dock = after.dockPosition,
+                dock = after.dockHere,
                 focusCenter = after.focusPosition == com.shelf.launcher.data.FocusPosition.CENTER,
                 focusedWide = after.focusedCardStyle != com.shelf.launcher.data.FocusedCardStyle.COVER,
                 dimOthers = after.otherGamesLook != com.shelf.launcher.data.OtherGamesLook.NORMAL,

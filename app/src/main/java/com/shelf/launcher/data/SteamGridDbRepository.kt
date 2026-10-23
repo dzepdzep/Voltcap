@@ -268,13 +268,18 @@ class SteamGridDbRepository(private val api: SteamGridDbApi) {
         }
         val logoDeferred = async { runCatching { api.logos(gameId) }.getOrNull() }
 
+        val grid = gridDeferred.await()?.data?.firstOrNull()?.url
+        // (Update 317, Toni: an animated cover has its first still one kept beside it, for the cartridges and discs.)
+        val stillGrid = if (grid != null && AnimatedArt.looksAnimated(grid))
+            runCatching { api.grids(gameId, PORTRAIT_DIMENSIONS, STATIC) }.getOrNull()?.data?.firstOrNull()?.url else null
         GameArt(
-            gridUrl = gridDeferred.await()?.data?.firstOrNull()?.url,
+            gridUrl = grid,
             wideGridUrl = wideGridDeferred.await()?.data?.firstOrNull()?.url,
             heroUrl = heroDeferred.await(),
             logoUrl = logoDeferred.await()?.data?.firstOrNull()?.url,
-            animatedHeroUrl = animHeroDeferred.await()
-        )
+            animatedHeroUrl = animHeroDeferred.await(),
+            stillGridUrl = stillGrid
+        ).also { StillCovers.note(it) }
     }
 
     /** Every asset call failing (offline, a server hiccup) is not "this game has no art": not cached. */
@@ -285,5 +290,6 @@ class SteamGridDbRepository(private val api: SteamGridDbApi) {
         private const val WIDE_DIMENSIONS = "920x430"
         private const val BOTH = "static,animated"
         private const val ANIMATED = "animated"
+        private const val STATIC = "static"
     }
 }
