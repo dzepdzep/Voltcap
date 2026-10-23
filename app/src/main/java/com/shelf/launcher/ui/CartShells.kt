@@ -794,12 +794,15 @@ internal object CartShells {
         val plaque = header?.takeIf { !scan }
         val switchHeader = if (plaque == null && s.id == "switch" && !scan) SwitchLabel.header()?.let { h -> if (switchGame) h else brandStrip(h, brand) } else null
         // (Update 325, Toni: "the DS cartridges are missing the DS label" — some: those with a label scan have it printed.
-        // A DS / 3DS card drawn from its box cover gets the real sticker's white strip across its top, the console's name
-        // in plain grey letters on it — the name, not the logo.)
-        val paperHead = if (plaque == null && switchHeader == null && !scan && art != null && (s.id == "ds" || s.id == "3ds"))
-            paperStrip(brand.ifEmpty { com.shelf.launcher.data.ConsoleNames.display(if (s.id == "3ds") "3DS" else "NDS") }) else null
+        // A DS / 3DS card drawn from its box cover gets the real sticker's header across its top: a DS game on a DS card
+        // the sticker's own (SwitchLabel.dsStrip, Toni's picture of it), the art showing under its notched line; else a
+        // white strip with the console's name.)
+        val paperOn = plaque == null && switchHeader == null && !scan && art != null && (s.id == "ds" || s.id == "3ds")
+        val dsOwn = if (paperOn && s.id == "ds" && (brand.isEmpty() || brand == com.shelf.launcher.data.ConsoleNames.display("NDS"))) SwitchLabel.dsStrip() else null
+        val paperHead = if (!paperOn) null else dsOwn
+            ?: paperStrip(brand.ifEmpty { com.shelf.launcher.data.ConsoleNames.display(if (s.id == "3ds") "3DS" else "NDS") })
         val head = plaque ?: switchHeader ?: paperHead
-        val key = "f6|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        val key = "f6|${dsOwn != null}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
@@ -887,7 +890,8 @@ internal object CartShells {
         // across its top (SwitchLabel, from the template pack's label frame), at the header's own shape; the cover is cut
         // into the rest under it: its upper middle, leaving a box front's corner logo tile and rating off the card.)
         val headerH = head?.let { lr.width() * it.height / it.width.coerceAtLeast(1) }?.coerceAtMost(lr.height() * 0.4f) ?: 0f
-        val artRect = RectF(lr.left, lr.top + band + headerH, lr.right, lr.bottom)
+        // (Under the DS sticker's own header the art starts at its notch — the band's sides are see-through below its line.)
+        val artRect = RectF(lr.left, lr.top + band + headerH * (if (dsOwn != null) SwitchLabel.DS_ART_FROM else 1f), lr.right, lr.bottom)
         if (switchHeader != null) {
             c.drawBitmap(switchHeader, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
             if (art != null) c.drawBitmap(art, SwitchLabel.cutRect(art, artRect.width() / artRect.height().coerceAtLeast(1f)), artRect, p)
@@ -897,7 +901,7 @@ internal object CartShells {
             if (!title.isNullOrBlank()) text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
         } else if (art != null) {
             // (Update 307: the pack's plaque across the sticker's top, the art fitted under it as below.)
-            (plaque ?: paperHead)?.let { c.drawBitmap(it, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p) }
+            if (plaque != null) c.drawBitmap(plaque, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
             // (Update 206: the picture fills the label exactly — stretched to it, never cut — the label keeps the shell's
             // real size and place, the art adapts to it; a label scan is the sticker itself.)
             // (Update 240, #90: a scan of the whole sticker of a label that folds over the top has its fold cut off its
@@ -924,6 +928,8 @@ internal object CartShells {
                         android.graphics.Rect((pic.width - cw) / 2, 0, (pic.width - cw) / 2 + cw, pic.height)
                     }
                     c.drawBitmap(pic, src, artRect, p)
+                    // (Over the art: the DS sticker's own header lies over its top, its notched line on the picture.)
+                    c.drawBitmap(paperHead, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
                 } else {
                     val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
                         else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)

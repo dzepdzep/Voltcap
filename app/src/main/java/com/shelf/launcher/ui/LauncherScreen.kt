@@ -1383,7 +1383,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // once the screensaver has faded to black. Re-applied on every return,
     // since Android hands the lights back to the system while a game runs.
     val lightsContext = androidx.compose.ui.platform.LocalContext.current
-    var lightsDark by remember { mutableStateOf(false) }
+    // (Update 325, Toni: "the RGB lights still aren't turning off while the screen goes to black": they went dark on a
+    // timer of their own, which ran on while music held the screensaver up — and only with Voltcap running the lights,
+    // so with "System setting" (the default) nothing went dark at all. They follow the screensaver's real fade to black
+    // now (MusicBlackout.saverBlack), whoever runs the lights: with System setting the handheld's own light setting is
+    // held off while it's black and put back after.)
+    val lightsDark = MusicBlackout.saverBlack.value && state.appearance.lightsOffWithScreensaver
     var lightsResumes by remember { mutableStateOf(0) }
     val lightsLifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lightsLifecycle) {
@@ -1392,14 +1397,6 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         lightsLifecycle.lifecycle.addObserver(observer)
         onDispose { lightsLifecycle.lifecycle.removeObserver(observer) }
-    }
-    LaunchedEffect(screensaverOn, state.screensaver.blackoutMinutes, state.appearance.lightsOffWithScreensaver) {
-        lightsDark = false
-        val minutes = state.screensaver.blackoutMinutes
-        if (screensaverOn && minutes > 0 && state.appearance.lightsOffWithScreensaver) {
-            kotlinx.coroutines.delay(minutes * 60_000L)
-            lightsDark = true
-        }
     }
     val lightsActive = rememberIsActive()
     // "Theme colour" for the lights: follow the accent, settled (not every animation frame).
@@ -1418,6 +1415,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     ) {
         val a = state.appearance
         if (com.shelf.launcher.CrashGuard.safeMode) return@LaunchedEffect // safe mode: no controller lights
+        // (Update 325: Voltcap takes the lights while the screensaver holds them dark, also with System setting.)
+        val runs = a.lightsEnabled || lightsDark
         // Only while on screen with the display on: no background wake-ups, nothing during a game.
         if (!lightsActive) return@LaunchedEffect
         // Light writes (sysfs / HID) are blocking I/O: off the main thread.
@@ -1429,11 +1428,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // Update 200: the lights timer ("off with the screensaver") does the same while it holds them dark — the
             // Thor's firmware otherwise put its colour back on a stick — and puts the setting back when it ends.
             runCatching {
-                if (a.lightsEnabled && (lightsHeldOff || lightsDark)) com.shelf.launcher.device.SystemLights.holdOff(lightsContext)
+                if ((a.lightsEnabled && lightsHeldOff) || lightsDark) com.shelf.launcher.device.SystemLights.holdOff(lightsContext)
                 else com.shelf.launcher.device.SystemLights.release(lightsContext)
             }
             com.shelf.launcher.data.ControllerLights.apply(
-                lightsContext, a.lightsEnabled, on = !lightsDark && !lightsHeldOff, color = com.shelf.launcher.data.LightsTheme.resolve(a.lightsColor), brightness = lightLevel
+                lightsContext, runs, on = !lightsDark && !lightsHeldOff, color = com.shelf.launcher.data.LightsTheme.resolve(a.lightsColor), brightness = lightLevel
             )
         }
         // The handheld's own firmware switches the stick lights off after a while, and AYN's system puts its
@@ -1443,7 +1442,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val resendMs = if (com.shelf.launcher.device.RootShell.available) 8_000L else 30_000L
         // Update 200: also re-sent while the timer holds them dark with music playing (the pulse loop stops then,
         // so nothing kept them off and the firmware's colour came back).
-        while (a.lightsEnabled && !(a.lightsMusic && !lightsHeldOff && !lightsDark && state.nowPlaying?.isPlaying == true)) {
+        while (runs && !(a.lightsMusic && !lightsHeldOff && !lightsDark && state.nowPlaying?.isPlaying == true)) {
             kotlinx.coroutines.delay(resendMs)
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 if (lightsHeldOff || lightsDark) runCatching { com.shelf.launcher.device.SystemLights.holdOff(lightsContext) }

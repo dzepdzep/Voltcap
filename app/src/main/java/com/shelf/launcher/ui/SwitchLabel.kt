@@ -57,6 +57,7 @@ internal object SwitchLabel {
     fun prime(c: Context) {
         if (tried) return
         tried = true
+        primeDs(c)
         header = runCatching {
             val tpl = MediaTemplates.of("Switch") ?: return@runCatching null
             val cart = tpl.cart ?: return@runCatching null
@@ -74,4 +75,22 @@ internal object SwitchLabel {
 
     /** The header strip, or null before [prime] / when the template pack has none. */
     fun header(): Bitmap? = header
+
+    /**
+     * Update 325 (Toni's picture of the real DS sticker's top): the DS card's sticker header — the white band with the
+     * console's name over the notched line; see-through under the line, where the art shows. Loaded with [prime].
+     */
+    @Volatile private var dsHeader: Bitmap? = null
+
+    /** Where the art starts under [dsStrip], as a share of its height (the notch's top; the sides lower, see-through). */
+    const val DS_ART_FROM = 117f / 144f
+
+    fun dsStrip(): Bitmap? = dsHeader
+
+    private fun primeDs(c: Context) {
+        dsHeader = runCatching {
+            val opts = BitmapFactory.Options().apply { inScaled = false; inPreferredConfig = Bitmap.Config.ARGB_8888 }
+            BitmapFactory.decodeResource(c.resources, com.shelf.launcher.R.drawable.ds_label_strip, opts)
+        }.getOrNull()
+    }
 }

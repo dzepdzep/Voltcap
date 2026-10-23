@@ -1,6 +1,6 @@
 # Voltcap — what's been done (running summary)
 
-## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card top strip
+## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
 - **Thor recording after 324** (`voltcap-perf-20261023-190727.zip`, Mix look, All games): 308 → 250 ms a frame, handing
   the frame to the GPU 63 → 41 ms; the main thread still waits on the render thread ~half of the time. Cause: a
@@ -15,8 +15,23 @@
   with a real label scan have it printed): the sticker gets the real card's white strip across its top with the
   console's name in plain grey letters (the name, not the logo), the cover filling the rest of the sticker under it —
   cut to it, its upper part kept, no bands either side (`CartShells.paperStrip`).
+- **DS sticker header from Toni's picture** (Toni: "remove that and use this"): a DS game's card drawn from its cover wears
+  the real sticker's header (`res/drawable-nodpi/ds_label_strip.webp`, the white band with the console's name over the
+  notched line), the cover cut to the sticker under it and showing below the line (`SwitchLabel.dsStrip`, loaded with
+  `prime`). A 3DS card, or another console's game on a DS card, keeps the plain strip with its console's name.
+- **Second screen Showcase dock** (Toni: "Home black inside red outside, Chrome red inside white outside"): with the
+  one-colour icons every round button there is the accent symbol on the dock's faint plate — no accent plate behind Home,
+  no white plate behind the apps (`SecondShowcase.ShowcaseDock`).
+- **Stick lights off with the screensaver's black** (Toni: "the RGB lights still aren't turning off"): they follow the
+  screensaver's real fade to black (`MusicBlackout.saverBlack`) instead of a timer of their own (which ran on while music
+  held the screensaver up), and also with Lights › System setting (the default; nothing went dark before): the handheld's
+  own light setting is held off while it's black and put back after (`LauncherScreen`).
+- **Hide navigation bar on the Thor's lower screen** — not changed: AYN's system reads its setting for the lower screen's
+  bar only when that bar is made (see `data/GestureHint.kt`); with Force-hide on, turning the lower screen off and on once
+  (or a restart) makes it follow, and Voltcap keeps the setting held after that.
 - **N64 cartridges' bottom** (Toni): looks right now — nothing changed for it.
-- **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`.
+- **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/SwitchLabel.kt`, `ui/SecondShowcase.kt`, `ui/LauncherScreen.kt`,
+  `res/drawable-nodpi/ds_label_strip.webp` (new).
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1
