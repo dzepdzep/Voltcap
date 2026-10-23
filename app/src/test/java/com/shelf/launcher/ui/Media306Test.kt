@@ -20,14 +20,16 @@ class Media306Test {
         assertEquals("PlayStation 5", com.shelf.launcher.data.ConsoleNames.display("PS5"))
     }
 
-    // (Update 325, Toni: "delete the drawn cartridges — they don't look anything like our real models": a pack shape is
-    // never redrawn as a drawn cartridge any more — no drawn front, back or borrowed thickness; it stays the pack's picture.)
-    @Test fun packShapesStayTheirOwnPictures() {
-        for (look in CartLook.values()) assertNull(look.name, CustomCarts.authenticShell(look))
-        assertNull(CustomCarts.authenticForPick(SHELL_PREFIX + "pack:n64~opaque|PS2"))
-        assertNull(CustomCarts.depthForPick(SHELL_PREFIX + "pack:n64~opaque|PS2"))
-        assertNull(CustomCarts.authenticForPick(CUSTOM_CART + "PS2"))
-        // A library shell (not a pack shape) isn't a custom piece's real cartridge either.
+    @Test fun packShapesUseTheirRealCartridge() {
+        assertEquals("n64", CustomCarts.authenticShell(CartLook.N64)!!.id)
+        assertEquals("gb", CustomCarts.authenticShell(CartLook.GB)!!.id)
+        assertEquals("snes_na", CustomCarts.authenticShell(CartLook.SNES)!!.id)
+        assertNull(CustomCarts.authenticShell(CartLook.HUCARD))
+        assertNull(CustomCarts.authenticShell(CartLook.VITA))
+        val (sh, console) = CustomCarts.authenticForPick(SHELL_PREFIX + "pack:n64~opaque|PS2")!!
+        assertEquals("n64", sh.id); assertEquals("PS2", console)
+        assertEquals(sh.depth, CustomCarts.depthForPick(SHELL_PREFIX + "pack:n64~opaque|PS2")!!, 0.0001f)
+        // A library shell (not a pack shape) isn't a custom piece's real cartridge — it is one.
         assertNull(CustomCarts.authenticForPick(SHELL_PREFIX + "n64~grey|PS2"))
     }
 

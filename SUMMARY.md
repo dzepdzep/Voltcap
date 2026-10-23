@@ -2,26 +2,6 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
-- **Drawn cartridges removed for good** (Toni: "why did you ignore the remove drawn cartridge stuff — just delete them,
-  they don't look anything like our real models"). The first pass only hid them behind "Drawn only", which the R1 Disc
-  tile and the update 202 look move had switched on, so nothing changed on the device. Now no drawn shell shows anywhere:
-  - `mediaFor` never asks for the drawn 3D pick, the authentic shells or the real editions; a game without its own
-    photo is its console's cartridge from the template pack (the real models).
-  - A shell picked in the game's menu counts only when it's one of your pack's shapes (`CartShellStore.choice`); the
-    picker shows only Your custom shells (no Authentic tab, no real editions).
-  - Your pack's cartridges are your pack's own pictures again — not redrawn as the drawn cartridge in your plastic
-    (`CustomCarts.authenticShell` → null: no AuthenticPackCart front, drawn back or borrowed thickness).
-  - A game's own cartridge photo turned round, or in Inspect, has no drawn back or drawn connector opening any more —
-    its plain plastic.
-  - "Drawn only" goes off once (`applyRealPhotos325`); picking a disc on the R1 tile no longer turns it on.
-  - Kept: your custom pack cartridges for consoles without their own, the plain CDs, and the drawn discs.
-  - Test `Media306Test.packShapesUseTheirRealCartridge` (it checked the update 306 rule being removed) is now
-    `packShapesStayTheirOwnPictures`: every pack shape has no drawn cartridge behind it.
-  - The drawn-shell code itself is still in the app (nothing calls it for drawing); deleting the files is a later
-    clean-up once this is checked on the device.
-- Files: `ui/PhysicalMedia.kt`, `ui/CartShells.kt`, `ui/CartShellPicker.kt`, `ui/CustomCarts.kt`, `ui/SolidPiece.kt`,
-  `ui/MediaInspectView.kt`, `ui/QuickSettings.kt`, `data/AppearanceStore.kt`. Not compiled here (CI builds it).
-
 - **Twin icons: its own category page** (Toni: "Twin icons is missing a fitting category screen"): the Categories tool
   turns the tray into a grid of the categories — each its console's logo (or icon) and name on the same square icons
   with the same ring — and the top screen shows the one you're on big in the frame with its name on the card. D-pad
@@ -37,8 +17,6 @@
   presets keep your look (Twin desk / icons / showcase, Pocket layouts, Record crate, Card binder, Cube, Hero tiles,
   Disc station…) or have no preset kept the last look. They get a standard now: Pocket Quest its real cartridges, Tile
   home square tiles, the others plain covers (`layoutStandardLook`).
-- **Pocket Quest's cartridges** are the real ones now — with the change above (drawn shells only with "Always the drawn
-  one"), its Cartridges & discs show the console's real cartridge for games without their own photo.
 - **Pocket Ribbon: cover and cartridge** (Toni): the top screen's Game picture is the game's cover (SteamGridDB's, as the
   tiles show it) over a soft blurred fill of itself, with the game's cartridge (or disc) standing in front of it,
   wobbling / turning as in the cartridge looks, rising in at each game. Layout options › **Cartridge in front** (on by
@@ -50,11 +28,13 @@
   `ui/TwinScreens.kt`, `ui/GameLookPicker.kt`, `ui/PocketRibbon.kt`, `ui/PocketSettings.kt`, `ui/Motion.kt`,
   `data/Features.kt`. Not compiled here (CI builds it); not tried on a device.
 
-- **Real cartridges by default, drawn ones only with "Drawn only"** (Toni: "remove the drawn cartridges, they only break
-  stuff; keep the custom ones for consoles that don't have them and the CDs"): a game without its own photo is its
-  console's real cartridge from the template pack with its cover on the label; Voltcap's drawn shells (the 3D drawn
-  pick and the authentic drawn shell) only when Settings › Media shells is on. Custom carts for consoles without a
-  cartridge and the generic CDs stay (`PhysicalMedia.mediaFor`).
+- **Cartridges: the real shells stay, the template's flat pictures go** (Toni: "now it only shows drawn cartridges, no
+  real ones in sight"). Two passes tonight read "drawn" the wrong way round — they hid, then removed, Voltcap's real
+  shells (the ones matching each console's real cartridge) and left the template pack's flat pictures. Both are undone
+  (reverts of 4140d72 / a0504f2, and the first pass's gates in `mediaFor`), so cartridges are as before tonight: the
+  game's own photo when found, else its console's real shell. New: a cartridge console with no real shell (PS Vita…)
+  is on your custom cartridge pack when it's downloaded, instead of the template's flat picture; discs and UMDs keep
+  their own.
 - **Cube menu: games never cut at the strip's ends** — a piece shows only while it's whole inside the strip, fading as it
   leaves (`AnchoredStrip(wholeOnly)`, used by `StyleCube`).
 - **Pocket Classic: the Game Boy logos in their own colours** (Toni: "the Game Boy logo is just plain black"): GB / GBC /

@@ -52,8 +52,7 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
     val currentChoice = CartShells.parse(current)
     val currentId0 = current?.substringBefore('~')
     var query by remember { mutableStateOf("") }
-    // (Update 325: the drawn "Authentic" shells are gone — only your pack's shapes.)
-    var tab by remember { mutableStateOf(1) }
+    var tab by remember { mutableStateOf(0) }
     var group by remember { mutableStateOf<ShellGroup?>(null) }
     var colour by remember { mutableStateOf(currentChoice?.colourKey ?: "") }
     val region = remember(game.stableKey) { CaseCatalog.regionOf(game.romPath ?: game.name) }
@@ -86,6 +85,7 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
         ShelfTextField(query, { query = it }, "Search shells (NES, Genesis, card…)", leadingIcon = Icons.Filled.Search)
         Spacer(Modifier.height(8.dp))
         ChipFlow {
+            Chip("Authentic", accent = tab == 0) { tab = 0 }
             Chip("Your custom shells", accent = tab == 1) { tab = 1 }
             // (Update 200: "Your 3D pieces" is gone — the pre-rendered 3D models are retired; the drawn shells here turn
             // in real 3D themselves.)
@@ -106,8 +106,7 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
         }
         // Update 210: this game's real editions (MediaEditions) — its own plastic or special shell, with how sure each is.
         val editionsOn = com.shelf.launcher.data.Features.realEditions.state.value
-        // (Update 325: real editions were drawn shells — not offered any more.)
-        val editions = remember(platform, game.stableKey) { emptyList<Edition>() }
+        val editions = remember(platform, game.stableKey) { MediaEditions.forGame(platform, game.stableKey) }
         val autoEdition = remember(platform, game.stableKey, editionsOn) { MediaEditions.auto(platform, game.stableKey) }
         if (editions.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))

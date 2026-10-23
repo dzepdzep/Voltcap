@@ -152,8 +152,9 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
             // CustomCarts.authenticShell. Pack shapes without one keep the plain slab.)
             sh == null -> choice.pack?.let { CustomCarts.authenticShell(it) }?.let { real ->
                 val tone = packTone ?: CUSTOM_SHELL
-                // (Update 325: its thickness only — no drawn back, the drawn cartridges are gone.)
-                SolidSpec(choice.aspect, real.depth.coerceIn(0.02f, 0.4f), tone)
+                SolidSpec(choice.aspect, real.depth.coerceIn(0.02f, 0.4f), tone, back = {
+                    CustomCarts.authenticBack(real, tone, choice.clear, console, backStyle, 480)?.asImageBitmap()
+                }, fitBackToFace = true)
             } ?: SolidSpec(choice.aspect, 0.12f, packTone ?: CUSTOM_SHELL)
             else -> {
                 val colour = CartShells.colourOf(sh, choice.colourKey)
@@ -202,9 +203,15 @@ internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Flo
         // isn't the black of the usual Game Boy Color shell.)
         // (Update 207: a UMD photo at the UMD's own thickness.)
         if (sh == null) SolidSpec(aspect, if (platform != null && MediaShell.of(platform) == MediaShell.UMD) slabDepth(MediaShell.UMD) else 0.12f, tone ?: PLAIN_SHELL)
-        // (Update 325, Toni: "delete the drawn cartridges, they don't look anything like our real models": the photo
-        // keeps its real shell's thickness and plastic, but no drawn back — turned round it's its own plain plastic.)
-        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(ownShellColour(sh, platform, gameKey).argb).copy(alpha = 1f))
+        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(ownShellColour(sh, platform, gameKey).argb).copy(alpha = 1f), {
+            // (Update 207: in the photo's own plastic colour — a black or gold cartridge photo had the grey shell's back —
+            // and cut to the photo's outline when drawn: fitBackToFace.)
+            val own = ownShellColour(sh, platform, gameKey)
+            // (Update 228, #36: keyed by the colour — every photo's back was cached under one "photo" key, so a
+            // cartridge's back could come out in another photo's plastic.)
+            val colour = tone?.let { t -> t.copy(alpha = 1f).toArgb().let { c -> ShellColour("photo:$c", own.name, c, own.opacity) } } ?: own
+            runCatching { CartShells.back(sh, colour, 480, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
+        }, fitBackToFace = true)
     }
 }
 

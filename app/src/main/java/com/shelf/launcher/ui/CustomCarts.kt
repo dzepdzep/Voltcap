@@ -89,11 +89,7 @@ internal object CustomCarts {
      * game on your pack turns with that cartridge's thickness and back. Null for the PS Vita and HuCard shapes (flat cards
      * with no researched back to borrow).
      */
-    // (Update 325, Toni: "delete the drawn cartridges — they don't look anything like our real models; keep the custom
-    // ones": your pack's shapes are never redrawn as a drawn cartridge any more — not their front (AuthenticPackCart),
-    // back or thickness. They're your pack's own pictures, turning as the solid piece round them.)
-    @Suppress("UNUSED_PARAMETER")
-    fun authenticShell(look: CartLook): CartShell? = null
+    fun authenticShell(look: CartLook): CartShell? = CartUndersides.packFit(look)?.shellId?.let { CartShells.of(it) }
 
     /**
      * Update 306: the real cartridge behind a custom piece — your pack's cartridge ([CUSTOM_CART] + console, not an
