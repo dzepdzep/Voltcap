@@ -173,6 +173,10 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317aj — console badges on Tile home's tiles** (R1 Console badges): top left, or top right when the achievement
+  count takes the top left; not on a case that prints its console (`TileHome.kt`). **317ai reverted** (Toni: a
+  background picked for the game keeps the clip off it). Clips weren't playing because Battery saver was resting
+  (18 % battery) — clips pause in the low-battery rest by design.
 - **317ai — "Art + videos" plays clips again over a background you picked for the game:** update 314's rule (no clip
   over a game's own picked background) is no longer used (`LauncherScreen.kt`, both clip places); the rule in
   `BackgroundVideoPolicy.kt` stays only as an option with its default.

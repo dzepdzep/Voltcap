@@ -791,6 +791,9 @@ private fun HomeTile(
                 GameStateTag(gs, Modifier.align(Alignment.BottomStart).padding(6.dp), compact = !focused)
             }
         }
+        // (Update 317aj, Toni: the console badges — R1 Console badges — on Tile home's tiles too, as on the Voltcap row:
+        // the top left, or the top right when the achievement count has the top left. Not on a case printing its console.)
+        ConsoleBadge(game.platform, if (pillAt == Alignment.TopStart) Alignment.TopEnd else Alignment.TopStart, game.packageName, onCase = box3d != null)
     }
 }
 
