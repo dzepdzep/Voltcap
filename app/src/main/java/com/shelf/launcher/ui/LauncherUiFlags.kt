@@ -98,6 +98,9 @@ internal class LauncherUiFlags(viewModel: LauncherViewModel, context: Context, i
     var categoryImages by mutableStateOf(com.shelf.launcher.data.CategoryImagesStore(context).loadAll())
     var pickingImageFor by mutableStateOf<String?>(null)
     var categoryTiles by mutableStateOf<List<CategoryTile>>(emptyList())
+    /** Update 325: the category tiles taken off (CategoryTileOrder.isHidden), for Add category; and its list open. */
+    var removedCategoryTiles by mutableStateOf<List<CategoryTile>>(emptyList())
+    var addCategoryOpen by mutableStateOf(false)
     var stickLetter by mutableStateOf<Char?>(null)
     /** The platform browser (Slides / Wall / Grid): grabbed card, slide editor, Platform Options. */
     val pbState = PlatformBrowserState()

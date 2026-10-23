@@ -3063,6 +3063,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
             }
         }) { (special, platform) -> special?.name ?: platform?.let { "p:$it" } ?: "ALL" }
+            // (Update 325: not the categories taken off the category screen — CategoryTileOrder.isHidden.)
+            .filterNot { (special, platform) -> com.shelf.launcher.data.CategoryTileOrder.isHidden(special?.name ?: platform?.let { "p:$it" } ?: "ALL") }
 
     // ---- Category order, and where you left off ----
 

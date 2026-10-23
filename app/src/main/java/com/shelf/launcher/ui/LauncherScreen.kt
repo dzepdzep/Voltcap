@@ -1131,7 +1131,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // Art arrives in bursts while scraping: let a burst settle first.
         if (categoryTiles.isNotEmpty()) kotlinx.coroutines.delay(150)
         val snapshot = state
-        categoryTiles = withContext(Dispatchers.Default) { buildCategoryTiles(snapshot, fullNames, categoryImages) }
+        val all = withContext(Dispatchers.Default) { buildCategoryTiles(snapshot, fullNames, categoryImages) }
+        // (Update 325: the ones taken off stay off the screen; Add category lists them.)
+        categoryTiles = all.filterNot { com.shelf.launcher.data.CategoryTileOrder.isHidden(it.key) }
+        removedCategoryTiles = all.filter { com.shelf.launcher.data.CategoryTileOrder.isHidden(it.key) }
     }
     // The category showing now, as a category tile's key ("ALL", a special filter's name, "p:<platform or collection>").
     val currentCategoryKey = when {
@@ -4349,7 +4352,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     onSelect = { categoryIndex = it },
                     art = com.shelf.launcher.data.Features.categoryArt.state.value, style = state.appearance.categoryTileStyle,
                     // (Update 212: the tile's options — its picture, Reorder; a hold reorders now.)
-                    onOptions = { i -> categoryTiles.getOrNull(i)?.let { tile -> categoryIndex = i; pbState.options = tile } }
+                    onOptions = { i -> categoryTiles.getOrNull(i)?.let { tile -> categoryIndex = i; pbState.options = tile } },
+                    onAdd = if (removedCategoryTiles.isEmpty()) null else { { addCategoryOpen = true } }
                 )
             } else {
                 PlatformBrowser(
@@ -6506,8 +6510,28 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     else -> null
                 }
             },
-            onMusic = { tile.platform?.let { musicOverrideFor = com.shelf.launcher.data.MusicOverrides.platformKey(it) to tile.label } }
+            onMusic = { tile.platform?.let { musicOverrideFor = com.shelf.launcher.data.MusicOverrides.platformKey(it) to tile.label } },
+            // (Update 325: off the category screen and L2 / R2 — never the last one; showing it now, back to All games.)
+            onRemove = if (categoryTiles.size <= 1) null else { {
+                com.shelf.launcher.data.CategoryTileOrder.setHidden(tile.key, true)
+                if (tile.key == currentCategoryKey) { viewModel.setSpecialFilter(null); viewModel.setPlatformFilter(null) }
+                categoryIndex = categoryIndex.coerceAtMost((categoryTiles.size - 2).coerceAtLeast(0))
+                sounds?.play(UiSound.BACK)
+            } }
         )
+    }
+    // Update 325: Add category — the categories taken off, each put back with A / a tap.
+    if (addCategoryOpen) {
+        ShelfMenuDialog(title = "Add category", subtitle = "Back on the category screen and L2 / R2", onDismiss = { addCategoryOpen = false }, icon = Icons.Filled.Add) {
+            if (removedCategoryTiles.isEmpty()) MutedNote("Every category is on the screen.")
+            removedCategoryTiles.forEach { t ->
+                MenuRow(Icons.Filled.Add, t.label, t.subtitle) {
+                    com.shelf.launcher.data.CategoryTileOrder.setHidden(t.key, false)
+                    sounds?.play(UiSound.SELECT)
+                    if (removedCategoryTiles.size <= 1) addCategoryOpen = false
+                }
+            }
+        }
     }
     musicOverrideFor?.let { (key, title) ->
         MusicOverrideDialog(key, title) { musicOverrideFor = null }

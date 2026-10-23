@@ -30,6 +30,12 @@
   the disk (the app's files folder checked, the fitted copy checked) each time a game was built — 0.4 s of the recording;
   each answer is kept until the pack changes (`Packs.discFile`). The lower screen's frames are slow in the same moments
   only because both screens share one main thread — its own work was small.
+- **Remove / add categories on the category screen** (Toni: "Other apps appears in the categories screen for some reason
+  — add a way to add or remove categories there"): a tile's options (Y / Options) have **Remove from categories** — off
+  the category screen and L2 / R2 (and the style homes' tabs), never the last one; the one showing now goes back to All
+  games. **Add category** (a chip by Options, while any are off) lists them to put back. Saved with the tile order
+  (`CategoryTileOrder.isHidden / setHidden`, prefs "category_tile_order"). ("Other apps" shows when an app in the library
+  isn't a game.)
 - **Performance recording: the second screen too** (`second-screen.txt` in the zip): both screens are drawn by the app's
   one render thread and share the GPU — the Thor recordings show the main screen's frames waiting on it ~half the time.
 - **Second screen Showcase dock** (Toni: "Home black inside red outside, Chrome red inside white outside"): with the
@@ -44,7 +50,8 @@
   (or a restart) makes it follow, and Voltcap keeps the setting held after that.
 - **N64 cartridges' bottom** (Toni): looks right now — nothing changed for it.
 - **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/SwitchLabel.kt`, `ui/SecondShowcase.kt`, `ui/LauncherScreen.kt`,
-  `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`, `ui/Carousel.kt`, `data/Packs.kt`.
+  `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`, `ui/Carousel.kt`, `data/Packs.kt`,
+  `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1

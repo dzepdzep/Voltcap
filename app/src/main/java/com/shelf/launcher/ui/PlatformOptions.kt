@@ -43,7 +43,9 @@ internal fun PlatformOptionsDialog(
     onDesignSlide: (() -> Unit)?,
     onMusic: () -> Unit,
     /** Update 212: "Reorder" — picks this tile up to move it; null where it can't move here. */
-    onReorder: (() -> Unit)? = null
+    onReorder: (() -> Unit)? = null,
+    /** Update 325: "Remove from categories" — takes the tile off the category screen and L2 / R2; null: not offered. */
+    onRemove: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("PlatformOptionsDialog")
     val context = LocalContext.current
@@ -83,6 +85,9 @@ internal fun PlatformOptionsDialog(
             MenuRow(Icons.Filled.SwapVert, "Reorder", "Pick it up and move it: ◀ ▶ ▲ ▼ or drag, A puts it down") { onDismiss(); onReorder() }
         }
         MenuRow(Icons.Filled.Image, "Change picture…", "Your own picture for this tile") { onDismiss(); onPickPicture() }
+        if (onRemove != null) {
+            MenuRow(Icons.Filled.Delete, "Remove from categories", "Off the category screen and L2 / R2 — Add category brings it back", destructive = true) { onRemove(); onDismiss() }
+        }
         if (tile.customImage != null) {
             MenuRow(Icons.Filled.Delete, "Reset picture", "Back to the default picture", destructive = true) { onRemovePicture(); onDismiss() }
         }
