@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.IntSize
 import com.shelf.launcher.data.Features
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -731,7 +732,14 @@ internal class PieceShot {
                 // (A short wait, so a label still coming in isn't taken half drawn.)
                 kotlinx.coroutines.delay(120)
                 if (asked != key) return@launch
-                val b = runCatching { layer.toImageBitmap() }.getOrNull()
+                // (Update 325, Thor recording scrolling the Mix look: 2.7 s of 15 making these pictures — each one a
+                // hardware picture made on the main thread, waiting on the render thread, 20–100 ms — and a row of new
+                // games coming in all took theirs in the same frame: 1–2.4 s frames. One at a time now, a frame apart.)
+                val b = SHOTS.withLock {
+                    if (asked != key) null
+                    else runCatching { layer.toImageBitmap() }.getOrNull().also { kotlinx.coroutines.delay(24) }
+                }
+                if (asked != key) return@launch
                 if (b == null || b.width <= 0 || b.height <= 0) { if (++fails > 5) { off = true; image.value = null } }
                 else if (asked == key) { restarts = 0; taken++; image.value = b; done = true; if (keep != null) PieceShots.put(keep, b) }
             } finally {
@@ -743,6 +751,8 @@ internal class PieceShot {
 
     private companion object {
         const val MAX_SHOTS = 10
+        /** Update 325: one piece's picture made at a time, across every piece. */
+        val SHOTS = kotlinx.coroutines.sync.Mutex()
     }
 }
 

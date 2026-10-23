@@ -30,6 +30,12 @@
   the disk (the app's files folder checked, the fitted copy checked) each time a game was built — 0.4 s of the recording;
   each answer is kept until the pack changes (`Packs.discFile`). The lower screen's frames are slow in the same moments
   only because both screens share one main thread — its own work was small.
+- **Thor recordings 20:55 / 21:07** (scrolling the Mix look; switching categories): (1) scrolling froze for 1–2.4 s now
+  and then — the cartridges drawn from parts each make a picture of themselves (PieceShot), a hardware picture made on the
+  main thread (20–100 ms each, 2.7 s of 15), and a row of new games coming in made theirs in the same frame. One at a
+  time now, a frame apart (`PieceShot.take`, `SHOTS`). (2) Switching categories: while both collections slide and fade,
+  every piece counted as not opaque and drew into a buffer of its own each frame (61 ms a frame to the GPU); the slide's
+  fade no longer counts — a piece fades part by part for that moment, drawn straight in (`CarouselItem.opaqueOf`).
 - **Remove / add categories on the category screen** (Toni: "Other apps appears in the categories screen for some reason
   — add a way to add or remove categories there"): a tile's options (Y / Options) have **Remove from categories** — off
   the category screen and L2 / R2 (and the style homes' tabs), never the last one; the one showing now goes back to All

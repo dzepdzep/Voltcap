@@ -1499,8 +1499,11 @@ private fun CarouselItem(
     val shadeOf: () -> Float = { if (culled.value) 0f else c.place(ps.s, relNow.value()).shade }
     // Update 314 (Flip 2 ANR, the GPU out of memory): drawn fully opaque now — the slot's alpha (its place's, a category
     // slide's fade) all 1 — so a solid piece needs no buffer of its own to fade as one. (Inspect's dimming is the group's.)
+    // (Update 325, Thor recording switching categories: 61 ms a frame handing it to the GPU — while the two collections
+    // slide and fade, every piece counted as not opaque and drew itself into a buffer of its own in every frame. Their
+    // fade no longer counts: for that short slide a piece fades part by part, drawn straight in.)
     val opaqueOf: () -> Boolean = {
-        c.place(ps.o, relNow.value()).alpha * fadeNow.value() >= 0.999f
+        c.place(ps.o, relNow.value()).alpha >= 0.999f
     }
     // Update 316: one turn handed to the piece for the slot's whole life (reading the latest turn / opacity) — a new one at
     // every recomposition (each step, for the game left and the one reached) made the piece rebuild its drawing.
