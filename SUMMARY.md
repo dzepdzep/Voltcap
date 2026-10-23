@@ -1,6 +1,6 @@
 # Voltcap — what's been done (running summary)
 
-## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each
+## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card top strip
 
 - **Thor recording after 324** (`voltcap-perf-20261023-190727.zip`, Mix look, All games): 308 → 250 ms a frame, handing
   the frame to the GPU 63 → 41 ms; the main thread still waits on the render thread ~half of the time. Cause: a
@@ -11,7 +11,11 @@
   square drawn from its content (`SolidPiece`).
 - **Still seen in the recording:** ~16 ms a frame of Compose bookkeeping as games come in and go at the row's ends
   (next round, if the new recording still shows it).
-- **Copy:** `ui/SolidPiece.kt`.
+- **DS / 3DS cards drawn from a box cover** (Toni: "the DS cartridges are missing the DS label" — some of them: the ones
+  with a real label scan have it printed): the sticker gets the real card's white strip across its top with the
+  console's name in plain grey letters (the name, not the logo), the cover fitted under it (`CartShells.paperStrip`).
+- **N64 cartridges' bottom** (Toni): looks right now — nothing changed for it.
+- **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1

@@ -793,8 +793,13 @@ internal object CartShells {
         val switchGame = brand.isEmpty() || brand == com.shelf.launcher.data.ConsoleNames.display("Switch") || brand == com.shelf.launcher.data.ConsoleNames.display("Switch2")
         val plaque = header?.takeIf { !scan }
         val switchHeader = if (plaque == null && s.id == "switch" && !scan) SwitchLabel.header()?.let { h -> if (switchGame) h else brandStrip(h, brand) } else null
-        val head = plaque ?: switchHeader
-        val key = "f5|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        // (Update 325, Toni: "the DS cartridges are missing the DS label" — some: those with a label scan have it printed.
+        // A DS / 3DS card drawn from its box cover gets the real sticker's white strip across its top, the console's name
+        // in plain grey letters on it — the name, not the logo.)
+        val paperHead = if (plaque == null && switchHeader == null && !scan && art != null && (s.id == "ds" || s.id == "3ds"))
+            paperStrip(brand.ifEmpty { com.shelf.launcher.data.ConsoleNames.display(if (s.id == "3ds") "3DS" else "NDS") }) else null
+        val head = plaque ?: switchHeader ?: paperHead
+        val key = "f6|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
@@ -892,7 +897,7 @@ internal object CartShells {
             if (!title.isNullOrBlank()) text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
         } else if (art != null) {
             // (Update 307: the pack's plaque across the sticker's top, the art fitted under it as below.)
-            if (plaque != null) c.drawBitmap(plaque, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
+            (plaque ?: paperHead)?.let { c.drawBitmap(it, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p) }
             // (Update 206: the picture fills the label exactly — stretched to it, never cut — the label keeps the shell's
             // real size and place, the art adapts to it; a label scan is the sticker itself.)
             // (Update 240, #90: a scan of the whole sticker of a label that folds over the top has its fold cut off its
@@ -1069,6 +1074,28 @@ internal object CartShells {
         val t = brand.uppercase()
         while (tp.measureText(t) > w * 0.9f && tp.textSize > h * 0.2f) tp.textSize -= 1f
         c.drawText(t, w / 2f, h / 2f - (tp.ascent() + tp.descent()) / 2f, tp)
+        strips.put(key, b)
+        return b
+    }
+
+    /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
+    private fun paperStrip(brand: String): Bitmap {
+        val key = "paper|$brand"
+        strips.get(key)?.let { return it }
+        val w = 540; val h = 110
+        val b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(b)
+        c.drawColor(0xFFF3F3F1.toInt())
+        val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFF8C8E93.toInt(); textAlign = Paint.Align.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            textSize = h * 0.5f; letterSpacing = 0.06f
+        }
+        val t = brand.uppercase()
+        while (tp.measureText(t) > w * 0.86f && tp.textSize > h * 0.2f) tp.textSize -= 1f
+        c.drawText(t, w / 2f, h / 2f - (tp.ascent() + tp.descent()) / 2f, tp)
+        // (A thin grey line under it, where the strip meets the picture.)
+        val lp = Paint().apply { color = 0xFFC9CACD.toInt() }
+        c.drawRect(0f, h - 3f, w.toFloat(), h.toFloat(), lp)
         strips.put(key, b)
         return b
     }
