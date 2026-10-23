@@ -124,11 +124,7 @@ internal fun YearRecapDialog(
     LaunchedEffect(others, gone) {
         val wanted = (if (com.shelf.launcher.data.Features.recapForeignArt.value == com.shelf.launcher.data.Features.RecapForeignArt.COVER)
             others.map { (k, i) -> Game(i.name.ifBlank { k.substringAfterLast('/') }, i.platform, 0, com.shelf.launcher.data.SourceType.ROM, romPath = k) }
-        else emptyList()) + gone.map { k ->
-            val file = android.net.Uri.decode(k).substringAfterLast('/')
-            val folder = android.net.Uri.decode(k).substringBeforeLast('/').substringAfterLast('/').substringAfterLast(':')
-            Game(file.substringBeforeLast('.'), folder, 0, com.shelf.launcher.data.SourceType.ROM, romPath = k)
-        }
+        else emptyList()) + gone.map { k -> com.shelf.launcher.data.goneGame(k) }
         if (wanted.isNotEmpty()) onNeedForeignCovers(wanted)
     }
     val coverFor: (String) -> String? = { k ->

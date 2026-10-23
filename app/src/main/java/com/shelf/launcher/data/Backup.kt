@@ -611,6 +611,8 @@ object Backup {
                 SecureStore.clearRelogin(app, store.second)
             }
         }
+        // (Update 318: the RetroAchievements login is kept in memory once read — the restored one is read afresh.)
+        RaCredentialsStore.forget()
         return done
     }
 

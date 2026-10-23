@@ -1,5 +1,32 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 23 Oct 2026 (318): Stats' recaps get the covers of games no longer on the device ahead
+
+- **Covers fetched before they're needed** (Toni: "Stats don't show pictures of games that aren't on the device — scrape
+  them before"): `LauncherViewModel.prefetchStatsArt()` looks up the covers of every game in the play history that isn't
+  in the library — played on another device, or here and since removed — most played first, 20 s after start and each
+  time Stats opens; kept in the Save Vault art store the recaps read. A game whose cover wasn't found is tried again after
+  a week. Removed games are searched by their file's name, the console guessed from its folder (`data.goneGame`, shared
+  with `YearRecapDialog`).
+- **Game window (picture on top, buttons under) cut off at the bottom** (Toni's screenshot: the "Saves" / performance
+  line half off the window, no way to scroll): the room it saves under the picture is a guess, and a fact line that wraps
+  pushed the line out. The window now scrolls when it still doesn't fit (`GameWindow.kt`, Arrange.STACK); the D-pad's
+  focus scrolls to what it lands on.
+- **Freeze opening a game's window** (crash report 2026-10-22 19:36, Flip 2, "Input dispatching timed out"): the
+  RetroAchievements login was read on the main thread, and its first decryption through the Keystore took over 5 s.
+  `RaCredentialsStore` now decrypts each account once and keeps it in memory (forgotten on save / clear / a backup
+  restore), and the view model reads it off the main thread at start (`warm()`). The other two freezes in those reports
+  (19:17, 20:16) were the GPU stalls the carousel work in 314–317 removed; the 21:10 crash was the charge-limit start
+  fixed in 317.
+- **Spines cut at their ends on DS, Game Boy, Game Boy Color cases** (Toni's Inspect screenshots: Assassin's Creed II
+  Discovery's "NINTENDO DS", Astérix's "GAME BOY", Dr. Mario's title cut at the top): a spine scan a little narrower than
+  the case's side was zoomed to fill it, cutting its top and bottom. `spineWhole` (Case3D.kt) keeps the whole height —
+  widens a narrower scan to the side (up to 1/0.7×), fits a far narrower one inside whole, cuts only a scan wider than
+  the side (in the middle, as before). Keep cases and cardboard boxes; N64 and your own cuts unchanged.
+- **Copy:** `ui/Case3D.kt`, `LauncherViewModel.kt`, `data/OtherDevices.kt`, `data/RaCredentialsStore.kt`, `data/Backup.kt`,
+  `ui/YearRecapDialog.kt`, `ui/LauncherScreen.kt`, `ui/HubScreens.kt`, `ui/GameWindow.kt`.
+- **Not compiled here** (no Android SDK); not tried on a device.
+
 ## Update — 22 Oct 2026 (317): Cartridge carousel GPU memory and redraws, first-launch charge-limit crash
 
 **Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6), not merged; CI is the compile check, not

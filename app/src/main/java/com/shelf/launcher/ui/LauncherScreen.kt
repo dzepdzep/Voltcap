@@ -735,6 +735,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     val batteryWatchContext = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) { com.shelf.launcher.data.BatteryWatch.start(batteryWatchContext) }
     // Update 112: the animations follow the layout on screen (its own choices, Home › Animations › per layout).
+    // (Update 318: the covers of played games no longer in the library, fetched once a while after start — the recaps then
+    // show them when opened; a game already tried waits a week.)
+    LaunchedEffect(state.games.isNotEmpty()) {
+        if (state.games.isEmpty()) return@LaunchedEffect
+        kotlinx.coroutines.delay(20_000)
+        viewModel.prefetchStatsArt()
+    }
     SideEffect {
         MotionPrefs.layout = state.appearance.homeLayout
         MotionPrefs.globalHero = state.appearance.heroMotion; MotionPrefs.zoomPercent = state.appearance.heroZoomPercent
@@ -5123,6 +5130,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onDismiss = { hubScreen = null }
         )
         HubScreen.STATS -> StatsScreen(
+            // (Update 318) Opening Stats also fetches the missing covers of games no longer here, for its recaps.
+            onShown = { viewModel.prefetchStatsArt() },
             games = state.games, playtime = state.playtime, completion = state.raCompletionById.values,
             appearance = state.appearance, onAppearanceChange = { viewModel.setAppearance(it) },
             statuses = state.playStatuses, onOpenRecap = { yearRecap = it },

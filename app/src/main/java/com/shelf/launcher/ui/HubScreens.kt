@@ -279,8 +279,10 @@ internal fun StatsScreen(
     onAppearanceChange: (com.shelf.launcher.data.AppearanceSettings) -> Unit,
     statuses: Map<String, com.shelf.launcher.data.StatusEntry>,
     onOpenRecap: (com.shelf.launcher.data.YearRecap.Period) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onShown: () -> Unit = {}
 ) {
+    androidx.compose.runtime.LaunchedEffect(Unit) { onShown() }
     ShelfDialog(
         icon = Icons.Filled.BarChart, title = "Stats", subtitle = "How much you play",
         onDismiss = onDismiss, widthFraction = 0.92f, maxContentHeightFraction = 0.74f

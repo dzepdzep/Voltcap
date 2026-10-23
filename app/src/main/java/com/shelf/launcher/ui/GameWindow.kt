@@ -1348,7 +1348,13 @@ private fun WindowBody(
             val iconsRow = if (!details && inner < 600.dp) 52.dp else 0.dp
             val btnRoom = 100.dp + iconsRow + (if (info) 104.dp else 0.dp) + (if (bottom) 82.dp else 0.dp) + (if (status != null) 46.dp else 0.dp)
             val screenW = minOf(inner, (maxH - btnRoom - (if (look.panel != null) 28.dp else 0.dp)) * 1.78f).coerceAtLeast(120.dp)
-            Column(panelMod, horizontalAlignment = Alignment.CenterHorizontally) {
+            // (Update 318, Toni: "sometimes stuff gets cut off and I can't scroll down there": the room above is a guess — a
+            // fact line that wraps, a long title — so the window now scrolls when it still doesn't fit; the D-pad's focus
+            // brings the save / performance line into view.)
+            Column(
+                panelMod.heightIn(max = (maxH - (if (look.panel != null) 28.dp else 0.dp)).coerceAtLeast(120.dp)).verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Media(Modifier.width(screenW).height(screenW / 1.78f), showName = true)
                 if (info && !details) {
                     Spacer(Modifier.height(8.dp))

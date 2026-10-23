@@ -132,3 +132,14 @@ object OtherDevices {
         return out
     }
 }
+
+/**
+ * Update 318: a game in the play history whose file is no longer in the library, made from its address [key] — named by
+ * the file (without its extension), the console guessed from its folder — so its cover can be looked up by name.
+ */
+fun goneGame(key: String): Game {
+    val path = android.net.Uri.decode(key)
+    val file = path.substringAfterLast('/')
+    val folder = path.substringBeforeLast('/').substringAfterLast('/').substringAfterLast(':')
+    return Game(file.substringBeforeLast('.'), folder, 0, SourceType.ROM, romPath = key)
+}
