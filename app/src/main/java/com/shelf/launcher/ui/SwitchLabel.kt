@@ -57,7 +57,7 @@ internal object SwitchLabel {
     fun prime(c: Context) {
         if (tried) return
         tried = true
-        primeDs(c)
+        primeFrames(c)
         header = runCatching {
             val tpl = MediaTemplates.of("Switch") ?: return@runCatching null
             val cart = tpl.cart ?: return@runCatching null
@@ -76,21 +76,37 @@ internal object SwitchLabel {
     /** The header strip, or null before [prime] / when the template pack has none. */
     fun header(): Bitmap? = header
 
+    /** Update 325: a sticker frame — the template's sticker with its art window see-through ([win], 0..1 of it). */
+    class StickerFrame(val bmp: Bitmap, val win: android.graphics.RectF)
+
+    private val frames = java.util.concurrent.ConcurrentHashMap<String, StickerFrame>()
+
     /**
-     * Update 325 (Toni's picture of the real DS sticker's top): the DS card's sticker header — the white band with the
-     * console's name over the notched line; see-through under the line, where the art shows. Loaded with [prime].
+     * Update 325 (Toni: "can we just use this style if there isn't a real cartridge"): the DS / 3DS card's sticker from the
+     * template pack's label frame (its header with the console's name, the bottom band, the cut corner), for shell [id]
+     * "ds" / "3ds". Loaded with [prime]; null before, or when the template pack's frame isn't the one bundled.
      */
-    @Volatile private var dsHeader: Bitmap? = null
+    fun stickerFrame(id: String): StickerFrame? = frames[id]
 
-    /** Where the art starts under [dsStrip], as a share of its height (the notch's top; the sides lower, see-through). */
-    const val DS_ART_FROM = 117f / 144f
-
-    fun dsStrip(): Bitmap? = dsHeader
-
-    private fun primeDs(c: Context) {
-        dsHeader = runCatching {
+    private fun primeFrames(c: Context) {
+        for ((id, platform, res) in listOf(
+            Triple("ds", "NDS", com.shelf.launcher.R.drawable.tpl_cartl_nds), Triple("3ds", "3DS", com.shelf.launcher.R.drawable.tpl_cartl_3ds)
+        )) runCatching {
+            val tpl = MediaTemplates.of(platform) ?: return@runCatching
+            val cart = tpl.cart ?: return@runCatching
+            val lab = tpl.label?.takeIf { it.res == res } ?: return@runCatching
             val opts = BitmapFactory.Options().apply { inScaled = false; inPreferredConfig = Bitmap.Config.ARGB_8888 }
-            BitmapFactory.decodeResource(c.resources, com.shelf.launcher.R.drawable.ds_label_strip, opts)
-        }.getOrNull()
+            val b = BitmapFactory.decodeResource(c.resources, lab.res, opts) ?: return@runCatching
+            // The sticker: the plain card's window (cart.win); the art window inside it (lab.win), as a share of it.
+            val l = (cart.win[0] * b.width).toInt(); val t = (cart.win[1] * b.height).toInt()
+            val r = (cart.win[2] * b.width).toInt().coerceAtMost(b.width); val bot = (cart.win[3] * b.height).toInt().coerceAtMost(b.height)
+            if (r - l < 8 || bot - t < 8) return@runCatching
+            val cw = cart.win[2] - cart.win[0]; val ch = cart.win[3] - cart.win[1]
+            val win = android.graphics.RectF(
+                ((lab.win[0] - cart.win[0]) / cw).coerceIn(0f, 1f), ((lab.win[1] - cart.win[1]) / ch).coerceIn(0f, 1f),
+                ((lab.win[2] - cart.win[0]) / cw).coerceIn(0f, 1f), ((lab.win[3] - cart.win[1]) / ch).coerceIn(0f, 1f)
+            )
+            frames[id] = StickerFrame(Bitmap.createBitmap(b, l, t, r - l, bot - t).also { if (it !== b) b.recycle() }, win)
+        }
     }
 }

@@ -15,14 +15,14 @@
   with a real label scan have it printed): the sticker gets the real card's white strip across its top with the
   console's name in plain grey letters (the name, not the logo), the cover filling the rest of the sticker under it —
   cut to it, its upper part kept, no bands either side (`CartShells.paperStrip`).
-- **DS sticker header from Toni's picture** (Toni: "remove that and use this"): a DS game's card drawn from its cover wears
-  the real sticker's header (`res/drawable-nodpi/ds_label_strip.webp`, the white band with the console's name over the
-  notched line), the cover cut to the sticker under it and showing below the line (`SwitchLabel.dsStrip`, loaded with
-  `prime`). A 3DS card, or another console's game on a DS card, keeps the plain strip with its console's name. Both get
-  the real sticker's white band along the bottom (about a tenth of its height); the art stops above it. The sticker's
-  lower left corner is cut at 45° (2.1 mm, off the template) — the band ran into the card's cut corner. On the band, a
-  product code like the real ones ("NTR-ASSE-USA", 3DS "CTR-P-ASSE"): made up from the title and your case region (the
-  drawing has no ROM file to read the real one from), the same each time (`CartShells.productCode`).
+- **DS / 3DS cards without a label scan wear the template's sticker** (Toni: "can we just use this style if there isn't a
+  real cartridge"): the template pack's label frame (`tpl_cartl_nds` / `tpl_cartl_3ds` — the header with the console's
+  name, the bottom band, the cut corner) over the card's sticker, the cover cut into its window (`SwitchLabel.stickerFrame`,
+  loaded with `prime`). Another console's game on a DS card's shape: a white strip with its console's name and a white
+  band along the bottom. The sticker's lower left corner is cut at 45° (2.1 mm) — the band ran into the card's cut corner.
+  On the bottom band a product code like the real ones ("NTR-ASSE-USA", 3DS "CTR-P-ASSE"): made up from the title and
+  your case region (the drawing has no ROM file to read the real one from), the same each time (`CartShells.productCode`).
+  (Toni's own header picture, tried first, is gone again.)
 - **Performance recording: the second screen too** (`second-screen.txt` in the zip): both screens are drawn by the app's
   one render thread and share the GPU — the Thor recordings show the main screen's frames waiting on it ~half the time.
 - **Second screen Showcase dock** (Toni: "Home black inside red outside, Chrome red inside white outside"): with the
@@ -37,8 +37,7 @@
   (or a restart) makes it follow, and Voltcap keeps the setting held after that.
 - **N64 cartridges' bottom** (Toni): looks right now — nothing changed for it.
 - **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/SwitchLabel.kt`, `ui/SecondShowcase.kt`, `ui/LauncherScreen.kt`,
-  `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`,
-  `res/drawable-nodpi/ds_label_strip.webp` (new).
+  `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1
