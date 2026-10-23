@@ -367,6 +367,14 @@ internal fun layoutStandardLook(a: AppearanceSettings): AppearanceSettings {
     val std = p.apply(a)
     val out = a.copy(cardArtType = std.cardArtType, focusedCardStyle = std.focusedCardStyle)
     val F = Features
+    // (Update 322, Toni: "Layout standard isn't changing, just the old one" — Tile home's preset has no look of its own,
+    // so the look you had stayed. Its standard is the Switch-style home's: covers as square tiles.)
+    if (p.look == null && a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) {
+        F.squareTiles.value = true; F.spineLook.value = false; F.carouselWide.value = false
+        F.cartsOnly.value = false; F.caseWithMedia.value = false; F.discCase.value = false
+        setModelsLook(false)
+        return out.copy(cardArtType = CardArtType.COVER)
+    }
     val l = p.look ?: return out
     val type = out.cardArtType
     F.squareTiles.value = l.tiles
@@ -479,6 +487,8 @@ internal fun currentLookName(a: AppearanceSettings): String = when (val m = look
     LookMain.CARTS -> showAsNow(a).short
     // (Update 280: the two Cases looks.)
     LookMain.CASES -> if (Features.boxSpine.value) "Cases · turned" else "Cases"
+    // (Update 322: Square tiles named as a look of its own on the tile.)
+    LookMain.COVERS -> if (Features.squareTiles.value && !Features.spineLook.value) "Tiles" else m.short
     else -> m.short
 }
 
@@ -490,7 +500,8 @@ internal fun stepGameLook(a: AppearanceSettings): AppearanceSettings {
     // Update 204: Covers → Cases → Mix → Cartridges → Discs → Art (Cartridges & discs' three Show as each a step).
     // Update 280: Covers → Wide capsules → Cases → Cases · turned → Mix → Cartridges → Discs → Art → Layout standard.
     return when (lookMainOf(a)) {
-        LookMain.COVERS -> applyMainLook(LookMain.WIDE, a)
+        // (Update 322, Toni: "the Tile look is nowhere to be found": Covers → Square tiles → Wide…, a step of its own.)
+        LookMain.COVERS -> if (coverStyleNow(a) != LookCoverStyle.TILE) pickCoverStyle(LookCoverStyle.TILE, a) else applyMainLook(LookMain.WIDE, a)
         LookMain.WIDE -> applyMainLook(LookMain.CASES, a).also { pickCaseView(false) }
         LookMain.CASES -> if (!Features.boxSpine.value) { pickCaseView(true); a }
             else pickShowAs(LookShowAs.MIX, applyMainLook(LookMain.CARTS, a))

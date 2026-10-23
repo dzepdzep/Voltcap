@@ -1,5 +1,21 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 23 Oct 2026 (322): what the Thor recording showed; Square tiles and Layout standard on the Look tile
+
+- **Thor performance recording** (`voltcap-perf-20261023-154140.zip`, Case stacks / carousel, 397 frames in 15 s, p50 71 ms):
+  the main thread was busy 14.5 of 16 s — 6.6 s Compose (animation phase 12–80 ms a frame), 6.1 s drawing (3.6 s of it
+  waiting for the render thread / GPU to take the frame), 1.2 s key handling. Fixed now:
+  - **Click sounds off the main thread** (`UiSounds.play`: SoundPool.play — a call into the audio service — took 1.1 s;
+    the sound and the buzz now start on a thread of their own).
+  - **Case-back titles** (`printTitle`: two regexes compiled for every case in every frame, 0.8 s — compiled once, each
+    title worked out once).
+  Still the big part: drawing the 3D cases (CaseDraw ~0.7 s on the main thread, plus the GPU wait) — next round.
+- **Square tiles on the R1 Look tile** (Toni: "the Tile look is nowhere to be found"): Covers → **Tiles** → Wide → …
+  (it was only under Covers › Cover style in the hold list); the tile names it "Tiles".
+- **Layout standard on Tile home** (Toni: "it isn't changing, just the old one"): Tile home's preset has no look of its
+  own, so the look stayed; its standard is covers as square tiles now (`layoutStandardLook`).
+- **Copy:** `ui/UiSounds.kt`, `ui/BoxSides.kt`, `ui/GameLookPicker.kt`.
+
 ## Update — 23 Oct 2026 (321): performance recorder, idle rest, battery watcher fix, spine fit, icon styles, install script
 
 - **Performance recorder** (Settings › Diagnostics › Performance recording, `data/perf/PerfRecorder.kt`): "Record 15 s"
