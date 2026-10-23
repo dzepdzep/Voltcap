@@ -318,6 +318,8 @@ object Features {
     val homeHeaderTight = BoolPref("home_header_tight", true)
     /** Game look "Tile": the Voltcap row's covers as big squares (the Tile home's tiles), the one you're on a bit bigger. */
     val squareTiles = BoolPref("look_square_tiles", false)
+    /** Update 317ah: Tile home's round buttons were put under its tiles the first time it was picked (once only). */
+    val tileHomeButtonsSet = BoolPref("tile_home_buttons_set", false)
     /**
      * Update 166: in the carousels, the game you're on unfolds into its wide capsule as you scroll (the look "Covers ·
      * wide capsule"; the Voltcap row has it from the row's own "It shows as"). Off: it stays a cover.

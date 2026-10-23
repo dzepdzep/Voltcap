@@ -173,6 +173,11 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317ah — Tile home like the Switch home:** "Middle" centred the whole group (name and categories above the tiles,
+  buttons under), so the tiles sat under the screen's middle. Now the tiles' own middle is the screen's middle (the rest
+  kept on screen; Top / Bottom unchanged). The first time Tile home is picked its round buttons come on under the tiles
+  (`Features.tileHomeButtonsSet`, once only — changed later in Settings › Home › Round shortcuts, it stays).
+  `LauncherScreen.kt`, `LauncherViewModel.kt` (`setAppearance`), `data/Features.kt`. Not compiled here (CI builds it).
 - **317ag — Pull-out stack with cartridges / discs back to the edges:** with a non-case look (cartridges, discs, …) the
   Pull-out stack stands as the Spine wall (update 238), and 317g's exact count cut that short too. With Pull-out stack
   picked it's three times the number again, whatever the look.

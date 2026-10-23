@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.border
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
@@ -3629,6 +3630,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 )
             }
         } else if (tileLayout) androidx.compose.runtime.CompositionLocalProvider(LocalTileScale provides state.appearance.tileScale / 100f) {
+            // (Update 317ah) The group's and the tiles' coordinates (plain holders, not state) and the tiles' middle in the group.
+            val tileCoords = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(2) }
+            val tileMid = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+            val measureTileMid = {
+                val g = tileCoords[0]; val t = tileCoords[1]
+                if (g != null && t != null && g.isAttached && t.isAttached) {
+                    // The same wherever the group is placed, so it settles at once.
+                    val m = g.localPositionOf(t, androidx.compose.ui.geometry.Offset.Zero).y + t.size.height / 2f
+                    if (kotlin.math.abs(m - tileMid.floatValue) > 1f) tileMid.floatValue = m
+                }
+            }
             // Tile-style: tiles a little above the middle, round buttons under them.
             // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
             Column(
@@ -3640,6 +3652,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             com.shelf.launcher.data.DockPosition.BOTTOM -> Alignment.BottomCenter
                         }
                     )
+                    // (Update 317ah, Toni: "Tile home is still kind of low in the middle": Middle centred the whole group — the
+                    // name and categories above the tiles, the buttons under — so the tiles sat under the screen's middle. Now
+                    // the tiles' own middle is the screen's, the rest kept on the screen.)
+                    .then(
+                        if (dockPosition != com.shelf.launcher.data.DockPosition.MIDDLE) Modifier
+                        else Modifier.layout { measurable, constraints ->
+                            val p = measurable.measure(constraints.copy(minHeight = 0))
+                            val h = constraints.maxHeight
+                            if (h == androidx.compose.ui.unit.Constraints.Infinity) return@layout layout(p.width, p.height) { p.place(0, 0) }
+                            val mid = tileMid.floatValue.takeIf { it > 0f } ?: (p.height / 2f)
+                            val y = (h / 2f - mid).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            layout(p.width, h) { p.place(0, y) }
+                        }
+                    )
+                    .onGloballyPositioned { tileCoords[0] = it; measureTileMid() }
                     .padding(
                         // At the top it sits right under the edge like the classic row (the status bar moves to the bottom).
                         top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) 10.dp else 0.dp,
@@ -3696,7 +3723,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 } else {
                     // (Update 235, #15/#16: the tiles are moved / resized / taken off in Edit Home like the Voltcap row's
                     // Game row (update 202) — Tile home was out of the list when that came.)
-                    Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"), "Game row")) {
+                    Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"), "Game row")
+                        .onGloballyPositioned { tileCoords[1] = it; measureTileMid() }) {
                     TileHomeRow(
                         lastPlayedAt = state.lastPlayedAt,
                         onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },

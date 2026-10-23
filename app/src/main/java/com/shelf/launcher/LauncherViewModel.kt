@@ -684,7 +684,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val switching = settingsIn.homeLayout != old.homeLayout
         if (switching) com.shelf.launcher.data.LayoutOnly.leaving(getApplication(), old.homeLayout)
         // Each home layout keeps its own look: park the one you leave, bring in the one you enter.
-        val swapped = com.shelf.launcher.data.swapLayoutLook(old, settingsIn)
+        val swapped0 = com.shelf.launcher.data.swapLayoutLook(old, settingsIn)
+        // (Update 317ah, Toni: "the round shortcuts should be there by default — it should look like the Switch home": the
+        // first time Tile home is picked, its round buttons come on under the tiles, whatever another layout left them as.
+        // Changed after that in Settings › Home › Round shortcuts, it stays as you set it.)
+        val swapped = if (switching && swapped0.homeLayout == com.shelf.launcher.data.HomeLayout.TILES && !com.shelf.launcher.data.Features.tileHomeButtonsSet.value) {
+            com.shelf.launcher.data.Features.tileHomeButtonsSet.value = true
+            swapped0.copy(tileShortcuts = true, shortcutSpot = com.shelf.launcher.data.ShortcutSpot.ROW)
+        } else swapped0
         appearanceStore.save(swapped)
         // …and after the switch the shared settings come back and the next layout's own ones come in.
         val settings = if (switching && com.shelf.launcher.data.LayoutOnly.entered(getApplication(), old.homeLayout, swapped.homeLayout))
