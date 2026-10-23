@@ -173,6 +173,9 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317aq — no white haze over the game art** (Voltcap row, Tile home: the top / bottom shade took a light theme's
+  background colour — now always dark, `BackdropArt` in `HomeChrome.kt`), and Tile home with Endless fills to the right
+  edge: once each only when the games don't fill the row.
 - **317ap — Tile home, Auto badge corner:** the bottom right when the trophy count is along the top (a tile is too
   narrow for both in one row — the count ended in "…"); otherwise the top left.
 - **317ao — console badge where you want it:** Settings › Game look › Console badges has a new row, **Auto / Top left /

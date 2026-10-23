@@ -1163,10 +1163,12 @@ internal fun BackdropArt(
                     Brush.verticalGradient(
                         // Lighter than it used to be, so the art reaches
                         // all the way down instead of fading out at the row.
-                        0.0f to ShelfTheme.background.copy(alpha = 0.5f),
+                        // (Update 317aq, Toni: a white haze at the top and bottom with a light theme — it took the theme's
+                        // background colour. Always a dark shade now: the status bar's text is white.)
+                        0.0f to Color.Black.copy(alpha = 0.45f),
                         0.18f to Color.Transparent,
                         0.6f to Color.Transparent,
-                        1.0f to ShelfTheme.background.copy(alpha = 0.5f)
+                        1.0f to Color.Black.copy(alpha = 0.45f)
                     )
                 )
         )

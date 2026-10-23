@@ -503,7 +503,10 @@ internal fun TileHomeRow(
                 // (Update 317ak, Toni: "the games don't go to the end, and the far left one just disappears": each game once
                 // cut the row short and dropped the game leaving on the left at once. Only needed when the row holds nearly
                 // all the games — with more than fit (plus the one sliding off each side) no game shows twice on the screen.)
-                val onceOnly = looping && n < m.visible + 2
+                // (Update 317aq, Toni: with Endless on the row still stopped short of the right edge — with only a few more games
+                // than fit, once each couldn't fill both edges. Now once each only when the games don't fill the row at all;
+                // otherwise the slivers at the two edges may show the same game's two ends of the loop.)
+                val onceOnly = looping && n <= m.visible
                 for (i in (from..to).filter { i -> !(onceOnly && !drawnOnce(i - vFocus, n, loopBefore)) }) {
                     val game = games[if (looping) i.mod(n) else i]
                     key(game.stableKey, if (looping) i.floorDiv(n) else 0) {
