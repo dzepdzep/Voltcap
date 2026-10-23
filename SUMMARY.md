@@ -65,14 +65,8 @@
   app's cartridge, disc or case wore its one-colour icon in the accent, which follows the game you're on — every app's
   piece was drawn again in a new colour at each step. They wear the app's own icon now (`rememberOwnAppIcon`; the
   one-colour icons stay everywhere else).
-- **Carousel cartridges drawn like the 3D cases** (Toni: "the cases work really well without much sluggishness" — "yes
-  we can try"): in the carousels a cartridge is now two turned panels — its face, and one side panel in its plastic's
-  colour (with the sides' sheen) between the face's edge and the back's — drawn straight onto the view with the very camera
-  the turned layers use (android.graphics.Camera, as RenderNode's rotationY). Was a stack of turned copies, up to 24 a
-  piece, each a turned layer of its own. The side panel starts and ends where the shell's outline reaches its edge
-  (`edgeSpansOf`, worked out once per face off the main thread). A clear piece, one seen from behind and one whose face
-  picture isn't made yet are drawn as before; Inspect and the other views keep the detailed drawing
-  (`PieceTurn.panels`, set by `CarouselItem`).
+- **Cartridges as two turned panels — tried and taken back** (Toni: the N64 cartridges, UMDs and others showed layers on
+  their sides, and it didn't help the sluggishness much): the carousel's cartridges are the stacked copies again.
 - **Lighter sides past the nearest 5 each side** (Toni: "with 5 each side it works super well — but I don't want the
   sides to feel empty"): with To the edge the carousel still fills to the screen's edges; a cartridge / disc past the 5
   nearest each side draws its sides with at most 3 copies, no smear (`PieceTurn.farOf`, `FULL_NEAR`, `FAR_COPIES`). (Its
