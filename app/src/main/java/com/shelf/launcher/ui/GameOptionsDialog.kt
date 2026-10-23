@@ -109,6 +109,10 @@ fun GameOptionsDialog(
         }
         if (onInspect != null) {
             MenuRow(Icons.Filled.ViewInAr, "Inspect…", "Its case and ${inspectNoun(game.platform)} in 3D — open the case, turn them, look at the back and under", onClick = onInspect)
+            // (Update 321: how its spine scan goes onto the 3D case — a press steps to the next choice.)
+            val spineCtx = androidx.compose.ui.platform.LocalContext.current
+            val fit = com.shelf.launcher.data.SpineFits.of(game.stableKey)
+            MenuRow(Icons.Filled.ViewInAr, "Spine fit: ${fit.label}", fit.about + " — press for the next", onClick = { com.shelf.launcher.data.SpineFits.next(spineCtx, game.stableKey) })
         }
         if (onDsCase != null) {
             MenuRow(Icons.Filled.ViewInAr, "DS case…", "The case it came in: with or without the GBA holder, eco, North American or European", onClick = onDsCase)

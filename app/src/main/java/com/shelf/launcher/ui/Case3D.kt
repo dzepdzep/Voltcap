@@ -171,8 +171,17 @@ internal fun Case3D(
     // Update 312 is strictly an N64 Inspect alignment fix. Do not change
     // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
     // (Update 316: fitted away from the screen's thread — rememberDerived.)
+    // (Update 321: the game's own Spine fit — its menu — over the usual fitting.)
+    val spineMode = com.shelf.launcher.data.SpineFits.of(g.stableKey)
     val ownFitted: List<android.graphics.Bitmap>? =
-        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox319|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        if (spineMode != com.shelf.launcher.data.SpineFits.Mode.AUTO && userSpine == null) rememberDerived(ownUpright, "spineMode|${spineMode.name}|$depth") { b ->
+            listOf(when (spineMode) {
+                com.shelf.launcher.data.SpineFits.Mode.FILL -> fillCrop(b, depth, 0.02f)
+                com.shelf.launcher.data.SpineFits.Mode.WHOLE -> fitSpineInside(b, depth, false)
+                else -> scaleAcross(b, depth)
+            })
+        }
+        else if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox319|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317: keep cases as update 240 had them — the middle cut keeps the spine of a scan that carries slivers of
         // the back and front beside it, as the GameCube ones do; see the note above SPINE_TOO_WIDE.)
         else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else "spineFit318|$depth") { b ->

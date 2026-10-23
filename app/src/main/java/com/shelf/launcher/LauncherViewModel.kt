@@ -6334,6 +6334,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // (Update 318: the RetroAchievements login decrypted now, off the main thread — its first read took over 5 s on the
         // Flip 2 and froze the game window that asked for it.)
         viewModelScope.launch(Dispatchers.IO) { raCredentialsStore.warm() }
+        // (Update 321: each game's own spine fit.)
+        com.shelf.launcher.data.SpineFits.init(application)
         preloadPhysicalMedia()
         com.shelf.launcher.data.ScanReport.count = { countRealMedia() }
         com.shelf.launcher.data.ScanReport.saveAll = { saveAllRealMedia() }
