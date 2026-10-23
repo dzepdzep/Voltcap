@@ -170,6 +170,9 @@ tested on a handheld.
   `BoxPart.TOP`: the strip between back and front (found, or your own cut) turned a quarter back; only from a scan no
   wider than `WRAP_MAX` (2.2) for its height. `rememberBoxSides` uses it for the top of a cardboard box with a landscape
   front (N64, SNES) that has no top picture of its own. The short sides aren't in such a wrap — unchanged.
+- **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
+  hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
+  own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`,
   `ui/FullScanCutEditor.kt`, `ui/BoxSides.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,

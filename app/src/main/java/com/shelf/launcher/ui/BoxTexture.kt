@@ -109,7 +109,9 @@ internal object BoxTexture {
     }
 
     fun spine(physical: List<Pair<String, String>>?, platform: String?): String? =
-        physical?.firstOrNull { it.first == "Spine" }?.second
+        // (Update 317: your own cut first — userSpine.)
+        userSpine(physical, platform)
+            ?: physical?.firstOrNull { it.first == "Spine" }?.second
             ?: if (!com.shelf.launcher.data.Features.spineCuts.state.value) null
             else fullScan(physical)?.let { model(it, BoxPart.SPINE, platform) }
                 // Update 108: last of all, the spine face of ScreenScraper's 3D box picture (the side you see on the left).
@@ -124,7 +126,10 @@ internal object BoxTexture {
      */
     fun realSpine(physical: List<Pair<String, String>>?, platform: String?): String? {
         if (LookStyles.spineForAll()) return null
-        return physical?.firstOrNull { it.first == "Spine" }?.second
+        // (Update 317, Toni: "correcting the cut still doesn't fix the 3D model" — the game window's case and the other
+        // layouts' boxes take their spine from here, which never looked at your own cut.)
+        return userSpine(physical, platform)
+            ?: physical?.firstOrNull { it.first == "Spine" }?.second
             ?: if (com.shelf.launcher.data.Features.originalCases.state.value) spine(physical, platform) else null
     }
 
