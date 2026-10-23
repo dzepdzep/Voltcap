@@ -777,6 +777,12 @@ private fun HomeTile(
         // badge's height and its distance from the tile's edge — ConsoleBadge sizes its pill from the tile's width.)
         val chipH = (tile * 0.13f).coerceIn(11.dp, 20.dp)
         val chipPad = chipH * 0.3f
+        // (Update 317ao: the console badge's corner — picked, else the top right when the count has the top left — and, when
+        // the two share a row, the count kept clear of it: it shrinks its text, then ends in "…", never running under it.)
+        val badgeAt = badgeCornerOr(if (pillAt == Alignment.TopStart) Alignment.TopEnd else Alignment.TopStart)
+        val topRow = { a: Alignment? -> a == Alignment.TopStart || a == Alignment.TopEnd || a == Alignment.TopCenter }
+        val sharesRow = com.shelf.launcher.data.Features.consoleBadges.state.value && pillAt != null && topRow(pillAt) == topRow(badgeAt)
+        val pillMax = if (sharesRow) (tile - chipH * 3.4f - chipPad * 4).coerceAtLeast(chipH * 2.5f) else tile
         if (possible != null && possible > 0 && look.achievementsOnCards && titles.coverAchievements && pillAt != null) {
             val earned = progress.NumAchieved ?: 0
             Row(
@@ -784,6 +790,7 @@ private fun HomeTile(
                     .align(pillAt)
                     .padding(chipPad)
                     .height(chipH)
+                    .widthIn(max = pillMax)
                     .clip(RoundedCornerShape(50))
                     .background(Color.Black.copy(alpha = 0.62f))
                     .padding(horizontal = chipH * 0.4f),
@@ -813,7 +820,7 @@ private fun HomeTile(
         }
         // (Update 317aj, Toni: the console badges — R1 Console badges — on Tile home's tiles too, as on the Voltcap row:
         // the top left, or the top right when the achievement count has the top left. Not on a case printing its console.)
-        ConsoleBadge(game.platform, if (pillAt == Alignment.TopStart) Alignment.TopEnd else Alignment.TopStart, game.packageName, onCase = box3d != null)
+        ConsoleBadge(game.platform, badgeAt, game.packageName, onCase = box3d != null)
     }
 }
 

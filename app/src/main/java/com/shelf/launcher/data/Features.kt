@@ -349,6 +349,9 @@ object Features {
     val consoleBadgeTheme = BoolPref("console_badge_theme", false)
     /** Update 125: badges with the console's logo from Dan Patrick's white set (the R1 Console badges tile's second step). */
     val consoleBadgeLogos = BoolPref("console_badge_logos", false)
+    /** Update 317ao: which corner of a game's tile the console badge takes (Auto: where each layout puts it, clear of the rest). */
+    enum class BadgeCorner(val label: String) { AUTO("Auto"), TOP_LEFT("Top left"), TOP_RIGHT("Top right"), BOTTOM_LEFT("Bottom left"), BOTTOM_RIGHT("Bottom right") }
+    val consoleBadgeCorner = EnumPref("console_badge_corner", BadgeCorner.AUTO, BadgeCorner.values())
     /**
      * Update 125: with the Cartridges & discs look, every game as a cartridge — its own cartridge for cartridge consoles
      * (the real scan, or the drawn one), a plain cartridge with its cover as the label for disc and UMD games. The R1

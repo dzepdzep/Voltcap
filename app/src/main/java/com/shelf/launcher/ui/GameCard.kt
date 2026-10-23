@@ -543,7 +543,7 @@ fun GameCard(
             val badgeLow = if (discChips) coverPlace == com.shelf.launcher.data.Features.AchPlace.ABOVE
             else if (!banner && coverPlace != com.shelf.launcher.data.Features.AchPlace.CORNER) coverPlace == com.shelf.launcher.data.Features.AchPlace.ABOVE
             else look.trophyCorner == com.shelf.launcher.data.CardCorner.TOP_LEFT
-            val corner = if (badgeLow) Alignment.BottomStart else Alignment.TopStart
+            val corner = badgeCornerOr(if (badgeLow) Alignment.BottomStart else Alignment.TopStart)
             // (Update 202: not over a case — its printed band shows the console already; the corner stays free then.)
             val onCase = pick == null && box3d != null && !(look.spines && !focused && !banner && !pinnedWide)
             ConsoleBadge(game.platform, corner, game.packageName, onCase = onCase)
