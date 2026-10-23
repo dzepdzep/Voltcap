@@ -485,12 +485,17 @@ internal fun Modifier.solidPiece(
             val yaw = testPose?.first ?: ((turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f))
             // (Update 317: the view's shade, on the piece's own light — see PieceTurn.shadeOf.)
             val shadeS = if (turn?.shadeOf != null) turn.shadeOf.invoke().coerceIn(0f, 1f) else 0f
-            val lightShade = side != null && art != null
-            val shadeK = if (lightShade) 1f - shadeS else 1f
-            // (Without its pictures: darkened through the whole-piece buffer's paint.)
-            val bufShade = !lightShade && shadeS > 0.01f
+            // (Update 325, Thor recording — Mix look, All games, still 250 ms a frame, 41 ms of it handing the frame to the
+            // GPU: a piece without a sides' picture — the cartridge / disc photos — was darkened through its whole-piece
+            // buffer, so every game aside drew itself into a buffer of its own in every frame as the row moved. Each of its
+            // parts — sides, face, back — now carries the shade in its own light, like the pieces with a sides' picture; the
+            // buffer is left for a piece facing you square, drawn as its content, and for one fading in or out.)
+            val shadeK = 1f - shadeS
+            val flat = abs(yaw) < 0.25f
+            // (Facing you square, drawn as its own content: darkened through the whole-piece buffer's paint.)
+            val bufShade = flat && art == null && shadeS > 0.01f
             whole.colorFilter = if (bufShade) SolidLight.of(1f - shadeS) else null
-            if (abs(yaw) < 0.25f && !(lightShade && shadeS > 0.01f)) {
+            if (flat && (bufShade || shadeS <= 0.01f)) {
                 if (bufShade) {
                     whole.record(size = buf) { translate(m.toFloat(), m.toFloat()) { this@onDrawWithContent.drawContent() } }
                     translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
@@ -554,7 +559,7 @@ internal fun Modifier.solidPiece(
             // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
             // over in stripes (the "glitches" round the turned cartridges in the Box flow stacks).
             val sideTone = spec.tone.copy(alpha = 1f)
-            edge.colorFilter = SolidLight.of(0.42f + 0.22f * abs(sn))
+            edge.colorFilter = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
             if (art == null) {
                 solid.record { drawLayer(face) }
                 edge.record {
@@ -586,7 +591,7 @@ internal fun Modifier.solidPiece(
             madeShade = shadeS
             madeMoving = moving
             if (c >= 0f) {
-                lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))
+                lit.colorFilter = SolidLight.of((1f - 0.4f * abs(sn)) * shadeK)
                 if (art == null) lit.record { drawLayer(face) }
             } else {
                 val sb = spec.back

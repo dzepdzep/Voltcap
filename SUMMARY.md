@@ -1,5 +1,19 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each
+
+- **Thor recording after 324** (`voltcap-perf-20261023-190727.zip`, Mix look, All games): 308 → 250 ms a frame, handing
+  the frame to the GPU 63 → 41 ms; the main thread still waits on the render thread ~half of the time. Cause: a
+  cartridge / disc photo without a sides' picture was darkened (the shadow of the games aside) through a buffer of its
+  own — every game aside was drawn into its own offscreen picture in every frame as the row moved. Now its sides, face
+  and back each carry the shade in their own light (as the shells with a sides' picture already did), so an opaque
+  piece is drawn straight in. The buffer stays only for a piece fading in / out at the row's ends and one facing you
+  square drawn from its content (`SolidPiece`).
+- **Still seen in the recording:** ~16 ms a frame of Compose bookkeeping as games come in and go at the row's ends
+  (next round, if the new recording still shows it).
+- **Copy:** `ui/SolidPiece.kt`.
+- **Checked:** CI build on push. **Not tested** on a device.
+
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1
 
 - **Mix look / All games on the Thor** (`voltcap-perf-….zip`, p50 308 ms a frame, 63 ms of it handing the frame to the
