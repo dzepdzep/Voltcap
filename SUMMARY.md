@@ -16,6 +16,10 @@
   whole icon in them (`AppIconCache.loadMono`, `MonoAppIcon`); Voltcap's shortcuts their symbol alone. No rounded plate,
   no blurred copy behind (the empty "+" slot keeps its faint plate). Settings › Screens › App dock › **Icons in the
   theme's colour** (on; `Features.secondDockMono`) — off: the apps' own colour icons, still without the plate.
+- **…and everywhere** (Toni: "the icons always used for everything"): with that switch on, every app icon in Voltcap —
+  app drawer, shortcuts, notifications, apps in the library and on the home layouts — is its one-colour symbol in the
+  accent (`rememberAppIcon` returns it, tinted once per icon and colour; `AppIconArt` drops the banner and the blurred
+  copy behind it).
 - **Copy:** `ui/Case3D.kt`, `ui/BoxSides.kt`, `ui/SettingsDialog.kt`, `data/Features.kt`, `ui/AppIcons.kt`,
   `ui/SecondDockShortcuts.kt`, `ui/SecondScreenHome.kt`, `ui/ScreenLayoutsUi.kt`.
 - **Not compiled here**; GitHub's build check runs on the PR. Not tried on a device.

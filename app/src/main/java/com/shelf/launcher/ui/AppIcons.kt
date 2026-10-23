@@ -109,6 +109,9 @@ internal object AppIconCache {
 @Composable
 internal fun rememberAppIcon(packageName: String?): ImageBitmap? {
     com.shelf.launcher.Breadcrumbs.mark("rememberAppIcon")
+    // (Update 319, Toni: "the icons always used for everything": with Icons in the theme's colour on, every app icon in
+    // Voltcap is its one-colour symbol in the theme's accent.)
+    if (com.shelf.launcher.data.Features.secondDockMono.state.value) return rememberMonoAppIcon(packageName, com.shelf.launcher.ui.theme.ShelfTheme.accent)
     val context = LocalContext.current
     // Update 151: the icon is kept with the package it belongs to. produceState keeps its value across key changes, so for
     // the first frame after the package changed (a slot moving on to another app) it still held the LAST app's icon —
@@ -151,7 +154,9 @@ internal fun AppIconArt(
 ) {
     com.shelf.launcher.Breadcrumbs.mark("AppIconArt")
     val icon = rememberAppIcon(packageName)
-    val banner = if (wide) rememberAppBanner(packageName) else null
+    // (Update 319: with the one-colour icons, the symbol alone — no banner, no blurred copy behind it.)
+    val mono = com.shelf.launcher.data.Features.secondDockMono.state.value
+    val banner = if (wide && !mono) rememberAppBanner(packageName) else null
 
     // Plain if / else on purpose: an early `return@Box` inside Box (an inline
     // composable) corrupts Compose's internal bookkeeping on this compiler
@@ -162,7 +167,7 @@ internal fun AppIconArt(
         } else if (icon != null) {
             // Update 130: the enlarged copy is blurred once, in the picture (BakedBlur): the live blur did nothing on
             // Android 11 and older (and was left out in Lite), so a small icon blown up to the card showed its pixels.
-            val soft = rememberBakedBlur(androidx.compose.runtime.remember(icon) { icon.asAndroidBitmap() }, 24.dp, keepLast = false)
+            val soft = if (mono) null else rememberBakedBlur(androidx.compose.runtime.remember(icon) { icon.asAndroidBitmap() }, 24.dp, keepLast = false)
             if (soft != null) Image(
                 soft, null,
                 contentScale = ContentScale.Crop,
@@ -196,28 +201,42 @@ internal fun AppIconArt(
  */
 @Composable
 internal fun MonoAppIcon(packageName: String?, tint: Color, modifier: Modifier = Modifier) {
+    val icon = rememberMonoAppIcon(packageName, tint)
+    if (icon != null) Image(icon, null, contentScale = ContentScale.Fit, modifier = modifier) else Box(modifier)
+}
+
+/**
+ * Update 319: [packageName]'s one-colour symbol ([AppIconCache.loadMono]) already in [tint] — the app's own monochrome
+ * icon filled with it, else its symbol in the tint's shades (light and dark kept). Made once per icon and colour.
+ */
+@Composable
+internal fun rememberMonoAppIcon(packageName: String?, tint: Color): ImageBitmap? {
     val context = LocalContext.current
     val st = produceState<Pair<String?, Pair<ImageBitmap, Boolean>?>>(packageName to packageName?.let { AppIconCache.cachedMono(it) }, packageName, AppIconCache.version) {
         if (packageName == null) { value = null to null; return@produceState }
         AppIconCache.cachedMono(packageName)?.let { value = packageName to it; return@produceState }
         value = packageName to withContext(Dispatchers.IO) { AppIconCache.loadMono(context, packageName) }
     }.value
-    val icon = if (st.first == packageName) st.second else null
-    if (icon != null) {
-        val filter = androidx.compose.runtime.remember(tint, icon.second) {
-            if (icon.second) androidx.compose.ui.graphics.ColorFilter.tint(tint)
-            else {
-                val r = 0.35f + 0.9f * tint.red; val g = 0.35f + 0.9f * tint.green; val b = 0.35f + 0.9f * tint.blue
-                androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
-                    0.299f * r, 0.587f * r, 0.114f * r, 0f, 0f,
-                    0.299f * g, 0.587f * g, 0.114f * g, 0f, 0f,
-                    0.299f * b, 0.587f * b, 0.114f * b, 0f, 0f,
-                    0f, 0f, 0f, 1f, 0f
-                )))
-            }
-        }
-        Image(icon.first, null, colorFilter = filter, contentScale = ContentScale.Fit, modifier = modifier)
-    } else Box(modifier)
+    val icon = (if (st.first == packageName) st.second else null) ?: return null
+    return androidx.compose.runtime.remember(icon, tint) { tintedIcon(icon.first, icon.second, tint) }
+}
+
+private fun tintedIcon(src: ImageBitmap, trueMono: Boolean, tint: Color): ImageBitmap {
+    val s = src.asAndroidBitmap()
+    val out = android.graphics.Bitmap.createBitmap(s.width, s.height, android.graphics.Bitmap.Config.ARGB_8888)
+    val argb = android.graphics.Color.argb((tint.alpha * 255).toInt(), (tint.red * 255).toInt(), (tint.green * 255).toInt(), (tint.blue * 255).toInt())
+    val p = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
+    p.colorFilter = if (trueMono) android.graphics.PorterDuffColorFilter(argb, android.graphics.PorterDuff.Mode.SRC_IN) else {
+        val r = 0.35f + 0.9f * tint.red; val g = 0.35f + 0.9f * tint.green; val b = 0.35f + 0.9f * tint.blue
+        android.graphics.ColorMatrixColorFilter(floatArrayOf(
+            0.299f * r, 0.587f * r, 0.114f * r, 0f, 0f,
+            0.299f * g, 0.587f * g, 0.114f * g, 0f, 0f,
+            0.299f * b, 0.587f * b, 0.114f * b, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+    }
+    android.graphics.Canvas(out).drawBitmap(s, 0f, 0f, p)
+    return out.asImageBitmap()
 }
 
 /**

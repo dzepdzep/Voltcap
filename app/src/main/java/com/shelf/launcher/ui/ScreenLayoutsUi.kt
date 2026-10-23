@@ -463,7 +463,7 @@ private fun SecondHomeSettings(
             SwitchRow(
                 icon = Icons.Filled.Add,
                 title = "Icons in the theme's colour",
-                subtitle = "On (default): every app and shortcut in the dock as one symbol in the theme's accent, nothing behind it — follows the theme, the game's or the album's colours. Off: the apps' own colour icons.",
+                subtitle = "On (default): every app icon in Voltcap — this dock, the app drawer, shortcuts, apps in the library — as one symbol in the theme's accent, nothing behind it; follows the theme, the game's or the album's colours. Off: the apps' own colour icons.",
                 checked = com.shelf.launcher.data.Features.secondDockMono.state.value,
                 onChange = { com.shelf.launcher.data.Features.secondDockMono.value = it }
             )
