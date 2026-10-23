@@ -394,7 +394,9 @@ internal fun Modifier.solidPiece(
      * Update 317: what the content shows (its console, art and shape), so its picture (PieceShot) is kept for a piece of
      * the same content coming back on the screen — taking it again cost the screen's drawing ~10–80 ms. Null: not kept.
      */
-    shotKey: String? = null
+    shotKey: String? = null,
+    /** Update 325: its own turn instead of the cartridge's (a case's wobble, rememberCaseSpin); null: as [withCartSpin]. */
+    spinOf: (() -> Float)? = null
 ): Modifier {
     if (spec == null) return this
     // Update 317: the front's own picture for a piece without one (kept while it's off the screen) — see PieceShot.
@@ -403,7 +405,7 @@ internal fun Modifier.solidPiece(
     val mirror = LocalPieceReflection.current
     // (Update 316: not shown at all — none of its layers kept; see PieceTurn.activeOf.)
     if (turn?.activeOf?.invoke() == false) return this
-    val spin = if (withCartSpin) rememberCartSpin() else null
+    val spin = spinOf ?: if (withCartSpin) rememberCartSpin() else null
     if (turn == null && spin == null && TestHooks.pose.value == null) return this
     val dens = LocalDensity.current.density
     val cam = (turn?.camera ?: 14f) * dens

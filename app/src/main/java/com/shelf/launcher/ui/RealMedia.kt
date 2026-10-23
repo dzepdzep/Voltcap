@@ -754,15 +754,27 @@ private fun CaseArtBody(
     }
     // Settings › Game look › Moving discs, cartridges & cases: the box turns left and right and/or hops.
     val modifier = modifier0.caseMotion((cover?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0))
-    return CaseArtFace(platform, cover, scan, modifier, title, detail, caseModifier, allowDiscCase = true, spine = spine, game = game, physical = physical)
+    // (Update 325: its wobble turns the case in 3D — the view's own turn isn't handed to it then, only its wobble.)
+    val caseSpin = rememberCaseSpin()
+    if (caseSpin == null) return CaseArtFace(platform, cover, scan, modifier, title, detail, caseModifier, allowDiscCase = true, spine = spine, game = game, physical = physical)
+    var drawn = false
+    ProvidePieceTurn(null) {
+        drawn = CaseArtFace(platform, cover, scan, modifier, title, detail, caseModifier, allowDiscCase = true, spine = spine, game = game, physical = physical, spinOf = caseSpin)
+    }
+    return drawn
 }
 
 /** The case alone (as set: flat official case, 3D box, box turned to its spine, disc in its case). */
 @Composable
 private fun CaseArtFace(
     platform: String?, cover: Any?, scan: Any?, modifier: Modifier, title: String, detail: Int, caseModifier: Modifier,
-    allowDiscCase: Boolean, spine: Any? = null, game: com.shelf.launcher.data.Game? = null, physical: List<Pair<String, String>>? = null
+    allowDiscCase: Boolean, spine: Any? = null, game: com.shelf.launcher.data.Game? = null, physical: List<Pair<String, String>>? = null,
+    /** Update 325: the case's wobble (rememberCaseSpin) — a 3D case adds it to its turn, a front-facing one turns as a solid piece. */
+    spinOf: (() -> Float)? = null
 ): Boolean {
+    val turnedYaw: (() -> Float)? = spinOf?.let { s -> { TURNED_CASE_YAW + s() } }
+    // (A front-facing case: its outline at a case's thickness, turned by its wobble.)
+    val solidMod = if (spinOf != null) modifier.solidPiece(CASE_SOLID, withCartSpin = false, spinOf = spinOf) else modifier
     val tpl = MediaTemplates.of(platform)
     val cov = MediaCovers.used(platform)
     val use3d = com.shelf.launcher.data.Features.box3d.state.value
@@ -778,7 +790,7 @@ private fun CaseArtFace(
     // facing you. Every case is turned now: those as their real 3D case (Case3D, its catalog shape, its real spine),
     // as the N64 / SNES boxes already were. Only where the game is known (every home layout hands it in).)
     if (turned && game != null && !discCase && (box == null || noBand)) {
-        Case3D(game, cover ?: scan, physical, TURNED_CASE_YAW, case3dAspect(game, false), modifier, pitch = 4f, realFront = scan != null, fill = 0.9f)
+        Case3D(game, cover ?: scan, physical, TURNED_CASE_YAW, case3dAspect(game, false), modifier, pitch = 4f, realFront = scan != null, fill = 0.9f, yawOf = turnedYaw)
         return true
     }
     // The game's own scanned case (update 101, Settings › Game look › "Original cases"): the scan is the case, with its
@@ -794,7 +806,7 @@ private fun CaseArtFace(
     val plain = if (box == null && cov == null) plainCaseSpec(platform) else null
     if (plain != null) {
         val useScan = com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !androidOwnCase(platform)
-        PlainCase(plain, if (useScan) scan else cover ?: scan, CaseArtPlaceholder, modifier, caseModifier, fallback = cover)
+        PlainCase(plain, if (useScan) scan else cover ?: scan, CaseArtPlaceholder, solidMod, caseModifier, fallback = cover)
         return true
     }
     // (Update 240, #27/#58: "Box turned to show its spine" on a console whose template box lies on its back (BoxTpl.hSpine:
@@ -803,7 +815,7 @@ private fun CaseArtFace(
     // 127 × 32 mm for an N64 box) and region, its scanned front (or cover) fitted in, its real spine on its side — turned
     // as the other boxes are. The scan is used only where this case look would use it (the [scan] handed in).)
     if (side && box != null && box.hSpine && game != null && !discCase) {
-        Case3D(game, cover ?: scan, physical, TURNED_CASE_YAW, case3dAspect(game, false), modifier, pitch = 4f, realFront = scan != null, fill = 0.9f)
+        Case3D(game, cover ?: scan, physical, TURNED_CASE_YAW, case3dAspect(game, false), modifier, pitch = 4f, realFront = scan != null, fill = 0.9f, yawOf = turnedYaw)
         return true
     }
     // Update 202: never for an Android game — its case is Voltcap's own (androidOwnCase): WWE All Stars' scraped store
@@ -815,13 +827,13 @@ private fun CaseArtFace(
         }
         // (Update 104: no drawn 3D box round the scan any more — the scan itself, as the case.)
         val aspect = cov?.frontAspect ?: box?.let { if (it.frameRes != null) it.frameAspect else null } ?: realCaseMm(platform)?.let { it.first / it.second } ?: 0.7f
-        ScanCase(scan, aspect, modifier, caseModifier, onFail = { scanFailed = true }, cover = cover, cutLeft = if (noBand) PS1_BAND else 0f, platform = platform)
+        ScanCase(scan, aspect, solidMod, caseModifier, onFail = { scanFailed = true }, cover = cover, cutLeft = if (noBand) PS1_BAND else 0f, platform = platform)
         return true
     }
     // The official case, as on a shelf, facing you: the console's printed cover frame (its banner and logo) with the
     // game's cover in its window. The spine only shows on the 3D box seen from the side ("Box turned to show its spine").
     if (cov != null && !discCase && (box == null || (!use3d && !side))) {
-        CoverCase(cov, cover ?: scan, CaseArtPlaceholder, modifier, caseModifier = caseModifier)
+        CoverCase(cov, cover ?: scan, CaseArtPlaceholder, solidMod, caseModifier = caseModifier)
         return true
     }
     if (box == null) return false
@@ -841,7 +853,7 @@ private fun CaseArtFace(
     // (Update 202: the game's real spine whatever Original cases says, as its closed case and the Spines look show it —
     // not with one console's spine picked for all.)
     else if (side) Box3D(box, front, isBox, title, modifier, spin = false, detail = detail, realSpine = if (!LookStyles.spineForAll()) ownSpine else null, platform = platform)
-    else FrontBox(box, front, isBox, modifier, detail, platform = platform) // (Update 229, #27)
+    else FrontBox(box, front, isBox, solidMod, detail, platform = platform) // (Update 229, #27)
     return true
 }
 

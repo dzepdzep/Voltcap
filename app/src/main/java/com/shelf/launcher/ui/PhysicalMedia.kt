@@ -741,8 +741,32 @@ internal fun Modifier.mediaMotion(disc: Boolean, seed: Int): Modifier =
     motionLayer(disc, (if (disc) Features.discMotion else Features.cartMotion).state.value, seed, turnCart = false)
 
 /** A box (box art): turns slowly left and right and/or hops like a cartridge, as set under Cases (default still). */
+// (Update 325, Toni: "the animation the cases do when they wobble left and right makes them seem flat": the turn was the
+// flat picture tilted. Only the hop is here now — the turn is the case's own, in 3D: rememberCaseSpin, CaseArt.)
 @Composable
-internal fun Modifier.caseMotion(seed: Int): Modifier = motionLayer(false, Features.caseMotion.state.value, seed)
+internal fun Modifier.caseMotion(seed: Int): Modifier = motionLayer(false, Features.caseMotion.state.value, seed, turnCart = false)
+
+/** Update 325: the case's slow turn left and right (Cases › motion), drawn in 3D by the case itself; null: still. */
+@Composable
+internal fun rememberCaseSpin(): (() -> Float)? {
+    val motion = Features.caseMotion.state.value
+    val on = (!LocalLiteEffects.current || LocalMediaFocused.current) && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
+    if (!on || !motion.spins) return null
+    MotionPrefs.observe()
+    if (MotionPrefs.focusedOnlyMotion() && !LocalMediaFocused.current) return null
+    if (LocalStillPart.current) return null
+    val now = MediaClock.rememberFrameTime()
+    return androidx.compose.runtime.remember(now) {
+        {
+            val ms = now.longValue / 1_000_000L
+            // (As the flat turn did: about ±24°, slowly left and right.)
+            24f * kotlin.math.sin((ms % CART_SPIN_MS) / CART_SPIN_MS.toFloat() * 2f * Math.PI.toFloat())
+        }
+    }
+}
+
+/** Update 325: a front-facing case as a solid piece — its outline at a case's thickness (≈ 14 mm on 190), dark plastic. */
+internal val CASE_SOLID = SolidSpec(null, 0.07f, androidx.compose.ui.graphics.Color(0xFF16181D))
 
 /** The same motion for a preview in Settings (update 109): [motion] as picked, whatever is saved. */
 @Composable

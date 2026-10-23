@@ -2,6 +2,15 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **Cases wobble in 3D** (Toni: "the animation the cases do when they wobble left and right makes them seem flat"): the
+  wobble tilted the case's flat picture (a graphics-layer rotationY), so it read as a card. It's now the case's own
+  turn: a 3D case (Case3D) adds it to its turn; a front-facing case (scanned case, official cover case, template box,
+  plain case) turns as a solid piece with a case's thickness (≈ 14 mm on 190, dark plastic) — the same drawing the
+  cartridges use (`rememberCaseSpin`, `CASE_SOLID`, `solidPiece(spinOf)`). The hop is unchanged. A box shown from its
+  side and a case with its disc half out no longer wobble (they'd have turned flat). Settings' little preview still
+  shows the old flat turn.
+- Files: `ui/PhysicalMedia.kt`, `ui/SolidPiece.kt`, `ui/RealMedia.kt`. Not compiled here (CI builds it).
+
 - **"Drawn only" is gone** (Toni: "some layouts picked the drawn cartridges only — delete them, they keep breaking
   stuff"). Each layout remembered its own look, "Drawn only" included, and put it back when you switched to it. Now a
   game's own cartridge / disc photo always shows when one is found, else its console's real shell: the "Always the drawn
@@ -18,8 +27,8 @@
 - Files: `ui/GameLookPicker.kt`, `ui/QuickSettings.kt`, `ui/R1TileRules.kt`, `ui/LauncherScreen.kt`,
   `ui/SecondDockShortcuts.kt`, `data/AppearanceStore.kt`, `data/ConsoleNames.kt`, `ui/SceneStyle.kt`, `ui/GameTitles.kt`,
   `ui/SettingsDialog.kt`, `ui/CategoryScreen.kt`, `ui/SecondScreen.kt`, `ui/SecondScreenVolt.kt`, `ui/CompanionActivity.kt`,
-  `ui/EmulatorSettingsDialog.kt`. Not compiled here (CI builds it). Still open: the Game Boy cartridges' ghost layer and the
-  cases' wobble (waiting on a screenshot / description).
+  `ui/EmulatorSettingsDialog.kt`. Not compiled here (CI builds it). Still open: the Game Boy cartridges' ghost layer (waiting on
+  a screenshot).
 
 - **Twin icons: its own category page** (Toni: "Twin icons is missing a fitting category screen"): the Categories tool
   turns the tray into a grid of the categories — each its console's logo (or icon) and name on the same square icons
