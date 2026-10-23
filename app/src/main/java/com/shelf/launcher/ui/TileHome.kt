@@ -771,15 +771,20 @@ private fun HomeTile(
         // (Update 129: placed by the R1 Achievements tile; the corner one keeps the top right.)
         // Update 151: the corner picked (Settings / the R1 Achievements tile), not always the top right.
         val pillAt = achChipAlign(look.trophyCorner)
+        // (Update 317am, Toni: the badges lined up, the same size: the achievement count and the state mark take the console
+        // badge's height and its distance from the tile's edge — ConsoleBadge sizes its pill from the tile's width.)
+        val chipH = (tile * 0.13f).coerceIn(11.dp, 20.dp)
+        val chipPad = chipH * 0.3f
         if (possible != null && possible > 0 && look.achievementsOnCards && titles.coverAchievements && pillAt != null) {
             val earned = progress.NumAchieved ?: 0
             Row(
                 Modifier
                     .align(pillAt)
-                    .padding(6.dp)
+                    .padding(chipPad)
+                    .height(chipH)
                     .clip(RoundedCornerShape(50))
                     .background(Color.Black.copy(alpha = 0.62f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                    .padding(horizontal = chipH * 0.4f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Filled.EmojiEvents, null, tint = accent, modifier = Modifier.size(10.dp))
@@ -794,7 +799,7 @@ private fun HomeTile(
         // Game state mark (Settings › Library › Game states), bottom-left unless the no-art name sits there.
         if (request != null || game.sourceType == SourceType.APP) {
             GameStates.byKey[game.stableKey]?.let { gs ->
-                GameStateTag(gs, Modifier.align(Alignment.BottomStart).padding(6.dp), compact = !focused)
+                GameStateTag(gs, Modifier.align(Alignment.BottomStart).padding(chipPad).height(chipH), compact = !focused)
             }
         }
         // (Update 317aj, Toni: the console badges — R1 Console badges — on Tile home's tiles too, as on the Voltcap row:
