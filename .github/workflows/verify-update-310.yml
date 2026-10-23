@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - fix/dual-screen-controls-310
+      # (Update 321: Claude's work branches build on every push, so a compile error shows before a release build.)
+      - 'claude/**'
   pull_request:
     branches:
       - main
