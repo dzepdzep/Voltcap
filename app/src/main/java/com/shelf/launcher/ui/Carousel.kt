@@ -657,10 +657,10 @@ internal object Carousel {
         // slot, then dropped to the stack's. Once it has turned back to its spine (under 35 % out) it takes its place in the
         // stack's order — under the ones further out on the right, over them on the left, as the stack is drawn — so it
         // slides in where it belongs.)
-        val z = if (d < 1f && t < 0.35f) (if (rel > 0f) 49f + d else 51f - d) else stackZ(rel)
+        val order = if (d < 1f && t < 0.35f) (if (rel > 0f) 49f + d else 51f - d) else stackZ(rel)
         return out.set(
             rel * step * sc, (1f - sc) * 0.5f, sc, turn, 0f,
-            alpha(d, reach(side, shown)), (0.18f * (1f - t) + 0.008f * far).coerceAtMost(0.3f), z
+            alpha(d, reach(side, shown)), (0.18f * (1f - t) + 0.008f * far).coerceAtMost(0.3f), order
         )
     }
 
