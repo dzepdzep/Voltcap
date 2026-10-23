@@ -1124,6 +1124,15 @@ class AppearanceStore(context: Context) {
     }
 
     /**
+     * Update 325 (Toni: "real ones by default, the fake ones only if I choose Drawn only"): "Drawn only" was switched on
+     * behind your back (the R1 Disc tile, the update 202 look move), so it goes off once; turning it on afterwards stays.
+     */
+    private fun applyRealPhotos325() {
+        if (prefs.getBoolean("real_photos_325", false)) return
+        runCatching { Features.init(appContext); Features.mediaShells.value = false; prefs.edit().putBoolean("real_photos_325", true).apply() }
+    }
+
+    /**
      * Update 151: video previews on for everyone, once (the scraped clip plays over the game's big background art). A
      * new install has them on already; turning them off afterwards stays off.
      */
@@ -1194,7 +1203,7 @@ class AppearanceStore(context: Context) {
         }
     }
 
-    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); categoryPart204(); caseOnly208(); lookRework202(oneGameLook(loadSettings())) }.also {
+    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); categoryPart204(); caseOnly208(); lookRework202(oneGameLook(loadSettings())).also { applyRealPhotos325() } }.also {
         // Scraping in the background reads these too, without the home screen open.
         AnimatedArt.enabled = it.animatedArt
         AnimatedArt.preferAnimatedScraping = it.animatedArt && it.preferAnimatedArt

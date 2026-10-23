@@ -1653,7 +1653,9 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     val shellBack = remember(p.pick?.platform, p.realScan, backStyle) {
         // Update 204: the game's own cartridge photo turned round shows its console's real shell's researched back (it
         // was a plain silhouette, so the new backs never showed for the many games with a photo).
-        if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
+        // (Update 325: no drawn back on the real photo any more — the drawn cartridges are gone.)
+        if (p.pick == null && p.realScan != null) null
+        else if (false) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
             // (Update 207: in the photo's own plastic colour when it's been read.)
             val own = ownShellColour(sh, p.game.platform, p.game.stableKey) // (Update 210: its edition's plastic)
             // (Update 228, #36: keyed by the colour — one "photo" key for every photo's back in the cache.)
@@ -1698,7 +1700,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
             } else if (pp != null && pp.startsWith(CUSTOM_CART)) {
                 if (packOptical) packPlan(CartUndersides.opticalFit, false)
                 else packLookNow?.let { packPlan(CartUndersides.packFit(it), packClear) }
-            } else if (pp == null || (!isCustomPiece(pp) && pp == p.game.platform)) {
+            } else if (false) {
+                // (Update 325: no drawn opening on a real photo or template cartridge — the drawn cartridges are gone.)
                 ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
                     // (Only when the picture is close to the real shell's shape — else the opening wouldn't sit on it.)
                     if (abs(p.aspect - sh.aspect) / sh.aspect > 0.15f) null

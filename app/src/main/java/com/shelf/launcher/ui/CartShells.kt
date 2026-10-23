@@ -576,8 +576,9 @@ internal object CartShells {
     /** The piece for a choice on [platform]'s game ([gameKey]: its region, for a retired 3D piece's authentic shell). */
     fun pickOf(raw: String, platform: String, gameKey: String? = null): MediaPick? =
         parse(raw)?.let { retired(it, platform, CaseCatalog.regionOf(gameKey ?: "")) }?.let { ch0 ->
-            // (Update 308: a pack shape with a real cartridge is that cartridge in your pack's plastic — authentic.)
-            val ch = authentic(ch0, platform) ?: ch0
+            // (Update 308 made a pack shape with a real cartridge that drawn cartridge in your pack's plastic; update 325:
+            // your pack's own shape always — the drawn cartridges are gone.)
+            val ch = ch0
             // (Update 200: [Choice.raw] — a retired 3D piece's is its authentic shell's.)
             MediaPick(MediaShell.GB, "$SHELL_PREFIX${ch.raw}|$platform", ch.aspect)
         }
@@ -1507,7 +1508,13 @@ internal object CartShellStore {
     fun forConsole(platform: String): String? { load(); return map["console:$platform"] }
 
     /** The game's own choice, else its console's. */
-    fun choice(platform: String, gameKey: String?): String? { load(); return gameKey?.let { map[it] } ?: map["console:$platform"] }
+    // (Update 325, Toni: "remove the drawn cartridges fully, keep the custom ones": only a shape of your cartridge pack
+    // picked here still counts; a drawn shell picked before is ignored — the game is its own cartridge again.)
+    fun choice(platform: String, gameKey: String?): String? {
+        load()
+        fun ok(v: String?) = v?.takeIf { it.startsWith("pack:") }
+        return ok(gameKey?.let { map[it] }) ?: ok(map["console:$platform"])
+    }
 
     fun setGame(key: String, value: String?) { load(); if (value == null) map.remove(key) else map[key] = value; save() }
     fun setConsole(platform: String, value: String?) { load(); if (value == null) map.remove("console:$platform") else map["console:$platform"] = value; save() }

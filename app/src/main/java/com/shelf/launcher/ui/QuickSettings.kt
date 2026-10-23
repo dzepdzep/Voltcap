@@ -424,8 +424,8 @@ fun QuickSettingsCard(
                     if (pref.value.isNotEmpty()) after()
                 })
             }
-            // (A picked disc is drawn, so "Drawn discs" goes on with it.)
-            styleTile("discstyle", "Disc", F.discStyle, { LookStyles.DISCS }) { F.mediaShells.value = true }
+            // (Update 325: picking a disc no longer turns "Drawn only" on — the real photos stay unless you choose drawn.)
+            styleTile("discstyle", "Disc", F.discStyle, { LookStyles.DISCS })
             styleTile("casestyle", "Case", F.caseStyle, { LookStyles.cases() })
             styleTile("spinestyle", "Spine", F.spineStyle, { LookStyles.spines() })
             // (Update 159: the "3D on / off" tile (look3d) stood here. Update 200: removed — most looks are 3D already, and the

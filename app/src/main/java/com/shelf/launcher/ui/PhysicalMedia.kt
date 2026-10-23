@@ -351,20 +351,14 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     // have none, and the CDs": Voltcap's drawn shells only with "Drawn only" — Features.mediaShells — or a shell you
     // picked yourself, above. Otherwise a game without its own photo is its console's real cartridge from the template
     // pack with its cover on the label, as before update 206.)
-    if (!asDisc && !RealMedia.on && mediaShellsOn) drawn3dPick(platform, mixed, gameKey)?.let { return it }
+    // (Update 325, second pass — Toni: "why did you ignore the remove drawn cartridges": they're gone for good, whatever
+    // the switches say; drawn3dPick is no longer asked.)
     // Update 128, Cartridges look: the game on your cartridge pack (CustomCarts.kt) — every console with Custom, the
     // ones without a cartridge of their own with Original (consoles Voltcap has no media for included).
     if (!asDisc && !RealMedia.on && customCartFor(platform)) {
         // (Update 308: a pack shape with a real cartridge (the N64 shape → the N64 Game Pak…) is drawn as that cartridge
         // in your pack's plastic, with its plaque and the game's art — the exact authentic piece: CartShells.authentic.)
-        if (discShellFor(platform) == null) {
-            val look = CustomCarts.lookFor(platform)
-            val finish = Features.modelFinish.state.value
-            val clear = Features.cartClear.state.value && (finish == ModelFinish.CLEAR || finish == ModelFinish.OFF)
-            CustomCarts.authenticShell(look)?.let { real ->
-                return MediaPick(MediaShell.GB, "$SHELL_PREFIX${real.id}~${CartShells.packColourKey(look, clear, platform)}|$platform", real.aspect)
-            }
-        }
+        // (Update 325: no longer — your pack's own cartridge picture always, never a drawn shell in its plastic.)
         // (Update 131: a disc console's own shell from your optical-system pack has its own shape.)
         return MediaPick(MediaShell.GB, CUSTOM_CART + platform, CustomCarts.aspectFor(platform))
     }
@@ -374,15 +368,8 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     // (Update 206, one cartridge per console: always — not only after Real shell was picked once (Features.authenticCarts,
     // off for anyone who never picked it). Without it a cartridge beside its case, in the Disc station or the launch
     // animation was the template pack's flat picture: a second, different N64 / Game Boy / SNES cartridge.)
-    if (!asDisc && mediaShellsOn) {
-        val ownShell = MediaShell.of(platform)
-        if (ownShell == null || !(ownShell.disc || ownShell == MediaShell.UMD)) {
-            val region = CaseCatalog.regionOf(gameKey ?: "")
-            // (Update 210: its real edition first — MediaEditions.)
-            MediaEditions.autoRaw(platform, gameKey)?.let { raw -> CartShells.pickOf(raw, platform, gameKey)?.let { return it } }
-            CartShells.authenticIdFor(platform, region, gameKey)?.let { id -> CartShells.pickOf(id, platform)?.let { return it } }
-        }
-    }
+    // (Update 325, Toni: "remove the drawn cartridges fully": the authentic drawn shells and real editions are no longer
+    // drawn — a cartridge game without its own photo is its console's cartridge from the template pack, below.)
     // Update 204: a console without a cartridge or disc of its own (arcade, PC, DOS…) gets Voltcap's plain ones — the
     // plain CD with its console's name as a disc, else the plain cartridge — instead of a flat cover among the others.
     val own = MediaShell.of(platform) ?: return if (asDisc || (mixed && Features.mixedArt.state.value == MixedArt.DISC))

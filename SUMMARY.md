@@ -2,6 +2,24 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **Drawn cartridges removed for good** (Toni: "why did you ignore the remove drawn cartridge stuff — just delete them,
+  they don't look anything like our real models"). The first pass only hid them behind "Drawn only", which the R1 Disc
+  tile and the update 202 look move had switched on, so nothing changed on the device. Now no drawn shell shows anywhere:
+  - `mediaFor` never asks for the drawn 3D pick, the authentic shells or the real editions; a game without its own
+    photo is its console's cartridge from the template pack (the real models).
+  - A shell picked in the game's menu counts only when it's one of your pack's shapes (`CartShellStore.choice`); the
+    picker shows only Your custom shells (no Authentic tab, no real editions).
+  - Your pack's cartridges are your pack's own pictures again — not redrawn as the drawn cartridge in your plastic
+    (`CustomCarts.authenticShell` → null: no AuthenticPackCart front, drawn back or borrowed thickness).
+  - A game's own cartridge photo turned round, or in Inspect, has no drawn back or drawn connector opening any more —
+    its plain plastic.
+  - "Drawn only" goes off once (`applyRealPhotos325`); picking a disc on the R1 tile no longer turns it on.
+  - Kept: your custom pack cartridges for consoles without their own, the plain CDs, and the drawn discs.
+  - The drawn-shell code itself is still in the app (nothing calls it for drawing); deleting the files is a later
+    clean-up once this is checked on the device.
+- Files: `ui/PhysicalMedia.kt`, `ui/CartShells.kt`, `ui/CartShellPicker.kt`, `ui/CustomCarts.kt`, `ui/SolidPiece.kt`,
+  `ui/MediaInspectView.kt`, `ui/QuickSettings.kt`, `data/AppearanceStore.kt`. Not compiled here (CI builds it).
+
 - **Twin icons: its own category page** (Toni: "Twin icons is missing a fitting category screen"): the Categories tool
   turns the tray into a grid of the categories — each its console's logo (or icon) and name on the same square icons
   with the same ring — and the top screen shows the one you're on big in the frame with its name on the card. D-pad
