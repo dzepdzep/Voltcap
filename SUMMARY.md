@@ -26,7 +26,10 @@
   looks up the first still cover of every game whose cover is animated and has none yet (40 a pass, a game tried once
   a week; `SteamGridDbRepository.fetchStillGrid`), keeps it with the art and the cartridges / discs wear it at once.
   A cover you picked yourself (Artwork & details) that's animated still has no still one beside it.
-- **Copy:** `ui/Case3D.kt`, `ui/BoxSides.kt`, `ui/SettingsDialog.kt`, `data/Features.kt`, `ui/AppIcons.kt`,
+- **A tap on the inspected case / disc often did nothing** (Toni: "touching the case doesn't open it, it's realised after
+  some time"; dragging fine): a finger that moved a few pixels made the touch a drag and the tap was lost. A touch under
+  0.4 s that moved under 28 dp now counts as the tap (`inspectTap`, both Inspect views, MediaInspectView.kt).
+- **Copy:** `ui/MediaInspectView.kt`, `ui/Case3D.kt`, `ui/BoxSides.kt`, `ui/SettingsDialog.kt`, `data/Features.kt`, `ui/AppIcons.kt`,
   `data/SteamGridDbRepository.kt`, `LauncherViewModel.kt`, `ui/LauncherScreen.kt`,
   `ui/SecondDockShortcuts.kt`, `ui/SecondScreenHome.kt`, `ui/ScreenLayoutsUi.kt`.
 - **Not compiled here**; GitHub's build check runs on the PR. Not tried on a device.
