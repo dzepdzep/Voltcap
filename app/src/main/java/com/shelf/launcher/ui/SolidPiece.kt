@@ -73,8 +73,9 @@ internal class PieceTurn(
     val movingOf: (() -> Boolean)? = null,
     /**
      * Update 325 (Toni: "with 5 each side it works super well, but I don't want the sides to feel empty"): the piece is far
-     * out in the view (a carousel game past the nearest [FULL_NEAR] each side) — it's drawn as its face alone, turned, with
-     * no thickness: one picture instead of a stack of them. Null: never.
+     * out in the view (a carousel game past the nearest [FULL_NEAR] each side) — its sides are drawn with at most
+     * [FAR_COPIES] copies, as while moving. (Its face alone, flat, was tried first — Toni: "I hate that they appear
+     * flat".) Null: never.
      */
     val farOf: (() -> Boolean)? = null
 ) {
@@ -641,7 +642,7 @@ internal fun Modifier.solidPiece(
                 // (Update 324, Thor recording — Mix look, All games: 308 ms a frame, 63 ms of it handing the frame to the GPU:
                 // the cartridge / disc photos — this path — drew up to 32 slices and redrew their smear picture for every piece
                 // in every frame. At most 16 now, and while the row glides 6 with no smear, as the shells' sides (MOVING_COPIES).)
-                val n = if (far) 0 else ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, if (moving) MOVING_SLICES else 16)
+                val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, if (far) FAR_COPIES else if (moving) MOVING_SLICES else 16)
                 val clear = spec.clear
                 // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
                 // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
@@ -653,7 +654,7 @@ internal fun Modifier.solidPiece(
                 // solid edge at every angle, with the same 32 slice draws as before (no new render load).
                 val dz = if (n > 0) depthPx / n else 0f
                 val step = dz * sn * (if (c >= 0f) 1f else -1f)
-                val fill = if (n > 0 && testPose?.second != true && !moving) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
+                val fill = if (n > 0 && testPose?.second != true && !moving && !far) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
                 val copies = n * fill + 1
                 // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
                 // (Update 316: the plain sides when there's a sides' picture — edgeLeaf — else the offscreen ones.)
@@ -663,7 +664,7 @@ internal fun Modifier.solidPiece(
                 val reach = if (edgeLeaf != null && side != null && artSize != null)
                     (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(c)).coerceAtLeast(1.5f) else 0f
                 val span = depthPx * abs(sn)
-                val nLeaf = if (edgeLeaf == null || span < 0.5f || far) 0 else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
+                val nLeaf = if (edgeLeaf == null || span < 0.5f) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
                 edgeL.alpha = if (edgeLeaf != null) {
                     if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
                 } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
@@ -856,6 +857,9 @@ internal const val MOVING_SLICES = 4
 
 /** Update 325: how many games each side of a carousel's middle are drawn with their thickness (PieceTurn.farOf). */
 internal const val FULL_NEAR = 5
+
+/** Update 325: the most copies a piece past [FULL_NEAR] draws its sides with. */
+internal const val FAR_COPIES = 3
 
 /** A brightness filter in 40 steps (made once each). */
 private object SolidLight {
