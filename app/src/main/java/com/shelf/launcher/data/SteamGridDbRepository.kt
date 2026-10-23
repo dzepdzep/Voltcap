@@ -141,6 +141,16 @@ class SteamGridDbRepository(private val api: SteamGridDbApi) {
 
     /** Resolves a game to its SteamGridDB id using the same priority as
      * fetchArt (manual override > Steam AppID > name search). */
+    /**
+     * Update 319: [game]'s first still cover (600 × 900) — for a game whose cover was scraped animated before the
+     * cartridges and discs kept a still one beside it (GameArt.stillGridUrl). Null when none or offline.
+     */
+    suspend fun fetchStillGrid(game: Game): String? = try {
+        resolveGameId(game)?.let { id -> api.grids(id, PORTRAIT_DIMENSIONS, STATIC).data?.firstOrNull()?.url }
+    } catch (e: Exception) {
+        null
+    }
+
     suspend fun resolveGameId(game: Game): Int? = try {
         game.sgdbGameId
             ?: game.steamAppId?.let { api.gameBySteamId(it).data?.id }

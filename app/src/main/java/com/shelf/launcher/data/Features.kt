@@ -909,6 +909,13 @@ object Features {
     val shortcutHidden = SetPref("shortcut_hidden")
     /** App icons in the round shortcuts drawn in the theme's colours (monochrome, tinted). */
     val shortcutThemedIcons = BoolPref("shortcut_themed_icons", false)
+    /**
+     * Update 319 (Toni: "an icon pack in one colour so it follows the theme's colours", no square plate with a blur behind):
+     * the second screen's dock shows each app as its one-colour symbol in the theme's accent — the app's own monochrome
+     * icon (Android 13+) where it has one, else its icon's foreground drawn in the accent's shades — on nothing. Off: the
+     * apps' own colour icons, still without the plate.
+     */
+    val secondDockMono = BoolPref("second_dock_mono", true)
 
     // ---- Last played on every device ----
     /** Share "last played" through Google Drive so a game played on another device rises to the top here too. */
@@ -1101,6 +1108,12 @@ object Features {
         FILL("Fill missing sides"), AUTHENTIC("Authentic only"), PLAIN("Plain cardboard")
     }
     val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
+    /**
+     * Update 319 (Toni): with the printed sides off (Authentic only / Plain cardboard), the sides with no picture of their
+     * own named here ("RIGHT", "TOP", "BOTTOM" — BoxSide) take the colour of the cover's edge that meets them, as the
+     * printed card of a real box carries on round its corners; the others stay plain card.
+     */
+    val boxSideColors = SetPref("box_side_colors", setOf("RIGHT", "TOP", "BOTTOM"))
     /**
      * Update 191: which region's case a game gets (ui/CaseCatalog.kt) when its file name doesn't say ("(USA)", "(Europe)",
      * "(Japan)"), or one region for every game.

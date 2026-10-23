@@ -3858,6 +3858,20 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             com.shelf.launcher.data.Features.boxSides.state.value, { it.label }
         ) { com.shelf.launcher.data.Features.boxSides.value = it }
         MutedNote("A cardboard box's right side, top and bottom. Fill missing sides (default): your picture of that side (Artwork & details › Box right side / top / bottom), else a print made from the game's title, its console's logo and its box's colours. Authentic only: only pictures you've marked as a real packaging scan. Plain cardboard: plain card. The box's size and shape never change.")
+        // (Update 319, Toni: the printed sides on or off, and when off each side in the cover's colours, or not.)
+        if (com.shelf.launcher.data.Features.boxSides.state.value != com.shelf.launcher.data.Features.BoxSides.FILL) {
+            val colored = com.shelf.launcher.data.Features.boxSideColors.state.value
+            SectionLabel("Sides in the cover's colours")
+            ChipFlow {
+                listOf("RIGHT" to "Right side", "TOP" to "Top", "BOTTOM" to "Bottom").forEach { (id, label) ->
+                    val on = id in colored
+                    Chip((if (on) "✓ " else "") + label, accent = on) {
+                        com.shelf.launcher.data.Features.boxSideColors.value = if (on) colored - id else colored + id
+                    }
+                }
+            }
+            MutedNote("A side with no picture of its own takes the colour of the cover's edge that meets it, as a real box's print carries on round its corners. Off: plain card.")
+        }
         // (Update 195's "Authentic drawn cartridges" switch stood here. Update 202: it's Cartridges & discs › Cartridge ›
         // "Real shell for each console" now, which sets it. Any game can still go on any shell: its menu › Cartridge shell…)
         // Update 200: the cartridges' backs.

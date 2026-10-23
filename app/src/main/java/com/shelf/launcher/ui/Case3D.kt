@@ -172,7 +172,7 @@ internal fun Case3D(
     // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
     // (Update 316: fitted away from the screen's thread — rememberDerived.)
     val ownFitted: List<android.graphics.Bitmap>? =
-        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox318|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox319|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317: keep cases as update 240 had them — the middle cut keeps the spine of a scan that carries slivers of
         // the back and front beside it, as the GameCube ones do; see the note above SPINE_TOO_WIDE.)
         else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else "spineFit318|$depth") { b ->
@@ -808,7 +808,10 @@ private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float, widenN64: 
     // Preserve the complete printed scan within the fixed-size side, without
     // stretching it or blindly chopping its title/logo off. A missing or
     // failed scan still gets the existing console spine fallback.
-    if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f) fitSpineInside(cut, aspect, widenN64)
+    if (aspect > 0f && kotlin.math.abs(cur / aspect - 1f) > 0.3f && (widenN64 || cur > aspect)) fitSpineInside(cut, aspect, widenN64)
+    // (Update 319, Toni: "GBA spines are too thin, not as wide as the cardboard": a scan narrower than the side was fitted
+    // inside it whole, a thin strip on plain card. It's stretched across the side now, its whole height kept — N64 as below.)
+    else if (!widenN64 && aspect > 0f && cur < aspect) scaleAcross(cut, aspect)
     // (Update 317, Toni — Pokémon Stadium's N64 spine cut off at its foot: a scan a little narrower than the side had its
     // top and bottom cut and was zoomed to fill it. An N64 one keeps its whole height now, widened a little as update 312
     // does for the ones far off.)

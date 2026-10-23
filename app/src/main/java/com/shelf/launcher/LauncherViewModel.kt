@@ -2817,6 +2817,44 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * looked up ahead (most played first) and kept, so the recaps have them when opened. Removed games are searched by the
      * name in their file's address, the console guessed from its folder (YearRecapDialog asks the same way).
      */
+    @Volatile private var stillBackfillRunning = false
+
+    /**
+     * Update 319 (Toni: "I don't see the still covers on discs and cartridges"): a cover scraped animated before update
+     * 317 has no still one kept beside it, so its cartridges and discs had nothing else to wear. Those games' first still
+     * covers are looked up now (40 a pass, each game tried once a week), kept with their art and shown at once.
+     */
+    fun backfillStillCovers() {
+        if (stillBackfillRunning) return
+        stillBackfillRunning = true
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val prefs = app.getSharedPreferences("still_cover_backfill", android.content.Context.MODE_PRIVATE)
+                val now = System.currentTimeMillis()
+                val st = _uiState.value
+                val todo = st.games.filter { g ->
+                    val a = st.art[g.stableKey]
+                    a != null && a.gridUrl != null && a.stillGridUrl == null && com.shelf.launcher.data.AnimatedArt.looksAnimated(a.gridUrl) &&
+                        now - prefs.getLong(g.stableKey, 0L) > 7L * 86_400_000L
+                }
+                for (g in todo.take(40)) {
+                    val still = repository.fetchStillGrid(g)
+                    prefs.edit().putLong(g.stableKey, now).apply()
+                    if (still != null) {
+                        val cur = _uiState.value.art[g.stableKey] ?: continue
+                        val newArt = cur.copy(stillGridUrl = still)
+                        artCacheStore.put(g.stableKey, newArt)
+                        com.shelf.launcher.data.StillCovers.note(newArt)
+                        _uiState.update { it.copy(art = it.art + (g.stableKey to newArt)) }
+                    }
+                }
+            } finally {
+                stillBackfillRunning = false
+            }
+        }
+    }
+
     fun prefetchStatsArt() {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.IO) {

@@ -254,9 +254,24 @@ internal fun OpenableCase(piece: InspectPiece, modifier: Modifier) {
                         if (!tapBooklet(motion, piece, bookPlace, onItem, at.x, at.y, sw, sh)) motion.tapCase(scope, piece.content != null, onItem)
                     })
                 }
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures(onDragEnd = { motion.release(scope) }, onDragCancel = { motion.release(scope) }) { change, dx ->
-                        change.consume(); motion.nudge(dx * 0.42f)
+                .pointerInput(piece.content, itemPlace, bookPlace) {
+                    // (Update 319: a short touch that hardly moved is the tap — see inspectTap.)
+                    var downAt = androidx.compose.ui.geometry.Offset.Zero
+                    var moved = 0f
+                    var downTime = 0L
+                    detectHorizontalDragGestures(
+                        onDragStart = { at -> downAt = at; moved = 0f; downTime = android.os.SystemClock.uptimeMillis() },
+                        onDragEnd = {
+                            motion.release(scope)
+                            if (moved < 28.dp.toPx() && android.os.SystemClock.uptimeMillis() - downTime < 400L) {
+                                val sw = size.width.toFloat(); val sh = size.height.toFloat()
+                                val onItem = itemPlace?.hit(downAt.x, downAt.y, sw, sh) == true
+                                if (!tapBooklet(motion, piece, bookPlace, onItem, downAt.x, downAt.y, sw, sh)) motion.tapCase(scope, piece.content != null, onItem)
+                            }
+                        },
+                        onDragCancel = { motion.release(scope) }
+                    ) { change, dx ->
+                        change.consume(); moved += kotlin.math.abs(dx); motion.nudge(dx * 0.42f)
                     }
                 }
         ) {
@@ -315,6 +330,25 @@ internal fun openBookletPlace(piece: InspectPiece, aspect: Float): OpenItemPlace
  * Update 202: a tap on the open case's booklet ([bookPlace]; the lid open and nothing taken out, and not on the disc,
  * [onItem]) opens the game's manual (downloaded first if needed). True when it did — then the case stays as it is.
  */
+/**
+ * A tap on the inspected piece at [at] (in its [sw] × [sh] box): a case opens / takes out what's in it / opens its
+ * manual's booklet; a cartridge, disc or 3D piece turns once round. Update 319: shared by the tap and by a short touch
+ * that hardly moved (it used to count as a drag, and the tap was lost).
+ */
+internal fun inspectTap(
+    piece: InspectPiece, motion: InspectMotion, scope: CoroutineScope, itemPlace: OpenItemPlace?, bookPlace: OpenItemPlace?,
+    at: androidx.compose.ui.geometry.Offset, sw: Float, sh: Float
+) {
+    val onItem = itemPlace?.hit(at.x, at.y, sw, sh) == true
+    // (Update 191: a cardboard box opens too — its top flap.)
+    // (Update 200: a step at a time — open, then a tap on the disc takes it out.)
+    // (Update 202: a tap on the booklet in the open lid opens the manual.)
+    if (piece.kind == InspectKind.BOX && tapBooklet(motion, piece, bookPlace, onItem, at.x, at.y, sw, sh)) Unit
+    else if (piece.kind == InspectKind.BOX) motion.tapCase(scope, piece.content != null, onItem)
+    // (Update 199: a cartridge, disc or 3D piece has nothing to open: it turns once round.)
+    else motion.spinOnce(scope)
+}
+
 internal fun tapBooklet(
     motion: InspectMotion, piece: InspectPiece, bookPlace: OpenItemPlace?, onItem: Boolean, x: Float, y: Float, bw: Float, bh: Float
 ): Boolean {
@@ -1262,15 +1296,7 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                     .pointerInput(piece.kind, piece.content, itemPlace, bookPlace) {
                         // (Update 238, #117: a long press puts it back as it first stood — facing you, upright.)
                         detectTapGestures(onLongPress = { motion.resetPose(scope) }, onTap = { at ->
-                            val sw = size.width.toFloat(); val sh = size.height.toFloat()
-                            val onItem = itemPlace?.hit(at.x, at.y, sw, sh) == true
-                            // (Update 191: a cardboard box opens too — its top flap.)
-                            // (Update 200: a step at a time — open, then a tap on the disc takes it out.)
-                            // (Update 202: a tap on the booklet in the open lid opens the manual.)
-                            if (piece.kind == InspectKind.BOX && tapBooklet(motion, piece, bookPlace, onItem, at.x, at.y, sw, sh)) Unit
-                            else if (piece.kind == InspectKind.BOX) motion.tapCase(scope, piece.content != null, onItem)
-                            // (Update 199: a cartridge, disc or 3D piece has nothing to open: it turns once round.)
-                            else motion.spinOnce(scope)
+                            inspectTap(piece, motion, scope, itemPlace, bookPlace, at, size.width.toFloat(), size.height.toFloat())
                         })
                     }
                     // A horizontal drag turns it yourself; let go and it eases back.
@@ -1279,15 +1305,27 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                     .pointerInput(piece.kind) {
                         // (0.6.18: how fast your finger went as you let go — a flick keeps it turning, slowing to a stop.)
                         val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                        // (Update 319, Toni: "touching the case doesn't open it — it's realised after some time": a finger
+                        // that moved a few pixels made the touch a drag, and the tap was lost. A short touch that hardly
+                        // moved counts as the tap.)
+                        var downAt = androidx.compose.ui.geometry.Offset.Zero
+                        var moved = 0f
+                        var downTime = 0L
                         detectDragGestures(
-                            onDragStart = { tracker.resetTracking() },
+                            onDragStart = { at -> tracker.resetTracking(); downAt = at; moved = 0f; downTime = android.os.SystemClock.uptimeMillis() },
                             onDragEnd = {
-                                val v = tracker.calculateVelocity()
-                                motion.fling(scope, v.x * 0.42f * motion.yawSign(), v.y * 0.42f)
+                                if (moved < 28.dp.toPx() && android.os.SystemClock.uptimeMillis() - downTime < 400L) {
+                                    motion.release(scope)
+                                    inspectTap(piece, motion, scope, itemPlace, bookPlace, downAt, size.width.toFloat(), size.height.toFloat())
+                                } else {
+                                    val v = tracker.calculateVelocity()
+                                    motion.fling(scope, v.x * 0.42f * motion.yawSign(), v.y * 0.42f)
+                                }
                             },
                             onDragCancel = { motion.release(scope) }
                         ) { change, drag ->
                             change.consume()
+                            moved += drag.getDistance()
                             tracker.addPosition(change.uptimeMillis, change.position)
                             if (!motion.closing) {
                                 if (drag.x != 0f) motion.nudge(drag.x * 0.42f * motion.yawSign())

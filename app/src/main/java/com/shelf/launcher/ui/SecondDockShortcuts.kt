@@ -95,7 +95,13 @@ internal object SecondDockShortcuts {
     /** A dock item's icon: an app's own, or a Voltcap shortcut's symbol on a round plate. */
     @Composable
     fun Icon(id: String?, modifier: Modifier) {
-        if (BuiltinShortcuts.isBuiltin(id) && id != null) {
+        // (Update 319: the dock's icon pack — every item one symbol in the theme's accent, nothing behind it.)
+        val mono = com.shelf.launcher.data.Features.secondDockMono.state.value
+        if (mono && BuiltinShortcuts.isBuiltin(id) && id != null) {
+            Icon(iconOf(id), names[id], tint = ShelfTheme.accent, modifier = modifier.padding(4.dp))
+        } else if (mono) {
+            MonoAppIcon(id, ShelfTheme.accent, modifier)
+        } else if (BuiltinShortcuts.isBuiltin(id) && id != null) {
             Box(modifier.clip(CircleShape).background(ShelfTheme.accent.copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
                 Icon(iconOf(id), names[id], tint = ShelfTheme.accent, modifier = Modifier.fillMaxSize().padding(7.dp))
             }

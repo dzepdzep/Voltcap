@@ -459,6 +459,15 @@ private fun SecondHomeSettings(
                 }
             }
             Spacer(Modifier.height(12.dp))
+            // (Update 319: the dock's one-colour icon pack.)
+            SwitchRow(
+                icon = Icons.Filled.Add,
+                title = "Icons in the theme's colour",
+                subtitle = "On (default): every app icon in Voltcap — this dock, the app drawer, shortcuts, apps in the library — as one symbol in the theme's accent, nothing behind it; follows the theme, the game's or the album's colours. Off: the apps' own colour icons.",
+                checked = com.shelf.launcher.data.Features.secondDockMono.state.value,
+                onChange = { com.shelf.launcher.data.Features.secondDockMono.value = it }
+            )
+            Spacer(Modifier.height(12.dp))
             SectionLabel("Dock apps open on")
             ChipFlow {
                 Chip("The second screen", accent = appearance.secondDockOnSecond) {
