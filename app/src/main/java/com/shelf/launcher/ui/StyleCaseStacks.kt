@@ -166,18 +166,33 @@ internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
 private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, modifier: Modifier) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val compact = maxHeight < 380.dp
+        // Update 325 (Toni: "two different sizes show when editing Home"): a part hidden on the home screen still shows in
+        // Edit Home (faint, to bring it back) — but it took its room there too, so the games stood smaller and lower than on
+        // the home screen. Hidden, it's laid over the screen in Edit Home and takes no room: the same sizes as at home.
+        val toolsGhost = toolsOn && HomeEditState.active && HomeWidgets.hidden(LayoutParts.id(HomeLayout.STACKS, "tools"))
+        val barGhost = barOn && HomeEditState.active && HomeWidgets.hidden(LayoutParts.id(HomeLayout.STACKS, "bar"))
+        val toolsRoom = toolsOn && !toolsGhost
+        val barRoom = barOn && !barGhost
         // Update 159 (the loader look): the tool strip on top, the bottom panel with the name, clock and buttons.
-        val toolsH = if (toolsOn) 42.dp else 0.dp
-        val nameH = if (barOn) 0.dp else (if (compact) 42.dp else 56.dp)
-        val barH = if (barOn) (if (compact) 92.dp else 118.dp) else 0.dp
+        val toolsH = if (toolsRoom) 42.dp else 0.dp
+        val nameH = if (barRoom) 0.dp else (if (compact) 42.dp else 56.dp)
+        val barH = if (barRoom) (if (compact) 92.dp else 118.dp) else 0.dp
         val stageH = (maxHeight - toolsH - nameH - barH).coerceAtLeast(110.dp)
+        if (toolsGhost) Box(
+            Modifier.align(Alignment.TopCenter).zIndex(2f).fillMaxWidth().height(42.dp).editablePart(LayoutParts.id(HomeLayout.STACKS, "tools"), "Tool strip"),
+            contentAlignment = Alignment.Center
+        ) { StacksToolbar(c, Modifier) }
+        if (barGhost) Box(
+            Modifier.align(Alignment.BottomCenter).zIndex(2f).fillMaxWidth().height(if (compact) 92.dp else 118.dp)
+                .editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Bottom panel")
+        ) { StacksPanel(c, g, compact, Modifier.fillMaxSize()) }
         Column(Modifier.fillMaxSize()) {
-            if (toolsOn) Box(
+            if (toolsRoom) Box(
                 Modifier.fillMaxWidth().height(toolsH).editablePart(LayoutParts.id(HomeLayout.STACKS, "tools"), "Tool strip"),
                 contentAlignment = Alignment.Center
             ) { StacksToolbar(c, Modifier) }
             // Without the panel the name stays above the games, as before.
-            if (!barOn) Box(
+            if (!barRoom) Box(
                 Modifier.fillMaxWidth().height(nameH).padding(horizontal = 16.dp)
                     .editablePart(LayoutParts.id(HomeLayout.STACKS, "name"), "Name"),
                 contentAlignment = Alignment.BottomCenter
@@ -196,7 +211,7 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, m
                 loop = loopRowOn(c), loopTick = c.state.loopTick, loopStep = c.state.loopStep,
                 modifier = stage
             ) } else vcTrace("VC:StacksStage") { StacksStage(c, stage) }
-            if (barOn) Box(
+            if (barRoom) Box(
                 Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Bottom panel")
             ) { StacksPanel(c, g, compact, Modifier.fillMaxSize()) }
         }

@@ -67,6 +67,12 @@
   one-colour icons stay everywhere else).
 - **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
   drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **Edit Home shows the home screen's sizes** (Toni: "two different sizes show when editing Home", Stacks): a part hidden
+  at home (the tool strip, the bottom panel) still shows faintly in Edit Home to bring back, but it took its room there,
+  so the games stood smaller and lower; hidden, it's laid over the screen in Edit Home and takes no room
+  (`StacksBody`: `toolsGhost`, `barGhost`).
+- **Edit Home toolbar's ◀ ▶** (Toni: "misleading — they look like they go through everything, but it collapses"): they
+  step through the parts now (as L1 / R1, `HomeEditState.pickStep`); the bar folds away with its own ⇲ Fold button.
 - **Edit Home by touch: one finger moves, two fingers size** (Toni: "sometimes I can't move things with a finger — it gets
   resized instead; maybe resize with 2 fingers … then the icons should disappear and a tutorial of what does what in the
   legend"): the size handle (bottom left) and the stretch handles (right and bottom edge) are gone, on the floating parts
@@ -129,7 +135,7 @@
   `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`, `ui/MediaEditions.kt`,
   `ui/StacksArch.kt`, `data/RomScanner.kt`, `ui/AppIcons.kt`, `ui/GameCard.kt`, `ui/StyleHomes.kt`,
   `ui/Case3D.kt`, `ui/PhysicalMedia.kt`, `ui/HomeEdit.kt`, `ui/HomeParts.kt`, `ui/HomeEditLegend.kt`,
-  `ui/HomePartStyle.kt`.
+  `ui/HomePartStyle.kt`, `ui/StyleCaseStacks.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1

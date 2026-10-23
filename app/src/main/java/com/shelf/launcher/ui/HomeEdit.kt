@@ -280,6 +280,13 @@ object HomeEditState {
     var guideX by mutableStateOf<Float?>(null)
     var guideY by mutableStateOf<Float?>(null)
     var selected by mutableStateOf(HomeWidgets.MUSIC)
+    /** The next (1) or previous (-1) part to pick — L1 / R1, and (update 325) the toolbar's ◀ ▶. */
+    fun pickStep(dir: Int) {
+        val list = HomeEditSession.cycleList()
+        val i = list.indexOf(selected).coerceAtLeast(0)
+        val n = list.size
+        if (n > 0) selected = list[((i + dir) % n + n) % n]
+    }
     /** Update 325: what a two-finger pinch does to each part shown (by its id) — HomeEditPinch calls the picked one's. */
     val pinchers = HashMap<String, (Float) -> Unit>()
     /** Update 125: the Edit Home bar folded away to the left (-1) or right (1); 0 = open. */
@@ -503,12 +510,7 @@ object HomeEditState {
             Key.DirectionRight -> nudge(selected, 1, 0, fast)
             Key.DirectionUp -> nudge(selected, 0, -1, fast)
             Key.DirectionDown -> nudge(selected, 0, 1, fast)
-            Key.ButtonL1, Key.ButtonR1 -> {
-                val list = HomeEditSession.cycleList()
-                val i = list.indexOf(selected).coerceAtLeast(0)
-                val n = list.size
-                if (n > 0) selected = list[((i + if (e.key == Key.ButtonR1) 1 else -1) % n + n) % n]
-            }
+            Key.ButtonL1, Key.ButtonR1 -> pickStep(if (e.key == Key.ButtonR1) 1 else -1)
             // L2 / R2: smaller / bigger.
             Key.ButtonL2, Key.ButtonR2 -> {
                 HomeEditSession.push("size:$selected")

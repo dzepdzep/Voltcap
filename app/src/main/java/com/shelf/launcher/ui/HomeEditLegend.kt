@@ -94,6 +94,8 @@ private fun ToolbarActions() {
         // (Update 241, #05: Reset this layout on the bar too — it was only in the inspector's More; one step of Undo.)
         ToolKey("⟲ Reset layout") { HomeEditSession.resetLayout(HomeEditState.layout) }
         ToolKey("◉ Preview") { HomeEditState.preview = true }
+        // (Update 325: folds the bar to the side — a tab brings it back; the ◀ ▶ beside the part's name pick parts now.)
+        ToolKey("⇲ Fold") { HomeEditState.barFolded = 1 }
         ToolKey("✎ Adjust") { HomeEditState.inspectorTab = 0; HomeEditState.styling = HomeEditState.selected }
         ToolKey("Discard") { if (HomeEditSession.dirty()) HomeEditState.leaving = true else HomeEditSession.save() }
         ToolKey("✓ Done", accent = true) { HomeEditSession.save() }
@@ -131,7 +133,7 @@ private fun Hints(narrow: Boolean) {
         verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         listOf(
-            "☝" to "Tap: pick a part", "☝" to "Drag: move it", "✌" to "Two fingers: bigger / smaller",
+            "☝" to "Tap: pick a part", "◀ ▶" to "Next part", "☝" to "Drag: move it", "✌" to "Two fingers: bigger / smaller",
             "✕" to "Take it off", "✎" to (if (narrow) "Adjust: stretch" else "Adjust: stretch, style, line up")
         ).forEach { (k, l) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -162,9 +164,12 @@ private fun ToolKey(label: String, accent: Boolean = false, enabled: Boolean = t
 /** The arrow that folds the toolbar away to that side ([side] -1 left, 1 right). */
 @Composable
 private fun LegendFold(side: Int) {
+    // (Update 325, Toni: "the arrows next to Edit Home · Music player are misleading — they look like they go through
+    // everything on the screen, but they fold the bar away": they step through the parts now, as L1 / R1; the bar folds
+    // away with its own ⇲ Fold button.)
     Box(
         Modifier.size(28.dp).clip(RoundedCornerShape(50)).background(ShelfTheme.colors.surface)
-            .pointerInput(side) { detectTapGestures { HomeEditState.barFolded = side } },
+            .pointerInput(side) { detectTapGestures { HomeEditState.pickStep(side) } },
         contentAlignment = Alignment.Center
     ) { Text(if (side < 0) "◀" else "▶", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp) }
 }
