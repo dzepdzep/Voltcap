@@ -1450,7 +1450,9 @@ private fun CarouselItem(
     // (Update 325, Toni: "make all the cartridges and CDs stand at the same height, their bottoms level": a cartridge or
     // disc shorter than the tallest slot (a Game Boy cartridge beside an N64 one, a disc beside a DS card) stood in the
     // middle of the row; it stands on the row's floor now — the bottom of the tallest slot, where the floor is drawn.)
-    val standDrop = if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && !c.cases3d && !spineHere && !wideHere && model == null)
+    // (Toni: "make the cases line up the way the cartridges do": the 3D cases too — a DS box beside a DVD case stands on
+    // the same floor.)
+    val standDrop = if ((c.cases3d || gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) && !spineHere && !wideHere && model == null)
         ((c.bigH - hFull) / 2f).coerceAtLeast(0.dp) else 0.dp
     val floorDrop = (hFull - h0) / 2f + standDrop
     // Update 168: the case looks with their media (Case + disc, 3D case + disc, Case + its media) in the 3D-case views
