@@ -70,7 +70,13 @@ internal class PieceTurn(
      * Update 317 (Toni, option 2: "fewer copies while moving"): the view is moving (a carousel gliding) — the piece draws its
      * sides with at most [MOVING_COPIES] copies meanwhile, its full sides again the moment it stops. Null: never.
      */
-    val movingOf: (() -> Boolean)? = null
+    val movingOf: (() -> Boolean)? = null,
+    /**
+     * Update 325 (Toni: "with 5 each side it works super well, but I don't want the sides to feel empty"): the piece is far
+     * out in the view (a carousel game past the nearest [FULL_NEAR] each side) — it's drawn as its face alone, turned, with
+     * no thickness: one picture instead of a stack of them. Null: never.
+     */
+    val farOf: (() -> Boolean)? = null
 ) {
     /** Update 317: the piece applies [shadeOf] itself (it's drawn from its pictures); the view leaves it out. */
     val shadeTaken = mutableStateOf(false)
@@ -481,6 +487,7 @@ internal fun Modifier.solidPiece(
         var madeYaw = Float.NaN
         var madeShade = -1f
         var madeMoving = false
+        var madeFar = false
         onDrawWithContent {
             // (Update 294, testing only: TestHooks `voltcap_test_pose` — held at one turn, for before / after pictures.)
             val testPose = TestHooks.pose.value
@@ -506,6 +513,7 @@ internal fun Modifier.solidPiece(
                 return@onDrawWithContent
             }
             val moving = turn?.movingOf?.invoke() == true
+            val far = turn?.farOf?.invoke() == true
             // (Update 314: fully opaque in its view — drawn straight into it, no whole-piece buffer.)
             // (Not a see-through piece: its cut-out behind the face, DstOut, must stay inside its own buffer.)
             val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true && !bufShade
@@ -527,7 +535,7 @@ internal fun Modifier.solidPiece(
                 }
             }
             // (Update 314: the same turn as last drawn — the parts only drawn from the picture are still right.)
-            if (art != null && artMade && yaw == madeYaw && shadeS == madeShade && moving == madeMoving && testPose == null && !direct) {
+            if (art != null && artMade && yaw == madeYaw && shadeS == madeShade && moving == madeMoving && far == madeFar && testPose == null && !direct) {
                 translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
                 return@onDrawWithContent
             }
@@ -593,6 +601,7 @@ internal fun Modifier.solidPiece(
             madeYaw = yaw
             madeShade = shadeS
             madeMoving = moving
+            madeFar = far
             if (c >= 0f) {
                 lit.colorFilter = SolidLight.of((1f - 0.4f * abs(sn)) * shadeK)
                 if (art == null) lit.record { drawLayer(face) }
@@ -632,7 +641,7 @@ internal fun Modifier.solidPiece(
                 // (Update 324, Thor recording — Mix look, All games: 308 ms a frame, 63 ms of it handing the frame to the GPU:
                 // the cartridge / disc photos — this path — drew up to 32 slices and redrew their smear picture for every piece
                 // in every frame. At most 16 now, and while the row glides 6 with no smear, as the shells' sides (MOVING_COPIES).)
-                val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, if (moving) MOVING_SLICES else 16)
+                val n = if (far) 0 else ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, if (moving) MOVING_SLICES else 16)
                 val clear = spec.clear
                 // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
                 // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
@@ -654,7 +663,7 @@ internal fun Modifier.solidPiece(
                 val reach = if (edgeLeaf != null && side != null && artSize != null)
                     (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(c)).coerceAtLeast(1.5f) else 0f
                 val span = depthPx * abs(sn)
-                val nLeaf = if (edgeLeaf == null || span < 0.5f) 0 else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
+                val nLeaf = if (edgeLeaf == null || span < 0.5f || far) 0 else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
                 edgeL.alpha = if (edgeLeaf != null) {
                     if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
                 } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
@@ -844,6 +853,9 @@ internal const val SIDE_SPREAD = 10
 internal const val MOVING_COPIES = 3
 /** Update 324: a photo piece's slices while the row glides (at rest up to 16). */
 internal const val MOVING_SLICES = 4
+
+/** Update 325: how many games each side of a carousel's middle are drawn with their thickness (PieceTurn.farOf). */
+internal const val FULL_NEAR = 5
 
 /** A brightness filter in 40 steps (made once each). */
 private object SolidLight {

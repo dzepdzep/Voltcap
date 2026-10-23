@@ -1524,7 +1524,9 @@ private fun CarouselItem(
     // (Update 317: the shade too — a piece drawn from its pictures darkens itself, CarouselArt then needs no buffer for it.)
     val shadeLatest = rememberUpdatedState(shadeOf)
     val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }, shadeOf = { shadeLatest.value() },
-        movingOf = { ctxNow.value.moving?.invoke() == true }) }
+        movingOf = { ctxNow.value.moving?.invoke() == true },
+        // (Update 325: past the nearest FULL_NEAR each side, the face alone — see PieceTurn.farOf.)
+        farOf = { kotlin.math.abs(relNow.value()) > FULL_NEAR + 0.5f }) }
     Box(
         modifier
             // The drawing order, read while placing (zIndex is otherwise fixed at composition).

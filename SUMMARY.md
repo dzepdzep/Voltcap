@@ -61,6 +61,10 @@
   app's cartridge, disc or case wore its one-colour icon in the accent, which follows the game you're on — every app's
   piece was drawn again in a new colour at each step. They wear the app's own icon now (`rememberOwnAppIcon`; the
   one-colour icons stay everywhere else).
+- **Thickness only for the nearest 5 each side** (Toni: "with 5 each side it works super well — but I don't want the
+  sides to feel empty"): with To the edge the carousel still fills to the screen's edges, but a cartridge / disc past the
+  5 nearest each side is drawn as its turned face alone, no stack of copies for its sides — out there they're small and
+  nearly side-on (`PieceTurn.farOf`, `FULL_NEAR` = 5).
 - **Remove / add categories on the category screen** (Toni: "Other apps appears in the categories screen for some reason
   — add a way to add or remove categories there"): a tile's options (Y / Options) have **Remove from categories** — off
   the category screen and L2 / R2 (and the style homes' tabs), never the last one; the one showing now goes back to All
