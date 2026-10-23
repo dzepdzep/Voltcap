@@ -2811,6 +2811,30 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * you have (SteamGridDB first). Names from memory cards are often run together ("WWESmackDown!vs.RAW"), so they're
      * spaced out first. Found covers are kept; a game with none is tried again after a week.
      */
+    /**
+     * Update 318 (Toni: "Stats don't show pictures of games that aren't on the device — scrape them before"): the covers of
+     * every game in the play history that isn't in the library — played on another device, or here and since removed —
+     * looked up ahead (most played first) and kept, so the recaps have them when opened. Removed games are searched by the
+     * name in their file's address, the console guessed from its folder (YearRecapDialog asks the same way).
+     */
+    fun prefetchStatsArt() {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val lib = _uiState.value.games.mapTo(HashSet()) { it.stableKey }
+            val here = runCatching { PlaytimeStore(app).loadSessions() }.getOrDefault(emptyList())
+            val there = runCatching { com.shelf.launcher.data.OtherDevices.sessions(app) }.getOrDefault(emptyList())
+            val info = runCatching { com.shelf.launcher.data.OtherDevices.info(app) }.getOrDefault(emptyMap())
+            val wanted = (here + there).groupBy { it.key }.mapValues { (_, s) -> s.sumOf { it.ms } }
+                .entries.sortedByDescending { it.value }.map { it.key }
+                .filter { it !in lib }
+                .mapNotNull { k ->
+                    info[k]?.let { i -> Game(i.name.ifBlank { k.substringAfterLast('/') }, i.platform, 0, SourceType.ROM, romPath = k) }
+                        ?: if (k.contains('/')) com.shelf.launcher.data.goneGame(k) else null
+                }
+            if (wanted.isNotEmpty()) withContext(Dispatchers.Main) { loadVaultArt(wanted) }
+        }
+    }
+
     fun loadVaultArt(games: List<Game>) {
         val app = getApplication<android.app.Application>()
         val prefs = app.getSharedPreferences("save_vault_art", android.content.Context.MODE_PRIVATE)

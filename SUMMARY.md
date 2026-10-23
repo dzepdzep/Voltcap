@@ -1,5 +1,17 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 23 Oct 2026 (318): Stats' recaps get the covers of games no longer on the device ahead
+
+- **Covers fetched before they're needed** (Toni: "Stats don't show pictures of games that aren't on the device — scrape
+  them before"): `LauncherViewModel.prefetchStatsArt()` looks up the covers of every game in the play history that isn't
+  in the library — played on another device, or here and since removed — most played first, 20 s after start and each
+  time Stats opens; kept in the Save Vault art store the recaps read. A game whose cover wasn't found is tried again after
+  a week. Removed games are searched by their file's name, the console guessed from its folder (`data.goneGame`, shared
+  with `YearRecapDialog`).
+- **Copy:** `LauncherViewModel.kt`, `data/OtherDevices.kt`, `ui/YearRecapDialog.kt`, `ui/LauncherScreen.kt`,
+  `ui/HubScreens.kt`.
+- **Not compiled here** (no Android SDK); not tried on a device.
+
 ## Update — 22 Oct 2026 (317): Cartridge carousel GPU memory and redraws, first-launch charge-limit crash
 
 **Status:** Same branch / [PR #6](https://github.com/dzepdzep/Voltcap/pull/6), not merged; CI is the compile check, not
