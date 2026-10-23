@@ -14,6 +14,9 @@
   (it was only under Covers › Cover style in the hold list); the tile names it "Tiles".
 - **Layout standard on Tile home** (Toni: "it isn't changing, just the old one"): Tile home's preset has no look of its
   own, so the look stayed; its standard is covers as square tiles now (`layoutStandardLook`).
+- **Layout standard picked again did nothing** (Toni: "on all layouts"): once on, a look changed another way (an R1
+  look tile, a sub-choice) left Layout standard marked as the look in use, so picking it again was ignored. It's applied
+  every time it's picked now (`LookChooser`).
 - **Copy:** `ui/UiSounds.kt`, `ui/BoxSides.kt`, `ui/GameLookPicker.kt`.
 
 ## Update — 23 Oct 2026 (321): performance recorder, idle rest, battery watcher fix, spine fit, icon styles, install script

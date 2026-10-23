@@ -704,7 +704,9 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
                 LookMain.ART -> Sample.HERO
                 LookMain.LAYOUT -> Sample.FOCUS_WIDE
             }
-            LookChoiceCard(m.label, m.about, m == main, enabled, sample) { if (m != main) onChange(applyMainLook(m, appearance)) }
+            // (Update 323, Toni: "Layout standard did nothing on all layouts": once on, a look changed another way left it
+            // marked as the one in use, so picking it again was ignored. It's applied every time it's picked.)
+            LookChoiceCard(m.label, m.about, m == main, enabled, sample) { if (m != main || m == LookMain.LAYOUT) onChange(applyMainLook(m, appearance)) }
         }
     }
     when (main) {
