@@ -23,6 +23,13 @@
   On the bottom band a product code like the real ones ("NTR-ASSE-USA", 3DS "CTR-P-ASSE"): made up from the title and
   your case region (the drawing has no ROM file to read the real one from), the same each time (`CartShells.productCode`).
   (Toni's own header picture, tried first, is gone again.)
+- **Switching categories in the carousels** (Toni: "just too laggy", `voltcap-perf-20261023-205252.zip`: frames up to
+  530 ms, 200+ ms building the carousel): (1) with To the edge a new collection was built whole in one frame — 12 games a
+  side, 36 in Box flow / Spine wall — beside the leaving one; it's built from the middle out now, 4 a side in its first
+  frame and 2 more a side each frame after (`GameCarousel`, `builtReach`). (2) Every disc's shell picture was looked up on
+  the disk (the app's files folder checked, the fitted copy checked) each time a game was built — 0.4 s of the recording;
+  each answer is kept until the pack changes (`Packs.discFile`). The lower screen's frames are slow in the same moments
+  only because both screens share one main thread — its own work was small.
 - **Performance recording: the second screen too** (`second-screen.txt` in the zip): both screens are drawn by the app's
   one render thread and share the GPU — the Thor recordings show the main screen's frames waiting on it ~half the time.
 - **Second screen Showcase dock** (Toni: "Home black inside red outside, Chrome red inside white outside"): with the
@@ -37,7 +44,7 @@
   (or a restart) makes it follow, and Voltcap keeps the setting held after that.
 - **N64 cartridges' bottom** (Toni): looks right now — nothing changed for it.
 - **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/SwitchLabel.kt`, `ui/SecondShowcase.kt`, `ui/LauncherScreen.kt`,
-  `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`.
+  `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`, `ui/Carousel.kt`, `data/Packs.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1

@@ -1079,6 +1079,27 @@ internal fun GameCarousel(
         // Update 162: while a category change slides, the collection that was here goes on along the path (layer 1)
         // and the new one comes in after it from the side the change came from (layer 0), each fading as it goes.
         val showOld = swap.token != 0 && swap.doneToken.intValue != swap.token && swap.oldGames.isNotEmpty()
+        // Update 325 (Thor recording, switching categories with To the edge: 200+ ms frames — the new collection's games,
+        // 12 a side, 36 in Box flow / Spine wall, all built in one frame beside the leaving ones): a new collection is
+        // built from the middle out — 4 a side in its first frame, 2 more a side each frame after, until it reaches as
+        // far as the view does.
+        val buildKey = (games.firstOrNull()?.stableKey ?: "") + "|" + games.size
+        val build = remember { arrayOf<Any?>(null, Int.MAX_VALUE) }
+        val buildTick = remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        if (build[0] != buildKey) {
+            build[1] = if (build[0] == null) Int.MAX_VALUE else minOf(reachNow, 4)
+            build[0] = buildKey
+        }
+        buildTick.intValue
+        LaunchedEffect(buildKey) {
+            while ((build[1] as Int) < reachNow) {
+                androidx.compose.runtime.withFrameNanos { }
+                build[1] = (build[1] as Int) + 2
+                buildTick.intValue++
+            }
+            if (build[1] != Int.MAX_VALUE) { build[1] = Int.MAX_VALUE; buildTick.intValue++ }
+        }
+        val builtReach = build[1] as Int
         val shiftK = if (pageKind == Features.PageAnim.SLIDE) CarouselSwap.SHIFT else 0f
         val shiftN = shiftK.toInt()
         val dirS = swap.dir
@@ -1108,7 +1129,7 @@ internal fun GameCarousel(
                 val lBase = if (old) kotlin.math.floor(oldPos).toInt() else base
                 // (The leaving collection only as far as 8 each side: a long stack's far end just goes, rather than
                 // building dozens of games for a moment.)
-                val lReach = if (old) minOf(reachNow, 8) else reachNow
+                val lReach = if (old) minOf(reachNow, 8) else minOf(reachNow, builtReach)
                 val lo = lBase - lReach - 1 - (if (showOld && ((!old && dirS > 0) || (old && dirS < 0))) shiftN else 0)
                 val hi = lBase + lReach + 2 + (if (showOld && ((!old && dirS < 0) || (old && dirS > 0))) shiftN else 0)
                 val focusIdx = if (old) kotlin.math.round(oldPos).toInt() else vFocus
