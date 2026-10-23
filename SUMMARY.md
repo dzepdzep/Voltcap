@@ -173,6 +173,9 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317af — pull-out stack back as it was:** with "Games each side" counting exactly (317g) the pull-out stack showed only
+  that many spines and stopped short of the screen's edges. It's back to three times the number (plus the 8 hidden
+  behind the case pulled out), so its row reaches the edges again. Box flow / Spine wall keep the exact number.
 - **Still "over the one behind it, then behind" — it's Box flow, not the pull-out stack:** Box flow and Spine wall use
   `stackZ` too (middle game's order until d = 1). `settleZ(rel, e)`: once its ease into the stack passes 0.8 (the last
   third of the step) it takes the stack's order — the incoming game (d ≈ 0.33) stays on top.

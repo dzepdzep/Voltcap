@@ -388,7 +388,9 @@ internal object Carousel {
         return if (shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) each
         // (Update 238, #21: the pull-out stack's first few each side stand behind the case pulled out in front of them —
         // that many more, so the row still shows past it.)
-        else if (shown == CarouselView.SPINE_PULL) each + PULL_HIDDEN
+        // (Update 317af, Toni: with the number picked the pull-out stack stopped short of the screen's edges — back to
+        // three times as many, as before: its row always reaches the edges.)
+        else if (shown == CarouselView.SPINE_PULL) side * 3 + PULL_HIDDEN
         else side
     }
     /** Spacing between the games (Settings, 60–160 %), times [spread]. */
