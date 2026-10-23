@@ -14,7 +14,7 @@
   "Game (Disc 2) (USA).chd") joins its set now — one game, started from disc 1 / the .m3u (`RomScanner`, Pass 2). A
   rescan of the library picks it up.
 - **Not done yet:** N64 cartridges' bottom seen from the side (needs a close Inspect screenshot).
-- **Copy:** `ui/SolidPiece.kt`, `ui/EndlessRow.kt`, `ui/TileHome.kt`, `ui/QuickSettings.kt`, `ui/MediaInspectView.kt`,
+- **Copy:** `ui/SolidPiece.kt`, `ui/EndlessRow.kt`, `ui/QuickSettings.kt`, `ui/MediaInspectView.kt`,
   `data/Features.kt`, `data/RomScanner.kt`.
 - **Checked:** CI build (assembleDebug + unit tests) on push. **Not tested** on a device.
 
