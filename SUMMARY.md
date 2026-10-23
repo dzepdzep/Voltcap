@@ -173,6 +173,8 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317ar — the trophy count no longer grows on the game you're on** (Voltcap row, `GameCard.kt`): the same 9 sp text,
+  icon, tick and padding on every card, and no percentage joining it there.
 - **317aq — no white haze over the game art** (Voltcap row, Tile home: the top / bottom shade took a light theme's
   background colour — now always dark, `BackdropArt` in `HomeChrome.kt`), and Tile home with Endless fills to the right
   edge: once each only when the games don't fill the row.

@@ -621,27 +621,27 @@ fun GameCard(
                         .align(trophyAlign)
                         // (Update 240, #32/#57: on a disc's strip, 2 dp in, and at most half the tile when the game's state
                         // shares the strip.)
-                        .padding(if (discChips && trophyAlign == Alignment.BottomEnd) 2.dp else if (focused) 8.dp else 4.dp)
+                        .padding(if (discChips && trophyAlign == Alignment.BottomEnd) 2.dp else 4.dp)
                         // (Update 211: never wider than the card — the text shrinks / ends with … instead of being cut off.)
                         .widthIn(max = (if (discChips && GameStates.byKey[game.stableKey] != null) width / 2 - 4.dp else width - 12.dp).coerceAtLeast(24.dp))
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.65f))
-                        .padding(horizontal = if (focused) 8.dp else 5.dp, vertical = if (focused) 4.dp else 2.dp)
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (awardInPill && cornerAward != null) {
                             Icon(
                                 awardIcon(cornerAward), cornerAward.label,
-                                tint = awardTint(cornerAward), modifier = Modifier.size(if (focused) 12.dp else 9.dp)
+                                tint = awardTint(cornerAward), modifier = Modifier.size(9.dp)
                             )
                         } else {
                             Icon(
                                 Icons.Filled.EmojiEvents, null,
-                                tint = ShelfTheme.accent, modifier = Modifier.size(if (focused) 12.dp else 9.dp)
+                                tint = ShelfTheme.accent, modifier = Modifier.size(9.dp)
                             )
                         }
                         // Update 151: a small upright tick between the trophy and "0/69", so they read as two parts.
-                        ProgressTick(height = if (focused) 10.dp else 7.dp, gap = if (focused) 4.dp else 2.dp)
+                        ProgressTick(height = 7.dp, gap = 2.dp)
                         val earned = progress.NumAchieved ?: 0
                         Text(
                             // Always the count, the same on every card ("0/53", "12/120"); with room
@@ -650,12 +650,13 @@ fun GameCard(
                             // small Continue playing tiles "38/75 · 51%" ran off the card's edge.)
                             // (0.6.17: on the smallest tiles — Twin icons, Twin desk's list, Pocket Quest's strip — "107/155"
                             // was cut to "107/1": there the percentage instead, which always fits.)
-                            if (focused && width >= 132.dp) com.shelf.launcher.data.achievementProgress(earned, possible)
-                            else if ("$earned/$possible".length * 4.6f > (width - if (focused) 52.dp else 40.dp).value)
+                            // (Update 317ar, Toni: "I don't want the trophy count to get bigger when I'm on that game": the same
+                            // count, size and padding on every card — no percentage joining it on the one you're on.)
+                            if ("$earned/$possible".length * 4.6f > (width - 40.dp).value)
                                 "${(earned * 100 / possible).coerceIn(0, 100)}%"
                             else "$earned/$possible",
                             color = Color.White,
-                            fontSize = if (focused) 11.sp else 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (focused) 11.sp else 9.sp), maxFontSize = if (focused) 11.sp else 9.sp),
+                            fontSize = 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(9.sp), maxFontSize = 9.sp),
                             fontWeight = FontWeight.Bold,
                             maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             softWrap = false
