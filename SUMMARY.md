@@ -173,6 +173,8 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317an — Tile home's row from the screen's left edge** (14 dp in — the focus ring's room — instead of 6.5 % of the
+  width; `tileRowMetrics`), and the trophy count centred in its bubble (no font padding, line trimmed).
 - **317am — Tile home's badges lined up:** the achievement count and the state mark take the console badge's height
   (13 % of the tile, 11–20 dp) and its distance from the edge, so the three sit level and the same size (`TileHome.kt`).
 - **317al — console badges on the Hero carousel's covers too** (every other layout already had them: the Voltcap row,

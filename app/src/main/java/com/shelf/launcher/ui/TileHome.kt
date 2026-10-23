@@ -118,7 +118,9 @@ internal fun tileRowMetrics(size: CardSize): TileRowMetrics {
     val screen = screenSizeDp()
     // Never so big that fewer than four tiles fit across.
     val scale = LocalTileScale.current
-    val start = maxOf(24.dp, screen.width * 0.065f)
+    // (Update 317an, Toni: "move them completely to the edge of the screen": the row starts at the screen's left edge —
+    // just the focus ring's room — instead of 6.5 % in.)
+    val start = 14.dp
     val byHeight = screen.height * tileFraction(size) * scale
     val spacingFor = { t: Dp -> maxOf(10.dp, t * 0.075f) }
     // At the default size at least ~4 tiles fit across; bigger sizes may show fewer (never under ~1.6),
@@ -792,7 +794,14 @@ private fun HomeTile(
                 ProgressTick(height = 8.dp, gap = 3.dp)
                 Text(
                     "$earned/$possible",
-                    color = Color.White, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false
+                    color = Color.White, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
+                    // (Update 317an, Toni: the count sat low in its bubble — the font's own top / bottom room. Trimmed, centred.)
+                    style = androidx.compose.ui.text.TextStyle(
+                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                        lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                            androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                        )
+                    )
                 )
             }
         }
