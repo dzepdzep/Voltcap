@@ -484,6 +484,18 @@ internal object Carousel {
      * side): the middle one on top, then the ones crossing; in the right stack each one further out over the one inside
      * it (else its front would cover the next one's spine), in the left stack the inner one on top.
      */
+    /**
+     * Update 317 (Toni, Box flow: "putting the game back on the right side puts it over the one behind it, then quickly
+     * behind it"): [stackZ] for a game whose ease into its stack is [e] (0 in the middle … 1 in the stack). It kept the
+     * middle game's order until it was all the way in (d = 1), then dropped behind the one beside it; once it is nearly
+     * in (e past 0.8) it takes the stack's own order — under the ones further out on the right, over them on the left.
+     */
+    private fun settleZ(rel: Float, e: Float): Float {
+        val d = kotlin.math.abs(rel)
+        if (d >= 1f || e < 0.8f) return stackZ(rel)
+        return if (rel > 0f) 49f + d else 51f - d
+    }
+
     private fun stackZ(rel: Float): Float {
         val d = kotlin.math.abs(rel)
         if (d < 1f) return 100f - 30f * d
@@ -556,7 +568,7 @@ internal object Carousel {
                 val sc = 1f - 0.1f * e
                 out.set(
                     sign * (a * e * g0 + 0.125f * far * g), (1f - sc) * 0.5f,
-                    sc, 72f * e + (far * 1.2f).coerceAtMost(8f), 0f, alpha(d, reach(side, shown)), shade(d) * 0.5f, stackZ(rel)
+                    sc, 72f * e + (far * 1.2f).coerceAtMost(8f), 0f, alpha(d, reach(side, shown)), shade(d) * 0.5f, settleZ(rel, e)
                 )
             }
             CarouselView.TURNED -> {
@@ -604,7 +616,7 @@ internal object Carousel {
                 out.set(
                     sign * (a * e * g0 + 0.15f * far * g), (1f - sc) * 0.5f * e - 0.04f * (1f - e),
                     sc, 66f * e + (far * 2.2f).coerceAtMost(16f) + flowSway(near), 0f,
-                    alpha(d, reach(side, shown)), shade(d) * 0.45f, stackZ(rel)
+                    alpha(d, reach(side, shown)), shade(d) * 0.45f, settleZ(rel, e)
                 )
             }
             // (Update 238, #21) The pull-out stack — see [pullOut].

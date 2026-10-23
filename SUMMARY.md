@@ -173,6 +173,9 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **Still "over the one behind it, then behind" — it's Box flow, not the pull-out stack:** Box flow and Spine wall use
+  `stackZ` too (middle game's order until d = 1). `settleZ(rel, e)`: once its ease into the stack passes 0.8 (the last
+  third of the step) it takes the stack's order — the incoming game (d ≈ 0.33) stays on top.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`,
   `ui/FullScanCutEditor.kt`, `ui/BoxSides.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
