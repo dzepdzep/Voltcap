@@ -770,7 +770,14 @@ internal fun GameCarousel(
         cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL)
     // (Update 238, #21: the pull-out stack is made of real cases; the other looks — cartridges, discs, spines, wide
     // capsules, tiles — stand as in the Spine wall, their pieces turned toward their edges and packed each side.)
-    val view = if (chosenView == CarouselView.SPINE_PULL && !caseLook) CarouselView.SPINE_WALL else chosenView
+    // (Update 325, Toni: "the Tiles look should literally be the squares used in Tile home — why would it be anything
+    // else": in the views that turn the games to their edges — Spine wall, Box flow, the pull-out stack, Arc, Turned row,
+    // Record flip — the square tiles stood turned and packed like spines. With the Tiles look they're an even row of
+    // square tiles facing you, the one you're on a little bigger, as Tile home shows them.)
+    val tilesLook = cardArtType == com.shelf.launcher.data.CardArtType.COVER && carouselTiles() && !spines
+    val turnsToEdges = chosenView.cases || chosenView == CarouselView.BOX_FLOW || chosenView == CarouselView.SPINE_PULL || chosenView == CarouselView.FLIP
+    val view = if (tilesLook && turnsToEdges) CarouselView.POP
+        else if (chosenView == CarouselView.SPINE_PULL && !caseLook) CarouselView.SPINE_WALL else chosenView
     // (Update 238, #21: the pull-out stack's slots are its games' usual case thickness apart.)
     val pullDepthNow = androidx.compose.runtime.remember(games, view) { if (view == CarouselView.SPINE_PULL) typicalCaseDepth(games) else 0.085f }
     androidx.compose.runtime.SideEffect { Carousel.pullDepth = pullDepthNow }
