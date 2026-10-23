@@ -67,6 +67,9 @@
   one-colour icons stay everywhere else).
 - **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
   drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **No jagged bottoms while scrolling** (Toni: "the jagged bottoms appear only when scrolling"): a gliding row's pieces drew
+  their sides with 3 / 4 copies, and the steps between them showed; as many as at rest now (`MOVING_COPIES`,
+  `MOVING_SLICES`) — the reflection was what cost. The smear stays off while moving.
 - **Reflection without buffers; far cartridges' full sides again** (Toni's recording with Reflection on: still ~240 ms a
   frame; "the rigid edges on the far cartridges"): each game's reflection faded out through a buffer of its own (~25
   redrawn every frame). Its fade is now strips: the reflection recorded once and drawn again in 6 strips, each fainter, no

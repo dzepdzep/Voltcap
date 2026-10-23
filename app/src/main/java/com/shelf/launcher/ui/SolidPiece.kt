@@ -858,11 +858,11 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
 internal const val SIDE_SPREAD = 10
 
 /** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
-// (Update 325, Thor recordings scrolling the Mix look: still ~63 ms a frame handing it to the GPU while it glides — each
-// copy is a turned layer of its own. 3 and 4 while moving; all of them again the moment it stops.)
-internal const val MOVING_COPIES = 3
-/** Update 324: a photo piece's slices while the row glides (at rest up to 16). */
-internal const val MOVING_SLICES = 4
+// (Update 325: as many as at rest now — Toni: "the jagged bottoms appear only when scrolling": with 3 / 4 copies the
+// steps between them showed while it moved, and the reflection turned out to be what cost. Only the smear stays off.)
+internal const val MOVING_COPIES = 24
+/** Update 324: a photo piece's slices while the row glides (at rest up to 16 — the same now, Update 325). */
+internal const val MOVING_SLICES = 16
 
 /** Update 325: how many games each side of a carousel's middle are drawn with their thickness (PieceTurn.farOf). */
 internal const val FULL_NEAR = 5
