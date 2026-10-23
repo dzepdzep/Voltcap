@@ -8,8 +8,12 @@
   time Stats opens; kept in the Save Vault art store the recaps read. A game whose cover wasn't found is tried again after
   a week. Removed games are searched by their file's name, the console guessed from its folder (`data.goneGame`, shared
   with `YearRecapDialog`).
+- **Game window (picture on top, buttons under) cut off at the bottom** (Toni's screenshot: the "Saves" / performance
+  line half off the window, no way to scroll): the room it saves under the picture is a guess, and a fact line that wraps
+  pushed the line out. The window now scrolls when it still doesn't fit (`GameWindow.kt`, Arrange.STACK); the D-pad's
+  focus scrolls to what it lands on.
 - **Copy:** `LauncherViewModel.kt`, `data/OtherDevices.kt`, `ui/YearRecapDialog.kt`, `ui/LauncherScreen.kt`,
-  `ui/HubScreens.kt`.
+  `ui/HubScreens.kt`, `ui/GameWindow.kt`.
 - **Not compiled here** (no Android SDK); not tried on a device.
 
 ## Update — 22 Oct 2026 (317): Cartridge carousel GPU memory and redraws, first-launch charge-limit crash
