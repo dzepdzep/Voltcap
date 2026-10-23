@@ -67,6 +67,11 @@
   one-colour icons stay everywhere else).
 - **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
   drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **Row reveal / The row opens up: focus stays where you move it; something under the buttons** (Toni: "moving right from
+  Continue it goes straight back to Continue … add some stuff underneath so it isn't so empty"): Play was asked for again
+  and again for the first ~0.9 s and whenever the window got the focus back — once a button has the focus it's left
+  alone. Under the buttons, where there's room: the game's achievement badges (earned first, the rest faint, "+N" past 10),
+  or up to 4 of its screenshots when it has none (`RowRevealWindow`).
 - **Edit Home shows the home screen's sizes** (Toni: "two different sizes show when editing Home", Stacks): a part hidden
   at home (the tool strip, the bottom panel) still shows faintly in Edit Home to bring back, but it took its room there,
   so the games stood smaller and lower; hidden, it's laid over the screen in Edit Home and takes no room
@@ -135,7 +140,7 @@
   `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`, `ui/MediaEditions.kt`,
   `ui/StacksArch.kt`, `data/RomScanner.kt`, `ui/AppIcons.kt`, `ui/GameCard.kt`, `ui/StyleHomes.kt`,
   `ui/Case3D.kt`, `ui/PhysicalMedia.kt`, `ui/HomeEdit.kt`, `ui/HomeParts.kt`, `ui/HomeEditLegend.kt`,
-  `ui/HomePartStyle.kt`, `ui/StyleCaseStacks.kt`.
+  `ui/HomePartStyle.kt`, `ui/StyleCaseStacks.kt`, `ui/RowRevealWindow.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1
