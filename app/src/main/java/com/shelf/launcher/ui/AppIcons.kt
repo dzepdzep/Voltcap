@@ -42,6 +42,8 @@ internal object AppIconCache {
     private val icons = LruCache<String, ImageBitmap>(96)
     private val banners = LruCache<String, ImageBitmap>(32)
     private val noBanner = HashSet<String>()
+    /** Update 319: one-colour icons (picture, and whether it's the app's own monochrome icon) — [loadMono]. */
+    private val monos = LruCache<String, Pair<ImageBitmap, Boolean>>(64)
 
     /** Bumped when a package changes, so icons already on screen reload. */
     var version by mutableIntStateOf(0)
@@ -51,6 +53,7 @@ internal object AppIconCache {
     fun invalidate(pkg: String) {
         icons.remove(pkg)
         banners.remove(pkg)
+        monos.remove(pkg)
         synchronized(noBanner) { noBanner -= pkg }
         version++
     }
@@ -64,6 +67,33 @@ internal object AppIconCache {
         // every app in the library.
         context.packageManager.getApplicationIcon(pkg).toBitmap(192, 192).asImageBitmap()
     }.getOrNull()?.also { icons.put(pkg, it) }
+
+    fun cachedMono(pkg: String): Pair<ImageBitmap, Boolean>? = monos.get(pkg)
+
+    /**
+     * Update 319: [pkg]'s icon as a symbol for one colour: the app's own monochrome icon (Android 13+, true) where it ships
+     * one, else its adaptive icon's foreground alone (no background plate; false), else its whole icon (false) — the
+     * visible middle of the layer, at 192 px.
+     */
+    fun loadMono(context: Context, pkg: String): Pair<ImageBitmap, Boolean>? = runCatching {
+        val d = context.packageManager.getApplicationIcon(pkg)
+        val size = 192
+        if (android.os.Build.VERSION.SDK_INT >= 26 && d is android.graphics.drawable.AdaptiveIconDrawable) {
+            val mono = if (android.os.Build.VERSION.SDK_INT >= 33) d.monochrome else null
+            val layer = mono ?: d.foreground
+            if (layer != null) {
+                // An adaptive layer is 108 units across, of which the middle 72 show.
+                val full = size * 3 / 2
+                val out = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+                val c = android.graphics.Canvas(out)
+                c.translate(-(full - size) / 2f, -(full - size) / 2f)
+                layer.setBounds(0, 0, full, full)
+                layer.draw(c)
+                return@runCatching out.asImageBitmap() to (mono != null)
+            }
+        }
+        d.toBitmap(size, size).asImageBitmap() to false
+    }.getOrNull()?.also { monos.put(pkg, it) }
 
     fun loadBanner(context: Context, pkg: String): ImageBitmap? {
         val drawable = runCatching { context.packageManager.getApplicationBanner(pkg) }.getOrNull()
@@ -158,6 +188,36 @@ internal fun AppIconArt(
             }
         }
     }
+}
+
+/**
+ * Update 319: [packageName]'s icon in one colour, [tint] — the app's own monochrome icon filled with it, or its symbol in
+ * the tint's shades (its light and dark kept) — with nothing behind it. Nothing until it's loaded.
+ */
+@Composable
+internal fun MonoAppIcon(packageName: String?, tint: Color, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val st = produceState<Pair<String?, Pair<ImageBitmap, Boolean>?>>(packageName to packageName?.let { AppIconCache.cachedMono(it) }, packageName, AppIconCache.version) {
+        if (packageName == null) { value = null to null; return@produceState }
+        AppIconCache.cachedMono(packageName)?.let { value = packageName to it; return@produceState }
+        value = packageName to withContext(Dispatchers.IO) { AppIconCache.loadMono(context, packageName) }
+    }.value
+    val icon = if (st.first == packageName) st.second else null
+    if (icon != null) {
+        val filter = androidx.compose.runtime.remember(tint, icon.second) {
+            if (icon.second) androidx.compose.ui.graphics.ColorFilter.tint(tint)
+            else {
+                val r = 0.35f + 0.9f * tint.red; val g = 0.35f + 0.9f * tint.green; val b = 0.35f + 0.9f * tint.blue
+                androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
+                    0.299f * r, 0.587f * r, 0.114f * r, 0f, 0f,
+                    0.299f * g, 0.587f * g, 0.114f * g, 0f, 0f,
+                    0.299f * b, 0.587f * b, 0.114f * b, 0f, 0f,
+                    0f, 0f, 0f, 1f, 0f
+                )))
+            }
+        }
+        Image(icon.first, null, colorFilter = filter, contentScale = ContentScale.Fit, modifier = modifier)
+    } else Box(modifier)
 }
 
 /**

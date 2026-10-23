@@ -909,6 +909,13 @@ object Features {
     val shortcutHidden = SetPref("shortcut_hidden")
     /** App icons in the round shortcuts drawn in the theme's colours (monochrome, tinted). */
     val shortcutThemedIcons = BoolPref("shortcut_themed_icons", false)
+    /**
+     * Update 319 (Toni: "an icon pack in one colour so it follows the theme's colours", no square plate with a blur behind):
+     * the second screen's dock shows each app as its one-colour symbol in the theme's accent — the app's own monochrome
+     * icon (Android 13+) where it has one, else its icon's foreground drawn in the accent's shades — on nothing. Off: the
+     * apps' own colour icons, still without the plate.
+     */
+    val secondDockMono = BoolPref("second_dock_mono", true)
 
     // ---- Last played on every device ----
     /** Share "last played" through Google Drive so a game played on another device rises to the top here too. */

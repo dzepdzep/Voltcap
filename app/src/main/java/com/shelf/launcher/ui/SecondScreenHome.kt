@@ -1059,14 +1059,20 @@ private fun DockSlot(app: Game?, onClick: () -> Unit, onLongClick: () -> Unit) {
             .size(SLOT)
             .padTarget(rememberPadId("dock")) { onClick() }
             .clip(RoundedCornerShape(14.dp))
-            .background(if (app == null) Color.White.copy(alpha = 0.05f) else ShelfTheme.colors.surfaceRaised)
+            // (Update 319, Toni: "remove the square look with the blur behind": a plate only for the empty "+" slot; the apps
+            // stand on the dock itself.)
+            .then(if (app == null) Modifier.background(Color.White.copy(alpha = 0.05f)) else Modifier)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         contentAlignment = Alignment.Center
     ) {
         if (app == null) {
             Icon(Icons.Filled.Add, "Add an app to the dock", tint = ShelfTheme.accent, modifier = Modifier.size(22.dp))
+        } else if (com.shelf.launcher.data.Features.secondDockMono.state.value || SecondDockShortcuts.isShortcut(app.packageName)) {
+            SecondDockShortcuts.Icon(app.packageName, Modifier.fillMaxSize().padding(4.dp))
         } else {
-            SecondDockShortcuts.Icon(app.packageName, Modifier.fillMaxSize().padding(6.dp))
+            // The app's own colour icon, alone (AppIconArt draws it on a blurred copy of itself).
+            val icon = rememberAppIcon(app.packageName)
+            if (icon != null) androidx.compose.foundation.Image(icon, null, modifier = Modifier.fillMaxSize().padding(4.dp))
         }
     }
 }

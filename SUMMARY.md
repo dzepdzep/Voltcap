@@ -10,7 +10,14 @@
   row, **Sides in the cover's colours: Right side / Top / Bottom** (all on by default, `Features.boxSideColors`), gives
   each side with no picture of its own the colour of the cover's edge that meets it (`BoxSides.edgeColor` / `colored`);
   a side switched off stays plain card.
-- **Copy:** `ui/Case3D.kt`, `ui/BoxSides.kt`, `ui/SettingsDialog.kt`, `data/Features.kt`.
+- **Second screen dock: one-colour icon pack, no plate** (Toni: "an icon pack in one colour so it follows the theme's
+  colours", "remove the square look with the blur behind"): each app is its symbol in the theme's accent — the app's own
+  monochrome icon (Android 13+) where it ships one, else its adaptive icon's foreground in the accent's shades, else its
+  whole icon in them (`AppIconCache.loadMono`, `MonoAppIcon`); Voltcap's shortcuts their symbol alone. No rounded plate,
+  no blurred copy behind (the empty "+" slot keeps its faint plate). Settings › Screens › App dock › **Icons in the
+  theme's colour** (on; `Features.secondDockMono`) — off: the apps' own colour icons, still without the plate.
+- **Copy:** `ui/Case3D.kt`, `ui/BoxSides.kt`, `ui/SettingsDialog.kt`, `data/Features.kt`, `ui/AppIcons.kt`,
+  `ui/SecondDockShortcuts.kt`, `ui/SecondScreenHome.kt`, `ui/ScreenLayoutsUi.kt`.
 - **Not compiled here**; GitHub's build check runs on the PR. Not tried on a device.
 
 ## Update — 23 Oct 2026 (318): Stats' recaps get the covers of games no longer on the device ahead
