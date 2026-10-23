@@ -37,6 +37,9 @@ import coil.compose.AsyncImage
  * set by the home screen; everything reads through here, so a layout's own choice wins over the general one.
  */
 internal object MotionPrefs {
+    /** Update 317at: Background art motion and its zoom size (Settings), set by the home screen — for [slowZoom]. */
+    var globalHero: com.shelf.launcher.data.HeroMotion by androidx.compose.runtime.mutableStateOf(com.shelf.launcher.data.HeroMotion.QUICK_ZOOM)
+    var zoomPercent: Int by androidx.compose.runtime.mutableStateOf(15)
     // (Update 117: Compose state, so what follows the layout — the music player's look — redraws when it changes.)
     var layout: com.shelf.launcher.data.HomeLayout by androidx.compose.runtime.mutableStateOf(com.shelf.launcher.data.HomeLayout.CLASSIC)
     private val F = com.shelf.launcher.data.Features
@@ -168,6 +171,31 @@ internal fun <T : Any> HeldLayers(
 }
 
 /** One picture through [HeldLayers]. */
+/**
+ * Update 317at (Toni: "the slow zoom the Voltcap row uses should work on the other layouts that fit it"): a layout's own
+ * big picture drifts slowly closer while you rest on the game ([key]), as the home background does with Background art
+ * motion "Quick fade + slow zoom" / "Ken Burns" (that layout's own choice first), up to the same Zoom size. Paused while
+ * Voltcap is in the background; off with animations off. The parent clips it.
+ */
+@Composable
+internal fun Modifier.slowZoom(key: Any?): Modifier {
+    val motion = MotionPrefs.hero(MotionPrefs.globalHero)
+    val on = (motion == com.shelf.launcher.data.HeroMotion.QUICK_ZOOM || motion == com.shelf.launcher.data.HeroMotion.KEN_BURNS) &&
+        rememberAnimationsEnabled()
+    val active = rememberIsActive()
+    val target = 1f + MotionPrefs.zoomPercent.coerceIn(5, 25) / 100f
+    val z = remember { Animatable(1f) }
+    val last = remember { arrayOfNulls<Any>(1) }
+    LaunchedEffect(key, on, active, target) {
+        if (!on) { z.snapTo(1f); return@LaunchedEffect }
+        if (last[0] != key) { last[0] = key; z.snapTo(1f) }
+        if (!active) return@LaunchedEffect
+        val left = ((target - z.value) / (target - 1f)).coerceIn(0f, 1f)
+        z.animateTo(target, tween((22_000 * left).toInt().coerceAtLeast(1), easing = androidx.compose.animation.core.CubicBezierEasing(0.2f, 0f, 0.2f, 1f)))
+    }
+    return if (!on) this else this.graphicsLayer { scaleX = z.value; scaleY = z.value }
+}
+
 @Composable
 internal fun HeldImage(
     model: Any?,

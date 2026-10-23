@@ -313,7 +313,7 @@ private fun showPicture(c: StyleCtx, g: Game): String? = c.backdrop(g) ?: c.wide
 private fun androidx.compose.animation.AnimatedVisibilityScope.ShowPicture(c: StyleCtx, g: Game?, wPx: Int, hPx: Int, framed: Boolean) {
     val context = LocalContext.current
     val titles = LocalTitleOptions.current
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().clipToBounds()) {
         if (g == null) {
             Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.align(Alignment.Center))
             return@Box
@@ -321,7 +321,7 @@ private fun androidx.compose.animation.AnimatedVisibilityScope.ShowPicture(c: St
         val url = showPicture(c, g)
         if (url != null) {
             val req = remember(url, wPx, hPx) { heroRequest(context, url, wPx, hPx, g.stableKey) }
-            AsyncImage(req, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+            AsyncImage(req, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().slowZoom(g.stableKey).pixelArtwork())
         } else {
             StyleArt(c, g, Modifier.fillMaxSize(), wide = true, corner = 0.dp)
         }

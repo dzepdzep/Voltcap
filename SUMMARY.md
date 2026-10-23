@@ -173,6 +173,11 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317at — the slow zoom in the layouts with a big picture of their own:** Dashboard, Hero tiles, Library panel's
+  header, Twin showcase and the Hero carousel's background now drift slowly closer while you rest on a game, as the home
+  background does with Background art motion "Quick fade + slow zoom" / "Ken Burns" (the layout's own choice first),
+  up to the same Zoom size. `Modifier.slowZoom` in `Motion.kt` (MotionPrefs.globalHero / zoomPercent set by
+  LauncherScreen); `StyleDashboard.kt`, `StyleHeroTiles.kt`, `StyleLibrary.kt`, `TwinShowcase.kt`, `HeroCarousel.kt`.
 - **317as — Stats › Recaps show pictures of games no longer on this device** (played here, since removed: neither in the
   library nor another device's): cover looked up by the name in the file's address (console from its folder), as other
   devices' games are; `loadVaultArt` no longer drops a request made while a look-up runs (queued, and past 40 per pass).

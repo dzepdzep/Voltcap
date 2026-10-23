@@ -167,7 +167,7 @@ internal fun HeroCarouselBackdrop(heroUrl: String?, fallbackUrl: String?, modifi
     Box(modifier.fillMaxSize()) {
         // Held layers (update 104): the hero on screen stays until the next one has loaded, then it fades in over it.
         // (Each layer keeps the game it was made for: its picture request never changes under it.)
-        HeldLayers(shown, Features.transitionSpeed.state.value.ms.coerceIn(160, 520), Modifier.fillMaxSize()) { (url, layerKey, fallback), ready, failed ->
+        HeldLayers(shown, Features.transitionSpeed.state.value.ms.coerceIn(160, 520), Modifier.fillMaxSize().slowZoom(gameKey)) { (url, layerKey, fallback), ready, failed ->
             // A slow settle in when a new hero arrives (from a touch of zoom).
             val settle = remember(url) { Animatable(1.045f) }
             LaunchedEffect(url) { settle.animateTo(1f, tween(1400, easing = FastOutSlowInEasing)) }

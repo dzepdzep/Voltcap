@@ -735,7 +735,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     val batteryWatchContext = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) { com.shelf.launcher.data.BatteryWatch.start(batteryWatchContext) }
     // Update 112: the animations follow the layout on screen (its own choices, Home › Animations › per layout).
-    SideEffect { MotionPrefs.layout = state.appearance.homeLayout }
+    SideEffect {
+        MotionPrefs.layout = state.appearance.homeLayout
+        MotionPrefs.globalHero = state.appearance.heroMotion; MotionPrefs.zoomPercent = state.appearance.heroZoomPercent
+    }
     // Update 292: what's on screen, for the freeze snapshot of a crash report (FreezeWatchdog).
     SideEffect {
         com.shelf.launcher.data.crash.FreezeWatchdog.state("homeLayout", state.appearance.homeLayout.name)
