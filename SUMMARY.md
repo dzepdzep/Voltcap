@@ -1,5 +1,23 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1
+
+- **Mix look / All games on the Thor** (`voltcap-perf-….zip`, p50 308 ms a frame, 63 ms of it handing the frame to the
+  GPU): photo cartridges and discs (no 3D case model, built from slices) drew up to 48 slices plus a smear layer each.
+  Now at most 16 standing still, and 6 with no smear while the row glides (`SolidPiece`, `MOVING_SLICES`).
+- **Endless with few games** (Toni: "never reaching the edge if there aren't many games"): the row repeats the games
+  until both screen edges are filled (`Features.endlessFill`, on by default). R1 › Endless, hold: Fill / Each game once
+  (the old behaviour) / Off.
+- **Disc / cartridge taken out of its case** (Inspect): a drag now tilts it over its top and bottom as well as turning
+  it, so it can be seen all the way round like the Cartridges / Discs looks; putting it back levels it.
+- **Two-disc games as two entries** (Toni: "the game and then Disc 2"): disc 1 without a tag ("Game (USA).chd" beside
+  "Game (Disc 2) (USA).chd") joins its set now — one game, started from disc 1 / the .m3u (`RomScanner`, Pass 2). A
+  rescan of the library picks it up.
+- **Not done yet:** N64 cartridges' bottom seen from the side (needs a close Inspect screenshot).
+- **Copy:** `ui/SolidPiece.kt`, `ui/EndlessRow.kt`, `ui/TileHome.kt`, `ui/QuickSettings.kt`, `ui/MediaInspectView.kt`,
+  `data/Features.kt`, `data/RomScanner.kt`.
+- **Checked:** CI build (assembleDebug + unit tests) on push. **Not tested** on a device.
+
 ## Update — 23 Oct 2026 (322): what the Thor recording showed; Square tiles and Layout standard on the Look tile
 
 - **Thor performance recording** (`voltcap-perf-20261023-154140.zip`, Case stacks / carousel, 397 frames in 15 s, p50 71 ms):

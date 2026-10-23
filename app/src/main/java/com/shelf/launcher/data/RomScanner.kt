@@ -432,6 +432,19 @@ object RomScanner {
             discGroupTitles.putIfAbsent(groupKey, title)
             if (groupDir != null) discGroupDirs.putIfAbsent(groupKey, groupDir)
         }
+        // Update 324 (Toni: two-disc games showed as the game and a separate "Disc 2"): disc 1 often carries no tag —
+        // "Game (USA).chd" beside "Game (Disc 2) (USA).chd". A set without a disc 1 takes the untagged file of the same
+        // title in its folder as disc 1.
+        if (discGroups.isNotEmpty() && singleFiles.isNotEmpty()) {
+            val untagged = singleFiles.groupBy { "${it.parent}|${cleanupTitle(it.nameWithoutExtension).lowercase()}" }
+            discGroups.forEach { (groupKey, discs) ->
+                if (discs.any { it.first <= 1 }) return@forEach
+                val title = discGroupTitles[groupKey] ?: return@forEach
+                val dir = discGroupDirs[groupKey] ?: return@forEach
+                val first = untagged["${dir.path}|${title.lowercase()}"]?.minByOrNull { formatRank(it.extension) } ?: return@forEach
+                if (singleFiles.remove(first)) discs += 1 to first
+            }
+        }
         val missingM3u = mutableListOf<MultiDiscSet>()
 
         var groupsCreated = 0
