@@ -719,6 +719,20 @@ internal class InspectMotion {
     fun nudgeContent(deg: Float) { contentEase?.cancel(); contentTurn.floatValue += deg }
 
     /**
+     * Update 324 (Toni: "a disc or cartridge taken out of its case can't be turned all the way round, only in the
+     * cartridge / disc looks"): it tilts over its top and under its bottom too (−180…180, wrapped), as a piece of the
+     * Cartridges & discs looks does; it comes back with [releaseContent].
+     */
+    val contentPitch = mutableFloatStateOf(0f)
+    fun nudgeContentPitch(deg: Float) {
+        contentEase?.cancel()
+        var p = contentPitch.floatValue + deg
+        if (p > 180f) p -= 360f
+        if (p < -180f) p += 360f
+        contentPitch.floatValue = p
+    }
+
+    /**
      * Update 189: let go: it turns back to face you (the short way). (Update 238, #116: after the hold you picked, slowly
      * — or not at all with "Turned pieces turn back by themselves" off; turning it again stops the return at once.)
      */
@@ -731,8 +745,13 @@ internal class InspectMotion {
             delay(hold)
             val now = contentTurn.floatValue
             val to = (now / 360f).roundToInt() * 360f
-            animate(now, to, animationSpec = tween(dur, easing = RETURN_EASE)) { v, _ -> contentTurn.floatValue = v }
+            val p0 = contentPitch.floatValue
+            animate(0f, 1f, animationSpec = tween(dur, easing = RETURN_EASE)) { k, _ ->
+                contentTurn.floatValue = now + (to - now) * k
+                contentPitch.floatValue = p0 * (1f - k)
+            }
             contentTurn.floatValue = 0f
+            contentPitch.floatValue = 0f
         }
     }
 
@@ -871,6 +890,8 @@ internal class InspectMotion {
     fun putBack(scope: CoroutineScope) {
         if (closing) return
         caseJob?.cancel()
+        // (Update 324: back in the case upright.)
+        contentEase?.cancel(); contentPitch.floatValue = 0f
         caseJob = scope.launch {
             if (out.floatValue > 0f) animate(out.floatValue, 0f, animationSpec = tween(560, easing = FastOutSlowInEasing)) { v, _ -> out.floatValue = v }
         }
@@ -1455,18 +1476,23 @@ private fun InspectContent(
                     // (Update 200: a tap lays it back in the open case; a tap on the case then shuts it.)
                     detectTapGestures(onTap = { if (motion.out.floatValue > 0.5f) motion.putBack(scope) })
                 }
-                // A drag turns it round (a disc: over to its data side); let go and it comes back.
+                // A drag turns it round (a disc: over to its data side); up / down tilts it over (update 324); let go and it
+                // comes back.
                 .pointerInput(Unit) {
-                    detectHorizontalDragGestures(
+                    detectDragGestures(
                         onDragEnd = { motion.releaseContent(scope) },
                         onDragCancel = { motion.releaseContent(scope) }
-                    ) { change, dx ->
+                    ) { change, drag ->
                         change.consume()
-                        if (motion.out.floatValue > 0.5f) motion.nudgeContent(dx * 0.5f)
+                        if (motion.out.floatValue > 0.5f) {
+                            if (drag.x != 0f) motion.nudgeContent(drag.x * 0.5f)
+                            if (drag.y != 0f) motion.nudgeContentPitch(drag.y * 0.5f)
+                        }
                     }
                 })
     ) {
-        if (disc) InspectDisc(content, yawOf) else InspectSlab(content, yawOf)
+        val pitchOf: () -> Float = { motion.contentPitch.floatValue }
+        if (disc) InspectDisc(content, yawOf, pitchOf) else InspectSlab(content, yawOf, pitchOf)
     }
 }
 
