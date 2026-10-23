@@ -627,7 +627,16 @@ fun QuickSettingsCard(
             }
             // Endless: the row goes round from the last game to the first (off: it bumps against the end).
             // (Update 182 greyed it out on Hero tiles, which has no Endless. Update 202: hidden there — r1TileFit.)
-            add(R1Tile("endless", Icons.Filled.Repeat, if (a.loopRow) "Endless\non" else "Endless\noff", a.loopRow) {
+            add(R1Tile("endless", Icons.Filled.Repeat, if (a.loopRow) "Endless\non" else "Endless\noff", a.loopRow,
+                // (Update 324) Hold: fill the row with repeats, or each game once.
+                longAction = {
+                    val fill = com.shelf.launcher.data.Features.endlessFill.value
+                    choiceSheet = "Endless" to listOf(
+                        R1Choice("Fill the row (games repeat)", fill) { com.shelf.launcher.data.Features.endlessFill.value = true; home.setAppearance(a.copy(loopRow = true)) },
+                        R1Choice("Each game once", !fill) { com.shelf.launcher.data.Features.endlessFill.value = false; home.setAppearance(a.copy(loopRow = true)) },
+                        R1Choice("Off", !a.loopRow) { home.setAppearance(a.copy(loopRow = false)) }
+                    )
+                }) {
                 home.setAppearance(a.copy(loopRow = !a.loopRow))
             })
             // The round shortcut buttons: show / hide. Hold (update 104): where they sit, folded or open, move, off.

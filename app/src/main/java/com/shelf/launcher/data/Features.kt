@@ -916,6 +916,12 @@ object Features {
      * apps' own colour icons, still without the plate.
      */
     val secondDockMono = BoolPref("second_dock_mono", true)
+    /**
+     * Update 324 (Toni: "with Endless on the games never reach the edges when there aren't many"): Endless fills the row
+     * past both edges with the games again (on), or shows each game once (off, update 226's way — the row stops short when
+     * the category has few games). Hold the R1 Endless tile.
+     */
+    val endlessFill = BoolPref("endless_fill", true)
     /** Update 321: how the one-colour icons are drawn — the app's drawing kept see-through (DETAIL), or one solid shape. */
     enum class MonoIconStyle(val label: String) { DETAIL("Detail"), SOLID("Solid"), ORIGINAL("Own colours") }
     val monoIconStyle = EnumPref("mono_icon_style", MonoIconStyle.DETAIL, arrayOf(MonoIconStyle.DETAIL, MonoIconStyle.SOLID))

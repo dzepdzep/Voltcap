@@ -140,6 +140,8 @@ internal fun FollowFocus(list: LazyListState, row: LoopRow, before: Int = 1) {
  */
 internal fun drawnOnce(off: Int, n: Int, before: Int = (n - 1) / 2): Boolean {
     if (n <= 0) return true
+    // (Update 324: Endless › Fill the row — the games again past both edges, every layout.)
+    if (com.shelf.launcher.data.Features.endlessFill.value) return true
     val b = before.coerceIn(0, n - 1)
     return off >= -b && off <= n - 1 - b
 }
