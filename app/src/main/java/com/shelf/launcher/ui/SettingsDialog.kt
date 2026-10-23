@@ -643,6 +643,8 @@ fun SettingsDialog(
                                     )
                                     Spacer(Modifier.height(10.dp))
                                     CrashReportsCard()
+                                    Spacer(Modifier.height(12.dp))
+                                    PerfRecordCard()
                                 }
                                 "Backup" -> BackupContent(onRunSetup)
                                 "Updates & downloads" -> UpdatesContent()
