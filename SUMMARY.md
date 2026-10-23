@@ -13,7 +13,8 @@
   (next round, if the new recording still shows it).
 - **DS / 3DS cards drawn from a box cover** (Toni: "the DS cartridges are missing the DS label" — some of them: the ones
   with a real label scan have it printed): the sticker gets the real card's white strip across its top with the
-  console's name in plain grey letters (the name, not the logo), the cover fitted under it (`CartShells.paperStrip`).
+  console's name in plain grey letters (the name, not the logo), the cover filling the rest of the sticker under it —
+  cut to it, its upper part kept, no bands either side (`CartShells.paperStrip`).
 - **N64 cartridges' bottom** (Toni): looks right now — nothing changed for it.
 - **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.

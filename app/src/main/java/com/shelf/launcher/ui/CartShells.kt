@@ -912,10 +912,24 @@ internal object CartShells {
                 val pic = coverPic ?: labelArt(s, art)
                 val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
                 val la = artRect.width() / artRect.height().coerceAtLeast(1f)
-                val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
-                    else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
-                if (kotlin.math.abs(pa - la) > 0.02f) { p.color = edgeColour(pic, pa > la); c.drawRect(artRect, p) }
-                c.drawBitmap(pic, null, fit, p)
+                // (Update 325: under a DS card's paper strip the cover fills the rest of the sticker, as on a real card — cut
+                // to it, its upper part kept, rather than a narrower picture with bands either side.)
+                if (paperHead != null) {
+                    val src = if (pa < la) {
+                        val ch = (pic.width / la).toInt().coerceIn(1, pic.height)
+                        val top = ((pic.height - ch) * 0.3f).toInt().coerceIn(0, pic.height - ch)
+                        android.graphics.Rect(0, top, pic.width, top + ch)
+                    } else {
+                        val cw = (pic.height * la).toInt().coerceIn(1, pic.width)
+                        android.graphics.Rect((pic.width - cw) / 2, 0, (pic.width - cw) / 2 + cw, pic.height)
+                    }
+                    c.drawBitmap(pic, src, artRect, p)
+                } else {
+                    val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
+                        else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
+                    if (kotlin.math.abs(pa - la) > 0.02f) { p.color = edgeColour(pic, pa > la); c.drawRect(artRect, p) }
+                    c.drawBitmap(pic, null, fit, p)
+                }
             }
         } else if (!title.isNullOrBlank()) {
             text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
