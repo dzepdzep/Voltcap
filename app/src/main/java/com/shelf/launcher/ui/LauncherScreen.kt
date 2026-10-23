@@ -1424,7 +1424,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (!lightsActive) return@LaunchedEffect
         // Light writes (sysfs / HID) are blocking I/O: off the main thread.
         // Theme colours are bright, saturated accents: on the sticks they glared, so they're dimmed.
-        val lightLevel = if (a.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR) (a.lightsBrightness * 45 / 100).coerceAtLeast(3) else a.lightsBrightness
+        val lightLevel = if (a.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR) (a.lightsBrightness * 35 / 100).coerceAtLeast(3) else a.lightsBrightness
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             // "Off": the handheld's own light setting goes off too (it kept putting its colour back);
             // anything else puts it back the way it was.
@@ -1462,7 +1462,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     val lightsNow by androidx.compose.runtime.rememberUpdatedState(
         Triple(state.appearance.lightsEnabled && !com.shelf.launcher.CrashGuard.safeMode, !lightsDark && !lightsHeldOff,
             com.shelf.launcher.data.LightsTheme.resolve(state.appearance.lightsColor) to
-                (if (state.appearance.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR) (state.appearance.lightsBrightness * 45 / 100).coerceAtLeast(3) else state.appearance.lightsBrightness))
+                (if (state.appearance.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR) (state.appearance.lightsBrightness * 35 / 100).coerceAtLeast(3) else state.appearance.lightsBrightness))
     )
     DisposableEffect(Unit) {
         val app = lightsContext.applicationContext

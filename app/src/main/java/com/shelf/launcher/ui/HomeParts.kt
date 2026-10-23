@@ -54,10 +54,17 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  */
 @Composable
 internal fun HomeLogoPart(name: String, logo: String?) {
+    // (Update 325, Toni: "I can't get the logo lined up with the category — some logos are bigger, some smaller": many logo
+    // files have an empty margin, wider on one side than the other, so a logo in the middle of its part still stood off
+    // centre and smaller. Cut to what's drawn in it first — TrimToOpaque.)
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val model = androidx.compose.runtime.remember(logo) {
+        logo?.let { coil.request.ImageRequest.Builder(ctx).data(it).allowHardware(false).transformations(TrimToOpaque).build() }
+    }
     Box(Modifier.fillMaxWidth().height(LOGO_PART_H), contentAlignment = Alignment.Center) {
-        if (logo != null) {
+        if (model != null) {
             FadeInImage(
-                logo, name, contentScale = ContentScale.Fit, alignment = Alignment.Center,
+                model, name, contentScale = ContentScale.Fit, alignment = Alignment.Center,
                 modifier = Modifier.fillMaxSize()
             )
         } else {

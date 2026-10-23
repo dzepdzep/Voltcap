@@ -478,7 +478,20 @@ const val LIGHTS_THEME_COLOR: Int = 0x00FEFEFE
 /** The theme accent the lights use while "Theme colour" is picked (kept current by the home screen). */
 object LightsTheme {
     @Volatile var accent: Int = 0xFFFF6A00.toInt()
-    fun resolve(color: Int): Int = if (color == LIGHTS_THEME_COLOR) accent else color
+    fun resolve(color: Int): Int = if (color == LIGHTS_THEME_COLOR) soft(accent) else color
+
+    /**
+     * Update 325 (Toni: "following the theme colour makes the RGB too bright and saturated"): the accent is made to stand
+     * out on the screen, and the sticks' LEDs make a saturated colour harsher still — it's softened for them: a third less
+     * saturated and a little darker, the same hue.
+     */
+    private fun soft(c: Int): Int {
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(c, hsv)
+        hsv[1] = hsv[1] * 0.68f
+        hsv[2] = hsv[2] * 0.85f
+        return android.graphics.Color.HSVToColor(0xFF, hsv)
+    }
 }
 
 /** How the round shortcut button you're on is marked. */

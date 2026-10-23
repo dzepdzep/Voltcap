@@ -67,6 +67,11 @@
   one-colour icons stay everywhere else).
 - **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
   drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **Stick lights in the theme's colour, softer** (Toni: "too bright and saturated"): the accent goes to the LEDs a third
+  less saturated and a little darker (`LightsTheme.soft`), at 35 % of the brightness set (was 45 %).
+- **Logos cut to what's drawn in them** (Toni: "I can't get the alignment between the category and the logo"): many logo
+  files have an empty margin, wider on one side, so a centred logo still stood off centre and small; the logo parts cut
+  it away first (`HomeLogoPart`, TrimToOpaque).
 - **Row reveal / The row opens up: focus stays where you move it; something under the buttons** (Toni: "moving right from
   Continue it goes straight back to Continue … add some stuff underneath so it isn't so empty"): Play was asked for again
   and again for the first ~0.9 s and whenever the window got the focus back — once a button has the focus it's left
@@ -140,7 +145,7 @@
   `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`, `ui/MediaEditions.kt`,
   `ui/StacksArch.kt`, `data/RomScanner.kt`, `ui/AppIcons.kt`, `ui/GameCard.kt`, `ui/StyleHomes.kt`,
   `ui/Case3D.kt`, `ui/PhysicalMedia.kt`, `ui/HomeEdit.kt`, `ui/HomeParts.kt`, `ui/HomeEditLegend.kt`,
-  `ui/HomePartStyle.kt`, `ui/StyleCaseStacks.kt`, `ui/RowRevealWindow.kt`.
+  `ui/HomePartStyle.kt`, `ui/StyleCaseStacks.kt`, `ui/RowRevealWindow.kt`, `data/AppearanceStore.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1
