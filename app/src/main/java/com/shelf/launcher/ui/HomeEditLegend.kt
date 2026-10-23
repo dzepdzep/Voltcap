@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -117,6 +118,24 @@ private fun Hints(narrow: Boolean) {
         list.forEach { (k, l) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (k == "✚") Text("✚", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp) else GlyphPill(k)
+                Spacer(Modifier.width(4.dp))
+                Text(l, color = ShelfTheme.textMuted, fontSize = 10.sp, maxLines = 1, softWrap = false)
+            }
+        }
+    }
+    // Update 325 (Toni: "a tutorial of what does what in the legend"): the touch controls, now that the parts have no size
+    // or stretch handles.
+    Spacer(Modifier.height(3.dp))
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        listOf(
+            "☝" to "Tap: pick a part", "☝" to "Drag: move it", "✌" to "Two fingers: bigger / smaller",
+            "✕" to "Take it off", "✎" to (if (narrow) "Adjust: stretch" else "Adjust: stretch, style, line up")
+        ).forEach { (k, l) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(k, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp)
                 Spacer(Modifier.width(4.dp))
                 Text(l, color = ShelfTheme.textMuted, fontSize = 10.sp, maxLines = 1, softWrap = false)
             }
