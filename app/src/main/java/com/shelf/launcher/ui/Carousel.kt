@@ -1601,13 +1601,16 @@ private fun CarouselItem(
             if (c.cases3d && withMedia != null) CaseWithMedia3D(
                 g, cover, physical, aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow
             )
-            else if (c.cases3d) vcTrace("VC:Case3D") { Case3D(
+            // (Update 325, Toni: "why is the wobble not working in the carousel's cases look": the 3D cases took only the
+            // carousel's turn — Cases › motion's wobble is added to it now, the case's own, as a solid case turns.)
+            else if (c.cases3d) vcTrace("VC:Case3D") { MediaFocus(on) { val caseSpin = rememberCaseSpin(); Case3D(
                 g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
-                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf,
+                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White,
+                yawOf = caseSpin?.let { s -> { yawOf() + s() } } ?: yawOf, shadeOf = shadeOf,
                 // (Update 235, #24: not with a cover you picked for the game — it's the case front, UserCovers.)
                 realFront = (c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL) &&
                     UserCovers.of(g.stableKey) == null
-            ) } else vcTrace("VC:CarouselArt") { CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn, if (solidHere) pieceTurn else null) }
+            ) } } else vcTrace("VC:CarouselArt") { CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn, if (solidHere) pieceTurn else null) }
         } }
     }
 }
@@ -1687,10 +1690,15 @@ private fun CaseWithMedia3D(
         // The disc behind the case, its middle at the case's right edge.
         if (m.discOut) MediaPiece(Modifier.size(mw, mh).offset(x = caseW / 2f))
         Box(Modifier.size(caseW, h)) {
-            Case3D(
-                g, cover, physical, 0f, caseAspect, Modifier.fillMaxSize(), reflect = c.reflect,
-                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf, realFront = !userCover
-            )
+            // (Update 325: the case's own wobble on the carousel's turn, as the 3D cases alone.)
+            MediaFocus(on) {
+                val caseSpin = rememberCaseSpin()
+                Case3D(
+                    g, cover, physical, 0f, caseAspect, Modifier.fillMaxSize(), reflect = c.reflect,
+                    frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White,
+                    yawOf = caseSpin?.let { s -> { yawOf() + s() } } ?: yawOf, shadeOf = shadeOf, realFront = !userCover
+                )
+            }
         }
         // The cartridge / disc leaning against the case's lower right, in front.
         if (!m.discOut) MediaPiece(Modifier.size(mw, mh).offset(x = caseW / 2f + mw * 0.15f, y = (h - mh) / 2f).graphicsLayer { rotationZ = 8f })

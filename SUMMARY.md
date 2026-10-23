@@ -2,6 +2,13 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **Cases wobble in the carousel too** (Toni: "why is the wobble not working in the carousel view, cases look"): the
+  carousel's 3D cases (and Case + media's case) took only the carousel's own turn — the Cases motion was never added.
+  Now its wobble rides on that turn, the case turning in 3D (only the game you're on when motion is for it alone), as
+  in the other layouts (`GameCarousel` / `CaseWithMedia3D`, `rememberCaseSpin`). Follows Settings › … › Cases motion
+  (Spin / Both; Still by default).
+- Files: `ui/Carousel.kt`. Not compiled here (CI builds it).
+
 - **"Case + media" on the R1 Look tile** (Toni: "the look for the boxes and cases with their physical media is gone, can't
   find it anywhere"): it was still in Settings › Game look › Cases › With its media, but the R1 Look tile stepped Cases →
   Cases · turned → Mix and never landed on it. Now Cases → Cases · turned → **Case + media** (the case facing you, its
