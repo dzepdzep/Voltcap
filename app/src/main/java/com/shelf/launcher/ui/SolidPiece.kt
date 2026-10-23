@@ -619,7 +619,10 @@ internal fun Modifier.solidPiece(
                 // (Update 205: close enough together that no gap shows between them on a thick piece side-on.)
                 // (Update 207: a slice every 2 px, at most 32 — 64 slices a piece, every piece in a row, each frame,
                 // was part of what made scrolling a big library heavy; 2 px apart still shows no gap.)
-                val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, 32)
+                // (Update 324, Thor recording — Mix look, All games: 308 ms a frame, 63 ms of it handing the frame to the GPU:
+                // the cartridge / disc photos — this path — drew up to 32 slices and redrew their smear picture for every piece
+                // in every frame. At most 16 now, and while the row glides 6 with no smear, as the shells' sides (MOVING_COPIES).)
+                val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, if (moving) MOVING_SLICES else 16)
                 val clear = spec.clear
                 // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
                 // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
@@ -631,7 +634,7 @@ internal fun Modifier.solidPiece(
                 // solid edge at every angle, with the same 32 slice draws as before (no new render load).
                 val dz = if (n > 0) depthPx / n else 0f
                 val step = dz * sn * (if (c >= 0f) 1f else -1f)
-                val fill = if (n > 0 && testPose?.second != true) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
+                val fill = if (n > 0 && testPose?.second != true && !moving) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
                 val copies = n * fill + 1
                 // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
                 // (Update 316: the plain sides when there's a sides' picture — edgeLeaf — else the offscreen ones.)
@@ -798,6 +801,8 @@ internal const val SIDE_SPREAD = 10
 
 /** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
 internal const val MOVING_COPIES = 4
+/** Update 324: a photo piece's slices while the row glides (at rest up to 16). */
+internal const val MOVING_SLICES = 6
 
 /** A brightness filter in 40 steps (made once each). */
 private object SolidLight {
