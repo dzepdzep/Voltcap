@@ -173,6 +173,8 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317ak — Tile home with Endless: the row reaches the screen's edge again, the game leaving on the left slides off**
+  instead of vanishing. "Each game once" (update 226) now only when the category has fewer games than fit plus two.
 - **317aj — console badges on Tile home's tiles** (R1 Console badges): top left, or top right when the achievement
   count takes the top left; not on a case that prints its console (`TileHome.kt`). **317ai reverted** (Toni: a
   background picked for the game keeps the clip off it). Clips weren't playing because Battery saver was resting

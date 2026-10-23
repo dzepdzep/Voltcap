@@ -496,7 +496,11 @@ internal fun TileHomeRow(
                 }
                 // (Update 246, #60: the places picked before the loop — a `continue` in it made Compose give each pass its
                 // own group, so a step that moved every game one place along threw them all away and built them again.)
-                for (i in (from..to).filter { i -> !(looping && !drawnOnce(i - vFocus, n, loopBefore)) }) {
+                // (Update 317ak, Toni: "the games don't go to the end, and the far left one just disappears": each game once
+                // cut the row short and dropped the game leaving on the left at once. Only needed when the row holds nearly
+                // all the games — with more than fit (plus the one sliding off each side) no game shows twice on the screen.)
+                val onceOnly = looping && n < m.visible + 2
+                for (i in (from..to).filter { i -> !(onceOnly && !drawnOnce(i - vFocus, n, loopBefore)) }) {
                     val game = games[if (looping) i.mod(n) else i]
                     key(game.stableKey, if (looping) i.floorDiv(n) else 0) {
                         // Update 203: a cartridge turns as a solid piece (its thickness showing) — the tile hands it the
