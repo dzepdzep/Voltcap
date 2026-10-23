@@ -226,13 +226,15 @@ private fun tintedIcon(src: ImageBitmap, trueMono: Boolean, tint: Color): ImageB
     val out = android.graphics.Bitmap.createBitmap(s.width, s.height, android.graphics.Bitmap.Config.ARGB_8888)
     val argb = android.graphics.Color.argb((tint.alpha * 255).toInt(), (tint.red * 255).toInt(), (tint.green * 255).toInt(), (tint.blue * 255).toInt())
     val p = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
+    // (Update 319, Toni: "Home and Chrome are different colours": shades of the accent made a light icon pale and a dark
+    // one deep. Every icon is the accent itself now; an icon without its own monochrome version keeps its drawing as
+    // see-through — its light parts solid, its dark parts fainter.)
     p.colorFilter = if (trueMono) android.graphics.PorterDuffColorFilter(argb, android.graphics.PorterDuff.Mode.SRC_IN) else {
-        val r = 0.35f + 0.9f * tint.red; val g = 0.35f + 0.9f * tint.green; val b = 0.35f + 0.9f * tint.blue
         android.graphics.ColorMatrixColorFilter(floatArrayOf(
-            0.299f * r, 0.587f * r, 0.114f * r, 0f, 0f,
-            0.299f * g, 0.587f * g, 0.114f * g, 0f, 0f,
-            0.299f * b, 0.587f * b, 0.114f * b, 0f, 0f,
-            0f, 0f, 0f, 1f, 0f
+            0f, 0f, 0f, 0f, tint.red * 255f,
+            0f, 0f, 0f, 0f, tint.green * 255f,
+            0f, 0f, 0f, 0f, tint.blue * 255f,
+            0.65f * 0.299f, 0.65f * 0.587f, 0.65f * 0.114f, 0.35f, 0f
         ))
     }
     android.graphics.Canvas(out).drawBitmap(s, 0f, 0f, p)
