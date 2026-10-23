@@ -1,5 +1,32 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 23 Oct 2026 (321): performance recorder, idle rest, battery watcher fix, spine fit, icon styles, install script
+
+- **Performance recorder** (Settings › Diagnostics › Performance recording, `data/perf/PerfRecorder.kt`): "Record 15 s"
+  starts after 5 s; every frame's parts (FrameMetrics), the main thread's stack every 10 ms added up, and Android's
+  sampling profile where allowed → `Download/Voltcap/voltcap-perf-….zip`. Replaces perfetto, which recorded nothing on
+  the Thor. (The Thor carousel stutter waits for one of these.)
+- **Long idle rest** (Settings › Device › Battery saver › Rest when nobody's using it: Never / 5 / 10 (default) / 30 /
+  60 min, `Features.idleRestMin`, `HomeIdle.rest`): the background clip stops and the theme's scene holds a still frame on
+  both screens; the first press brings them back.
+- **Battery watcher**: a long gap (the handheld asleep overnight) was thrown away, so the night was never measured —
+  counted as screen-off time now; each figure also shown as a share of all cores ("x % of a core (y % of all 8)").
+- **Per-game Spine fit** (the game's menu, under Inspect…: Auto / Fill / Whole / Stretch, `data/SpineFits.kt`).
+- **Game window (picture on top)**: the picture is laid out last and takes the height left (weight), not a guess.
+- **Icon styles**: Settings › Screens › App dock › Detail / Solid; one app's own (Detail / Solid / Own colours / as every
+  app): long-press it in the dock (`data/IconStyles.kt`). Animated covers you picked yourself get a still cover for
+  cartridges / discs too (looked up by game, kept by address).
+- **`tools/install.ps1`**: installs the APK built last (any name) with -r -d and compiles it for speed; `-Build` builds
+  first, `-Serial` picks a handheld.
+- **CI**: `verify-update-310.yml` also runs on every push to `claude/**` branches.
+- **Copy:** `data/perf/PerfRecorder.kt` (new), `data/SpineFits.kt` (new), `data/IconStyles.kt` (new), `data/Features.kt`,
+  `data/BatteryWatch.kt`, `data/AnimatedArt.kt`, `data/SettingsScopes.kt`, `LauncherViewModel.kt`, `ui/CrashReportsCard.kt`,
+  `ui/SettingsDialog.kt`, `ui/PowerSaver.kt`, `ui/LauncherScreen.kt`, `ui/SecondScreen.kt`, `ui/BatterySaverUi.kt`,
+  `ui/BatteryWatchUi.kt`, `ui/Case3D.kt`, `ui/GameOptionsDialog.kt`, `ui/GameWindow.kt`, `ui/AppIcons.kt`,
+  `ui/SecondDockShortcuts.kt`, `ui/SecondScreenHome.kt`, `ui/ScreenLayoutsUi.kt`; `tools/install.ps1` (new);
+  `.github/workflows/verify-update-310.yml`.
+- **Not compiled here** (GitHub builds each push); not tried on a device.
+
 ## Update — 23 Oct 2026 (320): manuals downloaded ahead, or only previewed
 
 - **Manuals: download all ahead, or preview only** (Toni: "the manual downloads only when I press it on the case — can
