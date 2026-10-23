@@ -67,6 +67,11 @@
   one-colour icons stay everywhere else).
 - **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
   drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **Reflection without buffers; far cartridges' full sides again** (Toni's recording with Reflection on: still ~240 ms a
+  frame; "the rigid edges on the far cartridges"): each game's reflection faded out through a buffer of its own (~25
+  redrawn every frame). Its fade is now strips: the reflection recorded once and drawn again in 6 strips, each fainter, no
+  buffer (`Modifier.reflectionFade`, `REFLECT_BANDS`). The far cartridges' 3 copies left stepped edges — the carousel
+  no longer sets `farOf` (they draw their full sides).
 - **Cheaper reflection** (Toni: "I liked the reflection — could it cost less?"): each carousel game's reflection was a
   whole second piece — a cartridge's every copy for its sides again, and a picture of its own taken. In a reflection a
   cartridge / disc is now its turned face alone, using a picture already taken for the same content and never taking one

@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -1529,9 +1530,9 @@ private fun CarouselItem(
     // (Update 317: the shade too — a piece drawn from its pictures darkens itself, CarouselArt then needs no buffer for it.)
     val shadeLatest = rememberUpdatedState(shadeOf)
     val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }, shadeOf = { shadeLatest.value() },
-        movingOf = { ctxNow.value.moving?.invoke() == true },
-        // (Update 325: past the nearest FULL_NEAR each side, fewer copies for its sides — see PieceTurn.farOf.)
-        farOf = { kotlin.math.abs(relNow.value()) > FULL_NEAR + 0.5f }) }
+        movingOf = { ctxNow.value.moving?.invoke() == true }) }
+        // (Update 325: no longer farOf — the far cartridges' 3 copies left stepped edges on them, Toni: "the rigid edges on
+        // the far cartridges"; the reflection was what cost.)
     Box(
         modifier
             // The drawing order, read while placing (zIndex is otherwise fixed at composition).
@@ -1807,6 +1808,34 @@ private fun CarouselName(g: Game, modifier: Modifier) {
     )
 }
 
+/** Update 325: how many strips a reflection's fade is drawn in (see [reflectionFade]). */
+private const val REFLECT_BANDS = 6
+
+/**
+ * Update 325: the reflection's fade without a buffer: the content recorded once, then drawn again in [REFLECT_BANDS] strips
+ * over the part that shows (the 38 % nearest the game — the layer is upside down: its bottom), each through a layer of
+ * its own alpha (ModulateAlpha: no buffer), fainter the further from the game — 32 % at the game down to nothing, as the
+ * gradient it replaces.
+ */
+@androidx.compose.runtime.Composable
+private fun Modifier.reflectionFade(): Modifier {
+    val base = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val bands = List(REFLECT_BANDS) { androidx.compose.ui.graphics.rememberGraphicsLayer() }
+    return this.drawWithContent {
+        base.record { this@drawWithContent.drawContent() }
+        val from = size.height * 0.62f
+        val step = (size.height - from) / REFLECT_BANDS
+        for (i in 0 until REFLECT_BANDS) {
+            val b = bands[i]
+            b.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.ModulateAlpha
+            b.alpha = 0.32f * (i + 0.5f) / REFLECT_BANDS
+            b.record { drawLayer(base) }
+            val top = from + step * i
+            clipRect(0f, top, size.width, top + step + 0.5f) { drawLayer(b) }
+        }
+    }
+}
+
 /** One carousel game drawn flat (its art or spine, its shade and its reflection), in its slot. */
 @Composable
 private fun CarouselArt(
@@ -1844,20 +1873,13 @@ private fun CarouselArt(
             else ShelfGameArt(g, on, cardArtType, art, overrides, physicalMedia, screenshots, spines = false, mixed = mixed, realRef = realRef, pulse = pulse, modifier = Modifier.fillMaxSize())
         }
         // A reflection on a glossy floor under it (update 104, Settings › Carousel look).
+        // (Update 325, Thor recording with it on: still ~240 ms a frame — each game's reflection faded out through a buffer of
+        // its own, ~25 of them redrawn every frame. Its fade is now made of bands: the reflection recorded once, drawn again
+        // in REFLECT_BANDS strips, each fainter, cut to its strip — no buffer at all.)
         if (reflect) Box(
             Modifier.fillMaxSize().offset(y = h0 + 3.dp)
-                .graphicsLayer {
-                    scaleY = -1f
-                    alpha = 0.32f
-                    compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
-                }
-                .drawWithContent {
-                    drawContent()
-                    drawRect(
-                        Brush.verticalGradient(0f to Color.Transparent, 0.62f to Color.Transparent, 1f to Color.Black),
-                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
-                    )
-                }
+                .graphicsLayer { scaleY = -1f }
+                .reflectionFade()
         ) {
             if (spineHere) GameSpine(g, physicalMedia[g.stableKey], Modifier.fillMaxSize())
             // (Update 325: a cartridge / disc there is its turned face alone — LocalPieceReflection.)
