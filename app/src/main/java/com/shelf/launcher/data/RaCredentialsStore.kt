@@ -30,23 +30,37 @@ class RaCredentialsStore(context: Context) {
 
     fun setActive(slot: Int) { slotPrefs.edit().putInt(KEY_SLOT, slot.coerceIn(0, 1)).commit() }
 
+    /**
+     * (Update 318, Flip 2 freeze — crash report 2026-10-22 19:36: opening a game's window read the login on the main
+     * thread, and its first decryption through the Keystore took over 5 s.) Each slot is decrypted once and kept in memory
+     * (shared by every instance; a save / clear forgets it) — [warm] does the first read off the main thread at start.
+     */
     fun loadSlot(slot: Int): RaCredentials? {
-        val p = prefsOf(slot)
-        val username = p.getString(KEY_USERNAME, null) ?: return null
-        val apiKey = p.getString(KEY_API_KEY, null) ?: return null
-        return RaCredentials(username, apiKey)
+        val s = slot.coerceIn(0, 1)
+        synchronized(cacheLock) { if (cached[s]) return values[s] }
+        val p = prefsOf(s)
+        val username = p.getString(KEY_USERNAME, null)
+        val apiKey = p.getString(KEY_API_KEY, null)
+        val v = if (username != null && apiKey != null) RaCredentials(username, apiKey) else null
+        synchronized(cacheLock) { values[s] = v; cached[s] = true }
+        return v
     }
+
+    /** Update 318: decrypts both accounts now (call off the main thread), so later reads are instant. */
+    fun warm() { runCatching { loadSlot(0); loadSlot(1) } }
 
     fun saveSlot(slot: Int, credentials: RaCredentials) {
         prefsOf(slot.coerceIn(0, 1)).edit()
             .putString(KEY_USERNAME, credentials.username)
             .putString(KEY_API_KEY, credentials.apiKey)
             .apply()
+        forget()
         SecureStore.clearRelogin(app, SERVICE)
     }
 
     fun clearSlot(slot: Int) {
         prefsOf(slot.coerceIn(0, 1)).edit().remove(KEY_USERNAME).remove(KEY_API_KEY).apply()
+        forget()
         if (slot == 1 && activeSlot() == 1) setActive(0)
     }
 
@@ -70,6 +84,11 @@ class RaCredentialsStore(context: Context) {
     fun clear() = remove(activeSlot())
 
     companion object {
+        private val cacheLock = Any()
+        private val cached = BooleanArray(2)
+        private val values = arrayOfNulls<RaCredentials>(2)
+        /** Update 318: the next read decrypts again (after a save or a clear). */
+        fun forget() = synchronized(cacheLock) { cached.fill(false); values.fill(null) }
         private const val SERVICE = "RetroAchievements"
         private const val ENCRYPTED_PREFS_NAME = "ra_credentials_encrypted"
         private const val FALLBACK_PREFS_NAME = "ra_credentials"

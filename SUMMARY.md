@@ -12,8 +12,14 @@
   line half off the window, no way to scroll): the room it saves under the picture is a guess, and a fact line that wraps
   pushed the line out. The window now scrolls when it still doesn't fit (`GameWindow.kt`, Arrange.STACK); the D-pad's
   focus scrolls to what it lands on.
-- **Copy:** `LauncherViewModel.kt`, `data/OtherDevices.kt`, `ui/YearRecapDialog.kt`, `ui/LauncherScreen.kt`,
-  `ui/HubScreens.kt`, `ui/GameWindow.kt`.
+- **Freeze opening a game's window** (crash report 2026-10-22 19:36, Flip 2, "Input dispatching timed out"): the
+  RetroAchievements login was read on the main thread, and its first decryption through the Keystore took over 5 s.
+  `RaCredentialsStore` now decrypts each account once and keeps it in memory (forgotten on save / clear / a backup
+  restore), and the view model reads it off the main thread at start (`warm()`). The other two freezes in those reports
+  (19:17, 20:16) were the GPU stalls the carousel work in 314–317 removed; the 21:10 crash was the charge-limit start
+  fixed in 317.
+- **Copy:** `LauncherViewModel.kt`, `data/OtherDevices.kt`, `data/RaCredentialsStore.kt`, `data/Backup.kt`,
+  `ui/YearRecapDialog.kt`, `ui/LauncherScreen.kt`, `ui/HubScreens.kt`, `ui/GameWindow.kt`.
 - **Not compiled here** (no Android SDK); not tried on a device.
 
 ## Update — 22 Oct 2026 (317): Cartridge carousel GPU memory and redraws, first-launch charge-limit crash
