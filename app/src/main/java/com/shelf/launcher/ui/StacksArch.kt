@@ -169,7 +169,7 @@ private fun rememberStorageLine(): String? {
     return line
 }
 
-/** The time as a big LCD clock (24 h or 12 h as the handheld is set), the "88:88" segments faintly behind it. */
+/** The time as a big clock (24 h or 12 h as the handheld is set). */
 @Composable
 private fun ArchClock(ink: ArchInk, size: androidx.compose.ui.unit.TextUnit) {
     val context = LocalContext.current
@@ -182,7 +182,8 @@ private fun ArchClock(ink: ArchInk, size: androidx.compose.ui.unit.TextUnit) {
         java.text.SimpleDateFormat(p, java.util.Locale.US).format(java.util.Date(minute * 60_000L))
     }
     Box(contentAlignment = Alignment.Center) {
-        Text("88:88", color = ink.ink.copy(alpha = 0.07f), fontSize = size, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, maxLines = 1)
+        // (Update 325, Toni: "something weird behind that clock": the faint "88:88" sat beside the digits, not under them —
+        // the app's own font has digits of different widths. Gone.)
         Text(text, color = ink.ink.copy(alpha = 0.85f), fontSize = size, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, maxLines = 1)
     }
 }

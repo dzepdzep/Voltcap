@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -509,6 +510,7 @@ internal fun Modifier.solidPiece(
             // (Not a see-through piece: its cut-out behind the face, DstOut, must stay inside its own buffer.)
             val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true && !bufShade
             if (art == null) face.record { this@onDrawWithContent.drawContent() }
+            if (moving) PieceShots.hold(500)
             // (Update 317: the content's picture taken again whenever it changes — see PieceShot.)
             if (faceArt == null && testPose == null && !shot.off) {
                 val want = "${shot.version.intValue}|${size.width.toInt()}x${size.height.toInt()}"
@@ -619,6 +621,8 @@ internal fun Modifier.solidPiece(
                     if (shadeK < 1f) drawRect(Color.Black, alpha = 1f - shadeK, blendMode = BlendMode.SrcAtop)
                 }
             }
+            // (The node's middle: inside the whole-piece buffer the drawing area is bigger than the node.)
+            val nodeC = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
             // The piece itself: far to near, the slices, then the face (or the back), in the node's own place.
             val pieceDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = {
                 // Far to near: the slices, then the face (or the back, seen from behind).
@@ -654,10 +658,18 @@ internal fun Modifier.solidPiece(
                 edgeL.alpha = if (edgeLeaf != null) {
                     if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
                 } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
+                // (Update 325, Toni: "a floating layer over the Game Boy cartridges on top and a bit on the left": the copies
+                // behind the face were drawn as big as the face — moved sideways only, never further away — so seen large, in
+                // Inspect, the far ones stood out past its top edge. Each is drawn as much smaller as it is further from you
+                // than the face: the turned layers' own camera, [cam] × 72 px away (Skia's camera works in inches).)
+                val camPx = cam * 72f
+                val nearV = -depthPx / 2f * abs(c)
+                fun depthK(z: Float): Float = ((camPx + nearV) / (camPx - z * c)).coerceIn(0.5f, 1f)
                 if (edgeLeaf != null) for (k in 0 until nLeaf) {
                     val f = k.toFloat() / nLeaf
                     val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
-                    translate(z * sn, 0f) { drawLayer(edgeLeaf) }
+                    val dk = depthK(z)
+                    scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(edgeLeaf) } }
                 }
                 if (n > 0 && fill > 1 && edgeLeaf == null) {
                     smear.record(size = buf) {
@@ -670,8 +682,11 @@ internal fun Modifier.solidPiece(
                     val f = k.toFloat() / n
                     val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
                     // (The nearest slice alone: nothing past it to fill.)
-                    if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
-                    else translate(z * sn, 0f) { drawLayer(edge) }
+                    val dk = depthK(z)
+                    scale(dk, dk, pivot = nodeC) {
+                        if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+                        else translate(z * sn, 0f) { drawLayer(edge) }
+                    }
                 }
                 val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
                 // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
@@ -731,6 +746,9 @@ internal class PieceShot {
             try {
                 // (A short wait, so a label still coming in isn't taken half drawn.)
                 kotlinx.coroutines.delay(120)
+                // (Update 325: not while a carousel glides or a new category comes in — each picture waits on the render
+                // thread, which is busiest then; taken once it's been still a moment — PieceShots.hold.)
+                while (PieceShots.held()) kotlinx.coroutines.delay(200)
                 if (asked != key) return@launch
                 // (Update 325, Thor recording scrolling the Mix look: 2.7 s of 15 making these pictures — each one a
                 // hardware picture made on the main thread, waiting on the render thread, 20–100 ms — and a row of new
@@ -760,6 +778,10 @@ internal class PieceShot {
 internal object PieceShots {
     // (About 0.7 MB each at a carousel's size, on the GPU.)
     private val cache = android.util.LruCache<String, ImageBitmap>(96)
+    @Volatile private var quietUntil = 0L
+    /** Update 325: no pieces' pictures taken for the next [ms] (a carousel moving, a category coming in). */
+    fun hold(ms: Long) { quietUntil = maxOf(quietUntil, android.os.SystemClock.uptimeMillis() + ms) }
+    fun held(): Boolean = android.os.SystemClock.uptimeMillis() < quietUntil
     fun get(key: String): ImageBitmap? = cache.get(key)
     fun put(key: String, image: ImageBitmap) { cache.put(key, image) }
 }

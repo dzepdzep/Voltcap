@@ -36,6 +36,19 @@
   time now, a frame apart (`PieceShot.take`, `SHOTS`). (2) Switching categories: while both collections slide and fade,
   every piece counted as not opaque and drew into a buffer of its own each frame (61 ms a frame to the GPU); the slide's
   fade no longer counts — a piece fades part by part for that moment, drawn straight in (`CarouselItem.opaqueOf`).
+- **Thor recordings 21:20** (scrolling; switching categories): the pieces' pictures (PieceShot) still took 4 s of 15 while
+  categories changed — each waits on the render thread, busiest then. They wait now until the row has been still a
+  moment (`PieceShots.hold`: while a carousel glides, and 1.2 s after a new category comes in). Edition look-ups compiled
+  their title regexes for every game coming in (0.27 s) — compiled once (`MediaEditions.titleOf`).
+- **Some GBA games smaller** (Toni, Yoshi Topsy-Turvy): a game with a special edition got that shell's shape for its slot
+  (the taller tilt cartridge) while its own cartridge photo — a plain one — was fitted into it, smaller. With the photo
+  shown the slot is the console's own shape (`shelfArtAspect`, `physical`).
+- **"A floating layer" over the Game Boy cartridges' top and left** (Toni, the game window): the copies behind a piece's
+  face (its thickness) were drawn as big as the face, only moved sideways — seen large, the far ones stood out past its
+  top edge. Each is now drawn smaller by how much further away it is (perspective, the layers' own camera:
+  `cameraDistance` × 72 px) (`solidPiece`, `depthK`).
+- **The clock's faint "88:88"** (Toni: "something weird behind that clock", Stacks panel): it sat beside the digits — the
+  app's font has digits of different widths. Removed (`StacksArch.ArchClock`).
 - **Remove / add categories on the category screen** (Toni: "Other apps appears in the categories screen for some reason
   — add a way to add or remove categories there"): a tile's options (Y / Options) have **Remove from categories** — off
   the category screen and L2 / R2 (and the style homes' tabs), never the last one; the one showing now goes back to All
@@ -57,7 +70,8 @@
 - **N64 cartridges' bottom** (Toni): looks right now — nothing changed for it.
 - **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/SwitchLabel.kt`, `ui/SecondShowcase.kt`, `ui/LauncherScreen.kt`,
   `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`, `ui/Carousel.kt`, `data/Packs.kt`,
-  `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`.
+  `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`, `ui/MediaEditions.kt`,
+  `ui/StacksArch.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1

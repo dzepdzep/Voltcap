@@ -211,7 +211,11 @@ internal fun ShelfGameArt(
 }
 
 /** The width / height a game's art takes on the shelf (its case's front, its cartridge / disc, else a cover's shape). */
-internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardArtType, hidden: Set<String>, mixed: Boolean, cover: String? = null): Float {
+internal fun shelfArtAspect(
+    g: Game, cardArtType: com.shelf.launcher.data.CardArtType, hidden: Set<String>, mixed: Boolean, cover: String? = null,
+    /** Update 325: the game's scans — with its own cartridge / disc photo shown, the slot is that photo's console shape. */
+    physical: List<Pair<String, String>>? = null
+): Float {
     // Update 115: the wide looks at their own shape (they used to be cropped into a cover's).
     if (cardArtType == com.shelf.launcher.data.CardArtType.CAPSULE) return CAPSULE_ASPECT
     // Update 166: the Tile look in the carousels too: every cover a square tile (it was the Voltcap row's only).
@@ -219,7 +223,13 @@ internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardAr
     if (cardArtType == com.shelf.launcher.data.CardArtType.HERO || cardArtType == com.shelf.launcher.data.CardArtType.SCREENSHOT) return 16f / 9f
     val gArt = artForGame(cardArtType, g.platform, hidden, mixed, gameKey = g.stableKey)
     if (isFreeMedia(gArt, g.platform)) {
-        if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey)?.aspect ?: 0.7f // (Update 229, #31)
+        // (Update 325, Toni: "some GBA games appear smaller": a game with a special edition of its own — Yoshi Topsy-Turvy's
+        // taller tilt cartridge — got that shell's shape for its slot, and its own photo, a plain cartridge's shape, was
+        // fitted into it smaller than the others. With the photo shown, the console's own shape.)
+        if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) {
+            val photo = physical != null && realScanOf(gArt, typedArtFor(gArt, physical, null, g.platform, g.stableKey)) != null
+            return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = if (photo) null else g.stableKey)?.aspect ?: 0.7f // (Update 229, #31)
+        }
         // (Update 235, #27/#38: Voltcap's plain case at its real case's shape.)
         return MediaCovers.of(g.platform)?.frontAspect ?: plainCaseSpec(g.platform)?.aspect ?: 0.7f
     }
@@ -1046,7 +1056,7 @@ internal fun GameCarousel(
         val unitTarget = games.getOrNull(focus)?.takeIf { bigW > 0.dp }?.let { fg ->
             // (Update 171: with the room for its cartridge / disc beside it, so the neighbours stand clear of it.)
             val media = if (cases3d) caseMediaFor(fg, cardArtType, mixed)?.room(realCaseMm(fg.platform)) ?: 0f else 0f
-            val a = if (cases3d) case3dAspect(fg, mixed) else if (carouselWideOn(cardArtType)) CAPSULE_ASPECT else shelfArtAspect(fg, cardArtType, hidden, mixed)
+            val a = if (cases3d) case3dAspect(fg, mixed) else if (carouselWideOn(cardArtType)) CAPSULE_ASPECT else shelfArtAspect(fg, cardArtType, hidden, mixed, physical = physicalMedia[fg.stableKey] ?: HomeScans.map[fg.stableKey])
             val sh = carouselSlotH(a, bigW, bigH, mixed)
             ((sh * (a + media)) / bigW).coerceIn(0.6f, 2.4f)
         } ?: 1f
@@ -1092,6 +1102,8 @@ internal fun GameCarousel(
         }
         buildTick.intValue
         LaunchedEffect(buildKey) {
+            // (The new collection's pieces take their pictures once it has come in — PieceShots.hold.)
+            PieceShots.hold(1200)
             while ((build[1] as Int) < reachNow) {
                 androidx.compose.runtime.withFrameNanos { }
                 build[1] = (build[1] as Int) + 2
@@ -1423,7 +1435,7 @@ private fun CarouselItem(
     // Update 166: "Covers · wide capsule": the one you're on unfolds into its wide capsule (and folds back as you move on).
     val wideHere = on && !spineHere && model == null && !c.cases3d && carouselWideOn(c.cardArtType)
     val aspect0 = if (c.cases3d) case3dAspect(g, c.mixed) else if (spineHere) SPINE_ASPECT
-        else if (wideHere) CAPSULE_ASPECT else shelfArtAspect(g, c.cardArtType, c.hidden, c.mixed, cover)
+        else if (wideHere) CAPSULE_ASPECT else shelfArtAspect(g, c.cardArtType, c.hidden, c.mixed, cover, physical)
     val aspect by androidx.compose.animation.core.animateFloatAsState(aspect0, androidx.compose.animation.core.tween(220), label = "carouselWide")
     val hFull = if (model != null || spineHere) minOf(c.bigH, if (aspect > 1f) c.bigW / aspect * 1.25f else c.bigH)
         else carouselSlotH(aspect, c.bigW, c.bigH, c.mixed)
