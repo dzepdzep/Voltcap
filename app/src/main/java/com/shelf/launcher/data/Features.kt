@@ -1102,6 +1102,12 @@ object Features {
     }
     val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
     /**
+     * Update 319 (Toni): with the printed sides off (Authentic only / Plain cardboard), the sides with no picture of their
+     * own named here ("RIGHT", "TOP", "BOTTOM" — BoxSide) take the colour of the cover's edge that meets them, as the
+     * printed card of a real box carries on round its corners; the others stay plain card.
+     */
+    val boxSideColors = SetPref("box_side_colors", setOf("RIGHT", "TOP", "BOTTOM"))
+    /**
      * Update 191: which region's case a game gets (ui/CaseCatalog.kt) when its file name doesn't say ("(USA)", "(Europe)",
      * "(Japan)"), or one region for every game.
      */

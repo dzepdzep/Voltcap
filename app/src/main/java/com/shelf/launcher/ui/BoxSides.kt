@@ -72,6 +72,45 @@ internal object BoxSides {
     }
 
     /**
+     * Update 319: [side] in one colour — [color], the cover's edge that meets it — a touch darker towards its ends, as the
+     * printed sides are (nothing printed on it).
+     */
+    fun colored(side: BoxSide, w: Int, h: Int, color: Int): Bitmap {
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(out)
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        p.shader = if (side == BoxSide.RIGHT) LinearGradient(0f, 0f, 0f, h.toFloat(), intArrayOf(shade(color, 0.9f), color, shade(color, 0.86f)), null, Shader.TileMode.CLAMP)
+        else LinearGradient(0f, 0f, w.toFloat(), 0f, intArrayOf(shade(color, 0.88f), color, shade(color, 0.88f)), null, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), p)
+        return out
+    }
+
+    /** Update 319: the average colour of [front]'s edge that meets [side] (its outer 6 %), or null. */
+    fun edgeColor(front: Bitmap, side: BoxSide): Int? = runCatching {
+        val f = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
+        val w = f.width; val h = f.height
+        if (w < 4 || h < 4) return@runCatching null
+        val band = (minOf(w, h) * 0.06f).toInt().coerceAtLeast(1)
+        val r = when (side) {
+            BoxSide.RIGHT -> Rect(w - band, 0, w, h)
+            BoxSide.TOP -> Rect(0, 0, w, band)
+            BoxSide.BOTTOM -> Rect(0, h - band, w, h)
+        }
+        var rs = 0L; var gs = 0L; var bs = 0L; var n = 0
+        val stepX = ((r.width()) / 24).coerceAtLeast(1); val stepY = ((r.height()) / 24).coerceAtLeast(1)
+        var y = r.top
+        while (y < r.bottom) {
+            var x = r.left
+            while (x < r.right) {
+                val px = f.getPixel(x, y); rs += (px shr 16) and 255; gs += (px shr 8) and 255; bs += px and 255; n++
+                x += stepX
+            }
+            y += stepY
+        }
+        if (n == 0) null else (0xFF shl 24) or ((rs / n).toInt() shl 16) or ((gs / n).toInt() shl 8) or (bs / n).toInt()
+    }.getOrNull()
+
+    /**
      * A print for [side] of this game's box: [base] the colour it's printed on (the box's own — its front's edge for the
      * right side, its spine's for the top and bottom), [title], [platform]'s logo, [accent] (the cover's) in the pinstripes.
      */
@@ -194,8 +233,10 @@ internal fun rememberBoxSides(
     val title = printTitle(g.name)
     val platform = LookStyles.casePlatform(g.platform)
     val fill = mode == com.shelf.launcher.data.Features.BoxSides.FILL
-    val made by androidx.compose.runtime.produceState<Array<Bitmap?>?>(null, mode, b0, b1, b2, look.edge, look.top, shape, depth, front, title, platform, provVersion) {
-        if (plain) { value = null; return@produceState }
+    // (Update 319: with the print off, these sides take the cover's edge colour instead of plain card.)
+    val colorSides = com.shelf.launcher.data.Features.boxSideColors.state.value
+    val made by androidx.compose.runtime.produceState<Array<Bitmap?>?>(null, mode, b0, b1, b2, look.edge, look.top, shape, depth, front, title, platform, provVersion, colorSides) {
+        if (plain && (colorSides.isEmpty() || front == null)) { value = null; return@produceState }
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             runCatching {
                 val accent = front?.let { f -> DerivedArt.of(f, "accent") { CollectorBacks.accentOf(f) ?: 0 } }?.takeIf { it != 0 }
@@ -206,6 +247,9 @@ internal fun rememberBoxSides(
                     else if (fill) {
                         val base = if (side == BoxSide.RIGHT) look.edge else look.top
                         DerivedArt.named("sideprint|$i|$w|$h|$base|$platform|$accent|$title") { BoxSides.print(context, side, w, h, base, title, platform, accent) }
+                    } else if (side.name in colorSides && front != null) {
+                        val edge = DerivedArt.of(front, "edge|$i") { BoxSides.edgeColor(front, side) ?: 0 }.takeIf { it != 0 }
+                        edge?.let { col -> DerivedArt.named("sidecolor|$i|$w|$h|$col") { BoxSides.colored(side, w, h, col) } }
                     } else null
                 }.toTypedArray()
             }.getOrNull()

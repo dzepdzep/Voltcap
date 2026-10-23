@@ -1,5 +1,18 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 23 Oct 2026 (319): GBA spines across the whole box side; box sides in the cover's colours
+
+- **GBA (and any cardboard box) spine too thin** (Toni: "not as wide as the cardboard"): a spine scan narrower than the
+  box's side was fitted inside it whole — a thin strip on plain card. It's stretched across the side now, its whole height
+  kept (`boxSideSpine`, Case3D.kt); a scan far wider than the side is still fitted inside, N64 as before.
+- **Box sides in the cover's colours** (Toni: the printed sides on or off; off → the cover's colours, per side): Settings ›
+  Game look › Box sides — "Fill missing sides" is the printed sides on; with "Authentic only" or "Plain cardboard" a new
+  row, **Sides in the cover's colours: Right side / Top / Bottom** (all on by default, `Features.boxSideColors`), gives
+  each side with no picture of its own the colour of the cover's edge that meets it (`BoxSides.edgeColor` / `colored`);
+  a side switched off stays plain card.
+- **Copy:** `ui/Case3D.kt`, `ui/BoxSides.kt`, `ui/SettingsDialog.kt`, `data/Features.kt`.
+- **Not compiled here**; GitHub's build check runs on the PR. Not tried on a device.
+
 ## Update — 23 Oct 2026 (318): Stats' recaps get the covers of games no longer on the device ahead
 
 - **Covers fetched before they're needed** (Toni: "Stats don't show pictures of games that aren't on the device — scrape
