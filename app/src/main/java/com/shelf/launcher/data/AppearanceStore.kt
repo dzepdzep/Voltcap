@@ -1123,6 +1123,9 @@ class AppearanceStore(context: Context) {
         runCatching { Features.init(appContext); Features.mediaShells.value = false; prefs.edit().putBoolean("defaults_v4", true).apply() }
     }
 
+    /** Update 325 (Toni: "delete the drawn-only cartridges, they keep breaking stuff"): "Drawn only" is gone — always off. */
+    private fun noDrawnOnly325() { runCatching { Features.init(appContext); if (Features.mediaShells.value) Features.mediaShells.value = false } }
+
     /**
      * Update 151: video previews on for everyone, once (the scraped clip plays over the game's big background art). A
      * new install has them on already; turning them off afterwards stays off.
@@ -1194,7 +1197,7 @@ class AppearanceStore(context: Context) {
         }
     }
 
-    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); categoryPart204(); caseOnly208(); lookRework202(oneGameLook(loadSettings())) }.also {
+    fun load(): AppearanceSettings = applyDefaultsV2().let { applyDefaultsV3(); applyDefaultsV4(); applyVideoOn151(); applyStage200(); categoryPart204(); caseOnly208(); lookRework202(oneGameLook(loadSettings())).also { noDrawnOnly325() } }.also {
         // Scraping in the background reads these too, without the home screen open.
         AnimatedArt.enabled = it.animatedArt
         AnimatedArt.preferAnimatedScraping = it.animatedArt && it.preferAnimatedArt
@@ -1670,7 +1673,8 @@ fun AppearanceSettings.withLook(look: LayoutLook): AppearanceSettings {
     Features.boxSpine.value = look.boxSpine
     Features.box3d.value = look.box3d
     Features.discCase.value = look.discCase
-    Features.mediaShells.value = look.mediaShells
+    // (Update 325: "Drawn only" is gone — a layout's saved look never turns it back on.)
+    Features.mediaShells.value = false
     Features.bigGcDiscs.value = look.bigGcDiscs
     return copy(
         cardSize = look.cardSize, cardCorners = look.cardCorners, otherGamesLook = look.otherGamesLook,

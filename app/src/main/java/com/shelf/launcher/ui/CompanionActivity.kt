@@ -266,7 +266,7 @@ private fun CompanionScreen(info: CompanionInfo, onBack: () -> Unit) {
                         gameDisplayName(info.title), color = ShelfTheme.colors.textPrimary, fontSize = 24.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(24.sp), maxFontSize = 24.sp),
                         fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
                     )
-                    Text(info.platform, color = ShelfTheme.secondary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(com.shelf.launcher.data.ConsoleNames.display(info.platform), color = ShelfTheme.secondary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.height(10.dp))
                     Text(
                         "This session  " + clock(session),

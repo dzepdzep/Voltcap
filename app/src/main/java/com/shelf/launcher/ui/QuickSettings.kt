@@ -396,14 +396,25 @@ fun QuickSettingsCard(
             // games on a cartridge. Original / Custom and Opaque / Clear left its hold list: they're the Look tile's
             // Cartridge choices now.)
             // (Update 202: when it shows is decided in r1TileFit, R1TileRules.kt.)
+            // (Update 325, Toni: "changing the R1 cartridge can't go back to each cartridge's own original look": the tile
+            // starts on and comes back round to each console's own cartridge — Own → each pack shape → Own; the hold list has
+            // it first.)
             run {
                 val look = F.cartLook.state.value
-                add(R1Tile("cartlook", Icons.Filled.Memory, "Cartridge\n" + look.label, cartNow() != LookCart.REAL,
+                val own = cartNow() == LookCart.REAL && !F.cartsOnly.state.value
+                add(R1Tile("cartlook", Icons.Filled.Memory, "Cartridge\n" + (if (own) "Own" else look.label), !own,
                     longAction = {
-                        choiceSheet = "Cartridge shape" to CartLook.values().map { l -> R1Choice(l.label, F.cartLook.value == l) { F.cartLook.value = l } }
+                        choiceSheet = "Cartridge" to (
+                            listOf(R1Choice("Each console's own", own) { pickCart(LookCart.REAL) }) +
+                                CartLook.values().map { l -> R1Choice(l.label, !own && F.cartLook.value == l) { F.cartLook.value = l; if (cartNow() == LookCart.REAL) pickCart(LookCart.PACK) } }
+                            )
                     }) {
                     val all = CartLook.values()
-                    F.cartLook.value = all[(all.indexOf(F.cartLook.value) + 1) % all.size]
+                    when {
+                        own -> { F.cartLook.value = all.first(); pickCart(LookCart.PACK) }
+                        F.cartLook.value == all.last() -> pickCart(LookCart.REAL)
+                        else -> F.cartLook.value = all[all.indexOf(F.cartLook.value) + 1]
+                    }
                 })
             }
             // Update 129: one console's disc / case / spine for every game, only while that look is on — tap: the next
@@ -425,7 +436,8 @@ fun QuickSettingsCard(
                 })
             }
             // (A picked disc is drawn, so "Drawn discs" goes on with it.)
-            styleTile("discstyle", "Disc", F.discStyle, { LookStyles.DISCS }) { F.mediaShells.value = true }
+            // (Update 325: no longer turns "Drawn only" on — it's gone.)
+            styleTile("discstyle", "Disc", F.discStyle, { LookStyles.DISCS })
             styleTile("casestyle", "Case", F.caseStyle, { LookStyles.cases() })
             styleTile("spinestyle", "Spine", F.spineStyle, { LookStyles.spines() })
             // (Update 159: the "3D on / off" tile (look3d) stood here. Update 200: removed — most looks are 3D already, and the
@@ -538,12 +550,7 @@ fun QuickSettingsCard(
                 // The game's own cartridge / disc photo when one is found (off: Voltcap's drawn ones).
                 // (Update 202: named as Cartridges & discs' "The game's own photo" choice, which it flips; it was "Real discs /
                 // Drawn discs". Only with that look, as before — r1TileFit.)
-                run {
-                    val photos = !f.mediaShells.state.value
-                    add(R1Tile("drawnmedia", Icons.Filled.Album, if (photos) "Own\nphotos" else "Drawn\nonly", photos) {
-                        f.mediaShells.value = !f.mediaShells.value
-                    })
-                }
+                // (Update 325: the "Own photos / Drawn only" tile is gone with "Drawn only" — own photos always.)
                 // The second screen as a magnifier of the main one (tap: the Magnifier page on / off, hold: start the capture).
                 // (Update 202: with a second display and the Magnifier page on; greyed while Dual screen is off — r1TileFit.)
                 run {

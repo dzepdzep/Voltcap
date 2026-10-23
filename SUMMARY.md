@@ -2,6 +2,25 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **"Drawn only" is gone** (Toni: "some layouts picked the drawn cartridges only — delete them, they keep breaking
+  stuff"). Each layout remembered its own look, "Drawn only" included, and put it back when you switched to it. Now a
+  game's own cartridge / disc photo always shows when one is found, else its console's real shell: the "Always the drawn
+  one" choice (Game look › Cartridges & discs), the R1 "Own photos / Drawn only" tile and its second-screen dock shortcut
+  are gone; a layout's saved look never turns it on, the R1 Disc tile no longer does, and it's switched off at start.
+- **R1 Cartridge tile goes back to each console's own** (Toni: "changing the R1 cartridge can't go back to each
+  cartridge's original look"): tap steps Own → each pack shape → Own; hold lists "Each console's own" first. It shows
+  on Real shells too now (with the pack downloaded), so it's always the way back.
+- **Official console names everywhere** (Toni: "categories are sometimes abbreviations — GBA → Game Boy Advance"): the
+  category title on the home screen (it showed the key), the game window's category, the second-screen and companion
+  labels and the emulator settings now use the full name; "Full console names" is no longer a switch (always on), and
+  the names list gained the keys that still showed raw (MegaDrive, SFC, Famicom, FDS, Switch 2, SG-1000, Atari 5200,
+  Neo Geo Pocket Color, WonderSwan Color, TurboGrafx…); SNES reads "Super Nintendo Entertainment System".
+- Files: `ui/GameLookPicker.kt`, `ui/QuickSettings.kt`, `ui/R1TileRules.kt`, `ui/LauncherScreen.kt`,
+  `ui/SecondDockShortcuts.kt`, `data/AppearanceStore.kt`, `data/ConsoleNames.kt`, `ui/SceneStyle.kt`, `ui/GameTitles.kt`,
+  `ui/SettingsDialog.kt`, `ui/CategoryScreen.kt`, `ui/SecondScreen.kt`, `ui/SecondScreenVolt.kt`, `ui/CompanionActivity.kt`,
+  `ui/EmulatorSettingsDialog.kt`. Not compiled here (CI builds it). Still open: the Game Boy cartridges' ghost layer and the
+  cases' wobble (waiting on a screenshot / description).
+
 - **Twin icons: its own category page** (Toni: "Twin icons is missing a fitting category screen"): the Categories tool
   turns the tray into a grid of the categories — each its console's logo (or icon) and name on the same square icons
   with the same ring — and the top screen shows the one you're on big in the frame with its name on the card. D-pad

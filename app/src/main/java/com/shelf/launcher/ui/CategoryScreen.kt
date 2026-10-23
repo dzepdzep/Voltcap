@@ -501,7 +501,7 @@ fun buildCategoryTiles(
                     val label = when (p) {
                         com.shelf.launcher.ANDROID_GAMES_PLATFORM -> "Android games"
                         "App" -> "Other apps"
-                        else -> if (fullNames) com.shelf.launcher.data.ConsoleNames.display(p) else p
+                        else -> com.shelf.launcher.data.ConsoleNames.display(p) // (Update 325: always the official name)
                     }
                     add(
                         CategoryTile(

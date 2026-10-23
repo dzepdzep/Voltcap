@@ -4256,16 +4256,7 @@ private fun NameAndCategoryContent(appearance: AppearanceSettings, onChange: (Ap
                     )
                 }
             }
-            item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.VideogameAsset,
-                    title = "Full console names",
-                    subtitle = "\"PlayStation 2\", \"Nintendo GameCube\" instead of \"PS2\", \"GameCube\" — in the category bar and on cards.",
-                    checked = appearance.fullConsoleNames,
-                    onChange = { onChange(appearance.copy(fullConsoleNames = it)) },
-                    modifier = m
-                )
-            }
+            // (Update 325: "Full console names" is gone — the official names always show.)
             item { m ->
                 SwitchRow(
                     icon = Icons.Filled.VideogameAsset,

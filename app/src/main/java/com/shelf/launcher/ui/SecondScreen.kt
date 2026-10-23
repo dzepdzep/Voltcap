@@ -373,7 +373,7 @@ fun CompanionPanel(
                             game.name, color = ShelfTheme.colors.textPrimary, fontSize = 24.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(24.sp), maxFontSize = 24.sp),
                             fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
                         )
-                        Text(game.platform, color = ShelfTheme.secondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.secondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         if ((playtimeMs ?: 0L) > 0L) {
                             Text(
                                 "Played ${PlaytimeStore.format(playtimeMs ?: 0L)}",

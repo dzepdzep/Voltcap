@@ -42,7 +42,6 @@ internal object SecondDockShortcuts {
         "voltcap:r1:endless" to "Endless row",
         "voltcap:r1:navbar" to "Hide nav bar",
         "voltcap:r1:whoplays" to "Who is playing",
-        "voltcap:r1:drawnmedia" to "Drawn / real discs",
         "voltcap:r1:theme" to "Next theme",
         "voltcap:r1:saver" to "Battery saver",
         "voltcap:r1:rescan" to "Rescan library",

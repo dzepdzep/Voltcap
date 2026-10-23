@@ -107,8 +107,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         "gamelook" -> lookFit(l)
         // Cartridge shape (your pack): Cartridges & discs drawn with the pack (not Real shells, unless disc games go on a
         // cartridge), with some of the pack downloaded, where the look is drawn.
-        "cartlook" -> if (look == CardArtType.CARTRIDGE_DISC && (cartNow() != LookCart.REAL || Features.cartsOnly.state.value) &&
-            com.shelf.launcher.data.Packs.anyCarts()) lookFit(l) else R1Fit.Hide
+        // (Update 325: on Real shells too — the tile is the way back and forth between each console's own and the pack.)
+        "cartlook" -> if (look == CardArtType.CARTRIDGE_DISC && com.shelf.launcher.data.Packs.anyCarts()) lookFit(l) else R1Fit.Hide
         // Disc for every game: the Discs look where the look is drawn, and Disc station (always discs, LookStyles.disc).
         "discstyle" -> if (l == HomeLayout.DISCS) R1Fit.Show else if (look == CardArtType.DISC) lookFit(l) else R1Fit.Hide
         // Case for every game: the case looks where the look is drawn, and Game shelf (its pulled-out game is a case).

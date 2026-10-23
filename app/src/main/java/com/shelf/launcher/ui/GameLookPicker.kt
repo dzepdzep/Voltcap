@@ -288,7 +288,7 @@ private fun pickCaseMedia(m: LookCaseMedia) {
 }
 
 /** Update 202: sets the cartridge choice — its 3D finish now and for next time, and the switches that go with it. */
-private fun pickCart(c: LookCart) {
+internal fun pickCart(c: LookCart) {
     val F = Features
     F.modelFinish.value = c.finish
     F.modelFinishLast.value = c.finish
@@ -444,7 +444,6 @@ internal fun migrateGameLook202(type: CardArtType) {
     )
     F.modelFinishLast.value = cart.finish
     if (main == LookMain.CARTS) {
-        if (wasModels) F.mediaShells.value = true
         pickCart(cart)
     } else setModelsLook(false)
 }
@@ -821,16 +820,8 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
             }
             // Update 212: Android games as a disc or a cartridge (AndroidMedia.kt).
             AndroidMediaChoice()
-            val photos = !F.mediaShells.value
-            SectionLabel("The game's own photo")
-            ChoiceRow {
-                LookChoiceCard("Use its own photo when one is found", "The game's real cartridge or disc photo from ScreenScraper; the drawn one for the rest.", photos, enabled, Sample.PHOTO_ON) {
-                    F.mediaShells.value = false
-                }
-                LookChoiceCard("Always the drawn one", "Every game drawn, so the real shell and its back always show.", !photos, enabled, Sample.PHOTO_OFF) {
-                    F.mediaShells.value = true
-                }
-            }
+            // (Update 325, Toni: "some layouts picked the drawn cartridges only — delete them, they keep breaking stuff":
+            // "Always the drawn one" is gone. A game's own photo always shows when one is found, else its real shell.)
         }
         LookMain.LAYOUT -> {
             // (Update 280.)

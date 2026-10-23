@@ -1901,7 +1901,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         if (on) "Navigation bar hidden" else "Navigation bar shown"
                     }
                     "voltcap:r1:whoplays" -> { f.whoPlays.value = !f.whoPlays.value; if (f.whoPlays.value) "Who is playing: on" else "Who is playing: off" }
-                    "voltcap:r1:drawnmedia" -> { f.mediaShells.value = !f.mediaShells.value; if (f.mediaShells.value) "Drawn discs" else "Real discs" }
+                    // (Update 325: "Drawn only" is gone — the old dock shortcut just says so.)
+                    "voltcap:r1:drawnmedia" -> "Own photos are always used"
                     "voltcap:r1:theme" -> {
                         val favs = f.favoriteThemes.state.value
                         val favThemes = com.shelf.launcher.ui.theme.AppTheme.values().filter { it.name in favs }

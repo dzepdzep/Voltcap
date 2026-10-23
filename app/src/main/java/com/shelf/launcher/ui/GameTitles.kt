@@ -28,8 +28,8 @@ data class TitleOptions(
     fun console(platform: String): String = when {
         // Collections, franchises and play statuses (category label).
         com.shelf.launcher.data.isCollectionKey(platform) -> com.shelf.launcher.data.collectionLabel(platform)
-        fullConsoleNames -> com.shelf.launcher.data.ConsoleNames.display(platform)
-        else -> platform
+        // (Update 325, Toni: "always the official names": no more short keys, whatever the old switch says.)
+        else -> com.shelf.launcher.data.ConsoleNames.display(platform)
     }
 
     fun display(name: String): String = when {
