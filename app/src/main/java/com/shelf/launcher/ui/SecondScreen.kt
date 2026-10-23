@@ -263,12 +263,15 @@ fun SecondScreenHost(
             }.getOrNull()
         } else null
         presentationHolder[0] = presentation
+        // (Update 325: the performance recorder records this window's frames too.)
+        com.shelf.launcher.data.perf.PerfRecorder.secondWindow = presentation?.window
         showing = presentation != null
         SecondScreenShown.value = presentation != null
         onDispose {
             showing = false
             SecondScreenShown.value = false
             presentationHolder[0] = null
+            com.shelf.launcher.data.perf.PerfRecorder.secondWindow = null
             // (Update 188: its dimming layer goes with it.)
             dimView?.let { SecondDim.detach(it) }
             presentation?.let { runCatching { it.dismiss() } }

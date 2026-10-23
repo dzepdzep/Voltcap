@@ -37,6 +37,13 @@ object PerfRecorder {
         private set
 
     @Volatile private var running = false
+
+    /**
+     * Update 325: the second screen's window while it shows (SecondScreen) — its frames are recorded beside the main
+     * screen's (`second-screen.txt`): both windows are drawn by the app's one render thread and share the GPU, so a busy
+     * second screen holds the main one's frames back.
+     */
+    @Volatile var secondWindow: Window? = null
     private val main by lazy { Handler(Looper.getMainLooper()) }
 
     /** Starts a recording of [activity]'s window in [DELAY_S] seconds. */
@@ -57,20 +64,25 @@ object PerfRecorder {
 
     private fun record(app: Context, window: Window) {
         val frames = java.util.Collections.synchronizedList(ArrayList<Frame>())
+        val frames2 = java.util.Collections.synchronizedList(ArrayList<Frame>())
+        val window2 = secondWindow
         val dir = File(app.cacheDir, "perf_record").apply { deleteRecursively(); mkdirs() }
         val trace = File(dir, "voltcap.trace")
         // FrameMetrics (Android 7+): each frame's parts, on a thread of its own.
         val thread = android.os.HandlerThread("PerfRecorder").apply { start() }
-        val listener = if (Build.VERSION.SDK_INT >= 24) Window.OnFrameMetricsAvailableListener { _, m, _ ->
+        fun listenerInto(into: MutableList<Frame>) = if (Build.VERSION.SDK_INT >= 24) Window.OnFrameMetricsAvailableListener { _, m, _ ->
             fun g(id: Int) = runCatching { m.getMetric(id) }.getOrDefault(0L)
             if (g(FrameMetrics.FIRST_DRAW_FRAME) == 1L) return@OnFrameMetricsAvailableListener
-            frames += Frame(
+            into += Frame(
                 g(FrameMetrics.TOTAL_DURATION), g(FrameMetrics.INPUT_HANDLING_DURATION), g(FrameMetrics.ANIMATION_DURATION),
                 g(FrameMetrics.LAYOUT_MEASURE_DURATION), g(FrameMetrics.DRAW_DURATION), g(FrameMetrics.SYNC_DURATION),
                 g(FrameMetrics.COMMAND_ISSUE_DURATION), if (Build.VERSION.SDK_INT >= 31) g(FrameMetrics.GPU_DURATION) else 0L
             )
         } else null
+        val listener = listenerInto(frames)
         if (listener != null) runCatching { window.addOnFrameMetricsAvailableListener(listener, Handler(thread.looper)) }
+        val listener2 = if (window2 != null) listenerInto(frames2) else null
+        if (listener2 != null) runCatching { window2!!.addOnFrameMetricsAvailableListener(listener2, Handler(thread.looper)) }
         // Android's sampling profile (every thread, every millisecond) — not allowed on every system: then without it.
         val traced = runCatching { android.os.Debug.startMethodTracingSampling(trace.absolutePath, 48 * 1024 * 1024, 1000) }.isSuccess
         // The main thread's stack every 10 ms, added up.
@@ -92,11 +104,13 @@ object PerfRecorder {
         fun tick() {
             if (left <= 0) {
                 if (listener != null) runCatching { window.removeOnFrameMetricsAvailableListener(listener) }
+                if (listener2 != null) runCatching { window2!!.removeOnFrameMetricsAvailableListener(listener2) }
                 if (traced) runCatching { android.os.Debug.stopMethodTracing() }
                 Thread {
                     runCatching { sampler.join(2000L) }
                     thread.quitSafely()
-                    val name = save(app, dir, ArrayList(frames), synchronized(stacks) { HashMap(stacks) }, samples, if (traced && trace.length() > 0) trace else null)
+                    val second = if (window2 == null) "No second screen was showing.\n" else summary(ArrayList(frames2))
+                    val name = save(app, dir, ArrayList(frames), synchronized(stacks) { HashMap(stacks) }, samples, if (traced && trace.length() > 0) trace else null, second)
                     main.post {
                         status = if (name != null) "Saved Download/Voltcap/$name — upload it" else "Couldn't save the recording"
                         running = false
@@ -150,11 +164,12 @@ object PerfRecorder {
     }
 
     /** The zip into Download/Voltcap (MediaStore, Android 10+; the app's own files folder before). Its name, or null. */
-    private fun save(app: Context, dir: File, frames: List<Frame>, stacks: Map<String, Int>, samples: Int, trace: File?): String? = runCatching {
+    private fun save(app: Context, dir: File, frames: List<Frame>, stacks: Map<String, Int>, samples: Int, trace: File?, second: String): String? = runCatching {
         val name = "voltcap-perf-" + java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date()) + ".zip"
         fun write(out: java.io.OutputStream) {
             ZipOutputStream(out).use { z ->
                 z.putNextEntry(ZipEntry("frames.txt")); z.write(summary(frames).toByteArray()); z.closeEntry()
+                z.putNextEntry(ZipEntry("second-screen.txt")); z.write(second.toByteArray()); z.closeEntry()
                 z.putNextEntry(ZipEntry("main-thread.txt")); z.write(stackText(stacks, samples).toByteArray()); z.closeEntry()
                 if (trace != null) { z.putNextEntry(ZipEntry("voltcap.trace")); trace.inputStream().use { it.copyTo(z) }; z.closeEntry() }
             }

@@ -691,6 +691,15 @@ internal object CartShells {
             // A straight top (or no arc that spans the label).
             if (rt == rb) p.addRoundRect(r, rt, rt, Path.Direction.CW)
             else p.addRoundRect(r, floatArrayOf(rt, rt, rt, rt, rb, rb, rb, rb), Path.Direction.CW)
+            // (Update 325, Toni: the sticker's white bottom band ran into the card's cut corner: a DS / 3DS sticker has its
+            // lower left corner cut off at 45°, about 2.1 mm, along the card's own cut — measured off the template.)
+            if (s.id == "ds" || s.id == "3ds") {
+                val cut = 2.1f * k
+                val tri = Path().apply {
+                    moveTo(r.left - 1f, r.bottom - cut - 1f); lineTo(r.left + cut + 1f, r.bottom + 1f); lineTo(r.left - 1f, r.bottom + 1f); close()
+                }
+                p.op(tri, Path.Op.DIFFERENCE)
+            }
             return p
         }
         val cx = r.centerX()
@@ -802,7 +811,7 @@ internal object CartShells {
         val paperHead = if (!paperOn) null else dsOwn
             ?: paperStrip(brand.ifEmpty { com.shelf.launcher.data.ConsoleNames.display(if (s.id == "3ds") "3DS" else "NDS") })
         val head = plaque ?: switchHeader ?: paperHead
-        val key = "f6|${dsOwn != null}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        val key = "f6|${dsOwn != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
@@ -935,6 +944,14 @@ internal object CartShells {
                     c.drawBitmap(paperHead, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
                     p.color = 0xFFFFFFFF.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom), p)
                     p.color = 0xFFBDBDBD.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom - footH + 0.12f * k), p)
+                    // (Toni: "some fitting numbers there, so it looks like the real cartridges": the product code printed at
+                    // the band's left, past the cut corner — see productCode.)
+                    val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = 0xFF4A4A4E.toInt(); textSize = footH * 0.42f; letterSpacing = 0.04f
+                        typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+                    }
+                    val by = lr.bottom - footH / 2f - (tp.ascent() + tp.descent()) / 2f
+                    c.drawText(productCode(s.id, title ?: brand), lr.left + 3.0f * k, by, tp)
                 } else {
                     val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
                         else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
@@ -1101,6 +1118,28 @@ internal object CartShells {
         c.drawText(t, w / 2f, h / 2f - (tp.ascent() + tp.descent()) / 2f, tp)
         strips.put(key, b)
         return b
+    }
+
+    /**
+     * Update 325: the product code a DS / 3DS sticker prints along its bottom ("NTR-ADME-USA", "CTR-P-ADME") — made up
+     * for the game, the same every time: "A", two letters from its title's first words, the region's letter (your case
+     * region: E North America, P Europe, J Japan). The drawing has no ROM file to read the real code from.
+     */
+    private fun productCode(id: String, title: String): String {
+        val region = com.shelf.launcher.data.Features.caseRegion.state.value.code
+        val letter = when (region) { "EU" -> 'P'; "JP" -> 'J'; else -> 'E' }
+        val skip = setOf("THE", "A", "AN", "OF", "AND", "DS", "3D")
+        val words = title.uppercase().split(Regex("[^A-Z]+")).filter { it.isNotEmpty() && it !in skip }
+        val h = kotlin.math.abs(title.hashCode())
+        val fill = "ABCDEFGHJKLMNPRSTUVWXYZ"
+        val two = buildString {
+            words.take(2).forEach { append(it[0]) }
+            if (length < 2 && words.isNotEmpty() && words[0].length > 1) append(words[0][1])
+            var i = 0
+            while (length < 2) { append(fill[(h / (i * 7 + 1)) % fill.length]); i++ }
+        }
+        val code = "A$two$letter"
+        return if (id == "3ds") "CTR-P-$code" else "NTR-$code-" + when (region) { "EU" -> "EUR"; "JP" -> "JPN"; else -> "USA" }
     }
 
     /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
