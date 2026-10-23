@@ -1351,11 +1351,13 @@ private fun WindowBody(
             // (Update 318, Toni: "sometimes stuff gets cut off and I can't scroll down there": the room above is a guess — a
             // fact line that wraps, a long title — so the window now scrolls when it still doesn't fit; the D-pad's focus
             // brings the save / performance line into view.)
+            // (Update 321: measured, not guessed — the picture is laid out last and takes the height the facts, buttons and
+            // status line leave (never wider than the estimate), so nothing is pushed off the bottom and nothing scrolls.)
             Column(
-                panelMod.heightIn(max = (maxH - (if (look.panel != null) 28.dp else 0.dp)).coerceAtLeast(120.dp)).verticalScroll(rememberScrollState()),
+                panelMod.heightIn(max = (maxH - (if (look.panel != null) 28.dp else 0.dp)).coerceAtLeast(120.dp)),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Media(Modifier.width(screenW).height(screenW / 1.78f), showName = true)
+                Media(Modifier.weight(1f, fill = false).widthIn(max = screenW).aspectRatio(1.78f, matchHeightConstraintsFirst = true), showName = true)
                 if (info && !details) {
                     Spacer(Modifier.height(8.dp))
                     Box(Modifier.width(screenW)) { WinInfo(look, g, state, extras, descLines = 2) }
