@@ -3766,7 +3766,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             // None: a window with what to do (pick a PDF, search online) instead of a passing message.
             val link = url
             if (link == null) { onMissing(); return@launch }
-            val file = runCatching { L.download(app, game, link, screenScraperRepository.withLogin(link, creds)) }.getOrNull()
+            // (Update 320: kept only with Manuals › Download all ahead; otherwise a preview, deleted once closed.)
+            val keep = com.shelf.launcher.data.Features.manualKeep.value == com.shelf.launcher.data.Features.ManualKeep.AHEAD
+            val file = runCatching { L.download(app, game, link, screenScraperRepository.withLogin(link, creds), keep) }.getOrNull()
             when {
                 file != null -> onReady(file)
                 L.stoppedLast -> Unit
@@ -5797,7 +5799,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * that isn't on the device yet (beside the ROM, picked by you or downloaded before), into the saved-art store as
      * opening one does. Progress in ManualLinks.bulk; ManualLinks.stopAll stops it. Waits while a game is running.
      */
-    fun findAllManuals(download: Boolean) {
+    /**
+     * Update 320: with Manuals › Download all ahead, every manual found that isn't on the device yet is downloaded in the
+     * background (a while after start, and when the setting is switched on) — quietly, as [findAllManuals] with download.
+     */
+    fun downloadManualsAhead() {
+        if (com.shelf.launcher.data.Features.manualKeep.value != com.shelf.launcher.data.Features.ManualKeep.AHEAD) return
+        if (screenScraperStore.load() == null) return
+        findAllManuals(download = true, quiet = true)
+    }
+
+    fun findAllManuals(download: Boolean, quiet: Boolean = false) {
         if (manualBulkJob?.isActive == true) return
         val creds = screenScraperStore.load()
         if (creds == null) {
@@ -5847,7 +5859,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     kotlinx.coroutines.delay(250)
                 }
                 if (saved > 0) L.version++
-                setStatusMessage(
+                if (!quiet) setStatusMessage(
                     when {
                         get.isEmpty() -> "Every manual found (${L.foundCount()}) is on this device already."
                         failed == 0 -> "Downloaded $saved manual" + (if (saved == 1) "" else "s") + "."

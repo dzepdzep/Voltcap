@@ -1109,6 +1109,14 @@ object Features {
     }
     val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
     /**
+     * Update 320 (Toni: "the manual downloads only when I press it on the case — can they all be downloaded ahead if I
+     * choose so, and if not just a preview, viewed that time without downloading"). PREVIEW: a manual is fetched only to
+     * read it, into a temporary file deleted when it's closed — nothing kept. AHEAD: every manual found is downloaded onto
+     * the device in the background (and one opened is kept), for reading offline.
+     */
+    enum class ManualKeep(val label: String) { PREVIEW("Preview only — nothing kept"), AHEAD("Download all ahead") }
+    val manualKeep = EnumPref("manual_keep", ManualKeep.PREVIEW, ManualKeep.values())
+    /**
      * Update 319 (Toni): with the printed sides off (Authentic only / Plain cardboard), the sides with no picture of their
      * own named here ("RIGHT", "TOP", "BOTTOM" — BoxSide) take the colour of the cover's edge that meets them, as the
      * printed card of a real box carries on round its corners; the others stay plain card.

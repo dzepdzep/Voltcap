@@ -2470,6 +2470,22 @@ private fun ManualsBulkRow() {
         Spacer(Modifier.height(6.dp))
         ChipFlow { Chip("Stop") { L.stopAll?.invoke() } }
     } else {
+        // (Update 320: kept on the device ahead, or only previewed when opened.)
+        val keep = com.shelf.launcher.data.Features.manualKeep.state.value
+        SectionLabel("Manuals on this device")
+        ChipFlow {
+            com.shelf.launcher.data.Features.ManualKeep.values().forEach { m ->
+                Chip((if (keep == m) "✓ " else "") + m.label, accent = keep == m) {
+                    com.shelf.launcher.data.Features.manualKeep.value = m
+                    if (m == com.shelf.launcher.data.Features.ManualKeep.AHEAD) L.runAll?.invoke(true)
+                }
+            }
+        }
+        MutedNote(
+            if (keep == com.shelf.launcher.data.Features.ManualKeep.AHEAD) "Every manual found is downloaded onto this device in the background, for reading offline (manuals take space: Settings › Metadata shows how much)."
+            else "A manual is fetched only while you read it and deleted when you close it — nothing is kept. Manuals already on the device still open from there."
+        )
+        Spacer(Modifier.height(6.dp))
         ChipFlow {
             Chip("Find manuals", accent = false) { L.runAll?.invoke(false) }
             Chip("Download all manuals", accent = false) { L.runAll?.invoke(true) }

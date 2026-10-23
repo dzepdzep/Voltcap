@@ -182,7 +182,7 @@ object ArtFiles {
      * kept (ScreenScraper answers some errors with text). [onProgress] gets bytes done and the total (-1: unknown);
      * [cancelled] is asked between chunks and stops it. The file, or null.
      */
-    fun downloadManual(key: String, url: String, onProgress: (Long, Long) -> Unit, cancelled: () -> Boolean): File? = runCatching {
+    fun downloadManual(key: String, url: String, onProgress: (Long, Long) -> Unit, cancelled: () -> Boolean, into: File? = null): File? = runCatching {
         val req = okhttp3.Request.Builder().url(url).header("User-Agent", "Voltcap").build()
         manualClient.newCall(req).execute().use { r ->
             if (!r.isSuccessful) return@runCatching null
@@ -211,7 +211,18 @@ object ArtFiles {
                     }
                 }
             }
-            if (!full()) {
+            // (Update 320: a preview goes to [into], a temporary file — not into the saved-art store.)
+            if (into != null) {
+                into.parentFile?.mkdirs()
+                val part = File(into.parentFile, into.name + ".part")
+                try {
+                    part.outputStream().buffered().use(copy)
+                    if (into.exists()) into.delete()
+                    if (part.renameTo(into)) into else null
+                } finally {
+                    part.delete()
+                }
+            } else if (!full()) {
                 if (write(key, copy)) manualFile(key) else null
             } else {
                 val dest = manualOverflow(key) ?: return@runCatching null

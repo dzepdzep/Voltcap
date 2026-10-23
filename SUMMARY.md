@@ -1,5 +1,18 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 23 Oct 2026 (320): manuals downloaded ahead, or only previewed
+
+- **Manuals: download all ahead, or preview only** (Toni: "the manual downloads only when I press it on the case — can
+  they all be downloaded ahead if I choose so, and if not just a preview, viewed that time without downloading").
+  Settings › (Manuals card) › **Manuals on this device**: *Preview only — nothing kept* (default) — a manual is fetched
+  into a temporary file only to read it and deleted when its reader closes (`ManualLinks.previewDir` / `dropPreview`,
+  `ArtFiles.downloadManual(into = …)`); *Download all ahead* — every manual found is downloaded in the background, 20 s
+  after start and when it's picked (`downloadManualsAhead`, quiet `findAllManuals`), and one opened is kept. Manuals
+  already on the device open from there either way; the case's booklet shows a manual's first page only when it's kept.
+- **Copy:** `data/Features.kt`, `data/ArtFiles.kt`, `data/ManualLinks.kt`, `LauncherViewModel.kt`, `ui/LauncherScreen.kt`,
+  `ui/SettingsDialog.kt`.
+- **Not compiled here** (GitHub's build check runs); not tried on a device.
+
 ## Update — 23 Oct 2026 (319): GBA spines across the whole box side; box sides in the cover's colours
 
 - **GBA (and any cardboard box) spine too thin** (Toni: "not as wide as the cardboard"): a spine scan narrower than the

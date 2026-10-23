@@ -741,6 +741,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (state.games.isEmpty()) return@LaunchedEffect
         kotlinx.coroutines.delay(20_000)
         viewModel.prefetchStatsArt()
+        // (Update 320: every manual found downloaded ahead, when Manuals › Download all ahead is chosen.)
+        viewModel.downloadManualsAhead()
         // (Update 319: still covers for the cartridges and discs of games scraped animated before update 317.)
         viewModel.backfillStillCovers()
     }
@@ -4582,7 +4584,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         )
     }
     manualFor?.let { (game, file) ->
-        ManualViewer(file, gameDisplayName(game.name)) { manualFor = null }
+        ManualViewer(file, gameDisplayName(game.name)) { manualFor = null; com.shelf.launcher.data.ManualLinks.dropPreview(file) }
     }
     // Update 202: the manual from anywhere — the game window's Manual button, the booklet in an opened case, the second
     // screen's Details page: found (or downloaded once, its progress in ManualDownloadDialog), then read.
