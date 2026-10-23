@@ -115,10 +115,11 @@ object BatteryWatch {
         val dCpu = cpu - lastCpu
         lastWall = wall; lastCpu = cpu
         if (dWall < 20_000L || dCpu < 0) return
-        // The sleeping thread doesn't count in deep sleep: after a long gap (screen off for hours) this sample would put all
-        // of those hours into one slice with hardly any CPU. It only restarts the measuring.
-        if (dWall > 3 * EVERY_MS) return
-        val interactive = (c.getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isInteractive != false
+        // (Update 321, Toni: "the battery watcher doesn't work well": a long gap — the handheld asleep, the screen off for
+        // hours, the sleeping thread not counting — was thrown away, so the night was never measured. It's the screen-off
+        // time, with the CPU Voltcap used in it: counted as that.)
+        val asleep = dWall > 3 * EVERY_MS
+        val interactive = !asleep && (c.getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isInteractive != false
         val info = ActivityManager.RunningAppProcessInfo().also { ActivityManager.getMyMemoryState(it) }
         val front = info.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         val where = when {
@@ -141,7 +142,13 @@ object BatteryWatch {
     }
 
     /** What was measured in one situation. */
-    data class Slice(val where: Where, val hours: Double, val cpuPercent: Double, val avgMa: Double?)
+    data class Slice(val where: Where, val hours: Double, val cpuPercent: Double, val avgMa: Double?) {
+        /** Update 321: [cpuPercent] is of one core (all Voltcap's threads together); this is of the whole processor. */
+        val wholeCpuPercent: Double get() = cpuPercent / CORES
+    }
+
+    /** Update 321: the processor's cores (the watcher's "% of a core" against all of them). */
+    val CORES: Int = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
 
     data class Report(
         val slices: List<Slice>,
@@ -182,7 +189,7 @@ object BatteryWatch {
         var level = 0
         val enough = front.hours >= 0.05 || other.hours >= 0.05 || off.hours >= 0.25
         if (front.hours >= 0.05) {
-            findings += "With Voltcap in front it keeps about %.0f %% of one processor core busy.".format(front.cpuPercent)
+            findings += "With Voltcap in front it keeps about %.0f %% of one processor core busy (%.1f %% of all %d cores).".format(front.cpuPercent, front.wholeCpuPercent, CORES)
             if (front.cpuPercent >= 35) {
                 level = maxOf(level, 2)
                 tips += "Use Lite effects: Settings › Performance. Animated backgrounds, glows and live scenes redraw the screen all the time."
