@@ -15,6 +15,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asAndroidColorFilter
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -77,7 +79,15 @@ internal class PieceTurn(
      * [FAR_COPIES] copies, as while moving. (Its face alone, flat, was tried first — Toni: "I hate that they appear
      * flat".) Null: never.
      */
-    val farOf: (() -> Boolean)? = null
+    val farOf: (() -> Boolean)? = null,
+    /**
+     * Update 325 (Toni: "the cases work really well without much sluggishness" — yes, try the cartridges the same way): the
+     * piece is drawn as two turned panels, like Case3D's faces — its face, and one side panel in its plastic's colour
+     * between the face's edge and the back's — straight onto the view, with the very camera the turned layers use; no
+     * stack of turned copies (up to 24 a piece, each a turned layer of its own). A clear piece, one seen from behind and one
+     * without its face's picture yet are drawn as before. False: as before (Inspect keeps every detail).
+     */
+    val panels: Boolean = false
 ) {
     /** Update 317: the piece applies [shadeOf] itself (it's drawn from its pictures); the view leaves it out. */
     val shadeTaken = mutableStateOf(false)
@@ -405,6 +415,8 @@ internal fun Modifier.solidPiece(
     // (The same modifier for the piece's whole life: a new one at each recomposition — every step of a carousel — made the
     // content draw again, which counted as new content and took the picture again, until the piece gave up on it.)
     val shotMark = remember(shot) { Modifier.graphicsLayer { }.drawWithContent { shot.changed(); drawContent() } }
+    // (Update 325: where the face's outline reaches its left and right edges, for the side panel — see PieceTurn.panels.)
+    val edgeSpans = if (turn?.panels == true) rememberDerived((faceArt?.image ?: shotImage)?.asAndroidBitmap(), "edges325") { b -> edgeSpansOf(b) } else null
     val sideMade = rememberDerived((faceArt?.image ?: shotImage)?.asAndroidBitmap(), "side317|${spec.tone.toArgb()}") { b -> sideArtOf(b, spec.tone.toArgb())?.asImageBitmap() }
     // (Update 317: the last sides' picture kept while a new front's is made — the piece stays drawn from its pictures, so it
     // keeps darkening itself; see shadeTaken below.)
@@ -483,6 +495,13 @@ internal fun Modifier.solidPiece(
         val sideSrc = side?.let { IntSize(it.width, it.height) }
         val edgeLeaf = if (side != null) edgeLeafLayer.also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.ModulateAlpha } else null
         val litLeaf = if (side != null) litLeafLayer else null
+        // (Update 325: the panels' camera — the same as the turned layers' — and their matrices and paints.)
+        val panelCam = android.graphics.Camera().apply { setLocation(0f, 0f, -cam) }
+        val frontM = android.graphics.Matrix()
+        val backM = android.graphics.Matrix()
+        val panelPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+        val sidePath = android.graphics.Path()
+        val pts = FloatArray(8)
         var artMade = false
         var solidMade = false
         var madeYaw = Float.NaN
@@ -543,10 +562,11 @@ internal fun Modifier.solidPiece(
             val t = Math.toRadians(yaw.toDouble())
             val c = cos(t).toFloat()
             val sn = sin(t).toFloat()
+            val usePanels = turn?.panels == true && art != null && artPos != null && artSize != null && spec.clear == null && testPose == null && c >= 0f
             edge.rotationY = yaw; edge.cameraDistance = cam
             lit.rotationY = yaw; lit.cameraDistance = cam
             // (Update 316: the plain sides and face, their light drawn in — recorded again only as the turn changes.)
-            if (edgeLeaf != null && litLeaf != null && side != null && art != null) {
+            if (edgeLeaf != null && litLeaf != null && side != null && art != null && !usePanels) {
                 edgeLeaf.rotationY = yaw; edgeLeaf.cameraDistance = cam
                 litLeaf.rotationY = yaw; litLeaf.cameraDistance = cam
                 val edgeLight = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
@@ -634,7 +654,52 @@ internal fun Modifier.solidPiece(
             // (The node's middle: inside the whole-piece buffer the drawing area is bigger than the node.)
             val nodeC = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
             // The piece itself: far to near, the slices, then the face (or the back), in the node's own place.
-            val pieceDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = {
+            val nodeW = size.width; val nodeH = size.height
+            val pieceDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = pd@{
+                if (usePanels) {
+                    val nc = drawContext.canvas.nativeCanvas
+                    val ap = artPos!!; val asz = artSize!!
+                    fun panelMatrix(z: Float, out: android.graphics.Matrix) {
+                        panelCam.save(); panelCam.rotateY(yaw); panelCam.translate(0f, 0f, z); panelCam.getMatrix(out); panelCam.restore()
+                        out.preTranslate(-nodeW / 2f, -nodeH / 2f); out.postTranslate(nodeW / 2f, nodeH / 2f)
+                    }
+                    // (The camera looks along +z: the face is the near side, −depth / 2; the back +depth / 2.)
+                    panelMatrix(-depthPx / 2f, frontM)
+                    panelMatrix(depthPx / 2f, backM)
+                    val e = edgeSpans
+                    val sideLight = ((0.42f + 0.22f * abs(sn)) * shadeK).coerceIn(0f, 1f)
+                    val tone = spec.tone
+                    val sideArgb = android.graphics.Color.argb(255, (tone.red * 255 * sideLight).toInt(), (tone.green * 255 * sideLight).toInt(), (tone.blue * 255 * sideLight).toInt())
+                    for (right in booleanArrayOf(false, true)) {
+                        val x = ap.x + asz.width * (if (right) 0.985f else 0.015f)
+                        val top = ap.y + asz.height * (e?.get(if (right) 2 else 0) ?: 0f)
+                        val bot = ap.y + asz.height * (e?.get(if (right) 3 else 1) ?: 1f)
+                        if (bot - top < 2f) continue
+                        pts[0] = x; pts[1] = top; pts[2] = x; pts[3] = bot
+                        pts[4] = x; pts[5] = bot; pts[6] = x; pts[7] = top
+                        frontM.mapPoints(pts, 0, pts, 0, 2)
+                        backM.mapPoints(pts, 4, pts, 4, 2)
+                        // (Seen only when the back's edge stands out past the face's: the side turned towards you.)
+                        val out = if (right) pts[4] - pts[2] else pts[2] - pts[4]
+                        if (out < 0.5f) continue
+                        sidePath.rewind()
+                        sidePath.moveTo(pts[0], pts[1]); sidePath.lineTo(pts[2], pts[3]); sidePath.lineTo(pts[4], pts[5]); sidePath.lineTo(pts[6], pts[7]); sidePath.close()
+                        panelPaint.shader = null; panelPaint.colorFilter = null; panelPaint.color = sideArgb
+                        nc.drawPath(sidePath, panelPaint)
+                        // The sheen the sides have: a little light at the top, a little shade at the bottom.
+                        panelPaint.shader = android.graphics.LinearGradient(0f, minOf(pts[1], pts[7]), 0f, maxOf(pts[3], pts[5]),
+                            intArrayOf(0x1FFFFFFF, 0x00FFFFFF, 0x2E000000), floatArrayOf(0f, 0.5f, 1f), android.graphics.Shader.TileMode.CLAMP)
+                        nc.drawPath(sidePath, panelPaint)
+                        panelPaint.shader = null
+                    }
+                    // The face, turned, in its light.
+                    panelPaint.colorFilter = SolidLight.of((1f - 0.4f * abs(sn)) * shadeK)?.asAndroidColorFilter()
+                    nc.save(); nc.concat(frontM)
+                    nc.drawBitmap(art!!.asAndroidBitmap(), null, android.graphics.RectF(ap.x.toFloat(), ap.y.toFloat(), (ap.x + asz.width).toFloat(), (ap.y + asz.height).toFloat()), panelPaint)
+                    nc.restore()
+                    panelPaint.colorFilter = null
+                    return@pd
+                }
                 // Far to near: the slices, then the face (or the back, seen from behind).
                 // (Update 205: close enough together that no gap shows between them on a thick piece side-on.)
                 // (Update 207: a slice every 2 px, at most 32 — 64 slices a piece, every piece in a row, each frame,
@@ -785,6 +850,28 @@ internal class PieceShot {
         val SHOTS = kotlinx.coroutines.sync.Mutex()
     }
 }
+
+/**
+ * Update 325: where [src]'s outline reaches its left and right edges (a column 1.5 % in from each side): top and bottom
+ * of the opaque part as shares of its height — [left top, left bottom, right top, right bottom]. For the side panel
+ * (PieceTurn.panels), so it starts and ends where the shell's edge does (a rounded corner, the N64's arched top).
+ */
+internal fun edgeSpansOf(src: android.graphics.Bitmap): FloatArray? = runCatching {
+    val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+    val w = soft.width; val h = soft.height
+    if (w < 4 || h < 4) return@runCatching null
+    val out = FloatArray(4)
+    for ((i, fx) in floatArrayOf(0.015f, 0.985f).withIndex()) {
+        val x = (fx * (w - 1)).toInt()
+        val col = IntArray(h)
+        soft.getPixels(col, 0, 1, x, 0, 1, h)
+        val top = col.indexOfFirst { (it ushr 24) > 100 }
+        val bot = col.indexOfLast { (it ushr 24) > 100 }
+        if (top < 0 || bot <= top) { out[i * 2] = 0f; out[i * 2 + 1] = 1f }
+        else { out[i * 2] = top / h.toFloat(); out[i * 2 + 1] = (bot + 1) / h.toFloat() }
+    }
+    out
+}.getOrNull()
 
 /** Update 317: the pieces' pictures of their content ([PieceShot]) by what they show, for pieces coming back on the screen. */
 internal object PieceShots {

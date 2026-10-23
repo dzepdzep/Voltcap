@@ -1526,7 +1526,9 @@ private fun CarouselItem(
     val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }, shadeOf = { shadeLatest.value() },
         movingOf = { ctxNow.value.moving?.invoke() == true },
         // (Update 325: past the nearest FULL_NEAR each side, the face alone — see PieceTurn.farOf.)
-        farOf = { kotlin.math.abs(relNow.value()) > FULL_NEAR + 0.5f }) }
+        farOf = { kotlin.math.abs(relNow.value()) > FULL_NEAR + 0.5f },
+        // (Update 325: drawn as two turned panels, like the 3D cases — see PieceTurn.panels.)
+        panels = true) }
     Box(
         modifier
             // The drawing order, read while placing (zIndex is otherwise fixed at composition).
