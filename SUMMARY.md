@@ -67,6 +67,11 @@
   one-colour icons stay everywhere else).
 - **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
   drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **Discs spin and cartridges sway again** (Toni: "discs don't spin and cartridges don't wobble", even while going through
+  games): Performance › Automatic had turned Lite on after the slow frames, and Lite stopped every piece's motion. The game
+  you're on keeps its spin / sway / hop in Lite now — one piece; the others stay still (`motionLayer`, `rememberCartSpin`).
+- **Edit Home: smaller parts** (Toni: "it gets stuck at a certain size and won't go lower"): a part could be made no
+  smaller than 60 % — 30 % now (`HomeWidgets.SCALE_MIN`).
 - **No jagged bottoms while scrolling** (Toni: "the jagged bottoms appear only when scrolling"): a gliding row's pieces drew
   their sides with 3 / 4 copies, and the steps between them showed; as many as at rest now (`MOVING_COPIES`,
   `MOVING_SLICES`) — the reflection was what cost. The smear stays off while moving.
@@ -111,7 +116,7 @@
   `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`, `ui/Carousel.kt`, `data/Packs.kt`,
   `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`, `ui/MediaEditions.kt`,
   `ui/StacksArch.kt`, `data/RomScanner.kt`, `ui/AppIcons.kt`, `ui/GameCard.kt`, `ui/StyleHomes.kt`,
-  `ui/Case3D.kt`.
+  `ui/Case3D.kt`, `ui/PhysicalMedia.kt`, `ui/HomeEdit.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1

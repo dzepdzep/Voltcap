@@ -741,7 +741,10 @@ internal fun Modifier.motionPreview(disc: Boolean, motion: Features.MediaMotion)
 
 @Composable
 private fun Modifier.motionLayer(disc: Boolean, motion: Features.MediaMotion, seed: Int, turnCart: Boolean = true): Modifier {
-    val on = !LocalLiteEffects.current && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
+    // (Update 325, Toni: "discs don't spin and cartridges don't wobble", even while going through games: Performance ›
+    // Automatic had turned Lite on after slow frames, and Lite stopped every one. The game you're on keeps its motion in
+    // Lite — one piece; the others stay still.)
+    val on = (!LocalLiteEffects.current || LocalMediaFocused.current) && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
     if (!on || motion == Features.MediaMotion.OFF) return this
     // Update 112: only the game you're on moves (Home › Animations, per layout too).
     MotionPrefs.observe()

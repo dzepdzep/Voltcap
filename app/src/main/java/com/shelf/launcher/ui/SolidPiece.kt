@@ -340,7 +340,10 @@ internal fun rememberCustomPieceTone(pickPlatform: String): Color? {
 @Composable
 internal fun rememberCartSpin(): (() -> Float)? {
     val motion = Features.cartMotion.state.value
-    val on = !LocalLiteEffects.current && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
+    // (Update 325, Toni: "discs don't spin and cartridges don't wobble", even while going through games: Performance ›
+    // Automatic had turned Lite on after slow frames, and Lite stopped every one. The game you're on keeps its motion in
+    // Lite — one piece; the others stay still.)
+    val on = (!LocalLiteEffects.current || LocalMediaFocused.current) && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
     if (!on || !motion.spins) return null
     MotionPrefs.observe()
     if (MotionPrefs.focusedOnlyMotion() && !LocalMediaFocused.current) return null

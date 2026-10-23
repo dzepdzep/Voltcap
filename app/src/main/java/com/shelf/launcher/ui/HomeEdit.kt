@@ -100,7 +100,8 @@ object HomeWidgets {
     /** Widgets that can be moved, in the order shoulder buttons step through them. */
     val all = listOf(MUSIC, SHORTCUTS, HEADER) + headerParts + listOf(CATEGORY, INFO, NEWS)
 
-    const val SCALE_MIN = 0.6f
+    // (Update 325, Toni: "some things in Edit Home won't scale down lower than a certain size": 60 % was the floor — 30 % now.)
+    const val SCALE_MIN = 0.3f
     const val SCALE_MAX = 1.8f
 
     fun parseScales(s: String, clamp: Boolean = true): Map<String, Float> = s.split(';').mapNotNull { part ->
