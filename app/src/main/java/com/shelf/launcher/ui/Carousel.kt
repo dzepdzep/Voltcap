@@ -1860,7 +1860,10 @@ private fun CarouselArt(
                 }
         ) {
             if (spineHere) GameSpine(g, physicalMedia[g.stableKey], Modifier.fillMaxSize())
-            else ShelfGameArt(g, false, cardArtType, art, overrides, physicalMedia, screenshots, spines = false, mixed = mixed, realRef = realRef, pulse = 0f, modifier = Modifier.fillMaxSize())
+            // (Update 325: a cartridge / disc there is its turned face alone — LocalPieceReflection.)
+            else androidx.compose.runtime.CompositionLocalProvider(LocalPieceReflection provides true) {
+                ShelfGameArt(g, false, cardArtType, art, overrides, physicalMedia, screenshots, spines = false, mixed = mixed, realRef = realRef, pulse = 0f, modifier = Modifier.fillMaxSize())
+            }
         }
     }
 }

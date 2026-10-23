@@ -83,6 +83,13 @@ internal class PieceTurn(
     val shadeTaken = mutableStateOf(false)
 }
 
+/**
+ * Update 325 (Toni: "I liked the reflection — could it cost less?"): inside a carousel game's reflection. The piece there is
+ * its turned face alone, no copies for its sides and no picture of its own taken — each reflection was a whole second
+ * piece, its sides' copies and all; faint and fading, its thickness didn't show.
+ */
+internal val LocalPieceReflection = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 /** Set by a view that leaves the turning to the piece (solidPiece / followTurn) inside it; null: nothing turns it. */
 internal val LocalPieceTurn = compositionLocalOf<PieceTurn?> { null }
 
@@ -390,6 +397,7 @@ internal fun Modifier.solidPiece(
     // Update 317: the front's own picture for a piece without one (kept while it's off the screen) — see PieceShot.
     val shot = remember { PieceShot() }
     val turn = LocalPieceTurn.current
+    val mirror = LocalPieceReflection.current
     // (Update 316: not shown at all — none of its layers kept; see PieceTurn.activeOf.)
     if (turn?.activeOf?.invoke() == false) return this
     val spin = if (withCartSpin) rememberCartSpin() else null
@@ -525,7 +533,8 @@ internal fun Modifier.solidPiece(
                 val want = "${shot.version.intValue}|${size.width.toInt()}x${size.height.toInt()}"
                 val keep = shotKey?.let { "$it|${size.width.toInt()}x${size.height.toInt()}" }
                 if (shot.image.value == null && keep != null) PieceShots.get(keep)?.let { shot.image.value = it; shot.asked = want }
-                if (shot.asked != want) {
+                // (Update 325: a reflection uses a picture already taken for the same content, never takes one itself.)
+                if (shot.asked != want && !mirror) {
                     // (Its own drawing for the picture isn't new content: drawn again here after a while away from the
                     // screen's drawing, the content draws itself again — counted, that took a picture every frame.)
                     if (art != null) {
@@ -642,7 +651,7 @@ internal fun Modifier.solidPiece(
                 // (Update 324, Thor recording — Mix look, All games: 308 ms a frame, 63 ms of it handing the frame to the GPU:
                 // the cartridge / disc photos — this path — drew up to 32 slices and redrew their smear picture for every piece
                 // in every frame. At most 16 now, and while the row glides 6 with no smear, as the shells' sides (MOVING_COPIES).)
-                val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, if (far) FAR_COPIES else if (moving) MOVING_SLICES else 16)
+                val n = if (mirror) 0 else ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, if (far) FAR_COPIES else if (moving) MOVING_SLICES else 16)
                 val clear = spec.clear
                 // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
                 // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
@@ -664,7 +673,7 @@ internal fun Modifier.solidPiece(
                 val reach = if (edgeLeaf != null && side != null && artSize != null)
                     (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(c)).coerceAtLeast(1.5f) else 0f
                 val span = depthPx * abs(sn)
-                val nLeaf = if (edgeLeaf == null || span < 0.5f) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
+                val nLeaf = if (edgeLeaf == null || span < 0.5f || mirror) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
                 edgeL.alpha = if (edgeLeaf != null) {
                     if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
                 } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()

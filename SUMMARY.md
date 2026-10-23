@@ -67,6 +67,10 @@
   one-colour icons stay everywhere else).
 - **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
   drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **Cheaper reflection** (Toni: "I liked the reflection — could it cost less?"): each carousel game's reflection was a
+  whole second piece — a cartridge's every copy for its sides again, and a picture of its own taken. In a reflection a
+  cartridge / disc is now its turned face alone, using a picture already taken for the same content and never taking one
+  (`LocalPieceReflection`, set round the reflection in `CarouselArt`). Faint and fading, its thickness didn't show.
 - **Cartridges and discs stand on one floor** (Toni: "all the cartridges and CDs at the same height, their bottoms"): a
   cartridge / disc shorter than the tallest slot stood in the row's middle; it stands at the bottom of the tallest slot now,
   where the floor is (`CarouselItem`, `standDrop`).
