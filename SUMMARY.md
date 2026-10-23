@@ -2,6 +2,17 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **Case + media: UMDs, PS1 discs, DS cards** (Toni: "UMDs spin whole — only the inside should spin, and it isn't the
+  right UMD model"; "PS1 CDs appear small"; "reuse the real DS model for the drawn ones, they look off"):
+  - A UMD is drawn everywhere as the UMD of the open case (UmdBack): the shell stands still and only its disc turns in
+    the window (Moving discs › Spin), the gleam and hub over it; it only bobs (`UmdMedia`, `UmdBack.layers`). A UMD's own
+    photo beside its case no longer spins as if it were a disc (`mediaRound`).
+  - A disc / UMD leaning on its case is its real size against the case (`mediaBesideFrac`): a 120 mm CD on a 125 mm PS1
+    jewel case nearly as tall as it (it was 60 % of every case), a 64 mm UMD on a PSP case, GameCube's 80 mm disc.
+  - Outside the carousel the card / cartridge beside its case is the game's own piece — its console's real shell
+    (`mediaFor`), as everywhere else — not the template's drawing (the DS cards looked off).
+- Files: `ui/UmdBack.kt`, `ui/PhysicalMedia.kt`, `ui/Carousel.kt`, `ui/RealMedia.kt`. Not compiled here (CI builds it).
+
 - **Cases wobble in the carousel too** (Toni: "why is the wobble not working in the carousel view, cases look"): the
   carousel's 3D cases (and Case + media's case) took only the carousel's own turn — the Cases motion was never added.
   Now its wobble rides on that turn, the case turning in 3D (only the game you're on when motion is for it alone), as

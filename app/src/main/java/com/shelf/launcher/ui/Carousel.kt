@@ -1620,9 +1620,10 @@ private class CaseMedia(val pick: MediaPick, val discOut: Boolean) {
     private val round get() = pick.shell.disc || pick.shell == MediaShell.UMD
     /** The media's height against the case's. */
     fun size(caseMm: Pair<Float, Float>?): Float =
-        if (discOut) ((caseMm?.let { 120f / it.second } ?: 0.63f) * 0.92f).coerceIn(0.45f, 0.95f) else if (round) 0.6f else 0.5f
-    /** Its width against its height. */
-    val aspect: Float get() = if (round) 1f else pick.aspect
+        if (discOut) ((caseMm?.let { 120f / it.second } ?: 0.63f) * 0.92f).coerceIn(0.45f, 0.95f)
+        else mediaBesideFrac(pick.shell, caseMm, if (round) 0.6f else 0.5f) // (Update 325: at its real size)
+    /** Its width against its height. (Update 325: a UMD at its own shape, not square.) */
+    val aspect: Float get() = if (pick.shell == MediaShell.UMD) pick.shell.aspect else if (round) 1f else pick.aspect
     /** How far it reaches past the case's right edge, against the case's height. */
     fun room(caseMm: Pair<Float, Float>?): Float = size(caseMm) * aspect * (if (discOut) 0.5f else 0.65f)
 }
@@ -1680,7 +1681,8 @@ private fun CaseWithMedia3D(
         }) { ProvidePieceTurn(PieceTurn(yawOf, 12f)) {
             // (Update 171: the real photo is the piece itself — it was once put on the drawn cartridge's label, a small
             // cartridge inside the cartridge. Update 173: beside a real case only.)
-            if (realMedia != null) RealMediaPicture(realMedia, m.pick.shell.disc || m.pick.shell == MediaShell.UMD, Modifier.fillMaxSize(), platform = g.platform, gameKey = g.stableKey)
+            // (Update 325: a UMD's photo isn't round — it spun whole, as a disc; mediaRound.)
+            if (realMedia != null) RealMediaPicture(realMedia, mediaRound(g.platform), Modifier.fillMaxSize(), platform = g.platform, gameKey = g.stableKey)
             else PhysicalMedia(m.pick.shell, label ?: cover ?: appIcon, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover ?: appIcon, title = g.name, noCase = true)
         } }
     }

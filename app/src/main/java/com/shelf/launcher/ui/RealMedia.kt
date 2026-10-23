@@ -720,8 +720,12 @@ private fun CaseArtBody(
         val aspect = cov0?.frontAspectFor(cover ?: scan) ?: box0?.let { if (it.frameRes != null) it.frameAspect else it.aspect } ?: plain0?.aspect ?: 0.7f
         val round = shell.disc || shell == MediaShell.UMD
         // The cartridge / disc's height as a share of the case's, and its own width / height.
-        val mFrac = if (round) 0.6f else 0.5f
-        val mAspect = if (round) 1f else shell.aspect
+        // (Update 325: at its real size against the case — a PS1 CD nearly as tall as its jewel case; a UMD at its own shape.)
+        val mFrac = mediaBesideFrac(shell, realCaseMm(platform), if (round) 0.6f else 0.5f)
+        // (Update 325, Toni: "reuse the real DS model for the drawn ones, they look off": a cartridge / card beside its case
+        // is the game's own piece — its console's real shell, as everywhere else (mediaFor) — not the template's drawing.)
+        val cartPick = if (!round) mediaFor(platform, gameKey = game?.stableKey)?.takeIf { !it.shell.disc && it.shell != MediaShell.UMD } else null
+        val mAspect = cartPick?.aspect ?: if (shell == MediaShell.UMD) shell.aspect else if (round) 1f else shell.aspect
         BoxWithConstraints(modifier0, contentAlignment = Alignment.Center) {
             val out = 0.62f
             // Update 144: the case as big as a case on its own in the same place; its cartridge / disc sticks out to the
@@ -743,10 +747,10 @@ private fun CaseArtBody(
                 // (Update 202: not for an Android game — its scraped "cartridge" is store art, androidOwnCase.)
                 val caseReal = com.shelf.launcher.data.Features.originalCases.state.value && scan != null && !LookStyles.caseForAll() && !androidOwnCase(platform)
                 val ownMedia = if (caseReal) BoxTexture.mediaOfFront(scan) else null
-                if (ownMedia != null) RealMediaPicture(ownMedia, round, Modifier.align(Alignment.BottomEnd).offset(y = -h * 0.03f).size(mW, mH))
+                if (ownMedia != null) RealMediaPicture(ownMedia, round && shell != MediaShell.UMD, Modifier.align(Alignment.BottomEnd).offset(y = -h * 0.03f).size(mW, mH)) // (Update 325: a UMD photo never spins whole)
                 else PhysicalMedia(
-                    shell, cover ?: scan, Modifier.align(Alignment.BottomEnd).offset(y = -h * 0.03f).size(mW, mH),
-                    platform = platform, caseCover = cover
+                    cartPick?.shell ?: shell, cover ?: scan, Modifier.align(Alignment.BottomEnd).offset(y = -h * 0.03f).size(mW, mH),
+                    platform = cartPick?.platform ?: platform, caseCover = cover, title = game?.name ?: title
                 )
             }
         }
