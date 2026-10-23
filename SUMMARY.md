@@ -18,7 +18,12 @@
   restore), and the view model reads it off the main thread at start (`warm()`). The other two freezes in those reports
   (19:17, 20:16) were the GPU stalls the carousel work in 314–317 removed; the 21:10 crash was the charge-limit start
   fixed in 317.
-- **Copy:** `LauncherViewModel.kt`, `data/OtherDevices.kt`, `data/RaCredentialsStore.kt`, `data/Backup.kt`,
+- **Spines cut at their ends on DS, Game Boy, Game Boy Color cases** (Toni's Inspect screenshots: Assassin's Creed II
+  Discovery's "NINTENDO DS", Astérix's "GAME BOY", Dr. Mario's title cut at the top): a spine scan a little narrower than
+  the case's side was zoomed to fill it, cutting its top and bottom. `spineWhole` (Case3D.kt) keeps the whole height —
+  widens a narrower scan to the side (up to 1/0.7×), fits a far narrower one inside whole, cuts only a scan wider than
+  the side (in the middle, as before). Keep cases and cardboard boxes; N64 and your own cuts unchanged.
+- **Copy:** `ui/Case3D.kt`, `LauncherViewModel.kt`, `data/OtherDevices.kt`, `data/RaCredentialsStore.kt`, `data/Backup.kt`,
   `ui/YearRecapDialog.kt`, `ui/LauncherScreen.kt`, `ui/HubScreens.kt`, `ui/GameWindow.kt`.
 - **Not compiled here** (no Android SDK); not tried on a device.
 
