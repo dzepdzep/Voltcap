@@ -467,6 +467,16 @@ private fun SecondHomeSettings(
                 checked = com.shelf.launcher.data.Features.secondDockMono.state.value,
                 onChange = { com.shelf.launcher.data.Features.secondDockMono.value = it }
             )
+            // (Update 321) How they're drawn; one app's own choice: long-press it in the dock.
+            if (com.shelf.launcher.data.Features.secondDockMono.state.value) {
+                val st = com.shelf.launcher.data.Features.monoIconStyle.state.value
+                ChipFlow {
+                    listOf(com.shelf.launcher.data.Features.MonoIconStyle.DETAIL, com.shelf.launcher.data.Features.MonoIconStyle.SOLID).forEach { m ->
+                        Chip((if (st == m) "✓ " else "") + m.label, accent = st == m) { com.shelf.launcher.data.Features.monoIconStyle.value = m }
+                    }
+                }
+                MutedNote("Detail keeps each app's drawing as lighter and fainter parts; Solid makes it one plain shape. For one app (or its own colours): long-press it in the dock.")
+            }
             Spacer(Modifier.height(12.dp))
             SectionLabel("Dock apps open on")
             ChipFlow {

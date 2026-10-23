@@ -916,6 +916,9 @@ object Features {
      * apps' own colour icons, still without the plate.
      */
     val secondDockMono = BoolPref("second_dock_mono", true)
+    /** Update 321: how the one-colour icons are drawn — the app's drawing kept see-through (DETAIL), or one solid shape. */
+    enum class MonoIconStyle(val label: String) { DETAIL("Detail"), SOLID("Solid"), ORIGINAL("Own colours") }
+    val monoIconStyle = EnumPref("mono_icon_style", MonoIconStyle.DETAIL, arrayOf(MonoIconStyle.DETAIL, MonoIconStyle.SOLID))
 
     // ---- Last played on every device ----
     /** Share "last played" through Google Drive so a game played on another device rises to the top here too. */

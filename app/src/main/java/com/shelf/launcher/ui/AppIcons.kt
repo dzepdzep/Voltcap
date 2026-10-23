@@ -111,7 +111,9 @@ internal fun rememberAppIcon(packageName: String?): ImageBitmap? {
     com.shelf.launcher.Breadcrumbs.mark("rememberAppIcon")
     // (Update 319, Toni: "the icons always used for everything": with Icons in the theme's colour on, every app icon in
     // Voltcap is its one-colour symbol in the theme's accent.)
-    if (com.shelf.launcher.data.Features.secondDockMono.state.value) return rememberMonoAppIcon(packageName, com.shelf.launcher.ui.theme.ShelfTheme.accent)
+    val style = com.shelf.launcher.data.IconStyles.of(packageName)
+    if (com.shelf.launcher.data.Features.secondDockMono.state.value && style != com.shelf.launcher.data.Features.MonoIconStyle.ORIGINAL)
+        return rememberMonoAppIcon(packageName, com.shelf.launcher.ui.theme.ShelfTheme.accent, solid = style == com.shelf.launcher.data.Features.MonoIconStyle.SOLID)
     val context = LocalContext.current
     // Update 151: the icon is kept with the package it belongs to. produceState keeps its value across key changes, so for
     // the first frame after the package changed (a slot moving on to another app) it still held the LAST app's icon —
@@ -155,7 +157,8 @@ internal fun AppIconArt(
     com.shelf.launcher.Breadcrumbs.mark("AppIconArt")
     val icon = rememberAppIcon(packageName)
     // (Update 319: with the one-colour icons, the symbol alone — no banner, no blurred copy behind it.)
-    val mono = com.shelf.launcher.data.Features.secondDockMono.state.value
+    val mono = com.shelf.launcher.data.Features.secondDockMono.state.value &&
+        com.shelf.launcher.data.IconStyles.of(packageName) != com.shelf.launcher.data.Features.MonoIconStyle.ORIGINAL
     val banner = if (wide && !mono) rememberAppBanner(packageName) else null
 
     // Plain if / else on purpose: an early `return@Box` inside Box (an inline
@@ -210,7 +213,7 @@ internal fun MonoAppIcon(packageName: String?, tint: Color, modifier: Modifier =
  * icon filled with it, else its symbol in the tint's shades (light and dark kept). Made once per icon and colour.
  */
 @Composable
-internal fun rememberMonoAppIcon(packageName: String?, tint: Color): ImageBitmap? {
+internal fun rememberMonoAppIcon(packageName: String?, tint: Color, solid: Boolean = false): ImageBitmap? {
     val context = LocalContext.current
     val st = produceState<Pair<String?, Pair<ImageBitmap, Boolean>?>>(packageName to packageName?.let { AppIconCache.cachedMono(it) }, packageName, AppIconCache.version) {
         if (packageName == null) { value = null to null; return@produceState }
@@ -218,7 +221,7 @@ internal fun rememberMonoAppIcon(packageName: String?, tint: Color): ImageBitmap
         value = packageName to withContext(Dispatchers.IO) { AppIconCache.loadMono(context, packageName) }
     }.value
     val icon = (if (st.first == packageName) st.second else null) ?: return null
-    return androidx.compose.runtime.remember(icon, tint) { tintedIcon(icon.first, icon.second, tint) }
+    return androidx.compose.runtime.remember(icon, tint, solid) { tintedIcon(icon.first, icon.second || solid, tint) }
 }
 
 private fun tintedIcon(src: ImageBitmap, trueMono: Boolean, tint: Color): ImageBitmap {
