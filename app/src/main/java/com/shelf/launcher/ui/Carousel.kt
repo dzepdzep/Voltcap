@@ -383,7 +383,9 @@ internal object Carousel {
         // (Update 317, Toni: "Games each side" did nothing in Box flow / the pull-out stack — three times the number, slim
         // and packed, reached the screen's edges at 2 already. Now the number picked is how many show each side; To the edge
         // keeps the full stacks.)
-        val each = if (side >= EDGE_SIDE) side * 3 else side
+        // (Update 317ag: not with the Pull-out stack picked — with cartridges, discs and the other non-case looks it stands
+        // as the Spine wall, and that stopped short of the screen's edges too. It fills to the edges, as before.)
+        val each = if (side >= EDGE_SIDE || view == CarouselView.SPINE_PULL) side * 3 else side
         // (Update 182: with To the edge — slim spines and boxes need three times as many to reach the edges.)
         return if (shown == CarouselView.SPINE_WALL || shown == CarouselView.BOX_FLOW) each
         // (Update 238, #21: the pull-out stack's first few each side stand behind the case pulled out in front of them —

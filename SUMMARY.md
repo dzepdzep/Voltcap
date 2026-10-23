@@ -173,6 +173,9 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317ag — Pull-out stack with cartridges / discs back to the edges:** with a non-case look (cartridges, discs, …) the
+  Pull-out stack stands as the Spine wall (update 238), and 317g's exact count cut that short too. With Pull-out stack
+  picked it's three times the number again, whatever the look.
 - **317af — pull-out stack back as it was:** with "Games each side" counting exactly (317g) the pull-out stack showed only
   that many spines and stopped short of the screen's edges. It's back to three times the number (plus the 8 hidden
   behind the case pulled out), so its row reaches the edges again. Box flow / Spine wall keep the exact number.
