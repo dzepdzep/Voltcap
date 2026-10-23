@@ -189,6 +189,8 @@ internal fun styleHomeKey(
     if (layout == HomeLayout.POCKET) return pocketQuestKey(event, reach, sound)
     // (Update 239, #93: the Cube menu takes every key too — its big cube, the docked cube, the games and buttons; StyleCube.kt.)
     if (layout == HomeLayout.CUBE) return cubeKey(event, reach, sound)
+    // (Update 325: Twin icons' category page takes the keys while it's open.)
+    if (layout == HomeLayout.TWIN_ICONS && TwinNav.cats.value) return twinCatsKey(event, sound)
     val code = event.nativeKeyEvent.keyCode
     val down = event.type == KeyEventType.KeyDown
     val up = event.type == KeyEventType.KeyUp

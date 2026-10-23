@@ -50,6 +50,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -98,19 +100,72 @@ private fun topBack(): Color = if (topLight) Color(0xFFEDF0F4) else themeDark(Ic
 /** Update 158: the grid's icons per row as last drawn (for the keys). */
 internal object TwinNav {
     @Volatile var cols = 5
+    /**
+     * Update 325 (Toni: "Twin icons is missing a fitting category screen"): the Categories tool opens the tray as a grid
+     * of the categories — each its console's logo on an icon — and the top screen shows the one you're on big. A picks
+     * it, B (or the tool again) goes back to the games.
+     */
+    val cats = androidx.compose.runtime.mutableStateOf(false)
+    val catCursor = androidx.compose.runtime.mutableIntStateOf(0)
+    @Volatile var ctx: StyleCtx? = null
+
+    fun openCats(c: StyleCtx) {
+        if (cats.value) { closeCats(); return }
+        if (c.stops.isEmpty()) return
+        catCursor.intValue = c.stop.coerceIn(0, c.stops.size - 1)
+        StyleNav.reset()
+        cats.value = true
+    }
+
+    fun closeCats() { cats.value = false }
+
+    fun pick(c: StyleCtx, i: Int) {
+        val steps = pocketStepsTo(c, i)
+        if (steps != 0) c.actions.category(steps)
+        cats.value = false
+    }
+}
+
+/** Update 325: the category page's keys — the grid, A picks, B back to the games. */
+internal fun twinCatsKey(event: androidx.compose.ui.input.key.KeyEvent, sound: (UiSound) -> Unit): Boolean {
+    val c = TwinNav.ctx ?: return false
+    val code = event.nativeKeyEvent.keyCode
+    val type = event.type
+    if (type == androidx.compose.ui.input.key.KeyEventType.KeyUp) return StyleNav.keysDown.remove(code)
+    if (type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return false
+    val first = event.nativeKeyEvent.repeatCount == 0
+    fun take(): Boolean { StyleNav.keysDown += code; return true }
+    val n = c.stops.size
+    if (n == 0) { TwinNav.closeCats(); return take() }
+    val cols = TwinNav.cols.coerceAtLeast(1)
+    val cur = TwinNav.catCursor.intValue.coerceIn(0, n - 1)
+    val next = when (event.key) {
+        Key.DirectionLeft -> (cur - 1).mod(n)
+        Key.DirectionRight -> (cur + 1).mod(n)
+        Key.DirectionUp -> if (cur - cols >= 0) cur - cols else cur
+        Key.DirectionDown -> if (cur / cols < (n - 1) / cols) minOf(cur + cols, n - 1) else cur
+        Key.ButtonA, Key.Enter, Key.DirectionCenter -> { if (first) { sound(UiSound.SELECT); TwinNav.pick(c, cur) }; return take() }
+        Key.ButtonB, Key.Back, Key.Escape -> { if (first) { sound(UiSound.BACK); TwinNav.closeCats() }; return take() }
+        else -> return false
+    }
+    if (next != cur) { TwinNav.catCursor.intValue = next; sound(UiSound.MOVE) }
+    return take()
 }
 
 /** The round shortcuts used as tool buttons, in this order (the ones you've kept). */
 internal val TwinToolOrder = listOf("Settings", "Search", "Achievements", "Notifications", "Music", "Categories")
 
 private fun twinTools(c: StyleCtx): List<HomeShortcut> =
-    TwinToolOrder.mapNotNull { l -> c.shortcuts.firstOrNull { it.label == l } }.ifEmpty { c.shortcuts.take(6) } +
+    TwinToolOrder.mapNotNull { l -> c.shortcuts.firstOrNull { it.label == l } }.ifEmpty { c.shortcuts.take(6) }
+        // (Update 325: Categories opens Twin icons' own category page.)
+        .map { t -> if (t.label == "Categories" && c.stops.isNotEmpty()) HomeShortcut(t.label, t.icon, t.tint) { TwinNav.openCats(c) } else t } +
         // Update 180: the second screen's own dashboard (its pages, dock, Games page); ↩ there comes back.
         if (twinOnSecond(c.state) && Features.twinDashboardAccess.state.value) listOf(HomeShortcut("Second screen", androidx.compose.material.icons.Icons.Filled.Dashboard, Color(0xFF7C5CFF)) { TwinScreens.dashboard = true }) else emptyList()
 
 @Composable
 internal fun StyleTwinIcons(c: StyleCtx, modifier: Modifier = Modifier) {
     SideEffect {
+        TwinNav.ctx = c
         StyleLoop.on = loopRowOn(c)
         StyleNav.side = emptyList()
         StyleNav.top = twinTools(c).map { it.onClick }
@@ -216,10 +271,11 @@ private fun TwinIconsTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
                         IconsNeighbour(c, 1, side)
                     }
                 }
-                IconsSlot(c, slot)
+                if (TwinNav.cats.value) CatSlot(c, slot) else IconsSlot(c, slot)
             }
             Spacer(Modifier.height(pad * 0.7f))
-            IconsCard(c, compact, Modifier.fillMaxWidth(if (framed) 1f else 0.72f).height(cardH).editablePart(LayoutParts.id(HomeLayout.TWIN_ICONS, "card"), "Name card"))
+            if (TwinNav.cats.value) CatCard(c, compact, Modifier.fillMaxWidth(if (framed) 1f else 0.72f).height(cardH))
+            else IconsCard(c, compact, Modifier.fillMaxWidth(if (framed) 1f else 0.72f).height(cardH).editablePart(LayoutParts.id(HomeLayout.TWIN_ICONS, "card"), "Name card"))
         }
     }
 }
@@ -397,7 +453,9 @@ internal fun TwinIconsBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
         val v = rememberWalkedPlace(c.focus, n, loop, StyleLoop.walked, c.games, tap)
         Column(Modifier.fillMaxSize().padding(pad), verticalArrangement = Arrangement.spacedBy(gap)) {
             TrayTools(tools, toolH, Modifier.fillMaxWidth().height(toolH))
-            if (n == 0) {
+            if (TwinNav.cats.value) {
+                CatGrid(c, cols, Modifier.fillMaxWidth().height(gridH))
+            } else if (n == 0) {
                 Box(Modifier.fillMaxWidth().height(gridH), contentAlignment = Alignment.Center) {
                     Text(EmptyShelf.text, color = TrayMuted, fontSize = 13.sp)
                 }
@@ -405,6 +463,125 @@ internal fun TwinIconsBottom(c: StyleCtx, modifier: Modifier, framed: Boolean) {
                 TrayGrid(c, keys, tap, loop, v, cols, inGames, Modifier.fillMaxWidth().height(gridH))
             }
             TrayOpen(c, tools, Modifier.fillMaxWidth().height(openH))
+        }
+    }
+}
+
+// ---- Update 325: the category page ----
+
+/** A category's picture: its console's logo, else its icon. */
+@Composable
+private fun CatArt(st: StyleStop, ink: Color, onDark: Boolean, modifier: Modifier) {
+    Box(modifier, contentAlignment = Alignment.Center) {
+        val p = st.platform
+        if (p != null && !com.shelf.launcher.data.isCollectionKey(p)) PlatformLogo(p, st.label, Modifier.fillMaxSize(), textColor = ink, blackToWhite = onDark)
+        else Icon(st.icon, st.label, tint = ink, modifier = Modifier.fillMaxSize(0.6f))
+    }
+}
+
+/** The top screen on the category page: the category you're on big in the frame (tap: pick it). */
+@Composable
+private fun CatSlot(c: StyleCtx, slot: Dp) {
+    val accent = ShelfTheme.accent
+    val i = TwinNav.catCursor.intValue.coerceIn(0, (c.stops.size - 1).coerceAtLeast(0))
+    val st = c.stops.getOrNull(i) ?: return
+    Box(
+        Modifier
+            .size(slot)
+            .drawBehind {
+                drawCircle(
+                    Brush.radialGradient(listOf(accent.copy(alpha = 0.3f), Color.Transparent), center = center, radius = size.minDimension * 0.75f),
+                    radius = size.minDimension * 0.75f
+                )
+            }
+            .clip(RoundedCornerShape(slot * 0.16f))
+            .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.9f), accent, Color.White.copy(alpha = 0.55f))))
+            .padding(slot * 0.03f)
+            .clip(RoundedCornerShape(slot * 0.14f))
+            .background(if (topLight) Color.White else Color(0xFF0E131B))
+            .padding(slot * 0.14f)
+            .tapOnly { TwinNav.pick(c, i) },
+        contentAlignment = Alignment.Center
+    ) {
+        Crossfade(targetState = st, animationSpec = tween(160), label = "twinCat") { s ->
+            CatArt(s, if (topLight) TrayInk else Color.White, !topLight, Modifier.fillMaxSize())
+        }
+    }
+}
+
+/** The card under it: the category's name and where it leads. */
+@Composable
+private fun CatCard(c: StyleCtx, compact: Boolean, modifier: Modifier) {
+    val accent = ShelfTheme.accent
+    val i = TwinNav.catCursor.intValue.coerceIn(0, (c.stops.size - 1).coerceAtLeast(0))
+    val st = c.stops.getOrNull(i)
+    Row(
+        modifier.clip(RoundedCornerShape(12.dp)).background(if (trayDark) TraySurface else Color.White.copy(alpha = 0.92f))
+            .tapOnly { if (st != null) TwinNav.pick(c, i) }.padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(Modifier.size(if (compact) 8.dp else 10.dp).clip(CircleShape).background(accent))
+        Spacer(Modifier.width(10.dp))
+        Crossfade(targetState = st, animationSpec = tween(160), label = "twinCatCard", modifier = Modifier.weight(1f)) { s ->
+            Column(Modifier.fillMaxWidth()) {
+                Text(s?.label.orEmpty(), color = TrayInk, fontSize = if (compact) 13.sp else 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    if (i == c.stop) "You're here · ${c.games.size} games" else "A: its games · B: back",
+                    color = TrayMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+/** The tray as the categories: the same square icons and ring as the games, each its console's logo and name. */
+@Composable
+private fun CatGrid(c: StyleCtx, cols: Int, modifier: Modifier) {
+    val n = c.stops.size
+    val density = LocalDensity.current
+    val accent = ShelfTheme.accent
+    val cur = TwinNav.catCursor.intValue.coerceIn(0, (n - 1).coerceAtLeast(0))
+    BoxWithConstraints(modifier.clipToBounds()) {
+        val gap = Features.twinGap.state.value.dp
+        val inset = 5.dp
+        val cellW = (maxWidth - inset * 2 - gap * (cols - 1)) / cols
+        val cell = minOf(cellW, maxHeight - inset * 2).coerceAtLeast(16.dp)
+        val pitch = cell + gap
+        val rows = ((maxHeight - inset * 2 + gap) / pitch).toInt().coerceAtLeast(1)
+        val gridW = cell * cols + gap * (cols - 1)
+        val totalRows = (n + cols - 1) / cols
+        val target = (cur / cols - (if (rows >= 3) 1 else 0)).coerceIn(0, (totalRows - rows).coerceAtLeast(0))
+        val scroll = rememberTwinScroll(target.toFloat(), rows + 2f, n * 8 + cols)
+        val pitchPx = with(density) { pitch.toPx() }
+        val x0Px = with(density) { ((maxWidth - gridW) / 2).toPx() }
+        val insetPx = with(density) { inset.toPx() }
+        val shape = RoundedCornerShape(18)
+        for (i in 0 until n) {
+            val st = c.stops[i]
+            val r = i / cols
+            val col = i % cols
+            key(st.label, st.platform, st.special) {
+                val on = i == cur
+                val ring by androidx.compose.animation.core.animateFloatAsState(if (on) 1f else 0f, tween(if (on) 140 else 180), label = "twinCatRing")
+                Column(
+                    Modifier.size(cell)
+                        .offset { IntOffset((x0Px + col * pitchPx).roundToInt(), (insetPx + (r - scroll.value) * pitchPx).roundToInt()) }
+                        .graphicsLayer { val k = 1f + 0.06f * ring; scaleX = k; scaleY = k }
+                        .trayRing(ring > 0.01f, accent.copy(alpha = ring), ring)
+                        .clip(shape)
+                        .background(if (i == c.stop) lerp(TraySurface, accent, 0.12f) else TraySurface)
+                        .border(1.dp, TrayEdge, shape)
+                        .tapOnly { if (on) TwinNav.pick(c, i) else TwinNav.catCursor.intValue = i }
+                        .padding(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CatArt(st, TrayInk, trayDark, Modifier.fillMaxWidth().weight(1f).padding(2.dp))
+                    if (cell >= 44.dp) Text(
+                        st.label, color = TrayMuted, fontSize = 8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        lineHeight = 9.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -538,13 +715,19 @@ private fun TrayOpen(c: StyleCtx, tools: List<HomeShortcut>, modifier: Modifier)
             .clip(shape)
             .background(if (on) lerp(TraySurface, accent, 0.22f) else TraySurface)
             .border(if (on) 2.dp else 1.dp, if (on) accent else TrayEdge, shape)
-            .tapOnly { if (c.game != null) open() }
+            .tapOnly { if (TwinNav.cats.value) TwinNav.pick(c, TwinNav.catCursor.intValue) else if (c.game != null) open() }
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
         if (inTools) {
             Text(tools.getOrNull(StyleNav.index)?.label.orEmpty(), color = TrayInk, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        } else if (TwinNav.cats.value) {
+            // (Update 325: on the category page, the bar opens the category you're on.)
+            val ci = TwinNav.catCursor.intValue
+            Icon(Icons.Filled.PlayArrow, null, tint = accent, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Open  ·  " + c.stops.getOrNull(ci)?.label.orEmpty(), color = TrayInk, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         } else {
             Icon(Icons.Filled.PlayArrow, null, tint = if (on) TrayInk else accent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))

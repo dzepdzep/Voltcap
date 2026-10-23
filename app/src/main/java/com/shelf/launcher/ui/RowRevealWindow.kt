@@ -165,7 +165,9 @@ internal fun RowMotionWindow(
     onFullDetails: () -> Unit,
     onNeedMedia: (Game) -> Unit,
     onOptions: () -> Unit,
-    onAchievements: () -> Unit
+    onAchievements: () -> Unit,
+    /** Update 325 (Toni: "some popups are missing the inspect function"): the game window with the piece out; null: an app. */
+    onInspect: (() -> Unit)? = null
 ): Boolean {
     val view = LocalView.current
     val origin = remember(g.stableKey) {
@@ -425,6 +427,7 @@ internal fun RowMotionWindow(
                 RevealButton("Details", accent = accent, onAccent = onAccent) { RowReveal.reset(); onFullDetails() }
                 if (g.raGameId != null || g.platform == "Steam") RevealButton("Achievements", accent = accent, onAccent = onAccent) { RowReveal.reset(); onAchievements() }
                 RevealButton("Options", accent = accent, onAccent = onAccent) { RowReveal.reset(); onOptions() }
+                if (onInspect != null) RevealButton("◧  Inspect", accent = accent, onAccent = onAccent) { RowReveal.reset(); onInspect() }
             }
 
             // ---- Update 325 (Toni: "add some stuff underneath there so it isn't so empty — achievements or something"):

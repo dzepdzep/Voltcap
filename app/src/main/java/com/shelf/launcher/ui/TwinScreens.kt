@@ -262,17 +262,19 @@ internal fun TwinSecondScreen(c: StyleCtx) {
             com.shelf.launcher.data.Features.twinDashboardAccess.state.value
         ) {
             Row(
-                Modifier.align(Alignment.BottomEnd).padding(8.dp).clip(RoundedCornerShape(50))
-                    .background(Color(0xEAF8F9FB)).tapOnly { TwinScreens.dashboard = true }
-                    .padding(horizontal = 9.dp, vertical = 5.dp),
+                // (Update 325, Toni: "the second screen button should be smaller and named something more fitting":
+                // a small chip named for what it opens — the second screen's own dashboard.)
+                Modifier.align(Alignment.BottomEnd).padding(6.dp).clip(RoundedCornerShape(50))
+                    .background(Color(0xD8F8F9FB)).tapOnly { TwinScreens.dashboard = true }
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 androidx.compose.material3.Icon(
-                    androidx.compose.material.icons.Icons.Filled.Dashboard, "Normal second screen",
-                    tint = Color(0xFF26313C), modifier = Modifier.size(16.dp)
+                    androidx.compose.material.icons.Icons.Filled.Dashboard, "Dashboard",
+                    tint = Color(0xFF26313C), modifier = Modifier.size(12.dp)
                 )
-                Spacer(Modifier.size(5.dp))
-                androidx.compose.material3.Text("Second screen", color = Color(0xFF26313C), fontSize = 11.sp)
+                Spacer(Modifier.size(3.dp))
+                androidx.compose.material3.Text("Dashboard", color = Color(0xFF26313C), fontSize = 9.sp)
             }
         }
     }

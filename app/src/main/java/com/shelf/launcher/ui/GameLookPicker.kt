@@ -363,19 +363,26 @@ private fun pickCaseView(turned: Boolean) {
  * positions and the layout's options stay as you have them. A layout that draws its games its own way keeps them so.
  */
 internal fun layoutStandardLook(a: AppearanceSettings): AppearanceSettings {
-    val p = com.shelf.launcher.data.LayoutPresets.builtIns.firstOrNull { it.layout == a.homeLayout } ?: return a
-    val std = p.apply(a)
+    val p = com.shelf.launcher.data.LayoutPresets.builtIns.firstOrNull { it.layout == a.homeLayout }
+    val std = p?.apply(a) ?: a
     val out = a.copy(cardArtType = std.cardArtType, focusedCardStyle = std.focusedCardStyle)
     val F = Features
     // (Update 322, Toni: "Layout standard isn't changing, just the old one" — Tile home's preset has no look of its own,
     // so the look you had stayed. Its standard is the Switch-style home's: covers as square tiles.)
-    if (p.look == null && a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) {
-        F.squareTiles.value = true; F.spineLook.value = false; F.carouselWide.value = false
+    // (Update 325, Toni: "Layout standard still uses the last used look there": every layout whose presets keep your look
+    // — the two-screen and Pocket layouts, Record crate, Card binder, Cube… — or that has no preset kept it. They get a
+    // standard of their own: Pocket Quest its real cartridges, Tile home square tiles, the others plain covers.)
+    if (p?.look == null) {
+        val layout = a.homeLayout
+        val carts = layout == com.shelf.launcher.data.HomeLayout.POCKET
+        F.squareTiles.value = layout == com.shelf.launcher.data.HomeLayout.TILES
+        F.spineLook.value = false; F.carouselWide.value = false
         F.cartsOnly.value = false; F.caseWithMedia.value = false; F.discCase.value = false
-        setModelsLook(false)
-        return out.copy(cardArtType = CardArtType.COVER)
+        setModelsLook(carts)
+        if (carts) F.gridTiles.value = false
+        return out.copy(cardArtType = if (carts) CardArtType.CARTRIDGE_DISC else CardArtType.COVER)
     }
-    val l = p.look ?: return out
+    val l = p?.look ?: return out
     val type = out.cardArtType
     F.squareTiles.value = l.tiles
     F.spineLook.value = l.spines
@@ -830,8 +837,9 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
             val p = com.shelf.launcher.data.LayoutPresets.builtIns.firstOrNull { it.layout == appearance.homeLayout }
             SectionLabel("Layout standard")
             MutedNote(
-                if (p != null) "This layout is in its standard look: \"${p.name}\" — ${gameLookLabel(appearance.cardArtFor())}. Switch layout and the look switches with it. Pick another look above to choose your own."
-                else "This layout has no standard look of its own; it keeps the look as it is."
+                if (p?.look != null) "This layout is in its standard look: \"${p?.name}\" — ${gameLookLabel(appearance.cardArtFor())}. Switch layout and the look switches with it. Pick another look above to choose your own."
+                // (Update 325: a layout without a preset look of its own has a standard too — layoutStandardLook.)
+                else "This layout is in its standard look — ${gameLookLabel(appearance.cardArtFor())}. Switch layout and the look switches with it. Pick another look above to choose your own."
             )
         }
         LookMain.ART -> {

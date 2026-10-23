@@ -260,12 +260,13 @@ private fun ShowStage(c: StyleCtx, modifier: Modifier, framed: Boolean) {
                 val sideways = p.dx != 0 || p.dy == 0
                 val s = if (sideways) (if (p.dx < 0) -1 else 1) else (if (p.dy < 0) -1 else 1)
                 val move = tween<IntOffset>(SHOW_MS, easing = ShowEase)
-                val enter = (if (sideways) slideInHorizontally(move) { w -> s * w / 3 } else slideInVertically(move) { h -> s * h / 3 }) +
-                    scaleIn(tween(SHOW_MS, easing = ShowEase), initialScale = 1.08f) +
-                    fadeIn(tween(SHOW_MS * 3 / 4, easing = ShowEase))
-                val exit = (if (sideways) slideOutHorizontally(move) { w -> -s * w / 3 } else slideOutVertically(move) { h -> -s * h / 3 }) +
-                    scaleOut(tween(SHOW_MS, easing = ShowEase), targetScale = 0.92f) +
-                    fadeOut(tween(SHOW_MS * 2 / 3, easing = ShowEase))
+                // (Update 325, Toni: "the changing game hero animation is too aggressive": a soft cross-fade with a short
+                // drift — a twelfth of the picture, not a third, and barely any zoom — the old one fading under the new.)
+                val enter = (if (sideways) slideInHorizontally(move) { w -> s * w / 12 } else slideInVertically(move) { h -> s * h / 12 }) +
+                    scaleIn(tween(SHOW_MS, easing = ShowEase), initialScale = 1.02f) +
+                    fadeIn(tween(SHOW_MS, easing = ShowEase))
+                val exit = (if (sideways) slideOutHorizontally(move) { w -> -s * w / 12 } else slideOutVertically(move) { h -> -s * h / 12 }) +
+                    fadeOut(tween(SHOW_MS, easing = ShowEase))
                 (enter togetherWith exit).using(SizeTransform(clip = true))
             },
             label = "twinShowcase",
@@ -335,14 +336,18 @@ private fun androidx.compose.animation.AnimatedVisibilityScope.ShowPicture(c: St
             Modifier.align(Alignment.Center).fillMaxWidth(0.6f).fillMaxHeight(0.46f)
                 .animateEnterExit(
                     enter = fadeIn(tween(SHOW_MS, delayMillis = SHOW_MS / 5, easing = ShowEase)) +
-                        scaleIn(tween(SHOW_MS, delayMillis = SHOW_MS / 5, easing = ShowEase), initialScale = 0.86f),
-                    exit = fadeOut(tween(SHOW_MS / 3)) + scaleOut(tween(SHOW_MS / 2), targetScale = 1.06f)
+                        scaleIn(tween(SHOW_MS, delayMillis = SHOW_MS / 5, easing = ShowEase), initialScale = 0.95f),
+                    exit = fadeOut(tween(SHOW_MS / 3)) + scaleOut(tween(SHOW_MS / 2), targetScale = 1.02f)
                 ),
             contentAlignment = Alignment.Center
         ) {
+            // (Update 325: a logo still loading when the picture settled faded in then, instead of popping in.)
+            var ready by remember(logo) { mutableStateOf(false) }
+            val shown by animateFloatAsState(if (ready) 1f else 0f, tween(SHOW_MS, easing = ShowEase), label = "showLogo")
             if (logo != null && !failed) AsyncImage(
                 logo, titles.display(g.name), contentScale = ContentScale.Fit,
-                onError = { failed = true }, modifier = Modifier.fillMaxSize()
+                onSuccess = { ready = true }, onError = { failed = true },
+                modifier = Modifier.fillMaxSize().graphicsLayer { alpha = shown; val k = 0.97f + 0.03f * shown; scaleX = k; scaleY = k }
             ) else FitText(
                 titles.display(g.name), color = Color.White, maxSize = if (framed) 22.sp else 40.sp, minSize = 14.sp,
                 maxLines = 2, fontWeight = FontWeight.Black, textAlign = androidx.compose.ui.text.style.TextAlign.Center,

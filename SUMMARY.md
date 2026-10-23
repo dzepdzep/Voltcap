@@ -2,6 +2,34 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **Twin icons: its own category page** (Toni: "Twin icons is missing a fitting category screen"): the Categories tool
+  turns the tray into a grid of the categories — each its console's logo (or icon) and name on the same square icons
+  with the same ring — and the top screen shows the one you're on big in the frame with its name on the card. D-pad
+  moves, A or a tap on the one you're on opens it, B or the tool again goes back to the games; the Open bar reads
+  "Open · <category>" (`TwinNav.cats`, `twinCatsKey`, `CatGrid` / `CatSlot` / `CatCard`).
+- **Inspect in the Popup / Reveal windows** (Toni: "some popups are missing the inspect icon"): the row-motion windows
+  (`RowMotionWindow`) get an "◧ Inspect" button after Options, opening the game window with the piece out — as the
+  banner page, Game Glance and the standard window already had.
+- **Twin showcase**: the picture change is a soft cross-fade with a short drift (a twelfth of the picture instead of a
+  third, almost no zoom); the logo settles in gently and, if it was still loading, fades in when it arrives. The
+  second-screen chip is smaller and named **Dashboard** (what it opens) — also Pocket Classic's fallback chip.
+- **Layout standard on every layout** (Toni: "the look layout is still using the last used look there"): layouts whose
+  presets keep your look (Twin desk / icons / showcase, Pocket layouts, Record crate, Card binder, Cube, Hero tiles,
+  Disc station…) or have no preset kept the last look. They get a standard now: Pocket Quest its real cartridges, Tile
+  home square tiles, the others plain covers (`layoutStandardLook`).
+- **Pocket Quest's cartridges** are the real ones now — with the change above (drawn shells only with "Always the drawn
+  one"), its Cartridges & discs show the console's real cartridge for games without their own photo.
+- **Pocket Ribbon: cover and cartridge** (Toni): the top screen's Game picture is the game's cover (SteamGridDB's, as the
+  tiles show it) over a soft blurred fill of itself, with the game's cartridge (or disc) standing in front of it,
+  wobbling / turning as in the cartridge looks, rising in at each game. Layout options › **Cartridge in front** (on by
+  default); "Game art" is now called "Game cover" (`RibbonShowcase`, `Features.ribbonCart`).
+- **Logos come in with the layout's animation** (Toni: "the logos shouldn't just spawn in"): the logo parts (Edit Home ›
+  Logo, SteamGridDB logo, RetroAchievements icon) come in as the game's info does — Motion › The game's info: rise,
+  fade or just appear — once the picture has loaded (`FadeInImage`).
+- Files: `ui/TwinIcons.kt`, `ui/StyleHomes.kt`, `ui/RowRevealWindow.kt`, `ui/GameWindow.kt`, `ui/TwinShowcase.kt`,
+  `ui/TwinScreens.kt`, `ui/GameLookPicker.kt`, `ui/PocketRibbon.kt`, `ui/PocketSettings.kt`, `ui/Motion.kt`,
+  `data/Features.kt`. Not compiled here (CI builds it); not tried on a device.
+
 - **Real cartridges by default, drawn ones only with "Drawn only"** (Toni: "remove the drawn cartridges, they only break
   stuff; keep the custom ones for consoles that don't have them and the CDs"): a game without its own photo is its
   console's real cartridge from the template pack with its cover on the label; Voltcap's drawn shells (the 3D drawn

@@ -539,7 +539,7 @@ internal fun GameWindow(
         return
     }
     if (rowMotion != Features.WinMotion.NONE && !askedInspect &&
-        RowMotionWindow(rowMotion, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements)) return
+        RowMotionWindow(rowMotion, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onInspect = inspectOther)) return
     // Update 146: the banner page (Settings › Game window › Style), the same for every layout.
     if (Features.winBanner.state.value && !askedInspect) {
         BannerGameWindow(

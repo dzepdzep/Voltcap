@@ -1232,7 +1232,7 @@ object Features {
     enum class PocketAnim(val label: String) { NORMAL("Normal"), FAST("Fast"), OFF("Off") }
     enum class PocketArrange(val label: String) { AUTO("Two screens when there are"), STACKED("One above the other"), SIDE("Side by side") }
     enum class PocketArt(val label: String) { COVER("Game look (cover, case, cartridge…)"), LOGO("Logo"), SHOT("Screenshot") }
-    enum class RibbonTop(val label: String) { GAME("Game art"), ALBUM("Album art"), PHOTO("Your photo"), SLIDES("Screenshots slideshow") }
+    enum class RibbonTop(val label: String) { GAME("Game cover"), ALBUM("Album art"), PHOTO("Your photo"), SLIDES("Screenshots slideshow") }
     /** The user name on the top screens ("" = the RetroAchievements name, else "Player"). */
     val pocketName = StringPref("pocket_name", "")
     val pocketAnim = EnumPref("pocket_anim", PocketAnim.NORMAL, PocketAnim.values())
@@ -1261,6 +1261,12 @@ object Features {
     val ribbonNames = BoolPref("ribbon_names", true)
     /** Update 187: a soft glow round the icon you're on. */
     val ribbonGlow = BoolPref("ribbon_glow", true)
+    /**
+     * Update 325 (Toni: "in Pocket Ribbon, in front of the hero make the cartridge appear by default with its animation,
+     * and instead of the hero the cover art from SteamGridDB, as in the tiles"): the game's cartridge (or disc) standing
+     * in front of its cover on the top screen.
+     */
+    val ribbonCart = BoolPref("ribbon_cart", true)
     /** Icon size (dots, 24–40) and the gap between icons (dots). */
     /** (Update 182: bigger by default, up to 56.) */
     val ribbonIcon = IntPref("ribbon_icon2", 44, 24..56)

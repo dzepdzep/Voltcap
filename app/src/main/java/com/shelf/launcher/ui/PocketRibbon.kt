@@ -10,7 +10,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -24,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.CornerRadius
@@ -130,8 +133,10 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
         Features.RibbonTop.ALBUM -> (np?.art ?: heldArt[0]?.takeIf { np != null && !it.isRecycled }) ?: g?.let { c.backdrop(it) }
         Features.RibbonTop.PHOTO -> PocketPhoto.file(context)?.takeIf { it.isFile } ?: g?.let { c.backdrop(it) }
         Features.RibbonTop.SLIDES -> shots.getOrNull(slideIndex) ?: g?.let { c.backdrop(it) }
-        else -> g?.let { c.backdrop(it) ?: c.wide(it) }
+        // (Update 325: the game's cover — SteamGridDB's, as the tiles show it — not its hero picture.)
+        else -> g?.let { c.cover(it) ?: c.backdrop(it) ?: c.wide(it) }
     }
+    val showcase = source == Features.RibbonTop.GAME && g != null
     PocketRibbonFrame(modifier, framed) {
         PocketScreen(Modifier.fillMaxSize(), responsive = !Features.pocketPixel.state.value, outside = RPaper) {
             val uPx = d(1f).value * density
@@ -154,8 +159,9 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
                     drawRect(RFrame)
                     pocketOutline(uPx, REdge)
                 }
-                Box(Modifier.fillMaxSize().padding(d(4f)).background(Color(0xFFDDE1E6))) {
-                    if (model != null) HeldImage(model, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, imageModifier = Modifier.pixelArtwork())
+                Box(Modifier.fillMaxSize().padding(d(4f)).background(Color(0xFFDDE1E6)).clipToBounds()) {
+                    if (showcase && g != null) RibbonShowcase(c, g, model, Modifier.fillMaxSize())
+                    else if (model != null) HeldImage(model, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, imageModifier = Modifier.pixelArtwork())
                     else if (g != null) Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))
                 }
             }
@@ -164,6 +170,36 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             if (CategoryTitle.captionOn(c.state.appearance)) CategoryTitle.Native() // (Update 212: the layout's own category title.)
             if (CategoryTitle.captionOn(c.state.appearance)) PocketText(this, c.categoryLabel, 22f, POCKET_H - 13f, 140f, 11f, 6.5f, RMuted, font, TextAlign.Start)
             if (c.games.isNotEmpty()) PocketText(this, "${c.focus + 1} / ${c.games.size}", 154f, POCKET_H - 13f, 80f, 11f, 6.5f, RMuted, font, TextAlign.End)
+        }
+    }
+}
+
+/**
+ * Update 325: the top screen's game picture — its cover (as the tiles show it) over a soft, blurred fill of itself,
+ * and, with Cartridge in front (on by default), the game's cartridge or disc standing in front of it, wobbling / turning
+ * as in the cartridge looks. Whatever the game look is: the piece is always the game's cartridge or disc.
+ */
+@Composable
+private fun RibbonShowcase(c: StyleCtx, g: com.shelf.launcher.data.Game, cover: Any?, modifier: Modifier) {
+    val cart = Features.ribbonCart.state.value
+    val cartCtx = remember(c) {
+        StyleCtx(c.state, c.games, c.focus, c.art, c.shortcuts, c.actions, com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, c.mixed, c.stops, c.stop, c.categoryLabel)
+    }
+    Box(modifier) {
+        if (cover != null) {
+            HeldImage(cover, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, imageModifier = Modifier.blur(10.dp))
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
+            HeldImage(
+                cover, Modifier.fillMaxHeight().fillMaxWidth(if (cart) 0.5f else 1f).align(if (cart) Alignment.CenterStart else Alignment.Center).padding(6.dp),
+                contentScale = ContentScale.Fit, imageModifier = Modifier.pixelArtwork()
+            )
+        } else Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))
+        if (cart) androidx.compose.runtime.key(g.stableKey) {
+            StyleArt(
+                cartCtx, g,
+                Modifier.fillMaxHeight(0.9f).fillMaxWidth(0.5f).align(Alignment.CenterEnd).padding(end = 6.dp).riseOnEnter(),
+                focused = true
+            )
         }
     }
 }
