@@ -33,6 +33,13 @@ object HomeIdle {
         private set
     var deep by mutableStateOf(false)
         private set
+    /**
+     * Update 321: resting after [Features.idleRestMin] minutes without input (Settings › Device › Battery saver › Rest
+     * when nobody's using it): no background clip, the animated background a still frame. The first press brings it back.
+     */
+    var rest by mutableStateOf(false)
+        private set
+    private fun restMs(): Long = com.shelf.launcher.data.Features.idleRestMin.value * 60_000L
 
     /** Update 187: as still as when deeply idle — or the battery saver's low-battery rest (BatterySaver.low). */
     val still: Boolean get() = deep || com.shelf.launcher.data.BatterySaver.low
@@ -51,6 +58,7 @@ object HomeIdle {
         if (focusHide) focusHide = false
         if (idle) { idle = false; com.shelf.launcher.data.AnimatedArt.setSleeping(false) } // (Update 235: wakes with the idle flag, not the deep one)
         if (deep) deep = false
+        if (rest) rest = false
     }
 
     /** Keeps [idle] / [deep] up to date; runs while the home screen is on screen (one wake-up per step). */
@@ -67,9 +75,13 @@ object HomeIdle {
             // idle, like the background clip, instead of the 3-minute deep idle; each holds the frame it was on.)
             if (since >= IDLE_MS && !idle) { idle = true; com.shelf.launcher.data.AnimatedArt.setSleeping(true) }
             if (since >= DEEP_MS && !deep) deep = true
+            // (Update 321) The long rest, when it's set.
+            val r = restMs()
+            if (r > 0 && since >= r && !rest) rest = true
             val next = when {
                 since < IDLE_MS -> IDLE_MS - since
                 since < DEEP_MS -> DEEP_MS - since
+                r > 0 && since < r -> r - since
                 else -> 10_000L
             }
             delay(next.coerceIn(500L, 30_000L))

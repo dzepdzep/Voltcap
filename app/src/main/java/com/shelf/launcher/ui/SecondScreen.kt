@@ -233,7 +233,7 @@ fun SecondScreenHost(
                                     LocalSceneQuality provides secondScreenQuality(LocalSceneQuality.current),
                                     LocalSceneMinFrameMs provides (if (slow) 66 else 0),
                                     // Update 187: the battery saver's low-battery rest holds the scene here too.
-                                    LocalSceneCovered provides (LocalSceneCovered.current || com.shelf.launcher.data.BatterySaver.low),
+                                    LocalSceneCovered provides (LocalSceneCovered.current || com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest),
                                     LocalOnSecondScreen provides true // Update 177: the controller can come here (SecondPad.kt)
                                 ) {
                                     currentContent()

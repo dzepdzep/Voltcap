@@ -2709,7 +2709,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     }
                     androidx.compose.runtime.CompositionLocalProvider(
                         LocalSceneAvoid provides sceneAvoid,
-                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm || com.shelf.launcher.data.BatterySaver.low), // (Update 187: the battery saver's low-battery rest: a still frame)
+                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm || com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest), // (Update 187: the battery saver's low-battery rest: a still frame)
                         LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                         // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                         LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
@@ -2953,7 +2953,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 !roomClip && !screensaverOn && !heroLayout && !discCalm &&
                 !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))
         }
-        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low)
+        // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
+        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest)
 
         // Hero carousel: the focused game's hero fills the screen (under the status bar).
         if (heroLayout) {
@@ -2991,7 +2992,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                         !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                 },
-                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low
+                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest
             )
         }
         // The status bar's real height (taller with the music player in it), so what sits under it

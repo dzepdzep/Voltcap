@@ -1346,6 +1346,11 @@ object Features {
     val saverMode = EnumPref("saver_mode", BatterySaver.Mode.AUTO, BatterySaver.Mode.values())
     /** Update 187: below this level (%), not plugged in, the low-battery rest starts. */
     val saverLowAt = IntPref("saver_low_at", 20, 5..50)
+    /**
+     * Update 321 (Toni: Voltcap drained 30 % overnight): after this many minutes without a press or a touch, Voltcap rests
+     * (HomeIdle.rest): the background clip stops, the theme's animation holds a still frame, on both screens. 0 = never.
+     */
+    val idleRestMin = IntPref("idle_rest_min", 10, 0..120)
     /** Update 187: Android's own Battery Saver on counts as low battery too. */
     val saverFollowSystem = BoolPref("saver_follow_system", true)
     /** Update 187: Voltcap rests while a game or another app has the controller (two-screen handhelds). */
