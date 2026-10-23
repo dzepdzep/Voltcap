@@ -173,6 +173,10 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317al — console badges on the Hero carousel's covers too** (every other layout already had them: the Voltcap row,
+  Grid, TV room, the carousels, the style layouts through StyleArt — not on spines, nor on a case printing its console).
+  Tile home with Endless and "Moves to the edges": one game shows past the left edge as well when there are more games
+  than fit. Game states ("PLAYING"…) is already off by default (`Features.gameStates`).
 - **317ak — Tile home with Endless: the row reaches the screen's edge again, the game leaving on the left slides off**
   instead of vanishing. "Each game once" (update 226) now only when the category has fewer games than fit plus two.
 - **317aj — console badges on Tile home's tiles** (R1 Console badges): top left, or top right when the achievement

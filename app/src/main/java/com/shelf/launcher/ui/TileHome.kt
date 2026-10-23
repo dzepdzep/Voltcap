@@ -492,7 +492,9 @@ internal fun TileHomeRow(
                     com.shelf.launcher.data.TileFocus.LEFT -> 0
                     com.shelf.launcher.data.TileFocus.RIGHT -> n - 1
                     com.shelf.launcher.data.TileFocus.CENTER -> (n - 1) / 2
-                    com.shelf.launcher.data.TileFocus.EDGES -> vFocus - window[0]
+                    // (Update 317al: one more before the row's first, so a game shows past the left edge too when there are
+                    // more games than fit — the one leaving slides off instead of vanishing.)
+                    com.shelf.launcher.data.TileFocus.EDGES -> vFocus - window[0] + (if (n > m.visible) 1 else 0)
                 }
                 // (Update 246, #60: the places picked before the loop — a `continue` in it made Compose give each pass its
                 // own group, so a step that moved every game one place along threw them all away and built them again.)

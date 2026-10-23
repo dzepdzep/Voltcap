@@ -503,6 +503,8 @@ private fun CoverWheel(
                     AsyncImage(model = req, contentDescription = g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                 }
                 else Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))
+                // (Update 317al: the console badge, as on the other layouts' covers — not on a case printing its console.)
+                ConsoleBadge(g.platform, packageName = g.packageName, onCase = free && gArt != com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC)
                 // Game state mark on the selected cover only (the others are too small for it).
                 if (sel > 0.5f) GameStates.byKey[g.stableKey]?.let { gs ->
                     GameStateTag(gs, Modifier.align(Alignment.BottomCenter).padding(3.dp), compact = true)
