@@ -2,6 +2,14 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **The ghost round a cartridge in Inspect / Wobble** (Toni's screenshots: a faint copy of Pugsley's Scavenger Hunt's
+  Game Boy cartridge past its top edge and down its left side in the game window): the game's own card on the home
+  screen stayed drawn behind the window, where the piece had come out of it; its edges showed past the piece. Only the
+  3D carousel hid it (MediaInspect.key / amount). Now every layout's card for the game you're on fades out as its piece
+  comes out and back as it goes in — through the mark every layout already puts on it (`Modifier.gameOrigin`). (The
+  earlier pass — the far side slices drawn smaller — stays; it wasn't this.)
+- Files: `ui/GameWindow.kt`. Not compiled here (CI builds it).
+
 - **Case + media: UMDs, PS1 discs, DS cards** (Toni: "UMDs spin whole — only the inside should spin, and it isn't the
   right UMD model"; "PS1 CDs appear small"; "reuse the real DS model for the drawn ones, they look off"):
   - A UMD is drawn everywhere as the UMD of the open case (UmdBack): the shell stands still and only its disc turns in
@@ -51,8 +59,7 @@
 - Files: `ui/GameLookPicker.kt`, `ui/QuickSettings.kt`, `ui/R1TileRules.kt`, `ui/LauncherScreen.kt`,
   `ui/SecondDockShortcuts.kt`, `data/AppearanceStore.kt`, `data/ConsoleNames.kt`, `ui/SceneStyle.kt`, `ui/GameTitles.kt`,
   `ui/SettingsDialog.kt`, `ui/CategoryScreen.kt`, `ui/SecondScreen.kt`, `ui/SecondScreenVolt.kt`, `ui/CompanionActivity.kt`,
-  `ui/EmulatorSettingsDialog.kt`. Not compiled here (CI builds it). Still open: the Game Boy cartridges' ghost layer (waiting on
-  a screenshot).
+  `ui/EmulatorSettingsDialog.kt`. Not compiled here (CI builds it). 
 
 - **Twin icons: its own category page** (Toni: "Twin icons is missing a fitting category screen"): the Categories tool
   turns the tray into a grid of the categories — each its console's logo (or icon) and name on the same square icons

@@ -137,7 +137,11 @@ internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
     // on) stays.
     if (!on || LocalArtMirror.current) return this
     val view = LocalView.current
-    return this.onGloballyPositioned { c ->
+    // (Update 325, Toni: "the Game Boy cartridges still have that ghost layer above and a bit on the left" — screenshots
+    // of the game window's Inspect / Wobble: it was the game's own card on the home screen behind the window, still drawn
+    // where the piece had come out of it, its edges showing past the piece. Only the 3D carousel hid it (MediaInspect);
+    // every layout's card for the game you're on fades out now as its piece comes out, and back as it goes in.)
+    return this.graphicsLayer { if (MediaInspect.key == key) alpha = 1f - MediaInspect.amount.floatValue }.onGloballyPositioned { c ->
         val r = c.boundsInWindow()
         if (r.width < 4f || r.height < 4f) return@onGloballyPositioned
         val win = c.findRootCoordinates().size
