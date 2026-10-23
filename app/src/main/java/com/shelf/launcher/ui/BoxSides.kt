@@ -183,7 +183,8 @@ internal fun rememberBoxSides(
         ?.takeIf { mode == com.shelf.launcher.data.Features.BoxSides.FILL || com.shelf.launcher.data.ArtProvenance.isScan(it) }
     val plain = mode == com.shelf.launcher.data.Features.BoxSides.PLAIN
     val u0 = if (plain) null else pick(BoxSide.RIGHT)
-    val u1 = if (plain) null else pick(BoxSide.TOP)
+    // (Update 317: no picture of its top — a landscape box's top cut from its full case scan lying on its side, BoxPart.TOP.)
+    val u1 = if (plain) null else pick(BoxSide.TOP) ?: (if (shape > 1.1f) BoxTexture.wrapTop(scans, g.platform) else null)
     val u2 = if (plain) null else pick(BoxSide.BOTTOM)
     val b0 = rememberSoftBitmap(u0, 900)
     val b1 = rememberSoftBitmap(u1, 900)

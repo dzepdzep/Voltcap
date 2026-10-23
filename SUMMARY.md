@@ -165,9 +165,14 @@ tested on a handheld.
 - **N64 spine cut at its foot (Pokémon Stadium):** a scan a little narrower than the side (under 30 % off) had its top and
   bottom cut and was zoomed; an N64 one keeps its whole height now (`fitSpineInside`, update 312's widening). Cache kind
   `n64-align317`.
+- **Fix:** 317aa redeclared `pullOut`'s `z` (compile error on the user's build) — now `order`.
+- **The Cover Project's N64 wrap on the 3D box (Toni):** back | the box's long top edge | front, lying on its side. New
+  `BoxPart.TOP`: the strip between back and front (found, or your own cut) turned a quarter back; only from a scan no
+  wider than `WRAP_MAX` (2.2) for its height. `rememberBoxSides` uses it for the top of a cardboard box with a landscape
+  front (N64, SNES) that has no top picture of its own. The short sides aren't in such a wrap — unchanged.
 - **Copy:** `ui/Carousel.kt`, `ui/SolidPiece.kt`, `ui/PhysicalMedia.kt`, `ui/RealMedia.kt`, `ui/CustomCarts.kt`,
   `ui/StyleArtRequests.kt`, `ui/Case3D.kt`, `ui/CoverCases.kt`, `ui/BoxTexture.kt`, `ui/ShelfHome.kt`,
-  `ui/FullScanCutEditor.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
+  `ui/FullScanCutEditor.kt`, `ui/BoxSides.kt`, `data/Models.kt`, `data/SteamGridDbRepository.kt`,
   `data/ArtCacheStore.kt`, `data/AnimatedArt.kt`,
   `device/ChargeLimitService.kt`.
 - **Checked:** CI (assembleDebug + unit tests). **Not tested:** on a device — please check `dumpsys gfxinfo` render
