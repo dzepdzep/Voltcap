@@ -67,6 +67,10 @@
   one-colour icons stay everywhere else).
 - **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
   drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **Edit Home's logo parts centred** (Toni: "some logos are bigger, some smaller — hard to control where it lines up"):
+  Logo, Logo (SteamGridDB) and Logo (RetroAchievements) are one fixed size now (their width × 140 dp) with the logo in
+  the middle — it sat against the left and the part was as tall as each logo, so every game's logo stood elsewhere
+  (`HomeLogoPart`, `HomeRaLogoPart`). The name shown without a logo is centred too.
 - **Discs spin and cartridges sway again** (Toni: "discs don't spin and cartridges don't wobble", even while going through
   games): Performance › Automatic had turned Lite on after the slow frames, and Lite stopped every piece's motion. The game
   you're on keeps its spin / sway / hop in Lite now — one piece; the others stay still (`motionLayer`, `rememberCartSpin`).
@@ -116,7 +120,7 @@
   `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`, `ui/Carousel.kt`, `data/Packs.kt`,
   `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`, `ui/MediaEditions.kt`,
   `ui/StacksArch.kt`, `data/RomScanner.kt`, `ui/AppIcons.kt`, `ui/GameCard.kt`, `ui/StyleHomes.kt`,
-  `ui/Case3D.kt`, `ui/PhysicalMedia.kt`, `ui/HomeEdit.kt`.
+  `ui/Case3D.kt`, `ui/PhysicalMedia.kt`, `ui/HomeEdit.kt`, `ui/HomeParts.kt`.
 - **Checked:** CI build on push. **Not tested** on a device.
 
 ## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1
