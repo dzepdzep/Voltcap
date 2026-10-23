@@ -173,6 +173,8 @@ tested on a handheld.
 - **"Correcting the cut still doesn't fix the 3D model":** the game window's case and the other layouts' boxes (grid,
   hero, case stacks, tiles, TV room) take their spine from `BoxTexture.realSpine` / `spine`, which never looked at your
   own cut — only Case3D and the shelf did (317v). Both now return `userSpine` first.
+- **317ap — Tile home, Auto badge corner:** the bottom right when the trophy count is along the top (a tile is too
+  narrow for both in one row — the count ended in "…"); otherwise the top left.
 - **317ao — console badge where you want it:** Settings › Game look › Console badges has a new row, **Auto / Top left /
   Top right / Bottom left / Bottom right** (`Features.consoleBadgeCorner`, `badgeCornerOr` in `ConsoleBadge.kt`; every
   layout's badge follows it; the Voltcap row's other marks still keep clear of the corner it takes). On Tile home a long

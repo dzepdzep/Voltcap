@@ -779,7 +779,12 @@ private fun HomeTile(
         val chipPad = chipH * 0.3f
         // (Update 317ao: the console badge's corner — picked, else the top right when the count has the top left — and, when
         // the two share a row, the count kept clear of it: it shrinks its text, then ends in "…", never running under it.)
-        val badgeAt = badgeCornerOr(if (pillAt == Alignment.TopStart) Alignment.TopEnd else Alignment.TopStart)
+        // (Update 317ap, Toni: "the count is written with …": a tile is too narrow for the count and the logo side by side,
+        // so Auto puts the badge in the bottom right when the count is along the top; picked into the same row, the count
+        // still keeps clear of it.)
+        val badgeAt = badgeCornerOr(
+            if (pillAt == Alignment.TopStart || pillAt == Alignment.TopEnd || pillAt == Alignment.TopCenter) Alignment.BottomEnd else Alignment.TopStart
+        )
         val topRow = { a: Alignment? -> a == Alignment.TopStart || a == Alignment.TopEnd || a == Alignment.TopCenter }
         val sharesRow = com.shelf.launcher.data.Features.consoleBadges.state.value && pillAt != null && topRow(pillAt) == topRow(badgeAt)
         val pillMax = if (sharesRow) (tile - chipH * 3.4f - chipPad * 4).coerceAtLeast(chipH * 2.5f) else tile
