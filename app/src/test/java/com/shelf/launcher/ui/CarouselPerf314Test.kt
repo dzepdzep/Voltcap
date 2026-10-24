@@ -50,8 +50,9 @@ class CarouselPerf314Test {
     // --- the sides' picture (update 316) ---
 
     @Test fun sideAlphaMatchesTheSolidFilter() {
-        assertTrue(sideAlpha(0) == 0 && sideAlpha(6) == 0 && sideAlpha(255) == 255)
-        assertTrue(sideAlpha(64) == 232)
+        // (Update 325: SIDE_CUT — a nearly clear background (under ~20 %) makes no sides; the shell's edge stays solid.)
+        assertTrue(sideAlpha(0) == 0 && sideAlpha(40) == 0 && sideAlpha(255) == 255)
+        assertTrue(sideAlpha(64) == 56 && sideAlpha(128) == 255)
     }
 
     @Test fun sideColourIsTheToneUnderTheSheen() {

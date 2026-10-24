@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material.icons.filled.Dashboard
@@ -390,6 +391,13 @@ fun QuickSettingsCard(
                     else -> { F.consoleBadges.value = false; F.consoleBadgeLogos.value = false }
                 }
             })
+            // (Update 325, Toni: "an R1 tile for the game you're on — with a colour outline or not": Coloured frame on / off.)
+            run {
+                val a = home.appearance
+                add(R1Tile("outline", Icons.Filled.CropFree, if (a.focusBorder) "Outline\non" else "Outline\noff", a.focusBorder) {
+                    home.setAppearance(home.appearance.copy(focusBorder = !home.appearance.focusBorder))
+                })
+            }
             // Update 128: your pack's cartridge shape — tap: the next of its 14 shapes; hold: every shape.
             // (Update 131: only with some of your cartridge pack downloaded — Settings › Game look › Extra art packs.)
             // (Update 202: while the pack is drawn — Cartridges & discs with Your pack's shapes or Clear plastic, or disc

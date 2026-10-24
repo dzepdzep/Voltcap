@@ -464,7 +464,7 @@ internal fun Modifier.solidPiece(
         // Update 209: the face's outline that clears a see-through piece's sides from behind its face.
         hole.blendMode = BlendMode.DstOut
         solid.colorFilter = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
-            1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 4f, -24f
+            1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 4f, -SIDE_CUT.toFloat()
         )))
         val sheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))
         // The piece's own size in the node (its longest side sets its thickness).

@@ -2,6 +2,17 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **The Game Boy ghost, again** (Toni's next screenshot, The Addams Family: a faint straight line over the cartridge's
+  top, running past its right side, and down its left): a rectangle bigger than the cartridge — the face's box. The
+  sides are made from the face's outline, and every pixel over ~2 % counted (× 4 − 24), so a nearly clear background
+  in the box came out as a faint slab round the piece. Now under ~20 % is left out (`SIDE_CUT`, × 4 − 200): in Inspect
+  (InspectSlab), the row's pieces (SolidPiece's solid filter and its sides' picture, `sideAlpha`). The shell's own
+  smoothed edge stays solid. Test `sideAlphaMatchesTheSolidFilter` follows the new cut.
+- **R1 tile: Outline on / off** (Toni: "an R1 tile for the game you're on — a colour outline or not"): Settings › Game
+  look › Coloured frame, from the R1 panel (hold: its setting).
+- Files: `ui/PieceFit.kt`, `ui/SolidPiece.kt`, `ui/MediaInspectView.kt`, `ui/QuickSettings.kt`, `ui/R1Shortcuts.kt`,
+  `ui/R1Extras.kt`, test `CarouselPerf314Test`. Not compiled here (CI builds it).
+
 - **The ghost round a cartridge in Inspect / Wobble** (Toni's screenshots: a faint copy of Pugsley's Scavenger Hunt's
   Game Boy cartridge past its top edge and down its left side in the game window): the game's own card on the home
   screen stayed drawn behind the window, where the piece had come out of it; its edges showed past the piece. Only the

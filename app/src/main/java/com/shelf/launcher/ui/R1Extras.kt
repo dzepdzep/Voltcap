@@ -116,6 +116,7 @@ internal fun r1HoldTarget(id: String): R1Target? = when {
     id == "rowpos" -> R1Target.Voltcap("Home", "Where the row sits")
     id == "romm" -> R1Target.Voltcap("Accounts", "RomM (download games from your RomM server)")
     id == "gamelook" || id == "media" || id == "badges" -> R1Target.Voltcap("Game look", "Game look")
+    id == "outline" -> R1Target.Voltcap("Game look", "Coloured frame") // (Update 325)
     id == "layout" -> R1Target.Voltcap("Home", "Home layout")
     id == "carousel" -> R1Target.Voltcap("Home", "Carousel look")
     id == "theme" -> R1Target.Voltcap("Theme", "Themes")
