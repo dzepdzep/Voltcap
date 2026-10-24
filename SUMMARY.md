@@ -2,6 +2,10 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **New R1 tiles show up where they belong** (Toni: "I can't find the R1 tile for the outline" — in 0.6.40 it was the
+  last tile, behind the arrow): a tile new since you arranged your tiles comes in right after the tile it's built beside
+  (Outline after Badges), not at the end of the page. (`QuickSettings`, `ordered`.) Not compiled here (CI builds it).
+
 - **The Game Boy ghost, again** (Toni's next screenshot, The Addams Family: a faint straight line over the cartridge's
   top, running past its right side, and down its left): a rectangle bigger than the cartridge — the face's box. The
   sides are made from the face's outline, and every pixel over ~2 % counted (× 4 − 24), so a nearly clear background
