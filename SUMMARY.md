@@ -2,6 +2,14 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **Android / app games back on your pack's fitted cartridge** (Toni: "the custom cartridges that were fit to size are
+  gone, e.g. Android"): an app game came onto your pack's shape for apps (the Switch-card size, CustomCarts.lookFor)
+  only through the 3D cartridge finish (drawn3dPick); Layout standard on a layout without a look of its own (this
+  update) switched that finish off, so they fell back to the plain green Android cartridge. Layout standard no longer
+  touches the finish outside a cartridge look, and an app game is on the pack's shape whenever that part of the pack is
+  downloaded, whatever the finish (`mediaFor`).
+- Files: `ui/PhysicalMedia.kt`, `ui/GameLookPicker.kt`. Not compiled here (CI builds it).
+
 - **New R1 tiles show up where they belong** (Toni: "I can't find the R1 tile for the outline" — in 0.6.40 it was the
   last tile, behind the arrow): a tile new since you arranged your tiles comes in right after the tile it's built beside
   (Outline after Badges), not at the end of the page. (`QuickSettings`, `ordered`.) Not compiled here (CI builds it).

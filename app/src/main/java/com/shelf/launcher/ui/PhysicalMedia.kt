@@ -406,7 +406,14 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     // Android's logo.
     if (platform == "App" || platform == "Android") {
         val disc = asDisc || (mixed && Features.mixedArt.state.value == MixedArt.DISC)
-        return if (disc) MediaPick(MediaShell.DISC, genericDiscKey("Android")) else MediaPick(MediaShell.GB, ANDROID_CART)
+        if (disc) return MediaPick(MediaShell.DISC, genericDiscKey("Android"))
+        // (Update 325, Toni: "the custom cartridges that were fit to size are gone, e.g. Android": they came only through the
+        // 3D cartridge finish (drawn3dPick), and with it off they fell back to the plain green cartridge. Your pack's shape
+        // for apps (CustomCarts.lookFor — the Switch-card size) whenever that part of the pack is downloaded.)
+        if (!RealMedia.on && CustomCarts.idFor(platform)?.let { com.shelf.launcher.data.Packs.hasCart(it) } == true) {
+            CartShells.pickOf("pack:" + CustomCarts.lookFor(platform).key + "~opaque", platform, gameKey)?.let { return it }
+        }
+        return MediaPick(MediaShell.GB, ANDROID_CART)
     }
     // Card artwork "Discs only": a cartridge game as the generic CD.
     if (asDisc && !(own.disc || own == MediaShell.UMD)) return MediaPick(MediaShell.DISC, genericDiscKey(platform))
