@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.IntSize
 import com.shelf.launcher.data.Features
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -68,11 +70,25 @@ internal class PieceTurn(
      * Update 317 (Toni, option 2: "fewer copies while moving"): the view is moving (a carousel gliding) — the piece draws its
      * sides with at most [MOVING_COPIES] copies meanwhile, its full sides again the moment it stops. Null: never.
      */
-    val movingOf: (() -> Boolean)? = null
+    val movingOf: (() -> Boolean)? = null,
+    /**
+     * Update 325 (Toni: "with 5 each side it works super well, but I don't want the sides to feel empty"): the piece is far
+     * out in the view (a carousel game past the nearest [FULL_NEAR] each side) — its sides are drawn with at most
+     * [FAR_COPIES] copies, as while moving. (Its face alone, flat, was tried first — Toni: "I hate that they appear
+     * flat".) Null: never.
+     */
+    val farOf: (() -> Boolean)? = null
 ) {
     /** Update 317: the piece applies [shadeOf] itself (it's drawn from its pictures); the view leaves it out. */
     val shadeTaken = mutableStateOf(false)
 }
+
+/**
+ * Update 325 (Toni: "I liked the reflection — could it cost less?"): inside a carousel game's reflection. The piece there is
+ * its turned face alone, no copies for its sides and no picture of its own taken — each reflection was a whole second
+ * piece, its sides' copies and all; faint and fading, its thickness didn't show.
+ */
+internal val LocalPieceReflection = androidx.compose.runtime.staticCompositionLocalOf { false }
 
 /** Set by a view that leaves the turning to the piece (solidPiece / followTurn) inside it; null: nothing turns it. */
 internal val LocalPieceTurn = compositionLocalOf<PieceTurn?> { null }
@@ -324,7 +340,10 @@ internal fun rememberCustomPieceTone(pickPlatform: String): Color? {
 @Composable
 internal fun rememberCartSpin(): (() -> Float)? {
     val motion = Features.cartMotion.state.value
-    val on = !LocalLiteEffects.current && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
+    // (Update 325, Toni: "discs don't spin and cartridges don't wobble", even while going through games: Performance ›
+    // Automatic had turned Lite on after slow frames, and Lite stopped every one. The game you're on keeps its motion in
+    // Lite — one piece; the others stay still.)
+    val on = (!LocalLiteEffects.current || LocalMediaFocused.current) && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
     if (!on || !motion.spins) return null
     MotionPrefs.observe()
     if (MotionPrefs.focusedOnlyMotion() && !LocalMediaFocused.current) return null
@@ -375,15 +394,18 @@ internal fun Modifier.solidPiece(
      * Update 317: what the content shows (its console, art and shape), so its picture (PieceShot) is kept for a piece of
      * the same content coming back on the screen — taking it again cost the screen's drawing ~10–80 ms. Null: not kept.
      */
-    shotKey: String? = null
+    shotKey: String? = null,
+    /** Update 325: its own turn instead of the cartridge's (a case's wobble, rememberCaseSpin); null: as [withCartSpin]. */
+    spinOf: (() -> Float)? = null
 ): Modifier {
     if (spec == null) return this
     // Update 317: the front's own picture for a piece without one (kept while it's off the screen) — see PieceShot.
     val shot = remember { PieceShot() }
     val turn = LocalPieceTurn.current
+    val mirror = LocalPieceReflection.current
     // (Update 316: not shown at all — none of its layers kept; see PieceTurn.activeOf.)
     if (turn?.activeOf?.invoke() == false) return this
-    val spin = if (withCartSpin) rememberCartSpin() else null
+    val spin = spinOf ?: if (withCartSpin) rememberCartSpin() else null
     if (turn == null && spin == null && TestHooks.pose.value == null) return this
     val dens = LocalDensity.current.density
     val cam = (turn?.camera ?: 14f) * dens
@@ -442,7 +464,7 @@ internal fun Modifier.solidPiece(
         // Update 209: the face's outline that clears a see-through piece's sides from behind its face.
         hole.blendMode = BlendMode.DstOut
         solid.colorFilter = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
-            1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 4f, -24f
+            1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 4f, -SIDE_CUT.toFloat()
         )))
         val sheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))
         // The piece's own size in the node (its longest side sets its thickness).
@@ -479,18 +501,24 @@ internal fun Modifier.solidPiece(
         var madeYaw = Float.NaN
         var madeShade = -1f
         var madeMoving = false
+        var madeFar = false
         onDrawWithContent {
             // (Update 294, testing only: TestHooks `voltcap_test_pose` — held at one turn, for before / after pictures.)
             val testPose = TestHooks.pose.value
             val yaw = testPose?.first ?: ((turn?.yawOf?.invoke() ?: 0f) + (spin?.invoke() ?: 0f))
             // (Update 317: the view's shade, on the piece's own light — see PieceTurn.shadeOf.)
             val shadeS = if (turn?.shadeOf != null) turn.shadeOf.invoke().coerceIn(0f, 1f) else 0f
-            val lightShade = side != null && art != null
-            val shadeK = if (lightShade) 1f - shadeS else 1f
-            // (Without its pictures: darkened through the whole-piece buffer's paint.)
-            val bufShade = !lightShade && shadeS > 0.01f
+            // (Update 325, Thor recording — Mix look, All games, still 250 ms a frame, 41 ms of it handing the frame to the
+            // GPU: a piece without a sides' picture — the cartridge / disc photos — was darkened through its whole-piece
+            // buffer, so every game aside drew itself into a buffer of its own in every frame as the row moved. Each of its
+            // parts — sides, face, back — now carries the shade in its own light, like the pieces with a sides' picture; the
+            // buffer is left for a piece facing you square, drawn as its content, and for one fading in or out.)
+            val shadeK = 1f - shadeS
+            val flat = abs(yaw) < 0.25f
+            // (Facing you square, drawn as its own content: darkened through the whole-piece buffer's paint.)
+            val bufShade = flat && art == null && shadeS > 0.01f
             whole.colorFilter = if (bufShade) SolidLight.of(1f - shadeS) else null
-            if (abs(yaw) < 0.25f && !(lightShade && shadeS > 0.01f)) {
+            if (flat && (bufShade || shadeS <= 0.01f)) {
                 if (bufShade) {
                     whole.record(size = buf) { translate(m.toFloat(), m.toFloat()) { this@onDrawWithContent.drawContent() } }
                     translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
@@ -499,16 +527,19 @@ internal fun Modifier.solidPiece(
                 return@onDrawWithContent
             }
             val moving = turn?.movingOf?.invoke() == true
+            val far = turn?.farOf?.invoke() == true
             // (Update 314: fully opaque in its view — drawn straight into it, no whole-piece buffer.)
             // (Not a see-through piece: its cut-out behind the face, DstOut, must stay inside its own buffer.)
             val direct = testPose == null && spec.clear == null && turn?.opaqueOf?.invoke() == true && !bufShade
             if (art == null) face.record { this@onDrawWithContent.drawContent() }
+            if (moving) PieceShots.hold(500)
             // (Update 317: the content's picture taken again whenever it changes — see PieceShot.)
             if (faceArt == null && testPose == null && !shot.off) {
                 val want = "${shot.version.intValue}|${size.width.toInt()}x${size.height.toInt()}"
                 val keep = shotKey?.let { "$it|${size.width.toInt()}x${size.height.toInt()}" }
                 if (shot.image.value == null && keep != null) PieceShots.get(keep)?.let { shot.image.value = it; shot.asked = want }
-                if (shot.asked != want) {
+                // (Update 325: a reflection uses a picture already taken for the same content, never takes one itself.)
+                if (shot.asked != want && !mirror) {
                     // (Its own drawing for the picture isn't new content: drawn again here after a while away from the
                     // screen's drawing, the content draws itself again — counted, that took a picture every frame.)
                     if (art != null) {
@@ -519,7 +550,7 @@ internal fun Modifier.solidPiece(
                 }
             }
             // (Update 314: the same turn as last drawn — the parts only drawn from the picture are still right.)
-            if (art != null && artMade && yaw == madeYaw && shadeS == madeShade && moving == madeMoving && testPose == null && !direct) {
+            if (art != null && artMade && yaw == madeYaw && shadeS == madeShade && moving == madeMoving && far == madeFar && testPose == null && !direct) {
                 translate(-m.toFloat(), -m.toFloat()) { drawLayer(whole) }
                 return@onDrawWithContent
             }
@@ -554,7 +585,7 @@ internal fun Modifier.solidPiece(
             // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
             // over in stripes (the "glitches" round the turned cartridges in the Box flow stacks).
             val sideTone = spec.tone.copy(alpha = 1f)
-            edge.colorFilter = SolidLight.of(0.42f + 0.22f * abs(sn))
+            edge.colorFilter = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
             if (art == null) {
                 solid.record { drawLayer(face) }
                 edge.record {
@@ -585,8 +616,9 @@ internal fun Modifier.solidPiece(
             madeYaw = yaw
             madeShade = shadeS
             madeMoving = moving
+            madeFar = far
             if (c >= 0f) {
-                lit.colorFilter = SolidLight.of(1f - 0.4f * abs(sn))
+                lit.colorFilter = SolidLight.of((1f - 0.4f * abs(sn)) * shadeK)
                 if (art == null) lit.record { drawLayer(face) }
             } else {
                 val sb = spec.back
@@ -613,13 +645,18 @@ internal fun Modifier.solidPiece(
                     if (shadeK < 1f) drawRect(Color.Black, alpha = 1f - shadeK, blendMode = BlendMode.SrcAtop)
                 }
             }
+            // (The node's middle: inside the whole-piece buffer the drawing area is bigger than the node.)
+            val nodeC = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
             // The piece itself: far to near, the slices, then the face (or the back), in the node's own place.
             val pieceDraw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = {
                 // Far to near: the slices, then the face (or the back, seen from behind).
                 // (Update 205: close enough together that no gap shows between them on a thick piece side-on.)
                 // (Update 207: a slice every 2 px, at most 32 — 64 slices a piece, every piece in a row, each frame,
                 // was part of what made scrolling a big library heavy; 2 px apart still shows no gap.)
-                val n = ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, 32)
+                // (Update 324, Thor recording — Mix look, All games: 308 ms a frame, 63 ms of it handing the frame to the GPU:
+                // the cartridge / disc photos — this path — drew up to 32 slices and redrew their smear picture for every piece
+                // in every frame. At most 16 now, and while the row glides 6 with no smear, as the shells' sides (MOVING_COPIES).)
+                val n = if (mirror) 0 else ceil(depthPx * abs(sn) / 2f).toInt().coerceIn(0, if (far) FAR_COPIES else if (moving) MOVING_SLICES else 16)
                 val clear = spec.clear
                 // Update 294 (Toni, the Thor: stepped light outlines / stacked layers round a turned cartridge's edges —
                 // the small cart beside the one you're on in the Hub's cover flow, the stacked pieces in the 9/26 view):
@@ -631,7 +668,7 @@ internal fun Modifier.solidPiece(
                 // solid edge at every angle, with the same 32 slice draws as before (no new render load).
                 val dz = if (n > 0) depthPx / n else 0f
                 val step = dz * sn * (if (c >= 0f) 1f else -1f)
-                val fill = if (n > 0 && testPose?.second != true) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
+                val fill = if (n > 0 && testPose?.second != true && !moving && !far) ceil(abs(step)).toInt().coerceIn(1, 4) else 1
                 val copies = n * fill + 1
                 // (Update 209: a see-through piece's slices each faint enough that all of them together are [clear].)
                 // (Update 316: the plain sides when there's a sides' picture — edgeLeaf — else the offscreen ones.)
@@ -641,14 +678,22 @@ internal fun Modifier.solidPiece(
                 val reach = if (edgeLeaf != null && side != null && artSize != null)
                     (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(c)).coerceAtLeast(1.5f) else 0f
                 val span = depthPx * abs(sn)
-                val nLeaf = if (edgeLeaf == null || span < 0.5f) 0 else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
+                val nLeaf = if (edgeLeaf == null || span < 0.5f || mirror) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
                 edgeL.alpha = if (edgeLeaf != null) {
                     if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
                 } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
+                // (Update 325, Toni: "a floating layer over the Game Boy cartridges on top and a bit on the left": the copies
+                // behind the face were drawn as big as the face — moved sideways only, never further away — so seen large, in
+                // Inspect, the far ones stood out past its top edge. Each is drawn as much smaller as it is further from you
+                // than the face: the turned layers' own camera, [cam] × 72 px away (Skia's camera works in inches).)
+                val camPx = cam * 72f
+                val nearV = -depthPx / 2f * abs(c)
+                fun depthK(z: Float): Float = ((camPx + nearV) / (camPx - z * c)).coerceIn(0.5f, 1f)
                 if (edgeLeaf != null) for (k in 0 until nLeaf) {
                     val f = k.toFloat() / nLeaf
                     val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
-                    translate(z * sn, 0f) { drawLayer(edgeLeaf) }
+                    val dk = depthK(z)
+                    scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(edgeLeaf) } }
                 }
                 if (n > 0 && fill > 1 && edgeLeaf == null) {
                     smear.record(size = buf) {
@@ -661,8 +706,11 @@ internal fun Modifier.solidPiece(
                     val f = k.toFloat() / n
                     val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
                     // (The nearest slice alone: nothing past it to fill.)
-                    if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
-                    else translate(z * sn, 0f) { drawLayer(edge) }
+                    val dk = depthK(z)
+                    scale(dk, dk, pivot = nodeC) {
+                        if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+                        else translate(z * sn, 0f) { drawLayer(edge) }
+                    }
                 }
                 val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
                 // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
@@ -722,8 +770,20 @@ internal class PieceShot {
             try {
                 // (A short wait, so a label still coming in isn't taken half drawn.)
                 kotlinx.coroutines.delay(120)
+                // (Update 325: not while a carousel glides or a new category comes in — each picture waits on the render
+                // thread, which is busiest then; taken once it's been still a moment — PieceShots.hold.)
+                while (PieceShots.held()) kotlinx.coroutines.delay(200)
                 if (asked != key) return@launch
-                val b = runCatching { layer.toImageBitmap() }.getOrNull()
+                // (Update 325, Thor recording scrolling the Mix look: 2.7 s of 15 making these pictures — each one a
+                // hardware picture made on the main thread, waiting on the render thread, 20–100 ms — and a row of new
+                // games coming in all took theirs in the same frame: 1–2.4 s frames. One at a time now, a frame apart.)
+                val b = SHOTS.withLock {
+                    if (asked != key) null
+                    // (Update 325, the next Thor recording: still 3.2 s of 15 between category steps, one right after another —
+                    // a third of a second apart now, so the frames between them stay quick.)
+                    else runCatching { layer.toImageBitmap() }.getOrNull().also { kotlinx.coroutines.delay(320) }
+                }
+                if (asked != key) return@launch
                 if (b == null || b.width <= 0 || b.height <= 0) { if (++fails > 5) { off = true; image.value = null } }
                 else if (asked == key) { restarts = 0; taken++; image.value = b; done = true; if (keep != null) PieceShots.put(keep, b) }
             } finally {
@@ -735,6 +795,8 @@ internal class PieceShot {
 
     private companion object {
         const val MAX_SHOTS = 10
+        /** Update 325: one piece's picture made at a time, across every piece. */
+        val SHOTS = kotlinx.coroutines.sync.Mutex()
     }
 }
 
@@ -742,6 +804,10 @@ internal class PieceShot {
 internal object PieceShots {
     // (About 0.7 MB each at a carousel's size, on the GPU.)
     private val cache = android.util.LruCache<String, ImageBitmap>(96)
+    @Volatile private var quietUntil = 0L
+    /** Update 325: no pieces' pictures taken for the next [ms] (a carousel moving, a category coming in). */
+    fun hold(ms: Long) { quietUntil = maxOf(quietUntil, android.os.SystemClock.uptimeMillis() + ms) }
+    fun held(): Boolean = android.os.SystemClock.uptimeMillis() < quietUntil
     fun get(key: String): ImageBitmap? = cache.get(key)
     fun put(key: String, image: ImageBitmap) { cache.put(key, image) }
 }
@@ -797,7 +863,17 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
 internal const val SIDE_SPREAD = 10
 
 /** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
-internal const val MOVING_COPIES = 4
+// (Update 325: as many as at rest now — Toni: "the jagged bottoms appear only when scrolling": with 3 / 4 copies the
+// steps between them showed while it moved, and the reflection turned out to be what cost. Only the smear stays off.)
+internal const val MOVING_COPIES = 24
+/** Update 324: a photo piece's slices while the row glides (at rest up to 16 — the same now, Update 325). */
+internal const val MOVING_SLICES = 16
+
+/** Update 325: how many games each side of a carousel's middle are drawn with their thickness (PieceTurn.farOf). */
+internal const val FULL_NEAR = 5
+
+/** Update 325: the most copies a piece past [FULL_NEAR] draws its sides with. */
+internal const val FAR_COPIES = 3
 
 /** A brightness filter in 40 steps (made once each). */
 private object SolidLight {

@@ -2833,6 +2833,19 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 val prefs = app.getSharedPreferences("still_cover_backfill", android.content.Context.MODE_PRIVATE)
                 val now = System.currentTimeMillis()
                 val st = _uiState.value
+                // (Update 321: animated covers you picked yourself (Artwork & details) get one too, kept by their address.)
+                prefs.all.forEach { (k, v) -> if (k.startsWith("map:") && v is String) com.shelf.launcher.data.StillCovers.put(k.removePrefix("map:"), v) }
+                val picked = st.games.mapNotNull { g ->
+                    val c = st.artOverrides[g.stableKey]?.cover
+                    if (c != null && com.shelf.launcher.data.AnimatedArt.looksAnimated(c) && !prefs.contains("map:$c") &&
+                        now - prefs.getLong("o:" + g.stableKey, 0L) > 7L * 86_400_000L) g to c else null
+                }
+                for ((g, c) in picked.take(20)) {
+                    val still = repository.fetchStillGrid(g)
+                    prefs.edit().putLong("o:" + g.stableKey, now).apply { if (still != null) putString("map:$c", still) }.apply()
+                    // (Worn from the next time its cartridge or disc is drawn.)
+                    if (still != null) com.shelf.launcher.data.StillCovers.put(c, still)
+                }
                 val todo = st.games.filter { g ->
                     val a = st.art[g.stableKey]
                     a != null && a.gridUrl != null && a.stillGridUrl == null && com.shelf.launcher.data.AnimatedArt.looksAnimated(a.gridUrl) &&
@@ -3050,6 +3063,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
             }
         }) { (special, platform) -> special?.name ?: platform?.let { "p:$it" } ?: "ALL" }
+            // (Update 325: not the categories taken off the category screen — CategoryTileOrder.isHidden.)
+            .filterNot { (special, platform) -> com.shelf.launcher.data.CategoryTileOrder.isHidden(special?.name ?: platform?.let { "p:$it" } ?: "ALL") }
 
     // ---- Category order, and where you left off ----
 
@@ -3766,7 +3781,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             // None: a window with what to do (pick a PDF, search online) instead of a passing message.
             val link = url
             if (link == null) { onMissing(); return@launch }
-            val file = runCatching { L.download(app, game, link, screenScraperRepository.withLogin(link, creds)) }.getOrNull()
+            // (Update 320: kept only with Manuals › Download all ahead; otherwise a preview, deleted once closed.)
+            val keep = com.shelf.launcher.data.Features.manualKeep.value == com.shelf.launcher.data.Features.ManualKeep.AHEAD
+            val file = runCatching { L.download(app, game, link, screenScraperRepository.withLogin(link, creds), keep) }.getOrNull()
             when {
                 file != null -> onReady(file)
                 L.stoppedLast -> Unit
@@ -5797,7 +5814,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * that isn't on the device yet (beside the ROM, picked by you or downloaded before), into the saved-art store as
      * opening one does. Progress in ManualLinks.bulk; ManualLinks.stopAll stops it. Waits while a game is running.
      */
-    fun findAllManuals(download: Boolean) {
+    /**
+     * Update 320: with Manuals › Download all ahead, every manual found that isn't on the device yet is downloaded in the
+     * background (a while after start, and when the setting is switched on) — quietly, as [findAllManuals] with download.
+     */
+    fun downloadManualsAhead() {
+        if (com.shelf.launcher.data.Features.manualKeep.value != com.shelf.launcher.data.Features.ManualKeep.AHEAD) return
+        if (screenScraperStore.load() == null) return
+        findAllManuals(download = true, quiet = true)
+    }
+
+    fun findAllManuals(download: Boolean, quiet: Boolean = false) {
         if (manualBulkJob?.isActive == true) return
         val creds = screenScraperStore.load()
         if (creds == null) {
@@ -5847,7 +5874,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     kotlinx.coroutines.delay(250)
                 }
                 if (saved > 0) L.version++
-                setStatusMessage(
+                if (!quiet) setStatusMessage(
                     when {
                         get.isEmpty() -> "Every manual found (${L.foundCount()}) is on this device already."
                         failed == 0 -> "Downloaded $saved manual" + (if (saved == 1) "" else "s") + "."
@@ -6322,6 +6349,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // (Update 318: the RetroAchievements login decrypted now, off the main thread — its first read took over 5 s on the
         // Flip 2 and froze the game window that asked for it.)
         viewModelScope.launch(Dispatchers.IO) { raCredentialsStore.warm() }
+        // (Update 321: each game's own spine fit.)
+        com.shelf.launcher.data.SpineFits.init(application)
+        com.shelf.launcher.data.IconStyles.init(application)
         preloadPhysicalMedia()
         com.shelf.launcher.data.ScanReport.count = { countRealMedia() }
         com.shelf.launcher.data.ScanReport.saveAll = { saveAllRealMedia() }

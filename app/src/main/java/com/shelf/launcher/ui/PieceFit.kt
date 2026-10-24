@@ -60,8 +60,16 @@ internal fun carouselOffScreen(centerX: Float, halfExtent: Float, viewW: Float, 
     return centerX + halfExtent < -margin || centerX - halfExtent > viewW + margin
 }
 
-/** Update 316: the sides' outline alpha from a front pixel's [a] (0–255): × 4 − 24, as the solid filter's matrix makes it. */
-internal fun sideAlpha(a: Int): Int = (a * 4 - 24).coerceIn(0, 255)
+/** Update 316: the sides' outline alpha from a front pixel's [a] (0–255): × 4 − [SIDE_CUT], as the solid filter's matrix makes it. */
+internal fun sideAlpha(a: Int): Int = (a * 4 - SIDE_CUT).coerceIn(0, 255)
+
+/**
+ * Update 325 (Toni's screenshots: a faint straight line over a Game Boy cartridge's top, past its right side, and down its
+ * left side in the game window's Inspect): the sides were made from every pixel of the face over 2 % — a nearly clear
+ * background in the face's box came out as a ghost slab round the piece. Now under ~20 % is left out; the shell's own
+ * edge (its smoothed outline, ~50 % and up) is solid as before.
+ */
+internal const val SIDE_CUT = 200
 
 /**
  * Update 316: the sides' colour (0xRRGGBB) [t] of the way down: [tone] under the sheen — white 12 % at the top, clear in

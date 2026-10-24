@@ -23,7 +23,7 @@ object ConsoleNames {
         "WiiU" to "Nintendo Wii U",
         "Switch" to "Nintendo Switch",
         "NES" to "Nintendo Entertainment System",
-        "SNES" to "Super Nintendo",
+        "SNES" to "Super Nintendo Entertainment System",
         "N64" to "Nintendo 64",
         "GB" to "Game Boy",
         "GBC" to "Game Boy Color",
@@ -65,7 +65,21 @@ object ConsoleNames {
         "Intellivision" to "Intellivision",
         "Vectrex" to "Vectrex",
         "Android" to "Android",
-        "Disc" to "Disc images"
+        "Disc" to "Disc images",
+        // (Update 325, Toni: "always the official names": the keys that still showed as they are.)
+        "MegaDrive" to "Sega Mega Drive / Genesis",
+        "Pico8" to "PICO-8",
+        "Famicom" to "Nintendo Famicom",
+        "FDS" to "Famicom Disk System",
+        "SFC" to "Super Famicom",
+        "Switch2" to "Nintendo Switch 2",
+        "SG1000" to "Sega SG-1000",
+        "Atari5200" to "Atari 5200",
+        "NeoGeoPocketColor" to "Neo Geo Pocket Color",
+        "WonderSwanColor" to "WonderSwan Color",
+        "TG16" to "TurboGrafx-16",
+        "TGCD" to "TurboGrafx-CD",
+        "App" to "Other apps"
     )
 
     fun display(platform: String): String = names[platform] ?: platform

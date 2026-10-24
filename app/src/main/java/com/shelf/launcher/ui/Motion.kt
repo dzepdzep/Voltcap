@@ -282,13 +282,21 @@ internal fun FadeInImage(
 ) {
     val a = remember(model) { Animatable(0f) }
     var loaded by remember(model) { mutableStateOf(false) }
+    // (Update 325, Toni: "the logos that appear shouldn't just spawn in — use the same animation the layout uses": a
+    // logo comes in as the game's info does — Motion › The game's info: rises into place, fades in, or just appears —
+    // once its picture has loaded, instead of popping in after the info has already moved.)
+    val info = MotionPrefs.info()
     LaunchedEffect(model, loaded) {
         if (!loaded) return@LaunchedEffect
-        if (com.shelf.launcher.data.Features.animHeldPictures.value) a.animateTo(1f, tween(fadeMs, easing = FastOutSlowInEasing)) else a.snapTo(1f)
+        if (info != com.shelf.launcher.data.Features.InfoAnim.NONE) a.animateTo(1f, tween(maxOf(fadeMs, 300), easing = FastOutSlowInEasing)) else a.snapTo(1f)
     }
+    val rise = info == com.shelf.launcher.data.Features.InfoAnim.RISE && !LocalStillPart.current
     AsyncImage(
         model, contentDescription, contentScale = contentScale, alignment = alignment,
         onSuccess = { loaded = true },
-        modifier = modifier.graphicsLayer { alpha = a.value }
+        modifier = modifier.graphicsLayer {
+            alpha = a.value
+            if (rise) translationY = (1f - a.value) * 14f * density
+        }
     )
 }

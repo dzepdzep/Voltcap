@@ -155,7 +155,9 @@ fun CategoryScreen(
     /** Update 208: moves the tile at the first index to the second (true when it moved). */
     onMove: (Int, Int) -> Boolean = { _, _ -> false },
     /** Update 208: a tile tapped while reordering becomes the one you're on. */
-    onSelect: (Int) -> Unit = {}
+    onSelect: (Int) -> Unit = {},
+    /** Update 325: "Add category" — the categories taken off, to put back; null when none are. */
+    onAdd: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("CategoryScreen")
     val columns = categoryColumns(style)
@@ -274,7 +276,7 @@ fun CategoryScreen(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             if (reorder) "A Pick up / put down · ◀ ▶ ▲ ▼ Move it · Drag a tile (hold) to move it · B or Start Done"
-                            else "◀ ▶ ▲ ▼ Choose · A Open · Y Options (picture) · Start or hold a tile Reorder · B Back",
+                            else "◀ ▶ ▲ ▼ Choose · A Open · Y Options (picture, remove) · Start or hold a tile Reorder · B Back",
                             color = ShelfTheme.textMuted, fontSize = 12.sp
                         )
                         // (Update 212: how the order works, said where it's changed.)
@@ -286,6 +288,11 @@ fun CategoryScreen(
                     }
                     // (Update 208: the Reorder button in the corner. Update 212: and the tile's Options.)
                     if (!reorder) {
+                        // (Update 325: the categories taken off come back from here.)
+                        if (onAdd != null) {
+                            Chip("Add category", accent = false) { onAdd() }
+                            Spacer(Modifier.width(8.dp))
+                        }
                         Chip("Options", accent = false) { onOptions(selectedIndex) }
                         Spacer(Modifier.width(8.dp))
                     }
@@ -494,7 +501,7 @@ fun buildCategoryTiles(
                     val label = when (p) {
                         com.shelf.launcher.ANDROID_GAMES_PLATFORM -> "Android games"
                         "App" -> "Other apps"
-                        else -> if (fullNames) com.shelf.launcher.data.ConsoleNames.display(p) else p
+                        else -> com.shelf.launcher.data.ConsoleNames.display(p) // (Update 325: always the official name)
                     }
                     add(
                         CategoryTile(

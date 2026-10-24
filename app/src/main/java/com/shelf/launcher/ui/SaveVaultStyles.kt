@@ -853,7 +853,22 @@ internal fun SaveVaultSettings(onDark: Boolean = false) {
             }
         }
         // (Update 285, Toni: "the logos without the cards, and only without cards": PS2 saves show their own save icon in
-        // Icons only — the cards always show the cards. The old "PS2 browser style" switch is gone.)
+        // Icons only. Update 325, Toni: "the PS2 view for Save Vault is gone": the "PS2 browser style" switch is back
+        // for the card styles — PS2 saves then show as the console's memory-card browser shows them; off by default.)
+        val context = androidx.compose.ui.platform.LocalContext.current
+        remember { com.shelf.launcher.data.Ps2BrowserStyle.load(context) }
+        val ps2On = com.shelf.launcher.data.Ps2BrowserStyle.on.value
+        if (Features.saveVaultStyle.state.value != SaveVaultStyle.ICONS) {
+            ChipFlow {
+                Chip(if (ps2On) "✓ PS2 browser style" else "PS2 browser style", accent = ps2On) {
+                    com.shelf.launcher.data.Ps2BrowserStyle.set(context, !ps2On)
+                }
+            }
+            if (ps2On) Text(
+                "PS2 saves show their own save icon from the memory card; a save without a readable one shows a generic card marked \"No save icon\".",
+                color = label, fontSize = 11.sp
+            )
+        }
         if (Features.saveVaultStyle.state.value == SaveVaultStyle.ICONS) Text(
             "Each save as its game's icon, no card: a PS2 save's own icon from the memory card, else its RetroAchievements icon, else its SteamGridDB logo.",
             color = label, fontSize = 11.sp

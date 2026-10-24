@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -417,6 +418,15 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
             else -> {}
         }
     }
+    // (Update 325, Toni: "keep the real ones, and the custom ones we made for the consoles that don't have them": a
+    // cartridge console with no real shell above (the PS Vita…) is on your cartridge pack when it's downloaded, rather
+    // than the template's flat picture. Discs and UMDs keep their own.)
+    if (!asDisc && !RealMedia.on && !own.disc && own != MediaShell.UMD &&
+        CartShells.authenticIdFor(platform, CaseCatalog.regionOf(gameKey ?: ""), gameKey) == null) {
+        CustomCarts.idFor(platform)?.takeIf { com.shelf.launcher.data.Packs.hasCart(it) }?.let {
+            return MediaPick(MediaShell.GB, CUSTOM_CART + platform, CustomCarts.aspectFor(platform))
+        }
+    }
     return MediaPick(own, platform)
 }
 
@@ -661,6 +671,12 @@ internal fun PhysicalMedia(
         DiscInCase(tpl, boxFront(tpl.box!!, front, null).first, false, label ?: caseCover, modifier.followTurn(), platform = platform)
         return
     }
+    // (Update 325, Toni: "UMDs spin whole — only the inside should spin, and it isn't the right UMD model": a UMD is the
+    // drawn UMD of the open case (UmdBack) — the shell still, only its disc turning in the window.)
+    if (shell == MediaShell.UMD) {
+        UmdMedia(label, modifier.followTurn().motionLayer(true, Features.discMotion.state.value, (label?.hashCode() ?: 0) xor (platform?.hashCode() ?: 0), spinDisc = false))
+        return
+    }
     // Discs turn slowly, cartridges give a little hop now and then (each on its own beat).
     val discLook = when {
         tpl?.disc != null -> true
@@ -732,16 +748,47 @@ internal fun Modifier.mediaMotion(disc: Boolean, seed: Int): Modifier =
     motionLayer(disc, (if (disc) Features.discMotion else Features.cartMotion).state.value, seed, turnCart = false)
 
 /** A box (box art): turns slowly left and right and/or hops like a cartridge, as set under Cases (default still). */
+// (Update 325, Toni: "the animation the cases do when they wobble left and right makes them seem flat": the turn was the
+// flat picture tilted. Only the hop is here now — the turn is the case's own, in 3D: rememberCaseSpin, CaseArt.)
 @Composable
-internal fun Modifier.caseMotion(seed: Int): Modifier = motionLayer(false, Features.caseMotion.state.value, seed)
+internal fun Modifier.caseMotion(seed: Int): Modifier = motionLayer(false, Features.caseMotion.state.value, seed, turnCart = false)
+
+/** Update 325: the case's slow turn left and right (Cases › motion), drawn in 3D by the case itself; null: still. */
+@Composable
+internal fun rememberCaseSpin(): (() -> Float)? {
+    val motion = Features.caseMotion.state.value
+    val on = (!LocalLiteEffects.current || LocalMediaFocused.current) && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
+    if (!on || !motion.spins) return null
+    MotionPrefs.observe()
+    if (MotionPrefs.focusedOnlyMotion() && !LocalMediaFocused.current) return null
+    if (LocalStillPart.current) return null
+    val now = MediaClock.rememberFrameTime()
+    return androidx.compose.runtime.remember(now) {
+        {
+            val ms = now.longValue / 1_000_000L
+            // (As the flat turn did: about ±24°, slowly left and right.)
+            24f * kotlin.math.sin((ms % CART_SPIN_MS) / CART_SPIN_MS.toFloat() * 2f * Math.PI.toFloat())
+        }
+    }
+}
+
+/** Update 325: a front-facing case as a solid piece — its outline at a case's thickness (≈ 14 mm on 190), dark plastic. */
+internal val CASE_SOLID = SolidSpec(null, 0.07f, androidx.compose.ui.graphics.Color(0xFF16181D))
 
 /** The same motion for a preview in Settings (update 109): [motion] as picked, whatever is saved. */
 @Composable
 internal fun Modifier.motionPreview(disc: Boolean, motion: Features.MediaMotion): Modifier = motionLayer(disc, motion, 0)
 
 @Composable
-private fun Modifier.motionLayer(disc: Boolean, motion: Features.MediaMotion, seed: Int, turnCart: Boolean = true): Modifier {
-    val on = !LocalLiteEffects.current && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
+private fun Modifier.motionLayer(
+    disc: Boolean, motion: Features.MediaMotion, seed: Int, turnCart: Boolean = true,
+    /** Update 325: false — a UMD: its disc turns inside it (UmdMedia), the piece itself only bobs. */
+    spinDisc: Boolean = true
+): Modifier {
+    // (Update 325, Toni: "discs don't spin and cartridges don't wobble", even while going through games: Performance ›
+    // Automatic had turned Lite on after slow frames, and Lite stopped every one. The game you're on keeps its motion in
+    // Lite — one piece; the others stay still.)
+    val on = (!LocalLiteEffects.current || LocalMediaFocused.current) && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
     if (!on || motion == Features.MediaMotion.OFF) return this
     // Update 112: only the game you're on moves (Home › Animations, per layout too).
     MotionPrefs.observe()
@@ -760,7 +807,7 @@ private fun Modifier.motionLayer(disc: Boolean, motion: Features.MediaMotion, se
         val sp = (ms % spinMs) / spinMs.toFloat()
         val bp = (ms % bounceMs) / bounceMs.toFloat()
         if (disc) {
-            if (spins) {
+            if (spins && spinDisc) {
                 rotationZ = sp * 360f
                 compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
             }
@@ -784,6 +831,65 @@ private fun Modifier.motionLayer(disc: Boolean, motion: Features.MediaMotion, se
             }
         }
     }
+}
+
+/**
+ * Update 325: a UMD as the drawn UMD (UmdBack, the one in the open case): its shell standing still, the disc with the
+ * game's label turning in the window as the discs turn (Moving discs › Spin), the window's gleam and hub over it.
+ */
+@Composable
+private fun UmdMedia(label: Any?, modifier: Modifier) {
+    val bmp = rememberSoftBitmap(label, 480)
+    val imgs = androidx.compose.runtime.remember(bmp) {
+        val (shell, disc, top) = UmdBack.layers(bmp)
+        Triple(shell.asImageBitmap(), disc.asImageBitmap(), top.asImageBitmap())
+    }
+    val angle = rememberUmdDiscAngle()
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val a = MediaShell.UMD.aspect
+        val w = minOf(maxWidth, maxHeight * a)
+        androidx.compose.foundation.Canvas(Modifier.size(w, w / a)) {
+            val full = androidx.compose.ui.unit.IntSize(size.width.toInt(), size.height.toInt())
+            drawImage(imgs.first, dstSize = full)
+            val r = UmdBack.DISC_R_W * size.width
+            val cx = UmdBack.DISC_X * size.width
+            val cy = UmdBack.DISC_Y * size.height
+            rotate(angle?.invoke() ?: 0f, Offset(cx, cy)) {
+                drawImage(imgs.second, dstOffset = androidx.compose.ui.unit.IntOffset((cx - r).toInt(), (cy - r).toInt()),
+                    dstSize = androidx.compose.ui.unit.IntSize((2 * r).toInt(), (2 * r).toInt()))
+            }
+            drawImage(imgs.third, dstSize = full)
+        }
+    }
+}
+
+/** Update 325: a UMD's disc turning in its window (Moving discs › Spin, as the discs turn); null: still. */
+@Composable
+private fun rememberUmdDiscAngle(): (() -> Float)? {
+    val motion = Features.discMotion.state.value
+    val on = (!LocalLiteEffects.current || LocalMediaFocused.current) && rememberAnimationsEnabled() && rememberIsActive() && !HomeIdle.calm
+    if (!on || !motion.spins) return null
+    MotionPrefs.observe()
+    if (MotionPrefs.focusedOnlyMotion() && !LocalMediaFocused.current) return null
+    if (LocalStillPart.current) return null
+    val now = MediaClock.rememberFrameTime()
+    return androidx.compose.runtime.remember(now) { { (now.longValue / 1_000_000L % 6000L) / 6000f * 360f } }
+}
+
+/**
+ * Update 325 (Toni: "PS1 CDs appear small" beside their case): a disc / UMD leaning on its case at its real size against
+ * the case's real height — a 120 mm CD on a 125 mm jewel case nearly as tall as it, a 64 mm UMD on a 170 mm PSP case. It
+ * was 60 % of every case. Cartridges keep half the case's height. [fallback] when the case's size isn't known.
+ */
+internal fun mediaBesideFrac(shell: MediaShell, caseMm: Pair<Float, Float>?, fallback: Float): Float {
+    val caseH = caseMm?.second?.takeIf { it > 0f } ?: return fallback
+    val mm = when {
+        shell == MediaShell.UMD -> 64f
+        shell == MediaShell.MINI_DISC && !Features.bigGcDiscs.state.value -> 80f
+        shell.disc -> 120f
+        else -> return fallback
+    }
+    return (mm / caseH).coerceIn(0.3f, 0.95f)
 }
 
 /** The sticker's paper colour under the label while it loads. */

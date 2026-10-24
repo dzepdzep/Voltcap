@@ -159,18 +159,25 @@ internal object MediaEditions {
         Edition("gen_jcart_titles", "Codemasters J-Cart", setOf("Genesis", "MegaDrive"), listOf("pete sampras tennis", "micro machines 2 turbo tournament", "micro machines turbo tournament 96", "micro machines military", "super skidmarks"), setOf("US", "EU", "AU", "JP"), "jcart", null, EditionStatus.PENDING, false, listOf("https://de.wikipedia.org/wiki/J-Cart"), "These game families had J-Cart releases; not every release was one, so it's offered, not picked.")
     )
 
+    // (Update 325, Thor recording switching categories: 0.27 s compiling these for each game coming in — compiled once.)
+    private val TAGS = Regex("""\s*[(\[][^)\]]*[)\]]""")
+    private val MARKS = Regex("\\p{M}+")
+    private val PUNCT = Regex("[.'’!]")
+    private val NON_WORD = Regex("[^a-z0-9]+")
+    private val PARENS = Regex("""\(([^)]*)\)""")
+
     /** "Legend of Zelda, The - Ocarina of Time (USA) (Rev 1).z64" → "legend of zelda ocarina of time". */
     fun titleOf(fileName: String): String {
-        val noTags = fileName.replace(Regex("""\s*[(\[][^)\]]*[)\]]"""), " ")
-        val ascii = java.text.Normalizer.normalize(noTags, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
-        return ascii.lowercase().replace("&", " and ").replace(Regex("[.'’!]"), "")
-            .replace(Regex("[^a-z0-9]+"), " ").split(' ').filter { it.isNotEmpty() && it != "the" }.joinToString(" ")
+        val noTags = fileName.replace(TAGS, " ")
+        val ascii = java.text.Normalizer.normalize(noTags, java.text.Normalizer.Form.NFD).replace(MARKS, "")
+        return ascii.lowercase().replace("&", " and ").replace(PUNCT, "")
+            .replace(NON_WORD, " ").split(' ').filter { it.isNotEmpty() && it != "the" }.joinToString(" ")
     }
 
     /** The regions the file name states ("(USA, Europe)" → US, EU; "(World)" → all). Empty: none stated. */
     fun regionsOf(fileName: String): Set<String> {
         val out = HashSet<String>()
-        Regex("""\(([^)]*)\)""").findAll(fileName).forEach { m ->
+        PARENS.findAll(fileName).forEach { m ->
             m.groupValues[1].split(',').map { it.trim().lowercase() }.forEach { w ->
                 when (w) {
                     "usa", "us", "america", "canada" -> out += "US"

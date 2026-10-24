@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Bolt
@@ -70,6 +71,7 @@ internal object R1Shortcut {
         "fps" -> Icons.Filled.Layers
         "gamelook", "media" -> Icons.Filled.Album
         "badges" -> Icons.Filled.Label
+        "outline" -> Icons.Filled.CropFree // (Update 325)
         "layout" -> Icons.Filled.Dashboard
         "endless" -> Icons.Filled.Repeat
         "roundshort" -> Icons.Filled.Apps

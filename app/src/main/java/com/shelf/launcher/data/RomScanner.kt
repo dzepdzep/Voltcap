@@ -379,6 +379,9 @@ object RomScanner {
             .map { it.absolutePath }.toSet())
 
         // Pass 1: an existing .m3u playlist is authoritative for whatever it lists.
+        val m3uListed = mutableSetOf<String>()
+        // (Update 325: each listed set's folder and title without any tags — see the lone later disc below.)
+        val setBases = mutableMapOf<String, File>()
         m3uFiles.forEach { m3u ->
             val discPaths = parseM3u(m3u)
             val platform = discPaths.firstOrNull()?.let { platformFor(it, rootPath, deep) }
@@ -391,6 +394,8 @@ object RomScanner {
                     romPath = m3u.absolutePath
                 )
                 discPaths.forEach { consumedPaths += it.absolutePath }
+                m3uListed += m3u.absolutePath
+                setBases.putIfAbsent("${m3u.parent}|${baseTitle(m3u.nameWithoutExtension)}", m3u)
             }
         }
 
@@ -432,13 +437,40 @@ object RomScanner {
             discGroupTitles.putIfAbsent(groupKey, title)
             if (groupDir != null) discGroupDirs.putIfAbsent(groupKey, groupDir)
         }
+        // Update 324 (Toni: two-disc games showed as the game and a separate "Disc 2"): disc 1 often carries no tag —
+        // "Game (USA).chd" beside "Game (Disc 2) (USA).chd". A set without a disc 1 takes the untagged file of the same
+        // title in its folder as disc 1.
+        if (discGroups.isNotEmpty() && singleFiles.isNotEmpty()) {
+            val untagged = singleFiles.groupBy { "${it.parent}|${cleanupTitle(it.nameWithoutExtension).lowercase()}" }
+            discGroups.forEach { (groupKey, discs) ->
+                if (discs.any { it.first <= 1 }) return@forEach
+                val title = discGroupTitles[groupKey] ?: return@forEach
+                val dir = discGroupDirs[groupKey] ?: return@forEach
+                val first = untagged["${dir.path}|${title.lowercase()}"]?.minByOrNull { formatRank(it.extension) } ?: return@forEach
+                if (singleFiles.remove(first)) discs += 1 to first
+            }
+        }
         val missingM3u = mutableListOf<MultiDiscSet>()
+        discGroups.forEach { (key, discs) ->
+            if (discs.size >= 2) discGroupDirs[key]?.let { dir -> setBases.putIfAbsent("${dir.path}|${baseTitle(discGroupTitles[key] ?: "")}", discs.minBy { it.first }.second) }
+        }
 
         var groupsCreated = 0
         var groupWriteFailures = 0
 
         discGroups.forEach { (groupKey, discs) ->
             if (discs.size < 2) {
+                // Update 325 (Toni: "Alone in the Dark still shows disc 2" — beside the USA set and its playlist lay a
+                // European "(Europe) (Disc 2).chd" with no disc 1 of its own): a lone later disc of a game whose set is
+                // already here (the same folder, the same title whatever its region and other tags) isn't a game of its
+                // own — it's listed under Library check › doubles.
+                val (num, file) = discs[0]
+                val dir = discGroupDirs[groupKey]
+                val set = if (num >= 2 && dir != null) setBases["${dir.path}|${baseTitle(discGroupTitles[groupKey] ?: "")}"] else null
+                if (set != null) {
+                    duplicates += Duplicate(prettifyName(set.nameWithoutExtension), platformFor(file, rootPath, deep) ?: "", set.absolutePath, file.absolutePath, sameFolder = true)
+                    return@forEach
+                }
                 // Only one file actually matched this title — not a real
                 // multi-disc set, so don't strip its name; scan it normally.
                 singleFiles += discs.map { it.second }
@@ -458,11 +490,17 @@ object RomScanner {
             }
 
             val m3uFile = File(parentDir, "$title.m3u")
+            // (Update 325, Toni: "Alone in the Dark still shows disc 2": these two used to list every disc as a game of
+            // its own. A playlist of this name that's already listed (Pass 1) but leaves these discs out — disc 2 missing
+            // from it, say — is the game: the discs aren't listed again. One that couldn't be read, or a playlist that
+            // can't be written (Android often won't let an app write in the ROM folder): the set is one game started
+            // from disc 1, listed under Library check like a set without its playlist.)
+            if (m3uFile.exists() && m3uFile.absolutePath in m3uListed) return@forEach
+            val firstOnly = Game(name = prettifyName(title), platform = platform, hue = hueFor(title), sourceType = SourceType.ROM, romPath = firstFile.absolutePath)
             if (m3uFile.exists()) {
-                // Something's already at this path that Pass 1 didn't parse
-                // as covering these discs — don't overwrite or guess, just
-                // fall back to listing the discs individually.
-                singleFiles += sortedDiscs.map { it.second }
+                // Something's already at this path that Pass 1 didn't parse — don't overwrite or guess.
+                missingM3u += MultiDiscSet(title, platform, parentDir, sortedDiscs.map { it.second.relativeTo(parentDir).path })
+                games += firstOnly
                 return@forEach
             }
             val set = MultiDiscSet(title, platform, parentDir, sortedDiscs.map { it.second.relativeTo(parentDir).path })
@@ -493,7 +531,8 @@ object RomScanner {
                 groupsCreated++
             } else {
                 groupWriteFailures++
-                singleFiles += sortedDiscs.map { it.second }
+                missingM3u += set
+                games += firstOnly
             }
         }
 
@@ -539,6 +578,10 @@ object RomScanner {
     } catch (e: Exception) {
         emptyList()
     }
+
+    /** Update 325: [raw] without any (…) / […] tags, trimmed and lower case — a set's title whatever its region. */
+    private val TAGS = Regex("""\s*[(\[][^)\]]*[)\]]""")
+    private fun baseTitle(raw: String): String = cleanupTitle(raw.replace(TAGS, " ")).lowercase()
 
     private fun cleanupTitle(raw: String): String =
         raw.replace(Regex("""\s+"""), " ")

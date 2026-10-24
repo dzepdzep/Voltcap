@@ -136,8 +136,18 @@ object ManualLinks {
      * Downloads [game]'s manual from [rawUrl] (the noted address; [loginUrl] the address to fetch, with the login) into
      * the saved-art store, showing [progress] meanwhile. The file, or null (failed, not a PDF, or stopped: [stoppedLast]).
      */
-    suspend fun download(context: Context, game: Game, rawUrl: String, loginUrl: String): File? = withContext(Dispatchers.IO) {
+    /** Update 320: the folder a previewed manual is fetched into (emptied before each one, and when it's closed). */
+    fun previewDir(context: Context): File = File(context.cacheDir, "manual_preview")
+
+    /** Update 320: [file] was a preview — deleted now its reader is closed. */
+    fun dropPreview(file: File) { if (file.parentFile?.name == "manual_preview") runCatching { file.delete() } }
+
+    suspend fun download(context: Context, game: Game, rawUrl: String, loginUrl: String, keep: Boolean = true): File? = withContext(Dispatchers.IO) {
         ArtFiles.init(context)
+        val into = if (keep) null else previewDir(context).let { d ->
+            d.listFiles()?.forEach { it.delete() }
+            File(d, "manual-${game.stableKey.hashCode().toUInt()}.pdf")
+        }
         val job = coroutineContext[Job]
         stoppedLast = false
         cancel = { stoppedLast = true }
@@ -148,8 +158,8 @@ object ManualLinks {
                 // (Not every 64 KB: about ten updates a second at most.)
                 val now = android.os.SystemClock.uptimeMillis()
                 if (now - shownAt > 90L || done == total) { shownAt = now; progress = Progress(game, done, total) }
-            }, cancelled = { stoppedLast || job?.isActive == false })
-            if (file != null) version++
+            }, cancelled = { stoppedLast || job?.isActive == false }, into = into)
+            if (file != null && keep) version++
             file
         } finally {
             progress = null

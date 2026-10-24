@@ -125,7 +125,8 @@ internal fun SaveExplorerDialog(
     // (Update 239, #112: Filters & look › "PS2 browser style" — read before the first frame.)
     remember { com.shelf.launcher.data.Ps2BrowserStyle.load(context) }
     // (Update 285: PS2 saves show their own icon in Icons only — never on the cards.)
-    val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS
+    // (Update 325: and with the "PS2 browser style" switch back, in the card styles too.)
+    val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS || com.shelf.launcher.data.Ps2BrowserStyle.on.value
     // Google Drive sync, right inside the vault: "Sync now" runs a saves sync, then looks for saves again.
     // (Update 151: read before the first frame, so a connected vault never flashes "Not connected".)
     remember { com.shelf.launcher.data.CloudSync.load(context) }

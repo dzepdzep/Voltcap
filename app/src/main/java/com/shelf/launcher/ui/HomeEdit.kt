@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -41,6 +45,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInRoot
@@ -100,7 +105,8 @@ object HomeWidgets {
     /** Widgets that can be moved, in the order shoulder buttons step through them. */
     val all = listOf(MUSIC, SHORTCUTS, HEADER) + headerParts + listOf(CATEGORY, INFO, NEWS)
 
-    const val SCALE_MIN = 0.6f
+    // (Update 325, Toni: "some things in Edit Home won't scale down lower than a certain size": 60 % was the floor — 30 % now.)
+    const val SCALE_MIN = 0.3f
     const val SCALE_MAX = 1.8f
 
     fun parseScales(s: String, clamp: Boolean = true): Map<String, Float> = s.split(';').mapNotNull { part ->
@@ -274,6 +280,15 @@ object HomeEditState {
     var guideX by mutableStateOf<Float?>(null)
     var guideY by mutableStateOf<Float?>(null)
     var selected by mutableStateOf(HomeWidgets.MUSIC)
+    /** The next (1) or previous (-1) part to pick — L1 / R1, and (update 325) the toolbar's ◀ ▶. */
+    fun pickStep(dir: Int) {
+        val list = HomeEditSession.cycleList()
+        val i = list.indexOf(selected).coerceAtLeast(0)
+        val n = list.size
+        if (n > 0) selected = list[((i + dir) % n + n) % n]
+    }
+    /** Update 325: what a two-finger pinch does to each part shown (by its id) — HomeEditPinch calls the picked one's. */
+    val pinchers = HashMap<String, (Float) -> Unit>()
     /** Update 125: the Edit Home bar folded away to the left (-1) or right (1); 0 = open. */
     var barFolded by mutableStateOf(0)
     /**
@@ -495,12 +510,7 @@ object HomeEditState {
             Key.DirectionRight -> nudge(selected, 1, 0, fast)
             Key.DirectionUp -> nudge(selected, 0, -1, fast)
             Key.DirectionDown -> nudge(selected, 0, 1, fast)
-            Key.ButtonL1, Key.ButtonR1 -> {
-                val list = HomeEditSession.cycleList()
-                val i = list.indexOf(selected).coerceAtLeast(0)
-                val n = list.size
-                if (n > 0) selected = list[((i + if (e.key == Key.ButtonR1) 1 else -1) % n + n) % n]
-            }
+            Key.ButtonL1, Key.ButtonR1 -> pickStep(if (e.key == Key.ButtonR1) 1 else -1)
             // L2 / R2: smaller / bigger.
             Key.ButtonL2, Key.ButtonR2 -> {
                 HomeEditSession.push("size:$selected")
@@ -607,6 +617,25 @@ internal fun BoxScope.MovableWidget(
         val x2 = if (keepRight) o.x + wNow - w2 else o.x
         HomeEditState.live[id] = z.fractionOf(x2, o.y, w2, h2)
     }
+    /** Update 325: after a pinch made it [r] times its size — its middle stays where it was. */
+    fun keepMiddle(r: Float) {
+        val z = zoneNow
+        val f0 = HomeEditState.live[id] ?: fNow
+        val o = z.place(f0.first, f0.second, wNow, hNow)
+        val w2 = wNow * r
+        val h2 = hNow * r
+        HomeEditState.live[id] = z.fractionOf(o.x + (wNow - w2) / 2f, o.y + (hNow - h2) / 2f, w2, h2)
+    }
+    // Update 325: what a two-finger pinch does to this part while it's the one picked (HomeEditPinch).
+    androidx.compose.runtime.DisposableEffect(id, editing) {
+        if (editing) HomeEditState.pinchers[id] = { zoom ->
+            val now = HomeEditState.liveScale[id] ?: 1f
+            val next = (now * zoom).coerceIn(HomeWidgets.SCALE_MIN, HomeWidgets.SCALE_MAX)
+            HomeEditState.liveScale[id] = next
+            keepMiddle(next / now)
+        }
+        onDispose { HomeEditState.pinchers.remove(id) }
+    }
     Box(
         Modifier
             .zIndex(if (PartsLayer.z > 0f && selected) PartsLayer.z + 2f else PartsLayer.z)
@@ -635,16 +664,18 @@ internal fun BoxScope.MovableWidget(
                             HomeNest.dragging = null; HomeNest.hover = null
                             HomeEditState.guideX = null; HomeEditState.guideY = null
                         }
-                        detectDragGestures(
-                            onDragStart = {
+                        // Update 325 (Toni: "sometimes I can't move things with a finger — it gets resized instead; maybe resize
+                        // with two fingers"): one finger moves it, two fingers pinch it bigger or smaller (round its middle).
+                        // The size handle is a tap now (its Style), and the stretch handles show only on a part big enough
+                        // for them not to cover it.
+                        fun dragStart() {
                                 HomeEditState.selected = id; HomeEditSession.push("drag:$id", force = true)
                                 // (Update 241, #06: a part inside a hollow one starts from where it's drawn now.)
                                 if (HomeNest.centreOf(id) != null) HomeEditState.live[id] = zoneNow.fractionOf(posNow.x, posNow.y, wNow, hNow)
                                 raw = HomeEditState.live[id] ?: fNow
                                 HomeNest.dragging = id
-                            },
-                            onDrag = { change, drag ->
-                                change.consume()
+                        }
+                        fun dragBy(drag: androidx.compose.ui.geometry.Offset) {
                                 val fw = (zoneNow.usableWidth - wNow).coerceAtLeast(1.dp).toPx()
                                 val fh = (zoneNow.usableHeight - hNow).coerceAtLeast(1.dp).toPx()
                                 raw = (raw.first + drag.x / fw).coerceIn(0f, 1f) to (raw.second + drag.y / fh).coerceIn(0f, 1f)
@@ -660,10 +691,35 @@ internal fun BoxScope.MovableWidget(
                                     (if (near.second == null && sy == raw.second) HomeWidgets.grid(sy) else sy)
                                 // (Update 241, #06: the hollow part its middle is over now, outlined.)
                                 HomeNest.hover = HomeEditState.bounds[id]?.let { HomeNest.containerAt(id, it.center) }
-                            },
-                            onDragEnd = { dropped() },
-                            onDragCancel = { HomeNest.dragging = null; HomeNest.hover = null; HomeEditState.guideX = null; HomeEditState.guideY = null }
-                        )
+                        }
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            // (Touching a part picks it — a pinch then sizes this one: HomeEditPinch.)
+                            HomeEditState.selected = id
+                            var moved = 0f
+                            var started = false
+                            var pinching = false
+                            val slop = viewConfiguration.touchSlop
+                            do {
+                                val event = awaitPointerEvent()
+                                val fingers = event.changes.count { it.pressed }
+                                if (fingers >= 2) {
+                                    // (Two fingers: the screen-wide pinch sizes it — HomeEditPinch; it stops moving.)
+                                    if (!pinching) { pinching = true; if (started) { dropped(); started = false } }
+                                } else if (fingers == 1 && !pinching) {
+                                    val pan = event.calculatePan()
+                                    if (!started) {
+                                        moved += pan.getDistance()
+                                        if (moved > slop) { started = true; dragStart() }
+                                    }
+                                    if (started) {
+                                        dragBy(pan)
+                                        event.changes.forEach { if (it.positionChanged()) it.consume() }
+                                    }
+                                }
+                            } while (event.changes.any { it.pressed })
+                            if (started) dropped()
+                        }
                     }
                     // The guide lines (across the whole screen) while it's snapped.
                     .then(if (selected) Modifier.drawWithContent {
@@ -691,39 +747,10 @@ internal fun BoxScope.MovableWidget(
             ScaledWidget(scale) { StyledPart(id) { if (fixedWidth != null) Box(Modifier.width(fixedWidth)) { content() } else content() } }
         }
         if (selected && chromeOn) {
-            // The size handle (bottom left, update 125 — the ✕ keeps the top right): drag out to make it bigger, in to make it smaller.
-            // Update 119: inside the part (a handle hanging outside it never got the touch), bigger, and the drag keeps
-            // going while the part grows (the gesture used to restart — and stop — at every change of size).
-            val sizeNow by androidx.compose.runtime.rememberUpdatedState(size)
-            Box(
-                Modifier.align(Alignment.BottomStart).size(30.dp).clip(RoundedCornerShape(50))
-                    .background(if (selected) ShelfTheme.accent else ShelfTheme.colors.surfaceRaised)
-                    .border(1.5.dp, ShelfTheme.colors.textPrimary.copy(alpha = 0.6f), RoundedCornerShape(50))
-                    // Update 133: a tap on the handle opens the part's Style (a drag still resizes it).
-                    .pointerInput(id) { detectTapGestures { HomeEditState.selected = id; HomeEditState.inspectorTab = 0; HomeEditState.styling = id } }
-                    .pointerInput(id) {
-                        detectDragGestures(
-                            onDragStart = { HomeEditState.selected = id; HomeEditSession.push("resize:$id", force = true) },
-                            onDrag = { change, drag ->
-                                change.consume()
-                                val diag = kotlin.math.max(1f, (sizeNow.width + sizeNow.height).toFloat())
-                                val now = HomeEditState.liveScale[id] ?: 1f
-                                // Out from the bottom left corner (left and down) makes it bigger.
-                                val next = (now * (1f + (-drag.x + drag.y) / diag)).coerceIn(HomeWidgets.SCALE_MIN, HomeWidgets.SCALE_MAX)
-                                HomeEditState.liveScale[id] = next
-                                // Update 179: its top right corner stays still: it grows towards the handle, what's in it with it.
-                                keepCorner(next / now, 1f, keepRight = true)
-                            }
-                        )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.OpenInFull, null, tint = if (selected) onAccentColor() else ShelfTheme.colors.textPrimary, modifier = Modifier.size(15.dp))
-            }
-            // Update 133: stretch it wider (right edge) or taller (bottom edge) on its own.
-            // (Update 179: the left / top edge stays still while it's stretched.)
-            StretchHandle(id, across = true, selected = selected, onStretch = { rx, ry -> keepCorner(rx, ry, keepRight = false) }) { sizeNow }
-            StretchHandle(id, across = false, selected = selected, onStretch = { rx, ry -> keepCorner(rx, ry, keepRight = false) }) { sizeNow }
+            // (Update 325, Toni: "sometimes I can't move things with a finger — it gets resized instead … the icons should
+            // disappear, and what does what in the legend": no size and stretch handles any more — one finger moves a part,
+            // two fingers pinch it bigger or smaller (HomeEditPinch), and its Adjust has the size and the stretch sliders.
+            // The ✕ stays.)
             // The red ✕ (update 104): takes the part off the screen (+ Add brings it back). (Inside the part too.)
             // (Update 212: one step of Undo; Elements › Show brings it back too.)
             Box(
@@ -847,6 +874,8 @@ internal fun BoxScope.HomeEditBar() {
         if (HomeEditState.preview || folded != 0) HomeEditState.chrome.remove("bar")
         if (HomeEditState.preview || folded == 0) HomeEditState.chrome.remove("fold")
     }
+    // Update 325: two fingers anywhere on the screen size the part picked (a part touched first is the one picked).
+    if (!HomeEditState.preview) Box(Modifier.matchParentSize().then(HomeEditPinchElement))
     // (Update 241, #05: while a floating part is dragged, the grid it snaps to — faint lines every 10 % of the safe zone,
     // stronger at the thirds and the middle; no touches.)
     if (HomeNest.dragging != null && !HomeEditState.preview) {
@@ -1062,9 +1091,14 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
         // Update 202: counted — the same part drawn twice for a moment (the game you're on while the row slides to the
         // next one) stays listed until the last of them goes.
         LayoutParts.uses[id] = (LayoutParts.uses[id] ?: 0) + 1
+        // (Update 325: a two-finger pinch sizes it round its middle — HomeEditPinch.)
+        HomeEditState.pinchers[id] = { zoom ->
+            val now = HomeEditState.liveScale[id] ?: 1f
+            HomeEditState.liveScale[id] = (now * zoom).coerceIn(HomeWidgets.SCALE_MIN, HomeWidgets.SCALE_MAX)
+        }
         onDispose {
             val n = (LayoutParts.uses[id] ?: 1) - 1
-            if (n <= 0) { LayoutParts.uses.remove(id); LayoutParts.registered.remove(id); HomeNest.untrack(id) } else LayoutParts.uses[id] = n
+            if (n <= 0) { HomeEditState.pinchers.remove(id); LayoutParts.uses.remove(id); LayoutParts.registered.remove(id); HomeNest.untrack(id) } else LayoutParts.uses[id] = n
         }
     }
     // Update 202: where it is on the screen (the drag's snapping and the safe zone use it), and the screen's safe zone.
@@ -1133,23 +1167,7 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
             val a = r * 0.42f
             drawLine(androidx.compose.ui.graphics.Color.White, c.copy(x = c.x - a, y = c.y - a), c.copy(x = c.x + a, y = c.y + a), 2.dp.toPx())
             drawLine(androidx.compose.ui.graphics.Color.White, c.copy(x = c.x - a, y = c.y + a), c.copy(x = c.x + a, y = c.y - a), 2.dp.toPx())
-            // Update 116: the size handle — in its bottom left corner (update 125; the ✕ keeps the top right).
-            val hc = androidx.compose.ui.geometry.Offset(r + 1.dp.toPx(), size.height - r - 1.dp.toPx())
-            drawCircle(if (selected) accent else androidx.compose.ui.graphics.Color(0xFF2A2E38), r, hc)
-            drawCircle(androidx.compose.ui.graphics.Color.White, r, hc, style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx()))
-            drawLine(androidx.compose.ui.graphics.Color.White, hc.copy(x = hc.x - r * 0.45f, y = hc.y + r * 0.45f), hc.copy(x = hc.x + r * 0.45f, y = hc.y - r * 0.45f), 1.8.dp.toPx())
-            // Update 133: the stretch handles — the middle of the right edge (wider) and of the bottom edge (taller).
-            val fill = if (selected) accent else androidx.compose.ui.graphics.Color(0xFF2A2E38)
-            val rc = androidx.compose.ui.geometry.Offset(size.width - r * 0.6f, size.height / 2f)
-            val bc = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height - r * 0.6f)
-            for (c2 in listOf(rc, bc)) {
-                val across = c2 == rc
-                val hw = if (across) r * 0.6f else r * 1.3f
-                val hh = if (across) r * 1.3f else r * 0.6f
-                drawRoundRect(fill, androidx.compose.ui.geometry.Offset(c2.x - hw, c2.y - hh), androidx.compose.ui.geometry.Size(hw * 2, hh * 2), androidx.compose.ui.geometry.CornerRadius(r))
-                drawRoundRect(androidx.compose.ui.graphics.Color.White, androidx.compose.ui.geometry.Offset(c2.x - hw, c2.y - hh), androidx.compose.ui.geometry.Size(hw * 2, hh * 2), androidx.compose.ui.geometry.CornerRadius(r),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx()))
-            }
+            // (Update 325: no size or stretch handles any more — two fingers pinch it, its Adjust stretches it.)
             // Update 202: the guide lines while it's snapped to the safe zone's edge or middle (as the floating parts have).
             if (selected) {
                 val gx = HomeEditState.guideX
@@ -1203,56 +1221,8 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                         }
                         continue
                     }
-                    // Update 116: the corner handle resizes it (drag out: bigger, in: smaller).
-                    if (wasSelected && first.position.x < r && first.position.y > size.height - r) {
-                        // Update 133: a tap on it (no drag) opens the part's Style.
-                        var moved = 0f
-                        HomeEditSession.push("resize:$id", force = true)
-                        while (true) {
-                            val ev = pending ?: awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                            pending = null
-                            val ch = ev.changes.firstOrNull() ?: break
-                            if (!ch.pressed) { ch.consume(); break }
-                            val d = ch.position - ch.previousPosition
-                            moved += kotlin.math.abs(d.x) + kotlin.math.abs(d.y)
-                            ch.consume()
-                            val diag = kotlin.math.max(1f, (size.width + size.height).toFloat())
-                            val now = HomeEditState.liveScale[id] ?: 1f
-                            val next = (now * (1f + (-d.x + d.y) / diag)).coerceIn(HomeWidgets.SCALE_MIN, HomeWidgets.SCALE_MAX)
-                            HomeEditState.liveScale[id] = next
-                            // Update 179: the opposite (top right) corner stays still, so the part and what's in it
-                            // follow the handle (it used to grow from its middle).
-                            val (stx, sty) = HomeWidgets.stretch(id)
-                            val ds = next - now
-                            val sh = HomeEditState.liveShift[id] ?: (0f to 0f)
-                            HomeEditState.liveShift[id] = (sh.first - ds * stx * size.width / 2f / density) to (sh.second + ds * sty * size.height / 2f / density)
-                        }
-                        if (moved < 8.dp.toPx()) { HomeEditState.inspectorTab = 0; HomeEditState.styling = id }
-                        continue
-                    }
-                    // Update 133: the stretch handles — the middle of the right edge (wider), of the bottom edge (taller).
-                    val acrossHit = wasSelected && first.position.x > size.width - r && kotlin.math.abs(first.position.y - size.height / 2f) < r
-                    val downHit = wasSelected && first.position.y > size.height - r && kotlin.math.abs(first.position.x - size.width / 2f) < r
-                    if (acrossHit || downHit) {
-                        HomeEditSession.push("stretch:$id", force = true)
-                        while (true) {
-                            val ev = pending ?: awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                            pending = null
-                            val ch = ev.changes.firstOrNull() ?: break
-                            if (!ch.pressed) { ch.consume(); break }
-                            val d = ch.position - ch.previousPosition
-                            ch.consume()
-                            val before = HomeWidgets.stretch(id)
-                            HomeEditState.stretchBy(id, if (acrossHit) d.x else 0f, if (downHit) d.y else 0f, size.width, size.height)
-                            // Update 179: the left (or top) edge stays still: it grows towards the handle.
-                            val after = HomeWidgets.stretch(id)
-                            val sc = HomeWidgets.scale(id)
-                            val sh = HomeEditState.liveShift[id] ?: (0f to 0f)
-                            HomeEditState.liveShift[id] = (sh.first + sc * (after.first - before.first) * size.width / 2f / density) to
-                                (sh.second + sc * (after.second - before.second) * size.height / 2f / density)
-                        }
-                        continue
-                    }
+                    // (Update 325: the corner and the edges no longer resize or stretch it — every drag moves it, two
+                    // fingers pinch it: HomeEditPinch. Toni: "it gets resized instead of moved".)
                     // Update 202: moved by the finger's place on the screen (a part made bigger or smaller used to move
                     // slower or faster than the finger), snapping back to its own place and to the safe zone's edges and
                     // middle (a guide line through it), and kept inside the safe zone (SnapPart below).
@@ -1266,6 +1236,8 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                         val ch = ev.changes.firstOrNull() ?: break
                         if (!ch.pressed) { ch.consume(); break }
                         ch.consume()
+                        // (Update 325: two fingers pinch it — it stays put meanwhile.)
+                        if (ev.changes.count { it.pressed } >= 2) { last = coords[0]?.takeIf { it.isAttached }?.localToRoot(ch.position); continue }
                         val lc = coords[0]?.takeIf { it.isAttached }
                         val here = lc?.localToRoot(ch.position)
                         val d = if (here != null && last != null) here - last!! else ch.position - ch.previousPosition
@@ -1505,4 +1477,33 @@ internal object PartRects {
             .minByOrNull { abs(it - p.y.value) } ?: return want
         return zone.fractionOf(p.x, y.dp, w, h)
     }
+}
+
+
+/**
+ * Update 325: Edit Home's two-finger pinch — screen-wide, so it works on a small part too (both fingers on it was hard):
+ * it sizes the picked part round its middle. It shares every touch with what's under it (one finger still reaches the
+ * parts to move them, the toolbar to tap it) and takes only the two-finger ones.
+ */
+private object HomeEditPinchElement : androidx.compose.ui.node.ModifierNodeElement<HomeEditPinchNode>() {
+    override fun create() = HomeEditPinchNode()
+    override fun update(node: HomeEditPinchNode) {}
+    override fun hashCode() = 325
+    override fun equals(other: Any?) = other === this
+}
+
+private class HomeEditPinchNode : Modifier.Node(), androidx.compose.ui.node.PointerInputModifierNode {
+    private var pinching = false
+    override fun onPointerEvent(pointerEvent: androidx.compose.ui.input.pointer.PointerEvent, pass: androidx.compose.ui.input.pointer.PointerEventPass, bounds: IntSize) {
+        if (pass != androidx.compose.ui.input.pointer.PointerEventPass.Main) return
+        val fingers = pointerEvent.changes.count { it.pressed }
+        if (fingers < 2) { pinching = false; return }
+        val id = HomeEditState.selected
+        if (!pinching) { pinching = true; HomeEditSession.push("resize:$id", force = true) }
+        val zoom = pointerEvent.calculateZoom()
+        if (zoom != 1f && zoom.isFinite()) HomeEditState.pinchers[id]?.invoke(zoom)
+        pointerEvent.changes.forEach { if (it.positionChanged()) it.consume() }
+    }
+    override fun onCancelPointerInput() { pinching = false }
+    override fun sharePointerInputWithSiblings() = true
 }

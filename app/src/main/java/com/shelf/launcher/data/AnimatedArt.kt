@@ -329,6 +329,9 @@ object StillCovers {
         byAnimated[a] = s
     }
 
+    /** Update 321: [animated]'s still cover (a cover you picked yourself, looked up by its game). */
+    fun put(animated: String, still: String) { byAnimated[animated] = still }
+
     /** [model]'s still cover when it's an animated cover with one; else [model] as it is. */
     fun swap(model: Any?): Any? = (model as? String)?.let { byAnimated[it] } ?: model
 }

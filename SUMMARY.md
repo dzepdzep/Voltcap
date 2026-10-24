@@ -1,5 +1,353 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
+
+- **The Game Boy ghost, again** (Toni's next screenshot, The Addams Family: a faint straight line over the cartridge's
+  top, running past its right side, and down its left): a rectangle bigger than the cartridge — the face's box. The
+  sides are made from the face's outline, and every pixel over ~2 % counted (× 4 − 24), so a nearly clear background
+  in the box came out as a faint slab round the piece. Now under ~20 % is left out (`SIDE_CUT`, × 4 − 200): in Inspect
+  (InspectSlab), the row's pieces (SolidPiece's solid filter and its sides' picture, `sideAlpha`). The shell's own
+  smoothed edge stays solid. Test `sideAlphaMatchesTheSolidFilter` follows the new cut.
+- **R1 tile: Outline on / off** (Toni: "an R1 tile for the game you're on — a colour outline or not"): Settings › Game
+  look › Coloured frame, from the R1 panel (hold: its setting).
+- Files: `ui/PieceFit.kt`, `ui/SolidPiece.kt`, `ui/MediaInspectView.kt`, `ui/QuickSettings.kt`, `ui/R1Shortcuts.kt`,
+  `ui/R1Extras.kt`, test `CarouselPerf314Test`. Not compiled here (CI builds it).
+
+- **The ghost round a cartridge in Inspect / Wobble** (Toni's screenshots: a faint copy of Pugsley's Scavenger Hunt's
+  Game Boy cartridge past its top edge and down its left side in the game window): the game's own card on the home
+  screen stayed drawn behind the window, where the piece had come out of it; its edges showed past the piece. Only the
+  3D carousel hid it (MediaInspect.key / amount). Now every layout's card for the game you're on fades out as its piece
+  comes out and back as it goes in — through the mark every layout already puts on it (`Modifier.gameOrigin`). (The
+  earlier pass — the far side slices drawn smaller — stays; it wasn't this.)
+- Files: `ui/GameWindow.kt`. Not compiled here (CI builds it).
+
+- **Case + media: UMDs, PS1 discs, DS cards** (Toni: "UMDs spin whole — only the inside should spin, and it isn't the
+  right UMD model"; "PS1 CDs appear small"; "reuse the real DS model for the drawn ones, they look off"):
+  - A UMD is drawn everywhere as the UMD of the open case (UmdBack): the shell stands still and only its disc turns in
+    the window (Moving discs › Spin), the gleam and hub over it; it only bobs (`UmdMedia`, `UmdBack.layers`). A UMD's own
+    photo beside its case no longer spins as if it were a disc (`mediaRound`).
+  - A disc / UMD leaning on its case is its real size against the case (`mediaBesideFrac`): a 120 mm CD on a 125 mm PS1
+    jewel case nearly as tall as it (it was 60 % of every case), a 64 mm UMD on a PSP case, GameCube's 80 mm disc.
+  - Outside the carousel the card / cartridge beside its case is the game's own piece — its console's real shell
+    (`mediaFor`), as everywhere else — not the template's drawing (the DS cards looked off).
+- Files: `ui/UmdBack.kt`, `ui/PhysicalMedia.kt`, `ui/Carousel.kt`, `ui/RealMedia.kt`. Not compiled here (CI builds it).
+
+- **Cases wobble in the carousel too** (Toni: "why is the wobble not working in the carousel view, cases look"): the
+  carousel's 3D cases (and Case + media's case) took only the carousel's own turn — the Cases motion was never added.
+  Now its wobble rides on that turn, the case turning in 3D (only the game you're on when motion is for it alone), as
+  in the other layouts (`GameCarousel` / `CaseWithMedia3D`, `rememberCaseSpin`). Follows Settings › … › Cases motion
+  (Spin / Both; Still by default).
+- Files: `ui/Carousel.kt`. Not compiled here (CI builds it).
+
+- **"Case + media" on the R1 Look tile** (Toni: "the look for the boxes and cases with their physical media is gone, can't
+  find it anywhere"): it was still in Settings › Game look › Cases › With its media, but the R1 Look tile stepped Cases →
+  Cases · turned → Mix and never landed on it. Now Cases → Cases · turned → **Case + media** (the case facing you, its
+  disc / cartridge leaning on it) → Mix…, and the tile names it (`stepGameLook`, `lookLabel`).
+- Files: `ui/GameLookPicker.kt`. Not compiled here (CI builds it).
+
+- **Cases wobble in 3D** (Toni: "the animation the cases do when they wobble left and right makes them seem flat"): the
+  wobble tilted the case's flat picture (a graphics-layer rotationY), so it read as a card. It's now the case's own
+  turn: a 3D case (Case3D) adds it to its turn; a front-facing case (scanned case, official cover case, template box,
+  plain case) turns as a solid piece with a case's thickness (≈ 14 mm on 190, dark plastic) — the same drawing the
+  cartridges use (`rememberCaseSpin`, `CASE_SOLID`, `solidPiece(spinOf)`). The hop is unchanged. A box shown from its
+  side and a case with its disc half out no longer wobble (they'd have turned flat). Settings' little preview still
+  shows the old flat turn.
+- Files: `ui/PhysicalMedia.kt`, `ui/SolidPiece.kt`, `ui/RealMedia.kt`. Not compiled here (CI builds it).
+
+- **"Drawn only" is gone** (Toni: "some layouts picked the drawn cartridges only — delete them, they keep breaking
+  stuff"). Each layout remembered its own look, "Drawn only" included, and put it back when you switched to it. Now a
+  game's own cartridge / disc photo always shows when one is found, else its console's real shell: the "Always the drawn
+  one" choice (Game look › Cartridges & discs), the R1 "Own photos / Drawn only" tile and its second-screen dock shortcut
+  are gone; a layout's saved look never turns it on, the R1 Disc tile no longer does, and it's switched off at start.
+- **R1 Cartridge tile goes back to each console's own** (Toni: "changing the R1 cartridge can't go back to each
+  cartridge's original look"): tap steps Own → each pack shape → Own; hold lists "Each console's own" first. It shows
+  on Real shells too now (with the pack downloaded), so it's always the way back.
+- **Official console names everywhere** (Toni: "categories are sometimes abbreviations — GBA → Game Boy Advance"): the
+  category title on the home screen (it showed the key), the game window's category, the second-screen and companion
+  labels and the emulator settings now use the full name; "Full console names" is no longer a switch (always on), and
+  the names list gained the keys that still showed raw (MegaDrive, SFC, Famicom, FDS, Switch 2, SG-1000, Atari 5200,
+  Neo Geo Pocket Color, WonderSwan Color, TurboGrafx…); SNES reads "Super Nintendo Entertainment System".
+- Files: `ui/GameLookPicker.kt`, `ui/QuickSettings.kt`, `ui/R1TileRules.kt`, `ui/LauncherScreen.kt`,
+  `ui/SecondDockShortcuts.kt`, `data/AppearanceStore.kt`, `data/ConsoleNames.kt`, `ui/SceneStyle.kt`, `ui/GameTitles.kt`,
+  `ui/SettingsDialog.kt`, `ui/CategoryScreen.kt`, `ui/SecondScreen.kt`, `ui/SecondScreenVolt.kt`, `ui/CompanionActivity.kt`,
+  `ui/EmulatorSettingsDialog.kt`. Not compiled here (CI builds it). 
+
+- **Twin icons: its own category page** (Toni: "Twin icons is missing a fitting category screen"): the Categories tool
+  turns the tray into a grid of the categories — each its console's logo (or icon) and name on the same square icons
+  with the same ring — and the top screen shows the one you're on big in the frame with its name on the card. D-pad
+  moves, A or a tap on the one you're on opens it, B or the tool again goes back to the games; the Open bar reads
+  "Open · <category>" (`TwinNav.cats`, `twinCatsKey`, `CatGrid` / `CatSlot` / `CatCard`).
+- **Inspect in the Popup / Reveal windows** (Toni: "some popups are missing the inspect icon"): the row-motion windows
+  (`RowMotionWindow`) get an "◧ Inspect" button after Options, opening the game window with the piece out — as the
+  banner page, Game Glance and the standard window already had.
+- **Twin showcase**: the picture change is a soft cross-fade with a short drift (a twelfth of the picture instead of a
+  third, almost no zoom); the logo settles in gently and, if it was still loading, fades in when it arrives. The
+  second-screen chip is smaller and named **Dashboard** (what it opens) — also Pocket Classic's fallback chip.
+- **Layout standard on every layout** (Toni: "the look layout is still using the last used look there"): layouts whose
+  presets keep your look (Twin desk / icons / showcase, Pocket layouts, Record crate, Card binder, Cube, Hero tiles,
+  Disc station…) or have no preset kept the last look. They get a standard now: Pocket Quest its real cartridges, Tile
+  home square tiles, the others plain covers (`layoutStandardLook`).
+- **Pocket Ribbon: cover and cartridge** (Toni): the top screen's Game picture is the game's cover (SteamGridDB's, as the
+  tiles show it) over a soft blurred fill of itself, with the game's cartridge (or disc) standing in front of it,
+  wobbling / turning as in the cartridge looks, rising in at each game. Layout options › **Cartridge in front** (on by
+  default); "Game art" is now called "Game cover" (`RibbonShowcase`, `Features.ribbonCart`).
+- **Logos come in with the layout's animation** (Toni: "the logos shouldn't just spawn in"): the logo parts (Edit Home ›
+  Logo, SteamGridDB logo, RetroAchievements icon) come in as the game's info does — Motion › The game's info: rise,
+  fade or just appear — once the picture has loaded (`FadeInImage`).
+- Files: `ui/TwinIcons.kt`, `ui/StyleHomes.kt`, `ui/RowRevealWindow.kt`, `ui/GameWindow.kt`, `ui/TwinShowcase.kt`,
+  `ui/TwinScreens.kt`, `ui/GameLookPicker.kt`, `ui/PocketRibbon.kt`, `ui/PocketSettings.kt`, `ui/Motion.kt`,
+  `data/Features.kt`. Not compiled here (CI builds it); not tried on a device.
+
+- **Cartridges: the real shells stay, the template's flat pictures go** (Toni: "now it only shows drawn cartridges, no
+  real ones in sight"). Two passes tonight read "drawn" the wrong way round — they hid, then removed, Voltcap's real
+  shells (the ones matching each console's real cartridge) and left the template pack's flat pictures. Both are undone
+  (reverts of 4140d72 / a0504f2, and the first pass's gates in `mediaFor`), so cartridges are as before tonight: the
+  game's own photo when found, else its console's real shell. New: a cartridge console with no real shell (PS Vita…)
+  is on your custom cartridge pack when it's downloaded, instead of the template's flat picture; discs and UMDs keep
+  their own.
+- **Cube menu: games never cut at the strip's ends** — a piece shows only while it's whole inside the strip, fading as it
+  leaves (`AnchoredStrip(wholeOnly)`, used by `StyleCube`).
+- **Pocket Classic: the Game Boy logos in their own colours** (Toni: "the Game Boy logo is just plain black"): GB / GBC /
+  GBA logos are lettering only, so in ink they read as plain text; they keep their navy / colour lettering now, the
+  other consoles stay in ink (`PocketClassic.pocketLogoTint`).
+- **Save Vault: "PS2 browser style" is back** (Toni: "the PS2 view for Save Vault is gone"): update 285 kept PS2 save
+  icons for Icons only and removed the switch; the switch is back in Filters & look for the card styles (your old
+  setting is still saved), and Inspect follows it.
+- **Save Vault Inspect: the capsule from the side** (Toni: "weird graphics"): its sides were made from the face's opaque
+  parts — the glass is nearly clear, so only the icon and badge were pushed out. They follow the pill's own outline now
+  (`inspectSolid(pill)`).
+- Files: `ui/PhysicalMedia.kt`, `ui/AnchoredStrip.kt`, `ui/StyleCube.kt`, `ui/PocketClassic.kt`, `ui/SaveExplorer.kt`,
+  `ui/SaveVaultStyles.kt`, `ui/SaveInspect.kt`. Not compiled here (CI builds it); not tried on a device.
+
+- **Thor recording after 324** (`voltcap-perf-20261023-190727.zip`, Mix look, All games): 308 → 250 ms a frame, handing
+  the frame to the GPU 63 → 41 ms; the main thread still waits on the render thread ~half of the time. Cause: a
+  cartridge / disc photo without a sides' picture was darkened (the shadow of the games aside) through a buffer of its
+  own — every game aside was drawn into its own offscreen picture in every frame as the row moved. Now its sides, face
+  and back each carry the shade in their own light (as the shells with a sides' picture already did), so an opaque
+  piece is drawn straight in. The buffer stays only for a piece fading in / out at the row's ends and one facing you
+  square drawn from its content (`SolidPiece`).
+- **Still seen in the recording:** ~16 ms a frame of Compose bookkeeping as games come in and go at the row's ends
+  (next round, if the new recording still shows it).
+- **DS / 3DS cards drawn from a box cover** (Toni: "the DS cartridges are missing the DS label" — some of them: the ones
+  with a real label scan have it printed): the sticker gets the real card's white strip across its top with the
+  console's name in plain grey letters (the name, not the logo), the cover filling the rest of the sticker under it —
+  cut to it, its upper part kept, no bands either side (`CartShells.paperStrip`).
+- **DS / 3DS cards without a label scan wear the template's sticker** (Toni: "can we just use this style if there isn't a
+  real cartridge"): the template pack's label frame (`tpl_cartl_nds` / `tpl_cartl_3ds` — the header with the console's
+  name, the bottom band, the cut corner) over the card's sticker, the cover cut into its window (`SwitchLabel.stickerFrame`,
+  loaded with `prime`). Another console's game on a DS card's shape: a white strip with its console's name and a white
+  band along the bottom. The sticker's lower left corner is cut at 45° (2.1 mm) — the band ran into the card's cut corner.
+  On the bottom band a product code like the real ones ("NTR-ASSE-USA", 3DS "CTR-P-ASSE"): made up from the title and
+  your case region (the drawing has no ROM file to read the real one from), the same each time (`CartShells.productCode`).
+  (Toni's own header picture, tried first, is gone again.)
+- **Switching categories in the carousels** (Toni: "just too laggy", `voltcap-perf-20261023-205252.zip`: frames up to
+  530 ms, 200+ ms building the carousel): (1) with To the edge a new collection was built whole in one frame — 12 games a
+  side, 36 in Box flow / Spine wall — beside the leaving one; it's built from the middle out now, 4 a side in its first
+  frame and 2 more a side each frame after (`GameCarousel`, `builtReach`). (2) Every disc's shell picture was looked up on
+  the disk (the app's files folder checked, the fitted copy checked) each time a game was built — 0.4 s of the recording;
+  each answer is kept until the pack changes (`Packs.discFile`). The lower screen's frames are slow in the same moments
+  only because both screens share one main thread — its own work was small.
+- **Thor recordings 20:55 / 21:07** (scrolling the Mix look; switching categories): (1) scrolling froze for 1–2.4 s now
+  and then — the cartridges drawn from parts each make a picture of themselves (PieceShot), a hardware picture made on the
+  main thread (20–100 ms each, 2.7 s of 15), and a row of new games coming in made theirs in the same frame. One at a
+  time now, a frame apart (`PieceShot.take`, `SHOTS`). (2) Switching categories: while both collections slide and fade,
+  every piece counted as not opaque and drew into a buffer of its own each frame (61 ms a frame to the GPU); the slide's
+  fade no longer counts — a piece fades part by part for that moment, drawn straight in (`CarouselItem.opaqueOf`).
+- **Thor recordings 21:20** (scrolling; switching categories): the pieces' pictures (PieceShot) still took 4 s of 15 while
+  categories changed — each waits on the render thread, busiest then. They wait now until the row has been still a
+  moment (`PieceShots.hold`: while a carousel glides, and 1.2 s after a new category comes in). Edition look-ups compiled
+  their title regexes for every game coming in (0.27 s) — compiled once (`MediaEditions.titleOf`).
+- **Some GBA games smaller** (Toni, Yoshi Topsy-Turvy): a game with a special edition got that shell's shape for its slot
+  (the taller tilt cartridge) while its own cartridge photo — a plain one — was fitted into it, smaller. With the photo
+  shown the slot is the console's own shape (`shelfArtAspect`, `physical`).
+- **"A floating layer" over the Game Boy cartridges' top and left** (Toni, the game window): the copies behind a piece's
+  face (its thickness) were drawn as big as the face, only moved sideways — seen large, the far ones stood out past its
+  top edge. Each is now drawn smaller by how much further away it is (perspective, the layers' own camera:
+  `cameraDistance` × 72 px) (`solidPiece`, `depthK`).
+- **The clock's faint "88:88"** (Toni: "something weird behind that clock", Stacks panel): it sat beside the digits — the
+  app's font has digits of different widths. Removed (`StacksArch.ArchClock`).
+- **Thor recordings 21:32 / 21:33** (scrolling Mix; categories): the pieces' pictures still took 3.2 s between category
+  steps, one right after another — a third of a second apart now, and only 2.5 s after a category comes in. While a row
+  glides the pieces' sides are drawn with 4 copies (photos) / 3 (shells), was 6 / 4 (`MOVING_SLICES`, `MOVING_COPIES`).
+- **Alone in the Dark, really** (Toni's file list: the USA discs 1 and 2 with their playlist, and beside them a European
+  "(Europe) (Disc 2).chd" with no disc 1 of its own — that one was listed as a game): a lone later disc of a game whose set
+  is already in the folder (the same title whatever its region and other tags — `baseTitle`) isn't listed; it's under
+  Library check › doubles (`RomScanner`, Pass 2).
+- **Alone in the Dark still showed disc 2** (Toni): a set whose playlist couldn't be written (Android often won't let an
+  app write in the ROM folder) — or with a playlist of its name that couldn't be read — had every disc listed as a game of
+  its own; and a playlist that leaves a disc out left that disc listed. The set is one game now, started from disc 1 and
+  listed under Library check (make its playlist there); a disc missing from its game's own playlist isn't listed again
+  (`RomScanner`, Pass 2). Rescan to see it.
+- **Apps' pictures on their cartridges flickering** (Toni: "the normal colour, then another colour, then only text"): an
+  app's cartridge, disc or case wore its one-colour icon in the accent, which follows the game you're on — every app's
+  piece was drawn again in a new colour at each step. They wear the app's own icon now (`rememberOwnAppIcon`; the
+  one-colour icons stay everywhere else).
+- **Reflection's hint** (Toni: turning it off made it smooth): Settings › Carousel look › Reflection says every game is
+  drawn twice and that, with To the edge and the cartridges / discs looks, off makes scrolling smoother.
+- **Stick lights in the theme's colour, softer** (Toni: "too bright and saturated"): the accent goes to the LEDs a third
+  less saturated and a little darker (`LightsTheme.soft`), at 35 % of the brightness set (was 45 %).
+- **Logos cut to what's drawn in them** (Toni: "I can't get the alignment between the category and the logo"): many logo
+  files have an empty margin, wider on one side, so a centred logo still stood off centre and small; the logo parts cut
+  it away first (`HomeLogoPart`, TrimToOpaque).
+- **Row reveal / The row opens up: focus stays where you move it; something under the buttons** (Toni: "moving right from
+  Continue it goes straight back to Continue … add some stuff underneath so it isn't so empty"): Play was asked for again
+  and again for the first ~0.9 s and whenever the window got the focus back — once a button has the focus it's left
+  alone. Under the buttons, where there's room: the game's achievement badges (earned first, the rest faint, "+N" past 10),
+  or up to 4 of its screenshots when it has none (`RowRevealWindow`).
+- **Edit Home shows the home screen's sizes** (Toni: "two different sizes show when editing Home", Stacks): a part hidden
+  at home (the tool strip, the bottom panel) still shows faintly in Edit Home to bring back, but it took its room there,
+  so the games stood smaller and lower; hidden, it's laid over the screen in Edit Home and takes no room
+  (`StacksBody`: `toolsGhost`, `barGhost`).
+- **Edit Home toolbar's ◀ ▶** (Toni: "misleading — they look like they go through everything, but it collapses"): they
+  step through the parts now (as L1 / R1, `HomeEditState.pickStep`); the bar folds away with its own ⇲ Fold button.
+- **Edit Home by touch: one finger moves, two fingers size** (Toni: "sometimes I can't move things with a finger — it gets
+  resized instead; maybe resize with 2 fingers … then the icons should disappear and a tutorial of what does what in the
+  legend"): the size handle (bottom left) and the stretch handles (right and bottom edge) are gone, on the floating parts
+  and the layouts' own parts — every one-finger drag moves a part (touching a part picks it). A two-finger pinch anywhere on
+  the screen makes the picked part bigger or smaller round its middle (`HomeEditPinch`: a screen-wide touch node that
+  shares every touch with what's under it and takes only the two-finger ones; each part registers what a pinch does in
+  `HomeEditState.pinchers`). Stretching wider / taller stays in its Adjust (the sliders), which also gets 40 % and 55 %
+  sizes. The legend has a touch line: Tap pick · Drag move · Two fingers bigger / smaller · ✕ take off · ✎ Adjust.
+- **Edit Home's logo parts centred** (Toni: "some logos are bigger, some smaller — hard to control where it lines up"):
+  Logo, Logo (SteamGridDB) and Logo (RetroAchievements) are one fixed size now (their width × 140 dp) with the logo in
+  the middle — it sat against the left and the part was as tall as each logo, so every game's logo stood elsewhere
+  (`HomeLogoPart`, `HomeRaLogoPart`). The name shown without a logo is centred too.
+- **Discs spin and cartridges sway again** (Toni: "discs don't spin and cartridges don't wobble", even while going through
+  games): Performance › Automatic had turned Lite on after the slow frames, and Lite stopped every piece's motion. The game
+  you're on keeps its spin / sway / hop in Lite now — one piece; the others stay still (`motionLayer`, `rememberCartSpin`).
+- **Edit Home: smaller parts** (Toni: "it gets stuck at a certain size and won't go lower"): a part could be made no
+  smaller than 60 % — 30 % now (`HomeWidgets.SCALE_MIN`).
+- **No jagged bottoms while scrolling** (Toni: "the jagged bottoms appear only when scrolling"): a gliding row's pieces drew
+  their sides with 3 / 4 copies, and the steps between them showed; as many as at rest now (`MOVING_COPIES`,
+  `MOVING_SLICES`) — the reflection was what cost. The smear stays off while moving.
+- **Reflection without buffers; far cartridges' full sides again** (Toni's recording with Reflection on: still ~240 ms a
+  frame; "the rigid edges on the far cartridges"): each game's reflection faded out through a buffer of its own (~25
+  redrawn every frame). Its fade is now strips: the reflection recorded once and drawn again in 6 strips, each fainter, no
+  buffer (`Modifier.reflectionFade`, `REFLECT_BANDS`). The far cartridges' 3 copies left stepped edges — the carousel
+  no longer sets `farOf` (they draw their full sides).
+- **Cheaper reflection** (Toni: "I liked the reflection — could it cost less?"): each carousel game's reflection was a
+  whole second piece — a cartridge's every copy for its sides again, and a picture of its own taken. In a reflection a
+  cartridge / disc is now its turned face alone, using a picture already taken for the same content and never taking one
+  (`LocalPieceReflection`, set round the reflection in `CarouselArt`). Faint and fading, its thickness didn't show.
+- **The Tiles look is Tile home's square tiles in every carousel view** (Toni: "the Tiles look should literally be the
+  squares used in Tile home", on Case stacks): in the views that turn the games to their edges (Spine wall, Box flow, the
+  pull-out stack, Arc, Turned row, Record flip) the square tiles stood turned and packed like spines; with the Tiles look
+  those views lay them out as the Even row — square tiles facing you, the one you're on a little bigger (`GameCarousel`).
+- **3D cases stand on one floor too** (Toni: "make the cases line up the way the cartridges do"): in the carousels a 3D
+  case shorter than the tallest slot (a DS box beside a DVD case) stands on the row's floor (`standDrop`, cases3d).
+- **Cartridges and discs stand on one floor** (Toni: "all the cartridges and CDs at the same height, their bottoms"): a
+  cartridge / disc shorter than the tallest slot stood in the row's middle; it stands at the bottom of the tallest slot now,
+  where the floor is (`CarouselItem`, `standDrop`).
+- **Cartridges as two turned panels — tried and taken back** (Toni: the N64 cartridges, UMDs and others showed layers on
+  their sides, and it didn't help the sluggishness much): the carousel's cartridges are the stacked copies again.
+- **Lighter sides past the nearest 5 each side** (Toni: "with 5 each side it works super well — but I don't want the
+  sides to feel empty"): with To the edge the carousel still fills to the screen's edges; a cartridge / disc past the 5
+  nearest each side draws its sides with at most 3 copies, no smear (`PieceTurn.farOf`, `FULL_NEAR`, `FAR_COPIES`). (Its
+  face alone, flat, was tried first — Toni: "I hate that they appear flat".)
+- **Remove / add categories on the category screen** (Toni: "Other apps appears in the categories screen for some reason
+  — add a way to add or remove categories there"): a tile's options (Y / Options) have **Remove from categories** — off
+  the category screen and L2 / R2 (and the style homes' tabs), never the last one; the one showing now goes back to All
+  games. **Add category** (a chip by Options, while any are off) lists them to put back. Saved with the tile order
+  (`CategoryTileOrder.isHidden / setHidden`, prefs "category_tile_order"). ("Other apps" shows when an app in the library
+  isn't a game.)
+- **Performance recording: the second screen too** (`second-screen.txt` in the zip): both screens are drawn by the app's
+  one render thread and share the GPU — the Thor recordings show the main screen's frames waiting on it ~half the time.
+- **Second screen Showcase dock** (Toni: "Home black inside red outside, Chrome red inside white outside"): with the
+  one-colour icons every round button there is the accent symbol on the dock's faint plate — no accent plate behind Home,
+  no white plate behind the apps (`SecondShowcase.ShowcaseDock`).
+- **Stick lights off with the screensaver's black** (Toni: "the RGB lights still aren't turning off"): they follow the
+  screensaver's real fade to black (`MusicBlackout.saverBlack`) instead of a timer of their own (which ran on while music
+  held the screensaver up), and also with Lights › System setting (the default; nothing went dark before): the handheld's
+  own light setting is held off while it's black and put back after (`LauncherScreen`).
+- **Hide navigation bar on the Thor's lower screen** — not changed: AYN's system reads its setting for the lower screen's
+  bar only when that bar is made (see `data/GestureHint.kt`); with Force-hide on, turning the lower screen off and on once
+  (or a restart) makes it follow, and Voltcap keeps the setting held after that.
+- **N64 cartridges' bottom** (Toni): looks right now — nothing changed for it.
+- **Copy:** `ui/SolidPiece.kt`, `ui/CartShells.kt`, `ui/SwitchLabel.kt`, `ui/SecondShowcase.kt`, `ui/LauncherScreen.kt`,
+  `ui/SecondScreen.kt`, `data/perf/PerfRecorder.kt`, `ui/Carousel.kt`, `data/Packs.kt`,
+  `data/CategoryTileOrder.kt`, `ui/CategoryScreen.kt`, `ui/PlatformOptions.kt`, `ui/LauncherUiFlags.kt`, `LauncherViewModel.kt`, `ui/MediaEditions.kt`,
+  `ui/StacksArch.kt`, `data/RomScanner.kt`, `ui/AppIcons.kt`, `ui/GameCard.kt`, `ui/StyleHomes.kt`,
+  `ui/Case3D.kt`, `ui/PhysicalMedia.kt`, `ui/HomeEdit.kt`, `ui/HomeParts.kt`, `ui/HomeEditLegend.kt`,
+  `ui/HomePartStyle.kt`, `ui/StyleCaseStacks.kt`, `ui/RowRevealWindow.kt`, `data/AppearanceStore.kt`.
+- **Checked:** CI build on push. **Not tested** on a device.
+
+## Update — 23 Oct 2026 (324): Mix look lighter on the Thor, Endless fills the row, 360° discs out of the case, untagged disc 1
+
+- **Mix look / All games on the Thor** (`voltcap-perf-….zip`, p50 308 ms a frame, 63 ms of it handing the frame to the
+  GPU): photo cartridges and discs (no 3D case model, built from slices) drew up to 48 slices plus a smear layer each.
+  Now at most 16 standing still, and 6 with no smear while the row glides (`SolidPiece`, `MOVING_SLICES`).
+- **Endless with few games** (Toni: "never reaching the edge if there aren't many games"): the row repeats the games
+  until both screen edges are filled (`Features.endlessFill`, on by default). R1 › Endless, hold: Fill / Each game once
+  (the old behaviour) / Off.
+- **Disc / cartridge taken out of its case** (Inspect): a drag now tilts it over its top and bottom as well as turning
+  it, so it can be seen all the way round like the Cartridges / Discs looks; putting it back levels it.
+- **Two-disc games as two entries** (Toni: "the game and then Disc 2"): disc 1 without a tag ("Game (USA).chd" beside
+  "Game (Disc 2) (USA).chd") joins its set now — one game, started from disc 1 / the .m3u (`RomScanner`, Pass 2). A
+  rescan of the library picks it up.
+- **Not done yet:** N64 cartridges' bottom seen from the side (needs a close Inspect screenshot).
+- **Copy:** `ui/SolidPiece.kt`, `ui/EndlessRow.kt`, `ui/QuickSettings.kt`, `ui/MediaInspectView.kt`,
+  `data/Features.kt`, `data/RomScanner.kt`.
+- **Checked:** CI build (assembleDebug + unit tests) on push. **Not tested** on a device.
+
+## Update — 23 Oct 2026 (322): what the Thor recording showed; Square tiles and Layout standard on the Look tile
+
+- **Thor performance recording** (`voltcap-perf-20261023-154140.zip`, Case stacks / carousel, 397 frames in 15 s, p50 71 ms):
+  the main thread was busy 14.5 of 16 s — 6.6 s Compose (animation phase 12–80 ms a frame), 6.1 s drawing (3.6 s of it
+  waiting for the render thread / GPU to take the frame), 1.2 s key handling. Fixed now:
+  - **Click sounds off the main thread** (`UiSounds.play`: SoundPool.play — a call into the audio service — took 1.1 s;
+    the sound and the buzz now start on a thread of their own).
+  - **Case-back titles** (`printTitle`: two regexes compiled for every case in every frame, 0.8 s — compiled once, each
+    title worked out once).
+  Still the big part: drawing the 3D cases (CaseDraw ~0.7 s on the main thread, plus the GPU wait) — next round.
+- **Square tiles on the R1 Look tile** (Toni: "the Tile look is nowhere to be found"): Covers → **Tiles** → Wide → …
+  (it was only under Covers › Cover style in the hold list); the tile names it "Tiles".
+- **Layout standard on Tile home** (Toni: "it isn't changing, just the old one"): Tile home's preset has no look of its
+  own, so the look stayed; its standard is covers as square tiles now (`layoutStandardLook`).
+- **Layout standard picked again did nothing** (Toni: "on all layouts"): once on, a look changed another way (an R1
+  look tile, a sub-choice) left Layout standard marked as the look in use, so picking it again was ignored. It's applied
+  every time it's picked now (`LookChooser`).
+- **Copy:** `ui/UiSounds.kt`, `ui/BoxSides.kt`, `ui/GameLookPicker.kt`.
+
+## Update — 23 Oct 2026 (321): performance recorder, idle rest, battery watcher fix, spine fit, icon styles, install script
+
+- **Performance recorder** (Settings › Diagnostics › Performance recording, `data/perf/PerfRecorder.kt`): "Record 15 s"
+  starts after 5 s; every frame's parts (FrameMetrics), the main thread's stack every 10 ms added up, and Android's
+  sampling profile where allowed → `Download/Voltcap/voltcap-perf-….zip`. Replaces perfetto, which recorded nothing on
+  the Thor. (The Thor carousel stutter waits for one of these.)
+- **Long idle rest** (Settings › Device › Battery saver › Rest when nobody's using it: Never / 5 / 10 (default) / 30 /
+  60 min, `Features.idleRestMin`, `HomeIdle.rest`): the background clip stops and the theme's scene holds a still frame on
+  both screens; the first press brings them back.
+- **Battery watcher**: a long gap (the handheld asleep overnight) was thrown away, so the night was never measured —
+  counted as screen-off time now; each figure also shown as a share of all cores ("x % of a core (y % of all 8)").
+- **Per-game Spine fit** (the game's menu, under Inspect…: Auto / Fill / Whole / Stretch, `data/SpineFits.kt`).
+- **Game window (picture on top)**: the picture is laid out last and takes the height left (weight), not a guess.
+- **Icon styles**: Settings › Screens › App dock › Detail / Solid; one app's own (Detail / Solid / Own colours / as every
+  app): long-press it in the dock (`data/IconStyles.kt`). Animated covers you picked yourself get a still cover for
+  cartridges / discs too (looked up by game, kept by address).
+- **`tools/install.ps1`**: installs the APK built last (any name) with -r -d and compiles it for speed; `-Build` builds
+  first, `-Serial` picks a handheld.
+- **CI**: `verify-update-310.yml` also runs on every push to `claude/**` branches.
+- **Copy:** `data/perf/PerfRecorder.kt` (new), `data/SpineFits.kt` (new), `data/IconStyles.kt` (new), `data/Features.kt`,
+  `data/BatteryWatch.kt`, `data/AnimatedArt.kt`, `data/SettingsScopes.kt`, `LauncherViewModel.kt`, `ui/CrashReportsCard.kt`,
+  `ui/SettingsDialog.kt`, `ui/PowerSaver.kt`, `ui/LauncherScreen.kt`, `ui/SecondScreen.kt`, `ui/BatterySaverUi.kt`,
+  `ui/BatteryWatchUi.kt`, `ui/Case3D.kt`, `ui/GameOptionsDialog.kt`, `ui/GameWindow.kt`, `ui/AppIcons.kt`,
+  `ui/SecondDockShortcuts.kt`, `ui/SecondScreenHome.kt`, `ui/ScreenLayoutsUi.kt`; `tools/install.ps1` (new);
+  `.github/workflows/verify-update-310.yml`.
+- **Not compiled here** (GitHub builds each push); not tried on a device.
+
+## Update — 23 Oct 2026 (320): manuals downloaded ahead, or only previewed
+
+- **Manuals: download all ahead, or preview only** (Toni: "the manual downloads only when I press it on the case — can
+  they all be downloaded ahead if I choose so, and if not just a preview, viewed that time without downloading").
+  Settings › (Manuals card) › **Manuals on this device**: *Preview only — nothing kept* (default) — a manual is fetched
+  into a temporary file only to read it and deleted when its reader closes (`ManualLinks.previewDir` / `dropPreview`,
+  `ArtFiles.downloadManual(into = …)`); *Download all ahead* — every manual found is downloaded in the background, 20 s
+  after start and when it's picked (`downloadManualsAhead`, quiet `findAllManuals`), and one opened is kept. Manuals
+  already on the device open from there either way; the case's booklet shows a manual's first page only when it's kept.
+- **Copy:** `data/Features.kt`, `data/ArtFiles.kt`, `data/ManualLinks.kt`, `LauncherViewModel.kt`, `ui/LauncherScreen.kt`,
+  `ui/SettingsDialog.kt`.
+- **Not compiled here** (GitHub's build check runs); not tried on a device.
+
 ## Update — 23 Oct 2026 (319): GBA spines across the whole box side; box sides in the cover's colours
 
 - **GBA (and any cardboard box) spine too thin** (Toni: "not as wide as the cardboard"): a spine scan narrower than the

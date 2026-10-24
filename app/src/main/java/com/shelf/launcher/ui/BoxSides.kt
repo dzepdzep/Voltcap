@@ -259,7 +259,13 @@ internal fun rememberBoxSides(
 }
 
 /** Update 305: a game's name as printed on generated packaging — without the file's "(USA)", "(Rumble Version)", "[!]" tags. */
-internal fun printTitle(name: String): String {
-    val t = gameDisplayName(name).replace(Regex("\\s*[(\\[][^)\\]]*[)\\]]"), "").replace(Regex("\\s+"), " ").trim()
-    return t.ifBlank { gameDisplayName(name) }
+internal fun printTitle(name: String): String = printTitles.getOrPut(name) {
+    // (Update 322, Thor performance recording: 0.8 s of 15 s compiling these two patterns again for every case drawn in
+    // every frame — compiled once now, and each title worked out once.)
+    val t = gameDisplayName(name).replace(PRINT_TAGS, "").replace(PRINT_SPACES, " ").trim()
+    t.ifBlank { gameDisplayName(name) }
 }
+
+private val PRINT_TAGS = Regex("\\s*[(\\[][^)\\]]*[)\\]]")
+private val PRINT_SPACES = Regex("\\s+")
+private val printTitles = java.util.concurrent.ConcurrentHashMap<String, String>()

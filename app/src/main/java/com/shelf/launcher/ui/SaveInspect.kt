@@ -52,7 +52,9 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -158,7 +160,7 @@ internal fun inspectObjectFor(style: SaveVaultStyle): InspectObject? = when (sty
 
 /** (Update 241, #48: a PS2 save's memory-card saves when the vault draws it with its own icon — the PS2 browser style.) */
 private fun ps2InspectRefs(game: Game, capsule: SaveCapsules.Capsule?): List<Ps2SaveRef> =
-    if (Features.saveVaultStyle.state.value == SaveVaultStyle.ICONS && Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsule) else emptyList()
+    if ((Features.saveVaultStyle.state.value == SaveVaultStyle.ICONS || Ps2BrowserStyle.on.value) && Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsule) else emptyList()
 
 /** (Update 241, #50: whether a save's details in Save Vault offer Inspect — a 3D object to look at.) */
 internal fun saveInspectable(game: Game, capsule: SaveCapsules.Capsule?): Boolean =
@@ -681,7 +683,8 @@ private fun InspectStage(
                     translationY = pose.panY.floatValue
                 }
                 .inspectSolid(pose, if (card != null) saveCardDepth(card) else obj.depth, frac, aspect, tone, clear,
-                    slot = obj == InspectObject.MEMORY_CARD || (obj == InspectObject.CARD_3D && card?.startsWith("memory_card") == true)),
+                    slot = obj == InspectObject.MEMORY_CARD || (obj == InspectObject.CARD_3D && card?.startsWith("memory_card") == true),
+                    pill = if (obj == InspectObject.CAPSULE) 0.62f else null),
             contentAlignment = Alignment.Center
         ) {
             InspectFace(obj, back, game, icon, state, look)
@@ -770,7 +773,13 @@ private fun setPose(m: Matrix, cy: Float, sy: Float, cp: Float, sp: Float, px: F
 private fun Modifier.inspectSolid(
     pose: InspectPose, depth: Float, frac: Float, aspect: Float, tone: Color, clear: Float?,
     /** Update 285 (Toni: "a memory card's opening at the bottom"): its connector slot cut along the bottom edge. */
-    slot: Boolean = false
+    slot: Boolean = false,
+    /**
+     * Update 325 (Toni: "inspecting the capsule from the side shows weird graphics"): the piece's own outline, a pill this
+     * wide against its height, centred — for a face that is mostly clear glass (the capsule), whose sides made from its
+     * opaque parts were only its icon and badge pushed out. Null: the sides follow the face's outline.
+     */
+    pill: Float? = null
 ): Modifier =
     this.drawWithCache {
         val face = obtainGraphicsLayer()
@@ -798,6 +807,11 @@ private fun Modifier.inspectSolid(
         val recordFace: DrawScope.() -> Unit = { content?.drawContent() }
         val recordFromFace: DrawScope.() -> Unit = { drawLayer(face) }
         val recordHole: DrawScope.() -> Unit = { drawLayer(solid) }
+        val pillW = size.width * frac
+        val pillH = if (pill != null) pillW / pill.coerceAtLeast(0.05f) else 0f
+        val recordPill: DrawScope.() -> Unit = {
+            drawRoundRect(Color.White, Offset((size.width - pillW) / 2f, (size.height - pillH) / 2f), Size(pillW, pillH), CornerRadius(pillW / 2f))
+        }
         val recordEdge: DrawScope.() -> Unit = {
             drawLayer(solid)
             drawRect(side, blendMode = BlendMode.SrcIn)
@@ -854,7 +868,7 @@ private fun Modifier.inspectSolid(
             val spread = sqrt((1f - facing * facing).coerceAtLeast(0f))
             slices = if (depthPx < 0.5f) 0 else ceil(depthPx * spread / 1.5f).toInt().coerceIn(0, 40)
             face.record(block = recordFace)
-            solid.record(block = recordFromFace)
+            if (pill != null) { solid.colorFilter = null; solid.record(block = recordPill) } else solid.record(block = recordFromFace)
             edge.colorFilter = InspectLight.of(0.42f + 0.22f * spread)
             edge.alpha = if (clear == null || slices <= 0) 1f
                 else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f).toDouble(), 1.0 / (slices + 1))).toFloat()

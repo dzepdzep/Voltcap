@@ -271,9 +271,14 @@ internal fun ShowcaseDock(
     apps: List<Game>, maxApps: Int, onHome: () -> Unit, onLaunch: (Game) -> Unit, onAllApps: () -> Unit, onSettings: () -> Unit,
     onAdd: () -> Unit, onMenu: (Game) -> Unit, modifier: Modifier = Modifier
 ) {
+    // (Update 325, Toni: "the Home icon and the Chrome icon on the 2nd screen are still not the same colour — Home black
+    // inside red outside, Chrome red inside white outside": with the one-colour icons every round button here is the same —
+    // the symbol in the accent on the dock's faint plate; the accent plate behind Home and the white one behind each app
+    // are for the apps' own colours only.)
+    val mono = com.shelf.launcher.data.Features.secondDockMono.state.value
     Pill(modifier.widthIn(max = 640.dp)) {
-        DockRound(rememberPadId("sc-home"), onHome, bg = ShelfTheme.accent) {
-            Icon(Icons.Filled.Home, "Home", tint = onAccentColor(), modifier = Modifier.size(20.dp))
+        DockRound(rememberPadId("sc-home"), onHome, bg = if (mono) Color.White.copy(alpha = 0.10f) else ShelfTheme.accent) {
+            Icon(Icons.Filled.Home, "Home", tint = if (mono) ShelfTheme.accent else onAccentColor(), modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(6.dp))
         Box(Modifier.width(1.dp).height(28.dp).background(Color.White.copy(alpha = 0.14f)))
@@ -282,24 +287,24 @@ internal fun ShowcaseDock(
             apps.forEach { app ->
                 val id = rememberPadId("sc-app")
                 Box(
-                    Modifier.size(40.dp).padTarget(id) { onLaunch(app) }.clip(CircleShape).background(Color.White.copy(alpha = 0.95f))
+                    Modifier.size(40.dp).padTarget(id) { onLaunch(app) }.clip(CircleShape).background(Color.White.copy(alpha = if (mono) 0.10f else 0.95f))
                         .combinedClickable(onClick = { onLaunch(app) }, onLongClick = { onMenu(app) }),
                     contentAlignment = Alignment.Center
                 ) { SecondDockShortcuts.Icon(app.packageName, Modifier.fillMaxSize().padding(5.dp)) }
             }
             if (apps.size < maxApps) DockRound(rememberPadId("sc-add"), onAdd, bg = Color.White.copy(alpha = 0.10f)) {
-                Icon(Icons.Filled.Add, "Add an app to the dock", tint = Color.White, modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.Add, "Add an app to the dock", tint = if (mono) ShelfTheme.accent else Color.White, modifier = Modifier.size(20.dp))
             }
         }
         Spacer(Modifier.width(6.dp))
         Box(Modifier.width(1.dp).height(28.dp).background(Color.White.copy(alpha = 0.14f)))
         Spacer(Modifier.width(6.dp))
         DockRound(rememberPadId("sc-all"), onAllApps, bg = Color.White.copy(alpha = 0.10f)) {
-            Icon(Icons.Filled.Apps, "All apps", tint = Color.White, modifier = Modifier.size(20.dp))
+            Icon(Icons.Filled.Apps, "All apps", tint = if (mono) ShelfTheme.accent else Color.White, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(6.dp))
         DockRound(rememberPadId("sc-set"), onSettings, bg = Color.White.copy(alpha = 0.10f)) {
-            Icon(Icons.Filled.Settings, "Settings", tint = Color.White, modifier = Modifier.size(20.dp))
+            Icon(Icons.Filled.Settings, "Settings", tint = if (mono) ShelfTheme.accent else Color.White, modifier = Modifier.size(20.dp))
         }
     }
 }

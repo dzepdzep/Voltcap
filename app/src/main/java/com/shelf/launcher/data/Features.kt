@@ -916,6 +916,15 @@ object Features {
      * apps' own colour icons, still without the plate.
      */
     val secondDockMono = BoolPref("second_dock_mono", true)
+    /**
+     * Update 324 (Toni: "with Endless on the games never reach the edges when there aren't many"): Endless fills the row
+     * past both edges with the games again (on), or shows each game once (off, update 226's way — the row stops short when
+     * the category has few games). Hold the R1 Endless tile.
+     */
+    val endlessFill = BoolPref("endless_fill", true)
+    /** Update 321: how the one-colour icons are drawn — the app's drawing kept see-through (DETAIL), or one solid shape. */
+    enum class MonoIconStyle(val label: String) { DETAIL("Detail"), SOLID("Solid"), ORIGINAL("Own colours") }
+    val monoIconStyle = EnumPref("mono_icon_style", MonoIconStyle.DETAIL, arrayOf(MonoIconStyle.DETAIL, MonoIconStyle.SOLID))
 
     // ---- Last played on every device ----
     /** Share "last played" through Google Drive so a game played on another device rises to the top here too. */
@@ -1109,6 +1118,14 @@ object Features {
     }
     val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
     /**
+     * Update 320 (Toni: "the manual downloads only when I press it on the case — can they all be downloaded ahead if I
+     * choose so, and if not just a preview, viewed that time without downloading"). PREVIEW: a manual is fetched only to
+     * read it, into a temporary file deleted when it's closed — nothing kept. AHEAD: every manual found is downloaded onto
+     * the device in the background (and one opened is kept), for reading offline.
+     */
+    enum class ManualKeep(val label: String) { PREVIEW("Preview only — nothing kept"), AHEAD("Download all ahead") }
+    val manualKeep = EnumPref("manual_keep", ManualKeep.PREVIEW, ManualKeep.values())
+    /**
      * Update 319 (Toni): with the printed sides off (Authentic only / Plain cardboard), the sides with no picture of their
      * own named here ("RIGHT", "TOP", "BOTTOM" — BoxSide) take the colour of the cover's edge that meets them, as the
      * printed card of a real box carries on round its corners; the others stay plain card.
@@ -1215,7 +1232,7 @@ object Features {
     enum class PocketAnim(val label: String) { NORMAL("Normal"), FAST("Fast"), OFF("Off") }
     enum class PocketArrange(val label: String) { AUTO("Two screens when there are"), STACKED("One above the other"), SIDE("Side by side") }
     enum class PocketArt(val label: String) { COVER("Game look (cover, case, cartridge…)"), LOGO("Logo"), SHOT("Screenshot") }
-    enum class RibbonTop(val label: String) { GAME("Game art"), ALBUM("Album art"), PHOTO("Your photo"), SLIDES("Screenshots slideshow") }
+    enum class RibbonTop(val label: String) { GAME("Game cover"), ALBUM("Album art"), PHOTO("Your photo"), SLIDES("Screenshots slideshow") }
     /** The user name on the top screens ("" = the RetroAchievements name, else "Player"). */
     val pocketName = StringPref("pocket_name", "")
     val pocketAnim = EnumPref("pocket_anim", PocketAnim.NORMAL, PocketAnim.values())
@@ -1244,6 +1261,12 @@ object Features {
     val ribbonNames = BoolPref("ribbon_names", true)
     /** Update 187: a soft glow round the icon you're on. */
     val ribbonGlow = BoolPref("ribbon_glow", true)
+    /**
+     * Update 325 (Toni: "in Pocket Ribbon, in front of the hero make the cartridge appear by default with its animation,
+     * and instead of the hero the cover art from SteamGridDB, as in the tiles"): the game's cartridge (or disc) standing
+     * in front of its cover on the top screen.
+     */
+    val ribbonCart = BoolPref("ribbon_cart", true)
     /** Icon size (dots, 24–40) and the gap between icons (dots). */
     /** (Update 182: bigger by default, up to 56.) */
     val ribbonIcon = IntPref("ribbon_icon2", 44, 24..56)
@@ -1338,6 +1361,11 @@ object Features {
     val saverMode = EnumPref("saver_mode", BatterySaver.Mode.AUTO, BatterySaver.Mode.values())
     /** Update 187: below this level (%), not plugged in, the low-battery rest starts. */
     val saverLowAt = IntPref("saver_low_at", 20, 5..50)
+    /**
+     * Update 321 (Toni: Voltcap drained 30 % overnight): after this many minutes without a press or a touch, Voltcap rests
+     * (HomeIdle.rest): the background clip stops, the theme's animation holds a still frame, on both screens. 0 = never.
+     */
+    val idleRestMin = IntPref("idle_rest_min", 10, 0..120)
     /** Update 187: Android's own Battery Saver on counts as low battery too. */
     val saverFollowSystem = BoolPref("saver_follow_system", true)
     /** Update 187: Voltcap rests while a game or another app has the controller (two-screen handhelds). */

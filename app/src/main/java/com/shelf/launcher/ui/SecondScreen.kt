@@ -233,7 +233,7 @@ fun SecondScreenHost(
                                     LocalSceneQuality provides secondScreenQuality(LocalSceneQuality.current),
                                     LocalSceneMinFrameMs provides (if (slow) 66 else 0),
                                     // Update 187: the battery saver's low-battery rest holds the scene here too.
-                                    LocalSceneCovered provides (LocalSceneCovered.current || com.shelf.launcher.data.BatterySaver.low),
+                                    LocalSceneCovered provides (LocalSceneCovered.current || com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest),
                                     LocalOnSecondScreen provides true // Update 177: the controller can come here (SecondPad.kt)
                                 ) {
                                     currentContent()
@@ -263,12 +263,15 @@ fun SecondScreenHost(
             }.getOrNull()
         } else null
         presentationHolder[0] = presentation
+        // (Update 325: the performance recorder records this window's frames too.)
+        com.shelf.launcher.data.perf.PerfRecorder.secondWindow = presentation?.window
         showing = presentation != null
         SecondScreenShown.value = presentation != null
         onDispose {
             showing = false
             SecondScreenShown.value = false
             presentationHolder[0] = null
+            com.shelf.launcher.data.perf.PerfRecorder.secondWindow = null
             // (Update 188: its dimming layer goes with it.)
             dimView?.let { SecondDim.detach(it) }
             presentation?.let { runCatching { it.dismiss() } }
@@ -370,7 +373,7 @@ fun CompanionPanel(
                             game.name, color = ShelfTheme.colors.textPrimary, fontSize = 24.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(24.sp), maxFontSize = 24.sp),
                             fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
                         )
-                        Text(game.platform, color = ShelfTheme.secondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.secondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         if ((playtimeMs ?: 0L) > 0L) {
                             Text(
                                 "Played ${PlaytimeStore.format(playtimeMs ?: 0L)}",

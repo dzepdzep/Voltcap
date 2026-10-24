@@ -288,7 +288,7 @@ private fun pickCaseMedia(m: LookCaseMedia) {
 }
 
 /** Update 202: sets the cartridge choice — its 3D finish now and for next time, and the switches that go with it. */
-private fun pickCart(c: LookCart) {
+internal fun pickCart(c: LookCart) {
     val F = Features
     F.modelFinish.value = c.finish
     F.modelFinishLast.value = c.finish
@@ -363,11 +363,26 @@ private fun pickCaseView(turned: Boolean) {
  * positions and the layout's options stay as you have them. A layout that draws its games its own way keeps them so.
  */
 internal fun layoutStandardLook(a: AppearanceSettings): AppearanceSettings {
-    val p = com.shelf.launcher.data.LayoutPresets.builtIns.firstOrNull { it.layout == a.homeLayout } ?: return a
-    val std = p.apply(a)
+    val p = com.shelf.launcher.data.LayoutPresets.builtIns.firstOrNull { it.layout == a.homeLayout }
+    val std = p?.apply(a) ?: a
     val out = a.copy(cardArtType = std.cardArtType, focusedCardStyle = std.focusedCardStyle)
     val F = Features
-    val l = p.look ?: return out
+    // (Update 322, Toni: "Layout standard isn't changing, just the old one" — Tile home's preset has no look of its own,
+    // so the look you had stayed. Its standard is the Switch-style home's: covers as square tiles.)
+    // (Update 325, Toni: "Layout standard still uses the last used look there": every layout whose presets keep your look
+    // — the two-screen and Pocket layouts, Record crate, Card binder, Cube… — or that has no preset kept it. They get a
+    // standard of their own: Pocket Quest its real cartridges, Tile home square tiles, the others plain covers.)
+    if (p?.look == null) {
+        val layout = a.homeLayout
+        val carts = layout == com.shelf.launcher.data.HomeLayout.POCKET
+        F.squareTiles.value = layout == com.shelf.launcher.data.HomeLayout.TILES
+        F.spineLook.value = false; F.carouselWide.value = false
+        F.cartsOnly.value = false; F.caseWithMedia.value = false; F.discCase.value = false
+        setModelsLook(carts)
+        if (carts) F.gridTiles.value = false
+        return out.copy(cardArtType = if (carts) CardArtType.CARTRIDGE_DISC else CardArtType.COVER)
+    }
+    val l = p?.look ?: return out
     val type = out.cardArtType
     F.squareTiles.value = l.tiles
     F.spineLook.value = l.spines
@@ -429,7 +444,6 @@ internal fun migrateGameLook202(type: CardArtType) {
     )
     F.modelFinishLast.value = cart.finish
     if (main == LookMain.CARTS) {
-        if (wasModels) F.mediaShells.value = true
         pickCart(cart)
     } else setModelsLook(false)
 }
@@ -478,7 +492,10 @@ internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? 
 internal fun currentLookName(a: AppearanceSettings): String = when (val m = lookMainOf(a)) {
     LookMain.CARTS -> showAsNow(a).short
     // (Update 280: the two Cases looks.)
-    LookMain.CASES -> if (Features.boxSpine.value) "Cases · turned" else "Cases"
+    // (Update 325: "Case + media" named on the tile too.)
+    LookMain.CASES -> if (Features.caseWithMedia.value) "Case + media" else if (Features.boxSpine.value) "Cases · turned" else "Cases"
+    // (Update 322: Square tiles named as a look of its own on the tile.)
+    LookMain.COVERS -> if (Features.squareTiles.value && !Features.spineLook.value) "Tiles" else m.short
     else -> m.short
 }
 
@@ -490,10 +507,16 @@ internal fun stepGameLook(a: AppearanceSettings): AppearanceSettings {
     // Update 204: Covers → Cases → Mix → Cartridges → Discs → Art (Cartridges & discs' three Show as each a step).
     // Update 280: Covers → Wide capsules → Cases → Cases · turned → Mix → Cartridges → Discs → Art → Layout standard.
     return when (lookMainOf(a)) {
-        LookMain.COVERS -> applyMainLook(LookMain.WIDE, a)
+        // (Update 322, Toni: "the Tile look is nowhere to be found": Covers → Square tiles → Wide…, a step of its own.)
+        LookMain.COVERS -> if (coverStyleNow(a) != LookCoverStyle.TILE) pickCoverStyle(LookCoverStyle.TILE, a) else applyMainLook(LookMain.WIDE, a)
         LookMain.WIDE -> applyMainLook(LookMain.CASES, a).also { pickCaseView(false) }
-        LookMain.CASES -> if (!Features.boxSpine.value) { pickCaseView(true); a }
-            else pickShowAs(LookShowAs.MIX, applyMainLook(LookMain.CARTS, a))
+        // (Update 325, Toni: "the look for the boxes and cases with their physical media is gone, can't find it": a step
+        // of its own after Cases · turned — Case + media, the case facing you with its disc / cartridge leaning on it.)
+        LookMain.CASES -> when {
+            Features.caseWithMedia.value -> { pickCaseMedia(LookCaseMedia.INSIDE); pickShowAs(LookShowAs.MIX, applyMainLook(LookMain.CARTS, a)) }
+            !Features.boxSpine.value -> { pickCaseView(true); a }
+            else -> { pickCaseView(false); pickCaseMedia(LookCaseMedia.BESIDE); a }
+        }
         LookMain.CARTS -> when (showAsNow(a)) {
             LookShowAs.MIX -> pickShowAs(LookShowAs.CARTS, a)
             LookShowAs.CARTS -> pickShowAs(LookShowAs.DISCS, a)
@@ -693,7 +716,9 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
                 LookMain.ART -> Sample.HERO
                 LookMain.LAYOUT -> Sample.FOCUS_WIDE
             }
-            LookChoiceCard(m.label, m.about, m == main, enabled, sample) { if (m != main) onChange(applyMainLook(m, appearance)) }
+            // (Update 323, Toni: "Layout standard did nothing on all layouts": once on, a look changed another way left it
+            // marked as the one in use, so picking it again was ignored. It's applied every time it's picked.)
+            LookChoiceCard(m.label, m.about, m == main, enabled, sample) { if (m != main || m == LookMain.LAYOUT) onChange(applyMainLook(m, appearance)) }
         }
     }
     when (main) {
@@ -801,24 +826,17 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
             }
             // Update 212: Android games as a disc or a cartridge (AndroidMedia.kt).
             AndroidMediaChoice()
-            val photos = !F.mediaShells.value
-            SectionLabel("The game's own photo")
-            ChoiceRow {
-                LookChoiceCard("Use its own photo when one is found", "The game's real cartridge or disc photo from ScreenScraper; the drawn one for the rest.", photos, enabled, Sample.PHOTO_ON) {
-                    F.mediaShells.value = false
-                }
-                LookChoiceCard("Always the drawn one", "Every game drawn, so the real shell and its back always show.", !photos, enabled, Sample.PHOTO_OFF) {
-                    F.mediaShells.value = true
-                }
-            }
+            // (Update 325, Toni: "some layouts picked the drawn cartridges only — delete them, they keep breaking stuff":
+            // "Always the drawn one" is gone. A game's own photo always shows when one is found, else its real shell.)
         }
         LookMain.LAYOUT -> {
             // (Update 280.)
             val p = com.shelf.launcher.data.LayoutPresets.builtIns.firstOrNull { it.layout == appearance.homeLayout }
             SectionLabel("Layout standard")
             MutedNote(
-                if (p != null) "This layout is in its standard look: \"${p.name}\" — ${gameLookLabel(appearance.cardArtFor())}. Switch layout and the look switches with it. Pick another look above to choose your own."
-                else "This layout has no standard look of its own; it keeps the look as it is."
+                if (p?.look != null) "This layout is in its standard look: \"${p?.name}\" — ${gameLookLabel(appearance.cardArtFor())}. Switch layout and the look switches with it. Pick another look above to choose your own."
+                // (Update 325: a layout without a preset look of its own has a standard too — layoutStandardLook.)
+                else "This layout is in its standard look — ${gameLookLabel(appearance.cardArtFor())}. Switch layout and the look switches with it. Pick another look above to choose your own."
             )
         }
         LookMain.ART -> {

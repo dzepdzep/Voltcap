@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,35 +45,56 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  * (capsule, memory card, SD card, floppy label), picked in Layout options › Game info on screen.
  */
 
-/** The game's logo on the art, no backing (its name, big, when it has no logo). */
+/**
+ * The game's logo on the art, no backing (its name, big, when it has no logo).
+ * Update 325 (Toni: "the logo part in Edit Home — some logos are bigger, some smaller, hard to control where it lines up —
+ * centre it"): the part is one fixed size (its width × 140 dp) whatever the logo, and the logo sits in its middle — it
+ * was against the left, the part as tall as each logo, so every game's logo stood somewhere else. Where you put the part
+ * is now the middle of every logo.
+ */
 @Composable
 internal fun HomeLogoPart(name: String, logo: String?) {
-    if (logo != null) {
-        FadeInImage(
-            logo, name, contentScale = ContentScale.Fit, alignment = Alignment.CenterStart,
-            modifier = Modifier.fillMaxWidth().heightIn(max = 140.dp)
-        )
-    } else {
-        Text(
-            gameDisplayName(name), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, maxLines = 2,
-            overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
-        )
+    // (Update 325, Toni: "I can't get the logo lined up with the category — some logos are bigger, some smaller": many logo
+    // files have an empty margin, wider on one side than the other, so a logo in the middle of its part still stood off
+    // centre and smaller. Cut to what's drawn in it first — TrimToOpaque.)
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val model = androidx.compose.runtime.remember(logo) {
+        logo?.let { coil.request.ImageRequest.Builder(ctx).data(it).allowHardware(false).transformations(TrimToOpaque).build() }
+    }
+    Box(Modifier.fillMaxWidth().height(LOGO_PART_H), contentAlignment = Alignment.Center) {
+        if (model != null) {
+            FadeInImage(
+                model, name, contentScale = ContentScale.Fit, alignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Text(
+                gameDisplayName(name), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, maxLines = 2,
+                overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW), textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
     }
 }
+
+/** Update 325: the logo parts' one height (see [HomeLogoPart]). */
+private val LOGO_PART_H = 140.dp
 
 /** Update 125: RetroAchievements' icon for the game (Edit Home › + Add › Logo (RetroAchievements)); its name until there is one. */
 @Composable
 internal fun HomeRaLogoPart(name: String, icon: String?) {
-    if (icon != null) {
-        FadeInImage(
-            icon, name, contentScale = ContentScale.Fit, alignment = Alignment.CenterStart,
-            modifier = Modifier.fillMaxWidth().heightIn(max = 140.dp).clip(RoundedCornerShape(10.dp))
-        )
-    } else {
-        Text(
-            gameDisplayName(name), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-            overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
-        )
+    // (Update 325: one fixed size, the icon in its middle — as HomeLogoPart.)
+    Box(Modifier.fillMaxWidth().height(LOGO_PART_H), contentAlignment = Alignment.Center) {
+        if (icon != null) {
+            FadeInImage(
+                icon, name, contentScale = ContentScale.Fit, alignment = Alignment.Center,
+                modifier = Modifier.fillMaxHeight().aspectRatio(1f).clip(RoundedCornerShape(10.dp))
+            )
+        } else {
+            Text(
+                gameDisplayName(name), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+                overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW), textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
     }
 }
 

@@ -579,6 +579,7 @@ fun SecondScreenHome(
                         menuFor = null
                     },
                     onRemove = { onDockChange(dockPackages - pkg); menuFor = null },
+                    pkg = pkg,
                     onClose = { menuFor = null }
                 )
             }
@@ -1085,7 +1086,9 @@ private fun DockAppMenu(
     canMoveRight: Boolean,
     onMove: (Int) -> Unit,
     onRemove: () -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    /** Update 321: the docked app (its icon style here); null for none. */
+    pkg: String? = null
 ) {
     Box(
         Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)).clickable(onClick = onClose),
@@ -1107,6 +1110,14 @@ private fun DockAppMenu(
             )
             if (canMoveLeft) MenuItem("Move left") { onMove(-1) }
             if (canMoveRight) MenuItem("Move right") { onMove(1) }
+            // (Update 321: this app's icon — Detail, Solid, its own colours, or as every app.)
+            if (pkg != null && !SecondDockShortcuts.isShortcut(pkg) && com.shelf.launcher.data.Features.secondDockMono.state.value) {
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                val own = com.shelf.launcher.data.IconStyles.hasOwn(pkg)
+                MenuItem("Icon: " + com.shelf.launcher.data.IconStyles.of(pkg).label + (if (own) "" else " (as every app)")) {
+                    com.shelf.launcher.data.IconStyles.next(ctx, pkg)
+                }
+            }
             MenuItem("Remove from dock", onClick = onRemove)
         }
     }

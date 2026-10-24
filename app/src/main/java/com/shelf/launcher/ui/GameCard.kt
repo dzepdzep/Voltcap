@@ -364,7 +364,7 @@ fun GameCard(
         // Update 147: an app without art of its own wears its icon on its cartridge's label, disc or case front (the
         // icon used to be laid over the whole card, hiding the cartridge / case under it).
         val appIcon = if (artUrl == null && game.sourceType == SourceType.APP && (pick != null || box3d != null)) {
-            rememberAppIcon(game.packageName)?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
+            rememberOwnAppIcon(game.packageName)?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
         } else null
         // Mastered / completed: the light sweep follows the object's own shape (cartridge, disc, case), not a square round it.
         val shineOn = titles.masteredShimmer && (award == RaAward.MASTERED || award == RaAward.COMPLETED)

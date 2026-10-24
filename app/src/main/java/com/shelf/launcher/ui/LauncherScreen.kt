@@ -741,6 +741,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (state.games.isEmpty()) return@LaunchedEffect
         kotlinx.coroutines.delay(20_000)
         viewModel.prefetchStatsArt()
+        // (Update 320: every manual found downloaded ahead, when Manuals › Download all ahead is chosen.)
+        viewModel.downloadManualsAhead()
         // (Update 319: still covers for the cartridges and discs of games scraped animated before update 317.)
         viewModel.backfillStillCovers()
     }
@@ -1129,7 +1131,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // Art arrives in bursts while scraping: let a burst settle first.
         if (categoryTiles.isNotEmpty()) kotlinx.coroutines.delay(150)
         val snapshot = state
-        categoryTiles = withContext(Dispatchers.Default) { buildCategoryTiles(snapshot, fullNames, categoryImages) }
+        val all = withContext(Dispatchers.Default) { buildCategoryTiles(snapshot, fullNames, categoryImages) }
+        // (Update 325: the ones taken off stay off the screen; Add category lists them.)
+        categoryTiles = all.filterNot { com.shelf.launcher.data.CategoryTileOrder.isHidden(it.key) }
+        removedCategoryTiles = all.filter { com.shelf.launcher.data.CategoryTileOrder.isHidden(it.key) }
     }
     // The category showing now, as a category tile's key ("ALL", a special filter's name, "p:<platform or collection>").
     val currentCategoryKey = when {
@@ -1381,7 +1386,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // once the screensaver has faded to black. Re-applied on every return,
     // since Android hands the lights back to the system while a game runs.
     val lightsContext = androidx.compose.ui.platform.LocalContext.current
-    var lightsDark by remember { mutableStateOf(false) }
+    // (Update 325, Toni: "the RGB lights still aren't turning off while the screen goes to black": they went dark on a
+    // timer of their own, which ran on while music held the screensaver up — and only with Voltcap running the lights,
+    // so with "System setting" (the default) nothing went dark at all. They follow the screensaver's real fade to black
+    // now (MusicBlackout.saverBlack), whoever runs the lights: with System setting the handheld's own light setting is
+    // held off while it's black and put back after.)
+    val lightsDark = MusicBlackout.saverBlack.value && state.appearance.lightsOffWithScreensaver
     var lightsResumes by remember { mutableStateOf(0) }
     val lightsLifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lightsLifecycle) {
@@ -1390,14 +1400,6 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         lightsLifecycle.lifecycle.addObserver(observer)
         onDispose { lightsLifecycle.lifecycle.removeObserver(observer) }
-    }
-    LaunchedEffect(screensaverOn, state.screensaver.blackoutMinutes, state.appearance.lightsOffWithScreensaver) {
-        lightsDark = false
-        val minutes = state.screensaver.blackoutMinutes
-        if (screensaverOn && minutes > 0 && state.appearance.lightsOffWithScreensaver) {
-            kotlinx.coroutines.delay(minutes * 60_000L)
-            lightsDark = true
-        }
     }
     val lightsActive = rememberIsActive()
     // "Theme colour" for the lights: follow the accent, settled (not every animation frame).
@@ -1416,22 +1418,24 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     ) {
         val a = state.appearance
         if (com.shelf.launcher.CrashGuard.safeMode) return@LaunchedEffect // safe mode: no controller lights
+        // (Update 325: Voltcap takes the lights while the screensaver holds them dark, also with System setting.)
+        val runs = a.lightsEnabled || lightsDark
         // Only while on screen with the display on: no background wake-ups, nothing during a game.
         if (!lightsActive) return@LaunchedEffect
         // Light writes (sysfs / HID) are blocking I/O: off the main thread.
         // Theme colours are bright, saturated accents: on the sticks they glared, so they're dimmed.
-        val lightLevel = if (a.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR) (a.lightsBrightness * 45 / 100).coerceAtLeast(3) else a.lightsBrightness
+        val lightLevel = if (a.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR) (a.lightsBrightness * 35 / 100).coerceAtLeast(3) else a.lightsBrightness
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             // "Off": the handheld's own light setting goes off too (it kept putting its colour back);
             // anything else puts it back the way it was.
             // Update 200: the lights timer ("off with the screensaver") does the same while it holds them dark — the
             // Thor's firmware otherwise put its colour back on a stick — and puts the setting back when it ends.
             runCatching {
-                if (a.lightsEnabled && (lightsHeldOff || lightsDark)) com.shelf.launcher.device.SystemLights.holdOff(lightsContext)
+                if ((a.lightsEnabled && lightsHeldOff) || lightsDark) com.shelf.launcher.device.SystemLights.holdOff(lightsContext)
                 else com.shelf.launcher.device.SystemLights.release(lightsContext)
             }
             com.shelf.launcher.data.ControllerLights.apply(
-                lightsContext, a.lightsEnabled, on = !lightsDark && !lightsHeldOff, color = com.shelf.launcher.data.LightsTheme.resolve(a.lightsColor), brightness = lightLevel
+                lightsContext, runs, on = !lightsDark && !lightsHeldOff, color = com.shelf.launcher.data.LightsTheme.resolve(a.lightsColor), brightness = lightLevel
             )
         }
         // The handheld's own firmware switches the stick lights off after a while, and AYN's system puts its
@@ -1441,7 +1445,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val resendMs = if (com.shelf.launcher.device.RootShell.available) 8_000L else 30_000L
         // Update 200: also re-sent while the timer holds them dark with music playing (the pulse loop stops then,
         // so nothing kept them off and the firmware's colour came back).
-        while (a.lightsEnabled && !(a.lightsMusic && !lightsHeldOff && !lightsDark && state.nowPlaying?.isPlaying == true)) {
+        while (runs && !(a.lightsMusic && !lightsHeldOff && !lightsDark && state.nowPlaying?.isPlaying == true)) {
             kotlinx.coroutines.delay(resendMs)
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 if (lightsHeldOff || lightsDark) runCatching { com.shelf.launcher.device.SystemLights.holdOff(lightsContext) }
@@ -1458,7 +1462,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     val lightsNow by androidx.compose.runtime.rememberUpdatedState(
         Triple(state.appearance.lightsEnabled && !com.shelf.launcher.CrashGuard.safeMode, !lightsDark && !lightsHeldOff,
             com.shelf.launcher.data.LightsTheme.resolve(state.appearance.lightsColor) to
-                (if (state.appearance.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR) (state.appearance.lightsBrightness * 45 / 100).coerceAtLeast(3) else state.appearance.lightsBrightness))
+                (if (state.appearance.lightsColor == com.shelf.launcher.data.LIGHTS_THEME_COLOR) (state.appearance.lightsBrightness * 35 / 100).coerceAtLeast(3) else state.appearance.lightsBrightness))
     )
     DisposableEffect(Unit) {
         val app = lightsContext.applicationContext
@@ -1897,7 +1901,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         if (on) "Navigation bar hidden" else "Navigation bar shown"
                     }
                     "voltcap:r1:whoplays" -> { f.whoPlays.value = !f.whoPlays.value; if (f.whoPlays.value) "Who is playing: on" else "Who is playing: off" }
-                    "voltcap:r1:drawnmedia" -> { f.mediaShells.value = !f.mediaShells.value; if (f.mediaShells.value) "Drawn discs" else "Real discs" }
+                    // (Update 325: "Drawn only" is gone — the old dock shortcut just says so.)
+                    "voltcap:r1:drawnmedia" -> "Own photos are always used"
                     "voltcap:r1:theme" -> {
                         val favs = f.favoriteThemes.state.value
                         val favThemes = com.shelf.launcher.ui.theme.AppTheme.values().filter { it.name in favs }
@@ -2707,7 +2712,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     }
                     androidx.compose.runtime.CompositionLocalProvider(
                         LocalSceneAvoid provides sceneAvoid,
-                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm || com.shelf.launcher.data.BatterySaver.low), // (Update 187: the battery saver's low-battery rest: a still frame)
+                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm || com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest), // (Update 187: the battery saver's low-battery rest: a still frame)
                         LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                         // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                         LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
@@ -2951,7 +2956,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 !roomClip && !screensaverOn && !heroLayout && !discCalm &&
                 !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))
         }
-        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low)
+        // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
+        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest)
 
         // Hero carousel: the focused game's hero fills the screen (under the status bar).
         if (heroLayout) {
@@ -2989,7 +2995,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                         !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                 },
-                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low
+                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest
             )
         }
         // The status bar's real height (taller with the music player in it), so what sits under it
@@ -4347,7 +4353,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     onSelect = { categoryIndex = it },
                     art = com.shelf.launcher.data.Features.categoryArt.state.value, style = state.appearance.categoryTileStyle,
                     // (Update 212: the tile's options — its picture, Reorder; a hold reorders now.)
-                    onOptions = { i -> categoryTiles.getOrNull(i)?.let { tile -> categoryIndex = i; pbState.options = tile } }
+                    onOptions = { i -> categoryTiles.getOrNull(i)?.let { tile -> categoryIndex = i; pbState.options = tile } },
+                    onAdd = if (removedCategoryTiles.isEmpty()) null else { { addCategoryOpen = true } }
                 )
             } else {
                 PlatformBrowser(
@@ -4582,7 +4589,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         )
     }
     manualFor?.let { (game, file) ->
-        ManualViewer(file, gameDisplayName(game.name)) { manualFor = null }
+        ManualViewer(file, gameDisplayName(game.name)) { manualFor = null; com.shelf.launcher.data.ManualLinks.dropPreview(file) }
     }
     // Update 202: the manual from anywhere — the game window's Manual button, the booklet in an opened case, the second
     // screen's Details page: found (or downloaded once, its progress in ManualDownloadDialog), then read.
@@ -6504,8 +6511,28 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     else -> null
                 }
             },
-            onMusic = { tile.platform?.let { musicOverrideFor = com.shelf.launcher.data.MusicOverrides.platformKey(it) to tile.label } }
+            onMusic = { tile.platform?.let { musicOverrideFor = com.shelf.launcher.data.MusicOverrides.platformKey(it) to tile.label } },
+            // (Update 325: off the category screen and L2 / R2 — never the last one; showing it now, back to All games.)
+            onRemove = if (categoryTiles.size <= 1) null else { {
+                com.shelf.launcher.data.CategoryTileOrder.setHidden(tile.key, true)
+                if (tile.key == currentCategoryKey) { viewModel.setSpecialFilter(null); viewModel.setPlatformFilter(null) }
+                categoryIndex = categoryIndex.coerceAtMost((categoryTiles.size - 2).coerceAtLeast(0))
+                sounds?.play(UiSound.BACK)
+            } }
         )
+    }
+    // Update 325: Add category — the categories taken off, each put back with A / a tap.
+    if (addCategoryOpen) {
+        ShelfMenuDialog(title = "Add category", subtitle = "Back on the category screen and L2 / R2", onDismiss = { addCategoryOpen = false }, icon = Icons.Filled.Add) {
+            if (removedCategoryTiles.isEmpty()) MutedNote("Every category is on the screen.")
+            removedCategoryTiles.forEach { t ->
+                MenuRow(Icons.Filled.Add, t.label, t.subtitle) {
+                    com.shelf.launcher.data.CategoryTileOrder.setHidden(t.key, false)
+                    sounds?.play(UiSound.SELECT)
+                    if (removedCategoryTiles.size <= 1) addCategoryOpen = false
+                }
+            }
+        }
     }
     musicOverrideFor?.let { (key, title) ->
         MusicOverrideDialog(key, title) { musicOverrideFor = null }

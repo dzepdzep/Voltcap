@@ -82,6 +82,12 @@ internal fun BatterySaverSettings() {
             Features.saverFollowSystem.state.value, { Features.saverFollowSystem.value = it }
         )
     }
+    // (Update 321) The long idle rest.
+    StyleChoice(
+        "Rest when nobody's using it", arrayOf(0, 5, 10, 30, 60), Features.idleRestMin.state.value,
+        { if (it == 0) "Never" else "After $it min" }
+    ) { Features.idleRestMin.value = it }
+    MutedNote("After that long without a press or a touch, the background clip stops and the theme's animation holds a still frame, on both screens. The first press brings everything back.")
     SwitchRow(
         Icons.Filled.SportsEsports, "Rest while you play",
         "On a two-screen handheld a game on one screen leaves Voltcap showing on the other. While a game you started " +

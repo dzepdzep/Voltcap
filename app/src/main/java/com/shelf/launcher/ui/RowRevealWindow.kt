@@ -41,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -163,7 +165,9 @@ internal fun RowMotionWindow(
     onFullDetails: () -> Unit,
     onNeedMedia: (Game) -> Unit,
     onOptions: () -> Unit,
-    onAchievements: () -> Unit
+    onAchievements: () -> Unit,
+    /** Update 325 (Toni: "some popups are missing the inspect function"): the game window with the piece out; null: an app. */
+    onInspect: (() -> Unit)? = null
 ): Boolean {
     val view = LocalView.current
     val origin = remember(g.stableKey) {
@@ -232,13 +236,21 @@ internal fun RowMotionWindow(
             onDispose { }
         }
         val playFocus = remember { FocusRequester() }
+        // (Update 325, Toni: "moving right from Continue it goes straight back to Continue" — here and in Row reveal: Play
+        // was asked for again and again for the first ~0.9 s, and again whenever the window got the focus back, so a step
+        // to the next button was taken back. Once a button has the focus it's left alone.)
+        val buttonsFocused = remember { androidx.compose.runtime.mutableStateOf(false) }
         LaunchedEffect(Unit) {
             kotlinx.coroutines.delay(20); KeyInput.leaveTouchMode(dlgView)
-            for (wait in longArrayOf(60, 140, 250, 400)) { kotlinx.coroutines.delay(wait); runCatching { playFocus.requestFocus() } }
+            for (wait in longArrayOf(60, 140, 250, 400)) {
+                kotlinx.coroutines.delay(wait)
+                if (buttonsFocused.value) break
+                runCatching { playFocus.requestFocus() }
+            }
         }
         val windowInfo = androidx.compose.ui.platform.LocalWindowInfo.current
         LaunchedEffect(windowInfo.isWindowFocused) {
-            if (windowInfo.isWindowFocused) { kotlinx.coroutines.delay(30); runCatching { playFocus.requestFocus() } }
+            if (windowInfo.isWindowFocused) { kotlinx.coroutines.delay(30); if (!buttonsFocused.value) runCatching { playFocus.requestFocus() } }
         }
         val d = LocalDensity.current
         BoxWithConstraints(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { close() } }) {
@@ -400,6 +412,7 @@ internal fun RowMotionWindow(
             Row(
                 Modifier
                     .onSizeChanged { buttonsSize = it }
+                    .onFocusChanged { buttonsFocused.value = it.hasFocus }
                     .graphicsLayer {
                         val t = p.value
                         translationX = lerpF(buttonsFrom.x, buttonsTo.x, t)
@@ -414,6 +427,45 @@ internal fun RowMotionWindow(
                 RevealButton("Details", accent = accent, onAccent = onAccent) { RowReveal.reset(); onFullDetails() }
                 if (g.raGameId != null || g.platform == "Steam") RevealButton("Achievements", accent = accent, onAccent = onAccent) { RowReveal.reset(); onAchievements() }
                 RevealButton("Options", accent = accent, onAccent = onAccent) { RowReveal.reset(); onOptions() }
+                if (onInspect != null) RevealButton("◧  Inspect", accent = accent, onAccent = onAccent) { RowReveal.reset(); onInspect() }
+            }
+
+            // ---- Update 325 (Toni: "add some stuff underneath there so it isn't so empty — achievements or something"):
+            // under the buttons, the game's achievement badges (earned first, the rest faint), or a few of its screenshots
+            // when it has none. Only where there's room for it. ----
+            val stripTop = buttonsTo.y + buttonsSize.height + with(d) { 16.dp.toPx() }
+            val stripH = with(d) { 58.dp.toPx() }
+            val badges = trophies.sortedWith(compareBy<com.shelf.launcher.data.RaAchievementDetail> { if (it.isUnlocked) 0 else 1 }.then(com.shelf.launcher.data.RA_DISPLAY_ORDER))
+                .mapNotNull { a -> com.shelf.launcher.data.RaBadges.url(a.badgeName)?.let { it to a.isUnlocked } }.take(10)
+            val shots = if (badges.isEmpty()) state.screenshots[k].orEmpty().take(4) else emptyList()
+            if (buttonsSize != IntSize.Zero && (badges.isNotEmpty() || shots.isNotEmpty()) && stripTop + stripH <= H - with(d) { 12.dp.toPx() }) Row(
+                Modifier
+                    .graphicsLayer {
+                        val t = p.value
+                        translationX = buttonsTo.x
+                        translationY = stripTop + with(d) { 10.dp.toPx() } * (1f - part(t, 0.5f, 1f))
+                        alpha = part(t, 0.55f, 1f)
+                    }
+                    .widthIn(max = with(d) { (W - buttonsTo.x - pad).coerceAtLeast(0f).toDp() }),
+                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (badges.isNotEmpty()) {
+                    badges.forEach { (url, unlocked) ->
+                        AsyncImage(
+                            url, null, contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(8.dp))
+                                .graphicsLayer { alpha = if (unlocked) 1f else 0.35f }
+                                .border(1.dp, if (unlocked) accent.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        )
+                    }
+                    if (total > badges.size) Text("+${total - badges.size}", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                } else shots.forEach { url ->
+                    AsyncImage(
+                        url, null, contentScale = ContentScale.Crop,
+                        modifier = Modifier.height(58.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(8.dp))
+                    )
+                }
             }
         }
     }

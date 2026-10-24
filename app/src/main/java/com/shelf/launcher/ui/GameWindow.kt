@@ -137,7 +137,11 @@ internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
     // on) stays.
     if (!on || LocalArtMirror.current) return this
     val view = LocalView.current
-    return this.onGloballyPositioned { c ->
+    // (Update 325, Toni: "the Game Boy cartridges still have that ghost layer above and a bit on the left" — screenshots
+    // of the game window's Inspect / Wobble: it was the game's own card on the home screen behind the window, still drawn
+    // where the piece had come out of it, its edges showing past the piece. Only the 3D carousel hid it (MediaInspect);
+    // every layout's card for the game you're on fades out now as its piece comes out, and back as it goes in.)
+    return this.graphicsLayer { if (MediaInspect.key == key) alpha = 1f - MediaInspect.amount.floatValue }.onGloballyPositioned { c ->
         val r = c.boundsInWindow()
         if (r.width < 4f || r.height < 4f) return@onGloballyPositioned
         val win = c.findRootCoordinates().size
@@ -539,7 +543,7 @@ internal fun GameWindow(
         return
     }
     if (rowMotion != Features.WinMotion.NONE && !askedInspect &&
-        RowMotionWindow(rowMotion, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements)) return
+        RowMotionWindow(rowMotion, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onInspect = inspectOther)) return
     // Update 146: the banner page (Settings › Game window › Style), the same for every layout.
     if (Features.winBanner.state.value && !askedInspect) {
         BannerGameWindow(
@@ -1351,11 +1355,13 @@ private fun WindowBody(
             // (Update 318, Toni: "sometimes stuff gets cut off and I can't scroll down there": the room above is a guess — a
             // fact line that wraps, a long title — so the window now scrolls when it still doesn't fit; the D-pad's focus
             // brings the save / performance line into view.)
+            // (Update 321: measured, not guessed — the picture is laid out last and takes the height the facts, buttons and
+            // status line leave (never wider than the estimate), so nothing is pushed off the bottom and nothing scrolls.)
             Column(
-                panelMod.heightIn(max = (maxH - (if (look.panel != null) 28.dp else 0.dp)).coerceAtLeast(120.dp)).verticalScroll(rememberScrollState()),
+                panelMod.heightIn(max = (maxH - (if (look.panel != null) 28.dp else 0.dp)).coerceAtLeast(120.dp)),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Media(Modifier.width(screenW).height(screenW / 1.78f), showName = true)
+                Media(Modifier.weight(1f, fill = false).widthIn(max = screenW).aspectRatio(1.78f, matchHeightConstraintsFirst = true), showName = true)
                 if (info && !details) {
                     Spacer(Modifier.height(8.dp))
                     Box(Modifier.width(screenW)) { WinInfo(look, g, state, extras, descLines = 2) }

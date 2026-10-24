@@ -72,7 +72,7 @@ internal fun BatteryWatchCard() {
         Spacer(Modifier.height(6.dp))
         r.slices.filter { it.hours >= 0.01 }.forEach { s ->
             MutedNote(
-                "${s.where.label}: %.1f h measured · %.1f %% of a core".format(s.hours, s.cpuPercent) +
+                "${s.where.label}: %.1f h measured · %.1f %% of a core (%.1f %% of all ${BatteryWatch.CORES})".format(s.hours, s.cpuPercent, s.wholeCpuPercent) +
                     (s.avgMa?.let { " · %.0f mA".format(it) } ?: "")
             )
         }

@@ -189,6 +189,8 @@ internal fun styleHomeKey(
     if (layout == HomeLayout.POCKET) return pocketQuestKey(event, reach, sound)
     // (Update 239, #93: the Cube menu takes every key too — its big cube, the docked cube, the games and buttons; StyleCube.kt.)
     if (layout == HomeLayout.CUBE) return cubeKey(event, reach, sound)
+    // (Update 325: Twin icons' category page takes the keys while it's open.)
+    if (layout == HomeLayout.TWIN_ICONS && TwinNav.cats.value) return twinCatsKey(event, sound)
     val code = event.nativeKeyEvent.keyCode
     val down = event.type == KeyEventType.KeyDown
     val up = event.type == KeyEventType.KeyUp
@@ -940,7 +942,7 @@ internal fun StyleArt(
     val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null
     // Update 173: an app without art wears its icon on its cartridge's label / case front (the window stayed black).
     val appIcon = if (url == null && cover == null && g.sourceType == com.shelf.launcher.data.SourceType.APP && (pick != null || box3d != null)) {
-        rememberAppIcon(g.packageName)?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
+        rememberOwnAppIcon(g.packageName)?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
     } else null
     // Free-standing media get the pool of light under them, never a frame round their slot.
     val fxMod = if (!lit) Modifier else if (free) Modifier.mediaFloorGlow(true, ring, fx ?: 0f) else Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline)

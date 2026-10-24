@@ -643,6 +643,8 @@ fun SettingsDialog(
                                     )
                                     Spacer(Modifier.height(10.dp))
                                     CrashReportsCard()
+                                    Spacer(Modifier.height(12.dp))
+                                    PerfRecordCard()
                                 }
                                 "Backup" -> BackupContent(onRunSetup)
                                 "Updates & downloads" -> UpdatesContent()
@@ -2470,6 +2472,22 @@ private fun ManualsBulkRow() {
         Spacer(Modifier.height(6.dp))
         ChipFlow { Chip("Stop") { L.stopAll?.invoke() } }
     } else {
+        // (Update 320: kept on the device ahead, or only previewed when opened.)
+        val keep = com.shelf.launcher.data.Features.manualKeep.state.value
+        SectionLabel("Manuals on this device")
+        ChipFlow {
+            com.shelf.launcher.data.Features.ManualKeep.values().forEach { m ->
+                Chip((if (keep == m) "✓ " else "") + m.label, accent = keep == m) {
+                    com.shelf.launcher.data.Features.manualKeep.value = m
+                    if (m == com.shelf.launcher.data.Features.ManualKeep.AHEAD) L.runAll?.invoke(true)
+                }
+            }
+        }
+        MutedNote(
+            if (keep == com.shelf.launcher.data.Features.ManualKeep.AHEAD) "Every manual found is downloaded onto this device in the background, for reading offline (manuals take space: Settings › Metadata shows how much)."
+            else "A manual is fetched only while you read it and deleted when you close it — nothing is kept. Manuals already on the device still open from there."
+        )
+        Spacer(Modifier.height(6.dp))
         ChipFlow {
             Chip("Find manuals", accent = false) { L.runAll?.invoke(false) }
             Chip("Download all manuals", accent = false) { L.runAll?.invoke(true) }
@@ -4238,16 +4256,7 @@ private fun NameAndCategoryContent(appearance: AppearanceSettings, onChange: (Ap
                     )
                 }
             }
-            item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.VideogameAsset,
-                    title = "Full console names",
-                    subtitle = "\"PlayStation 2\", \"Nintendo GameCube\" instead of \"PS2\", \"GameCube\" — in the category bar and on cards.",
-                    checked = appearance.fullConsoleNames,
-                    onChange = { onChange(appearance.copy(fullConsoleNames = it)) },
-                    modifier = m
-                )
-            }
+            // (Update 325: "Full console names" is gone — the official names always show.)
             item { m ->
                 SwitchRow(
                     icon = Icons.Filled.VideogameAsset,
@@ -5581,7 +5590,8 @@ private fun CarouselTiltChoices() {
         f.carouselSpread.state.value, { f.carouselSpread.value = it }
     )
     SwitchRow(
-        Icons.Filled.ViewInAr, "Reflection", "A faint mirror image of each game under it, as on a glossy floor.",
+        // (Update 325, Toni: turning it off made the cartridges' carousel smooth on the Thor — every game drawn twice.)
+        Icons.Filled.ViewInAr, "Reflection", "A faint mirror image of each game under it, as on a glossy floor. Every game is drawn twice — with To the edge and the cartridges / discs looks, off makes scrolling smoother.",
         f.carouselReflect.state.value, { f.carouselReflect.value = it }
     )
     // Update 147: the black stage of a disc loader's case views (on with Arc, Spine wall and Turned row).

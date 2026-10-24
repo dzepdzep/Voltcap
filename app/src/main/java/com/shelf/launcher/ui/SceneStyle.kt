@@ -42,7 +42,8 @@ internal fun categoryKeyLabel(key: String): String = when {
         com.shelf.launcher.SpecialFilter.valueOf(key.removePrefix("special:")).label
     }.getOrDefault(key.removePrefix("special:"))
     key.startsWith("cat:") -> key.removePrefix("cat:").removePrefix("collection:").replace('_', ' ')
-    else -> key
+    // (Update 325, Toni: "categories are sometimes abbreviations — always the official names, GBA → Game Boy Advance".)
+    else -> com.shelf.launcher.data.ConsoleNames.display(key)
 }
 
 /** Every colour's hue turned by [deg] degrees (saturation and brightness kept). */

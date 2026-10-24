@@ -42,7 +42,6 @@ internal object SecondDockShortcuts {
         "voltcap:r1:endless" to "Endless row",
         "voltcap:r1:navbar" to "Hide nav bar",
         "voltcap:r1:whoplays" to "Who is playing",
-        "voltcap:r1:drawnmedia" to "Drawn / real discs",
         "voltcap:r1:theme" to "Next theme",
         "voltcap:r1:saver" to "Battery saver",
         "voltcap:r1:rescan" to "Rescan library",
@@ -100,7 +99,10 @@ internal object SecondDockShortcuts {
         if (mono && BuiltinShortcuts.isBuiltin(id) && id != null) {
             Icon(iconOf(id), names[id], tint = ShelfTheme.accent, modifier = modifier.padding(4.dp))
         } else if (mono) {
-            MonoAppIcon(id, ShelfTheme.accent, modifier)
+            // (Update 321: rememberAppIcon follows the app's own style — Detail, Solid or its own colours.)
+            val icon = rememberAppIcon(id)
+            if (icon != null) androidx.compose.foundation.Image(icon, null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, modifier = modifier)
+            else Box(modifier)
         } else if (BuiltinShortcuts.isBuiltin(id) && id != null) {
             Box(modifier.clip(CircleShape).background(ShelfTheme.accent.copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
                 Icon(iconOf(id), names[id], tint = ShelfTheme.accent, modifier = Modifier.fillMaxSize().padding(7.dp))

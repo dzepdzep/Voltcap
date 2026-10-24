@@ -691,6 +691,15 @@ internal object CartShells {
             // A straight top (or no arc that spans the label).
             if (rt == rb) p.addRoundRect(r, rt, rt, Path.Direction.CW)
             else p.addRoundRect(r, floatArrayOf(rt, rt, rt, rt, rb, rb, rb, rb), Path.Direction.CW)
+            // (Update 325, Toni: the sticker's white bottom band ran into the card's cut corner: a DS / 3DS sticker has its
+            // lower left corner cut off at 45°, about 2.1 mm, along the card's own cut — measured off the template.)
+            if (s.id == "ds" || s.id == "3ds") {
+                val cut = 2.1f * k
+                val tri = Path().apply {
+                    moveTo(r.left - 1f, r.bottom - cut - 1f); lineTo(r.left + cut + 1f, r.bottom + 1f); lineTo(r.left - 1f, r.bottom + 1f); close()
+                }
+                p.op(tri, Path.Op.DIFFERENCE)
+            }
             return p
         }
         val cx = r.centerX()
@@ -793,8 +802,16 @@ internal object CartShells {
         val switchGame = brand.isEmpty() || brand == com.shelf.launcher.data.ConsoleNames.display("Switch") || brand == com.shelf.launcher.data.ConsoleNames.display("Switch2")
         val plaque = header?.takeIf { !scan }
         val switchHeader = if (plaque == null && s.id == "switch" && !scan) SwitchLabel.header()?.let { h -> if (switchGame) h else brandStrip(h, brand) } else null
-        val head = plaque ?: switchHeader
-        val key = "f5|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        // (Update 325, Toni: "the DS cartridges are missing the DS label" — some: those with a label scan have it printed.
+        // A DS / 3DS game's card drawn from its box cover wears the template pack's sticker ("just use this style if there
+        // isn't a real cartridge": SwitchLabel.stickerFrame — its header, bottom band and cut corner), the cover in its
+        // window; another console's game on the card's shape a white strip with its console's name.)
+        val paperOn = plaque == null && switchHeader == null && !scan && art != null && (s.id == "ds" || s.id == "3ds")
+        val ownConsole = com.shelf.launcher.data.ConsoleNames.display(if (s.id == "3ds") "3DS" else "NDS")
+        val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
+        val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
+        val head = plaque ?: switchHeader ?: paperHead
+        val key = "f7|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
@@ -861,7 +878,7 @@ internal object CartShells {
         val coverPic = if (art != null && !scan) labelArt(s, art) else null
         // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
         // (Update 307: a pack plaque header runs across the whole sticker too.)
-        val lr = if (head != null) lr0 else coverPic?.let { pic ->
+        val lr = if (head != null || frame != null) lr0 else coverPic?.let { pic ->
             val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
             val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
             if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
@@ -882,7 +899,12 @@ internal object CartShells {
         // across its top (SwitchLabel, from the template pack's label frame), at the header's own shape; the cover is cut
         // into the rest under it: its upper middle, leaving a box front's corner logo tile and rating off the card.)
         val headerH = head?.let { lr.width() * it.height / it.width.coerceAtLeast(1) }?.coerceAtMost(lr.height() * 0.4f) ?: 0f
-        val artRect = RectF(lr.left, lr.top + band + headerH, lr.right, lr.bottom)
+        // (Toni: "also the line at the bottom, the white square thing": the strip's sticker gets the real card's white band
+        // along its bottom, about a tenth of its height — the art stops above it. The template's sticker has its own.)
+        val footH = if (paperHead != null) lr.height() * 0.097f else 0f
+        val artRect = frame?.let { f ->
+            RectF(lr.left + f.win.left * lr.width(), lr.top + f.win.top * lr.height(), lr.left + f.win.right * lr.width(), lr.top + f.win.bottom * lr.height())
+        } ?: RectF(lr.left, lr.top + band + headerH, lr.right, lr.bottom - footH)
         if (switchHeader != null) {
             c.drawBitmap(switchHeader, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
             if (art != null) c.drawBitmap(art, SwitchLabel.cutRect(art, artRect.width() / artRect.height().coerceAtLeast(1f)), artRect, p)
@@ -907,10 +929,43 @@ internal object CartShells {
                 val pic = coverPic ?: labelArt(s, art)
                 val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
                 val la = artRect.width() / artRect.height().coerceAtLeast(1f)
-                val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
-                    else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
-                if (kotlin.math.abs(pa - la) > 0.02f) { p.color = edgeColour(pic, pa > la); c.drawRect(artRect, p) }
-                c.drawBitmap(pic, null, fit, p)
+                // (Update 325: under a DS card's paper strip the cover fills the rest of the sticker, as on a real card — cut
+                // to it, its upper part kept, rather than a narrower picture with bands either side.)
+                if (paperHead != null || frame != null) {
+                    val src = if (pa < la) {
+                        val ch = (pic.width / la).toInt().coerceIn(1, pic.height)
+                        val top = ((pic.height - ch) * 0.3f).toInt().coerceIn(0, pic.height - ch)
+                        android.graphics.Rect(0, top, pic.width, top + ch)
+                    } else {
+                        val cw = (pic.height * la).toInt().coerceIn(1, pic.width)
+                        android.graphics.Rect((pic.width - cw) / 2, 0, (pic.width - cw) / 2 + cw, pic.height)
+                    }
+                    // (A little past the window, so no paper shows at its edge; the sticker frame lies over it.)
+                    val bleed = if (frame != null) 0.3f * k else 0f
+                    c.drawBitmap(pic, src, RectF(artRect.left - bleed, artRect.top - bleed, artRect.right + bleed, artRect.bottom + bleed), p)
+                    if (frame != null) c.drawBitmap(frame.bmp, null, lr, p)
+                    else if (paperHead != null) {
+                        c.drawBitmap(paperHead, null, RectF(lr.left, lr.top, lr.right, lr.top + headerH), p)
+                        p.color = 0xFFFFFFFF.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom), p)
+                        p.color = 0xFFBDBDBD.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom - footH + 0.12f * k), p)
+                    }
+                    // (Toni: "some fitting numbers there, so it looks like the real cartridges": the product code printed at
+                    // the left of the band under the art, past the cut corner — see productCode.)
+                    val bandH = lr.bottom - artRect.bottom
+                    if (bandH > 0.8f * k) {
+                        val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                            color = 0xFF4A4A4E.toInt(); textSize = minOf(bandH * 0.42f, 1.3f * k); letterSpacing = 0.04f
+                            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+                        }
+                        val by = lr.bottom - bandH / 2f - (tp.ascent() + tp.descent()) / 2f
+                        c.drawText(productCode(s.id, title ?: brand), lr.left + 3.0f * k, by, tp)
+                    }
+                } else {
+                    val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
+                        else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
+                    if (kotlin.math.abs(pa - la) > 0.02f) { p.color = edgeColour(pic, pa > la); c.drawRect(artRect, p) }
+                    c.drawBitmap(pic, null, fit, p)
+                }
             }
         } else if (!title.isNullOrBlank()) {
             text(c, title, artRect, 0xFF2A2A2E.toInt(), p, bold = true, maxLines = 3)
@@ -1069,6 +1124,50 @@ internal object CartShells {
         val t = brand.uppercase()
         while (tp.measureText(t) > w * 0.9f && tp.textSize > h * 0.2f) tp.textSize -= 1f
         c.drawText(t, w / 2f, h / 2f - (tp.ascent() + tp.descent()) / 2f, tp)
+        strips.put(key, b)
+        return b
+    }
+
+    /**
+     * Update 325: the product code a DS / 3DS sticker prints along its bottom ("NTR-ADME-USA", "CTR-P-ADME") — made up
+     * for the game, the same every time: "A", two letters from its title's first words, the region's letter (your case
+     * region: E North America, P Europe, J Japan). The drawing has no ROM file to read the real code from.
+     */
+    private fun productCode(id: String, title: String): String {
+        val region = com.shelf.launcher.data.Features.caseRegion.state.value.code
+        val letter = when (region) { "EU" -> 'P'; "JP" -> 'J'; else -> 'E' }
+        val skip = setOf("THE", "A", "AN", "OF", "AND", "DS", "3D")
+        val words = title.uppercase().split(Regex("[^A-Z]+")).filter { it.isNotEmpty() && it !in skip }
+        val h = kotlin.math.abs(title.hashCode())
+        val fill = "ABCDEFGHJKLMNPRSTUVWXYZ"
+        val two = buildString {
+            words.take(2).forEach { append(it[0]) }
+            if (length < 2 && words.isNotEmpty() && words[0].length > 1) append(words[0][1])
+            var i = 0
+            while (length < 2) { append(fill[(h / (i * 7 + 1)) % fill.length]); i++ }
+        }
+        val code = "A$two$letter"
+        return if (id == "3ds") "CTR-P-$code" else "NTR-$code-" + when (region) { "EU" -> "EUR"; "JP" -> "JPN"; else -> "USA" }
+    }
+
+    /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
+    private fun paperStrip(brand: String): Bitmap {
+        val key = "paper|$brand"
+        strips.get(key)?.let { return it }
+        val w = 540; val h = 110
+        val b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(b)
+        c.drawColor(0xFFF3F3F1.toInt())
+        val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFF8C8E93.toInt(); textAlign = Paint.Align.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            textSize = h * 0.5f; letterSpacing = 0.06f
+        }
+        val t = brand.uppercase()
+        while (tp.measureText(t) > w * 0.86f && tp.textSize > h * 0.2f) tp.textSize -= 1f
+        c.drawText(t, w / 2f, h / 2f - (tp.ascent() + tp.descent()) / 2f, tp)
+        // (A thin grey line under it, where the strip meets the picture.)
+        val lp = Paint().apply { color = 0xFFC9CACD.toInt() }
+        c.drawRect(0f, h - 3f, w.toFloat(), h.toFloat(), lp)
         strips.put(key, b)
         return b
     }

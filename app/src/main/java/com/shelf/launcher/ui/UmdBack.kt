@@ -137,49 +137,88 @@ internal object UmdBack {
     fun front(label: Bitmap?, px: Int = 512): Bitmap {
         val key = "${label?.let { System.identityHashCode(it) } ?: 0}|$px"
         fronts.get(key)?.let { return it }
-        val k = px / W
-        val b = Bitmap.createBitmap(px, (H * k).toInt(), Bitmap.Config.ARGB_8888)
+        val (shell, disc, top) = layers(label, px)
+        val b = Bitmap.createBitmap(shell.width, shell.height, Bitmap.Config.ARGB_8888)
         val c = Canvas(b)
-        c.scale(k, k)
-        val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        val shape = outline(RectF(0f, 0f, W, H))
-        // The white shell, a little shaded towards the bottom.
-        p.shader = LinearGradient(0f, 0f, 0f, H, 0xFFFAFAFB.toInt(), 0xFFE3E5E9.toInt(), Shader.TileMode.CLAMP)
-        c.drawPath(shape, p)
-        p.shader = null
-        // The disc's label through the window: the cover cut square round its middle, filling the ring.
-        val discR = 29.4f
-        c.save()
-        c.clipPath(Path().apply { addCircle(CX, CY, discR, Path.Direction.CW) })
-        if (label != null && label.width > 0 && label.height > 0) {
-            val sq = minOf(label.width, label.height)
-            val src = android.graphics.Rect((label.width - sq) / 2, (label.height - sq) / 2, (label.width + sq) / 2, (label.height + sq) / 2)
-            c.drawBitmap(label, src, RectF(CX - discR, CY - discR, CX + discR, CY + discR), p)
-        } else {
-            p.shader = RadialGradient(CX, CY, discR, intArrayOf(0xFFC9CDD3.toInt(), 0xFF8E939B.toInt()), null, Shader.TileMode.CLAMP)
-            c.drawCircle(CX, CY, discR, p)
-            p.shader = null
-        }
-        // A soft gleam across the clear window.
-        p.shader = LinearGradient(CX - discR, CY - discR, CX + discR, CY + discR,
-            intArrayOf(0x33FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x22FFFFFF), floatArrayOf(0f, 0.35f, 0.7f, 1f), Shader.TileMode.CLAMP)
-        c.drawCircle(CX, CY, discR, p)
-        p.shader = null
-        c.restore()
-        // The window's dark rim, the white middle and the hub.
-        p.style = Paint.Style.STROKE; p.strokeWidth = 0.9f; p.color = 0xFF1C1E22.toInt()
-        c.drawCircle(CX, CY, discR + 0.2f, p)
-        p.style = Paint.Style.FILL; p.color = 0xFFF6F7F8.toInt()
-        c.drawCircle(CX, CY, 10.5f, p)
-        p.style = Paint.Style.STROKE; p.strokeWidth = 0.35f; p.color = 0x55000000
-        c.drawCircle(CX, CY, 10.5f, p)
-        p.style = Paint.Style.FILL
-        // The shell's edge.
-        p.style = Paint.Style.STROKE; p.strokeWidth = 0.5f; p.color = 0x44000000
-        c.drawPath(shape, p)
-        p.style = Paint.Style.FILL
+        c.drawBitmap(shell, 0f, 0f, null)
+        val k = px / W
+        c.drawBitmap(disc, (CX - DISC_R) * k, (CY - DISC_R) * k, null)
+        c.drawBitmap(top, 0f, 0f, null)
         fronts.put(key, b)
         return b
+    }
+
+    /** Update 325: the disc's middle in the front picture, as shares of its width and height (for turning it). */
+    const val DISC_X = CX / W
+    const val DISC_Y = CY / H
+    /** Update 325: the disc's radius as a share of the front's width. */
+    const val DISC_R_W = 29.4f / W
+    private const val DISC_R = 29.4f
+
+    private val layerCache = object : android.util.LruCache<String, Triple<Bitmap, Bitmap, Bitmap>>(8 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: Triple<Bitmap, Bitmap, Bitmap>) = value.first.byteCount + value.second.byteCount + value.third.byteCount
+    }
+
+    /**
+     * Update 325 (Toni: "a UMD spins whole — only the inside should spin"): the front in three layers — the shell, the
+     * disc seen through its window (square, [DISC_R] round its middle, to turn on its own), and what lies over the disc
+     * (the window's gleam and rim, the white middle with the hub, the shell's edge).
+     */
+    fun layers(label: Bitmap?, px: Int = 512): Triple<Bitmap, Bitmap, Bitmap> {
+        val key = "${label?.let { System.identityHashCode(it) } ?: 0}|$px"
+        layerCache.get(key)?.let { return it }
+        val k = px / W
+        val hpx = (H * k).toInt()
+        val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        val shapePath = outline(RectF(0f, 0f, W, H))
+        // The white shell, a little shaded towards the bottom.
+        val shell = Bitmap.createBitmap(px, hpx, Bitmap.Config.ARGB_8888)
+        Canvas(shell).apply {
+            scale(k, k)
+            p.shader = LinearGradient(0f, 0f, 0f, H, 0xFFFAFAFB.toInt(), 0xFFE3E5E9.toInt(), Shader.TileMode.CLAMP)
+            drawPath(shapePath, p)
+            p.shader = null
+        }
+        // The disc's label through the window: the cover cut square round its middle, filling the ring.
+        val dpx = (2 * DISC_R * k).toInt().coerceAtLeast(1)
+        val disc = Bitmap.createBitmap(dpx, dpx, Bitmap.Config.ARGB_8888)
+        Canvas(disc).apply {
+            scale(k, k)
+            translate(DISC_R - CX, DISC_R - CY)
+            clipPath(Path().apply { addCircle(CX, CY, DISC_R, Path.Direction.CW) })
+            if (label != null && label.width > 0 && label.height > 0) {
+                val sq = minOf(label.width, label.height)
+                val src = android.graphics.Rect((label.width - sq) / 2, (label.height - sq) / 2, (label.width + sq) / 2, (label.height + sq) / 2)
+                drawBitmap(label, src, RectF(CX - DISC_R, CY - DISC_R, CX + DISC_R, CY + DISC_R), p)
+            } else {
+                p.shader = RadialGradient(CX, CY, DISC_R, intArrayOf(0xFFC9CDD3.toInt(), 0xFF8E939B.toInt()), null, Shader.TileMode.CLAMP)
+                drawCircle(CX, CY, DISC_R, p)
+                p.shader = null
+            }
+        }
+        val top = Bitmap.createBitmap(px, hpx, Bitmap.Config.ARGB_8888)
+        Canvas(top).apply {
+            scale(k, k)
+            // A soft gleam across the clear window.
+            p.shader = LinearGradient(CX - DISC_R, CY - DISC_R, CX + DISC_R, CY + DISC_R,
+                intArrayOf(0x33FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x22FFFFFF), floatArrayOf(0f, 0.35f, 0.7f, 1f), Shader.TileMode.CLAMP)
+            drawCircle(CX, CY, DISC_R, p)
+            p.shader = null
+            // The window's dark rim, the white middle and the hub.
+            p.style = Paint.Style.STROKE; p.strokeWidth = 0.9f; p.color = 0xFF1C1E22.toInt()
+            drawCircle(CX, CY, DISC_R + 0.2f, p)
+            p.style = Paint.Style.FILL; p.color = 0xFFF6F7F8.toInt()
+            drawCircle(CX, CY, 10.5f, p)
+            p.style = Paint.Style.STROKE; p.strokeWidth = 0.35f; p.color = 0x55000000
+            drawCircle(CX, CY, 10.5f, p)
+            // The shell's edge.
+            p.strokeWidth = 0.5f; p.color = 0x44000000
+            drawPath(shapePath, p)
+            p.style = Paint.Style.FILL
+        }
+        val out = Triple(shell, disc, top)
+        layerCache.put(key, out)
+        return out
     }
 
     private fun shade(argb: Int, f: Float): Int = AColor.argb(

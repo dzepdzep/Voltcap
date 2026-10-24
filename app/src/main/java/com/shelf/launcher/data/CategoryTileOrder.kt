@@ -22,6 +22,21 @@ object CategoryTileOrder {
         val p = context.applicationContext.getSharedPreferences("category_tile_order", Context.MODE_PRIVATE)
         prefs = p
         order = p.getString("order", "").orEmpty().split('|').filter { it.isNotBlank() }
+        hidden = p.getString("hidden", "").orEmpty().split('|').filter { it.isNotBlank() }.toSet()
+        version.value++
+    }
+
+    // ---- Update 325 (Toni: "Other apps appears in the categories screen for some reason — add a way to add or remove
+    // categories there"): tiles you took off — gone from the category screen and from L2 / R2, until added back. ----
+
+    @Volatile private var hidden: Set<String> = emptySet()
+
+    /** Whether the tile [key] ("ALL", a special filter's name, "p:<console or collection>") was taken off. */
+    fun isHidden(key: String): Boolean = key in hidden
+
+    fun setHidden(key: String, off: Boolean) {
+        hidden = if (off) hidden + key else hidden - key
+        prefs?.edit()?.apply { if (hidden.isEmpty()) remove("hidden") else putString("hidden", hidden.joinToString("|")) }?.apply()
         version.value++
     }
 

@@ -29,7 +29,9 @@ object SettingsScopes {
         // Update 202: the games' manual addresses (ManualLinks; the PDFs themselves are in the saved art).
         "manual_urls",
         // Platform artwork / maker / year, and your own platform order.
-        "platform_media", "platform_order"
+        "platform_media", "platform_order",
+        // Update 321: each game's own spine fit (SpineFits).
+        "spine_fit"
     )
 
     /** Tied to this handheld's folders, emulators, screens or storage. */
@@ -56,7 +58,9 @@ object SettingsScopes {
         // Which RetroAchievements account is the one playing on this device.
         "ra_account_slot",
         // Update 144: sleep mode for the radios (it needs this handheld's system rights).
-        "sleep_radios"
+        "sleep_radios",
+        // Update 319: when each game's still cover was last looked for (this device's own look-ups).
+        "still_cover_backfill"
     )
 
     /** Credentials and sign-in state (plus the plain-text names older versions fell back to). */

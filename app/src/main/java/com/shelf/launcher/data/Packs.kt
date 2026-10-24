@@ -147,8 +147,25 @@ object Packs {
     private val discEmpty = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
 
     /** Your disc-console shell [name] when it's on the device. */
+    /**
+     * Update 325 (Thor recording, switching categories with the cartridges / discs carousel: 0.4 s of a 15 s recording in
+     * here — the app's files folder looked up and checked on the disk, and a fitted copy's file checked, for every disc
+     * in every row built): each disc's answer kept until the pack changes ([version]).
+     */
+    private val discFiles = java.util.concurrent.ConcurrentHashMap<String, Any>()
+    private val NO_FILE = Any()
+
     fun discFile(name: String): File? {
-        version.intValue
+        val ver = version.intValue
+        val key = "$name|$ver"
+        discFiles[key]?.let { return it as? File }
+        val f = discFileNow(name)
+        if (discFiles.size > 256) discFiles.clear()
+        discFiles[key] = f ?: NO_FILE
+        return f
+    }
+
+    private fun discFileNow(name: String): File? {
         val c = appContext ?: return null
         if ("disc_$name.webp" !in have) return null
         val f = File(dir(c, Pack.DISCS), "$name.webp")

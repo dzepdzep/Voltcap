@@ -187,6 +187,12 @@ class UiSounds(context: Context) {
 
     private var lastActionAt = 0L
 
+    /**
+     * Update 322 (Thor performance recording: 1.1 s of 15 s on the main thread inside SoundPool.play — a call into the
+     * system's audio service on every press): the sound and the buzz start on a thread of their own.
+     */
+    private val worker by lazy { android.os.HandlerThread("voltcap-ui-sounds").apply { start() }.let { android.os.Handler(it.looper) } }
+
     fun play(sound: UiSound) {
         UiSoundClock.lastPlayed = System.currentTimeMillis()
         if (sound == UiSound.MOVE) {
@@ -204,9 +210,9 @@ class UiSounds(context: Context) {
         }
         if (enabled && volume > 0f) {
             val level = volume * if (sound == UiSound.MOVE) 0.7f else 1f
-            ids[sound]?.let { pool.play(it, level, level, 1, 0, 1f) }
+            ids[sound]?.let { id -> worker.post { runCatching { pool.play(id, level, level, 1, 0, 1f) } } }
         }
-        if (haptics) buzz(sound)
+        if (haptics) worker.post { runCatching { buzz(sound) } }
     }
 
     /**

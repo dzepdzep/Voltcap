@@ -124,3 +124,31 @@ fun CrashReportsCard() {
         }
     }
 }
+
+/**
+ * Update 321: Settings card — Performance recording (data/perf/PerfRecorder): "Record 15 s" starts in a few seconds,
+ * so Settings can be closed and the slow screen used; the zip lands in Download/Voltcap.
+ */
+@Composable
+fun PerfRecordCard() {
+    val context = LocalContext.current
+    val status = com.shelf.launcher.data.perf.PerfRecorder.status
+    ShelfCard {
+        SectionLabel("Performance recording")
+        MutedNote(
+            "Records ${com.shelf.launcher.data.perf.PerfRecorder.SECONDS} seconds of how long each frame takes and what Voltcap was busy with. " +
+                "It starts 5 seconds after you press it: close Settings and use the screen that's slow (scroll the carousel, say). " +
+                "The file is saved in Download/Voltcap — send it for a look."
+        )
+        Spacer(Modifier.height(6.dp))
+        if (status != null) Text(status, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp)
+        Spacer(Modifier.height(6.dp))
+        ChipFlow {
+            Chip("Record ${com.shelf.launcher.data.perf.PerfRecorder.SECONDS} s") {
+                var c: android.content.Context? = context
+                while (c is android.content.ContextWrapper && c !is android.app.Activity) c = c.baseContext
+                (c as? android.app.Activity)?.let { com.shelf.launcher.data.perf.PerfRecorder.start(it) }
+            }
+        }
+    }
+}

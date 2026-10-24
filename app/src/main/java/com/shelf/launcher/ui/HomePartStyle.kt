@@ -199,7 +199,7 @@ internal fun PartSizeControls(id: String, first: FocusRequester? = null) {
     MutedNote("Size")
     ChipFlow {
         val now = HomeEditState.liveScale[id] ?: 1f
-        listOf(0.7f to "70 %", 0.85f to "85 %", 1f to "100 %", 1.25f to "125 %", 1.5f to "150 %").forEach { (v, l) ->
+        listOf(0.4f to "40 %", 0.55f to "55 %", 0.7f to "70 %", 0.85f to "85 %", 1f to "100 %", 1.25f to "125 %", 1.5f to "150 %").forEach { (v, l) ->
             Chip(l, accent = kotlin.math.abs(now - v) < 0.02f) { HomeEditSession.push("size:$id"); HomeEditState.liveScale[id] = v }
         }
     }

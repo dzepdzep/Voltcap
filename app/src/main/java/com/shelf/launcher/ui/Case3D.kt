@@ -171,8 +171,17 @@ internal fun Case3D(
     // Update 312 is strictly an N64 Inspect alignment fix. Do not change
     // existing artwork fitting on SNES, GB, GBA or other cardboard boxes.
     // (Update 316: fitted away from the screen's thread — rememberDerived.)
+    // (Update 321: the game's own Spine fit — its menu — over the usual fitting.)
+    val spineMode = com.shelf.launcher.data.SpineFits.of(g.stableKey)
     val ownFitted: List<android.graphics.Bitmap>? =
-        if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox319|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        if (spineMode != com.shelf.launcher.data.SpineFits.Mode.AUTO && userSpine == null) rememberDerived(ownUpright, "spineMode|${spineMode.name}|$depth") { b ->
+            listOf(when (spineMode) {
+                com.shelf.launcher.data.SpineFits.Mode.FILL -> fillCrop(b, depth, 0.02f)
+                com.shelf.launcher.data.SpineFits.Mode.WHOLE -> fitSpineInside(b, depth, false)
+                else -> scaleAcross(b, depth)
+            })
+        }
+        else if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox319|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317: keep cases as update 240 had them — the middle cut keeps the spine of a scan that carries slivers of
         // the back and front beside it, as the GameCube ones do; see the note above SPINE_TOO_WIDE.)
         else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else "spineFit318|$depth") { b ->
@@ -233,7 +242,7 @@ internal fun Case3D(
     // Update 173: a game without a cover (an app) gets its plain front — its icon and name — in its case template too
     // (an Android game's case had no Android band then), and the app's icon on it.
     val noArt = cover == null && ownFront == null
-    val appIcon = if (noArt && g.sourceType == com.shelf.launcher.data.SourceType.APP) rememberAppIcon(g.packageName) else null
+    val appIcon = if (noArt && g.sourceType == com.shelf.launcher.data.SourceType.APP) rememberOwnAppIcon(g.packageName) else null
     val noCover = remember(title, g.hue, noArt, appIcon) { if (noArt) plainFront(title, g.hue, appIcon?.asAndroidBitmap()) else null }
     // Update 188: a scanned front (or a box scan used as the cover) keeps its own shape — the case takes it, within a
     // quarter of the console's case shape — instead of being cut to the template's shape: a PlayStation case lost the

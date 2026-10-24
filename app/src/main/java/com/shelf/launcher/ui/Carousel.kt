@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -122,7 +123,7 @@ internal fun ShelfGameArt(
             val real = realScanOf(gArt, typed)
             // (Update 173: an app without art: its icon on the label / case front — they stayed blank.)
             val appIcon = if (cover == null && typed == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
-                rememberAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
+                rememberOwnAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
             } else null
             if (real != null) MediaFocus(on) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp), platform = g.platform, gameKey = g.stableKey) }
             else if (pick != null) {
@@ -211,7 +212,11 @@ internal fun ShelfGameArt(
 }
 
 /** The width / height a game's art takes on the shelf (its case's front, its cartridge / disc, else a cover's shape). */
-internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardArtType, hidden: Set<String>, mixed: Boolean, cover: String? = null): Float {
+internal fun shelfArtAspect(
+    g: Game, cardArtType: com.shelf.launcher.data.CardArtType, hidden: Set<String>, mixed: Boolean, cover: String? = null,
+    /** Update 325: the game's scans — with its own cartridge / disc photo shown, the slot is that photo's console shape. */
+    physical: List<Pair<String, String>>? = null
+): Float {
     // Update 115: the wide looks at their own shape (they used to be cropped into a cover's).
     if (cardArtType == com.shelf.launcher.data.CardArtType.CAPSULE) return CAPSULE_ASPECT
     // Update 166: the Tile look in the carousels too: every cover a square tile (it was the Voltcap row's only).
@@ -219,7 +224,13 @@ internal fun shelfArtAspect(g: Game, cardArtType: com.shelf.launcher.data.CardAr
     if (cardArtType == com.shelf.launcher.data.CardArtType.HERO || cardArtType == com.shelf.launcher.data.CardArtType.SCREENSHOT) return 16f / 9f
     val gArt = artForGame(cardArtType, g.platform, hidden, mixed, gameKey = g.stableKey)
     if (isFreeMedia(gArt, g.platform)) {
-        if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey)?.aspect ?: 0.7f // (Update 229, #31)
+        // (Update 325, Toni: "some GBA games appear smaller": a game with a special edition of its own — Yoshi Topsy-Turvy's
+        // taller tilt cartridge — got that shell's shape for its slot, and its own photo, a plain cartridge's shape, was
+        // fitted into it smaller than the others. With the photo shown, the console's own shape.)
+        if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) {
+            val photo = physical != null && realScanOf(gArt, typedArtFor(gArt, physical, null, g.platform, g.stableKey)) != null
+            return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = if (photo) null else g.stableKey)?.aspect ?: 0.7f // (Update 229, #31)
+        }
         // (Update 235, #27/#38: Voltcap's plain case at its real case's shape.)
         return MediaCovers.of(g.platform)?.frontAspect ?: plainCaseSpec(g.platform)?.aspect ?: 0.7f
     }
@@ -759,7 +770,14 @@ internal fun GameCarousel(
         cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL)
     // (Update 238, #21: the pull-out stack is made of real cases; the other looks — cartridges, discs, spines, wide
     // capsules, tiles — stand as in the Spine wall, their pieces turned toward their edges and packed each side.)
-    val view = if (chosenView == CarouselView.SPINE_PULL && !caseLook) CarouselView.SPINE_WALL else chosenView
+    // (Update 325, Toni: "the Tiles look should literally be the squares used in Tile home — why would it be anything
+    // else": in the views that turn the games to their edges — Spine wall, Box flow, the pull-out stack, Arc, Turned row,
+    // Record flip — the square tiles stood turned and packed like spines. With the Tiles look they're an even row of
+    // square tiles facing you, the one you're on a little bigger, as Tile home shows them.)
+    val tilesLook = cardArtType == com.shelf.launcher.data.CardArtType.COVER && carouselTiles() && !spines
+    val turnsToEdges = chosenView.cases || chosenView == CarouselView.BOX_FLOW || chosenView == CarouselView.SPINE_PULL || chosenView == CarouselView.FLIP
+    val view = if (tilesLook && turnsToEdges) CarouselView.POP
+        else if (chosenView == CarouselView.SPINE_PULL && !caseLook) CarouselView.SPINE_WALL else chosenView
     // (Update 238, #21: the pull-out stack's slots are its games' usual case thickness apart.)
     val pullDepthNow = androidx.compose.runtime.remember(games, view) { if (view == CarouselView.SPINE_PULL) typicalCaseDepth(games) else 0.085f }
     androidx.compose.runtime.SideEffect { Carousel.pullDepth = pullDepthNow }
@@ -1046,7 +1064,7 @@ internal fun GameCarousel(
         val unitTarget = games.getOrNull(focus)?.takeIf { bigW > 0.dp }?.let { fg ->
             // (Update 171: with the room for its cartridge / disc beside it, so the neighbours stand clear of it.)
             val media = if (cases3d) caseMediaFor(fg, cardArtType, mixed)?.room(realCaseMm(fg.platform)) ?: 0f else 0f
-            val a = if (cases3d) case3dAspect(fg, mixed) else if (carouselWideOn(cardArtType)) CAPSULE_ASPECT else shelfArtAspect(fg, cardArtType, hidden, mixed)
+            val a = if (cases3d) case3dAspect(fg, mixed) else if (carouselWideOn(cardArtType)) CAPSULE_ASPECT else shelfArtAspect(fg, cardArtType, hidden, mixed, physical = physicalMedia[fg.stableKey] ?: HomeScans.map[fg.stableKey])
             val sh = carouselSlotH(a, bigW, bigH, mixed)
             ((sh * (a + media)) / bigW).coerceIn(0.6f, 2.4f)
         } ?: 1f
@@ -1079,6 +1097,29 @@ internal fun GameCarousel(
         // Update 162: while a category change slides, the collection that was here goes on along the path (layer 1)
         // and the new one comes in after it from the side the change came from (layer 0), each fading as it goes.
         val showOld = swap.token != 0 && swap.doneToken.intValue != swap.token && swap.oldGames.isNotEmpty()
+        // Update 325 (Thor recording, switching categories with To the edge: 200+ ms frames — the new collection's games,
+        // 12 a side, 36 in Box flow / Spine wall, all built in one frame beside the leaving ones): a new collection is
+        // built from the middle out — 4 a side in its first frame, 2 more a side each frame after, until it reaches as
+        // far as the view does.
+        val buildKey = (games.firstOrNull()?.stableKey ?: "") + "|" + games.size
+        val build = remember { arrayOf<Any?>(null, Int.MAX_VALUE) }
+        val buildTick = remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        if (build[0] != buildKey) {
+            build[1] = if (build[0] == null) Int.MAX_VALUE else minOf(reachNow, 4)
+            build[0] = buildKey
+        }
+        buildTick.intValue
+        LaunchedEffect(buildKey) {
+            // (The new collection's pieces take their pictures once it has come in — PieceShots.hold.)
+            PieceShots.hold(2500)
+            while ((build[1] as Int) < reachNow) {
+                androidx.compose.runtime.withFrameNanos { }
+                build[1] = (build[1] as Int) + 2
+                buildTick.intValue++
+            }
+            if (build[1] != Int.MAX_VALUE) { build[1] = Int.MAX_VALUE; buildTick.intValue++ }
+        }
+        val builtReach = build[1] as Int
         val shiftK = if (pageKind == Features.PageAnim.SLIDE) CarouselSwap.SHIFT else 0f
         val shiftN = shiftK.toInt()
         val dirS = swap.dir
@@ -1108,7 +1149,7 @@ internal fun GameCarousel(
                 val lBase = if (old) kotlin.math.floor(oldPos).toInt() else base
                 // (The leaving collection only as far as 8 each side: a long stack's far end just goes, rather than
                 // building dozens of games for a moment.)
-                val lReach = if (old) minOf(reachNow, 8) else reachNow
+                val lReach = if (old) minOf(reachNow, 8) else minOf(reachNow, builtReach)
                 val lo = lBase - lReach - 1 - (if (showOld && ((!old && dirS > 0) || (old && dirS < 0))) shiftN else 0)
                 val hi = lBase + lReach + 2 + (if (showOld && ((!old && dirS < 0) || (old && dirS > 0))) shiftN else 0)
                 val focusIdx = if (old) kotlin.math.round(oldPos).toInt() else vFocus
@@ -1402,7 +1443,7 @@ private fun CarouselItem(
     // Update 166: "Covers · wide capsule": the one you're on unfolds into its wide capsule (and folds back as you move on).
     val wideHere = on && !spineHere && model == null && !c.cases3d && carouselWideOn(c.cardArtType)
     val aspect0 = if (c.cases3d) case3dAspect(g, c.mixed) else if (spineHere) SPINE_ASPECT
-        else if (wideHere) CAPSULE_ASPECT else shelfArtAspect(g, c.cardArtType, c.hidden, c.mixed, cover)
+        else if (wideHere) CAPSULE_ASPECT else shelfArtAspect(g, c.cardArtType, c.hidden, c.mixed, cover, physical)
     val aspect by androidx.compose.animation.core.animateFloatAsState(aspect0, androidx.compose.animation.core.tween(220), label = "carouselWide")
     val hFull = if (model != null || spineHere) minOf(c.bigH, if (aspect > 1f) c.bigW / aspect * 1.25f else c.bigH)
         else carouselSlotH(aspect, c.bigW, c.bigH, c.mixed)
@@ -1413,7 +1454,14 @@ private fun CarouselItem(
         Math.pow((maxOf(w, h) / c.caseRefMm).toDouble(), 0.6).toFloat().coerceIn(0.74f, 1f)
     } ?: 1f else 1f
     val h0 = hFull * realK
-    val floorDrop = (hFull - h0) / 2f
+    // (Update 325, Toni: "make all the cartridges and CDs stand at the same height, their bottoms level": a cartridge or
+    // disc shorter than the tallest slot (a Game Boy cartridge beside an N64 one, a disc beside a DS card) stood in the
+    // middle of the row; it stands on the row's floor now — the bottom of the tallest slot, where the floor is drawn.)
+    // (Toni: "make the cases line up the way the cartridges do": the 3D cases too — a DS box beside a DVD case stands on
+    // the same floor.)
+    val standDrop = if ((c.cases3d || gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) && !spineHere && !wideHere && model == null)
+        ((c.bigH - hFull) / 2f).coerceAtLeast(0.dp) else 0.dp
+    val floorDrop = (hFull - h0) / 2f + standDrop
     // Update 168: the case looks with their media (Case + disc, 3D case + disc, Case + its media) in the 3D-case views
     // too: the disc half out of the case behind it, or the cartridge / disc leaning against it — the views drew the case
     // alone. The slot widens the same both sides, so the case stays in the middle.
@@ -1478,8 +1526,11 @@ private fun CarouselItem(
     val shadeOf: () -> Float = { if (culled.value) 0f else c.place(ps.s, relNow.value()).shade }
     // Update 314 (Flip 2 ANR, the GPU out of memory): drawn fully opaque now — the slot's alpha (its place's, a category
     // slide's fade) all 1 — so a solid piece needs no buffer of its own to fade as one. (Inspect's dimming is the group's.)
+    // (Update 325, Thor recording switching categories: 61 ms a frame handing it to the GPU — while the two collections
+    // slide and fade, every piece counted as not opaque and drew itself into a buffer of its own in every frame. Their
+    // fade no longer counts: for that short slide a piece fades part by part, drawn straight in.)
     val opaqueOf: () -> Boolean = {
-        c.place(ps.o, relNow.value()).alpha * fadeNow.value() >= 0.999f
+        c.place(ps.o, relNow.value()).alpha >= 0.999f
     }
     // Update 316: one turn handed to the piece for the slot's whole life (reading the latest turn / opacity) — a new one at
     // every recomposition (each step, for the game left and the one reached) made the piece rebuild its drawing.
@@ -1489,6 +1540,8 @@ private fun CarouselItem(
     val shadeLatest = rememberUpdatedState(shadeOf)
     val pieceTurn = remember { PieceTurn({ turnLatest.value() }, 12f, { opaqueLatest.value() }, activeOf = { !culled.value }, shadeOf = { shadeLatest.value() },
         movingOf = { ctxNow.value.moving?.invoke() == true }) }
+        // (Update 325: no longer farOf — the far cartridges' 3 copies left stepped edges on them, Toni: "the rigid edges on
+        // the far cartridges"; the reflection was what cost.)
     Box(
         modifier
             // The drawing order, read while placing (zIndex is otherwise fixed at composition).
@@ -1548,13 +1601,16 @@ private fun CarouselItem(
             if (c.cases3d && withMedia != null) CaseWithMedia3D(
                 g, cover, physical, aspect, h0, withMedia, c, on, yawOf, shadeOf, mediaShow
             )
-            else if (c.cases3d) vcTrace("VC:Case3D") { Case3D(
+            // (Update 325, Toni: "why is the wobble not working in the carousel's cases look": the 3D cases took only the
+            // carousel's turn — Cases › motion's wobble is added to it now, the case's own, as a solid case turns.)
+            else if (c.cases3d) vcTrace("VC:Case3D") { MediaFocus(on) { val caseSpin = rememberCaseSpin(); Case3D(
                 g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), reflect = c.reflect,
-                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf,
+                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White,
+                yawOf = caseSpin?.let { s -> { yawOf() + s() } } ?: yawOf, shadeOf = shadeOf,
                 // (Update 235, #24: not with a cover you picked for the game — it's the case front, UserCovers.)
                 realFront = (c.cardArtType == com.shelf.launcher.data.CardArtType.CASE || c.cardArtType == com.shelf.launcher.data.CardArtType.CASE_REAL) &&
                     UserCovers.of(g.stableKey) == null
-            ) } else vcTrace("VC:CarouselArt") { CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn, if (solidHere) pieceTurn else null) }
+            ) } } else vcTrace("VC:CarouselArt") { CarouselArt(g, on, spineHere, c.reflect, h0, shadeOf, if (wideHere) com.shelf.launcher.data.CardArtType.CAPSULE else c.cardArtType, c.art, c.overrides, remember(g.stableKey, physical) { if (physical != null) mapOf(g.stableKey to physical) else emptyMap() }, c.screenshots, c.mixed, c.realRef, c.pulseOn, if (solidHere) pieceTurn else null) }
         } }
     }
 }
@@ -1564,9 +1620,10 @@ private class CaseMedia(val pick: MediaPick, val discOut: Boolean) {
     private val round get() = pick.shell.disc || pick.shell == MediaShell.UMD
     /** The media's height against the case's. */
     fun size(caseMm: Pair<Float, Float>?): Float =
-        if (discOut) ((caseMm?.let { 120f / it.second } ?: 0.63f) * 0.92f).coerceIn(0.45f, 0.95f) else if (round) 0.6f else 0.5f
-    /** Its width against its height. */
-    val aspect: Float get() = if (round) 1f else pick.aspect
+        if (discOut) ((caseMm?.let { 120f / it.second } ?: 0.63f) * 0.92f).coerceIn(0.45f, 0.95f)
+        else mediaBesideFrac(pick.shell, caseMm, if (round) 0.6f else 0.5f) // (Update 325: at its real size)
+    /** Its width against its height. (Update 325: a UMD at its own shape, not square.) */
+    val aspect: Float get() = if (pick.shell == MediaShell.UMD) pick.shell.aspect else if (round) 1f else pick.aspect
     /** How far it reaches past the case's right edge, against the case's height. */
     fun room(caseMm: Pair<Float, Float>?): Float = size(caseMm) * aspect * (if (discOut) 0.5f else 0.65f)
 }
@@ -1611,7 +1668,7 @@ private fun CaseWithMedia3D(
     val label = scans?.firstOrNull { it.first == "Disc label" }?.second
     // (Update 173: an app without art wears its icon on its cartridge's label, as the cards do — it was blank.)
     val appIcon = if (cover == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
-        rememberAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
+        rememberOwnAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
     } else null
     val dens = c.dens
     @Composable
@@ -1624,7 +1681,8 @@ private fun CaseWithMedia3D(
         }) { ProvidePieceTurn(PieceTurn(yawOf, 12f)) {
             // (Update 171: the real photo is the piece itself — it was once put on the drawn cartridge's label, a small
             // cartridge inside the cartridge. Update 173: beside a real case only.)
-            if (realMedia != null) RealMediaPicture(realMedia, m.pick.shell.disc || m.pick.shell == MediaShell.UMD, Modifier.fillMaxSize(), platform = g.platform, gameKey = g.stableKey)
+            // (Update 325: a UMD's photo isn't round — it spun whole, as a disc; mediaRound.)
+            if (realMedia != null) RealMediaPicture(realMedia, mediaRound(g.platform), Modifier.fillMaxSize(), platform = g.platform, gameKey = g.stableKey)
             else PhysicalMedia(m.pick.shell, label ?: cover ?: appIcon, Modifier.fillMaxSize(), platform = m.pick.platform, labelIsScan = label != null, caseCover = cover ?: appIcon, title = g.name, noCase = true)
         } }
     }
@@ -1634,10 +1692,15 @@ private fun CaseWithMedia3D(
         // The disc behind the case, its middle at the case's right edge.
         if (m.discOut) MediaPiece(Modifier.size(mw, mh).offset(x = caseW / 2f))
         Box(Modifier.size(caseW, h)) {
-            Case3D(
-                g, cover, physical, 0f, caseAspect, Modifier.fillMaxSize(), reflect = c.reflect,
-                frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White, yawOf = yawOf, shadeOf = shadeOf, realFront = !userCover
-            )
+            // (Update 325: the case's own wobble on the carousel's turn, as the 3D cases alone.)
+            MediaFocus(on) {
+                val caseSpin = rememberCaseSpin()
+                Case3D(
+                    g, cover, physical, 0f, caseAspect, Modifier.fillMaxSize(), reflect = c.reflect,
+                    frame = on && c.focusBorder, frameColor = if (on && c.focusBorder) c.accentOf() else Color.White,
+                    yawOf = caseSpin?.let { s -> { yawOf() + s() } } ?: yawOf, shadeOf = shadeOf, realFront = !userCover
+                )
+            }
         }
         // The cartridge / disc leaning against the case's lower right, in front.
         if (!m.discOut) MediaPiece(Modifier.size(mw, mh).offset(x = caseW / 2f + mw * 0.15f, y = (h - mh) / 2f).graphicsLayer { rotationZ = 8f })
@@ -1764,6 +1827,34 @@ private fun CarouselName(g: Game, modifier: Modifier) {
     )
 }
 
+/** Update 325: how many strips a reflection's fade is drawn in (see [reflectionFade]). */
+private const val REFLECT_BANDS = 6
+
+/**
+ * Update 325: the reflection's fade without a buffer: the content recorded once, then drawn again in [REFLECT_BANDS] strips
+ * over the part that shows (the 38 % nearest the game — the layer is upside down: its bottom), each through a layer of
+ * its own alpha (ModulateAlpha: no buffer), fainter the further from the game — 32 % at the game down to nothing, as the
+ * gradient it replaces.
+ */
+@androidx.compose.runtime.Composable
+private fun Modifier.reflectionFade(): Modifier {
+    val base = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val bands = List(REFLECT_BANDS) { androidx.compose.ui.graphics.rememberGraphicsLayer() }
+    return this.drawWithContent {
+        base.record { this@drawWithContent.drawContent() }
+        val from = size.height * 0.62f
+        val step = (size.height - from) / REFLECT_BANDS
+        for (i in 0 until REFLECT_BANDS) {
+            val b = bands[i]
+            b.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.ModulateAlpha
+            b.alpha = 0.32f * (i + 0.5f) / REFLECT_BANDS
+            b.record { drawLayer(base) }
+            val top = from + step * i
+            clipRect(0f, top, size.width, top + step + 0.5f) { drawLayer(b) }
+        }
+    }
+}
+
 /** One carousel game drawn flat (its art or spine, its shade and its reflection), in its slot. */
 @Composable
 private fun CarouselArt(
@@ -1801,23 +1892,19 @@ private fun CarouselArt(
             else ShelfGameArt(g, on, cardArtType, art, overrides, physicalMedia, screenshots, spines = false, mixed = mixed, realRef = realRef, pulse = pulse, modifier = Modifier.fillMaxSize())
         }
         // A reflection on a glossy floor under it (update 104, Settings › Carousel look).
+        // (Update 325, Thor recording with it on: still ~240 ms a frame — each game's reflection faded out through a buffer of
+        // its own, ~25 of them redrawn every frame. Its fade is now made of bands: the reflection recorded once, drawn again
+        // in REFLECT_BANDS strips, each fainter, cut to its strip — no buffer at all.)
         if (reflect) Box(
             Modifier.fillMaxSize().offset(y = h0 + 3.dp)
-                .graphicsLayer {
-                    scaleY = -1f
-                    alpha = 0.32f
-                    compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
-                }
-                .drawWithContent {
-                    drawContent()
-                    drawRect(
-                        Brush.verticalGradient(0f to Color.Transparent, 0.62f to Color.Transparent, 1f to Color.Black),
-                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
-                    )
-                }
+                .graphicsLayer { scaleY = -1f }
+                .reflectionFade()
         ) {
             if (spineHere) GameSpine(g, physicalMedia[g.stableKey], Modifier.fillMaxSize())
-            else ShelfGameArt(g, false, cardArtType, art, overrides, physicalMedia, screenshots, spines = false, mixed = mixed, realRef = realRef, pulse = 0f, modifier = Modifier.fillMaxSize())
+            // (Update 325: a cartridge / disc there is its turned face alone — LocalPieceReflection.)
+            else androidx.compose.runtime.CompositionLocalProvider(LocalPieceReflection provides true) {
+                ShelfGameArt(g, false, cardArtType, art, overrides, physicalMedia, screenshots, spines = false, mixed = mixed, realRef = realRef, pulse = 0f, modifier = Modifier.fillMaxSize())
+            }
         }
     }
 }
