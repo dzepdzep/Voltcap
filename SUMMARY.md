@@ -2,6 +2,10 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **Cartridges no longer flash their name before the picture** (Toni: "Switch cartridges first show text quickly and
+  then show the picture"): while a cover is still on its way the sticker stays plain; the game's name is printed on it
+  only if no cover has come after 1.5 s (`CartShellArt`, `titleNow`). Not compiled here (CI builds it).
+
 - **Android / app games back on your pack's fitted cartridge** (Toni: "the custom cartridges that were fit to size are
   gone, e.g. Android"): an app game came onto your pack's shape for apps (the Switch-card size, CustomCarts.lookFor)
   only through the 3D cartridge finish (drawn3dPick); Layout standard on a layout without a look of its own (this
