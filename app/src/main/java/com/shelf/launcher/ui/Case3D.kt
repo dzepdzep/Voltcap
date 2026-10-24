@@ -304,7 +304,9 @@ internal fun Case3D(
         androidx.compose.runtime.derivedStateOf { BackSources.state.value?.let { printedBackFor(g, it, aspect) } }
     }
     // (Update 325: a picked cover that is the whole wrap gives the case its own back — the wrap's back, cut as the scans' are.)
-    val wrapBack = if (ownFront == null) unfoldedSrc?.let { BoxTexture.model(it, BoxPart.BACK, g.platform) }?.takeUnless { FlatArt.isKnown(it) } else null
+    // (A box front you uploaded that is the whole wrap too — unless the game has a back scan of its own.)
+    val wrapBack = unfoldedSrc?.takeIf { ownFront == null || scans?.any { it.first == "Back of the box" } != true }
+        ?.let { BoxTexture.model(it, BoxPart.BACK, g.platform) }?.takeUnless { FlatArt.isKnown(it) }
     val defaultBack = remember(scans, g.platform, cover, aspect, flatVersion, printedSpec) { defaultCaseBack(g, scans, cover, aspect, printedSpec) }
     val autoBack: Any? = if (given != null) null else wrapBack ?: defaultBack
     // (Update 302: no back scan and its back is wanted — TheGamesDB's back is asked for once, with your key: TgdbBacks.)

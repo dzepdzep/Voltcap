@@ -6,6 +6,9 @@
   could use the back of it, and the front didn't adjust well; the CD is a plain disc without the cut in the middle"):
   - A cover you picked that is the whole wrap (back | spine | front) went onto the 3D case's front whole. It's cut as the
     scans are now: its front on the front, its back on the case's back (`Case3D`, `unfoldedSrc` / `wrapBack`).
+  - The same for your own uploaded wraps: as the game's cover in the flat cases too (the console's printed case, the plain
+    PS3 / Xbox case — `rememberWrapFront` in CaseArt), and as its Box front, whose back now goes on the case's back
+    unless the game has its own back scan.
   - A disc's own picture is cut with the real disc's centre hole (Ø 15 mm on 120) — PS3 / Xbox disc prints are often a
     plain round picture (`RealMediaPicture`, `DiscPhotoShape`).
 - Files: `ui/Case3D.kt`, `ui/PhysicalMedia.kt`. Not compiled here (CI builds it).
