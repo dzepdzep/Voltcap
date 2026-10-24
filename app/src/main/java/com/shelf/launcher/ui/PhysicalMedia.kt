@@ -406,7 +406,14 @@ internal fun mediaFor(platform: String, mixed: Boolean = false, asDisc: Boolean 
     // Android's logo.
     if (platform == "App" || platform == "Android") {
         val disc = asDisc || (mixed && Features.mixedArt.state.value == MixedArt.DISC)
-        return if (disc) MediaPick(MediaShell.DISC, genericDiscKey("Android")) else MediaPick(MediaShell.GB, ANDROID_CART)
+        if (disc) return MediaPick(MediaShell.DISC, genericDiscKey("Android"))
+        // (Update 325, Toni: "the custom cartridges that were fit to size are gone, e.g. Android": they came only through the
+        // 3D cartridge finish (drawn3dPick), and with it off they fell back to the plain green cartridge. Your pack's shape
+        // for apps (CustomCarts.lookFor — the Switch-card size) whenever that part of the pack is downloaded.)
+        if (!RealMedia.on && CustomCarts.idFor(platform)?.let { com.shelf.launcher.data.Packs.hasCart(it) } == true) {
+            CartShells.pickOf("pack:" + CustomCarts.lookFor(platform).key + "~opaque", platform, gameKey)?.let { return it }
+        }
+        return MediaPick(MediaShell.GB, ANDROID_CART)
     }
     // Card artwork "Discs only": a cartridge game as the generic CD.
     if (asDisc && !(own.disc || own == MediaShell.UMD)) return MediaPick(MediaShell.DISC, genericDiscKey(platform))
@@ -578,6 +585,9 @@ internal fun realScanOf(type: com.shelf.launcher.data.CardArtType, typed: String
 internal fun mediaRound(platform: String): Boolean = mediaKind(platform) == "disc" && MediaShell.of(platform) != MediaShell.UMD
 
 /** A ring: the printed part of a disc (between the hub and the rim). */
+/** Update 325: a disc photo's outline — the disc with its centre hole (Ø 15 mm on 120: 12.5 % of its radius). */
+private val DiscPhotoShape: Shape = RingShape(0.125f, 1f)
+
 private class RingShape(private val inner: Float, private val outer: Float) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val c = Offset(size.width / 2, size.height / 2)
@@ -1053,7 +1063,9 @@ internal fun RealMediaPicture(
             roundModel ?: shared, null,
             contentScale = if (round) androidx.compose.ui.layout.ContentScale.Crop else androidx.compose.ui.layout.ContentScale.Fit, // (Update 157)
             modifier = (if (round) Modifier.fillMaxSize().wrapContentSize().then(roundSide) else Modifier.fillMaxSize())
-                .then(if (round) Modifier.clip(androidx.compose.foundation.shape.CircleShape) else Modifier),
+                // (Update 325, Toni: "the CD is just a plain disc without the cut in the middle" — PS3 / Xbox disc pictures
+                // are often a flat round print: the real disc's centre hole, Ø 15 mm on 120, cut out of every disc photo.)
+                .then(if (round) Modifier.clip(DiscPhotoShape) else Modifier),
             // Update 200: its shape noted, so the launch animation (LaunchThrow) sizes the game's own cartridge at it.
             onSuccess = { r ->
                 (model as? String)?.let { k -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(k, sz.width, sz.height) } }

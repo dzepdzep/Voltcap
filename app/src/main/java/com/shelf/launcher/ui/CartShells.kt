@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -1541,6 +1542,13 @@ internal fun CartShellArt(
         val shell = choice?.shell
         val colourKey = choice?.colourKey
         val bmpArt = rememberSoftBitmap(art, 480)
+        // (Update 325, Toni: "Switch cartridges first show text quickly and then the picture": while its cover is still on
+        // its way the sticker stays plain — the game's name only if no cover has come after a moment.)
+        val waitingArt = art != null && bmpArt == null
+        val nameLate by androidx.compose.runtime.produceState(!waitingArt, art, bmpArt) {
+            if (waitingArt) { value = false; kotlinx.coroutines.delay(1500); value = true } else value = true
+        }
+        val titleNow = if (waitingArt && !nameLate) null else title
         // (Update 297: the Switch card's red header strip, loaded once — SwitchLabel.)
         val ctxSw = androidx.compose.ui.platform.LocalContext.current
         remember { SwitchLabel.prime(ctxSw) }
@@ -1552,17 +1560,17 @@ internal fun CartShellArt(
         val identity = "$pickPlatform|$title|$maxPx|$labelIsScan"
         val madeFront = remember { androidx.compose.runtime.mutableStateOf<Pair<String, android.graphics.Bitmap>?>(null) }
         val prior = madeFront.value
-        val cachedFront = remember(pickPlatform, bmpArt, brand, title, maxPx, labelIsScan) {
+        val cachedFront = remember(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan) {
             if (shell == null) null else runCatching {
-                CartShells.cachedFrontFor(shell, colourKey, console, bmpArt, brand, title, maxPx, labelIsScan)
-                    ?: if (prior != null && prior.first != identity) CartShells.frontFor(shell, colourKey, console, bmpArt, brand, title, maxPx, labelIsScan) else null
+                CartShells.cachedFrontFor(shell, colourKey, console, bmpArt, brand, titleNow, maxPx, labelIsScan)
+                    ?: if (prior != null && prior.first != identity) CartShells.frontFor(shell, colourKey, console, bmpArt, brand, titleNow, maxPx, labelIsScan) else null
             }.getOrNull()
         }
-        androidx.compose.runtime.LaunchedEffect(pickPlatform, bmpArt, brand, title, maxPx, labelIsScan) {
+        androidx.compose.runtime.LaunchedEffect(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan) {
             if (shell == null) { madeFront.value = null; return@LaunchedEffect }
             if (cachedFront != null) { madeFront.value = identity to cachedFront; return@LaunchedEffect }
             val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                runCatching { CartShells.frontFor(shell, colourKey, console, bmpArt, brand, title, maxPx, labelIsScan) }.getOrNull()
+                runCatching { CartShells.frontFor(shell, colourKey, console, bmpArt, brand, titleNow, maxPx, labelIsScan) }.getOrNull()
             }
             if (made != null) madeFront.value = identity to made
         }

@@ -656,7 +656,7 @@ internal fun FrontBox(
  */
 @Composable
 internal fun CaseArt(
-    platform: String?, cover: Any?, scan: Any?, modifier: Modifier = Modifier, title: String = "", detail: Int = 360,
+    platform: String?, cover0: Any?, scan: Any?, modifier: Modifier = Modifier, title: String = "", detail: Int = 360,
     real: RealCaseRef? = null, caseModifier: Modifier = Modifier,
     /** The game's own spine (BoxTexture.spine), for the box turned to its side. */
     spine: Any? = null,
@@ -684,7 +684,10 @@ internal fun CaseArt(
     // with Original cases on the scan won and your cover showed only while the scan loaded. Every case look comes here —
     // the cards of every layout, the Grid, the TV room, the style homes — so the callers needn't be told.)
     EnsureUserCovers()
-    val caseScan = if (forAll || UserCovers.isPicked(cover)) null else scan
+    // (Update 325, Toni: "the cutting for custom uploaded cases — fit, and the back usable too": a cover you picked or
+    // uploaded that is the whole wrap — back | spine | front — goes into the case as its front, cut out as the scans are.)
+    val cover = if (UserCovers.isPicked(cover0)) rememberWrapFront(cover0, LookStyles.casePlatform(platform)) else cover0
+    val caseScan = if (forAll || UserCovers.isPicked(cover0)) null else scan
     val caseSpine = if (forAll) null else spine
     val mm = if (real != null) realCaseMm(casePlatform) else null
     // Update 141: in another console's case, only its shape — no branding — and the game's own console's logo.
@@ -766,6 +769,20 @@ private fun CaseArtBody(
         drawn = CaseArtFace(platform, cover, scan, modifier, title, detail, caseModifier, allowDiscCase = true, spine = spine, game = game, physical = physical, spinOf = caseSpin)
     }
     return drawn
+}
+
+/**
+ * Update 325: [cover]'s front when it's the whole wrap (back | spine | front — far wider than [platform]'s real case
+ * front), cut as the full box scans are (BoxTexture FRONT); else [cover] as it is.
+ */
+@Composable
+internal fun rememberWrapFront(cover: Any?, platform: String?): Any? {
+    val s = cover as? String ?: return cover
+    if (platform == null || BoxTexture.parse(s) != null) return cover
+    val real = CaseCatalog.frontAspect(platform) ?: realCaseMm(platform)?.let { it.first / it.second } ?: return cover
+    val bmp = rememberSoftBitmap(s, 480)
+    val raw = CoverAspects.rawOf(s) ?: bmp?.let { it.width.toFloat() / it.height.coerceAtLeast(1) } ?: return cover
+    return if (raw > real * UNFOLDED_SCAN) BoxTexture.model(s, BoxPart.FRONT, platform) else cover
 }
 
 /** The case alone (as set: flat official case, 3D box, box turned to its spine, disc in its case). */
