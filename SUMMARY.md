@@ -2,6 +2,14 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **PS3 / Xbox cases and discs** (Toni's screenshots, TNA iMPACT!: "even after the real cover from The Cover Project it
+  could use the back of it, and the front didn't adjust well; the CD is a plain disc without the cut in the middle"):
+  - A cover you picked that is the whole wrap (back | spine | front) went onto the 3D case's front whole. It's cut as the
+    scans are now: its front on the front, its back on the case's back (`Case3D`, `unfoldedSrc` / `wrapBack`).
+  - A disc's own picture is cut with the real disc's centre hole (Ø 15 mm on 120) — PS3 / Xbox disc prints are often a
+    plain round picture (`RealMediaPicture`, `DiscPhotoShape`).
+- Files: `ui/Case3D.kt`, `ui/PhysicalMedia.kt`. Not compiled here (CI builds it).
+
 - **Cartridges no longer flash their name before the picture** (Toni: "Switch cartridges first show text quickly and
   then show the picture"): while a cover is still on its way the sticker stays plain; the game's name is printed on it
   only if no cover has come after 1.5 s (`CartShellArt`, `titleNow`). Not compiled here (CI builds it).
