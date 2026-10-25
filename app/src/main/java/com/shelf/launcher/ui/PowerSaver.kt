@@ -52,9 +52,26 @@ object HomeIdle {
     /** Idle focus mode (hero carousel): the UI is faded out until the next input. */
     var focusHide by mutableStateOf(false)
 
+    /**
+     * Update 329: the R1 tile walk (TileCheck, test hooks only) holds the home screen still — the rest's still frame,
+     * the clip paused, effects held — so its before / after pictures differ only by what a tile changed. Input it sends
+     * then doesn't wake it, but still counts as input (no idle fading).
+     */
+    @Volatile private var testHold = false
+    internal fun holdForTest(on: Boolean) {
+        lastInput = SystemClock.elapsedRealtime()
+        focusHide = false
+        testHold = on
+        if (on) {
+            if (!idle) { idle = true; com.shelf.launcher.data.AnimatedArt.setSleeping(true) }
+            rest = true
+        } else poke()
+    }
+
     /** Any input. Cheap: only writes state when the home screen was idle. */
     fun poke() {
         lastInput = SystemClock.elapsedRealtime()
+        if (testHold) { if (focusHide) focusHide = false; return }
         if (focusHide) focusHide = false
         if (idle) { idle = false; com.shelf.launcher.data.AnimatedArt.setSleeping(false) } // (Update 235: wakes with the idle flag, not the deep one)
         if (deep) deep = false

@@ -292,6 +292,8 @@ fun QuickSettingsCard(
     var mostUsed by remember { mutableStateOf(tilePrefs.getBoolean("most_used", false)) }
     var uses by remember { mutableStateOf(tilePrefs.all.filterKeys { it.startsWith("use_") }.mapNotNull { (k, v) -> (v as? Int)?.let { k.removePrefix("use_") to it } }.toMap()) }
     fun countUse(id: String) {
+        // (Update 329: a test walk's presses don't count towards "most used".)
+        if (TestHooks.previewOnly) return
         val n = (uses[id] ?: 0) + 1
         uses = uses + (id to n)
         tilePrefs.edit().putInt("use_$id", n).apply()
@@ -655,7 +657,13 @@ fun QuickSettingsCard(
                 home.setAppearance(a.copy(loopRow = !a.loopRow))
             })
             // The round shortcut buttons: show / hide. Hold (update 104): where they sit, folded or open, move, off.
-            add(R1Tile("roundshort", Icons.Filled.Apps, if (a.tileShortcuts) "Round\nshortcuts" else "Shortcuts\noff", a.tileShortcuts,
+            // (Update 329, found by the R1 tile walk on the AYN Thor: "By the row" exists only on Tile home — on every
+            // other layout it means off, as in Settings › Home › Round shortcuts. With it the tap switched the Tile home's
+            // buttons on and off and nothing changed here. Off the Tile home the tap now shows them in a corner / takes
+            // them off this layout, like Settings does, and the tile says whether they show here.)
+            val shortcutRowHere = a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES
+            val shortcutsHere = a.tileShortcuts && (shortcutRowHere || a.shortcutSpot != com.shelf.launcher.data.ShortcutSpot.ROW)
+            add(R1Tile("roundshort", Icons.Filled.Apps, if (shortcutsHere) "Round\nshortcuts" else "Shortcuts\noff", shortcutsHere,
                 longAction = {
                     val corner = a.shortcutSpot != com.shelf.launcher.data.ShortcutSpot.ROW && a.shortcutSpot != com.shelf.launcher.data.ShortcutSpot.FREE
                     val folded = !com.shelf.launcher.data.Features.shortcutsOpen.value
@@ -678,7 +686,14 @@ fun QuickSettingsCard(
                             R1Choice("Off", !a.tileShortcuts) { home.setAppearance(a.copy(tileShortcuts = false)) }
                         ))
                 }) {
-                home.setAppearance(a.copy(tileShortcuts = !a.tileShortcuts))
+                when {
+                    shortcutRowHere -> home.setAppearance(a.copy(tileShortcuts = !a.tileShortcuts))
+                    // Off on this layout (the Tile home keeps its buttons by the tiles).
+                    shortcutsHere -> home.setAppearance(a.copy(shortcutSpot = com.shelf.launcher.data.ShortcutSpot.ROW))
+                    // On: in a corner (the one picked before, else bottom right), folded behind ☰ as the hold list's.
+                    else -> home.setAppearance(a.copy(tileShortcuts = true,
+                        shortcutSpot = if (a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW) com.shelf.launcher.data.ShortcutSpot.BOTTOM_RIGHT else a.shortcutSpot))
+                }
             })
             // Update 129: the Achievements tile (was Progress): where the count / progress sits on the game you're on —
             // covers, cartridges, discs, every layout's pictures and the wide capsule alike.
@@ -1000,6 +1015,7 @@ fun QuickSettingsCard(
     // "~" after a greyed tile. Compared with the R1 matrix (R1Compat326Test) layout by layout, look by look.
     if (TestHooks.enabled(context)) {
         val dump = allTiles.joinToString(",") { if (it.disabled) it.id + "~" else it.id }
+        androidx.compose.runtime.SideEffect { TestHooks.lastTiles = dump }
         LaunchedEffect(dump) {
             android.util.Log.e("VoltcapTest", "r1 layout=${home?.appearance?.homeLayout} look=${home?.appearance?.cardArtType} tiles=$dump")
         }

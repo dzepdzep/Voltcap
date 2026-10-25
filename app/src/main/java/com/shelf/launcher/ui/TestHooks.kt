@@ -28,6 +28,14 @@ internal object TestHooks {
     fun enabled(context: android.content.Context): Boolean = enabledCache ?: runCatching {
         java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists()
     }.getOrDefault(false).also { enabledCache = it }
+    /**
+     * Update 329: `--es voltcap_test_tilewalk all` (or a comma list of tile ids) — every R1 tile shown here pressed and
+     * checked on both screens (TileCheck), this session only. [lastTiles]: the tiles the R1 panel showed last.
+     */
+    val tileWalk = mutableStateOf<String?>(null)
+    @Volatile var lastTiles: String? = null
+    /** Update 329: during the tile walk, a song "playing" (nothing plays) so the music player and its tile show. */
+    @Volatile var fakeNowPlaying: com.shelf.launcher.data.NowPlaying? = null
     /** A category to show (`--es voltcap_test_category ALL`, or a console's name): for the scroll-stutter runs. */
     val category = mutableStateOf<String?>(null)
     /** 0.6.15: open the Sort window (`--ez voltcap_test_sort true`). */
@@ -92,6 +100,12 @@ internal object TestHooks {
         val la = intent?.getStringExtra("voltcap_test_labelaudit")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
+        val tw = intent?.getStringExtra("voltcap_test_tilewalk")
+        if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
+            // (A walk only ever previews: nothing it changes is saved.)
+            previewOnly = true
+            tileWalk.value = tw
+        }
         if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return

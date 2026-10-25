@@ -1,5 +1,21 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 25 Oct 2026 (329, in progress): every R1 tile pressed in every layout × look on the Thor
+
+- **R1 tile walk (test hooks only, `ui/TileCheck.kt`):** `--es voltcap_test_tilewalk <tiles|all>` presses every R1 tile
+  the panel shows for the layout / look on screen (through the panel, like an L1 shortcut), closes it and compares both
+  screens before / after (PixelCopy, small pictures); a tile that changed nothing gets its next value too. A control
+  (panel opened and closed, nothing pressed) runs first. Everything is a preview and put back after each tile; the
+  home screen is held still meanwhile (`HomeIdle.holdForTest`), a fake song "plays" so the music player shows
+  (`TestHooks.fakeNowPlaying`), presses don't count for "most used" tiles. Results: `VoltcapTest tile …` lines.
+- **Fixed — Round shortcuts did nothing off the Tile home with "By the row"** (that spot exists only on the Tile home; on
+  every other layout it means off, as in Settings › Home › Round shortcuts). There the tap now shows them in a corner /
+  takes them off this layout, and the tile says whether they show here (`QuickSettings.kt`).
+- Running on the Thor now (33 layouts × 8 looks, ~100 s each); results, fixes and the report follow in this entry.
+- **Copy** (already in place): `src_copy\ui\TileCheck.kt` (new), `src_copy\ui\QuickSettings.kt`,
+  `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\TestHooks.kt`, `src_copy\ui\PowerSaver.kt`,
+  `src_copy\LauncherViewModel.kt`.
+
 ## Update — 25 Oct 2026 (328): device walk of every layout × look, a game that came back on the wrong screen, sampling while asleep
 
 - **Device walk on the AYN Thor (the rest of the 326 audit).** All 33 home layouts × 8 game looks (264 combinations) shown

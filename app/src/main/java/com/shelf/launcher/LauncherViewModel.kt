@@ -3156,7 +3156,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 it.copy(
                     hasNotificationAccess = hasAccess,
                     notifications = notes,
-                    nowPlaying = playing,
+                    nowPlaying = com.shelf.launcher.ui.TestHooks.fakeNowPlaying ?: playing,
                     notificationError = null
                 )
             }
@@ -3221,7 +3221,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     /** Just the playing track, without re-reading notifications — cheap enough
      * to call every second while the player or screensaver is on screen. */
     fun refreshNowPlaying() {
-        val playing = runCatching { ShelfNotificationListener.nowPlaying(getApplication())?.first }.getOrNull()
+        val playing = com.shelf.launcher.ui.TestHooks.fakeNowPlaying ?: runCatching { ShelfNotificationListener.nowPlaying(getApplication())?.first }.getOrNull()
         if (playing != _uiState.value.nowPlaying) _uiState.update { it.copy(nowPlaying = playing) }
     }
 

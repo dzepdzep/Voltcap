@@ -991,6 +991,38 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
     }
 
+    // (Update 329: the R1 tile walk over adb — TestHooks / TileCheck, off without its flag file; previews only.)
+    val tileWalk = TestHooks.tileWalk.value
+    val walkContext = androidx.compose.ui.platform.LocalContext.current
+    val walkScope = rememberCoroutineScope()
+    LaunchedEffect(tileWalk) {
+        val arg = tileWalk ?: return@LaunchedEffect
+        // (Its own scope: clearing the request restarts this effect, which must not cancel the walk.)
+        TestHooks.tileWalk.value = null
+        var c: android.content.Context? = walkContext
+        while (c is android.content.ContextWrapper && c !is android.app.Activity) c = c.baseContext
+        val act = c as? android.app.Activity ?: return@LaunchedEffect
+        walkScope.launch { TileCheck.walk(
+            TileCheck.Hooks(
+                activity = act,
+                vm = viewModel,
+                openPanel = { id -> R1Shortcut.pending = id; notificationsOnly = false; showNotifications = true },
+                closeAll = { closeAllDialogs(); showNotifications = false; showDetails = false; GamePopup.game = null; HomeEditState.close(); R1Shortcut.pending = null },
+                // (What A on the game does: the game window in its style, or the classic window where that's picked.)
+                openDetails = { openGame() },
+                key = { code ->
+                    // (As a D-pad press: the keys' source is what the home screen's handlers look at.)
+                    val t = android.os.SystemClock.uptimeMillis()
+                    for (action in intArrayOf(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.ACTION_UP)) {
+                        act.dispatchKeyEvent(android.view.KeyEvent(t, t, action, code, 0, 0, android.view.KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
+                            0, android.view.InputDevice.SOURCE_DPAD or android.view.InputDevice.SOURCE_GAMEPAD))
+                    }
+                }
+            ),
+            if (arg == "all") null else arg.split(',').map { it.trim() }.toSet()
+        ) }
+    }
+
     fun runDetailsAction(action: DetailsAction, game: com.shelf.launcher.data.Game) {
         when (action) {
             DetailsAction.PLAY -> { showDetails = false; startGame(game) }
