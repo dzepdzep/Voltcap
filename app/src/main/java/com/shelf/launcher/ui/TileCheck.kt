@@ -30,11 +30,13 @@ internal object TileCheck {
         "herofit", "sort", "edithome"
     )
 
-    private const val W = 192
-    private const val H = 108
+    // (Update 329, second pass: 480 × 270 and 0.04 % — at 192 × 108 / 0.15 % a small change such as the corner ☰ of the
+    // round shortcuts or an achievement chip stayed under the line and read as "does nothing".)
+    private const val W = 480
+    private const val H = 270
     private const val PIXEL = 28
-    /** Share of a screen's pixels that must change (outside the moving parts) to count as an effect: 0.15 %. */
-    private const val EFFECT = 0.0015f
+    /** Share of a screen's pixels that must change (outside the moving parts) to count as an effect: 0.04 % (52 pixels). */
+    private const val EFFECT = 0.0004f
 
     class Shot(val main: IntArray?, val second: IntArray?)
 

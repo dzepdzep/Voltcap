@@ -41,7 +41,15 @@ internal fun categoryKeyLabel(key: String): String = when {
     key.startsWith("special:") -> runCatching {
         com.shelf.launcher.SpecialFilter.valueOf(key.removePrefix("special:")).label
     }.getOrDefault(key.removePrefix("special:"))
-    key.startsWith("cat:") -> key.removePrefix("cat:").removePrefix("collection:").replace('_', ' ')
+    // (Update 329, found on the AYN Thor: the category title (LauncherUiState.sortCategoryKey) is "cat:" + the platform
+    // filter — a console's key ("cat:PS2") or a collection's ("cat:col:Backlog"). It showed the key itself: "PS2".)
+    key.startsWith("cat:") -> key.removePrefix("cat:").let { k ->
+        when {
+            com.shelf.launcher.data.isCollectionKey(k) -> com.shelf.launcher.data.collectionLabel(k)
+            k.startsWith("collection:") -> k.removePrefix("collection:").replace('_', ' ')
+            else -> com.shelf.launcher.data.ConsoleNames.label(k)
+        }
+    }
     // (Update 325, Toni: "categories are sometimes abbreviations — always the official names, GBA → Game Boy Advance".)
     else -> com.shelf.launcher.data.ConsoleNames.label(key)
 }

@@ -433,7 +433,10 @@ fun QuickSettingsCard(
             // decided in r1TileFit, R1TileRules.kt; the lists are read only when pressed.)
             fun styleTile(id: String, word: String, pref: com.shelf.launcher.data.Features.StringPref, consoles: () -> List<String>, after: () -> Unit = {}) {
                 val now = pref.state.value
+                // (Update 329, seen on the AYN Thor: a long official name — "Nintendo Entertainment System" — was cut off in
+                // the tile's small caption; there it's the short name, the hold list keeps the full ones.)
                 val name = if (now.isEmpty()) "Own" else com.shelf.launcher.data.ConsoleNames.label(now)
+                    .let { if (it.length > 14) com.shelf.launcher.data.ConsoleNames.short(now) else it }
                 add(R1Tile(id, Icons.Filled.Album, "$word\n$name", now.isNotEmpty(),
                     longAction = {
                         choiceSheet = "$word for every game" to (
@@ -481,8 +484,11 @@ fun QuickSettingsCard(
             // Update 179: the two-screen layouts — the gap between their tiles (tap: the next, hold: the list).
             // (Update 202: every tile is built; which show where is decided in r1TileFit, R1TileRules.kt.)
             run {
-                val pref = if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TWIN_ICONS) com.shelf.launcher.data.Features.twinGap else com.shelf.launcher.data.Features.twinDeskGap
-                val gaps = TWIN_GAPS.filter { it <= (if (pref === com.shelf.launcher.data.Features.twinGap) 32 else 24) }
+                // (Update 329, found by the R1 tile walk: Twin showcase reads Twin icons' gap (twinGap, at least 4 dp) — the
+                // tile changed Twin desk's gap there, so nothing moved.)
+                val showcase = a.homeLayout == com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE
+                val pref = if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TWIN_ICONS || showcase) com.shelf.launcher.data.Features.twinGap else com.shelf.launcher.data.Features.twinDeskGap
+                val gaps = TWIN_GAPS.filter { it <= (if (pref === com.shelf.launcher.data.Features.twinGap) 32 else 24) && (!showcase || it >= 4) }
                 val now = pref.state.value
                 add(R1Tile("twingap", Icons.Filled.ViewModule, "Gaps\n" + gapLabel(now), false,
                     longAction = { choiceSheet = "Gap between tiles" to gaps.map { g -> R1Choice(gapLabel(g), now == g) { pref.value = g } } }) {
@@ -605,6 +611,15 @@ fun QuickSettingsCard(
                         )
                     }) {
                     when {
+                        // (Update 329, found by the R1 tile walk: on a style home without Voltcap's status bar — Hero tiles,
+                        // Spotlight's Home menu, Channel grid, the Pocket layouts, Twin showcase — "in the status bar" draws
+                        // nothing, so the tap only switched an invisible player on and off. There it puts the player at the
+                        // top right on its own (as moved in Edit Home, where it can go anywhere) and takes it off again.)
+                        !a.statusOn -> when {
+                            off -> { if (!moved) HomeWidgets.set(HomeWidgets.MUSIC, 1f, 0f); home.setAppearance(a.copy(miniPlayer = true)) }
+                            !moved -> HomeWidgets.set(HomeWidgets.MUSIC, 1f, 0f)
+                            else -> home.setAppearance(a.copy(miniPlayer = false))
+                        }
                         off -> home.setAppearance(a.copy(musicPlayerPosition = top, miniPlayer = true))
                         moved -> { HomeWidgets.reset(HomeWidgets.MUSIC); home.setAppearance(a.copy(musicPlayerPosition = top, miniPlayer = true)) }
                         a.musicPlayerPosition != top -> home.setAppearance(a.copy(musicPlayerPosition = top, miniPlayer = true))
@@ -730,7 +745,18 @@ fun QuickSettingsCard(
             }
             // Game size of the layout in use (update 104: every layout, it used to only size the Voltcap row):
             // press cycles Small / Medium / Large, hold opens a slider.
-            add(R1Tile("gamesize", Icons.Filled.PhotoSizeSelectLarge, "Size\n" + GameSize.label(a), false, longAction = { showGameSize = true }) {
+            // (Update 329, found by the R1 tile walk: Case stacks and Grid in their Carousel view draw the carousel, which
+            // has its own Game size (Settings › Home › Carousel) and doesn't read the layout's — the tile changed nothing
+            // there. With the carousel on it steps the carousel's size.)
+            val carouselSized = (a.homeLayout == com.shelf.launcher.data.HomeLayout.STACKS || a.homeLayout == com.shelf.launcher.data.HomeLayout.GRID) &&
+                a.homeLayout.name in com.shelf.launcher.data.Features.carouselLayouts.state.value
+            if (carouselSized) {
+                val cs = com.shelf.launcher.data.Features.carouselSize.state.value
+                val csLabel = when { cs < 93 -> "Small"; cs > 110 -> "Large"; else -> "Medium" }
+                add(R1Tile("gamesize", Icons.Filled.PhotoSizeSelectLarge, "Size\n$csLabel", false, longAction = { showGameSize = true }) {
+                    com.shelf.launcher.data.Features.carouselSize.value = GameSize.STEPS.firstOrNull { it > cs + 2 } ?: GameSize.STEPS.first()
+                })
+            } else add(R1Tile("gamesize", Icons.Filled.PhotoSizeSelectLarge, "Size\n" + GameSize.label(a), false, longAction = { showGameSize = true }) {
                 GameSize.step(a) { home.setAppearance(it) }
             })
             // Update 136, Art drop: how far the cover drops below the case template's top band (Box art looks) — each look its
@@ -857,7 +883,10 @@ fun QuickSettingsCard(
             // Update 186: what's behind the home screen, in one tap: the game's picture with its video clip → the picture
             // only → the theme's animated background → a still background (the theme's own colour). Hold: every choice.
             run {
+                val artLayer = a.homeLayout.styleHome && styleArtBehind(a.homeLayout)
+                val clips = (a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART || a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.BLURRED) && a.videoPreviews
                 val now = when {
+                    artLayer -> if (clips) "Art +\nvideos" else "Art\nonly"
                     a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART && a.videoPreviews -> "Art +\nvideos"
                     a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART -> "Art\nonly"
                     a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.BLURRED -> "Blurred\nart"
@@ -878,6 +907,12 @@ fun QuickSettingsCard(
                     }) {
                     home.setAppearance(
                         when {
+                            // (Update 329, found by the R1 tile walk and on the AYN Thor: a style home showing the game's art
+                            // across the whole screen (Side menu, Spotlight, Icon bar, Console hub, Resume & discover… —
+                            // their Layout options › Background) covers the theme animation and the still background, so
+                            // two of the four taps changed nothing. There the tap switches the clips on and off.)
+                            artLayer -> if (clips) a.copy(videoPreviews = false)
+                                else a.copy(backgroundStyle = if (a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.BLURRED) a.backgroundStyle else com.shelf.launcher.data.BackgroundStyle.ART, videoPreviews = true)
                             a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART && a.videoPreviews -> a.copy(videoPreviews = false)
                             a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART -> a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.ANIMATED)
                             a.backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ANIMATED -> a.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.BLACK)

@@ -166,7 +166,8 @@ internal fun TwinShowcaseSettings() {
     MutedNote("Made for handhelds with two screens. The top screen shows the game you're on as its big picture; the bottom screen is a grid of square icons. More games carry on to the right — the rows never grow. Moving slides the grid and the picture together. With one screen, both halves show together.")
     Spacer(Modifier.height(10.dp))
     StyleChoice("Rows", arrayOf(1, 2, 3), Features.twinShowRows.state.value, { "$it" }) { Features.twinShowRows.value = it }
-    StyleChoice("Gap between icons", TWIN_GAPS, Features.twinGap.state.value, { gapLabel(it) }) { Features.twinGap.value = it }
+    // (Update 329: from 4 dp — the grid never goes closer, so None / 2 dp looked the same as 4.)
+    StyleChoice("Gap between icons", TWIN_GAPS.filter { it >= 4 }.toTypedArray(), Features.twinGap.state.value.coerceAtLeast(4), { gapLabel(it) }) { Features.twinGap.value = it }
     TwinFullTopSwitch()
     Spacer(Modifier.height(8.dp))
     SwitchRow(

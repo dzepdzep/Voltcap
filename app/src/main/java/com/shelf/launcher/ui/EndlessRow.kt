@@ -26,7 +26,10 @@ internal const val LOOP_COPIES = 1000
 internal fun loopRowOn(c: StyleCtx): Boolean = c.state.appearance.loopRow && c.games.size >= 2 && endlessApplies(c.state.appearance.homeLayout)
 
 /** Update 182: Hero tiles has no Endless (its rows going round were confusing): it stops at the ends there. */
-internal fun endlessApplies(layout: com.shelf.launcher.data.HomeLayout): Boolean = layout != com.shelf.launcher.data.HomeLayout.HERO_TILES
+// (Update 329, found by the R1 tile walk: Twin showcase's grid stops at its ends too — StyleTwinShowcase keeps Endless off —
+// so the R1 tile switched nothing there.)
+internal fun endlessApplies(layout: com.shelf.launcher.data.HomeLayout): Boolean =
+    layout != com.shelf.launcher.data.HomeLayout.HERO_TILES && layout != com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE
 
 /**
  * The virtual place of [focus] on an endless row of [n] games: it moves by the D-pad's step ([tick] / [step] from the

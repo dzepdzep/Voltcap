@@ -716,6 +716,11 @@ object CategoryBars {
     /** The choices [layout] offers, in the R1 tile's order. */
     fun choices(layout: HomeLayout): List<CategoryBar> =
         if (layout in OWN || layout in MENU) listOf(CategoryBar.CURRENT, CategoryBar.OFF)
+        // (Update 329, found by the R1 tile walk on the AYN Thor: Twin desk / Twin showcase show the category's name in their
+        // own bar, and every category only with Layout options › Additional category bar on — "All categories" looked the
+        // same as "Current only" there.)
+        else if ((layout == HomeLayout.TWIN_DESK || layout == HomeLayout.TWIN_SHOWCASE) && !Features.twinSharedCategories.state.value)
+            listOf(CategoryBar.CURRENT, CategoryBar.OFF)
         else listOf(CategoryBar.CURRENT, CategoryBar.FULL, CategoryBar.OFF)
 
     /** A short name for [b] on [layout] (a caption is just shown or not). */

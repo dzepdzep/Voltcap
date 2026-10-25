@@ -83,12 +83,26 @@ class R1Compat326Test {
                                     assertEquals("$t on $l / $look", R1Fit.Hide, f)
                                 }
                                 // Outline: only where the frame is drawn.
+                                // (Update 329, the device walk: not round free-standing cartridges / discs on the Voltcap row,
+                                // Tile home, Hero carousel and the carousel views; on the Grid only with its Glow focus or
+                                // round the case looks — greyed, saying so, otherwise.)
                                 if (t == "outline") {
                                     val drawn = !l.styleHome || ((l == HomeLayout.SIDE || l == HomeLayout.STACKS) && carousel)
-                                    assertEquals("outline on $l (carousel $carousel)", if (drawn) R1Fit.Show else R1Fit.Hide, f)
+                                    val free = look == CardArtType.DISC || look == CardArtType.CARTRIDGE_DISC
+                                    val expected = when {
+                                        !drawn -> "HIDE"
+                                        free && (l == HomeLayout.CLASSIC || l == HomeLayout.TILES || l == HomeLayout.HERO || carousel) -> "HIDE"
+                                        l == HomeLayout.GRID && !carousel && look != CardArtType.CASE && look != CardArtType.CASE_REAL -> "GREY"
+                                        else -> "SHOW"
+                                    }
+                                    assertEquals("outline on $l / $look (carousel $carousel)", expected, fitName(f))
                                 }
-                                // Endless: everywhere but Hero tiles.
-                                if (t == "endless") assertEquals("endless on $l", if (l == HomeLayout.HERO_TILES) R1Fit.Hide else R1Fit.Show, f)
+                                // Endless: everywhere but Hero tiles and Twin showcase (update 329: its grid stops at the ends).
+                                if (t == "endless") assertEquals("endless on $l",
+                                    if (l == HomeLayout.HERO_TILES || l == HomeLayout.TWIN_SHOWCASE) R1Fit.Hide else R1Fit.Show, f)
+                                // (Update 329) The achievement chip isn't drawn by the carousel view.
+                                if (t == "progressbar" && carousel && l in setOf(HomeLayout.CLASSIC, HomeLayout.GRID, HomeLayout.SIDE, HomeLayout.STACKS))
+                                    assertEquals("progressbar on $l with the carousel", R1Fit.Hide, f)
                                 // The game window's style is greyed (with a reason), never hidden, while the window is off.
                                 if (t == "popupstyle") assertTrue("popupstyle", if (gameWindow) f == R1Fit.Show else f is R1Fit.Grey)
                             }

@@ -145,11 +145,26 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // Update 326 (audit): Outline (Settings › Game look › Coloured frame, R1 tile of 325) — only where it's drawn: the
         // Voltcap row, Tile home, Grid, Hero carousel, TV room (their cards), and the carousel view of Side menu / Case
         // stacks. The other style homes draw their own focus ring, so the tile switched nothing there.
-        "outline" -> on(!l.styleHome || (l == HomeLayout.SIDE || l == HomeLayout.STACKS) && l.name in Features.carouselLayouts.state.value)
+        "outline" -> when {
+            !(!l.styleHome || (l == HomeLayout.SIDE || l == HomeLayout.STACKS) && l.name in Features.carouselLayouts.state.value) -> R1Fit.Hide
+            // (Update 329, found by the R1 tile walk: cartridges and discs stand free, with no frame round them — the Voltcap
+            // row, Tile home, Hero carousel and the carousel views draw the outline only round covers, cases and tiles.)
+            (look == CardArtType.DISC || look == CardArtType.CARTRIDGE_DISC) &&
+                (classic || l == HomeLayout.HERO || l.name in Features.carouselLayouts.state.value) -> R1Fit.Hide
+            // (Update 329: the Grid draws it only with "The game you're on: Glow" — Outline always rings it, Raise & spin
+            // never does — except round the case looks' cases.)
+            l == HomeLayout.GRID && l.name !in Features.carouselLayouts.state.value && look != CardArtType.CASE && look != CardArtType.CASE_REAL &&
+                Features.gridFocus.state.value != Features.GridFocus.GLOW ->
+                R1Fit.Grey("On the Grid the outline goes with The game you're on: Glow (Settings › Home › Layout options). With ${Features.gridFocus.state.value.label} it isn't drawn.")
+            else -> R1Fit.Show
+        }
         // Achievements place (the chip on the game you're on): the Voltcap row, Grid, Arcade, Case stacks and the style
         // homes drawn with StyleArt — not Game shelf, Disc station, Card binder, Record crate, Hero carousel, TV room,
         // Circuit board (its readout has the charge bar) or the two Pocket layouts; Pocket Quest only with your look.
-        "progressbar" -> when (l) {
+        // (Update 329, found by the R1 tile walk: the carousel view — Voltcap row, Grid, Side menu, Case stacks — draws no
+        // achievement chip on its games, so the tile changed nothing while it's on.)
+        "progressbar" -> if (l in setOf(HomeLayout.CLASSIC, HomeLayout.GRID, HomeLayout.SIDE, HomeLayout.STACKS) &&
+            l.name in Features.carouselLayouts.state.value) R1Fit.Hide else when (l) {
             HomeLayout.SHELF, HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.CRATE, HomeLayout.HERO, HomeLayout.TV,
             HomeLayout.CIRCUIT, HomeLayout.POCKET_CLASSIC -> R1Fit.Hide
             // (Update 326, audit: Pocket ribbon's cartridge on top is drawn with StyleArt, which puts the chip on it.)
@@ -197,6 +212,11 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         "magnifier" -> when {
             !x.secondDisplay || !Features.secondMagnifier.state.value -> R1Fit.Hide
             !a.useSecondScreen -> R1Fit.Grey("The second screen is off — turn on Dual screen first.")
+            // (Update 329, found by the R1 tile walk: the two-screen layouts — Twin desk / icons / showcase, the Pocket
+            // layouts — put their own bottom half on the second screen, so the page switched there didn't show. Voltcap's
+            // normal second screen, opened from the layout (TwinScreens.dashboard), shows it.)
+            l.isTwin && !TwinScreens.dashboard ->
+                R1Fit.Grey("${l.label} uses the second screen for its lower half. Open Voltcap's normal second screen from the layout (Layout options › Open normal second screen) to see the Magnifier there.")
             else -> R1Fit.Show
         }
         // Background (art + videos / art / animation / still): every layout whose background shows — not Green Core or
