@@ -2,6 +2,20 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **Released** (what went out, for the record):
+  - **0.6.40** (build 46, 24 Oct): updates 320–325 up to "Sides made only from the piece itself, R1 Outline tile" (PR #9).
+    A 0.6.39 published a few seconds before PR #9 was merged was 0.6.38 renumbered (built from the old main); it was
+    deleted before anyone installed it.
+  - **"Voltcap hotfix"** (build 47): `release.ps1 hotfix` took "hotfix" as the version — 0.6.40 again under that name.
+    Deleted; anyone who has it is offered 0.6.41 (the updater counts "hotfix" as older than any number).
+  - **0.6.41** (build 48, 25 Oct): PR #10 — Android / app games back on the pack's fitted cartridge, PS3 / Xbox wrap
+    covers cut to front and back, discs with their centre hole, no name flash on cartridges, new R1 tiles beside their
+    neighbours.
+  - Releasing: `git checkout main`, `git pull`, check `git log -1` shows the merge, then
+    `& ".\tools\release\release.ps1" <x.y.z> "<notes>"` — the first word after the script is the version.
+- Not yet tried on the Thor: everything after 0.6.38 above that the screenshots didn't show (the 0.6.41 fixes, the
+  ghost cut, case wobble in the carousel, UMD / PS1 / DS beside cases, the Outline tile's place).
+
 - **PS3 / Xbox cases and discs** (Toni's screenshots, TNA iMPACT!: "even after the real cover from The Cover Project it
   could use the back of it, and the front didn't adjust well; the CD is a plain disc without the cut in the middle"):
   - A cover you picked that is the whole wrap (back | spine | front) went onto the 3D case's front whole. It's cut as the
