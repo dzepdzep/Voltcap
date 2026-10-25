@@ -996,6 +996,14 @@ fun QuickSettingsCard(
         }
     }
     val byId = allTiles.associateBy { it.id }
+    // Update 326: a test walk over adb reads which tiles the panel shows here (TestHooks; off without its flag file):
+    // "~" after a greyed tile. Compared with the R1 matrix (R1Compat326Test) layout by layout, look by look.
+    if (TestHooks.enabled(context)) {
+        val dump = allTiles.joinToString(",") { if (it.disabled) it.id + "~" else it.id }
+        LaunchedEffect(dump) {
+            android.util.Log.e("VoltcapTest", "r1 layout=${home?.appearance?.homeLayout} look=${home?.appearance?.cardArtType} tiles=$dump")
+        }
+    }
     // (Update 325, Toni: "I can't find the R1 tile for the outline": a tile new since you last arranged them went to the
     // very end, behind the arrow. It now comes in right after the tile it's built beside — Outline after Badges.)
     val ordered = run {

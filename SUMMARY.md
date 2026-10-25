@@ -1,5 +1,45 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 25 Oct 2026 (328): device walk of every layout × look, a game that came back on the wrong screen, sampling while asleep
+
+- **Device walk on the AYN Thor (the rest of the 326 audit).** All 33 home layouts × 8 game looks (264 combinations) shown
+  with the test hooks (nothing saved), the R1 panel opened and closed with B in each, both screens captured: no crash, no
+  freeze, R1 closed every time. What the panel showed was logged per combination and compared with the automated matrix:
+  every difference comes from a switch set differently on the Thor (cartridge packs downloaded, header off, Twin full top,
+  Spines on Shelf off, Case stacks carousel on) — none was a wrong rule. Screenshots of every layout looked through (no
+  clipping, no broken cards / cases / discs / spines). After the walk a restart brought your own layout and look back
+  (Case stacks + Case).
+- **Twin desk during a game:** the in-game second screen (Game + info) stayed live — pages, the Widgets page (Now playing,
+  System, clock, battery), timer counting; back home, Twin desk's lower half came straight back.
+- **Fixed — a game brought back from the background could open on the lower screen.** Starting a game that is still open
+  (Running games / Quick resume) brought it forward without saying which screen. With Game + info Voltcap opens the info
+  page on the second screen first, so that screen had the focus — and Android opened the game there. Found with WWE All
+  Stars: its launcher came up on the lower screen, started its game window again and the old one closed with a crash;
+  Voltcap's info page then stayed on the lower screen with no game. New launches always passed the game's screen; now
+  resuming does too (`QuickResume.resume`, `RunningGames.resume`, `LauncherViewModel.startGameNow`). Possibly one of the
+  "second screen randomly stops" reports.
+- **Fixed — performance readings kept running with the screen off.** Measured asleep during a game: Voltcap read the CPU /
+  GPU / FPS files every second (≈3 % of one core, a 35 MB + 59 MB garbage collection every ~2 min). The overlay paused
+  itself when the screen went off, the in-game tuner (AutoTDP) didn't. The sampler now skips every reading while the
+  device is asleep, whoever holds it (`data/perf/PerfSampler.kt`). The freeze watchdog no longer reads every thread's CPU
+  time every 5 s while asleep either (`data/crash/FreezeWatchdog.kt`; a freeze still writes its report).
+- **Longer play and memory:** 7 min of WWE All Stars with Twin desk: second screen live throughout, Voltcap steady at
+  306–342 MB. Leak check — all 33 layouts walked 5 times from a fresh start: memory rose to 0.9–1.5 GB, but the native
+  memory in use went back down after garbage collections (705 → 172 MB), so no leak; pictures are freed late and the
+  allocator keeps freed pages. Count-limited picture caches that ignore Android's trims are noted as a follow-up (would
+  lower the peak on smaller handhelds). Hours of play not tested.
+- R1: the "Drawn media" rule (tile removed in 325) is out of the list of tiles with a rule; a test now also fails when a
+  rule names a tile that isn't built (`R1TileRules.kt`, `R1Compat326Test.kt`). The matrix CSV lost that column.
+- Test hooks: with the hooks file present the R1 panel logs its tiles per layout / look (`QuickSettings.kt`,
+  `TestHooks.enabled`) — that is how the walk was compared. Nothing changes without the file.
+- Report: `docs/compat/COMPAT_326.md` (device results added, section 6).
+- **Copy** (already in place and pushed): `src_copy\data\QuickResume.kt`, `src_copy\data\RunningGames.kt`,
+  `src_copy\LauncherViewModel.kt`, `src_copy\data\perf\PerfSampler.kt`, `src_copy\data\crash\FreezeWatchdog.kt`,
+  `src_copy\ui\QuickSettings.kt`, `src_copy\ui\TestHooks.kt`, `src_copy\ui\R1TileRules.kt`,
+  `project_copy\app\src\test\java\com\shelf\launcher\ui\R1Compat326Test.kt`, docs.
+- **Check:** unit tests, release built and installed on the Thor; resume and screen-off checked there (see the report).
+  Test side effects: WWE All Stars was started and closed several times (its own crash once, above).
+
 ## Update — 25 Oct 2026 (327): Switch games really start in Eden and Eden Duo from Voltcap
 
 - **Eden Duo installed on the Thor** (v1.3.2.2 from its GitHub release, `dev.igawa6.edenduo`) for testing. Voltcap found

@@ -256,6 +256,20 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 328
+- **Every game start that only brings a running game forward** (`QuickResume.resume`, `RunningGames.resume`) must pass
+  the game's display (`ScreenPlacement.optionsFor`) — the companion is started first on the other screen and has the focus.
+- **Nothing reads performance files while asleep:** `PerfSampler` checks `PowerManager.isInteractive` itself (any
+  holder: overlay, PerfPage, TuneService/AutoTDP); `FreezeWatchdog` skips its 5 s CPU reading while asleep.
+- **Test hooks:** with the hooks file, the R1 panel logs `VoltcapTest r1 layout=… look=… tiles=…` (tile id, `~` = greyed)
+  — compare with `docs/compat/r1_matrix_326.csv`. Device walk scripts are on the Thor in `/data/local/tmp/` (walk.sh,
+  leak.sh, long.sh).
+- **Memory after visiting every layout:** PSS 0.9–1.5 GB, but native memory *in use* drops back (705 → 172 MB) after
+  garbage collections — no leak; the allocator keeps ~600 MB of freed pages. Focus moves on Twin desk / Hero carousel
+  churn hundreds of MB of decoded pictures. Many of Voltcap's own bitmap caches are limited by count, not bytes
+  (CoverCases, SolidPiece, CartShells, AppIcons, ThemeThumbs…) and none listen to trims — a candidate for a byte budget.
+  (`dumpsys meminfo` Native Heap columns: … Heap Size, Heap Alloc, Heap Free — Alloc is the one to watch.)
+
 ## State after update 326
 - **src_copy can fall behind GitHub:** PRs edited on GitHub (Claude Code web) change `app/src` only. Before editing,
   compare `src_copy` with `app/src` (sizes / git) and refresh it, or the robocopy puts old files back (326 found 111).

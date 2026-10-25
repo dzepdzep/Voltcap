@@ -214,8 +214,13 @@ object PerfSampler {
                 (ctx.getSystemService(android.content.Context.DISPLAY_SERVICE) as android.hardware.display.DisplayManager)
                     .getDisplay(android.view.Display.DEFAULT_DISPLAY)?.refreshRate
             }.getOrNull()?.takeIf { it > 1f }
+            // Update 328: also asleep → no reading, whoever holds the sampler. Found on the AYN Thor: during a game with the
+            // in-game tuner's AutoTDP on (TuneService holds it), Voltcap kept reading the CPU / GPU / FPS files every
+            // second with the screen off (≈3 % of a core, a garbage collection every ~2 min). The overlay already paused
+            // itself on screen off; the tuner didn't.
+            val power = ctx.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
             while (isActive) {
-                if (!paused) {
+                if (!paused && power?.isInteractive != false) {
                     val base = runCatching { reader.sample() }.getOrDefault(PerfSnapshot())
                     val pkg = gamePackage
                     val now = System.currentTimeMillis()

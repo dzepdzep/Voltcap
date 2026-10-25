@@ -5450,10 +5450,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         ) {
             runCatching { com.shelf.launcher.data.RunningGames.closePackage(app0, resumePkg) }
         }
-        val resumed = (stillOpen && com.shelf.launcher.data.RunningGames.resume(app0, game.stableKey)) ||
+        // (Update 328: on the game's own screen — see QuickResume.resume.)
+        val resumed = (stillOpen && com.shelf.launcher.data.RunningGames.resume(app0, game.stableKey, displayId)) ||
             (_uiState.value.appearance.quickResume && game.sourceType == SourceType.ROM && resumePkg != null &&
                 com.shelf.launcher.data.QuickResume.canResume(getApplication(), game.stableKey, resumePkg) &&
-                com.shelf.launcher.data.QuickResume.resume(getApplication(), resumePkg))
+                com.shelf.launcher.data.QuickResume.resume(getApplication(), resumePkg, displayId))
         val outcome = if (resumed) LaunchOutcome.Launched else GameLauncher.launch(
             getApplication<Application>(),
             game,

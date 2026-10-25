@@ -252,9 +252,9 @@ object RunningGames {
     }
 
     /** Brings [key]'s game back to the front (no restart). */
-    fun resume(c: Context, key: String): Boolean {
+    fun resume(c: Context, key: String, displayId: Int? = null): Boolean {
         val pkg = packageFor(c, key) ?: return false
-        return QuickResume.resume(c, pkg)
+        return QuickResume.resume(c, pkg, displayId)
     }
 
     /** Opens Android's page for [pkg] (with Force stop), for when Voltcap can't end it itself. */

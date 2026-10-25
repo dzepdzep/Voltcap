@@ -22,6 +22,12 @@ internal object TestHooks {
      */
     val look = mutableStateOf<String?>(null)
     @Volatile var previewOnly = false
+
+    /** Update 326: the flag file is there (read once): the test-only logging may run. */
+    @Volatile private var enabledCache: Boolean? = null
+    fun enabled(context: android.content.Context): Boolean = enabledCache ?: runCatching {
+        java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists()
+    }.getOrDefault(false).also { enabledCache = it }
     /** A category to show (`--es voltcap_test_category ALL`, or a console's name): for the scroll-stutter runs. */
     val category = mutableStateOf<String?>(null)
     /** 0.6.15: open the Sort window (`--ez voltcap_test_sort true`). */

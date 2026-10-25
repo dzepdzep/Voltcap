@@ -29,13 +29,21 @@ object QuickResume {
         return ended > 0L && System.currentTimeMillis() - ended < 10 * 60_000L
     }
 
-    /** Brings the running emulator's task to the front without restarting it. */
-    fun resume(context: Context, pkg: String): Boolean = runCatching {
+    /**
+     * Brings the running emulator's task to the front without restarting it, on [displayId] (the game's screen from the
+     * screen layout; null = Android decides).
+     *
+     * Update 328: the screen is passed on. Found on the AYN Thor: with "Game + info" the info page is started on the
+     * second screen first, so it has the focus when the game comes back — and a resume without a screen was opened
+     * there (a WWE port's launcher came up on the bottom screen, started its game window again and its old one closed
+     * with a crash). New launches always had their screen; only this path didn't.
+     */
+    fun resume(context: Context, pkg: String, displayId: Int? = null): Boolean = runCatching {
         val intent = context.packageManager.getLaunchIntentForPackage(pkg) ?: return false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
         // No CLEAR_TASK / CLEAR_TOP: those would end the running game.
         intent.flags = intent.flags and (Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP).inv()
-        context.startActivity(intent)
+        context.startActivity(intent, ScreenPlacement.optionsFor(displayId))
         true
     }.getOrDefault(false)
 }

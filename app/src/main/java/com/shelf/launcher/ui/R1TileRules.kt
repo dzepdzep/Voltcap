@@ -126,6 +126,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
             else -> R1Fit.Hide
         }
         // The game's own photo (drawn / real discs and cartridges): the Discs and Cartridges & discs looks, where drawn.
+        // (Update 326: no tile since 325 — "Own photos / Drawn only" went with "Drawn only"; an old L1 shortcut to it says so,
+        // LauncherScreen. Kept for that shortcut's check.)
         "drawnmedia" -> if (look == CardArtType.DISC || look == CardArtType.CARTRIDGE_DISC) lookFit(l) else R1Fit.Hide
         // Art position (the cover in the case template): the case looks, where the look is drawn.
         "artdrop" -> if (look == CardArtType.CASE || look == CardArtType.CASE_REAL) lookFit(l) else R1Fit.Hide
@@ -228,7 +230,7 @@ internal val R1_RULED_TILES: Set<String> = setOf(
     "wifi", "dnd", "music", "saves", "navbar", "fps", "battery", "batterywatch", "saver", "mixer", "settings",
     "bt", "lights", "dual", "rescan", "scrape", "theme", "colors", "romm", "whoplays", "profile",
     "layout", "sort", "edithome", "popupstyle", "musicspot", "roundshort", "corners",
-    "gamelook", "cartlook", "discstyle", "casestyle", "spinestyle", "drawnmedia", "artdrop",
+    "gamelook", "cartlook", "discstyle", "casestyle", "spinestyle", "artdrop",
     "badges", "outline", "progressbar", "gamesize", "endless", "carousel", "rowpos", "categories", "headertight", "twingap",
     "shelflook", "spotlight", "bartabs", "crosscut", "pqtheme", "magnifier", "background", "herofit"
 )

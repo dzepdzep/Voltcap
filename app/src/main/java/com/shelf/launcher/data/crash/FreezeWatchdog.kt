@@ -86,7 +86,9 @@ object FreezeWatchdog {
             }
             if (now - lastSample >= SAMPLE_MS) {
                 lastSample = now
-                runCatching { sampleCpu(now) }
+                // Update 328: no CPU reading while the screen is off (every thread's stat file every 5 s for nothing —
+                // nobody is looking). A freeze still writes its snapshot below with a fresh reading.
+                if (awake(app)) runCatching { sampleCpu(now) }
             }
             val silent = now - lastBeat
             if (silent >= STALL_MS) {
@@ -108,6 +110,12 @@ object FreezeWatchdog {
                 mainHandler.post(beat)
             }
         }
+    }
+
+    private var power: android.os.PowerManager? = null
+    private fun awake(app: Context): Boolean {
+        val pm = power ?: (app.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager)?.also { power = it }
+        return runCatching { pm?.isInteractive }.getOrNull() != false
     }
 
     // ---- CPU -------------------------------------------------------------------

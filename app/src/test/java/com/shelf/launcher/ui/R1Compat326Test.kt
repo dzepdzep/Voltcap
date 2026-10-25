@@ -56,6 +56,10 @@ class R1Compat326Test {
         if (ids.isEmpty()) return // source not reachable from this working directory
         val missing = ids.filter { !it.startsWith("dev_") && it !in R1_RULED_TILES }
         assertTrue("R1 tiles without a rule in r1TileFit (R1TileRules.kt): $missing", missing.isEmpty())
+        // And the other way round: no rule for a tile that isn't built any more (the matrix would list a ghost tile —
+        // the device walk found "drawnmedia", gone since 325).
+        val ghosts = R1_RULED_TILES.filter { it !in ids }
+        assertTrue("Rules for tiles QuickSettings.kt no longer builds: $ghosts", ghosts.isEmpty())
     }
 
     /** Every layout × look × the switches each rule reads: no tile throws, and the invariants hold. */
@@ -75,7 +79,7 @@ class R1Compat326Test {
                                 val f = r1TileFit(t, x)
                                 checked++
                                 // A look tile never shows where the layout draws its games its own way.
-                                if (t in setOf("gamelook", "cartlook", "drawnmedia", "artdrop") && layoutOwnLook(l) != null) {
+                                if (t in setOf("gamelook", "cartlook", "artdrop") && layoutOwnLook(l) != null) {
                                     assertEquals("$t on $l / $look", R1Fit.Hide, f)
                                 }
                                 // Outline: only where the frame is drawn.
