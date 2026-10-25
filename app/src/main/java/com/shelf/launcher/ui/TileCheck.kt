@@ -134,6 +134,13 @@ internal object TileCheck {
      */
     private suspend fun act(h: Hooks, id: String, steps: Int, a0: com.shelf.launcher.data.AppearanceSettings): Pair2 {
         when (id) {
+            "artdrop" -> {
+                // The tile opens the Art position adjuster; what it changes is where the cover sits in the case — a
+                // step down and smaller (step 2: further), as moving it there would.
+                val F = com.shelf.launcher.data.Features
+                F.artDropCase.value = (F.artDropCase.value + 20 * steps).coerceIn(-50, 100)
+                F.artZoomCase.value = (F.artZoomCase.value - 15 * steps).coerceIn(50, 200)
+            }
             "sort" -> {
                 // The tile opens the Sort window; what it changes is the order — the next sort, as a preview.
                 val all = com.shelf.launcher.data.SortMode.values()
