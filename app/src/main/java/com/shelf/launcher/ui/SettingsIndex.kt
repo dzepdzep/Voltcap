@@ -239,6 +239,7 @@ internal object SettingsIndex {
         E("Game logos", "Home", "Name & logo", null, null),
         E("Full console names", "Home", "Name & logo", null, null),
         E("Console name on the wide card", "Home", "Name & logo", null, null),
+        E("Short console names", "Home", "Name & logo", null, null),
         E("Where the logo goes", "Home", "Name & logo", null, null),
         E("Next to the row", "Home", "Next to the row", null, null),
         E("Music player", "Home", "Music player", null, null),

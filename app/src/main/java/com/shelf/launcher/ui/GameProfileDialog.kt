@@ -56,7 +56,7 @@ fun GameProfileDialog(
     val version by viewModel.profileVersion.collectAsState()
     val isApp = game.sourceType == SourceType.APP
     val isRom = game.sourceType == SourceType.ROM
-    val consoleName = ConsoleNames.display(game.platform)
+    val consoleName = ConsoleNames.label(game.platform)
     // Re-read whenever anything changed (the stores are tiny SharedPreferences reads).
     val resolved = remember(version, game.stableKey) { viewModel.effectiveProfile(game) }
     val own = remember(version, game.stableKey) { viewModel.gameProfile(game) }

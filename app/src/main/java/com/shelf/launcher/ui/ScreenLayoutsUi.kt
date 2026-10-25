@@ -68,7 +68,7 @@ fun ScreenLayoutPickerDialog(
 ) {
     com.shelf.launcher.Breadcrumbs.mark("ScreenLayoutPickerDialog")
     var picked by remember { mutableStateOf(current.layout.id) }
-    val console = ConsoleNames.display(game.platform)
+    val console = ConsoleNames.label(game.platform)
     val targets = remember(game.stableKey, collections, emulatorPackage) {
         buildList {
             add(LayoutTarget(null, "", "Just this time"))
@@ -298,7 +298,7 @@ private fun RuleLine(rule: ScreenRule, target: String, layoutName: String, onRem
 private fun ruleTargetName(rule: ScreenRule, gameNames: Map<String, String>): String = when (rule.scope) {
     RuleScope.GAME -> gameNames[rule.value] ?: rule.value.substringAfterLast('/')
     RuleScope.COLLECTION -> collectionLabel(rule.value)
-    RuleScope.CONSOLE -> ConsoleNames.display(rule.value)
+    RuleScope.CONSOLE -> ConsoleNames.label(rule.value)
     RuleScope.EMULATOR -> rule.value
     RuleScope.DEFAULT -> "Everything"
 }

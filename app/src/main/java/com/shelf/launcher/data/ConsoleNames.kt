@@ -82,5 +82,35 @@ object ConsoleNames {
         "App" to "Other apps"
     )
 
+    /** The official name — always (printed on cases, cartridges and discs, logo look-ups, reports). */
     fun display(platform: String): String = names[platform] ?: platform
+
+    /**
+     * Update 329 (Toni: "on by default the real official names, not GBA, PS2… — those the user can turn on"): the short
+     * names people use, for Settings › Home › Name & logo › Short console names. Consoles not listed use their key, which
+     * already is their usual short name (PS2, GBA, N64, SNES…).
+     */
+    private val shortNames = mapOf(
+        "GameCube" to "GameCube", "MegaDrive" to "Mega Drive", "Genesis" to "Mega Drive", "MasterSystem" to "Master System",
+        "GameGear" to "Game Gear", "SegaCD" to "Sega CD", "VirtualBoy" to "Virtual Boy", "NeoGeoPocket" to "NGP",
+        "NeoGeoPocketColor" to "NGPC", "PCEngine" to "PC Engine", "PCEngineCD" to "PCE CD", "WonderSwan" to "WS",
+        "WonderSwanColor" to "WSC", "Atari2600" to "2600", "Atari5200" to "5200", "Atari7800" to "7800", "XboxOne" to "Xbox One",
+        "XboxSeries" to "Xbox Series", "Xbox360" to "Xbox 360", "PokemonMini" to "Pokémon mini", "PSVita" to "Vita",
+        "Switch2" to "Switch 2", "WiiU" to "Wii U", "ColecoVision" to "Coleco", "Intellivision" to "Intellivision",
+        "NeoGeo" to "Neo Geo", "NeoGeoCD" to "Neo Geo CD", "Pico8" to "PICO-8", "PICO8" to "PICO-8", "Naomi" to "NAOMI",
+        "CDi" to "CD-i", "SG1000" to "SG-1000", "C64" to "C64", "App" to "Other apps", "Android" to "Android",
+        "Disc" to "Discs", "Arcade" to "Arcade", "DOS" to "DOS", "ScummVM" to "ScummVM", "Amiga" to "Amiga", "MSX" to "MSX",
+        "Lynx" to "Lynx", "Jaguar" to "Jaguar", "Saturn" to "Saturn", "Dreamcast" to "Dreamcast", "Atomiswave" to "Atomiswave",
+        "Vectrex" to "Vectrex", "Switch" to "Switch", "Wii" to "Wii", "3DO" to "3DO", "Xbox" to "Xbox", "TG16" to "TG-16",
+        "TGCD" to "TG-CD", "Famicom" to "Famicom", "SFC" to "Super Famicom", "FDS" to "FDS"
+    )
+
+    /** The short name ("PS2", "GBA", "Mega Drive"…). */
+    fun short(platform: String): String = shortNames[platform] ?: platform
+
+    /**
+     * Update 329: what the screens show for a console — its official name, or the short one with Settings › Home ›
+     * Name & logo › Short console names on (off by default). Use [display] for anything printed on the game's media.
+     */
+    fun label(platform: String): String = if (Features.shortConsoleNames.state.value) short(platform) else display(platform)
 }

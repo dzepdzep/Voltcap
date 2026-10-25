@@ -5551,10 +5551,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 skippedExtras.takeIf { it.isNotEmpty() }?.let { "Skipped launch parameters: " + it.joinToString(", ") + "." }
             ).joinToString(" ").ifEmpty { null }
             is LaunchOutcome.NotConfigured ->
-                "No emulator set up for ${game.platform} yet — pick one (Start › Emulator changes it later)."
+                "No emulator set up for ${com.shelf.launcher.data.ConsoleNames.label(game.platform)} yet — pick one (Start › Emulator changes it later)."
             is LaunchOutcome.EmulatorNotFound ->
                 "${outcome.packageName ?: "The emulator"} didn't accept the launch. Check the emulator set for " +
-                    "${game.platform} (Start › Emulator), or try a different game path format there."
+                    "${com.shelf.launcher.data.ConsoleNames.label(game.platform)} (Start › Emulator), or try a different game path format there."
             is LaunchOutcome.Error ->
                 "Couldn't launch ${game.name}: ${outcome.message}"
         }

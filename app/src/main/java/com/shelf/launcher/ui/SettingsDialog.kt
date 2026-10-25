@@ -4267,6 +4267,20 @@ private fun NameAndCategoryContent(appearance: AppearanceSettings, onChange: (Ap
                     modifier = m
                 )
             }
+            // Update 329 (Toni: "on by default the real official names — the short ones could be turned on by the user").
+            item { m ->
+                val short = com.shelf.launcher.data.Features.shortConsoleNames.state.value
+                SwitchRow(
+                    icon = Icons.Filled.VideogameAsset,
+                    title = "Short console names",
+                    subtitle = "PS2, GBA, SNES… on the categories, tabs and game details instead of the official names " +
+                        "(PlayStation 2, Game Boy Advance…). Off: the official names. Cases, cartridges and discs always " +
+                        "print the official name.",
+                    checked = short,
+                    onChange = { com.shelf.launcher.data.Features.shortConsoleNames.value = it },
+                    modifier = m
+                )
+            }
         }
     }
 

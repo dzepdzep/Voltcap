@@ -124,7 +124,7 @@ internal fun ShowcaseArtPage(info: SecondHomeGame, logoUrl: String?, nowPlayingC
                 )
             }
             val bits = listOfNotNull(
-                com.shelf.launcher.data.ConsoleNames.display(game.platform),
+                com.shelf.launcher.data.ConsoleNames.label(game.platform),
                 info.playtimeMs?.takeIf { it > 0 }?.let { "Played ${PlaytimeStore.format(it)}" }
             )
             Spacer(Modifier.height(10.dp))

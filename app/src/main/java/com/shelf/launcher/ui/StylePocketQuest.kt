@@ -394,13 +394,14 @@ private fun PqStopIcon(st: StyleStop?, tint: Color, size: Dp) {
     else Icon(st?.icon ?: Icons.Filled.Apps, null, tint = tint, modifier = Modifier.size(size))
 }
 
-/** Short tab names: GBA, SNES, PS1… (the console's key while short, its name when that's short, else the key). */
+/**
+ * The tab's name. (Update 329, Toni: "on by default the real official names, not GBA, PS2…": the official name — the short
+ * one (GBA, SNES, PS1…) only with Settings › Home › Name & logo › Short console names.)
+ */
 internal fun pqShortName(st: StyleStop): String {
     val p = st.platform ?: return st.label
     if (com.shelf.launcher.data.isCollectionKey(p)) return st.label
-    if (p.length <= 6) return p.uppercase()
-    val full = com.shelf.launcher.data.ConsoleNames.display(p)
-    return if (full.length <= 12) full else p
+    return com.shelf.launcher.data.ConsoleNames.label(p)
 }
 
 @Composable

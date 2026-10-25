@@ -76,7 +76,7 @@ fun EmulatorSettingsDialog(
                     StatusDot(assigned != null)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(com.shelf.launcher.data.ConsoleNames.display(platform), color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Text(com.shelf.launcher.data.ConsoleNames.label(platform), color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                         Text(
                             assigned ?: "Not set — select to choose",
                             color = if (assigned != null) ShelfTheme.textMuted else ShelfTheme.accent,

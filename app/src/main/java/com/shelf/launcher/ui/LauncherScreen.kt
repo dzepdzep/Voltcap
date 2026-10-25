@@ -4032,7 +4032,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     game = g, title = gameDisplayName(g.name),
                     // (Update 113: the big logo — SteamGridDB's by default.)
                     logo = if (LocalTitleOptions.current.showLogos) bigLogo(g, state) else null,
-                    console = com.shelf.launcher.data.ConsoleNames.display(g.platform),
+                    console = com.shelf.launcher.data.ConsoleNames.label(g.platform),
                     playtimeMs = state.playtime[k] ?: 0L, lastPlayed = state.lastPlayedAt[k],
                     summary = meta?.summary,
                     facts = listOfNotNull(meta?.releaseYear?.toString(), meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() }, meta?.developer, meta?.publisher),
@@ -4662,7 +4662,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val games = state.games
         com.shelf.launcher.data.WebRemote.games = {
             games.filter { it.sourceType != com.shelf.launcher.data.SourceType.APP || it.platform != "App" }
-                .map { Triple(it.stableKey, gameDisplayName(it.name), com.shelf.launcher.data.ConsoleNames.display(it.platform)) }
+                .map { Triple(it.stableKey, gameDisplayName(it.name), com.shelf.launcher.data.ConsoleNames.label(it.platform)) }
         }
         val launch: (String) -> Unit = { key ->
             games.firstOrNull { it.stableKey == key }?.let { g -> android.os.Handler(android.os.Looper.getMainLooper()).post { startGame(g) } }
@@ -4971,8 +4971,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onOpenGame = { g -> showSaveExplorer = false; saveSyncForGame = g },
             onDismiss = { showSaveExplorer = false },
             lastPlayed = state.lastPlayedAt,
-            // Update 112: the vault always uses the consoles' full names (Game Boy Color, not GBC).
-            consoleName = { p -> com.shelf.launcher.data.ConsoleNames.display(p) },
+            // Update 112: the vault uses the consoles' full names (Game Boy Color, not GBC) — 329: unless Short console names.
+            consoleName = { p -> com.shelf.launcher.data.ConsoleNames.label(p) },
             // (Update 285: Icons only — the RetroAchievements icon, else the SteamGridDB logo, else as above.)
             logoFor = { g ->
                 g.raGameId?.let { id -> state.raIcons[id] ?: com.shelf.launcher.data.RaBadges.mediaUrl(state.raCompletionById[id]?.ImageIcon) }
@@ -5135,7 +5135,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     scrapeDone = state.scrapeDone, scrapeTotal = state.scrapeTotal,
                     onScrapeMissing = { viewModel.scrapeMissingArt(manual = true) },
                     gameKey = g?.stableKey, gameName = g?.let { gameDisplayName(it.name) }, gamePlatform = g?.platform,
-                    gameConsole = g?.platform?.let { com.shelf.launcher.data.ConsoleNames.display(it) },
+                    gameConsole = g?.platform?.let { com.shelf.launcher.data.ConsoleNames.label(it) },
                     consoleSiblings = { g?.let { me -> state.games.filter { it.platform == me.platform && it.stableKey != me.stableKey }.map { it.stableKey } }.orEmpty() },
                     openSettingsAt = { section, label ->
                         // Straight to the setting: its section, sub-page and group (the settings search's own map).
@@ -6698,7 +6698,7 @@ private fun gameWindowOptions(
         ))
         if (state.appearance.userCollections) add(WinOption("Collections", "Add it to one of your own lists", onClick = go(onCollections)))
         if (isRom) {
-            add(WinOption("Emulator for ${g.platform}", "Which app — and core — runs this console", onClick = go(onEmulator)))
+            add(WinOption("Emulator for ${com.shelf.launcher.data.ConsoleNames.label(g.platform)}", "Which app — and core — runs this console", onClick = go(onEmulator)))
             add(WinOption("Achievement matching", if (g.raGameId != null) "Hash, custom hash or game ID" else "Not linked yet — see why, or set a hash or ID", onClick = go(onMatching)))
             if (g.raGameId != null) add(WinOption("Refetch achievement icon", "Ask RetroAchievements again for its icon", onClick = go { viewModel.refetchRaIcon(g) }))
         }

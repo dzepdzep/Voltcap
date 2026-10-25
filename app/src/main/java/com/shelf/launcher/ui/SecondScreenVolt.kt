@@ -361,7 +361,7 @@ internal fun ShowcaseArt(info: SecondHomeGame, modifier: Modifier = Modifier) {
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.Center) {
                     Text(
-                        com.shelf.launcher.data.ConsoleNames.display(game.platform).uppercase(),
+                        com.shelf.launcher.data.ConsoleNames.label(game.platform).uppercase(),
                         color = ShelfTheme.accent, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                     Spacer(Modifier.height(4.dp))

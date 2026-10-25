@@ -433,12 +433,12 @@ fun QuickSettingsCard(
             // decided in r1TileFit, R1TileRules.kt; the lists are read only when pressed.)
             fun styleTile(id: String, word: String, pref: com.shelf.launcher.data.Features.StringPref, consoles: () -> List<String>, after: () -> Unit = {}) {
                 val now = pref.state.value
-                val name = if (now.isEmpty()) "Own" else com.shelf.launcher.data.ConsoleNames.display(now)
+                val name = if (now.isEmpty()) "Own" else com.shelf.launcher.data.ConsoleNames.label(now)
                 add(R1Tile(id, Icons.Filled.Album, "$word\n$name", now.isNotEmpty(),
                     longAction = {
                         choiceSheet = "$word for every game" to (
                             listOf(R1Choice("Each game's own", pref.value.isEmpty()) { pref.value = "" }) +
-                                consoles().map { p -> R1Choice(com.shelf.launcher.data.ConsoleNames.display(p), pref.value == p) { pref.value = p; after() } }
+                                consoles().map { p -> R1Choice(com.shelf.launcher.data.ConsoleNames.label(p), pref.value == p) { pref.value = p; after() } }
                             )
                     }) {
                     pref.value = LookStyles.next(pref.value, consoles())

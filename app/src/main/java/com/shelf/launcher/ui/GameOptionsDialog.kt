@@ -89,7 +89,7 @@ fun GameOptionsDialog(
     com.shelf.launcher.Breadcrumbs.mark("GameOptionsDialog")
     ShelfMenuDialog(
         title = gameDisplayName(game.name),
-        subtitle = "${game.platform} · options",
+        subtitle = "${com.shelf.launcher.data.ConsoleNames.label(game.platform)} · options",
         onDismiss = onDismiss,
         icon = Icons.Filled.VideogameAsset
     ) {
@@ -121,7 +121,7 @@ fun GameOptionsDialog(
         if (onCartShell != null) {
             // (Update 212: an Android game picks a disc or a cartridge here first, AndroidMedia.kt.)
             if (game.platform == "App" || game.platform == "Android") MenuRow(Icons.Filled.Memory, "Disc or cartridge…", "How this game is drawn: a disc, or a cartridge in any shell — it stays an Android game", onClick = onCartShell)
-            else MenuRow(Icons.Filled.Memory, "Cartridge shell…", "Draw it on any console's cartridge or your own — it stays a ${game.platform} game", onClick = onCartShell)
+            else MenuRow(Icons.Filled.Memory, "Cartridge shell…", "Draw it on any console's cartridge or your own — it stays a ${com.shelf.launcher.data.ConsoleNames.label(game.platform)} game", onClick = onCartShell)
         }
         if (onGameSettings != null) {
             MenuRow(Icons.Filled.Tune, "Game settings…", "Sync, second screen, launch parameters — inherited or set for this ${if (game.sourceType == SourceType.APP) "app" else "game"}", onClick = onGameSettings)
@@ -165,7 +165,7 @@ fun GameOptionsDialog(
             Spacer(Modifier.height(4.dp))
             MenuRow(
                 Icons.Filled.VideogameAsset,
-                "Emulator for ${game.platform}",
+                "Emulator for ${com.shelf.launcher.data.ConsoleNames.label(game.platform)}",
                 "Which app — and core — runs this system",
                 onClick = onConfigureEmulator
             )

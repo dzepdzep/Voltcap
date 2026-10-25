@@ -234,7 +234,8 @@ object DiscordPresence {
      */
     fun showStatus(status: String) {
         val playing = current ?: return
-        val line = "${playing.platform} · $status".take(128)
+        // (Update 329: the official name — friends see it, not the short key.)
+        val line = "${ConsoleNames.display(playing.platform)} · $status".take(128)
         scope.launch {
             if (available != true) return@launch
             runCatching {

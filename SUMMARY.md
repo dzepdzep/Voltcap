@@ -11,6 +11,12 @@
 - **Fixed — Round shortcuts did nothing off the Tile home with "By the row"** (that spot exists only on the Tile home; on
   every other layout it means off, as in Settings › Home › Round shortcuts). There the tap now shows them in a corner /
   takes them off this layout, and the tile says whether they show here (`QuickSettings.kt`).
+- **Console names (Toni: "on by default the real official names, not GBA, PS2… — the short ones the user can turn on"):**
+  every screen label now goes through `ConsoleNames.label` — the official name, or the short one with the new switch
+  **Settings › Home › Name & logo › Short console names** (off by default). Fixed places that showed the bare key: Pocket
+  Quest's category tabs (3DS, GBA…), the console line on the wide card, the emulator pickers ("Emulator for PS2"), the
+  game's Options window, the launch error messages, Discord status. Printed cases / cartridges / discs and logo look-ups
+  keep the official name (`ConsoleNames.display`). Test: `ConsoleNames329Test`.
 - Running on the Thor now (33 layouts × 8 looks, ~100 s each); results, fixes and the report follow in this entry.
 - **Copy** (already in place): `src_copy\ui\TileCheck.kt` (new), `src_copy\ui\QuickSettings.kt`,
   `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\TestHooks.kt`, `src_copy\ui\PowerSaver.kt`,

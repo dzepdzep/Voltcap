@@ -882,7 +882,7 @@ fun GameCard(
                     // you're browsing already says which console it is.
                     if (titles.showConsoleName && !veryTight) {
                         Text(
-                            text = game.platform,
+                            text = LocalTitleOptions.current.console(game.platform),
                             color = ShelfTheme.secondary,
                             fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
                             fontWeight = FontWeight.Bold,

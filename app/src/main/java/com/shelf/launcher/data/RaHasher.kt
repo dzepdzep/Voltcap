@@ -67,7 +67,7 @@ object RaHasher {
                 Result.Hashed(md5(header))
             } ?: Result.Unsupported("Unrecognised disc image")
             platform in cartridgePlatforms -> hashCartridge(file, platform)
-            else -> Result.Unsupported("No hashing rule for $platform yet")
+            else -> Result.Unsupported("No hashing rule for ${ConsoleNames.label(platform)} yet")
         }
     } catch (e: Exception) {
         Result.Failed(e.message ?: e::class.java.simpleName)

@@ -373,7 +373,7 @@ private fun ConsoleSticker(platform: String?) {
                 Spacer(Modifier.width(8.dp))
             }
             Text(
-                platform?.let { ConsoleNames.display(it) } ?: "All games", color = Color.White, fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp),
+                platform?.let { ConsoleNames.label(it) } ?: "All games", color = Color.White, fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp),
                 fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis
             )
         }
@@ -753,7 +753,7 @@ private fun TvInfoBar(game: Game, metaAll: GameMetadata?, playtimeMs: Long?, las
     val meta = metaAll.shownIn(com.shelf.launcher.data.Features.factsGrid.state.value)
     // A slim strip under the set: the TV stays what you look at.
     val facts = listOfNotNull(
-        ConsoleNames.display(game.platform),
+        ConsoleNames.label(game.platform),
         meta?.releaseYear?.toString(),
         meta?.developer,
         meta?.publisher,

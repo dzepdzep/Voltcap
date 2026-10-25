@@ -192,7 +192,7 @@ private fun computeStats(
 
     val byKey = games.associateBy { it.stableKey }
     val consoles = playtime.entries
-        .groupBy { byKey[it.key]?.platform?.let { p -> com.shelf.launcher.data.ConsoleNames.display(p) } ?: "Other" }
+        .groupBy { byKey[it.key]?.platform?.let { p -> com.shelf.launcher.data.ConsoleNames.label(p) } ?: "Other" }
         .mapValues { (_, list) -> list.sumOf { it.value } }
         .filterValues { it > 0 }
         .entries.sortedByDescending { it.value }.take(5).map { it.key to it.value }

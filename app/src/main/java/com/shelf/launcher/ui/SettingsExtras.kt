@@ -231,9 +231,9 @@ internal fun BiosCheckCard(platforms: List<String>, romRoot: String) {
             r == null -> MutedNote("Looking…")
             r.isEmpty() -> MutedNote("Nothing in your library needs a BIOS. ✓")
             else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                r.entries.sortedBy { ConsoleNames.display(it.key) }.forEach { (platform, list) ->
+                r.entries.sortedBy { ConsoleNames.label(it.key) }.forEach { (platform, list) ->
                     Column {
-                        Text(ConsoleNames.display(platform), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text(ConsoleNames.label(platform), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         list.forEach { res -> BiosLine(res) }
                     }
                 }

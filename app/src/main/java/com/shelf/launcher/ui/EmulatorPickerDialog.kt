@@ -92,7 +92,7 @@ fun EmulatorPickerDialog(
 
     ShelfDialog(
         icon = Icons.Filled.VideogameAsset,
-        title = "Emulator for $platform",
+        title = "Emulator for ${com.shelf.launcher.data.ConsoleNames.label(platform)}",
         subtitle = currentLabel?.let { "Currently: $it" } ?: "Not set yet.",
         onDismiss = onDismiss,
         maxContentHeightFraction = 0.65f,
@@ -106,12 +106,12 @@ fun EmulatorPickerDialog(
         // RetroArch core step comes first when a RetroArch build is chosen.
         pendingRetroArchPackage?.let { raPackage ->
             ShelfCard {
-                SectionLabel("RetroArch core for $platform")
+                SectionLabel("RetroArch core for ${com.shelf.launcher.data.ConsoleNames.label(platform)}")
                 MutedNote("RetroArch needs to know which core runs this system, otherwise it opens its own menu instead of the game.")
                 Spacer(Modifier.height(8.dp))
                 val cores = CoreRegistry.coresFor(platform)
                 if (cores.isEmpty()) {
-                    EmptyState("No known cores for $platform — use advanced setup below to enter a core path by hand.")
+                    EmptyState("No known cores for ${com.shelf.launcher.data.ConsoleNames.label(platform)} — use advanced setup below to enter a core path by hand.")
                 } else {
                     cores.forEach { core ->
                         val corePath = CoreRegistry.corePath(raPackage, core.id)
@@ -144,7 +144,7 @@ fun EmulatorPickerDialog(
 
         if (suggested.isNotEmpty()) {
             ShelfCard {
-                SectionLabel("Suggested for $platform")
+                SectionLabel("Suggested for ${com.shelf.launcher.data.ConsoleNames.label(platform)}")
                 suggested.forEach { app ->
                     AppRow(
                         name = app.name.ifBlank { EmulatorRegistry.displayNameFor(app.packageName) ?: app.packageName.orEmpty() },

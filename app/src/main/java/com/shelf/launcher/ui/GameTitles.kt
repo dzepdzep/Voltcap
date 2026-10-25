@@ -29,7 +29,8 @@ data class TitleOptions(
         // Collections, franchises and play statuses (category label).
         com.shelf.launcher.data.isCollectionKey(platform) -> com.shelf.launcher.data.collectionLabel(platform)
         // (Update 325, Toni: "always the official names": no more short keys, whatever the old switch says.)
-        else -> com.shelf.launcher.data.ConsoleNames.display(platform)
+        // (Update 329: official names unless Short console names is on.)
+        else -> com.shelf.launcher.data.ConsoleNames.label(platform)
     }
 
     fun display(name: String): String = when {

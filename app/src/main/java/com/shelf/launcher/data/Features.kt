@@ -358,6 +358,8 @@ object Features {
      * Look tile's "Cartridges only" step.
      */
     val cartsOnly = BoolPref("carts_only", false)
+    /** Update 329: short console names on the screens (PS2, GBA…) instead of the official ones (ConsoleNames.label). */
+    val shortConsoleNames = BoolPref("short_console_names", false)
     /**
      * Update 128, the Cartridges look (cartsOnly): Original keeps each console's own cartridge and puts your cartridge
      * pack on the rest (discs, UMDs, Steam, Android, PC, arcade…); Custom puts every console on your pack. Also the
