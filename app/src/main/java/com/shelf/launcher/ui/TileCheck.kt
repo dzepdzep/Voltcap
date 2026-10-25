@@ -117,6 +117,10 @@ internal object TileCheck {
 
     /** Two shots 400 ms apart (the second only for the noise mask). */
     private suspend fun twoShots(h: Hooks): Pair2 {
+        // (Counts as input: Hero carousel's idle focus mode fades its UI out after 15 s without any — that showed up as
+        // a change in the control on Hero carousel.)
+        HomeIdle.holdForTest(true)
+        delay(150)
         val a = capture(h); delay(400); val b = capture(h)
         return Pair2(a, b)
     }
