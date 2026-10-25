@@ -144,9 +144,16 @@ object ScreenLayouts {
     /** Consoles whose emulators draw both screens (DS, 3DS). */
     private val DUAL_SCREEN_CONSOLES = setOf("NDS", "3DS")
 
+    /**
+     * Update 326: emulators that use the second screen themselves whatever the console — Eden Duo (Switch) puts a live
+     * companion for the running game there (maps, menus, status). Voltcap keeps out of that screen for them.
+     */
+    val DUAL_SCREEN_EMULATORS = setOf(EmulatorCatalog.EDEN_DUO, EmulatorCatalog.EDEN_DUO + ".dev")
+
     /** Voltcap's own pick when no rule matches. */
-    fun fallback(setup: ScreenSetup, game: Game): String = when {
+    fun fallback(setup: ScreenSetup, game: Game, emulatorPackage: String? = null): String = when {
         game.platform in DUAL_SCREEN_CONSOLES -> NATIVE
+        setup == ScreenSetup.DUAL && emulatorPackage != null && emulatorPackage in DUAL_SCREEN_EMULATORS -> NATIVE
         setup == ScreenSetup.TV -> TV
         else -> INFO
     }
@@ -236,7 +243,7 @@ class ScreenLayoutsStore(context: Context) {
             val layout = rules[scope.key(value)]?.let { all[it] } ?: continue
             return ResolvedLayout(layout, scope, value.ifEmpty { null })
         }
-        val fallback = all[ScreenLayouts.fallback(setup, game)] ?: ScreenLayouts.builtIns.first()
+        val fallback = all[ScreenLayouts.fallback(setup, game, emulatorPackage)] ?: ScreenLayouts.builtIns.first()
         return ResolvedLayout(fallback, null, null)
     }
 

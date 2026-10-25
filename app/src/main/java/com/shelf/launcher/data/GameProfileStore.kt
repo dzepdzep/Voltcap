@@ -28,10 +28,15 @@ data class GameProfile(
     /** Game level only (a console-wide extra would be wrong for most emulators). */
     val launchExtras: List<LaunchExtra> = emptyList(),
     /** Follow the walkthrough automatically while playing; null = on. */
-    val guideAutoLocate: Boolean? = null
+    val guideAutoLocate: Boolean? = null,
+    /**
+     * Update 326: this game's own emulator (package), instead of its console's — e.g. one Switch game on Eden Duo for its
+     * second-screen companion, the rest on Eden. Game level only; null = the console's emulator.
+     */
+    val emulatorPackage: String? = null
 ) {
     fun isEmpty() = syncSaves == null && secondScreenPage == null && perfOverlay == null &&
-        launchExtras.isEmpty() && guideAutoLocate == null
+        launchExtras.isEmpty() && guideAutoLocate == null && emulatorPackage == null
 }
 
 enum class ProfileSource(val label: String) { GAME("this game"), CATEGORY("console"), GLOBAL("default") }

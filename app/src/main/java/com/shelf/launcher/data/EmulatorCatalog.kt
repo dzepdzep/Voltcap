@@ -10,6 +10,9 @@ import android.content.Intent
  * Hand-written entries in LaunchProfiles / CoreRegistry always win.
  */
 internal object EmulatorCatalog {
+    /** Update 326: Eden Duo's package (its duo.gradle: applicationId 'dev.igawa6.edenduo'; '.dev' for its dev builds). */
+    const val EDEN_DUO = "dev.igawa6.edenduo"
+
     class Entry(
         val name: String, val packageName: String, val activity: String, val action: String,
         val romExtra: String?, val format: RomFormat, val asData: Boolean, val boolExtras: Map<String, Boolean>
@@ -209,6 +212,11 @@ internal object EmulatorCatalog {
             Entry("Skyline", "skyline.emu", "emu.skyline.EmulationActivity", "android.intent.action.VIEW", null, RomFormat.SHARED_URI, true, mapOf()),
             Entry("Strato (Official)", "org.stratoemu.strato", "org.stratoemu.strato.EmulationActivity", "android.intent.action.VIEW", null, RomFormat.SHARED_URI, true, mapOf()),
             Entry("eden", "dev.eden.eden_emulator", "org.yuzu.yuzu_emu.activities.EmulationActivity", "android.nfc.action.TECH_DISCOVERED", null, RomFormat.SHARED_URI, true, mapOf()),
+            // Update 326 (not from Daijishou): Eden Duo, the dual-screen Eden fork (github.com/igawa6/eden-duo). Same
+            // EmulationActivity and intent filters as Eden (checked in its AndroidManifest / EmulationFragment: a content
+            // URI with a .nsp / .xci / … name on the intent's data starts the game); its companion runs on the second screen.
+            Entry("Eden Duo", EDEN_DUO, "org.yuzu.yuzu_emu.activities.EmulationActivity", "android.intent.action.VIEW", null, RomFormat.SHARED_URI, true, mapOf()),
+            Entry("Eden Duo (Dev)", EDEN_DUO + ".dev", "org.yuzu.yuzu_emu.activities.EmulationActivity", "android.intent.action.VIEW", null, RomFormat.SHARED_URI, true, mapOf()),
             Entry("eden (Optimized)", "com.miHoYo.Yuanshen", "org.yuzu.yuzu_emu.activities.EmulationActivity", "android.nfc.action.TECH_DISCOVERED", null, RomFormat.SHARED_URI, true, mapOf()),
             Entry("eden (Legacy)", "dev.legacy.eden_emulator", "org.yuzu.yuzu_emu.activities.EmulationActivity", "android.nfc.action.TECH_DISCOVERED", null, RomFormat.SHARED_URI, true, mapOf()),
             Entry("eden (Nightly)", "dev.eden.eden_nightly", "org.yuzu.yuzu_emu.activities.EmulationActivity", "android.nfc.action.TECH_DISCOVERED", null, RomFormat.SHARED_URI, true, mapOf()),

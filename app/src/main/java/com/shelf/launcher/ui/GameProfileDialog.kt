@@ -215,19 +215,69 @@ fun GameProfileDialog(
             }
         }
 
-        // ---- Emulator (read only) ----
-        if (isRom) {
-            val pkg = viewModel.emulatorFor(game)
-            Section("Emulator", "$consoleName: " + (pkg ?: "not set up yet") + " (shared by all $consoleName games)", onReset = null) {
-                Chip("Change emulator…", accent = false, onClick = onOpenEmulator)
-            }
-        }
+        // ---- Emulator: the console's, or (update 326) this game's own ----
+        if (isRom) GameEmulatorSection(game, viewModel, version, consoleName, onOpenEmulator)
 
         Spacer(Modifier.height(4.dp))
         MutedNote(
             "Not available: controller profiles (Android can't remap controls inside other apps — set them up in the emulator) " +
                 "and orientation (Android can't force another app's screen rotation)."
         )
+    }
+}
+
+/**
+ * Update 326: the emulator this game starts in. The console's emulator by default (Change emulator… sets that for every
+ * game of the console); or one of the installed emulators made for the console, for this game only — e.g. Eden Duo for
+ * a Switch game with a second-screen companion while the others stay on Eden.
+ */
+@Composable
+private fun GameEmulatorSection(
+    game: Game,
+    viewModel: LauncherViewModel,
+    version: Int,
+    consoleName: String,
+    onOpenEmulator: () -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val state by viewModel.uiState.collectAsState()
+    val own = remember(version, game.stableKey) { viewModel.gameProfile(game).emulatorPackage }
+    val consolePkg = state.emulatorConfigs[game.platform]?.packageName
+    val pm = context.packageManager
+    // Installed emulators made for this console (RetroArch left out: it needs a core per console, set under Change emulator…).
+    val choices = remember(state.installedApps, game.platform) {
+        val suggested = com.shelf.launcher.data.EmulatorRegistry.suggestionsFor(game.platform)
+            .filter { it.platforms != com.shelf.launcher.data.ALL_PLATFORMS }
+            .map { it.packageName }.toSet()
+        state.installedApps.filter { a ->
+            val p = a.packageName
+            p != null && p in suggested && !com.shelf.launcher.data.CoreRegistry.isRetroArch(p) &&
+                com.shelf.launcher.data.EmulatorCatalog.isRealEmulator(pm, p)
+        }.distinctBy { it.packageName }
+    }
+    fun label(pkg: String?): String = pkg?.let { p ->
+        state.installedApps.firstOrNull { it.packageName == p }?.name?.takeIf { it.isNotBlank() }
+            ?: com.shelf.launcher.data.EmulatorRegistry.displayNameFor(p) ?: p
+    } ?: "not set up yet"
+    val ownInstalled = own != null && choices.any { it.packageName == own }
+    val status = when {
+        own != null && ownInstalled -> "Set for this game: ${label(own)}"
+        own != null -> "Set for this game: $own (not installed — using $consoleName's: ${label(consolePkg)})"
+        else -> "$consoleName: ${label(consolePkg)} (shared by all $consoleName games)"
+    }
+    Section("Emulator", status, onReset = if (own != null) ({ viewModel.setGameEmulator(game, null) }) else null) {
+        ChipFlow {
+            Chip("Console's emulator", accent = own == null) { viewModel.setGameEmulator(game, null) }
+            choices.mapNotNull { it.packageName }.forEach { p ->
+                Chip(label(p), accent = own == p) { viewModel.setGameEmulator(game, p) }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Chip("Change emulator for all $consoleName games…", accent = false, onClick = onOpenEmulator)
+        if (choices.any { it.packageName in com.shelf.launcher.data.ScreenLayouts.DUAL_SCREEN_EMULATORS }) {
+            Spacer(Modifier.height(6.dp))
+            MutedNote("Eden Duo shows its own companion on the second screen; Voltcap leaves that screen to it unless Screens has a layout set for this game.")
+        }
     }
 }
 

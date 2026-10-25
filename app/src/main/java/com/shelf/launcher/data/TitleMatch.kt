@@ -48,7 +48,7 @@ object TitleMatch {
         "org.ppsspp" to AppKind.EMULATOR, "com.retroarch" to AppKind.EMULATOR, "com.explusalpha" to AppKind.EMULATOR,
         "org.dolphinemu" to AppKind.EMULATOR, "xyz.aethersx2" to AppKind.EMULATOR, "com.github.stenzek" to AppKind.EMULATOR,
         "org.citra" to AppKind.EMULATOR, "io.github.lime3ds" to AppKind.EMULATOR, "io.github.azahar" to AppKind.EMULATOR,
-        "org.yuzu" to AppKind.EMULATOR, "dev.eden" to AppKind.EMULATOR, "com.antutu.ABenchMark" to AppKind.TOOL,
+        "org.yuzu" to AppKind.EMULATOR, "dev.eden" to AppKind.EMULATOR, "dev.igawa6" to AppKind.EMULATOR, "com.antutu.ABenchMark" to AppKind.TOOL,
         "info.cemu" to AppKind.EMULATOR, "me.magnum.melonds" to AppKind.EMULATOR, "com.drastic" to AppKind.EMULATOR,
         "com.flycast" to AppKind.EMULATOR, "com.reicast" to AppKind.EMULATOR, "skyline.emu" to AppKind.EMULATOR,
         "org.mupen64plusae" to AppKind.EMULATOR, "com.dsemu" to AppKind.EMULATOR, "com.winlator" to AppKind.EMULATOR,

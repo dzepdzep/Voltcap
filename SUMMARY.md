@@ -1,5 +1,76 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 25 Oct 2026 (326): second screen no longer freezes during games, Eden Duo, R1 compatibility audit
+
+- **Before anything else — `src_copy` was 111 files behind.** PRs #9–#11 (0.6.40 / 0.6.41) changed `app/src` directly on
+  GitHub, so `src_copy` and three `project_copy` files (SUMMARY.md, packs/v1/carts_CREDITS.txt, tools/release/release.ps1)
+  were older than the project. The next robocopy would have put the old versions back. They were refreshed from
+  `main` (ebcc767) first; `git status` showed no code change after the robocopy, so they match exactly.
+  **If you edit on GitHub again, refresh `src_copy` before the next robocopy** (or tell Claude to).
+
+- **Second screen "stops working" during games — root cause found on the Thor (adb).** Voltcap's second-screen window is
+  an Android Presentation: a window above every app on its display. It stayed up while a game covered Voltcap, but its
+  drawing is paused while Voltcap is in the background — so the lower screen showed a **frozen picture** (clock stuck at
+  13:24 at 13:26, video stopped, taps doing nothing), and it sat over the live in-game second screen Voltcap opens for
+  the game (pages, widgets, music, volume, timer). The same happened whenever another app or one of Voltcap's own
+  windows covered the home ("sometimes inside Voltcap"). Now the window steps aside while Voltcap is in the background
+  and comes back (the same window, nothing rebuilt) when Voltcap is in front again. Checked on the Thor: in-game timer
+  0:11 → 1:25 → 1:52, clock moving, a tap changes the page; back home the home's second screen is back and live; sleep /
+  wake the same. (`ui/SecondScreen.kt`)
+- **The window comes back when Android closes it itself** (the display's size / density changing, the screen going for a
+  moment): the home believed it was still up (Twin layouts kept their lower half "on" an empty screen) until Voltcap was
+  restarted. It's rebuilt now (at most 5 times in 30 s, only while Voltcap is in front, never over a game's own screen).
+  Not reproducible on the Thor's firmware (a density change didn't make Android close it) — not tested on the device.
+- **In-game second screen stayed black-and-white:** the home's dimming kept running behind it and its grey shared with the
+  in-game screen, which nothing woke. It waits while Voltcap is in the background now (`SecondDim.hold`). Thor: still in
+  colour after 1:40 of play.
+- Behaviour change: with Settings › Screens layout **"Game, leave the other screen"** the lower screen shows what's under
+  Voltcap's window (the Thor's own launcher) during a game, instead of the frozen Voltcap picture. **"Game + info"** (the
+  default) is the one with Voltcap's live pages during play.
+
+- **Eden Duo** (github.com/igawa6/eden-duo, package `dev.igawa6.edenduo` — read from its `duo.gradle`; its dev builds
+  `dev.igawa6.edenduo.dev`):
+  - Recognised as a Switch emulator (picker suggestion, emulator list) and launched directly: its `EmulationActivity`
+    with the game as the intent's data (its `EmulationFragment` reads a content link ending in .nsp / .xci…).
+  - **Per game:** new in **Game settings › Emulator**: *Console's emulator* or any installed Switch emulator for this game
+    only (e.g. Fire Emblem: Three Houses on Eden Duo for its companion, the rest on Eden). An emulator that's later
+    uninstalled is kept in the game's settings; the console's is used meanwhile. Globally as before: Settings ›
+    Emulators › Switch. New installs pick Eden Duo › Eden › Citron as the Switch default (existing setups untouched).
+  - Its companion keeps the lower screen: on a built-in second screen a game in Eden Duo gets **"Emulator uses both
+    screens"** unless you set a layout for it (Settings › Screens), and Voltcap's own window steps aside (above).
+  - Eden Duo's screen swap needs a lasting file grant; with the default "Shared file link" it keeps the game on the main
+    screen. Not tested on the device — **Eden Duo isn't installed on the Thor**.
+
+- **R1 compatibility audit** (rules in `ui/R1TileRules.kt`, the one place that decides every tile):
+  - **Outline** (325) was shown on every layout; the style homes draw their own focus ring, so it switched nothing there.
+    Now only on Voltcap row, Tile home, Grid, Hero carousel, TV room, and Side menu / Case stacks with their carousel.
+  - **Badges** hidden on Hero carousel, which draws them since 317al → shown. **Badges / Achievements** on Pocket ribbon
+    while its cartridge is on → shown (the cartridge draws both).
+  - **Endless** on Hero tiles: hidden, but a saved Endless still sent the focus from the last tile to the first → off there.
+  - **Case / Spine / Disc for every game:** after switching to another look the tile was hidden but the game window,
+    Inspect, carousels and launch still wore the picked console's case / spine. A pick now applies exactly where its
+    tile shows; it's kept and comes back with its look (`ui/LookStyles.kt`).
+  - Background clips: checked — they replace only Game art / Blurred art, never Your wallpaper, Animated theme, Black or a
+    picture picked for the game (313/314). No change.
+  - New guard: a test fails when a tile is added to `QuickSettings.kt` without a rule; an exhaustive sweep of every
+    layout × look × the switches the rules read (~120 000 decisions) checks the invariants and writes the matrix.
+- **Report:** `docs/compat/COMPAT_326.md` (PASS / FIXED / HIDDEN / UNTESTED, automated and device separated) and
+  `docs/compat/r1_matrix_326.csv` (layout × look × tile).
+
+- **Copy** (`C:\Users\User\AndroidStudioProjects\ShelfLauncher\…`): already in place and pushed by Claude —
+  `src_copy\ui\SecondScreen.kt`, `src_copy\ui\SecondDim.kt`, `src_copy\ui\R1TileRules.kt`, `src_copy\ui\LookStyles.kt`,
+  `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\GameProfileDialog.kt`, `src_copy\LauncherViewModel.kt`,
+  `src_copy\data\EmulatorCatalog.kt`, `src_copy\data\ScreenLayouts.kt`, `src_copy\data\GameProfileStore.kt`,
+  `src_copy\data\DefaultEmulators.kt`, `src_copy\data\TitleMatch.kt`; new tests
+  `project_copy\app\src\test\java\com\shelf\launcher\ui\R1Compat326Test.kt`,
+  `project_copy\app\src\test\java\com\shelf\launcher\data\EdenDuo326Test.kt`; `project_copy\docs\compat\COMPAT_326.md`,
+  `project_copy\docs\compat\r1_matrix_326.csv`. No files to delete.
+- **Check:** `testDebugUnitTest` 232/232 pass; `assembleRelease` built (R8 / dex fine); installed on the Thor (data
+  kept) — second screen in game, back home, sleep / wake, the dimming, and the R1 panel on Case stacks checked there;
+  no crash in the crash log. **Not tested:** Eden Duo itself (not installed), the window rebuild after Android closes
+  it, display hot-plug (TV out), hours of play, walking every layout / look on the device (the rules are swept
+  automatically), the new Game settings › Emulator row on screen, RP Classic / Odin.
+
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
 - **Released** (what went out, for the record):

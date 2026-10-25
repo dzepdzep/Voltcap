@@ -2003,7 +2003,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             setFocus((s.focusedIndex + delta).mod(size))
             return
         }
-        if (s.appearance.loopRow && size >= 1) {
+        // (Update 326, audit: not on a layout without Endless — Hero tiles: the R1 tile is hidden there, but a saved Endless
+        // still sent the focus round from the last tile to the first.)
+        if (s.appearance.loopRow && size >= 1 && com.shelf.launcher.ui.endlessApplies(s.appearance.homeLayout)) {
             val raw = s.focusedIndex + delta
             // The Voltcap row and (update 125) the other rows slide round on their own (EndlessRow.kt); the rest get a short
             // "comes back in from the other side".
@@ -5206,7 +5208,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** The emulator (or GameNative) behind a game, for emulator rules. */
     private fun emulatorPackageFor(game: Game): String? = when (game.sourceType) {
-        SourceType.ROM -> if (game.platform == "DroidDeck") com.shelf.launcher.data.GameClients.DROIDDECK else _uiState.value.emulatorConfigs[game.platform]?.packageName
+        SourceType.ROM -> if (game.platform == "DroidDeck") com.shelf.launcher.data.GameClients.DROIDDECK
+            else gameEmulatorOverride(game) ?: _uiState.value.emulatorConfigs[game.platform]?.packageName
         SourceType.STEAM -> _uiState.value.gameNativeConfig.packageName
         SourceType.APP -> null
     }
@@ -5229,6 +5232,22 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         _uiState.value.collections.filter { game.stableKey in it.keys }.map { it.key to it.name }
 
     fun emulatorFor(game: Game): String? = emulatorPackageFor(game)
+
+    /**
+     * Update 326: the game's own emulator (Game settings › Emulator), when it is still installed. An uninstalled one is
+     * kept in the game's settings (it comes back when the emulator does) but the console's emulator is used meanwhile.
+     */
+    fun gameEmulatorOverride(game: Game): String? {
+        if (game.sourceType != SourceType.ROM) return null
+        val pkg = gameProfileStore.game(game.stableKey).emulatorPackage ?: return null
+        val pm = getApplication<Application>().packageManager
+        return pkg.takeIf { runCatching { pm.getPackageInfo(it, 0) }.isSuccess }
+    }
+
+    /** Update 326: sets (or with null clears) [game]'s own emulator. */
+    fun setGameEmulator(game: Game, packageName: String?) {
+        updateGameProfile(game) { it.copy(emulatorPackage = packageName) }
+    }
 
     // ---- Game settings (per-game / per-console overrides) ----
 
@@ -5369,7 +5388,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     private fun startGameNow(game: Game, displayId: Int?, placementNote: String?) {
         val config = if (game.sourceType == SourceType.ROM) {
-            _uiState.value.emulatorConfigs[game.platform]
+            val console = _uiState.value.emulatorConfigs[game.platform]
+            // Update 326: the game's own emulator (Game settings › Emulator) wins over its console's; launched with that
+            // emulator's own launch profile, like a console set to it.
+            val own = gameEmulatorOverride(game)
+            if (own != null && own != console?.packageName) {
+                com.shelf.launcher.data.EmulatorConfig(platform = game.platform, mode = com.shelf.launcher.data.LaunchMode.EXPLICIT_INTENT, packageName = own)
+            } else console
         } else {
             null
         }

@@ -15,8 +15,8 @@ import com.shelf.launcher.data.Features
  * Update 188: the second screen dims when nobody uses it (Settings › Screens › Dim the second screen; also under
  * Settings › Device › Battery saver). After [Features.secondDimAfter] seconds without a touch there or a press on Voltcap,
  * a black layer fades part-way over it (update 189: the art goes black-and-white, see [secondDimArt]) and its backlight
- * is turned down, also while a game runs on the other screen — that's
- * when Voltcap's second screen otherwise sat at full brightness the whole game. The first touch on it only wakes it
+ * is turned down. (Update 326: while a game is in front, Voltcap's second-screen window steps aside for the in-game one
+ * and this waits — [hold].) The first touch on it only wakes it
  * (that touch doesn't press anything); a press on Voltcap wakes it too.
  *
  * Plain Android views, not Compose: while a game is in front Voltcap's Compose drawing is paused, but its second screen
@@ -63,6 +63,17 @@ internal object SecondDim {
 
     /** A setting changed: start over. */
     fun settingsChanged() = poke()
+
+    /**
+     * Update 326: Voltcap's second-screen window steps aside while Voltcap is stopped (a game in front — SecondScreenHost),
+     * so its dimming stops too: no timer, its layer and the grey art cleared. The grey art is a shared value, and the
+     * in-game second screen (CompanionActivity) reads it as well — it stayed black-and-white for the whole game, since
+     * nothing there woke it. [poke] starts it again when Voltcap is back. Main thread.
+     */
+    fun hold() {
+        main.removeCallbacks(check)
+        if (dimmed) undim() else if (artGrey.floatValue != 0f) greyTo(0f, 0L)
+    }
 
     private fun wakeAndSchedule() {
         if (dimmed) undim()

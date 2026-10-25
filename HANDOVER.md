@@ -256,6 +256,18 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 326
+- **src_copy can fall behind GitHub:** PRs edited on GitHub (Claude Code web) change `app/src` only. Before editing,
+  compare `src_copy` with `app/src` (sizes / git) and refresh it, or the robocopy puts old files back (326 found 111).
+- **Second screen (SecondScreenHost):** the Presentation is hidden on the activity's ON_STOP and shown on ON_START (its
+  Compose drawing is paused while stopped — it used to sit frozen over the in-game CompanionActivity). A dismiss by
+  Android (not by us: `ownDismiss`) bumps `revive` and rebuilds it. `SecondDim.hold()` on stop.
+- **Eden Duo:** `EmulatorCatalog.EDEN_DUO`; `ScreenLayouts.DUAL_SCREEN_EMULATORS` → NATIVE fallback on DUAL setups;
+  per-game emulator = `GameProfile.emulatorPackage` (`LauncherViewModel.gameEmulatorOverride`, used by
+  `emulatorPackageFor` and `startGameNow`), UI in `GameProfileDialog.GameEmulatorSection`.
+- **R1:** every tile id needs a rule in `R1_RULED_TILES` / `r1TileFit` (test `R1Compat326Test`). Look-wide picks
+  (Disc / Case / Spine for every game) are gated by the same rule through `LookStyles.liveFor` / `sync` (LauncherScreen).
+
 ## State after update 215
 - **InspectDisc edge:** only a rounded strip `2·half × dia` at the centre (rim colour + 30 % black), clipped round the hole; the far-face oval is gone (it showed as a ghost disc behind every tilted disc).
 - **CaseOpenDraw:** the item quad's depth = tray quad + 0.001 (itemOnLid: lid-inside quad + 0.001) — average-depth sorting put a low-lying Switch card behind the tray when pitched.

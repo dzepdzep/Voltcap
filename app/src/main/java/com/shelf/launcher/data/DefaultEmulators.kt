@@ -22,6 +22,8 @@ object DefaultEmulators {
         Default("GameCube", listOf("org.dolphinemu.dolphinemu")),
         Default("Wii", listOf("org.dolphinemu.dolphinemu")),
         Default("PSP", listOf("org.ppsspp.ppssppgold", "org.ppsspp.ppsspp")),
+        // Update 326: Switch — Eden Duo first when it's installed (its second-screen companion), then Eden, then Citron.
+        Default("Switch", listOf(EmulatorCatalog.EDEN_DUO, "dev.eden.eden_emulator", "org.citron.citron_emu")),
         // RetroArch-based, each with the requested core
         Default("GBA", RETROARCH, "mgba"),
         Default("GB", RETROARCH, "gambatte"),

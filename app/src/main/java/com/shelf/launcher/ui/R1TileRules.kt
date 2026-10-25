@@ -132,15 +132,26 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
 
         // Console badges: every layout that puts them on its games — not Disc station, Card binder, Arcade, Game shelf or
         // Hero carousel (they draw no badges); RomM's browser shows them on every layout once RomM is set up.
-        "badges" -> on(x.romm || l !in setOf(HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.ARCADE, HomeLayout.SHELF, HomeLayout.HERO,
-            // (Update 226, #98: the Pocket layouts draw no console badges either.)
-            HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON))
+        // (Update 326, audit: Hero carousel draws them on its covers since 317al, and Pocket ribbon on its cartridge when
+        // that's on (Layout options) — the tile was hidden there while the badges still showed.)
+        "badges" -> on(x.romm || when (l) {
+            HomeLayout.POCKET_RIBBON -> Features.ribbonCart.state.value
+            else -> l !in setOf(HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.ARCADE, HomeLayout.SHELF,
+                // (Update 226, #98: the Pocket layouts draw no console badges either.)
+                HomeLayout.POCKET_CLASSIC)
+        })
+        // Update 326 (audit): Outline (Settings › Game look › Coloured frame, R1 tile of 325) — only where it's drawn: the
+        // Voltcap row, Tile home, Grid, Hero carousel, TV room (their cards), and the carousel view of Side menu / Case
+        // stacks. The other style homes draw their own focus ring, so the tile switched nothing there.
+        "outline" -> on(!l.styleHome || (l == HomeLayout.SIDE || l == HomeLayout.STACKS) && l.name in Features.carouselLayouts.state.value)
         // Achievements place (the chip on the game you're on): the Voltcap row, Grid, Arcade, Case stacks and the style
         // homes drawn with StyleArt — not Game shelf, Disc station, Card binder, Record crate, Hero carousel, TV room,
         // Circuit board (its readout has the charge bar) or the two Pocket layouts; Pocket Quest only with your look.
         "progressbar" -> when (l) {
             HomeLayout.SHELF, HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.CRATE, HomeLayout.HERO, HomeLayout.TV,
-            HomeLayout.CIRCUIT, HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON -> R1Fit.Hide
+            HomeLayout.CIRCUIT, HomeLayout.POCKET_CLASSIC -> R1Fit.Hide
+            // (Update 326, audit: Pocket ribbon's cartridge on top is drawn with StyleArt, which puts the chip on it.)
+            HomeLayout.POCKET_RIBBON -> on(Features.ribbonCart.state.value)
             // (Update 204: hidden, not greyed, while Pocket Quest shows plain covers.)
             HomeLayout.POCKET -> on(Features.pqMedia.state.value != Features.PqMedia.COVERS)
             else -> R1Fit.Show
@@ -207,6 +218,20 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         else -> R1Fit.Show
     }
 }
+
+/**
+ * Update 326: every tile id the R1 panel builds that r1TileFit decides for (the device tiles "dev_…" are decided by their
+ * prefix). A test (R1Compat326Test) reads QuickSettings.kt and fails when a tile is added without a rule here — the
+ * Outline tile of 325 fell through to "show everywhere" that way.
+ */
+internal val R1_RULED_TILES: Set<String> = setOf(
+    "wifi", "dnd", "music", "saves", "navbar", "fps", "battery", "batterywatch", "saver", "mixer", "settings",
+    "bt", "lights", "dual", "rescan", "scrape", "theme", "colors", "romm", "whoplays", "profile",
+    "layout", "sort", "edithome", "popupstyle", "musicspot", "roundshort", "corners",
+    "gamelook", "cartlook", "discstyle", "casestyle", "spinestyle", "drawnmedia", "artdrop",
+    "badges", "outline", "progressbar", "gamesize", "endless", "carousel", "rowpos", "categories", "headertight", "twingap",
+    "shelflook", "spotlight", "bartabs", "crosscut", "pqtheme", "magnifier", "background", "herofit"
+)
 
 /**
  * Update 202: the look tiles' fit in layout [l]: hidden where the layout draws its games its own way.

@@ -2148,6 +2148,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             }
         }
     }
+    // Update 326 (R1 audit): the Disc / Case / Spine picked for every game apply only where their R1 tiles do (LookStyles).
+    // Read here, in the composition, so a change of layout, look or the switches the rule reads is followed at once.
+    val lookStylesLive = LookStyles.liveFor(state.appearance)
+    SideEffect { LookStyles.sync(lookStylesLive) }
     val secondScreenActive = SecondScreenHost(
         enabled = state.appearance.useSecondScreen && !com.shelf.launcher.CrashGuard.safeMode,
         // Touches and keys on the second screen count as using the launcher. Update 113: a touch down there also

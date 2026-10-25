@@ -123,6 +123,14 @@ fun SecondScreenHost(
     val activity = LocalContext.current as? ComponentActivity
     val suppressed by SecondScreenGate.suppressed.collectAsState()
     var displayEpoch by remember { mutableIntStateOf(0) }
+    val presentationHolder = remember { arrayOfNulls<Presentation>(1) }
+    // Update 326: bumped when Android closed the second screen's window on its own (display metrics / state changed,
+    // display briefly gone). The window is made again — at once while Voltcap is in front, otherwise when it comes back
+    // (this composition is paused while Voltcap is stopped, so nothing is ever put over a game's own second screen).
+    var revive by remember { mutableIntStateOf(0) }
+    // [0] = time of the last revive, [1] = revives in a row within 30 s (stops a window Android keeps refusing from looping).
+    val reviveLog = remember { longArrayOf(0L, 0L) }
+    val wantedNow by rememberUpdatedState(enabled && !suppressed)
 
     // Displays added or removed while Voltcap is open.
     DisposableEffect(activity) {
@@ -130,7 +138,13 @@ fun SecondScreenHost(
         val listener = object : DisplayManager.DisplayListener {
             override fun onDisplayAdded(displayId: Int) { displayEpoch++ }
             override fun onDisplayRemoved(displayId: Int) { displayEpoch++ }
-            override fun onDisplayChanged(displayId: Int) {}
+            // Update 326: a second screen that came back on (sleep / wake, the handheld's own screen switch) while ours
+            // had no window there gets it again. Only then — this fires for every brightness / rate change too.
+            override fun onDisplayChanged(displayId: Int) {
+                if (displayId == Display.DEFAULT_DISPLAY || presentationHolder[0] != null || !wantedNow) return
+                val d = runCatching { manager?.getDisplay(displayId) }.getOrNull() ?: return
+                if (d.state == Display.STATE_ON && (d.flags and Display.FLAG_PRIVATE) == 0) displayEpoch++
+            }
         }
         runCatching { manager?.registerDisplayListener(listener, Handler(Looper.getMainLooper())) }
         onDispose { runCatching { manager?.unregisterDisplayListener(listener) } }
@@ -156,15 +170,16 @@ fun SecondScreenHost(
     }
     val currentContent by rememberUpdatedState(content)
     val currentActivity by rememberUpdatedState(onUserActivity)
-    val presentationHolder = remember { arrayOfNulls<Presentation>(1) }
     val textInputs by TextInputFocus.active.collectAsState()
     val parent = rememberCompositionContext()
     // Only true once the second screen actually came up — some devices report
     // extra displays (cover screens, casting) that refuse to show anything.
     var showing by remember { mutableStateOf(false) }
 
-    DisposableEffect(display?.displayId, activity, suppressed) {
+    DisposableEffect(display?.displayId, activity, suppressed, revive) {
         var dimView: android.view.View? = null // (Update 188)
+        // Update 326: set when this effect closes the window itself, so its dismiss callback isn't taken for Android's.
+        var ownDismiss = false
         val presentation = if (display != null && activity != null && !suppressed) {
             runCatching {
                 object : Presentation(activity, display) {
@@ -256,6 +271,23 @@ fun SecondScreenHost(
                     // No text fields here, so the keyboard must never target this window. And it never takes
                     // the focus: touches still work, the controller stays on the main screen.
                     window?.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+                    // Update 326: Android closes a Presentation by itself when its display changes size / density or goes
+                    // away for a moment. That left the second screen empty (or the handheld's own launcher there) until
+                    // Voltcap was restarted, while the home still believed it was up. Now it's made again.
+                    setOnDismissListener {
+                        if (ownDismiss) return@setOnDismissListener
+                        presentationHolder[0] = null
+                        com.shelf.launcher.data.perf.PerfRecorder.secondWindow = null
+                        SecondScreenShown.value = false
+                        showing = false
+                        dimView?.let { SecondDim.detach(it) }
+                        val now = android.os.SystemClock.elapsedRealtime()
+                        reviveLog[1] = if (now - reviveLog[0] < 30_000L) reviveLog[1] + 1 else 1L
+                        reviveLog[0] = now
+                        if (reviveLog[1] <= 5L) {
+                            Handler(Looper.getMainLooper()).postDelayed({ revive++ }, 400L * reviveLog[1])
+                        }
+                    }
                     show()
                     // Update 202: this window asks for the bars hidden too, like Voltcap's main window (SystemBars).
                     window?.let { w -> runCatching { SystemBars.apply(w) } }
@@ -268,6 +300,7 @@ fun SecondScreenHost(
         showing = presentation != null
         SecondScreenShown.value = presentation != null
         onDispose {
+            ownDismiss = true
             showing = false
             SecondScreenShown.value = false
             presentationHolder[0] = null
@@ -276,6 +309,33 @@ fun SecondScreenHost(
             dimView?.let { SecondDim.detach(it) }
             presentation?.let { runCatching { it.dismiss() } }
         }
+    }
+
+    // Update 326 — the second screen "freezing" during games (found on the Thor with adb): a Presentation is a window above
+    // every app on its display, and it stayed up while a game covered Voltcap. But this composition is paused while
+    // Voltcap is stopped, so it showed a still picture (clock stuck, video stopped, touches doing nothing) — over the
+    // live in-game second screen Voltcap had just opened there (CompanionActivity: pages, widgets, music, volume) and over
+    // whatever the game or another app put there. It now steps aside while Voltcap is stopped and comes back as it was
+    // when Voltcap is in front again (hide / show: the same window, nothing rebuilt).
+    DisposableEffect(activity) {
+        val lifecycle = activity?.lifecycle
+        var hiddenByStop = false
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> presentationHolder[0]?.let { p ->
+                    runCatching { p.hide(); hiddenByStop = true }
+                    SecondDim.hold()
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_START -> {
+                    if (hiddenByStop) presentationHolder[0]?.let { p -> runCatching { p.show() } }
+                    hiddenByStop = false
+                    SecondDim.poke()
+                }
+                else -> {}
+            }
+        }
+        runCatching { lifecycle?.addObserver(observer) }
+        onDispose { runCatching { lifecycle?.removeObserver(observer) } }
     }
 
     // While a text field is being edited on the main display, the second
