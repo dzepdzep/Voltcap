@@ -24,8 +24,14 @@ class EdenDuo326Test {
         assertEquals(listOf("org.yuzu.yuzu_emu.activities.EmulationActivity"), p.activities)
         assertEquals("android.intent.action.VIEW", p.action)
         assertNull(p.romExtra)
-        assertEquals(RomFormat.SHARED_URI, p.format)
+        // A storage link through the folder the emulator was given (its file code refuses Voltcap's shared link —
+        // found on the Thor), rooted at the game's own folder unless one is set.
+        assertEquals(RomFormat.DOCUMENT_URI, p.format)
+        assertTrue(p.treeAtGameFolder)
         assertNotNull(LaunchProfiles.find(EmulatorCatalog.EDEN_DUO + ".dev"))
+        // Eden itself too; other emulators keep their own link type.
+        assertEquals(RomFormat.DOCUMENT_URI, LaunchProfiles.find("dev.eden.eden_emulator")!!.format)
+        assertTrue(!LaunchProfiles.find("org.ppsspp.ppsspp")!!.treeAtGameFolder)
     }
 
     @Test fun suggestedForSwitchAndCountedAsAnEmulator() {

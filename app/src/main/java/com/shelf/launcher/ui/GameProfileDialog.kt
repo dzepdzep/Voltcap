@@ -96,7 +96,7 @@ fun GameProfileDialog(
                 (if (src == AppDisplaySource.APP) "Set for this app" else "Inherited from the " +
                     (if (src == AppDisplaySource.CATEGORY) "Emulators category" else "default")) + ": " + target.label
             } else {
-                val plan = remember(displayVersion, game.stableKey) { viewModel.screenPlanFor(game) }
+                val plan = remember(displayVersion, version, game.stableKey) { viewModel.screenPlanFor(game) }
                 plan?.let { "Layout: " + screensRowSubtitle(it.resolved) } ?: "Needs a second screen"
             },
             onReset = if (isApp) {
@@ -104,7 +104,7 @@ fun GameProfileDialog(
                 val (_, src) = remember(displayVersion, version, game.stableKey) { viewModel.effectiveAppDisplay(game) }
                 if (pkg != null && src == AppDisplaySource.APP) ({ viewModel.resetAppDisplay(pkg) }) else null
             } else {
-                val plan = remember(displayVersion, game.stableKey) { viewModel.screenPlanFor(game) }
+                val plan = remember(displayVersion, version, game.stableKey) { viewModel.screenPlanFor(game) }
                 if (plan?.resolved?.scope == RuleScope.GAME) ({ viewModel.setScreenRule(RuleScope.GAME, game.stableKey, null) }) else null
             }
         ) {

@@ -110,8 +110,10 @@
             android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY"
             android:value="true" />
 
+        <!-- Update 326: FileProvider that also answers the document columns emulators ask for (Eden / Eden Duo:
+             RomShareProvider.kt). Same authority, same paths. -->
         <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name=".data.RomShareProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">

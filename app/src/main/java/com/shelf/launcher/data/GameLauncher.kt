@@ -173,12 +173,14 @@ object GameLauncher {
 
     private fun explicitAttempts(context: Context, romPath: String, config: EmulatorConfig, shelfRomRoot: String?): List<Intent> {
         // Storage links must be rooted at the folder the emulator was given.
-        val romRoot = config.accessFolder ?: shelfRomRoot
+        var romRoot = config.accessFolder ?: shelfRomRoot
         val pkg = config.packageName ?: return listOf(viewIntent(context, romPath, null, RomFormat.SHARED_URI, romRoot))
 
         if (CoreRegistry.isRetroArch(pkg)) return listOf(retroArchIntent(context, pkg, romPath, config))
 
         val profile = LaunchProfiles.find(pkg)
+        // (Update 326: Eden's family — rooted at the game's own folder unless a folder is set for the emulator.)
+        if (config.accessFolder == null && profile?.treeAtGameFolder == true) File(romPath).parent?.let { romRoot = it }
         val chosen = config.romFormat?.takeIf { it != RomFormat.AUTO }
         val attempts = mutableListOf<Intent>()
 

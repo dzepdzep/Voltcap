@@ -63,13 +63,13 @@ this update.
 | # | Check | Status |
 |---|---|---|
 | E1 | Package verified from its source (`duo.gradle`: `dev.igawa6.edenduo`, dev builds `.dev`) | **PASS** |
-| E2 | Launch intent: same `org.yuzu.yuzu_emu.activities.EmulationActivity`, game as the intent's content URI (its `EmulationFragment` resolves a URI whose name ends in .nsp/.xci…) | **PASS** (automated + source) — **UNTESTED** on the device: Eden Duo isn't installed on the Thor |
+| E2 | Launch intent: same `org.yuzu.yuzu_emu.activities.EmulationActivity`, game as a storage link through the game's folder (update 327: Eden's family refused Voltcap's shared link — "No game found") | **FIXED** — device: Voltcap sends the intent to Eden Duo; the same launch boots Mario Golf Super Rush in Eden. Eden Duo booting a game **UNTESTED**: it needs its own keys / firmware / games folder set up first |
 | E3 | Detected as a Switch emulator (picker suggestion, emulator list, app kind) | **PASS** (automated) |
 | E4 | Global: Settings › Emulators › Switch; new installs pick Eden Duo › Eden › Citron as the Switch default | **PASS** (automated) |
-| E5 | Per game: Game settings › Emulator (new) — Console's emulator or any installed Switch emulator, for this game only | **PASS** (compiled; UI not walked on the device) |
+| E5 | Per game: Game settings › Emulator (new) — Console's emulator or any installed Switch emulator, for this game only | **PASS** (device: lists citron / Eden / Eden Duo, choice kept, used at launch; Display row now refreshes — FIXED in 327) |
 | E6 | Second screen left to Eden Duo's companion: layout defaults to "Emulator uses both screens" on the built-in screen (a rule you set still wins); Voltcap's own second screen steps aside during the game (S1) | **PASS** (automated + S1/S7 on device) — **UNTESTED** with Eden Duo itself |
 | E7 | Eden, Citron and the other Switch emulators unchanged | **PASS** (automated) |
-| E8 | Eden Duo's screen swap (game moved to the bottom screen) needs a lasting file grant; Voltcap's default "Shared file link" is one-time, so Eden Duo keeps the game on the main screen. Setting Switch's link to "Storage link" (Settings › Emulators › Switch) with the folder given to Eden Duo allows it | **UNTESTED** |
+| E8 | Eden Duo's screen swap needs a lasting file grant — the storage link (327) is one | **UNTESTED** (needs Eden Duo set up) |
 
 ## 5. R1 matrix by layout (default switches; per look in the CSV)
 

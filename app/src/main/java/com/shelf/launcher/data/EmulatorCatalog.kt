@@ -13,6 +13,9 @@ internal object EmulatorCatalog {
     /** Update 326: Eden Duo's package (its duo.gradle: applicationId 'dev.igawa6.edenduo'; '.dev' for its dev builds). */
     const val EDEN_DUO = "dev.igawa6.edenduo"
 
+    /** Update 326: the emulation screen of yuzu's Android app and its builds (Eden, Eden Duo, yuzu EA…). */
+    const val YUZU_FAMILY_ACTIVITY_PREFIX = "org.yuzu.yuzu_emu."
+
     class Entry(
         val name: String, val packageName: String, val activity: String, val action: String,
         val romExtra: String?, val format: RomFormat, val asData: Boolean, val boolExtras: Map<String, Boolean>
@@ -338,14 +341,20 @@ internal object EmulatorCatalog {
     /** A launch profile for [packageName] built from the catalog (first console that lists it). */
     fun profileFor(packageName: String): LaunchProfile? {
         val e = standalone.values.asSequence().flatten().firstOrNull { it.packageName == packageName } ?: return null
+        // Update 326 (found on the Thor): Eden, Eden Duo and the other builds of yuzu's Android app refuse a Shared file
+        // link ("No game found in arguments or intent" — their file code needs a storage document); a storage link
+        // through the folder they were given boots the game (checked with Kirby Fighters 2 in Eden). So they get a
+        // storage link rooted at the game's folder, which is the Switch games folder they're normally given.
+        val yuzuFamily = e.activity.startsWith(YUZU_FAMILY_ACTIVITY_PREFIX) && e.romExtra == null
         return LaunchProfile(
             packages = listOf(e.packageName),
             activities = listOf(e.activity),
             action = e.action,
             romExtra = e.romExtra,
-            format = e.format,
+            format = if (yuzuFamily) RomFormat.DOCUMENT_URI else e.format,
             alsoAsData = e.asData && e.romExtra != null,
-            boolExtras = e.boolExtras
+            boolExtras = e.boolExtras,
+            treeAtGameFolder = yuzuFamily
         )
     }
 }

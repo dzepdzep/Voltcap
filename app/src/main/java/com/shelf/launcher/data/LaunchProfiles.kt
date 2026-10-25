@@ -27,7 +27,13 @@ data class LaunchProfile(
     /** Also put the game on the intent's data, alongside the extra. */
     val alsoAsData: Boolean = false,
     val mimeType: String? = null,
-    val boolExtras: Map<String, Boolean> = emptyMap()
+    val boolExtras: Map<String, Boolean> = emptyMap(),
+    /**
+     * Update 326: a storage link (DOCUMENT_URI) is rooted at the game's own folder unless a folder is set for the
+     * emulator (Settings › Emulators › Folder given to the emulator) — Eden's family opens a game only through the
+     * folder it was given itself, which is the Switch games folder.
+     */
+    val treeAtGameFolder: Boolean = false
 ) {
     /** The main activity, for places that show or pre-fill one. */
     val activity: String? get() = activities.firstOrNull()

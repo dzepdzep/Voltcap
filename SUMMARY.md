@@ -1,5 +1,36 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 25 Oct 2026 (327): Switch games really start in Eden and Eden Duo from Voltcap
+
+- **Eden Duo installed on the Thor** (v1.3.2.2 from its GitHub release, `dev.igawa6.edenduo`) for testing. Voltcap found
+  it at once: **Game settings › Emulator** lists citron, Eden and Eden Duo for every Switch game.
+- **Found while testing: Voltcap could not start a Switch game in any Eden build** (Eden, Eden Duo — and this was so
+  before 326). Eden opened and closed again ("No game found in arguments or intent"); Eden Duo crashed. Voltcap hands
+  games over as a *Shared file link*, and Eden's file code only reads games through the *folder it was given* (a storage
+  link). Now Eden's family (every build with yuzu's `org.yuzu.yuzu_emu` screen: Eden, Eden Duo, Eden Nightly / Legacy,
+  yuzu) gets a storage link through the game's own folder — the Switch games folder you give Eden. If you gave Eden a
+  folder higher up (or keep games in sub-folders), set it under Settings › Emulators › Switch › Folder given to the
+  emulator. Eden Duo's screen swap (game on the lower screen) works with this kind of link too.
+  Checked on the Thor: Mario Golf Super Rush started from Voltcap in Eden and ran (59.9 FPS), the in-game second screen
+  on the lower screen, Voltcap's own lower screen out of the way; back home, all back. (`EmulatorCatalog.profileFor`,
+  `LaunchProfiles.treeAtGameFolder`, `GameLauncher.explicitAttempts`.)
+- Voltcap's file provider now also answers the document questions emulators ask a link (`data/RomShareProvider.kt`,
+  in the manifest in place of Android's FileProvider, same authority) — Eden logged an error for every shared link.
+- Game settings › Display now updates at once when this game's emulator changes (Eden Duo → "Emulator uses both
+  screens").
+- **Eden Duo itself can't run a game yet on the Thor:** it's a fresh install without your keys / firmware and without a
+  games folder. Its own first-start setup (Eden Duo › settings: keys, firmware, add the Switch ROMs folder) is needed —
+  not done by Claude (your keys are yours to copy). Then a Switch game set to Eden Duo starts like Mario Golf did in Eden.
+- Donkey Kong Country Returns HD doesn't start in Eden even from adb (the file itself, not Voltcap).
+- Test side effects: Mario Golf Super Rush and Donkey Kong Country Returns HD were started once and are in Continue
+  playing now; both games' emulator choice was set back to Console's emulator. Switch has no console emulator set yet
+  (Settings › Emulators › Switch).
+- **Copy** (already in place and pushed): `src_copy\data\EmulatorCatalog.kt`, `src_copy\data\LaunchProfiles.kt`,
+  `src_copy\data\GameLauncher.kt`, `src_copy\data\RomShareProvider.kt` (new), `src_copy\ui\GameProfileDialog.kt`,
+  `project_copy\app\src\main\AndroidManifest.xml`, `project_copy\app\src\test\java\com\shelf\launcher\data\EdenDuo326Test.kt`.
+- **Check:** unit tests pass; release built and installed on the Thor; Eden launch checked there. Not tested: Eden Duo
+  booting a game (needs its setup), Citron (unchanged: still a shared link).
+
 ## Update — 25 Oct 2026 (326): second screen no longer freezes during games, Eden Duo, R1 compatibility audit
 
 - **Before anything else — `src_copy` was 111 files behind.** PRs #9–#11 (0.6.40 / 0.6.41) changed `app/src` directly on
