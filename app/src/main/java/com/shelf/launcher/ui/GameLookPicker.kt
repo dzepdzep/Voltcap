@@ -482,6 +482,15 @@ internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? 
     com.shelf.launcher.data.HomeLayout.CRATE -> "record sleeves"
     com.shelf.launcher.data.HomeLayout.CARDS -> "collectible cards"
     com.shelf.launcher.data.HomeLayout.ARCADE -> "arcade cabinets"
+    // (Update 329, found by the R1 tile walk on the AYN Thor: Spotlight draws your look only with Layout options › Tiles
+    // along the top › The game look's shape — squares (its default) and wide capsules are the cover cropped; the Icon bar the
+    // same with its square tiles on (default). The look tiles changed nothing there.)
+    com.shelf.launcher.data.HomeLayout.SPOT -> when (com.shelf.launcher.data.Features.spotShape.state.value) {
+        com.shelf.launcher.data.Features.TileShape.LOOK -> null
+        com.shelf.launcher.data.Features.TileShape.WIDE -> "wide capsules (Layout options › Tiles along the top)"
+        else -> "squares (Layout options › Tiles along the top)"
+    }
+    com.shelf.launcher.data.HomeLayout.BAR -> if (com.shelf.launcher.data.Features.barSquares.state.value) "squares (Layout options › Square tiles)" else null
     // (Update 183: the Pocket layouts follow your look — cartridges, cases and discs in their frames.)
     else -> null
 }
