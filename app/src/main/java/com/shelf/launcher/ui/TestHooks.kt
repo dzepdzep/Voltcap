@@ -100,7 +100,7 @@ internal object TestHooks {
         val la = intent?.getStringExtra("voltcap_test_labelaudit")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
-        val tw = intent?.getStringExtra("voltcap_test_tilewalk")
+        val tw = intent?.getStringExtra("voltcap_test_tilewalk_all")?.let { "ALL:$it" } ?: intent?.getStringExtra("voltcap_test_tilewalk")
         if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
             // (A walk only ever previews: nothing it changes is saved.)
             previewOnly = true

@@ -1002,7 +1002,27 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         var c: android.content.Context? = walkContext
         while (c is android.content.ContextWrapper && c !is android.app.Activity) c = c.baseContext
         val act = c as? android.app.Activity ?: return@LaunchedEffect
-        walkScope.launch { TileCheck.walk(
+        val all = arg.startsWith("ALL:")
+        fun words(x: String) = x.split(',', ' ').map { it.trim() }.filter { it.isNotEmpty() }
+        val parts = if (all) arg.removePrefix("ALL:").split('|') else emptyList()
+        walkScope.launch { if (all) TileCheck.walkAll(
+            TileCheck.Hooks(
+                activity = act,
+                vm = viewModel,
+                openPanel = { id -> R1Shortcut.pending = id; notificationsOnly = false; showNotifications = true },
+                closeAll = { closeAllDialogs(); showNotifications = false; showDetails = false; GamePopup.game = null; HomeEditState.close(); R1Shortcut.pending = null },
+                openDetails = { openGame() },
+                key = { code ->
+                    val t = android.os.SystemClock.uptimeMillis()
+                    for (action in intArrayOf(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.ACTION_UP)) {
+                        act.dispatchKeyEvent(android.view.KeyEvent(t, t, action, code, 0, 0, android.view.KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
+                            0, android.view.InputDevice.SOURCE_DPAD or android.view.InputDevice.SOURCE_GAMEPAD))
+                    }
+                }
+            ),
+            words(parts.getOrElse(0) { "" }), words(parts.getOrElse(1) { "" }),
+            parts.getOrNull(2)?.let { t -> if (t.isBlank() || t == "all") null else words(t).toSet() }
+        ) else TileCheck.walk(
             TileCheck.Hooks(
                 activity = act,
                 vm = viewModel,

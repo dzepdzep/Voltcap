@@ -51,6 +51,37 @@ internal object TileCheck {
         val key: (Int) -> Unit
     )
 
+    /** A result line: logged, and kept in <external files>/tilecheck/results.log (survives a dropped adb). */
+    private fun out(h: Hooks, line: String) {
+        Log.e("VoltcapTest", line)
+        runCatching {
+            val dir = java.io.File(h.activity.getExternalFilesDir(null), "tilecheck").apply { mkdirs() }
+            java.io.File(dir, "results.log").appendText(
+                java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date()) + " " + line + "\n")
+        }
+    }
+
+    /**
+     * The whole walk inside Voltcap (`--es voltcap_test_tilewalk_all "LAYOUTS|LOOKS|TILES"`, spaces or commas): each
+     * layout, each look (previews, as the test hooks show them), then [walk]. Stops below 20 % battery or above 45 °C.
+     */
+    suspend fun walkAll(h: Hooks, layouts: List<String>, looks: List<String>, only: Set<String>?) {
+        for (l in layouts) for (k in looks) {
+            val bm = h.activity.getSystemService(android.content.Context.BATTERY_SERVICE) as? android.os.BatteryManager
+            val level = bm?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 100
+            val temp = h.activity.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+                ?.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
+            if (level in 1..19 || temp > 450) { out(h, "tilewalk STOPPED battery=$level temp=$temp before $l $k"); return }
+            val layout = com.shelf.launcher.data.HomeLayout.values().firstOrNull { it.name == l } ?: continue
+            val look = com.shelf.launcher.data.CardArtType.values().firstOrNull { it.name == k } ?: continue
+            h.closeAll(); StyleNav.reset()
+            h.vm.previewAppearance(h.vm.uiState.value.appearance.copy(homeLayout = layout)); delay(3000)
+            h.vm.previewAppearance(h.vm.uiState.value.appearance.copy(cardArtType = look)); delay(2500)
+            walk(h, only)
+        }
+        out(h, "tilewalk ALLDONE")
+    }
+
     private suspend fun grab(window: Window?): IntArray? {
         val w = window ?: return null
         val view = w.peekDecorView() ?: return null
@@ -179,13 +210,13 @@ internal object TileCheck {
         TestHooks.fakeNowPlaying = com.shelf.launcher.data.NowPlaying("Tile walk", "Voltcap test", "com.shelf.launcher", isPlaying = true)
         h.vm.refreshNowPlaying()
         try { walkInner(h, only) } catch (e: Throwable) {
-            Log.e("VoltcapTest", "tilewalk error $tag ${e.javaClass.simpleName}: ${e.message}")
+            out(h, "tilewalk error $tag ${e.javaClass.simpleName}: ${e.message}")
             if (e is kotlinx.coroutines.CancellationException) throw e
         } finally {
             TestHooks.fakeNowPlaying = null
             h.vm.refreshNowPlaying()
             HomeIdle.holdForTest(false)
-            Log.e("VoltcapTest", "tilewalk end $tag")
+            out(h, "tilewalk end $tag")
         }
     }
 
@@ -200,7 +231,7 @@ internal object TileCheck {
         val shown = TestHooks.lastTiles.orEmpty().split(',').filter { it.isNotBlank() && !it.endsWith("~") }
         h.closeAll(); delay(800)
         val tiles = listOf("none") + HOME_TILES.filter { it in shown && (only == null || it in only) }
-        Log.e("VoltcapTest", "tilewalk start $tag tiles=${tiles.joinToString(",")}")
+        out(h, "tilewalk start $tag tiles=${tiles.joinToString(",")}")
         val features0 = com.shelf.launcher.data.Features.snapshot()
         val badge0 = h.vm.uiState.value.achievementBadgeNextToTitle
         val theme0 = h.vm.uiState.value.appTheme
@@ -209,12 +240,12 @@ internal object TileCheck {
         for (id in tiles) {
             HomeIdle.holdForTest(true)
             if (id == "edithome") {
-                Log.e("VoltcapTest", "tile $tag id=edithome parts=${HomeWidgets.present.size} verdict=OPENS")
+                out(h, "tile $tag id=edithome parts=${HomeWidgets.present.size} verdict=OPENS")
                 continue
             }
             if (id == "musicspot" && HomeWidgets.position(HomeWidgets.MUSIC) != null) {
                 // (A tap would put your moved player back in its corner: not pressed.)
-                Log.e("VoltcapTest", "tile $tag id=musicspot verdict=SKIP_MOVED")
+                out(h, "tile $tag id=musicspot verdict=SKIP_MOVED")
                 continue
             }
             var verdict = "NONE"
@@ -261,7 +292,7 @@ internal object TileCheck {
                     if (noise > 0.5f) verdict = "NOISY"
                 }
             }
-            Log.e("VoltcapTest", "tile $tag id=$id $detail verdict=$verdict")
+            out(h, "tile $tag id=$id $detail verdict=$verdict")
         }
         restore(h, a0, features0, badge0)
     }
