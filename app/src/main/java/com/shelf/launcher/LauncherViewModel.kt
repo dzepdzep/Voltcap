@@ -679,6 +679,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setAppearance(settingsIn: AppearanceSettings) {
+        // Update 328: during a test-hook preview (adb walk, TestHooks.previewOnly) nothing is saved, whatever asks — found
+        // on the Thor: turning the in-game second screen's page saved the whole previewed appearance (Twin desk) as yours.
+        if (com.shelf.launcher.ui.TestHooks.previewOnly) { previewAppearance(settingsIn); return }
         val old = _uiState.value.appearance
         // Update 133: a layout's own settings ("Only for this layout", data/LayoutOnly.kt) are kept before it's left…
         val switching = settingsIn.homeLayout != old.homeLayout

@@ -30,6 +30,11 @@
   lower the peak on smaller handhelds). Hours of play not tested.
 - R1: the "Drawn media" rule (tile removed in 325) is out of the list of tiles with a rule; a test now also fails when a
   rule names a tile that isn't built (`R1TileRules.kt`, `R1Compat326Test.kt`). The matrix CSV lost that column.
+- **Fixed — a test preview could be saved as your settings.** During an adb walk (test hooks, "nothing saved"), turning
+  the in-game second screen's page saved the whole previewed appearance: Twin desk became your saved layout. While a
+  preview is on, every appearance change now stays a preview (`LauncherViewModel.setAppearance`). Your layout was put
+  back to Case stacks with the Case look (checked: restart → Case stacks; the same page turn during a preview no longer
+  saves anything). Only reachable with the test-hooks file (adb), never in normal use.
 - Test hooks: with the hooks file present the R1 panel logs its tiles per layout / look (`QuickSettings.kt`,
   `TestHooks.enabled`) — that is how the walk was compared. Nothing changes without the file.
 - Report: `docs/compat/COMPAT_326.md` (device results added, section 6).
@@ -38,7 +43,10 @@
   `src_copy\ui\QuickSettings.kt`, `src_copy\ui\TestHooks.kt`, `src_copy\ui\R1TileRules.kt`,
   `project_copy\app\src\test\java\com\shelf\launcher\ui\R1Compat326Test.kt`, docs.
 - **Check:** unit tests, release built and installed on the Thor; resume and screen-off checked there (see the report).
-  Test side effects: WWE All Stars was started and closed several times (its own crash once, above).
+  Test side effects: WWE All Stars was started and closed several times (its own crash once, above); Chibi Robo!
+  (GameCube, Dolphin) was started once by mistake during the last check and closed at once (about 20 s, nothing saved);
+  the in-game second screen's start page may now be Widgets (it was turned during the tests); your favourite-theme
+  rotation changed the theme on the restarts.
 
 ## Update — 25 Oct 2026 (327): Switch games really start in Eden and Eden Duo from Voltcap
 

@@ -261,6 +261,9 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
   the game's display (`ScreenPlacement.optionsFor`) — the companion is started first on the other screen and has the focus.
 - **Nothing reads performance files while asleep:** `PerfSampler` checks `PowerManager.isInteractive` itself (any
   holder: overlay, PerfPage, TuneService/AutoTDP); `FreezeWatchdog` skips its 5 s CPU reading while asleep.
+- **Test previews never save:** `setAppearance` turns into `previewAppearance` while `TestHooks.previewOnly` (any
+  caller — the companion's page turn saved a previewed layout before). Features switches are separate prefs and still
+  save: use `voltcap_test_snapshot save|restore` around walks that touch them.
 - **Test hooks:** with the hooks file, the R1 panel logs `VoltcapTest r1 layout=… look=… tiles=…` (tile id, `~` = greyed)
   — compare with `docs/compat/r1_matrix_326.csv`. Device walk scripts are on the Thor in `/data/local/tmp/` (walk.sh,
   leak.sh, long.sh).

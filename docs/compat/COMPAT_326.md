@@ -128,6 +128,7 @@ look is shown for the session only, nothing saved; screenshots in `screens\audit
 | D11 | Leak check: all 33 layouts walked 5 times from a fresh start (focus moves in each) | Total memory rose 398 MB → 0.9–1.2 GB and peaked once at 1.56 GB, but the memory in use did not pile up: native memory in use (decoded pictures) went 705 → 304 MB and later 172 MB after Android's garbage collections — it is freed, only late. What stays high is memory the allocator keeps for reuse (≈ 600 MB "free" inside the native heap). No swap, no low-memory kills, no crash. Not a leak; a large, lazily-freed picture footprint (see note) | **PASS** (no leak) |
 | D12 | Background videos over wallpapers | Code check only (item 6) | **PASS** (code) / device **UNTESTED** |
 | D13 | Eden Duo booting a game | Needs Eden Duo's own setup (keys, firmware, games folder) | **UNTESTED** |
+| D14 | Test previews leaving your settings alone | **Was wrong:** turning the in-game second screen's page during a preview saved the previewed layout (Twin desk) as yours | **FIXED** — device: page turned during a Twin desk preview, restart → your Case stacks; your layout was put back |
 
 Note on D11: moving the focus on Twin desk / Hero carousel decodes a lot of pictures (hundreds of MB between collections),
 and many of Voltcap's own picture caches are limited by count rather than size and don't react to Android asking for
