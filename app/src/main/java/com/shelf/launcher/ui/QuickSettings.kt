@@ -996,7 +996,18 @@ fun QuickSettingsCard(
         }
     }
     val byId = allTiles.associateBy { it.id }
-    val ordered = order.mapNotNull { byId[it] } + allTiles.filter { it.id !in order }
+    // (Update 325, Toni: "I can't find the R1 tile for the outline": a tile new since you last arranged them went to the
+    // very end, behind the arrow. It now comes in right after the tile it's built beside — Outline after Badges.)
+    val ordered = run {
+        val out = order.mapNotNull { byId[it] }.toMutableList()
+        allTiles.forEachIndexed { i, t ->
+            if (t.id in order) return@forEachIndexed
+            val before = allTiles.getOrNull(i - 1)?.id
+            val at = out.indexOfFirst { it.id == before }
+            if (at >= 0) out.add(at + 1, t) else out.add(t)
+        }
+        out
+    }
     // An L1 shortcut for a tile: press it once now that the panel is up (the tiles may still be loading, so wait a moment).
     // A request the panel never showed (no access on this layout…) must not fire at the next R1 open.
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { R1Shortcut.pending = null } }

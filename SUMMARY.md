@@ -2,6 +2,33 @@
 
 ## Update — 23 Oct 2026 (325): cartridges / discs aside darkened without a buffer each; DS card header, dock icons, lights with the screensaver
 
+- **PS3 / Xbox cases and discs** (Toni's screenshots, TNA iMPACT!: "even after the real cover from The Cover Project it
+  could use the back of it, and the front didn't adjust well; the CD is a plain disc without the cut in the middle"):
+  - A cover you picked that is the whole wrap (back | spine | front) went onto the 3D case's front whole. It's cut as the
+    scans are now: its front on the front, its back on the case's back (`Case3D`, `unfoldedSrc` / `wrapBack`).
+  - The same for your own uploaded wraps: as the game's cover in the flat cases too (the console's printed case, the plain
+    PS3 / Xbox case — `rememberWrapFront` in CaseArt), and as its Box front, whose back now goes on the case's back
+    unless the game has its own back scan.
+  - A disc's own picture is cut with the real disc's centre hole (Ø 15 mm on 120) — PS3 / Xbox disc prints are often a
+    plain round picture (`RealMediaPicture`, `DiscPhotoShape`).
+- Files: `ui/Case3D.kt`, `ui/PhysicalMedia.kt`. Not compiled here (CI builds it).
+
+- **Cartridges no longer flash their name before the picture** (Toni: "Switch cartridges first show text quickly and
+  then show the picture"): while a cover is still on its way the sticker stays plain; the game's name is printed on it
+  only if no cover has come after 1.5 s (`CartShellArt`, `titleNow`). Not compiled here (CI builds it).
+
+- **Android / app games back on your pack's fitted cartridge** (Toni: "the custom cartridges that were fit to size are
+  gone, e.g. Android"): an app game came onto your pack's shape for apps (the Switch-card size, CustomCarts.lookFor)
+  only through the 3D cartridge finish (drawn3dPick); Layout standard on a layout without a look of its own (this
+  update) switched that finish off, so they fell back to the plain green Android cartridge. Layout standard no longer
+  touches the finish outside a cartridge look, and an app game is on the pack's shape whenever that part of the pack is
+  downloaded, whatever the finish (`mediaFor`).
+- Files: `ui/PhysicalMedia.kt`, `ui/GameLookPicker.kt`. Not compiled here (CI builds it).
+
+- **New R1 tiles show up where they belong** (Toni: "I can't find the R1 tile for the outline" — in 0.6.40 it was the
+  last tile, behind the arrow): a tile new since you arranged your tiles comes in right after the tile it's built beside
+  (Outline after Badges), not at the end of the page. (`QuickSettings`, `ordered`.) Not compiled here (CI builds it).
+
 - **The Game Boy ghost, again** (Toni's next screenshot, The Addams Family: a faint straight line over the cartridge's
   top, running past its right side, and down its left): a rectangle bigger than the cartridge — the face's box. The
   sides are made from the face's outline, and every pixel over ~2 % counted (× 4 − 24), so a nearly clear background

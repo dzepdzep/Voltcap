@@ -378,8 +378,9 @@ internal fun layoutStandardLook(a: AppearanceSettings): AppearanceSettings {
         F.squareTiles.value = layout == com.shelf.launcher.data.HomeLayout.TILES
         F.spineLook.value = false; F.carouselWide.value = false
         F.cartsOnly.value = false; F.caseWithMedia.value = false; F.discCase.value = false
-        setModelsLook(carts)
-        if (carts) F.gridTiles.value = false
+        // (Not setModelsLook(false) for the others: it switched the 3D cartridge finish off, and with it the Android / app
+        // games' pack cartridge — they fell back to the plain green one. The finish only counts in a cartridge look.)
+        if (carts) { setModelsLook(true); F.gridTiles.value = false }
         return out.copy(cardArtType = if (carts) CardArtType.CARTRIDGE_DISC else CardArtType.COVER)
     }
     val l = p?.look ?: return out
