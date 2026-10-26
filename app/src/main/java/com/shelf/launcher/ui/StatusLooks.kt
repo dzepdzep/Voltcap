@@ -113,7 +113,9 @@ internal data class StatusLook(
     /** Faint unlit "88:88" behind the time (an LCD's segments). */
     val ghost: Boolean = false,
     /** Battery cells in the ink, not the theme's colours (red only when it's really low). */
-    val plainBattery: Boolean = true
+    val plainBattery: Boolean = true,
+    /** Update 339: in the top left corner instead of the right (Night menu: its list fills the right). */
+    val left: Boolean = false
 )
 
 /** The plain look (every layout before update 333, and with the switch off). */
@@ -144,17 +146,30 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
         // Icon bar: each group its own round button, like the bar's shortcut icons.
         HomeLayout.BAR -> StatusLook(BarBacking.SEGMENTS, bg = Color(0xB3161A21), rim = Color.White.copy(alpha = 0.16f), corner = 50.dp, gap = 6.dp, iconSize = 15.dp, avatar = AvatarShape.CIRCLE, avatarSize = 24.dp)
         // Dashboard: a frosted panel like its widgets, a big time first, rules between.
-        HomeLayout.DASH -> StatusLook(
-            BarBacking.CAPSULE, bg = Color.White.copy(alpha = 0.12f), rim = Color.White.copy(alpha = 0.24f), corner = 12.dp,
-            clockSize = 16.sp, clockWeight = FontWeight.SemiBold, sep = "|", decor = BarDecor.GLOSS, avatarSize = 24.dp
-        )
+        HomeLayout.DASH -> when (Features.dashPanel.state.value) {
+            // (Update 339: the panels' own glass — light, dark or the theme's colour.)
+            Features.PanelLook.DARK -> StatusLook(BarBacking.CAPSULE, bg = Color(0x99101318), rim = Color.White.copy(alpha = 0.16f), corner = 12.dp, clockSize = 16.sp, clockWeight = FontWeight.SemiBold, sep = "|", decor = BarDecor.GLOSS, avatarSize = 24.dp)
+            Features.PanelLook.THEME -> StatusLook(BarBacking.CAPSULE, bg = mixC(acc, Color.Black, 0.55f).copy(alpha = 0.75f), rim = acc.copy(alpha = 0.5f), corner = 12.dp, clockSize = 16.sp, clockWeight = FontWeight.SemiBold, sep = "|", decor = BarDecor.GLOSS, avatarSize = 24.dp)
+            else -> StatusLook(BarBacking.CAPSULE, bg = Color.White.copy(alpha = 0.12f), rim = Color.White.copy(alpha = 0.24f), corner = 12.dp, clockSize = 16.sp, clockWeight = FontWeight.SemiBold, sep = "|", decor = BarDecor.GLOSS, avatarSize = 24.dp)
+        }
         // Live tiles: flat square tiles, capitals, no rounding anywhere.
-        HomeLayout.LIVE -> StatusLook(
-            BarBacking.SEGMENTS, bg = if (paleBehind) Color(0xE6303030) else mixC(acc, Color.Black, 0.35f).copy(alpha = 0.9f),
-            corner = 0.dp, caps = true, weight = FontWeight.Normal, clockWeight = FontWeight.Light, clockSize = 13.sp, gap = 3.dp, avatar = AvatarShape.SQUARE, avatarSize = 24.dp
-        )
+        HomeLayout.LIVE -> {
+            // (Update 339: the tiles' own colour — the theme's, green, or the game's.)
+            val tile = when (Features.liveColor.state.value) {
+                Features.LiveColor.GREEN -> Color(0xFF107C10)
+                else -> acc
+            }
+            StatusLook(
+                BarBacking.SEGMENTS, bg = if (paleBehind) Color(0xE6303030) else tile.copy(alpha = 0.92f),
+                corner = 0.dp, caps = true, weight = FontWeight.Normal, clockWeight = FontWeight.Light, clockSize = 13.sp, gap = 3.dp, avatar = AvatarShape.SQUARE, avatarSize = 24.dp,
+                accent = if (paleBehind) tile else Color.White
+            )
+        }
         // Side menu: a dark band across the top, the theme's trim under it, spaced capitals like a menu.
-        HomeLayout.SIDE -> StatusLook(BarBacking.TOOLBAR, bg = Color(0xA6080A0E), rim = acc.copy(alpha = 0.85f), rimWidth = 2.dp, gap = 12.dp, caps = true, tracking = 0.06f, clockSize = 11.sp, iconSize = 15.dp, avatarSize = 22.dp)
+        HomeLayout.SIDE -> (if (Features.sideGold.state.value) Color(0xFFD9B45A) else acc).let { trim ->
+            // (Update 339: the menu's own trim — the theme's colour, or gold.)
+            StatusLook(BarBacking.TOOLBAR, bg = Color(0xA6080A0E), rim = trim.copy(alpha = 0.85f), accent = trim, rimWidth = 2.dp, gap = 12.dp, caps = true, tracking = 0.06f, clockSize = 11.sp, iconSize = 15.dp, avatarSize = 22.dp)
+        }
         // Cross menu: floating light type, nothing behind (its own icons float the same way).
         HomeLayout.CROSS -> StatusLook(BarBacking.NONE, shade = 0.08f, clockSize = 15.sp, clockWeight = FontWeight.Light, weight = FontWeight.Light, gap = 13.dp, shadowed = true, avatar = AvatarShape.CIRCLE, iconSize = 15.dp)
         // Console hub / Resume: a console dashboard's corner — no box, a bold time, your picture round with the theme's ring.
@@ -188,9 +203,10 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
         )
         // Disc station: a CD player's LCD window — green digits, unlit 88:88 behind.
         HomeLayout.DISCS -> StatusLook(
-            BarBacking.LCD, bg = Color(0xF00C1710), ink = Color(0xFF8CF5AE), accent = Color(0xFFB8FFCB), rim = Color(0xFF2F4B37), rimWidth = 1.5.dp,
-            corner = 4.dp, font = FontFamily.Monospace, clockSize = 14.sp, clockWeight = FontWeight.Bold, ghost = true, iconSize = 14.dp, gap = 7.dp,
-            avatar = AvatarShape.SQUARE, avatarSize = 20.dp, glow = Color(0xFF2BD66A)
+            // (Update 339: the player's dark panels and the theme's colour lit in the readout, as the layout has them.)
+            BarBacking.LCD, bg = mixC(ShelfTheme.colors.surface, Color.Black, 0.45f).copy(alpha = 0.95f), ink = mixC(acc, Color.White, 0.55f), accent = acc,
+            rim = mixC(acc, Color.Black, 0.55f), rimWidth = 1.5.dp, corner = 4.dp, font = FontFamily.Monospace, clockSize = 14.sp, clockWeight = FontWeight.Bold,
+            ghost = true, iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp, glow = acc
         )
         // Record crate: a record's centre label — cream, a serif face, printed rings.
         HomeLayout.CRATE -> StatusLook(
@@ -204,47 +220,81 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
             rimWidth = 1.5.dp, corner = 5.dp, caps = true, tracking = 0.08f, clockSize = 11.sp, clockWeight = FontWeight.Bold, gap = 7.dp, avatarSize = 22.dp
         )
         // Cardboard box: a kraft paper label, taped down, typed.
-        HomeLayout.BOX -> StatusLook(
-            BarBacking.LABEL, bg = Color(0xF2CBAA78), ink = Color(0xFF34240F), accent = Color(0xFF7A2E1B), corner = 1.dp,
-            font = FontFamily.Monospace, decor = BarDecor.TAPE, clockSize = 12.sp, clockWeight = FontWeight.Bold, iconSize = 14.dp, gap = 7.dp,
-            avatar = AvatarShape.SQUARE, avatarSize = 20.dp
-        )
+        HomeLayout.BOX -> Features.boxCardboard.state.value.let { b ->
+            // (Update 339: a label of the box's own cardboard — brown, white or dark.)
+            val dark = b == Features.BoxCardboard.DARK
+            StatusLook(
+                BarBacking.LABEL, bg = Color(b.top).copy(alpha = 0.95f), ink = if (dark) Color(0xFFEDE4D6) else Color(0xFF34240F), accent = if (dark) Color(0xFFE0A96A) else Color(0xFF7A2E1B), corner = 1.dp,
+                font = FontFamily.Monospace, decor = BarDecor.TAPE, clockSize = 12.sp, clockWeight = FontWeight.Bold, iconSize = 14.dp, gap = 7.dp,
+                avatar = AvatarShape.SQUARE, avatarSize = 20.dp
+            )
+        }
         // Storage boxes: small tabs in the box's own wallpaper colours.
         HomeLayout.STORAGE -> (StorageWallTint.color ?: acc).let { w ->
-            StatusLook(BarBacking.SEGMENTS, bg = mixC(w, Color.Black, 0.45f).copy(alpha = 0.92f), rim = mixC(w, Color.White, 0.4f), rimWidth = 1.5.dp, corner = 7.dp, gap = 5.dp, clockWeight = FontWeight.Bold, iconSize = 15.dp, avatarSize = 22.dp)
+            // (Update 339: pale tabs like the boxes' own white panels, edged in the box's wallpaper colour.)
+            StatusLook(BarBacking.SEGMENTS, bg = Color(0xF2F6F8FB), ink = Color(0xFF263040), accent = mixC(w, Color.Black, 0.25f), rim = mixC(w, Color.Black, 0.1f), rimWidth = 1.5.dp, corner = 7.dp, gap = 5.dp, clockWeight = FontWeight.Bold, iconSize = 15.dp, avatarSize = 22.dp)
         }
         // Circuit board: a green chip readout, cut corners, faint traces.
-        HomeLayout.CIRCUIT -> StatusLook(
-            BarBacking.LCD, bg = Color(0xF00B2A12), ink = Color(0xFF8CFF9E), accent = Color(0xFFD9FF8C), rim = Color(0xFF2E7D46),
-            corner = 5.dp, cut = true, font = FontFamily.Monospace, decor = BarDecor.TRACES, iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp
-        )
+        HomeLayout.CIRCUIT -> when (Features.circuitColors.state.value) {
+            // (Update 339: the board's own colours — the theme's, the green board, or the black one.)
+            Features.CircuitColors.GREEN -> StatusLook(
+                BarBacking.LCD, bg = Color(0xF00B2A12), ink = Color(0xFF8CFF9E), accent = Color(0xFFD9FF8C), rim = Color(0xFF2E7D46),
+                corner = 5.dp, cut = true, font = FontFamily.Monospace, decor = BarDecor.TRACES, iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp
+            )
+            Features.CircuitColors.DARK -> StatusLook(
+                BarBacking.LCD, bg = Color(0xF00E1013), ink = Color(0xFFDCE2EA), accent = acc, rim = Color(0xFF2A2E35),
+                corner = 5.dp, cut = true, font = FontFamily.Monospace, decor = BarDecor.TRACES, iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp
+            )
+            Features.CircuitColors.THEME -> StatusLook(
+                BarBacking.LCD, bg = ShelfTheme.colors.surface.copy(alpha = 0.95f), ink = mixC(acc, Color.White, 0.5f), accent = acc, rim = ShelfTheme.colors.surfaceRaised,
+                corner = 5.dp, cut = true, font = FontFamily.Monospace, decor = BarDecor.TRACES, iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp
+            )
+        }
         // Timeline: a date strip — no box, spaced capitals, the theme's ruled line with ticks under it.
         HomeLayout.TIMELINE -> StatusLook(BarBacking.UNDERLINE, rim = acc, rimWidth = 2.dp, caps = true, tracking = 0.1f, clockSize = 11.sp, weight = FontWeight.Normal, clockWeight = FontWeight.Bold, gap = 10.dp, shade = 0.18f, sep = "/", avatarSize = 22.dp)
         // Arcade cabinets: a marquee — dark glass, neon capitals.
         HomeLayout.ARCADE -> StatusLook(
-            BarBacking.CAPSULE, bg = Color(0xD9120A1E), ink = Color(0xFFFFE9FB), accent = Color(0xFFFF5FD9), rim = Color(0x99FF4FD8), rimWidth = 1.5.dp, corner = 4.dp,
-            caps = true, tracking = 0.1f, glow = Color(0xFFFF4FD8), clockWeight = FontWeight.Bold, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp
+            // (Update 339: the cabinets' own colour — the theme's — lit like their marquee.)
+            BarBacking.CAPSULE, bg = mixC(acc, Color.Black, 0.82f).copy(alpha = 0.9f), ink = mixC(acc, Color.White, 0.8f), accent = acc, rim = acc.copy(alpha = 0.7f),
+            rimWidth = 1.5.dp, corner = 4.dp, caps = true, tracking = 0.1f, glow = acc, clockWeight = FontWeight.Bold, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp
         )
         // Twin desk: instruments printed on the paper — no box, dark ink, thin rules between.
         HomeLayout.TWIN_DESK -> StatusLook(BarBacking.NONE, ink = Color(0xFF1D2430), accent = Color(0xFFE5484D), sep = "|", font = FontFamily.Monospace, clockSize = 12.sp, clockWeight = FontWeight.Bold, iconSize = 15.dp, gap = 9.dp, avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
         // Twin icons: a clean pale strip like its top screen.
-        HomeLayout.TWIN_ICONS -> StatusLook(BarBacking.TOOLBAR, bg = Color(0xE6EEF1F5), ink = Color(0xFF26303C), accent = Color(0xFF2E8BFF), rim = Color(0x26000000), iconSize = 15.dp, gap = 9.dp, avatarSize = 22.dp)
+        HomeLayout.TWIN_ICONS -> if (Features.twinIconsTone.state.value == Features.TwinTone.LIGHT)
+            // (Update 339: its top screen's own tone — light, or the theme-tinted dark one — and the theme's colour.)
+            StatusLook(BarBacking.TOOLBAR, bg = Color(0xE6EEF1F5), ink = Color(0xFF26303C), accent = acc, rim = Color(0x26000000), iconSize = 15.dp, gap = 9.dp, avatarSize = 22.dp)
+        else StatusLook(BarBacking.TOOLBAR, bg = Color(0x80161C27), ink = Color.White.copy(alpha = 0.92f), accent = acc, rim = Color.White.copy(alpha = 0.12f), iconSize = 15.dp, gap = 9.dp, avatarSize = 22.dp)
         // Green Core: dark green glass, cut corners, green capitals.
         HomeLayout.GREENCORE -> StatusLook(BarBacking.CAPSULE, bg = Color(0xB30E2A16), ink = Color(0xFFCFFFD8), accent = Color(0xFF6CF29A), rim = Color(0x9939D27A), corner = 8.dp, cut = true, caps = true, tracking = 0.08f, clockSize = 11.sp, clockWeight = FontWeight.Bold, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp)
         // Pocket Quest (with Voltcap's bar): each group in its own blue window with a gold edge, pixel type.
         HomeLayout.POCKET -> StatusLook(BarBacking.SEGMENTS, bg = Color(0xF21B2766), accent = Color(0xFFFFD34A), rim = Color(0xFFFFD34A), rimWidth = 1.5.dp, corner = 3.dp, font = pixel, clockSize = 12.sp, gap = 5.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp)
         // Cube menu: small indigo cubes, one per group.
-        HomeLayout.CUBE -> StatusLook(BarBacking.SEGMENTS, bg = Color(0xA62A2470), rim = Color(0x998C84FF), rimWidth = 1.5.dp, corner = 6.dp, gap = 5.dp, avatar = AvatarShape.ROUNDED, clockWeight = FontWeight.Bold, avatarSize = 22.dp)
+        HomeLayout.CUBE -> Features.cubeTint.state.value.let { t ->
+            // (Update 339: the cube's own tint — indigo, lilac, smoke or the theme's.)
+            val tint = if (t == Features.CubeTint.THEME) acc else Color(t.argb)
+            StatusLook(BarBacking.SEGMENTS, bg = mixC(tint, Color.Black, 0.55f).copy(alpha = 0.7f), rim = mixC(tint, Color.White, 0.3f).copy(alpha = 0.6f), accent = mixC(tint, Color.White, 0.45f), rimWidth = 1.5.dp, corner = 6.dp, gap = 5.dp, avatar = AvatarShape.ROUNDED, clockWeight = FontWeight.Bold, avatarSize = 22.dp)
+        }
         // Memory card: the 2000s browser's pale grey — no box, its dark grey type.
-        HomeLayout.MEMCARD -> StatusLook(BarBacking.NONE, ink = Color(0xFF3A414B), accent = Color(0xFF2F6FD6), weight = FontWeight.Normal, clockWeight = FontWeight.Normal, clockSize = 13.sp, gap = 10.dp, avatar = AvatarShape.SQUARE, avatarSize = 24.dp)
+        HomeLayout.MEMCARD -> if (Features.mcBack.state.value == Features.McBack.THEME)
+            // (Update 339: on its grey the dark grey type and the browser's gold; on the theme's background, light.)
+            StatusLook(BarBacking.NONE, ink = Color(0xFFF2F4F7), accent = acc, shadowed = true, weight = FontWeight.Normal, clockWeight = FontWeight.Normal, clockSize = 13.sp, gap = 10.dp, avatar = AvatarShape.SQUARE, avatarSize = 24.dp)
+        else StatusLook(BarBacking.NONE, ink = Color(0xFF3A414B), accent = Color(0xFF9C6408), weight = FontWeight.Normal, clockWeight = FontWeight.Normal, clockSize = 13.sp, gap = 10.dp, avatar = AvatarShape.SQUARE, avatarSize = 24.dp)
         // File select: chunky — a thick gold-rimmed blue box, bold capitals.
         HomeLayout.FILESELECT -> StatusLook(BarBacking.CAPSULE, bg = Color(0xF21F2A8C), accent = Color(0xFFFFD34A), rim = Color(0xFFFFD34A), rimWidth = 2.5.dp, corner = 6.dp, caps = true, weight = FontWeight.Bold, clockWeight = FontWeight.Black, clockSize = 13.sp, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp)
         // Airy home: its two-tone pixel display — no box, pixel type in its slate ink.
-        HomeLayout.AIRY -> StatusLook(BarBacking.NONE, ink = Color(0xFF3C4A5A), accent = Color(0xFF2E8BFF), font = pixel, clockSize = 12.sp, gap = 9.dp, avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
+        HomeLayout.AIRY -> StatusLook(BarBacking.NONE, ink = Color(0xFF3C4A5A), accent = Color(Features.ahAccent.state.value.argb), font = pixel, clockSize = 12.sp, gap = 9.dp, avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
         // Night menu: moonlit type, nothing behind (its title sits just under the bar).
-        HomeLayout.NIGHT -> StatusLook(BarBacking.NONE, ink = Color(0xFFE4ECFF), accent = Color(0xFFBFD0FF), glow = Color(0xFF6E8BFF), weight = FontWeight.Light, clockWeight = FontWeight.Normal, clockSize = 13.sp, gap = 10.dp, sep = "·", avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
+        HomeLayout.NIGHT -> Features.nmColor.state.value.let { n ->
+            // (Update 339: its own night colour — midnight, crimson, emerald — and up in the left corner, Toni: the menu's
+            // slanted list fills the right.)
+            StatusLook(BarBacking.NONE, ink = Color(0xFFEAF2FF), accent = Color(n.hi), glow = Color(n.hi).copy(alpha = 0.6f), weight = FontWeight.Light, clockWeight = FontWeight.Normal, clockSize = 13.sp, gap = 10.dp, sep = "·", avatar = AvatarShape.CIRCLE, avatarSize = 22.dp, left = true)
+        }
         // Orbit deck: deep space — no box, light type, glowing dots between.
-        HomeLayout.ORBIT -> StatusLook(BarBacking.NONE, accent = Color(0xFF8FD3FF), glow = Color(0xFF6FA8FF), weight = FontWeight.Light, clockWeight = FontWeight.Light, clockSize = 14.sp, tracking = 0.06f, sep = "•", gap = 10.dp, avatar = AvatarShape.CIRCLE, avatarSize = 24.dp)
+        HomeLayout.ORBIT -> Features.odColor.state.value.let { o ->
+            // (Update 339: the deck's own space colour.)
+            StatusLook(BarBacking.NONE, accent = mixC(Color(o.glow), Color.White, 0.25f), glow = Color(o.glow), weight = FontWeight.Light, clockWeight = FontWeight.Light, clockSize = 14.sp, tracking = 0.06f, sep = "•", gap = 10.dp, avatar = AvatarShape.CIRCLE, avatarSize = 24.dp)
+        }
         // Layout Studio: the theme's colours (its palette follows the theme).
         HomeLayout.CUSTOM -> StatusLook(BarBacking.CAPSULE, bg = mixC(acc, Color.Black, 0.7f).copy(alpha = 0.7f), rim = acc.copy(alpha = 0.45f), corner = 10.dp, avatarSize = 24.dp)
         // The Pocket Classic / Ribbon bars are their own (Voltcap's isn't drawn there); anything else: the plain look.

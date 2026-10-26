@@ -181,6 +181,120 @@ internal fun StatusBar(
         running?.let { (d, t) -> (d.toFloat() / t).coerceIn(0f, 1f) } ?: 0f,
         androidx.compose.animation.core.tween(400), label = "taskLine"
     )
+    // The clock, battery, icons and your picture (update 334: grouped and put together the layout's way).
+    val cluster: @Composable () -> Unit = {
+            // Compact, like Android's own: small icons, narrow gaps. The bell only shows when there's something, with how many.
+            // Update 202: the clock, battery, icons and profile are moved / resized / taken off in Edit Home (each layout its own).
+            // Update 334: grouped — time · devices · actions · system · you — and put together the layout's way (StatusLooks):
+            // one box, a box per group, a readout, a label, a ruled line or nothing, with what the look puts between groups.
+            // Narrow screens: tighter, no separators, the percentage left to the gauge.
+            val compact = widthDp < 520
+            val gap = if (compact) (look.gap - 2.dp).coerceAtLeast(3.dp) else look.gap
+            val segmented = look.backing == BarBacking.SEGMENTS
+            val sep = look.sep.takeUnless { compact || segmented }
+            val textStyle = look.textStyle(uiFontStyle().merge(CenteredLine))
+            val small = 12.sp
+            val voltGauge = VoltUi.on && com.shelf.launcher.data.Features.voltBattery.state.value
+            val clockShown = clockText != null && OwnClock.count == 0
+            val pieceH = Modifier.heightIn(min = look.avatarSize.coerceAtMost(26.dp))
+            @Composable
+            fun Sep() {
+                if (sep != null) Text(sep, color = ink.copy(alpha = 0.45f), fontSize = small, style = textStyle, modifier = Modifier.padding(horizontal = gap / 2))
+                else Spacer(Modifier.width(if (segmented) gap else gap + 2.dp))
+            }
+            @Composable
+            fun Group(content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+                Row(Modifier.statusSegment(look), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap), content = content)
+            }
+            Row(
+                Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons").statusContainer(look).then(pieceH),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+            if (menuSlot > 0) Spacer(Modifier.width(44.dp).height(28.dp).onGloballyPositioned { onMenuSlot(it.boundsInRoot()) })
+            // Time (and the Drive sync beside it). (Update 333: no clock while the layout shows its own — OwnClock.)
+            if (syncSlot != null || clockShown) {
+                Group {
+                    syncSlot?.invoke()
+                    if (clockShown) Box(contentAlignment = Alignment.CenterEnd) {
+                        val t = look.cased(clockText!!)
+                        // An LCD's unlit segments behind the digits.
+                        if (look.ghost) Text(t.map { if (it.isDigit()) '8' else it }.joinToString(""), color = ink.copy(alpha = 0.12f), fontSize = look.clockSize, fontWeight = look.clockWeight, maxLines = 1, softWrap = false, style = textStyle.merge(androidx.compose.ui.text.TextStyle(shadow = null)))
+                        Text(t, color = ink, fontSize = look.clockSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(look.clockSize), maxFontSize = look.clockSize), lineHeight = androidx.compose.ui.unit.TextUnit(1.25f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.clockWeight, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = textStyle)
+                    }
+                }
+                Sep()
+            }
+            // Controllers and other devices.
+            if (accessories.isNotEmpty()) {
+                Group { AccessoryChips(accessories, maxChips, ink) { showDevices = true } }
+                Sep()
+            }
+            // Search, the trophy from the last game, notifications.
+            Group {
+                Icon(Icons.Filled.Search, null, tint = ink, modifier = Modifier.size(look.iconSize).tapOnly(onSearchButtonClick))
+                if (trophyCount > 0) ReturnTrophy(trophyCount, onTrophy)
+                if (notificationCount > 0) Row(Modifier.tapOnly(onNotifications), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Notifications, null, tint = ink, modifier = Modifier.size(look.iconSize))
+                    Text(
+                        if (notificationCount > 99) "99+" else "$notificationCount",
+                        color = ink, fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
+                        style = textStyle, modifier = Modifier.padding(start = 1.dp)
+                    )
+                }
+            }
+            Sep()
+            // Wi-Fi and the battery.
+            Group {
+                Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ink, modifier = Modifier.size(look.iconSize))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    // Volt looks: a little charge gauge (HomeExtras.kt) — update 334: in the bar's ink unless it's really low.
+                    if (voltGauge) VoltBattery(battery.percent, battery.charging, LowBatteryColor, ink, fill = if (look.plainBattery) ink else null)
+                    else Icon(
+                        if (battery.charging) Icons.Filled.BatteryChargingFull else batteryIconFor(battery.percent, false), null,
+                        tint = if (!battery.charging && battery.percent < 15) LowBatteryColor else ink,
+                        modifier = Modifier.size(look.iconSize)
+                    )
+                    if (bar.showPercent && !(compact && voltGauge)) Text("${battery.percent}%", color = ink, fontSize = small, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(small), maxFontSize = small), lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = textStyle)
+                }
+            }
+            Sep()
+            // You: RetroAchievements points (wide screens) and your picture. Falls back to the profile's initial, so the
+            // bar never looks empty.
+            val avatarUrl = profilePictureUrl(RaBadges.mediaUrl(raProfile?.UserPic))
+            Group {
+                if (raProfile != null && widthDp >= 600) raProfile.TotalPoints?.let { points ->
+                    Text(
+                        "$points", color = barAccent, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
+                        // (0.6.17: a dark edge — in the theme's colour over a picture of the same colour it disappeared.
+                        //  Update 334: not on a box of its own, where it's on the box's colour.)
+                        style = if (look.boxed || segmented || ink.luminance() < 0.5f) textStyle else textStyle.merge(
+                            androidx.compose.ui.text.TextStyle(
+                                shadow = look.glow?.let { androidx.compose.ui.graphics.Shadow(it, androidx.compose.ui.geometry.Offset.Zero, 10f) } ?: androidx.compose.ui.graphics.Shadow(
+                                    Color.Black.copy(alpha = 0.85f), androidx.compose.ui.geometry.Offset(0f, 1f),
+                                    2.5f * androidx.compose.ui.platform.LocalDensity.current.density
+                                )
+                            )
+                        )
+                    )
+                }
+                val pic = Modifier.size(look.avatarSize)
+                    .then(if (look.ring != null) Modifier.border(2.dp, look.ring, look.avatarShape()).padding(3.dp) else Modifier)
+                    .clip(look.avatarShape()).tapOnly(onProfileClick)
+                if (avatarUrl != null) {
+                    AsyncImage(model = avatarUrl, contentDescription = raProfile?.User, contentScale = ContentScale.Crop, modifier = pic)
+                } else {
+                    Box(pic.background(barAccent), contentAlignment = Alignment.Center) {
+                        // (Update 332: the playing profile's initial.)
+                        Text(
+                            com.shelf.launcher.data.Profiles.active()?.name?.trim()?.take(1)?.uppercase() ?: "P1",
+                            color = if (barAccent.luminance() > 0.55f) Color(0xFF14171C) else Color.White,
+                            fontWeight = FontWeight.Bold, fontSize = if (look.avatarSize < 24.dp) 11.sp else 13.sp, style = look.textStyle(uiFontStyle().merge(CenteredLine)).merge(androidx.compose.ui.text.TextStyle(shadow = null, letterSpacing = androidx.compose.ui.unit.TextUnit.Unspecified))
+                        )
+                    }
+                }
+            }
+            }
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -201,6 +315,7 @@ internal fun StatusBar(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         if (menuSlot < 0) Spacer(Modifier.width(44.dp).height(28.dp).onGloballyPositioned { onMenuSlot(it.boundsInRoot()) })
+        if (look.left) { cluster(); Spacer(Modifier.width(14.dp)) }
         // Optional mini music player, top left (Appearance setting).
         // It gives way to the icons on the right: the clock, battery and the profile picture keep their
         // corner and the player shrinks into what's left (it used to push the profile off the screen).
@@ -244,117 +359,8 @@ internal fun StatusBar(
                 )
             }
         }
-        // Compact, like Android's own: small icons, narrow gaps. The bell only shows when there's something, with how many.
-        // Update 202: the clock, battery, icons and profile are moved / resized / taken off in Edit Home (each layout its own).
-        // Update 334: grouped — time · devices · actions · system · you — and put together the layout's way (StatusLooks):
-        // one box, a box per group, a readout, a label, a ruled line or nothing, with what the look puts between groups.
-        // Narrow screens: tighter, no separators, the percentage left to the gauge.
-        val compact = widthDp < 520
-        val gap = if (compact) (look.gap - 2.dp).coerceAtLeast(3.dp) else look.gap
-        val segmented = look.backing == BarBacking.SEGMENTS
-        val sep = look.sep.takeUnless { compact || segmented }
-        val textStyle = look.textStyle(uiFontStyle().merge(CenteredLine))
-        val small = 12.sp
-        val voltGauge = VoltUi.on && com.shelf.launcher.data.Features.voltBattery.state.value
-        val clockShown = clockText != null && OwnClock.count == 0
-        val pieceH = Modifier.heightIn(min = look.avatarSize.coerceAtMost(26.dp))
-        @Composable
-        fun Sep() {
-            if (sep != null) Text(sep, color = ink.copy(alpha = 0.45f), fontSize = small, style = textStyle, modifier = Modifier.padding(horizontal = gap / 2))
-            else Spacer(Modifier.width(if (segmented) gap else gap + 2.dp))
-        }
-        @Composable
-        fun Group(content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
-            Row(Modifier.statusSegment(look), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap), content = content)
-        }
-        Row(
-            Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons").statusContainer(look).then(pieceH),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-        if (menuSlot > 0) Spacer(Modifier.width(44.dp).height(28.dp).onGloballyPositioned { onMenuSlot(it.boundsInRoot()) })
-        // Time (and the Drive sync beside it). (Update 333: no clock while the layout shows its own — OwnClock.)
-        if (syncSlot != null || clockShown) {
-            Group {
-                syncSlot?.invoke()
-                if (clockShown) Box(contentAlignment = Alignment.CenterEnd) {
-                    val t = look.cased(clockText!!)
-                    // An LCD's unlit segments behind the digits.
-                    if (look.ghost) Text(t.map { if (it.isDigit()) '8' else it }.joinToString(""), color = ink.copy(alpha = 0.12f), fontSize = look.clockSize, fontWeight = look.clockWeight, maxLines = 1, softWrap = false, style = textStyle.merge(androidx.compose.ui.text.TextStyle(shadow = null)))
-                    Text(t, color = ink, fontSize = look.clockSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(look.clockSize), maxFontSize = look.clockSize), lineHeight = androidx.compose.ui.unit.TextUnit(1.25f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.clockWeight, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = textStyle)
-                }
-            }
-            Sep()
-        }
-        // Controllers and other devices.
-        if (accessories.isNotEmpty()) {
-            Group { AccessoryChips(accessories, maxChips, ink) { showDevices = true } }
-            Sep()
-        }
-        // Search, the trophy from the last game, notifications.
-        Group {
-            Icon(Icons.Filled.Search, null, tint = ink, modifier = Modifier.size(look.iconSize).tapOnly(onSearchButtonClick))
-            if (trophyCount > 0) ReturnTrophy(trophyCount, onTrophy)
-            if (notificationCount > 0) Row(Modifier.tapOnly(onNotifications), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Notifications, null, tint = ink, modifier = Modifier.size(look.iconSize))
-                Text(
-                    if (notificationCount > 99) "99+" else "$notificationCount",
-                    color = ink, fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
-                    style = textStyle, modifier = Modifier.padding(start = 1.dp)
-                )
-            }
-        }
-        Sep()
-        // Wi-Fi and the battery.
-        Group {
-            Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ink, modifier = Modifier.size(look.iconSize))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                // Volt looks: a little charge gauge (HomeExtras.kt) — update 334: in the bar's ink unless it's really low.
-                if (voltGauge) VoltBattery(battery.percent, battery.charging, LowBatteryColor, ink, fill = if (look.plainBattery) ink else null)
-                else Icon(
-                    if (battery.charging) Icons.Filled.BatteryChargingFull else batteryIconFor(battery.percent, false), null,
-                    tint = if (!battery.charging && battery.percent < 15) LowBatteryColor else ink,
-                    modifier = Modifier.size(look.iconSize)
-                )
-                if (bar.showPercent && !(compact && voltGauge)) Text("${battery.percent}%", color = ink, fontSize = small, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(small), maxFontSize = small), lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = textStyle)
-            }
-        }
-        Sep()
-        // You: RetroAchievements points (wide screens) and your picture. Falls back to the profile's initial, so the
-        // bar never looks empty.
-        val avatarUrl = profilePictureUrl(RaBadges.mediaUrl(raProfile?.UserPic))
-        Group {
-            if (raProfile != null && widthDp >= 600) raProfile.TotalPoints?.let { points ->
-                Text(
-                    "$points", color = barAccent, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
-                    // (0.6.17: a dark edge — in the theme's colour over a picture of the same colour it disappeared.
-                    //  Update 334: not on a box of its own, where it's on the box's colour.)
-                    style = if (look.boxed || segmented || ink.luminance() < 0.5f) textStyle else textStyle.merge(
-                        androidx.compose.ui.text.TextStyle(
-                            shadow = look.glow?.let { androidx.compose.ui.graphics.Shadow(it, androidx.compose.ui.geometry.Offset.Zero, 10f) } ?: androidx.compose.ui.graphics.Shadow(
-                                Color.Black.copy(alpha = 0.85f), androidx.compose.ui.geometry.Offset(0f, 1f),
-                                2.5f * androidx.compose.ui.platform.LocalDensity.current.density
-                            )
-                        )
-                    )
-                )
-            }
-            val pic = Modifier.size(look.avatarSize)
-                .then(if (look.ring != null) Modifier.border(2.dp, look.ring, look.avatarShape()).padding(3.dp) else Modifier)
-                .clip(look.avatarShape()).tapOnly(onProfileClick)
-            if (avatarUrl != null) {
-                AsyncImage(model = avatarUrl, contentDescription = raProfile?.User, contentScale = ContentScale.Crop, modifier = pic)
-            } else {
-                Box(pic.background(barAccent), contentAlignment = Alignment.Center) {
-                    // (Update 332: the playing profile's initial.)
-                    Text(
-                        com.shelf.launcher.data.Profiles.active()?.name?.trim()?.take(1)?.uppercase() ?: "P1",
-                        color = if (barAccent.luminance() > 0.55f) Color(0xFF14171C) else Color.White,
-                        fontWeight = FontWeight.Bold, fontSize = if (look.avatarSize < 24.dp) 11.sp else 13.sp, style = look.textStyle(uiFontStyle().merge(CenteredLine)).merge(androidx.compose.ui.text.TextStyle(shadow = null, letterSpacing = androidx.compose.ui.unit.TextUnit.Unspecified))
-                    )
-                }
-            }
-        }
-        }
+        // (Update 339: in the top right corner, or the top left for a look that wants it — StatusLook.left.)
+        if (!look.left) cluster()
     }
     if (showDevices) ConnectedDevicesDialog { showDevices = false }
 }

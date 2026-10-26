@@ -1,5 +1,26 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (339): status bars in each layout's own colours; Night menu's bar top left
+
+Toni: "some of the status bars aren't following the colours of the layout" and "on the Persona-inspired one move the
+status bar to the upper left". The bars now take each layout's own colour settings instead of fixed ones
+(`ui\StatusLooks.kt`):
+- Circuit board: its board colours (your theme's / green / black) — was always a green LCD.
+- Disc station: its dark panels with the theme's colour lit in the readout — was green.
+- Arcade cabinets: the cabinets' colour (the theme's), lit like their marquee — was pink neon.
+- Twin icons: its top screen's tone (light, or the theme-tinted dark) and the theme's colour — was always pale and blue.
+- Cube menu: the cube's tint (indigo / lilac / smoke / theme). Memory card: its own grey with the browser's gold, or light
+  on the theme background. Storage boxes: pale tabs like the boxes' white panels, edged in the wallpaper's colour.
+- Airy home: its accent colour setting. Orbit deck / Night menu: their colour settings. Cardboard box: a label of the
+  box's own cardboard (brown / white / dark). Live tiles: the tiles' colour (theme / green). Side menu: its trim (theme /
+  gold). Dashboard: its panel glass (light / dark / theme colour).
+- **Night menu**: the bar sits in the top left corner (StatusLook.left, `ui\HomeChrome.kt`) — the slanted list fills the
+  right and the bar ran into its first entry.
+
+Checked on the AYN Thor (release): screenshots of all 37 layouts, then the 14 changed ones again.
+
+Files: `ui\StatusLooks.kt`, `ui\HomeChrome.kt`.
+
 ## Update — 26 Oct 2026 (338): real cases found for more games; Voltcap's own spines as slim as the real ones
 
 Toni: "most of GBA / GB / GBC / 3DS / DS and sometimes PS1 show the custom cases, not the real ones; the PS1 custom spines
