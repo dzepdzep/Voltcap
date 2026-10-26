@@ -276,7 +276,7 @@ private class BoxSlot(val box: Int, val row: Int, val x0: Float, val thick: Floa
  * [t] thick; the camera [hc] above the floor, over the middle across and [yc] from the back wall, looking straight down.
  * A point (x, y, z) is drawn at ([sx], [sy]) — nearer the camera (higher up), bigger.
  */
-private class BoxCam(val wMm: Float, val dMm: Float, val wallH: Float, val t: Float, val hc: Float, val yc: Float, val f: Float, val cx: Float, val cy: Float) {
+private class BoxCam(val wMm: Float, val dMm: Float, val wallH: Float, val t: Float, val hc: Float, val yc: Float, val f: Float, val cx: Float, val cy: Float, val vh: Float = 0f) {
     fun sx(x: Float, z: Float) = cx + f * x / (hc - z)
     fun sy(y: Float, z: Float) = cy + f * (y - yc) / (hc - z)
     fun o(x: Float, y: Float, z: Float) = Offset(sx(x, z), sy(y, z))
@@ -304,7 +304,7 @@ private fun boxCam(wPx: Float, hPx: Float, tilt: Float, sizeK: Float): BoxCam {
     val fW = wPx * 0.96f * (hc - wallH) / (w + 2 * t)
     val f = minOf(fH, fW)
     val cy = top - f * (-t - yc) / (hc - wallH)
-    return BoxCam(w, d, wallH, t, hc, yc, f, wPx / 2f, cy)
+    return BoxCam(w, d, wallH, t, hc, yc, f, wPx / 2f, cy, hPx)
 }
 
 /** Packs the games into boxes: across the back row as many as physically fit (each its own case's thickness), then the front row, then the next box. */
@@ -753,8 +753,16 @@ private fun BoxCase(
                     val axX = cam.cx; val axY = cam.sy(cam.yc, 0f)
                     // (Only part of the drift away from the camera's axis: lifted straight up, it should stay over its slot
                     // to the eye — the full drift sent a case at the box's corner flying off over the flap.)
-                    translationX = (cxPx - axX) * (kz - 1f) * 0.3f
-                    translationY = (cyPx - axY) * (kz - 1f) * 0.3f
+                    // Update 341: …but never off the screen (a case from the front row, lifted and turned to its cover,
+                    // was cut off at the bottom edge).
+                    val m = 10.dp.toPx()
+                    fun keepIn(t: Float, mid: Float, half: Float, room: Float): Float {
+                        if (room <= 0f) return t
+                        val lo = half + m - mid; val hi = room - m - half - mid
+                        return if (lo > hi) (lo + hi) / 2f else t.coerceIn(lo, hi)
+                    }
+                    translationX = keepIn((cxPx - axX) * (kz - 1f) * 0.3f, cxPx, caseW * kz / 2f, cam.cx * 2f)
+                    translationY = keepIn((cyPx - axY) * (kz - 1f) * 0.3f, cyPx, caseLenPx * kz / 2f, cam.vh)
                     rotationZ = jr * (1f - r)
                 }
                 .pointerInput(index) { detectTapGestures { if (flip > 0.5f) BoxNav.flipped = null else onTap() } }

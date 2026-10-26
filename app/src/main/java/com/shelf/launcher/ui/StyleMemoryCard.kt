@@ -271,15 +271,27 @@ private fun MemCardScreen(c: StyleCtx, refs: Map<String, List<Ps2SaveRef>>, modi
 
         MemCardHeader(c, refs[c.game?.stableKey], headerH)
 
+        // Update 341: room above the first row (over the header's foot) for the icon you're on to jump into — it was cut
+        // off at the top edge there.
+        val head = minOf(28.dp, headerH)
+        val headPx = with(density) { head.toPx() }
         Box(
-            Modifier.padding(top = headerH).width(areaW).height(areaH).clipToBounds()
+            Modifier.padding(top = headerH - head).width(areaW).height(areaH + head).clipToBounds()
                 // The rows fade out at the top and bottom edges instead of being cut.
                 .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
                 .drawWithContent {
                     drawContent()
                     val f = (18.dp.toPx() / size.height).coerceIn(0.01f, 0.3f)
+                    val ft = ((18.dp.toPx() + headPx) / size.height).coerceIn(0.01f, 0.4f)
+                    // Update 341: only where rows are cut — on the first row the icon you're on jumped up into the fade
+                    // and its top went see-through.
+                    val topCut = scroll.value.coerceIn(0f, 1f)
+                    val botCut = if (firstRow + visRows < rows) 1f else 0f
                     drawRect(
-                        Brush.verticalGradient(0f to Color.Transparent, f to Color.Black, 1f - f to Color.Black, 1f to Color.Transparent),
+                        Brush.verticalGradient(
+                            0f to Color.Black.copy(alpha = 1f - topCut), ft to Color.Black, 1f - f to Color.Black,
+                            1f to Color.Black.copy(alpha = 1f - botCut)
+                        ),
                         blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
                     )
                 }
@@ -310,7 +322,7 @@ private fun MemCardScreen(c: StyleCtx, refs: Map<String, List<Ps2SaveRef>>, modi
                             depth = depth, selMode = selMode, clock = clock, floatOn = floatOn,
                             intro = intro, introDelay = (order * 0.035f).coerceAtMost(0.6f),
                             modifier = Modifier
-                                .offset { IntOffset(((col * cellW.value + dx) * density.density).roundToInt(), (((r - scroll.value) * rowH.value + dy) * density.density).roundToInt()) }
+                                .offset { IntOffset(((col * cellW.value + dx) * density.density).roundToInt(), (((r - scroll.value) * rowH.value + dy) * density.density + headPx).roundToInt()) }
                                 .size(cellW, rowH),
                             onTap = { if (latestFocus == i) open() else select(i) }
                         )

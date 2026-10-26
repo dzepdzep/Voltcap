@@ -265,7 +265,7 @@ internal fun TvRoomHome(
             // The info strip stays here when there's no room under the set (or it's turned off there).
             if (game != null && !underOn) {
                 Spacer(Modifier.height(6.dp))
-                Box(Modifier.fillMaxWidth().height(if (gamesW < 260.dp) 54.dp else 62.dp).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "info"), "Game info").riseOnChange(game.stableKey)) {
+                Box(Modifier.fillMaxWidth().height(if (gamesW < 260.dp) 54.dp else 68.dp).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "info"), "Game info").riseOnChange(game.stableKey)) {
                     TvInfoBar(
                         game, metadata[game.stableKey], playtime[game.stableKey], lastPlayed[game.stableKey],
                         cover = overrides[game.stableKey]?.cover ?: art[game.stableKey]?.gridUrl,
@@ -773,7 +773,8 @@ private fun TvInfoBar(game: Game, metaAll: GameMetadata?, playtimeMs: Long?, las
     BoxWithConstraints(Modifier.fillMaxSize()) {
     // Small screens: a narrower column and a shorter strip - the logo gives way, the stars shrink to one, nothing wraps.
     val narrow = maxWidth < 260.dp
-    val short = maxHeight < 58.dp
+    // (Update 341: the line about the game only when all three lines fit: under a short TV its lower half was cut off.)
+    val short = maxHeight < 66.dp
     val logoOn = Features.detailLayerLogo.state.value && logo != null && maxWidth >= 230.dp
     Column(
         Modifier.fillMaxSize().voltSurface(uiRounded(12.dp), base = ShelfTheme.colors.surface, alpha = 0.72f)
@@ -790,8 +791,9 @@ private fun TvInfoBar(game: Game, metaAll: GameMetadata?, playtimeMs: Long?, las
                 Text(stars, color = ShelfTheme.accent, fontSize = if (narrow) 11.sp else 12.sp, maxLines = 1, softWrap = false)
             }
         }
-        Text(facts, color = ShelfTheme.textMuted, fontSize = if (narrow) 10.sp else 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (narrow) 10.sp else 11.sp), maxFontSize = if (narrow) 10.sp else 11.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (!short) meta?.summary?.let { Text(it, color = ShelfTheme.textMuted.copy(alpha = 0.8f), fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        Text(facts, color = ShelfTheme.textMuted, fontSize = if (narrow) 10.sp else 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (narrow) 10.sp else 11.sp), maxFontSize = if (narrow) 10.sp else 11.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 1.25.em)
+        // (Update 341: own line heights — the default 24 sp line under each small line pushed the story out of the strip.)
+        if (!short) meta?.summary?.let { Text(it, color = ShelfTheme.textMuted.copy(alpha = 0.8f), fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 1.25.em) }
     }
     }
     }

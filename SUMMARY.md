@@ -1,5 +1,26 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (341): fixes found while recording the trailer
+
+Found by recording every layout on the Thor and checking the frames:
+- Cardboard box: Y (look at its cover) on a case in the front row lifted it half off the bottom of the screen; the
+  lifted case is now kept on the screen (`ui\StyleCardboardBox.kt`, `BoxCam` knows the screen height).
+- Names with a second extension left in ("WWE All Stars.dec" from `….dec.iso`): `.dec`, `.nkit`, `.trim`, `.trimmed`
+  are dropped from the name (`data\RomScanner.kt`, `prettifyName`). Shows after the next library scan.
+- Timeline: the cards beside the one you're on no longer show their date half hidden under its name pill
+  (`ui\StyleTimelineHistory.kt`).
+- TV room: the game's one-line story under the TV was cut in half when the strip was short; it only shows when all
+  three lines fit, and the strip beside the games is a little taller (62 → 68 dp) so it fits there (`ui\TvRoomHome.kt`).
+- Memory card (Toni: "the 7 Wonders icon kept disappearing in the air a bit"): the rows fade at the top and bottom
+  edges, and the first row's icon jumped up into that fade, its top going see-through (and, without the fade, cut
+  off). The edges fade now only where rows are actually cut off, and there's room above the first row for the jump
+  (`ui\StyleMemoryCard.kt`).
+- TV room info strip: the small lines had the default 24 sp line height, which pushed the story line out of the strip.
+- Cube menu (Toni: "the button letters aren't in the centre of the circles"): A / X / Y / B centred in their circles
+  (`ui\CubeHub.kt`, `HubHint`, the shared `CenteredLine` style).
+Copy: `src_copy\ui\StyleCardboardBox.kt`, `src_copy\data\RomScanner.kt`, `src_copy\ui\StyleTimelineHistory.kt`,
+`src_copy\ui\TvRoomHome.kt`, `src_copy\ui\StyleMemoryCard.kt`, `src_copy\ui\CubeHub.kt`. Checked: built (release), installed on the Thor, re-recorded.
+
 ## Update — 26 Oct 2026 (340): Record crate — the record slides out of its sleeve
 
 Toni: "that vinyl just spawns in without actually being drawn out". The record's slide followed only the flip, and the

@@ -512,7 +512,8 @@ private fun HubHint(button: String, label: String, onTap: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(Modifier.size(19.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.92f)), contentAlignment = Alignment.Center) {
-            Text(button, color = Color(0xFF1A1530), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            // (Update 341: the letter in the middle of its circle — the font's padding sat it low.)
+            Text(button, color = Color(0xFF1A1530), fontSize = 11.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = CenteredLine)
         }
         Spacer(Modifier.width(5.dp))
         Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1)

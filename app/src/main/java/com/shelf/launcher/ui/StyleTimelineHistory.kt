@@ -312,7 +312,9 @@ private fun HistoryRow(
                     val here = on && p == place
                     HistoryTile(
                         c, g, real, here = here, sel = here && inGames, big = on, cardW = cardW, cardH = cardH, capW = geo.capW,
-                        date = if (on && (dates || here)) text.date(mode, data.stamp[p]) else null, accent = accent, compact = compact,
+                        // (Update 341: the cards beside the one you're on keep their date to themselves: the name pill, wider than its
+                        // card, would half cover it.)
+                        date = if (on && (here || (dates && !(geo.capW > cardW && abs(p - place) == 1)))) text.date(mode, data.stamp[p]) else null, accent = accent, compact = compact,
                         onPick = if (onPick != null) ({ onPick(p) }) else null // (Update 156)
                     )
                 }

@@ -593,8 +593,11 @@ object RomScanner {
             .trim(' ', '-', '_')
             .trim()
 
+    // Update 341: a second extension left in the name ("WWE All Stars.dec.iso" → "WWE All Stars", not "….dec").
+    private val INNER_EXT = Regex("""\.(dec|nkit|trimmed|trim)$""", RegexOption.IGNORE_CASE)
+
     private fun prettifyName(raw: String): String =
-        raw.replace('_', ' ').replace('-', ' ')
+        raw.replace(INNER_EXT, "").replace('_', ' ').replace('-', ' ')
             .split(' ')
             .filter { it.isNotBlank() }
             .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
