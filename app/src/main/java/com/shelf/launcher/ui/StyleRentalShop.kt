@@ -44,6 +44,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
@@ -178,9 +180,9 @@ internal fun rentalShopKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolea
 
 // ---- The shop ----
 
-private class ShopColors(val wallTop: Color, val wallBottom: Color, val neon: Color, val neon2: Color, val shelf: Color, val floorA: Color, val floorB: Color)
+internal class ShopColors(val wallTop: Color, val wallBottom: Color, val neon: Color, val neon2: Color, val shelf: Color, val floorA: Color, val floorB: Color)
 
-private fun shopColors(w: Features.RsWall): ShopColors = when (w) {
+internal fun shopColors(w: Features.RsWall): ShopColors = when (w) {
     Features.RsWall.PURPLE -> ShopColors(Color(0xFF2B1846), Color(0xFF120A1F), Color(0xFFFF4FD8), Color(0xFF46E6FF), Color(0xFF6B4A2E), Color(0xFF2A2236), Color(0xFF1A1424))
     Features.RsWall.TEAL -> ShopColors(Color(0xFF0E3A40), Color(0xFF061A1D), Color(0xFFFFD84A), Color(0xFFFF5A5A), Color(0xFF7A5A3A), Color(0xFF1E3236), Color(0xFF112023))
     Features.RsWall.BLUE -> ShopColors(Color(0xFF14204F), Color(0xFF070B1E), Color(0xFF5BFF8F), Color(0xFFFF8A3D), Color(0xFF5E5E66), Color(0xFF1E2238), Color(0xFF121524))
@@ -285,13 +287,22 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
         }
         // The section's sign, hanging over the shelves.
         val st = c.stops.getOrNull(c.stop)
-        Box(Modifier.align(Alignment.TopCenter).offset { IntOffset(0, (hPx * 0.085f).roundToInt()) }.graphicsLayer { translationX = walk.value * wPx * 0.6f; alpha = 1f - abs(walk.value) }
-            .clip(RoundedCornerShape(3.dp)).background(Brush.verticalGradient(listOf(Color(0xFFFDFDF7), Color(0xFFE4E2D6))))
-            .border(3.dp, Color(0xFF1C1C1C), RoundedCornerShape(3.dp)).padding(horizontal = 16.dp, vertical = 3.dp),
+        // (Update 346: a backlit lightbox — dark plate, the console's logo lit white, the neon round its rim — instead of a white
+        // card the logo's own white lines vanished into.)
+        Box(Modifier.align(Alignment.TopCenter).zIndex(5f).offset { IntOffset(0, (hPx * 0.085f).roundToInt()) }.graphicsLayer { translationX = walk.value * wPx * 0.6f; alpha = 1f - abs(walk.value) }
+            .shadow(14.dp, RoundedCornerShape(4.dp), ambientColor = sc.neon2, spotColor = sc.neon2)
+            .clip(RoundedCornerShape(4.dp)).background(Brush.verticalGradient(listOf(Color(0xFF2A2A30), Color(0xFF111114))))
+            .border(2.dp, lerp(sc.neon2, Color.White, 0.25f).copy(alpha = 0.6f + 0.4f * on), RoundedCornerShape(4.dp))
+            .drawBehind {
+                // The lamp behind the panel, brightest in the middle.
+                drawRect(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent), center = center, radius = size.width * 0.55f))
+            }
+            .padding(horizontal = 18.dp, vertical = 5.dp),
             contentAlignment = Alignment.Center) {
             val plat = st?.platform?.takeIf { st.special == null && !com.shelf.launcher.data.isCollectionKey(it) }
-            if (plat != null) PlatformLogo(plat, st.label, Modifier.height(24.dp).width(200.dp), textColor = Color(0xFF1C1C1C), textSize = 15.sp, blackToWhite = false)
-            else Text((st?.label ?: c.categoryLabel).uppercase(), color = Color(0xFF1C1C1C), fontSize = 15.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            if (plat != null) PlatformLogo(plat, st.label, Modifier.height(24.dp).width(200.dp), textColor = Color.White, textSize = 15.sp, blackToWhite = true)
+            else Text((st?.label ?: c.categoryLabel).uppercase(), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
+                style = TextStyle(shadow = Shadow(Color.White.copy(alpha = 0.5f), Offset.Zero, 10f)))
         }
         // The shelves and their cases, the camera gliding along.
         Box(Modifier.fillMaxSize().graphicsLayer { translationX = walk.value * wPx * 0.6f; alpha = 1f - abs(walk.value) * 0.7f }
@@ -307,13 +318,44 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
             }
         ) {
             // The boards.
+            // (Update 346: shelf depth — each row a recess with a back panel, shadowed under the board above and lit by the
+            // lamps in the ceiling; each board shows its top and a lit front lip; the far ends fall into shadow.)
             Canvas(Modifier.fillMaxSize()) {
-                for (r in 0 until rows) {
-                    val y = topY + rowH * (r + 1) - rowH * 0.06f
-                    drawRect(Color.Black.copy(alpha = 0.35f), Offset(0f, y + 10f), Size(size.width, rowH * 0.06f))
-                    drawRect(Brush.verticalGradient(listOf(lerp(sc.shelf, Color.White, 0.25f), sc.shelf, lerp(sc.shelf, Color.Black, 0.4f)), startY = y, endY = y + rowH * 0.07f),
-                        Offset(0f, y), Size(size.width, rowH * 0.07f))
+                val recessTop = topY - rowH * 0.05f
+                val unitTop = recessTop
+                val unitBot = topY + rowH * rows + rowH * 0.03f
+                // The back panel of the unit, darker than the wall.
+                drawRect(Brush.verticalGradient(listOf(lerp(sc.wallTop, Color.Black, 0.3f), lerp(sc.wallBottom, Color.Black, 0.2f)), startY = unitTop, endY = unitBot),
+                    Offset(0f, unitTop), Size(size.width, unitBot - unitTop))
+                // The ceiling lamps: soft pools of light down the back panel.
+                val lamps = 6
+                for (l in 0 until lamps) {
+                    val cx = size.width * (l + 0.5f) / lamps
+                    drawRect(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.07f), Color.Transparent), center = Offset(cx, unitTop), radius = size.width / lamps * 0.9f),
+                        Offset(cx - size.width / lamps, unitTop), Size(size.width * 2f / lamps, unitBot - unitTop))
                 }
+                for (r in 0 until rows) {
+                    val rowTop = topY + rowH * r
+                    val y = topY + rowH * (r + 1) - rowH * 0.06f
+                    // The shadow the board above throws into the recess.
+                    drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent), startY = rowTop - rowH * 0.02f, endY = rowTop + rowH * 0.22f),
+                        Offset(0f, rowTop - rowH * 0.02f), Size(size.width, rowH * 0.24f))
+                    // Under the cases, where they meet the board.
+                    drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f)), startY = y - rowH * 0.1f, endY = y),
+                        Offset(0f, y - rowH * 0.1f), Size(size.width, rowH * 0.1f))
+                    // The board: its top seen from just above, its front lip, its shadow on the panel below.
+                    val topFace = rowH * 0.035f
+                    val lip = rowH * 0.06f
+                    drawRect(lerp(sc.shelf, Color.White, 0.12f), Offset(0f, y - topFace), Size(size.width, topFace))
+                    drawRect(Brush.verticalGradient(listOf(lerp(sc.shelf, Color.White, 0.3f), sc.shelf, lerp(sc.shelf, Color.Black, 0.45f)), startY = y, endY = y + lip),
+                        Offset(0f, y), Size(size.width, lip))
+                    drawLine(Color.White.copy(alpha = 0.35f), Offset(0f, y + 1f), Offset(size.width, y + 1f), 1.5f)
+                    drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent), startY = y + lip, endY = y + lip + rowH * 0.08f),
+                        Offset(0f, y + lip), Size(size.width, rowH * 0.08f))
+                }
+                // The ends of the wall in shadow.
+                drawRect(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.45f), 0.12f to Color.Transparent, 0.88f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.45f)),
+                    Offset(0f, unitTop), Size(size.width, unitBot - unitTop))
             }
             if (n == 0) {
                 Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.8f), fontSize = 15.sp, modifier = Modifier.align(Alignment.Center))
@@ -332,13 +374,23 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
                             val a = if (asCases) case3dAspect(g, false) else caseW / caseH
                             val bh = minOf(caseH, colW * 0.92f / a)
                             val bw = bh * a
+                            // (Update 346: picked up — its shadow left on the board as it comes forward.)
+                            if (lift > 0.01f) Box(
+                                Modifier.size(with(density) { (bw * 1.15f).toDp() }, with(density) { (rowH * 0.08f).toDp() }).zIndex(2f)
+                                    .graphicsLayer {
+                                        translationX = wPx / 2f + (cc - cam.value) * colW - bw * 0.575f
+                                        translationY = topY + rowH * (r + 1) - rowH * 0.06f - rowH * 0.05f
+                                        alpha = lift
+                                    }
+                                    .background(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)))
+                            )
                             Box(
                                 Modifier.size(with(density) { bw.toDp() }, with(density) { bh.toDp() }).zIndex(if (isOn) 3f else 1f)
                                     .graphicsLayer {
                                         val x = wPx / 2f + (cc - cam.value) * colW - bw / 2f
                                         translationX = x
-                                        translationY = topY + rowH * (r + 1) - rowH * 0.06f - bh - lift * caseH * 0.08f
-                                        val s = 1f + 0.12f * lift
+                                        translationY = topY + rowH * (r + 1) - rowH * 0.06f - bh - lift * caseH * 0.13f
+                                        val s = 1f + 0.15f * lift
                                         scaleX = s; scaleY = s
                                         transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
                                         rotationX = -8f * lift
@@ -356,7 +408,7 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
                             }
                             // The shelf tag under the case you're on.
                             if (isOn) Text(
-                                if (c.lastPlayed(g) == null) "NEW!" else "3 NIGHTS", color = Color(0xFF1C1C1C), fontSize = 10.sp, fontWeight = FontWeight.Black,
+                                if (c.lastPlayed(g) == null) "NEW!" else if (g.stableKey in c.state.favorites) "★ FAVE" else "PLAYED", color = Color(0xFF1C1C1C), fontSize = 10.sp, fontWeight = FontWeight.Black,
                                 modifier = Modifier.zIndex(4f).graphicsLayer {
                                     translationX = wPx / 2f + (cc - cam.value) * colW - 22.dp.toPx()
                                     translationY = topY + rowH * (r + 1) - rowH * 0.04f

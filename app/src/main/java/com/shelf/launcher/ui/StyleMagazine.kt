@@ -259,7 +259,9 @@ internal fun StyleMagazine(c: StyleCtx, modifier: Modifier = Modifier) {
         }, contentAlignment = Alignment.Center
     ) {
         // The spread: two pages of about 0.72 each, as big as the desk allows.
-        val spreadAspect = 1.46f
+        // (Update 346: on a short screen the pages get wider instead — at 0.72 each the right page's two columns were
+        // squeezed to a few words a line.)
+        val spreadAspect = if (maxHeight < 380.dp) (maxWidth / maxHeight * 0.96f).coerceIn(1.46f, 1.9f) else 1.46f
         val sw = minOf(maxWidth, maxHeight * spreadAspect)
         val sh = sw / spreadAspect
         val pageW = sw / 2
@@ -337,7 +339,8 @@ private fun MagLeftPage(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean, mo
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.45f), 0.3f to Color.Transparent, 0.6f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.75f))))
         // The masthead strip along the top of the page.
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            MagKicker(if (c.focus == c.games.indexOf(g) && c.focus == 0) "Cover story" else "Review", st, compact)
+            // (Update 346: "Feature", not "Review" — there's no review of ours behind it.)
+            MagKicker(if (c.games.indexOf(g) == 0) "Cover story" else "Feature", st, compact)
             Spacer(Modifier.width(6.dp))
             Text((if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform)).uppercase(), color = Color.White, fontFamily = st.head,
                 fontWeight = FontWeight.Bold, fontSize = if (compact) 9.sp else 11.sp, letterSpacing = 1.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -352,10 +355,14 @@ private fun MagLeftPage(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean, mo
         }
         // The headline.
         Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 14.dp, vertical = 12.dp)) {
+            // (Update 346: the headline fits its page — long names step down instead of losing their end.)
+            val name = titles.display(g.name).uppercase()
+            val big = if (compact) 22.sp else 32.sp
+            val hs = if (name.length > 34) big * 0.72f else if (name.length > 22) big * 0.85f else big
             Text(
-                titles.display(g.name).uppercase(), color = Color.White, fontFamily = st.head, fontWeight = st.headWeight,
-                fontStyle = if (st.italicHead) FontStyle.Italic else FontStyle.Normal, fontSize = if (compact) 22.sp else 32.sp,
-                lineHeight = if (compact) 23.sp else 33.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                name, color = Color.White, fontFamily = st.head, fontWeight = st.headWeight,
+                fontStyle = if (st.italicHead) FontStyle.Italic else FontStyle.Normal, fontSize = hs,
+                lineHeight = hs * 1.04f, maxLines = 3, overflow = TextOverflow.Ellipsis,
                 style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.6f), Offset(2f, 2f), 4f))
             )
             Box(Modifier.padding(top = 4.dp).width(60.dp).height(4.dp).background(st.accent2))
@@ -375,31 +382,38 @@ private fun MagRightPage(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean, m
             fontStyle = if (st.italicHead) FontStyle.Italic else FontStyle.Normal)
         Text(
             listOfNotNull(meta?.developer, meta?.releaseYear?.toString(), meta?.genres?.firstOrNull()).joinToString("  ·  ").ifEmpty { titles.console(g.platform) },
-            color = st.muted, fontFamily = st.body, fontSize = if (compact) 9.sp else 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+            color = st.muted, fontFamily = st.body, fontSize = if (compact) 10.sp else 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
         )
         Box(Modifier.padding(vertical = 5.dp).fillMaxWidth().height(2.dp).background(st.ink))
         Row(Modifier.weight(1f)) {
             // The story: its summary, a drop cap, set in a column.
             Column(Modifier.weight(0.52f).fillMaxHeight()) {
-                val story = meta?.summary?.takeIf { it.isNotBlank() } ?: "${titles.display(g.name)} on ${titles.console(g.platform)}. " +
-                    "Our tester's notes are still being typed up — check back next issue for the full story."
-                Text(
+                // (Update 346: the game's own summary only — no made-up "tester's notes" when there's none; the
+                // screenshots take the column then.)
+                val story = meta?.summary?.takeIf { it.isNotBlank() }
+                if (story != null) Text(
                     androidx.compose.ui.text.buildAnnotatedString {
-                        withStyle(androidx.compose.ui.text.SpanStyle(fontSize = if (compact) 20.sp else 28.sp, fontWeight = FontWeight.Black, color = st.accent, fontFamily = st.head)) { append(story.take(1)) }
+                        withStyle(androidx.compose.ui.text.SpanStyle(fontSize = if (compact) 22.sp else 28.sp, fontWeight = FontWeight.Black, color = st.accent, fontFamily = st.head)) { append(story.take(1)) }
                         append(story.drop(1))
                     },
-                    color = st.ink, fontFamily = st.body, fontSize = if (compact) 9.sp else 11.sp, lineHeight = if (compact) 12.sp else 15.sp,
+                    color = st.ink, fontFamily = st.body, fontSize = if (compact) 10.5.sp else 11.sp, lineHeight = if (compact) 13.5.sp else 15.sp,
                     overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                ) else Text(
+                    "No story on file for this game yet.", color = st.muted, fontFamily = st.body, fontStyle = FontStyle.Italic,
+                    fontSize = if (compact) 10.sp else 11.sp, modifier = if (shots.isEmpty()) Modifier.weight(1f) else Modifier.padding(bottom = 6.dp)
                 )
-                if (shots.isNotEmpty() && !compact) {
+                if (shots.isNotEmpty()) {
                     Spacer(Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        shots.take(2).forEachIndexed { i, s ->
-                            Column(Modifier.weight(1f)) {
-                                Box(Modifier.fillMaxWidth().height(58.dp).border(1.dp, st.ink).background(st.muted.copy(alpha = 0.18f))) {
+                    // (Update 346: kept on small pages too — one figure there — and as tall as the page allows, not a fixed strip.)
+                    val n = if (compact) 1 else 2
+                    val figH = if (story == null) 0.dp else if (compact) 54.dp else 64.dp
+                    Row(Modifier.then(if (story == null) Modifier.weight(1f) else Modifier), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        shots.take(if (story == null) 4.coerceAtMost(shots.size).let { if (compact) minOf(it, 2) else it } else n).forEachIndexed { i, s ->
+                            Column(Modifier.weight(1f).then(if (figH > 0.dp) Modifier else Modifier.fillMaxHeight())) {
+                                Box(Modifier.fillMaxWidth().then(if (figH > 0.dp) Modifier.height(figH) else Modifier.weight(1f)).border(1.dp, st.ink).background(st.muted.copy(alpha = 0.18f))) {
                                     AsyncImage(rememberStyleArtRequest(s), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                                 }
-                                Text("Fig. ${i + 1}", color = st.muted, fontFamily = st.body, fontSize = 8.sp, fontStyle = FontStyle.Italic)
+                                Text("Fig. ${i + 1}", color = st.muted, fontFamily = st.body, fontSize = 9.sp, fontStyle = FontStyle.Italic, maxLines = 1)
                             }
                         }
                     }
@@ -415,19 +429,26 @@ private fun MagRightPage(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean, m
         }
         // The running foot.
         Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(st.masthead + "  ·  " + c.categoryLabel.uppercase(), color = st.muted, fontFamily = st.head, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
+            Text(st.masthead + "  ·  " + c.categoryLabel.uppercase(), color = st.muted, fontFamily = st.head, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
                 maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             Text("${idx * 2 + 3}", color = st.ink, fontFamily = st.head, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
-/** The VERDICT box: the critics' score in a burst, or how long you've played. */
+/**
+ * The score box: the critics' score in a burst (Metacritic's, else the critics' average the scrapers give), else your
+ * time played. (Update 346: only what's known — the "verdicts" made from the score ("For fans only") are gone.)
+ */
 @Composable
 private fun MagVerdict(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean) {
     val meta = c.state.metadata[g.stableKey]
     val score = meta?.metacritic ?: meta?.criticScore
-    Row(Modifier.fillMaxWidth().border(2.dp, st.ink).padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
+    // (Update 346: whose score it is runs across the top of the box — beside the burst it had no room in a narrow sidebar.)
+    Column(Modifier.fillMaxWidth().border(2.dp, st.ink).padding(5.dp)) {
+    FitText(magScoreTitle(meta?.metacritic != null, score != null), st.accent, maxSize = if (compact) 10.sp else 11.sp, minSize = 7.sp, maxLines = 1,
+        fontWeight = FontWeight.Black, style = androidx.compose.ui.text.TextStyle(fontFamily = st.head, letterSpacing = 0.5.sp))
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(if (compact) 36.dp else 44.dp), contentAlignment = Alignment.Center) {
             Canvas(Modifier.fillMaxSize()) {
                 // A starburst.
@@ -442,24 +463,33 @@ private fun MagVerdict(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean) {
                 p.close()
                 drawPath(p, st.accent)
             }
-            Text(score?.toString() ?: (c.playtime(g)?.let { "${(it / 3_600_000L).coerceAtLeast(0)}h" } ?: "NEW"), color = Color.White, fontFamily = st.head, fontWeight = FontWeight.Black,
-                fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, softWrap = false)
+            val played = c.playtime(g)?.takeIf { it > 0 }
+            Text(score?.toString() ?: (played?.let { ms -> if (ms >= 3_600_000L) "${ms / 3_600_000L}h" else "${(ms / 60_000L).coerceAtLeast(1)}m" } ?: "NEW"), color = Color.White, fontFamily = st.head, fontWeight = FontWeight.Black,
+                fontSize = if (compact) 11.sp else 12.sp, maxLines = 1, softWrap = false)
         }
         Spacer(Modifier.width(6.dp))
         Column(Modifier.weight(1f)) {
-            Text("VERDICT", color = st.accent, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = if (compact) 9.sp else 11.sp, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
             Text(
-                when {
-                    score == null -> if (c.playtime(g) != null) "On our play list" else "Not played yet"
-                    score >= 90 -> "A must-play classic"
-                    score >= 80 -> "Highly recommended"
-                    score >= 70 -> "Worth a go"
-                    else -> "For fans only"
-                },
-                color = st.ink, fontFamily = st.body, fontSize = if (compact) 9.sp else 10.sp, lineHeight = if (compact) 11.sp else 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis
+                magScoreLine(score != null, c.playtime(g)?.takeIf { it > 0 } != null),
+                color = st.ink, fontFamily = st.body, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis
             )
         }
     }
+    }
+}
+
+/** Update 346: the score box's heading — whose score it is, or that it's your time. */
+internal fun magScoreTitle(metacritic: Boolean, score: Boolean): String = when {
+    metacritic -> "METASCORE"
+    score -> "CRITICS"
+    else -> "YOUR TIME"
+}
+
+/** Update 346: the line under it — what the number is, never a judgement of the game. */
+internal fun magScoreLine(score: Boolean, played: Boolean): String = when {
+    score -> "Out of 100"
+    played -> "Time played"
+    else -> "Not played yet"
 }
 
 /** ACHIEVEMENT WATCH: earned / total as a chart bar, a row of its badges. */
@@ -469,7 +499,8 @@ private fun MagAchievements(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean
     val (e, t) = pr
     val list = c.state.raAchievementDetails[g.stableKey].orEmpty()
     Column(Modifier.fillMaxWidth().background(lerp(st.paper, st.accent2, 0.18f)).padding(6.dp)) {
-        Text("ACHIEVEMENTS", color = st.ink, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = if (compact) 8.sp else 10.sp, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
+        FitText("ACHIEVEMENTS", st.ink, maxSize = 10.sp, minSize = 7.sp, maxLines = 1, fontWeight = FontWeight.Black,
+            style = androidx.compose.ui.text.TextStyle(fontFamily = st.head, letterSpacing = 0.5.sp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("$e/$t", color = st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = if (compact) 11.sp else 14.sp)
             Spacer(Modifier.width(6.dp))
@@ -477,10 +508,11 @@ private fun MagAchievements(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean
                 Box(Modifier.fillMaxHeight().fillMaxWidth((e.toFloat() / t).coerceIn(0f, 1f)).background(st.accent))
             }
         }
-        if (list.isNotEmpty() && !compact) Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            (list.filter { it.isUnlocked } + list.filter { !it.isUnlocked }).take(6).forEach { a ->
+        if (list.isNotEmpty()) Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            (list.filter { it.isUnlocked } + list.filter { !it.isUnlocked }).take(if (compact) 4 else 5).forEach { a ->
                 val url = com.shelf.launcher.data.RaBadges.url(a.badgeName)
-                Box(Modifier.size(20.dp).border(1.dp, st.ink)) {
+                // (Update 346: badges no smaller than 24 dp; fewer of them on a small page instead.)
+                Box(Modifier.size(24.dp).border(1.dp, st.ink)) {
                     if (url != null) AsyncImage(url, a.title, Modifier.fillMaxSize().graphicsLayer { alpha = if (a.isUnlocked) 1f else 0.35f }, contentScale = ContentScale.Crop)
                 }
             }
@@ -490,6 +522,7 @@ private fun MagAchievements(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean
 
 /** THE STATS: time played, last played, how long it takes to beat. */
 @Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 private fun MagStats(c: StyleCtx, g: Game, st: MagStyle) {
     val meta = c.state.metadata[g.stableKey]
     Column(Modifier.fillMaxWidth().border(1.dp, st.muted).padding(5.dp)) {
@@ -497,7 +530,12 @@ private fun MagStats(c: StyleCtx, g: Game, st: MagStyle) {
         @Composable
         fun line(l: String, v: String?) {
             if (v.isNullOrBlank()) return
-            Row { Text(l, color = st.muted, fontFamily = st.body, fontSize = 9.sp, lineHeight = 11.sp, maxLines = 1, modifier = Modifier.weight(1f)); Text(v, color = st.ink, fontFamily = st.body, fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
+            // (Update 346: the label keeps its width and the value wraps under it when they don't fit side by side —
+            // "Played  Never played" was cut to "Playe".)
+            androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(l, color = st.muted, fontFamily = st.body, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, softWrap = false, modifier = Modifier.padding(end = 6.dp))
+                Text(v, color = st.ink, fontFamily = st.body, fontSize = 10.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
         line("Played", stylePlaytime(c.playtime(g), c.lastPlayed(g) != null))
         line("Last played", c.lastPlayed(g)?.let { lastPlayedLabel(it) })

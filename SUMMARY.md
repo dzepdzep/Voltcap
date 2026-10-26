@@ -1,5 +1,46 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (346): polish of the seven console layouts and their windows
+
+Toni's two briefs ("Console Layout Polish & Bug Fixes", "Complete Console Popup Audit & Polish"). Functional fixes first,
+then visuals; nothing removed, all settings / Looks / R1 / controller / touch kept. Dreamcast World still pending.
+- **Terminal** (`ui\StyleTerminal.kt`): unique, stable 8.3 names per listing (`termAliases`: ASTERI~1, ~2, ~10 …; the
+  real title kept for display and search); text size by screen (13–15 sp), listing / preview proportions, "…" on cut
+  titles, a moving line for the one you're on, [pos/count], key caps for the hints, a filled preview at C:\ (contents,
+  played lately). Its RUN window uses the same names.
+- **Bubble home** (`ui\StyleBubbles.kt`): the console pill no longer runs into the first row; past 14 pages an 11-dot
+  window with page numbers; glossier bubbles (glint, lens light, rim) and a blue ring of light round the one you're on;
+  folder tabs only with a count, smaller and out on the rim on small bubbles.
+- **Game magazine** (`ui\StyleMagazine.kt`): no made-up verdicts — the score box says whose score it is (METASCORE /
+  CRITICS / YOUR TIME) and fits its width; story only from the game's summary; bigger screenshots, badges ≥ 24 dp; THE
+  STATS wraps instead of cutting "Played"; wider pages on short screens.
+- **Pocket camera** (`ui\StylePocketCamera.kt`): on wide screens the facts stand beside the photo (the camera's info
+  screen), so the photo is bigger at whole pixels (Thor: 6× instead of 4×); the album sits beside the viewfinder; small
+  print never under ~9 sp.
+- **Panel dashboard** (`ui\StylePanels.kt`): the channel above / below shows its name and fades out — its cut-off blank
+  panel tops looked like grey placeholder bars.
+- **Rental shop** (`ui\StyleRentalShop.kt`): a backlit lightbox sign (the white plate hid the logo), shelf unit with
+  recesses, under-shelf shadow, board tops and lit lips, ceiling light pools, dark ends; the picked case lifts further and
+  leaves a shadow; shelf tag NEW! / ★ FAVE / PLAYED (no made-up rental period).
+- **Blades** (`ui\StyleBlades.kt`): deeper curved edges, bevel and lit rim, gloss and a sheen on the open blade, blades
+  behind recede; Spotlight: rows follow the blade's curve, the game in a curved glossy pod, a glossy gamer tag.
+- **Windows** (`ui\WinScenesConsole.kt`, `ui\WinScenes.kt`, `ui\GameWindow.kt`): every scene list fades at its
+  edges where there's more (`sceneFadeEdges`) instead of cutting a row in half; Blade guide drawn like the home's blades
+  and slides further; Panel detail sized to fit a 16:9 handheld; magazine callouts in two columns, one "!" on Play;
+  rental tag: no due date (genre, maker, played, achievements two by two), keys three across, "RENT & PLAY" once, a
+  short tag on short screens; camera menu shows the picture the layout shows (cover / screenshot / art), time on its own
+  line; pages sit on the scene's own paper (no dark boxes); `lookFor` gives the seven layouts their own window colours
+  and words. Settings: a note under "<layout>'s window" when a shared motion / banner window opens instead (no setting
+  changed).
+- Tests: `app\src\test\...\ui\Layouts346Test.kt` (8.3 names unique / per extension / stable, listing lines fit,
+  factual score box, bubble page dots, no doubled popup words).
+Copy: `src_copy\ui\` StyleTerminal, StyleBubbles, StyleMagazine, StylePocketCamera, StylePanels, StyleRentalShop,
+StyleBlades, WinScenes, WinScenesConsole, GameWindow, SettingsDialog (.kt); `project_copy\app\src\test\java\com\
+shelf\launcher\ui\Layouts346Test.kt`.
+Checked: testDebugUnitTest and assembleRelease pass; on the Thor (top screen, PS2 category) every layout and its window
+screenshotted before / after at 1920×1080 and at 1280×720 (short screen), Blades Spotlight and Panels Systems channel.
+Not tested: the Thor's second screen, touch gestures, launching a game and coming back, rapid open / close, analog stick.
+
 ## Update — 26 Oct 2026 (345): Android games keep their Android case and cartridge
 
 Toni: "why is the Android game shown that weirdly, not like the others, and the game isn't the cartridge" (WWE All Stars

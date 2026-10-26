@@ -51,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -243,6 +244,25 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable
         contentAlignment = Alignment.Center
     ) { content(focused) }
 }
+
+/**
+ * Update 346: a scene's scrolling list says when there's more — its edge fades out where rows run on (the brief: "no
+ * clipped text"; a row cut in half by the window's edge read as a bug). Put it before verticalScroll(state).
+ */
+internal fun Modifier.sceneFadeEdges(state: androidx.compose.foundation.ScrollState, edge: Dp = 26.dp): Modifier =
+    this.graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            val e = edge.toPx().coerceAtMost(size.height / 3f)
+            if (state.canScrollBackward) drawRect(
+                Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black, startY = 0f, endY = e),
+                size = Size(size.width, e), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+            )
+            if (state.canScrollForward) drawRect(
+                Brush.verticalGradient(0f to Color.Black, 1f to Color.Transparent, startY = size.height - e, endY = size.height),
+                topLeft = Offset(0f, size.height - e), size = Size(size.width, e), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+            )
+        }
 
 private fun pageName(p: WinPage) = when (p) {
     WinPage.MAIN -> "Info"; WinPage.DETAILS -> "Details"; WinPage.OPTIONS -> "Options"; WinPage.TROPHIES -> "Achievements"; WinPage.PERF -> "Performance"

@@ -3549,6 +3549,14 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             // Update 330: the layouts with a window of their own (WinScenes.kt) — it, or the standard window in their colours.
             if (winSceneFor(appearance.homeLayout) != null) {
                 RowChoice("${appearance.homeLayout.label}'s window", arrayOf(true, false), F.winScenes.state.value, { if (it) "Built into the layout" else "Standard window" }) { F.winScenes.value = it }
+                // (Update 346: say so when a choice for every layout below is what opens instead — it isn't changed for you.)
+                val overriding = when {
+                    F.winMotion.state.value == com.shelf.launcher.data.Features.WinMotion.SHARED -> "\"Its motion: Shared move\""
+                    F.winMotion.state.value != com.shelf.launcher.data.Features.WinMotion.NONE -> "\"Its motion: ${F.winMotion.state.value.label}\" (where the layout has a row to open; else the style below)"
+                    F.winBanner.state.value -> "\"Its style: Banner page\""
+                    else -> null
+                }
+                if (overriding != null && F.winScenes.state.value) MutedNote("Opens instead: $overriding, set for every layout below. Set it to Off / The layout's own to see ${appearance.homeLayout.label}'s window.")
             }
             // Update 146: the banner page — one look for every layout (art banner, Play strip, tabs).
             RowChoice("Its style (every layout)", arrayOf(false, true), F.winBanner.state.value, { if (it) "Banner page" else "The layout's own" }) { F.winBanner.value = it }

@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -52,6 +53,16 @@ import coil.compose.AsyncImage
  * Update 344: the game windows of the console-inspired layouts (Blades, …), drawn by the layouts themselves (see
  * WinScenes.kt for how a scene gets the game and its actions from GameWindow).
  */
+
+/** Update 346: Play in the magazine's burst — one "!" (the look's own word may already shout: "CONTINUE!"). */
+internal fun magBurstLabel(label: String): String = label.uppercase().let { if (it.endsWith("!")) it else "$it!" }
+
+/** Update 346: a rental tag's key — Play reads "RENT & PLAY", never "RENT & RENT & PLAY" when the look says it already. */
+internal fun rentalKeyLabel(label: String, primary: Boolean): String = label.uppercase().let { if (primary && !it.startsWith("RENT")) "RENT & $it" else it }
+
+/** Update 346: a scrolling column whose edges fade where there's more (see sceneFadeEdges). */
+@Composable
+private fun fadeScroll(): Modifier { val s = rememberScrollState(); return Modifier.sceneFadeEdges(s).verticalScroll(s) }
 
 private fun winPageName(p: WinPage) = when (p) {
     WinPage.MAIN -> "Info"; WinPage.DETAILS -> "Details"; WinPage.OPTIONS -> "Options"; WinPage.TROPHIES -> "Achievements"; WinPage.PERF -> "Performance"
@@ -76,8 +87,8 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
         Modifier.size(w, h).graphicsLayer {
             val k = ctx.reveal().coerceIn(0f, 1f)
             val e = 1f - (1f - k) * (1f - k)
-            translationX = -(1f - e) * size.width * 0.35f
-            alpha = e
+            translationX = -(1f - e) * size.width * 0.6f
+            alpha = (e * 1.6f).coerceIn(0f, 1f)
         }
     ) {
         // The blade itself: a curved leading edge, its colour, a gloss and a lit rim.
@@ -96,10 +107,25 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                 quadraticTo(tab, 0f, tab + corner, 0f)
                 close()
             }
-            translate(left = 10f, top = 12f) { drawPath(path, Color.Black.copy(alpha = 0.4f)) }
+            // (Update 346: the same blade as the home's — a deep shadow on what it slides over, a bevel and a lit sheen
+            // along its curved edge, the gloss band and a diagonal shine — so it reads as one more blade, not a card.)
+            val edge = Path().apply {
+                moveTo(tab + corner, size.height)
+                quadraticTo(tab, size.height, tab * 0.8f, size.height - corner)
+                quadraticTo(-tab * 0.5f, size.height / 2f, tab * 0.8f, corner)
+                quadraticTo(tab, 0f, tab + corner, 0f)
+            }
+            translate(left = -tab * 0.5f, top = 6f) { drawPath(path, Color.Black.copy(alpha = 0.25f)) }
+            translate(left = -tab * 0.22f, top = 10f) { drawPath(path, Color.Black.copy(alpha = 0.35f)) }
             drawPath(path, Brush.linearGradient(listOf(lerp(p.hi, Color.White, 0.08f), lerp(p.hi, p.lo, 0.55f), p.lo), start = Offset.Zero, end = Offset(size.width, size.height)))
-            drawPath(path, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.26f), Color.Transparent), endY = size.height * 0.3f))
-            drawPath(path, Color.White.copy(alpha = 0.45f), style = Stroke(2f))
+            clipPath(path) {
+                drawPath(edge, Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Transparent), startX = -tab * 0.5f, endX = tab * 2.2f), style = Stroke(tab * 0.9f))
+                drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.28f), Color.White.copy(alpha = 0.04f), Color.Transparent), endY = size.height * 0.32f))
+                drawRect(Brush.linearGradient(0f to Color.Transparent, 0.42f to Color.Transparent, 0.5f to Color.White.copy(alpha = 0.09f), 0.58f to Color.Transparent,
+                    1f to Color.Transparent, start = Offset.Zero, end = Offset(size.width, size.height)))
+            }
+            drawPath(edge, Color.White.copy(alpha = 0.8f), style = Stroke(2.4f))
+            drawPath(path, Color.White.copy(alpha = 0.3f), style = Stroke(1.5f))
         }
         Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)) {
             Text(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Light, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -110,7 +136,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
             Spacer(Modifier.height(if (compact) 6.dp else 12.dp))
             Row(Modifier.fillMaxSize()) {
                 // The commands.
-                Column(Modifier.weight(0.46f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Column(Modifier.weight(0.46f).fillMaxHeight().then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
                     rows.forEach { a ->
                         SceneControl(a, Modifier.fillMaxWidth()) { on ->
@@ -151,7 +177,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                                 if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                             }
                             Spacer(Modifier.width(12.dp))
-                            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                            Column(Modifier.weight(1f).then(fadeScroll())) {
                                 @Composable
                                 fun fact(label: String, value: String?) {
                                     if (value.isNullOrBlank()) return
@@ -229,7 +255,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(Modifier.weight(1f).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
                     rows.forEach { a ->
                         SceneControl(a, Modifier) { on ->
@@ -252,7 +278,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.width(14.dp))
             Box(Modifier.weight(0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(if (ctx.page == WinPage.MAIN) Color.White.copy(alpha = 0.92f) else Color.Black.copy(alpha = 0.55f))) {
-                if (ctx.page == WinPage.MAIN) Column(Modifier.fillMaxSize().padding(12.dp).verticalScroll(rememberScrollState())) {
+                if (ctx.page == WinPage.MAIN) Column(Modifier.fillMaxSize().padding(12.dp).then(fadeScroll())) {
                     if (ctx.total > 0) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Filled.EmojiEvents, null, tint = Color(0xFFE0A400), modifier = Modifier.size(18.dp))
@@ -300,7 +326,16 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH, 480.dp)
     val u = with(density) { kotlin.math.floor((h.toPx() / 120f)).coerceAtLeast(2f).toDp() }
     val fs: (Float) -> androidx.compose.ui.unit.TextUnit = { k -> with(density) { (u * k).toSp() } }
-    val bmp = rememberDithered(ctx.cover, 112, 128, pal)
+    // (Update 346: the same picture the layout shows — its cover, a screenshot or the art, as picked with ▲ ▼ there; a
+    // screenshot / the art is a landscape photo.)
+    val src = CameraNav.source
+    val url = when (src) {
+        1 -> ctx.state.screenshots[ctx.g.stableKey]?.firstOrNull() ?: ctx.cover
+        2 -> ctx.backdrop ?: ctx.wide ?: ctx.cover
+        else -> ctx.cover
+    }
+    val land = src != 0 && url != ctx.cover
+    val bmp = if (land) rememberDithered(url, 128, 112, pal) else rememberDithered(url, 112, 128, pal)
     Box(
         Modifier.size(w, h).graphicsLayer {
             // The shutter opening: the window grows out of a bar in the middle.
@@ -311,13 +346,17 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
     ) {
         Canvas(Modifier.fillMaxSize()) { pixelFrame(u.toPx(), c3, c0, 3) }
         Row(Modifier.fillMaxSize().padding(u * 6)) {
-            Column(Modifier.fillMaxHeight()) {
-                Box(Modifier.weight(1f).aspectRatio(112f / 128f, matchHeightConstraintsFirst = true).border(1.dp, c0).background(c2)) {
+            Column(if (land) Modifier.fillMaxHeight().fillMaxWidth(0.46f) else Modifier.fillMaxHeight()) {
+                val pic = if (land) Modifier.fillMaxWidth().aspectRatio(128f / 112f) else Modifier.weight(1f).aspectRatio(112f / 128f, matchHeightConstraintsFirst = true)
+                Box(pic.border(1.dp, c0).background(c2)) {
                     if (bmp != null) androidx.compose.foundation.Image(bmp, ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds,
                         filterQuality = androidx.compose.ui.graphics.FilterQuality.None)
                 }
+                if (land) Spacer(Modifier.weight(1f))
                 Spacer(Modifier.height(u * 2))
-                Text(ctx.console.uppercase() + (ctx.year?.let { "  $it" } ?: ""), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1)
+                Text(ctx.console.uppercase() + (ctx.year?.let { "  $it" } ?: ""), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // (Update 346: the time on its own line — beside the achievements it was cut to "TROPHIES 0/…".)
+                Text("TIME " + ctx.played.uppercase(), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Spacer(Modifier.width(u * 6))
             Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -326,7 +365,7 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                 Box(Modifier.fillMaxWidth().height(u).background(c0))
                 Spacer(Modifier.height(u * 3))
                 if (ctx.page == WinPage.MAIN) {
-                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(u)) {
+                    Column(Modifier.weight(1f).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(u)) {
                         val rows = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
                         rows.forEach { a ->
                             SceneControl(a, Modifier.fillMaxWidth()) { on ->
@@ -341,10 +380,7 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                         }
                     }
                     Spacer(Modifier.height(u * 2))
-                    Text(
-                        listOfNotNull("TIME " + ctx.played.uppercase(), if (ctx.total > 0) "TROPHIES ${ctx.earned}/${ctx.total}" else null).joinToString("   "),
-                        color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1, overflow = TextOverflow.Ellipsis
-                    )
+                    if (ctx.total > 0) Text("TROPHIES ${ctx.earned}/${ctx.total}", color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 } else {
                     Box(Modifier.weight(1f).fillMaxWidth().background(c0)) { ctx.pageBody(Modifier.fillMaxSize().padding(u * 2)) }
                     Spacer(Modifier.height(u * 2))
@@ -374,6 +410,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 800.dp)
     val h = minOf(ctx.maxH, 500.dp)
     val compact = h < 380.dp
+    // (Update 346: on a 16:9 handheld the window is ~440 dp high — the art strip and the rows are sized to fit the list.)
+    val short = h < 470.dp
     val ink = p.panelInk
     Box(
         Modifier.size(w, h).graphicsLayer {
@@ -386,7 +424,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
     ) {
         Column(Modifier.fillMaxSize()) {
             // The art strip with the name.
-            Box(Modifier.fillMaxWidth().height(if (compact) 86.dp else 132.dp).background(p.bottom)) {
+            Box(Modifier.fillMaxWidth().height(if (compact) 78.dp else if (short) 100.dp else 132.dp).background(p.bottom)) {
                 (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
                 Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 18.dp, vertical = 10.dp)) {
@@ -396,17 +434,18 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                 Box(Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter).background(p.accent))
             }
             Row(Modifier.fillMaxSize().padding(14.dp)) {
-                Column(Modifier.weight(0.45f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(Modifier.weight(0.45f).fillMaxHeight().then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
                     rows.forEach { a ->
                         SceneControl(a, Modifier.fillMaxWidth()) { on ->
                             Row(
-                                Modifier.fillMaxWidth().height(if (a.primary) 44.dp else 36.dp).background(if (on) lerp(p.accent, Color.Black, 0.28f) else Color.Transparent).padding(horizontal = 12.dp),
+                                Modifier.fillMaxWidth().height(if (a.primary) (if (short) 40.dp else 44.dp) else if (short) 31.dp else 36.dp)
+                                    .background(if (on) lerp(p.accent, Color.Black, 0.28f) else Color.Transparent).padding(horizontal = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(a.icon, null, tint = if (on) Color.White else ink.copy(alpha = 0.75f), modifier = Modifier.size(if (a.primary) 22.dp else 18.dp))
                                 Spacer(Modifier.width(12.dp))
-                                Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFC0700A) else ink, fontSize = if (a.primary) 18.sp else 15.sp,
+                                Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFC0700A) else ink, fontSize = if (a.primary) 18.sp else if (short) 14.sp else 15.sp,
                                     fontWeight = if (a.primary || on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
@@ -419,7 +458,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                             if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                         }
                         Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                        Column(Modifier.weight(1f).then(fadeScroll())) {
                             @Composable
                             fun fact(label: String, value: String?) {
                                 if (value.isNullOrBlank()) return
@@ -446,7 +485,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                                 }
                             }
                         }
-                    } else Box(Modifier.fillMaxSize().background(Color(0xFF1E2329))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                    } else Box(Modifier.fillMaxSize().border(1.dp, ink.copy(alpha = 0.18f))) { ctx.pageBody(Modifier.fillMaxSize()) }
                 }
             }
         }
@@ -500,14 +539,14 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                 Text(st.masthead + "  ·  " + (if (ctx.page == WinPage.MAIN) "FEATURE" else winPageName(ctx.page).uppercase()), color = st.accent, fontFamily = st.head,
                     fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
                 Text(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 20.sp else 26.sp, lineHeight = if (compact) 22.sp else 28.sp,
-                    fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal, maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
                 Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
                 if (ctx.page == WinPage.MAIN) {
-                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(Modifier.weight(1f).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         ctx.buttons.filter { it.primary }.forEach { a ->
                             SceneControl(a, Modifier) { on ->
-                                Box(Modifier.size(if (compact) 92.dp else 112.dp, if (compact) 50.dp else 60.dp), contentAlignment = Alignment.Center) {
+                                Box(Modifier.size(if (compact) 88.dp else 112.dp, if (compact) 42.dp else 60.dp), contentAlignment = Alignment.Center) {
                                     Canvas(Modifier.fillMaxSize().graphicsLayer { rotationZ = if (on) -4f else 0f; val s = if (on) 1.08f else 1f; scaleX = s; scaleY = s }) {
                                         val p = Path(); val n = 16
                                         for (i in 0 until n * 2) {
@@ -519,23 +558,33 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                                         }
                                         p.close(); drawPath(p, if (on) st.accent else st.accent2)
                                     }
-                                    Text(a.label.uppercase() + "!", color = if (on) Color.White else st.ink, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = if (compact) 13.sp else 16.sp)
+                                    Text(magBurstLabel(a.label), color = if (on) Color.White else st.ink, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = if (compact) 13.sp else 16.sp)
                                 }
                             }
                         }
-                        (ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }).forEach { a ->
-                            SceneControl(a, Modifier) { on ->
-                                Text("▸ " + a.label.uppercase(), color = if (a.urgent) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = if (compact) 12.sp else 14.sp,
-                                    letterSpacing = 0.5.sp, maxLines = 1,
-                                    modifier = Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
-                                        .padding(horizontal = 10.dp, vertical = 2.dp))
+                        // (Update 346: the "see page" callouts run in two columns, down then across, as a contents box would —
+                        // in one column the last ones ran off the bottom of the page on a 16:9 handheld.)
+                        val callouts = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }
+                        val half = (callouts.size + 1) / 2
+                        Row(Modifier.fillMaxWidth()) {
+                            for (col in listOf(callouts.take(half), callouts.drop(half))) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    col.forEach { a ->
+                                        SceneControl(a, Modifier) { on ->
+                                            Text("▸ " + a.label.uppercase(), color = if (a.urgent) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold,
+                                                fontSize = if (compact) 12.sp else 14.sp, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
+                                                    .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp))
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                     Text(listOfNotNull(if (ctx.playtime == null && ctx.lastPlayed == null) "NOT PLAYED YET" else "PLAYED " + ctx.played.uppercase(), if (ctx.total > 0) "ACHIEVEMENTS ${ctx.earned}/${ctx.total}" else null).joinToString("   "),
                         color = st.muted, fontFamily = st.head, fontSize = 10.sp, letterSpacing = 1.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 } else {
-                    Box(Modifier.weight(1f).fillMaxWidth().background(Color(0xFF20242A))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                    Box(Modifier.weight(1f).fillMaxWidth().border(1.dp, st.ink.copy(alpha = 0.35f))) { ctx.pageBody(Modifier.fillMaxSize()) }
                     ctx.buttons.forEach { a ->
                         SceneControl(a, Modifier) { on ->
                             Text("▸ " + a.label.uppercase(), color = if (on) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -553,8 +602,9 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
 
 /**
  * Rental shop's window, beside the case you picked up (GameWindow brings the case off the shelf to be turned): the shop's
- * bright yellow rental tag — its name in heavy black capitals, the console, "RENTAL: 3 NIGHTS" and the day it's due back,
- * time played and achievements, a barcode, a perforated tear-off; the commands as black punched keys, the one you're on
+ * bright yellow rental tag — its name in heavy black capitals, the console, its genre and maker (update 346: no made-up
+ * rental period or due date — only the game's own facts; "BE KIND, PLAY IT AGAIN" is the shop's printed slogan), time
+ * played and achievements, a barcode, a perforated tear-off; the commands as black punched keys, the one you're on
  * lit in the shop's neon.
  */
 @Composable
@@ -562,10 +612,9 @@ internal fun RentalTag(ctx: WinSceneCtx) {
     val yellow = Color(0xFFFFE14A); val ink = Color(0xFF1C1C1C); val neon = Color(0xFFFF4FD8)
     val w = minOf(ctx.maxW, 460.dp)
     val h = minOf(ctx.maxH, 520.dp)
-    val due = remember {
-        val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, 3) }
-        java.text.SimpleDateFormat("EEE d MMM", java.util.Locale.getDefault()).format(cal.time).uppercase()
-    }
+    // (Update 346: a short screen gets a short tag — one line of facts, the title on one line, a slimmer tear-off.)
+    val short = h < 380.dp
+    val tear = if (short) 0.1f else 0.15f
     Box(
         Modifier.size(w, h).graphicsLayer {
             val k = ctx.reveal().coerceIn(0f, 1f)
@@ -580,32 +629,56 @@ internal fun RentalTag(ctx: WinSceneCtx) {
             // The hole it hung from and the perforation above the tear-off.
             drawCircle(ink, 9f, Offset(size.width / 2f, 22f))
             var x = 10f
-            while (x < size.width - 10f) { drawCircle(ink.copy(alpha = 0.6f), 2.5f, Offset(x, size.height * 0.87f)); x += 12f }
+            while (x < size.width - 10f) { drawCircle(ink.copy(alpha = 0.6f), 2.5f, Offset(x, size.height * (1f - tear + 0.02f))); x += 12f }
             // The barcode.
             var bx = 18f; var i = 0
-            while (bx < size.width * 0.6f) { val bw = if (i % 3 == 0) 6f else 3f; drawRect(ink, Offset(bx, size.height * 0.9f), Size(bw, size.height * 0.07f)); bx += bw + 3f + (i % 2) * 2f; i++ }
+            while (bx < size.width * 0.6f) { val bw = if (i % 3 == 0) 6f else 3f; drawRect(ink, Offset(bx, size.height * (1f - tear + 0.045f)), Size(bw, size.height * (tear - 0.07f))); bx += bw + 3f + (i % 2) * 2f; i++ }
         }
-        Column(Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, top = 34.dp, bottom = h * 0.15f)) {
+        Column(Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, top = if (short) 26.dp else 34.dp, bottom = h * tear)) {
             Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-            Text(ctx.name.uppercase(), color = ink, fontSize = 22.sp, lineHeight = 24.sp, fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(ctx.name.uppercase(), color = ink, fontSize = if (short) 18.sp else 22.sp, lineHeight = if (short) 20.sp else 24.sp, fontWeight = FontWeight.Black,
+                maxLines = if (short) 1 else 2, overflow = TextOverflow.Ellipsis)
             Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(3.dp).background(ink))
+            Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth().height(3.dp).background(ink))
             if (ctx.page == WinPage.MAIN) {
-                Row { Text("RENTAL", color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(92.dp)); Text("3 NIGHTS · DUE $due", color = ink, fontSize = 11.sp, fontWeight = FontWeight.Black) }
-                Row { Text("PLAYED", color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(92.dp)); Text(ctx.played.uppercase(), color = ink, fontSize = 11.sp, fontWeight = FontWeight.Black) }
-                if (ctx.total > 0) Row { Text("TROPHIES", color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(92.dp)); Text("${ctx.earned} / ${ctx.total}", color = ink, fontSize = 11.sp, fontWeight = FontWeight.Black) }
-                Spacer(Modifier.height(8.dp))
-                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    val rows = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
-                    rows.forEach { a ->
-                        SceneControl(a, Modifier.fillMaxWidth()) { on ->
-                            Row(Modifier.fillMaxWidth().height(if (a.primary) 38.dp else 30.dp).background(if (on) neon else ink).padding(horizontal = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Icon(a.icon, null, tint = if (on) ink else yellow, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text((if (a.primary) "RENT & " else "") + a.label.uppercase(), color = if (on) ink else if (a.urgent) Color(0xFFFF8A3D) else yellow,
-                                    fontSize = if (a.primary) 15.sp else 12.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // (Update 346: the facts two by two, label over value, so the keys below fit on the tag.)
+                val facts = listOfNotNull(ctx.genres?.let { "GENRE" to it }, ctx.developer?.let { "MADE BY" to it }, "PLAYED" to ctx.played,
+                    if (ctx.total > 0) "TROPHIES" to "${ctx.earned} / ${ctx.total}" else null)
+                (if (short) facts.takeLast(2) else facts).chunked(2).forEach { pair ->
+                    Row(Modifier.fillMaxWidth().padding(bottom = 3.dp)) {
+                        pair.forEach { (l, v) ->
+                            Column(Modifier.weight(1f).padding(end = 6.dp)) {
+                                Text(l, color = ink.copy(alpha = 0.65f), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1)
+                                Text(v.uppercase(), color = ink, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
+                        }
+                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
+                Spacer(Modifier.height(if (short) 4.dp else 8.dp))
+                Column(Modifier.weight(1f).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    @Composable
+                    fun key(a: WinAction, m: Modifier) {
+                        SceneControl(a, m) { on ->
+                            Row(Modifier.fillMaxWidth().height(if (a.primary) (if (short) 32.dp else 38.dp) else if (short) 26.dp else 30.dp).background(if (on) neon else ink).padding(horizontal = if (a.primary) 10.dp else 6.dp),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Icon(a.icon, null, tint = if (on) ink else yellow, modifier = Modifier.size(if (a.primary) 16.dp else 12.dp))
+                                Spacer(Modifier.width(if (a.primary) 8.dp else 4.dp))
+                                // (Update 346: the window's look already says "RENT & PLAY" — it read "RENT & RENT & PLAY".)
+                                val label = rentalKeyLabel(a.label, a.primary)
+                                Text(label, color = if (on) ink else if (a.urgent) Color(0xFFFF8A3D) else yellow,
+                                    fontSize = if (a.primary) 15.sp else 10.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
+                    // Play across the tag; the others as a block of punched keys, two by two, so they all fit on the tag.
+                    ctx.buttons.filter { it.primary }.forEach { key(it, Modifier.fillMaxWidth()) }
+                    val rest = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }
+                    val across = if (w >= 340.dp) 3 else 2
+                    rest.chunked(across).forEach { group ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            group.forEach { key(it, Modifier.weight(1f)) }
+                            repeat(across - group.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                     ctx.chips.forEach { a ->
@@ -615,7 +688,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                     }
                 }
             } else {
-                Box(Modifier.weight(1f).fillMaxWidth().background(Color(0xFF20242A))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                Box(Modifier.weight(1f).fillMaxWidth().border(2.dp, ink)) { ctx.pageBody(Modifier.fillMaxSize()) }
                 Spacer(Modifier.height(4.dp))
                 ctx.buttons.forEach { a ->
                     SceneControl(a, Modifier) { on ->
@@ -665,10 +738,10 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
             // Not drawn yet below the reveal line.
             drawRect(tc.bg, Offset(0f, size.height * k), Size(size.width, size.height * (1f - k)))
         }
-        Text(" RUN " + termFileName(ctx.name) + " ", style = style.copy(color = tc.hiInk, shadow = null), modifier = Modifier.align(Alignment.TopCenter).background(tc.hi))
+        Text(" RUN " + TermNav.alias(ctx.g) + " ", style = style.copy(color = tc.hiInk, shadow = null), modifier = Modifier.align(Alignment.TopCenter).background(tc.hi))
         Row(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 22.dp).graphicsLayer { alpha = ((k - 0.4f) / 0.6f).coerceIn(0f, 1f) }) {
-            Column(Modifier.weight(0.55f).fillMaxHeight().verticalScroll(rememberScrollState())) {
-                Text("C:\\> TYPE " + termFileName(ctx.name) + ".NFO", style = style.copy(color = tc.dim))
+            Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
+                Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
                 Spacer(Modifier.height(4.dp))
                 Text(ctx.name.uppercase(), style = style.copy(color = tc.accent), maxLines = 2, overflow = TextOverflow.Ellipsis)
                 @Composable
@@ -685,7 +758,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                 if (ctx.page != WinPage.MAIN) Box(Modifier.fillMaxWidth().height(h * 0.5f).padding(top = 6.dp).border(1.dp, tc.dim)) { ctx.pageBody(Modifier.fillMaxSize()) }
             }
             Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(0.45f).fillMaxHeight().verticalScroll(rememberScrollState())) {
+            Column(Modifier.weight(0.45f).fillMaxHeight().then(fadeScroll())) {
                 val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
                 rows.forEach { a ->
                     SceneControl(a, Modifier.fillMaxWidth()) { on ->

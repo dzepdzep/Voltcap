@@ -67,6 +67,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
@@ -766,6 +767,113 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
             back = "Back", details = "Details", play = playWord,
             paper = Color(0xFF15171B)
         )
+        // ---- Update 346: the update 344 layouts' own colours for the standard window and every page of their windows (Details,
+        // Options, Achievements, Performance) — they took the Voltcap row's theme glass. Each follows its layout's colour option. ----
+        // Blades: the lit blade's glossy colour, rounded-off tabs, the lit row the blade's pale glow.
+        HomeLayout.BLADES -> {
+            val bp = bladePalette()
+            WinLook(
+                Arrange.SPLIT, Btn.ROUNDED,
+                veil = Brush.horizontalGradient(listOf(bp.bg.copy(alpha = 0.55f), bp.bg.copy(alpha = 0.9f))),
+                panel = Brush.verticalGradient(listOf(bp.hi, lerp(bp.hi, bp.lo, 0.55f), bp.lo)),
+                frame = bp.glow.copy(alpha = 0.55f), frameW = 2.dp, corner = 26.dp, mediaCorner = 4.dp,
+                mediaFrame = Color.White.copy(alpha = 0.7f), mediaFrameW = 2.dp,
+                ink = Color.White, muted = Color.White.copy(alpha = 0.78f), accent = bp.glow,
+                btnFill = solid(Color.Black.copy(alpha = 0.16f)), btnInk = Color.White,
+                btnOnFill = Brush.verticalGradient(listOf(Color.White, lerp(bp.glow, Color.White, 0.55f))), btnOnInk = bp.ink,
+                btnBorder = Color.White.copy(alpha = 0.18f),
+                back = "Back", details = "Details", play = playWord,
+                paper = bp.lo, keepsPalette = true
+            )
+        }
+        // Bubble home: the LiveArea's white glass with soft blue, round-ended glossy keys.
+        HomeLayout.BUBBLES -> WinLook(
+            Arrange.SPLIT, Btn.PILL,
+            veil = Brush.verticalGradient(listOf(Color(0xFF1C4C8A).copy(alpha = 0.55f), Color(0xFF071A33).copy(alpha = 0.85f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFFFDFEFF), Color(0xFFE3ECF6))),
+            frame = Color.White, frameW = 2.dp, corner = 24.dp, mediaCorner = 18.dp,
+            mediaFrame = Color.White, mediaFrameW = 3.dp,
+            ink = Color(0xFF16202C), muted = Color(0xFF55657A), accent = Color(0xFF2F86E0),
+            btnFill = Brush.verticalGradient(listOf(Color.White, Color(0xFFE7EEF6))), btnInk = Color(0xFF16202C),
+            btnOnFill = Brush.verticalGradient(listOf(Color(0xFF7CC0FF), Color(0xFF2F86E0))), btnOnInk = Color.White,
+            btnBorder = Color(0xFFB9C9DB),
+            back = "Back", details = "Details", play = if (resumed) "Continue" else "Start",
+            paper = Color.White, keepsPalette = true
+        )
+        // Pocket camera: the camera's four shades only — the lightest paper, the darkest ink, square blocky keys, capitals.
+        HomeLayout.CAMERA -> {
+            val sh = cameraPalette(Features.pcPalette.state.value).map { Color(it) }
+            WinLook(
+                Arrange.SPLIT, Btn.SQUARE,
+                veil = solid(sh[0].copy(alpha = 0.82f)),
+                panel = solid(sh[3]), frame = sh[0], frameW = 4.dp, corner = 0.dp, mediaCorner = 0.dp,
+                mediaFrame = sh[0], mediaFrameW = 3.dp,
+                ink = sh[0], muted = sh[1], accent = sh[1],
+                btnFill = solid(sh[3]), btnInk = sh[0], btnOnFill = solid(sh[0]), btnOnInk = sh[3], btnBorder = sh[1],
+                back = "BACK", details = "INFO", play = if (resumed) "CONTINUE" else "START",
+                mono = true, caps = true, paper = sh[2], keepsPalette = true
+            )
+        }
+        // Panel dashboard: a white panel face on the channel's colour, flat square keys, the lit one the dashboard's green.
+        HomeLayout.PANELS -> {
+            val pp = panelPalette()
+            WinLook(
+                Arrange.SPLIT, Btn.SQUARE,
+                veil = Brush.verticalGradient(listOf(pp.top.copy(alpha = 0.6f), pp.bottom.copy(alpha = 0.92f))),
+                panel = Brush.verticalGradient(listOf(pp.panel, lerp(pp.panel, pp.bottom, 0.12f))),
+                frame = Color.White.copy(alpha = 0.6f), frameW = 1.dp, corner = 2.dp, mediaCorner = 1.dp,
+                mediaFrame = null, mediaFrameW = 0.dp,
+                ink = pp.panelInk, muted = pp.panelInk.copy(alpha = 0.66f), accent = pp.accent,
+                btnFill = solid(pp.panelInk.copy(alpha = 0.06f)), btnInk = pp.panelInk,
+                btnOnFill = solid(lerp(pp.accent, pp.top, 0.35f)), btnOnInk = Color.White, btnBorder = null,
+                back = "Back", details = "Details", play = playWord,
+                paper = pp.panel, keepsPalette = true
+            )
+        }
+        // Game magazine: the issue's paper and ink, its red (or green) for the lit button, the headline type.
+        HomeLayout.MAGAZINE -> {
+            val ms = magStyle(Features.mgStyle.state.value)
+            WinLook(
+                Arrange.SPLIT, Btn.SQUARE,
+                veil = solid(ms.desk.copy(alpha = 0.82f)),
+                panel = solid(ms.paper), frame = ms.ink.copy(alpha = 0.18f), frameW = 1.dp, corner = 1.dp, mediaCorner = 0.dp,
+                mediaFrame = ms.ink, mediaFrameW = 2.dp,
+                ink = ms.ink, muted = ms.muted, accent = ms.accent,
+                btnFill = solid(ms.paper), btnInk = ms.ink, btnOnFill = solid(ms.accent), btnOnInk = Color.White, btnBorder = ms.ink,
+                back = "BACK", details = "THE STORY", play = if (resumed) "CONTINUE!" else "PLAY IT!",
+                mono = ms.body == androidx.compose.ui.text.font.FontFamily.Monospace, caps = true, paper = ms.paper, keepsPalette = true
+            )
+        }
+        // Rental shop: the rental tag's yellow card, black keys, the lit one the shop's neon.
+        HomeLayout.SHOP -> {
+            val sc = shopColors(Features.rsWall.state.value)
+            WinLook(
+                Arrange.SPLIT, Btn.SQUARE,
+                veil = Brush.verticalGradient(listOf(sc.wallTop.copy(alpha = 0.6f), sc.wallBottom.copy(alpha = 0.9f))),
+                panel = Brush.verticalGradient(listOf(Color(0xFFFFE15C), Color(0xFFF5CF3A))),
+                frame = Color(0xFF1A1508), frameW = 2.dp, corner = 3.dp, mediaCorner = 2.dp,
+                mediaFrame = Color(0xFF1A1508), mediaFrameW = 2.dp,
+                ink = Color(0xFF1A1508), muted = Color(0xFF4D4220), accent = sc.neon,
+                btnFill = solid(Color(0xFF1A1508)), btnInk = Color(0xFFFFE15C), btnOnFill = solid(sc.neon), btnOnInk = Color(0xFF1A1508),
+                btnBorder = null,
+                back = "BACK", details = "CATALOGUE CARD", play = if (resumed) "CONTINUE" else "RENT & PLAY",
+                caps = true, paper = Color(0xFFFFF4C2), keepsPalette = true
+            )
+        }
+        // Terminal: the monitor itself — its phosphor on its glass, reverse video for the lit key, a fixed-width face.
+        HomeLayout.TERMINAL -> {
+            val tc = termColors(Features.tmTheme.state.value)
+            WinLook(
+                Arrange.SPLIT, Btn.TEXT,
+                veil = solid(Color.Black.copy(alpha = 0.78f)),
+                panel = solid(tc.bg), frame = tc.fg, frameW = 2.dp, corner = 0.dp, mediaCorner = 0.dp,
+                mediaFrame = tc.dim, mediaFrameW = 1.dp,
+                ink = tc.fg, muted = tc.dim, accent = tc.accent,
+                btnFill = solid(tc.bg), btnInk = tc.fg, btnOnFill = solid(tc.hi), btnOnInk = tc.hiInk, btnBorder = null,
+                back = "ESC", details = "TYPE NFO", play = if (resumed) "RESUME" else "RUN",
+                mono = true, caps = true, paper = tc.bg, keepsPalette = true
+            )
+        }
         // The Voltcap row (and anything else): the theme's own glass panel, round-ended buttons.
         else -> WinLook(
             Arrange.STACK, Btn.PILL,

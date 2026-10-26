@@ -420,6 +420,7 @@ internal fun StyleBubbles(c: StyleCtx, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val cols = if (maxWidth / maxHeight > 1.45f) 5 else 4
         val nameMax = maxWidth * 0.42f
+        val tagMax = maxWidth * 0.26f
         SideEffect { BubbleNav.cols = cols }
         val o = open.value
         // The bubbles (or folders) recede as the LiveArea comes forward.
@@ -428,12 +429,12 @@ internal fun StyleBubbles(c: StyleCtx, modifier: Modifier = Modifier) {
             else BubblePages(c, cols)
             // The category (or Folders) as a small tag top left.
             if (caption || view == BubbleNav.View.FOLDERS) Row(
-                Modifier.padding(start = 16.dp, top = 4.dp).clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.22f)).padding(horizontal = 12.dp, vertical = 4.dp),
+                Modifier.padding(start = 16.dp, top = 4.dp).widthIn(max = tagMax).clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.22f)).padding(horizontal = 12.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(if (view == BubbleNav.View.FOLDERS) Icons.Filled.Folder else Icons.Filled.BubbleChart, null, tint = Color.White, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(6.dp))
-                Text(if (view == BubbleNav.View.FOLDERS) "Folders" else c.categoryLabel + "  ·  " + c.games.size, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                Text(if (view == BubbleNav.View.FOLDERS) "Folders" else c.categoryLabel + "  ·  " + c.games.size, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             // The name of the bubble you're on, in a white pill at the top in the middle.
             val name = if (view == BubbleNav.View.FOLDERS) c.stops.getOrNull(systems.getOrNull(BubbleNav.folder) ?: -1)?.label
@@ -447,13 +448,28 @@ internal fun StyleBubbles(c: StyleCtx, modifier: Modifier = Modifier) {
     }
 }
 
+/** Update 346: room kept at the top of the bubble pages for the name pill and the category tag. */
+private val BUBBLE_TOP = 40.dp
+
+/** Update 346: at most this many page dots; more pages show a window of them round the page you're on. */
+internal const val BUBBLE_DOTS = 14
+
+/** Update 346: the pages whose dots show (first..last) for page [page] of [pages]: all of them up to [BUBBLE_DOTS], else 11 round it. */
+internal fun bubbleDotWindow(page: Int, pages: Int): Pair<Int, Int> {
+    if (pages <= BUBBLE_DOTS) return 0 to pages - 1
+    val span = 11
+    val from = (page - span / 2).coerceIn(0, pages - span)
+    return from to from + span - 1
+}
+
 /** Where bubble [slot] sits on a page [w] × [h] px of [cols] across: its centre and the diameter. */
-private fun bubbleSpot(slot: Int, cols: Int, w: Float, h: Float): Triple<Float, Float, Float> {
+private fun bubbleSpot(slot: Int, cols: Int, w: Float, h: Float, reserve: Float = 0f): Triple<Float, Float, Float> {
     val (row, col) = bubbleSlot(slot, cols)
     val padX = w * 0.06f
     val stepX = (w - padX * 2f) / cols
-    val top = h * 0.07f
-    val stepY = (h * 0.86f) / 3f
+    // (Update 346: below [reserve] — the name pill at the top; the first row's bubbles ran into it.)
+    val top = reserve + (h - reserve) * 0.04f
+    val stepY = ((h - reserve) * 0.9f) / 3f
     val x = padX + (col + 0.5f + if (row == 1) 0.5f else 0f) * stepX
     val y = top + (row + 0.5f) * stepY
     val d = minOf(stepX * 0.74f, stepY * 0.76f)
@@ -492,6 +508,7 @@ private fun BubblePages(c: StyleCtx, cols: Int) {
     ) {
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
+        val reservePx = with(density) { BUBBLE_TOP.toPx() }
         val areaW = wPx * 0.94f
         val shiftX = (wPx - areaW) * 0.35f
         // The pages near the one you're on (the one sliding in and out too).
@@ -503,7 +520,7 @@ private fun BubblePages(c: StyleCtx, cols: Int) {
                 val i = p * per + s
                 if (i >= count) break
                 val gg = c.games[i]
-                val (x, y, d) = bubbleSpot(s, cols, areaW, hPx)
+                val (x, y, d) = bubbleSpot(s, cols, areaW, hPx, reservePx)
                 key(i) {
                     val on = i == focus
                     BubbleArt(c, gg, on, d, i, clock, Modifier.offset { IntOffset((x - d / 2f + shiftX).roundToInt(), (y - d / 2f + dy).roundToInt()) }.zIndex(if (on) 2f else 1f)
@@ -511,15 +528,45 @@ private fun BubblePages(c: StyleCtx, cols: Int) {
                 }
             }
         }
-        // The page dots down the right.
-        if (pages > 1) Column(Modifier.align(Alignment.CenterEnd).padding(end = 10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            for (p in 0 until pages.coerceAtMost(14)) Box(
-                Modifier.size(if (p == page) 9.dp else 7.dp).clip(CircleShape)
-                    .background(if (p == page) Color.White else Color.White.copy(alpha = 0.4f))
-                    .pointerInput(p) { detectTapGestures { select((p * per).coerceAtMost(latestCount - 1)); bbSound(KitSound.PAGE, UiSound.MOVE) } }
-            )
+        // The page dots down the right. (Update 346: past 14 pages a window of dots round the page you're on, the outer
+        // ones smaller where more pages go on, and the page number — the first 14 only were shown, the rest had no dot.)
+        if (pages > 1) Column(Modifier.align(Alignment.CenterEnd).padding(end = 10.dp), verticalArrangement = Arrangement.spacedBy(7.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            val (from, to) = bubbleDotWindow(page, pages)
+            if (pages > BUBBLE_DOTS) Text("${page + 1}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.25f)).padding(horizontal = 6.dp, vertical = 1.dp))
+            for (p in from..to) {
+                val edge = (p == from && from > 0) || (p == to && to < pages - 1)
+                Box(
+                    Modifier.size(if (p == page) 9.dp else if (edge) 4.dp else 7.dp).clip(CircleShape)
+                        .background(if (p == page) Color.White else Color.White.copy(alpha = if (edge) 0.3f else 0.45f))
+                        .pointerInput(p) { detectTapGestures { select((p * per).coerceAtMost(latestCount - 1)); bbSound(KitSound.PAGE, UiSound.MOVE) } }
+                )
+            }
+            if (pages > BUBBLE_DOTS) Text("$pages", color = Color.White.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
         }
     }
+}
+
+/**
+ * Update 346: a bubble's glass — the bright cap, a small hard glint up on the left, light gathering in the bottom edge
+ * (as through a lens) and the white rim; the one you're on with a thicker rim.
+ */
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.bubbleGloss(on: Boolean) {
+    val r = size.width / 2f
+    drawOval(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.66f), Color.White.copy(alpha = 0.04f)), startY = size.height * 0.05f, endY = size.height * 0.48f),
+        Offset(size.width * 0.17f, size.height * 0.05f), Size(size.width * 0.66f, size.height * 0.42f))
+    drawOval(Color.White.copy(alpha = 0.85f), Offset(size.width * 0.24f, size.height * 0.13f), Size(size.width * 0.13f, size.height * 0.07f))
+    drawCircle(Brush.radialGradient(0.78f to Color.Transparent, 1f to Color.White.copy(alpha = 0.32f), center = Offset(r, r * 0.86f), radius = r * 1.06f), r)
+    drawCircle(Color.White.copy(alpha = if (on) 0.98f else 0.72f), r - 1.2f, style = Stroke(if (on) 3.4f else 2f))
+}
+
+/** Update 346: the light round the bubble you're on — a soft white bloom and a blue ring of light just outside its rim. */
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.bubbleHalo() {
+    val r = size.width / 2f
+    drawCircle(Brush.radialGradient(0.7f to Color.White.copy(alpha = 0.5f), 1f to Color.White.copy(alpha = 0f), radius = r * 1.34f), r * 1.34f)
+    drawCircle(Color(0xFF6FC3FF).copy(alpha = 0.35f), r * 1.07f, style = Stroke(r * 0.09f))
+    drawCircle(Color(0xFFBFE6FF).copy(alpha = 0.9f), r * 1.035f, style = Stroke(2.4f))
 }
 
 /** One glossy bubble with the game's art, floating; the one you're on swells and bobs, ringed in light. */
@@ -537,7 +584,7 @@ private fun BubbleArt(c: StyleCtx, g: Game, on: Boolean, dPx: Float, i: Int, clo
         Canvas(Modifier.fillMaxSize()) {
             drawOval(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.28f), Color.Transparent), center = Offset(size.width / 2f, size.height * 1.02f), radius = size.width * 0.5f),
                 Offset(size.width * 0.12f, size.height * 0.9f), Size(size.width * 0.76f, size.height * 0.2f))
-            if (on) drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0f)), radius = size.width * 0.66f), size.width * 0.66f)
+            if (on) bubbleHalo()
         }
         Box(Modifier.fillMaxSize().clip(CircleShape).background(placeholderBrush(g.hue))) {
             val cv = c.cover(g)
@@ -549,9 +596,7 @@ private fun BubbleArt(c: StyleCtx, g: Game, on: Boolean, dPx: Float, i: Int, clo
         Canvas(Modifier.fillMaxSize()) {
             val r = size.width / 2f
             drawCircle(Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.22f))), r)
-            drawOval(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.62f), Color.White.copy(alpha = 0.05f)), startY = size.height * 0.05f, endY = size.height * 0.48f),
-                Offset(size.width * 0.17f, size.height * 0.05f), Size(size.width * 0.66f, size.height * 0.42f))
-            drawCircle(Color.White.copy(alpha = if (on) 0.95f else 0.7f), r - 1.2f, style = Stroke(if (on) 3.2f else 2f))
+            bubbleGloss(on)
         }
         if (g.stableKey in c.state.favorites) Icon(Icons.Filled.Star, null, tint = Color(0xFFFFD34A), modifier = Modifier.align(Alignment.TopEnd).size(16.dp))
     }
@@ -576,7 +621,7 @@ private fun BubbleFolders(c: StyleCtx, cols: Int, systems: List<Int>) {
             val i = page * per + s
             if (i >= n) break
             val st = c.stops.getOrNull(systems[i]) ?: continue
-            val (x, y, dPx) = bubbleSpot(s, cols, wPx, hPx)
+            val (x, y, dPx) = bubbleSpot(s, cols, wPx, hPx, with(density) { BUBBLE_TOP.toPx() })
             val d = with(density) { dPx.toDp() }
             val on = i == focus
             key(i) {
@@ -587,23 +632,26 @@ private fun BubbleFolders(c: StyleCtx, cols: Int, systems: List<Int>) {
                 }
                 Box(Modifier.offset { IntOffset((x - dPx / 2f + shiftX).roundToInt(), (y - dPx / 2f).roundToInt()) }.size(d).graphicsLayer { scaleX = grow; scaleY = grow }
                     .pointerInput(i) { detectTapGestures { if (BubbleNav.folder == i) bubblesPickFolder(c, i) else { BubbleNav.folder = i; bbSound(KitSound.MOVE, UiSound.MOVE) } } }) {
+                    if (on) Canvas(Modifier.fillMaxSize()) { bubbleHalo() }
                     Box(Modifier.fillMaxSize().clip(CircleShape).background(Brush.verticalGradient(listOf(Color(0xFFF4F8FC), Color(0xFFC9D6E4)))), contentAlignment = Alignment.Center) {
                         when {
                             photo != null -> AsyncImage(photo, st.label, Modifier.fillMaxSize(0.78f), contentScale = ContentScale.Fit)
-                            platform != null -> PlatformLogo(platform, st.label, Modifier.fillMaxSize(0.66f), textColor = Color(0xFF223040), blackToWhite = false)
+                            // (Update 346: a little smaller and higher — a name drawn as text ran into the count tab.)
+                            platform != null -> PlatformLogo(platform, st.label, Modifier.fillMaxSize(0.58f).offset(y = -d * 0.05f), textColor = Color(0xFF223040), blackToWhite = false)
                             else -> Icon(st.icon, null, tint = Color(0xFF223040), modifier = Modifier.size(d * 0.4f))
                         }
                     }
-                    Canvas(Modifier.fillMaxSize()) {
-                        drawOval(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.6f), Color.White.copy(alpha = 0f)), endY = size.height * 0.45f),
-                            Offset(size.width * 0.17f, size.height * 0.05f), Size(size.width * 0.66f, size.height * 0.4f))
-                        drawCircle(Color.White.copy(alpha = if (on) 0.95f else 0.7f), size.width / 2f - 1.2f, style = Stroke(if (on) 3.2f else 2f))
-                    }
+                    Canvas(Modifier.fillMaxSize()) { bubbleGloss(on) }
                     // The folder tab and its count.
-                    Row(Modifier.align(Alignment.BottomEnd).clip(RoundedCornerShape(50)).background(Color(0xFF2F86E0)).padding(horizontal = 6.dp, vertical = 2.dp),
+                    // (Update 346: only with a number — a folder without its count showed an empty tab.)
+                    val count = st.platform?.let { counts[it] }
+                    // (On small bubbles — a short screen — the tab shrinks and sits out on the rim instead of covering the console.)
+                    val small = d < 84.dp
+                    if (count != null) Row(Modifier.align(Alignment.BottomEnd).offset(x = if (small) d * 0.1f else 0.dp, y = if (small) d * 0.06f else 0.dp)
+                        .clip(RoundedCornerShape(50)).background(Color(0xFF2F86E0)).padding(horizontal = if (small) 4.dp else 6.dp, vertical = if (small) 1.dp else 2.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Folder, null, tint = Color.White, modifier = Modifier.size(11.dp))
-                        st.platform?.let { p -> counts[p]?.let { Text(" $it", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold) } }
+                        if (!small) Icon(Icons.Filled.Folder, null, tint = Color.White, modifier = Modifier.size(11.dp))
+                        Text(if (small) "$count" else " $count", color = Color.White, fontSize = if (small) 8.sp else 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

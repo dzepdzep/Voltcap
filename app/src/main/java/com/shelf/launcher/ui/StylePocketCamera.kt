@@ -229,18 +229,27 @@ internal fun StylePocketCamera(c: StyleCtx, modifier: Modifier = Modifier) {
         }
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
-        // One "pixel" of the camera's screen, and the photo's whole-number scale.
-        val scale = floor((hPx * 0.58f) / 112f).coerceAtLeast(1f).let { s -> if (128f * s > wPx * 0.6f) floor(wPx * 0.6f / 128f).coerceAtLeast(1f) else s }
+        // One "pixel" of the camera's screen, and the photo's whole-number scale. (Update 346: on a wide screen the facts
+        // stand beside the photo, as on the camera's own info screen, so the photo can be drawn bigger — on the Thor
+        // 6× instead of 4×; the photo stays at whole pixels, never smoothed.)
+        val wide = maxWidth > maxHeight * 1.5f
+        val scale = if (wide) {
+            val s = floor(hPx * 0.86f / 131f).coerceAtLeast(1f)
+            val fit = floor(wPx * 0.72f / 212f).coerceAtLeast(1f)
+            minOf(s, fit)
+        } else floor((hPx * 0.58f) / 112f).coerceAtLeast(1f).let { s -> if (128f * s > wPx * 0.6f) floor(wPx * 0.6f / 128f).coerceAtLeast(1f) else s }
         val u = with(density) { (scale.coerceAtLeast(2f)).toDp() }
         val photoW = with(density) { (128f * scale).toDp() }
         val photoH = with(density) { (112f * scale).toDp() }
-        val panelW = photoW + u * 8
+        val infoW = u * 72
+        val panelW = if (wide) photoW + infoW + u * 12 else photoW + u * 8
         val sideRoom = (maxWidth - panelW) / 2
         val thumb = (sideRoom * 0.62f).coerceAtMost(maxHeight / 5.2f)
         val showSides = thumb >= 40.dp
-        val fs: (Float) -> TextUnit = { k -> with(density) { (u * k).toSp() } }
+        // (Update 346: never smaller than ~9 sp for the small print, however small the camera's pixel gets on a short screen.)
+        val fs: (Float) -> TextUnit = { k -> with(density) { maxOf((u * k).toSp().value, k * 2.1f).sp } }
         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            if (showSides) CameraAlbum(c, (1..4).map { c.focus - it }.reversed(), thumb, pal, u, font, fs, select, Modifier.width(sideRoom))
+            if (showSides) CameraAlbum(c, (1..4).map { c.focus - it }.reversed(), thumb, pal, u, font, fs, select, Alignment.End, Modifier.width(sideRoom).padding(end = u * 6))
             // The viewfinder.
             Box(Modifier.width(panelW).padding(vertical = u * 2)) {
                 Canvas(Modifier.matchParentSize()) { pixelFrame(u.toPx(), c3, c0, 3) }
@@ -253,27 +262,19 @@ internal fun StylePocketCamera(c: StyleCtx, modifier: Modifier = Modifier) {
                         Text("No." + (c.focus + 1).toString().padStart(3, '0'), color = c2, fontFamily = font, fontSize = fs(5.5f), maxLines = 1)
                     }
                     Spacer(Modifier.height(u * 2))
-                    CameraPhoto(c, g, source, photoW, photoH, pal, Modifier.pointerInput(g.stableKey) { detectTapGestures { open() } })
-                    Spacer(Modifier.height(u * 2))
-                    Text(LocalTitleOptions.current.display(g.name).uppercase(), color = c0, fontFamily = font, fontSize = fs(7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    val meta = c.state.metadata[g.stableKey]
-                    Text(
-                        listOfNotNull(meta?.releaseYear?.toString(), if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "ANDROID" else LocalTitleOptions.current.console(g.platform).uppercase()).joinToString("  "),
-                        color = c1, fontFamily = font, fontSize = fs(5f), maxLines = 1, overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(Modifier.height(u * 2))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        c.progress(g)?.let { (e, t) ->
-                            PixelIcon(PX_TROPHY, u * 0.9f, c0); Spacer(Modifier.width(u * 2))
-                            Text("$e/$t", color = c0, fontFamily = font, fontSize = fs(5f)); Spacer(Modifier.width(u * 5))
-                        }
-                        PixelIcon(PX_CLOCK, u * 0.9f, c0); Spacer(Modifier.width(u * 2))
-                        Text(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null).uppercase(), color = c0, fontFamily = font, fontSize = fs(5f), maxLines = 1)
-                        if (g.stableKey in c.state.favorites) { Spacer(Modifier.width(u * 5)); PixelIcon(PX_STAR, u * 0.9f, c0) }
+                    val photo = @Composable { CameraPhoto(c, g, source, photoW, photoH, pal, Modifier.pointerInput(g.stableKey) { detectTapGestures { open() } }) }
+                    if (wide) Row {
+                        photo()
+                        Spacer(Modifier.width(u * 4))
+                        Column(Modifier.width(infoW).height(photoH)) { CameraFacts(c, g, pal, u, font, fs, stacked = true) }
+                    } else {
+                        photo()
+                        Spacer(Modifier.height(u * 2))
+                        CameraFacts(c, g, pal, u, font, fs, stacked = false)
                     }
                 }
             }
-            if (showSides) CameraAlbum(c, (1..4).map { c.focus + it }, thumb, pal, u, font, fs, select, Modifier.width(sideRoom))
+            if (showSides) CameraAlbum(c, (1..4).map { c.focus + it }, thumb, pal, u, font, fs, select, Alignment.Start, Modifier.width(sideRoom).padding(start = u * 6))
         }
         // The album's name top left, the hints along the bottom.
         if (caption) Text(("ALBUM: " + c.categoryLabel).uppercase(), color = c2, fontFamily = font, fontSize = fs(5f), maxLines = 1,
@@ -325,14 +326,71 @@ private fun CameraPhoto(c: StyleCtx, g: Game, source: Int, w: Dp, h: Dp, pal: In
     }
 }
 
-/** A column of the album: small dithered photos of the games at [indexes] (those past the ends left out). */
+/**
+ * The photo's facts: its name, year and console, achievements, time played (and a star when it's a favourite). [stacked]:
+ * one under the other beside the photo (wide screens), else under the photo as before.
+ */
+@Composable
+private fun CameraFacts(c: StyleCtx, g: Game, pal: IntArray, u: Dp, font: FontFamily, fs: (Float) -> TextUnit, stacked: Boolean) {
+    val c0 = Color(pal[0]); val c1 = Color(pal[1])
+    val titles = LocalTitleOptions.current
+    val meta = c.state.metadata[g.stableKey]
+    val year = meta?.releaseYear?.toString()
+    val console = if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "ANDROID" else titles.console(g.platform).uppercase()
+    val time = stylePlaytime(c.playtime(g), c.lastPlayed(g) != null).uppercase()
+    val fav = g.stableKey in c.state.favorites
+    if (stacked) {
+        Text(titles.display(g.name).uppercase(), color = c0, fontFamily = font, fontSize = fs(6f), lineHeight = fs(7.5f), maxLines = 3, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.height(u * 2))
+        Box(Modifier.fillMaxWidth().height(u).background(c0))
+        Spacer(Modifier.height(u * 3))
+        // (Shrinks rather than breaking a long console name in the middle of a word.)
+        FitText(console, c1, maxSize = fs(4.5f), minSize = 7.sp, maxLines = 1, style = androidx.compose.ui.text.TextStyle(fontFamily = font))
+        year?.let { Text(it, color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1) }
+        Spacer(Modifier.height(u * 4))
+        c.progress(g)?.let { (e, t) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PixelIcon(PX_TROPHY, u * 0.9f, c0); Spacer(Modifier.width(u * 2))
+                Text("$e/$t", color = c0, fontFamily = font, fontSize = fs(5f), maxLines = 1)
+            }
+            Spacer(Modifier.height(u * 2))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PixelIcon(PX_CLOCK, u * 0.9f, c0); Spacer(Modifier.width(u * 2))
+            Text(time, color = c0, fontFamily = font, fontSize = fs(5f), lineHeight = fs(6.5f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+        if (fav) {
+            Spacer(Modifier.height(u * 2))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PixelIcon(PX_STAR, u * 0.9f, c0); Spacer(Modifier.width(u * 2))
+                Text("FAVOURITE", color = c0, fontFamily = font, fontSize = fs(5f), maxLines = 1)
+            }
+        }
+        return
+    }
+    Text(titles.display(g.name).uppercase(), color = c0, fontFamily = font, fontSize = fs(7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Text(listOfNotNull(year, console).joinToString("  "), color = c1, fontFamily = font, fontSize = fs(5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Spacer(Modifier.height(u * 2))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        c.progress(g)?.let { (e, t) ->
+            PixelIcon(PX_TROPHY, u * 0.9f, c0); Spacer(Modifier.width(u * 2))
+            Text("$e/$t", color = c0, fontFamily = font, fontSize = fs(5f)); Spacer(Modifier.width(u * 5))
+        }
+        PixelIcon(PX_CLOCK, u * 0.9f, c0); Spacer(Modifier.width(u * 2))
+        Text(time, color = c0, fontFamily = font, fontSize = fs(5f), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+        if (fav) { Spacer(Modifier.width(u * 5)); PixelIcon(PX_STAR, u * 0.9f, c0) }
+    }
+}
+
+/** A column of the album: small dithered photos of the games at [indexes] (those past the ends left out), kept to the viewfinder's side. */
 @Composable
 private fun CameraAlbum(
-    c: StyleCtx, indexes: List<Int>, thumb: Dp, pal: IntArray, u: Dp, font: FontFamily, fs: (Float) -> TextUnit, select: (Int) -> Unit, modifier: Modifier
+    c: StyleCtx, indexes: List<Int>, thumb: Dp, pal: IntArray, u: Dp, font: FontFamily, fs: (Float) -> TextUnit, select: (Int) -> Unit,
+    align: Alignment.Horizontal, modifier: Modifier
 ) {
     val n = c.games.size
     val c0 = Color(pal[0]); val c2 = Color(pal[2]); val c3 = Color(pal[3])
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(u * 2, Alignment.CenterVertically)) {
+    Column(modifier, horizontalAlignment = align, verticalArrangement = Arrangement.spacedBy(u * 2, Alignment.CenterVertically)) {
         indexes.forEach { raw ->
             val i = if (StyleLoop.on && n > 1) raw.mod(n) else raw
             if (i !in 0 until n || i == c.focus) { Spacer(Modifier.size(thumb)); return@forEach }

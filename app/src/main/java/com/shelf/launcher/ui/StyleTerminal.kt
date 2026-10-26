@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -95,6 +96,9 @@ internal object TermNav {
     @Volatile var root: List<TermEntry> = emptyList()
     @Volatile var systems: List<Int> = emptyList()
     @Volatile var rows: Int = 12
+    /** Update 346: the listing's 8.3 names (stableKey → alias), for the RUN window too. */
+    @Volatile var aliases: Map<String, String> = emptyMap()
+    fun alias(g: Game): String = aliases[g.stableKey] ?: termFileName(g.name)
     internal val keysDown = HashSet<Int>()
     fun signature(): Any = listOf(dir, rootSel, sysSel)
 }
@@ -217,21 +221,54 @@ internal fun TerminalBackdrop(modifier: Modifier) {
 
 /** A short file name from a game's name: capitals and digits, eight of them, as an old system would keep it. */
 internal fun termFileName(name: String): String {
-    val clean = name.uppercase().replace(Regex("\\(.*?\\)|\\[.*?]"), "").replace(Regex("[^A-Z0-9 ]"), "").trim()
-    val words = clean.split(' ').filter { it.isNotBlank() }
-    val joined = words.joinToString("")
-    return (if (joined.length <= 8) joined else joined.take(6) + "~1").ifEmpty { "GAME" }
+    val joined = termStem(name)
+    return if (joined.length <= 8) joined else joined.take(6) + "~1"
 }
 
-private fun termExt(g: Game): String = if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "APK" else g.platform.uppercase().replace(Regex("[^A-Z0-9]"), "").take(3).ifEmpty { "ROM" }
+/** The game's name as an old system's file name before it's cut: capitals and digits only, tags in brackets dropped. */
+internal fun termStem(name: String): String {
+    val clean = name.uppercase().replace(Regex("\\(.*?\\)|\\[.*?]"), "").replace(Regex("[^A-Z0-9 ]"), "").trim()
+    return clean.split(' ').filter { it.isNotBlank() }.joinToString("").ifEmpty { "GAME" }
+}
+
+/**
+ * Update 346: every game of a listing its own 8.3 name, as the old systems made them — the name itself when it fits and is
+ * free, else its first letters and ~1, ~2, … (~10 on: one letter fewer). Unique per name + extension; worked out in a
+ * fixed order (the names, then the keys), so a game keeps its alias whatever the list's sort. Two "Asterix & Obelix
+ * XXL" games were both ASTERI~1.PS2. [ext] gives each game's extension.
+ */
+internal fun <T> termAliases(items: List<T>, key: (T) -> String, name: (T) -> String, ext: (T) -> String): Map<String, String> {
+    val used = HashSet<String>()
+    val out = HashMap<String, String>(items.size * 2)
+    val order = items.map { Triple(termStem(name(it)), key(it), ext(it)) }.sortedWith(compareBy({ it.first }, { it.second }))
+    for ((stem, k, e) in order) {
+        if (k in out) continue
+        var alias = stem.takeIf { it.length <= 8 && (it + "." + e) !in used }
+        var n = 1
+        while (alias == null) {
+            val tail = "~$n"
+            val cand = stem.take(8 - tail.length) + tail
+            if ((cand + "." + e) !in used) alias = cand
+            n++
+        }
+        used += alias + "." + e
+        out[k] = alias
+    }
+    return out
+}
+
+internal fun termExt(g: Game): String = if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "APK" else g.platform.uppercase().replace(Regex("[^A-Z0-9]"), "").take(3).ifEmpty { "ROM" }
 
 @Composable
 internal fun StyleTerminal(c: StyleCtx, modifier: Modifier = Modifier) {
     val systems = remember(c.stops) { gcSystems(c) }
+    // Update 346: every file its own 8.3 name (two games could share ASTERI~1).
+    val aliases = remember(c.games) { termAliases(c.games, { it.stableKey }, { it.name }, ::termExt) }
     SideEffect {
         TermNav.ctx = c
         TermNav.systems = systems
         TermNav.root = termRootEntries(c)
+        TermNav.aliases = aliases
         StyleNav.side = emptyList(); StyleNav.top = emptyList(); StyleNav.bar = emptyList()
         StyleLoop.on = loopRowOn(c)
     }
@@ -264,8 +301,14 @@ internal fun StyleTerminal(c: StyleCtx, modifier: Modifier = Modifier) {
     val density = LocalDensity.current
     val glow = crt != Features.TmCrt.OFF
     BoxWithConstraints(modifier.fillMaxSize().padding(if (crt == Features.TmCrt.FULL) 10.dp else 0.dp)) {
+        // (Update 346: sized to the screen — small handhelds got 12 sp text and a preview squeezed to a strip.)
         val compact = maxHeight < 380.dp
-        val fsz: TextUnit = if (compact) 12.sp else 15.sp
+        val narrow = maxWidth < 600.dp
+        val fsz: TextUnit = when {
+            compact && narrow -> 13.sp
+            compact || narrow -> 14.sp
+            else -> 15.sp
+        }
         val lineH = with(density) { (fsz.toPx() * 1.32f).toDp() }
         val style = TextStyle(fontFamily = font, fontSize = fsz, lineHeight = fsz * 1.32f, color = tc.fg, shadow = if (glow) Shadow(tc.fg.copy(alpha = 0.75f), Offset.Zero, 10f) else null)
         val screenShape = RoundedCornerShape(if (crt == Features.TmCrt.FULL) 22.dp else 0.dp)
@@ -274,29 +317,40 @@ internal fun StyleTerminal(c: StyleCtx, modifier: Modifier = Modifier) {
             alpha = if (crt == Features.TmCrt.FULL && !lite) 0.97f + 0.03f * sin(clock.floatValue * 40f) else 1f
         }) {
             if (boot.value < 1f) TermBoot(boot.value, style, tc)
-            else Column(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 6.dp)) {
+            else Column(Modifier.fillMaxSize().padding(horizontal = if (narrow) 8.dp else 14.dp, vertical = 6.dp)) {
                 // The title line, in reverse.
                 Row(Modifier.fillMaxWidth().background(tc.hi).padding(horizontal = 6.dp)) {
-                    Text(" VOLTCAP OS  v1.0", style = style.copy(color = tc.hiInk, shadow = null), maxLines = 1, modifier = Modifier.weight(1f))
-                    Text(termPath(c) + " ", style = style.copy(color = tc.hiInk, shadow = null), maxLines = 1)
+                    Text(if (narrow) " VOLTCAP OS" else " VOLTCAP OS  v1.0", style = style.copy(color = tc.hiInk, shadow = null), maxLines = 1, modifier = Modifier.weight(1f))
+                    Text(termPath(c) + " ", style = style.copy(color = tc.hiInk, shadow = null), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(if (compact) 3.dp else 6.dp))
                 Row(Modifier.weight(1f).fillMaxWidth()) {
-                    TermListing(c, tc, style, lineH, compact, Modifier.weight(if (compact) 0.58f else 0.55f).fillMaxHeight())
-                    Spacer(Modifier.width(12.dp))
-                    TermPreview(c, tc, style, compact, Modifier.weight(if (compact) 0.42f else 0.45f).fillMaxHeight())
+                    // (The listing gets the room the names need; the preview keeps at least its picture and facts.)
+                    val listW = if (narrow) 0.6f else 0.56f
+                    TermListing(c, tc, style, lineH, Modifier.weight(listW).fillMaxHeight())
+                    Spacer(Modifier.width(if (narrow) 8.dp else 12.dp))
+                    TermPreview(c, tc, style, compact, Modifier.weight(1f - listW).fillMaxHeight())
                 }
                 Spacer(Modifier.height(4.dp))
                 TermPrompt(c, tc, style, clock)
-                Text(
-                    when (TermNav.dir) {
-                        TermNav.Dir.GAMES -> "ENTER RUN   ESC UP   X FAV   Y TROPHIES   L2/R2 DRIVE"
-                        else -> "ENTER OPEN   ESC UP   ^v MOVE   <> PAGE"
-                    },
-                    style = style.copy(color = tc.dim, fontSize = fsz * 0.75f, shadow = null), maxLines = 1
-                )
+                TermHints(tc, style.copy(fontSize = fsz * 0.8f, shadow = null), narrow)
             }
             if (crt != Features.TmCrt.OFF) TermCrt(crt == Features.TmCrt.FULL)
+        }
+    }
+}
+
+/** Update 346: the controller's keys for what's on screen, as key caps in reverse video — the handheld's buttons, not a keyboard's. */
+@Composable
+private fun TermHints(tc: TermColors, style: TextStyle, narrow: Boolean) {
+    val keys = when (TermNav.dir) {
+        TermNav.Dir.GAMES -> listOf("A" to "RUN", "B" to "UP", "X" to "FAV", "Y" to "TROPHIES", "L2/R2" to "DRIVE") + if (narrow) emptyList() else listOf("◀▶" to "PAGE")
+        else -> listOf("A" to "OPEN", "B" to "UP", "▲▼" to "MOVE") + if (narrow) emptyList() else listOf("◀▶" to "PAGE")
+    }
+    Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+        keys.forEach { (k, v) ->
+            Text(" $k ", style = style.copy(color = tc.bg), maxLines = 1, modifier = Modifier.background(tc.dim))
+            Text(" $v  ", style = style.copy(color = tc.dim), maxLines = 1)
         }
     }
 }
@@ -318,13 +372,36 @@ private fun TermBoot(k: Float, style: TextStyle, tc: TermColors) {
     }
 }
 
+/** Update 346: [s] cut to [n] characters, a "…" where it was cut (never mid-way without saying so). */
+internal fun termFit(s: String, n: Int): String = when {
+    n <= 0 -> ""
+    s.length <= n -> s.padEnd(n)
+    n == 1 -> "…"
+    else -> s.take(n - 1) + "…"
+}
+
+/**
+ * Update 346: one listing line for a game, fitted to [cols] characters: its 8.3 name and extension, its title (as it is
+ * — the 8.3 name is only the file's), the time played at the right. Narrow listings drop the 8.3 name before the title.
+ */
+internal fun termGameLine(alias: String, ext: String, title: String, played: String, cols: Int, full: Boolean = false): String {
+    val pt = played.padStart(6)
+    val withFile = cols >= 44
+    val head = if (withFile) alias.padEnd(8) + " " + ext.padEnd(3) + "  " else ""
+    val room = (cols - head.length - pt.length - 1).coerceAtLeast(4)
+    return head + (if (full) title.padEnd(room) else termFit(title, room)) + " " + pt
+}
+
 /** The directory listing: the lines near the cursor, the one it's on in reverse video. */
 @Composable
-private fun TermListing(c: StyleCtx, tc: TermColors, style: TextStyle, lineH: androidx.compose.ui.unit.Dp, compact: Boolean, modifier: Modifier) {
+private fun TermListing(c: StyleCtx, tc: TermColors, style: TextStyle, lineH: androidx.compose.ui.unit.Dp, modifier: Modifier) {
     val titles = LocalTitleOptions.current
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
     val latest by rememberUpdatedState(c)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val charW = remember(style.fontFamily, style.fontSize) { measurer.measure("MMMMMMMMMM", style.copy(shadow = null)).size.width / 10f }
+    val marquee = rememberAnimationsEnabled()
     BoxWithConstraints(modifier.clipToBounds().pointerInput(Unit) {
         var acc = 0f
         detectVerticalDragGestures(onDragStart = { acc = 0f }) { ch, dy ->
@@ -343,6 +420,8 @@ private fun TermListing(c: StyleCtx, tc: TermColors, style: TextStyle, lineH: an
         }
     }) {
         val rows = ((maxHeight / lineH).toInt() - 2).coerceAtLeast(3)
+        // Characters a line holds (less the cursor mark and the row's padding).
+        val cols = with(LocalDensity.current) { ((maxWidth - 8.dp).toPx() / charW.coerceAtLeast(1f)).toInt() - 2 }.coerceAtLeast(12)
         SideEffect { TermNav.rows = rows }
         val (count, sel) = when (TermNav.dir) {
             TermNav.Dir.GAMES -> c.games.size to c.focus
@@ -351,25 +430,30 @@ private fun TermListing(c: StyleCtx, tc: TermColors, style: TextStyle, lineH: an
         }
         val first = (sel - rows / 2).coerceIn(0, (count - rows).coerceAtLeast(0))
         Column {
-            Text(" Directory of " + termPath(c), style = style.copy(color = tc.dim), maxLines = 1)
+            Text(termFit(" Directory of " + termPath(c), cols + 2), style = style.copy(color = tc.dim), maxLines = 1, softWrap = false)
             for (i in first until (first + rows).coerceAtMost(count)) {
                 val on = i == sel
+                var isDir = false
+                var cut = false
                 val line: String = when (TermNav.dir) {
                     TermNav.Dir.GAMES -> c.games[i].let { g ->
-                        val nm = if (compact) titles.display(g.name).uppercase() else termFileName(g.name).padEnd(9) + termExt(g).padEnd(4) + titles.display(g.name).uppercase()
+                        val title = titles.display(g.name).uppercase()
                         val pt = c.playtime(g)?.let { ms -> val m = (ms / 60_000L).toInt(); if (m >= 60) "${m / 60}h${(m % 60).toString().padStart(2, '0')}" else "${m}m" } ?: "--"
-                        nm.take(if (compact) 22 else 36).padEnd(if (compact) 22 else 36) + " " + pt.padStart(6)
+                        val ln = termGameLine(TermNav.alias(g), termExt(g), title, pt, cols)
+                        // (The one you're on scrolls its whole title when it doesn't fit.)
+                        if (on && marquee && ln.contains('…')) { cut = true; termGameLine(TermNav.alias(g), termExt(g), title, pt, cols, full = true) } else ln
                     }
-                    TermNav.Dir.ROOT -> TermNav.root[i].let { e -> (e.name.padEnd(13) + (if (e.dir) "<DIR>" else "     ") + "  " + e.note).take(48) }
+                    TermNav.Dir.ROOT -> TermNav.root[i].let { e -> isDir = e.dir; termFit(e.name.padEnd(13) + (if (e.dir) "<DIR>" else "     ") + "  " + e.note, cols) }
                     TermNav.Dir.SYSTEMS -> c.stops.getOrNull(TermNav.systems[i])?.let { st ->
+                        isDir = true
                         val n = c.state.games.count { it.platform == st.platform }
-                        (termFileName(st.label).padEnd(10) + "<DIR>  " + st.label.uppercase()).take(36).padEnd(36) + " " + "$n".padStart(5)
+                        val head = termFileName(st.label).padEnd(9) + "<DIR>  "
+                        head + termFit(st.label.uppercase(), (cols - head.length - 6).coerceAtLeast(4)) + "$n".padStart(6)
                     } ?: ""
                 }
                 key(i) {
-                    Text(
-                        line, style = if (on) style.copy(color = tc.hiInk, shadow = null) else style, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false,
-                        modifier = Modifier.fillMaxWidth().background(if (on) tc.hi else Color.Transparent).padding(horizontal = 4.dp)
+                    Row(
+                        Modifier.fillMaxWidth().background(if (on) tc.hi else Color.Transparent).padding(horizontal = 4.dp)
                             .pointerInput(i) {
                                 detectTapGestures {
                                     when (TermNav.dir) {
@@ -379,10 +463,21 @@ private fun TermListing(c: StyleCtx, tc: TermColors, style: TextStyle, lineH: an
                                     }
                                 }
                             }
-                    )
+                    ) {
+                        // (Update 346: a ► on the line you're on as well as the reverse video — it reads on the white and four-colour monitors too.)
+                        Text(if (on) "►" else " ", style = if (on) style.copy(color = tc.hiInk, shadow = null) else style, maxLines = 1)
+                        Text(
+                            line, style = if (on) style.copy(color = tc.hiInk, shadow = null) else style.copy(color = if (isDir) tc.accent else tc.fg),
+                            maxLines = 1, overflow = TextOverflow.Clip, softWrap = false,
+                            modifier = Modifier.weight(1f).then(
+                                if (cut) Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1200, repeatDelayMillis = 1500) else Modifier
+                            )
+                        )
+                    }
                 }
             }
-            Text(" " + count + (if (TermNav.dir == TermNav.Dir.GAMES) " file(s)" else " item(s)"), style = style.copy(color = tc.dim), maxLines = 1)
+            val pos = if (count > 0) "  [${sel + 1}/$count]" else ""
+            Text(" " + count + (if (TermNav.dir == TermNav.Dir.GAMES) " file(s)" else " item(s)") + pos, style = style.copy(color = tc.dim), maxLines = 1)
         }
     }
 }
@@ -394,40 +489,60 @@ private fun TermPreview(c: StyleCtx, tc: TermColors, style: TextStyle, compact: 
     val pal = intArrayOf(
         tc.bg.toArgb(), lerp(tc.bg, tc.fg, 0.33f).toArgb(), lerp(tc.bg, tc.fg, 0.66f).toArgb(), tc.fg.toArgb()
     )
-    Column(modifier.border(2.dp, tc.fg).padding(8.dp)) {
+    val f = style.fontSize * 0.88f
+    val small = style.copy(fontSize = f, lineHeight = f * 1.25f)
+    Column(modifier.border(2.dp, tc.fg).padding(if (compact) 6.dp else 8.dp)) {
         Text("[ PREVIEW ]", style = style.copy(color = tc.accent), maxLines = 1)
         Spacer(Modifier.height(4.dp))
         when (TermNav.dir) {
             TermNav.Dir.GAMES -> c.game?.let { g ->
                 val bmp = rememberDithered(c.cover(g), 96, 128, pal)
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.fillMaxHeight().aspectRatio(96f / 128f).border(1.dp, tc.dim)) {
+                    Box(Modifier.fillMaxHeight().aspectRatio(96f / 128f, matchHeightConstraintsFirst = true).border(1.dp, tc.dim)) {
                         if (bmp != null) Image(bmp, g.name, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds, filterQuality = FilterQuality.None)
                     }
                 }
                 Spacer(Modifier.height(4.dp))
                 val meta = c.state.metadata[g.stableKey]
-                val f = style.fontSize * 0.85f
-                Text(titles.display(g.name).uppercase(), style = style.copy(fontSize = f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("SYSTEM: " + (if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "ANDROID" else titles.console(g.platform).uppercase()), style = style.copy(fontSize = f, color = tc.dim), maxLines = 1)
-                if (!compact) meta?.releaseYear?.let { Text("YEAR:   $it", style = style.copy(fontSize = f, color = tc.dim), maxLines = 1) }
-                Text("PLAYED: " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null).uppercase(), style = style.copy(fontSize = f, color = tc.dim), maxLines = 1)
+                // (Update 346: the whole title — two lines — and the file's 8.3 name under it; the listing may have cut it.)
+                Text(titles.display(g.name).uppercase(), style = small, maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
+                Text(TermNav.alias(g) + "." + termExt(g), style = small.copy(color = tc.dim), maxLines = 1)
+                Text("SYS  " + (if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "ANDROID" else titles.console(g.platform).uppercase()), style = small.copy(color = tc.dim), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (!compact) meta?.releaseYear?.let { Text("YEAR $it", style = small.copy(color = tc.dim), maxLines = 1) }
+                Text("TIME " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null).uppercase(), style = small.copy(color = tc.dim), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 c.progress(g)?.let { (e, t) ->
                     val filled = ((e.toFloat() / t) * 10).toInt().coerceIn(0, 10)
-                    Text("ACHV:   [" + "#".repeat(filled) + ".".repeat(10 - filled) + "] $e/$t", style = style.copy(fontSize = f), maxLines = 1)
+                    Text("[" + "#".repeat(filled) + ".".repeat(10 - filled) + "] $e/$t", style = small, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false)
                 }
             }
             TermNav.Dir.ROOT -> TermNav.root.getOrNull(TermNav.rootSel)?.let { e ->
-                Text(e.name, style = style.copy(fontSize = style.fontSize * 1.4f), maxLines = 1)
-                Text(e.note, style = style.copy(color = tc.dim), maxLines = 2)
-                Spacer(Modifier.height(8.dp))
-                Text(if (e.dir) "A DIRECTORY. ENTER GOES IN." else "A PROGRAM. ENTER RUNS IT.", style = style.copy(color = tc.dim, fontSize = style.fontSize * 0.85f))
+                Text(e.name, style = style.copy(fontSize = style.fontSize * 1.3f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(e.note, style = small.copy(color = tc.dim), maxLines = 2)
+                Spacer(Modifier.height(6.dp))
+                // (Update 346: what's in the directory — the empty preview said only "a directory".)
+                val inside: List<String> = when (e.name) {
+                    "GAMES" -> c.games.take(12).map { TermNav.alias(it) + "." + termExt(it) }
+                    "SYSTEMS" -> TermNav.systems.take(12).mapNotNull { c.stops.getOrNull(it)?.label?.let { l -> termFileName(l) + "  <DIR>" } }
+                    else -> emptyList()
+                }
+                if (inside.isNotEmpty()) {
+                    Text("CONTENTS:", style = small.copy(color = tc.accent), maxLines = 1)
+                    Column(Modifier.weight(1f).clipToBounds()) { inside.forEach { Text("  $it", style = small, maxLines = 1, softWrap = false) } }
+                } else {
+                    Text(if (e.dir) "DIRECTORY — PRESS A TO OPEN IT." else "PROGRAM — PRESS A TO RUN IT.", style = small.copy(color = tc.dim))
+                }
             }
             TermNav.Dir.SYSTEMS -> c.stops.getOrNull(TermNav.systems.getOrNull(TermNav.sysSel) ?: -1)?.let { st ->
-                Text(st.label.uppercase(), style = style.copy(fontSize = style.fontSize * 1.2f), maxLines = 2)
-                Text("${c.state.games.count { it.platform == st.platform }} FILE(S)", style = style.copy(color = tc.dim), maxLines = 1)
-                Spacer(Modifier.height(8.dp))
-                Text("ENTER: CD " + termFileName(st.label), style = style.copy(color = tc.dim, fontSize = style.fontSize * 0.85f), maxLines = 1)
+                Text(st.label.uppercase(), style = style.copy(fontSize = style.fontSize * 1.15f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val games = c.state.games.filter { it.platform == st.platform }
+                Text("${games.size} FILE(S)", style = small.copy(color = tc.dim), maxLines = 1)
+                Spacer(Modifier.height(6.dp))
+                // (Update 346: its games played last, else its first ones, so the preview isn't an empty box.)
+                val shown = games.sortedByDescending { c.lastPlayed(it) ?: 0L }.take(10)
+                if (shown.isNotEmpty()) {
+                    Text(if (shown.any { c.lastPlayed(it) != null }) "PLAYED LAST:" else "CONTENTS:", style = small.copy(color = tc.accent), maxLines = 1)
+                    Column(Modifier.weight(1f).clipToBounds()) { shown.forEach { Text("  " + titles.display(it.name).uppercase(), style = small, maxLines = 1, overflow = TextOverflow.Ellipsis) } }
+                }
             }
         }
     }
@@ -437,7 +552,7 @@ private fun TermPreview(c: StyleCtx, tc: TermColors, style: TextStyle, compact: 
 @Composable
 private fun TermPrompt(c: StyleCtx, tc: TermColors, style: TextStyle, clock: androidx.compose.runtime.FloatState) {
     val cmd = when (TermNav.dir) {
-        TermNav.Dir.GAMES -> c.game?.let { "RUN " + termFileName(it.name) + "." + termExt(it) } ?: ""
+        TermNav.Dir.GAMES -> c.game?.let { "RUN " + TermNav.alias(it) + "." + termExt(it) } ?: ""
         TermNav.Dir.ROOT -> TermNav.root.getOrNull(TermNav.rootSel)?.let { if (it.dir) "CD " + it.name else it.name } ?: ""
         TermNav.Dir.SYSTEMS -> c.stops.getOrNull(TermNav.systems.getOrNull(TermNav.sysSel) ?: -1)?.let { "CD " + termFileName(it.label) } ?: ""
     }

@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
@@ -323,6 +324,21 @@ internal fun StylePanels(c: StyleCtx, modifier: Modifier = Modifier) {
                             scaleX = s; scaleY = s
                             transformOrigin = TransformOrigin(0f, 0.5f)
                             alpha = (1f - abs(d) * 0.62f).coerceIn(0f, 1f)
+                            compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+                        }
+                        // (Update 346: a channel above / below shows its name and the edge of its panels fading out — not the
+                        // blank tops of its panels cut off by the screen, which read as grey placeholder bars.)
+                        .drawWithContent {
+                            drawContent()
+                            val t = abs(d).coerceAtMost(1f)
+                            if (t > 0.01f) {
+                                val h = size.height
+                                val keep = androidx.compose.ui.graphics.Color.Black
+                                val gone = androidx.compose.ui.graphics.Color.Black.copy(alpha = 1f - t)
+                                val brush = if (d > 0f) Brush.verticalGradient(0f to keep, 0.11f to keep, 0.2f to gone, 1f to gone, startY = 0f, endY = h)
+                                else Brush.verticalGradient(0f to gone, 0.5f to gone, 0.8f to keep, 1f to keep, startY = 0f, endY = h)
+                                drawRect(brush, blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
+                            }
                         }
                 ) { PanelChannel(c, p, i, i == ch, rowH, compact) }
             }

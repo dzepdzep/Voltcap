@@ -57,6 +57,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
@@ -68,6 +70,7 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -440,12 +443,14 @@ private fun BladeShape(
         Canvas(Modifier.fillMaxSize()) {
             val x = xOf()
             val dpth = depth().coerceIn(0f, 3f)
-            // Blades further from the open one stand a little lower and shorter (receding).
-            val top = topPx + dpth * size.height * 0.012f
-            val bot = botPx - dpth * size.height * 0.012f
+            // (Update 346: more depth — blades further from the open one stand lower and shorter, the leading edge bows out
+            // further, a bevel and a lit sheen run along the curve, and the open blade carries a diagonal gloss.)
+            val top = topPx + dpth * size.height * 0.02f
+            val bot = botPx - dpth * size.height * 0.02f
             val right = size.width
-            val bulge = tabPx * 0.42f
+            val bulge = tabPx * 0.62f
             val corner = tabPx * 0.5f
+            val mid = (top + bot) / 2f
             val path = Path().apply {
                 moveTo(x + bulge + corner, top)
                 lineTo(right, top)
@@ -453,27 +458,53 @@ private fun BladeShape(
                 lineTo(x + bulge + corner, bot)
                 quadraticTo(x + bulge, bot, x + bulge * 0.8f, bot - corner)
                 // The leading edge bows out to the left in the middle.
-                quadraticTo(x - bulge * 0.55f, (top + bot) / 2f, x + bulge * 0.8f, top + corner)
+                quadraticTo(x - bulge * 0.7f, mid, x + bulge * 0.8f, top + corner)
                 quadraticTo(x + bulge, top, x + bulge + corner, top)
                 close()
             }
-            // A soft shadow cast to the left onto the blade behind.
-            translate(left = -tabPx * 0.22f) { drawPath(path, Color.Black.copy(alpha = 0.32f)) }
-            translate(left = -tabPx * 0.1f) { drawPath(path, Color.Black.copy(alpha = 0.3f)) }
-            val shade = (0.18f + 0.1f * dpth).coerceAtMost(0.5f) * (1f - litK)
-            drawPath(path, Brush.verticalGradient(listOf(lerp(base, Color.White, 0.14f), base, lerp(base, Color.Black, 0.5f)), startY = top, endY = bot))
+            val edge = Path().apply {
+                moveTo(x + bulge + corner, bot)
+                quadraticTo(x + bulge, bot, x + bulge * 0.8f, bot - corner)
+                quadraticTo(x - bulge * 0.7f, mid, x + bulge * 0.8f, top + corner)
+                quadraticTo(x + bulge, top, x + bulge + corner, top)
+            }
+            // A soft shadow cast to the left onto the blade behind, deeper for the open one (it stands proud).
+            val lift = 0.6f + 0.4f * litK
+            translate(left = -tabPx * 0.34f * lift) { drawPath(path, Color.Black.copy(alpha = 0.2f)) }
+            translate(left = -tabPx * 0.2f * lift) { drawPath(path, Color.Black.copy(alpha = 0.28f)) }
+            translate(left = -tabPx * 0.08f) { drawPath(path, Color.Black.copy(alpha = 0.3f)) }
+            val shade = (0.2f + 0.12f * dpth).coerceAtMost(0.55f) * (1f - litK)
+            drawPath(path, Brush.verticalGradient(listOf(lerp(base, Color.White, 0.18f), base, lerp(base, Color.Black, 0.55f)), startY = top, endY = bot))
+            // Darker towards its right: the blade turns away from the light.
+            drawPath(path, Brush.horizontalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.22f)), startX = x + tabPx * 2f, endX = right))
             drawPath(path, Color.Black.copy(alpha = shade))
-            // The gloss: a bright band near the top, a lit rim along the curved edge.
-            drawPath(path, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.28f), Color.White.copy(alpha = 0.04f), Color.Transparent), startY = top, endY = top + (bot - top) * 0.35f))
-            drawPath(path, Color.White.copy(alpha = 0.18f + 0.3f * litK), style = Stroke(1.6f))
+            clipPath(path) {
+                // The bevel: a lit band just inside the curved edge and a dark one after it, so the edge reads as thickness.
+                drawPath(edge, Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.34f + 0.16f * litK), Color.Transparent), startX = x - bulge * 0.7f, endX = x + bulge * 1.6f),
+                    style = Stroke(tabPx * 0.5f))
+                drawPath(edge, Color.Black.copy(alpha = 0.18f), style = Stroke(tabPx * 0.12f), blendMode = androidx.compose.ui.graphics.BlendMode.SrcOver)
+                // The gloss: a bright band near the top.
+                drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.05f), Color.Transparent), startY = top, endY = top + (bot - top) * 0.32f))
+                // The open blade's diagonal sheen.
+                if (litK > 0.01f) drawRect(
+                    Brush.linearGradient(
+                        0f to Color.Transparent, 0.45f to Color.Transparent, 0.52f to Color.White.copy(alpha = 0.1f * litK), 0.6f to Color.Transparent, 1f to Color.Transparent,
+                        start = Offset(x, top), end = Offset(right, bot)
+                    )
+                )
+            }
+            // The rim: the curved edge lit, the top edge catching the light.
+            drawPath(edge, Color.White.copy(alpha = 0.3f + 0.45f * litK), style = Stroke(2.2f))
+            drawLine(Color.White.copy(alpha = 0.18f + 0.2f * litK), Offset(x + bulge + corner, top + 1f), Offset(right, top + 1f), strokeWidth = 1.6f)
         }
         // The name up its tab.
         Text(
             BladesNav.NAMES[i].uppercase(), color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp,
             maxLines = 1, softWrap = false,
             modifier = Modifier.graphicsLayer {
-                translationX = xOf() + tabPx * 0.24f
-                translationY = botPx - 18.dp.toPx()
+                // (Update 346: clear of the deeper curve near the bottom.)
+                translationX = xOf() + tabPx * 0.3f
+                translationY = botPx - 34.dp.toPx()
                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
                 rotationZ = -90f
                 alpha = if (lit) 0.75f else 1f
@@ -787,8 +818,12 @@ private fun BladeMenu(c: StyleCtx, p: BladePalette, compact: Boolean, b: Int, it
             BoxWithConstraints(Modifier.weight(0.47f).fillMaxHeight().clipToBounds()) {
                 val rowH = (maxHeight / 7.5f).coerceIn(34.dp, 54.dp)
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    // (Update 346: the rows follow the blade's curved leading edge — out to the left in the middle, in at
+                    // the ends — so the menu reads as part of the blade, not a plain list.)
+                    val mid = (items.size - 1) / 2f
                     items.forEachIndexed { i, it ->
-                        BladeRow(i == row, p, rowH, Modifier.pointerInput(b, i) {
+                        val bow = if (mid > 0f) ((i - mid) / mid).let { k -> k * k } else 0f
+                        BladeRow(i == row, p, rowH, Modifier.padding(start = (if (compact) 10.dp else 18.dp) * bow).pointerInput(b, i) {
                             detectTapGestures { if (BladesNav.rowOf(b) == i) bladesActivate(c, b, i) else { BladesNav.setRowOf(b, i); blSound(KitSound.MOVE, UiSound.MOVE) } }
                         }) { lit ->
                             Row(Modifier.fillMaxSize().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -812,10 +847,14 @@ private fun BladeMenu(c: StyleCtx, p: BladePalette, compact: Boolean, b: Int, it
                         val item = items.getOrNull(r) ?: return@Crossfade
                         val gg = item.game
                         if (gg != null) Column(Modifier.fillMaxSize()) {
-                            Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(3.dp)).background(placeholderBrush(gg.hue))) {
+                            // (Update 346: the game in a pod cut to the blade's own curve, glossed and rimmed in light.)
+                            val pod = BladePodShape
+                            Box(Modifier.fillMaxWidth().weight(1f).shadow(10.dp, pod).clip(pod).background(placeholderBrush(gg.hue))) {
                                 (c.wide(gg))?.let { u -> AsyncImage(rememberStyleArtRequest(u), gg.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.75f))))
-                                Column(Modifier.align(Alignment.BottomStart).padding(12.dp)) {
+                                Box(Modifier.fillMaxWidth().fillMaxHeight(0.3f).background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent))))
+                                Box(Modifier.fillMaxSize().border(2.dp, Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.85f), Color.White.copy(alpha = 0.2f))), pod))
+                                Column(Modifier.align(Alignment.BottomStart).padding(start = 26.dp, end = 12.dp, top = 12.dp, bottom = 12.dp)) {
                                     Text(titles.display(gg.name), color = Color.White, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(titles.console(gg.platform) + "  ·  " + stylePlaytime(c.playtime(gg), true), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
                                 }
@@ -837,6 +876,20 @@ private fun BladeMenu(c: StyleCtx, p: BladePalette, compact: Boolean, b: Int, it
     }
 }
 
+/** Update 346: Spotlight's pod — a panel whose left edge bows out like a blade's leading edge. */
+private val BladePodShape = androidx.compose.foundation.shape.GenericShape { size, _ ->
+    val b = (size.width * 0.05f).coerceAtMost(22f * 2.5f)
+    val r = (size.minDimension * 0.04f).coerceAtLeast(6f)
+    moveTo(b + r, 0f)
+    lineTo(size.width - r, 0f); quadraticTo(size.width, 0f, size.width, r)
+    lineTo(size.width, size.height - r); quadraticTo(size.width, size.height, size.width - r, size.height)
+    lineTo(b + r, size.height)
+    quadraticTo(b, size.height, b * 0.9f, size.height - r)
+    quadraticTo(-b * 0.8f, size.height / 2f, b * 0.9f, r)
+    quadraticTo(b, 0f, b + r, 0f)
+    close()
+}
+
 /** The gamer card: your picture, name, points, and how much you've played. */
 @Composable
 private fun BladeGamerCard(c: StyleCtx, p: BladePalette) {
@@ -844,23 +897,28 @@ private fun BladeGamerCard(c: StyleCtx, p: BladePalette) {
     val stats = c.state.raProfileStats
     val avatar = profilePictureUrl(com.shelf.launcher.data.RaBadges.mediaUrl(prof?.UserPic))
     val total = remember(c.state.playtime) { c.state.playtime.values.sum() }
+    // (Update 346: a gamer tag — a glossy plate with rounded ends in the blade's colour, the picture in a lit frame at its
+    // left end — instead of a flat dark strip.)
+    val tag = RoundedCornerShape(50)
     Row(
-        Modifier.fillMaxWidth().height(64.dp).clip(RoundedCornerShape(4.dp))
-            .background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.15f))))
-            .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp)).padding(8.dp),
+        Modifier.fillMaxWidth().height(64.dp).shadow(6.dp, tag).clip(tag)
+            .background(Brush.verticalGradient(listOf(lerp(p.hi, Color.White, 0.18f), p.hi, lerp(p.hi, p.lo, 0.7f))))
+            .drawBehind { drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.32f), Color.Transparent), endY = size.height * 0.5f)) }
+            .border(1.5.dp, Color.White.copy(alpha = 0.55f), tag).padding(start = 8.dp, end = 18.dp, top = 7.dp, bottom = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(48.dp).clip(RoundedCornerShape(3.dp)).background(lerp(p.lo, Color.Black, 0.3f)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(50.dp).clip(CircleShape).background(lerp(p.lo, Color.Black, 0.3f)).border(2.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) {
             if (avatar != null) AsyncImage(avatar, prof?.User, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             else Icon(Icons.Filled.Person, null, tint = Color.White, modifier = Modifier.size(30.dp))
         }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(prof?.User ?: c.state.raUsername ?: "Player", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val ink = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.45f), Offset(0f, 1.5f), 3f))
+            Text(prof?.User ?: c.state.raUsername ?: "Player", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink)
             Text(
                 listOfNotNull(prof?.TotalPoints?.let { "$it points" }, stats.mastered.takeIf { it > 0 }?.let { "$it mastered" }, stylePlaytime(total.takeIf { it > 0 }, true).takeIf { total > 0 }?.let { "$it played" })
                     .joinToString("  ·  ").ifEmpty { "${c.state.games.size} games" },
-                color = lerp(p.glow, Color.White, 0.45f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink
             )
         }
     }
